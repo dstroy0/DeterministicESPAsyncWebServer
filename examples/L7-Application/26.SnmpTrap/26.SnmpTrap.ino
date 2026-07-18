@@ -13,7 +13,7 @@
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
  *     build_flags = -DDWS_ENABLE_SNMP=1 -DDWS_ENABLE_SNMP_TRAP=1
- *     ; for SNMPv3 traps also: -DDWS_ENABLE_SNMP_V3=1 (then call snmp_trap_v3)
+ *     ; for SNMPv3 traps also: -DDWS_ENABLE_SNMP_V3=1 (then call dws_snmp_trap_v3)
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
@@ -66,7 +66,8 @@ void loop()
         vb.type = (uint8_t)SnmpVbType::SNMP_VB_GAUGE32;
         vb.ival = (long)ESP.getFreeHeap();
 
-        bool ok = snmp_trap_v2c(MANAGER, TRAP_PORT, "public", TRAP_OID, sizeof(TRAP_OID) / sizeof(uint32_t), &vb, 1);
+        bool ok =
+            dws_snmp_trap_v2c(MANAGER, TRAP_PORT, "public", TRAP_OID, sizeof(TRAP_OID) / sizeof(uint32_t), &vb, 1);
         Serial.printf("trap -> %s : %s (heap=%ld)\n", MANAGER, ok ? "sent" : "failed", vb.ival);
     }
 }

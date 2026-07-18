@@ -23,7 +23,7 @@
 #include "network_drivers/presentation/websocket/websocket.h" // ws_find()/ws_free(): a WS-upgraded slot must never be HTTP-parsed
 #endif
 #if DWS_ENABLE_SSE
-#include "network_drivers/presentation/sse/sse.h" // sse_free(): release an SSE binding when its HTTP slot closes/reuses
+#include "network_drivers/presentation/sse/sse.h" // dws_sse_free(): release an SSE binding when its HTTP slot closes/reuses
 #endif
 #if DWS_ENABLE_TLS
 #include "network_drivers/tls/tls.h"
@@ -50,7 +50,7 @@ void http_reset(uint8_t slot_id)
 // HTTP proto handler owns their teardown. Both frees are no-ops when the slot has no such binding.
 // Called on close AND on a fresh accept, because a slot can be reaped by the idle sweep or aborted
 // (SSE pool full) without a close event ever firing - so a reused slot must not inherit a stale
-// binding. A stale sse binding is the DoS: http_poll_slot() sees sse_find(slot) and skips HTTP
+// binding. A stale sse binding is the DoS: http_poll_slot() sees dws_sse_find(slot) and skips HTTP
 // dispatch, wedging every later connection that reuses the slot.
 static inline void http_release_upgrade_bindings(uint8_t slot_id)
 {
@@ -58,7 +58,7 @@ static inline void http_release_upgrade_bindings(uint8_t slot_id)
     ws_free(slot_id);
 #endif
 #if DWS_ENABLE_SSE
-    sse_free(slot_id);
+    dws_sse_free(slot_id);
 #endif
 }
 
@@ -155,14 +155,14 @@ static void tls_data(uint8_t slot)
 #if DWS_ENABLE_HTTP2
     // Just past the handshake: if the client negotiated ALPN "h2", this connection speaks HTTP/2
     // for its lifetime - hand its decrypted bytes to the h2 engine, not the HTTP/1.1 parser.
-    if (!conn_pool[slot].h2_checked)
+    if (!conn_pool[slot].dws_h2_checked)
     {
-        conn_pool[slot].h2_checked = 1;
+        conn_pool[slot].dws_h2_checked = 1;
         const char *alpn = dws_tls_alpn(slot);
         if (alpn && strcmp(alpn, "h2") == 0)
         {
             conn_pool[slot].h2 = 1;
-            conn_pool[slot].resp_sink = dws_h2_server_respond; // route responses through the h2 framer
+            conn_pool[slot].dws_resp_sink = dws_h2_server_respond; // route responses through the h2 framer
             dws_h2_server_open(slot);
         }
     }
@@ -207,8 +207,8 @@ static void http_evt_accept(uint8_t slot)
     http_conn_open(slot); // resets the parser + (keep-alive) the per-conn request tally
 #if DWS_ENABLE_HTTP2
     conn_pool[slot].h2 = 0; // a reused slot must re-run the post-handshake ALPN check
-    conn_pool[slot].h2_checked = 0;
-    conn_pool[slot].resp_sink = nullptr; // back to the HTTP/1.1 builder until ALPN says otherwise
+    conn_pool[slot].dws_h2_checked = 0;
+    conn_pool[slot].dws_resp_sink = nullptr; // back to the HTTP/1.1 builder until ALPN says otherwise
 #endif
 }
 static void http_evt_data(uint8_t slot)
@@ -234,7 +234,7 @@ static void http_evt_close(uint8_t slot)
 // HTTP's poll pump is instance-bound (it dispatches into a DWS's routes), so the routing
 // core installs it here at begin() via http_proto_set_poll(). The trampoline lets the ProtoHandler
 // stay a plain static const while the actual pump lives in the application TU - the on_poll analogue
-// of the resp_sink TX seam. Until installed (e.g. the native harness before begin()) it is a no-op.
+// of the dws_resp_sink TX seam. Until installed (e.g. the native harness before begin()) it is a no-op.
 static void (*s_http_poll)(uint8_t slot) = nullptr;
 static void http_evt_poll(uint8_t slot)
 {

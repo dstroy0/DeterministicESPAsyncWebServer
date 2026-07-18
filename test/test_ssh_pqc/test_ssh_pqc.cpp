@@ -137,7 +137,7 @@ static void kdf_ref_string(const uint8_t Kb[32], const uint8_t H[32], const uint
 void test_decaps_ref_matches_kat()
 {
     uint8_t ss[32];
-    mlkem768_decaps_ref(kat_dk, kat_ct, ss);
+    dws_mlkem768_decaps_ref(kat_dk, kat_ct, ss);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_ss, ss, 32);
 }
 
@@ -222,7 +222,7 @@ void test_hybrid_kex_end_to_end()
 
     // Client combiner: K_PQ from decaps, K_CL from X25519, K = SHA256(K_PQ || K_CL).
     uint8_t k_pq[32];
-    mlkem768_decaps_ref(kat_dk, ct, k_pq);
+    dws_mlkem768_decaps_ref(kat_dk, ct, k_pq);
     uint8_t k_cl[32];
     ssh_x25519(k_cl, client_sk, qs);
     uint8_t kin[64];

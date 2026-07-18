@@ -1,7 +1,7 @@
-# DTLS 1.3 interop: dtls_conn ⇄ wolfSSL
+# DTLS 1.3 interop: dws_dtls_conn ⇄ wolfSSL
 
 Real-peer conformance test for the library's DTLS 1.3 server (`network_drivers/presentation/dtls`).
-[`dtls_interop_server.cpp`](dtls_interop_server.cpp) wraps the transport-neutral `dtls_conn` state
+[`dws_dtls_interop_server.cpp`](dws_dtls_interop_server.cpp) wraps the transport-neutral `dws_dtls_conn` state
 machine in a tiny UDP server; the [wolfSSL](https://github.com/wolfSSL/wolfssl) DTLS 1.3 example
 client drives a full handshake **and** an application-data round trip against it.
 
@@ -14,7 +14,7 @@ bugs the self-consistent host tests could not (see below).
 Linux only (needs a POSIX UDP socket and a native `g++`). One command builds everything and runs it:
 
 ```sh
-test/servers/dtls_wolfssl/run_interop.sh
+test/servers/dws_dtls_wolfssl/run_interop.sh
 ```
 
 Expected output:

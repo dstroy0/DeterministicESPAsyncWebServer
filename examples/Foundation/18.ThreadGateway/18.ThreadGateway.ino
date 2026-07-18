@@ -5,7 +5,7 @@
 // Thread mesh is bridged to IP and the web. This decodes the HDLC-lite frames and bridges
 // the spinel payload of each one northbound.
 //
-//   Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> dws_gateway_uplink()
+//   Thread RCP --UART--> dws_spinel_frame_decode() --> spinel payload -> dws_gateway_uplink()
 //                                                                         |
 //                                                  envelope + topic  thread/0/<tid>
 //                                                                         |
@@ -59,7 +59,7 @@ void setup()
     // Reset the NCP: spinel RESET command (header 0x80 | CMD_RESET 0x01).
     const uint8_t reset[2] = {0x80, 0x01};
     uint8_t frame[8];
-    uint16_t n = spinel_frame_encode(reset, 2, frame, sizeof(frame));
+    uint16_t n = dws_spinel_frame_encode(reset, 2, frame, sizeof(frame));
     Serial2.write(frame, n);
     Serial.println("Thread gateway: spinel/HDLC -> codec -> publish (thread/0/<tid>)");
 }
@@ -75,7 +75,7 @@ void loop()
             break;
         uint8_t payload[DWS_THREAD_MAX_DATA];
         uint16_t plen = 0;
-        int n = spinel_frame_decode(g_buf, g_len, payload, sizeof(payload), &plen);
+        int n = dws_spinel_frame_decode(g_buf, g_len, payload, sizeof(payload), &plen);
         if (n == 0)
             break; // need more
         if (n < 0)

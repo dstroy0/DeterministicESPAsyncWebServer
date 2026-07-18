@@ -59,7 +59,7 @@ bool tlv(uint8_t *out, size_t cap, size_t *n, uint8_t tag, const uint8_t *val, s
 }
 
 // Append a BER INTEGER (unsigned value, minimal length, leading 0x00 if the MSB is set).
-bool ber_int(uint8_t *out, size_t cap, size_t *n, uint8_t tag, uint32_t v)
+bool dws_ber_int(uint8_t *out, size_t cap, size_t *n, uint8_t tag, uint32_t v)
 {
     uint8_t buf[5];
     size_t k = 0;
@@ -80,12 +80,12 @@ bool ber_int(uint8_t *out, size_t cap, size_t *n, uint8_t tag, uint32_t v)
     return tlv(out, cap, n, tag, buf, k);
 }
 
-bool ber_str(uint8_t *out, size_t cap, size_t *n, uint8_t tag, const char *s)
+bool dws_ber_str(uint8_t *out, size_t cap, size_t *n, uint8_t tag, const char *s)
 {
     return tlv(out, cap, n, tag, (const uint8_t *)(s ? s : ""), s ? strnlen(s, cap + 1) : 0);
 }
 
-bool ber_bool(uint8_t *out, size_t cap, size_t *n, uint8_t tag, bool v)
+bool dws_ber_bool(uint8_t *out, size_t cap, size_t *n, uint8_t tag, bool v)
 {
     uint8_t b = v ? 0xFF : 0x00;
     return tlv(out, cap, n, tag, &b, 1);
@@ -102,12 +102,13 @@ size_t dws_goose_pdu(const DetwsGoose *g, uint8_t *out, size_t cap)
 
     size_t n = RESERVE; // build the content after the reserved header area
     static const uint8_t ZT[8] = {0};
-    bool ok = ber_str(out, cap, &n, 0x80, g->gocb_ref) && ber_int(out, cap, &n, 0x81, g->time_allowed_to_live) &&
-              ber_str(out, cap, &n, 0x82, g->dat_set) && ber_str(out, cap, &n, 0x83, g->go_id) &&
-              tlv(out, cap, &n, 0x84, g->t ? g->t : ZT, 8) && ber_int(out, cap, &n, 0x85, g->st_num) &&
-              ber_int(out, cap, &n, 0x86, g->sq_num) && ber_bool(out, cap, &n, 0x87, g->simulation) &&
-              ber_int(out, cap, &n, 0x88, g->conf_rev) && ber_bool(out, cap, &n, 0x89, g->nds_com) &&
-              ber_int(out, cap, &n, 0x8A, g->num_entries) && tlv(out, cap, &n, 0xAB, g->all_data, g->all_data_len);
+    bool ok = dws_ber_str(out, cap, &n, 0x80, g->gocb_ref) &&
+              dws_ber_int(out, cap, &n, 0x81, g->time_allowed_to_live) && dws_ber_str(out, cap, &n, 0x82, g->dat_set) &&
+              dws_ber_str(out, cap, &n, 0x83, g->go_id) && tlv(out, cap, &n, 0x84, g->t ? g->t : ZT, 8) &&
+              dws_ber_int(out, cap, &n, 0x85, g->st_num) && dws_ber_int(out, cap, &n, 0x86, g->sq_num) &&
+              dws_ber_bool(out, cap, &n, 0x87, g->simulation) && dws_ber_int(out, cap, &n, 0x88, g->conf_rev) &&
+              dws_ber_bool(out, cap, &n, 0x89, g->nds_com) && dws_ber_int(out, cap, &n, 0x8A, g->num_entries) &&
+              tlv(out, cap, &n, 0xAB, g->all_data, g->all_data_len);
     if (!ok)
         return 0;
 

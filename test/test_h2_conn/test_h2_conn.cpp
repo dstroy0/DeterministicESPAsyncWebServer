@@ -1,10 +1,10 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for the HTTP/2 connection engine (network_drivers/presentation/http2/h2_conn,
+// Unit tests for the HTTP/2 connection engine (network_drivers/presentation/http2/dws_h2_conn,
 // RFC 9113): initial SETTINGS on init, the preface + client SETTINGS -> SETTINGS ACK, decoding a
 // real HPACK-encoded request into the header callbacks, PING -> PING ACK, split-across-reads
-// frame reassembly, and h2_conn_respond serializing a HEADERS + DATA response we can decode back.
+// frame reassembly, and dws_h2_conn_respond serializing a HEADERS + DATA response we can decode back.
 
 #include "network_drivers/presentation/http2/h2_conn.h"
 #include "network_drivers/presentation/http2/h2_frame.h"
@@ -74,7 +74,7 @@ static int count_frames(const std::vector<uint8_t> &b, uint8_t type, int *ack_ou
     while (i + 9 <= b.size())
     {
         H2FrameHeader h;
-        h2_parse_header(&b[i], 9, &h);
+        dws_h2_parse_header(&b[i], 9, &h);
         if (h.type == type)
         {
             n++;
@@ -92,10 +92,10 @@ static int count_frames(const std::vector<uint8_t> &b, uint8_t type, int *ack_ou
 static size_t build_request(uint8_t *block, size_t cap)
 {
     size_t bo = 0;
-    bo += hpack_encode_header(block + bo, cap - bo, ":method", 7, "GET", 3);
-    bo += hpack_encode_header(block + bo, cap - bo, ":scheme", 7, "https", 5);
-    bo += hpack_encode_header(block + bo, cap - bo, ":path", 5, "/", 1);
-    bo += hpack_encode_header(block + bo, cap - bo, ":authority", 10, "example.com", 11);
+    bo += dws_hpack_encode_header(block + bo, cap - bo, ":method", 7, "GET", 3);
+    bo += dws_hpack_encode_header(block + bo, cap - bo, ":scheme", 7, "https", 5);
+    bo += dws_hpack_encode_header(block + bo, cap - bo, ":path", 5, "/", 1);
+    bo += dws_hpack_encode_header(block + bo, cap - bo, ":authority", 10, "example.com", 11);
     return bo;
 }
 
@@ -104,7 +104,7 @@ void test_init_and_request()
     Cap cap;
     H2Callbacks cb = mk_cb(&cap);
     H2Conn c;
-    h2_conn_init(&c, &cb); // must emit our SETTINGS
+    dws_h2_conn_init(&c, &cb); // must emit our SETTINGS
     int acks = 0;
     TEST_ASSERT_EQUAL_INT(1, count_frames(cap.out, H2FrameType::H2_SETTINGS, &acks));
     TEST_ASSERT_EQUAL_INT(0, acks); // our SETTINGS is not an ACK
@@ -112,16 +112,16 @@ void test_init_and_request()
     // Assemble: preface + empty client SETTINGS + HEADERS(stream 1, END_HEADERS|END_STREAM).
     std::vector<uint8_t> in(H2_PREFACE, H2_PREFACE + H2_PREFACE_LEN);
     uint8_t sf[9];
-    size_t sn = h2_build_settings(sf, sizeof sf, nullptr, nullptr, 0);
+    size_t sn = dws_h2_build_settings(sf, sizeof sf, nullptr, nullptr, 0);
     in.insert(in.end(), sf, sf + sn);
     uint8_t block[128];
     size_t blen = build_request(block, sizeof block);
     uint8_t hf[160];
-    size_t hn = h2_build_headers(hf, sizeof hf, 1, block, blen, true);
+    size_t hn = dws_h2_build_headers(hf, sizeof hf, 1, block, blen, true);
     in.insert(in.end(), hf, hf + hn);
 
     cap.out.clear();
-    TEST_ASSERT_TRUE(h2_conn_recv(&c, in.data(), in.size()));
+    TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, in.data(), in.size()));
 
     // The request headers were decoded and delivered.
     TEST_ASSERT_EQUAL_INT(4, (int)cap.req_headers.size());
@@ -145,25 +145,25 @@ void test_respond_roundtrip()
     Cap cap;
     H2Callbacks cb = mk_cb(&cap);
     H2Conn c;
-    h2_conn_init(&c, &cb);
+    dws_h2_conn_init(&c, &cb);
     std::vector<uint8_t> in(H2_PREFACE, H2_PREFACE + H2_PREFACE_LEN);
     uint8_t sf[9];
-    in.insert(in.end(), sf, sf + h2_build_settings(sf, sizeof sf, nullptr, nullptr, 0));
+    in.insert(in.end(), sf, sf + dws_h2_build_settings(sf, sizeof sf, nullptr, nullptr, 0));
     uint8_t block[128];
     size_t blen = build_request(block, sizeof block);
     uint8_t hf[160];
-    in.insert(in.end(), hf, hf + h2_build_headers(hf, sizeof hf, 1, block, blen, true));
-    TEST_ASSERT_TRUE(h2_conn_recv(&c, in.data(), in.size()));
+    in.insert(in.end(), hf, hf + dws_h2_build_headers(hf, sizeof hf, 1, block, blen, true));
+    TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, in.data(), in.size()));
 
     cap.out.clear();
-    TEST_ASSERT_TRUE(h2_conn_respond(&c, 1, 200, "text/plain", "hi", 2));
+    TEST_ASSERT_TRUE(dws_h2_conn_respond(&c, 1, 200, "text/plain", "hi", 2));
     // Output holds a HEADERS frame + a DATA frame on stream 1.
     TEST_ASSERT_EQUAL_INT(1, count_frames(cap.out, H2FrameType::H2_HEADERS));
     TEST_ASSERT_EQUAL_INT(1, count_frames(cap.out, H2FrameType::H2_DATA));
 
     // Walk the frames; decode the response HEADERS block and check the DATA.
     HpackDynTable dt;
-    hpack_dyn_init(&dt, 4096);
+    dws_hpack_dyn_init(&dt, 4096);
     std::vector<std::pair<std::string, std::string>> rh;
     std::string data;
     bool data_end = false;
@@ -171,7 +171,7 @@ void test_respond_roundtrip()
     while (i + 9 <= cap.out.size())
     {
         H2FrameHeader h;
-        h2_parse_header(&cap.out[i], 9, &h);
+        dws_h2_parse_header(&cap.out[i], 9, &h);
         const uint8_t *pl = &cap.out[i + 9];
         if (h.type == H2FrameType::H2_HEADERS && h.stream_id == 1)
         {
@@ -180,7 +180,7 @@ void test_respond_roundtrip()
             {
                 std::vector<std::pair<std::string, std::string>> *v;
             } rc{&rh};
-            hpack_decode(
+            dws_hpack_decode(
                 &dt, pl, h.length, scratch, sizeof scratch,
                 [](void *ctx, const char *n, size_t nl, const char *v, size_t vl) {
                     ((RC *)ctx)->v->emplace_back(std::string(n, nl), std::string(v, vl));
@@ -211,18 +211,18 @@ void test_ping_and_split_recv()
     Cap cap;
     H2Callbacks cb = mk_cb(&cap);
     H2Conn c;
-    h2_conn_init(&c, &cb);
+    dws_h2_conn_init(&c, &cb);
     // Preface, then a PING frame, fed one byte at a time (exercises reassembly).
     std::vector<uint8_t> in(H2_PREFACE, H2_PREFACE + H2_PREFACE_LEN);
     const uint8_t op[8] = {9, 8, 7, 6, 5, 4, 3, 2};
     uint8_t ping[9 + 8];
-    h2_write_header(ping, sizeof ping, 8, H2FrameType::H2_PING, 0, 0);
+    dws_h2_write_header(ping, sizeof ping, 8, H2FrameType::H2_PING, 0, 0);
     memcpy(ping + 9, op, 8);
     in.insert(in.end(), ping, ping + sizeof ping);
 
     cap.out.clear();
     for (size_t k = 0; k < in.size(); k++)
-        TEST_ASSERT_TRUE(h2_conn_recv(&c, &in[k], 1));
+        TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, &in[k], 1));
     // A PING ACK echoing the opaque data was sent.
     int acks = 0;
     TEST_ASSERT_EQUAL_INT(1, count_frames(cap.out, H2FrameType::H2_PING, &acks));
@@ -233,7 +233,7 @@ void test_ping_and_split_recv()
     while (i + 9 <= cap.out.size())
     {
         H2FrameHeader h;
-        h2_parse_header(&cap.out[i], 9, &h);
+        dws_h2_parse_header(&cap.out[i], 9, &h);
         if (h.type == H2FrameType::H2_PING && (h.flags & H2_FLAG_ACK))
         {
             TEST_ASSERT_EQUAL_MEMORY(op, &cap.out[i + 9], 8);
@@ -249,9 +249,9 @@ void test_bad_preface()
     Cap cap;
     H2Callbacks cb = mk_cb(&cap);
     H2Conn c;
-    h2_conn_init(&c, &cb);
+    dws_h2_conn_init(&c, &cb);
     const uint8_t junk[] = {'G', 'E', 'T', ' ', '/', ' ', 'H'};
-    TEST_ASSERT_FALSE(h2_conn_recv(&c, junk, sizeof junk));
+    TEST_ASSERT_FALSE(dws_h2_conn_recv(&c, junk, sizeof junk));
 }
 
 // ---- frame-handler helpers -------------------------------------------------
@@ -261,11 +261,11 @@ void test_bad_preface()
 static void establish(H2Conn &c, Cap &cap)
 {
     H2Callbacks cb = mk_cb(&cap);
-    h2_conn_init(&c, &cb);
+    dws_h2_conn_init(&c, &cb);
     std::vector<uint8_t> in(H2_PREFACE, H2_PREFACE + H2_PREFACE_LEN);
     uint8_t sf[9];
-    in.insert(in.end(), sf, sf + h2_build_settings(sf, sizeof sf, nullptr, nullptr, 0));
-    TEST_ASSERT_TRUE(h2_conn_recv(&c, in.data(), in.size()));
+    in.insert(in.end(), sf, sf + dws_h2_build_settings(sf, sizeof sf, nullptr, nullptr, 0));
+    TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, in.data(), in.size()));
     cap.out.clear();
 }
 
@@ -274,11 +274,11 @@ static bool feed_frame(H2Conn &c, uint8_t type, uint8_t flags, uint32_t sid, con
 {
     std::vector<uint8_t> v;
     uint8_t hh[9];
-    h2_write_header(hh, sizeof hh, (uint32_t)pn, type, flags, sid);
+    dws_h2_write_header(hh, sizeof hh, (uint32_t)pn, type, flags, sid);
     v.insert(v.end(), hh, hh + 9);
     if (pn)
         v.insert(v.end(), pl, pl + pn);
-    return h2_conn_recv(&c, v.data(), v.size());
+    return dws_h2_conn_recv(&c, v.data(), v.size());
 }
 
 // Open a request stream (HEADERS, END_HEADERS, no END_STREAM) so it stays OPEN.
@@ -287,7 +287,7 @@ static void open_stream(H2Conn &c, uint32_t id)
     uint8_t block[128];
     size_t blen = build_request(block, sizeof block);
     uint8_t hf[160];
-    TEST_ASSERT_TRUE(h2_conn_recv(&c, hf, h2_build_headers(hf, sizeof hf, id, block, blen, false)));
+    TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, hf, dws_h2_build_headers(hf, sizeof hf, id, block, blen, false)));
 }
 
 // HEADERS carrying PADDED + PRIORITY still decodes: the pad-length byte and the
@@ -331,8 +331,8 @@ void test_h2_stream_id_must_increase()
     uint8_t block[128];
     size_t blen = build_request(block, sizeof block);
     uint8_t hf[160];
-    TEST_ASSERT_TRUE(h2_conn_recv(&c, hf, h2_build_headers(hf, sizeof hf, 3, block, blen, true)));
-    TEST_ASSERT_FALSE(h2_conn_recv(&c, hf, h2_build_headers(hf, sizeof hf, 1, block, blen, true)));
+    TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, hf, dws_h2_build_headers(hf, sizeof hf, 3, block, blen, true)));
+    TEST_ASSERT_FALSE(dws_h2_conn_recv(&c, hf, dws_h2_build_headers(hf, sizeof hf, 1, block, blen, true)));
 }
 
 // A stream 0 / even id on HEADERS is rejected (requests are odd, client-initiated).
@@ -344,7 +344,7 @@ void test_h2_headers_bad_stream_id()
     uint8_t block[128];
     size_t blen = build_request(block, sizeof block);
     uint8_t hf[160];
-    TEST_ASSERT_FALSE(h2_conn_recv(&c, hf, h2_build_headers(hf, sizeof hf, 2, block, blen, true)));
+    TEST_ASSERT_FALSE(dws_h2_conn_recv(&c, hf, dws_h2_build_headers(hf, sizeof hf, 2, block, blen, true)));
 }
 
 // Once MAX_STREAMS are open, a new stream is refused with RST_STREAM but the
@@ -359,13 +359,13 @@ void test_h2_stream_table_full_rst()
     for (int i = 0; i < DWS_H2_MAX_STREAMS; i++)
     {
         uint8_t hf[160];
-        size_t hn = h2_build_headers(hf, sizeof hf, (uint32_t)(1 + 2 * i), block, blen, false);
-        TEST_ASSERT_TRUE(h2_conn_recv(&c, hf, hn));
+        size_t hn = dws_h2_build_headers(hf, sizeof hf, (uint32_t)(1 + 2 * i), block, blen, false);
+        TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, hf, hn));
     }
     cap.out.clear();
     uint8_t hf[160];
-    size_t hn = h2_build_headers(hf, sizeof hf, (uint32_t)(1 + 2 * DWS_H2_MAX_STREAMS), block, blen, false);
-    TEST_ASSERT_TRUE(h2_conn_recv(&c, hf, hn)); // kept alive
+    size_t hn = dws_h2_build_headers(hf, sizeof hf, (uint32_t)(1 + 2 * DWS_H2_MAX_STREAMS), block, blen, false);
+    TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, hf, hn)); // kept alive
     TEST_ASSERT_TRUE(count_frames(cap.out, H2FrameType::H2_RST_STREAM) >= 1);
 }
 
@@ -491,7 +491,7 @@ void test_h2_goaway_then_ignore()
     const uint8_t ga[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_GOAWAY, 0, 0, ga, 8)); // phase -> closing
     const uint8_t junk[9] = {0};
-    TEST_ASSERT_TRUE(h2_conn_recv(&c, junk, sizeof junk)); // ignored while closing
+    TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, junk, sizeof junk)); // ignored while closing
 }
 
 // SETTINGS ACK is accepted; a length that is not a multiple of 6 is malformed.
@@ -525,27 +525,27 @@ void test_h2_frame_too_big()
     H2Conn c;
     establish(c, cap);
     uint8_t hh[9];
-    h2_write_header(hh, sizeof hh, DWS_H2_MAX_FRAME + 1, H2FrameType::H2_DATA, 0, 1);
-    TEST_ASSERT_FALSE(h2_conn_recv(&c, hh, 9));
+    dws_h2_write_header(hh, sizeof hh, DWS_H2_MAX_FRAME + 1, H2FrameType::H2_DATA, 0, 1);
+    TEST_ASSERT_FALSE(dws_h2_conn_recv(&c, hh, 9));
 }
 
-// respond() to an unknown stream fails; h2_conn_goaway emits a GOAWAY; a body
+// respond() to an unknown stream fails; dws_h2_conn_goaway emits a GOAWAY; a body
 // larger than the peer's max frame size is split across DATA frames.
 void test_h2_respond_paths_and_goaway()
 {
     Cap cap;
     H2Conn c;
     establish(c, cap);
-    TEST_ASSERT_FALSE(h2_conn_respond(&c, 99, 200, "text/plain", "x", 1)); // no such stream
+    TEST_ASSERT_FALSE(dws_h2_conn_respond(&c, 99, 200, "text/plain", "x", 1)); // no such stream
 
     open_stream(c, 1);
     c.peer.max_frame_size = 4; // force multi-chunk DATA
     cap.out.clear();
-    TEST_ASSERT_TRUE(h2_conn_respond(&c, 1, 200, nullptr, "0123456789", 10));
+    TEST_ASSERT_TRUE(dws_h2_conn_respond(&c, 1, 200, nullptr, "0123456789", 10));
     TEST_ASSERT_TRUE(count_frames(cap.out, H2FrameType::H2_DATA) >= 3); // 10 bytes / 4 -> >=3 frames
 
     cap.out.clear();
-    h2_conn_goaway(&c, 0);
+    dws_h2_conn_goaway(&c, 0);
     TEST_ASSERT_EQUAL_INT(1, count_frames(cap.out, H2FrameType::H2_GOAWAY));
 }
 
@@ -617,7 +617,7 @@ void test_h2_respond_content_type_too_big()
     establish(c, cap);
     open_stream(c, 1);
     std::string big_ct(1000, 'a');
-    TEST_ASSERT_FALSE(h2_conn_respond(&c, 1, 200, big_ct.c_str(), "x", 1));
+    TEST_ASSERT_FALSE(dws_h2_conn_respond(&c, 1, 200, big_ct.c_str(), "x", 1));
 }
 
 int main()

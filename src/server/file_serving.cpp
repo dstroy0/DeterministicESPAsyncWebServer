@@ -141,7 +141,7 @@ void DWS::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, cons
     size_t file_size = f.size();
 
     bool keep;
-    const char *cl = resp_conn_hdr(slot_id, &keep);
+    const char *cl = dws_resp_conn_hdr(slot_id, &keep);
 
     // Optional Content-Encoding line (e.g. gzip for pre-compressed assets).
     char enc_line[40];
@@ -175,7 +175,7 @@ void DWS::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, cons
         int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%s%s%s%s\r\n", etag,
                             lastmod_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
         dws_conn_send_flush(slot_id, h304, (u16_t)n304); // 304s are frequent (cache revalidation): one marshal
-        resp_end(slot_id, 304, 0, keep, /*pre_flushed=*/true);
+        dws_resp_end(slot_id, 304, 0, keep, /*pre_flushed=*/true);
         return;
     }
     char etag_line[48];
@@ -210,7 +210,7 @@ void DWS::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, cons
                             "%s%s\r\n",
                             (unsigned)file_size, _cors_enabled ? _cors_header_buf : "", cl);
         dws_conn_send_flush(slot_id, h416, (u16_t)n416);
-        resp_end(slot_id, 416, 0, keep, /*pre_flushed=*/true);
+        dws_resp_end(slot_id, 416, 0, keep, /*pre_flushed=*/true);
         return;
     }
     if (rr > 0)
@@ -241,14 +241,14 @@ void DWS::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, cons
     if (head || body_len == 0)
     {
         f.close();
-        resp_end(slot_id, status, 0, keep);
+        dws_resp_end(slot_id, status, 0, keep);
         return;
     }
 
     // Hand the body to the cross-loop pump: it pages out at most one send-buffer
     // window now and resumes on later loops as the window drains, so a file larger
     // than TCP_SND_BUF is never truncated. The pump owns the file and calls
-    // resp_end() at completion - do not close f or end the response here.
+    // dws_resp_end() at completion - do not close f or end the response here.
     FileSend &s = s_send.file[slot_id];
     s.file = f; // shared handle on ARDUINO; the local f going out of scope keeps it open
     s.off = body_off;
@@ -314,7 +314,7 @@ void DWS::file_send_pump(uint8_t slot_id)
     s.file.close();
     s.active = false;
     dws_conn_flush(slot_id);
-    resp_end(slot_id, s.status, s.total, s.keep);
+    dws_resp_end(slot_id, s.status, s.total, s.keep);
 }
 
 void DWS::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type)

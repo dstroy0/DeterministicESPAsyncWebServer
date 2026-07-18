@@ -14,7 +14,7 @@
 
 #include "shared_primitives/endian.h"
 
-size_t amqp_protocol_header(uint8_t *buf, size_t cap)
+size_t dws_amqp_protocol_header(uint8_t *buf, size_t cap)
 {
     static const uint8_t hdr[8] = {'A', 'M', 'Q', 'P', 0, 0, 9, 1};
     if (!buf || cap < sizeof(hdr))
@@ -33,8 +33,8 @@ static size_t write_frame_header(uint8_t *buf, uint8_t type, uint16_t channel, u
     return p; // 7
 }
 
-size_t amqp_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint16_t channel, const uint8_t *payload,
-                        size_t payload_len)
+size_t dws_amqp_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint16_t channel, const uint8_t *payload,
+                            size_t payload_len)
 {
     if (!buf || (payload_len && !payload) || payload_len > 0xFFFFFFFFu)
         return 0;
@@ -51,8 +51,8 @@ size_t amqp_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint16_t channel
     return p;
 }
 
-size_t amqp_build_method(uint8_t *buf, size_t cap, uint16_t channel, uint16_t class_id, uint16_t method_id,
-                         const uint8_t *args, size_t args_len)
+size_t dws_amqp_build_method(uint8_t *buf, size_t cap, uint16_t channel, uint16_t class_id, uint16_t method_id,
+                             const uint8_t *args, size_t args_len)
 {
     if (!buf || (args_len && !args))
         return 0;
@@ -73,12 +73,12 @@ size_t amqp_build_method(uint8_t *buf, size_t cap, uint16_t channel, uint16_t cl
     return p;
 }
 
-size_t amqp_build_heartbeat(uint8_t *buf, size_t cap)
+size_t dws_amqp_build_heartbeat(uint8_t *buf, size_t cap)
 {
-    return amqp_build_frame(buf, cap, AMQP_FRAME_HEARTBEAT, 0, nullptr, 0);
+    return dws_amqp_build_frame(buf, cap, AMQP_FRAME_HEARTBEAT, 0, nullptr, 0);
 }
 
-bool amqp_parse_frame(const uint8_t *buf, size_t len, AmqpFrame *out, size_t *consumed)
+bool dws_amqp_parse_frame(const uint8_t *buf, size_t len, AmqpFrame *out, size_t *consumed)
 {
     if (!buf || !out || len < AMQP_FRAME_OVERHEAD)
         return false;
@@ -99,8 +99,8 @@ bool amqp_parse_frame(const uint8_t *buf, size_t len, AmqpFrame *out, size_t *co
     return true;
 }
 
-bool amqp_parse_method(const uint8_t *payload, size_t payload_len, uint16_t *class_id, uint16_t *method_id,
-                       const uint8_t **args, size_t *args_len)
+bool dws_amqp_parse_method(const uint8_t *payload, size_t payload_len, uint16_t *class_id, uint16_t *method_id,
+                           const uint8_t **args, size_t *args_len)
 {
     if (!payload || payload_len < 4)
         return false;

@@ -50,7 +50,7 @@ void setup()
 
     // Every metric this device sends is tagged so the collector can group by device (DogStatsD
     // tag syntax; harmless with plain StatsD collectors that ignore it).
-    statsd_begin(STATSD_HOST, STATSD_PORT, "device:esp32-demo");
+    dws_statsd_begin(STATSD_HOST, STATSD_PORT, "device:esp32-demo");
     Serial.printf("StatsD -> %s:%u\n", STATSD_HOST, STATSD_PORT);
 }
 
@@ -61,13 +61,13 @@ void loop()
     {
         last = millis();
 
-        statsd_count("esp32.loops", 1);                              // a counter (rate over time)
-        statsd_gauge("esp32.heap.free", (int64_t)ESP.getFreeHeap()); // a gauge (absolute level)
-        statsd_gauge("esp32.uptime.s", (int64_t)(millis() / 1000));
+        dws_statsd_count("esp32.loops", 1);                              // a counter (rate over time)
+        dws_statsd_gauge("esp32.heap.free", (int64_t)ESP.getFreeHeap()); // a gauge (absolute level)
+        dws_statsd_gauge("esp32.uptime.s", (int64_t)(millis() / 1000));
 
         uint32_t t0 = millis();
         // ... do some work you want to measure here ...
-        statsd_timing("esp32.loop.work_ms", millis() - t0); // a timing/duration
+        dws_statsd_timing("esp32.loop.work_ms", millis() - t0); // a timing/duration
 
         Serial.println("pushed metrics");
     }

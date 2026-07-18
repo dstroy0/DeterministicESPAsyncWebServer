@@ -30,7 +30,7 @@ static void test_hs_header_roundtrip(void)
 
     uint8_t out[64];
     // msg_type=1 (client_hello), msg_seq=7, full length 100, this fragment covers [40,70).
-    size_t n = dtls_hs_frag_build(1, 7, 100, 40, frag, sizeof(frag), out, sizeof(out));
+    size_t n = dws_dtls_hs_frag_build(1, 7, 100, 40, frag, sizeof(frag), out, sizeof(out));
     TEST_ASSERT_EQUAL_size_t(DTLS_HS_HDR_LEN + sizeof(frag), n);
 
     // Explicit big-endian layout: type | uint24 length | uint16 msg_seq | uint24 off | uint24 len.
@@ -41,7 +41,7 @@ static void test_hs_header_roundtrip(void)
     TEST_ASSERT_EQUAL_UINT8(0x1E, out[11]); // fragment_length low byte = 30
 
     DtlsHsHeader h;
-    size_t consumed = dtls_hs_header_parse(out, n, &h);
+    size_t consumed = dws_dtls_hs_header_parse(out, n, &h);
     TEST_ASSERT_EQUAL_size_t(n, consumed);
     TEST_ASSERT_EQUAL_UINT8(1, h.msg_type);
     TEST_ASSERT_EQUAL_UINT32(100, h.length);
@@ -57,7 +57,7 @@ static void test_hs_header_parse_rejects(void)
     DtlsHsHeader h;
 
     // Shorter than the 12-byte header.
-    TEST_ASSERT_EQUAL_size_t(0, dtls_hs_header_parse(buf, 11, &h));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_hs_header_parse(buf, 11, &h));
 
     // fragment_offset + fragment_length runs past the declared message length.
     memset(buf, 0, sizeof(buf));
@@ -65,14 +65,14 @@ static void test_hs_header_parse_rejects(void)
     buf[3] = 10; // length = 10
     buf[8] = 8;  // fragment_offset = 8
     buf[11] = 5; // fragment_length = 5 -> 8+5 > 10
-    TEST_ASSERT_EQUAL_size_t(0, dtls_hs_header_parse(buf, sizeof(buf), &h));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_hs_header_parse(buf, sizeof(buf), &h));
 
     // fragment_length claims more bytes than are present.
     memset(buf, 0, sizeof(buf));
     buf[0] = 1;
     buf[3] = 40;  // length = 40
     buf[11] = 20; // fragment_length = 20 but only 4 bytes follow the header
-    TEST_ASSERT_EQUAL_size_t(0, dtls_hs_header_parse(buf, DTLS_HS_HDR_LEN + 4, &h));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_hs_header_parse(buf, DTLS_HS_HDR_LEN + 4, &h));
 }
 
 // ---------------------------------------------------------------------------
@@ -84,11 +84,11 @@ static int feed(DtlsHsReasm *r, uint8_t msg_type, uint16_t msg_seq, uint32_t ful
                 const uint8_t *body, uint32_t flen)
 {
     uint8_t rec[512];
-    size_t n = dtls_hs_frag_build(msg_type, msg_seq, full_len, off, body + off, flen, rec, sizeof(rec));
+    size_t n = dws_dtls_hs_frag_build(msg_type, msg_seq, full_len, off, body + off, flen, rec, sizeof(rec));
     TEST_ASSERT_TRUE(n > 0);
     DtlsHsHeader h;
-    TEST_ASSERT_EQUAL_size_t(n, dtls_hs_header_parse(rec, n, &h));
-    return dtls_hs_reasm_add(r, &h);
+    TEST_ASSERT_EQUAL_size_t(n, dws_dtls_hs_header_parse(rec, n, &h));
+    return dws_dtls_hs_reasm_add(r, &h);
 }
 
 static void fill(uint8_t *b, size_t n)
@@ -103,7 +103,7 @@ static void test_hs_reasm_single_fragment(void)
     fill(body, sizeof(body));
     uint8_t buf[80];
     DtlsHsReasm r;
-    dtls_hs_reasm_init(&r, 2, buf, sizeof(buf));
+    dws_dtls_hs_reasm_init(&r, 2, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_INT(1, feed(&r, 11 /*certificate*/, 2, sizeof(body), 0, body, sizeof(body)));
     TEST_ASSERT_EQUAL_UINT32(sizeof(body), r.length);
     TEST_ASSERT_EQUAL_UINT8(11, r.msg_type);
@@ -116,7 +116,7 @@ static void test_hs_reasm_in_order(void)
     fill(body, sizeof(body));
     uint8_t buf[100];
     DtlsHsReasm r;
-    dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
+    dws_dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_INT(0, feed(&r, 1, 0, 100, 0, body, 40));
     TEST_ASSERT_EQUAL_INT(0, feed(&r, 1, 0, 100, 40, body, 40));
     TEST_ASSERT_EQUAL_INT(1, feed(&r, 1, 0, 100, 80, body, 20));
@@ -129,7 +129,7 @@ static void test_hs_reasm_out_of_order(void)
     fill(body, sizeof(body));
     uint8_t buf[100];
     DtlsHsReasm r;
-    dtls_hs_reasm_init(&r, 4, buf, sizeof(buf));
+    dws_dtls_hs_reasm_init(&r, 4, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_INT(0, feed(&r, 1, 4, 100, 80, body, 20)); // last fragment first
     TEST_ASSERT_EQUAL_INT(0, feed(&r, 1, 4, 100, 0, body, 40));
     TEST_ASSERT_EQUAL_INT(1, feed(&r, 1, 4, 100, 40, body, 40)); // closes the middle gap
@@ -142,7 +142,7 @@ static void test_hs_reasm_overlap_and_duplicate(void)
     fill(body, sizeof(body));
     uint8_t buf[100];
     DtlsHsReasm r;
-    dtls_hs_reasm_init(&r, 1, buf, sizeof(buf));
+    dws_dtls_hs_reasm_init(&r, 1, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_INT(0, feed(&r, 1, 1, 100, 0, body, 60));
     TEST_ASSERT_EQUAL_INT(0, feed(&r, 1, 1, 100, 0, body, 60));  // exact duplicate
     TEST_ASSERT_EQUAL_INT(0, feed(&r, 1, 1, 100, 30, body, 40)); // overlaps [30,70)
@@ -156,7 +156,7 @@ static void test_hs_reasm_wrong_msg_seq_ignored(void)
     fill(body, sizeof(body));
     uint8_t buf[40];
     DtlsHsReasm r;
-    dtls_hs_reasm_init(&r, 5, buf, sizeof(buf));
+    dws_dtls_hs_reasm_init(&r, 5, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_INT(0, feed(&r, 1, 6, 40, 0, body, 40)); // wrong msg_seq -> ignored
     TEST_ASSERT_FALSE(r.active);
     TEST_ASSERT_EQUAL_INT(1, feed(&r, 1, 5, 40, 0, body, 40)); // correct msg_seq completes
@@ -167,7 +167,7 @@ static void test_hs_reasm_empty_body(void)
 {
     uint8_t buf[16];
     DtlsHsReasm r;
-    dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
+    dws_dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
     // A zero-length body (e.g. a bodiless message) is complete as soon as the header arrives.
     TEST_ASSERT_EQUAL_INT(1, feed(&r, 22, 0, 0, 0, buf, 0));
     TEST_ASSERT_EQUAL_UINT32(0, r.length);
@@ -182,23 +182,23 @@ static void test_hs_reasm_rejects(void)
     {
         uint8_t buf[32];
         DtlsHsReasm r;
-        dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
+        dws_dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
         TEST_ASSERT_EQUAL_INT(-1, feed(&r, 1, 0, 100, 0, body, 32));
     }
     // Fragments disagree on the total length.
     {
         uint8_t buf[256];
         DtlsHsReasm r;
-        dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
+        dws_dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
         TEST_ASSERT_EQUAL_INT(0, feed(&r, 1, 0, 100, 0, body, 40));
         DtlsHsHeader h = {1, 90 /*!=100*/, 0, 40, 10, body + 40};
-        TEST_ASSERT_EQUAL_INT(-1, dtls_hs_reasm_add(&r, &h));
+        TEST_ASSERT_EQUAL_INT(-1, dws_dtls_hs_reasm_add(&r, &h));
     }
     // Too many disjoint ranges for the bounded interval list.
     {
         uint8_t buf[256];
         DtlsHsReasm r;
-        dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
+        dws_dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
         int rc = 0;
         // Single-byte fragments at even offsets stay disjoint (a gap at each odd byte).
         for (uint32_t off = 0; off <= 2u * DTLS_HS_REASM_MAX_RANGES; off += 2)
@@ -215,7 +215,7 @@ static void test_ack_roundtrip(void)
 {
     DtlsRecordNumber in[3] = {{2, 5}, {2, 6}, {3, 0x0102030405060708ull}};
     uint8_t out[64];
-    size_t n = dtls_ack_build(in, 3, out, sizeof(out));
+    size_t n = dws_dtls_ack_build(in, 3, out, sizeof(out));
     TEST_ASSERT_EQUAL_size_t(2 + 3 * 16, n);
     TEST_ASSERT_EQUAL_UINT8(0x00, out[0]); // list length prefix = 48
     TEST_ASSERT_EQUAL_UINT8(0x30, out[1]);
@@ -224,7 +224,7 @@ static void test_ack_roundtrip(void)
 
     DtlsRecordNumber back[4];
     size_t count = 0;
-    TEST_ASSERT_TRUE(dtls_ack_parse(out, n, back, 4, &count));
+    TEST_ASSERT_TRUE(dws_dtls_ack_parse(out, n, back, 4, &count));
     TEST_ASSERT_EQUAL_size_t(3, count);
     for (unsigned i = 0; i < 3; i++)
     {
@@ -233,9 +233,9 @@ static void test_ack_roundtrip(void)
     }
 
     // An empty ACK is a valid "I have nothing outstanding to report" message.
-    n = dtls_ack_build(nullptr, 0, out, sizeof(out));
+    n = dws_dtls_ack_build(nullptr, 0, out, sizeof(out));
     TEST_ASSERT_EQUAL_size_t(2, n);
-    TEST_ASSERT_TRUE(dtls_ack_parse(out, n, back, 4, &count));
+    TEST_ASSERT_TRUE(dws_dtls_ack_parse(out, n, back, 4, &count));
     TEST_ASSERT_EQUAL_size_t(0, count);
 }
 
@@ -245,19 +245,19 @@ static void test_ack_parse_rejects(void)
     size_t count = 0;
     uint8_t buf[64];
 
-    TEST_ASSERT_FALSE(dtls_ack_parse(buf, 1, out, 4, &count)); // shorter than the length prefix
+    TEST_ASSERT_FALSE(dws_dtls_ack_parse(buf, 1, out, 4, &count)); // shorter than the length prefix
 
     buf[0] = 0x00;
     buf[1] = 0x08; // list length 8 is not a multiple of 16
-    TEST_ASSERT_FALSE(dtls_ack_parse(buf, 10, out, 4, &count));
+    TEST_ASSERT_FALSE(dws_dtls_ack_parse(buf, 10, out, 4, &count));
 
     buf[0] = 0x00;
-    buf[1] = 0x10;                                              // claims 16 bytes...
-    TEST_ASSERT_FALSE(dtls_ack_parse(buf, 10, out, 4, &count)); // ...but only 8 follow
+    buf[1] = 0x10;                                                  // claims 16 bytes...
+    TEST_ASSERT_FALSE(dws_dtls_ack_parse(buf, 10, out, 4, &count)); // ...but only 8 follow
 
     DtlsRecordNumber many[3] = {{0, 1}, {0, 2}, {0, 3}};
-    size_t n = dtls_ack_build(many, 3, buf, sizeof(buf));
-    TEST_ASSERT_FALSE(dtls_ack_parse(buf, n, out, 2, &count)); // 3 records, capacity 2
+    size_t n = dws_dtls_ack_build(many, 3, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(dws_dtls_ack_parse(buf, n, out, 2, &count)); // 3 records, capacity 2
 }
 
 // ---------------------------------------------------------------------------
@@ -284,8 +284,8 @@ static const uint8_t COOKIE_WIRE[77] = {0x01, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66
 static void test_cookie_kat(void)
 {
     uint8_t out[DTLS_COOKIE_MAX];
-    size_t n = dtls_cookie_make(COOKIE_KEY, COOKIE_TS, COOKIE_PAYLOAD, sizeof(COOKIE_PAYLOAD), COOKIE_ADDR,
-                                sizeof(COOKIE_ADDR), out, sizeof(out));
+    size_t n = dws_dtls_cookie_make(COOKIE_KEY, COOKIE_TS, COOKIE_PAYLOAD, sizeof(COOKIE_PAYLOAD), COOKIE_ADDR,
+                                    sizeof(COOKIE_ADDR), out, sizeof(out));
     TEST_ASSERT_EQUAL_size_t(sizeof(COOKIE_WIRE), n);
     TEST_ASSERT_EQUAL_MEMORY(COOKIE_WIRE, out, sizeof(COOKIE_WIRE));
 }
@@ -295,8 +295,8 @@ static void test_cookie_verify_accept_and_payload(void)
     uint8_t payload[64];
     size_t plen = 0;
     // max_age = 0 disables the freshness check, isolating the MAC + payload recovery.
-    TEST_ASSERT_TRUE(dtls_cookie_verify(COOKIE_KEY, 0, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), COOKIE_WIRE,
-                                        sizeof(COOKIE_WIRE), payload, sizeof(payload), &plen));
+    TEST_ASSERT_TRUE(dws_dtls_cookie_verify(COOKIE_KEY, 0, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), COOKIE_WIRE,
+                                            sizeof(COOKIE_WIRE), payload, sizeof(payload), &plen));
     TEST_ASSERT_EQUAL_size_t(sizeof(COOKIE_PAYLOAD), plen);
     TEST_ASSERT_EQUAL_MEMORY(COOKIE_PAYLOAD, payload, plen);
 }
@@ -308,40 +308,40 @@ static void test_cookie_verify_rejects(void)
 
     // A different client address fails the MAC (the address is authenticated, not stored).
     uint8_t other_addr[4] = {0xC0, 0xA8, 0x01, 0x33};
-    TEST_ASSERT_FALSE(dtls_cookie_verify(COOKIE_KEY, 0, 0, other_addr, sizeof(other_addr), COOKIE_WIRE,
-                                         sizeof(COOKIE_WIRE), payload, sizeof(payload), &plen));
+    TEST_ASSERT_FALSE(dws_dtls_cookie_verify(COOKIE_KEY, 0, 0, other_addr, sizeof(other_addr), COOKIE_WIRE,
+                                             sizeof(COOKIE_WIRE), payload, sizeof(payload), &plen));
 
     // A tampered payload byte fails the MAC.
     uint8_t bad[77];
     memcpy(bad, COOKIE_WIRE, sizeof(bad));
     bad[20] ^= 0x01;
-    TEST_ASSERT_FALSE(dtls_cookie_verify(COOKIE_KEY, 0, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), bad, sizeof(bad), payload,
-                                         sizeof(payload), &plen));
+    TEST_ASSERT_FALSE(dws_dtls_cookie_verify(COOKIE_KEY, 0, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), bad, sizeof(bad),
+                                             payload, sizeof(payload), &plen));
 
     // A truncated cookie is rejected.
-    TEST_ASSERT_FALSE(dtls_cookie_verify(COOKIE_KEY, 0, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), COOKIE_WIRE, 20, payload,
-                                         sizeof(payload), &plen));
+    TEST_ASSERT_FALSE(dws_dtls_cookie_verify(COOKIE_KEY, 0, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), COOKIE_WIRE, 20,
+                                             payload, sizeof(payload), &plen));
 }
 
 static void test_cookie_freshness(void)
 {
     uint8_t cookie[DTLS_COOKIE_MAX];
     const uint8_t payload[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-    size_t n = dtls_cookie_make(COOKIE_KEY, 1000, payload, sizeof(payload), COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie,
-                                sizeof(cookie));
+    size_t n = dws_dtls_cookie_make(COOKIE_KEY, 1000, payload, sizeof(payload), COOKIE_ADDR, sizeof(COOKIE_ADDR),
+                                    cookie, sizeof(cookie));
     TEST_ASSERT_TRUE(n > 0);
 
     uint8_t out[16];
     size_t plen = 0;
     // Within max_age -> accepted.
-    TEST_ASSERT_TRUE(
-        dtls_cookie_verify(COOKIE_KEY, 1005, 10, COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie, n, out, sizeof(out), &plen));
+    TEST_ASSERT_TRUE(dws_dtls_cookie_verify(COOKIE_KEY, 1005, 10, COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie, n, out,
+                                            sizeof(out), &plen));
     // Older than max_age -> stale.
-    TEST_ASSERT_FALSE(
-        dtls_cookie_verify(COOKIE_KEY, 2000, 10, COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie, n, out, sizeof(out), &plen));
+    TEST_ASSERT_FALSE(dws_dtls_cookie_verify(COOKIE_KEY, 2000, 10, COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie, n, out,
+                                             sizeof(out), &plen));
     // Timestamp in the future relative to now -> rejected.
-    TEST_ASSERT_FALSE(
-        dtls_cookie_verify(COOKIE_KEY, 999, 10, COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie, n, out, sizeof(out), &plen));
+    TEST_ASSERT_FALSE(dws_dtls_cookie_verify(COOKIE_KEY, 999, 10, COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie, n, out,
+                                             sizeof(out), &plen));
 }
 
 int main(int, char **)

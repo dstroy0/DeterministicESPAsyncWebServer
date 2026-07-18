@@ -5,7 +5,7 @@
  * @file ghash.h
  * @brief GHASH (the GF(2^128) universal hash under AES-GCM, NIST SP 800-38D sec 6.3), 4-bit table.
  *
- * Shared by ssh_aesgcm (AES-256-GCM) and quic_aead (AES-128-GCM, also DTLS 1.3). The textbook GHASH
+ * Shared by ssh_aesgcm (AES-256-GCM) and dws_quic_aead (AES-128-GCM, also DTLS 1.3). The textbook GHASH
  * is a 128-iteration bitwise GF(2^128) multiply per 16-byte block (~3,700 cyc/byte on an ESP32-S3),
  * which made AES-GCM ~350x slower than raw AES-CTR and is the throughput floor of every AEAD record
  * layer (measured, docs/FEATURE_PERFORMANCE.md). There is no hardware GF-multiply on the S3 (unlike

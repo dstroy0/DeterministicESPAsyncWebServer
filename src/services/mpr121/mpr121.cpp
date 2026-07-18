@@ -18,32 +18,32 @@
 
 #include <string.h>
 
-uint16_t mpr121_touched(uint8_t status_lo, uint8_t status_hi)
+uint16_t dws_mpr121_touched(uint8_t status_lo, uint8_t status_hi)
 {
     return (uint16_t)(((uint16_t)status_lo | ((uint16_t)status_hi << 8)) & 0x0FFF);
 }
 
-bool mpr121_is_touched(uint16_t mask, uint8_t e)
+bool dws_mpr121_is_touched(uint16_t mask, uint8_t e)
 {
     return e < MPR121_ELECTRODES && (mask & (uint16_t)(1u << e)) != 0;
 }
 
-bool mpr121_proximity(uint8_t status_hi)
+bool dws_mpr121_proximity(uint8_t status_hi)
 {
     return (status_hi & 0x10) != 0; // status bit 12
 }
 
-bool mpr121_overcurrent(uint8_t status_hi)
+bool dws_mpr121_overcurrent(uint8_t status_hi)
 {
     return (status_hi & 0x80) != 0; // status bit 15
 }
 
-uint16_t mpr121_word10(uint8_t lsb, uint8_t msb)
+uint16_t dws_mpr121_word10(uint8_t lsb, uint8_t msb)
 {
     return (uint16_t)(((uint16_t)lsb | ((uint16_t)msb << 8)) & 0x03FF);
 }
 
-size_t mpr121_build_init(uint8_t *buf, size_t cap, uint8_t n, uint8_t touch_thr, uint8_t release_thr)
+size_t dws_mpr121_build_init(uint8_t *buf, size_t cap, uint8_t n, uint8_t touch_thr, uint8_t release_thr)
 {
     if (!buf || n == 0 || n > MPR121_ELECTRODES)
         return 0;
@@ -123,13 +123,13 @@ bool rd(uint8_t reg, uint8_t *out, uint8_t n)
 }
 } // namespace
 
-bool mpr121_begin(uint8_t addr)
+bool dws_mpr121_begin(uint8_t addr)
 {
     s_mpr.addr = addr ? addr : (uint8_t)DWS_MPR121_I2C_ADDR;
     dws_i2c_begin();
     uint8_t seq[MPR121_INIT_MAX];
-    size_t n = mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, DWS_MPR121_TOUCH_THRESHOLD,
-                                 DWS_MPR121_RELEASE_THRESHOLD);
+    size_t n = dws_mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, DWS_MPR121_TOUCH_THRESHOLD,
+                                     DWS_MPR121_RELEASE_THRESHOLD);
     if (n == 0)
         return false;
     if (!wr(seq[0], seq[1])) // soft reset first; then let the chip settle
@@ -141,35 +141,35 @@ bool mpr121_begin(uint8_t addr)
     return true;
 }
 
-uint16_t mpr121_read_touched()
+uint16_t dws_mpr121_read_touched()
 {
     uint8_t s[2] = {0, 0};
     if (!rd(0x00, s, 2))
         return 0;
-    return mpr121_touched(s[0], s[1]);
+    return dws_mpr121_touched(s[0], s[1]);
 }
 
-uint16_t mpr121_read_filtered(uint8_t e)
+uint16_t dws_mpr121_read_filtered(uint8_t e)
 {
     if (e >= MPR121_ELECTRODES)
         return 0;
     uint8_t d[2] = {0, 0};
     if (!rd((uint8_t)(0x04 + 2 * e), d, 2))
         return 0;
-    return mpr121_word10(d[0], d[1]);
+    return dws_mpr121_word10(d[0], d[1]);
 }
 
 #else // host build: no I2C. The decode + init-sequence builder above are host-tested.
 
-bool mpr121_begin(uint8_t)
+bool dws_mpr121_begin(uint8_t)
 {
     return false;
 }
-uint16_t mpr121_read_touched()
+uint16_t dws_mpr121_read_touched()
 {
     return 0;
 }
-uint16_t mpr121_read_filtered(uint8_t)
+uint16_t dws_mpr121_read_filtered(uint8_t)
 {
     return 0;
 }

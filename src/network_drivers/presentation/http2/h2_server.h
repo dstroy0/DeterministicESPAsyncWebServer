@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file h2_server.h
- * @brief Bridge between the HTTP/2 engine (h2_conn) and the server's request pipeline.
+ * @file dws_h2_server.h
+ * @brief Bridge between the HTTP/2 engine (dws_h2_conn) and the server's request pipeline.
  *
  * When a TLS connection negotiates ALPN "h2", the session layer hands its decrypted bytes to
- * this module instead of the HTTP/1.1 parser. It runs one h2_conn per connection slot, maps each
+ * this module instead of the HTTP/1.1 parser. It runs one dws_h2_conn per connection slot, maps each
  * decoded request's pseudo-headers (:method / :path / :authority) and headers into the slot's
  * HttpReq, and marks it ParseState::PARSE_COMPLETE so the existing route dispatcher serves it. Responses from
  * the handlers route back here (DWS::send branches on the slot's h2 flag) and are

@@ -49,19 +49,19 @@ void setup()
     Serial.begin(115200);
     pinMode(LED_PIN, OUTPUT);
 
-    ld2410_begin(RADAR_RX, RADAR_TX);
-    ld2410_set_engineering(true); // also report the per-gate energies (nice for tuning)
+    dws_ld2410_begin(RADAR_RX, RADAR_TX);
+    dws_ld2410_set_engineering(true); // also report the per-gate energies (nice for tuning)
     Serial.println("LD2410 radar ready - wave a hand in front of it");
 }
 
 void loop()
 {
-    // Pump the UART; ld2410_poll() returns true only when a fresh report has been decoded.
-    if (!ld2410_poll())
+    // Pump the UART; dws_ld2410_poll() returns true only when a fresh report has been decoded.
+    if (!dws_ld2410_poll())
         return;
 
-    const Ld2410Report *r = ld2410_last();
-    digitalWrite(LED_PIN, ld2410_present(r) ? HIGH : LOW);
+    const Ld2410Report *r = dws_ld2410_last();
+    digitalWrite(LED_PIN, dws_ld2410_present(r) ? HIGH : LOW);
 
     // Print only when the presence state changes, so the Serial Monitor stays readable.
     static uint8_t last_state = 0xFF;
@@ -69,6 +69,6 @@ void loop()
     {
         last_state = r->state;
         Serial.printf("[radar] %-17s distance=%3ucm  moving=%3ucm/%-3u static=%3ucm/%-3u\n", state_name(r->state),
-                      ld2410_distance_cm(r), r->moving_cm, r->moving_energy, r->static_cm, r->static_energy);
+                      dws_ld2410_distance_cm(r), r->moving_cm, r->moving_energy, r->static_cm, r->static_energy);
     }
 }

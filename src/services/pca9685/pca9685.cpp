@@ -21,7 +21,7 @@ const uint8_t PCA9685_PRESCALE_MIN = 3;
 const uint8_t PCA9685_PRESCALE_MAX = 255;
 } // namespace
 
-uint8_t pca9685_prescale(uint32_t freq_hz)
+uint8_t dws_pca9685_prescale(uint32_t freq_hz)
 {
     if (freq_hz == 0)
         return PCA9685_PRESCALE_MAX;
@@ -35,14 +35,14 @@ uint8_t pca9685_prescale(uint32_t freq_hz)
     return (uint8_t)pre;
 }
 
-uint8_t pca9685_channel_reg(uint8_t channel)
+uint8_t dws_pca9685_channel_reg(uint8_t channel)
 {
     if (channel >= PCA9685_CHANNELS)
         return 0;
     return (uint8_t)(PCA9685_REG_LED0_ON_L + 4 * channel);
 }
 
-uint16_t pca9685_us_to_count(uint32_t microseconds, uint32_t freq_hz)
+uint16_t dws_pca9685_us_to_count(uint32_t microseconds, uint32_t freq_hz)
 {
     // count = round(us * 4096 * freq / 1e6); 64-bit to avoid overflow at high pulse widths.
     uint64_t num = (uint64_t)microseconds * 4096u * freq_hz;
@@ -50,11 +50,11 @@ uint16_t pca9685_us_to_count(uint32_t microseconds, uint32_t freq_hz)
     return count > PCA9685_COUNT_MAX ? (uint16_t)PCA9685_COUNT_MAX : (uint16_t)count;
 }
 
-size_t pca9685_set_pwm_bytes(uint8_t *buf, size_t cap, uint8_t channel, uint16_t on, uint16_t off)
+size_t dws_pca9685_set_pwm_bytes(uint8_t *buf, size_t cap, uint8_t channel, uint16_t on, uint16_t off)
 {
     if (!buf || cap < 5 || channel >= PCA9685_CHANNELS)
         return 0;
-    buf[0] = pca9685_channel_reg(channel);
+    buf[0] = dws_pca9685_channel_reg(channel);
     // Bit 4 of each _H register is the full-ON / full-OFF flag (count bit 12), so keep bits 4:0.
     buf[1] = (uint8_t)(on & 0xFF);
     buf[2] = (uint8_t)((on >> 8) & 0x1F);
@@ -93,14 +93,14 @@ bool wr(uint8_t reg, uint8_t val)
 }
 } // namespace
 
-bool pca9685_begin(uint8_t addr, uint32_t freq_hz)
+bool dws_pca9685_begin(uint8_t addr, uint32_t freq_hz)
 {
     s_pca.addr = addr ? addr : (uint8_t)DWS_PCA9685_I2C_ADDR;
     s_pca.freq = freq_hz ? freq_hz : (uint32_t)DWS_PCA9685_FREQ;
     dws_i2c_begin();
     bool ok = true;
     ok &= wr(PCA9685_REG_MODE1, 0x10); // SLEEP (required before changing PRESCALE)
-    ok &= wr(PCA9685_REG_PRESCALE, pca9685_prescale(s_pca.freq));
+    ok &= wr(PCA9685_REG_PRESCALE, dws_pca9685_prescale(s_pca.freq));
     ok &= wr(PCA9685_REG_MODE1, 0x20); // wake, auto-increment (AI)
     delayMicroseconds(500);            // oscillator settle
     ok &= wr(PCA9685_REG_MODE1, 0xA0); // AI + RESTART
@@ -108,32 +108,32 @@ bool pca9685_begin(uint8_t addr, uint32_t freq_hz)
     return ok;
 }
 
-bool pca9685_set_pwm(uint8_t channel, uint16_t on, uint16_t off)
+bool dws_pca9685_set_pwm(uint8_t channel, uint16_t on, uint16_t off)
 {
     uint8_t b[5];
-    if (pca9685_set_pwm_bytes(b, sizeof(b), channel, on, off) != 5)
+    if (dws_pca9685_set_pwm_bytes(b, sizeof(b), channel, on, off) != 5)
         return false;
     Wire.beginTransmission(s_pca.addr);
     Wire.write(b, 5);
     return Wire.endTransmission() == 0;
 }
 
-bool pca9685_set_servo_us(uint8_t channel, uint32_t microseconds)
+bool dws_pca9685_set_servo_us(uint8_t channel, uint32_t microseconds)
 {
-    return pca9685_set_pwm(channel, 0, pca9685_us_to_count(microseconds, s_pca.freq));
+    return dws_pca9685_set_pwm(channel, 0, dws_pca9685_us_to_count(microseconds, s_pca.freq));
 }
 
 #else // host build: no I2C. The prescale / count math + encoder above are host-tested.
 
-bool pca9685_begin(uint8_t, uint32_t)
+bool dws_pca9685_begin(uint8_t, uint32_t)
 {
     return false;
 }
-bool pca9685_set_pwm(uint8_t, uint16_t, uint16_t)
+bool dws_pca9685_set_pwm(uint8_t, uint16_t, uint16_t)
 {
     return false;
 }
-bool pca9685_set_servo_us(uint8_t, uint32_t)
+bool dws_pca9685_set_servo_us(uint8_t, uint32_t)
 {
     return false;
 }

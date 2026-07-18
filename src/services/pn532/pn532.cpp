@@ -18,7 +18,7 @@ namespace
 const uint8_t ACK[6] = {0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00};
 }
 
-uint16_t pn532_build_frame(uint8_t tfi, const uint8_t *data, uint8_t len, uint8_t *out, uint16_t cap)
+uint16_t dws_pn532_build_frame(uint8_t tfi, const uint8_t *data, uint8_t len, uint8_t *out, uint16_t cap)
 {
     if (!out || len > DWS_PN532_MAX_DATA || (data == nullptr && len > 0))
         return 0;
@@ -43,7 +43,7 @@ uint16_t pn532_build_frame(uint8_t tfi, const uint8_t *data, uint8_t len, uint8_
     return total;
 }
 
-int pn532_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *tfi, const uint8_t **pdata, uint8_t *pdata_len)
+int dws_pn532_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *tfi, const uint8_t **pdata, uint8_t *pdata_len)
 {
     if (!raw || len < 1)
         return 0;
@@ -75,7 +75,7 @@ int pn532_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *tfi, const uint
     return (int)total;
 }
 
-bool pn532_is_ack(const uint8_t *raw, uint16_t len)
+bool dws_pn532_is_ack(const uint8_t *raw, uint16_t len)
 {
     if (!raw || len < 6)
         return false;
@@ -85,7 +85,7 @@ bool pn532_is_ack(const uint8_t *raw, uint16_t len)
     return true;
 }
 
-uint16_t pn532_build_ack(uint8_t *out, uint16_t cap)
+uint16_t dws_pn532_build_ack(uint8_t *out, uint16_t cap)
 {
     if (!out || cap < 6)
         return 0;

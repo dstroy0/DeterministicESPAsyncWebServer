@@ -90,9 +90,9 @@ pio ci examples/L7-Application/61.Rtc \
 ## How it works (for the curious)
 
 The DS1307/DS3231 store the time in seven **BCD** registers (each nibble is one decimal digit)
-at I2C address `0x68`. `rtc_read_epoch()` reads those seven bytes and `rtc_regs_to_epoch()`
+at I2C address `0x68`. `dws_rtc_read_epoch()` reads those seven bytes and `dws_rtc_regs_to_epoch()`
 converts them - handling 12/24-hour encoding, leap years, and the chip's clock-halt/century
-bits - into a Unix timestamp; `rtc_set_epoch()` does the reverse to set the chip. All the date
+bits - into a Unix timestamp; `dws_rtc_set_epoch()` does the reverse to set the chip. All the date
 math is fixed-point and heap-free, and the conversions are unit-tested on a PC across the
 2000-2099 range (that round-trip test caught a real 32-bit overflow past 2038 - see
 `test/test_rtc`). Only the register read/write touches I2C.

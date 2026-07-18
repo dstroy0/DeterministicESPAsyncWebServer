@@ -62,15 +62,15 @@ struct FinsHeader
 };
 
 /** @brief Build a command frame: header + MRC + SRC + params. Returns total octets, or 0. */
-size_t fins_build_command(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t mrc, uint8_t src,
-                          const uint8_t *params, size_t params_len);
+size_t dws_fins_build_command(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t mrc, uint8_t src,
+                              const uint8_t *params, size_t params_len);
 
 /**
  * @brief Build a Memory Area Read command (0101): area code, 2-octet word address + bit,
  *        2-octet item count. The number of items is big-endian.
  */
-size_t fins_build_memory_area_read(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t area, uint16_t address,
-                                   uint8_t bit, uint16_t count);
+size_t dws_fins_build_memory_area_read(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t area, uint16_t address,
+                                       uint8_t bit, uint16_t count);
 
 /** @brief A parsed command (request side). @ref params points INTO the source buffer. */
 struct FinsCommand
@@ -83,7 +83,7 @@ struct FinsCommand
 };
 
 /** @brief Parse a command frame (header + MRC + SRC + params). */
-bool fins_parse_command(const uint8_t *buf, size_t len, FinsCommand *out);
+bool dws_fins_parse_command(const uint8_t *buf, size_t len, FinsCommand *out);
 
 /** @brief A parsed response. @ref data points INTO the source buffer. */
 struct FinsResponse
@@ -98,7 +98,7 @@ struct FinsResponse
 };
 
 /** @brief Parse a response frame (header + MRC + SRC + MRES + SRES + data). */
-bool fins_parse_response(const uint8_t *buf, size_t len, FinsResponse *out);
+bool dws_fins_parse_response(const uint8_t *buf, size_t len, FinsResponse *out);
 
 #endif // DWS_ENABLE_FINS
 

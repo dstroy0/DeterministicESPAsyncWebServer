@@ -50,8 +50,8 @@
  * @param[out] ss  32-octet shared secret.
  * @return true on success, false if @p ek fails the modulus check.
  */
-bool mlkem768_encaps(const uint8_t ek[MLKEM768_EK_BYTES], const uint8_t m[MLKEM768_MSG_BYTES],
-                     uint8_t ct[MLKEM768_CT_BYTES], uint8_t ss[MLKEM768_SS_BYTES]);
+bool dws_mlkem768_encaps(const uint8_t ek[MLKEM768_EK_BYTES], const uint8_t m[MLKEM768_MSG_BYTES],
+                         uint8_t ct[MLKEM768_CT_BYTES], uint8_t ss[MLKEM768_SS_BYTES]);
 
 #endif // DWS_ENABLE_PQC_KEX
 

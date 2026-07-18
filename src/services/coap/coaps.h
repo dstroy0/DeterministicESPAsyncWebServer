@@ -10,8 +10,8 @@
  * 5684). This is the transport-neutral glue: it drives one @ref DtlsConn through its handshake and,
  * once established, unwraps each encrypted application record, hands the CoAP request to
  * dws_coap_server_process(), and re-wraps the response. The socket / per-peer routing lives in a thin
- * front-end (dtls_server) on top; this file has no sockets, so it is host-testable with an in-test
- * DTLS client, exactly like dtls_conn itself.
+ * front-end (dws_dtls_server) on top; this file has no sockets, so it is host-testable with an in-test
+ * DTLS client, exactly like dws_dtls_conn itself.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026

@@ -35,7 +35,7 @@ static const uint8_t MD5_S[64] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7
                                   4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
                                   6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21};
 
-static void md5_compress(uint32_t s[4], const uint8_t block[64])
+static void dws_md5_compress(uint32_t s[4], const uint8_t block[64])
 {
     uint32_t m[16];
     for (int i = 0; i < 16; i++)
@@ -80,7 +80,7 @@ static void md5_compress(uint32_t s[4], const uint8_t block[64])
     s[3] += d;
 }
 
-void md5_init(MdCtx *c)
+void dws_md5_init(MdCtx *c)
 {
     c->state[0] = 0x67452301;
     c->state[1] = 0xefcdab89;
@@ -92,7 +92,7 @@ void md5_init(MdCtx *c)
 
 // --- MD4 (RFC 1320) --------------------------------------------------------
 
-static void md4_compress(uint32_t s[4], const uint8_t block[64])
+static void dws_md4_compress(uint32_t s[4], const uint8_t block[64])
 {
     uint32_t x[16];
     for (int i = 0; i < 16; i++)
@@ -167,7 +167,7 @@ static void md4_compress(uint32_t s[4], const uint8_t block[64])
     s[3] += d;
 }
 
-void md4_init(MdCtx *c)
+void dws_md4_init(MdCtx *c)
 {
     c->state[0] = 0x67452301;
     c->state[1] = 0xefcdab89;
@@ -217,41 +217,41 @@ static void md_finish(MdCtx *c, uint8_t out[16], md_compress_fn compress)
         dws_wr32le(out + i * 4, c->state[i]);
 }
 
-void md5_update(MdCtx *c, const uint8_t *data, size_t len)
+void dws_md5_update(MdCtx *c, const uint8_t *data, size_t len)
 {
-    md_absorb(c, data, len, md5_compress);
+    md_absorb(c, data, len, dws_md5_compress);
 }
-void md5_final(MdCtx *c, uint8_t out[16])
+void dws_md5_final(MdCtx *c, uint8_t out[16])
 {
-    md_finish(c, out, md5_compress);
+    md_finish(c, out, dws_md5_compress);
 }
-void md4_update(MdCtx *c, const uint8_t *data, size_t len)
+void dws_md4_update(MdCtx *c, const uint8_t *data, size_t len)
 {
-    md_absorb(c, data, len, md4_compress);
+    md_absorb(c, data, len, dws_md4_compress);
 }
-void md4_final(MdCtx *c, uint8_t out[16])
+void dws_md4_final(MdCtx *c, uint8_t out[16])
 {
-    md_finish(c, out, md4_compress);
+    md_finish(c, out, dws_md4_compress);
 }
 
 void md5(const uint8_t *data, size_t len, uint8_t out[16])
 {
     MdCtx c;
-    md5_init(&c);
-    md5_update(&c, data, len);
-    md5_final(&c, out);
+    dws_md5_init(&c);
+    dws_md5_update(&c, data, len);
+    dws_md5_final(&c, out);
 }
 void md4(const uint8_t *data, size_t len, uint8_t out[16])
 {
     MdCtx c;
-    md4_init(&c);
-    md4_update(&c, data, len);
-    md4_final(&c, out);
+    dws_md4_init(&c);
+    dws_md4_update(&c, data, len);
+    dws_md4_final(&c, out);
 }
 
 // --- HMAC-MD5 (RFC 2104) ---------------------------------------------------
 
-void hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg_len, uint8_t out[16])
+void dws_hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg_len, uint8_t out[16])
 {
     uint8_t k[64];
     memset(k, 0, sizeof(k));
@@ -270,15 +270,15 @@ void hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg
 
     uint8_t inner[16];
     MdCtx c;
-    md5_init(&c);
-    md5_update(&c, ipad, 64);
-    md5_update(&c, msg, msg_len);
-    md5_final(&c, inner);
+    dws_md5_init(&c);
+    dws_md5_update(&c, ipad, 64);
+    dws_md5_update(&c, msg, msg_len);
+    dws_md5_final(&c, inner);
 
-    md5_init(&c);
-    md5_update(&c, opad, 64);
-    md5_update(&c, inner, 16);
-    md5_final(&c, out);
+    dws_md5_init(&c);
+    dws_md5_update(&c, opad, 64);
+    dws_md5_update(&c, inner, 16);
+    dws_md5_final(&c, out);
 }
 
 #endif // DWS_ENABLE_SMB

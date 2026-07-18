@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ntp_service.h
+ * @file dws_ntp_service.h
  * @brief Optional SNTP wall-clock time sync (DWS_ENABLE_NTP).
  *
  * Thin wrapper over the ESP-IDF SNTP client (`configTzTime`). Gives a
@@ -65,11 +65,11 @@ size_t dws_ntp_http_date(char *out, size_t out_cap);
 /**
  * @brief NTP as a time source for the multi-source registry (services/time_source).
  *
- * Register with dws_time_source_add("ntp", priority, ntp_time_source) so the aggregated
+ * Register with dws_time_source_add("ntp", priority, dws_ntp_time_source) so the aggregated
  * dws_time_now() (and thus the HTTP `Date` header when DWS_ENABLE_TIME_SOURCE is set) can
  * be fed by NTP alongside an RTC / GPS. Returns the current epoch, or 0 when not synced.
  */
-uint32_t ntp_time_source(void);
+uint32_t dws_ntp_time_source(void);
 
 #if !defined(ARDUINO)
 /**

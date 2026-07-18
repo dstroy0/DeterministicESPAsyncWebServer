@@ -5,8 +5,8 @@
  * @file 03.Multipart.ino
  * @brief Parse a multipart/form-data POST body (RFC 7578) in place.
  *
- * POST /upload with a multipart body; multipart_parse() splits it into parts and
- * multipart_get_field() returns a named text field. The whole body must fit in
+ * POST /upload with a multipart body; dws_multipart_parse() splits it into parts and
+ * dws_multipart_get_field() returns a named text field. The whole body must fit in
  * BODY_BUF_SIZE (no streaming), so this suits small form fields / tiny uploads.
  * A test form is served at /.
  *
@@ -30,12 +30,12 @@ static const char FORM[] = "<!doctype html><meta charset=utf-8><title>upload</ti
 void handle_upload(uint8_t id, HttpReq *req)
 {
     Multipart mp;
-    if (!multipart_parse(req, &mp))
+    if (!dws_multipart_parse(req, &mp))
     {
         server.send(id, 400, "text/plain", "expected multipart/form-data (and within BODY_BUF_SIZE)");
         return;
     }
-    const char *name = multipart_get_field(&mp, "name");
+    const char *name = dws_multipart_get_field(&mp, "name");
     char out[160];
     snprintf(out, sizeof(out), "parsed %d part(s); field 'name' = %s", mp.part_count, name ? name : "(absent)");
     server.send(id, 200, "text/plain", out);

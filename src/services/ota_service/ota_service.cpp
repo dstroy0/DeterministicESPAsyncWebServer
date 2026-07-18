@@ -42,7 +42,7 @@ static bool ota_check_auth(HttpReq *req)
         return false;
 
     uint8_t decoded[MAX_AUTH_LEN * 2 + 2];
-    size_t n = base64_decode(h + 6, decoded, sizeof(decoded) - 1);
+    size_t n = dws_base64_decode(h + 6, decoded, sizeof(decoded) - 1);
     if (n == 0)
         return false;
     decoded[n] = '\0';

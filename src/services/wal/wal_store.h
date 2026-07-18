@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file wal_store.h
+ * @file dws_wal_store.h
  * @brief Durable write-ahead store: A/B superblock + checkpoint over a block-device seam (DWS_ENABLE_WAL).
  *
  * Increment 2 on top of the pure record codec in wal.h. It turns the codec into a mountable, power-loss-safe
@@ -17,7 +17,7 @@
  * Records (wal.h framing) are **appended sequentially** into the data region and are *not* synced per op -
  * that matches the measured envelope (docs/FEATURE_PERFORMANCE.md): batch, then checkpoint in bulk.
  *
- * **Checkpoint = the atomic commit.** ::wal_store_checkpoint syncs the appended data, then writes an updated
+ * **Checkpoint = the atomic commit.** ::dws_wal_store_checkpoint syncs the appended data, then writes an updated
  * superblock (with an incremented generation, the new durable head, and the next seq) to the *inactive* of
  * the two copies and syncs that. Flipping which copy is newest is the single durable pointer move. If a
  * crash tears the new superblock, its CRC fails and mount falls back to the older copy; either way mount
@@ -81,29 +81,29 @@ struct WalStore
  * @brief Format @p dev into an empty store (writes a generation-1 superblock). Erases any existing log.
  * @return false if @p dev is too small to hold both superblocks plus a data region.
  */
-bool wal_store_format(WalStore *s, const WalDev *dev);
+bool dws_wal_store_format(WalStore *s, const WalDev *dev);
 
 /**
  * @brief Mount an existing store: pick the newest valid superblock, then replay the tail past its committed
  * head to recover records appended since the last checkpoint. @return false if neither superblock is valid
  * (unformatted / both torn).
  */
-bool wal_store_mount(WalStore *s, const WalDev *dev);
+bool dws_wal_store_mount(WalStore *s, const WalDev *dev);
 
 /**
- * @brief Append one record (wal.h framing) at the current head. Does **not** sync - call ::wal_store_checkpoint
+ * @brief Append one record (wal.h framing) at the current head. Does **not** sync - call ::dws_wal_store_checkpoint
  * to make appends durable. @return false if the record does not fit the remaining data region (log full) or a
  * device write is short.
  */
-bool wal_store_append(WalStore *s, const uint8_t *payload, uint32_t len);
+bool dws_wal_store_append(WalStore *s, const uint8_t *payload, uint32_t len);
 
 /**
  * @brief Make every append so far durable and advance the committed head: sync data, write the next-generation
  * superblock to the inactive copy, sync it. @return false on a device write/sync failure.
  */
-bool wal_store_checkpoint(WalStore *s);
+bool dws_wal_store_checkpoint(WalStore *s);
 
-/** @brief Per-record callback for ::wal_store_scan - like ::WalRecordCb but also gives the record's
+/** @brief Per-record callback for ::dws_wal_store_scan - like ::WalRecordCb but also gives the record's
  * data-region byte offset (so an index can record where to re-read the payload later). */
 using WalStoreRecordCb = void (*)(uint64_t seq, uint64_t data_off, const uint8_t *payload, uint32_t len, void *ctx);
 
@@ -114,26 +114,26 @@ using WalStoreRecordCb = void (*)(uint64_t seq, uint64_t data_off, const uint8_t
  * payload) and re-validates it with the codec, stopping at the first bad record. The point is to rebuild an
  * in-RAM index after mount (e.g. the dbm hash table replays puts/deletes this way). @return the record count.
  */
-size_t wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scratch, size_t scratch_len);
+size_t dws_wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scratch, size_t scratch_len);
 
 /**
  * @brief Read @p len bytes from data-region offset @p off (as reported to ::WalStoreRecordCb) into @p buf.
  * @return true on success. Lets an index re-read a value straight from the log without buffering it.
  */
-bool wal_store_pread(WalStore *s, uint64_t off, uint8_t *buf, size_t len);
+bool dws_wal_store_pread(WalStore *s, uint64_t off, uint8_t *buf, size_t len);
 
 /** @brief Bytes used in the data region (including appends not yet checkpointed). */
-static inline uint64_t wal_store_used(const WalStore *s)
+static inline uint64_t dws_wal_store_used(const WalStore *s)
 {
     return s->head;
 }
 /** @brief The durable committed head as of the last checkpoint. */
-static inline uint64_t wal_store_committed(const WalStore *s)
+static inline uint64_t dws_wal_store_committed(const WalStore *s)
 {
     return s->committed;
 }
 /** @brief Total usable data-region capacity in bytes. */
-static inline uint64_t wal_store_capacity(const WalStore *s)
+static inline uint64_t dws_wal_store_capacity(const WalStore *s)
 {
     return s->data_cap;
 }

@@ -67,23 +67,23 @@ struct EipHeader
 };
 
 /** @brief Build the encapsulation header + command data. Returns total octets, or 0. */
-size_t eip_build(uint8_t *buf, size_t cap, const EipHeader *h, const uint8_t *data, size_t data_len);
+size_t dws_eip_build(uint8_t *buf, size_t cap, const EipHeader *h, const uint8_t *data, size_t data_len);
 
 /** @brief Parse the encapsulation header and slice the command data. */
-bool eip_parse(const uint8_t *buf, size_t len, EipHeader *out, const uint8_t **data, size_t *data_len);
+bool dws_eip_parse(const uint8_t *buf, size_t len, EipHeader *out, const uint8_t **data, size_t *data_len);
 
 /** @brief Build a RegisterSession request (protocol version 1). @p sender_context may be null (zeros). */
-size_t eip_build_register_session(uint8_t *buf, size_t cap, const uint8_t sender_context[8]);
+size_t dws_eip_build_register_session(uint8_t *buf, size_t cap, const uint8_t sender_context[8]);
 
 /**
  * @brief Build a SendRRData request wrapping @p cip as an unconnected message (Null Address
  *        item + Unconnected Data item).
  */
-size_t eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_handle, const uint8_t sender_context[8],
-                              uint16_t timeout, const uint8_t *cip, size_t cip_len);
+size_t dws_eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_handle, const uint8_t sender_context[8],
+                                  uint16_t timeout, const uint8_t *cip, size_t dws_cip_len);
 
 /** @brief From a SendRRData command-data block, extract the Unconnected Data item (the CIP reply). */
-bool eip_parse_send_rr_data(const uint8_t *data, size_t data_len, const uint8_t **cip, size_t *cip_len);
+bool dws_eip_parse_send_rr_data(const uint8_t *data, size_t data_len, const uint8_t **cip, size_t *dws_cip_len);
 
 #endif // DWS_ENABLE_ENIP
 

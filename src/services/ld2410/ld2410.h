@@ -12,7 +12,7 @@
  * mode" - the per-gate energy of all nine range gates. Configuration is a second frame kind
  * (header `FD FC FB FA`, footer `04 03 02 01`) carrying a 2-byte command word.
  *
- * This codec is pure and host-tested: ::ld2410_parse_report decodes one report frame, and
+ * This codec is pure and host-tested: ::dws_ld2410_parse_report decodes one report frame, and
  * ::Ld2410Stream reassembles frames byte-by-byte from a UART with resync on noise (no heap,
  * fixed buffer). The command encoders build the config frames. On an ESP32 the binding pumps a
  * `HardwareSerial` and keeps the latest report; only that read/write touches hardware.
@@ -69,7 +69,7 @@ struct Ld2410Report
  * (0x02 basic / 0x01 engineering), the `0xAA` head marker and the `0x55` tail.
  * @return true on a valid frame; false on any mismatch or a short buffer.
  */
-bool ld2410_parse_report(const uint8_t *frame, size_t len, Ld2410Report *out);
+bool dws_ld2410_parse_report(const uint8_t *frame, size_t len, Ld2410Report *out);
 
 /** @brief Byte-by-byte report-frame reassembler (fixed buffer, resyncs on noise). */
 struct Ld2410Stream
@@ -82,48 +82,48 @@ struct Ld2410Stream
 };
 
 /** @brief Reset a stream to the syncing state. */
-void ld2410_stream_reset(Ld2410Stream *s);
+void dws_ld2410_stream_reset(Ld2410Stream *s);
 
 /**
  * @brief Feed one received byte. When it completes a valid report frame, fills @p out and
  * returns true; otherwise returns false (still syncing / mid-frame / bad frame - it resyncs).
  */
-bool ld2410_stream_push(Ld2410Stream *s, uint8_t byte, Ld2410Report *out);
+bool dws_ld2410_stream_push(Ld2410Stream *s, uint8_t byte, Ld2410Report *out);
 
 /** @brief true if @p r shows any target (moving or stationary). */
-bool ld2410_present(const Ld2410Report *r);
+bool dws_ld2410_present(const Ld2410Report *r);
 
 /** @brief Best available target distance (cm): the moving distance if moving, else stationary. */
-uint16_t ld2410_distance_cm(const Ld2410Report *r);
+uint16_t dws_ld2410_distance_cm(const Ld2410Report *r);
 
 // --- Config-command encoders (build a full `FD FC FB FA` .. `04 03 02 01` frame) -------------
 // Each returns the frame length written, or 0 if @p cap is too small. Config commands must be
 // bracketed by enable/end; engineering + restart take effect inside that bracket.
 
 /** @brief "Enable configuration" (word 0x00FF, value 0x0001). */
-size_t ld2410_cmd_config_enable(uint8_t *buf, size_t cap);
+size_t dws_ld2410_cmd_config_enable(uint8_t *buf, size_t cap);
 /** @brief "End configuration" (word 0x00FE). */
-size_t ld2410_cmd_config_end(uint8_t *buf, size_t cap);
+size_t dws_ld2410_cmd_config_end(uint8_t *buf, size_t cap);
 /** @brief Enable (0x0062) or disable (0x0063) engineering mode. */
-size_t ld2410_cmd_engineering(uint8_t *buf, size_t cap, bool on);
+size_t dws_ld2410_cmd_engineering(uint8_t *buf, size_t cap, bool on);
 /** @brief Restart the module (word 0x00A3). */
-size_t ld2410_cmd_restart(uint8_t *buf, size_t cap);
+size_t dws_ld2410_cmd_restart(uint8_t *buf, size_t cap);
 
 // --- ESP32 binding (Serial pump; no-ops on a host build) -------------------------------------
 
 /** @brief Open UART2 at DWS_LD2410_BAUD on @p rx_pin / @p tx_pin. @return true on ESP32. */
-bool ld2410_begin(int rx_pin, int tx_pin);
+bool dws_ld2410_begin(int rx_pin, int tx_pin);
 
 /** @brief Pump the UART through the stream. @return true if a fresh report was decoded. */
-bool ld2410_poll();
+bool dws_ld2410_poll();
 
 /** @brief The most recently decoded report, or nullptr before the first one arrives. */
-const Ld2410Report *ld2410_last();
+const Ld2410Report *dws_ld2410_last();
 
 /** @brief Enable/disable engineering mode (brackets the command with enable/end). */
-bool ld2410_set_engineering(bool on);
+bool dws_ld2410_set_engineering(bool on);
 
 /** @brief Restart the module (brackets the command with enable/end). */
-bool ld2410_restart();
+bool dws_ld2410_restart();
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_LD2410_H

@@ -159,7 +159,7 @@ static inline void poly_tomsg(uint8_t msg[32], const int16_t a[256])
 } // namespace mlkem_ref_detail
 
 // Recover the 32-octet shared secret from a decapsulation key (2400 B) and a genuine ciphertext.
-static inline void mlkem768_decaps_ref(const uint8_t dk[2400], const uint8_t ct[1088], uint8_t ss[32])
+static inline void dws_mlkem768_decaps_ref(const uint8_t dk[2400], const uint8_t ct[1088], uint8_t ss[32])
 {
     using namespace mlkem_ref_detail;
     // dk = dk_pke(1152) || ek(1184) || H(ek)(32) || z(32); s_hat is stored in NTT domain.

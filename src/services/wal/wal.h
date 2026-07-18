@@ -22,7 +22,7 @@
  * image with a corrupted or truncated tail and it recovers to the last good record.
  *
  * The durable store layer - A/B superblock, checkpoint, and mount/recover over a block-device seam - is
- * built on this codec in wal_store.h; wal_fs.h binds that seam to a real fs::FS file (SD / LittleFS). The
+ * built on this codec in dws_wal_store.h; dws_wal_fs.h binds that seam to a real fs::FS file (SD / LittleFS). The
  * whole path is hardware-verified on an SD card over SPI (checkpoint recovery, torn-tail drop, byte-level
  * payload persistence, and survival across a chip reset all pass).
  */
@@ -43,18 +43,18 @@
 #define WAL_MAGIC 0x314C4157u
 
 /** @brief CRC-32 (IEEE 802.3, poly 0xEDB88320, init/final 0xFFFFFFFF) over @p data. */
-uint32_t wal_crc32(const uint8_t *data, size_t len);
+uint32_t dws_wal_crc32(const uint8_t *data, size_t len);
 
 /**
  * @name Streaming CRC-32
- * The same CRC as ::wal_crc32, split so a record header and a large payload can be folded in without
+ * The same CRC as ::dws_wal_crc32, split so a record header and a large payload can be folded in without
  * ever buffering both together - which is how the store CRCs an append (header then payload) and how
  * recovery CRCs a record it reads back from media in small chunks.
  * @{
  */
-uint32_t wal_crc32_init(void);                                       ///< seed (0xFFFFFFFF)
-uint32_t wal_crc32_update(uint32_t crc, const uint8_t *d, size_t n); ///< fold @p n bytes into @p crc
-uint32_t wal_crc32_final(uint32_t crc);                              ///< finalize (xor 0xFFFFFFFF)
+uint32_t dws_wal_crc32_init(void);                                       ///< seed (0xFFFFFFFF)
+uint32_t dws_wal_crc32_update(uint32_t crc, const uint8_t *d, size_t n); ///< fold @p n bytes into @p crc
+uint32_t dws_wal_crc32_final(uint32_t crc);                              ///< finalize (xor 0xFFFFFFFF)
 /** @} */
 
 /**
@@ -63,9 +63,9 @@ uint32_t wal_crc32_final(uint32_t crc);                              ///< finali
  * @param payload the record body (may be null when @p len is 0).
  * @return total bytes written (::WAL_RECORD_HEADER + @p len), or 0 if it does not fit @p cap.
  */
-size_t wal_record_encode(uint8_t *out, size_t cap, uint64_t seq, const uint8_t *payload, uint32_t len);
+size_t dws_wal_record_encode(uint8_t *out, size_t cap, uint64_t seq, const uint8_t *payload, uint32_t len);
 
-/** @brief Per-record callback for ::wal_replay. */
+/** @brief Per-record callback for ::dws_wal_replay. */
 using WalRecordCb = void (*)(uint64_t seq, const uint8_t *payload, uint32_t len, void *ctx);
 
 /**
@@ -75,7 +75,7 @@ using WalRecordCb = void (*)(uint64_t seq, const uint8_t *payload, uint32_t len,
  * truncated tail from a power loss). @return the offset just past the last good record - the durable
  * journal length; any bytes beyond it are the torn tail to discard/overwrite.
  */
-size_t wal_replay(const uint8_t *img, size_t len, WalRecordCb cb, void *ctx);
+size_t dws_wal_replay(const uint8_t *img, size_t len, WalRecordCb cb, void *ctx);
 
 #endif // DWS_ENABLE_WAL
 #endif // DETERMINISTICESPASYNCWEBSERVER_WAL_H

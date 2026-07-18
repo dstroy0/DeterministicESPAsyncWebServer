@@ -41,8 +41,8 @@ static void read_header(const uint8_t *buf, FinsHeader *h)
     h->sid = buf[9];
 }
 
-size_t fins_build_command(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t mrc, uint8_t src,
-                          const uint8_t *params, size_t params_len)
+size_t dws_fins_build_command(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t mrc, uint8_t src,
+                              const uint8_t *params, size_t params_len)
 {
     if (!buf || !h || (params_len && !params))
         return 0;
@@ -60,8 +60,8 @@ size_t fins_build_command(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t
     return p;
 }
 
-size_t fins_build_memory_area_read(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t area, uint16_t address,
-                                   uint8_t bit, uint16_t count)
+size_t dws_fins_build_memory_area_read(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t area, uint16_t address,
+                                       uint8_t bit, uint16_t count)
 {
     uint8_t params[6];
     params[0] = area;
@@ -70,10 +70,10 @@ size_t fins_build_memory_area_read(uint8_t *buf, size_t cap, const FinsHeader *h
     params[3] = bit;
     params[4] = (uint8_t)(count >> 8);
     params[5] = (uint8_t)(count & 0xFF);
-    return fins_build_command(buf, cap, h, FINS_MRC_MEMORY_AREA, FINS_SRC_MEMORY_AREA_READ, params, sizeof(params));
+    return dws_fins_build_command(buf, cap, h, FINS_MRC_MEMORY_AREA, FINS_SRC_MEMORY_AREA_READ, params, sizeof(params));
 }
 
-bool fins_parse_command(const uint8_t *buf, size_t len, FinsCommand *out)
+bool dws_fins_parse_command(const uint8_t *buf, size_t len, FinsCommand *out)
 {
     if (!buf || !out || len < FINS_HEADER_SIZE + 2)
         return false;
@@ -85,7 +85,7 @@ bool fins_parse_command(const uint8_t *buf, size_t len, FinsCommand *out)
     return true;
 }
 
-bool fins_parse_response(const uint8_t *buf, size_t len, FinsResponse *out)
+bool dws_fins_parse_response(const uint8_t *buf, size_t len, FinsResponse *out)
 {
     if (!buf || !out || len < FINS_HEADER_SIZE + 4) // header + MRC + SRC + MRES + SRES
         return false;

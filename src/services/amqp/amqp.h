@@ -43,18 +43,18 @@
 #define AMQP_FRAME_OVERHEAD 8 ///< type(1) + channel(2) + size(4) + frame-end(1)
 
 /** @brief Write the 8-octet protocol header ("AMQP" + 0 0 9 1). Returns 8, or 0 on overflow. */
-size_t amqp_protocol_header(uint8_t *buf, size_t cap);
+size_t dws_amqp_protocol_header(uint8_t *buf, size_t cap);
 
 /** @brief Build a frame: type + channel + size + payload + 0xCE. Returns total octets, or 0. */
-size_t amqp_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint16_t channel, const uint8_t *payload,
-                        size_t payload_len);
+size_t dws_amqp_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint16_t channel, const uint8_t *payload,
+                            size_t payload_len);
 
 /** @brief Build a METHOD frame: payload = class-id + method-id + @p args. */
-size_t amqp_build_method(uint8_t *buf, size_t cap, uint16_t channel, uint16_t class_id, uint16_t method_id,
-                         const uint8_t *args, size_t args_len);
+size_t dws_amqp_build_method(uint8_t *buf, size_t cap, uint16_t channel, uint16_t class_id, uint16_t method_id,
+                             const uint8_t *args, size_t args_len);
 
 /** @brief Build a heartbeat frame (type 8, channel 0, empty payload). Returns 8, or 0. */
-size_t amqp_build_heartbeat(uint8_t *buf, size_t cap);
+size_t dws_amqp_build_heartbeat(uint8_t *buf, size_t cap);
 
 /** @brief A parsed frame. @ref payload points INTO the source buffer. */
 struct AmqpFrame
@@ -70,11 +70,11 @@ struct AmqpFrame
  * @param consumed receives the full frame length so the caller can advance.
  * @return true on a complete, terminated frame; false if incomplete or the end octet is wrong.
  */
-bool amqp_parse_frame(const uint8_t *buf, size_t len, AmqpFrame *out, size_t *consumed);
+bool dws_amqp_parse_frame(const uint8_t *buf, size_t len, AmqpFrame *out, size_t *consumed);
 
 /** @brief Split a METHOD frame payload into class-id / method-id / arguments. */
-bool amqp_parse_method(const uint8_t *payload, size_t payload_len, uint16_t *class_id, uint16_t *method_id,
-                       const uint8_t **args, size_t *args_len);
+bool dws_amqp_parse_method(const uint8_t *payload, size_t payload_len, uint16_t *class_id, uint16_t *method_id,
+                           const uint8_t **args, size_t *args_len);
 
 #endif // DWS_ENABLE_AMQP
 

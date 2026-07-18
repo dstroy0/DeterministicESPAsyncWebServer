@@ -49,7 +49,7 @@ static uint64_t rd64(const uint8_t *p)
 }
 
 // A minimal NTLMSSP CHALLENGE (server type-2) with a timestamp+EOL target info.
-static size_t ntlmssp_challenge(uint8_t *m, const uint8_t sc[8])
+static size_t dws_ntlmssp_challenge(uint8_t *m, const uint8_t sc[8])
 {
     memset(m, 0, 64);
     const uint8_t sig[8] = {'N', 'T', 'L', 'M', 'S', 'S', 'P', 0};
@@ -74,7 +74,7 @@ static size_t ntlmssp_challenge(uint8_t *m, const uint8_t sc[8])
 
 // Same CHALLENGE, but with a caller-supplied target-info blob (exercises find_av_timestamp's
 // scan/skip/EOL branches and large target infos that overflow the client's crypto buffers).
-static size_t ntlmssp_challenge_ti(uint8_t *m, const uint8_t sc[8], const uint8_t *ti, size_t ti_len)
+static size_t dws_ntlmssp_challenge_ti(uint8_t *m, const uint8_t sc[8], const uint8_t *ti, size_t ti_len)
 {
     memset(m, 0, 48);
     const uint8_t sig[8] = {'N', 'T', 'L', 'M', 'S', 'S', 'P', 0};
@@ -95,7 +95,7 @@ enum MockFault
 {
     FAULT_NONE = 0,
     FAULT_DROP,       // append no response (the peer closes mid-handshake)
-    FAULT_BAD_HEADER, // corrupt the response ProtocolId so smb2_parse_header fails
+    FAULT_BAD_HEADER, // corrupt the response ProtocolId so dws_smb2_parse_header fails
     FAULT_BAD_BODY,   // corrupt the response body StructureSize so the body parser fails
 };
 
@@ -135,7 +135,7 @@ struct Mock
 
 static void append_frame(Mock *m, const uint8_t *resp, size_t rlen)
 {
-    m->rx_len += smb2_transport_frame(m->rx + m->rx_len, sizeof(m->rx) - m->rx_len, resp, rlen);
+    m->rx_len += dws_smb2_transport_frame(m->rx + m->rx_len, sizeof(m->rx) - m->rx_len, resp, rlen);
 }
 
 static int mock_send(void *c, const uint8_t *d, size_t n)
@@ -145,7 +145,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     const uint8_t *msg = d + 4; // skip the Direct-TCP prefix
     size_t mlen = n - 4;
     Smb2Header h;
-    if (!smb2_parse_header(msg, mlen, &h))
+    if (!dws_smb2_parse_header(msg, mlen, &h))
         return -1;
 
     uint8_t resp[DWS_SMB_BUF + 128];
@@ -155,13 +155,13 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     switch (h.command)
     {
     case Smb2Command::SMB2_NEGOTIATE:
-        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_NEGOTIATE, 1, h.message_id, 0, 0);
+        dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_NEGOTIATE, 1, h.message_id, 0, 0);
         w16(b + 0, 65);                                       // StructureSize
         w16(b + 4, (uint16_t)Smb2Dialect::SMB2_DIALECT_0210); // DialectRevision
         rlen = 128;                                           // header + 64-byte fixed body, empty security buffer
         break;
     case Smb2Command::SMB2_SESSION_SETUP: {
-        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_SESSION_SETUP, 1, h.message_id, 0, m->session_id);
+        dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_SESSION_SETUP, 1, h.message_id, 0, m->session_id);
         w16(b + 0, 9); // StructureSize
         if (m->ss_round++ == 0)
         {
@@ -187,13 +187,13 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
                 {
                     uint8_t junk[16];
                     memset(junk, 0x55, sizeof(junk)); // wrapped, but too short/wrong to be an NTLMSSP CHALLENGE
-                    sc_n = spnego_wrap_authenticate(junk, sizeof(junk), sctok, sizeof(sctok));
+                    sc_n = dws_spnego_wrap_authenticate(junk, sizeof(junk), sctok, sizeof(sctok));
                 }
                 else
                 {
-                    size_t chal_n = m->chal_ti ? ntlmssp_challenge_ti(chal, sc, m->chal_ti, m->chal_ti_len)
-                                               : ntlmssp_challenge(chal, sc);
-                    sc_n = spnego_wrap_authenticate(chal, chal_n, sctok, sizeof(sctok)); // NegTokenResp shape
+                    size_t chal_n = m->chal_ti ? dws_ntlmssp_challenge_ti(chal, sc, m->chal_ti, m->chal_ti_len)
+                                               : dws_ntlmssp_challenge(chal, sc);
+                    sc_n = dws_spnego_wrap_authenticate(chal, chal_n, sctok, sizeof(sctok)); // NegTokenResp shape
                 }
                 w16(b + 4, 72); // SecurityBufferOffset
                 w16(b + 6, (uint16_t)sc_n);
@@ -209,15 +209,15 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         break;
     }
     case Smb2Command::SMB2_TREE_CONNECT:
-        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_TREE_CONNECT, 1, h.message_id, m->tree_id,
-                          m->session_id);
+        dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_TREE_CONNECT, 1, h.message_id, m->tree_id,
+                              m->session_id);
         w32(resp + 8, m->tc_status);
         w16(b + 0, 16); // StructureSize
         b[2] = Smb2ShareType::SMB2_SHARE_TYPE_DISK;
         rlen = 64 + 16;
         break;
     case Smb2Command::SMB2_CREATE:
-        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_CREATE, 1, h.message_id, m->tree_id, m->session_id);
+        dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_CREATE, 1, h.message_id, m->tree_id, m->session_id);
         w32(resp + 8, m->create_status);
         w16(b + 0, 89); // StructureSize
         w32(b + 4, 1);  // CreateAction = FILE_OPENED
@@ -229,7 +229,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         const uint8_t *rq = msg + 64; // READ request body
         uint32_t length = rd32(rq + 4);
         uint64_t off = rd64(rq + 8);
-        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_READ, 1, h.message_id, m->tree_id, m->session_id);
+        dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_READ, 1, h.message_id, m->tree_id, m->session_id);
         if (off >= m->file_data_len)
         {
             w32(resp + 8, Smb2Status::SMB2_STATUS_END_OF_FILE);
@@ -259,14 +259,14 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
             if (off + length > m->file_data_len)
                 m->file_data_len = (size_t)(off + length);
         }
-        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_WRITE, 1, h.message_id, m->tree_id, m->session_id);
+        dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_WRITE, 1, h.message_id, m->tree_id, m->session_id);
         w16(b + 0, 17);     // StructureSize
         w32(b + 4, length); // Count
         rlen = 64 + 16;
         break;
     }
     case Smb2Command::SMB2_CLOSE:
-        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_CLOSE, 1, h.message_id, m->tree_id, m->session_id);
+        dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_CLOSE, 1, h.message_id, m->tree_id, m->session_id);
         w16(b + 0, 60); // StructureSize
         rlen = 64 + 60;
         break;
@@ -280,7 +280,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         if (m->fault_kind == FAULT_DROP)
             drop = true;
         else if (m->fault_kind == FAULT_BAD_HEADER)
-            resp[0] = 0x00; // break the ProtocolId magic (FE 53 4D 42) -> smb2_parse_header fails
+            resp[0] = 0x00; // break the ProtocolId magic (FE 53 4D 42) -> dws_smb2_parse_header fails
         else if (m->fault_kind == FAULT_BAD_BODY)
             w16(resp + 64, 0xFFFF); // break the body StructureSize -> the body parser fails
     }
@@ -675,7 +675,7 @@ void test_long_user_overflow()
     Mock m = make_mock();
     SmbConfig cfg = make_cfg();
     char user[300];
-    memset(user, 'u', sizeof(user) - 1); // 299 chars -> ntlm_ntowfv2 fails closed
+    memset(user, 'u', sizeof(user) - 1); // 299 chars -> dws_ntlm_ntowfv2 fails closed
     user[sizeof(user) - 1] = 0;
     cfg.user = user;
     SmbHandle h;
@@ -769,7 +769,7 @@ void test_av_truncated_timestamp()
 struct Canned
 {
     uint8_t resp[512];
-    size_t resp_len;
+    size_t dws_resp_len;
     size_t pos;
     bool short_send; // send returns a short count (1) instead of the true length
 };
@@ -784,9 +784,9 @@ static int canned_send(void *c, const uint8_t *d, size_t n)
 static int canned_recv(void *c, uint8_t *buf, size_t cap)
 {
     Canned *cn = (Canned *)c;
-    if (cn->pos >= cn->resp_len)
+    if (cn->pos >= cn->dws_resp_len)
         return 0; // exhausted -> peer closed
-    size_t avail = cn->resp_len - cn->pos;
+    size_t avail = cn->dws_resp_len - cn->pos;
     size_t take = avail < cap ? avail : cap;
     memcpy(buf, cn->resp + cn->pos, take);
     cn->pos += take;
@@ -794,9 +794,9 @@ static int canned_recv(void *c, uint8_t *buf, size_t cap)
 }
 
 // Build a 64-byte SMB2 response header (command + status) into msg; returns the body pointer.
-static uint8_t *resp_hdr(uint8_t *msg, Smb2Command cmd, uint32_t status)
+static uint8_t *dws_resp_hdr(uint8_t *msg, Smb2Command cmd, uint32_t status)
 {
-    smb2_build_header(msg, 64, cmd, 1, 5, 0x00A1, 0x1122334455667788ULL);
+    dws_smb2_build_header(msg, 64, cmd, 1, 5, 0x00A1, 0x1122334455667788ULL);
     w32(msg + 8, status);
     msg[16] |= 0x01; // server-to-redir
     return msg + 64;
@@ -804,7 +804,7 @@ static uint8_t *resp_hdr(uint8_t *msg, Smb2Command cmd, uint32_t status)
 
 static void canned_frame(Canned *cn, const uint8_t *msg, size_t mlen)
 {
-    cn->resp_len = smb2_transport_frame(cn->resp, sizeof(cn->resp), msg, mlen);
+    cn->dws_resp_len = dws_smb2_transport_frame(cn->resp, sizeof(cn->resp), msg, mlen);
     cn->pos = 0;
 }
 
@@ -853,7 +853,7 @@ void test_read_send_io()
 void test_read_recv_io()
 {
     Canned cn;
-    memset(&cn, 0, sizeof(cn)); // resp_len 0 -> recv returns 0
+    memset(&cn, 0, sizeof(cn)); // dws_resp_len 0 -> recv returns 0
     SmbHandle h = make_handle();
     uint8_t buf[16];
     size_t got = 0;
@@ -867,7 +867,7 @@ void test_read_bad_header()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_READ, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_READ, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 17);
     b[2] = 80;
     w32(b + 4, 0);
@@ -886,7 +886,7 @@ void test_read_status_error()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_READ, 0xC0000022); // STATUS_ACCESS_DENIED
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_READ, 0xC0000022); // STATUS_ACCESS_DENIED
     w16(b + 0, 17);
     b[2] = 80;
     w32(b + 4, 0);
@@ -904,7 +904,7 @@ void test_read_bad_body()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_READ, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_READ, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 99); // not 17
     b[2] = 80;
     w32(b + 4, 0);
@@ -922,7 +922,7 @@ void test_read_data_too_long()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[256] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_READ, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_READ, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 17);
     b[2] = 80;       // DataOffset
     w32(b + 4, 100); // DataLength 100, but only 16 requested
@@ -941,7 +941,7 @@ void test_read_zero_data()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_READ, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_READ, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 17);
     b[2] = 80;
     w32(b + 4, 0); // DataLength 0
@@ -1002,7 +1002,7 @@ void test_write_recv_overflow()
     cn.resp[1] = 0x00;
     cn.resp[2] = 0x20;
     cn.resp[3] = 0x00; // length 0x2000 = 8192 > DWS_SMB_BUF (1024)
-    cn.resp_len = 4;
+    cn.dws_resp_len = 4;
     SmbHandle h = make_handle();
     uint8_t data[16] = {0};
     size_t wrote = 0;
@@ -1016,7 +1016,7 @@ void test_write_bad_header()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_WRITE, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_WRITE, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 17);
     w32(b + 4, 16); // Count
     msg[0] = 0x00;  // corrupt ProtocolId
@@ -1034,7 +1034,7 @@ void test_write_status_error()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_WRITE, 0xC0000022);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_WRITE, 0xC0000022);
     w16(b + 0, 17);
     w32(b + 4, 16);
     canned_frame(&cn, msg, 80);
@@ -1051,7 +1051,7 @@ void test_write_bad_body()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_WRITE, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_WRITE, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 99); // not 17
     w32(b + 4, 16);
     canned_frame(&cn, msg, 80);
@@ -1068,7 +1068,7 @@ void test_write_zero_count()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_WRITE, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_WRITE, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 17);
     w32(b + 4, 0); // Count 0
     canned_frame(&cn, msg, 80);
@@ -1085,7 +1085,7 @@ void test_write_count_too_big()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_WRITE, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_WRITE, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 17);
     w32(b + 4, 999); // Count > 16 requested
     canned_frame(&cn, msg, 80);
@@ -1125,7 +1125,7 @@ void test_close_recv_overflow()
     cn.resp[1] = 0x00;
     cn.resp[2] = 0x00;
     cn.resp[3] = 0xC8; // length 200 > 128
-    cn.resp_len = 4;
+    cn.dws_resp_len = 4;
     SmbHandle h = make_handle();
     TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_OVERFLOW, smb_close(&h, canned_send, canned_recv, &cn));
 }
@@ -1139,7 +1139,7 @@ void test_close_recv_zero_len()
     cn.resp[1] = 0x00;
     cn.resp[2] = 0x00;
     cn.resp[3] = 0x00;
-    cn.resp_len = 4;
+    cn.dws_resp_len = 4;
     SmbHandle h = make_handle();
     TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO, smb_close(&h, canned_send, canned_recv, &cn));
 }
@@ -1152,8 +1152,8 @@ void test_close_recv_trunc_body()
     cn.resp[0] = 0x00;
     cn.resp[1] = 0x00;
     cn.resp[2] = 0x00;
-    cn.resp[3] = 0x64;    // length 100
-    cn.resp_len = 4 + 40; // only 40 of the 100 body bytes follow
+    cn.resp[3] = 0x64;        // length 100
+    cn.dws_resp_len = 4 + 40; // only 40 of the 100 body bytes follow
     SmbHandle h = make_handle();
     TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO, smb_close(&h, canned_send, canned_recv, &cn));
 }
@@ -1164,7 +1164,7 @@ void test_close_bad_header()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_CLOSE, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_CLOSE, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 60);
     msg[0] = 0x00; // corrupt ProtocolId
     canned_frame(&cn, msg, 124);
@@ -1178,7 +1178,7 @@ void test_close_status_error()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_CLOSE, 0xC0000022);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_CLOSE, 0xC0000022);
     w16(b + 0, 60);
     canned_frame(&cn, msg, 124);
     SmbHandle h = make_handle();
@@ -1191,7 +1191,7 @@ void test_close_bad_body()
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     uint8_t msg[128] = {0};
-    uint8_t *b = resp_hdr(msg, Smb2Command::SMB2_CLOSE, Smb2Status::SMB2_STATUS_SUCCESS);
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_CLOSE, Smb2Status::SMB2_STATUS_SUCCESS);
     w16(b + 0, 99); // not 60
     canned_frame(&cn, msg, 124);
     SmbHandle h = make_handle();

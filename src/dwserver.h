@@ -187,11 +187,11 @@ typedef void (*WsCloseHandler)(uint8_t ws_id);
 /**
  * @brief Callback fired when a new SSE client connects.
  *
- * Use sse_send() inside this callback to push an initial event if needed.
+ * Use dws_sse_send() inside this callback to push an initial event if needed.
  *
- * @param sse_id  Index into sse_pool[] for this connection.
+ * @param dws_sse_id  Index into dws_sse_pool[] for this connection.
  */
-typedef void (*SseConnectHandler)(uint8_t sse_id);
+typedef void (*SseConnectHandler)(uint8_t dws_sse_id);
 #endif // DWS_ENABLE_SSE
 
 // ---------------------------------------------------------------------------
@@ -254,7 +254,7 @@ struct Route
 #endif
 
 #if DWS_ENABLE_SSE
-    SseConnectHandler sse_connect; ///< Fired when client subscribes.
+    SseConnectHandler dws_sse_connect; ///< Fired when client subscribes.
 #endif
 
 #if DWS_ENABLE_FILE_SERVING
@@ -467,7 +467,7 @@ class DWS
      * @param pre_flushed the caller already emitted the final bytes with dws_conn_send_flush()
      *        (write+tcp_output coalesced into one marshal), so skip the redundant flush here.
      */
-    void resp_end(uint8_t slot_id, int code, int body_len, bool keep, bool pre_flushed = false);
+    void dws_resp_end(uint8_t slot_id, int code, int body_len, bool keep, bool pre_flushed = false);
 
     /**
      * @brief Resolve the Connection response header and report keep-alive intent.
@@ -476,7 +476,7 @@ class DWS
      * or "Connection: close\r\n" and, via @p keep_out, whether the slot is kept
      * alive. Always reports close when keep-alive is compiled out.
      */
-    const char *resp_conn_hdr(uint8_t slot_id, bool *keep_out);
+    const char *dws_resp_conn_hdr(uint8_t slot_id, bool *keep_out);
 
     /**
      * @brief Append the shared response trailer (CORS block, custom headers, the
@@ -567,7 +567,7 @@ class DWS
 #if DWS_ENABLE_CSRF
     /// @brief Built-in CSRF gate: serve the `GET /csrf` token endpoint and enforce a valid
     ///        `X-CSRF-Token` on every state-changing method. @return true if a response was sent.
-    bool csrf_gate(uint8_t slot_id, HttpReq *req, HttpMethod method);
+    bool dws_csrf_gate(uint8_t slot_id, HttpReq *req, HttpMethod method);
 #endif
 
 #if DWS_ENABLE_WEBSOCKET
@@ -726,12 +726,12 @@ class DWS
      *
      * Profile: TLS_AES_128_GCM_SHA256 + X25519 + Ed25519 (a client offering none of these is refused).
      */
-    bool h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8_t ed25519_seed[32],
-                 uint16_t port = DWS_HTTP3_PORT);
+    bool dws_h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8_t ed25519_seed[32],
+                     uint16_t port = DWS_HTTP3_PORT);
 
     /**
      * @brief Internal: run a completed HTTP/3 request through the shared route dispatcher on the
-     * reserved conn-pool slot (called by the quic_server request trampoline, not by app code). The
+     * reserved conn-pool slot (called by the dws_quic_server request trampoline, not by app code). The
      * response routes back to @p stream_id on @p conn_id via send() -> dws_quic_server_respond.
      */
     void dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *method, const char *path,
@@ -1313,7 +1313,7 @@ class DWS
      *
      * When a GET request arrives for @p path, the library sends the SSE
      * headers and keeps the connection open.  @p on_connect fires so the
-     * handler can push an initial event with sse_send().
+     * handler can push an initial event with dws_sse_send().
      *
      * @param path        URL path, e.g. `"/events"`.
      * @param on_connect  Fired when a client subscribes.  May be nullptr.
@@ -1324,20 +1324,20 @@ class DWS
      * @brief Push an event to one SSE client.
      *
      * Formats and sends `event: ...\ndata: ...\nid: ...\n\n` to the client
-     * on @p sse_id.  Any field may be nullptr to omit it from the output.
+     * on @p dws_sse_id.  Any field may be nullptr to omit it from the output.
      * The data field is required; passing nullptr sends nothing.
      *
-     * @param sse_id  Index into sse_pool[].
+     * @param dws_sse_id  Index into dws_sse_pool[].
      * @param data    Event data string (required).
      * @param event   Optional event name (sets the `event:` field).
      * @param id      Optional event ID (sets the `id:` field).
      */
-    void sse_send(uint8_t sse_id, const char *data, const char *event = nullptr, const char *id = nullptr);
+    void dws_sse_send(uint8_t dws_sse_id, const char *data, const char *event = nullptr, const char *id = nullptr);
 
     /**
      * @brief Push an event to all connected SSE clients on a given path.
      *
-     * Iterates sse_pool[] and calls sse_send() for every active client
+     * Iterates dws_sse_pool[] and calls dws_sse_send() for every active client
      * whose path matches @p path.
      *
      * @param path   SSE endpoint path, e.g. `"/events"`.
@@ -1345,7 +1345,7 @@ class DWS
      * @param event  Optional event name.
      * @param id     Optional event ID.
      */
-    void sse_broadcast(const char *path, const char *data, const char *event = nullptr, const char *id = nullptr);
+    void dws_sse_broadcast(const char *path, const char *data, const char *event = nullptr, const char *id = nullptr);
 #endif // DWS_ENABLE_SSE
 };
 

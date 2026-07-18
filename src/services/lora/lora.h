@@ -10,17 +10,17 @@
  *
  *   - **Codec** - the RadioHead-compatible 4-byte frame header (`to` / `from` / `id` /
  *     `flags`) that virtually every hobby / sensor LoRa deployment uses on top of the
- *     header-less LoRa PHY. lora_frame_parse() splits a received frame into that header and
- *     the payload; lora_frame_build() prepends it. Pure, no hardware.
+ *     header-less LoRa PHY. dws_lora_frame_parse() splits a received frame into that header and
+ *     the payload; dws_lora_frame_build() prepends it. Pure, no hardware.
  *   - **Driver** - the SX127x register protocol (init / send / receive / enter-RX) over a
- *     caller-supplied register-access **bus** (@ref lora_bus). The SPI transfer and the
+ *     caller-supplied register-access **bus** (@ref dws_lora_bus). The SPI transfer and the
  *     chip-select / reset GPIOs are the integration's - you implement two callbacks that
  *     read and write a chip register - so the register sequence is host-testable with a mock
  *     bus and portable across whatever SPI peripheral you wire the module to.
  *
- * Wiring to the gateway (see example 11.LoRaGateway): poll lora_recv(); on a frame,
- * lora_frame_parse() then dws_gateway_uplink(port, header.from, payload, len, rssi). A downlink
- * builds a frame with lora_frame_build() and lora_send()s it. The codec + register protocol
+ * Wiring to the gateway (see example 11.LoRaGateway): poll dws_lora_recv(); on a frame,
+ * dws_lora_frame_parse() then dws_gateway_uplink(port, header.from, payload, len, rssi). A downlink
+ * builds a frame with dws_lora_frame_build() and dws_lora_send()s it. The codec + register protocol
  * are verified on the host; the RF link itself needs the module.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -40,7 +40,7 @@
 // --- Codec: the RadioHead RH_RF95 4-byte header ---------------------------------------
 
 /** @brief RadioHead-compatible LoRa frame header (precedes the payload). */
-struct lora_header
+struct dws_lora_header
 {
     uint8_t to;    ///< destination node address (0xFF = broadcast)
     uint8_t from;  ///< source node address
@@ -54,32 +54,33 @@ struct lora_header
  * @param[out] payload_len set to the payload length.
  * @return true; false if @p raw is shorter than the 4-byte header.
  */
-bool lora_frame_parse(const uint8_t *raw, uint16_t len, lora_header *hdr, const uint8_t **payload,
-                      uint16_t *payload_len);
+bool dws_lora_frame_parse(const uint8_t *raw, uint16_t len, dws_lora_header *hdr, const uint8_t **payload,
+                          uint16_t *payload_len);
 
 /**
  * @brief Build a frame (header + payload) into @p out.
  * @return the total frame length, or 0 if it would not fit @p cap or exceeds the payload max.
  */
-uint16_t lora_frame_build(const lora_header *hdr, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap);
+uint16_t dws_lora_frame_build(const dws_lora_header *hdr, const uint8_t *payload, uint16_t len, uint8_t *out,
+                              uint16_t cap);
 
 // --- Driver: SX127x over a register-access bus ----------------------------------------
 
 /** @brief Read one SX127x register (@p reg is the bare 7-bit address). */
-typedef uint8_t (*lora_reg_read_fn)(uint8_t reg, void *ctx);
+typedef uint8_t (*dws_lora_reg_read_fn)(uint8_t reg, void *ctx);
 /** @brief Write one SX127x register (@p reg is the bare 7-bit address). */
-typedef void (*lora_reg_write_fn)(uint8_t reg, uint8_t val, void *ctx);
+typedef void (*dws_lora_reg_write_fn)(uint8_t reg, uint8_t val, void *ctx);
 
 /** @brief The register-access bus a driver call uses (your SPI + chip-select behind it). */
-struct lora_bus
+struct dws_lora_bus
 {
-    lora_reg_read_fn read;
-    lora_reg_write_fn write;
+    dws_lora_reg_read_fn read;
+    dws_lora_reg_write_fn write;
     void *ctx;
 };
 
-/** @brief Radio configuration applied by lora_init(). */
-struct lora_config
+/** @brief Radio configuration applied by dws_lora_init(). */
+struct dws_lora_config
 {
     uint32_t freq_hz;    ///< carrier frequency in Hz (e.g. 868100000 / 915000000).
     uint8_t spreading;   ///< spreading factor 6..12 (SF7 default is a good start).
@@ -94,27 +95,27 @@ struct lora_config
  * @return true; false if the register at RegVersion is not the SX127x id (0x12) - i.e. the
  *         bus is not talking to the chip.
  */
-bool lora_init(const lora_bus *bus, const lora_config *cfg);
+bool dws_lora_init(const dws_lora_bus *bus, const dws_lora_config *cfg);
 
 /**
  * @brief Load @p frame into the FIFO and start a transmit (the radio returns to standby on
- *        TxDone). Poll lora_tx_done() for completion.
+ *        TxDone). Poll dws_lora_tx_done() for completion.
  * @return true; false if @p len exceeds DWS_LORA_MAX_PAYLOAD + 4.
  */
-bool lora_send(const lora_bus *bus, const uint8_t *frame, uint8_t len);
+bool dws_lora_send(const dws_lora_bus *bus, const uint8_t *frame, uint8_t len);
 
 /** @brief True once a transmit has finished (RegIrqFlags TxDone); clears the flag. */
-bool lora_tx_done(const lora_bus *bus);
+bool dws_lora_tx_done(const dws_lora_bus *bus);
 
-/** @brief Put the radio in continuous-receive mode (call once, then poll lora_recv()). */
-void lora_set_rx(const lora_bus *bus);
+/** @brief Put the radio in continuous-receive mode (call once, then poll dws_lora_recv()). */
+void dws_lora_set_rx(const dws_lora_bus *bus);
 
 /**
  * @brief If a frame has been received, copy it into @p buf and report its RSSI.
  * @param[out] rssi set to the packet RSSI in dBm (may be null).
  * @return the frame length (>=0), or -1 if no frame is ready or the CRC failed.
  */
-int lora_recv(const lora_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi);
+int dws_lora_recv(const dws_lora_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi);
 
 #endif // DWS_ENABLE_LORA
 

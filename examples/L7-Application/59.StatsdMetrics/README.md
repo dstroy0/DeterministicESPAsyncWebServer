@@ -47,7 +47,7 @@ can reach in to ask it.
    `esp32.heap.free:210000|g|#device:esp32-demo`).
 
 The `|#device:esp32-demo` on the end is a **tag** - an optional label (here set once in
-`statsd_begin`) that lets your dashboard group metrics by device. Plain StatsD collectors
+`dws_statsd_begin`) that lets your dashboard group metrics by device. Plain StatsD collectors
 ignore it; Datadog/Telegraf use it.
 
 ## Put your own numbers in
@@ -55,12 +55,12 @@ ignore it; Datadog/Telegraf use it.
 The API is one call per metric - drop these wherever something interesting happens:
 
 ```cpp
-statsd_count("orders.placed", 1);          // a counter (how often)
-statsd_gauge("tank.level_pct", level);     // a gauge (the current value)
-statsd_gauge_delta("connections", +1);     // nudge a gauge up or down
-statsd_timing("sensor.read_ms", elapsed);  // how long something took
-statsd_set("unique.users", clientId);      // count distinct values
-statsd_count_sampled("chatty.event", 1, 0.1f); // only sending 1-in-10? tell the server so
+dws_statsd_count("orders.placed", 1);          // a counter (how often)
+dws_statsd_gauge("tank.level_pct", level);     // a gauge (the current value)
+dws_statsd_gauge_delta("connections", +1);     // nudge a gauge up or down
+dws_statsd_timing("sensor.read_ms", elapsed);  // how long something took
+dws_statsd_set("unique.users", clientId);      // count distinct values
+dws_statsd_count_sampled("chatty.event", 1, 0.1f); // only sending 1-in-10? tell the server so
 ```
 
 ## Troubleshooting
@@ -86,9 +86,9 @@ pio ci examples/L7-Application/59.StatsdMetrics \
 
 ## How it works (for the curious)
 
-`statsd_begin(host, port, tags)` stores the target and optional global tags in fixed BSS.
-Each `statsd_*` call renders the value by hand (no `printf` float/64-bit formatting, which
+`dws_statsd_begin(host, port, tags)` stores the target and optional global tags in fixed BSS.
+Each `dws_statsd_*` call renders the value by hand (no `printf` float/64-bit formatting, which
 needs extra support on some targets), builds the `name:value|type[|@rate][|#tags]` line with
-the pure `statsd_format()` builder, and sends it with the transport UDP service
+the pure `dws_statsd_format()` builder, and sends it with the transport UDP service
 (`dws_udp_sendto`). Zero heap; the line format is unit-tested on a PC against the StatsD spec
 (see `test/test_statsd`).

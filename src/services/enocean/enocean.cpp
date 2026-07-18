@@ -15,7 +15,7 @@
 
 #include <string.h>
 
-uint8_t esp3_crc8(const uint8_t *buf, uint16_t len)
+uint8_t dws_esp3_crc8(const uint8_t *buf, uint16_t len)
 {
     uint8_t crc = 0;
     for (uint16_t i = 0; i < len; i++)
@@ -27,7 +27,7 @@ uint8_t esp3_crc8(const uint8_t *buf, uint16_t len)
     return crc;
 }
 
-int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out)
+int dws_esp3_parse(const uint8_t *raw, uint16_t len, dws_esp3_packet *out)
 {
     if (!raw || len < 1)
         return 0;
@@ -40,16 +40,16 @@ int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out)
     uint8_t type = raw[4];
     if (data_len > DWS_ENOCEAN_MAX_DATA)
         return -1; // implausible length -> resynchronise
-    if (esp3_crc8(&raw[1], 4) != raw[5])
+    if (dws_esp3_crc8(&raw[1], 4) != raw[5])
         return -1; // header CRC mismatch
     uint32_t total = 6u + data_len + opt_len + 1u;
     if (len < total)
         return 0; // wait for the rest of the telegram
-    if (esp3_crc8(&raw[6], (uint16_t)(data_len + opt_len)) != raw[6 + data_len + opt_len])
+    if (dws_esp3_crc8(&raw[6], (uint16_t)(data_len + opt_len)) != raw[6 + data_len + opt_len])
         return -1; // data CRC mismatch
     if (out)
     {
-        out->type = (esp3_type)type;
+        out->type = (dws_esp3_type)type;
         out->data = &raw[6];
         out->data_len = data_len;
         out->opt = &raw[6 + data_len];
@@ -58,8 +58,8 @@ int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out)
     return (int)total;
 }
 
-uint16_t esp3_build(esp3_type type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
-                    uint8_t *out, uint16_t cap)
+uint16_t dws_esp3_build(dws_esp3_type type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
+                        uint8_t *out, uint16_t cap)
 {
     if (!out || data_len > DWS_ENOCEAN_MAX_DATA)
         return 0;
@@ -71,12 +71,12 @@ uint16_t esp3_build(esp3_type type, const uint8_t *data, uint16_t data_len, cons
     out[2] = (uint8_t)(data_len & 0xFF);
     out[3] = opt_len;
     out[4] = (uint8_t)type;
-    out[5] = esp3_crc8(&out[1], 4);
+    out[5] = dws_esp3_crc8(&out[1], 4);
     for (uint16_t i = 0; i < data_len; i++)
         out[6 + i] = data[i];
     for (uint8_t i = 0; i < opt_len; i++)
         out[6 + data_len + i] = opt[i];
-    out[6 + data_len + opt_len] = esp3_crc8(&out[6], (uint16_t)(data_len + opt_len));
+    out[6 + data_len + opt_len] = dws_esp3_crc8(&out[6], (uint16_t)(data_len + opt_len));
     return (uint16_t)total;
 }
 

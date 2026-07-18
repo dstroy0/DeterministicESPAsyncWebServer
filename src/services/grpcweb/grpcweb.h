@@ -39,17 +39,17 @@
 #define GRPCWEB_PREFIX_LEN 5
 
 /** @brief Frame a body: `[flags][len BE32][body]`. Returns total octets, or 0 on overflow. */
-size_t grpcweb_frame(uint8_t *buf, size_t cap, uint8_t flags, const uint8_t *body, size_t body_len);
+size_t dws_grpcweb_frame(uint8_t *buf, size_t cap, uint8_t flags, const uint8_t *body, size_t body_len);
 
 /** @brief Frame a (Protobuf) message; @p compressed sets the compressed flag. */
-size_t grpcweb_frame_message(uint8_t *buf, size_t cap, const uint8_t *msg, size_t msg_len, bool compressed);
+size_t dws_grpcweb_frame_message(uint8_t *buf, size_t cap, const uint8_t *msg, size_t msg_len, bool compressed);
 
 /**
  * @brief Build a trailers frame: `grpc-status:<status>\r\n` plus, when @p message is given,
  *        `grpc-message:<message>\r\n`, wrapped with the 0x80 trailer flag.
  * @return total octets written, or 0 on overflow.
  */
-size_t grpcweb_frame_trailer(uint8_t *buf, size_t cap, int status, const char *message);
+size_t dws_grpcweb_frame_trailer(uint8_t *buf, size_t cap, int status, const char *message);
 
 /** @brief One parsed frame; @ref body points INTO the source buffer. */
 struct GrpcWebFrame
@@ -66,10 +66,10 @@ struct GrpcWebFrame
  * @param consumed receives the frame's total length so the caller can advance.
  * @return true on a complete frame; false if fewer than the prefix + body octets are buffered.
  */
-bool grpcweb_parse(const uint8_t *buf, size_t len, GrpcWebFrame *out, size_t *consumed);
+bool dws_grpcweb_parse(const uint8_t *buf, size_t len, GrpcWebFrame *out, size_t *consumed);
 
 /** @brief Extract `grpc-status` (an integer) from a trailers-frame body. */
-bool grpcweb_trailer_status(const uint8_t *body, size_t len, int *status);
+bool dws_grpcweb_trailer_status(const uint8_t *body, size_t len, int *status);
 
 #endif // DWS_ENABLE_GRPC_WEB
 

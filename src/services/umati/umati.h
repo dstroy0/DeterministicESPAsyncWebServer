@@ -137,28 +137,28 @@ struct UmatiMachineTool
  * @brief Bind the MachineTool the resolvers serve. @p mt must outlive the server (own it statically).
  *        Refresh its fields any time; each Read returns the current values.
  */
-void umati_bind(const UmatiMachineTool *mt);
+void dws_umati_bind(const UmatiMachineTool *mt);
 
 /**
  * @brief Read resolver for the MachineTool model (an @ref OpcUaReadHandler): fills @p out for a umati
  *        node's Value attribute. Returns false for a node outside the model (the server answers
- *        BadNodeIdUnknown). Install with `opcua_set_read_handler(umati_read)`.
+ *        BadNodeIdUnknown). Install with `dws_opcua_set_read_handler(dws_umati_read)`.
  */
-bool umati_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out);
+bool dws_umati_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out);
 
 /**
  * @brief Browse resolver for the MachineTool model (an @ref OpcUaBrowseHandler): writes the child
  *        references of a umati node (and of the Objects folder, which organizes the MachineTool) into
  *        @p out. Returns the count, or -1 for a node outside the model. Install with
- *        `opcua_set_browse_handler(umati_browse)`.
+ *        `dws_opcua_set_browse_handler(dws_umati_browse)`.
  */
-int32_t umati_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max);
+int32_t dws_umati_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max);
 
 /**
  * @brief Convenience: bind @p mt and register both resolvers on the OPC UA server in one call
- *        (`opcua_set_read_handler` + `opcua_set_browse_handler`). Call before `server.begin()`.
+ *        (`dws_opcua_set_read_handler` + `dws_opcua_set_browse_handler`). Call before `server.begin()`.
  */
-void umati_install(const UmatiMachineTool *mt);
+void dws_umati_install(const UmatiMachineTool *mt);
 
 #endif // DWS_ENABLE_UMATI
 #endif // DETERMINISTICESPASYNCWEBSERVER_UMATI_H

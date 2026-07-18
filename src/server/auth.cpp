@@ -13,7 +13,7 @@
  */
 
 #include "dwserver.h"
-#include "network_drivers/presentation/base64/base64.h"         // base64_decode (Basic)
+#include "network_drivers/presentation/base64/base64.h"         // dws_base64_decode (Basic)
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h" // ssh_sha256, SSH_SHA256_DIGEST_LEN (Digest)
 #include "network_drivers/transport/tcp.h"                      // conn_pool, dws_conn_send, TcpConn/ConnState
 #include "server/dwserver_internal.h"                           // req_is_head, resp helpers
@@ -182,7 +182,7 @@ void DWS::send_unauth(uint8_t slot_id, const Route *r, bool stale)
         snprintf(challenge, sizeof(challenge), "WWW-Authenticate: Basic realm=\"%s\"\r\n", r->auth_realm);
 
     bool keep;
-    const char *cl = resp_conn_hdr(slot_id, &keep);
+    const char *cl = dws_resp_conn_hdr(slot_id, &keep);
 
     static const char body[] = "Unauthorized";
     char header[RESP_HDR_BUF_SIZE];
@@ -207,7 +207,7 @@ void DWS::send_unauth(uint8_t slot_id, const Route *r, bool stale)
         dws_conn_send_flush(slot_id, header, (u16_t)hlen);
     }
 
-    resp_end(slot_id, 401, (int)(sizeof(body) - 1), keep, /*pre_flushed=*/true);
+    dws_resp_end(slot_id, 401, (int)(sizeof(body) - 1), keep, /*pre_flushed=*/true);
 }
 
 // Constant-time byte equality: compares all @p len bytes regardless of a mismatch, so a credential
@@ -232,7 +232,7 @@ bool DWS::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r)
     uint8_t decoded[MAX_AUTH_LEN * 2 + 2];
     // Bound the write to leave room for the null terminator at decoded[n]; an
     // over-long Authorization value now fails the decode instead of overrunning.
-    size_t n = base64_decode(auth_hdr + 6, decoded, sizeof(decoded) - 1);
+    size_t n = dws_base64_decode(auth_hdr + 6, decoded, sizeof(decoded) - 1);
     if (n == 0)
         return false;
     decoded[n] = '\0';

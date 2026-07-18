@@ -103,14 +103,14 @@ struct SftpReader
     bool ok; ///< false once any read ran past the end (all further reads are no-ops)
 };
 
-void sftp_rd_init(SftpReader *r, const uint8_t *payload, size_t len);
-uint8_t sftp_rd_u8(SftpReader *r);
-uint32_t sftp_rd_u32(SftpReader *r);
-uint64_t sftp_rd_u64(SftpReader *r);
+void dws_sftp_rd_init(SftpReader *r, const uint8_t *payload, size_t len);
+uint8_t dws_sftp_rd_u8(SftpReader *r);
+uint32_t dws_sftp_rd_u32(SftpReader *r);
+uint64_t dws_sftp_rd_u64(SftpReader *r);
 /** @brief Read a `uint32 len || bytes` string as a pointer into the payload (no copy). @return r->ok. */
-bool sftp_rd_string(SftpReader *r, const uint8_t **out, uint32_t *out_len);
+bool dws_sftp_rd_string(SftpReader *r, const uint8_t **out, uint32_t *out_len);
 /** @brief Parse an ATTRS blob (only known fields kept; unknown/extended fields skipped). @return r->ok. */
-bool sftp_rd_attrs(SftpReader *r, SftpAttrs *a);
+bool dws_sftp_rd_attrs(SftpReader *r, SftpAttrs *a);
 
 // --- writer: build a packet into a caller buffer; reserves the 4-byte length prefix, backfilled by finish ---
 struct SftpWriter
@@ -121,44 +121,44 @@ struct SftpWriter
     bool ovf;   ///< set once a write would exceed cap
 };
 
-void sftp_wr_init(SftpWriter *w, uint8_t *out, size_t cap);
-void sftp_wr_u8(SftpWriter *w, uint8_t v);
-void sftp_wr_u32(SftpWriter *w, uint32_t v);
-void sftp_wr_u64(SftpWriter *w, uint64_t v);
-void sftp_wr_bytes(SftpWriter *w, const void *b, size_t n);
-void sftp_wr_string(SftpWriter *w, const void *s, uint32_t n); ///< uint32 len + bytes
-void sftp_wr_attrs(SftpWriter *w, const SftpAttrs *a);
+void dws_sftp_wr_init(SftpWriter *w, uint8_t *out, size_t cap);
+void dws_sftp_wr_u8(SftpWriter *w, uint8_t v);
+void dws_sftp_wr_u32(SftpWriter *w, uint32_t v);
+void dws_sftp_wr_u64(SftpWriter *w, uint64_t v);
+void dws_sftp_wr_bytes(SftpWriter *w, const void *b, size_t n);
+void dws_sftp_wr_string(SftpWriter *w, const void *s, uint32_t n); ///< uint32 len + bytes
+void dws_sftp_wr_attrs(SftpWriter *w, const SftpAttrs *a);
 /** @brief Backfill the length prefix (= off-4). @return the total packet length, or 0 on overflow. */
-size_t sftp_wr_finish(SftpWriter *w);
+size_t dws_sftp_wr_finish(SftpWriter *w);
 /** @brief Position where the next byte will be written (used to remember a patch point, e.g. a NAME count). */
-size_t sftp_wr_pos(const SftpWriter *w);
+size_t dws_sftp_wr_pos(const SftpWriter *w);
 /** @brief Overwrite a big-endian uint32 already written at @p at (for backfilling a count). */
-void sftp_wr_patch_u32(SftpWriter *w, size_t at, uint32_t v);
+void dws_sftp_wr_patch_u32(SftpWriter *w, size_t at, uint32_t v);
 
 // --- framing ---
 /**
  * @brief The full length of the leading packet in @p buf (4-byte prefix + payload), or 0 if fewer than 4 bytes
  *        are present (need more) or the declared length exceeds @p max (caller drops the connection).
  */
-size_t sftp_frame_len(const uint8_t *buf, size_t have, size_t max);
+size_t dws_sftp_frame_len(const uint8_t *buf, size_t have, size_t max);
 
 // --- response builders (return the total packet length written, or 0 on overflow) ---
-size_t sftp_build_version(uint8_t *out, size_t cap);
-size_t sftp_build_status(uint32_t id, uint32_t code, const char *msg, uint8_t *out, size_t cap);
-size_t sftp_build_handle(uint32_t id, const void *handle, uint32_t hlen, uint8_t *out, size_t cap);
-size_t sftp_build_attrs(uint32_t id, const SftpAttrs *a, uint8_t *out, size_t cap);
+size_t dws_sftp_build_version(uint8_t *out, size_t cap);
+size_t dws_sftp_build_status(uint32_t id, uint32_t code, const char *msg, uint8_t *out, size_t cap);
+size_t dws_sftp_build_handle(uint32_t id, const void *handle, uint32_t hlen, uint8_t *out, size_t cap);
+size_t dws_sftp_build_attrs(uint32_t id, const SftpAttrs *a, uint8_t *out, size_t cap);
 /** @brief SSH_FXP_DATA carrying @p data[0..dlen). */
-size_t sftp_build_data(uint32_t id, const void *data, uint32_t dlen, uint8_t *out, size_t cap);
+size_t dws_sftp_build_data(uint32_t id, const void *data, uint32_t dlen, uint8_t *out, size_t cap);
 /** @brief SSH_FXP_NAME with one entry (filename + longname + attrs) - used by REALPATH. */
-size_t sftp_build_name1(uint32_t id, const char *name, const char *longname, const SftpAttrs *a, uint8_t *out,
-                        size_t cap);
+size_t dws_sftp_build_name1(uint32_t id, const char *name, const char *longname, const SftpAttrs *a, uint8_t *out,
+                            size_t cap);
 
 /**
  * @brief Format a Unix `ls -l`-style longname for a NAME entry, e.g. "-rw-r--r-- 1 0 0 1234 Jan  1 2026 name".
  *        @return the string length written (excluding NUL), clamped to @p cap-1.
  */
-size_t sftp_format_longname(bool is_dir, uint32_t perms, uint64_t size, uint32_t mtime, const char *name, char *out,
-                            size_t cap);
+size_t dws_sftp_format_longname(bool is_dir, uint32_t perms, uint64_t size, uint32_t mtime, const char *name, char *out,
+                                size_t cap);
 
 #endif // DWS_ENABLE_SSH_SFTP
 

@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ntrip_caster_listener.h
+ * @file dws_ntrip_caster_listener.h
  * @brief Server-side NTRIP caster listener (DWS_ENABLE_NTRIP_CASTER): the ConnProto::PROTO_NTRIP_CASTER
  *        handler that answers rover requests and streams RTCM to subscribers.
  *
- * The pure codec (ntrip_caster.h) parses requests and builds responses / the source table; this file owns
+ * The pure codec (dws_ntrip_caster.h) parses requests and builds responses / the source table; this file owns
  * the connection state: it reads each rover's request off its socket, replies (stream-accept, source
  * table, error, or 401), and then fans RTCM correction bytes out to every rover subscribed to a mountpoint.
  * Layered exactly like services/relay - the app opens the listener, adds one or more mountpoints, then
@@ -22,7 +22,7 @@
  *   dws_ntrip_caster_add_mount((uint8_t)li, &m, nullptr);              // null = open (no auth)
  *   ...
  *   uint8_t frame[64];
- *   size_t n = rtcm3_build_1005(frame, sizeof(frame), 2003, x01mm, y01mm, z01mm);
+ *   size_t n = dws_rtcm3_build_1005(frame, sizeof(frame), 2003, x01mm, y01mm, z01mm);
  *   dws_ntrip_caster_broadcast("BASE1", frame, n);                    // -> every subscribed rover
  * @endcode
  *

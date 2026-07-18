@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ntp_service.cpp
+ * @file dws_ntp_service.cpp
  * @brief SNTP wall-clock time sync implementation (DWS_ENABLE_NTP).
  */
 
@@ -85,7 +85,7 @@ size_t dws_ntp_http_date(char *out, size_t out_cap)
 // NTP as a registry time source (defined for both the device and host builds; dws_ntp_epoch is 0
 // until synced / when no test epoch is injected). Register it with dws_time_source_add() so the
 // aggregated dws_time_now() - and the HTTP Date header - can be fed by NTP alongside an RTC / GPS.
-uint32_t ntp_time_source(void)
+uint32_t dws_ntp_time_source(void)
 {
     return (uint32_t)dws_ntp_epoch();
 }

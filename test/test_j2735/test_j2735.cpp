@@ -16,11 +16,11 @@ void tearDown(void)
 
 void test_cint_bits(void)
 {
-    TEST_ASSERT_EQUAL_UINT(0, uper_cint_bits(5, 5));   // single value -> 0 bits
-    TEST_ASSERT_EQUAL_UINT(1, uper_cint_bits(0, 1));   // 2 values -> 1 bit
-    TEST_ASSERT_EQUAL_UINT(7, uper_cint_bits(0, 127)); // 128 values -> 7 bits
-    TEST_ASSERT_EQUAL_UINT(8, uper_cint_bits(0, 128)); // 129 values -> 8 bits
-    TEST_ASSERT_EQUAL_UINT(16, uper_cint_bits(0, 65535));
+    TEST_ASSERT_EQUAL_UINT(0, dws_uper_cint_bits(5, 5));   // single value -> 0 bits
+    TEST_ASSERT_EQUAL_UINT(1, dws_uper_cint_bits(0, 1));   // 2 values -> 1 bit
+    TEST_ASSERT_EQUAL_UINT(7, dws_uper_cint_bits(0, 127)); // 128 values -> 7 bits
+    TEST_ASSERT_EQUAL_UINT(8, dws_uper_cint_bits(0, 128)); // 129 values -> 8 bits
+    TEST_ASSERT_EQUAL_UINT(16, dws_uper_cint_bits(0, 65535));
 }
 
 void test_bit_writer_pattern(void)
@@ -28,10 +28,10 @@ void test_bit_writer_pattern(void)
     // Write 0b101 (3 bits) then 0b11 (2 bits): stream 10111 000 -> 0xB8.
     uint8_t buf[4];
     UperWriter w;
-    uper_writer_init(&w, buf, sizeof(buf));
-    uper_put_bits(&w, 0b101, 3);
-    uper_put_bits(&w, 0b11, 2);
-    size_t n = uper_writer_finish(&w);
+    dws_uper_writer_init(&w, buf, sizeof(buf));
+    dws_uper_put_bits(&w, 0b101, 3);
+    dws_uper_put_bits(&w, 0b11, 2);
+    size_t n = dws_uper_writer_finish(&w);
     TEST_ASSERT_EQUAL_size_t(1, n);
     TEST_ASSERT_EQUAL_HEX8(0xB8, buf[0]);
 }
@@ -40,10 +40,10 @@ void test_writer_null_and_zero(void)
 {
     // A null buffer (or zero cap) leaves the writer not-ok and must not dereference it.
     UperWriter w;
-    uper_writer_init(&w, nullptr, 8);
+    dws_uper_writer_init(&w, nullptr, 8);
     TEST_ASSERT_FALSE(w.ok);
     uint8_t buf[4];
-    uper_writer_init(&w, buf, 0);
+    dws_uper_writer_init(&w, buf, 0);
     TEST_ASSERT_FALSE(w.ok);
 }
 
@@ -51,15 +51,15 @@ void test_cint_roundtrip(void)
 {
     uint8_t buf[8];
     UperWriter w;
-    uper_writer_init(&w, buf, sizeof(buf));
-    uper_put_cint(&w, 100, 0, 127); // 7 bits: 1100100
-    uper_put_cint(&w, -5, -10, 10); // offset 5 in 5 bits: 00101
-    size_t n = uper_writer_finish(&w);
+    dws_uper_writer_init(&w, buf, sizeof(buf));
+    dws_uper_put_cint(&w, 100, 0, 127); // 7 bits: 1100100
+    dws_uper_put_cint(&w, -5, -10, 10); // offset 5 in 5 bits: 00101
+    size_t n = dws_uper_writer_finish(&w);
 
     UperReader r;
-    uper_reader_init(&r, buf, n * 8);
-    TEST_ASSERT_EQUAL_INT64(100, uper_get_cint(&r, 0, 127));
-    TEST_ASSERT_EQUAL_INT64(-5, uper_get_cint(&r, -10, 10));
+    dws_uper_reader_init(&r, buf, n * 8);
+    TEST_ASSERT_EQUAL_INT64(100, dws_uper_get_cint(&r, 0, 127));
+    TEST_ASSERT_EQUAL_INT64(-5, dws_uper_get_cint(&r, -10, 10));
     TEST_ASSERT_TRUE(r.ok);
 }
 
@@ -166,10 +166,10 @@ void test_uper_overflow_and_bsm_guard()
 {
     uint8_t buf[4];
     UperWriter w;
-    uper_writer_init(&w, buf, sizeof(buf));
-    uper_put_bits(&w, 0xFFFFFFFFu, 32);
-    uper_put_bits(&w, 0xFFFFFFFFu, 32); // past the 4-byte buffer -> not ok
-    TEST_ASSERT_EQUAL_size_t(0, uper_writer_finish(&w));
+    dws_uper_writer_init(&w, buf, sizeof(buf));
+    dws_uper_put_bits(&w, 0xFFFFFFFFu, 32);
+    dws_uper_put_bits(&w, 0xFFFFFFFFu, 32); // past the 4-byte buffer -> not ok
+    TEST_ASSERT_EQUAL_size_t(0, dws_uper_writer_finish(&w));
     J2735BsmCore c = {};
     TEST_ASSERT_EQUAL_size_t(0, dws_j2735_bsm_core_encode(&c, buf, 1)); // tiny cap fails closed
 }
@@ -178,19 +178,19 @@ void test_j2735_guards_and_truncation()
 {
     uint8_t buf[64];
 
-    // uper_put_cint / uper_get_cint with a single-value (zero-bit) range: nothing on the wire.
+    // dws_uper_put_cint / dws_uper_get_cint with a single-value (zero-bit) range: nothing on the wire.
     UperWriter w;
-    uper_writer_init(&w, buf, sizeof(buf));
-    uper_put_cint(&w, 5, 5, 5); // hi <= lo -> 0 bits
-    TEST_ASSERT_EQUAL_size_t(0, uper_writer_finish(&w));
+    dws_uper_writer_init(&w, buf, sizeof(buf));
+    dws_uper_put_cint(&w, 5, 5, 5); // hi <= lo -> 0 bits
+    TEST_ASSERT_EQUAL_size_t(0, dws_uper_writer_finish(&w));
     UperReader r;
-    uper_reader_init(&r, buf, sizeof(buf) * 8);
-    TEST_ASSERT_TRUE(uper_get_cint(&r, 5, 5) == 5); // 0 bits -> returns lo
-    // uper_get_bits: nbits == 0, and a not-ok reader (null buffer), both return 0.
-    TEST_ASSERT_EQUAL_UINT32(0, uper_get_bits(&r, 0));
+    dws_uper_reader_init(&r, buf, sizeof(buf) * 8);
+    TEST_ASSERT_TRUE(dws_uper_get_cint(&r, 5, 5) == 5); // 0 bits -> returns lo
+    // dws_uper_get_bits: nbits == 0, and a not-ok reader (null buffer), both return 0.
+    TEST_ASSERT_EQUAL_UINT32(0, dws_uper_get_bits(&r, 0));
     UperReader rn;
-    uper_reader_init(&rn, nullptr, 0);
-    TEST_ASSERT_EQUAL_UINT32(0, uper_get_bits(&rn, 4));
+    dws_uper_reader_init(&rn, nullptr, 0);
+    TEST_ASSERT_EQUAL_UINT32(0, dws_uper_get_bits(&rn, 4));
 
     // encode/decode null-argument guards.
     J2735BsmCore c = {};

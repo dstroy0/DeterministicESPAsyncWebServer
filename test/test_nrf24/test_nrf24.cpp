@@ -92,7 +92,7 @@ void tearDown()
 void test_init_configures_and_powers_up()
 {
     nrf_config c = default_cfg();
-    TEST_ASSERT_TRUE(nrf24_init(&g_bus, &c));
+    TEST_ASSERT_TRUE(dws_nrf24_init(&g_bus, &c));
     TEST_ASSERT_EQUAL_HEX8(0x0E, g.reg[0x00]);       // CONFIG = EN_CRC|CRCO|PWR_UP (PRX bit clear)
     TEST_ASSERT_EQUAL_UINT8(76, g.reg[0x05]);        // RF_CH
     TEST_ASSERT_EQUAL_HEX8(0x03, g.reg[0x03]);       // SETUP_AW = 5-byte
@@ -106,15 +106,15 @@ void test_init_fails_when_absent()
 {
     g.present = false; // reads float -> the RF_CH read-back will not match
     nrf_config c = default_cfg();
-    TEST_ASSERT_FALSE(nrf24_init(&g_bus, &c));
+    TEST_ASSERT_FALSE(dws_nrf24_init(&g_bus, &c));
 }
 
 void test_send_pads_to_width_and_keys_tx()
 {
     nrf_config c = default_cfg();
-    nrf24_init(&g_bus, &c);
+    dws_nrf24_init(&g_bus, &c);
     const uint8_t data[3] = {0xAB, 0xCD, 0xEF};
-    TEST_ASSERT_TRUE(nrf24_send(&g_bus, data, 3));
+    TEST_ASSERT_TRUE(dws_nrf24_send(&g_bus, data, 3));
     TEST_ASSERT_EQUAL_UINT8(8, g.tx_len); // padded to the static width
     TEST_ASSERT_EQUAL_MEMORY(data, g.tx_payload, 3);
     TEST_ASSERT_EQUAL_UINT8(0, g.tx_payload[3]); // zero pad
@@ -125,20 +125,20 @@ void test_send_pads_to_width_and_keys_tx()
 void test_send_rejects_oversize()
 {
     const uint8_t big[9] = {0};
-    TEST_ASSERT_FALSE(nrf24_send(&g_bus, big, 9)); // > DWS_NRF24_PAYLOAD (8)
+    TEST_ASSERT_FALSE(dws_nrf24_send(&g_bus, big, 9)); // > DWS_NRF24_PAYLOAD (8)
 }
 
 void test_tx_done_flag()
 {
-    TEST_ASSERT_FALSE(nrf24_tx_done(&g_bus));
+    TEST_ASSERT_FALSE(dws_nrf24_tx_done(&g_bus));
     g.reg[0x07] = 0x20; // STATUS TX_DS
-    TEST_ASSERT_TRUE(nrf24_tx_done(&g_bus));
-    TEST_ASSERT_FALSE(nrf24_tx_done(&g_bus)); // cleared (write-1-to-clear)
+    TEST_ASSERT_TRUE(dws_nrf24_tx_done(&g_bus));
+    TEST_ASSERT_FALSE(dws_nrf24_tx_done(&g_bus)); // cleared (write-1-to-clear)
 }
 
 void test_set_rx_enters_prx()
 {
-    nrf24_set_rx(&g_bus);
+    dws_nrf24_set_rx(&g_bus);
     TEST_ASSERT_EQUAL_HEX8(0x0F, g.reg[0x00]); // CONFIG PRIM_RX = 1
     TEST_ASSERT_TRUE(g.ce);
 }
@@ -149,7 +149,7 @@ void test_recv_reads_payload_and_pipe()
         g.rx_payload[i] = (uint8_t)(0x20 + i);
     g.reg[0x07] = 0x40 | (2 << 1); // STATUS RX_DR, pipe 2
     uint8_t buf[16], pipe = 0xFF;
-    int n = nrf24_recv(&g_bus, buf, sizeof(buf), &pipe);
+    int n = dws_nrf24_recv(&g_bus, buf, sizeof(buf), &pipe);
     TEST_ASSERT_EQUAL_INT(8, n);
     TEST_ASSERT_EQUAL_UINT8(2, pipe);
     TEST_ASSERT_EQUAL_MEMORY(g.rx_payload, buf, 8);
@@ -159,14 +159,14 @@ void test_recv_reads_payload_and_pipe()
 void test_recv_no_packet()
 {
     uint8_t buf[16];
-    TEST_ASSERT_EQUAL_INT(-1, nrf24_recv(&g_bus, buf, sizeof(buf), nullptr));
+    TEST_ASSERT_EQUAL_INT(-1, dws_nrf24_recv(&g_bus, buf, sizeof(buf), nullptr));
 }
 
 void test_recv_fifo_empty_pipe()
 {
     g.reg[0x07] = 0x40 | (7 << 1); // RX_DR set but pipe 7 = FIFO empty
     uint8_t buf[16];
-    TEST_ASSERT_EQUAL_INT(-1, nrf24_recv(&g_bus, buf, sizeof(buf), nullptr));
+    TEST_ASSERT_EQUAL_INT(-1, dws_nrf24_recv(&g_bus, buf, sizeof(buf), nullptr));
     TEST_ASSERT_EQUAL_HEX8(0x00, g.reg[0x07] & 0x40); // cleared
 }
 
@@ -176,7 +176,7 @@ void test_recv_truncates_to_cap()
         g.rx_payload[i] = (uint8_t)(0x50 + i);
     g.reg[0x07] = 0x40; // RX_DR, pipe 0
     uint8_t buf[4], pipe = 0xFF;
-    int n = nrf24_recv(&g_bus, buf, sizeof(buf), &pipe);
+    int n = dws_nrf24_recv(&g_bus, buf, sizeof(buf), &pipe);
     TEST_ASSERT_EQUAL_INT(4, n);
     TEST_ASSERT_EQUAL_UINT8(0, pipe);
     TEST_ASSERT_EQUAL_MEMORY(g.rx_payload, buf, 4);
@@ -186,10 +186,10 @@ void test_data_rate_variants()
 {
     nrf_config c = default_cfg();
     c.data_rate = 1; // 2 Mbps
-    TEST_ASSERT_TRUE(nrf24_init(&g_bus, &c));
+    TEST_ASSERT_TRUE(dws_nrf24_init(&g_bus, &c));
     nrf_config c2 = default_cfg();
     c2.data_rate = 2; // 250 kbps
-    TEST_ASSERT_TRUE(nrf24_init(&g_bus, &c2));
+    TEST_ASSERT_TRUE(dws_nrf24_init(&g_bus, &c2));
 }
 
 int main()

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Unit tests for the TLS 1.3 server handshake state machine (network_drivers/presentation/http3/
-// quic_tls; RFC 9001 / RFC 8446). The main test drives the server with a hand-built ClientHello and
+// dws_quic_tls; RFC 9001 / RFC 8446). The main test drives the server with a hand-built ClientHello and
 // then runs the *client* half of the key schedule independently in the test, proving both sides
 // derive identical handshake + application secrets and that the server accepts the client Finished
 // (a full interop round-trip of the state machine). Plus: capability-negotiation rejections.
@@ -14,7 +14,7 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #if DWS_ENABLE_PQC_KEX
 #include "../test_pqc_mlkem/mlkem_kat.h"            // kat_ek, kat_dk (a valid ML-KEM key pair)
-#include "../test_ssh_pqc/mlkem_ref.h"              // mlkem768_decaps_ref (the client side)
+#include "../test_ssh_pqc/mlkem_ref.h"              // dws_mlkem768_decaps_ref (the client side)
 #include "network_drivers/presentation/pqc/mlkem.h" // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
 #endif
 #include <string.h>
@@ -54,7 +54,7 @@ enum
     INC_SA = 4,    // signature_algorithms (ed25519)
     INC_KS = 8,    // key_share (x25519 + pub)
     INC_ALPN = 16, // ALPN h3
-    INC_TP = 32,   // quic_transport_parameters
+    INC_TP = 32,   // dws_quic_transport_parameters
     INC_ALL = 63,
 };
 
@@ -114,7 +114,7 @@ static size_t build_ch_ext(uint8_t *out, const uint8_t client_pub[32], const uin
         memcpy(out + p, alpn, sizeof(alpn));
         p += sizeof(alpn);
     }
-    if (inc & INC_TP) // quic_transport_parameters
+    if (inc & INC_TP) // dws_quic_transport_parameters
     {
         out[p++] = 0x00;
         out[p++] = 0x39;
@@ -148,7 +148,7 @@ static void make_server_config(QuicTlsConfig *cfg)
     memcpy(cfg->ed25519_seed, SERVER_SEED, 32);
     memcpy(cfg->ephemeral_priv, SERVER_PRIV, 32);
     memcpy(cfg->random, SERVER_RANDOM, 32);
-    quic_tp_defaults(&cfg->params);
+    dws_quic_tp_defaults(&cfg->params);
     cfg->params.has_initial_scid = true;
     cfg->params.initial_scid_len = 4;
     memcpy(cfg->params.initial_scid, "\x11\x22\x33\x44", 4);
@@ -162,17 +162,17 @@ void test_full_handshake_roundtrip()
     QuicTlsConfig cfg;
     make_server_config(&cfg);
     QuicTls qt;
-    quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_server_init(&qt, &cfg);
 
     // Client transport params.
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     ctp.has_initial_scid = true;
     ctp.initial_scid_len = 4;
     memcpy(ctp.initial_scid, "\xaa\xbb\xcc\xdd", 4);
     ctp.initial_max_data = 524288;
     uint8_t ctp_enc[128];
-    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
 
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_PRIV);
@@ -180,20 +180,20 @@ void test_full_handshake_roundtrip()
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
 
     // 1) Feed the ClientHello. The server should build its flights and derive keys.
-    size_t used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    size_t used = dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     TEST_ASSERT_EQUAL_UINT(ch_len, used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
     TEST_ASSERT_TRUE(qt.hs_keys_ready);
     TEST_ASSERT_TRUE(qt.ap_keys_ready);
 
     size_t si_len = 0, sh_flight_len = 0;
-    const uint8_t *si = quic_tls_flight(&qt, QuicEnc::QUIC_ENC_INITIAL, &si_len);
-    const uint8_t *sh_flight = quic_tls_flight(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, &sh_flight_len);
+    const uint8_t *si = dws_quic_tls_flight(&qt, QuicEnc::QUIC_ENC_INITIAL, &si_len);
+    const uint8_t *sh_flight = dws_quic_tls_flight(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, &sh_flight_len);
     TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, si[0]);                // Initial flight = ServerHello
     TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS, sh_flight[0]); // then EE..Finished
 
     // Server parsed our transport params.
-    const QuicTransportParams *peer = quic_tls_peer_params(&qt);
+    const QuicTransportParams *peer = dws_quic_tls_peer_params(&qt);
     TEST_ASSERT_NOT_NULL(peer);
     TEST_ASSERT_EQUAL_UINT64(524288, peer->initial_max_data);
 
@@ -215,9 +215,9 @@ void test_full_handshake_roundtrip()
     ssh_sha256_final(&t, ch_sf); // H(CH..server Finished)
 
     Tls13KeySchedule cks;
-    tls13_ks_early(&TLS13_KDF, &cks);
-    tls13_ks_handshake(&cks, ecdhe, ch_sh);
-    tls13_ks_master(&cks, ch_sf);
+    dws_tls13_ks_early(&TLS13_KDF, &cks);
+    dws_tls13_ks_handshake(&cks, ecdhe, ch_sh);
+    dws_tls13_ks_master(&cks, ch_sf);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.handshake_secret, cks.handshake_secret, 32);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.client_hs_traffic, cks.client_hs_traffic, 32);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_hs_traffic, cks.server_hs_traffic, 32);
@@ -232,20 +232,20 @@ void test_full_handshake_roundtrip()
     ssh_sha256_update(&t, sh_flight, sh_flight_len - 36);
     ssh_sha256_final(&t, ch_cv);
     uint8_t sfin_expected[32];
-    tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
+    dws_tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);
 
     // 3) Client builds its Finished and the server accepts it.
     uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
-    tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, ch_sf, cfin + 4);
-    used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
+    dws_tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, ch_sf, cfin + 4);
+    used = dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
     TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);
     TEST_ASSERT_TRUE(qt.complete);
 
     // Keys are exposed for both directions at both levels.
-    TEST_ASSERT_NOT_NULL(quic_tls_keys(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, true));
-    TEST_ASSERT_NOT_NULL(quic_tls_keys(&qt, QuicEnc::QUIC_ENC_APP, false));
+    TEST_ASSERT_NOT_NULL(dws_quic_tls_keys(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, true));
+    TEST_ASSERT_NOT_NULL(dws_quic_tls_keys(&qt, QuicEnc::QUIC_ENC_APP, false));
 }
 
 void test_reject_bad_client_finished()
@@ -254,23 +254,23 @@ void test_reject_bad_client_finished()
     QuicTlsConfig cfg;
     make_server_config(&cfg);
     QuicTls qt;
-    quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_server_init(&qt, &cfg);
 
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     uint8_t ctp_enc[64];
-    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
-    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
 
     // A Finished with the wrong verify_data must be rejected (decrypt_error).
     uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
     memset(cfin + 4, 0x99, 32);
-    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(51, qt.alert); // decrypt_error
 }
@@ -282,12 +282,12 @@ void test_reject_no_h3_alpn()
     QuicTlsConfig cfg;
     make_server_config(&cfg);
     QuicTls qt;
-    quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_server_init(&qt, &cfg);
 
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     uint8_t ctp_enc[64];
-    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
@@ -299,7 +299,7 @@ void test_reject_no_h3_alpn()
             ch[i + 1] = '9';
             break;
         }
-    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(120, qt.alert); // no_application_protocol
 }
@@ -311,22 +311,22 @@ void test_partial_client_hello()
     QuicTlsConfig cfg;
     make_server_config(&cfg);
     QuicTls qt;
-    quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_server_init(&qt, &cfg);
 
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     uint8_t ctp_enc[64];
-    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
 
-    size_t used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len - 10);
+    size_t used = dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len - 10);
     TEST_ASSERT_EQUAL_UINT(0, used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_START, qt.state);
     // Delivering the whole message now completes it.
-    used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    used = dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     TEST_ASSERT_EQUAL_UINT(ch_len, used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
 }
@@ -339,12 +339,12 @@ static uint8_t reject_alert(unsigned inc, const uint8_t *bad_tp, size_t bad_tp_l
     QuicTlsConfig cfg;
     make_server_config(&cfg);
     QuicTls qt;
-    quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_server_init(&qt, &cfg);
 
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     uint8_t ctp_enc[64];
-    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     const uint8_t *tp = bad_tp ? bad_tp : ctp_enc;
     size_t tpl = bad_tp ? bad_tp_len : ctp_len;
 
@@ -352,7 +352,7 @@ static uint8_t reject_alert(unsigned inc, const uint8_t *bad_tp, size_t bad_tp_l
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_ch_ext(ch, client_pub, tp, tpl, inc);
-    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     return qt.alert;
 }
@@ -377,7 +377,7 @@ void test_reject_no_ed25519()
     TEST_ASSERT_EQUAL_UINT8(40, reject_alert(INC_ALL & ~INC_SA, nullptr, 0));
 }
 
-// No quic_transport_parameters extension -> missing_extension(109).
+// No dws_quic_transport_parameters extension -> missing_extension(109).
 void test_reject_no_transport_params()
 {
     TEST_ASSERT_EQUAL_UINT8(109, reject_alert(INC_ALL & ~INC_TP, nullptr, 0));
@@ -397,10 +397,10 @@ void test_reject_malformed_client_hello()
     QuicTlsConfig cfg;
     make_server_config(&cfg);
     QuicTls qt;
-    quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_server_init(&qt, &cfg);
     // ClientHello, handshake length 2, body = legacy_version only (no random / ciphers / extensions).
     uint8_t bad[] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x02, 0x03, 0x03};
-    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, bad, sizeof(bad));
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, bad, sizeof(bad));
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error
 }
@@ -410,32 +410,32 @@ static void drive_to_wait_finished(QuicTls *qt, QuicTlsConfig *cfg)
 {
     fill_test_material();
     make_server_config(cfg);
-    quic_tls_server_init(qt, cfg);
+    dws_quic_tls_server_init(qt, cfg);
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     uint8_t ctp_enc[64];
-    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
-    quic_tls_recv_crypto(qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    dws_quic_tls_recv_crypto(qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
 }
 
 // Drive a fresh server through a ClientHello with the given config; return the resulting state.
 static QtlsState run_handshake(const QuicTlsConfig *cfg)
 {
     QuicTls qt;
-    quic_tls_server_init(&qt, cfg);
+    dws_quic_tls_server_init(&qt, cfg);
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     uint8_t ctp_enc[64];
-    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
-    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     return qt.state;
 }
 
@@ -452,12 +452,12 @@ void test_quic_tls_cert_size_boundary_emit_fails()
     const size_t buf = sizeof(dummy.flight_hs);
     uint8_t scratch[4096];
     uint8_t tp_enc[512];
-    size_t tp_len = quic_tp_encode(&cfg.params, tp_enc, sizeof(tp_enc));
-    size_t ee = tls13_build_encrypted_extensions(scratch, sizeof(scratch), tp_enc, tp_len);
-    size_t cert_overhead = tls13_build_certificate(scratch, sizeof(scratch), CERT, 0); // fixed part only
+    size_t tp_len = dws_quic_tp_encode(&cfg.params, tp_enc, sizeof(tp_enc));
+    size_t ee = dws_tls13_build_encrypted_extensions(scratch, sizeof(scratch), tp_enc, tp_len);
+    size_t cert_overhead = dws_tls13_build_certificate(scratch, sizeof(scratch), CERT, 0); // fixed part only
     uint8_t z[32] = {0};
-    size_t cv = tls13_build_cert_verify(scratch, sizeof(scratch), z, cfg.ed25519_seed);
-    size_t fin = tls13_build_finished(scratch, sizeof(scratch), z);
+    size_t cv = dws_tls13_build_cert_verify(scratch, sizeof(scratch), z, cfg.ed25519_seed);
+    size_t fin = dws_tls13_build_finished(scratch, sizeof(scratch), z);
     TEST_ASSERT_TRUE(ee > 0 && cert_overhead > 0 && cv > 4 && fin > 4);
 
     static uint8_t big_cert[4096];
@@ -488,48 +488,49 @@ void test_quic_tls_more_guards()
     drive_to_wait_finished(&qt, &cfg);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
     uint8_t fin_badlen[8] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x04, 1, 2, 3, 4}; // 4-byte verify, not 32
-    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, fin_badlen, sizeof(fin_badlen));
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, fin_badlen, sizeof(fin_badlen));
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error
 
     // A non-Finished message while awaiting the client Finished -> UNEXPECTED_MESSAGE.
     drive_to_wait_finished(&qt, &cfg);
     uint8_t wrong[36] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x20};
-    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, wrong, sizeof(wrong));
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, wrong, sizeof(wrong));
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(10, qt.alert); // unexpected_message
 
     // recv_crypto on a FAILED handshake drains (returns the whole length, changes nothing).
     uint8_t more[4] = {0, 0, 0, 0};
-    TEST_ASSERT_EQUAL_UINT(sizeof(more), quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, more, sizeof(more)));
+    TEST_ASSERT_EQUAL_UINT(sizeof(more),
+                           dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, more, sizeof(more)));
 
     // flight() for a level that is neither Initial nor Handshake -> nullptr / zero length.
     size_t l = 123;
-    TEST_ASSERT_NULL(quic_tls_flight(&qt, QuicEnc::QUIC_ENC_APP, &l));
+    TEST_ASSERT_NULL(dws_quic_tls_flight(&qt, QuicEnc::QUIC_ENC_APP, &l));
     TEST_ASSERT_EQUAL_UINT(0, l);
 
     // keys() before the handshake has derived them -> nullptr (both levels + an unknown level).
     QuicTls fresh;
-    quic_tls_server_init(&fresh, &cfg);
-    TEST_ASSERT_NULL(quic_tls_keys(&fresh, QuicEnc::QUIC_ENC_HANDSHAKE, true));
-    TEST_ASSERT_NULL(quic_tls_keys(&fresh, QuicEnc::QUIC_ENC_APP, false));
-    TEST_ASSERT_NULL(quic_tls_keys(&fresh, 999, true));
+    dws_quic_tls_server_init(&fresh, &cfg);
+    TEST_ASSERT_NULL(dws_quic_tls_keys(&fresh, QuicEnc::QUIC_ENC_HANDSHAKE, true));
+    TEST_ASSERT_NULL(dws_quic_tls_keys(&fresh, QuicEnc::QUIC_ENC_APP, false));
+    TEST_ASSERT_NULL(dws_quic_tls_keys(&fresh, 999, true));
 
     // An oversized certificate overruns the handshake flight buffer, so the emit() flight-bound guard
     // fails the handshake with INTERNAL_ERROR (cert_der/cert_len are caller-supplied and unbounded).
     fill_test_material();
     make_server_config(&cfg);
     cfg.cert_len = 100000; // far larger than DWS_H3_CRYPTO_BUF; the Certificate builder returns 0
-    quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_server_init(&qt, &cfg);
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     uint8_t ctp_enc[64];
-    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
-    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(80, qt.alert); // internal_error
 }
@@ -600,7 +601,7 @@ static size_t build_client_hello_hybrid(uint8_t *out, const uint8_t client_pub[3
         p += sizeof(alpn);
     }
     {
-        out[p++] = 0x00; // quic_transport_parameters
+        out[p++] = 0x00; // dws_quic_transport_parameters
         out[p++] = 0x39;
         out[p++] = (uint8_t)(tp_len >> 8);
         out[p++] = (uint8_t)tp_len;
@@ -628,28 +629,28 @@ void test_hybrid_handshake_roundtrip()
     for (int i = 0; i < 32; i++)
         cfg.mlkem_m[i] = (uint8_t)(0x5a ^ i); // fixed Encaps randomness for a repeatable test
     QuicTls qt;
-    quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_server_init(&qt, &cfg);
 
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     ctp.has_initial_scid = true;
     ctp.initial_scid_len = 4;
     memcpy(ctp.initial_scid, "\xaa\xbb\xcc\xdd", 4);
     uint8_t ctp_enc[128];
-    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
 
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     static uint8_t ch[2048];
     size_t ch_len = build_client_hello_hybrid(ch, client_pub, ctp_enc, ctp_len);
 
-    size_t used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    size_t used = dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     TEST_ASSERT_EQUAL_UINT(ch_len, used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
 
     size_t si_len = 0, sh_flight_len = 0;
-    const uint8_t *si = quic_tls_flight(&qt, QuicEnc::QUIC_ENC_INITIAL, &si_len);
-    const uint8_t *sh_flight = quic_tls_flight(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, &sh_flight_len);
+    const uint8_t *si = dws_quic_tls_flight(&qt, QuicEnc::QUIC_ENC_INITIAL, &si_len);
+    const uint8_t *sh_flight = dws_quic_tls_flight(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, &sh_flight_len);
     TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, si[0]);
 
     // Walk the ServerHello extensions (start = 4+2+32+1+2+1+2 = 44 with a 0-length session id) to the
@@ -677,7 +678,7 @@ void test_hybrid_handshake_roundtrip()
 
     // Client combiner: ML-KEM secret first, then X25519.
     uint8_t ml_ss[32];
-    mlkem768_decaps_ref(kat_dk, server_ct, ml_ss);
+    dws_mlkem768_decaps_ref(kat_dk, server_ct, ml_ss);
     uint8_t x_ss[32];
     ssh_x25519(x_ss, CLIENT_PRIV, server_x25519);
     uint8_t ecdhe[64];
@@ -697,9 +698,9 @@ void test_hybrid_handshake_roundtrip()
     ssh_sha256_final(&t, ch_sf);
 
     Tls13KeySchedule cks;
-    tls13_ks_early(&TLS13_KDF, &cks);
-    tls13_ks_handshake(&cks, ecdhe, ch_sh, 64); // 64-byte hybrid secret
-    tls13_ks_master(&cks, ch_sf);
+    dws_tls13_ks_early(&TLS13_KDF, &cks);
+    dws_tls13_ks_handshake(&cks, ecdhe, ch_sh, 64); // 64-byte hybrid secret
+    dws_tls13_ks_master(&cks, ch_sf);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.handshake_secret, cks.handshake_secret, 32);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.client_hs_traffic, cks.client_hs_traffic, 32);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_hs_traffic, cks.server_hs_traffic, 32);
@@ -713,12 +714,12 @@ void test_hybrid_handshake_roundtrip()
     ssh_sha256_update(&t, sh_flight, sh_flight_len - 36);
     ssh_sha256_final(&t, ch_cv);
     uint8_t sfin_expected[32];
-    tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
+    dws_tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);
 
     uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
-    tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, ch_sf, cfin + 4);
-    used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
+    dws_tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, ch_sf, cfin + 4);
+    used = dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
     TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);
 }

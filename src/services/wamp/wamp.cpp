@@ -50,7 +50,7 @@ static void emit_args(JsonWriter &w, const char *args_json, const char *kwargs_j
         w.raw(kwargs_json);
 }
 
-size_t wamp_build_hello(char *buf, size_t cap, const char *realm, const char *details_json)
+size_t dws_wamp_build_hello(char *buf, size_t cap, const char *realm, const char *details_json)
 {
     if (!buf || !realm)
         return 0;
@@ -63,7 +63,7 @@ size_t wamp_build_hello(char *buf, size_t cap, const char *realm, const char *de
     return finish(w);
 }
 
-size_t wamp_build_goodbye(char *buf, size_t cap, const char *reason_uri, const char *details_json)
+size_t dws_wamp_build_goodbye(char *buf, size_t cap, const char *reason_uri, const char *details_json)
 {
     if (!buf || !reason_uri)
         return 0;
@@ -76,7 +76,7 @@ size_t wamp_build_goodbye(char *buf, size_t cap, const char *reason_uri, const c
     return finish(w);
 }
 
-size_t wamp_build_subscribe(char *buf, size_t cap, uint64_t request, const char *topic, const char *options_json)
+size_t dws_wamp_build_subscribe(char *buf, size_t cap, uint64_t request, const char *topic, const char *options_json)
 {
     if (!buf || !topic)
         return 0;
@@ -90,7 +90,7 @@ size_t wamp_build_subscribe(char *buf, size_t cap, uint64_t request, const char 
     return finish(w);
 }
 
-size_t wamp_build_unsubscribe(char *buf, size_t cap, uint64_t request, uint64_t subscription_id)
+size_t dws_wamp_build_unsubscribe(char *buf, size_t cap, uint64_t request, uint64_t subscription_id)
 {
     if (!buf)
         return 0;
@@ -103,8 +103,8 @@ size_t wamp_build_unsubscribe(char *buf, size_t cap, uint64_t request, uint64_t 
     return finish(w);
 }
 
-size_t wamp_build_publish(char *buf, size_t cap, uint64_t request, const char *topic, const char *options_json,
-                          const char *args_json, const char *kwargs_json)
+size_t dws_wamp_build_publish(char *buf, size_t cap, uint64_t request, const char *topic, const char *options_json,
+                              const char *args_json, const char *kwargs_json)
 {
     if (!buf || !topic)
         return 0;
@@ -119,8 +119,8 @@ size_t wamp_build_publish(char *buf, size_t cap, uint64_t request, const char *t
     return finish(w);
 }
 
-size_t wamp_build_call(char *buf, size_t cap, uint64_t request, const char *procedure, const char *options_json,
-                       const char *args_json, const char *kwargs_json)
+size_t dws_wamp_build_call(char *buf, size_t cap, uint64_t request, const char *procedure, const char *options_json,
+                           const char *args_json, const char *kwargs_json)
 {
     if (!buf || !procedure)
         return 0;
@@ -135,7 +135,7 @@ size_t wamp_build_call(char *buf, size_t cap, uint64_t request, const char *proc
     return finish(w);
 }
 
-size_t wamp_build_register(char *buf, size_t cap, uint64_t request, const char *procedure, const char *options_json)
+size_t dws_wamp_build_register(char *buf, size_t cap, uint64_t request, const char *procedure, const char *options_json)
 {
     if (!buf || !procedure)
         return 0;
@@ -149,8 +149,8 @@ size_t wamp_build_register(char *buf, size_t cap, uint64_t request, const char *
     return finish(w);
 }
 
-size_t wamp_build_yield(char *buf, size_t cap, uint64_t request, const char *options_json, const char *args_json,
-                        const char *kwargs_json)
+size_t dws_wamp_build_yield(char *buf, size_t cap, uint64_t request, const char *options_json, const char *args_json,
+                            const char *kwargs_json)
 {
     if (!buf)
         return 0;
@@ -232,7 +232,7 @@ static size_t scan_value(const char *s, size_t i)
     return i > start ? i : 0;
 }
 
-bool wamp_element(const char *msg, size_t index, const char **start, size_t *len)
+bool dws_wamp_element(const char *msg, size_t index, const char **start, size_t *len)
 {
     if (!msg)
         return false;
@@ -265,11 +265,11 @@ bool wamp_element(const char *msg, size_t index, const char **start, size_t *len
     }
 }
 
-bool wamp_get_uint(const char *msg, size_t index, uint64_t *out)
+bool dws_wamp_get_uint(const char *msg, size_t index, uint64_t *out)
 {
     const char *s;
     size_t n;
-    if (!wamp_element(msg, index, &s, &n) || n == 0)
+    if (!dws_wamp_element(msg, index, &s, &n) || n == 0)
         return false;
     uint64_t v = 0;
     for (size_t i = 0; i < n; i++)
@@ -283,21 +283,21 @@ bool wamp_get_uint(const char *msg, size_t index, uint64_t *out)
     return true;
 }
 
-bool wamp_get_type(const char *msg, int *out)
+bool dws_wamp_get_type(const char *msg, int *out)
 {
     uint64_t v;
-    if (!wamp_get_uint(msg, 0, &v))
+    if (!dws_wamp_get_uint(msg, 0, &v))
         return false;
     if (out)
         *out = (int)v;
     return true;
 }
 
-bool wamp_get_uri(const char *msg, size_t index, char *out, size_t out_cap)
+bool dws_wamp_get_uri(const char *msg, size_t index, char *out, size_t out_cap)
 {
     const char *s;
     size_t n;
-    if (!out || out_cap == 0 || !wamp_element(msg, index, &s, &n))
+    if (!out || out_cap == 0 || !dws_wamp_element(msg, index, &s, &n))
         return false;
     if (n < 2 || s[0] != '"' || s[n - 1] != '"') // must be a quoted string
         return false;

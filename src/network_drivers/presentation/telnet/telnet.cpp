@@ -104,7 +104,7 @@ static void send_escaped(uint8_t slot, const void *data, size_t n)
 // Connection lifecycle (called from the session layer)
 // ---------------------------------------------------------------------------
 
-void telnet_accept(uint8_t slot)
+void dws_telnet_accept(uint8_t slot)
 {
     TelnetConn *t = nullptr;
     for (int i = 0; i < MAX_TELNET_CONNS; i++)
@@ -131,7 +131,7 @@ void telnet_accept(uint8_t slot)
     raw_send(slot, "DWS Telnet ready\r\n> ", 22);
 }
 
-void telnet_close(uint8_t slot)
+void dws_telnet_close(uint8_t slot)
 {
     TelnetConn *t = find_conn(slot);
     if (t)
@@ -171,7 +171,7 @@ static void handle_data(uint8_t slot, TelnetConn *t, uint8_t b)
     }
 }
 
-void telnet_rx(uint8_t slot)
+void dws_telnet_rx(uint8_t slot)
 {
     TelnetConn *t = find_conn(slot);
     if (!t)
@@ -233,7 +233,7 @@ void telnet_rx(uint8_t slot)
 // Application API
 // ---------------------------------------------------------------------------
 
-void telnet_on_command(TelnetCommandCb cb)
+void dws_telnet_on_command(TelnetCommandCb cb)
 {
     s_telnet.cmd_cb = cb;
 }
@@ -245,20 +245,20 @@ static void broadcast(const char *s, size_t n)
             send_escaped(s_telnet.tn[i].slot, s, n); // app output: escape IAC (RFC 854)
 }
 
-void telnet_print(const char *s)
+void dws_telnet_print(const char *s)
 {
     if (s)
-        broadcast(s, strnlen(s, TELNET_BUF_SIZE)); // line-oriented console, same cap as telnet_printf
+        broadcast(s, strnlen(s, TELNET_BUF_SIZE)); // line-oriented console, same cap as dws_telnet_printf
 }
 
-void telnet_println(const char *s)
+void dws_telnet_println(const char *s)
 {
     if (s)
         broadcast(s, strnlen(s, TELNET_BUF_SIZE));
     broadcast("\r\n", 2);
 }
 
-void telnet_printf(const char *fmt, ...)
+void dws_telnet_printf(const char *fmt, ...)
 {
     char buf[TELNET_BUF_SIZE];
     va_list ap;
@@ -269,7 +269,7 @@ void telnet_printf(const char *fmt, ...)
         broadcast(buf, (size_t)(n < (int)sizeof(buf) ? n : (int)sizeof(buf) - 1));
 }
 
-uint8_t telnet_client_count()
+uint8_t dws_telnet_client_count()
 {
     uint8_t c = 0;
     for (int i = 0; i < MAX_TELNET_CONNS; i++)
@@ -280,8 +280,8 @@ uint8_t telnet_client_count()
 
 // The Telnet ProtoHandler (Layer 5 dispatch seam) - installed by proto_register_builtins() via this
 // accessor, so this module carries no dependency on the session layer.
-static const ProtoHandler s_telnet_handler = {telnet_accept, telnet_rx, telnet_close, nullptr};
-const ProtoHandler *telnet_proto_handler(void)
+static const ProtoHandler s_telnet_handler = {dws_telnet_accept, dws_telnet_rx, dws_telnet_close, nullptr};
+const ProtoHandler *dws_telnet_proto_handler(void)
 {
     return &s_telnet_handler;
 }

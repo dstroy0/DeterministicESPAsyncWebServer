@@ -86,40 +86,41 @@
 #define MQTTSN_PROTOCOL_ID 0x01 ///< CONNECT ProtocolId octet
 
 /** @brief Compose a Flags octet. @p qos is 0..3 (3 = QoS -1); @p topic_id_type is MQTTSN_TOPIC_*. */
-uint8_t mqttsn_make_flags(bool dup, uint8_t qos, bool retain, bool will, bool clean, uint8_t topic_id_type);
+uint8_t dws_mqttsn_make_flags(bool dup, uint8_t qos, bool retain, bool will, bool clean, uint8_t topic_id_type);
 
 // ---- builders (return total bytes written, or 0 on overflow / bad input) ----
 
 /** @brief CONNECT: Flags, ProtocolId(=1), Duration, ClientId. */
-size_t mqttsn_build_connect(uint8_t *buf, size_t cap, uint8_t flags, uint16_t duration, const char *client_id);
+size_t dws_mqttsn_build_connect(uint8_t *buf, size_t cap, uint8_t flags, uint16_t duration, const char *client_id);
 
 /** @brief REGISTER: TopicId (0x0000 from a client), MsgId, TopicName. */
-size_t mqttsn_build_register(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, const char *topic_name);
+size_t dws_mqttsn_build_register(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, const char *topic_name);
 
 /** @brief REGACK: TopicId, MsgId, ReturnCode. */
-size_t mqttsn_build_regack(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, uint8_t ret_code);
+size_t dws_mqttsn_build_regack(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, uint8_t ret_code);
 
 /** @brief PUBLISH: Flags, TopicId, MsgId, Data. */
-size_t mqttsn_build_publish(uint8_t *buf, size_t cap, uint8_t flags, uint16_t topic_id, uint16_t msg_id,
-                            const uint8_t *data, size_t data_len);
+size_t dws_mqttsn_build_publish(uint8_t *buf, size_t cap, uint8_t flags, uint16_t topic_id, uint16_t msg_id,
+                                const uint8_t *data, size_t data_len);
 
 /** @brief PUBACK: TopicId, MsgId, ReturnCode. */
-size_t mqttsn_build_puback(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, uint8_t ret_code);
+size_t dws_mqttsn_build_puback(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, uint8_t ret_code);
 
 /** @brief SUBSCRIBE by topic name: Flags, MsgId, TopicName (set TopicIdType normal/short in @p flags). */
-size_t mqttsn_build_subscribe_name(uint8_t *buf, size_t cap, uint8_t flags, uint16_t msg_id, const char *topic_name);
+size_t dws_mqttsn_build_subscribe_name(uint8_t *buf, size_t cap, uint8_t flags, uint16_t msg_id,
+                                       const char *topic_name);
 
 /** @brief SUBSCRIBE by pre-defined topic id: Flags, MsgId, TopicId (TopicIdType predefined). */
-size_t mqttsn_build_subscribe_id(uint8_t *buf, size_t cap, uint8_t flags, uint16_t msg_id, uint16_t topic_id);
+size_t dws_mqttsn_build_subscribe_id(uint8_t *buf, size_t cap, uint8_t flags, uint16_t msg_id, uint16_t topic_id);
 
 /** @brief PINGREQ: optional ClientId (nullptr for an empty keep-alive ping). */
-size_t mqttsn_build_pingreq(uint8_t *buf, size_t cap, const char *client_id);
+size_t dws_mqttsn_build_pingreq(uint8_t *buf, size_t cap, const char *client_id);
 
 /** @brief DISCONNECT: optional sleep Duration (pass with_duration=false for a plain disconnect). */
-size_t mqttsn_build_disconnect(uint8_t *buf, size_t cap, bool with_duration, uint16_t duration);
+size_t dws_mqttsn_build_disconnect(uint8_t *buf, size_t cap, bool with_duration, uint16_t duration);
 
 /** @brief SEARCHGW: broadcast Radius. */
-size_t mqttsn_build_searchgw(uint8_t *buf, size_t cap, uint8_t radius);
+size_t dws_mqttsn_build_searchgw(uint8_t *buf, size_t cap, uint8_t radius);
 
 // ---- parsing ----
 
@@ -136,18 +137,20 @@ struct MqttsnHeader
  * @param consumed receives the full message length (so the caller can advance).
  * @return true on a complete, self-consistent message; false if incomplete / malformed.
  */
-bool mqttsn_parse_header(const uint8_t *buf, size_t len, MqttsnHeader *out, size_t *consumed);
+bool dws_mqttsn_parse_header(const uint8_t *buf, size_t len, MqttsnHeader *out, size_t *consumed);
 
 // The typed parsers below take the @ref MqttsnHeader payload/payload_len.
-bool mqttsn_parse_connack(const uint8_t *payload, size_t len, uint8_t *ret_code);
-bool mqttsn_parse_regack(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id, uint8_t *ret_code);
-bool mqttsn_parse_puback(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id, uint8_t *ret_code);
-bool mqttsn_parse_suback(const uint8_t *payload, size_t len, uint8_t *flags, uint16_t *topic_id, uint16_t *msg_id,
-                         uint8_t *ret_code);
-bool mqttsn_parse_publish(const uint8_t *payload, size_t len, uint8_t *flags, uint16_t *topic_id, uint16_t *msg_id,
-                          const uint8_t **data, size_t *data_len);
-bool mqttsn_parse_register(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id,
-                           const char **topic_name, size_t *topic_name_len);
+bool dws_mqttsn_parse_connack(const uint8_t *payload, size_t len, uint8_t *ret_code);
+bool dws_mqttsn_parse_regack(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id,
+                             uint8_t *ret_code);
+bool dws_mqttsn_parse_puback(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id,
+                             uint8_t *ret_code);
+bool dws_mqttsn_parse_suback(const uint8_t *payload, size_t len, uint8_t *flags, uint16_t *topic_id, uint16_t *msg_id,
+                             uint8_t *ret_code);
+bool dws_mqttsn_parse_publish(const uint8_t *payload, size_t len, uint8_t *flags, uint16_t *topic_id, uint16_t *msg_id,
+                              const uint8_t **data, size_t *data_len);
+bool dws_mqttsn_parse_register(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id,
+                               const char **topic_name, size_t *topic_name_len);
 
 #endif // DWS_ENABLE_MQTT_SN
 

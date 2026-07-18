@@ -41,7 +41,7 @@ void ws_client_accept_for_key(const char *key_b64, char *out, size_t out_cap)
     sha1((const uint8_t *)concat, klen + mlen, digest);
     if (out_cap < 29) // 28 base64 chars + NUL
         return;
-    base64_encode(digest, SHA1_DIGEST_LEN, out);
+    dws_base64_encode(digest, SHA1_DIGEST_LEN, out);
 }
 
 size_t ws_client_build_handshake(uint8_t *out, size_t cap, const char *host, const char *path, const char *key_b64,
@@ -516,7 +516,7 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
     uint8_t keyraw[16];
     esp_fill_random(keyraw, sizeof(keyraw));
     char key_b64[25];
-    base64_encode(keyraw, sizeof(keyraw), key_b64);
+    dws_base64_encode(keyraw, sizeof(keyraw), key_b64);
     char expect[32];
     ws_client_accept_for_key(key_b64, expect, sizeof(expect));
 

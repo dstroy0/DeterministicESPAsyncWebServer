@@ -63,18 +63,18 @@ struct LoraIrq
 
 const uint8_t SX127X_VERSION = 0x12;
 
-inline uint8_t rd(const lora_bus *b, uint8_t reg)
+inline uint8_t rd(const dws_lora_bus *b, uint8_t reg)
 {
     return b->read(reg, b->ctx);
 }
-inline void wr(const lora_bus *b, uint8_t reg, uint8_t val)
+inline void wr(const dws_lora_bus *b, uint8_t reg, uint8_t val)
 {
     b->write(reg, val, b->ctx);
 }
 } // namespace
 
-bool lora_frame_parse(const uint8_t *raw, uint16_t len, lora_header *hdr, const uint8_t **payload,
-                      uint16_t *payload_len)
+bool dws_lora_frame_parse(const uint8_t *raw, uint16_t len, dws_lora_header *hdr, const uint8_t **payload,
+                          uint16_t *payload_len)
 {
     if (!raw || !hdr || len < 4)
         return false;
@@ -89,7 +89,8 @@ bool lora_frame_parse(const uint8_t *raw, uint16_t len, lora_header *hdr, const 
     return true;
 }
 
-uint16_t lora_frame_build(const lora_header *hdr, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)
+uint16_t dws_lora_frame_build(const dws_lora_header *hdr, const uint8_t *payload, uint16_t len, uint8_t *out,
+                              uint16_t cap)
 {
     if (!hdr || !out || len > DWS_LORA_MAX_PAYLOAD || (uint32_t)len + 4 > cap)
         return 0;
@@ -102,7 +103,7 @@ uint16_t lora_frame_build(const lora_header *hdr, const uint8_t *payload, uint16
     return (uint16_t)(len + 4);
 }
 
-bool lora_init(const lora_bus *bus, const lora_config *cfg)
+bool dws_lora_init(const dws_lora_bus *bus, const dws_lora_config *cfg)
 {
     if (!bus || !bus->read || !bus->write || !cfg)
         return false;
@@ -137,7 +138,7 @@ bool lora_init(const lora_bus *bus, const lora_config *cfg)
     return true;
 }
 
-bool lora_send(const lora_bus *bus, const uint8_t *frame, uint8_t len)
+bool dws_lora_send(const dws_lora_bus *bus, const uint8_t *frame, uint8_t len)
 {
     if (!bus || !frame || len == 0 || len > DWS_LORA_MAX_PAYLOAD + 4)
         return false;
@@ -150,7 +151,7 @@ bool lora_send(const lora_bus *bus, const uint8_t *frame, uint8_t len)
     return true;
 }
 
-bool lora_tx_done(const lora_bus *bus)
+bool dws_lora_tx_done(const dws_lora_bus *bus)
 {
     if (!bus)
         return false;
@@ -162,7 +163,7 @@ bool lora_tx_done(const lora_bus *bus)
     return false;
 }
 
-void lora_set_rx(const lora_bus *bus)
+void dws_lora_set_rx(const dws_lora_bus *bus)
 {
     if (!bus)
         return;
@@ -170,7 +171,7 @@ void lora_set_rx(const lora_bus *bus)
     wr(bus, LoraReg::REG_OP_MODE, LoraMode::MODE_LORA | LoraMode::MODE_RX_CONT);
 }
 
-int lora_recv(const lora_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi)
+int dws_lora_recv(const dws_lora_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi)
 {
     if (!bus || !buf)
         return -1;

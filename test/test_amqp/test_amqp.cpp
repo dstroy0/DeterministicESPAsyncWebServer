@@ -18,7 +18,7 @@ void tearDown()
 void test_protocol_header()
 {
     uint8_t buf[8];
-    size_t n = amqp_protocol_header(buf, sizeof(buf));
+    size_t n = dws_amqp_protocol_header(buf, sizeof(buf));
     const uint8_t expect[] = {'A', 'M', 'Q', 'P', 0, 0, 9, 1};
     TEST_ASSERT_EQUAL_size_t(8, n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, 8);
@@ -29,7 +29,7 @@ void test_build_method_bytes()
 {
     const uint8_t args[] = {0x00};
     uint8_t buf[32];
-    size_t n = amqp_build_method(buf, sizeof(buf), 1, 10, 10, args, sizeof(args));
+    size_t n = dws_amqp_build_method(buf, sizeof(buf), 1, 10, 10, args, sizeof(args));
     const uint8_t expect[] = {
         0x01,                   // type METHOD
         0x00, 0x01,             // channel 1
@@ -46,11 +46,11 @@ void test_method_round_trip()
 {
     const uint8_t args[] = {0x0A, 0x0B, 0x0C};
     uint8_t buf[32];
-    size_t n = amqp_build_method(buf, sizeof(buf), 7, 60, 40, args, sizeof(args)); // Basic.Publish-ish
+    size_t n = dws_amqp_build_method(buf, sizeof(buf), 7, 60, 40, args, sizeof(args)); // Basic.Publish-ish
 
     AmqpFrame f;
     size_t consumed;
-    TEST_ASSERT_TRUE(amqp_parse_frame(buf, n, &f, &consumed));
+    TEST_ASSERT_TRUE(dws_amqp_parse_frame(buf, n, &f, &consumed));
     TEST_ASSERT_EQUAL_HEX8(AMQP_FRAME_METHOD, f.type);
     TEST_ASSERT_EQUAL_UINT16(7, f.channel);
     TEST_ASSERT_EQUAL_size_t(n, consumed);
@@ -58,7 +58,7 @@ void test_method_round_trip()
     uint16_t cls, meth;
     const uint8_t *a;
     size_t alen;
-    TEST_ASSERT_TRUE(amqp_parse_method(f.payload, f.payload_len, &cls, &meth, &a, &alen));
+    TEST_ASSERT_TRUE(dws_amqp_parse_method(f.payload, f.payload_len, &cls, &meth, &a, &alen));
     TEST_ASSERT_EQUAL_UINT16(60, cls);
     TEST_ASSERT_EQUAL_UINT16(40, meth);
     TEST_ASSERT_EQUAL_size_t(sizeof(args), alen);
@@ -68,14 +68,14 @@ void test_method_round_trip()
 void test_heartbeat()
 {
     uint8_t buf[16];
-    size_t n = amqp_build_heartbeat(buf, sizeof(buf));
+    size_t n = dws_amqp_build_heartbeat(buf, sizeof(buf));
     const uint8_t expect[] = {0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xCE};
     TEST_ASSERT_EQUAL_size_t(8, n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
 
     AmqpFrame f;
     size_t consumed;
-    TEST_ASSERT_TRUE(amqp_parse_frame(buf, n, &f, &consumed));
+    TEST_ASSERT_TRUE(dws_amqp_parse_frame(buf, n, &f, &consumed));
     TEST_ASSERT_EQUAL_HEX8(AMQP_FRAME_HEARTBEAT, f.type);
     TEST_ASSERT_EQUAL_size_t(0, f.payload_len);
 }
@@ -84,16 +84,16 @@ void test_heartbeat()
 void test_parse_stream()
 {
     uint8_t buf[64];
-    size_t n = amqp_build_method(buf, sizeof(buf), 1, 10, 11, nullptr, 0);
-    n += amqp_build_heartbeat(buf + n, sizeof(buf) - n);
+    size_t n = dws_amqp_build_method(buf, sizeof(buf), 1, 10, 11, nullptr, 0);
+    n += dws_amqp_build_heartbeat(buf + n, sizeof(buf) - n);
 
     size_t pos = 0;
     AmqpFrame f;
     size_t c;
-    TEST_ASSERT_TRUE(amqp_parse_frame(buf + pos, n - pos, &f, &c));
+    TEST_ASSERT_TRUE(dws_amqp_parse_frame(buf + pos, n - pos, &f, &c));
     TEST_ASSERT_EQUAL_HEX8(AMQP_FRAME_METHOD, f.type);
     pos += c;
-    TEST_ASSERT_TRUE(amqp_parse_frame(buf + pos, n - pos, &f, &c));
+    TEST_ASSERT_TRUE(dws_amqp_parse_frame(buf + pos, n - pos, &f, &c));
     TEST_ASSERT_EQUAL_HEX8(AMQP_FRAME_HEARTBEAT, f.type);
     pos += c;
     TEST_ASSERT_EQUAL_size_t(n, pos);
@@ -105,40 +105,40 @@ void test_parse_rejects_bad()
     size_t c;
     // A frame whose end octet is not 0xCE.
     const uint8_t bad_end[] = {0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0xAA, 0xFF};
-    TEST_ASSERT_FALSE(amqp_parse_frame(bad_end, sizeof(bad_end), &f, &c));
+    TEST_ASSERT_FALSE(dws_amqp_parse_frame(bad_end, sizeof(bad_end), &f, &c));
     // Truncated (declares 5 payload octets, buffer too short).
     const uint8_t trunc[] = {0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x05, 0x00};
-    TEST_ASSERT_FALSE(amqp_parse_frame(trunc, sizeof(trunc), &f, &c));
+    TEST_ASSERT_FALSE(dws_amqp_parse_frame(trunc, sizeof(trunc), &f, &c));
     // A size field of 0xFFFFFFFF must fail closed, not wrap the bounds check (32-bit hardening).
     const uint8_t huge[] = {0x01, 0x00, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x00};
-    TEST_ASSERT_FALSE(amqp_parse_frame(huge, sizeof(huge), &f, &c));
+    TEST_ASSERT_FALSE(dws_amqp_parse_frame(huge, sizeof(huge), &f, &c));
     // A method payload shorter than the 4-octet class/method id.
     const uint8_t short_method[] = {0x00, 0x0A};
     uint16_t cls, meth;
     const uint8_t *a;
     size_t alen;
-    TEST_ASSERT_FALSE(amqp_parse_method(short_method, sizeof(short_method), &cls, &meth, &a, &alen));
+    TEST_ASSERT_FALSE(dws_amqp_parse_method(short_method, sizeof(short_method), &cls, &meth, &a, &alen));
 }
 
 void test_build_overflow_fails_closed()
 {
     const uint8_t args[] = {1, 2, 3, 4};
     uint8_t small[8]; // needs 8 + 4 + args
-    TEST_ASSERT_EQUAL_size_t(0, amqp_build_method(small, sizeof(small), 1, 10, 10, args, sizeof(args)));
-    TEST_ASSERT_EQUAL_size_t(0, amqp_protocol_header(small, 4));
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_method(small, sizeof(small), 1, 10, 10, args, sizeof(args)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_protocol_header(small, 4));
 }
 
 void test_build_and_parse_guards()
 {
     uint8_t buf[64];
     uint8_t payload[4] = {1, 2, 3, 4};
-    TEST_ASSERT_EQUAL_size_t(0, amqp_build_frame(nullptr, sizeof(buf), 1, 0, payload, sizeof(payload))); // null buf
-    TEST_ASSERT_EQUAL_size_t(0, amqp_build_frame(buf, sizeof(buf), 1, 0, nullptr, 4));                   // null payload
-    TEST_ASSERT_EQUAL_size_t(0, amqp_build_frame(buf, 4, 1, 0, payload, sizeof(payload)));               // cap < total
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_frame(nullptr, sizeof(buf), 1, 0, payload, sizeof(payload))); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_frame(buf, sizeof(buf), 1, 0, nullptr, 4));     // null payload
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_frame(buf, 4, 1, 0, payload, sizeof(payload))); // cap < total
     AmqpFrame fr;
     size_t consumed = 0;
     uint8_t tiny[3] = {1, 0, 0};
-    TEST_ASSERT_FALSE(amqp_parse_frame(tiny, sizeof(tiny), &fr, &consumed)); // too short
+    TEST_ASSERT_FALSE(dws_amqp_parse_frame(tiny, sizeof(tiny), &fr, &consumed)); // too short
 }
 
 int main()

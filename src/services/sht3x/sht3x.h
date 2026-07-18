@@ -39,30 +39,30 @@
 #define SHT3X_CMD_HEATER_OFF 0x3066  ///< disable the on-chip heater
 
 /** @brief Sensirion CRC-8 (poly 0x31, init 0xFF) over @p len bytes. */
-uint8_t sht3x_crc8(const uint8_t *data, size_t len);
+uint8_t dws_sht3x_crc8(const uint8_t *data, size_t len);
 
 /** @brief Convert a raw 16-bit temperature tick to milli-degrees Celsius. */
-int32_t sht3x_temp_mc(uint16_t raw);
+int32_t dws_sht3x_temp_mc(uint16_t raw);
 
 /** @brief Convert a raw 16-bit humidity tick to milli-percent relative humidity (0..100000). */
-int32_t sht3x_rh_mpct(uint16_t raw);
+int32_t dws_sht3x_rh_mpct(uint16_t raw);
 
 /**
  * @brief Decode a six-byte single-shot response (T msb/lsb/crc, RH msb/lsb/crc). Verifies both
  * CRC-8 words, then fills @p temp_mc and @p rh_mpct (either may be null).
  * @return false if a CRC does not match (a corrupt read).
  */
-bool sht3x_parse(const uint8_t resp[6], int32_t *temp_mc, int32_t *rh_mpct);
+bool dws_sht3x_parse(const uint8_t resp[6], int32_t *temp_mc, int32_t *rh_mpct);
 
 // --- ESP32 binding (I2C via Wire; no-ops on a host build) ------------------------------------
 
 /** @brief Soft-reset the SHT3x at @p addr over I2C. @return true if it acknowledged. */
-bool sht3x_begin(uint8_t addr);
+bool dws_sht3x_begin(uint8_t addr);
 
 /**
  * @brief Trigger a single-shot high-repeatability measurement, read + verify the six bytes, and
  * return the temperature (milli-C) and humidity (milli-%RH). @return false on I2C or CRC error.
  */
-bool sht3x_read(int32_t *temp_mc, int32_t *rh_mpct);
+bool dws_sht3x_read(int32_t *temp_mc, int32_t *rh_mpct);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SHT3X_H

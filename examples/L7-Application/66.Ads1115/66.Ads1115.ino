@@ -26,14 +26,14 @@
 void setup()
 {
     Serial.begin(115200);
-    ads1115_begin(0x48);
+    dws_ads1115_begin(0x48);
     Serial.println("ADS1115 ready - reading AIN0 at +/-4.096 V full scale");
 }
 
 void loop()
 {
     int32_t uv = 0; // microvolts
-    if (ads1115_read_uv(0, Ads1115Gain::ADS1115_GAIN_1, &uv))
+    if (dws_ads1115_read_uv(0, Ads1115Gain::ADS1115_GAIN_1, &uv))
     {
         // Print microvolts as V.mmm (millivolt precision) by hand - no float formatting.
         long v_whole = uv / 1000000;

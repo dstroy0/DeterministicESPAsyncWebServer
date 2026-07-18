@@ -70,7 +70,7 @@ void err_ack(ScpConn *c, const char *msg)
     buf[1 + ml] = '\n';
     dws_ssh_conn_send(c->slot, c->channel, buf, 2 + ml);
 }
-void scp_end(ScpConn *c)
+void dws_scp_end(ScpConn *c)
 {
     if (c->file)
         c->file.close();
@@ -79,7 +79,7 @@ void scp_end(ScpConn *c)
     dws_ssh_conn_close_channel(c->slot, c->channel);
 }
 
-void scp_on_open(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len)
+void dws_scp_on_open(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len)
 {
     if (slot >= MAX_SSH_CONNS)
         return;
@@ -94,7 +94,7 @@ void scp_on_open(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len
     c->cl_len = 0;
 
     char path[DWS_SFTP_PATH_MAX];
-    ScpMode mode = scp_parse_cmd(cmd, cmd_len, path, sizeof(path));
+    ScpMode mode = dws_scp_parse_cmd(cmd, cmd_len, path, sizeof(path));
     if (mode == ScpMode::SINK)
     {
         size_t pl = strlen(path);
@@ -107,17 +107,17 @@ void scp_on_open(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len
     else if (mode == ScpMode::SOURCE)
     {
         err_ack(c, "scp download not supported; use sftp get");
-        scp_end(c);
+        dws_scp_end(c);
     }
     else
     {
         err_ack(c, "unsupported scp command");
-        scp_end(c);
+        dws_scp_end(c);
     }
 }
 
 // Resolve the on-disk destination for a received file named @p name.
-bool scp_resolve_dest(ScpConn *c, const char *name, char *out, size_t cap)
+bool dws_scp_resolve_dest(ScpConn *c, const char *name, char *out, size_t cap)
 {
     char sub[DWS_SFTP_PATH_MAX + 96];
     if (c->dest_is_dir)
@@ -127,7 +127,7 @@ bool scp_resolve_dest(ScpConn *c, const char *name, char *out, size_t cap)
     return fs_path_resolve(s_scp.root, sub, out, cap) == 0;
 }
 
-void scp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len)
+void dws_scp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len)
 {
     if (slot >= MAX_SSH_CONNS)
         return;
@@ -160,24 +160,24 @@ void scp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len
             uint32_t mode = 0;
             uint64_t size = 0;
             char name[DWS_SFTP_PATH_MAX];
-            if (!scp_parse_cline(c->cl, c->cl_len, &mode, &size, name, sizeof(name)))
+            if (!dws_scp_parse_cline(c->cl, c->cl_len, &mode, &size, name, sizeof(name)))
             {
                 err_ack(c, "unsupported scp record"); // e.g. a D/E directory record (no -r support)
-                scp_end(c);
+                dws_scp_end(c);
                 return;
             }
             char disk[DWS_SFTP_PATH_MAX];
-            if (!scp_resolve_dest(c, name, disk, sizeof(disk)))
+            if (!dws_scp_resolve_dest(c, name, disk, sizeof(disk)))
             {
                 err_ack(c, "bad path");
-                scp_end(c);
+                dws_scp_end(c);
                 return;
             }
             c->file = s_scp.fs->open(disk, "w");
             if (!c->file)
             {
                 err_ack(c, "cannot create file");
-                scp_end(c);
+                dws_scp_end(c);
                 return;
             }
             c->remaining = size;
@@ -209,7 +209,7 @@ void scp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len
                 err_ack(c, "write error");
             else
                 ack(c, SCP_ACK_OK);
-            scp_end(c);
+            dws_scp_end(c);
             return;
         }
         return; // NONE / unexpected
@@ -230,8 +230,8 @@ void dws_ssh_scp_begin(fs::FS &fs, const char *root)
     }
     if (!s_scp.registered)
     {
-        dws_ssh_channel_set_scp_open_cb(scp_on_open);
-        dws_ssh_channel_set_scp_data_cb(scp_on_data);
+        dws_ssh_channel_set_scp_open_cb(dws_scp_on_open);
+        dws_ssh_channel_set_scp_data_cb(dws_scp_on_data);
         s_scp.registered = true;
     }
 }

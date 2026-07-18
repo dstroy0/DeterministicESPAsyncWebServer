@@ -64,7 +64,7 @@ enum : uint32_t
 };
 
 // All MachineTool model state, owned by one instance (internal linkage): the bound machine-data
-// pointer the resolvers read from. Null until umati_bind(); a Read/Browse before binding is a clean
+// pointer the resolvers read from. Null until dws_umati_bind(); a Read/Browse before binding is a clean
 // miss (BadNodeIdUnknown), so the server never dereferences a null model.
 struct UmatiCtx
 {
@@ -134,12 +134,12 @@ int32_t add_var(OpcUaReference *out, int32_t n, uint32_t max, uint32_t id, const
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
-void umati_bind(const UmatiMachineTool *mt)
+void dws_umati_bind(const UmatiMachineTool *mt)
 {
     s_umati.mt = mt;
 }
 
-bool umati_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out)
+bool dws_umati_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out)
 {
     const UmatiMachineTool *mt = s_umati.mt;
     if (!mt || ns != DWS_UMATI_NS || attribute != OPCUA_ATTR_VALUE)
@@ -224,7 +224,7 @@ bool umati_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out)
     }
 }
 
-int32_t umati_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
+int32_t dws_umati_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
 {
     const UmatiMachineTool *mt = s_umati.mt;
     if (!mt)
@@ -297,11 +297,11 @@ int32_t umati_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max
     }
 }
 
-void umati_install(const UmatiMachineTool *mt)
+void dws_umati_install(const UmatiMachineTool *mt)
 {
-    umati_bind(mt);
-    opcua_set_read_handler(umati_read);
-    opcua_set_browse_handler(umati_browse);
+    dws_umati_bind(mt);
+    dws_opcua_set_read_handler(dws_umati_read);
+    dws_opcua_set_browse_handler(dws_umati_browse);
 }
 
 #endif // DWS_ENABLE_UMATI

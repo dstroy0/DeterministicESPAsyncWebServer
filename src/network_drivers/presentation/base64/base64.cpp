@@ -23,7 +23,7 @@
 
 static const char B64_TABLE[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-void base64_encode(const uint8_t *src, size_t src_len, char *dst)
+void dws_base64_encode(const uint8_t *src, size_t src_len, char *dst)
 {
     size_t i = 0;
     size_t j = 0;
@@ -62,7 +62,7 @@ void base64_encode(const uint8_t *src, size_t src_len, char *dst)
 #include "mbedtls/base64.h"
 #include <string.h>
 
-size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
+size_t dws_base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
 {
     size_t src_len = strnlen(src, ((dst_cap + 2) / 3) * 4 + 4); // max base64 length decoding within dst_cap
     size_t olen;
@@ -91,7 +91,7 @@ static int b64_val(char c)
     return -1;
 }
 
-size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
+size_t dws_base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
 {
     size_t out = 0;
 
@@ -154,15 +154,15 @@ size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
 // ---------------------------------------------------------------------------
 // Base64url (RFC 4648 section 5): '-' / '_' replace '+' / '/', no '=' padding.
 // Shared by JWT (HS256) and OIDC (RS256) so the alphabet lives in one place.
-// Platform-independent: encode builds on base64_encode then rewrites the two
+// Platform-independent: encode builds on dws_base64_encode then rewrites the two
 // differing characters in place; decode is a direct streaming decoder that
 // accepts the URL and standard alphabets and stops at '=', so it needs no temp
 // buffer or re-padding.
 // ---------------------------------------------------------------------------
 
-size_t base64url_encode(const uint8_t *src, size_t src_len, char *dst)
+size_t dws_base64url_encode(const uint8_t *src, size_t src_len, char *dst)
 {
-    base64_encode(src, src_len, dst); // standard base64, '='-padded, NUL-terminated
+    dws_base64_encode(src, src_len, dst); // standard base64, '='-padded, NUL-terminated
     size_t n = 0;
     for (size_t i = 0; dst[i]; i++)
     {
@@ -179,7 +179,7 @@ size_t base64url_encode(const uint8_t *src, size_t src_len, char *dst)
     return n;
 }
 
-static int base64url_val(char c)
+static int dws_base64url_val(char c)
 {
     if (c >= 'A' && c <= 'Z')
         return c - 'A';
@@ -197,7 +197,7 @@ static int base64url_val(char c)
     return -1;
 }
 
-size_t base64url_decode(const char *src, size_t src_len, uint8_t *dst, size_t dst_cap)
+size_t dws_base64url_decode(const char *src, size_t src_len, uint8_t *dst, size_t dst_cap)
 {
     size_t o = 0;
     uint32_t acc = 0;
@@ -206,7 +206,7 @@ size_t base64url_decode(const char *src, size_t src_len, uint8_t *dst, size_t ds
     {
         if (src[i] == '=')
             break; // optional padding ends the input
-        int v = base64url_val(src[i]);
+        int v = dws_base64url_val(src[i]);
         if (v < 0)
             return 0;
         acc = (acc << 6) | (uint32_t)v;

@@ -34,8 +34,8 @@ static size_t write_segment(uint8_t *p, size_t cap, uint8_t logical_type, uint16
     return 4;
 }
 
-size_t cip_build_epath(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id, uint16_t attribute_id,
-                       bool with_attribute)
+size_t dws_cip_build_epath(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id, uint16_t attribute_id,
+                           bool with_attribute)
 {
     if (!buf)
         return 0;
@@ -58,8 +58,8 @@ size_t cip_build_epath(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t ins
     return p;
 }
 
-size_t cip_build_request(uint8_t *buf, size_t cap, uint8_t service, const uint8_t *epath, size_t epath_len,
-                         const uint8_t *data, size_t data_len)
+size_t dws_cip_build_request(uint8_t *buf, size_t cap, uint8_t service, const uint8_t *epath, size_t epath_len,
+                             const uint8_t *data, size_t data_len)
 {
     // EPATH must be whole 16-bit words and fit the 1-octet word count.
     if (!buf || !epath || (epath_len & 1) || (epath_len / 2) > 0xFF || (data_len && !data))
@@ -80,18 +80,18 @@ size_t cip_build_request(uint8_t *buf, size_t cap, uint8_t service, const uint8_
     return p;
 }
 
-size_t cip_build_get_attr_single(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id,
-                                 uint16_t attribute_id)
+size_t dws_cip_build_get_attr_single(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id,
+                                     uint16_t attribute_id)
 {
     uint8_t epath[12];
-    size_t elen = cip_build_epath(epath, sizeof(epath), class_id, instance_id, attribute_id, true);
+    size_t elen = dws_cip_build_epath(epath, sizeof(epath), class_id, instance_id, attribute_id, true);
     if (!elen)
         return 0; // GCOVR_EXCL_LINE  unreachable: epath[12] holds the worst-case 3x4B logical segments, so build never
                   // fails
-    return cip_build_request(buf, cap, CIP_SC_GET_ATTR_SINGLE, epath, elen, nullptr, 0);
+    return dws_cip_build_request(buf, cap, CIP_SC_GET_ATTR_SINGLE, epath, elen, nullptr, 0);
 }
 
-bool cip_parse_response(const uint8_t *buf, size_t len, CipResponse *out)
+bool dws_cip_parse_response(const uint8_t *buf, size_t len, CipResponse *out)
 {
     if (!buf || !out || len < 4) // service + reserved + general status + additional-status size
         return false;

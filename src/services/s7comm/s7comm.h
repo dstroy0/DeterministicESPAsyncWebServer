@@ -20,7 +20,7 @@
  * is padded to an even length except the last.
  *
  * Constants and the length rule are verified against the Wireshark S7comm dissector. This
- * codec produces / consumes the S7 PDU; wrap it with `cotp_build_dt` + `tpkt_build`.
+ * codec produces / consumes the S7 PDU; wrap it with `dws_cotp_build_dt` + `dws_tpkt_build`.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -80,8 +80,8 @@
 #define S7_RET_OK 0xFF       ///< data item return code: success
 
 /** @brief Build a Setup Communication job. Returns the PDU length, or 0 on overflow. */
-size_t s7_build_setup(uint8_t *buf, size_t cap, uint16_t pdu_ref, uint16_t max_amq_calling, uint16_t max_amq_called,
-                      uint16_t pdu_size);
+size_t dws_s7_build_setup(uint8_t *buf, size_t cap, uint16_t pdu_ref, uint16_t max_amq_calling, uint16_t max_amq_called,
+                          uint16_t pdu_size);
 
 /** @brief One Read Var item (an S7-ANY pointer). */
 struct S7ReadItem
@@ -94,7 +94,7 @@ struct S7ReadItem
 };
 
 /** @brief Build a Read Var job for @p n items. Returns the PDU length, or 0 on overflow. */
-size_t s7_build_read_request(uint8_t *buf, size_t cap, uint16_t pdu_ref, const S7ReadItem *items, size_t n);
+size_t dws_s7_build_read_request(uint8_t *buf, size_t cap, uint16_t pdu_ref, const S7ReadItem *items, size_t n);
 
 /** @brief A parsed S7comm header. @ref param / @ref data point INTO the source buffer. */
 struct S7Header
@@ -111,7 +111,7 @@ struct S7Header
 };
 
 /** @brief Parse + validate an S7comm header (protocol id, lengths). */
-bool s7_parse_header(const uint8_t *buf, size_t len, S7Header *out);
+bool dws_s7_parse_header(const uint8_t *buf, size_t len, S7Header *out);
 
 /** @brief One Read Var response data item. @ref data points INTO the source buffer. */
 struct S7DataItem
@@ -128,7 +128,7 @@ struct S7DataItem
  * @param offset   in/out cursor, start at 0; advanced past the item (and its even-pad).
  * @return true on a complete item; false at end-of-section or on truncation.
  */
-bool s7_read_next_item(const uint8_t *data, size_t data_len, size_t *offset, S7DataItem *out);
+bool dws_s7_read_next_item(const uint8_t *data, size_t data_len, size_t *offset, S7DataItem *out);
 
 #endif // DWS_ENABLE_S7COMM
 

@@ -24,13 +24,13 @@ static const char *GGA_BODY = "GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.
 
 void test_checksum_known_vector()
 {
-    TEST_ASSERT_EQUAL_HEX8(0x47, nmea0183_checksum(GGA_BODY, strlen(GGA_BODY)));
+    TEST_ASSERT_EQUAL_HEX8(0x47, dws_nmea0183_checksum(GGA_BODY, strlen(GGA_BODY)));
 }
 
 void test_build()
 {
     char buf[96];
-    size_t n = nmea0183_build(buf, sizeof(buf), GGA_BODY);
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), GGA_BODY);
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_CHAR('$', buf[0]);
     TEST_ASSERT_EQUAL_CHAR('\n', buf[n - 1]);
@@ -41,7 +41,7 @@ void test_build()
 void test_parse_gga()
 {
     Nmea0183 m;
-    TEST_ASSERT_TRUE(nmea0183_parse(GGA, strlen(GGA), &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(GGA, strlen(GGA), &m));
     TEST_ASSERT_EQUAL_STRING("GP", m.talker);
     TEST_ASSERT_EQUAL_STRING("GGA", m.type);
     // 15 fields: address + 14 data fields (two trailing empty).
@@ -55,18 +55,18 @@ void test_parse_gga()
 void test_field_helpers()
 {
     Nmea0183 m;
-    TEST_ASSERT_TRUE(nmea0183_parse(GGA, strlen(GGA), &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(GGA, strlen(GGA), &m));
     float lat = 0;
-    TEST_ASSERT_TRUE(nmea0183_field_float(&m, 2, &lat));
+    TEST_ASSERT_TRUE(dws_nmea0183_field_float(&m, 2, &lat));
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 4807.038f, lat);
     long sats = 0;
-    TEST_ASSERT_TRUE(nmea0183_field_int(&m, 7, &sats)); // "08"
+    TEST_ASSERT_TRUE(dws_nmea0183_field_int(&m, 7, &sats)); // "08"
     TEST_ASSERT_EQUAL_INT(8, sats);
     // an empty field yields no value.
     float none;
-    TEST_ASSERT_FALSE(nmea0183_field_float(&m, 13, &none));
+    TEST_ASSERT_FALSE(dws_nmea0183_field_float(&m, 13, &none));
     // a non-numeric field (the "N" hemisphere) yields no value.
-    TEST_ASSERT_FALSE(nmea0183_field_int(&m, 3, &sats));
+    TEST_ASSERT_FALSE(dws_nmea0183_field_int(&m, 3, &sats));
 }
 
 void test_parse_rejects_bad_checksum()
@@ -78,23 +78,23 @@ void test_parse_rejects_bad_checksum()
     star[1] = '0';
     star[2] = '0';
     Nmea0183 m;
-    TEST_ASSERT_FALSE(nmea0183_parse(bad, strlen(bad), &m));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse(bad, strlen(bad), &m));
 }
 
 void test_parse_rejects_no_dollar()
 {
     Nmea0183 m;
-    TEST_ASSERT_FALSE(nmea0183_parse("GPGGA,1,2*00\r\n", 14, &m));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse("GPGGA,1,2*00\r\n", 14, &m));
 }
 
 // Round-trip: build from a body, then parse the result back.
 void test_build_then_parse()
 {
     char buf[96];
-    size_t n = nmea0183_build(buf, sizeof(buf), "GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W");
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W");
     TEST_ASSERT_TRUE(n > 0);
     Nmea0183 m;
-    TEST_ASSERT_TRUE(nmea0183_parse(buf, n, &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
     TEST_ASSERT_EQUAL_STRING("GP", m.talker);
     TEST_ASSERT_EQUAL_STRING("RMC", m.type);
     TEST_ASSERT_EQUAL_MEMORY("A", m.fields[2], 1); // status = active
@@ -105,27 +105,27 @@ void test_build_then_parse()
 void test_nmea0183_error_paths()
 {
     char buf[96];
-    TEST_ASSERT_EQUAL_size_t(0, nmea0183_build(nullptr, sizeof(buf), "GPGGA")); // null buf
-    TEST_ASSERT_EQUAL_size_t(0, nmea0183_build(buf, sizeof(buf), nullptr));     // null body
-    TEST_ASSERT_EQUAL_size_t(0, nmea0183_build(buf, 4, "GPGGA"));               // cap too small
+    TEST_ASSERT_EQUAL_size_t(0, dws_nmea0183_build(nullptr, sizeof(buf), "GPGGA")); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, dws_nmea0183_build(buf, sizeof(buf), nullptr));     // null body
+    TEST_ASSERT_EQUAL_size_t(0, dws_nmea0183_build(buf, 4, "GPGGA"));               // cap too small
 
     Nmea0183 m;
     // A lowercase checksum still validates (hex_val a-f). "GPGGA,1" -> checksum 0x4B -> "4b".
     const char *body = "GPGGA,1";
-    uint8_t cs = nmea0183_checksum(body, strlen(body));
+    uint8_t cs = dws_nmea0183_checksum(body, strlen(body));
     char lower[32];
     snprintf(lower, sizeof(lower), "$%s*%02x\r\n", body, cs); // %02x emits lowercase hex
-    TEST_ASSERT_TRUE(nmea0183_parse(lower, strlen(lower), &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(lower, strlen(lower), &m));
 
-    TEST_ASSERT_FALSE(nmea0183_parse("$GPGGA,1*4G\r\n", 13, &m)); // 'G' is not a hex digit
-    TEST_ASSERT_FALSE(nmea0183_parse("$GPGGA,123\r\n", 12, &m));  // no '*' checksum introducer
+    TEST_ASSERT_FALSE(dws_nmea0183_parse("$GPGGA,1*4G\r\n", 13, &m)); // 'G' is not a hex digit
+    TEST_ASSERT_FALSE(dws_nmea0183_parse("$GPGGA,123\r\n", 12, &m));  // no '*' checksum introducer
 
-    TEST_ASSERT_TRUE(nmea0183_parse(GGA, strlen(GGA), &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(GGA, strlen(GGA), &m));
     float f;
-    TEST_ASSERT_FALSE(nmea0183_field_float(&m, 3, &f)); // "N": non-empty but not a number
+    TEST_ASSERT_FALSE(dws_nmea0183_field_float(&m, 3, &f)); // "N": non-empty but not a number
     long v;
-    TEST_ASSERT_FALSE(nmea0183_field_int(nullptr, 0, &v)); // null message
-    TEST_ASSERT_FALSE(nmea0183_field_int(&m, 13, &v));     // empty field
+    TEST_ASSERT_FALSE(dws_nmea0183_field_int(nullptr, 0, &v)); // null message
+    TEST_ASSERT_FALSE(dws_nmea0183_field_int(&m, 13, &v));     // empty field
 }
 
 int main()

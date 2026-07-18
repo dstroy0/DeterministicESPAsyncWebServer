@@ -13,17 +13,17 @@ consuming stack already speaks it - the API and the zero-heap pattern are
 identical.
 
 **Encoding with `MsgpackWriter`.** Initialize over a stack buffer, declare the map
-size, emit pairs, check `msgpack_ok()`, write `msgpack_len()` bytes:
+size, emit pairs, check `dws_msgpack_ok()`, write `dws_msgpack_len()` bytes:
 
 ```cpp
 uint8_t buf[64];
 MsgpackWriter w;
-msgpack_init(&w, buf, sizeof(buf));
-msgpack_map(&w, 3);
-msgpack_str(&w, "heap"); msgpack_uint(&w, ESP.getFreeHeap());
-msgpack_str(&w, "uptime"); msgpack_uint(&w, millis() / 1000);
-msgpack_str(&w, "rssi"); msgpack_int(&w, WiFi.RSSI());
-ctx.len = msgpack_ok(&w) ? msgpack_len(&w) : 0;   // page these bytes out below
+dws_msgpack_init(&w, buf, sizeof(buf));
+dws_msgpack_map(&w, 3);
+dws_msgpack_str(&w, "heap"); dws_msgpack_uint(&w, ESP.getFreeHeap());
+dws_msgpack_str(&w, "uptime"); dws_msgpack_uint(&w, millis() / 1000);
+dws_msgpack_str(&w, "rssi"); dws_msgpack_int(&w, WiFi.RSSI());
+ctx.len = dws_msgpack_ok(&w) ? dws_msgpack_len(&w) : 0;   // page these bytes out below
 ```
 
 As with CBOR, the payload is binary so it is delivered through the binary-safe
@@ -33,24 +33,24 @@ generator's `ctx` must outlive the call, so it is `static`.
 
 **Decoding with `MsgpackReader`.** The cursor decoder is the mirror image: bind a
 reader to the bytes, read the map header, then each key/value, and check
-`msgpack_reader_ok()` once at the end (it is sticky, so a single check covers the
+`dws_msgpack_reader_ok()` once at the end (it is sticky, so a single check covers the
 whole parse). Strings point straight into the source buffer, no copy:
 
 ```cpp
 MsgpackReader r;
-msgpack_reader_init(&r, req->body, req->body_len);
+dws_msgpack_reader_init(&r, req->body, req->body_len);
 size_t count;
-if (!msgpack_read_map(&r, &count)) { /* not a map */ }
-for (size_t i = 0; i < count && msgpack_reader_ok(&r); i++) {
+if (!dws_msgpack_read_map(&r, &count)) { /* not a map */ }
+for (size_t i = 0; i < count && dws_msgpack_reader_ok(&r); i++) {
     const char *key; size_t klen; int64_t val;
-    if (!msgpack_read_str(&r, &key, &klen) || !msgpack_read_int(&r, &val)) break;
+    if (!dws_msgpack_read_str(&r, &key, &klen) || !dws_msgpack_read_int(&r, &val)) break;
     // use key[0..klen) and val
 }
-if (!msgpack_reader_ok(&r)) { /* malformed / truncated */ }
+if (!dws_msgpack_reader_ok(&r)) { /* malformed / truncated */ }
 ```
 
 Every read is bounds-checked, so malformed or truncated input fails closed rather
-than over-reading. `msgpack_peek()` reports the next object's type if you need to
+than over-reading. `dws_msgpack_peek()` reports the next object's type if you need to
 branch on it.
 
 ## Build and run
@@ -95,7 +95,7 @@ struct MpCtx
     uint8_t buf[64];
     size_t len, off;
 };
-static size_t msgpack_source(uint8_t *out, size_t cap, void *vctx)
+static size_t dws_msgpack_source(uint8_t *out, size_t cap, void *vctx)
 {
     MpCtx *c = (MpCtx *)vctx;
     if (c->off >= c->len)
@@ -112,25 +112,25 @@ static size_t msgpack_source(uint8_t *out, size_t cap, void *vctx)
 static void on_decode(uint8_t id, HttpReq *req)
 {
     MsgpackReader r;
-    msgpack_reader_init(&r, req->body, req->body_len); // cursor over the request body
+    dws_msgpack_reader_init(&r, req->body, req->body_len); // cursor over the request body
     size_t count;
-    if (!msgpack_read_map(&r, &count)) // header must be a map
+    if (!dws_msgpack_read_map(&r, &count)) // header must be a map
     {
         server.send(id, 400, "text/plain", "expected a MessagePack map");
         return;
     }
     char out[160];
     size_t o = 0;
-    for (size_t i = 0; i < count && msgpack_reader_ok(&r); i++)
+    for (size_t i = 0; i < count && dws_msgpack_reader_ok(&r); i++)
     {
         const char *key;
         size_t klen;
         int64_t val;
-        if (!msgpack_read_str(&r, &key, &klen) || !msgpack_read_int(&r, &val)) // key then value
+        if (!dws_msgpack_read_str(&r, &key, &klen) || !dws_msgpack_read_int(&r, &val)) // key then value
             break;
         o += snprintf(out + o, sizeof(out) - o, "%.*s=%lld\n", (int)klen, key, (long long)val);
     }
-    if (!msgpack_reader_ok(&r)) // one sticky check covers the whole parse
+    if (!dws_msgpack_reader_ok(&r)) // one sticky check covers the whole parse
     {
         server.send(id, 400, "text/plain", "malformed MessagePack");
         return;
@@ -155,17 +155,17 @@ void setup()
     server.on("/telemetry.msgpack", HTTP_GET, [](uint8_t id, HttpReq *) {
         static MpCtx ctx; // static: must outlive send_chunked
         MsgpackWriter w;
-        msgpack_init(&w, ctx.buf, sizeof(ctx.buf));
-        msgpack_map(&w, 3);
-        msgpack_str(&w, "heap");
-        msgpack_uint(&w, ESP.getFreeHeap());
-        msgpack_str(&w, "uptime");
-        msgpack_uint(&w, millis() / 1000);
-        msgpack_str(&w, "rssi");
-        msgpack_int(&w, WiFi.RSSI());
-        ctx.len = msgpack_ok(&w) ? msgpack_len(&w) : 0;
+        dws_msgpack_init(&w, ctx.buf, sizeof(ctx.buf));
+        dws_msgpack_map(&w, 3);
+        dws_msgpack_str(&w, "heap");
+        dws_msgpack_uint(&w, ESP.getFreeHeap());
+        dws_msgpack_str(&w, "uptime");
+        dws_msgpack_uint(&w, millis() / 1000);
+        dws_msgpack_str(&w, "rssi");
+        dws_msgpack_int(&w, WiFi.RSSI());
+        ctx.len = dws_msgpack_ok(&w) ? dws_msgpack_len(&w) : 0;
         ctx.off = 0;
-        server.send_chunked(id, 200, "application/msgpack", msgpack_source, &ctx);
+        server.send_chunked(id, 200, "application/msgpack", dws_msgpack_source, &ctx);
     });
     server.on("/decode", HTTP_POST, on_decode); // decode side
     server.begin(80);

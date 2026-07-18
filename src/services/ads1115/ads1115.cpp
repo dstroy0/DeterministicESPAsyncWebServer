@@ -25,7 +25,7 @@ const uint16_t PGA_BITS[6] = {0x0000, 0x0200, 0x0400, 0x0600, 0x0800, 0x0A00};
 const int32_t FSR_UV[6] = {6144000, 4096000, 2048000, 1024000, 512000, 256000};
 } // namespace
 
-uint16_t ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr)
+uint16_t dws_ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr)
 {
     if (channel > 3)
         channel = 0;
@@ -46,7 +46,7 @@ uint16_t ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr)
     return cfg;
 }
 
-int32_t ads1115_raw_to_uv(int16_t raw, uint8_t gain)
+int32_t dws_ads1115_raw_to_uv(int16_t raw, uint8_t gain)
 {
     if (gain > Ads1115Gain::ADS1115_GAIN_16)
         gain = (uint8_t)DWS_ADS1115_GAIN;
@@ -97,25 +97,25 @@ bool rd16(uint8_t reg, uint16_t *v)
 }
 } // namespace
 
-bool ads1115_begin(uint8_t addr)
+bool dws_ads1115_begin(uint8_t addr)
 {
     s_ads.addr = addr ? addr : (uint8_t)DWS_ADS1115_I2C_ADDR;
     dws_i2c_begin();
     return true;
 }
 
-bool ads1115_read_raw(uint8_t channel, uint8_t gain, int16_t *raw)
+bool dws_ads1115_read_raw(uint8_t channel, uint8_t gain, int16_t *raw)
 {
     if (!raw)
         return false;
     uint8_t dr = (uint8_t)DWS_ADS1115_DR;
     if (dr > Ads1115DataRate::ADS1115_DR_860)
         dr = Ads1115DataRate::ADS1115_DR_128;
-    if (!wr16(ADS1115_REG_CONFIG, ads1115_config_single(channel, gain, dr)))
+    if (!wr16(ADS1115_REG_CONFIG, dws_ads1115_config_single(channel, gain, dr)))
         return false;
     // Single-shot conversion time tracks the data rate (~1000/SPS ms); wait it out plus a 1 ms margin.
-    static const uint16_t ads1115_sps[8] = {8, 16, 32, 64, 128, 250, 475, 860};
-    dwsdelay(1000u / ads1115_sps[dr] + 1);
+    static const uint16_t dws_ads1115_sps[8] = {8, 16, 32, 64, 128, 250, 475, 860};
+    dwsdelay(1000u / dws_ads1115_sps[dr] + 1);
     uint16_t v = 0;
     if (!rd16(ADS1115_REG_CONVERSION, &v))
         return false;
@@ -123,27 +123,27 @@ bool ads1115_read_raw(uint8_t channel, uint8_t gain, int16_t *raw)
     return true;
 }
 
-bool ads1115_read_uv(uint8_t channel, uint8_t gain, int32_t *microvolts)
+bool dws_ads1115_read_uv(uint8_t channel, uint8_t gain, int32_t *microvolts)
 {
     int16_t raw = 0;
-    if (!ads1115_read_raw(channel, gain, &raw))
+    if (!dws_ads1115_read_raw(channel, gain, &raw))
         return false;
     if (microvolts)
-        *microvolts = ads1115_raw_to_uv(raw, gain);
+        *microvolts = dws_ads1115_raw_to_uv(raw, gain);
     return true;
 }
 
 #else // host build: no I2C. The config encoder + conversion above are host-tested.
 
-bool ads1115_begin(uint8_t)
+bool dws_ads1115_begin(uint8_t)
 {
     return false;
 }
-bool ads1115_read_raw(uint8_t, uint8_t, int16_t *)
+bool dws_ads1115_read_raw(uint8_t, uint8_t, int16_t *)
 {
     return false;
 }
-bool ads1115_read_uv(uint8_t, uint8_t, int32_t *)
+bool dws_ads1115_read_uv(uint8_t, uint8_t, int32_t *)
 {
     return false;
 }

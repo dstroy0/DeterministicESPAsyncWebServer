@@ -11,8 +11,8 @@
  * fixed sequence of register writes (soft reset, the NXP filter/AFE defaults, per-electrode
  * touch/release thresholds, and the electrode-configuration register that starts it running).
  *
- * This codec is pure and host-tested: ::mpr121_touched / ::mpr121_word10 decode the reported
- * words, and ::mpr121_build_init emits the whole bring-up sequence as `(register, value)` byte
+ * This codec is pure and host-tested: ::dws_mpr121_touched / ::dws_mpr121_word10 decode the reported
+ * words, and ::dws_mpr121_build_init emits the whole bring-up sequence as `(register, value)` byte
  * pairs (so the exact bytes are verifiable off-target). On an ESP32 the binding replays that
  * sequence over I2C (Wire) and reads the status; only that touches hardware.
  *
@@ -38,21 +38,21 @@
 /**
  * @brief Decode the 12-electrode touch bitmask from the two status registers (0x00 low, 0x01
  * high). Bit i (0..11) is set when electrode i is touched; proximity (bit 12) and the
- * over-current flag are masked out (see ::mpr121_proximity / ::mpr121_overcurrent).
+ * over-current flag are masked out (see ::dws_mpr121_proximity / ::dws_mpr121_overcurrent).
  */
-uint16_t mpr121_touched(uint8_t status_lo, uint8_t status_hi);
+uint16_t dws_mpr121_touched(uint8_t status_lo, uint8_t status_hi);
 
-/** @brief True if electrode @p e (0..11) is touched in a mask from ::mpr121_touched. */
-bool mpr121_is_touched(uint16_t mask, uint8_t e);
+/** @brief True if electrode @p e (0..11) is touched in a mask from ::dws_mpr121_touched. */
+bool dws_mpr121_is_touched(uint16_t mask, uint8_t e);
 
 /** @brief True if the proximity electrode (status bit 12) is active. */
-bool mpr121_proximity(uint8_t status_hi);
+bool dws_mpr121_proximity(uint8_t status_hi);
 
 /** @brief True if the over-current flag (status bit 15) is set (wiring fault / short). */
-bool mpr121_overcurrent(uint8_t status_hi);
+bool dws_mpr121_overcurrent(uint8_t status_hi);
 
 /** @brief Combine a little-endian LSB/MSB register pair into a 10-bit value (filtered/baseline). */
-uint16_t mpr121_word10(uint8_t lsb, uint8_t msb);
+uint16_t dws_mpr121_word10(uint8_t lsb, uint8_t msb);
 
 /**
  * @brief Build the MPR121 bring-up sequence as consecutive `(register, value)` byte pairs.
@@ -63,17 +63,17 @@ uint16_t mpr121_word10(uint8_t lsb, uint8_t msb);
  * write, in order (the ECR-start pair must be written last).
  * @return the number of bytes written (pairs * 2), or 0 if @p cap is too small / args invalid.
  */
-size_t mpr121_build_init(uint8_t *buf, size_t cap, uint8_t n_electrodes, uint8_t touch_thr, uint8_t release_thr);
+size_t dws_mpr121_build_init(uint8_t *buf, size_t cap, uint8_t n_electrodes, uint8_t touch_thr, uint8_t release_thr);
 
 // --- ESP32 binding (I2C via Wire; no-ops on a host build) ------------------------------------
 
 /** @brief Reset + configure the MPR121 at @p addr over I2C. @return true if it acknowledged. */
-bool mpr121_begin(uint8_t addr);
+bool dws_mpr121_begin(uint8_t addr);
 
 /** @brief Read the current 12-electrode touch bitmask (0 if the device is absent). */
-uint16_t mpr121_read_touched();
+uint16_t dws_mpr121_read_touched();
 
 /** @brief Read electrode @p e's 10-bit filtered capacitance value. */
-uint16_t mpr121_read_filtered(uint8_t e);
+uint16_t dws_mpr121_read_filtered(uint8_t e);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_MPR121_H

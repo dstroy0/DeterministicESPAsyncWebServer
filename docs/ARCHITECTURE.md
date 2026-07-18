@@ -205,8 +205,8 @@ would be a forced fit. Two transport models, two matched seams.
 **The request/response core is protocol(version)-agnostic:** every version decodes into the
 shared `HttpReq` and converges on one `match_and_execute` / route / `Handler` (HTTP/1.1,
 HTTP/2, and HTTP/3), and the response funnels back through the symmetric **TX seam** - a
-per-connection `resp_sink` function pointer (`TcpConn::resp_sink`) that HTTP/2 installs at
-ALPN and HTTP/3 at dispatch. `DWS::send()` / `send_empty()` call `conn->resp_sink(...)`
+per-connection `dws_resp_sink` function pointer (`TcpConn::dws_resp_sink`) that HTTP/2 installs at
+ALPN and HTTP/3 at dispatch. `DWS::send()` / `send_empty()` call `conn->dws_resp_sink(...)`
 when it is set (h2 frames the reply as HEADERS+DATA on the stream; h3 as an HTTP/3 response on
 its QUIC stream) and otherwise build the HTTP/1.1 message - so the response methods name no
 protocol. It is the RX `ProtoHandler` seam's TX counterpart: request decode and response encode
@@ -252,16 +252,16 @@ data,close}` plus `tls_data` (the TLS handshake pump + ALPN "h2" detection + Web
    dispatches into a `DWS`'s routes - so it used to be a large inline block in the worker loop
    guarded by `if (proto != PROTO_HTTP)`. That block is now `DWS::http_poll_slot()`, installed
    as the HTTP `ProtoHandler`'s `on_poll` (via `http_proto_set_poll()`, the `on_poll` analogue of the
-   `resp_sink` TX seam; the running instance is wired in at the top of `service_once()`). The worker
+   `dws_resp_sink` TX seam; the running instance is wired in at the top of `service_once()`). The worker
    dispatch loop now calls `on_poll` uniformly for **every** protocol including HTTP - it names no
    protocol and has no special case. The singleton pollers (ssh, rfwd) gate on `CONN_ACTIVE` inside
    their own `on_poll`, preserving the behavior the loop-level gate used to give them.
 
 4. **The response path is behind a uniform TX seam - DONE.** `send()` / `send_empty()` no longer
-   branch on `conn->h2` / `conn->h3`; a self-framing protocol installs a `TcpConn::resp_sink`
+   branch on `conn->h2` / `conn->h3`; a self-framing protocol installs a `TcpConn::dws_resp_sink`
    function pointer (h2 at ALPN, h3 at dispatch) and the response methods route through it, so the
    L7 responders name no protocol. This is the TX counterpart of the RX `ProtoHandler` seam; adding
-   a self-framing protocol means installing one `resp_sink`, not editing the responders.
+   a self-framing protocol means installing one `dws_resp_sink`, not editing the responders.
 
 5. **TLS is an inline transform inside the HTTP handler**, not a composable wrapper, so only
    HTTP can be TLS-wrapped. Acceptable and inherent (SSH carries its own crypto; Telnet /
@@ -269,7 +269,7 @@ data,close}` plus `tls_data` (the TLS handshake pump + ALPN "h2" detection + Web
 
 Net: L5 is pure dispatch and every protocol (including HTTP) lives behind the same uniform seam via
 its own module - request decode through the `ProtoHandler` seam (accept / data / close / **poll**),
-response encode through the `resp_sink` seam. The worker dispatch loop names no protocol and has no
+response encode through the `dws_resp_sink` seam. The worker dispatch loop names no protocol and has no
 special case: HTTP plugs in exactly like SSH, Telnet, Modbus, or OPC UA. The one remaining inherent
 trait is that TLS is an HTTP-only inline transform (item 5). The piping is straight.
 

@@ -21,7 +21,7 @@ static uint8_t checksum(const uint8_t *p, size_t n)
     return s;
 }
 
-size_t mbus_build_ack(uint8_t *buf, size_t cap)
+size_t dws_mbus_build_ack(uint8_t *buf, size_t cap)
 {
     if (!buf || cap < 1)
         return 0;
@@ -29,7 +29,7 @@ size_t mbus_build_ack(uint8_t *buf, size_t cap)
     return 1;
 }
 
-size_t mbus_build_short(uint8_t *buf, size_t cap, uint8_t c, uint8_t a)
+size_t dws_mbus_build_short(uint8_t *buf, size_t cap, uint8_t c, uint8_t a)
 {
     if (!buf || cap < 5)
         return 0;
@@ -41,8 +41,8 @@ size_t mbus_build_short(uint8_t *buf, size_t cap, uint8_t c, uint8_t a)
     return 5;
 }
 
-size_t mbus_build_long(uint8_t *buf, size_t cap, uint8_t c, uint8_t a, uint8_t ci, const uint8_t *data,
-                       uint8_t data_len)
+size_t dws_mbus_build_long(uint8_t *buf, size_t cap, uint8_t c, uint8_t a, uint8_t ci, const uint8_t *data,
+                           uint8_t data_len)
 {
     if (!buf || data_len > MBUS_MAX_DATA || (data_len && !data))
         return 0;
@@ -64,17 +64,17 @@ size_t mbus_build_long(uint8_t *buf, size_t cap, uint8_t c, uint8_t a, uint8_t c
     return total;
 }
 
-size_t mbus_build_snd_nke(uint8_t *buf, size_t cap, uint8_t a)
+size_t dws_mbus_build_snd_nke(uint8_t *buf, size_t cap, uint8_t a)
 {
-    return mbus_build_short(buf, cap, MBUS_C_SND_NKE, a);
+    return dws_mbus_build_short(buf, cap, MBUS_C_SND_NKE, a);
 }
 
-size_t mbus_build_req_ud2(uint8_t *buf, size_t cap, uint8_t a, bool fcb)
+size_t dws_mbus_build_req_ud2(uint8_t *buf, size_t cap, uint8_t a, bool fcb)
 {
-    return mbus_build_short(buf, cap, (uint8_t)(fcb ? 0x7Bu : MBUS_C_REQ_UD2), a);
+    return dws_mbus_build_short(buf, cap, (uint8_t)(fcb ? 0x7Bu : MBUS_C_REQ_UD2), a);
 }
 
-bool mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed)
+bool dws_mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed)
 {
     if (!buf || !out || len < 1)
         return false;
@@ -128,7 +128,7 @@ bool mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed
     return false;
 }
 
-uint8_t mbus_dif_data_len(uint8_t coding)
+uint8_t dws_mbus_dif_data_len(uint8_t coding)
 {
     switch ((MbusDifCoding)(coding & 0x0Fu))
     {
@@ -167,7 +167,7 @@ uint8_t mbus_dif_data_len(uint8_t coding)
     }
 }
 
-bool mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *out)
+bool dws_mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *out)
 {
     if (!body || !pos || !out || *pos >= len)
         return false;
@@ -220,7 +220,7 @@ bool mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *
     }
     else
     {
-        dlen = mbus_dif_data_len(coding);
+        dlen = dws_mbus_dif_data_len(coding);
     }
 
     if (p + dlen > len)

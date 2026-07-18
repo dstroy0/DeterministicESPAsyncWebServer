@@ -42,7 +42,7 @@ static void json_num(JsonWriter &w, double d)
     w.raw(tmp);
 }
 
-size_t senml_json_build(char *buf, size_t cap, const SenmlRecord *records, size_t count)
+size_t dws_senml_json_build(char *buf, size_t cap, const SenmlRecord *records, size_t count)
 {
     if (!buf || (count && !records))
         return 0;
@@ -91,12 +91,12 @@ size_t senml_json_build(char *buf, size_t cap, const SenmlRecord *records, size_
 }
 
 // Emit a SenML number into a CBOR value: an integer when integral, else a float.
-static void cbor_num(CborWriter *w, double d)
+static void dws_cbor_num(CborWriter *w, double d)
 {
     if (is_integral(d))
-        cbor_int(w, (int64_t)d);
+        dws_cbor_int(w, (int64_t)d);
     else
-        cbor_float(w, (float)d);
+        dws_cbor_float(w, (float)d);
 }
 
 static size_t record_fields(const SenmlRecord &r)
@@ -118,64 +118,64 @@ static size_t record_fields(const SenmlRecord &r)
     return n;
 }
 
-size_t senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records, size_t count)
+size_t dws_senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records, size_t count)
 {
     if (!buf || (count && !records))
         return 0;
     CborWriter w;
-    cbor_init(&w, buf, cap);
-    cbor_array(&w, count);
+    dws_cbor_init(&w, buf, cap);
+    dws_cbor_array(&w, count);
     for (size_t i = 0; i < count; i++)
     {
         const SenmlRecord &r = records[i];
-        cbor_map(&w, record_fields(r));
+        dws_cbor_map(&w, record_fields(r));
         if (r.base_name)
         {
-            cbor_int(&w, SENML_LBL_BN);
-            cbor_text(&w, r.base_name);
+            dws_cbor_int(&w, SENML_LBL_BN);
+            dws_cbor_text(&w, r.base_name);
         }
         if (r.has_base_time)
         {
-            cbor_int(&w, SENML_LBL_BT);
-            cbor_num(&w, r.base_time);
+            dws_cbor_int(&w, SENML_LBL_BT);
+            dws_cbor_num(&w, r.base_time);
         }
         if (r.name)
         {
-            cbor_int(&w, SENML_LBL_N);
-            cbor_text(&w, r.name);
+            dws_cbor_int(&w, SENML_LBL_N);
+            dws_cbor_text(&w, r.name);
         }
         if (r.unit)
         {
-            cbor_int(&w, SENML_LBL_U);
-            cbor_text(&w, r.unit);
+            dws_cbor_int(&w, SENML_LBL_U);
+            dws_cbor_text(&w, r.unit);
         }
         switch (r.value_kind)
         {
         case SenmlValueKind::SENML_V_FLOAT:
-            cbor_int(&w, SENML_LBL_V);
-            cbor_num(&w, r.value);
+            dws_cbor_int(&w, SENML_LBL_V);
+            dws_cbor_num(&w, r.value);
             break;
         case SenmlValueKind::SENML_V_STRING:
             if (r.value_str)
             {
-                cbor_int(&w, SENML_LBL_VS);
-                cbor_text(&w, r.value_str);
+                dws_cbor_int(&w, SENML_LBL_VS);
+                dws_cbor_text(&w, r.value_str);
             }
             break;
         case SenmlValueKind::SENML_V_BOOL:
-            cbor_int(&w, SENML_LBL_VB);
-            cbor_bool(&w, r.value_bool);
+            dws_cbor_int(&w, SENML_LBL_VB);
+            dws_cbor_bool(&w, r.value_bool);
             break;
         case SenmlValueKind::SENML_V_NONE:
             break;
         }
         if (r.has_time)
         {
-            cbor_int(&w, SENML_LBL_T);
-            cbor_num(&w, r.time);
+            dws_cbor_int(&w, SENML_LBL_T);
+            dws_cbor_num(&w, r.time);
         }
     }
-    return cbor_ok(&w) ? cbor_len(&w) : 0;
+    return dws_cbor_ok(&w) ? dws_cbor_len(&w) : 0;
 }
 
 #endif // DWS_ENABLE_SENML

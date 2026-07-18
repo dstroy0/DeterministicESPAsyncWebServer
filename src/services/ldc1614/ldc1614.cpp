@@ -11,22 +11,22 @@
 
 #if DWS_ENABLE_LDC1614
 
-uint32_t ldc1614_data(uint16_t msb_reg, uint16_t lsb_reg)
+uint32_t dws_ldc1614_data(uint16_t msb_reg, uint16_t lsb_reg)
 {
     return ((uint32_t)(msb_reg & 0x0FFF) << 16) | lsb_reg;
 }
 
-uint8_t ldc1614_error(uint16_t msb_reg)
+uint8_t dws_ldc1614_error(uint16_t msb_reg)
 {
     return (uint8_t)((msb_reg >> 12) & 0x0F);
 }
 
-uint64_t ldc1614_sensor_freq_hz(uint32_t data28, uint32_t fref_hz)
+uint64_t dws_ldc1614_sensor_freq_hz(uint32_t data28, uint32_t fref_hz)
 {
     return ((uint64_t)data28 * fref_hz) >> 28;
 }
 
-size_t ldc1614_build_config(uint8_t *buf, size_t cap, uint16_t rcount, uint16_t settlecount)
+size_t dws_ldc1614_build_config(uint8_t *buf, size_t cap, uint16_t rcount, uint16_t settlecount)
 {
     if (!buf || cap < LDC1614_CONFIG_MAX)
         return 0;
@@ -89,7 +89,7 @@ bool write16(uint8_t reg, uint16_t val)
 }
 } // namespace
 
-bool ldc1614_begin(uint8_t addr, uint16_t rcount, uint16_t settlecount)
+bool dws_ldc1614_begin(uint8_t addr, uint16_t rcount, uint16_t settlecount)
 {
     dws_i2c_begin();
     s_ldc.addr = addr;
@@ -99,14 +99,14 @@ bool ldc1614_begin(uint8_t addr, uint16_t rcount, uint16_t settlecount)
     if (id != LDC1614_DEVICE_ID)
         return false;
     uint8_t seq[LDC1614_CONFIG_MAX];
-    size_t n = ldc1614_build_config(seq, sizeof(seq), rcount, settlecount);
+    size_t n = dws_ldc1614_build_config(seq, sizeof(seq), rcount, settlecount);
     for (size_t i = 0; i + 3 <= n; i += 3)
         if (!write16(seq[i], (uint16_t)((seq[i + 1] << 8) | seq[i + 2])))
             return false;
     return true;
 }
 
-bool ldc1614_read_ch0(uint32_t *out)
+bool dws_ldc1614_read_ch0(uint32_t *out)
 {
     if (!out)
         return false;
@@ -114,7 +114,7 @@ bool ldc1614_read_ch0(uint32_t *out)
     uint16_t lsb = 0;
     if (!read16(LDC1614_REG_DATA_CH0_MSB, &msb) || !read16(LDC1614_REG_DATA_CH0_LSB, &lsb))
         return false;
-    *out = ldc1614_data(msb, lsb);
+    *out = dws_ldc1614_data(msb, lsb);
     return true;
 }
 

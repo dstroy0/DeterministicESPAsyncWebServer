@@ -18,23 +18,23 @@ void tearDown()
 
 void test_num_frames()
 {
-    TEST_ASSERT_EQUAL_UINT8(1, n2k_fastpacket_num_frames(6));    // fits frame 0
-    TEST_ASSERT_EQUAL_UINT8(2, n2k_fastpacket_num_frames(7));    // 6 + 1
-    TEST_ASSERT_EQUAL_UINT8(2, n2k_fastpacket_num_frames(13));   // 6 + 7
-    TEST_ASSERT_EQUAL_UINT8(3, n2k_fastpacket_num_frames(14));   // 6 + 7 + 1
-    TEST_ASSERT_EQUAL_UINT8(32, n2k_fastpacket_num_frames(223)); // 6 + 31*7
+    TEST_ASSERT_EQUAL_UINT8(1, dws_n2k_fastpacket_num_frames(6));    // fits frame 0
+    TEST_ASSERT_EQUAL_UINT8(2, dws_n2k_fastpacket_num_frames(7));    // 6 + 1
+    TEST_ASSERT_EQUAL_UINT8(2, dws_n2k_fastpacket_num_frames(13));   // 6 + 7
+    TEST_ASSERT_EQUAL_UINT8(3, dws_n2k_fastpacket_num_frames(14));   // 6 + 7 + 1
+    TEST_ASSERT_EQUAL_UINT8(32, dws_n2k_fastpacket_num_frames(223)); // 6 + 31*7
 }
 
 void test_single_frame()
 {
     const uint8_t payload[8] = {1, 2, 3, 4, 5, 6, 7, 8};
     CanFrame f;
-    TEST_ASSERT_TRUE(n2k_build_single(&f, 2, 0x01F200, 0x15, 0xFF, payload, 8)); // a PDU2 PGN
+    TEST_ASSERT_TRUE(dws_n2k_build_single(&f, 2, 0x01F200, 0x15, 0xFF, payload, 8)); // a PDU2 PGN
     TEST_ASSERT_TRUE(f.extended);
     TEST_ASSERT_EQUAL_UINT8(8, f.dlc);
     TEST_ASSERT_EQUAL_MEMORY(payload, f.data, 8);
     J1939Id d;
-    TEST_ASSERT_TRUE(j1939_decode_id(f.id, &d));
+    TEST_ASSERT_TRUE(dws_j1939_decode_id(f.id, &d));
     TEST_ASSERT_EQUAL_HEX32(0x01F200, d.pgn);
 }
 
@@ -48,16 +48,16 @@ void test_fastpacket_roundtrip()
     const uint8_t sa = 0x15;
     const uint8_t seq = 3;
 
-    uint8_t frames = n2k_fastpacket_num_frames(20); // 6 + 7 + 7 = 3
+    uint8_t frames = dws_n2k_fastpacket_num_frames(20); // 6 + 7 + 7 = 3
     TEST_ASSERT_EQUAL_UINT8(3, frames);
 
     N2kFastPacketRx rx;
-    n2k_fastpacket_reset(&rx);
+    dws_n2k_fastpacket_reset(&rx);
     for (uint8_t i = 0; i < frames; i++)
     {
         CanFrame f;
-        TEST_ASSERT_TRUE(n2k_fastpacket_build_frame(&f, seq, i, 6, pgn, sa, 0xFF, msg, 20));
-        N2kFpResult r = n2k_fastpacket_feed(&rx, &f);
+        TEST_ASSERT_TRUE(dws_n2k_fastpacket_build_frame(&f, seq, i, 6, pgn, sa, 0xFF, msg, 20));
+        N2kFpResult r = dws_n2k_fastpacket_feed(&rx, &f);
         if (i == 0)
             TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_STARTED, r);
         else if (i + 1 < frames)
@@ -75,10 +75,10 @@ void test_fastpacket_single_frame_completes()
 {
     uint8_t msg[5] = {9, 8, 7, 6, 5};
     CanFrame f;
-    TEST_ASSERT_TRUE(n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F200, 0x15, 0xFF, msg, 5));
+    TEST_ASSERT_TRUE(dws_n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F200, 0x15, 0xFF, msg, 5));
     N2kFastPacketRx rx;
-    n2k_fastpacket_reset(&rx);
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_COMPLETE, n2k_fastpacket_feed(&rx, &f));
+    dws_n2k_fastpacket_reset(&rx);
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_COMPLETE, dws_n2k_fastpacket_feed(&rx, &f));
     TEST_ASSERT_EQUAL_UINT16(5, rx.total_len);
     TEST_ASSERT_EQUAL_MEMORY(msg, rx.buf, 5);
 }
@@ -90,15 +90,15 @@ void test_fastpacket_interleaved_sequence_ignored()
     for (int i = 0; i < 20; i++)
         msg[i] = (uint8_t)i;
     N2kFastPacketRx rx;
-    n2k_fastpacket_reset(&rx);
+    dws_n2k_fastpacket_reset(&rx);
     CanFrame f0;
-    n2k_fastpacket_build_frame(&f0, 3, 0, 6, 0x01F801, 0x15, 0xFF, msg, 20);
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_STARTED, n2k_fastpacket_feed(&rx, &f0));
+    dws_n2k_fastpacket_build_frame(&f0, 3, 0, 6, 0x01F801, 0x15, 0xFF, msg, 20);
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_STARTED, dws_n2k_fastpacket_feed(&rx, &f0));
 
     // A frame from sequence 4 (different message) must not be accepted into seq 3.
     CanFrame other;
-    n2k_fastpacket_build_frame(&other, 4, 1, 6, 0x01F801, 0x15, 0xFF, msg, 20);
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &other));
+    dws_n2k_fastpacket_build_frame(&other, 4, 1, 6, 0x01F801, 0x15, 0xFF, msg, 20);
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, dws_n2k_fastpacket_feed(&rx, &other));
     TEST_ASSERT_TRUE(rx.active); // seq 3 still in progress
 }
 
@@ -106,13 +106,13 @@ void test_fastpacket_out_of_order_errors()
 {
     uint8_t msg[20] = {0};
     N2kFastPacketRx rx;
-    n2k_fastpacket_reset(&rx);
+    dws_n2k_fastpacket_reset(&rx);
     CanFrame f0;
-    n2k_fastpacket_build_frame(&f0, 3, 0, 6, 0x01F801, 0x15, 0xFF, msg, 20);
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_STARTED, n2k_fastpacket_feed(&rx, &f0));
+    dws_n2k_fastpacket_build_frame(&f0, 3, 0, 6, 0x01F801, 0x15, 0xFF, msg, 20);
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_STARTED, dws_n2k_fastpacket_feed(&rx, &f0));
     CanFrame f2;
-    n2k_fastpacket_build_frame(&f2, 3, 2, 6, 0x01F801, 0x15, 0xFF, msg, 20); // skip frame 1
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_ERR, n2k_fastpacket_feed(&rx, &f2));
+    dws_n2k_fastpacket_build_frame(&f2, 3, 2, 6, 0x01F801, 0x15, 0xFF, msg, 20); // skip frame 1
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_ERR, dws_n2k_fastpacket_feed(&rx, &f2));
     TEST_ASSERT_FALSE(rx.active);
 }
 
@@ -123,30 +123,30 @@ void test_nmea2000_error_paths()
     CanFrame f;
     const uint8_t data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
-    TEST_ASSERT_FALSE(n2k_fastpacket_build_frame(nullptr, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 8)); // null out
-    TEST_ASSERT_FALSE(n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, nullptr, 8));   // null data
-    TEST_ASSERT_FALSE(n2k_fastpacket_build_frame(&f, 8, 0, 6, 0x01F801, 0x15, 0xFF, data, 8));      // seq > 7
-    TEST_ASSERT_FALSE(n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 0));      // total_len 0
+    TEST_ASSERT_FALSE(dws_n2k_fastpacket_build_frame(nullptr, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 8)); // null out
+    TEST_ASSERT_FALSE(dws_n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, nullptr, 8));   // null data
+    TEST_ASSERT_FALSE(dws_n2k_fastpacket_build_frame(&f, 8, 0, 6, 0x01F801, 0x15, 0xFF, data, 8));      // seq > 7
+    TEST_ASSERT_FALSE(dws_n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 0));      // total_len 0
     TEST_ASSERT_FALSE(
-        n2k_fastpacket_build_frame(&f, 0, 5, 6, 0x01F801, 0x15, 0xFF, data, 8)); // frame_idx past the count
+        dws_n2k_fastpacket_build_frame(&f, 0, 5, 6, 0x01F801, 0x15, 0xFF, data, 8)); // frame_idx past the count
     TEST_ASSERT_FALSE(
-        n2k_fastpacket_build_frame(&f, 0, 0, 8, 0x01F801, 0x15, 0xFF, data, 8)); // priority>7 -> encode fails
+        dws_n2k_fastpacket_build_frame(&f, 0, 0, 8, 0x01F801, 0x15, 0xFF, data, 8)); // priority>7 -> encode fails
 
     N2kFastPacketRx rx;
-    n2k_fastpacket_reset(&rx);
-    n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 8);
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(nullptr, &f));  // null rx
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, nullptr)); // null frame
+    dws_n2k_fastpacket_reset(&rx);
+    dws_n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 8);
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, dws_n2k_fastpacket_feed(nullptr, &f));  // null rx
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, dws_n2k_fastpacket_feed(&rx, nullptr)); // null frame
     CanFrame notext = f;
     notext.extended = false;
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &notext)); // not a 29-bit frame
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, dws_n2k_fastpacket_feed(&rx, &notext)); // not a 29-bit frame
     CanFrame shortdlc = f;
     shortdlc.dlc = 1;
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &shortdlc)); // dlc < 2
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, dws_n2k_fastpacket_feed(&rx, &shortdlc)); // dlc < 2
 
     CanFrame bad_total = f;
     bad_total.data[1] = 0; // first frame declaring a zero total length
-    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_ERR, n2k_fastpacket_feed(&rx, &bad_total));
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_ERR, dws_n2k_fastpacket_feed(&rx, &bad_total));
 }
 
 int main()

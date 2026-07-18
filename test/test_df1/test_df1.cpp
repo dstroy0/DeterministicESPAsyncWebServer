@@ -20,21 +20,21 @@ void tearDown()
 void test_bcc_vector()
 {
     const uint8_t data[] = {0x07, 0x19}; // 0x07 + 0x19 = 0x20
-    TEST_ASSERT_EQUAL_HEX8(0xE0, df1_bcc(data, sizeof(data)));
-    TEST_ASSERT_EQUAL_HEX8(0x00, df1_bcc(nullptr, 0)); // empty -> 0
+    TEST_ASSERT_EQUAL_HEX8(0xE0, dws_df1_bcc(data, sizeof(data)));
+    TEST_ASSERT_EQUAL_HEX8(0x00, dws_df1_bcc(nullptr, 0)); // empty -> 0
 }
 
 // CRC-16/ARC (DF1 polynomial, init 0) check value for "123456789" is 0xBB3D.
 void test_crc_vector()
 {
-    TEST_ASSERT_EQUAL_HEX16(0xBB3D, df1_crc((const uint8_t *)"123456789", 9));
+    TEST_ASSERT_EQUAL_HEX16(0xBB3D, dws_df1_crc((const uint8_t *)"123456789", 9));
 }
 
 void test_build_bcc_frame()
 {
     const uint8_t data[] = {0x07, 0x19};
     uint8_t buf[16];
-    size_t n = df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_BCC);
+    size_t n = dws_df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_BCC);
     const uint8_t expect[] = {DF1_DLE, DF1_STX, 0x07, 0x19, DF1_DLE, DF1_ETX, 0xE0};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
@@ -45,7 +45,7 @@ void test_build_dle_stuffing()
 {
     const uint8_t data[] = {0x10, 0x05}; // sum 0x15 -> BCC 0xEB
     uint8_t buf[16];
-    size_t n = df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_BCC);
+    size_t n = dws_df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_BCC);
     const uint8_t expect[] = {DF1_DLE, DF1_STX, 0x10, 0x10, 0x05, DF1_DLE, DF1_ETX, 0xEB};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
@@ -55,11 +55,11 @@ void test_round_trip_bcc()
 {
     const uint8_t data[] = {0x10, 0x05, 0x10, 0xAB}; // two embedded DLEs
     uint8_t buf[32];
-    size_t n = df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_BCC);
+    size_t n = dws_df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_BCC);
 
     uint8_t out[32];
     size_t out_len;
-    TEST_ASSERT_TRUE(df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
+    TEST_ASSERT_TRUE(dws_df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
     TEST_ASSERT_EQUAL_size_t(sizeof(data), out_len);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(data, out, out_len);
 }
@@ -68,11 +68,11 @@ void test_round_trip_crc()
 {
     const uint8_t data[] = {0x00, 0x05, 0x0F, 0x00, 0x10, 0x42}; // includes a DLE (0x10)
     uint8_t buf[32];
-    size_t n = df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_CRC);
+    size_t n = dws_df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_CRC);
 
     uint8_t out[32];
     size_t out_len;
-    TEST_ASSERT_TRUE(df1_parse_frame(buf, n, Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len));
+    TEST_ASSERT_TRUE(dws_df1_parse_frame(buf, n, Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len));
     TEST_ASSERT_EQUAL_size_t(sizeof(data), out_len);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(data, out, out_len);
 }
@@ -80,14 +80,14 @@ void test_round_trip_crc()
 void test_empty_data_frame()
 {
     uint8_t buf[16];
-    size_t n = df1_build_frame(buf, sizeof(buf), nullptr, 0, Df1Check::DF1_CHECK_BCC);
+    size_t n = dws_df1_build_frame(buf, sizeof(buf), nullptr, 0, Df1Check::DF1_CHECK_BCC);
     const uint8_t expect[] = {DF1_DLE, DF1_STX, DF1_DLE, DF1_ETX, 0x00};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
 
     uint8_t out[4];
     size_t out_len;
-    TEST_ASSERT_TRUE(df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
+    TEST_ASSERT_TRUE(dws_df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
     TEST_ASSERT_EQUAL_size_t(0, out_len);
 }
 
@@ -95,7 +95,7 @@ void test_parse_rejects_bad()
 {
     const uint8_t data[] = {0x07, 0x19};
     uint8_t buf[16];
-    size_t n = df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_BCC);
+    size_t n = dws_df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_BCC);
 
     uint8_t out[16];
     size_t out_len;
@@ -104,25 +104,25 @@ void test_parse_rejects_bad()
     // Corrupt a data byte -> BCC mismatch.
     memcpy(corrupt, buf, n);
     corrupt[2] ^= 0x01;
-    TEST_ASSERT_FALSE(df1_parse_frame(corrupt, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(corrupt, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
 
     // Missing DLE STX leader.
     memcpy(corrupt, buf, n);
     corrupt[1] = 0x55;
-    TEST_ASSERT_FALSE(df1_parse_frame(corrupt, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(corrupt, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
 
     // Truncated frame.
-    TEST_ASSERT_FALSE(df1_parse_frame(buf, n - 1, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(buf, n - 1, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
 
     // out buffer too small for the un-stuffed data.
-    TEST_ASSERT_FALSE(df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, 1, &out_len));
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, 1, &out_len));
 }
 
 void test_build_overflow_fails_closed()
 {
     const uint8_t data[] = {0x07, 0x19, 0x2A};
     uint8_t small[6]; // needs 2 + 3 + 2 + 1 = 8
-    TEST_ASSERT_EQUAL_size_t(0, df1_build_frame(small, sizeof(small), data, sizeof(data), Df1Check::DF1_CHECK_BCC));
+    TEST_ASSERT_EQUAL_size_t(0, dws_df1_build_frame(small, sizeof(small), data, sizeof(data), Df1Check::DF1_CHECK_BCC));
 }
 
 // Builder null guards and every parser edge/reject: a lone trailing DLE, a stuffed DLE
@@ -136,46 +136,48 @@ void test_parse_edges_and_guards()
     uint8_t bbuf[16];
 
     // build guards
-    TEST_ASSERT_EQUAL_size_t(0, df1_build_frame(nullptr, sizeof(bbuf), d, 2, Df1Check::DF1_CHECK_BCC)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, dws_df1_build_frame(nullptr, sizeof(bbuf), d, 2, Df1Check::DF1_CHECK_BCC)); // null buf
     TEST_ASSERT_EQUAL_size_t(
-        0, df1_build_frame(bbuf, sizeof(bbuf), nullptr, 2, Df1Check::DF1_CHECK_BCC)); // len but null data
+        0, dws_df1_build_frame(bbuf, sizeof(bbuf), nullptr, 2, Df1Check::DF1_CHECK_BCC)); // len but null data
 
     // parse guards
     const uint8_t ok5[5] = {DF1_DLE, DF1_STX, DF1_DLE, DF1_ETX, 0x00};
-    TEST_ASSERT_FALSE(df1_parse_frame(nullptr, 8, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len)); // null buf
-    TEST_ASSERT_FALSE(df1_parse_frame(ok5, sizeof(ok5), Df1Check::DF1_CHECK_BCC, nullptr, 0, &out_len)); // null out
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(nullptr, 8, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len)); // null buf
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(ok5, sizeof(ok5), Df1Check::DF1_CHECK_BCC, nullptr, 0, &out_len)); // null out
     const uint8_t two[2] = {DF1_DLE, DF1_STX};
     TEST_ASSERT_FALSE(
-        df1_parse_frame(two, sizeof(two), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len)); // too short
+        dws_df1_parse_frame(two, sizeof(two), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len)); // too short
 
     // a DLE as the final octet (no following byte)
     const uint8_t dle_end[5] = {DF1_DLE, DF1_STX, 0x41, 0x42, DF1_DLE};
-    TEST_ASSERT_FALSE(df1_parse_frame(dle_end, sizeof(dle_end), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
+    TEST_ASSERT_FALSE(
+        dws_df1_parse_frame(dle_end, sizeof(dle_end), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
 
     // a doubled DLE while the output buffer is already full (out_cap 0)
     uint8_t dframe[16];
     const uint8_t one_dle[1] = {DF1_DLE};
-    size_t dn = df1_build_frame(dframe, sizeof(dframe), one_dle, 1, Df1Check::DF1_CHECK_BCC);
-    TEST_ASSERT_FALSE(df1_parse_frame(dframe, dn, Df1Check::DF1_CHECK_BCC, out, 0, &out_len));
+    size_t dn = dws_df1_build_frame(dframe, sizeof(dframe), one_dle, 1, Df1Check::DF1_CHECK_BCC);
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(dframe, dn, Df1Check::DF1_CHECK_BCC, out, 0, &out_len));
 
     // a DLE followed by an unexpected control symbol
     const uint8_t bad_ctrl[5] = {DF1_DLE, DF1_STX, DF1_DLE, 0x41, 0x00};
-    TEST_ASSERT_FALSE(df1_parse_frame(bad_ctrl, sizeof(bad_ctrl), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
+    TEST_ASSERT_FALSE(
+        dws_df1_parse_frame(bad_ctrl, sizeof(bad_ctrl), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
 
     // data that never reaches a DLE ETX terminator
     const uint8_t no_end[5] = {DF1_DLE, DF1_STX, 0x41, 0x42, 0x43};
-    TEST_ASSERT_FALSE(df1_parse_frame(no_end, sizeof(no_end), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(no_end, sizeof(no_end), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
 
     // CRC selected but fewer than 2 check octets follow the ETX
     const uint8_t crc_trunc[6] = {DF1_DLE, DF1_STX, 0x41, DF1_DLE, DF1_ETX, 0x00};
     TEST_ASSERT_FALSE(
-        df1_parse_frame(crc_trunc, sizeof(crc_trunc), Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len));
+        dws_df1_parse_frame(crc_trunc, sizeof(crc_trunc), Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len));
 
     // a valid CRC frame with a corrupted CRC byte
     uint8_t cbuf[16];
-    size_t cn = df1_build_frame(cbuf, sizeof(cbuf), d, 2, Df1Check::DF1_CHECK_CRC);
+    size_t cn = dws_df1_build_frame(cbuf, sizeof(cbuf), d, 2, Df1Check::DF1_CHECK_CRC);
     cbuf[cn - 1] ^= 0xFF;
-    TEST_ASSERT_FALSE(df1_parse_frame(cbuf, cn, Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len));
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(cbuf, cn, Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len));
 }
 
 int main()

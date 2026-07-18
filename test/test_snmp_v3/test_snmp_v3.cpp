@@ -25,11 +25,11 @@ static const char *SYSDESCR_VAL = "DWS v3 agent";
 
 void setUp()
 {
-    snmp_agent_init("public");
-    snmp_agent_set_system(SYSDESCR_VAL, "admin", "esp32", "lab", 72);
-    snmp_v3_init(nullptr, 0); // built-in default engine ID
-    snmp_v3_set_boots(1);
-    snmp_v3_set_user("myuser", "authpass12", "privpass12");
+    dws_snmp_agent_init("public");
+    dws_snmp_agent_set_system(SYSDESCR_VAL, "admin", "esp32", "lab", 72);
+    dws_snmp_v3_init(nullptr, 0); // built-in default engine ID
+    dws_snmp_v3_set_boots(1);
+    dws_snmp_v3_set_user("myuser", "authpass12", "privpass12");
 }
 void tearDown()
 {
@@ -46,7 +46,7 @@ void test_localize_key_sha256_vector()
                                 0x79, 0x69, 0xaf, 0xe3, 0x90, 0x37, 0x34, 0x07, 0xd6, 0x52, 0x9a,
                                 0x98, 0x08, 0x41, 0x8a, 0xef, 0x8e, 0xb0, 0xbf, 0x45, 0x86};
     uint8_t key[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("maplesyrup", engine, sizeof(engine), key);
+    dws_snmp_usm_localize_key("maplesyrup", engine, sizeof(engine), key);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, key, 32);
 }
 
@@ -59,11 +59,11 @@ void test_localize_key_empty_password()
     uint8_t key[SNMP_USM_KEY_LEN];
 
     memset(key, 0xAA, sizeof(key));
-    snmp_usm_localize_key("", engine, sizeof(engine), key); // empty password
+    dws_snmp_usm_localize_key("", engine, sizeof(engine), key); // empty password
     TEST_ASSERT_EQUAL_HEX8_ARRAY(zero, key, SNMP_USM_KEY_LEN);
 
     memset(key, 0xBB, sizeof(key));
-    snmp_usm_localize_key(nullptr, engine, sizeof(engine), key); // null password
+    dws_snmp_usm_localize_key(nullptr, engine, sizeof(engine), key); // null password
     TEST_ASSERT_EQUAL_HEX8_ARRAY(zero, key, SNMP_USM_KEY_LEN);
 }
 
@@ -78,7 +78,7 @@ void test_aes128_fips197_vector()
                                 0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a};
     uint8_t zero[16] = {0};
     uint8_t out[16];
-    snmp_aes128_cfb(key, pt, zero, out, 16, true); // out = 0 XOR E(IV=pt) = E(pt)
+    dws_snmp_aes128_cfb(key, pt, zero, out, 16, true); // out = 0 XOR E(IV=pt) = E(pt)
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 16);
 }
 
@@ -89,8 +89,8 @@ void test_aes_cfb_roundtrip_partial_block()
     const char *msg = "SNMPv3 scopedPDU spanning more than one AES block plus a tail.";
     size_t n = strlen(msg);
     uint8_t ct[128], pt[128];
-    snmp_aes128_cfb(key, iv, (const uint8_t *)msg, ct, n, true);
-    snmp_aes128_cfb(key, iv, ct, pt, n, false);
+    dws_snmp_aes128_cfb(key, iv, (const uint8_t *)msg, ct, n, true);
+    dws_snmp_aes128_cfb(key, iv, ct, pt, n, false);
     TEST_ASSERT_EQUAL_MEMORY(msg, pt, n);
     TEST_ASSERT_TRUE(memcmp(msg, ct, n) != 0); // actually encrypted
 }
@@ -130,28 +130,28 @@ static size_t build_get(uint8_t *out, size_t cap, bool auth, bool priv, const ui
     // inner GET PDU
     uint8_t pdu[256];
     BerEnc pe;
-    ber_enc_init(&pe, pdu, sizeof(pdu));
-    size_t pp = ber_seq_begin(&pe, (uint8_t)SnmpTag::SNMP_PDU_GET);
-    ber_put_integer(&pe, req_id);
-    ber_put_integer(&pe, 0);
-    ber_put_integer(&pe, 0);
-    size_t vbl = ber_seq_begin(&pe, (uint8_t)SnmpTag::BER_SEQUENCE);
-    size_t vb = ber_seq_begin(&pe, (uint8_t)SnmpTag::BER_SEQUENCE);
-    ber_put_oid(&pe, oid, oid_len);
-    ber_put_null(&pe);
-    ber_seq_end(&pe, vb);
-    ber_seq_end(&pe, vbl);
-    ber_seq_end(&pe, pp);
+    dws_ber_enc_init(&pe, pdu, sizeof(pdu));
+    size_t pp = dws_ber_seq_begin(&pe, (uint8_t)SnmpTag::SNMP_PDU_GET);
+    dws_ber_put_integer(&pe, req_id);
+    dws_ber_put_integer(&pe, 0);
+    dws_ber_put_integer(&pe, 0);
+    size_t vbl = dws_ber_seq_begin(&pe, (uint8_t)SnmpTag::BER_SEQUENCE);
+    size_t vb = dws_ber_seq_begin(&pe, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_oid(&pe, oid, oid_len);
+    dws_ber_put_null(&pe);
+    dws_ber_seq_end(&pe, vb);
+    dws_ber_seq_end(&pe, vbl);
+    dws_ber_seq_end(&pe, pp);
 
     // scopedPDU
     uint8_t scoped[320];
     BerEnc se;
-    ber_enc_init(&se, scoped, sizeof(scoped));
-    size_t ss = ber_seq_begin(&se, (uint8_t)SnmpTag::BER_SEQUENCE);
-    ber_put_octet_string(&se, (uint8_t)SnmpTag::BER_OCTET_STRING, eid, eid_len);
-    ber_put_octet_string(&se, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
-    ber_put_raw(&se, pdu, pe.len);
-    ber_seq_end(&se, ss);
+    dws_ber_enc_init(&se, scoped, sizeof(scoped));
+    size_t ss = dws_ber_seq_begin(&se, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_octet_string(&se, (uint8_t)SnmpTag::BER_OCTET_STRING, eid, eid_len);
+    dws_ber_put_octet_string(&se, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
+    dws_ber_put_raw(&se, pdu, pe.len);
+    dws_ber_seq_end(&se, ss);
 
     // optional privacy
     uint8_t salt[8] = {0, 0, 0, 0, 0, 0, 0, 7};
@@ -164,53 +164,53 @@ static size_t build_get(uint8_t *out, size_t cap, bool auth, bool priv, const ui
         put_be32(iv, (uint32_t)boots);
         put_be32(iv + 4, (uint32_t)time);
         memcpy(iv + 8, salt, 8);
-        snmp_aes128_cfb(privkey, iv, scoped, cipher, se.len, true);
+        dws_snmp_aes128_cfb(privkey, iv, scoped, cipher, se.len, true);
         data = cipher;
     }
 
     // secparams
     uint8_t secp[128];
     BerEnc se2;
-    ber_enc_init(&se2, secp, sizeof(secp));
-    size_t s2 = ber_seq_begin(&se2, (uint8_t)SnmpTag::BER_SEQUENCE);
-    ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, eid, eid_len);
-    ber_put_integer(&se2, boots);
-    ber_put_integer(&se2, time);
-    ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)user, strlen(user));
+    dws_ber_enc_init(&se2, secp, sizeof(secp));
+    size_t s2 = dws_ber_seq_begin(&se2, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, eid, eid_len);
+    dws_ber_put_integer(&se2, boots);
+    dws_ber_put_integer(&se2, time);
+    dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)user, strlen(user));
     size_t auth_off = 0;
     if (auth)
     {
         auth_off = se2.len + 2;
         uint8_t z[SNMP_V3_AUTH_PARAM_LEN] = {0};
-        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, z, SNMP_V3_AUTH_PARAM_LEN);
+        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, z, SNMP_V3_AUTH_PARAM_LEN);
     }
     else
-        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
+        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     if (priv)
-        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, salt, 8);
+        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, salt, 8);
     else
-        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
-    ber_seq_end(&se2, s2);
+        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
+    dws_ber_seq_end(&se2, s2);
 
     // message
     BerEnc e;
-    ber_enc_init(&e, out, cap);
-    size_t msg = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
-    ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
-    size_t hdr = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
-    ber_put_integer(&e, msg_id);
-    ber_put_integer(&e, 65507);
+    dws_ber_enc_init(&e, out, cap);
+    size_t msg = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
+    size_t hdr = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_integer(&e, msg_id);
+    dws_ber_put_integer(&e, 65507);
     uint8_t fl = (uint8_t)((auth ? 1 : 0) | (priv ? 2 : 0) | (auth ? 0 : 4)); // reportable on discovery
-    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, &fl, 1);
-    ber_put_integer(&e, 3);
-    ber_seq_end(&e, hdr);
-    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, secp, se2.len);
+    dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, &fl, 1);
+    dws_ber_put_integer(&e, 3);
+    dws_ber_seq_end(&e, hdr);
+    dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, secp, se2.len);
     size_t sec_value_pos = e.len - se2.len;
     if (priv)
-        ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, data, data_len);
+        dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, data, data_len);
     else
-        ber_put_raw(&e, data, data_len);
-    ber_seq_end(&e, msg);
+        dws_ber_put_raw(&e, data, data_len);
+    dws_ber_seq_end(&e, msg);
 
     if (auth)
     {
@@ -225,53 +225,53 @@ static bool parse_v3(const uint8_t *buf, size_t len, const uint8_t *privkey, V3V
 {
     memset(v, 0, sizeof(*v));
     BerDec d;
-    ber_dec_init(&d, buf, len);
+    dws_ber_dec_init(&d, buf, len);
     uint8_t tag;
     size_t l;
-    if (!ber_read_header(&d, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
+    if (!dws_ber_read_header(&d, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
         return false;
     long version;
-    if (!ber_read_integer(&d, &version))
+    if (!dws_ber_read_integer(&d, &version))
         return false;
-    if (!ber_read_header(&d, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // global data
+    if (!dws_ber_read_header(&d, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // global data
         return false;
     long msgid, maxsize, secmodel;
-    if (!ber_read_integer(&d, &msgid) || !ber_read_integer(&d, &maxsize))
+    if (!dws_ber_read_integer(&d, &msgid) || !dws_ber_read_integer(&d, &maxsize))
         return false;
     size_t fl;
-    if (!ber_read_header(&d, &tag, &fl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
+    if (!dws_ber_read_header(&d, &tag, &fl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
         return false;
     v->flags = d.buf[d.pos];
     d.pos += fl;
-    if (!ber_read_integer(&d, &secmodel))
+    if (!dws_ber_read_integer(&d, &secmodel))
         return false;
     // secparams
     size_t seclen;
-    if (!ber_read_header(&d, &tag, &seclen) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
+    if (!dws_ber_read_header(&d, &tag, &seclen) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
         return false;
     BerDec sd;
-    ber_dec_init(&sd, d.buf + d.pos, seclen);
+    dws_ber_dec_init(&sd, d.buf + d.pos, seclen);
     d.pos += seclen;
-    if (!ber_read_header(&sd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
+    if (!dws_ber_read_header(&sd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
         return false;
     size_t eidl;
-    if (!ber_read_header(&sd, &tag, &eidl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
+    if (!dws_ber_read_header(&sd, &tag, &eidl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
         return false;
     memcpy(v->engine_id, sd.buf + sd.pos, eidl < sizeof(v->engine_id) ? eidl : sizeof(v->engine_id));
     v->engine_id_len = eidl;
     sd.pos += eidl;
-    if (!ber_read_integer(&sd, &v->boots) || !ber_read_integer(&sd, &v->time))
+    if (!dws_ber_read_integer(&sd, &v->boots) || !dws_ber_read_integer(&sd, &v->time))
         return false;
     size_t ul;
-    if (!ber_read_header(&sd, &tag, &ul) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // user
+    if (!dws_ber_read_header(&sd, &tag, &ul) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // user
         return false;
     sd.pos += ul;
     size_t al;
-    if (!ber_read_header(&sd, &tag, &al) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // authparams
+    if (!dws_ber_read_header(&sd, &tag, &al) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // authparams
         return false;
     sd.pos += al;
     size_t pl;
-    if (!ber_read_header(&sd, &tag, &pl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // privparams
+    if (!dws_ber_read_header(&sd, &tag, &pl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // privparams
         return false;
     const uint8_t *privparm = sd.buf + sd.pos;
 
@@ -280,13 +280,13 @@ static bool parse_v3(const uint8_t *buf, size_t len, const uint8_t *privkey, V3V
     if (v->flags & 0x02)
     {
         size_t ctl;
-        if (!ber_read_header(&d, &tag, &ctl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
+        if (!dws_ber_read_header(&d, &tag, &ctl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
             return false;
         uint8_t iv[16];
         put_be32(iv, (uint32_t)v->boots);
         put_be32(iv + 4, (uint32_t)v->time);
         memcpy(iv + 8, privparm, 8);
-        snmp_aes128_cfb(privkey, iv, d.buf + d.pos, g_dec, ctl, false);
+        dws_snmp_aes128_cfb(privkey, iv, d.buf + d.pos, g_dec, ctl, false);
         scoped = g_dec;
         scoped_len = ctl;
     }
@@ -298,32 +298,32 @@ static bool parse_v3(const uint8_t *buf, size_t len, const uint8_t *privkey, V3V
 
     // scopedPDU -> inner PDU
     BerDec cd;
-    ber_dec_init(&cd, scoped, scoped_len);
-    if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
+    dws_ber_dec_init(&cd, scoped, scoped_len);
+    if (!dws_ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
         return false;
-    if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // ctxEngineID
-        return false;
-    cd.pos += l;
-    if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // ctxName
+    if (!dws_ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // ctxEngineID
         return false;
     cd.pos += l;
-    if (!ber_read_header(&cd, &v->pdu_tag, &l)) // PDU
+    if (!dws_ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // ctxName
         return false;
-    if (!ber_read_integer(&cd, &v->request_id) || !ber_read_integer(&cd, &v->err_status))
+    cd.pos += l;
+    if (!dws_ber_read_header(&cd, &v->pdu_tag, &l)) // PDU
+        return false;
+    if (!dws_ber_read_integer(&cd, &v->request_id) || !dws_ber_read_integer(&cd, &v->err_status))
         return false;
     long erridx;
-    if (!ber_read_integer(&cd, &erridx))
+    if (!dws_ber_read_integer(&cd, &erridx))
         return false;
-    if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // varbind list
+    if (!dws_ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // varbind list
         return false;
     if (cd.pos < cd.len)
     {
-        if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // first varbind
+        if (!dws_ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // first varbind
             return false;
-        if (!ber_read_oid(&cd, v->oid, SNMP_MAX_OID_LEN, &v->oid_len))
+        if (!dws_ber_read_oid(&cd, v->oid, SNMP_MAX_OID_LEN, &v->oid_len))
             return false;
         size_t vl;
-        if (!ber_read_header(&cd, &v->val_tag, &vl))
+        if (!dws_ber_read_header(&cd, &v->val_tag, &vl))
             return false;
         if (v->val_tag == (uint8_t)SnmpTag::BER_OCTET_STRING)
         {
@@ -342,7 +342,7 @@ static void discover(V3View *v)
     uint8_t req[256], resp[512];
     uint32_t empty_oid[] = {1, 3, 6, 1, 2, 1, 1, 1, 0};
     size_t rl = build_get(req, sizeof(req), false, false, nullptr, 0, 0, 0, "", nullptr, nullptr, 100, 1, empty_oid, 9);
-    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, v));
 }
@@ -366,12 +366,12 @@ void test_authnopriv_get()
     V3View disc;
     discover(&disc);
     uint8_t authkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
+    dws_snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
 
     uint8_t req[300], resp[512];
     size_t rl = build_get(req, sizeof(req), true, false, disc.engine_id, disc.engine_id_len, disc.boots, disc.time,
                           "myuser", authkey, nullptr, 200, 42, OID_SYSDESCR, 9);
-    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
 
     V3View v;
@@ -389,13 +389,13 @@ void test_authpriv_get()
     V3View disc;
     discover(&disc);
     uint8_t authkey[SNMP_USM_KEY_LEN], privkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
-    snmp_usm_localize_key("privpass12", disc.engine_id, disc.engine_id_len, privkey);
+    dws_snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
+    dws_snmp_usm_localize_key("privpass12", disc.engine_id, disc.engine_id_len, privkey);
 
     uint8_t req[300], resp[512];
     size_t rl = build_get(req, sizeof(req), true, true, disc.engine_id, disc.engine_id_len, disc.boots, disc.time,
                           "myuser", authkey, privkey, 201, 77, OID_SYSDESCR, 9);
-    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
 
     V3View v;
@@ -411,12 +411,12 @@ void test_wrong_auth_password_reports_wrong_digest()
     V3View disc;
     discover(&disc);
     uint8_t badkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("wrongpass99", disc.engine_id, disc.engine_id_len, badkey);
+    dws_snmp_usm_localize_key("wrongpass99", disc.engine_id, disc.engine_id_len, badkey);
 
     uint8_t req[300], resp[512];
     size_t rl = build_get(req, sizeof(req), true, false, disc.engine_id, disc.engine_id_len, disc.boots, disc.time,
                           "myuser", badkey, nullptr, 202, 5, OID_SYSDESCR, 9);
-    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
 
     V3View v;
@@ -431,12 +431,12 @@ void test_unknown_user_reports()
     V3View disc;
     discover(&disc);
     uint8_t authkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
+    dws_snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
 
     uint8_t req[300], resp[512];
     size_t rl = build_get(req, sizeof(req), true, false, disc.engine_id, disc.engine_id_len, disc.boots, disc.time,
                           "nobody", authkey, nullptr, 203, 9, OID_SYSDESCR, 9);
-    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
 
     V3View v;
@@ -450,13 +450,13 @@ void test_not_in_time_window_reports()
     V3View disc;
     discover(&disc);
     uint8_t authkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
+    dws_snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
 
     // Send a far-future engineTime to fall outside the +/-150s window.
     uint8_t req[300], resp[512];
     size_t rl = build_get(req, sizeof(req), true, false, disc.engine_id, disc.engine_id_len, disc.boots,
                           disc.time + 100000, "myuser", authkey, nullptr, 204, 11, OID_SYSDESCR, 9);
-    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
 
     V3View v;
@@ -500,12 +500,12 @@ static bool find_inform_with_reqid(const uint8_t *d, size_t n, uint32_t reqid)
 // message (version 3) carrying an InformRequest PDU with our request-id.
 void test_inform_v3_builds_informrequest()
 {
-    snmp_v3_set_user("myuser", "authpass12", ""); // auth-only -> plaintext scopedPDU
+    dws_snmp_v3_set_user("myuser", "authpass12", ""); // auth-only -> plaintext scopedPDU
     dws_udp_capture_enable();
     dws_udp_capture_reset();
 
     const uint32_t reqid = 0x4321;
-    bool ok = snmp_inform_v3("127.0.0.1", 162, reqid, OID_SYSDESCR, 9, nullptr, 0);
+    bool ok = dws_snmp_inform_v3("127.0.0.1", 162, reqid, OID_SYSDESCR, 9, nullptr, 0);
     TEST_ASSERT_TRUE(ok); // built + "sent" through the capturing stub
 
     const uint8_t *d = dws_udp_captured();
@@ -533,31 +533,31 @@ void test_v3_message_structure_rejections()
     size_t full = build_get(req, sizeof(req), false, false, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
                             nullptr, nullptr, 300, 7, OID_SYSDESCR, 9);
     TEST_ASSERT_TRUE(full > 0);
-    TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, full, resp, sizeof(resp))); // noAuthNoPriv non-discovery
+    TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, full, resp, sizeof(resp))); // noAuthNoPriv non-discovery
     for (size_t L = 0; L < full; L++)
-        TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, L, resp, sizeof(resp)));
+        TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, L, resp, sizeof(resp)));
 
     // A message asserting privacy without authentication is invalid (RFC 3414).
     uint8_t pk[SNMP_USM_KEY_LEN] = {0};
     size_t pl = build_get(req, sizeof(req), false, true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
                           nullptr, pk, 300, 8, OID_SYSDESCR, 9);
-    TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, pl, resp, sizeof(resp)));
+    TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, pl, resp, sizeof(resp)));
 }
 
-// snmp_v3_init with a valid engine ID copies it; the boots accessor round-trips.
+// dws_snmp_v3_init with a valid engine ID copies it; the boots accessor round-trips.
 void test_v3_init_and_boots_accessors()
 {
     V3View v;
     discover(&v); // capture the default engine ID
     uint8_t custom[8] = {0x80, 0, 0, 0, 1, 2, 3, 4};
-    snmp_v3_init(custom, sizeof(custom));       // valid engine ID -> memcpy path
-    snmp_v3_init(v.engine_id, v.engine_id_len); // restore the default engine ID
-    snmp_v3_set_user("myuser", "authpass12", "privpass12");
+    dws_snmp_v3_init(custom, sizeof(custom));       // valid engine ID -> memcpy path
+    dws_snmp_v3_init(v.engine_id, v.engine_id_len); // restore the default engine ID
+    dws_snmp_v3_set_user("myuser", "authpass12", "privpass12");
 
-    uint32_t saved = snmp_v3_get_boots();
-    snmp_v3_set_boots(0xABCD);
-    TEST_ASSERT_EQUAL_UINT32(0xABCD, snmp_v3_get_boots());
-    snmp_v3_set_boots(saved);
+    uint32_t saved = dws_snmp_v3_get_boots();
+    dws_snmp_v3_set_boots(0xABCD);
+    TEST_ASSERT_EQUAL_UINT32(0xABCD, dws_snmp_v3_get_boots());
+    dws_snmp_v3_set_boots(saved);
 }
 
 // An authPriv message to a wrong engine ID takes the discovery path (with the private
@@ -567,18 +567,18 @@ void test_v3_discovery_variants()
     V3View v;
     discover(&v);
     uint8_t authkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    dws_snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
     uint8_t wrong_eid[8] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x11, 0x22, 0x33};
     uint8_t privkey[SNMP_USM_KEY_LEN] = {0};
 
     uint8_t req[300], resp[512];
     size_t rl = build_get(req, sizeof(req), true, true, wrong_eid, sizeof(wrong_eid), v.boots, v.time, "myuser",
                           authkey, privkey, 300, 9, OID_SYSDESCR, 9);
-    TEST_ASSERT_TRUE(snmp_v3_process(req, rl, resp, sizeof(resp)) > 0); // discovery Report
+    TEST_ASSERT_TRUE(dws_snmp_v3_process(req, rl, resp, sizeof(resp)) > 0); // discovery Report
 
     rl = build_get(req, sizeof(req), false, false, wrong_eid, sizeof(wrong_eid), 0, 0, "", nullptr, nullptr, 300, 10,
                    OID_SYSDESCR, 9);
-    TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, rl, resp, 20)); // Report does not fit -> fail closed
+    TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, rl, resp, 20)); // Report does not fit -> fail closed
 }
 
 // An authPriv request when privacy is not configured on the agent is a decryptionError.
@@ -587,31 +587,31 @@ void test_v3_priv_not_configured()
     V3View v;
     discover(&v);
     uint8_t authkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
-    snmp_v3_set_user("myuser", "authpass12", ""); // auth only
+    dws_snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    dws_snmp_v3_set_user("myuser", "authpass12", ""); // auth only
     uint8_t privkey[SNMP_USM_KEY_LEN] = {0};
 
     uint8_t req[300], resp[512];
     size_t rl = build_get(req, sizeof(req), true, true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
                           authkey, privkey, 300, 11, OID_SYSDESCR, 9);
-    size_t n = snmp_v3_process(req, rl, resp, sizeof(resp));
+    size_t n = dws_snmp_v3_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
     V3View r;
     TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
     TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);
-    snmp_v3_set_user("myuser", "authpass12", "privpass12"); // restore
+    dws_snmp_v3_set_user("myuser", "authpass12", "privpass12"); // restore
 }
 
 // A v3 notification is refused without authentication, and builds + sends with it.
 void test_v3_notify_paths()
 {
     uint32_t trap_oid[] = {1, 3, 6, 1, 4, 1, 49374, 0, 1};
-    snmp_v3_set_user("myuser", "", ""); // no auth
-    TEST_ASSERT_FALSE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0));
+    dws_snmp_v3_set_user("myuser", "", ""); // no auth
+    TEST_ASSERT_FALSE(dws_snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0));
 
-    snmp_v3_set_user("myuser", "authpass12", "privpass12");
+    dws_snmp_v3_set_user("myuser", "authpass12", "privpass12");
     dws_udp_capture_enable();
-    TEST_ASSERT_TRUE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0));
+    TEST_ASSERT_TRUE(dws_snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0));
     TEST_ASSERT_TRUE(dws_udp_captured_len() > 0);
 }
 
@@ -628,42 +628,42 @@ static size_t build_v3_raw_scoped(uint8_t *out, size_t cap, bool auth, const uin
     uint8_t salt[SNMP_V3_PRIV_PARAM_LEN] = {0, 0, 0, 0, 0, 0, 0, 7};
     uint8_t secp[128];
     BerEnc se2;
-    ber_enc_init(&se2, secp, sizeof(secp));
-    size_t s2 = ber_seq_begin(&se2, (uint8_t)SnmpTag::BER_SEQUENCE);
-    ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, eid, eid_len);
-    ber_put_integer(&se2, boots);
-    ber_put_integer(&se2, time);
-    ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)user, strlen(user));
+    dws_ber_enc_init(&se2, secp, sizeof(secp));
+    size_t s2 = dws_ber_seq_begin(&se2, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, eid, eid_len);
+    dws_ber_put_integer(&se2, boots);
+    dws_ber_put_integer(&se2, time);
+    dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)user, strlen(user));
     size_t auth_off = 0;
     if (auth)
     {
         auth_off = se2.len + 2;
         uint8_t z[SNMP_V3_AUTH_PARAM_LEN] = {0};
-        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, z, auth_plen);
+        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, z, auth_plen);
     }
     else
-        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
+        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     if (priv)
-        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, salt, sizeof(salt));
+        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, salt, sizeof(salt));
     else
-        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
-    ber_seq_end(&se2, s2);
+        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
+    dws_ber_seq_end(&se2, s2);
 
     BerEnc e;
-    ber_enc_init(&e, out, cap);
-    size_t msg = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
-    ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
-    size_t hdr = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
-    ber_put_integer(&e, msg_id);
-    ber_put_integer(&e, 65507);
+    dws_ber_enc_init(&e, out, cap);
+    size_t msg = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
+    size_t hdr = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_integer(&e, msg_id);
+    dws_ber_put_integer(&e, 65507);
     uint8_t fl = (uint8_t)((auth ? 0x01 : 0) | (priv ? 0x02 : 0) | (auth ? 0 : 0x04)); // reportable on discovery
-    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, &fl, 1);
-    ber_put_integer(&e, 3);
-    ber_seq_end(&e, hdr);
-    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, secp, se2.len);
+    dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, &fl, 1);
+    dws_ber_put_integer(&e, 3);
+    dws_ber_seq_end(&e, hdr);
+    dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, secp, se2.len);
     size_t sec_value_pos = e.len - se2.len;
-    ber_put_raw(&e, scoped, scoped_len); // scopedPDU / msgData carried verbatim (may be deliberately malformed)
-    ber_seq_end(&e, msg);
+    dws_ber_put_raw(&e, scoped, scoped_len); // scopedPDU / msgData carried verbatim (may be deliberately malformed)
+    dws_ber_seq_end(&e, msg);
     if (!e.ok)
         return 0;
     if (digest)
@@ -687,43 +687,43 @@ void test_v3_field_tag_corruption(void)
                             nullptr, nullptr, 300, 7, OID_SYSDESCR, 9);
     TEST_ASSERT_TRUE(full > 0);
 
-    // Walk the message exactly as snmp_v3_process does, recording each field's offset.
+    // Walk the message exactly as dws_snmp_v3_process does, recording each field's offset.
     BerDec d;
-    ber_dec_init(&d, req, full);
+    dws_ber_dec_init(&d, req, full);
     uint8_t tag;
     size_t l;
     long tmp;
-    ber_read_header(&d, &tag, &l); // outer SEQUENCE
+    dws_ber_read_header(&d, &tag, &l); // outer SEQUENCE
     size_t ver_tag = d.pos;
-    ber_read_integer(&d, &tmp);
+    dws_ber_read_integer(&d, &tmp);
     size_t gdata_tag = d.pos;
-    ber_read_header(&d, &tag, &l); // msgGlobalData SEQUENCE
+    dws_ber_read_header(&d, &tag, &l); // msgGlobalData SEQUENCE
     size_t msgid_tag = d.pos;
-    ber_read_integer(&d, &tmp); // msgID
-    ber_read_integer(&d, &tmp); // msgMaxSize
+    dws_ber_read_integer(&d, &tmp); // msgID
+    dws_ber_read_integer(&d, &tmp); // msgMaxSize
     size_t flags_tag = d.pos;
-    ber_read_header(&d, &tag, &l);
+    dws_ber_read_header(&d, &tag, &l);
     d.pos += l; // msgFlags OCTET STRING
     size_t secmodel_tag = d.pos;
-    ber_read_integer(&d, &tmp); // msgSecurityModel
+    dws_ber_read_integer(&d, &tmp); // msgSecurityModel
     size_t secp_tag = d.pos;
-    ber_read_header(&d, &tag, &l); // msgSecurityParameters OCTET STRING
-    size_t base = d.pos;           // secparams content begins here (== inner BerDec buf)
+    dws_ber_read_header(&d, &tag, &l); // msgSecurityParameters OCTET STRING
+    size_t base = d.pos;               // secparams content begins here (== inner BerDec buf)
     BerDec sd;
-    ber_dec_init(&sd, req + base, l);
+    dws_ber_dec_init(&sd, req + base, l);
     size_t sseq_tag = base + sd.pos;
-    ber_read_header(&sd, &tag, &l); // secparams SEQUENCE
+    dws_ber_read_header(&sd, &tag, &l); // secparams SEQUENCE
     size_t eid_tag = base + sd.pos;
-    ber_read_header(&sd, &tag, &l);
+    dws_ber_read_header(&sd, &tag, &l);
     sd.pos += l; // engineID OCTET STRING
     size_t boots_tag = base + sd.pos;
-    ber_read_integer(&sd, &tmp); // engineBoots
-    ber_read_integer(&sd, &tmp); // engineTime
+    dws_ber_read_integer(&sd, &tmp); // engineBoots
+    dws_ber_read_integer(&sd, &tmp); // engineTime
     size_t uname_tag = base + sd.pos;
-    ber_read_header(&sd, &tag, &l);
+    dws_ber_read_header(&sd, &tag, &l);
     sd.pos += l; // userName OCTET STRING
     size_t aparm_tag = base + sd.pos;
-    ber_read_header(&sd, &tag, &l);
+    dws_ber_read_header(&sd, &tag, &l);
     sd.pos += l; // authParams OCTET STRING
     size_t pparm_tag = base + sd.pos;
 
@@ -752,7 +752,7 @@ void test_v3_field_tag_corruption(void)
         uint8_t bad[300];
         memcpy(bad, req, full);
         bad[muts[i].off] = muts[i].val;
-        TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(bad, full, resp, sizeof(resp)));
+        TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(bad, full, resp, sizeof(resp)));
     }
 }
 
@@ -763,7 +763,7 @@ void test_v3_scoped_parse_rejections(void)
     V3View v;
     discover(&v);
     uint8_t authkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    dws_snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
     uint8_t req[320], resp[512];
 
     const uint8_t not_seq[] = {0x04, 0x01, 0x00};                                // scopedPDU not a SEQUENCE
@@ -779,7 +779,7 @@ void test_v3_scoped_parse_rejections(void)
         size_t rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
                                         authkey, 400 + (long)i, scopeds[i], lens[i]);
         TEST_ASSERT_TRUE(rl > 0);
-        TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, rl, resp, sizeof(resp)));
+        TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, rl, resp, sizeof(resp)));
     }
 }
 
@@ -803,7 +803,7 @@ void test_v3_discovery_malformed_scoped(void)
                                         nullptr, 410 + (long)i, scopeds[i], lens[i]);
         TEST_ASSERT_TRUE(rl > 0);
         // Engine mismatch -> a discovery Report is emitted regardless of the probe result.
-        TEST_ASSERT_TRUE(snmp_v3_process(req, rl, resp, sizeof(resp)) > 0);
+        TEST_ASSERT_TRUE(dws_snmp_v3_process(req, rl, resp, sizeof(resp)) > 0);
     }
 }
 
@@ -815,7 +815,7 @@ void test_v3_auth_edge_rejections(void)
     V3View v;
     discover(&v);
     uint8_t authkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    dws_snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
     uint8_t req[320], resp[512];
 
     // authParams length != 24 -> usmStatsWrongDigests Report (short-circuits before HMAC).
@@ -823,7 +823,7 @@ void test_v3_auth_edge_rejections(void)
     size_t rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
                                     authkey, 420, any_scoped, sizeof(any_scoped), false, 16 /*bad authParams len*/);
     TEST_ASSERT_TRUE(rl > 0);
-    size_t n = snmp_v3_process(req, rl, resp, sizeof(resp));
+    size_t n = dws_snmp_v3_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
     V3View r;
     TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
@@ -835,7 +835,7 @@ void test_v3_auth_edge_rejections(void)
     rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser", authkey,
                              421, not_octet, sizeof(not_octet), true /*priv*/);
     TEST_ASSERT_TRUE(rl > 0);
-    TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, rl, resp, sizeof(resp)));
+    TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, rl, resp, sizeof(resp)));
 }
 
 // A notification whose varbind value is too large fails the inner PDU / scopedPDU build. Sweeping the
@@ -843,7 +843,7 @@ void test_v3_auth_edge_rejections(void)
 // PDU fits but the scopedPDU wrapper overruns; above it the PDU itself overruns.
 void test_v3_notify_overflow_guards()
 {
-    snmp_v3_set_user("myuser", "authpass12", "privpass12");
+    dws_snmp_v3_set_user("myuser", "authpass12", "privpass12");
     dws_udp_capture_enable();
     uint32_t trap_oid[] = {1, 3, 6, 1, 4, 1, 49374, 0, 1};
     uint32_t vb_oid[] = {1, 3, 6, 1, 4, 1, 49374, 5, 0};
@@ -860,19 +860,19 @@ void test_v3_notify_overflow_guards()
     vb.oid_val_len = 0;
 
     vb.blen = 32; // small: builds + sends fine
-    TEST_ASSERT_TRUE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1));
+    TEST_ASSERT_TRUE(dws_snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1));
     vb.blen = 1550; // huge: the inner PDU overflows
-    TEST_ASSERT_FALSE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1));
+    TEST_ASSERT_FALSE(dws_snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1));
     for (size_t blen = 1360; blen <= 1480; blen += 2) // crosses the fit/overflow boundary for both buffers
     {
         vb.blen = blen;
-        (void)snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1);
+        (void)dws_snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1);
     }
 }
 
 // A GET whose value is large enough that the *response* PDU still fits the inner buffer but
 // wrapping it into the response scopedPDU (our engineID + contextName + response PDU) overruns
-// v3_c[SNMP_MSG_BUF_SIZE] exercises snmp_v3_process's response-scopedPDU overflow guard. The
+// v3_c[SNMP_MSG_BUF_SIZE] exercises dws_snmp_v3_process's response-scopedPDU overflow guard. The
 // value length is served by a dynamic getter so the test controls it exactly; sweeping across
 // the 1472-byte boundary hits the wrapper-overflow branch (return 0) regardless of the precise
 // BER overhead: below the window the whole response fits, above it the inner PDU itself overruns,
@@ -891,12 +891,12 @@ void test_v3_response_scopedpdu_overflow()
 {
     memset(g_big, 0x42, sizeof(g_big));
     static const uint32_t big_oid[] = {1, 3, 6, 1, 4, 1, 49374, 7, 0};
-    TEST_ASSERT_TRUE(snmp_agent_add_dynamic(big_oid, 9, (uint8_t)SnmpTag::BER_OCTET_STRING, big_getter));
+    TEST_ASSERT_TRUE(dws_snmp_agent_add_dynamic(big_oid, 9, (uint8_t)SnmpTag::BER_OCTET_STRING, big_getter));
 
     V3View disc;
     discover(&disc);
     uint8_t authkey[SNMP_USM_KEY_LEN];
-    snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
+    dws_snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
 
     uint8_t req[300], resp[2048];
     bool saw_overflow = false, saw_ok = false;
@@ -906,7 +906,7 @@ void test_v3_response_scopedpdu_overflow()
         size_t rl = build_get(req, sizeof(req), true, false, disc.engine_id, disc.engine_id_len, disc.boots, disc.time,
                               "myuser", authkey, nullptr, 500, 88, big_oid, 9);
         TEST_ASSERT_TRUE(rl > 0);
-        size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+        size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
         if (n == 0)
             saw_overflow = true; // response fits v3_b but its scopedPDU wrapper overruns v3_c -> guarded return 0
         else

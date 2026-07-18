@@ -29,7 +29,7 @@ static const uint8_t SERVO_CH = 0;
 void setup()
 {
     Serial.begin(115200);
-    if (pca9685_begin(0x40, 50)) // 50 Hz suits hobby servos
+    if (dws_pca9685_begin(0x40, 50)) // 50 Hz suits hobby servos
         Serial.println("PCA9685 ready - sweeping the servo on channel 0");
     else
         Serial.println("PCA9685 not found - check wiring and the address (0x40)");
@@ -40,12 +40,12 @@ void loop()
     // Sweep ~500 us..2500 us (roughly 0..180 degrees on a typical servo) and back.
     for (int us = 500; us <= 2500; us += 20)
     {
-        pca9685_set_servo_us(SERVO_CH, us);
+        dws_pca9685_set_servo_us(SERVO_CH, us);
         delay(15);
     }
     for (int us = 2500; us >= 500; us -= 20)
     {
-        pca9685_set_servo_us(SERVO_CH, us);
+        dws_pca9685_set_servo_us(SERVO_CH, us);
         delay(15);
     }
 }

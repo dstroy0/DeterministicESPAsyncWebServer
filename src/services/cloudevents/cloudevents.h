@@ -10,9 +10,9 @@
  * events interoperable with serverless / event-mesh consumers. Two content modes:
  *
  *  - **structured** - the whole event is one `application/cloudevents+json` body;
- *    build it with cloudevents_build_json() into a caller buffer.
+ *    build it with dws_cloudevents_build_json() into a caller buffer.
  *  - **binary** - the event attributes ride as `ce-*` HTTP headers and the payload
- *    is the body; read an inbound binary event with cloudevents_from_headers().
+ *    is the body; read an inbound binary event with dws_cloudevents_from_headers().
  *
  * Emit a binary event from a handler by adding the `ce-id` / `ce-source` /
  * `ce-type` / `ce-specversion` response headers yourself (and the data as the body)
@@ -60,7 +60,7 @@ struct CloudEvent
  *
  * @return number of bytes written (excluding the NUL), or 0 on error.
  */
-size_t cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce);
+size_t dws_cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce);
 
 /**
  * @brief Read an inbound binary-mode CloudEvent from a request's `ce-*` headers.
@@ -71,7 +71,7 @@ size_t cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce);
  *
  * @return true if the three required attributes (id, source, type) are present.
  */
-bool cloudevents_from_headers(const HttpReq *req, CloudEvent *out);
+bool dws_cloudevents_from_headers(const HttpReq *req, CloudEvent *out);
 
 #endif // DWS_ENABLE_CLOUDEVENTS
 

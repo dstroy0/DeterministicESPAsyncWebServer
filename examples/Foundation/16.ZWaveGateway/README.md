@@ -9,7 +9,7 @@ Silicon Labs 500 / 700-series controller speaking its **Serial API** over UART. 
 reports, we pull the source node id + payload and publish it northbound.
 
 ```
-Z-Wave mesh --UART--> zwave_parse_frame() --> node + payload -> dws_gateway_uplink()
+Z-Wave mesh --UART--> dws_zwave_parse_frame() --> node + payload -> dws_gateway_uplink()
                                                                      |
                                               envelope + topic  zwave/0/<node>
                                                                      |
@@ -22,7 +22,7 @@ them:
 
 ```cpp
 uint8_t type, cmd, pdlen; const uint8_t *pd;
-int n = zwave_parse_frame(buf, len, &type, &cmd, &pd, &pdlen);  // >0 / need-more / -1
+int n = dws_zwave_parse_frame(buf, len, &type, &cmd, &pd, &pdlen);  // >0 / need-more / -1
 if (n > 0) {
     Serial2.write((uint8_t)ZWAVE_ACK);              // acknowledge the frame
     if (cmd == 0x04 /* ApplicationCommandHandler */)
@@ -30,7 +30,7 @@ if (n > 0) {
 }
 ```
 
-`zwave_build_frame()` assembles a command the same way (this sketch sends GetVersion at
+`dws_zwave_build_frame()` assembles a command the same way (this sketch sends GetVersion at
 boot). The checksum is `0xFF` XOR-folded over LEN..last-data. The codec is host-tested
 against the documented GetVersion frame (`01 03 00 15 E9`) in `test/test_zwave`.
 

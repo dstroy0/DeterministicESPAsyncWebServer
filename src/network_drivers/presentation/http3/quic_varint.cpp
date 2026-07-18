@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_varint.cpp
- * @brief QUIC variable-length integer coding - implementation. See quic_varint.h.
+ * @file dws_quic_varint.cpp
+ * @brief QUIC variable-length integer coding - implementation. See dws_quic_varint.h.
  */
 
 #include "network_drivers/presentation/http3/quic_varint.h"
 
 #if DWS_ENABLE_HTTP3
 
-size_t quic_varint_len(uint64_t value)
+size_t dws_quic_varint_len(uint64_t value)
 {
     if (value <= 0x3F)
         return 1;
@@ -23,9 +23,9 @@ size_t quic_varint_len(uint64_t value)
     return 0;
 }
 
-size_t quic_varint_encode(uint8_t *out, size_t cap, uint64_t value)
+size_t dws_quic_varint_encode(uint8_t *out, size_t cap, uint64_t value)
 {
-    size_t n = quic_varint_len(value);
+    size_t n = dws_quic_varint_len(value);
     if (n == 0 || cap < n)
         return 0;
     // The 2-bit length prefix (log2 n) sits in the top bits of the first byte.
@@ -36,7 +36,7 @@ size_t quic_varint_encode(uint8_t *out, size_t cap, uint64_t value)
     return n;
 }
 
-bool quic_varint_decode(const uint8_t *in, size_t len, uint64_t *value, size_t *consumed)
+bool dws_quic_varint_decode(const uint8_t *in, size_t len, uint64_t *value, size_t *consumed)
 {
     if (len < 1)
         return false;

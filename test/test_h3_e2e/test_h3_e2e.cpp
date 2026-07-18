@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // End-to-end capstone for the whole HTTP/3 stack: a QUIC client (in the test) completes the TLS 1.3
-// handshake against a server that is quic_conn + h3_conn wired together, then sends a real HTTP/3
-// GET (QPACK HEADERS in a STREAM frame). The server's h3_conn dispatches the request, the app
-// responds through h3_conn_respond, and the client decrypts the 1-RTT response and verifies the
+// handshake against a server that is dws_quic_conn + dws_h3_conn wired together, then sends a real HTTP/3
+// GET (QPACK HEADERS in a STREAM frame). The server's dws_h3_conn dispatches the request, the app
+// responds through dws_h3_conn_respond, and the client decrypts the 1-RTT response and verifies the
 // HEADERS (:status 200) + DATA body. Exercises QUIC packet crypto + framing, the TLS 1.3 handshake,
 // QUIC streams, HTTP/3 framing, and QPACK, all composed.
 
@@ -44,7 +44,7 @@ static void app_request(void *app, H3Conn *h3, uint64_t sid, const char *method,
     (void)app;
     strncpy(g_method, method, sizeof(g_method) - 1);
     strncpy(g_path, path, sizeof(g_path) - 1);
-    h3_conn_respond(h3, sid, 200, "text/plain", (const uint8_t *)"hello h3", 8);
+    dws_h3_conn_respond(h3, sid, 200, "text/plain", (const uint8_t *)"hello h3", 8);
 }
 
 static void fill()
@@ -68,58 +68,58 @@ static void wr_pn(uint8_t *o, uint64_t pn, uint8_t pn_len)
 static size_t build_long(uint8_t *out, size_t cap, uint8_t type, const uint8_t *dcid, uint8_t dcl, const uint8_t *scid,
                          uint8_t scl, uint64_t pn, const QuicPacketKeys *keys, const uint8_t *frames, size_t frame_len)
 {
-    uint8_t pn_len = quic_pn_length(pn, -1);
-    size_t p = quic_build_long_header(out, cap, type, QUIC_VERSION_1, dcid, dcl, scid, scl, pn_len);
+    uint8_t pn_len = dws_quic_pn_length(pn, -1);
+    size_t p = dws_quic_build_long_header(out, cap, type, QUIC_VERSION_1, dcid, dcl, scid, scl, pn_len);
     if (type == QuicLongPacket::QUIC_LP_INITIAL)
-        p += quic_varint_encode(out + p, cap - p, 0);
-    p += quic_varint_encode(out + p, cap - p, (uint64_t)pn_len + frame_len + 16);
+        p += dws_quic_varint_encode(out + p, cap - p, 0);
+    p += dws_quic_varint_encode(out + p, cap - p, (uint64_t)pn_len + frame_len + 16);
     size_t pn_off = p;
     wr_pn(out + p, pn, pn_len);
     p += pn_len;
     memcpy(out + p, frames, frame_len);
-    return quic_packet_protect(out, cap, pn_off, pn_len, pn, frame_len, keys, true);
+    return dws_quic_packet_protect(out, cap, pn_off, pn_len, pn, frame_len, keys, true);
 }
 static size_t build_short(uint8_t *out, size_t cap, const uint8_t *dcid, uint8_t dcl, uint64_t pn,
                           const QuicPacketKeys *keys, const uint8_t *frames, size_t frame_len)
 {
-    uint8_t pn_len = quic_pn_length(pn, -1);
+    uint8_t pn_len = dws_quic_pn_length(pn, -1);
     out[0] = (uint8_t)(0x40 | (pn_len - 1));
     memcpy(out + 1, dcid, dcl);
     size_t pn_off = 1 + dcl;
     wr_pn(out + pn_off, pn, pn_len);
     memcpy(out + pn_off + pn_len, frames, frame_len);
-    return quic_packet_protect(out, cap, pn_off, pn_len, pn, frame_len, keys, false);
+    return dws_quic_packet_protect(out, cap, pn_off, pn_len, pn, frame_len, keys, false);
 }
 static size_t open_long(const uint8_t *dg, size_t len, const QuicPacketKeys *keys, uint8_t *plain, size_t *wire,
                         uint8_t *type)
 {
     QuicLongHeader h;
-    TEST_ASSERT_TRUE(quic_parse_long_header(dg, len, &h));
+    TEST_ASSERT_TRUE(dws_quic_parse_long_header(dg, len, &h));
     *type = h.type;
     size_t off = h.hdr_len;
     if (h.type == QuicLongPacket::QUIC_LP_INITIAL)
     {
         uint64_t tl = 0;
         size_t c = 0;
-        quic_varint_decode(dg + off, len - off, &tl, &c);
+        dws_quic_varint_decode(dg + off, len - off, &tl, &c);
         off += c + (size_t)tl;
     }
     uint64_t length = 0;
     size_t c = 0;
-    quic_varint_decode(dg + off, len - off, &length, &c);
+    dws_quic_varint_decode(dg + off, len - off, &length, &c);
     off += c;
     *wire = off + (size_t)length;
     static uint8_t work[2048];
     memcpy(work, dg, *wire);
     uint64_t pn = 0;
-    return quic_packet_unprotect(work, off, (size_t)length, 0, keys, true, plain, &pn);
+    return dws_quic_packet_unprotect(work, off, (size_t)length, 0, keys, true, plain, &pn);
 }
 static size_t open_short(const uint8_t *dg, size_t len, uint8_t dcl, const QuicPacketKeys *keys, uint8_t *plain)
 {
     static uint8_t work[2048];
     memcpy(work, dg, len);
     uint64_t pn = 0;
-    return quic_packet_unprotect(work, 1 + dcl, len - (1 + dcl), 0, keys, false, plain, &pn);
+    return dws_quic_packet_unprotect(work, 1 + dcl, len - (1 + dcl), 0, keys, false, plain, &pn);
 }
 static size_t extract_crypto(const uint8_t *p, size_t len, uint8_t *out)
 {
@@ -132,7 +132,7 @@ static size_t extract_crypto(const uint8_t *p, size_t len, uint8_t *out)
             continue;
         }
         QuicFrame f;
-        size_t n = quic_frame_parse(p + off, len - off, &f);
+        size_t n = dws_quic_frame_parse(p + off, len - off, &f);
         if (!n)
             break;
         off += n;
@@ -199,7 +199,7 @@ static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32], con
 void test_http3_get_end_to_end()
 {
     fill();
-    // Server: quic_conn + h3_conn wired together.
+    // Server: dws_quic_conn + dws_h3_conn wired together.
     QuicTlsConfig cfg;
     memset(&cfg, 0, sizeof(cfg));
     cfg.cert_der = CERT;
@@ -207,43 +207,43 @@ void test_http3_get_end_to_end()
     memcpy(cfg.ed25519_seed, SERVER_SEED, 32);
     memcpy(cfg.ephemeral_priv, SERVER_PRIV, 32);
     memcpy(cfg.random, SERVER_RANDOM, 32);
-    quic_tp_defaults(&cfg.params);
+    dws_quic_tp_defaults(&cfg.params);
     cfg.params.initial_max_data = 1048576;
     cfg.params.initial_max_sd_bidi_remote = 262144;
     cfg.params.initial_max_streams_bidi = 8;
 
     QuicConn qc;
-    quic_conn_init(&qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), SERVER_SCID, sizeof(SERVER_SCID),
-                   nullptr);
+    dws_quic_conn_init(&qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), SERVER_SCID,
+                       sizeof(SERVER_SCID), nullptr);
     H3Conn h3;
-    h3_conn_init(&h3, &qc, app_request, nullptr); // installs the QUIC callbacks
+    dws_h3_conn_init(&h3, &qc, app_request, nullptr); // installs the QUIC callbacks
 
     QuicInitialSecrets init;
-    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
 
     // Client Initial(ClientHello).
     QuicTransportParams ctp;
-    quic_tp_defaults(&ctp);
+    dws_quic_tp_defaults(&ctp);
     ctp.initial_max_data = 524288;
     ctp.initial_max_sd_bidi_local = 131072;
     uint8_t ctpe[128];
-    size_t ctpl = quic_tp_encode(&ctp, ctpe, sizeof(ctpe));
+    size_t ctpl = dws_quic_tp_encode(&ctp, ctpe, sizeof(ctpe));
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t chl = build_client_hello(ch, client_pub, ctpe, ctpl);
     uint8_t frames[1200];
-    size_t fl = quic_build_crypto(frames, sizeof(frames), 0, ch, chl);
+    size_t fl = dws_quic_build_crypto(frames, sizeof(frames), 0, ch, chl);
     memset(frames + fl, 0, 1100 - fl);
     fl = 1100;
     uint8_t dg[1500];
     size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
                            sizeof(CLIENT_SCID), 0, &init.client, frames, fl);
-    quic_conn_recv(&qc, dg, dl);
+    dws_quic_conn_recv(&qc, dg, dl);
 
     // Server flight -> derive client-side keys.
     uint8_t sdg[1500], plain[2048], sh[512], hsf[1024];
-    size_t sl = quic_conn_send(&qc, sdg, sizeof(sdg));
+    size_t sl = dws_quic_conn_send(&qc, sdg, sizeof(sdg));
     size_t wire = 0;
     uint8_t ty = 0;
     size_t pt = open_long(sdg, sl, &init.server, plain, &wire, &ty);
@@ -261,67 +261,67 @@ void test_http3_get_end_to_end()
         ssh_sha256_final(&tmp, chsh);
     }
     Tls13KeySchedule cks;
-    tls13_ks_early(&TLS13_KDF, &cks);
-    tls13_ks_handshake(&cks, ecdhe, chsh);
+    dws_tls13_ks_early(&TLS13_KDF, &cks);
+    dws_tls13_ks_handshake(&cks, ecdhe, chsh);
     QuicPacketKeys hs_s, hs_c, ap_s, ap_c;
-    quic_keys_from_secret(cks.server_hs_traffic, &hs_s);
-    quic_keys_from_secret(cks.client_hs_traffic, &hs_c);
+    dws_quic_keys_from_secret(cks.server_hs_traffic, &hs_s);
+    dws_quic_keys_from_secret(cks.client_hs_traffic, &hs_c);
     size_t hw = 0;
     uint8_t hty = 0;
     size_t hpt = open_long(sdg + wire, sl - wire, &hs_s, plain, &hw, &hty);
     size_t hsfl = extract_crypto(plain, hpt, hsf);
     ssh_sha256_update(&t, hsf, hsfl);
     ssh_sha256_final(&t, chsf);
-    tls13_ks_master(&cks, chsf);
-    quic_keys_from_secret(cks.server_ap_traffic, &ap_s);
-    quic_keys_from_secret(cks.client_ap_traffic, &ap_c);
+    dws_tls13_ks_master(&cks, chsf);
+    dws_quic_keys_from_secret(cks.server_ap_traffic, &ap_s);
+    dws_quic_keys_from_secret(cks.client_ap_traffic, &ap_c);
 
     // Client Initial(ACK) + Handshake(ACK + Finished) -> server completes + opens h3 streams.
     uint8_t ifr[64];
-    size_t ifl = quic_build_ack(ifr, sizeof(ifr), 0, 0, 0);
+    size_t ifl = dws_quic_build_ack(ifr, sizeof(ifr), 0, 0, 0);
     uint8_t idg[256];
     size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
                             sizeof(CLIENT_SCID), 1, &init.client, ifr, ifl);
     uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
-    tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, chsf, cfin + 4);
+    dws_tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, chsf, cfin + 4);
     uint8_t hfr[64];
-    size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
-    hfl += quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));
+    size_t hfl = dws_quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
+    hfl += dws_quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));
     size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID),
                             CLIENT_SCID, sizeof(CLIENT_SCID), 0, &hs_c, hfr, hfl);
-    quic_conn_recv(&qc, idg, idl + hdl);
-    TEST_ASSERT_TRUE(quic_conn_established(&qc));
+    dws_quic_conn_recv(&qc, idg, idl + hdl);
+    TEST_ASSERT_TRUE(dws_quic_conn_established(&qc));
     // Drain the server's HANDSHAKE_DONE + control-stream datagram(s).
-    while ((sl = quic_conn_send(&qc, sdg, sizeof(sdg))) > 0)
+    while ((sl = dws_quic_conn_send(&qc, sdg, sizeof(sdg))) > 0)
     {
     }
 
     // --- Client sends an HTTP/3 GET on request stream 0 (1-RTT) ---
     uint8_t block[128];
-    size_t bp = qpack_encode_prefix(block, sizeof(block));
-    bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":method", 7, "GET", 3);
-    bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/hello", 6);
-    bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":authority", 10, "h3.test", 7);
+    size_t bp = dws_qpack_encode_prefix(block, sizeof(block));
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":method", 7, "GET", 3);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/hello", 6);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":authority", 10, "h3.test", 7);
     uint8_t h3req[256];
-    size_t h3l = h3_build_headers(h3req, sizeof(h3req), block, bp);
+    size_t h3l = dws_h3_build_headers(h3req, sizeof(h3req), block, bp);
     uint8_t sfr[300];
-    size_t sfrl = quic_build_stream(sfr, sizeof(sfr), 0, 0, h3req, h3l, true);
+    size_t sfrl = dws_quic_build_stream(sfr, sizeof(sfr), 0, 0, h3req, h3l, true);
     uint8_t s1[512];
     size_t s1l = build_short(s1, sizeof(s1), SERVER_SCID, sizeof(SERVER_SCID), 0, &ap_c, sfr, sfrl);
-    quic_conn_recv(&qc, s1, s1l);
+    dws_quic_conn_recv(&qc, s1, s1l);
 
-    // h3_conn dispatched the request to the app.
+    // dws_h3_conn dispatched the request to the app.
     TEST_ASSERT_EQUAL_STRING("GET", g_method);
     TEST_ASSERT_EQUAL_STRING("/hello", g_path);
 
     // --- Server response: 1-RTT STREAM with HTTP/3 HEADERS(200) + DATA("hello h3") ---
     bool got = false;
-    while ((sl = quic_conn_send(&qc, sdg, sizeof(sdg))) > 0)
+    while ((sl = dws_quic_conn_send(&qc, sdg, sizeof(sdg))) > 0)
     {
         size_t off = 0;
         while (off < sl)
         {
-            if (quic_is_long_header(sdg[off]))
+            if (dws_quic_is_long_header(sdg[off]))
             {
                 size_t w = 0;
                 uint8_t tt = 0;
@@ -342,7 +342,7 @@ void test_http3_get_end_to_end()
                     continue;
                 }
                 QuicFrame f;
-                size_t n = quic_frame_parse(plain + fo, p2 - fo, &f);
+                size_t n = dws_quic_frame_parse(plain + fo, p2 - fo, &f);
                 if (!n)
                     break;
                 fo += n;
@@ -356,7 +356,7 @@ void test_http3_get_end_to_end()
                     while (so < sn)
                     {
                         H3Frame hf;
-                        if (!h3_frame_parse(sp + so, sn - so, &hf))
+                        if (!dws_h3_frame_parse(sp + so, sn - so, &hf))
                             break;
                         const uint8_t *hp = sp + so + hf.header_len;
                         if (hf.type == H3FrameType::H3_HEADERS)
@@ -366,7 +366,7 @@ void test_http3_get_end_to_end()
                             {
                                 char *s;
                             } e = {status};
-                            qpack_decode(
+                            dws_qpack_decode(
                                 hp, (size_t)hf.length, sc, sizeof(sc),
                                 [](void *c, const char *nm, size_t nl, const char *v, size_t vl) -> bool {
                                     if (nl == 7 && memcmp(nm, ":status", 7) == 0)

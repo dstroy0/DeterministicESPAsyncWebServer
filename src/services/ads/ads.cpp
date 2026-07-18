@@ -40,18 +40,18 @@ static size_t write_header(uint8_t *buf, size_t cap, const AdsRequest *r, AdsCom
     return p; // == ADS_HDR_LEN
 }
 
-size_t ads_build_read_device_info(uint8_t *buf, size_t cap, const AdsRequest *r)
+size_t dws_ads_build_read_device_info(uint8_t *buf, size_t cap, const AdsRequest *r)
 {
     return write_header(buf, cap, r, AdsCommand::read_device_info, 0);
 }
 
-size_t ads_build_read_state(uint8_t *buf, size_t cap, const AdsRequest *r)
+size_t dws_ads_build_read_state(uint8_t *buf, size_t cap, const AdsRequest *r)
 {
     return write_header(buf, cap, r, AdsCommand::read_state, 0);
 }
 
-size_t ads_build_read(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
-                      uint32_t read_len)
+size_t dws_ads_build_read(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
+                          uint32_t read_len)
 {
     size_t p = write_header(buf, cap, r, AdsCommand::read, 12);
     if (!p)
@@ -62,8 +62,8 @@ size_t ads_build_read(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t in
     return p;
 }
 
-size_t ads_build_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
-                       const uint8_t *data, uint32_t len)
+size_t dws_ads_build_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
+                           const uint8_t *data, uint32_t len)
 {
     if (len && !data)
         return 0;
@@ -81,8 +81,8 @@ size_t ads_build_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t i
     return p;
 }
 
-size_t ads_build_read_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
-                            uint32_t read_len, const uint8_t *write_data, uint32_t write_len)
+size_t dws_ads_build_read_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group,
+                                uint32_t index_offset, uint32_t read_len, const uint8_t *write_data, uint32_t write_len)
 {
     if (write_len && !write_data)
         return 0;
@@ -101,15 +101,15 @@ size_t ads_build_read_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint3
     return p;
 }
 
-size_t ads_build_write_control(uint8_t *buf, size_t cap, const AdsRequest *r, uint16_t ads_state, uint16_t device_state,
-                               const uint8_t *data, uint32_t len)
+size_t dws_ads_build_write_control(uint8_t *buf, size_t cap, const AdsRequest *r, uint16_t dws_ads_state,
+                                   uint16_t device_state, const uint8_t *data, uint32_t len)
 {
     if (len && !data)
         return 0;
     size_t p = write_header(buf, cap, r, AdsCommand::write_control, 8 + len);
     if (!p)
         return 0;
-    p += dws_wr16le(buf + p, ads_state);
+    p += dws_wr16le(buf + p, dws_ads_state);
     p += dws_wr16le(buf + p, device_state);
     p += dws_wr32le(buf + p, len);
     if (len)
@@ -120,9 +120,9 @@ size_t ads_build_write_control(uint8_t *buf, size_t cap, const AdsRequest *r, ui
     return p;
 }
 
-size_t ads_build_add_notification(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group,
-                                  uint32_t index_offset, uint32_t length, AdsTransMode mode, uint32_t max_delay,
-                                  uint32_t cycle_time)
+size_t dws_ads_build_add_notification(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group,
+                                      uint32_t index_offset, uint32_t length, AdsTransMode mode, uint32_t max_delay,
+                                      uint32_t cycle_time)
 {
     // IndexGroup + IndexOffset + Length + TransMode + MaxDelay + CycleTime + Reserved(16) = 40.
     size_t p = write_header(buf, cap, r, AdsCommand::add_notification, 40);
@@ -139,7 +139,7 @@ size_t ads_build_add_notification(uint8_t *buf, size_t cap, const AdsRequest *r,
     return p;
 }
 
-size_t ads_build_del_notification(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t notification_handle)
+size_t dws_ads_build_del_notification(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t notification_handle)
 {
     size_t p = write_header(buf, cap, r, AdsCommand::del_notification, 4);
     if (!p)
@@ -148,7 +148,7 @@ size_t ads_build_del_notification(uint8_t *buf, size_t cap, const AdsRequest *r,
     return p;
 }
 
-bool ads_parse_ams_header(const uint8_t *buf, size_t len, AdsAmsHeader *out)
+bool dws_ads_parse_ams_header(const uint8_t *buf, size_t len, AdsAmsHeader *out)
 {
     if (!buf || !out || len < (size_t)ADS_HDR_LEN)
         return false;
@@ -176,7 +176,7 @@ bool ads_parse_ams_header(const uint8_t *buf, size_t len, AdsAmsHeader *out)
     return true;
 }
 
-bool ads_parse_read(const uint8_t *data, size_t data_len, AdsReadResult *out)
+bool dws_ads_parse_read(const uint8_t *data, size_t data_len, AdsReadResult *out)
 {
     if (!data || !out || data_len < 8)
         return false;
@@ -188,7 +188,7 @@ bool ads_parse_read(const uint8_t *data, size_t data_len, AdsReadResult *out)
     return true;
 }
 
-bool ads_parse_result(const uint8_t *data, size_t data_len, uint32_t *result)
+bool dws_ads_parse_result(const uint8_t *data, size_t data_len, uint32_t *result)
 {
     if (!data || !result || data_len < 4)
         return false;
@@ -196,17 +196,17 @@ bool ads_parse_result(const uint8_t *data, size_t data_len, uint32_t *result)
     return true;
 }
 
-bool ads_parse_read_state(const uint8_t *data, size_t data_len, AdsReadStateResult *out)
+bool dws_ads_parse_read_state(const uint8_t *data, size_t data_len, AdsReadStateResult *out)
 {
     if (!data || !out || data_len < 8)
         return false;
     out->result = dws_rd32le(data);
-    out->ads_state = dws_rd16le(data + 4);
+    out->dws_ads_state = dws_rd16le(data + 4);
     out->device_state = dws_rd16le(data + 6);
     return true;
 }
 
-bool ads_parse_read_device_info(const uint8_t *data, size_t data_len, AdsDeviceInfo *out)
+bool dws_ads_parse_read_device_info(const uint8_t *data, size_t data_len, AdsDeviceInfo *out)
 {
     if (!data || !out || data_len < 4 + 4 + ADS_DEVICE_NAME_LEN)
         return false;
@@ -219,7 +219,7 @@ bool ads_parse_read_device_info(const uint8_t *data, size_t data_len, AdsDeviceI
     return true;
 }
 
-bool ads_parse_add_notification(const uint8_t *data, size_t data_len, uint32_t *result, uint32_t *handle)
+bool dws_ads_parse_add_notification(const uint8_t *data, size_t data_len, uint32_t *result, uint32_t *handle)
 {
     if (!data || !result || !handle || data_len < 8)
         return false;
@@ -228,7 +228,7 @@ bool ads_parse_add_notification(const uint8_t *data, size_t data_len, uint32_t *
     return true;
 }
 
-bool ads_parse_notification(const uint8_t *data, size_t data_len, AdsNotificationSampleFn on_sample, void *user)
+bool dws_ads_parse_notification(const uint8_t *data, size_t data_len, AdsNotificationSampleFn on_sample, void *user)
 {
     // Length(4) + Stamps(4), then per stamp: Timestamp(8) + Samples(4) + samples.
     if (!data || !on_sample || data_len < 8)

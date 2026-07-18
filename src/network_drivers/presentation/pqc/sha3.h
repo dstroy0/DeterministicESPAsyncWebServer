@@ -11,7 +11,7 @@
  *
  * One-shot helpers cover fixed-length digests and arbitrary SHAKE output. For an incremental XOF
  * (ML-KEM samples the public matrix by squeezing three bytes at a time) absorb once with
- * shake128_absorb() then pull with keccak_squeeze() as many times as needed.
+ * dws_shake128_absorb() then pull with dws_keccak_squeeze() as many times as needed.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -43,10 +43,10 @@ struct KeccakCtx
 
 /// Absorb the whole message with domain-separation byte @p domain (0x06 SHA3, 0x1F SHAKE) and pad,
 /// leaving @p c ready to squeeze. Handles any input length (multi-block).
-void keccak_absorb(KeccakCtx *c, uint32_t rate, const uint8_t *in, size_t inlen, uint8_t domain);
+void dws_keccak_absorb(KeccakCtx *c, uint32_t rate, const uint8_t *in, size_t inlen, uint8_t domain);
 
 /// Squeeze @p outlen octets, permuting between blocks. May be called repeatedly for XOF use.
-void keccak_squeeze(KeccakCtx *c, uint8_t *out, size_t outlen);
+void dws_keccak_squeeze(KeccakCtx *c, uint8_t *out, size_t outlen);
 
 /// SHA3-256 one-shot: 32-octet digest of @p in.
 void sha3_256(uint8_t out[32], const uint8_t *in, size_t inlen);
@@ -60,8 +60,8 @@ void shake128(uint8_t *out, size_t outlen, const uint8_t *in, size_t inlen);
 /// SHAKE256 one-shot: @p outlen octets from @p in.
 void shake256(uint8_t *out, size_t outlen, const uint8_t *in, size_t inlen);
 
-/// Begin an incremental SHAKE128 XOF over @p in; pull output with keccak_squeeze(@p c, ...).
-void shake128_absorb(KeccakCtx *c, const uint8_t *in, size_t inlen);
+/// Begin an incremental SHAKE128 XOF over @p in; pull output with dws_keccak_squeeze(@p c, ...).
+void dws_shake128_absorb(KeccakCtx *c, const uint8_t *in, size_t inlen);
 
 #endif // DWS_ENABLE_PQC_KEX
 

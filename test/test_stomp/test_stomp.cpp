@@ -22,7 +22,7 @@ void test_build_send()
     const char *keys[] = {"destination", "content-type"};
     const char *vals[] = {"/queue/a", "text/plain"};
     char buf[128];
-    size_t n = stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, 2, "hi", 2);
+    size_t n = dws_stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, 2, "hi", 2);
     const char expect[] = "SEND\ndestination:/queue/a\ncontent-type:text/plain\n\nhi\0";
     TEST_ASSERT_EQUAL_size_t(sizeof(expect) - 1, n); // sizeof includes the source-string NUL == our frame NUL
     TEST_ASSERT_EQUAL_MEMORY(expect, buf, n);
@@ -32,7 +32,7 @@ void test_build_send()
 void test_build_no_headers_no_body()
 {
     char buf[32];
-    size_t n = stomp_build_frame(buf, sizeof(buf), "DISCONNECT", nullptr, nullptr, 0, nullptr, 0);
+    size_t n = dws_stomp_build_frame(buf, sizeof(buf), "DISCONNECT", nullptr, nullptr, 0, nullptr, 0);
     const char expect[] = "DISCONNECT\n\n\0";
     TEST_ASSERT_EQUAL_size_t(sizeof(expect) - 1, n);
     TEST_ASSERT_EQUAL_MEMORY(expect, buf, n);
@@ -44,7 +44,7 @@ void test_build_escapes_header()
     const char *keys[] = {"k"};
     const char *vals[] = {"a:b\\c\nd"};
     char buf[64];
-    size_t n = stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, 1, nullptr, 0);
+    size_t n = dws_stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, 1, nullptr, 0);
     const char expect[] = "SEND\nk:a\\cb\\\\c\\nd\n\n\0";
     TEST_ASSERT_EQUAL_size_t(sizeof(expect) - 1, n);
     TEST_ASSERT_EQUAL_MEMORY(expect, buf, n);
@@ -55,7 +55,7 @@ void test_build_overflow_fails_closed()
     const char *keys[] = {"destination"};
     const char *vals[] = {"/queue/a"};
     char buf[8];
-    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, 1, "hi", 2));
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, 1, "hi", 2));
 }
 
 // Build then parse round-trips the command, headers, and body.
@@ -64,23 +64,23 @@ void test_round_trip()
     const char *keys[] = {"destination", "id"};
     const char *vals[] = {"/topic/x", "0"};
     char buf[128];
-    size_t n = stomp_build_frame(buf, sizeof(buf), "SUBSCRIBE", keys, vals, 2, nullptr, 0);
+    size_t n = dws_stomp_build_frame(buf, sizeof(buf), "SUBSCRIBE", keys, vals, 2, nullptr, 0);
     TEST_ASSERT_GREATER_THAN(0, (int)n);
 
     StompFrame f;
     size_t c;
-    TEST_ASSERT_TRUE(stomp_parse_frame(buf, n, &f, &c));
+    TEST_ASSERT_TRUE(dws_stomp_parse_frame(buf, n, &f, &c));
     TEST_ASSERT_EQUAL_size_t(n, c);
     TEST_ASSERT_EQUAL_MEMORY("SUBSCRIBE", f.command, f.command_len);
     TEST_ASSERT_EQUAL_size_t(2, f.header_count);
 
     const char *v;
     size_t vl;
-    TEST_ASSERT_TRUE(stomp_header(&f, "destination", &v, &vl));
+    TEST_ASSERT_TRUE(dws_stomp_header(&f, "destination", &v, &vl));
     TEST_ASSERT_EQUAL_MEMORY("/topic/x", v, vl);
-    TEST_ASSERT_TRUE(stomp_header(&f, "id", &v, &vl));
+    TEST_ASSERT_TRUE(dws_stomp_header(&f, "id", &v, &vl));
     TEST_ASSERT_EQUAL_MEMORY("0", v, vl);
-    TEST_ASSERT_FALSE(stomp_header(&f, "missing", &v, &vl));
+    TEST_ASSERT_FALSE(dws_stomp_header(&f, "missing", &v, &vl));
     TEST_ASSERT_EQUAL_size_t(0, f.body_len);
 }
 
@@ -91,7 +91,7 @@ void test_parse_message_crlf()
     size_t len = sizeof(raw) - 1; // drop only the implicit terminator; keep the embedded NUL + "extra"
     StompFrame f;
     size_t c;
-    TEST_ASSERT_TRUE(stomp_parse_frame(raw, len, &f, &c));
+    TEST_ASSERT_TRUE(dws_stomp_parse_frame(raw, len, &f, &c));
     TEST_ASSERT_EQUAL_MEMORY("MESSAGE", f.command, f.command_len);
     TEST_ASSERT_EQUAL_size_t(3, f.header_count);
     TEST_ASSERT_EQUAL_MEMORY("payload", f.body, f.body_len);
@@ -107,7 +107,7 @@ void test_parse_content_length_body_with_nul()
     size_t len = sizeof(raw) - 1; // include the body NUL and the terminating NUL
     StompFrame f;
     size_t c;
-    TEST_ASSERT_TRUE(stomp_parse_frame(raw, len, &f, &c));
+    TEST_ASSERT_TRUE(dws_stomp_parse_frame(raw, len, &f, &c));
     TEST_ASSERT_EQUAL_size_t(5, f.body_len);
     TEST_ASSERT_EQUAL_MEMORY("ab\0cd", f.body, 5);
     TEST_ASSERT_EQUAL_size_t(len, c);
@@ -120,7 +120,7 @@ void test_parse_skips_leading_heartbeats()
     size_t len = sizeof(raw) - 1;
     StompFrame f;
     size_t c;
-    TEST_ASSERT_TRUE(stomp_parse_frame(raw, len, &f, &c));
+    TEST_ASSERT_TRUE(dws_stomp_parse_frame(raw, len, &f, &c));
     TEST_ASSERT_EQUAL_MEMORY("RECEIPT", f.command, f.command_len);
     TEST_ASSERT_EQUAL_size_t(len, c);
 }
@@ -129,20 +129,20 @@ void test_parse_incomplete_and_malformed()
 {
     StompFrame f;
     size_t c;
-    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\n", 5, &f, &c));                 // no header/body terminator yet
-    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\n\nbody", 10, &f, &c));          // body NUL not buffered
-    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\nbadheader\n\n\0", 17, &f, &c)); // header without a colon
-    TEST_ASSERT_FALSE(stomp_parse_frame("\n\n\n", 3, &f, &c));                 // only heart-beats
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("SEND\n", 5, &f, &c));                 // no header/body terminator yet
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("SEND\n\nbody", 10, &f, &c));          // body NUL not buffered
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("SEND\nbadheader\n\n\0", 17, &f, &c)); // header without a colon
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("\n\n\n", 3, &f, &c));                 // only heart-beats
     // content-length that overruns the buffer.
-    TEST_ASSERT_FALSE(stomp_parse_frame("MESSAGE\ncontent-length:99\n\nhi\0", 30, &f, &c));
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("MESSAGE\ncontent-length:99\n\nhi\0", 30, &f, &c));
     // An absurd content-length must fail closed, not overflow the length parse (32-bit hardening).
-    TEST_ASSERT_FALSE(stomp_parse_frame("MESSAGE\ncontent-length:99999999999999999999\n\nhi\0", 49, &f, &c));
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("MESSAGE\ncontent-length:99999999999999999999\n\nhi\0", 49, &f, &c));
 }
 
 void test_unescape()
 {
     char dst[32];
-    size_t n = stomp_unescape(dst, sizeof(dst), "a\\cb\\\\c\\nd\\r", 12);
+    size_t n = dws_stomp_unescape(dst, sizeof(dst), "a\\cb\\\\c\\nd\\r", 12);
     TEST_ASSERT_EQUAL_size_t(8, n);                  // a : b \ c LF d CR
     TEST_ASSERT_EQUAL_MEMORY("a:b\\c\nd\r", dst, 8); // ':' from \c, '\' from \\, LF from \n, CR from \r
 }
@@ -150,9 +150,9 @@ void test_unescape()
 void test_unescape_rejects_bad()
 {
     char dst[32];
-    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(dst, sizeof(dst), "a\\x", 3)); // invalid escape
-    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(dst, sizeof(dst), "a\\", 2));  // dangling escape
-    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(dst, 2, "abc", 3));            // overflow
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_unescape(dst, sizeof(dst), "a\\x", 3)); // invalid escape
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_unescape(dst, sizeof(dst), "a\\", 2));  // dangling escape
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_unescape(dst, 2, "abc", 3));            // overflow
 }
 
 // The CR escape, null-argument guards, and every builder overflow boundary.
@@ -161,24 +161,24 @@ void test_build_cr_escape_and_guards()
     const char *keys[] = {"k"};
     const char *vals[] = {"a\rb"}; // CR forces the \r escape path
     char full[128];
-    size_t flen = stomp_build_frame(full, sizeof(full), "SEND", keys, vals, 1, "body", 4);
+    size_t flen = dws_stomp_build_frame(full, sizeof(full), "SEND", keys, vals, 1, "body", 4);
     TEST_ASSERT_GREATER_THAN(0, (int)flen);
     TEST_ASSERT_NOT_NULL(strstr(full, "k:a\\rb\n")); // \r escaped to backslash-r
 
     // Null / zero-cap / null-command guards.
-    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(nullptr, 64, "SEND", nullptr, nullptr, 0, nullptr, 0));
-    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(full, 0, "SEND", nullptr, nullptr, 0, nullptr, 0));
-    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(full, sizeof(full), nullptr, nullptr, nullptr, 0, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(nullptr, 64, "SEND", nullptr, nullptr, 0, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(full, 0, "SEND", nullptr, nullptr, 0, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(full, sizeof(full), nullptr, nullptr, nullptr, 0, nullptr, 0));
     // A null header key inside the loop fails closed.
     const char *nk[] = {nullptr};
     const char *nv[] = {"v"};
-    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(full, sizeof(full), "SEND", nk, nv, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(full, sizeof(full), "SEND", nk, nv, 1, nullptr, 0));
 
     // Every capacity below the full length fails closed (walks each overflow return).
     for (size_t cap = 1; cap < flen; cap++)
     {
         char small[128];
-        TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(small, cap, "SEND", keys, vals, 1, "body", 4));
+        TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(small, cap, "SEND", keys, vals, 1, "body", 4));
     }
 }
 
@@ -186,14 +186,14 @@ void test_parse_more_edges()
 {
     StompFrame f;
     size_t c;
-    TEST_ASSERT_FALSE(stomp_parse_frame(nullptr, 5, &f, &c));          // null args
-    TEST_ASSERT_FALSE(stomp_parse_frame("SEND", 4, &f, &c));           // command line incomplete
-    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\nfoo:bar", 12, &f, &c)); // header line incomplete
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame(nullptr, 5, &f, &c));          // null args
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("SEND", 4, &f, &c));           // command line incomplete
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("SEND\nfoo:bar", 12, &f, &c)); // header line incomplete
 
-    TEST_ASSERT_FALSE(stomp_parse_frame("MSG\ncontent-length:\n\nx", 22, &f, &c));   // empty content-length
-    TEST_ASSERT_FALSE(stomp_parse_frame("MSG\ncontent-length:xy\n\nx", 24, &f, &c)); // non-digit content-length
-    const char not_on_nul[] = "MSG\ncontent-length:2\n\nabcd";                       // 2 bytes then 'c', not the NUL
-    TEST_ASSERT_FALSE(stomp_parse_frame(not_on_nul, sizeof(not_on_nul) - 1, &f, &c));
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("MSG\ncontent-length:\n\nx", 22, &f, &c));   // empty content-length
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("MSG\ncontent-length:xy\n\nx", 24, &f, &c)); // non-digit content-length
+    const char not_on_nul[] = "MSG\ncontent-length:2\n\nabcd"; // 2 bytes then 'c', not the NUL
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame(not_on_nul, sizeof(not_on_nul) - 1, &f, &c));
 }
 
 void test_header_and_unescape_null()
@@ -201,11 +201,11 @@ void test_header_and_unescape_null()
     StompFrame f;
     const char *v;
     size_t vl;
-    TEST_ASSERT_FALSE(stomp_header(nullptr, "x", &v, &vl));
-    TEST_ASSERT_FALSE(stomp_header(&f, nullptr, &v, &vl));
+    TEST_ASSERT_FALSE(dws_stomp_header(nullptr, "x", &v, &vl));
+    TEST_ASSERT_FALSE(dws_stomp_header(&f, nullptr, &v, &vl));
     char dst[8];
-    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(nullptr, sizeof(dst), "a", 1));
-    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(dst, sizeof(dst), nullptr, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_unescape(nullptr, sizeof(dst), "a", 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_unescape(dst, sizeof(dst), nullptr, 1));
 }
 
 int main()

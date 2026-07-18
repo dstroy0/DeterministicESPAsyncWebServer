@@ -75,7 +75,7 @@ struct Multipart
  * @param mp   Output structure; filled on success.
  * @return true if at least one part was found, false on parse error.
  */
-bool multipart_parse(HttpReq *req, Multipart *mp);
+bool dws_multipart_parse(HttpReq *req, Multipart *mp);
 
 /**
  * @brief Look up a field value across all parsed parts by name.
@@ -87,6 +87,6 @@ bool multipart_parse(HttpReq *req, Multipart *mp);
  * @param field  Form field name to search for.
  * @return Part data (null-terminated), or nullptr if not found.
  */
-const char *multipart_get_field(const Multipart *mp, const char *field);
+const char *dws_multipart_get_field(const Multipart *mp, const char *field);
 
 #endif

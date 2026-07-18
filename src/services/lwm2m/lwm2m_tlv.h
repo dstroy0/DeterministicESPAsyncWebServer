@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file lwm2m_tlv.h
+ * @file dws_lwm2m_tlv.h
  * @brief OMA LwM2M TLV codec (DWS_ENABLE_LWM2M) - zero-heap writer + cursor reader for the
  *        `application/vnd.oma.lwm2m+tlv` resource encoding, carried over the shipped CoAP
  *        service for LwM2M device management.
@@ -56,25 +56,25 @@ struct Lwm2mTlvWriter
     bool error;
 };
 
-void lwm2m_tlv_init(Lwm2mTlvWriter *w, uint8_t *buf, size_t cap);
+void dws_lwm2m_tlv_init(Lwm2mTlvWriter *w, uint8_t *buf, size_t cap);
 
 /** @brief Write a TLV with raw value bytes. @p id_type is one of LWM2M_TLV_*. */
-bool lwm2m_tlv_write(Lwm2mTlvWriter *w, uint8_t id_type, uint16_t id, const uint8_t *value, size_t value_len);
+bool dws_lwm2m_tlv_write(Lwm2mTlvWriter *w, uint8_t id_type, uint16_t id, const uint8_t *value, size_t value_len);
 
 /** @brief Write a Resource integer (shortest of 1/2/4/8 octets, big-endian two's complement). */
-bool lwm2m_tlv_write_int(Lwm2mTlvWriter *w, uint16_t id, int64_t v);
+bool dws_lwm2m_tlv_write_int(Lwm2mTlvWriter *w, uint16_t id, int64_t v);
 
 /** @brief Write a Resource boolean (one octet, 0/1). */
-bool lwm2m_tlv_write_bool(Lwm2mTlvWriter *w, uint16_t id, bool v);
+bool dws_lwm2m_tlv_write_bool(Lwm2mTlvWriter *w, uint16_t id, bool v);
 
 /** @brief Write a Resource UTF-8 string. */
-bool lwm2m_tlv_write_string(Lwm2mTlvWriter *w, uint16_t id, const char *s);
+bool dws_lwm2m_tlv_write_string(Lwm2mTlvWriter *w, uint16_t id, const char *s);
 
 /** @brief Write a Resource float (8-octet IEEE-754, big-endian). */
-bool lwm2m_tlv_write_float(Lwm2mTlvWriter *w, uint16_t id, double v);
+bool dws_lwm2m_tlv_write_float(Lwm2mTlvWriter *w, uint16_t id, double v);
 
 /** @brief Bytes written so far, or 0 if any write overflowed. */
-size_t lwm2m_tlv_finish(Lwm2mTlvWriter *w);
+size_t dws_lwm2m_tlv_finish(Lwm2mTlvWriter *w);
 
 /** @brief One decoded TLV; @ref value points INTO the source buffer. */
 struct Lwm2mTlv
@@ -89,10 +89,10 @@ struct Lwm2mTlv
  * @brief Read one TLV at [buf+*pos]; advances *pos past it.
  * @return true on a complete TLV; false at end-of-buffer or on truncation.
  */
-bool lwm2m_tlv_read(const uint8_t *buf, size_t len, size_t *pos, Lwm2mTlv *out);
+bool dws_lwm2m_tlv_read(const uint8_t *buf, size_t len, size_t *pos, Lwm2mTlv *out);
 
 /** @brief Decode a TLV integer value (1/2/4/8 octets, big-endian two's complement). */
-bool lwm2m_tlv_value_int(const uint8_t *value, size_t len, int64_t *out);
+bool dws_lwm2m_tlv_value_int(const uint8_t *value, size_t len, int64_t *out);
 
 #endif // DWS_ENABLE_LWM2M
 

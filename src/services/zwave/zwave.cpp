@@ -25,8 +25,8 @@ uint8_t checksum(const uint8_t *from_len, uint16_t n)
 }
 } // namespace
 
-uint16_t zwave_build_frame(zwave_type type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out,
-                           uint16_t cap)
+uint16_t dws_zwave_build_frame(dws_zwave_type type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out,
+                               uint16_t cap)
 {
     if (!out || data_len > DWS_ZWAVE_MAX_DATA || (data == nullptr && data_len > 0))
         return 0;
@@ -45,8 +45,8 @@ uint16_t zwave_build_frame(zwave_type type, uint8_t cmd, const uint8_t *data, ui
     return total;
 }
 
-int zwave_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *type, uint8_t *cmd, const uint8_t **pdata,
-                      uint8_t *pdata_len)
+int dws_zwave_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *type, uint8_t *cmd, const uint8_t **pdata,
+                          uint8_t *pdata_len)
 {
     if (!raw || len < 1)
         return 0;
@@ -73,20 +73,20 @@ int zwave_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *type, uint8_t *
     return (int)total;
 }
 
-bool zwave_is_ack(uint8_t b)
+bool dws_zwave_is_ack(uint8_t b)
 {
     return b == Zwave::ZWAVE_ACK;
 }
-bool zwave_is_nak(uint8_t b)
+bool dws_zwave_is_nak(uint8_t b)
 {
     return b == Zwave::ZWAVE_NAK;
 }
-bool zwave_is_can(uint8_t b)
+bool dws_zwave_is_can(uint8_t b)
 {
     return b == Zwave::ZWAVE_CAN;
 }
 
-uint16_t zwave_build_ack(uint8_t *out, uint16_t cap)
+uint16_t dws_zwave_build_ack(uint8_t *out, uint16_t cap)
 {
     if (!out || cap < 1)
         return 0;

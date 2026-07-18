@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
-ScpMode scp_parse_cmd(const char *cmd, size_t cmd_len, char *path_out, size_t path_cap)
+ScpMode dws_scp_parse_cmd(const char *cmd, size_t cmd_len, char *path_out, size_t path_cap)
 {
     if (!cmd || !path_out || path_cap == 0)
         return ScpMode::INVALID;
@@ -55,8 +55,8 @@ ScpMode scp_parse_cmd(const char *cmd, size_t cmd_len, char *path_out, size_t pa
     return mode;
 }
 
-bool scp_parse_cline(const char *line, size_t len, uint32_t *mode_out, uint64_t *size_out, char *name_out,
-                     size_t name_cap)
+bool dws_scp_parse_cline(const char *line, size_t len, uint32_t *mode_out, uint64_t *size_out, char *name_out,
+                         size_t name_cap)
 {
     if (!line || len < 1 || line[0] != 'C') // only plain file records (not D/E directory records)
         return false;
@@ -100,7 +100,7 @@ bool scp_parse_cline(const char *line, size_t len, uint32_t *mode_out, uint64_t 
     return true;
 }
 
-size_t scp_build_cline(uint32_t mode, uint64_t size, const char *name, char *out, size_t cap)
+size_t dws_scp_build_cline(uint32_t mode, uint64_t size, const char *name, char *out, size_t cap)
 {
     int n = snprintf(out, cap, "C%04o %llu %s\n", (unsigned)(mode & 07777), (unsigned long long)size, name);
     if (n <= 0 || (size_t)n >= cap)

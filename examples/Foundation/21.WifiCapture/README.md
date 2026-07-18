@@ -10,10 +10,10 @@ frame out the wired interface to a collector - "capture on Wi-Fi, forward to Eth
 wires three existing pieces together:
 
 ```
-Wi-Fi radio ─promisc_begin()→ sink ─dws_forward_ingress()→ ETH send cb ─UDP→ collector
+Wi-Fi radio ─dws_promisc_begin()→ sink ─dws_forward_ingress()→ ETH send cb ─UDP→ collector
 ```
 
-- **`services/promisc`** puts the radio in promiscuous mode (`promisc_begin(channel, sink)`) and
+- **`services/promisc`** puts the radio in promiscuous mode (`dws_promisc_begin(channel, sink)`) and
   delivers each raw 802.11 frame (plus RSSI + channel) to your sink. Capture is strictly passive
   (no injection).
 - **`services/forward`** (the forwarding plane) bridges interfaces: register a Wi-Fi source and

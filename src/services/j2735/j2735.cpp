@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_J2735
 
-void uper_writer_init(UperWriter *w, uint8_t *buf, size_t cap)
+void dws_uper_writer_init(UperWriter *w, uint8_t *buf, size_t cap)
 {
     w->buf = buf;
     w->cap = cap;
@@ -22,14 +22,14 @@ void uper_writer_init(UperWriter *w, uint8_t *buf, size_t cap)
             buf[i] = 0;
 }
 
-size_t uper_writer_finish(UperWriter *w)
+size_t dws_uper_writer_finish(UperWriter *w)
 {
     if (!w->ok)
         return 0;
     return (w->bit_pos + 7) / 8;
 }
 
-void uper_put_bits(UperWriter *w, uint32_t value, unsigned nbits)
+void dws_uper_put_bits(UperWriter *w, uint32_t value, unsigned nbits)
 {
     if (!w->ok || nbits == 0)
         return;
@@ -50,12 +50,12 @@ void uper_put_bits(UperWriter *w, uint32_t value, unsigned nbits)
     w->bit_pos += nbits;
 }
 
-void uper_put_bool(UperWriter *w, bool v)
+void dws_uper_put_bool(UperWriter *w, bool v)
 {
-    uper_put_bits(w, v ? 1 : 0, 1);
+    dws_uper_put_bits(w, v ? 1 : 0, 1);
 }
 
-unsigned uper_cint_bits(int64_t lo, int64_t hi)
+unsigned dws_uper_cint_bits(int64_t lo, int64_t hi)
 {
     if (hi <= lo)
         return 0;                         // single value: encoded in zero bits
@@ -66,17 +66,17 @@ unsigned uper_cint_bits(int64_t lo, int64_t hi)
     return bits;
 }
 
-void uper_put_cint(UperWriter *w, int64_t value, int64_t lo, int64_t hi)
+void dws_uper_put_cint(UperWriter *w, int64_t value, int64_t lo, int64_t hi)
 {
-    unsigned bits = uper_cint_bits(lo, hi);
+    unsigned bits = dws_uper_cint_bits(lo, hi);
     if (bits == 0)
         return;
     uint64_t off = (uint64_t)(value - lo);
     // Values wider than 32 bits are not used by the J2735 fields here, but support up to 32.
-    uper_put_bits(w, (uint32_t)off, bits);
+    dws_uper_put_bits(w, (uint32_t)off, bits);
 }
 
-void uper_reader_init(UperReader *r, const uint8_t *buf, size_t nbits)
+void dws_uper_reader_init(UperReader *r, const uint8_t *buf, size_t nbits)
 {
     r->buf = buf;
     r->nbits = nbits;
@@ -84,7 +84,7 @@ void uper_reader_init(UperReader *r, const uint8_t *buf, size_t nbits)
     r->ok = (buf != nullptr);
 }
 
-uint32_t uper_get_bits(UperReader *r, unsigned nbits)
+uint32_t dws_uper_get_bits(UperReader *r, unsigned nbits)
 {
     if (!r->ok || nbits == 0)
         return 0;
@@ -104,17 +104,17 @@ uint32_t uper_get_bits(UperReader *r, unsigned nbits)
     return v;
 }
 
-bool uper_get_bool(UperReader *r)
+bool dws_uper_get_bool(UperReader *r)
 {
-    return uper_get_bits(r, 1) != 0;
+    return dws_uper_get_bits(r, 1) != 0;
 }
 
-int64_t uper_get_cint(UperReader *r, int64_t lo, int64_t hi)
+int64_t dws_uper_get_cint(UperReader *r, int64_t lo, int64_t hi)
 {
-    unsigned bits = uper_cint_bits(lo, hi);
+    unsigned bits = dws_uper_cint_bits(lo, hi);
     if (bits == 0)
         return lo;
-    uint32_t off = uper_get_bits(r, bits);
+    uint32_t off = dws_uper_get_bits(r, bits);
     return lo + (int64_t)off;
 }
 
@@ -123,16 +123,16 @@ size_t dws_j2735_bsm_core_encode(const J2735BsmCore *c, uint8_t *out, size_t cap
     if (!c || !out)
         return 0;
     UperWriter w;
-    uper_writer_init(&w, out, cap);
-    uper_put_cint(&w, c->msg_count, 0, 127);
-    uper_put_bits(&w, c->id, 32);
-    uper_put_cint(&w, c->sec_mark, 0, 65535);
-    uper_put_cint(&w, c->lat, -900000000, 900000001);
-    uper_put_cint(&w, c->lon, -1799999999, 1800000001);
-    uper_put_cint(&w, c->elev, -4096, 61439);
-    uper_put_cint(&w, c->speed, 0, 8191);
-    uper_put_cint(&w, c->heading, 0, 28800);
-    return uper_writer_finish(&w);
+    dws_uper_writer_init(&w, out, cap);
+    dws_uper_put_cint(&w, c->msg_count, 0, 127);
+    dws_uper_put_bits(&w, c->id, 32);
+    dws_uper_put_cint(&w, c->sec_mark, 0, 65535);
+    dws_uper_put_cint(&w, c->lat, -900000000, 900000001);
+    dws_uper_put_cint(&w, c->lon, -1799999999, 1800000001);
+    dws_uper_put_cint(&w, c->elev, -4096, 61439);
+    dws_uper_put_cint(&w, c->speed, 0, 8191);
+    dws_uper_put_cint(&w, c->heading, 0, 28800);
+    return dws_uper_writer_finish(&w);
 }
 
 bool dws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c)
@@ -140,15 +140,15 @@ bool dws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c)
     if (!in || !c)
         return false;
     UperReader r;
-    uper_reader_init(&r, in, len * 8);
-    c->msg_count = (uint8_t)uper_get_cint(&r, 0, 127);
-    c->id = uper_get_bits(&r, 32);
-    c->sec_mark = (uint16_t)uper_get_cint(&r, 0, 65535);
-    c->lat = (int32_t)uper_get_cint(&r, -900000000, 900000001);
-    c->lon = (int32_t)uper_get_cint(&r, -1799999999, 1800000001);
-    c->elev = (int32_t)uper_get_cint(&r, -4096, 61439);
-    c->speed = (uint16_t)uper_get_cint(&r, 0, 8191);
-    c->heading = (uint16_t)uper_get_cint(&r, 0, 28800);
+    dws_uper_reader_init(&r, in, len * 8);
+    c->msg_count = (uint8_t)dws_uper_get_cint(&r, 0, 127);
+    c->id = dws_uper_get_bits(&r, 32);
+    c->sec_mark = (uint16_t)dws_uper_get_cint(&r, 0, 65535);
+    c->lat = (int32_t)dws_uper_get_cint(&r, -900000000, 900000001);
+    c->lon = (int32_t)dws_uper_get_cint(&r, -1799999999, 1800000001);
+    c->elev = (int32_t)dws_uper_get_cint(&r, -4096, 61439);
+    c->speed = (uint16_t)dws_uper_get_cint(&r, 0, 8191);
+    c->heading = (uint16_t)dws_uper_get_cint(&r, 0, 28800);
     return r.ok;
 }
 
@@ -157,16 +157,16 @@ size_t dws_j2735_spat_encode(const J2735MovementState *states, size_t count, uin
     if (!out || (count && !states) || count > 31)
         return 0;
     UperWriter w;
-    uper_writer_init(&w, out, cap);
-    uper_put_cint(&w, (int64_t)count, 0, 31);
+    dws_uper_writer_init(&w, out, cap);
+    dws_uper_put_cint(&w, (int64_t)count, 0, 31);
     for (size_t i = 0; i < count; i++)
     {
-        uper_put_cint(&w, states[i].signal_group, 0, 255);
-        uper_put_cint(&w, states[i].phase, 0, 9);
-        uper_put_cint(&w, states[i].min_end_time, 0, 36000);
-        uper_put_cint(&w, states[i].max_end_time, 0, 36000);
+        dws_uper_put_cint(&w, states[i].signal_group, 0, 255);
+        dws_uper_put_cint(&w, states[i].phase, 0, 9);
+        dws_uper_put_cint(&w, states[i].min_end_time, 0, 36000);
+        dws_uper_put_cint(&w, states[i].max_end_time, 0, 36000);
     }
-    return uper_writer_finish(&w);
+    return dws_uper_writer_finish(&w);
 }
 
 bool dws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *out_states, size_t max_states,
@@ -175,16 +175,16 @@ bool dws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *ou
     if (!in || !out_states || !out_count)
         return false;
     UperReader r;
-    uper_reader_init(&r, in, len * 8);
-    size_t count = (size_t)uper_get_cint(&r, 0, 31);
+    dws_uper_reader_init(&r, in, len * 8);
+    size_t count = (size_t)dws_uper_get_cint(&r, 0, 31);
     if (!r.ok || count > max_states)
         return false;
     for (size_t i = 0; i < count; i++)
     {
-        out_states[i].signal_group = (uint8_t)uper_get_cint(&r, 0, 255);
-        out_states[i].phase = (uint8_t)uper_get_cint(&r, 0, 9);
-        out_states[i].min_end_time = (uint16_t)uper_get_cint(&r, 0, 36000);
-        out_states[i].max_end_time = (uint16_t)uper_get_cint(&r, 0, 36000);
+        out_states[i].signal_group = (uint8_t)dws_uper_get_cint(&r, 0, 255);
+        out_states[i].phase = (uint8_t)dws_uper_get_cint(&r, 0, 9);
+        out_states[i].min_end_time = (uint16_t)dws_uper_get_cint(&r, 0, 36000);
+        out_states[i].max_end_time = (uint16_t)dws_uper_get_cint(&r, 0, 36000);
     }
     if (!r.ok)
         return false;
@@ -198,19 +198,19 @@ size_t dws_j2735_map_encode(const J2735MapIntersection *isect, const J2735Lane *
     if (!isect || !out || (count && !lanes) || count > 31)
         return 0;
     UperWriter w;
-    uper_writer_init(&w, out, cap);
-    uper_put_cint(&w, isect->intersection_id, 0, 65535);
-    uper_put_cint(&w, isect->ref_lat, 0, 65535);
-    uper_put_cint(&w, isect->ref_lon, 0, 65535);
-    uper_put_cint(&w, (int64_t)count, 0, 31);
+    dws_uper_writer_init(&w, out, cap);
+    dws_uper_put_cint(&w, isect->intersection_id, 0, 65535);
+    dws_uper_put_cint(&w, isect->ref_lat, 0, 65535);
+    dws_uper_put_cint(&w, isect->ref_lon, 0, 65535);
+    dws_uper_put_cint(&w, (int64_t)count, 0, 31);
     for (size_t i = 0; i < count; i++)
     {
-        uper_put_cint(&w, lanes[i].lane_id, 0, 255);
-        uper_put_bool(&w, lanes[i].is_ingress);
-        uper_put_cint(&w, lanes[i].node_x, -2048, 2047);
-        uper_put_cint(&w, lanes[i].node_y, -2048, 2047);
+        dws_uper_put_cint(&w, lanes[i].lane_id, 0, 255);
+        dws_uper_put_bool(&w, lanes[i].is_ingress);
+        dws_uper_put_cint(&w, lanes[i].node_x, -2048, 2047);
+        dws_uper_put_cint(&w, lanes[i].node_y, -2048, 2047);
     }
-    return uper_writer_finish(&w);
+    return dws_uper_writer_finish(&w);
 }
 
 bool dws_j2735_map_decode(const uint8_t *in, size_t len, J2735MapIntersection *isect, J2735Lane *out_lanes,
@@ -219,19 +219,19 @@ bool dws_j2735_map_decode(const uint8_t *in, size_t len, J2735MapIntersection *i
     if (!in || !isect || !out_lanes || !out_count)
         return false;
     UperReader r;
-    uper_reader_init(&r, in, len * 8);
-    isect->intersection_id = (uint16_t)uper_get_cint(&r, 0, 65535);
-    isect->ref_lat = (uint16_t)uper_get_cint(&r, 0, 65535);
-    isect->ref_lon = (uint16_t)uper_get_cint(&r, 0, 65535);
-    size_t count = (size_t)uper_get_cint(&r, 0, 31);
+    dws_uper_reader_init(&r, in, len * 8);
+    isect->intersection_id = (uint16_t)dws_uper_get_cint(&r, 0, 65535);
+    isect->ref_lat = (uint16_t)dws_uper_get_cint(&r, 0, 65535);
+    isect->ref_lon = (uint16_t)dws_uper_get_cint(&r, 0, 65535);
+    size_t count = (size_t)dws_uper_get_cint(&r, 0, 31);
     if (!r.ok || count > max_lanes)
         return false;
     for (size_t i = 0; i < count; i++)
     {
-        out_lanes[i].lane_id = (uint8_t)uper_get_cint(&r, 0, 255);
-        out_lanes[i].is_ingress = uper_get_bool(&r);
-        out_lanes[i].node_x = (int16_t)uper_get_cint(&r, -2048, 2047);
-        out_lanes[i].node_y = (int16_t)uper_get_cint(&r, -2048, 2047);
+        out_lanes[i].lane_id = (uint8_t)dws_uper_get_cint(&r, 0, 255);
+        out_lanes[i].is_ingress = dws_uper_get_bool(&r);
+        out_lanes[i].node_x = (int16_t)dws_uper_get_cint(&r, -2048, 2047);
+        out_lanes[i].node_y = (int16_t)dws_uper_get_cint(&r, -2048, 2047);
     }
     if (!r.ok)
         return false;

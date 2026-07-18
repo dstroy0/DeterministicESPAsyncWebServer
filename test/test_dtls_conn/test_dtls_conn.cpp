@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // DTLS 1.3 server handshake (RFC 9147 §5-6). A self-consistent proof: the test plays a minimal DTLS
-// 1.3 client against dtls_conn - it builds a ClientHello, drives the server, then runs the SAME TLS
+// 1.3 client against dws_dtls_conn - it builds a ClientHello, drives the server, then runs the SAME TLS
 // 1.3 key schedule to deprotect the server flight, VERIFIES the server's CertificateVerify signature
 // and Finished MAC over the real transcript, sends its own Finished, and confirms both sides install
 // identical application-traffic keys. If any transcript byte, epoch, nonce, or key were wrong the
@@ -225,7 +225,7 @@ static bool hrr_cookie(const uint8_t *sh, size_t len, uint8_t *cookie_out, size_
 static size_t frag_to_tls(const uint8_t *payload, size_t plen, uint8_t *tls_out)
 {
     DtlsHsHeader hh;
-    if (!dtls_hs_header_parse(payload, plen, &hh) || hh.frag_offset != 0 || hh.frag_length != hh.length)
+    if (!dws_dtls_hs_header_parse(payload, plen, &hh) || hh.frag_offset != 0 || hh.frag_length != hh.length)
         return 0;
     tls_out[0] = hh.msg_type;
     tls_out[1] = (uint8_t)(hh.length >> 16);
@@ -289,7 +289,7 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     size_t off = 0;
     // record 0: ServerHello (DTLSPlaintext, epoch 0)
     DtlsPlaintext pt;
-    size_t rl = dtls_plaintext_parse(flight + off, fl - off, &pt);
+    size_t rl = dws_dtls_plaintext_parse(flight + off, fl - off, &pt);
     TEST_ASSERT_TRUE(rl > 0);
     off += rl;
     uint8_t sh[512];
@@ -315,11 +315,11 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     uint8_t h[32];
     SshSha256Ctx tmp = tr;
     ssh_sha256_final(&tmp, h);
-    tls13_ks_early(&DTLS13_KDF, &cks);
-    tls13_ks_handshake(&cks, ecdhe, h, 32);
+    dws_tls13_ks_early(&DTLS13_KDF, &cks);
+    dws_tls13_ks_handshake(&cks, ecdhe, h, 32);
 
     DtlsRecordKeys srv_read; // client reads the server's epoch-2 records
-    dtls_record_keys_derive(&srv_read, DtlsCipher::AES_128_GCM_SHA256, 2, cks.server_hs_traffic);
+    dws_dtls_record_keys_derive(&srv_read, DtlsCipher::AES_128_GCM_SHA256, 2, cks.server_hs_traffic);
 
     // records 1..4: EncryptedExtensions, Certificate, CertificateVerify, Finished (DTLSCiphertext)
     uint8_t cert_pub[32];
@@ -332,8 +332,8 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
         TEST_ASSERT_TRUE(crl > 0);
         uint8_t inner[512];
         DtlsCiphertext info;
-        TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&srv_read, exp_seq, flight + off, crl, inner, sizeof(inner), &info,
-                                                   client_cid, client_cid_len));
+        TEST_ASSERT_TRUE(dws_dtls_ciphertext_unprotect(&srv_read, exp_seq, flight + off, crl, inner, sizeof(inner),
+                                                       &info, client_cid, client_cid_len));
         exp_seq = info.seq + 1;
         off += crl;
         TEST_ASSERT_EQUAL_UINT8(DTLS_CT_HANDSHAKE, info.content_type);
@@ -349,7 +349,7 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
             SshSha256Ctx sc = tr;
             ssh_sha256_final(&sc, h_ch_cert);
             uint8_t content[160]; // 64*0x20 + 33-byte context + 0x00 + 32-byte hash = 130
-            size_t clen = tls13_cert_verify_content(content, sizeof(content), h_ch_cert, true);
+            size_t clen = dws_tls13_cert_verify_content(content, sizeof(content), h_ch_cert, true);
             TEST_ASSERT_TRUE(clen > 0);
             const uint8_t *sig = msg + 4 + 2 + 2; // algorithm(2) + signature length(2)
             TEST_ASSERT_TRUE(ssh_ed25519_verify(cert_pub, content, clen, sig));
@@ -360,7 +360,7 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
             SshSha256Ctx s = tr;
             ssh_sha256_final(&s, hcv);
             uint8_t expect[32];
-            tls13_finished_mac(&DTLS13_KDF, cks.server_hs_traffic, hcv, expect);
+            dws_tls13_finished_mac(&DTLS13_KDF, cks.server_hs_traffic, hcv, expect);
             TEST_ASSERT_EQUAL_MEMORY(expect, msg + 4, 32);
             seen_fin = 1;
         }
@@ -379,22 +379,22 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     uint8_t h_sfin[32];
     SshSha256Ctx s2 = tr;
     ssh_sha256_final(&s2, h_sfin);
-    tls13_ks_master(&cks, h_sfin);
+    dws_tls13_ks_master(&cks, h_sfin);
 
     uint8_t cfin_verify[32];
-    tls13_finished_mac(&DTLS13_KDF, cks.client_hs_traffic, h_sfin, cfin_verify);
+    dws_tls13_finished_mac(&DTLS13_KDF, cks.client_hs_traffic, h_sfin, cfin_verify);
     uint8_t cfin[64];
-    size_t cfin_len = tls13_build_finished(cfin, sizeof(cfin), cfin_verify);
+    size_t cfin_len = dws_tls13_build_finished(cfin, sizeof(cfin), cfin_verify);
 
     DtlsRecordKeys cli_write; // client writes its epoch-2 Finished
-    dtls_record_keys_derive(&cli_write, DtlsCipher::AES_128_GCM_SHA256, 2, cks.client_hs_traffic);
+    dws_dtls_record_keys_derive(&cli_write, DtlsCipher::AES_128_GCM_SHA256, 2, cks.client_hs_traffic);
 
     uint8_t cfin_frag[80];
-    size_t cff = dtls_hs_frag_build(cfin[0], cfin_msg_seq, (uint32_t)(cfin_len - 4), 0, cfin + 4,
-                                    (uint32_t)(cfin_len - 4), cfin_frag, sizeof(cfin_frag));
+    size_t cff = dws_dtls_hs_frag_build(cfin[0], cfin_msg_seq, (uint32_t)(cfin_len - 4), 0, cfin + 4,
+                                        (uint32_t)(cfin_len - 4), cfin_frag, sizeof(cfin_frag));
     uint8_t cfin_rec[128];
-    size_t cfr = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec, sizeof(cfin_rec),
-                                         scid_len ? scid : nullptr, scid_len);
+    size_t cfr = dws_dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec,
+                                             sizeof(cfin_rec), scid_len ? scid : nullptr, scid_len);
 
     uint8_t out2[64];
     int r2 = dws_dtls_conn_process(conn, cfin_rec, cfr, out2, sizeof(out2));
@@ -404,14 +404,14 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     // --- both sides agree on the application-traffic keys ---
     DtlsRecordKeys cli_app_read;  // client reads server app data (from server_ap_traffic)
     DtlsRecordKeys cli_app_write; // client writes app data (from client_ap_traffic)
-    dtls_record_keys_derive(&cli_app_read, DtlsCipher::AES_128_GCM_SHA256, 3, cks.server_ap_traffic);
-    dtls_record_keys_derive(&cli_app_write, DtlsCipher::AES_128_GCM_SHA256, 3, cks.client_ap_traffic);
+    dws_dtls_record_keys_derive(&cli_app_read, DtlsCipher::AES_128_GCM_SHA256, 3, cks.server_ap_traffic);
+    dws_dtls_record_keys_derive(&cli_app_write, DtlsCipher::AES_128_GCM_SHA256, 3, cks.client_ap_traffic);
 
     // The ACK is an epoch-3 (application) record of content type 26 that the client can decrypt.
     uint8_t ack_pt[64];
     DtlsCiphertext ackinfo;
-    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&cli_app_read, 0, out2, (size_t)r2, ack_pt, sizeof(ack_pt), &ackinfo,
-                                               client_cid, client_cid_len));
+    TEST_ASSERT_TRUE(dws_dtls_ciphertext_unprotect(&cli_app_read, 0, out2, (size_t)r2, ack_pt, sizeof(ack_pt), &ackinfo,
+                                                   client_cid, client_cid_len));
     TEST_ASSERT_EQUAL_UINT8(DTLS_CT_ACK, ackinfo.content_type);
 
     const DtlsRecordKeys *srv_app_write = dws_dtls_conn_app_write_keys(conn); // server->client
@@ -426,16 +426,16 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     // A retransmitted client Finished (its ACK was lost) must draw a fresh ACK, not a fatal error
     // (RFC 9147 §5.8.3): re-send the same Finished in a new record and expect another ACK.
     uint8_t cfin_rec2[128];
-    size_t cfr2 = dtls_ciphertext_protect(&cli_write, 1, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec2,
-                                          sizeof(cfin_rec2), scid_len ? scid : nullptr, scid_len);
+    size_t cfr2 = dws_dtls_ciphertext_protect(&cli_write, 1, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec2,
+                                              sizeof(cfin_rec2), scid_len ? scid : nullptr, scid_len);
     uint8_t out3[64];
     int r3 = dws_dtls_conn_process(conn, cfin_rec2, cfr2, out3, sizeof(out3));
     TEST_ASSERT_TRUE(r3 > 0);
     TEST_ASSERT_TRUE(dws_dtls_conn_established(conn));
     uint8_t ack_pt3[64];
     DtlsCiphertext ackinfo3;
-    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&cli_app_read, 1, out3, (size_t)r3, ack_pt3, sizeof(ack_pt3), &ackinfo3,
-                                               client_cid, client_cid_len));
+    TEST_ASSERT_TRUE(dws_dtls_ciphertext_unprotect(&cli_app_read, 1, out3, (size_t)r3, ack_pt3, sizeof(ack_pt3),
+                                                   &ackinfo3, client_cid, client_cid_len));
     TEST_ASSERT_EQUAL_UINT8(DTLS_CT_ACK, ackinfo3.content_type);
 }
 
@@ -471,10 +471,10 @@ static void test_full_handshake(void)
     ssh_sha256_update(&tr, ch, ch_len);
 
     uint8_t ch_frag[300];
-    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
-                                      sizeof(ch_frag));
+    size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                          sizeof(ch_frag));
     uint8_t ch_rec[320];
-    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+    size_t ch_rl = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
 
     uint8_t flight[2048];
     int fl = dws_dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
@@ -508,10 +508,10 @@ static void test_cid_handshake(void)
     ssh_sha256_update(&tr, ch, ch_len);
 
     uint8_t ch_frag[300];
-    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
-                                      sizeof(ch_frag));
+    size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                          sizeof(ch_frag));
     uint8_t ch_rec[320];
-    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+    size_t ch_rl = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
 
     uint8_t flight[2048];
     int fl = dws_dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
@@ -519,7 +519,7 @@ static void test_cid_handshake(void)
 
     // The server's first epoch-2 record (after the plaintext ServerHello) must carry the C bit + our CID.
     DtlsPlaintext sh_pt;
-    size_t shrl = dtls_plaintext_parse(flight, (size_t)fl, &sh_pt);
+    size_t shrl = dws_dtls_plaintext_parse(flight, (size_t)fl, &sh_pt);
     TEST_ASSERT_TRUE(shrl > 0);
     const uint8_t *ep2 = flight + shrl;
     TEST_ASSERT_TRUE((ep2[0] & 0x10) != 0); // C bit set on the encrypted flight
@@ -550,9 +550,9 @@ static void test_hrr_group_renegotiation(void)
     size_t ch1_len = build_client_hello_ex(ch1, client_pub, /*with_keyshare=*/false, nullptr, 0);
     uint8_t f1[300];
     size_t f1l =
-        dtls_hs_frag_build(ch1[0], 0, (uint32_t)(ch1_len - 4), 0, ch1 + 4, (uint32_t)(ch1_len - 4), f1, sizeof(f1));
+        dws_dtls_hs_frag_build(ch1[0], 0, (uint32_t)(ch1_len - 4), 0, ch1 + 4, (uint32_t)(ch1_len - 4), f1, sizeof(f1));
     uint8_t r1[320];
-    size_t r1l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, f1, f1l, r1, sizeof(r1));
+    size_t r1l = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, f1, f1l, r1, sizeof(r1));
 
     uint8_t hrr_flight[512];
     int hf = dws_dtls_conn_process(&conn, r1, r1l, hrr_flight, sizeof(hrr_flight));
@@ -561,13 +561,13 @@ static void test_hrr_group_renegotiation(void)
 
     // --- the server flight is a single epoch-0 plaintext HelloRetryRequest ---
     DtlsPlaintext pt;
-    size_t rl = dtls_plaintext_parse(hrr_flight, (size_t)hf, &pt);
+    size_t rl = dws_dtls_plaintext_parse(hrr_flight, (size_t)hf, &pt);
     TEST_ASSERT_TRUE(rl > 0);
     uint8_t hrr[512];
     size_t hrr_len = frag_to_tls(pt.fragment, pt.frag_len, hrr);
     TEST_ASSERT_TRUE(hrr_len > 0);
-    TEST_ASSERT_EQUAL_UINT8(0x02, hrr[0]);                       // ServerHello handshake type
-    TEST_ASSERT_EQUAL_MEMORY(tls13_hrr_random, hrr + 4 + 2, 32); // the HRR magic random marks it an HRR
+    TEST_ASSERT_EQUAL_UINT8(0x02, hrr[0]);                           // ServerHello handshake type
+    TEST_ASSERT_EQUAL_MEMORY(dws_tls13_hrr_random, hrr + 4 + 2, 32); // the HRR magic random marks it an HRR
     uint8_t cookie[DTLS_COOKIE_MAX];
     size_t cookie_len = 0;
     TEST_ASSERT_TRUE(hrr_cookie(hrr, hrr_len, cookie, &cookie_len));
@@ -583,7 +583,7 @@ static void test_hrr_group_renegotiation(void)
     SshSha256Ctx tr;
     ssh_sha256_init(&tr);
     uint8_t mh[36];
-    size_t mhl = tls13_build_message_hash(mh, sizeof(mh), ch1_hash);
+    size_t mhl = dws_tls13_build_message_hash(mh, sizeof(mh), ch1_hash);
     TEST_ASSERT_TRUE(mhl > 0);
     ssh_sha256_update(&tr, mh, mhl);
     ssh_sha256_update(&tr, hrr, hrr_len);
@@ -595,9 +595,9 @@ static void test_hrr_group_renegotiation(void)
 
     uint8_t f2[380];
     size_t f2l =
-        dtls_hs_frag_build(ch2[0], 1, (uint32_t)(ch2_len - 4), 0, ch2 + 4, (uint32_t)(ch2_len - 4), f2, sizeof(f2));
+        dws_dtls_hs_frag_build(ch2[0], 1, (uint32_t)(ch2_len - 4), 0, ch2 + 4, (uint32_t)(ch2_len - 4), f2, sizeof(f2));
     uint8_t r2[420];
-    size_t r2l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 1, f2, f2l, r2, sizeof(r2));
+    size_t r2l = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 1, f2, f2l, r2, sizeof(r2));
 
     uint8_t flight[2048];
     int fl = dws_dtls_conn_process(&conn, r2, r2l, flight, sizeof(flight));
@@ -625,9 +625,9 @@ static void test_hrr_retry_without_cookie_rejected(void)
     size_t ch1_len = build_client_hello_ex(ch1, client_pub, /*with_keyshare=*/false, nullptr, 0);
     uint8_t f1[300];
     size_t f1l =
-        dtls_hs_frag_build(ch1[0], 0, (uint32_t)(ch1_len - 4), 0, ch1 + 4, (uint32_t)(ch1_len - 4), f1, sizeof(f1));
+        dws_dtls_hs_frag_build(ch1[0], 0, (uint32_t)(ch1_len - 4), 0, ch1 + 4, (uint32_t)(ch1_len - 4), f1, sizeof(f1));
     uint8_t r1[320];
-    size_t r1l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, f1, f1l, r1, sizeof(r1));
+    size_t r1l = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, f1, f1l, r1, sizeof(r1));
     uint8_t hrr_flight[512];
     TEST_ASSERT_TRUE(dws_dtls_conn_process(&conn, r1, r1l, hrr_flight, sizeof(hrr_flight)) > 0);
 
@@ -636,9 +636,9 @@ static void test_hrr_retry_without_cookie_rejected(void)
     size_t ch2_len = build_client_hello_ex(ch2, client_pub, /*with_keyshare=*/true, nullptr, 0);
     uint8_t f2[380];
     size_t f2l =
-        dtls_hs_frag_build(ch2[0], 1, (uint32_t)(ch2_len - 4), 0, ch2 + 4, (uint32_t)(ch2_len - 4), f2, sizeof(f2));
+        dws_dtls_hs_frag_build(ch2[0], 1, (uint32_t)(ch2_len - 4), 0, ch2 + 4, (uint32_t)(ch2_len - 4), f2, sizeof(f2));
     uint8_t r2[420];
-    size_t r2l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 1, f2, f2l, r2, sizeof(r2));
+    size_t r2l = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 1, f2, f2l, r2, sizeof(r2));
     uint8_t out[2048];
     TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, r2, r2l, out, sizeof(out)));
     TEST_ASSERT_EQUAL_UINT8(40, dws_dtls_conn_alert(&conn)); // handshake_failure
@@ -667,8 +667,8 @@ static void test_reject_no_tls13(void)
         }
     uint8_t frag[300], rec[320], out[1024];
     size_t fl =
-        dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), frag, sizeof(frag));
-    size_t rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, frag, fl, rec, sizeof(rec));
+        dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), frag, sizeof(frag));
+    size_t rl = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, frag, fl, rec, sizeof(rec));
     TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
     TEST_ASSERT_EQUAL_UINT8(70, dws_dtls_conn_alert(&conn)); // protocol_version
 }
@@ -686,10 +686,10 @@ static int drive_server_flight(DtlsConn *conn, DtlsServerConfig *cfg, SshSha256C
     ssh_sha256_init(tr);
     ssh_sha256_update(tr, ch, ch_len);
     uint8_t ch_frag[300];
-    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
-                                      sizeof(ch_frag));
+    size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                          sizeof(ch_frag));
     uint8_t ch_rec[320];
-    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+    size_t ch_rl = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
     return dws_dtls_conn_process(conn, ch_rec, ch_rl, flight, flight_cap);
 }
 
@@ -770,7 +770,7 @@ static void test_pto_ack_cancels_retransmit(void)
 
     // Derive the client's epoch-2 write keys from the ServerHello, as a real client would.
     DtlsPlaintext pt;
-    TEST_ASSERT_TRUE(dtls_plaintext_parse(flight, (size_t)fl, &pt) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_plaintext_parse(flight, (size_t)fl, &pt) > 0);
     uint8_t sh[512];
     size_t sh_len = frag_to_tls(pt.fragment, pt.frag_len, sh);
     TEST_ASSERT_TRUE(sh_len > 0);
@@ -787,18 +787,18 @@ static void test_pto_ack_cancels_retransmit(void)
     uint8_t ecdhe[32];
     ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
     Tls13KeySchedule cks;
-    tls13_ks_early(&DTLS13_KDF, &cks);
-    tls13_ks_handshake(&cks, ecdhe, h, 32);
+    dws_tls13_ks_early(&DTLS13_KDF, &cks);
+    dws_tls13_ks_handshake(&cks, ecdhe, h, 32);
     DtlsRecordKeys cli_write;
-    dtls_record_keys_derive(&cli_write, DtlsCipher::AES_128_GCM_SHA256, 2, cks.client_hs_traffic);
+    dws_dtls_record_keys_derive(&cli_write, DtlsCipher::AES_128_GCM_SHA256, 2, cks.client_hs_traffic);
 
     // ACK the whole flight: ServerHello (epoch 0, seq 0) + the four epoch-2 messages (seq 0..3).
     DtlsRecordNumber rns[5] = {{0, 0}, {2, 0}, {2, 1}, {2, 2}, {2, 3}};
     uint8_t ack_body[2 + 5 * 16];
-    size_t bl = dtls_ack_build(rns, 5, ack_body, sizeof(ack_body));
+    size_t bl = dws_dtls_ack_build(rns, 5, ack_body, sizeof(ack_body));
     TEST_ASSERT_TRUE(bl > 0);
     uint8_t ack_rec[160];
-    size_t ar = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_ACK, ack_body, bl, ack_rec, sizeof(ack_rec));
+    size_t ar = dws_dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_ACK, ack_body, bl, ack_rec, sizeof(ack_rec));
     TEST_ASSERT_TRUE(ar > 0);
 
     uint8_t out[64];

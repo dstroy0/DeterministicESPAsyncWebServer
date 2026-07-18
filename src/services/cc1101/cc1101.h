@@ -32,26 +32,26 @@
 #include <stdint.h>
 
 /** @brief Full-duplex SPI transfer of @p len bytes (chip-select toggled by the callback). */
-typedef void (*cc1101_spi_fn)(const uint8_t *tx, uint8_t *rx, uint8_t len, void *ctx);
+typedef void (*dws_cc1101_spi_fn)(const uint8_t *tx, uint8_t *rx, uint8_t len, void *ctx);
 
 /** @brief The bus a driver call uses: your SPI transfer behind it. */
-struct cc1101_bus
+struct dws_cc1101_bus
 {
-    cc1101_spi_fn spi;
+    dws_cc1101_spi_fn spi;
     void *ctx;
 };
 
 /** @brief One modem-config register write (address + value). */
-struct cc1101_reg
+struct dws_cc1101_reg
 {
     uint8_t addr;
     uint8_t value;
 };
 
-/** @brief Radio configuration applied by cc1101_init(). */
-struct cc1101_config
+/** @brief Radio configuration applied by dws_cc1101_init(). */
+struct dws_cc1101_config
 {
-    const cc1101_reg *regs; ///< SmartRF-exported register settings (may be null for none).
+    const dws_cc1101_reg *regs; ///< SmartRF-exported register settings (may be null for none).
     size_t nregs;
     uint8_t channel; ///< CHANNR (0x0A): channel number on top of the base frequency.
 };
@@ -60,29 +60,29 @@ struct cc1101_config
  * @brief Reset the CC1101, apply @p cfg, set the channel, and confirm it is present.
  * @return true; false if the VERSION status register reads 0x00 / 0xFF (the bus is not talking).
  */
-bool cc1101_init(const cc1101_bus *bus, const cc1101_config *cfg);
+bool dws_cc1101_init(const dws_cc1101_bus *bus, const dws_cc1101_config *cfg);
 
 /**
  * @brief Transmit @p len bytes as a variable-length packet (leading length byte), then strobe TX.
  * @return true; false if @p len is 0 or exceeds 63 (one FIFO fill).
  */
-bool cc1101_send(const cc1101_bus *bus, const uint8_t *data, uint8_t len);
+bool dws_cc1101_send(const dws_cc1101_bus *bus, const uint8_t *data, uint8_t len);
 
 /** @brief True once the state machine has returned to IDLE after a transmit. */
-bool cc1101_tx_done(const cc1101_bus *bus);
+bool dws_cc1101_tx_done(const dws_cc1101_bus *bus);
 
-/** @brief Flush RX and enter receive mode (strobe RX). Then poll cc1101_recv(). */
-void cc1101_set_rx(const cc1101_bus *bus);
+/** @brief Flush RX and enter receive mode (strobe RX). Then poll dws_cc1101_recv(). */
+void dws_cc1101_set_rx(const dws_cc1101_bus *bus);
 
 /**
  * @brief If a packet is waiting, read it (length byte + payload + appended RSSI/LQI status).
  * @param[out] rssi_dbm set to the decoded RSSI in dBm (may be null).
  * @return the payload length (capped at @p cap), or -1 if the RX FIFO is empty.
  */
-int cc1101_recv(const cc1101_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi_dbm);
+int dws_cc1101_recv(const dws_cc1101_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi_dbm);
 
 /** @brief Convert a raw CC1101 RSSI register value to dBm (TI datasheet formula). Pure. */
-int16_t cc1101_rssi_dbm(uint8_t raw);
+int16_t dws_cc1101_rssi_dbm(uint8_t raw);
 
 #endif // DWS_ENABLE_CC1101
 

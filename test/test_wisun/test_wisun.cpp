@@ -18,8 +18,8 @@ void test_build_coap_get(void)
 {
     uint8_t buf[64];
     // CON GET "sensors/temp", msg id 0x1234, no token.
-    size_t n = wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 0x1234, nullptr, 0,
-                                "sensors/temp", nullptr, 0, buf, sizeof(buf));
+    size_t n = dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 0x1234, nullptr, 0,
+                                    "sensors/temp", nullptr, 0, buf, sizeof(buf));
     // Header: 0x40 (ver1, CON, tkl0), code 0x01, mid 0x12 0x34.
     TEST_ASSERT_EQUAL_HEX8(0x40, buf[0]);
     TEST_ASSERT_EQUAL_HEX8(0x01, buf[1]);
@@ -39,8 +39,8 @@ void test_build_coap_put_with_token_and_payload(void)
     uint8_t buf[64];
     const uint8_t token[2] = {0xAB, 0xCD};
     const uint8_t body[3] = {0x31, 0x32, 0x33};
-    size_t n = wisun_build_coap(WisunCoap::WISUN_COAP_NON, WisunCoap::WISUN_COAP_PUT, 0x0005, token, 2, "led", body, 3,
-                                buf, sizeof(buf));
+    size_t n = dws_wisun_build_coap(WisunCoap::WISUN_COAP_NON, WisunCoap::WISUN_COAP_PUT, 0x0005, token, 2, "led", body,
+                                    3, buf, sizeof(buf));
     // Header: 0x52 (ver=01, type NON=01, tkl=0010), code 0x03 (PUT), mid 0x00 0x05.
     TEST_ASSERT_EQUAL_HEX8(0x52, buf[0]);
     TEST_ASSERT_EQUAL_HEX8(0x03, buf[1]);
@@ -62,8 +62,8 @@ void test_build_coap_long_segment_extended_length(void)
 {
     // A 13-char path segment forces the extended-length nibble (0xD).
     uint8_t buf[64];
-    size_t n = wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0, "abcdefghijklm",
-                                nullptr, 0, buf, sizeof(buf));
+    size_t n = dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0,
+                                    "abcdefghijklm", nullptr, 0, buf, sizeof(buf));
     // Option header: delta 11 (0xB), length 13 -> nibble 0xD, ext byte 13-13=0.
     TEST_ASSERT_EQUAL_HEX8(0xBD, buf[4]);
     TEST_ASSERT_EQUAL_HEX8(0x00, buf[5]); // extended length = 0
@@ -75,13 +75,13 @@ void test_build_coap_rejects_bad_args(void)
 {
     uint8_t buf[64];
     uint8_t tok[9] = {0};
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, tok, 9, "x",
-                                                 nullptr, 0, buf,
-                                                 sizeof(buf))); // tkl > 8
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, tok, 9,
+                                                     "x", nullptr, 0, buf,
+                                                     sizeof(buf))); // tkl > 8
     uint8_t tiny[3];
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0,
-                                                 "x", nullptr, 0, tiny,
-                                                 sizeof(tiny))); // too small
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr,
+                                                     0, "x", nullptr, 0, tiny,
+                                                     sizeof(tiny))); // too small
 }
 
 void test_node_registry(void)
@@ -89,27 +89,27 @@ void test_node_registry(void)
     WisunNode storage[3];
     WisunFan fan;
     DWSIp br = dws_ip_from_v6_bytes((const uint8_t[16]){0xfd, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1});
-    wisun_init(&fan, &br, storage, 3);
+    dws_wisun_init(&fan, &br, storage, 3);
 
     DWSIp n1, n2;
     dws_ip_parse("fd00::10", &n1);
     dws_ip_parse("fd00::11", &n2);
-    TEST_ASSERT_EQUAL_INT(0, wisun_node_register(&fan, &n1, 100));
-    TEST_ASSERT_EQUAL_INT(1, wisun_node_register(&fan, &n2, 101));
+    TEST_ASSERT_EQUAL_INT(0, dws_wisun_node_register(&fan, &n1, 100));
+    TEST_ASSERT_EQUAL_INT(1, dws_wisun_node_register(&fan, &n2, 101));
     // Re-register n1 refreshes, does not add.
-    TEST_ASSERT_EQUAL_INT(0, wisun_node_register(&fan, &n1, 200));
-    TEST_ASSERT_EQUAL_size_t(2, wisun_joined_count(&fan));
+    TEST_ASSERT_EQUAL_INT(0, dws_wisun_node_register(&fan, &n1, 200));
+    TEST_ASSERT_EQUAL_size_t(2, dws_wisun_joined_count(&fan));
     size_t idx = 99;
-    TEST_ASSERT_TRUE(wisun_node_find(&fan, &n2, &idx));
+    TEST_ASSERT_TRUE(dws_wisun_node_find(&fan, &n2, &idx));
     TEST_ASSERT_EQUAL_size_t(1, idx);
 
     char js[128];
-    size_t jn = wisun_nodes_json(&fan, js, sizeof(js));
+    size_t jn = dws_wisun_nodes_json(&fan, js, sizeof(js));
     TEST_ASSERT_EQUAL_size_t(strlen(js), jn);
     TEST_ASSERT_EQUAL_STRING("[{\"addr\":\"fd00::10\",\"joined\":true},{\"addr\":\"fd00::11\",\"joined\":true}]", js);
     // Overflow path: a buffer too small to hold the array returns 0.
     char tiny[8];
-    TEST_ASSERT_EQUAL_size_t(0, wisun_nodes_json(&fan, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_nodes_json(&fan, tiny, sizeof(tiny)));
 }
 
 void test_registry_full_and_misses(void)
@@ -118,23 +118,23 @@ void test_registry_full_and_misses(void)
     WisunFan fan;
     DWSIp br;
     dws_ip_parse("fd00::1", &br);
-    wisun_init(&fan, &br, storage, 2);
+    dws_wisun_init(&fan, &br, storage, 2);
     DWSIp a, b, c;
     dws_ip_parse("fd00::a", &a);
     dws_ip_parse("fd00::b", &b);
     dws_ip_parse("fd00::c", &c);
-    TEST_ASSERT_EQUAL_INT(0, wisun_node_register(&fan, &a, 1));
-    TEST_ASSERT_EQUAL_INT(1, wisun_node_register(&fan, &b, 2));
-    TEST_ASSERT_EQUAL_INT(-1, wisun_node_register(&fan, &c, 3)); // table full
-    TEST_ASSERT_FALSE(wisun_node_find(&fan, &c, nullptr));       // not present
-    TEST_ASSERT_EQUAL_size_t(2, wisun_joined_count(&fan));
+    TEST_ASSERT_EQUAL_INT(0, dws_wisun_node_register(&fan, &a, 1));
+    TEST_ASSERT_EQUAL_INT(1, dws_wisun_node_register(&fan, &b, 2));
+    TEST_ASSERT_EQUAL_INT(-1, dws_wisun_node_register(&fan, &c, 3)); // table full
+    TEST_ASSERT_FALSE(dws_wisun_node_find(&fan, &c, nullptr));       // not present
+    TEST_ASSERT_EQUAL_size_t(2, dws_wisun_joined_count(&fan));
     // Bad args on init / register / build.
-    wisun_init(&fan, &br, nullptr, 2); // null storage -> cap 0
-    TEST_ASSERT_EQUAL_INT(-1, wisun_node_register(&fan, &a, 1));
+    dws_wisun_init(&fan, &br, nullptr, 2); // null storage -> cap 0
+    TEST_ASSERT_EQUAL_INT(-1, dws_wisun_node_register(&fan, &a, 1));
     uint8_t buf[8];
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0,
-                                                 "x", nullptr, 0, nullptr,
-                                                 sizeof(buf))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr,
+                                                     0, "x", nullptr, 0, nullptr,
+                                                     sizeof(buf))); // null out
 }
 
 void test_coap_length_ext()
@@ -146,7 +146,7 @@ void test_coap_length_ext()
         path[i] = 'A';
     path[301] = '\0';
     uint8_t out[512];
-    size_t n = wisun_build_coap(0, 1, 1, nullptr, 0, path, nullptr, 0, out, sizeof(out));
+    size_t n = dws_wisun_build_coap(0, 1, 1, nullptr, 0, path, nullptr, 0, out, sizeof(out));
     TEST_ASSERT_TRUE(n > 269);
 }
 
@@ -154,42 +154,43 @@ void test_coap_overflow_and_emit_fail()
 {
     uint8_t out[64];
     // Header fits (cap == 4) but no room for even the first option header -> emit fails -> build 0.
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, out, 4));
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, out, 4));
     // Header + no options, but the payload marker + payload overflow the buffer.
     uint8_t pl[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, nullptr, pl, sizeof(pl), out, 10));
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(0, 1, 1, nullptr, 0, nullptr, pl, sizeof(pl), out, 10));
     // Option header byte fits but the value does not -> emit_option second cap check.
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, "/abcde", nullptr, 0, out, 6));
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(0, 1, 1, nullptr, 0, "/abcde", nullptr, 0, out, 6));
 }
 
 void test_coap_arg_guards()
 {
     uint8_t out[64];
     uint8_t tok[2] = {1, 2};
-    TEST_ASSERT_EQUAL_size_t(0,
-                             wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, nullptr, sizeof(out))); // null out
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 9, "/a", nullptr, 0, out, sizeof(out)));  // tkl > 8
     TEST_ASSERT_EQUAL_size_t(
-        0, wisun_build_coap(0, 1, 1, nullptr, 2, "/a", nullptr, 0, out, sizeof(out))); // tkl w/ null token
+        0, dws_wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(0,
+                             dws_wisun_build_coap(0, 1, 1, nullptr, 9, "/a", nullptr, 0, out, sizeof(out))); // tkl > 8
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_wisun_build_coap(0, 1, 1, nullptr, 2, "/a", nullptr, 0, out, sizeof(out))); // tkl w/ null token
     uint8_t pl[2] = {1, 2};
     TEST_ASSERT_EQUAL_size_t(
-        0, wisun_build_coap(0, 1, 1, tok, 2, "/a", nullptr, 2, out, sizeof(out))); // plen w/ null payload
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, out, 3)); // cap < 4+tkl
+        0, dws_wisun_build_coap(0, 1, 1, tok, 2, "/a", nullptr, 2, out, sizeof(out))); // plen w/ null payload
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, out, 3)); // cap < 4+tkl
     (void)pl;
 }
 
 void test_wisun_null_guards()
 {
-    wisun_init(nullptr, nullptr, nullptr, 0); // null fan -> no-op
+    dws_wisun_init(nullptr, nullptr, nullptr, 0); // null fan -> no-op
     WisunFan fan;
     WisunNode storage[4];
-    wisun_init(&fan, nullptr, storage, 4); // null border_router -> zeroed
+    dws_wisun_init(&fan, nullptr, storage, 4); // null border_router -> zeroed
     size_t idx = 0;
-    TEST_ASSERT_FALSE(wisun_node_find(nullptr, nullptr, &idx)); // null fan
-    TEST_ASSERT_EQUAL_size_t(0, wisun_joined_count(nullptr));   // null fan
+    TEST_ASSERT_FALSE(dws_wisun_node_find(nullptr, nullptr, &idx)); // null fan
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_joined_count(nullptr));   // null fan
     char buf[64];
-    TEST_ASSERT_EQUAL_size_t(0, wisun_nodes_json(nullptr, buf, sizeof(buf))); // null fan
-    TEST_ASSERT_EQUAL_size_t(0, wisun_nodes_json(&fan, buf, 0));              // zero cap
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_nodes_json(nullptr, buf, sizeof(buf))); // null fan
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_nodes_json(&fan, buf, 0));              // zero cap
 }
 
 int main(void)

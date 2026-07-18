@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file snmp_crypto.h
+ * @file dws_snmp_crypto.h
  * @brief USM cryptographic primitives for SNMPv3 (DWS_ENABLE_SNMP_V3).
  *
  * Provides exactly what the User-based Security Model needs and nothing more:
@@ -44,8 +44,8 @@
  * @param engine_id_len  length of @p engine_id.
  * @param key_out        receives SNMP_USM_KEY_LEN localized key bytes.
  */
-void snmp_usm_localize_key(const char *password, const uint8_t *engine_id, size_t engine_id_len,
-                           uint8_t key_out[SNMP_USM_KEY_LEN]);
+void dws_snmp_usm_localize_key(const char *password, const uint8_t *engine_id, size_t engine_id_len,
+                               uint8_t key_out[SNMP_USM_KEY_LEN]);
 
 /**
  * @brief AES-128 CFB-128 transform (RFC 3826), used for SNMPv3 privacy.
@@ -61,8 +61,8 @@ void snmp_usm_localize_key(const char *password, const uint8_t *engine_id, size_
  * @param len      number of bytes.
  * @param encrypt  true to encrypt, false to decrypt.
  */
-void snmp_aes128_cfb(const uint8_t key[16], const uint8_t iv[16], const uint8_t *in, uint8_t *out, size_t len,
-                     bool encrypt);
+void dws_snmp_aes128_cfb(const uint8_t key[16], const uint8_t iv[16], const uint8_t *in, uint8_t *out, size_t len,
+                         bool encrypt);
 
 #endif // DWS_ENABLE_SNMP_V3
 

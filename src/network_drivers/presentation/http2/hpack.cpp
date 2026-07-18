@@ -214,13 +214,13 @@ bool decode_literal(HpackDynTable *t, const uint8_t *block, size_t len, size_t *
 {
     size_t c = 0;
     uint32_t name_idx = 0;
-    if (!hpack_decode_int(block + *pos, len - *pos, prefix_bits, &c, &name_idx))
+    if (!dws_hpack_decode_int(block + *pos, len - *pos, prefix_bits, &c, &name_idx))
         return false;
     *pos += c;
     size_t name_len = 0;
     if (name_idx == 0)
     {
-        if (!hpack_decode_str(block, len, pos, scratch, cap, &name_len))
+        if (!dws_hpack_decode_str(block, len, pos, scratch, cap, &name_len))
             return false;
     }
     else if (!resolve_name(t, name_idx, scratch, cap, &name_len))
@@ -228,7 +228,7 @@ bool decode_literal(HpackDynTable *t, const uint8_t *block, size_t len, size_t *
         return false;
     }
     size_t val_len = 0;
-    if (!hpack_decode_str(block, len, pos, scratch + name_len, cap - name_len, &val_len))
+    if (!dws_hpack_decode_str(block, len, pos, scratch + name_len, cap - name_len, &val_len))
         return false;
     if (do_index)
         dyn_insert(t, scratch, name_len, scratch + name_len, val_len);
@@ -239,7 +239,7 @@ bool decode_literal(HpackDynTable *t, const uint8_t *block, size_t len, size_t *
 
 // --- Public API ------------------------------------------------------------------------------
 
-void hpack_dyn_init(HpackDynTable *t, uint32_t max_bytes)
+void dws_hpack_dyn_init(HpackDynTable *t, uint32_t max_bytes)
 {
     memset(t, 0, sizeof(*t));
     t->max_size = max_bytes ? max_bytes : (uint32_t)HPACK_BYTES;
@@ -247,8 +247,8 @@ void hpack_dyn_init(HpackDynTable *t, uint32_t max_bytes)
         t->max_size = HPACK_BYTES;
 }
 
-bool hpack_decode(HpackDynTable *t, const uint8_t *block, size_t len, char *scratch, size_t scratch_cap,
-                  HpackEmitFn emit, void *ctx)
+bool dws_hpack_decode(HpackDynTable *t, const uint8_t *block, size_t len, char *scratch, size_t scratch_cap,
+                      HpackEmitFn emit, void *ctx)
 {
     size_t pos = 0;
     while (pos < len)
@@ -258,7 +258,7 @@ bool hpack_decode(HpackDynTable *t, const uint8_t *block, size_t len, char *scra
         { // 6.1 Indexed Header Field
             size_t c = 0;
             uint32_t idx = 0;
-            if (!hpack_decode_int(block + pos, len - pos, 7, &c, &idx) || idx == 0)
+            if (!dws_hpack_decode_int(block + pos, len - pos, 7, &c, &idx) || idx == 0)
                 return false;
             pos += c;
             if (!emit_indexed(t, idx, scratch, scratch_cap, emit, ctx))
@@ -273,7 +273,7 @@ bool hpack_decode(HpackDynTable *t, const uint8_t *block, size_t len, char *scra
         { // 6.3 Dynamic table size update (prefix 5)
             size_t c = 0;
             uint32_t nm = 0;
-            if (!hpack_decode_int(block + pos, len - pos, 5, &c, &nm))
+            if (!dws_hpack_decode_int(block + pos, len - pos, 5, &c, &nm))
                 return false;
             pos += c;
             dyn_set_max(t, nm);
@@ -287,8 +287,8 @@ bool hpack_decode(HpackDynTable *t, const uint8_t *block, size_t len, char *scra
     return true;
 }
 
-size_t hpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t name_len, const char *value,
-                           size_t value_len)
+size_t dws_hpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t name_len, const char *value,
+                               size_t value_len)
 {
     int name_idx = 0;
     int full_idx = 0;
@@ -306,19 +306,19 @@ size_t hpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t na
         }
     }
     if (full_idx)
-        return hpack_encode_int(out, cap, 7, 0x80, (uint32_t)full_idx);
+        return dws_hpack_encode_int(out, cap, 7, 0x80, (uint32_t)full_idx);
     // Literal without indexing (top nibble 0000), name prefix 4.
-    size_t o = hpack_encode_int(out, cap, 4, 0x00, (uint32_t)name_idx);
+    size_t o = dws_hpack_encode_int(out, cap, 4, 0x00, (uint32_t)name_idx);
     if (!o)
         return 0;
     if (name_idx == 0)
     {
-        size_t ns = hpack_encode_str(out + o, cap - o, name, name_len);
+        size_t ns = dws_hpack_encode_str(out + o, cap - o, name, name_len);
         if (!ns)
             return 0;
         o += ns;
     }
-    size_t vs = hpack_encode_str(out + o, cap - o, value, value_len);
+    size_t vs = dws_hpack_encode_str(out + o, cap - o, value, value_len);
     if (!vs)
         return 0;
     return o + vs;

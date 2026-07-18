@@ -91,44 +91,44 @@ struct J1939TpRx
 // --- identifier ---
 
 /** @brief Encode a 29-bit J1939 id. @p da is used only for a PDU1 (PF < 240) PGN. */
-bool j1939_encode_id(uint32_t *id, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da);
+bool dws_j1939_encode_id(uint32_t *id, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da);
 
 /** @brief Decode a 29-bit J1939 id into its fields. */
-bool j1939_decode_id(uint32_t id, J1939Id *out);
+bool dws_j1939_decode_id(uint32_t id, J1939Id *out);
 
 // --- single-frame messages ---
 
 /** @brief Build a single-frame (<= 8 octet) J1939 message. */
-bool j1939_build_message(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
-                         uint8_t len);
+bool dws_j1939_build_message(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
+                             uint8_t len);
 
 /** @brief Build a Request-PGN frame asking @p da for @p requested_pgn. */
-bool j1939_build_request(CanFrame *out, uint8_t sa, uint8_t da, uint32_t requested_pgn);
+bool dws_j1939_build_request(CanFrame *out, uint8_t sa, uint8_t da, uint32_t requested_pgn);
 
 /** @brief Build an Address-Claimed frame announcing @p sa with the 64-bit @p name. */
-bool j1939_build_address_claim(CanFrame *out, uint8_t sa, uint64_t name);
+bool dws_j1939_build_address_claim(CanFrame *out, uint8_t sa, uint64_t name);
 
 /** @brief Compose a 64-bit J1939 NAME from its fields (see J1939-81). */
-uint64_t j1939_build_name(bool arbitrary_address_capable, uint8_t industry_group, uint8_t vehicle_system_instance,
-                          uint8_t vehicle_system, uint8_t function, uint8_t function_instance, uint8_t ecu_instance,
-                          uint16_t manufacturer_code, uint32_t identity_number);
+uint64_t dws_j1939_build_name(bool arbitrary_address_capable, uint8_t industry_group, uint8_t vehicle_system_instance,
+                              uint8_t vehicle_system, uint8_t function, uint8_t function_instance, uint8_t ecu_instance,
+                              uint16_t manufacturer_code, uint32_t identity_number);
 
 // --- transport protocol (multi-packet) ---
 
 /** @brief Octet count -> TP packet count (ceil(size / 7)). */
-uint8_t j1939_tp_num_packets(uint16_t total_size);
+uint8_t dws_j1939_tp_num_packets(uint16_t total_size);
 
 /** @brief Build the BAM (broadcast) TP.CM announce frame for @p pgn / @p total_size. */
-bool j1939_build_bam_cm(CanFrame *out, uint8_t sa, uint32_t pgn, uint16_t total_size);
+bool dws_j1939_build_bam_cm(CanFrame *out, uint8_t sa, uint32_t pgn, uint16_t total_size);
 
 /** @brief Build TP.DT data packet @p seq (1-based) carrying @p chunk_len (1..7) octets. */
-bool j1939_build_tp_dt(CanFrame *out, uint8_t sa, uint8_t da, uint8_t seq, const uint8_t *chunk, uint8_t chunk_len);
+bool dws_j1939_build_tp_dt(CanFrame *out, uint8_t sa, uint8_t da, uint8_t seq, const uint8_t *chunk, uint8_t chunk_len);
 
 /** @brief Reset a reassembly context to idle. */
-void j1939_tp_reset(J1939TpRx *rx);
+void dws_j1939_tp_reset(J1939TpRx *rx);
 
 /** @brief Feed a received frame to the reassembler; see @ref J1939TpResult. */
-J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
+J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
 
 #endif // DWS_ENABLE_J1939
 #endif // DETERMINISTICESPASYNCWEBSERVER_J1939_H

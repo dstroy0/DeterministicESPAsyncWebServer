@@ -14,7 +14,7 @@
 // Pure presence state machine (host-tested).
 // ---------------------------------------------------------------------------
 
-void sen0192_motion_init(Sen0192Motion *m, uint32_t hold_ms, bool active_high)
+void dws_sen0192_motion_init(Sen0192Motion *m, uint32_t hold_ms, bool active_high)
 {
     m->present = false;
     m->seeded = false;
@@ -24,7 +24,7 @@ void sen0192_motion_init(Sen0192Motion *m, uint32_t hold_ms, bool active_high)
     m->motion_events = 0;
 }
 
-bool sen0192_motion_update(Sen0192Motion *m, bool level_high, uint32_t now_ms)
+bool dws_sen0192_motion_update(Sen0192Motion *m, bool level_high, uint32_t now_ms)
 {
     bool active = (level_high == m->active_high);
     if (active)
@@ -39,28 +39,28 @@ bool sen0192_motion_update(Sen0192Motion *m, bool level_high, uint32_t now_ms)
         }
         return false;
     }
-    sen0192_motion_tick(m, now_ms); // inactive sample: presence may age out
+    dws_sen0192_motion_tick(m, now_ms); // inactive sample: presence may age out
     return false;
 }
 
-bool sen0192_motion_tick(Sen0192Motion *m, uint32_t now_ms)
+bool dws_sen0192_motion_tick(Sen0192Motion *m, uint32_t now_ms)
 {
     if (m->present && m->seeded && (uint32_t)(now_ms - m->last_active_ms) > m->hold_ms)
         m->present = false;
     return m->present;
 }
 
-bool sen0192_motion_present(const Sen0192Motion *m)
+bool dws_sen0192_motion_present(const Sen0192Motion *m)
 {
     return m->present;
 }
 
-uint32_t sen0192_motion_events(const Sen0192Motion *m)
+uint32_t dws_sen0192_motion_events(const Sen0192Motion *m)
 {
     return m->motion_events;
 }
 
-uint32_t sen0192_motion_active_age_ms(const Sen0192Motion *m, uint32_t now_ms)
+uint32_t dws_sen0192_motion_active_age_ms(const Sen0192Motion *m, uint32_t now_ms)
 {
     return m->seeded ? (uint32_t)(now_ms - m->last_active_ms) : 0;
 }
@@ -85,48 +85,48 @@ struct Sen0192Ctx
 Sen0192Ctx s_sen;
 } // namespace
 
-bool sen0192_begin(void)
+bool dws_sen0192_begin(void)
 {
     s_sen.pin = DWS_SEN0192_PIN;
     pinMode(s_sen.pin, INPUT);
-    sen0192_motion_init(&s_sen.motion, DWS_SEN0192_HOLD_MS, DWS_SEN0192_ACTIVE_HIGH != 0);
+    dws_sen0192_motion_init(&s_sen.motion, DWS_SEN0192_HOLD_MS, DWS_SEN0192_ACTIVE_HIGH != 0);
     return true;
 }
 
-bool sen0192_poll(void)
+bool dws_sen0192_poll(void)
 {
     if (s_sen.pin < 0)
         return false;
     bool level = digitalRead(s_sen.pin) != 0;
-    return sen0192_motion_update(&s_sen.motion, level, dws_millis());
+    return dws_sen0192_motion_update(&s_sen.motion, level, dws_millis());
 }
 
-bool sen0192_present(void)
+bool dws_sen0192_present(void)
 {
-    sen0192_motion_tick(&s_sen.motion, dws_millis()); // age presence out even between poll()s
-    return sen0192_motion_present(&s_sen.motion);
+    dws_sen0192_motion_tick(&s_sen.motion, dws_millis()); // age presence out even between poll()s
+    return dws_sen0192_motion_present(&s_sen.motion);
 }
 
-uint32_t sen0192_motion_count(void)
+uint32_t dws_sen0192_motion_count(void)
 {
-    return sen0192_motion_events(&s_sen.motion);
+    return dws_sen0192_motion_events(&s_sen.motion);
 }
 
 #else // host build: no GPIO. The presence state machine above is host-tested.
 
-bool sen0192_begin(void)
+bool dws_sen0192_begin(void)
 {
     return false;
 }
-bool sen0192_poll(void)
+bool dws_sen0192_poll(void)
 {
     return false;
 }
-bool sen0192_present(void)
+bool dws_sen0192_present(void)
 {
     return false;
 }
-uint32_t sen0192_motion_count(void)
+uint32_t dws_sen0192_motion_count(void)
 {
     return 0;
 }

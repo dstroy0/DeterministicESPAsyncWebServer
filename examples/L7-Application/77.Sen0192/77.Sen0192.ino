@@ -34,14 +34,14 @@ void setup()
     Serial.begin(115200);
     pinMode(LED_PIN, OUTPUT);
 
-    sen0192_begin(); // input pin + polarity + hold all come from ServerConfig
+    dws_sen0192_begin(); // input pin + polarity + hold all come from ServerConfig
     Serial.printf("SEN0192 microwave motion ready on GPIO%d - walk in front of it\n", DWS_SEN0192_PIN);
 }
 
 void loop()
 {
-    sen0192_poll(); // sample the OUT line (updates the debounced presence)
-    bool present = sen0192_present();
+    dws_sen0192_poll(); // sample the OUT line (updates the debounced presence)
+    bool present = dws_sen0192_present();
     digitalWrite(LED_PIN, present ? HIGH : LOW);
 
     // Print only when presence changes, so the Serial Monitor stays readable.
@@ -50,7 +50,7 @@ void loop()
     {
         last = present;
         if (present)
-            Serial.printf("[motion] DETECTED  (event #%u)\n", sen0192_motion_count());
+            Serial.printf("[motion] DETECTED  (event #%u)\n", dws_sen0192_motion_count());
         else
             Serial.println("[motion] clear");
     }

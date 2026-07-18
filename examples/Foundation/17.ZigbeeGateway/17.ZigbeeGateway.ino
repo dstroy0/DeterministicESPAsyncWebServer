@@ -5,7 +5,7 @@
 // the ASH frames it sends; a DATA frame carrying an EZSP callback (e.g. an incoming Zigbee
 // message) is bridged northbound.
 //
-//   Zigbee NCP --UART--> ash_frame_decode() --> EZSP payload -> dws_gateway_uplink()
+//   Zigbee NCP --UART--> dws_ash_frame_decode() --> EZSP payload -> dws_gateway_uplink()
 //                                                                     |
 //                                              envelope + topic  zigbee/0/<node>
 //                                                                     |
@@ -58,7 +58,7 @@ void setup()
     dws_gateway_set_topic_prefix("zigbee");
 
     uint8_t rst[8];
-    uint16_t n = ash_frame_encode(Ash::ASH_RST, nullptr, 0, rst, sizeof(rst)); // reset the NCP
+    uint16_t n = dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, rst, sizeof(rst)); // reset the NCP
     Serial2.write(rst, n);
     Serial.println("Zigbee gateway: EZSP/ASH -> codec -> publish (zigbee/0/<node>)");
 }
@@ -74,7 +74,7 @@ void loop()
             break;
         uint8_t control = 0, payload[DWS_ZIGBEE_MAX_DATA];
         uint16_t plen = 0;
-        int n = ash_frame_decode(g_buf, g_len, &control, payload, sizeof(payload), &plen);
+        int n = dws_ash_frame_decode(g_buf, g_len, &control, payload, sizeof(payload), &plen);
         if (n == 0)
             break; // need more
         if (n < 0)

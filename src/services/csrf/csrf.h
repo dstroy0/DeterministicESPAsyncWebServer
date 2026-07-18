@@ -42,7 +42,7 @@
  * @param secret  Secret key bytes.
  * @param len     Length in bytes; capped at 32 (longer keys are truncated).
  */
-void csrf_set_secret(const uint8_t *secret, size_t len);
+void dws_csrf_set_secret(const uint8_t *secret, size_t len);
 
 /**
  * @brief Issue a fresh signed token into @p out.
@@ -51,7 +51,7 @@ void csrf_set_secret(const uint8_t *secret, size_t len);
  * @param cap  Size of @p out.
  * @return Token length in characters, or 0 if no secret is set or @p cap is too small.
  */
-int csrf_issue(char *out, size_t cap);
+int dws_csrf_issue(char *out, size_t cap);
 
 /**
  * @brief Verify a token's signature against the current secret.
@@ -59,10 +59,10 @@ int csrf_issue(char *out, size_t cap);
  * @return true if @p token is well-formed and its HMAC signature is valid;
  *         false otherwise (or if no secret is set).
  */
-bool csrf_verify(const char *token);
+bool dws_csrf_verify(const char *token);
 
 /** @brief Clear the secret and nonce counter (e.g. between tests). */
-void csrf_reset(void);
+void dws_csrf_reset(void);
 
 #endif // DWS_ENABLE_CSRF
 

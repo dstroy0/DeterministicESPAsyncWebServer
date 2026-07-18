@@ -11,7 +11,7 @@ plain register read/write, the nRF24 uses an **SPI command protocol** and a sepa
 **CE** pin, so its `nrf_bus` carries an SPI transfer plus a CE callback.
 
 ```
-nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> dws_gateway_uplink(port, pipe, ...)
+nRF24 RX --SPI--> dws_nrf24_recv() -> pipe + payload -> dws_gateway_uplink(port, pipe, ...)
                                                            |
                                         envelope + topic  nrf24/0/<pipe>
                                                            |
@@ -25,11 +25,11 @@ address handed to `dws_gateway_uplink()`. Payloads are a **static width**
 
 ```cpp
 nrf_config cfg = {}; cfg.address = addr5; cfg.channel = 76; cfg.data_rate = 0; cfg.tx_power = 3;
-nrf24_init(&bus, &cfg);
-nrf24_set_rx(&bus);
+dws_nrf24_init(&bus, &cfg);
+dws_nrf24_set_rx(&bus);
 
 uint8_t buf[DWS_NRF24_PAYLOAD]; uint8_t pipe;
-int n = nrf24_recv(&bus, buf, sizeof(buf), &pipe);   // -> a frame, or -1
+int n = dws_nrf24_recv(&bus, buf, sizeof(buf), &pipe);   // -> a frame, or -1
 dws_gateway_uplink(0, pipe, buf, n, 0);                   // pipe = source address
 ```
 

@@ -16,7 +16,7 @@
 
 static const uint8_t SMB2_PROTOCOL_ID[4] = {0xFE, 'S', 'M', 'B'};
 
-size_t smb2_transport_frame(uint8_t *out, size_t cap, const uint8_t *msg, size_t msg_len)
+size_t dws_smb2_transport_frame(uint8_t *out, size_t cap, const uint8_t *msg, size_t msg_len)
 {
     if (!out || !msg || msg_len > 0x00FFFFFF || 4 + msg_len > cap)
         return 0;
@@ -28,15 +28,15 @@ size_t smb2_transport_frame(uint8_t *out, size_t cap, const uint8_t *msg, size_t
     return 4 + msg_len;
 }
 
-uint32_t smb2_transport_len(const uint8_t *buf, size_t len)
+uint32_t dws_smb2_transport_len(const uint8_t *buf, size_t len)
 {
     if (!buf || len < 4 || buf[0] != 0x00)
         return 0;
     return ((uint32_t)buf[1] << 16) | ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
 }
 
-size_t smb2_build_header(uint8_t *buf, size_t cap, Smb2Command command, uint16_t credit_request, uint64_t message_id,
-                         uint32_t tree_id, uint64_t session_id)
+size_t dws_smb2_build_header(uint8_t *buf, size_t cap, Smb2Command command, uint16_t credit_request,
+                             uint64_t message_id, uint32_t tree_id, uint64_t session_id)
 {
     if (!buf || cap < SMB2_HEADER_SIZE)
         return 0;
@@ -55,7 +55,7 @@ size_t smb2_build_header(uint8_t *buf, size_t cap, Smb2Command command, uint16_t
     return SMB2_HEADER_SIZE;
 }
 
-bool smb2_parse_header(const uint8_t *buf, size_t len, Smb2Header *out)
+bool dws_smb2_parse_header(const uint8_t *buf, size_t len, Smb2Header *out)
 {
     if (!buf || !out || len < SMB2_HEADER_SIZE)
         return false;
@@ -71,7 +71,7 @@ bool smb2_parse_header(const uint8_t *buf, size_t len, Smb2Header *out)
     return true;
 }
 
-size_t smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_guid[16], uint16_t security_mode)
+size_t dws_smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_guid[16], uint16_t security_mode)
 {
     static const Smb2Dialect dialects[] = {Smb2Dialect::SMB2_DIALECT_0202, Smb2Dialect::SMB2_DIALECT_0210,
                                            Smb2Dialect::SMB2_DIALECT_0300, Smb2Dialect::SMB2_DIALECT_0302};
@@ -80,7 +80,7 @@ size_t smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_guid[
     if (!buf || !client_guid || cap < total)
         return 0;
 
-    if (smb2_build_header(buf, cap, Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0) == 0)
+    if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0) == 0)
         return 0;
 
     uint8_t *b = buf + SMB2_HEADER_SIZE; // NEGOTIATE request body
@@ -96,12 +96,12 @@ size_t smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_guid[
     return total;
 }
 
-bool smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2NegotiateResp *out)
+bool dws_smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2NegotiateResp *out)
 {
     if (!msg || !out)
         return false;
     Smb2Header h;
-    if (!smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_NEGOTIATE)
+    if (!dws_smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_NEGOTIATE)
         return false;
     // The fixed response body is 64 bytes (StructureSize .. NegotiateContextOffset), Buffer follows.
     if (len < SMB2_HEADER_SIZE + 64)
@@ -133,14 +133,14 @@ bool smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2Negotiate
     return true;
 }
 
-size_t smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
-                                uint8_t security_mode, const uint8_t *sec_buf, size_t sec_len)
+size_t dws_smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
+                                    uint8_t security_mode, const uint8_t *sec_buf, size_t sec_len)
 {
     const size_t body = 24; // fixed SESSION_SETUP request body (§2.2.5)
     const size_t total = SMB2_HEADER_SIZE + body + sec_len;
     if (!buf || !sec_buf || sec_len == 0 || sec_len > 0xFFFF || cap < total)
         return 0;
-    if (smb2_build_header(buf, cap, Smb2Command::SMB2_SESSION_SETUP, 1, message_id, 0, session_id) == 0)
+    if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_SESSION_SETUP, 1, message_id, 0, session_id) == 0)
         return 0;
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
@@ -156,12 +156,12 @@ size_t smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, u
     return total;
 }
 
-bool smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2SessionSetupResp *out)
+bool dws_smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2SessionSetupResp *out)
 {
     if (!msg || !out)
         return false;
     Smb2Header h;
-    if (!smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_SESSION_SETUP)
+    if (!dws_smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_SESSION_SETUP)
         return false;
     // The fixed response body is 8 bytes (StructureSize .. SecurityBufferLength), Buffer follows.
     if (len < SMB2_HEADER_SIZE + 8)
@@ -186,14 +186,14 @@ bool smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2Sessi
     return true;
 }
 
-size_t smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
-                               const uint8_t *path_utf16, size_t path_len)
+size_t dws_smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
+                                   const uint8_t *path_utf16, size_t path_len)
 {
     const size_t body = 8; // fixed TREE_CONNECT request body (§2.2.9)
     const size_t total = SMB2_HEADER_SIZE + body + path_len;
     if (!buf || !path_utf16 || path_len == 0 || path_len > 0xFFFF || cap < total)
         return 0;
-    if (smb2_build_header(buf, cap, Smb2Command::SMB2_TREE_CONNECT, 1, message_id, 0, session_id) == 0)
+    if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_TREE_CONNECT, 1, message_id, 0, session_id) == 0)
         return 0;
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
@@ -206,12 +206,12 @@ size_t smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id, ui
     return total;
 }
 
-bool smb2_parse_tree_connect_response(const uint8_t *msg, size_t len, Smb2TreeConnectResp *out)
+bool dws_smb2_parse_tree_connect_response(const uint8_t *msg, size_t len, Smb2TreeConnectResp *out)
 {
     if (!msg || !out)
         return false;
     Smb2Header h;
-    if (!smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_TREE_CONNECT)
+    if (!dws_smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_TREE_CONNECT)
         return false;
     if (len < SMB2_HEADER_SIZE + 16) // fixed 16-byte body, no variable buffer
         return false;
@@ -225,15 +225,15 @@ bool smb2_parse_tree_connect_response(const uint8_t *msg, size_t len, Smb2TreeCo
     return true;
 }
 
-size_t smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
-                         uint32_t desired_access, uint32_t share_access, uint32_t create_disposition,
-                         uint32_t create_options, const uint8_t *name_utf16, size_t name_len)
+size_t dws_smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                             uint32_t desired_access, uint32_t share_access, uint32_t create_disposition,
+                             uint32_t create_options, const uint8_t *name_utf16, size_t name_len)
 {
     const size_t body = 56; // fixed CREATE request body (§2.2.13)
     const size_t total = SMB2_HEADER_SIZE + body + name_len;
     if (!buf || !name_utf16 || name_len == 0 || name_len > 0xFFFF || cap < total)
         return 0;
-    if (smb2_build_header(buf, cap, Smb2Command::SMB2_CREATE, 1, message_id, tree_id, session_id) == 0)
+    if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_CREATE, 1, message_id, tree_id, session_id) == 0)
         return 0;
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
@@ -254,12 +254,12 @@ size_t smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t
     return total;
 }
 
-bool smb2_parse_create_response(const uint8_t *msg, size_t len, Smb2CreateResp *out)
+bool dws_smb2_parse_create_response(const uint8_t *msg, size_t len, Smb2CreateResp *out)
 {
     if (!msg || !out)
         return false;
     Smb2Header h;
-    if (!smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_CREATE)
+    if (!dws_smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_CREATE)
         return false;
     if (len < SMB2_HEADER_SIZE + 88) // fixed 88-byte body (StructureSize .. CreateContextsLength)
         return false;
@@ -273,14 +273,14 @@ bool smb2_parse_create_response(const uint8_t *msg, size_t len, Smb2CreateResp *
     return true;
 }
 
-size_t smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
-                        const uint8_t file_id[16])
+size_t dws_smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                            const uint8_t file_id[16])
 {
     const size_t body = 24; // fixed CLOSE request body (§2.2.15), no variable buffer
     const size_t total = SMB2_HEADER_SIZE + body;
     if (!buf || !file_id || cap < total)
         return 0;
-    if (smb2_build_header(buf, cap, Smb2Command::SMB2_CLOSE, 1, message_id, tree_id, session_id) == 0)
+    if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_CLOSE, 1, message_id, tree_id, session_id) == 0)
         return 0;
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
@@ -291,12 +291,12 @@ size_t smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t 
     return total;
 }
 
-bool smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *out)
+bool dws_smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *out)
 {
     if (!msg || !out)
         return false;
     Smb2Header h;
-    if (!smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_CLOSE)
+    if (!dws_smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_CLOSE)
         return false;
     if (len < SMB2_HEADER_SIZE + 60) // fixed 60-byte body
         return false;
@@ -308,14 +308,14 @@ bool smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *ou
     return true;
 }
 
-size_t smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
-                       const uint8_t file_id[16], uint32_t length, uint64_t offset)
+size_t dws_smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                           const uint8_t file_id[16], uint32_t length, uint64_t offset)
 {
     const size_t body = 48;                           // fixed READ request body (§2.2.19)
     const size_t total = SMB2_HEADER_SIZE + body + 1; // + a 1-byte buffer (StructureSize 49 convention)
     if (!buf || !file_id || cap < total)
         return 0;
-    if (smb2_build_header(buf, cap, Smb2Command::SMB2_READ, 1, message_id, tree_id, session_id) == 0)
+    if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_READ, 1, message_id, tree_id, session_id) == 0)
         return 0;
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
@@ -332,12 +332,12 @@ size_t smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t s
     return total;
 }
 
-bool smb2_parse_read_response(const uint8_t *msg, size_t len, Smb2ReadResp *out)
+bool dws_smb2_parse_read_response(const uint8_t *msg, size_t len, Smb2ReadResp *out)
 {
     if (!msg || !out)
         return false;
     Smb2Header h;
-    if (!smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_READ)
+    if (!dws_smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_READ)
         return false;
     if (len < SMB2_HEADER_SIZE + 16) // fixed 16-byte body (StructureSize .. Reserved2), Buffer follows
         return false;
@@ -360,14 +360,14 @@ bool smb2_parse_read_response(const uint8_t *msg, size_t len, Smb2ReadResp *out)
     return true;
 }
 
-size_t smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
-                        const uint8_t file_id[16], const uint8_t *data, size_t data_len, uint64_t offset)
+size_t dws_smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                            const uint8_t file_id[16], const uint8_t *data, size_t data_len, uint64_t offset)
 {
     const size_t body = 48; // fixed WRITE request body (§2.2.21)
     const size_t total = SMB2_HEADER_SIZE + body + data_len;
     if (!buf || !file_id || !data || data_len == 0 || data_len > 0xFFFFFFFF || cap < total)
         return 0;
-    if (smb2_build_header(buf, cap, Smb2Command::SMB2_WRITE, 1, message_id, tree_id, session_id) == 0)
+    if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_WRITE, 1, message_id, tree_id, session_id) == 0)
         return 0;
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
@@ -382,12 +382,12 @@ size_t smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t 
     return total;
 }
 
-bool smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *out)
+bool dws_smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *out)
 {
     if (!msg || !out)
         return false;
     Smb2Header h;
-    if (!smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_WRITE)
+    if (!dws_smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_WRITE)
         return false;
     if (len < SMB2_HEADER_SIZE + 16) // fixed 16-byte body
         return false;

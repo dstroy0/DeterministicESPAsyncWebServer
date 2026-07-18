@@ -50,7 +50,7 @@ static const uint8_t ENG[] = {
 void test_parse_basic()
 {
     Ld2410Report r;
-    TEST_ASSERT_TRUE(ld2410_parse_report(BASIC, sizeof(BASIC), &r));
+    TEST_ASSERT_TRUE(dws_ld2410_parse_report(BASIC, sizeof(BASIC), &r));
     TEST_ASSERT_EQUAL_UINT8(0, r.engineering);
     TEST_ASSERT_EQUAL_UINT8(Ld2410State::LD2410_STATE_MOVING, r.state);
     TEST_ASSERT_EQUAL_UINT16(250, r.moving_cm);
@@ -63,7 +63,7 @@ void test_parse_basic()
 void test_parse_engineering()
 {
     Ld2410Report r;
-    TEST_ASSERT_TRUE(ld2410_parse_report(ENG, sizeof(ENG), &r));
+    TEST_ASSERT_TRUE(dws_ld2410_parse_report(ENG, sizeof(ENG), &r));
     TEST_ASSERT_EQUAL_UINT8(1, r.engineering);
     TEST_ASSERT_EQUAL_UINT8(Ld2410State::LD2410_STATE_BOTH, r.state);
     TEST_ASSERT_EQUAL_UINT16(100, r.moving_cm);
@@ -86,55 +86,55 @@ void test_reject_malformed()
     // bad header
     memcpy(bad, BASIC, sizeof(BASIC));
     bad[0] = 0x00;
-    TEST_ASSERT_FALSE(ld2410_parse_report(bad, sizeof(BASIC), &r));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(bad, sizeof(BASIC), &r));
     // bad footer
     memcpy(bad, BASIC, sizeof(BASIC));
     bad[21] = 0x00;
-    TEST_ASSERT_FALSE(ld2410_parse_report(bad, sizeof(BASIC), &r));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(bad, sizeof(BASIC), &r));
     // wrong length field for the buffer
     memcpy(bad, BASIC, sizeof(BASIC));
     bad[4] = 0x0C;
-    TEST_ASSERT_FALSE(ld2410_parse_report(bad, sizeof(BASIC), &r));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(bad, sizeof(BASIC), &r));
     // missing head marker
     memcpy(bad, BASIC, sizeof(BASIC));
     bad[7] = 0x00;
-    TEST_ASSERT_FALSE(ld2410_parse_report(bad, sizeof(BASIC), &r));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(bad, sizeof(BASIC), &r));
     // bad tail
     memcpy(bad, BASIC, sizeof(BASIC));
     bad[17] = 0x00;
-    TEST_ASSERT_FALSE(ld2410_parse_report(bad, sizeof(BASIC), &r));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(bad, sizeof(BASIC), &r));
     // unknown data type
     memcpy(bad, BASIC, sizeof(BASIC));
     bad[6] = 0x09;
-    TEST_ASSERT_FALSE(ld2410_parse_report(bad, sizeof(BASIC), &r));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(bad, sizeof(BASIC), &r));
     // short buffer
-    TEST_ASSERT_FALSE(ld2410_parse_report(BASIC, 10, &r));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(BASIC, 10, &r));
 }
 
 void test_stream_resync_and_split()
 {
     Ld2410Stream s;
-    ld2410_stream_reset(&s);
+    dws_ld2410_stream_reset(&s);
     Ld2410Report r;
     int reports = 0;
 
     // Leading noise, including a false partial header (F4 then a non-F3), then the real frame.
     const uint8_t noise[] = {0x00, 0xFF, 0xF4, 0x11, 0xF4, 0xF3, 0x99};
     for (unsigned i = 0; i < sizeof(noise); i++)
-        if (ld2410_stream_push(&s, noise[i], &r))
+        if (dws_ld2410_stream_push(&s, noise[i], &r))
             reports++;
     TEST_ASSERT_EQUAL_INT(0, reports);
 
     // Feed the whole basic frame one byte at a time; exactly one report should complete.
     for (unsigned i = 0; i < sizeof(BASIC); i++)
-        if (ld2410_stream_push(&s, BASIC[i], &r))
+        if (dws_ld2410_stream_push(&s, BASIC[i], &r))
             reports++;
     TEST_ASSERT_EQUAL_INT(1, reports);
     TEST_ASSERT_EQUAL_UINT16(250, r.moving_cm);
 
     // A second frame back-to-back proves the stream reset itself.
     for (unsigned i = 0; i < sizeof(ENG); i++)
-        if (ld2410_stream_push(&s, ENG[i], &r))
+        if (dws_ld2410_stream_push(&s, ENG[i], &r))
             reports++;
     TEST_ASSERT_EQUAL_INT(2, reports);
     TEST_ASSERT_EQUAL_UINT8(1, r.engineering);
@@ -143,15 +143,15 @@ void test_stream_resync_and_split()
 void test_stream_absurd_length_drops()
 {
     Ld2410Stream s;
-    ld2410_stream_reset(&s);
+    dws_ld2410_stream_reset(&s);
     Ld2410Report r;
     // header + a length larger than the frame buffer -> must drop and resync, then decode.
     const uint8_t huge[] = {0xF4, 0xF3, 0xF2, 0xF1, 0xFF, 0xFF};
     for (unsigned i = 0; i < sizeof(huge); i++)
-        TEST_ASSERT_FALSE(ld2410_stream_push(&s, huge[i], &r));
+        TEST_ASSERT_FALSE(dws_ld2410_stream_push(&s, huge[i], &r));
     int reports = 0;
     for (unsigned i = 0; i < sizeof(BASIC); i++)
-        if (ld2410_stream_push(&s, BASIC[i], &r))
+        if (dws_ld2410_stream_push(&s, BASIC[i], &r))
             reports++;
     TEST_ASSERT_EQUAL_INT(1, reports);
 }
@@ -159,58 +159,58 @@ void test_stream_absurd_length_drops()
 void test_helpers()
 {
     Ld2410Report r;
-    ld2410_parse_report(BASIC, sizeof(BASIC), &r);
-    TEST_ASSERT_TRUE(ld2410_present(&r));
-    TEST_ASSERT_EQUAL_UINT16(250, ld2410_distance_cm(&r)); // moving -> moving distance
+    dws_ld2410_parse_report(BASIC, sizeof(BASIC), &r);
+    TEST_ASSERT_TRUE(dws_ld2410_present(&r));
+    TEST_ASSERT_EQUAL_UINT16(250, dws_ld2410_distance_cm(&r)); // moving -> moving distance
 
     r.state = Ld2410State::LD2410_STATE_STATIC;
-    TEST_ASSERT_EQUAL_UINT16(300, ld2410_distance_cm(&r)); // static -> static distance
+    TEST_ASSERT_EQUAL_UINT16(300, dws_ld2410_distance_cm(&r)); // static -> static distance
     r.state = Ld2410State::LD2410_STATE_NONE;
-    TEST_ASSERT_FALSE(ld2410_present(&r));
-    TEST_ASSERT_EQUAL_UINT16(0, ld2410_distance_cm(&r));
-    TEST_ASSERT_FALSE(ld2410_present(nullptr));
+    TEST_ASSERT_FALSE(dws_ld2410_present(&r));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_ld2410_distance_cm(&r));
+    TEST_ASSERT_FALSE(dws_ld2410_present(nullptr));
 }
 
 void test_command_encoders()
 {
     uint8_t f[32];
     const uint8_t enable[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01};
-    TEST_ASSERT_EQUAL_INT((int)(sizeof(enable)), (int)(ld2410_cmd_config_enable(f, sizeof(f))));
+    TEST_ASSERT_EQUAL_INT((int)(sizeof(enable)), (int)(dws_ld2410_cmd_config_enable(f, sizeof(f))));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(enable, f, sizeof(enable));
 
     const uint8_t end[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xFE, 0x00, 0x04, 0x03, 0x02, 0x01};
-    TEST_ASSERT_EQUAL_INT((int)(sizeof(end)), (int)(ld2410_cmd_config_end(f, sizeof(f))));
+    TEST_ASSERT_EQUAL_INT((int)(sizeof(end)), (int)(dws_ld2410_cmd_config_end(f, sizeof(f))));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(end, f, sizeof(end));
 
     const uint8_t eng_on[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0x62, 0x00, 0x04, 0x03, 0x02, 0x01};
-    TEST_ASSERT_EQUAL_INT((int)(sizeof(eng_on)), (int)(ld2410_cmd_engineering(f, sizeof(f), true)));
+    TEST_ASSERT_EQUAL_INT((int)(sizeof(eng_on)), (int)(dws_ld2410_cmd_engineering(f, sizeof(f), true)));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(eng_on, f, sizeof(eng_on));
 
     const uint8_t eng_off[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0x63, 0x00, 0x04, 0x03, 0x02, 0x01};
-    TEST_ASSERT_EQUAL_INT((int)(sizeof(eng_off)), (int)(ld2410_cmd_engineering(f, sizeof(f), false)));
+    TEST_ASSERT_EQUAL_INT((int)(sizeof(eng_off)), (int)(dws_ld2410_cmd_engineering(f, sizeof(f), false)));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(eng_off, f, sizeof(eng_off));
 
     const uint8_t restart[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01};
-    TEST_ASSERT_EQUAL_INT((int)(sizeof(restart)), (int)(ld2410_cmd_restart(f, sizeof(f))));
+    TEST_ASSERT_EQUAL_INT((int)(sizeof(restart)), (int)(dws_ld2410_cmd_restart(f, sizeof(f))));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(restart, f, sizeof(restart));
 
     // Too-small buffer must refuse, not overrun.
-    TEST_ASSERT_EQUAL_INT((int)(0), (int)(ld2410_cmd_config_enable(f, 4)));
+    TEST_ASSERT_EQUAL_INT((int)(0), (int)(dws_ld2410_cmd_config_enable(f, 4)));
 }
 
 void test_host_stubs_and_parse_guards()
 {
     // Host build: the UART bind functions fail closed / return null.
-    TEST_ASSERT_FALSE(ld2410_begin(16, 17));
-    TEST_ASSERT_FALSE(ld2410_poll());
-    TEST_ASSERT_NULL(ld2410_last());
-    TEST_ASSERT_FALSE(ld2410_set_engineering(true));
-    TEST_ASSERT_FALSE(ld2410_restart());
+    TEST_ASSERT_FALSE(dws_ld2410_begin(16, 17));
+    TEST_ASSERT_FALSE(dws_ld2410_poll());
+    TEST_ASSERT_NULL(dws_ld2410_last());
+    TEST_ASSERT_FALSE(dws_ld2410_set_engineering(true));
+    TEST_ASSERT_FALSE(dws_ld2410_restart());
     // Malformed report frames fail closed.
     Ld2410Report rep;
-    TEST_ASSERT_FALSE(ld2410_parse_report(nullptr, 20, &rep));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(nullptr, 20, &rep));
     uint8_t too_short[4] = {0xF4, 0xF3, 0xF2, 0xF1};
-    TEST_ASSERT_FALSE(ld2410_parse_report(too_short, sizeof(too_short), &rep));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(too_short, sizeof(too_short), &rep));
 }
 
 int main()

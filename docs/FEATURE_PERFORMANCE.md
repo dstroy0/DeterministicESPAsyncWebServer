@@ -180,17 +180,17 @@ measured in-firmware by the pentest rig's `/bench` endpoint ([`pentesting/rig_fi
 N=20000 warm iterations; three runs agree to within 0.3%, so the figures are stable). These are the real
 device costs of hot pure primitives on the auth and ETag/Digest paths - no network in the measurement.
 
-| Operation                               | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| --------------------------------------- | --------------: | -------------: |
-| `dws_hex_encode` (16 B -> 32 hex)       |             462 |           1925 |
-| `dws_hex_decode` (32 hex -> 16 B)       |             689 |           2870 |
-| `base64_decode` ("admin:admin", 16 ch)  |            5040 |          21000 |
-| `mime_type` (extension -> content-type) |             470 |           1958 |
+| Operation                                  | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------------------ | --------------: | -------------: |
+| `dws_hex_encode` (16 B -> 32 hex)          |             462 |           1925 |
+| `dws_hex_decode` (32 hex -> 16 B)          |             689 |           2870 |
+| `dws_base64_decode` ("admin:admin", 16 ch) |            5040 |          21000 |
+| `mime_type` (extension -> content-type)    |             470 |           1958 |
 
 - The hex codecs are the in-house table-lookup path: ~1.9 us to hex-encode a 16-byte value (an ETag or a
   Digest-nonce MAC), ~2.9 us to decode. Cheap enough that the conditional-GET / Digest machinery is never
   the bottleneck.
-- `base64_decode` of an 11-byte Basic-auth credential costs ~21 us - about 11x the hex decode - because on
+- `dws_base64_decode` of an 11-byte Basic-auth credential costs ~21 us - about 11x the hex decode - because on
   the ESP32 the decoder is mbedTLS's **constant-time** base64 (branchless per-character masks so timing does
   not leak the credential; see the base64 note in section 2). At once per authenticated request that is
   invisible, and constant-time is the right trade for a secret. This is the same measurement path that would
@@ -202,14 +202,14 @@ device costs of hot pure primitives on the auth and ETag/Digest paths - no netwo
 
 ### Server-Sent Events framing (DWS_ENABLE_SSE)
 
-`sse_format()` builds one `event:`/`id:`/`data:` record (WHATWG event-stream format) into a buffer; it is
-the pure, transport-free hot op behind every `sse_send()` / `sse_broadcast()`. Host figures from
+`dws_sse_format()` builds one `event:`/`id:`/`data:` record (WHATWG event-stream format) into a buffer; it is
+the pure, transport-free hot op behind every `dws_sse_send()` / `dws_sse_broadcast()`. Host figures from
 [`perf/bench_sse.cpp`](../perf/bench_sse.cpp); the device figure is the rig `/bench` CCOUNT op (N=20000 warm).
 
-| Operation                      | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ------------------------------ | ---------: | --------: | --------------: | -------------: |
-| `sse_format` data-only         |       62.5 |     432.1 |               - |              - |
-| `sse_format` event + id + data |      180.2 |     299.7 |            3393 |          14137 |
+| Operation                          | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ---------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `dws_sse_format` data-only         |       62.5 |     432.1 |               - |              - |
+| `dws_sse_format` event + id + data |      180.2 |     299.7 |            3393 |          14137 |
 
 - A fully-addressed record (named event + resumable id + data) costs ~14.1 us on the S3 - notably more than
   the codec primitives above, because the framing is three `snprintf("%s")` calls and the Xtensa `vsnprintf`
@@ -261,21 +261,21 @@ the device figure is the rig `/bench` CCOUNT op (N=20000 warm), including the ha
 
 ### SNMP agent codec (DWS_ENABLE_SNMP)
 
-`snmp_agent_process()` is the whole SNMP v1/v2c path (RFC 1157/3416): BER-decode the message + PDU,
+`dws_snmp_agent_process()` is the whole SNMP v1/v2c path (RFC 1157/3416): BER-decode the message + PDU,
 walk the MIB against the varbind OIDs, BER-encode the reply. Pure (no sockets, no heap). Host figures
 from [`perf/bench_snmp.cpp`](../perf/bench_snmp.cpp); the device figure is the rig `/bench` CCOUNT op.
 
-| Operation                           | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ----------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `snmp_agent_process` GET sysDescr.0 |      673.9 |      72.7 |            7005 |          29187 |
-| `snmp_agent_process` GETNEXT (walk) |      799.2 |      58.8 |               - |              - |
+| Operation                               | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| --------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `dws_snmp_agent_process` GET sysDescr.0 |      673.9 |      72.7 |            7005 |          29187 |
+| `dws_snmp_agent_process` GETNEXT (walk) |      799.2 |      58.8 |               - |              - |
 
 - A GET round trip is ~29 us on the S3 - the heaviest of the request-path codecs, because BER is a
   tag-length-value format decoded and re-encoded field by field (vs CoAP's simpler byte-oriented options
   and HTTP's text parse). GETNEXT (the snmpwalk step) costs a bit more again for the lexicographic MIB
   successor search. Still well under the datagram inter-arrival time of any realistic poll, so BER is not
   a bottleneck for a monitored device.
-- **Amplification note (security):** the pentest `snmp_getbulk_amplification` measured a GETBULK with
+- **Amplification note (security):** the pentest `dws_snmp_getbulk_amplification` measured a GETBULK with
   max-repetitions=10000 producing only ~9.7x (40 B request -> 386 B reply) - the constrained agent caps
   the reply at its small MIB + fixed tx buffer, so it is **not a usable reflection/amplification vector**
   (unlike a full SNMP daemon over a large MIB). That bound is a determinism property, not a config knob.
@@ -283,38 +283,38 @@ from [`perf/bench_snmp.cpp`](../perf/bench_snmp.cpp); the device figure is the r
 ### OPC UA Binary codec (DWS_ENABLE_OPCUA)
 
 The OPC UA server's hot ops (IEC 62541 / OPC UA Part 6): the UACP Hello/Acknowledge handshake
-(`opcua_parse_hello` + `opcua_build_ack`, run once per connection) and the per-node DataValue Variant
-encode (`ua_w_datavalue`, the Read-service hot op). All pure little-endian codecs. Host figures from
+(`dws_opcua_parse_hello` + `dws_opcua_build_ack`, run once per connection) and the per-node DataValue Variant
+encode (`dws_ua_w_datavalue`, the Read-service hot op). All pure little-endian codecs. Host figures from
 [`perf/bench_opcua.cpp`](../perf/bench_opcua.cpp); the device figure is the rig `/bench` CCOUNT op
 (parse HELLO + build ACK together).
 
-| Operation                           | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ----------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `opcua_parse_hello`                 |       15.0 |    3934.4 |               - |              - |
-| `opcua_build_ack`                   |       25.1 |    1115.1 |               - |              - |
-| HELLO parse + ACK build (handshake) |          - |         - |            1563 |           6512 |
-| `ua_w_datavalue` (scalar Double)    |       14.2 |     705.0 |               - |              - |
+| Operation                            | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------------ | ---------: | --------: | --------------: | -------------: |
+| `dws_opcua_parse_hello`              |       15.0 |    3934.4 |               - |              - |
+| `dws_opcua_build_ack`                |       25.1 |    1115.1 |               - |              - |
+| HELLO parse + ACK build (handshake)  |          - |         - |            1563 |           6512 |
+| `dws_ua_w_datavalue` (scalar Double) |       14.2 |     705.0 |               - |              - |
 
 - The whole handshake is ~6.5 us on the S3 - the cheapest connection-setup of the TCP protocols, because
   OPC UA Binary is a fixed little-endian struct format (no text parse, no TLV). The built-in-type codec
-  (`ua_w_*` / `ua_r_*`) is a few ns per field, so the Read/Browse response cost scales with the number of
+  (`dws_ua_w_*` / `dws_ua_r_*`) is a few ns per field, so the Read/Browse response cost scales with the number of
   nodes + references, not the encoding.
-- **Buffer-negotiation note (security):** the pentest `opcua_hello_buffer_abuse` sent a HELLO advertising
+- **Buffer-negotiation note (security):** the pentest `dws_opcua_hello_buffer_abuse` sent a HELLO advertising
   4 GB Receive/Send/MaxMessage buffers; the ACK negotiated them **down to the server's fixed 8192 B**
   (`DWS_OPCUA_BUF`) with MaxChunkCount 1 - the server never honors the client's huge sizes, so a Hello
   cannot induce an over-allocation. That bound is structural (fixed buffers), not a tunable.
 
 ### Modbus TCP slave codec (DWS_ENABLE_MODBUS)
 
-`modbus_process_adu()` is the whole Modbus TCP slave path (Modbus Application Protocol): parse the MBAP
+`dws_modbus_process_adu()` is the whole Modbus TCP slave path (Modbus Application Protocol): parse the MBAP
 header, dispatch the function code against the coil/register data model, build the response ADU. Pure
 (no sockets, no heap). Host figures from [`perf/bench_modbus.cpp`](../perf/bench_modbus.cpp); the device
 figure is the rig `/bench` CCOUNT op (Read Holding Registers x8).
 
-| Operation                            | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ------------------------------------ | ---------: | --------: | --------------: | -------------: |
-| `modbus_process_adu` read holding x8 |       17.6 |     683.3 |             477 |           1987 |
-| `modbus_process_adu` write multi x2  |       12.6 |    1351.2 |               - |              - |
+| Operation                                | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ---------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `dws_modbus_process_adu` read holding x8 |       17.6 |     683.3 |             477 |           1987 |
+| `dws_modbus_process_adu` write multi x2  |       12.6 |    1351.2 |               - |              - |
 
 - A Read Holding Registers round trip is ~2.0 us on the S3 - the **cheapest of all the protocol request
   paths** (a fixed binary MBAP header + a direct index into the register array, no text/TLV/negotiation).
@@ -446,19 +446,19 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 
 **Bulk primitives (per 1 KiB, sorted by throughput):**
 
-| Primitive                       | Backend           | S3 cyc / KiB | ns / byte | MB/s |
-| ------------------------------- | ----------------- | -----------: | --------: | ---: |
-| `ssh_aes256ctr`                 | HW AES            |       10,909 |      44.4 | 22.5 |
-| `ssh_sha256`                    | HW SHA            |       12,859 |      52.3 | 19.1 |
-| `ssh_sha512`                    | HW SHA            |       17,149 |      69.8 | 14.3 |
-| `ssh_poly1305`                  | SW (-O2 TU)       |       24,904 |     101.3 |  9.9 |
-| `ssh_hmac_sha256`               | HW SHA            |       31,994 |     130.2 |  7.7 |
-| `ssh_hmac_sha512`               | HW SHA            |       43,628 |     177.5 |  5.6 |
-| `ssh_chacha20`                  | SW (-O2 TU)       |       46,434 |     188.9 |  5.3 |
-| `ssh_chachapoly` encrypt (AEAD) | SW (-O2 TU)       |       77,433 |     315.1 |  3.2 |
-| `ssh_aesgcm` seal (AES-256-GCM) | HW AES + SW GHASH |      555,421 |     2,260 | 0.44 |
-| `quic_aes128_gcm` seal          | HW AES + SW GHASH |      562,292 |     2,288 | 0.44 |
-| `dtls_record` protect (DTLS1.3) | HW AES + SW GHASH |      578,730 |     2,355 | 0.42 |
+| Primitive                           | Backend           | S3 cyc / KiB | ns / byte | MB/s |
+| ----------------------------------- | ----------------- | -----------: | --------: | ---: |
+| `ssh_aes256ctr`                     | HW AES            |       10,909 |      44.4 | 22.5 |
+| `ssh_sha256`                        | HW SHA            |       12,859 |      52.3 | 19.1 |
+| `ssh_sha512`                        | HW SHA            |       17,149 |      69.8 | 14.3 |
+| `ssh_poly1305`                      | SW (-O2 TU)       |       24,904 |     101.3 |  9.9 |
+| `ssh_hmac_sha256`                   | HW SHA            |       31,994 |     130.2 |  7.7 |
+| `ssh_hmac_sha512`                   | HW SHA            |       43,628 |     177.5 |  5.6 |
+| `ssh_chacha20`                      | SW (-O2 TU)       |       46,434 |     188.9 |  5.3 |
+| `ssh_chachapoly` encrypt (AEAD)     | SW (-O2 TU)       |       77,433 |     315.1 |  3.2 |
+| `ssh_aesgcm` seal (AES-256-GCM)     | HW AES + SW GHASH |      555,421 |     2,260 | 0.44 |
+| `dws_quic_aes128_gcm` seal          | HW AES + SW GHASH |      562,292 |     2,288 | 0.44 |
+| `dws_dtls_record` protect (DTLS1.3) | HW AES + SW GHASH |      578,730 |     2,355 | 0.42 |
 
 **One-shot primitives (KEX, KDF, signatures; sorted by cost):**
 
@@ -466,13 +466,13 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 | ---------------------------------- | ------------------- | ----------: | --------: |
 | `fe_mul` (256-bit field multiply)  | HW MODMULT          |       1,377 |   5.74 us |
 | `ssh_gf_mul` (field mul, fallback) | SW radix-2^16       |       9,212 |   38.4 us |
-| `quic_hkdf_extract`                | HW SHA              |      25,044 |    104 us |
-| `quic_hkdf_expand_label`(16)       | HW SHA              |      25,946 |    108 us |
-| `tls13_kdf_expand_label`(16)       | HW SHA              |      25,910 |    108 us |
+| `dws_quic_hkdf_extract`            | HW SHA              |      25,044 |    104 us |
+| `dws_quic_hkdf_expand_label`(16)   | HW SHA              |      25,946 |    108 us |
+| `dws_tls13_kdf_expand_label`(16)   | HW SHA              |      25,910 |    108 us |
 | `ssh_rsa_2048_verify` (SHA-256)    | HW MPI              |   3,959,764 |   16.5 ms |
 | `ssh_ed25519_sign`                 | HW MODMULT + HW SHA |   4,651,281 |   19.4 ms |
 | `ssh_x25519` scalarmult (KEX)      | HW MODMULT          |   5,547,625 |   23.1 ms |
-| `mlkem768_encaps` (ML-KEM-768)     | SW NTT              |   5,645,995 |   23.5 ms |
+| `dws_mlkem768_encaps` (ML-KEM-768) | SW NTT              |   5,645,995 |   23.5 ms |
 | `ssh_ecdsa_p256_ecdh` (KEX)        | HW MODMULT          |  12,269,174 |   51.1 ms |
 | `ssh_ed25519_verify`               | HW MODMULT + HW SHA |  12,427,688 |   51.8 ms |
 | `ssh_ecdsa_p256_sign`              | HW MODMULT          |  13,064,925 |   54.4 ms |
@@ -565,39 +565,39 @@ The device is an MQTT client; these are its pure packet build/parse hot ops - `d
 
 ### Redis RESP2/RESP3 codec (DWS_ENABLE_REDIS)
 
-The Redis wire codec a device uses to talk to a Redis server: `resp_encode_command` (build an outbound
-command) and `resp_parse` (decode one value of a server reply - the untrusted-input cursor). Both pure.
+The Redis wire codec a device uses to talk to a Redis server: `dws_resp_encode_command` (build an outbound
+command) and `dws_resp_parse` (decode one value of a server reply - the untrusted-input cursor). Both pure.
 Host figures from [`perf/bench_redis.cpp`](../perf/bench_redis.cpp); the device figure is the rig
-`/bench` CCOUNT op (`resp_parse` of an array header).
+`/bench` CCOUNT op (`dws_resp_parse` of an array header).
 
-| Operation                             | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ------------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `resp_encode_command` (SET)           |       66.4 |     708.1 |               - |              - |
-| `resp_parse` (array reply, per value) |       64.7 |     432.5 |             244 |           1016 |
+| Operation                                 | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ----------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `dws_resp_encode_command` (SET)           |       66.4 |     708.1 |               - |              - |
+| `dws_resp_parse` (array reply, per value) |       64.7 |     432.5 |             244 |           1016 |
 
-- `resp_parse` decodes one value per call at ~1.0 us on the device (it is a **cursor**, not a recursive
+- `dws_resp_parse` decodes one value per call at ~1.0 us on the device (it is a **cursor**, not a recursive
   descent - an aggregate reports its child count and the caller loops, so there is no per-depth stack cost
   and a deeply-nested reply cannot blow the stack). Encoding a command is comparably cheap. RESP is the
   lightest of the client codecs; the Redis round-trip cost is the network, not the parse.
 
 ### FTP client wire codec (DWS_ENABLE_FTP)
 
-The FTP control-channel codec a device uses to push/pull files (RFC 959 + RFC 2428): `ftp_build_command`
-(emit a `VERB<SP>ARG` line), `ftp_parse_reply` (scan a single- or multi-line 3-digit reply over a fixed
-buffer - the untrusted-input hot op), and `ftp_parse_pasv` (decode the `227 (h1,h2,h3,h4,p1,p2)` data
+The FTP control-channel codec a device uses to push/pull files (RFC 959 + RFC 2428): `dws_ftp_build_command`
+(emit a `VERB<SP>ARG` line), `dws_ftp_parse_reply` (scan a single- or multi-line 3-digit reply over a fixed
+buffer - the untrusted-input hot op), and `dws_ftp_parse_pasv` (decode the `227 (h1,h2,h3,h4,p1,p2)` data
 address). All pure (the two sockets are the application's). Host figures from
 [`perf/bench_ftp.cpp`](../perf/bench_ftp.cpp); the device figure is the rig `/bench` CCOUNT op
-(`ftp_parse_reply` of a 3-line FEAT block).
+(`dws_ftp_parse_reply` of a 3-line FEAT block).
 
-| Operation                           | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ----------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `ftp_build_command` (STOR)          |       22.4 |     893.1 |               - |              - |
-| `ftp_parse_reply` (multiline FEAT)  |       46.8 |     961.2 |             700 |           2916 |
-| `ftp_parse_pasv` (227 data address) |       67.1 |     759.6 |               - |              - |
+| Operation                               | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| --------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `dws_ftp_build_command` (STOR)          |       22.4 |     893.1 |               - |              - |
+| `dws_ftp_parse_reply` (multiline FEAT)  |       46.8 |     961.2 |             700 |           2916 |
+| `dws_ftp_parse_pasv` (227 data address) |       67.1 |     759.6 |               - |              - |
 
-- `ftp_parse_reply` walks a possibly-multiline reply to the `NNN<SP>` terminator over a **fixed 512 B**
+- `dws_ftp_parse_reply` walks a possibly-multiline reply to the `NNN<SP>` terminator over a **fixed 512 B**
   control buffer (no heap), so an oversized or never-terminated multiline cannot over-read or over-buffer -
-  it just returns "need more" until the caller's deadline (validated by the `ftp_malicious_server` attack).
+  it just returns "need more" until the caller's deadline (validated by the `dws_ftp_malicious_server` attack).
   At ~2.9 us on the device the parse is free relative to the control round trip; FTP throughput is the data
   channel, not the codec. HW-verified device-as-FTP-client against a real `pyftpdlib` server (11/11 interop
   checks, the STOR confirmed server-side).
@@ -627,38 +627,38 @@ device from the rig `/bench` `smtp_run` op.
 ### syslog client formatter (DWS_ENABLE_SYSLOG)
 
 The RFC 5424 syslog client formats one `<PRI>1 - HOSTNAME APP-NAME - - - MSG` line per log call and ships
-it as a UDP datagram (`dws_udp_sendto`). `syslog_format` is the pure per-line hot op (no socket, no heap).
-Host from [`perf/bench_syslog.cpp`](../perf/bench_syslog.cpp); device from the rig `/bench` `syslog_format`
+it as a UDP datagram (`dws_udp_sendto`). `dws_syslog_format` is the pure per-line hot op (no socket, no heap).
+Host from [`perf/bench_syslog.cpp`](../perf/bench_syslog.cpp); device from the rig `/bench` `dws_syslog_format`
 op.
 
-| Operation                  | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| -------------------------- | ---------: | --------: | --------------: | -------------: |
-| `syslog_format` (RFC 5424) |      159.1 |     452.5 |            3686 |          15358 |
+| Operation                      | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------ | ---------: | --------: | --------------: | -------------: |
+| `dws_syslog_format` (RFC 5424) |      159.1 |     452.5 |            3686 |          15358 |
 
 - At **~15 us** on the device the format is dominated by `snprintf` composing the header + four field
   substitutions (newlib `snprintf` is not cheap on Xtensa - it is ~10x the leaner hand-rolled codecs). Still
   trivial for a log line, and the datagram is fire-and-forget over UDP. The line is bounded to
-  `DWS_SYSLOG_MSG_MAX` (256 B): an oversized message makes `syslog_format` return 0 and `syslog_log`
-  refuse (no overflow, no giant datagram - validated by the `syslog_injection` attack, which held the bound
+  `DWS_SYSLOG_MSG_MAX` (256 B): an oversized message makes `dws_syslog_format` return 0 and `dws_syslog_log`
+  refuse (no overflow, no giant datagram - validated by the `dws_syslog_injection` attack, which held the bound
   at an 80 B datagram for a 2 KB input). HW-verified device-as-syslog-client against a UDP collector (7/7
   interop; PRI/VERSION/HOSTNAME/APP-NAME/MSG validated as RFC 5424).
 
 ### NTP server (DWS_ENABLE_NTP_SERVER)
 
 The device answers NTP requests on UDP/123 from its own clock (RFC 5905 server mode).
-`ntp_server_build_response` is the per-query hot op: it validates the 48-octet request, echoes the client's
+`dws_ntp_server_build_response` is the per-query hot op: it validates the 48-octet request, echoes the client's
 version + transmit stamp into the origin field, and stamps the reference/receive/transmit timestamps. Pure
 (no clock, no socket). Host from [`perf/bench_ntp.cpp`](../perf/bench_ntp.cpp); device from the rig `/bench`
 op.
 
-| Operation                        | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| -------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `ntp_server_build_response` (48) |       10.5 |    9108.3 |             328 |           1366 |
+| Operation                            | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------------ | ---------: | --------: | --------------: | -------------: |
+| `dws_ntp_server_build_response` (48) |       10.5 |    9108.3 |             328 |           1366 |
 
 - The **cheapest server op benched** - a fixed 48-octet build at **~1.4 us** on the device (memset + a few
   field writes; no parse loop). More important than the speed is the **shape**: the reply is always exactly
   48 octets and a request shorter than 48 gets none, so **reply size never exceeds request size** - the
-  server has **no amplification factor** (unlike an ntpd MONLIST reflector). The `ntp_server_abuse` attack
+  server has **no amplification factor** (unlike an ntpd MONLIST reflector). The `dws_ntp_server_abuse` attack
   confirmed max reply/request = **1.00x** across 1..2048-octet requests, plus all 64 mode/version combos and
   malformed/oversized packets handled without a crash. HW-verified against the real `ntplib` client (6/6
   interop: mode 4, stratum, origin echo, LOCL ref-id, a plausible epoch).
@@ -707,77 +707,77 @@ callback, and appends one compressed A answer (or NXDOMAIN / NOTIMP). Pure (no c
 
 ### NATS client codec (DWS_ENABLE_NATS)
 
-The text pub/sub codec a device uses to talk to a NATS server: `nats_build_pub` (publish) and `nats_parse`
+The text pub/sub codec a device uses to talk to a NATS server: `dws_nats_build_pub` (publish) and `dws_nats_parse`
 (decode one inbound server frame - INFO/MSG/PING/+OK/-ERR, the untrusted-input hot op). Both pure. Host from
-[`perf/bench_nats.cpp`](../perf/bench_nats.cpp); device from the rig `/bench` `nats_parse` op.
+[`perf/bench_nats.cpp`](../perf/bench_nats.cpp); device from the rig `/bench` `dws_nats_parse` op.
 
-| Operation          | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ------------------ | ---------: | --------: | --------------: | -------------: |
-| `nats_build_pub`   |       33.8 |    1863.9 |               - |              - |
-| `nats_parse` (MSG) |      139.4 |     466.2 |            1573 |           6554 |
+| Operation              | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ---------------------- | ---------: | --------: | --------------: | -------------: |
+| `dws_nats_build_pub`   |       33.8 |    1863.9 |               - |              - |
+| `dws_nats_parse` (MSG) |      139.4 |     466.2 |            1573 |           6554 |
 
-- `nats_parse` decodes one frame per call at **~6.5 us** on the device (the MSG path tokenizes
+- `dws_nats_parse` decodes one frame per call at **~6.5 us** on the device (the MSG path tokenizes
   subject/sid/reply/size, then bounds the payload byte-count against the buffer - `size > len - after_line -
 2` returns "need more", so a byte-count lie can never over-read or over-allocate). Building a PUB is a
   cheap line emit. NATS is a light line-oriented protocol; the round-trip cost is the network, not the codec.
   HW-verified device-as-NATS-client against a real `nats-server` (7/7 interop: INFO/CONNECT/SUB/PUB and the
-  PUB delivered to an independent subscriber through the broker); the `nats_malicious_server` attack held all
+  PUB delivered to an independent subscriber through the broker); the `dws_nats_malicious_server` attack held all
   10 malformed-frame personalities.
 
 ### STOMP 1.2 frame codec (DWS_ENABLE_STOMP)
 
-The STOMP 1.2 frame codec a device uses to talk to a message broker: `stomp_build_frame` (emit a
-SEND/SUBSCRIBE) and `stomp_parse_frame` (decode one inbound frame - command + headers + content-length body,
+The STOMP 1.2 frame codec a device uses to talk to a message broker: `dws_stomp_build_frame` (emit a
+SEND/SUBSCRIBE) and `dws_stomp_parse_frame` (decode one inbound frame - command + headers + content-length body,
 the untrusted-input hot op). Both pure. Host from [`perf/bench_stomp.cpp`](../perf/bench_stomp.cpp); device
-from the rig `/bench` `stomp_parse_frame` op.
+from the rig `/bench` `dws_stomp_parse_frame` op.
 
-| Operation           | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ------------------- | ---------: | --------: | --------------: | -------------: |
-| `stomp_build_frame` |      117.1 |     597.8 |               - |              - |
-| `stomp_parse_frame` |      136.3 |     755.5 |            2314 |           9641 |
+| Operation               | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ----------------------- | ---------: | --------: | --------------: | -------------: |
+| `dws_stomp_build_frame` |      117.1 |     597.8 |               - |              - |
+| `dws_stomp_parse_frame` |      136.3 |     755.5 |            2314 |           9641 |
 
-- `stomp_parse_frame` decodes one frame per call at **~9.6 us** on the device (scan the command + header
+- `dws_stomp_parse_frame` decodes one frame per call at **~9.6 us** on the device (scan the command + header
   lines, then take the body by `content-length`, which is bounded against the buffer - a declared length past
   the buffered bytes returns "need more" and a length that does not land on the terminating NUL is rejected,
   so a content-length lie can never over-read; the header count is capped at `DWS_STOMP_MAX_HEADERS`).
   Building a frame escapes the header octets. HW-verified device-as-STOMP-client against an independent STOMP
   1.2 broker (7/7 interop: CONNECT/SUBSCRIBE/SEND and the SEND captured server-side); the
-  `stomp_malicious_broker` attack held all 10 malformed-frame personalities.
+  `dws_stomp_malicious_broker` attack held all 10 malformed-frame personalities.
 
 ### StatsD metrics client (DWS_ENABLE_STATSD)
 
-The StatsD line client the device uses to push metrics: `statsd_format` builds one `name:value|type[|@rate]
-[|#tags]` line and the emit helpers `dws_udp_sendto` it (fire-and-forget UDP). `statsd_format` is the pure
+The StatsD line client the device uses to push metrics: `dws_statsd_format` builds one `name:value|type[|@rate]
+[|#tags]` line and the emit helpers `dws_udp_sendto` it (fire-and-forget UDP). `dws_statsd_format` is the pure
 per-metric hot op. Host from [`perf/bench_statsd.cpp`](../perf/bench_statsd.cpp); device from the rig
-`/bench` `statsd_format` op.
+`/bench` `dws_statsd_format` op.
 
-| Operation                        | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| -------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `statsd_format` (counter + tags) |       47.4 |     971.4 |            1052 |           4383 |
+| Operation                            | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------------ | ---------: | --------: | --------------: | -------------: |
+| `dws_statsd_format` (counter + tags) |       47.4 |     971.4 |            1052 |           4383 |
 
 - A **~4.4 us** metric on the device (hand-rolled integer/rate rendering, then a bounded assemble - no
   `printf`). The line is capped at `DWS_STATSD_LINE_MAX` (256 B): an oversized name/value/tags makes
-  `statsd_format` return 0 and the metric is dropped (no overflow, no giant datagram - validated by the
-  `statsd_injection` attack, which held the bound at a 51 B datagram for a 2 KB name). HW-verified
+  `dws_statsd_format` return 0 and the metric is dropped (no overflow, no giant datagram - validated by the
+  `dws_statsd_injection` attack, which held the bound at a 51 B datagram for a 2 KB name). HW-verified
   device-as-StatsD-client against a UDP collector (5/5 interop; name/value/type validated).
 
 ### JWT HS256 bearer-auth verify (DWS_ENABLE_JWT)
 
-The per-request bearer-token check the device runs to authenticate a caller: `jwt_verify_hs256` splits the
+The per-request bearer-token check the device runs to authenticate a caller: `dws_jwt_verify_hs256` splits the
 compact JWT, enforces `alg == HS256` (rejecting `alg=none` / RS256 / HS384 before any HMAC), HMAC-SHA256s the
 signing input, base64url-encodes the MAC, and constant-time compares it. Host from
 [`perf/bench_jwt.cpp`](../perf/bench_jwt.cpp); device from the rig `/bench` op.
 
-| Operation          | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 us/op |
-| ------------------ | ---------: | --------: | --------------: | -------------: |
-| `jwt_verify_hs256` |     3243.0 |      43.5 |           33838 |          140.9 |
+| Operation              | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 us/op |
+| ---------------------- | ---------: | --------: | --------------: | -------------: |
+| `dws_jwt_verify_hs256` |     3243.0 |      43.5 |           33838 |          140.9 |
 
 - At **~141 us** this is the **heaviest per-request op** in the library after WS inflate - HMAC-SHA256 is two
   SHA-256 compressions plus the base64url. That is fine for a login / occasional bearer check, but a route
   hit at high request rate should cache the decision rather than re-verify every request. The important
   property is the **security shape**: the `alg` header is enforced before the MAC (RFC 7515 §5.2), the
   signature must be exactly 43 base64url chars, and the compare is constant-time - so the whole
-  alg-confusion / forgery class is closed. The `jwt_forgery` attack confirmed **14/14 forgeries rejected**
+  alg-confusion / forgery class is closed. The `dws_jwt_forgery` attack confirmed **14/14 forgeries rejected**
   (alg=none, a valid HMAC under alg=HS384/RS256/None, wrong-secret, stripped/bit-flipped/truncated signature,
   extra dots, oversized) with a genuinely valid token as the positive control. HW-verified against the real
   `PyJWT` library (6/6 interop: valid accepted, wrong-secret rejected, expired rejected by the `exp` check).
@@ -843,7 +843,7 @@ client (Python `httpx`, backed by the `h2` library) against the PSRAM h2 rig.
   stays alive. Practicality: HTTP/2 here buys ALPN interop + header compression + one long-lived connection,
   not high stream parallelism; drive it with modest concurrency.
 - HW-verified: the `http2` interop peer is 7/7 (ALPN h2, multiplexed streams, JSON/text bodies) and the
-  `h2_abuse` attack is held (rapid-reset / CONTINUATION-flood / HPACK-bomb / PING-flood, 0 findings). Bring-up
+  `dws_h2_abuse` attack is held (rapid-reset / CONTINUATION-flood / HPACK-bomb / PING-flood, 0 findings). Bring-up
   fixed a core-locking `tcp_write` assert on the IDF-5.5 PSRAM core - see [BUGS.md](BUGS.md).
 
 ### HTTP/3 over QUIC (DWS_ENABLE_HTTP3, PSRAM)
@@ -968,7 +968,7 @@ I/O-bound territory (the SD card's ~40-100 IOPS and 100+ ms write tail set the r
 the layer batches and checkpoints in bulk). The host saw the same 3.6x (96 -> 344 MB/s), a nice example of
 a fix that only the on-device number motivated - the host had 60x headroom and never showed the problem.
 
-The second finding was `resp_encode_command` at ~20 us on the device - it formatted the RESP length
+The second finding was `dws_resp_encode_command` at ~20 us on the device - it formatted the RESP length
 prefixes with `snprintf`. Replacing that with a hand-rolled decimal writer **cut it ~6x to ~3.3 us**
 (and ~5x on the host, 329 -> 65 ns), with byte-identical output. Both fixes came straight out of this
 table; neither was visible from the host baseline alone.
@@ -1007,16 +1007,16 @@ The building-automation network layer over UDP/47808: the BVLC envelope (Annex J
 the NPDU (Clause 6 - version/NPCI-control + optional DNET/DLEN/DADR + SNET/SLEN/SADR + hop count), build +
 validate/slice. Pure (no socket). Host from [`perf/bench_bacnet.cpp`](../perf/bench_bacnet.cpp).
 
-| Operation    | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ------------ | ---------: | --------: | --------------: | -------------: |
-| `bvlc_parse` |        4.2 |    4785.6 |               - |              - |
-| `npdu_parse` |        5.8 |    2736.7 |             101 |            420 |
-| `npdu_build` |       15.8 |    1009.8 |               - |              - |
+| Operation        | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ---------------- | ---------: | --------: | --------------: | -------------: |
+| `dws_bvlc_parse` |        4.2 |    4785.6 |               - |              - |
+| `dws_npdu_parse` |        5.8 |    2736.7 |             101 |            420 |
+| `dws_npdu_build` |       15.8 |    1009.8 |               - |              - |
 
 - Trivially cheap: BVLC/NPDU are fixed-field framing with no CRC (BACnet relies on the UDP checksum), so
-  parse is a handful of bounds checks + slices - **~0.42 us (101 cyc) on the ESP32-S3** for `npdu_parse`
+  parse is a handful of bounds checks + slices - **~0.42 us (101 cyc) on the ESP32-S3** for `dws_npdu_parse`
   (from the rig `/bench` op), ~37x lighter than DNP3's per-block-CRC parse (15.6 us) despite both being
-  ~30-octet frames. `npdu_build` costs more (writes the addressing fields). The `bacnet_frame_fuzz` parser
+  ~30-octet frames. `dws_npdu_build` costs more (writes the addressing fields). The `bacnet_frame_fuzz` parser
   attack HELD on HW (12 malformed BVLC/NPDU datagrams - bad type/version, length lies, DLEN/SLEN over-runs,
   truncation - all rejected, a valid one still parses).
 
@@ -1051,10 +1051,10 @@ from [`perf/bench_iec60870.cpp`](../perf/bench_iec60870.cpp).
 | `asdu_parse_header` |        5.0 |    2398.6 |               - |            - |
 
 - Fixed-field framing, no CRC on the -104 path (it rides the TCP checksum; only the serial -101 FT1.2 frame
-  carries a sum check) - a few ns to build/parse host, **~0.47 us (112 cyc) on the ESP32-S3** for `iec104_parse`
-  (APCI start/length validate + I/S/U decode + ASDU slice, rig `/bench` op) - sits between BACnet's `npdu_parse`
+  carries a sum check) - a few ns to build/parse host, **~0.47 us (112 cyc) on the ESP32-S3** for `dws_iec104_parse`
+  (APCI start/length validate + I/S/U decode + ASDU slice, rig `/bench` op) - sits between BACnet's `dws_npdu_parse`
   (0.42 us) and S7's `parse_header` (0.54 us): all three are the same fixed-field-bounds-check-and-slice class,
-  ~33x lighter than DNP3's per-block-CRC parse (15.6 us). The `iec104_frame_fuzz` parser attack **HELD on HW**
+  ~33x lighter than DNP3's per-block-CRC parse (15.6 us). The `dws_iec104_frame_fuzz` parser attack **HELD on HW**
   (rig `/iec104/parse`: 14/15 malformed APDUs handled - bad start octet (!=0x68), length under/over-run,
   truncated APCI, degenerate I/S/U control, a short chained ASDU header, all-0xFF - each rejected or sliced
   without over-reading, a valid I-frame still parsed to its type-9 ASDU; the 15th, an oversized 2 KB blob, is
@@ -1112,12 +1112,12 @@ SendRRData (which carries the CIP message). Pure (no socket). Host from
 
 | Operation                  | Host ns/op | Host MB/s |
 | -------------------------- | ---------: | --------: |
-| `eip_build` (encap)        |        7.5 |    4250.7 |
-| `eip_parse` (encap)        |        4.9 |    6493.8 |
+| `dws_eip_build` (encap)    |        7.5 |    4250.7 |
+| `dws_eip_parse` (encap)    |        4.9 |    6493.8 |
 | `register_session` (build) |        2.9 |    9587.6 |
 
 - **Fixed little-endian header, no BER, no CRC** - so it lands in the fast fixed-field class (~5-8 ns, like
-  IEC-104's APCI), ~20x cheaper than the nested-BER MMS/GOOSE builders. `eip_parse` (~4.9 ns) validates the
+  IEC-104's APCI), ~20x cheaper than the nested-BER MMS/GOOSE builders. `dws_eip_parse` (~4.9 ns) validates the
   command/length/status and slices the command data - the receive op, and the surface an `enip_frame_fuzz`
   parser attack targets (a length lie must not over-read past the 24-octet header). Device µs/op via the rig
   `/bench` op + that attack are the next ENIP increments; interop needs a CIP object model + a peer (e.g.

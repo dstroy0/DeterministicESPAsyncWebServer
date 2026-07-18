@@ -6,9 +6,9 @@
  * @brief Sigfox modem AT-command codec (DWS_ENABLE_SIGFOX) - Wisol / Murata over UART.
  *
  * The tiny-uplink half of a Sigfox-to-web bridge. A Wisol (SFM10R) / Murata Sigfox modem
- * is driven by AT commands over a UART: sigfox_build_uplink() formats an `AT$SF=<hex>`
+ * is driven by AT commands over a UART: dws_sigfox_build_uplink() formats an `AT$SF=<hex>`
  * command for a payload (the Sigfox network caps a message at 12 bytes and ~140 messages
- * per day, so uplinks are rare and small), and sigfox_parse_response() classifies the
+ * per day, so uplinks are rare and small), and dws_sigfox_parse_response() classifies the
  * modem's reply as OK, ERROR, or still pending (nothing conclusive yet). Pure text codec -
  * you carry the bytes over your UART - so it is fully host-testable. This is uplink-only
  * (the common Sigfox use); a device sends readings up, it is not addressed downlink.
@@ -28,7 +28,7 @@
 #include <stdint.h>
 
 /** @brief Classification of a Sigfox modem response line. */
-enum class sigfox_result : uint8_t
+enum class dws_sigfox_result : uint8_t
 {
     SIGFOX_PENDING = 0, ///< nothing conclusive yet (echo / partial); keep reading
     SIGFOX_OK = 1,      ///< the modem accepted / completed the command
@@ -41,14 +41,14 @@ enum class sigfox_result : uint8_t
  * @return the command length (excluding the NUL), or 0 if @p len exceeds
  *         DWS_SIGFOX_MAX_PAYLOAD or the command would not fit @p cap.
  */
-uint16_t sigfox_build_uplink(const uint8_t *payload, uint8_t len, char *out, uint16_t cap);
+uint16_t dws_sigfox_build_uplink(const uint8_t *payload, uint8_t len, char *out, uint16_t cap);
 
 /**
  * @brief Classify a modem reply (scans @p buf for "OK" / "ERROR").
- * @return sigfox_result::SIGFOX_OK, sigfox_result::SIGFOX_ERROR, or sigfox_result::SIGFOX_PENDING if neither is present
- * yet.
+ * @return dws_sigfox_result::SIGFOX_OK, dws_sigfox_result::SIGFOX_ERROR, or dws_sigfox_result::SIGFOX_PENDING if
+ * neither is present yet.
  */
-sigfox_result sigfox_parse_response(const char *buf, uint16_t len);
+dws_sigfox_result dws_sigfox_parse_response(const char *buf, uint16_t len);
 
 #endif // DWS_ENABLE_SIGFOX
 

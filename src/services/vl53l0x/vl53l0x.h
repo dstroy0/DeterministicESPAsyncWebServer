@@ -11,8 +11,8 @@
  * start ranging via SYSRANGE_START, poll RESULT_INTERRUPT_STATUS for data-ready, read the 16-bit range
  * from RESULT_RANGE_STATUS + 10, then clear the interrupt.
  *
- * This codec is pure and host-tested: ::vl53l0x_range_mm combines the range register pair,
- * ::vl53l0x_data_ready decodes the interrupt-status byte, and ::vl53l0x_range_valid checks the device
+ * This codec is pure and host-tested: ::dws_vl53l0x_range_mm combines the range register pair,
+ * ::dws_vl53l0x_data_ready decodes the interrupt-status byte, and ::dws_vl53l0x_range_valid checks the device
  * range-status field. On an ESP32 the binding runs the ranging loop over I2C (Wire); only that touches
  * hardware. Note: ST's optional tuning blob (for best accuracy) is not applied - default-settings
  * ranging via the documented registers.
@@ -33,26 +33,26 @@
 #define VL53L0X_RANGE_VALID 11 ///< DeviceRangeStatus value that means a valid measurement.
 
 /** @brief Combine the range high/low bytes (RESULT_RANGE_STATUS+10 / +11) into millimeters. */
-uint16_t vl53l0x_range_mm(uint8_t hi, uint8_t lo);
+uint16_t dws_vl53l0x_range_mm(uint8_t hi, uint8_t lo);
 
 /** @brief True if a new measurement is ready (any of the low 3 interrupt-status bits set). */
-bool vl53l0x_data_ready(uint8_t interrupt_status);
+bool dws_vl53l0x_data_ready(uint8_t interrupt_status);
 
 /** @brief The DeviceRangeStatus field (bits 6:3) of the RESULT_RANGE_STATUS register. */
-uint8_t vl53l0x_range_status(uint8_t range_status_reg);
+uint8_t dws_vl53l0x_range_status(uint8_t range_status_reg);
 
 /** @brief True if the range-status field reports a valid measurement (== VL53L0X_RANGE_VALID). */
-bool vl53l0x_range_valid(uint8_t range_status_reg);
+bool dws_vl53l0x_range_valid(uint8_t range_status_reg);
 
 // --- ESP32 binding (I2C via Wire; no-ops on a host build) ------------------------------------
 
 /** @brief Verify the model id and start continuous back-to-back ranging at @p addr. @return present + ack. */
-bool vl53l0x_begin(uint8_t addr);
+bool dws_vl53l0x_begin(uint8_t addr);
 
 /**
  * @brief If a measurement is ready, read the distance into @p mm and clear the interrupt.
  * @return true on a fresh, valid reading; false if not ready / invalid / I2C error.
  */
-bool vl53l0x_read_mm(uint16_t *mm);
+bool dws_vl53l0x_read_mm(uint16_t *mm);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_VL53L0X_H

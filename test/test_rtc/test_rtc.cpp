@@ -22,7 +22,7 @@ void test_known_epoch_2000()
 {
     uint8_t r[7] = {0x00, 0x00, 0x00, 0x07, 0x01, 0x01, 0x00}; // s,m,h,dow,date,month,year
     uint32_t e = 0;
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(r, &e));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(r, &e));
     TEST_ASSERT_EQUAL_UINT32(946684800u, e);
 }
 
@@ -31,7 +31,7 @@ void test_decode_datetime()
 {
     uint8_t r[7] = {0x56, 0x34, 0x12, 0x06, 0x04, 0x07, 0x26};
     uint32_t e = 0;
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(r, &e));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(r, &e));
     TEST_ASSERT_EQUAL_UINT32(1783168496u, e);
 }
 
@@ -41,8 +41,8 @@ void test_12hour_mode_equivalence()
     uint8_t base[7] = {0x00, 0x00, 0x14, 0x01, 0x01, 0x06, 0x24}; // 2024-06-01 14:00:00
     uint8_t twelve[7] = {0x00, 0x00, 0x62, 0x01, 0x01, 0x06, 0x24};
     uint32_t a = 0, b = 0;
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(base, &a));
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(twelve, &b));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(base, &a));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(twelve, &b));
     TEST_ASSERT_EQUAL_UINT32(a, b);
 }
 
@@ -53,11 +53,11 @@ void test_12hour_midnight_and_noon()
     uint8_t h24_0[7] = {0x00, 0x00, 0x00, 0x01, 0x01, 0x06, 0x24};
     uint8_t h24_12[7] = {0x00, 0x00, 0x12, 0x01, 0x01, 0x06, 0x24};
     uint32_t am = 0, mid = 0, pm = 0, noon_ref = 0;
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(midnight, &am));
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(h24_0, &mid));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(midnight, &am));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(h24_0, &mid));
     TEST_ASSERT_EQUAL_UINT32(mid, am);
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(noon, &pm));
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(h24_12, &noon_ref));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(noon, &pm));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(h24_12, &noon_ref));
     TEST_ASSERT_EQUAL_UINT32(noon_ref, pm);
 }
 
@@ -73,9 +73,9 @@ void test_roundtrip_over_range()
     for (unsigned i = 0; i < sizeof(samples) / sizeof(samples[0]); i++)
     {
         uint8_t r[7];
-        rtc_epoch_to_regs(samples[i], r);
+        dws_rtc_epoch_to_regs(samples[i], r);
         uint32_t back = 0;
-        TEST_ASSERT_TRUE(rtc_regs_to_epoch(r, &back));
+        TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(r, &back));
         TEST_ASSERT_EQUAL_UINT32(samples[i], back);
     }
 }
@@ -84,9 +84,9 @@ void test_leap_day()
 {
     uint8_t r[7] = {0x00, 0x00, 0x00, 0x04, 0x29, 0x02, 0x24}; // 2024-02-29 (valid leap day)
     uint32_t e = 0;
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(r, &e));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(r, &e));
     uint8_t back[7];
-    rtc_epoch_to_regs(e, back);
+    dws_rtc_epoch_to_regs(e, back);
     TEST_ASSERT_EQUAL_UINT8(0x29, back[4]); // date 29
     TEST_ASSERT_EQUAL_UINT8(0x02, back[5]); // February
 }
@@ -97,9 +97,9 @@ void test_masks_ch_and_century()
     // masked off, not fold into the value.
     uint8_t r[7] = {0x80 | 0x30, 0x00, 0x00, 0x01, 0x01, 0x80 | 0x06, 0x24}; // CH+30s, century+June
     uint32_t e = 0;
-    TEST_ASSERT_TRUE(rtc_regs_to_epoch(r, &e));
+    TEST_ASSERT_TRUE(dws_rtc_regs_to_epoch(r, &e));
     uint8_t back[7];
-    rtc_epoch_to_regs(e, back);
+    dws_rtc_epoch_to_regs(e, back);
     TEST_ASSERT_EQUAL_UINT8(0x30, back[0]); // 30 seconds (CH bit gone)
     TEST_ASSERT_EQUAL_UINT8(0x06, back[5]); // June (century bit gone)
 }
@@ -108,23 +108,23 @@ void test_invalid_guards()
 {
     uint32_t e = 0;
     uint8_t bad_sec[7] = {0x60, 0x00, 0x00, 0x01, 0x01, 0x01, 0x24}; // 60 seconds (max 59)
-    TEST_ASSERT_FALSE(rtc_regs_to_epoch(bad_sec, &e));
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(bad_sec, &e));
     uint8_t bad_month[7] = {0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x24}; // month 0
-    TEST_ASSERT_FALSE(rtc_regs_to_epoch(bad_month, &e));
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(bad_month, &e));
     uint8_t bad_date[7] = {0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x24}; // date 0
-    TEST_ASSERT_FALSE(rtc_regs_to_epoch(bad_date, &e));
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(bad_date, &e));
     uint8_t bad_hour[7] = {0x00, 0x00, 0x24, 0x01, 0x01, 0x01, 0x24}; // 24 hours (24h mode)
-    TEST_ASSERT_FALSE(rtc_regs_to_epoch(bad_hour, &e));
-    TEST_ASSERT_FALSE(rtc_regs_to_epoch(bad_sec, nullptr)); // null out
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(bad_hour, &e));
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(bad_sec, nullptr)); // null out
 }
 
 void test_host_i2c_stubs()
 {
     // Host build: no I2C bus. begin() reports ready, reads yield 0, set fails, time source is 0.
-    TEST_ASSERT_TRUE(rtc_begin());
-    TEST_ASSERT_EQUAL_UINT32(0, rtc_read_epoch());
-    TEST_ASSERT_FALSE(rtc_set_epoch(1730882977u));
-    TEST_ASSERT_EQUAL_UINT32(0, rtc_time_source());
+    TEST_ASSERT_TRUE(dws_rtc_begin());
+    TEST_ASSERT_EQUAL_UINT32(0, dws_rtc_read_epoch());
+    TEST_ASSERT_FALSE(dws_rtc_set_epoch(1730882977u));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_rtc_time_source());
 }
 
 int main()

@@ -14,7 +14,7 @@
  * The application owns the data model: it writes input registers / discrete
  * inputs (read-only to the client) to publish sensor state, reads holding
  * registers / coils the client has written, and is notified of client writes via
- * modbus_on_write(). Modbus has no authentication or encryption - run it only on
+ * dws_modbus_on_write(). Modbus has no authentication or encryption - run it only on
  * a trusted control network (front it with the per-IP accept throttle).
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
@@ -56,10 +56,10 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    modbus_server_init();
-    modbus_set_holding_reg(0, 0x1234); // client-writable registers
-    modbus_set_input_reg(0, 0);        // application-published (read-only to client)
-    modbus_on_write(on_write);
+    dws_modbus_server_init();
+    dws_modbus_set_holding_reg(0, 0x1234); // client-writable registers
+    dws_modbus_set_input_reg(0, 0);        // application-published (read-only to client)
+    dws_modbus_on_write(on_write);
 
     server.listen(502, ConnProto::PROTO_MODBUS);
     server.begin();
@@ -75,6 +75,6 @@ void loop()
     if (millis() - last >= 1000)
     {
         last = millis();
-        modbus_set_input_reg(0, (uint16_t)(millis() / 1000)); // uptime seconds
+        dws_modbus_set_input_reg(0, (uint16_t)(millis() / 1000)); // uptime seconds
     }
 }

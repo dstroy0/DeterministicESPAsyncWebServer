@@ -56,7 +56,7 @@ static size_t write_envelope(uint8_t *buf, size_t cap, FocasFrameType type, uint
     return p; // == FOCAS_FRAME_HDR_LEN
 }
 
-size_t focas_build_open(uint8_t *buf, size_t cap)
+size_t dws_focas_build_open(uint8_t *buf, size_t cap)
 {
     size_t p = write_envelope(buf, cap, FocasFrameType::open_req, 2);
     if (!p)
@@ -65,13 +65,13 @@ size_t focas_build_open(uint8_t *buf, size_t cap)
     return p;
 }
 
-size_t focas_build_close(uint8_t *buf, size_t cap)
+size_t dws_focas_build_close(uint8_t *buf, size_t cap)
 {
     return write_envelope(buf, cap, FocasFrameType::close_req, 0);
 }
 
-size_t focas_build_request(uint8_t *buf, size_t cap, FocasCmd cmd, int32_t v1, int32_t v2, int32_t v3, int32_t v4,
-                           int32_t v5, const uint8_t *extra, size_t extra_len)
+size_t dws_focas_build_request(uint8_t *buf, size_t cap, FocasCmd cmd, int32_t v1, int32_t v2, int32_t v3, int32_t v4,
+                               int32_t v5, const uint8_t *extra, size_t extra_len)
 {
     if (extra_len && !extra)
         return 0;
@@ -97,42 +97,42 @@ size_t focas_build_request(uint8_t *buf, size_t cap, FocasCmd cmd, int32_t v1, i
     return p;
 }
 
-size_t focas_build_sysinfo(uint8_t *buf, size_t cap)
+size_t dws_focas_build_sysinfo(uint8_t *buf, size_t cap)
 {
-    return focas_build_request(buf, cap, FocasCommand::sys_info, 0, 0, 0, 0, 0, nullptr, 0);
+    return dws_focas_build_request(buf, cap, FocasCommand::sys_info, 0, 0, 0, 0, 0, nullptr, 0);
 }
 
-size_t focas_build_read_alarm(uint8_t *buf, size_t cap)
+size_t dws_focas_build_read_alarm(uint8_t *buf, size_t cap)
 {
-    return focas_build_request(buf, cap, FocasCommand::read_alarm, 0, 0, 0, 0, 0, nullptr, 0);
+    return dws_focas_build_request(buf, cap, FocasCommand::read_alarm, 0, 0, 0, 0, 0, nullptr, 0);
 }
 
-size_t focas_build_read_param(uint8_t *buf, size_t cap, int32_t first, int32_t last, int32_t axis)
+size_t dws_focas_build_read_param(uint8_t *buf, size_t cap, int32_t first, int32_t last, int32_t axis)
 {
-    return focas_build_request(buf, cap, FocasCommand::read_cnc_param, first, last, axis, 0, 0, nullptr, 0);
+    return dws_focas_build_request(buf, cap, FocasCommand::read_cnc_param, first, last, axis, 0, 0, nullptr, 0);
 }
 
-size_t focas_build_read_macro(uint8_t *buf, size_t cap, int32_t first, int32_t last)
+size_t dws_focas_build_read_macro(uint8_t *buf, size_t cap, int32_t first, int32_t last)
 {
-    return focas_build_request(buf, cap, FocasCommand::read_macro, first, last, 0, 0, 0, nullptr, 0);
+    return dws_focas_build_request(buf, cap, FocasCommand::read_macro, first, last, 0, 0, 0, nullptr, 0);
 }
 
-size_t focas_build_read_position(uint8_t *buf, size_t cap, int32_t kind, int32_t axis)
+size_t dws_focas_build_read_position(uint8_t *buf, size_t cap, int32_t kind, int32_t axis)
 {
-    return focas_build_request(buf, cap, FocasCommand::read_position, kind, axis, 0, 0, 0, nullptr, 0);
+    return dws_focas_build_request(buf, cap, FocasCommand::read_position, kind, axis, 0, 0, 0, nullptr, 0);
 }
 
-size_t focas_build_read_feedrate(uint8_t *buf, size_t cap)
+size_t dws_focas_build_read_feedrate(uint8_t *buf, size_t cap)
 {
-    return focas_build_request(buf, cap, FocasCommand::read_feedrate, 0, 0, 0, 0, 0, nullptr, 0);
+    return dws_focas_build_request(buf, cap, FocasCommand::read_feedrate, 0, 0, 0, 0, 0, nullptr, 0);
 }
 
-size_t focas_build_read_spindle(uint8_t *buf, size_t cap)
+size_t dws_focas_build_read_spindle(uint8_t *buf, size_t cap)
 {
-    return focas_build_request(buf, cap, FocasCommand::read_spindle, 0, 0, 0, 0, 0, nullptr, 0);
+    return dws_focas_build_request(buf, cap, FocasCommand::read_spindle, 0, 0, 0, 0, 0, nullptr, 0);
 }
 
-bool focas_parse_frame(const uint8_t *buf, size_t len, FocasFrame *out)
+bool dws_focas_parse_frame(const uint8_t *buf, size_t len, FocasFrame *out)
 {
     if (!buf || !out || len < (size_t)FOCAS_FRAME_HDR_LEN)
         return false;
@@ -147,7 +147,7 @@ bool focas_parse_frame(const uint8_t *buf, size_t len, FocasFrame *out)
     return true;
 }
 
-bool focas_parse_response(const uint8_t *payload, size_t payload_len, FocasResponse *out)
+bool dws_focas_parse_response(const uint8_t *payload, size_t payload_len, FocasResponse *out)
 {
     if (!payload || !out || payload_len < (size_t)FOCAS_RESP_HDR_LEN)
         return false;
@@ -162,17 +162,17 @@ bool focas_parse_response(const uint8_t *payload, size_t payload_len, FocasRespo
     return true;
 }
 
-bool focas_parse_command_frame(const uint8_t *buf, size_t len, FocasResponse *out)
+bool dws_focas_parse_command_frame(const uint8_t *buf, size_t len, FocasResponse *out)
 {
     FocasFrame f;
-    if (!focas_parse_frame(buf, len, &f))
+    if (!dws_focas_parse_frame(buf, len, &f))
         return false;
     if (f.type != FocasFrameType::command_resp)
         return false;
-    return focas_parse_response(f.payload, f.payload_len, out);
+    return dws_focas_parse_response(f.payload, f.payload_len, out);
 }
 
-bool focas_parse_sysinfo(const uint8_t *data, size_t data_len, FocasSysInfo *out)
+bool dws_focas_parse_sysinfo(const uint8_t *data, size_t data_len, FocasSysInfo *out)
 {
     if (!data || !out || data_len < (size_t)FOCAS_SYSINFO_LEN)
         return false;
@@ -191,7 +191,7 @@ bool focas_parse_sysinfo(const uint8_t *data, size_t data_len, FocasSysInfo *out
     return true;
 }
 
-bool focas_parse_alarm(const uint8_t *data, size_t data_len, uint32_t *alarm_status)
+bool dws_focas_parse_alarm(const uint8_t *data, size_t data_len, uint32_t *alarm_status)
 {
     if (!data || !alarm_status || data_len < 4)
         return false;
@@ -199,7 +199,7 @@ bool focas_parse_alarm(const uint8_t *data, size_t data_len, uint32_t *alarm_sta
     return true;
 }
 
-bool focas_decode8(const uint8_t *chunk, size_t len, FocasValue *out)
+bool dws_focas_decode8(const uint8_t *chunk, size_t len, FocasValue *out)
 {
     if (!chunk || !out || len < (size_t)FOCAS_VALUE_LEN)
         return false;
@@ -211,7 +211,7 @@ bool focas_decode8(const uint8_t *chunk, size_t len, FocasValue *out)
     return out->valid;
 }
 
-float focas_value_f(const FocasValue *v)
+float dws_focas_value_f(const FocasValue *v)
 {
     if (!v || !v->valid)
         return 0.0f;

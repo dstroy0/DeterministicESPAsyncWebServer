@@ -118,7 +118,7 @@ pio ci examples/L7-Application/58.NtpServer \
 
 ## How it works (for the curious)
 
-`ntp_server_begin(stratum, refid)` binds UDP/123 through the library's transport UDP service
+`dws_ntp_server_begin(stratum, refid)` binds UDP/123 through the library's transport UDP service
 and answers each 48-byte NTP request from `dws_time_now()`, echoing the client's transmit
 timestamp so it can measure the round-trip delay. The time comes from **time sources** you
 register with `dws_time_source_add(name, priority, fn)` - here a GPS parser (priority 1)

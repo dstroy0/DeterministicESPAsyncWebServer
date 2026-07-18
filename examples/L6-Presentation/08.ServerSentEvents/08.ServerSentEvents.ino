@@ -3,10 +3,10 @@
 
 /**
  * @file 08.ServerSentEvents.ino
- * @brief Server-Sent Events (text/event-stream) push via on_sse() + sse_broadcast().
+ * @brief Server-Sent Events (text/event-stream) push via on_sse() + dws_sse_broadcast().
  *
  * Subscribes browsers at /events; the loop pushes a counter to every subscriber
- * once a second with sse_broadcast(). A test page at / shows the live stream.
+ * once a second with dws_sse_broadcast(). A test page at / shows the live stream.
  *
  * Flash, open Serial @ 115200 for the IP, then browse to http://<ip>/.
  */
@@ -24,9 +24,9 @@ static const char PAGE[] = "<!doctype html><meta charset=utf-8><title>SSE</title
                            "var s=new EventSource('/events');"
                            "s.addEventListener('tick',function(e){o.textContent+=e.data+'\\n'})</script>";
 
-void sse_connect(uint8_t sse_id)
+void dws_sse_connect(uint8_t dws_sse_id)
 {
-    server.sse_send(sse_id, "subscribed", "tick");
+    server.dws_sse_send(dws_sse_id, "subscribed", "tick");
 }
 
 void setup()
@@ -44,7 +44,7 @@ void setup()
     WiFi.setSleep(false);
 
     server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/html", PAGE); });
-    server.on_sse("/events", sse_connect);
+    server.on_sse("/events", dws_sse_connect);
     server.begin(80);
 }
 
@@ -59,6 +59,6 @@ void loop()
         last = millis();
         char buf[24];
         snprintf(buf, sizeof(buf), "%lu", n++);
-        server.sse_broadcast("/events", buf, "tick");
+        server.dws_sse_broadcast("/events", buf, "tick");
     }
 }

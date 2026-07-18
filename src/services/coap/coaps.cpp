@@ -31,10 +31,10 @@ int dws_coaps_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
         if (!dws_dtls_conn_open_app(c, dgram, len, req, sizeof(req), &req_len))
             return 0; // replay, truncated, or not application data
         uint8_t resp[COAPS_MSG_CAP];
-        size_t resp_len = dws_coap_server_process(req, req_len, resp, sizeof(resp));
-        if (!resp_len)
+        size_t dws_resp_len = dws_coap_server_process(req, req_len, resp, sizeof(resp));
+        if (!dws_resp_len)
             return 0; // no response (e.g. a Non-confirmable message with no resource match)
-        return (int)dws_dtls_conn_seal_app(c, resp, resp_len, out, out_cap);
+        return (int)dws_dtls_conn_seal_app(c, resp, dws_resp_len, out, out_cap);
     }
     return dws_dtls_conn_process(c, dgram, len, out, out_cap);
 }

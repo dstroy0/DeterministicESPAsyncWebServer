@@ -23,7 +23,7 @@ static bool ce_present(const char *s)
 static const char *const CE_KEY_DATACONTENTTYPE = "datacontenttype";
 static const char *const CE_KEY_DATA = "data";
 
-size_t cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce)
+size_t dws_cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce)
 {
     if (!buf || cap == 0 || !ce)
         return 0;
@@ -62,7 +62,7 @@ size_t cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce)
     return w.ok() ? strnlen(buf, cap) : 0;
 }
 
-bool cloudevents_from_headers(const HttpReq *req, CloudEvent *out)
+bool dws_cloudevents_from_headers(const HttpReq *req, CloudEvent *out)
 {
     if (!req || !out)
         return false;

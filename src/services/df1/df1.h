@@ -46,10 +46,10 @@ enum class Df1Check : uint8_t
 };
 
 /** @brief BCC: 2's complement of the modulo-256 sum of [data, data+len). */
-uint8_t df1_bcc(const uint8_t *data, size_t len);
+uint8_t dws_df1_bcc(const uint8_t *data, size_t len);
 
 /** @brief CRC-16/ARC (poly 0x8005 / 0xA001 reflected, init 0) over [data, data+len). */
-uint16_t df1_crc(const uint8_t *data, size_t len);
+uint16_t dws_df1_crc(const uint8_t *data, size_t len);
 
 /**
  * @brief Build a full-duplex frame around @p data: DLE STX + stuffed data + DLE ETX + check.
@@ -57,7 +57,7 @@ uint16_t df1_crc(const uint8_t *data, size_t len);
  *              the data + ETX).
  * @return total octets written, or 0 on overflow / bad input.
  */
-size_t df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_len, Df1Check check);
+size_t dws_df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_len, Df1Check check);
 
 /**
  * @brief Parse + validate a full-duplex frame, un-stuffing the application data.
@@ -67,7 +67,7 @@ size_t df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t dat
  * @return true on a complete, check-valid frame; false on bad framing, truncation, an
  *         out overflow, or a BCC/CRC mismatch.
  */
-bool df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *out, size_t out_cap, size_t *out_len);
+bool dws_df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *out, size_t out_cap, size_t *out_len);
 
 #endif // DWS_ENABLE_DF1
 

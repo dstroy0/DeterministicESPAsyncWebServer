@@ -14,7 +14,7 @@
 
 #include "shared_primitives/endian.h"
 
-uint16_t c37118_crc(const uint8_t *data, size_t len)
+uint16_t dws_c37118_crc(const uint8_t *data, size_t len)
 {
     uint16_t crc = 0xFFFF;
     for (size_t i = 0; i < len; i++)
@@ -26,8 +26,8 @@ uint16_t c37118_crc(const uint8_t *data, size_t len)
     return crc;
 }
 
-size_t c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t version, uint16_t idcode, uint32_t soc,
-                          uint32_t fracsec, const uint8_t *payload, size_t payload_len)
+size_t dws_c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t version, uint16_t idcode, uint32_t soc,
+                              uint32_t fracsec, const uint8_t *payload, size_t payload_len)
 {
     if (!buf || (payload_len && !payload))
         return 0;
@@ -46,19 +46,19 @@ size_t c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t versio
         memcpy(buf + p, payload, payload_len);
         p += payload_len;
     }
-    uint16_t crc = c37118_crc(buf, p); // over everything before CHK
+    uint16_t crc = dws_c37118_crc(buf, p); // over everything before CHK
     p += dws_wr16be(buf + p, crc);
     return p;
 }
 
-size_t c37118_build_command(uint8_t *buf, size_t cap, uint16_t idcode, uint32_t soc, uint32_t fracsec, uint16_t cmd)
+size_t dws_c37118_build_command(uint8_t *buf, size_t cap, uint16_t idcode, uint32_t soc, uint32_t fracsec, uint16_t cmd)
 {
     uint8_t payload[2];
     dws_wr16be(payload, cmd);
-    return c37118_build_frame(buf, cap, C37118_TYPE_CMD, C37118_VERSION_2011, idcode, soc, fracsec, payload, 2);
+    return dws_c37118_build_frame(buf, cap, C37118_TYPE_CMD, C37118_VERSION_2011, idcode, soc, fracsec, payload, 2);
 }
 
-bool c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out)
+bool dws_c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out)
 {
     if (!buf || !out || len < C37118_MIN_FRAME)
         return false;
@@ -67,7 +67,7 @@ bool c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out)
     uint16_t framesize = dws_rd16be(buf + 2);
     if (framesize < C37118_MIN_FRAME || framesize > len)
         return false; // out of range / not fully buffered
-    uint16_t want = c37118_crc(buf, (size_t)framesize - 2);
+    uint16_t want = dws_c37118_crc(buf, (size_t)framesize - 2);
     uint16_t got = dws_rd16be(buf + framesize - 2);
     if (want != got)
         return false; // CHK mismatch
@@ -82,7 +82,7 @@ bool c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out)
     return true;
 }
 
-bool c37118_parse_command(const C37118Frame *f, uint16_t *cmd)
+bool dws_c37118_parse_command(const C37118Frame *f, uint16_t *cmd)
 {
     if (!f || f->type != C37118_TYPE_CMD || f->data_len < 2)
         return false;

@@ -98,7 +98,7 @@ void ws_send_version_required(uint8_t slot_id);
 
 #if DWS_ENABLE_SSE
 /** @brief Send the SSE 200 headers and promote the slot to server-sent-events mode. */
-bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect);
+bool dws_sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect);
 #endif
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SERVER_INTERNAL_H

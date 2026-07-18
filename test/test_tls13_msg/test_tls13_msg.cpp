@@ -1,14 +1,14 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for the TLS 1.3 handshake messages (network_drivers/presentation/http3/tls13_msg;
+// Unit tests for the TLS 1.3 handshake messages (network_drivers/presentation/http3/dws_tls13_msg;
 // RFC 8446 sec 4). Byte-exact against the RFC 8448 sec 3 trace where the format is version-agnostic
 // (ServerHello, Certificate framing, Finished) and by construction/round-trip elsewhere:
 //   - ClientHello parse: extract the client's X25519 key_share and the offers_* capability flags.
 //   - ServerHello:  byte-exact vs RFC 8448 (random + empty session id + server X25519 share).
 //   - Certificate:  byte-exact vs RFC 8448 (DER reconstructed from the expected message).
 //   - Finished:     byte-exact vs RFC 8448 verify_data.
-//   - EncryptedExtensions: ALPN "h3" + quic_transport_parameters structure.
+//   - EncryptedExtensions: ALPN "h3" + dws_quic_transport_parameters structure.
 //   - CertificateVerify: sec 4.4.3 signed content + an Ed25519 sign/verify round-trip.
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
@@ -87,7 +87,7 @@ void test_parse_client_hello()
     uint8_t msg[256];
     size_t n = hx(CH, msg, sizeof(msg));
     Tls13ClientHello ch;
-    TEST_ASSERT_TRUE(tls13_parse_client_hello(msg, n, &ch));
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(msg, n, &ch));
     TEST_ASSERT_TRUE(ch.has_key_share);
     uint8_t exp_pub[32];
     hx("99381de560e4bd43d23d8e435a7dbafeb3c06e51c13cae4d5413691e529aaf2c", exp_pub, 32);
@@ -97,7 +97,7 @@ void test_parse_client_hello()
     TEST_ASSERT_EQUAL_UINT8(0, ch.session_id_len);
     // This plain-TLS trace has no ALPN / ed25519 sig alg / quic params.
     TEST_ASSERT_FALSE(ch.offers_h3_alpn);
-    TEST_ASSERT_NULL(ch.quic_tp);
+    TEST_ASSERT_NULL(ch.dws_quic_tp);
 }
 
 void test_build_server_hello()
@@ -108,7 +108,7 @@ void test_build_server_hello()
     hx("a6af06a4121860dc5e6e60249cd34c95930c8ac5cb1434dac155772ed3e26928", random, 32);
     hx("c9828876112095fe66762bdbf7c672e156d6cc253b833df1dd69b1b04e751f0f", pub, 32);
     uint8_t out[128];
-    size_t n = tls13_build_server_hello(out, sizeof(out), random, nullptr, 0, pub);
+    size_t n = dws_tls13_build_server_hello(out, sizeof(out), random, nullptr, 0, pub);
     TEST_ASSERT_EQUAL_UINT(elen, n);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, out, elen);
 }
@@ -121,7 +121,7 @@ void test_build_certificate()
     const uint8_t *der = exp + 11;
     size_t der_len = elen - 13;
     uint8_t out[512];
-    size_t n = tls13_build_certificate(out, sizeof(out), der, der_len);
+    size_t n = dws_tls13_build_certificate(out, sizeof(out), der, der_len);
     TEST_ASSERT_EQUAL_UINT(elen, n);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, out, elen);
 }
@@ -131,7 +131,7 @@ void test_build_finished()
     uint8_t verify[32];
     hx("9b9b141d906337fbd2cbdce71df4deda4ab42c309572cb7fffee5454b78f0718", verify, 32);
     uint8_t out[64];
-    size_t n = tls13_build_finished(out, sizeof(out), verify);
+    size_t n = dws_tls13_build_finished(out, sizeof(out), verify);
     uint8_t exp[64];
     size_t elen = hx("14 00 00 20 9b9b141d906337fbd2cbdce71df4deda4ab42c309572cb7fffee5454b78f0718", exp, sizeof(exp));
     TEST_ASSERT_EQUAL_UINT(elen, n);
@@ -142,7 +142,7 @@ void test_encrypted_extensions()
 {
     uint8_t tp[] = {0x04, 0x01, 0x20}; // a tiny transport-params blob
     uint8_t out[64];
-    size_t n = tls13_build_encrypted_extensions(out, sizeof(out), tp, sizeof(tp));
+    size_t n = dws_tls13_build_encrypted_extensions(out, sizeof(out), tp, sizeof(tp));
     TEST_ASSERT_TRUE(n > 0);
     // Handshake header: type 8, 24-bit length = n - 4.
     TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS, out[0]);
@@ -151,7 +151,7 @@ void test_encrypted_extensions()
     TEST_ASSERT_EQUAL_UINT(n - 6, (out[4] << 8) | out[5]);
     static const uint8_t alpn[] = {0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h', '3'};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(alpn, out + 6, sizeof(alpn));
-    // Then quic_transport_parameters ext: 00 39 00 03 <tp>.
+    // Then dws_quic_transport_parameters ext: 00 39 00 03 <tp>.
     const uint8_t *q = out + 6 + sizeof(alpn);
     TEST_ASSERT_EQUAL_UINT16(TLS_EXT_QUIC_TRANSPORT_PARAMS, (q[0] << 8) | q[1]);
     TEST_ASSERT_EQUAL_UINT16(sizeof(tp), (q[2] << 8) | q[3]);
@@ -163,7 +163,7 @@ void test_cert_verify_content()
     uint8_t thash[32];
     memset(thash, 0xab, 32);
     uint8_t content[160];
-    size_t n = tls13_cert_verify_content(content, sizeof(content), thash, true);
+    size_t n = dws_tls13_cert_verify_content(content, sizeof(content), thash, true);
     TEST_ASSERT_EQUAL_UINT(64 + 33 + 1 + 32, n);
     for (int i = 0; i < 64; i++)
         TEST_ASSERT_EQUAL_UINT8(0x20, content[i]);
@@ -182,7 +182,7 @@ void test_cert_verify_sign_roundtrip()
         thash[i] = (uint8_t)i;
 
     uint8_t out[128];
-    size_t n = tls13_build_cert_verify(out, sizeof(out), thash, seed);
+    size_t n = dws_tls13_build_cert_verify(out, sizeof(out), thash, seed);
     // Header: 0f, len = 2 + 2 + 64 = 68; algorithm ed25519; sig length 64.
     TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_CERTIFICATE_VERIFY, out[0]);
     TEST_ASSERT_EQUAL_UINT(68, (out[1] << 16) | (out[2] << 8) | out[3]);
@@ -192,11 +192,11 @@ void test_cert_verify_sign_roundtrip()
 
     // Rebuild the signed content and verify the signature.
     uint8_t content[160];
-    size_t clen = tls13_cert_verify_content(content, sizeof(content), thash, true);
+    size_t clen = dws_tls13_cert_verify_content(content, sizeof(content), thash, true);
     TEST_ASSERT_TRUE(ssh_ed25519_verify(pub, content, clen, out + 8));
     // A different transcript hash must not verify against the same signature.
     thash[0] ^= 0x01;
-    clen = tls13_cert_verify_content(content, sizeof(content), thash, true);
+    clen = dws_tls13_cert_verify_content(content, sizeof(content), thash, true);
     TEST_ASSERT_FALSE(ssh_ed25519_verify(pub, content, clen, out + 8));
 }
 
@@ -251,7 +251,7 @@ void test_tls13_malformed_extensions()
     for (size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); k++)
     {
         size_t n = build_ch(msg, cases[k].ext, cases[k].elen);
-        TEST_ASSERT_TRUE(tls13_parse_client_hello(msg, n, &ch)); // malformed ext skipped, not fatal
+        TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(msg, n, &ch)); // malformed ext skipped, not fatal
     }
 }
 
@@ -260,23 +260,23 @@ void test_tls13_parse_guards()
 {
     Tls13ClientHello ch;
     uint8_t bad_type[4] = {0x02, 0, 0, 0};
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(bad_type, sizeof(bad_type), &ch)); // wrong hs type
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(bad_type, sizeof(bad_type), &ch)); // wrong hs type
     uint8_t short_hdr[2] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00};
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(short_hdr, sizeof(short_hdr), &ch)); // r_u24 body len
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(short_hdr, sizeof(short_hdr), &ch)); // r_u24 body len
     uint8_t big_body[4] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0xFF};
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(big_body, sizeof(big_body), &ch)); // body len > msg
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(big_body, sizeof(big_body), &ch)); // body len > msg
     uint8_t no_ver[5] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x01, 0x03};
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(no_ver, sizeof(no_ver), &ch)); // r_u16 legacy_version
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(no_ver, sizeof(no_ver), &ch)); // r_u16 legacy_version
 
     // session id length > 32: body_len 35 = version(2)+random(32)+sid_len(1).
     uint8_t sid_big[39] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x23, 0x03, 0x03};
     sid_big[38] = 33;
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(sid_big, sizeof(sid_big), &ch)); // sid_len > 32
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(sid_big, sizeof(sid_big), &ch)); // sid_len > 32
 
     // session id length 32 but the bytes are not present (r_take fails).
     uint8_t sid_trunc[39] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x23, 0x03, 0x03};
     sid_trunc[38] = 32;
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(sid_trunc, sizeof(sid_trunc), &ch)); // sid r_take
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(sid_trunc, sizeof(sid_trunc), &ch)); // sid r_take
 
     // A valid-through-extensions base, then corrupt one internal length field each.
     uint8_t base[64];
@@ -284,14 +284,14 @@ void test_tls13_parse_guards()
     uint8_t v[64];
     memcpy(v, base, bn);
     v[40] = 3; // cipher_suites length odd
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(v, bn, &ch));
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(v, bn, &ch));
     memcpy(v, base, bn);
     v[43] = 255; // compression_methods length overruns
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(v, bn, &ch));
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(v, bn, &ch));
     memcpy(v, base, bn);
     v[45] = 0xFF;
     v[46] = 0xFF; // extensions_length overruns
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(v, bn, &ch));
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(v, bn, &ch));
 
     // ext_total unreadable: message ends exactly after compression_methods.
     uint8_t no_ext[44] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x28, 0x03, 0x03};
@@ -301,13 +301,13 @@ void test_tls13_parse_guards()
     no_ext[41] = 0x13;
     no_ext[42] = 0x01; // cipher_suites
     no_ext[43] = 0x00; // comp_len 0 -> body ends here, no ext_total
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(no_ext, sizeof(no_ext), &ch));
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(no_ext, sizeof(no_ext), &ch));
 
     // An extension whose declared length runs past the buffer.
     uint8_t bad_ext[4] = {0x00, 0x0a, 0x00, 0xFF}; // ext len 255, no body
     uint8_t msg[64];
     size_t mn = build_ch(msg, bad_ext, sizeof(bad_ext));
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(msg, mn, &ch));
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, mn, &ch));
 }
 
 // Builder capacity guards: a buffer too small for a w_bytes copy, and cert_verify_content overflow.
@@ -315,14 +315,14 @@ void test_tls13_builder_cap_guards()
 {
     uint8_t out[16];
     uint8_t r32[32] = {0}, pub[32] = {0};
-    TEST_ASSERT_EQUAL_UINT(0, tls13_build_server_hello(out, 10, r32, nullptr, 0, pub)); // w_bytes(random) overruns
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_server_hello(out, 10, r32, nullptr, 0, pub)); // w_bytes(random) overruns
     uint8_t thash[32] = {0};
-    TEST_ASSERT_EQUAL_UINT(0, tls13_cert_verify_content(out, 10, thash, true)); // total > cap
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_cert_verify_content(out, 10, thash, true)); // total > cap
 }
 
 // Remaining ClientHello parse coverage: the r_u8 compression-length truncation, the
 // list16_contains odd-length guard, per-extension short-body guards, a key_share entry
-// whose key length overruns, a valid "h3" ALPN, and the quic_transport_parameters extension.
+// whose key length overruns, a valid "h3" ALPN, and the dws_quic_transport_parameters extension.
 void test_tls13_extension_and_truncation_coverage()
 {
     Tls13ClientHello ch;
@@ -334,10 +334,10 @@ void test_tls13_extension_and_truncation_coverage()
     ct[40] = 0x02;
     ct[41] = 0x13;
     ct[42] = 0x01; // cipher_suites, then no compression_methods byte
-    TEST_ASSERT_FALSE(tls13_parse_client_hello(ct, sizeof(ct), &ch));
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(ct, sizeof(ct), &ch));
 
     // One ClientHello carrying malformed and valid extensions. Malformed bodies return
-    // from parse_extension without failing the overall parse; the valid ALPN + quic_tp set
+    // from parse_extension without failing the overall parse; the valid ALPN + dws_quic_tp set
     // their flags.
     static const uint8_t ex[] = {
         0x00, 0x2b, 0x00, 0x00,                                     // supported_versions body < 1
@@ -347,14 +347,14 @@ void test_tls13_extension_and_truncation_coverage()
         0x00, 0x33, 0x00, 0x06, 0x00, 0x04, 0x00, 0x1d, 0x00, 0x20, // key_share entry key length overruns
         0x00, 0x10, 0x00, 0x01, 0x00,                               // ALPN body < 2
         0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h',  '3',        // ALPN offering "h3"
-        0x00, 0x39, 0x00, 0x03, 0x04, 0x01, 0x20,                   // quic_transport_parameters
+        0x00, 0x39, 0x00, 0x03, 0x04, 0x01, 0x20,                   // dws_quic_transport_parameters
     };
     uint8_t msg[256];
     size_t n = build_ch(msg, ex, sizeof(ex));
-    TEST_ASSERT_TRUE(tls13_parse_client_hello(msg, n, &ch));
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(msg, n, &ch));
     TEST_ASSERT_TRUE(ch.offers_h3_alpn);
-    TEST_ASSERT_NOT_NULL(ch.quic_tp);
-    TEST_ASSERT_EQUAL_UINT(3, (unsigned)ch.quic_tp_len);
+    TEST_ASSERT_NOT_NULL(ch.dws_quic_tp);
+    TEST_ASSERT_EQUAL_UINT(3, (unsigned)ch.dws_quic_tp_len);
 }
 
 int main(int, char **)

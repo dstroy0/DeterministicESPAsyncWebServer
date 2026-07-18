@@ -14,7 +14,7 @@
 
 // --- -104 APCI ---
 
-size_t iec104_build_i(uint8_t *buf, size_t cap, uint16_t ns, uint16_t nr, const uint8_t *asdu, size_t asdu_len)
+size_t dws_iec104_build_i(uint8_t *buf, size_t cap, uint16_t ns, uint16_t nr, const uint8_t *asdu, size_t asdu_len)
 {
     if (!buf || (asdu_len && !asdu) || asdu_len > 249) // APDU length octet maxes at 253 (= 4 + 249)
         return 0;
@@ -32,7 +32,7 @@ size_t iec104_build_i(uint8_t *buf, size_t cap, uint16_t ns, uint16_t nr, const 
     return total;
 }
 
-size_t iec104_build_s(uint8_t *buf, size_t cap, uint16_t nr)
+size_t dws_iec104_build_s(uint8_t *buf, size_t cap, uint16_t nr)
 {
     if (!buf || cap < IEC104_APCI_LEN)
         return 0;
@@ -45,7 +45,7 @@ size_t iec104_build_s(uint8_t *buf, size_t cap, uint16_t nr)
     return IEC104_APCI_LEN;
 }
 
-size_t iec104_build_u(uint8_t *buf, size_t cap, uint8_t u_cmd)
+size_t dws_iec104_build_u(uint8_t *buf, size_t cap, uint8_t u_cmd)
 {
     if (!buf || cap < IEC104_APCI_LEN)
         return 0;
@@ -58,7 +58,7 @@ size_t iec104_build_u(uint8_t *buf, size_t cap, uint8_t u_cmd)
     return IEC104_APCI_LEN;
 }
 
-bool iec104_parse(const uint8_t *buf, size_t len, Iec104Apci *out, size_t *consumed)
+bool dws_iec104_parse(const uint8_t *buf, size_t len, Iec104Apci *out, size_t *consumed)
 {
     if (!buf || !out || len < 2 || buf[0] != IEC_START_104)
         return false;
@@ -98,7 +98,7 @@ bool iec104_parse(const uint8_t *buf, size_t len, Iec104Apci *out, size_t *consu
 
 // --- ASDU header + IOA ---
 
-size_t iec_asdu_build_header(uint8_t *buf, size_t cap, const IecAsduHeader *h)
+size_t dws_iec_asdu_build_header(uint8_t *buf, size_t cap, const IecAsduHeader *h)
 {
     if (!buf || !h || cap < 6)
         return 0;
@@ -111,7 +111,7 @@ size_t iec_asdu_build_header(uint8_t *buf, size_t cap, const IecAsduHeader *h)
     return 6;
 }
 
-bool iec_asdu_parse_header(const uint8_t *buf, size_t len, IecAsduHeader *out, size_t *consumed)
+bool dws_iec_asdu_parse_header(const uint8_t *buf, size_t len, IecAsduHeader *out, size_t *consumed)
 {
     if (!buf || !out || len < 6)
         return false;
@@ -128,7 +128,7 @@ bool iec_asdu_parse_header(const uint8_t *buf, size_t len, IecAsduHeader *out, s
     return true;
 }
 
-size_t iec_put_ioa(uint8_t *buf, size_t cap, uint32_t ioa)
+size_t dws_iec_put_ioa(uint8_t *buf, size_t cap, uint32_t ioa)
 {
     if (!buf || cap < 3)
         return 0;
@@ -138,7 +138,7 @@ size_t iec_put_ioa(uint8_t *buf, size_t cap, uint32_t ioa)
     return 3;
 }
 
-uint32_t iec_get_ioa(const uint8_t *p)
+uint32_t dws_iec_get_ioa(const uint8_t *p)
 {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
 }
@@ -153,7 +153,7 @@ static uint8_t sum8(const uint8_t *p, size_t n)
     return s;
 }
 
-size_t iec101_build_fixed(uint8_t *buf, size_t cap, uint8_t control, uint8_t addr)
+size_t dws_iec101_build_fixed(uint8_t *buf, size_t cap, uint8_t control, uint8_t addr)
 {
     if (!buf || cap < 5)
         return 0;
@@ -165,8 +165,8 @@ size_t iec101_build_fixed(uint8_t *buf, size_t cap, uint8_t control, uint8_t add
     return 5;
 }
 
-size_t iec101_build_variable(uint8_t *buf, size_t cap, uint8_t control, uint8_t addr, const uint8_t *asdu,
-                             uint8_t asdu_len)
+size_t dws_iec101_build_variable(uint8_t *buf, size_t cap, uint8_t control, uint8_t addr, const uint8_t *asdu,
+                                 uint8_t asdu_len)
 {
     if (!buf || (asdu_len && !asdu) || asdu_len > 253)
         return 0;
@@ -187,7 +187,7 @@ size_t iec101_build_variable(uint8_t *buf, size_t cap, uint8_t control, uint8_t 
     return total;
 }
 
-bool iec101_parse(const uint8_t *buf, size_t len, Iec101Frame *out, size_t *consumed)
+bool dws_iec101_parse(const uint8_t *buf, size_t len, Iec101Frame *out, size_t *consumed)
 {
     if (!buf || !out || len < 1)
         return false;

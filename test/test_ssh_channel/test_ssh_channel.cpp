@@ -983,32 +983,32 @@ void test_chan_global_request_reply_caps()
 }
 
 #if DWS_ENABLE_SSH_SFTP
-static int sftp_open_count;
-static uint32_t sftp_open_channel;
-static int sftp_data_count;
-static uint8_t sftp_data_buf[64];
-static size_t sftp_data_n;
+static int dws_sftp_open_count;
+static uint32_t dws_sftp_open_channel;
+static int dws_sftp_data_count;
+static uint8_t dws_sftp_data_buf[64];
+static size_t dws_sftp_data_n;
 static void t_sftp_open(uint8_t slot, uint32_t ch)
 {
     (void)slot;
-    sftp_open_channel = ch;
-    sftp_open_count++;
+    dws_sftp_open_channel = ch;
+    dws_sftp_open_count++;
 }
 static void t_sftp_data(uint8_t slot, uint32_t ch, const uint8_t *d, size_t n)
 {
     (void)slot;
     (void)ch;
-    sftp_data_n = n < sizeof(sftp_data_buf) ? n : sizeof(sftp_data_buf);
-    memcpy(sftp_data_buf, d, sftp_data_n);
-    sftp_data_count++;
+    dws_sftp_data_n = n < sizeof(dws_sftp_data_buf) ? n : sizeof(dws_sftp_data_buf);
+    memcpy(dws_sftp_data_buf, d, dws_sftp_data_n);
+    dws_sftp_data_count++;
 }
 
 // A "subsystem" "sftp" request is accepted (unlike other subsystems), tags the channel, fires the sftp-open
 // callback, and thereafter routes channel data to the sftp cb - not the session data cb.
 void test_sftp_subsystem_routes()
 {
-    sftp_open_count = 0;
-    sftp_data_count = 0;
+    dws_sftp_open_count = 0;
+    dws_sftp_data_count = 0;
     data_cb_count = 0;
     dws_ssh_channel_set_sftp_open_cb(t_sftp_open);
     dws_ssh_channel_set_sftp_data_cb(t_sftp_data);
@@ -1026,15 +1026,15 @@ void test_sftp_subsystem_routes()
     size_t ol = 0;
     TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, out[0]);
-    TEST_ASSERT_EQUAL_INT(1, sftp_open_count);
-    TEST_ASSERT_EQUAL_UINT32(id, sftp_open_channel);
+    TEST_ASSERT_EQUAL_INT(1, dws_sftp_open_count);
+    TEST_ASSERT_EQUAL_UINT32(id, dws_sftp_open_channel);
 
     uint8_t dp[32];
     size_t dn = make_data(dp, id, "FXP");
     TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)));
-    TEST_ASSERT_EQUAL_INT(1, sftp_data_count);
+    TEST_ASSERT_EQUAL_INT(1, dws_sftp_data_count);
     TEST_ASSERT_EQUAL_INT(0, data_cb_count); // the session data cb is NOT called for an sftp channel
-    TEST_ASSERT_EQUAL_MEMORY("FXP", sftp_data_buf, 3);
+    TEST_ASSERT_EQUAL_MEMORY("FXP", dws_sftp_data_buf, 3);
 }
 
 // An unknown subsystem is still refused.
@@ -1057,17 +1057,17 @@ void test_unknown_subsystem_refused()
 #endif // DWS_ENABLE_SSH_SFTP
 
 #if DWS_ENABLE_SSH_SCP
-static int scp_open_count;
-static char scp_cmd[64];
-static size_t scp_cmd_len;
-static int scp_data_count;
+static int dws_scp_open_count;
+static char dws_scp_cmd[64];
+static size_t dws_scp_cmd_len;
+static int dws_scp_data_count;
 static void t_scp_open(uint8_t slot, uint32_t ch, const char *cmd, size_t cl)
 {
     (void)slot;
     (void)ch;
-    scp_cmd_len = cl < sizeof(scp_cmd) ? cl : sizeof(scp_cmd);
-    memcpy(scp_cmd, cmd, scp_cmd_len);
-    scp_open_count++;
+    dws_scp_cmd_len = cl < sizeof(dws_scp_cmd) ? cl : sizeof(dws_scp_cmd);
+    memcpy(dws_scp_cmd, cmd, dws_scp_cmd_len);
+    dws_scp_open_count++;
 }
 static void t_scp_data(uint8_t slot, uint32_t ch, const uint8_t *d, size_t n)
 {
@@ -1075,15 +1075,15 @@ static void t_scp_data(uint8_t slot, uint32_t ch, const uint8_t *d, size_t n)
     (void)ch;
     (void)d;
     (void)n;
-    scp_data_count++;
+    dws_scp_data_count++;
 }
 
 // An exec "scp …" is accepted (exec already is), tags the channel SCP, hands the command to the scp cb, and
 // routes channel data to the scp cb.
 void test_scp_exec_routes()
 {
-    scp_open_count = 0;
-    scp_data_count = 0;
+    dws_scp_open_count = 0;
+    dws_scp_data_count = 0;
     dws_ssh_channel_set_scp_open_cb(t_scp_open);
     dws_ssh_channel_set_scp_data_cb(t_scp_data);
     uint32_t id = open_session(8, 32768);
@@ -1099,13 +1099,13 @@ void test_scp_exec_routes()
     size_t ol = 0;
     TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, out[0]);
-    TEST_ASSERT_EQUAL_INT(1, scp_open_count);
-    TEST_ASSERT_EQUAL_MEMORY("scp -t /gcode/part.nc", scp_cmd, scp_cmd_len);
+    TEST_ASSERT_EQUAL_INT(1, dws_scp_open_count);
+    TEST_ASSERT_EQUAL_MEMORY("scp -t /gcode/part.nc", dws_scp_cmd, dws_scp_cmd_len);
 
     uint8_t dp[32];
     size_t dn = make_data(dp, id, "C0644");
     TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)));
-    TEST_ASSERT_EQUAL_INT(1, scp_data_count);
+    TEST_ASSERT_EQUAL_INT(1, dws_scp_data_count);
 }
 #endif // DWS_ENABLE_SSH_SCP
 

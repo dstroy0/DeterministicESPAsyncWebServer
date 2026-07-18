@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-size_t dmx_build(uint8_t *buf, size_t cap, uint8_t start_code, const uint8_t *channels, uint16_t n)
+size_t dws_dmx_build(uint8_t *buf, size_t cap, uint8_t start_code, const uint8_t *channels, uint16_t n)
 {
     if (!buf || n > DMX_MAX_CHANNELS || (n && !channels))
         return 0;
@@ -25,19 +25,19 @@ size_t dmx_build(uint8_t *buf, size_t cap, uint8_t start_code, const uint8_t *ch
     return total;
 }
 
-uint8_t dmx_get_channel(const uint8_t *buf, size_t len, uint16_t ch)
+uint8_t dws_dmx_get_channel(const uint8_t *buf, size_t len, uint16_t ch)
 {
     if (!buf || ch < 1 || ch > DMX_MAX_CHANNELS || (size_t)ch >= len)
         return 0; // slot ch lives at buf[ch] (buf[0] is the start code)
     return buf[ch];
 }
 
-uint64_t rdm_uid(uint16_t manufacturer, uint32_t device)
+uint64_t dws_rdm_uid(uint16_t manufacturer, uint32_t device)
 {
     return ((uint64_t)manufacturer << 32) | device;
 }
 
-uint16_t rdm_checksum(const uint8_t *buf, size_t len)
+uint16_t dws_rdm_checksum(const uint8_t *buf, size_t len)
 {
     uint16_t s = 0;
     for (size_t i = 0; i < len; i++)
@@ -62,7 +62,7 @@ static uint64_t get_uid(const uint8_t *p)
            ((uint64_t)p[4] << 8) | (uint64_t)p[5];
 }
 
-size_t rdm_build(uint8_t *buf, size_t cap, const RdmPacket *p, const uint8_t *pdata, uint8_t pdl)
+size_t dws_rdm_build(uint8_t *buf, size_t cap, const RdmPacket *p, const uint8_t *pdata, uint8_t pdl)
 {
     if (!buf || !p || (pdl && !pdata))
         return 0;
@@ -86,13 +86,13 @@ size_t rdm_build(uint8_t *buf, size_t cap, const RdmPacket *p, const uint8_t *pd
     buf[23] = pdl;
     if (pdl)
         memcpy(buf + 24, pdata, pdl);
-    uint16_t cs = rdm_checksum(buf, ml); // checksum over SC..end of parameter data
+    uint16_t cs = dws_rdm_checksum(buf, ml); // checksum over SC..end of parameter data
     buf[ml] = (uint8_t)(cs >> 8);
     buf[ml + 1] = (uint8_t)cs;
     return total;
 }
 
-bool rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consumed)
+bool dws_rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consumed)
 {
     if (!buf || !out || len < RDM_OVERHEAD)
         return false;
@@ -108,7 +108,7 @@ bool rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consumed)
     if (len < total)
         return false;
     uint16_t cs = (uint16_t)((buf[ml] << 8) | buf[ml + 1]);
-    if (cs != rdm_checksum(buf, ml))
+    if (cs != dws_rdm_checksum(buf, ml))
         return false;
 
     out->dest_uid = get_uid(buf + 3);

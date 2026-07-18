@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file tls13_msg.cpp
- * @brief TLS 1.3 handshake messages for the QUIC handshake (see tls13_msg.h).
+ * @file dws_tls13_msg.cpp
+ * @brief TLS 1.3 handshake messages for the QUIC handshake (see dws_tls13_msg.h).
  */
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
@@ -275,8 +275,8 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         parse_alpn(body, blen, out);
         break;
     case TLS_EXT_QUIC_TRANSPORT_PARAMS:
-        out->quic_tp = body;
-        out->quic_tp_len = blen;
+        out->dws_quic_tp = body;
+        out->dws_quic_tp_len = blen;
         break;
     case TlsExt::TLS_EXT_COOKIE: {
         // Cookie { opaque cookie<1..2^16-1> } (RFC 8446 §4.2.2): 2-byte length then the cookie bytes.
@@ -311,7 +311,7 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
 }
 } // namespace
 
-bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *out, bool dtls)
+bool dws_tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *out, bool dtls)
 {
     memset(out, 0, sizeof(*out));
 
@@ -379,9 +379,9 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
 // ---------------------------------------------------------------------------
 // Builders
 // ---------------------------------------------------------------------------
-size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
-                                uint8_t session_id_len, const uint8_t *share, size_t share_len, uint16_t group,
-                                bool dtls, const uint8_t *conn_id, size_t conn_id_len)
+size_t dws_tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
+                                    uint8_t session_id_len, const uint8_t *share, size_t share_len, uint16_t group,
+                                    bool dtls, const uint8_t *conn_id, size_t conn_id_len)
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_SERVER_HELLO);
@@ -423,12 +423,12 @@ size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[3
 }
 
 // SHA-256("HelloRetryRequest") - RFC 8446 §4.1.3. A ServerHello with this random is a HelloRetryRequest.
-const uint8_t tls13_hrr_random[32] = {0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 0x11, 0xBE, 0x1D, 0x8C,
-                                      0x02, 0x1E, 0x65, 0xB8, 0x91, 0xC2, 0xA2, 0x11, 0x16, 0x7A, 0xBB,
-                                      0x8C, 0x5E, 0x07, 0x9E, 0x09, 0xE2, 0xC8, 0xA8, 0x33, 0x9C};
+const uint8_t dws_tls13_hrr_random[32] = {0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 0x11, 0xBE, 0x1D, 0x8C,
+                                          0x02, 0x1E, 0x65, 0xB8, 0x91, 0xC2, 0xA2, 0x11, 0x16, 0x7A, 0xBB,
+                                          0x8C, 0x5E, 0x07, 0x9E, 0x09, 0xE2, 0xC8, 0xA8, 0x33, 0x9C};
 
-size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *session_id, uint8_t session_id_len,
-                                       uint16_t selected_group, const uint8_t *cookie, size_t cookie_len, bool dtls)
+size_t dws_tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *session_id, uint8_t session_id_len,
+                                           uint16_t selected_group, const uint8_t *cookie, size_t cookie_len, bool dtls)
 {
     if (cookie_len > 0xFFFD)
         return 0; // cookie extension body (cookie_len + 2) must fit a uint16
@@ -440,7 +440,7 @@ size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *
     // (0xFEFD / 0xFEFC, RFC 9147 §5.3), the TLS ones (0x0303 / 0x0304) otherwise - a HelloRetryRequest
     // is a ServerHello, so it carries the same version fields.
     w_u16(&w, dtls ? TLS_LEGACY_VERSION_DTLS : (uint16_t)0x0303); // legacy_version
-    w_bytes(&w, tls13_hrr_random, 32);
+    w_bytes(&w, dws_tls13_hrr_random, 32);
     w_u8(&w, session_id_len);
     w_bytes(&w, session_id, session_id_len);
     w_u16(&w, TLS_CIPHER_AES_128_GCM_SHA256);
@@ -469,7 +469,7 @@ size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *
     return w.ok ? w.pos : 0;
 }
 
-size_t tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap)
+size_t dws_tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap)
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS);
@@ -479,7 +479,7 @@ size_t tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap)
     return w.ok ? w.pos : 0;
 }
 
-size_t tls13_build_message_hash(uint8_t *out, size_t cap, const uint8_t ch1_hash[32])
+size_t dws_tls13_build_message_hash(uint8_t *out, size_t cap, const uint8_t ch1_hash[32])
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, 254); // message_hash synthetic handshake type (RFC 8446 §4.4.1)
@@ -488,7 +488,8 @@ size_t tls13_build_message_hash(uint8_t *out, size_t cap, const uint8_t ch1_hash
     return w.ok ? w.pos : 0;
 }
 
-size_t tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t *quic_tp, size_t quic_tp_len)
+size_t dws_tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t *dws_quic_tp,
+                                            size_t dws_quic_tp_len)
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS);
@@ -501,17 +502,17 @@ size_t tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t 
     w_u16(&w, 3); // ProtocolNameList length
     w_u8(&w, 2);  // name length
     w_bytes(&w, (const uint8_t *)"h3", 2);
-    // quic_transport_parameters.
+    // dws_quic_transport_parameters.
     w_u16(&w, TLS_EXT_QUIC_TRANSPORT_PARAMS);
-    w_u16(&w, (uint16_t)quic_tp_len);
-    w_bytes(&w, quic_tp, quic_tp_len);
+    w_u16(&w, (uint16_t)dws_quic_tp_len);
+    w_bytes(&w, dws_quic_tp, dws_quic_tp_len);
     w_patch16(&w, ext_len);
 
     w_patch24(&w, hs_len);
     return w.ok ? w.pos : 0;
 }
 
-size_t tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert_der, size_t cert_len)
+size_t dws_tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert_der, size_t cert_len)
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_CERTIFICATE);
@@ -528,7 +529,7 @@ size_t tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert_der
     return w.ok ? w.pos : 0;
 }
 
-size_t tls13_cert_verify_content(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], bool is_server)
+size_t dws_tls13_cert_verify_content(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], bool is_server)
 {
     // RFC 8446 sec 4.4.3: 64 spaces || context string || 0x00 || transcript hash.
     static const char SRV[] = "TLS 1.3, server CertificateVerify";
@@ -545,12 +546,12 @@ size_t tls13_cert_verify_content(uint8_t *out, size_t cap, const uint8_t transcr
     return total;
 }
 
-size_t tls13_build_cert_verify(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], const uint8_t seed[32])
+size_t dws_tls13_build_cert_verify(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], const uint8_t seed[32])
 {
     uint8_t content[64 + 33 + 1 + 32];
-    size_t clen = tls13_cert_verify_content(content, sizeof(content), transcript_hash, true);
+    size_t clen = dws_tls13_cert_verify_content(content, sizeof(content), transcript_hash, true);
     // GCOVR_EXCL_START  content[] is sized to the exact maximum (64 + ctx 33 + 1 + hash 32), so
-    // tls13_cert_verify_content always succeeds here; the guard cannot fire.
+    // dws_tls13_cert_verify_content always succeeds here; the guard cannot fire.
     if (!clen)
         return 0;
     // GCOVR_EXCL_STOP
@@ -567,7 +568,7 @@ size_t tls13_build_cert_verify(uint8_t *out, size_t cap, const uint8_t transcrip
     return w.ok ? w.pos : 0;
 }
 
-size_t tls13_build_finished(uint8_t *out, size_t cap, const uint8_t verify_data[32])
+size_t dws_tls13_build_finished(uint8_t *out, size_t cap, const uint8_t verify_data[32])
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_FINISHED);

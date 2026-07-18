@@ -12,22 +12,22 @@
 
 #include <string.h>
 
-uint8_t n2k_fastpacket_num_frames(uint16_t total_len)
+uint8_t dws_n2k_fastpacket_num_frames(uint16_t total_len)
 {
     if (total_len <= N2K_FP_F0_DATA)
         return 1;
     return (uint8_t)(1u + (total_len - N2K_FP_F0_DATA + (N2K_FP_FN_DATA - 1)) / N2K_FP_FN_DATA);
 }
 
-bool n2k_fastpacket_build_frame(CanFrame *out, uint8_t seq, uint8_t frame_idx, uint8_t priority, uint32_t pgn,
-                                uint8_t sa, uint8_t da, const uint8_t *data, uint16_t total_len)
+bool dws_n2k_fastpacket_build_frame(CanFrame *out, uint8_t seq, uint8_t frame_idx, uint8_t priority, uint32_t pgn,
+                                    uint8_t sa, uint8_t da, const uint8_t *data, uint16_t total_len)
 {
     if (!out || !data || seq > 7 || total_len == 0 || total_len > DWS_N2K_FP_MAX)
         return false;
-    if (frame_idx >= n2k_fastpacket_num_frames(total_len))
+    if (frame_idx >= dws_n2k_fastpacket_num_frames(total_len))
         return false;
     uint32_t id;
-    if (!j1939_encode_id(&id, priority, pgn, sa, da))
+    if (!dws_j1939_encode_id(&id, priority, pgn, sa, da))
         return false;
     out->id = id;
     out->extended = true;
@@ -52,20 +52,20 @@ bool n2k_fastpacket_build_frame(CanFrame *out, uint8_t seq, uint8_t frame_idx, u
     return true;
 }
 
-void n2k_fastpacket_reset(N2kFastPacketRx *rx)
+void dws_n2k_fastpacket_reset(N2kFastPacketRx *rx)
 {
     if (rx)
         memset(rx, 0, sizeof(*rx));
 }
 
-N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
+N2kFpResult dws_n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
 {
     if (!rx || !f || !f->extended || f->dlc < 2)
         return N2kFpResult::N2K_FP_IGNORED;
     J1939Id id;
-    if (!j1939_decode_id(f->id, &id))
-        return N2kFpResult::N2K_FP_IGNORED; // GCOVR_EXCL_LINE  unreachable: j1939_decode_id only fails on a null out,
-                                            // and &id is non-null
+    if (!dws_j1939_decode_id(f->id, &id))
+        return N2kFpResult::N2K_FP_IGNORED; // GCOVR_EXCL_LINE  unreachable: dws_j1939_decode_id only fails on a null
+                                            // out, and &id is non-null
 
     uint8_t seq = (uint8_t)(f->data[0] >> N2K_FP_SEQ_SHIFT);
     uint8_t frame_idx = (uint8_t)(f->data[0] & N2K_FP_FRAME_MASK);
@@ -75,7 +75,7 @@ N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
         uint16_t total = f->data[1];
         if (total == 0 || total > DWS_N2K_FP_MAX)
             return N2kFpResult::N2K_FP_ERR;
-        n2k_fastpacket_reset(rx);
+        dws_n2k_fastpacket_reset(rx);
         rx->active = true;
         rx->seq = seq;
         rx->sa = id.sa;
@@ -98,7 +98,7 @@ N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
         return N2kFpResult::N2K_FP_IGNORED;
     if (frame_idx != rx->next_frame)
     {
-        n2k_fastpacket_reset(rx);
+        dws_n2k_fastpacket_reset(rx);
         return N2kFpResult::N2K_FP_ERR;
     }
     uint16_t remaining = (uint16_t)(rx->total_len - rx->received);
@@ -114,10 +114,10 @@ N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
     return N2kFpResult::N2K_FP_PROGRESS;
 }
 
-bool n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
-                      uint8_t len)
+bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
+                          uint8_t len)
 {
-    return j1939_build_message(out, priority, pgn, sa, da, data, len);
+    return dws_j1939_build_message(out, priority, pgn, sa, da, data, len);
 }
 
 #endif // DWS_ENABLE_NMEA2000

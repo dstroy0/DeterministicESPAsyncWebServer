@@ -15,12 +15,12 @@
  * choice for a constrained device sharing a secret with its issuer. RS256/ES256
  * (asymmetric) are out of scope. Signature verification is constant-time.
  *
- * The base verifier (jwt_verify_hs256 / jwt_bearer_valid) checks only the
+ * The base verifier (dws_jwt_verify_hs256 / dws_jwt_bearer_valid) checks only the
  * signature. The `*_at` variants additionally enforce the RFC 7519 time claims
  * (`exp` §4.1.4 and `nbf` §4.1.5) against a caller-supplied wall-clock epoch, with a
  * skew leeway - pass now=0 on a clockless device to skip the time checks (the
  * signature still gates). `iat` (§4.1.6) is informational; read it with
- * jwt_claim_int() if you want it.
+ * dws_jwt_claim_int() if you want it.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_JWT_H
@@ -45,20 +45,20 @@
  * @param secret_len  key length.
  * @return true if the signature is valid.
  */
-bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len);
+bool dws_jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len);
 
 /**
  * @brief Validate an `Authorization` header value carrying a Bearer JWT.
  *
  * Accepts a value beginning with `Bearer ` (case-insensitive scheme), then
- * verifies the token via jwt_verify_hs256().
+ * verifies the token via dws_jwt_verify_hs256().
  *
  * @param auth_header the full Authorization header value (may be nullptr).
  * @param secret      HMAC key bytes.
  * @param secret_len  key length.
  * @return true if a well-formed Bearer token validates.
  */
-bool jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t secret_len);
+bool dws_jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t secret_len);
 
 /**
  * @brief Check a JWT's time-based validity (RFC 7519 `exp` / `nbf`) against a clock.
@@ -66,7 +66,7 @@ bool jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t sec
  * Enforces `exp` (§4.1.4: rejected once @p now_epoch has passed it) and `nbf`
  * (§4.1.5: rejected before it), each within @p leeway_s seconds of skew tolerance.
  * An absent claim is not enforced. Does NOT check the signature - pair with
- * jwt_verify_hs256(). The comparisons are written to avoid integer overflow near the
+ * dws_jwt_verify_hs256(). The comparisons are written to avoid integer overflow near the
  * `long` epoch range.
  *
  * @param now_epoch  current Unix time in seconds; <= 0 means "no wall clock", so the
@@ -75,32 +75,32 @@ bool jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t sec
  * @param leeway_s   allowed clock skew in seconds (0 for none).
  * @return true if the token is currently within its validity window (or no clock is set).
  */
-bool jwt_time_valid(const char *token, size_t token_len, long now_epoch, long leeway_s);
+bool dws_jwt_time_valid(const char *token, size_t token_len, long now_epoch, long leeway_s);
 
 /**
  * @brief Verify a JWT's HS256 signature AND its `exp` / `nbf` time claims.
  *
- * jwt_verify_hs256() && jwt_time_valid(). On a clockless device (@p now_epoch <= 0)
+ * dws_jwt_verify_hs256() && dws_jwt_time_valid(). On a clockless device (@p now_epoch <= 0)
  * this reduces to the signature-only check.
  */
-bool jwt_verify_hs256_at(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len, long now_epoch,
-                         long leeway_s);
+bool dws_jwt_verify_hs256_at(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len,
+                             long now_epoch, long leeway_s);
 
 /**
  * @brief Validate a Bearer `Authorization` header, enforcing `exp` / `nbf` when clocked.
  *
- * jwt_bearer_valid() plus the RFC 7519 time-claim check. Pass @p now_epoch from your
+ * dws_jwt_bearer_valid() plus the RFC 7519 time-claim check. Pass @p now_epoch from your
  * time source (e.g. `(long)dws_time_now()`); 0 skips the time checks.
  */
-bool jwt_bearer_valid_at(const char *auth_header, const uint8_t *secret, size_t secret_len, long now_epoch,
-                         long leeway_s);
+bool dws_jwt_bearer_valid_at(const char *auth_header, const uint8_t *secret, size_t secret_len, long now_epoch,
+                             long leeway_s);
 
 /**
  * @brief Read an integer claim (e.g. "exp", "iat", "nbf") from a JWT payload.
  *
  * base64url-decodes the payload segment and scans the JSON for a top-level
  * numeric member @p name. Does not verify the signature - call
- * jwt_verify_hs256() first.
+ * dws_jwt_verify_hs256() first.
  *
  * @param token      the compact JWT string.
  * @param token_len  length of @p token.
@@ -108,20 +108,20 @@ bool jwt_bearer_valid_at(const char *auth_header, const uint8_t *secret, size_t 
  * @param out        receives the parsed value on success.
  * @return true if the claim is present and parses as an integer.
  */
-bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *out);
+bool dws_jwt_claim_int(const char *token, size_t token_len, const char *name, long *out);
 
 /**
  * @brief Read a string claim (e.g. "sub", "role", "scope") from a JWT payload.
  *
  * base64url-decodes the payload and copies the top-level string member @p name
  * into @p out (null-terminated, bounded by @p out_cap). Does not verify the
- * signature - call jwt_verify_hs256() first. Minimal unescaping (handles `\"` and
+ * signature - call dws_jwt_verify_hs256() first. Minimal unescaping (handles `\"` and
  * `\\`; other escapes are copied without their backslash), which suits
  * scope / role / sub values.
  *
  * @return true if the claim is present and is a string that fit in @p out.
  */
-bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *out, size_t out_cap);
+bool dws_jwt_claim_str(const char *token, size_t token_len, const char *name, char *out, size_t out_cap);
 
 /**
  * @brief Test whether a space-separated OAuth2 scope claim grants @p required.
@@ -130,7 +130,7 @@ bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *
  * @param required    the scope to look for.
  * @return true if @p required is one of the whole space-separated tokens.
  */
-bool jwt_scope_allows(const char *scope_claim, const char *required);
+bool dws_jwt_scope_allows(const char *scope_claim, const char *required);
 
 #endif // DWS_ENABLE_JWT
 

@@ -342,7 +342,7 @@ _Unit tests for the CiA 402 drive profile (services/cia402): the Statusword stat
 |  11 | `test_controlword_invalid_command`    |   ✅   | Controlword invalid command                                                               |
 |  12 | `test_sdo_set_velocity_torque`        |   ✅   | Sdo set velocity torque                                                                   |
 |  13 | `test_sdo_get_i32_roundtrip`          |   ✅   | Sdo get i32 roundtrip                                                                     |
-|  14 | `test_sdo_upload_reject_paths`        |   ✅   | (a) parse failure: dlc < 8 makes canopen_parse_sdo_response fail.                         |
+|  14 | `test_sdo_upload_reject_paths`        |   ✅   | (a) parse failure: dlc < 8 makes dws_canopen_parse_sdo_response fail.                     |
 |  15 | `test_pdo_null_guards`                |   ✅   | Pdo null guards                                                                           |
 
 </details>
@@ -1411,54 +1411,54 @@ _Unit and stress tests for SHA-1, Base64, and the WebSocket frame parser._
 
 _Unit and stress tests for the Server-Sent Events connection pool (sse.h/cpp)._
 
-|   # | Test                                                | Status | Description                                                                |
-| --: | :-------------------------------------------------- | :----: | :------------------------------------------------------------------------- |
-|   1 | `test_sse_pool_size`                                |   ✅   | Sse pool size                                                              |
-|   2 | `test_sse_ids_match_indices_after_init`             |   ✅   | Sse ids match indices after init                                           |
-|   3 | `test_sse_all_inactive_after_init`                  |   ✅   | Sse all inactive after init                                                |
-|   4 | `test_sse_path_empty_after_init`                    |   ✅   | Sse path empty after init                                                  |
-|   5 | `test_sse_alloc_returns_non_null`                   |   ✅   | Sse alloc returns non null                                                 |
-|   6 | `test_sse_alloc_sets_active`                        |   ✅   | Sse alloc sets active                                                      |
-|   7 | `test_sse_alloc_sets_slot_id`                       |   ✅   | Sse alloc sets slot id                                                     |
-|   8 | `test_sse_alloc_stores_path`                        |   ✅   | Sse alloc stores path                                                      |
-|   9 | `test_sse_alloc_stores_different_paths_per_slot`    |   ✅   | Sse alloc stores different paths per slot                                  |
-|  10 | `test_sse_alloc_path_truncated_to_max`              |   ✅   | Build a path longer than MAX_PATH_LEN                                      |
-|  11 | `test_sse_alloc_pool_full_returns_null`             |   ✅   | Sse alloc pool full returns null                                           |
-|  12 | `test_sse_alloc_sse_id_is_pool_index`               |   ✅   | First free slot is 0 → sse_id should be 0                                  |
-|  13 | `test_sse_find_returns_correct_conn`                |   ✅   | Sse find returns correct conn                                              |
-|  14 | `test_sse_find_returns_null_when_empty`             |   ✅   | Sse find returns null when empty                                           |
-|  15 | `test_sse_find_returns_null_for_different_slot`     |   ✅   | Sse find returns null for different slot                                   |
-|  16 | `test_sse_find_after_both_slots_allocated`          |   ✅   | Sse find after both slots allocated                                        |
-|  17 | `test_sse_find_checks_slot_id_not_sse_id`           |   ✅   | sse_pool[0] → slot 3; sse_find(3) must return it, not sse_find(0)          |
-|  18 | `test_sse_free_deactivates_slot`                    |   ✅   | Sse free deactivates slot                                                  |
-|  19 | `test_sse_free_restores_sse_id`                     |   ✅   | Sse free restores sse id                                                   |
-|  20 | `test_sse_free_makes_slot_findable_as_null`         |   ✅   | Sse free makes slot findable as null                                       |
-|  21 | `test_sse_free_clears_path`                         |   ✅   | Sse free clears path                                                       |
-|  22 | `test_sse_free_nop_on_unallocated`                  |   ✅   | Sse free nop on unallocated                                                |
-|  23 | `test_sse_alloc_after_free_succeeds`                |   ✅   | Sse alloc after free succeeds                                              |
-|  24 | `test_sse_free_only_frees_matching_slot`            |   ✅   | Sse free only frees matching slot                                          |
-|  25 | `test_sse_write_null_data_returns_false`            |   ✅   | Sse write null data returns false                                          |
-|  26 | `test_sse_write_returns_false_when_conn_not_active` |   ✅   | Sse write returns false when conn not active                               |
-|  27 | `test_sse_write_returns_false_when_pcb_null`        |   ✅   | Sse write returns false when pcb null                                      |
-|  28 | `test_sse_write_data_only_returns_true`             |   ✅   | Sse write data only returns true                                           |
-|  29 | `test_sse_write_with_event_returns_true`            |   ✅   | Sse write with event returns true                                          |
-|  30 | `test_sse_write_with_id_returns_true`               |   ✅   | Sse write with id returns true                                             |
-|  31 | `test_sse_write_with_all_fields_returns_true`       |   ✅   | Sse write with all fields returns true                                     |
-|  32 | `test_sse_write_does_not_affect_other_slots`        |   ✅   | Write to slot 0 -- slot 1 state must be unchanged                          |
-|  33 | `test_http_conn_open_releases_stale_sse_binding`    |   ✅   | Http conn open releases stale sse binding                                  |
-|  34 | `test_http_conn_open_leaves_other_slot_sse_binding` |   ✅   | Http conn open leaves other slot sse binding                               |
-|  35 | `test_sse_format_data_only`                         |   ✅   | Sse format data only                                                       |
-|  36 | `test_sse_format_event_and_data`                    |   ✅   | Sse format event and data                                                  |
-|  37 | `test_sse_format_id_and_data`                       |   ✅   | Sse format id and data                                                     |
-|  38 | `test_sse_format_all_fields_ordering`               |   ✅   | Field order per WHATWG: event, then id, then data (blank line terminates). |
-|  39 | `test_sse_format_null_data_returns_zero`            |   ✅   | Sse format null data returns zero                                          |
-|  40 | `test_sse_format_overflow_returns_zero`             |   ✅   | A record that cannot fit must report 0, never a partial (truncated) frame. |
-|  41 | `test_sse_format_zero_size_returns_zero`            |   ✅   | Sse format zero size returns zero                                          |
-|  42 | `stress_sse_alloc_free_100_cycles`                  |   ✅   | Stress - Sse alloc free 100 cycles                                         |
-|  43 | `stress_sse_alloc_free_both_slots_alternating`      |   ✅   | Stress - Sse alloc free both slots alternating                             |
-|  44 | `stress_sse_write_100_calls`                        |   ✅   | Stress - Sse write 100 calls                                               |
-|  45 | `stress_sse_find_with_full_pool`                    |   ✅   | Stress - Sse find with full pool                                           |
-|  46 | `stress_sse_write_slot_isolation`                   |   ✅   | Stress - Sse write slot isolation                                          |
+|   # | Test                                                | Status | Description                                                                   |
+| --: | :-------------------------------------------------- | :----: | :---------------------------------------------------------------------------- |
+|   1 | `test_sse_pool_size`                                |   ✅   | Sse pool size                                                                 |
+|   2 | `test_sse_ids_match_indices_after_init`             |   ✅   | Sse ids match indices after init                                              |
+|   3 | `test_sse_all_inactive_after_init`                  |   ✅   | Sse all inactive after init                                                   |
+|   4 | `test_sse_path_empty_after_init`                    |   ✅   | Sse path empty after init                                                     |
+|   5 | `test_sse_alloc_returns_non_null`                   |   ✅   | Sse alloc returns non null                                                    |
+|   6 | `test_sse_alloc_sets_active`                        |   ✅   | Sse alloc sets active                                                         |
+|   7 | `test_sse_alloc_sets_slot_id`                       |   ✅   | Sse alloc sets slot id                                                        |
+|   8 | `test_sse_alloc_stores_path`                        |   ✅   | Sse alloc stores path                                                         |
+|   9 | `test_sse_alloc_stores_different_paths_per_slot`    |   ✅   | Sse alloc stores different paths per slot                                     |
+|  10 | `test_sse_alloc_path_truncated_to_max`              |   ✅   | Build a path longer than MAX_PATH_LEN                                         |
+|  11 | `test_sse_alloc_pool_full_returns_null`             |   ✅   | Sse alloc pool full returns null                                              |
+|  12 | `test_sse_alloc_sse_id_is_pool_index`               |   ✅   | First free slot is 0 → dws_sse_id should be 0                                 |
+|  13 | `test_sse_find_returns_correct_conn`                |   ✅   | Sse find returns correct conn                                                 |
+|  14 | `test_sse_find_returns_null_when_empty`             |   ✅   | Sse find returns null when empty                                              |
+|  15 | `test_sse_find_returns_null_for_different_slot`     |   ✅   | Sse find returns null for different slot                                      |
+|  16 | `test_sse_find_after_both_slots_allocated`          |   ✅   | Sse find after both slots allocated                                           |
+|  17 | `test_sse_find_checks_slot_id_not_sse_id`           |   ✅   | dws_sse_pool[0] → slot 3; dws_sse_find(3) must return it, not dws_sse_find(0) |
+|  18 | `test_sse_free_deactivates_slot`                    |   ✅   | Sse free deactivates slot                                                     |
+|  19 | `test_sse_free_restores_sse_id`                     |   ✅   | Sse free restores sse id                                                      |
+|  20 | `test_sse_free_makes_slot_findable_as_null`         |   ✅   | Sse free makes slot findable as null                                          |
+|  21 | `test_sse_free_clears_path`                         |   ✅   | Sse free clears path                                                          |
+|  22 | `test_sse_free_nop_on_unallocated`                  |   ✅   | Sse free nop on unallocated                                                   |
+|  23 | `test_sse_alloc_after_free_succeeds`                |   ✅   | Sse alloc after free succeeds                                                 |
+|  24 | `test_sse_free_only_frees_matching_slot`            |   ✅   | Sse free only frees matching slot                                             |
+|  25 | `test_sse_write_null_data_returns_false`            |   ✅   | Sse write null data returns false                                             |
+|  26 | `test_sse_write_returns_false_when_conn_not_active` |   ✅   | Sse write returns false when conn not active                                  |
+|  27 | `test_sse_write_returns_false_when_pcb_null`        |   ✅   | Sse write returns false when pcb null                                         |
+|  28 | `test_sse_write_data_only_returns_true`             |   ✅   | Sse write data only returns true                                              |
+|  29 | `test_sse_write_with_event_returns_true`            |   ✅   | Sse write with event returns true                                             |
+|  30 | `test_sse_write_with_id_returns_true`               |   ✅   | Sse write with id returns true                                                |
+|  31 | `test_sse_write_with_all_fields_returns_true`       |   ✅   | Sse write with all fields returns true                                        |
+|  32 | `test_sse_write_does_not_affect_other_slots`        |   ✅   | Write to slot 0 -- slot 1 state must be unchanged                             |
+|  33 | `test_http_conn_open_releases_stale_sse_binding`    |   ✅   | Http conn open releases stale sse binding                                     |
+|  34 | `test_http_conn_open_leaves_other_slot_sse_binding` |   ✅   | Http conn open leaves other slot sse binding                                  |
+|  35 | `test_sse_format_data_only`                         |   ✅   | Sse format data only                                                          |
+|  36 | `test_sse_format_event_and_data`                    |   ✅   | Sse format event and data                                                     |
+|  37 | `test_sse_format_id_and_data`                       |   ✅   | Sse format id and data                                                        |
+|  38 | `test_sse_format_all_fields_ordering`               |   ✅   | Field order per WHATWG: event, then id, then data (blank line terminates).    |
+|  39 | `test_sse_format_null_data_returns_zero`            |   ✅   | Sse format null data returns zero                                             |
+|  40 | `test_sse_format_overflow_returns_zero`             |   ✅   | A record that cannot fit must report 0, never a partial (truncated) frame.    |
+|  41 | `test_sse_format_zero_size_returns_zero`            |   ✅   | Sse format zero size returns zero                                             |
+|  42 | `stress_sse_alloc_free_100_cycles`                  |   ✅   | Stress - Sse alloc free 100 cycles                                            |
+|  43 | `stress_sse_alloc_free_both_slots_alternating`      |   ✅   | Stress - Sse alloc free both slots alternating                                |
+|  44 | `stress_sse_write_100_calls`                        |   ✅   | Stress - Sse write 100 calls                                                  |
+|  45 | `stress_sse_find_with_full_pool`                    |   ✅   | Stress - Sse find with full pool                                              |
+|  46 | `stress_sse_write_slot_isolation`                   |   ✅   | Stress - Sse write slot isolation                                             |
 
 </details>
 
@@ -2536,7 +2536,7 @@ _Unit tests for the SNMP ASN.1 BER codec. Encodings are checked against_
 |  17 | `test_enc_len_long_form`                                 |   ✅   | A value >= 128 octets forces the long-form definite length (0x81 <len>).        |
 |  18 | `test_put_oid_guards`                                    |   ✅   | Put oid guards                                                                  |
 |  19 | `test_seq_end_overflow`                                  |   ✅   | A content region larger than the 16-bit back-patched length field fails closed. |
-|  20 | `test_read_oid_rejects`                                  |   ✅   | ber_read_oid on a non-OID TLV.                                                  |
+|  20 | `test_read_oid_rejects`                                  |   ✅   | dws_ber_read_oid on a non-OID TLV.                                              |
 |  21 | `test_ber_skip`                                          |   ✅   | Ber skip                                                                        |
 
 </details>
@@ -2548,7 +2548,7 @@ _Unit tests for the SNMP ASN.1 BER codec. Encodings are checked against_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the SNMP v1/v2c agent core (snmp_agent_process). Each test_
+_Unit tests for the SNMP v1/v2c agent core (dws_snmp_agent_process). Each test_
 
 |   # | Test                                        | Status | Description                                                                       |
 | --: | :------------------------------------------ | :----: | :-------------------------------------------------------------------------------- |
@@ -3791,7 +3791,7 @@ _Unit tests for the RTCM 3.x pure codec (services/gnss/rtcm3): CRC-24Q, MSB-firs
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the GNSS survey-in core (services/gnss/gnss_survey): the WGS84 geodetic->ECEF transform,_
+_Unit tests for the GNSS survey-in core (services/gnss/dws_gnss_survey): the WGS84 geodetic->ECEF transform,_
 
 |   # | Test                                       | Status | Description                                          |
 | --: | :----------------------------------------- | :----: | :--------------------------------------------------- |
@@ -3827,7 +3827,7 @@ _Unit tests for the GNSS survey-in core (services/gnss/gnss_survey): the WGS84 g
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the NTRIP caster protocol codec (services/gnss/ntrip_caster): rover request parsing_
+_Unit tests for the NTRIP caster protocol codec (services/gnss/dws_ntrip_caster): rover request parsing_
 
 |   # | Test                                              | Status | Description                                                         |
 | --: | :------------------------------------------------ | :----: | :------------------------------------------------------------------ |
@@ -4017,7 +4017,7 @@ _Unit tests for the Sparkplug B codec (services/sparkplug): the topic builder, t
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the Modbus master codec (services/modbus/modbus_master): request_
+_Unit tests for the Modbus master codec (services/modbus/dws_modbus_master): request_
 
 |   # | Test                               | Status | Description                                                             |
 | --: | :--------------------------------- | :----: | :---------------------------------------------------------------------- |
@@ -4381,7 +4381,7 @@ _Unit tests for OPC UA (services/opcua): the Binary built-in type codec (incl._
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Round-trip tests for the OPC UA client (services/opcua_client): the client builds_
+_Round-trip tests for the OPC UA client (services/dws_opcua_client): the client builds_
 
 |   # | Test                                          | Status | Description                                                                               |
 | --: | :-------------------------------------------- | :----: | :---------------------------------------------------------------------------------------- |
@@ -4499,7 +4499,7 @@ _HTTP Range requests / 206 Partial Content (DWS_ENABLE_RANGE). Each test_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the RFC 5424 syslog client (syslog_format formatter + syslog_init /_
+_Unit tests for the RFC 5424 syslog client (dws_syslog_format formatter + dws_syslog_init /_
 
 |   # | Test                                | Status | Description                  |
 | --: | :---------------------------------- | :----: | :--------------------------- |
@@ -4752,7 +4752,7 @@ _Unit tests for the SMTP client dialogue engine (services/smtp/smtp_run). A scri
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the NTP server response codec (services/ntp_server_build_response): a pure_
+_Unit tests for the NTP server response codec (services/dws_ntp_server_build_response): a pure_
 
 |   # | Test                              | Status | Description                |
 | --: | :-------------------------------- | :----: | :------------------------- |
@@ -4993,7 +4993,7 @@ _Unit tests for the HPACK codec (network_drivers/presentation/http2/hpack) again
 |   5 | `test_dynamic_name_and_index`  |   ✅   | Dynamic name and index                                              |
 |   6 | `test_hpack_decode_errors`     |   ✅   | Hpack decode errors                                                 |
 |   7 | `test_hpack_buffer_bounds`     |   ✅   | Hpack buffer bounds                                                 |
-|   8 | `test_hpack_encode_paths`      |   ✅   | hpack_dyn_init clamps a too-large max to the table storage.         |
+|   8 | `test_hpack_encode_paths`      |   ✅   | dws_hpack_dyn_init clamps a too-large max to the table storage.     |
 |   9 | `test_int_coding`              |   ✅   | C.1.1: 10, prefix 5 -> 0x0a                                         |
 |  10 | `test_huffman`                 |   ✅   | Huffman                                                             |
 |  11 | `test_decode_c31_and_index`    |   ✅   | RFC 7541 C.3.1: GET / with :authority www.example.com (no Huffman). |
@@ -5011,7 +5011,7 @@ _Unit tests for the HPACK codec (network_drivers/presentation/http2/hpack) again
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the HTTP/2 frame layer (network_drivers/presentation/http2/h2_frame, RFC 9113):_
+_Unit tests for the HTTP/2 frame layer (network_drivers/presentation/http2/dws_h2_frame, RFC 9113):_
 
 |   # | Test                                     | Status | Description                                                       |
 | --: | :--------------------------------------- | :----: | :---------------------------------------------------------------- |
@@ -5032,7 +5032,7 @@ _Unit tests for the HTTP/2 frame layer (network_drivers/presentation/http2/h2_fr
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the HTTP/2 connection engine (network_drivers/presentation/http2/h2_conn,_
+_Unit tests for the HTTP/2 connection engine (network_drivers/presentation/http2/dws_h2_conn,_
 
 |   # | Test                                   | Status | Description                     |
 | --: | :------------------------------------- | :----: | :------------------------------ |
@@ -5085,7 +5085,7 @@ _Unit tests for the QUIC variable-length integer codec (network_drivers/presenta
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the HTTP/3 framing layer (network_drivers/presentation/http3/h3_frame, RFC 9114_
+_Unit tests for the HTTP/3 framing layer (network_drivers/presentation/http3/dws_h3_frame, RFC 9114_
 
 |   # | Test                         | Status | Description                                                     |
 | --: | :--------------------------- | :----: | :-------------------------------------------------------------- |
@@ -6187,7 +6187,7 @@ _Host tests for services/wal: record framing + CRC32 + crash-recovery replay (th
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Host tests for services/wal wal_store: A/B superblock + checkpoint + mount/recover over a RAM device._
+_Host tests for services/wal dws_wal_store: A/B superblock + checkpoint + mount/recover over a RAM device._
 
 |   # | Test                                               | Status | Description                                 |
 | --: | :------------------------------------------------- | :----: | :------------------------------------------ |
@@ -6232,19 +6232,19 @@ _Host tests for services/wal wal_store: A/B superblock + checkpoint + mount/reco
 
 _Host tests for services/j2735: the ASN.1 UPER primitive codec + the BSMcore block._
 
-|   # | Test                               | Status | Description                                                                                   |
-| --: | :--------------------------------- | :----: | :-------------------------------------------------------------------------------------------- |
-|   1 | `test_cint_bits`                   |   ✅   | Cint bits                                                                                     |
-|   2 | `test_bit_writer_pattern`          |   ✅   | Write 0b101 (3 bits) then 0b11 (2 bits): stream 10111 000 -> 0xB8.                            |
-|   3 | `test_writer_null_and_zero`        |   ✅   | A null buffer (or zero cap) leaves the writer not-ok and must not dereference it.             |
-|   4 | `test_cint_roundtrip`              |   ✅   | Cint roundtrip                                                                                |
-|   5 | `test_bsm_core_roundtrip`          |   ✅   | Bsm core roundtrip                                                                            |
-|   6 | `test_bsm_core_bit_length`         |   ✅   | msgCnt 7 + id 32 + secMark 16 + lat 31 + long 32 + elev 16 + speed 13 + heading 15 = 162 bits |
-|   7 | `test_spat_roundtrip`              |   ✅   | Spat roundtrip                                                                                |
-|   8 | `test_spat_decode_too_many`        |   ✅   | Only room for 1 but 2 encoded -> false.                                                       |
-|   9 | `test_map_roundtrip`               |   ✅   | Map roundtrip                                                                                 |
-|  10 | `test_uper_overflow_and_bsm_guard` |   ✅   | Uper overflow and bsm guard                                                                   |
-|  11 | `test_j2735_guards_and_truncation` |   ✅   | uper_put_cint / uper_get_cint with a single-value (zero-bit) range: nothing on the wire.      |
+|   # | Test                               | Status | Description                                                                                      |
+| --: | :--------------------------------- | :----: | :----------------------------------------------------------------------------------------------- |
+|   1 | `test_cint_bits`                   |   ✅   | Cint bits                                                                                        |
+|   2 | `test_bit_writer_pattern`          |   ✅   | Write 0b101 (3 bits) then 0b11 (2 bits): stream 10111 000 -> 0xB8.                               |
+|   3 | `test_writer_null_and_zero`        |   ✅   | A null buffer (or zero cap) leaves the writer not-ok and must not dereference it.                |
+|   4 | `test_cint_roundtrip`              |   ✅   | Cint roundtrip                                                                                   |
+|   5 | `test_bsm_core_roundtrip`          |   ✅   | Bsm core roundtrip                                                                               |
+|   6 | `test_bsm_core_bit_length`         |   ✅   | msgCnt 7 + id 32 + secMark 16 + lat 31 + long 32 + elev 16 + speed 13 + heading 15 = 162 bits    |
+|   7 | `test_spat_roundtrip`              |   ✅   | Spat roundtrip                                                                                   |
+|   8 | `test_spat_decode_too_many`        |   ✅   | Only room for 1 but 2 encoded -> false.                                                          |
+|   9 | `test_map_roundtrip`               |   ✅   | Map roundtrip                                                                                    |
+|  10 | `test_uper_overflow_and_bsm_guard` |   ✅   | Uper overflow and bsm guard                                                                      |
+|  11 | `test_j2735_guards_and_truncation` |   ✅   | dws_uper_put_cint / dws_uper_get_cint with a single-value (zero-bit) range: nothing on the wire. |
 
 </details>
 
@@ -7167,7 +7167,7 @@ _Unit tests for the QUIC packet header + packet-number codec (network_drivers/pr
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the QUIC frame codec (network_drivers/presentation/http3/quic_frame, RFC 9000_
+_Unit tests for the QUIC frame codec (network_drivers/presentation/http3/dws_quic_frame, RFC 9000_
 
 |   # | Test                           | Status | Description                                                                                          |
 | --: | :----------------------------- | :----: | :--------------------------------------------------------------------------------------------------- |
@@ -7192,7 +7192,7 @@ _Unit tests for the QUIC frame codec (network_drivers/presentation/http3/quic_fr
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for QUIC Initial packet crypto (network_drivers/presentation/http3/quic_hkdf,_
+_Unit tests for QUIC Initial packet crypto (network_drivers/presentation/http3/dws_quic_hkdf,_
 
 |   # | Test                                | Status | Description                  |
 | --: | :---------------------------------- | :----: | :--------------------------- |
@@ -7278,7 +7278,7 @@ _DTLS 1.3 handshake framing + reliability tests (RFC 9147 §5, §7): the 12-byte
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 §4.1.4 / §4.4.1): the_
+_TLS 1.3 messages the DTLS 1.3 handshake adds to dws_tls13_msg (RFC 8446 §4.1.4 / §4.4.1): the_
 
 |   # | Test                              | Status | Description                                                                         |
 | --: | :-------------------------------- | :----: | :---------------------------------------------------------------------------------- |
@@ -7369,7 +7369,7 @@ _CoAP-over-DTLS server front-end (coaps_server.h): the per-peer DtlsConn pool + 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the TLS 1.3 key schedule (network_drivers/presentation/http3/tls13_kdf; RFC 8446_
+_Unit tests for the TLS 1.3 key schedule (network_drivers/presentation/http3/dws_tls13_kdf; RFC 8446_
 
 |   # | Test                            | Status | Description               |
 | --: | :------------------------------ | :----: | :------------------------ |
@@ -7389,7 +7389,7 @@ _Unit tests for the TLS 1.3 key schedule (network_drivers/presentation/http3/tls
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the QUIC transport-parameters codec (network_drivers/presentation/http3/quic_tp;_
+_Unit tests for the QUIC transport-parameters codec (network_drivers/presentation/http3/dws_quic_tp;_
 
 |   # | Test                        | Status | Description                                                                                  |
 | --: | :-------------------------- | :----: | :------------------------------------------------------------------------------------------- |
@@ -7411,7 +7411,7 @@ _Unit tests for the QUIC transport-parameters codec (network_drivers/presentatio
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the TLS 1.3 handshake messages (network_drivers/presentation/http3/tls13_msg;_
+_Unit tests for the TLS 1.3 handshake messages (network_drivers/presentation/http3/dws_tls13_msg;_
 
 |   # | Test                                           | Status | Description                                                                                     |
 | --: | :--------------------------------------------- | :----: | :---------------------------------------------------------------------------------------------- |
@@ -7491,7 +7491,7 @@ _Unit tests for the TLS 1.3 server handshake state machine (network_drivers/pres
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the QUIC v1 server connection engine (network_drivers/presentation/http3/quic_conn;_
+_Unit tests for the QUIC v1 server connection engine (network_drivers/presentation/http3/dws_quic_conn;_
 
 |   # | Test                                       | Status | Description                         |
 | --: | :----------------------------------------- | :----: | :---------------------------------- |
@@ -7532,7 +7532,7 @@ _Unit tests for the QUIC v1 server connection engine (network_drivers/presentati
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the HTTP/3 application engine (network_drivers/presentation/http3/h3_conn; RFC_
+_Unit tests for the HTTP/3 application engine (network_drivers/presentation/http3/dws_h3_conn; RFC_
 
 |   # | Test                                  | Status | Description                    |
 | --: | :------------------------------------ | :----: | :----------------------------- |

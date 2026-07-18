@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_frame.cpp
- * @brief QUIC frame parsing and building - implementation. See quic_frame.h.
+ * @file dws_quic_frame.cpp
+ * @brief QUIC frame parsing and building - implementation. See dws_quic_frame.h.
  */
 
 #include "network_drivers/presentation/http3/quic_frame.h"
@@ -19,14 +19,14 @@ namespace
 bool rd(const uint8_t *buf, size_t len, size_t *pos, uint64_t *v)
 {
     size_t c = 0;
-    if (!quic_varint_decode(buf + *pos, len - *pos, v, &c))
+    if (!dws_quic_varint_decode(buf + *pos, len - *pos, v, &c))
         return false;
     *pos += c;
     return true;
 }
 } // namespace
 
-size_t quic_frame_parse(const uint8_t *buf, size_t len, QuicFrame *out)
+size_t dws_quic_frame_parse(const uint8_t *buf, size_t len, QuicFrame *out)
 {
     size_t pos = 0;
     uint64_t type = 0;
@@ -179,7 +179,7 @@ size_t quic_frame_parse(const uint8_t *buf, size_t len, QuicFrame *out)
     return 0; // a genuinely unknown / reserved frame type
 }
 
-size_t quic_build_padding(uint8_t *out, size_t cap, size_t n)
+size_t dws_quic_build_padding(uint8_t *out, size_t cap, size_t n)
 {
     if (n > cap)
         return 0;
@@ -187,7 +187,7 @@ size_t quic_build_padding(uint8_t *out, size_t cap, size_t n)
     return n;
 }
 
-size_t quic_build_ping(uint8_t *out, size_t cap)
+size_t dws_quic_build_ping(uint8_t *out, size_t cap)
 {
     if (cap < 1)
         return 0;
@@ -195,7 +195,7 @@ size_t quic_build_ping(uint8_t *out, size_t cap)
     return 1;
 }
 
-size_t quic_build_handshake_done(uint8_t *out, size_t cap)
+size_t dws_quic_build_handshake_done(uint8_t *out, size_t cap)
 {
     if (cap < 1)
         return 0;
@@ -208,7 +208,7 @@ namespace
 // Append a varint; returns false on overflow.
 bool wr(uint8_t *out, size_t cap, size_t *pos, uint64_t v)
 {
-    size_t c = quic_varint_encode(out + *pos, cap - *pos, v);
+    size_t c = dws_quic_varint_encode(out + *pos, cap - *pos, v);
     if (!c)
         return false;
     *pos += c;
@@ -216,7 +216,7 @@ bool wr(uint8_t *out, size_t cap, size_t *pos, uint64_t v)
 }
 } // namespace
 
-size_t quic_build_ack(uint8_t *out, size_t cap, uint64_t largest, uint64_t delay, uint64_t first_range)
+size_t dws_quic_build_ack(uint8_t *out, size_t cap, uint64_t largest, uint64_t delay, uint64_t first_range)
 {
     size_t pos = 0;
     if (!wr(out, cap, &pos, QuicFrameType::QUIC_FT_ACK) || !wr(out, cap, &pos, largest) || !wr(out, cap, &pos, delay) ||
@@ -225,7 +225,7 @@ size_t quic_build_ack(uint8_t *out, size_t cap, uint64_t largest, uint64_t delay
     return pos;
 }
 
-size_t quic_build_crypto(uint8_t *out, size_t cap, uint64_t offset, const uint8_t *data, size_t len)
+size_t dws_quic_build_crypto(uint8_t *out, size_t cap, uint64_t offset, const uint8_t *data, size_t len)
 {
     size_t pos = 0;
     if (!wr(out, cap, &pos, QuicFrameType::QUIC_FT_CRYPTO) || !wr(out, cap, &pos, offset) || !wr(out, cap, &pos, len))
@@ -237,8 +237,8 @@ size_t quic_build_crypto(uint8_t *out, size_t cap, uint64_t offset, const uint8_
     return pos + len;
 }
 
-size_t quic_build_stream(uint8_t *out, size_t cap, uint64_t id, uint64_t offset, const uint8_t *data, size_t len,
-                         bool fin)
+size_t dws_quic_build_stream(uint8_t *out, size_t cap, uint64_t id, uint64_t offset, const uint8_t *data, size_t len,
+                             bool fin)
 {
     uint64_t type = QuicFrameType::QUIC_FT_STREAM | QuicStreamFlag::QUIC_STREAM_LEN |
                     (offset ? QuicStreamFlag::QUIC_STREAM_OFF : 0) | (fin ? QuicStreamFlag::QUIC_STREAM_FIN : 0);
@@ -256,7 +256,7 @@ size_t quic_build_stream(uint8_t *out, size_t cap, uint64_t id, uint64_t offset,
     return pos + len;
 }
 
-size_t quic_build_max_data(uint8_t *out, size_t cap, uint64_t max)
+size_t dws_quic_build_max_data(uint8_t *out, size_t cap, uint64_t max)
 {
     size_t pos = 0;
     if (!wr(out, cap, &pos, QuicFrameType::QUIC_FT_MAX_DATA) || !wr(out, cap, &pos, max))
@@ -264,8 +264,8 @@ size_t quic_build_max_data(uint8_t *out, size_t cap, uint64_t max)
     return pos;
 }
 
-size_t quic_build_connection_close(uint8_t *out, size_t cap, uint64_t error_code, uint64_t frame_type,
-                                   const char *reason, size_t reason_len)
+size_t dws_quic_build_connection_close(uint8_t *out, size_t cap, uint64_t error_code, uint64_t frame_type,
+                                       const char *reason, size_t reason_len)
 {
     size_t pos = 0;
     if (!wr(out, cap, &pos, QuicFrameType::QUIC_FT_CONNECTION_CLOSE) || !wr(out, cap, &pos, error_code) ||

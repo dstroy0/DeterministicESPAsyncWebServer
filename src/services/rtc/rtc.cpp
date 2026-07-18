@@ -50,7 +50,7 @@ void civil_from_days(long z, int *y, int *m, int *d)
 }
 } // namespace
 
-bool rtc_regs_to_epoch(const uint8_t r[RTC_REG_COUNT], uint32_t *epoch)
+bool dws_rtc_regs_to_epoch(const uint8_t r[RTC_REG_COUNT], uint32_t *epoch)
 {
     if (!r || !epoch)
         return false;
@@ -82,7 +82,7 @@ bool rtc_regs_to_epoch(const uint8_t r[RTC_REG_COUNT], uint32_t *epoch)
     return true;
 }
 
-void rtc_epoch_to_regs(uint32_t epoch, uint8_t r[RTC_REG_COUNT])
+void dws_rtc_epoch_to_regs(uint32_t epoch, uint8_t r[RTC_REG_COUNT])
 {
     long days = (long)(epoch / 86400u);
     int rem = (int)(epoch % 86400u);
@@ -108,13 +108,13 @@ void rtc_epoch_to_regs(uint32_t epoch, uint8_t r[RTC_REG_COUNT])
 #include "services/i2c.h"
 #include <Wire.h>
 
-bool rtc_begin()
+bool dws_rtc_begin()
 {
     dws_i2c_begin();
     return true;
 }
 
-uint32_t rtc_read_epoch()
+uint32_t dws_rtc_read_epoch()
 {
     Wire.beginTransmission(DWS_RTC_I2C_ADDR);
     Wire.write((uint8_t)0x00); // point at register 0 (seconds)
@@ -126,13 +126,13 @@ uint32_t rtc_read_epoch()
     for (int i = 0; i < RTC_REG_COUNT; i++)
         r[i] = (uint8_t)Wire.read();
     uint32_t e = 0;
-    return rtc_regs_to_epoch(r, &e) ? e : 0;
+    return dws_rtc_regs_to_epoch(r, &e) ? e : 0;
 }
 
-bool rtc_set_epoch(uint32_t epoch)
+bool dws_rtc_set_epoch(uint32_t epoch)
 {
     uint8_t r[RTC_REG_COUNT];
-    rtc_epoch_to_regs(epoch, r);
+    dws_rtc_epoch_to_regs(epoch, r);
     Wire.beginTransmission(DWS_RTC_I2C_ADDR);
     Wire.write((uint8_t)0x00);
     for (int i = 0; i < RTC_REG_COUNT; i++)
@@ -140,26 +140,26 @@ bool rtc_set_epoch(uint32_t epoch)
     return Wire.endTransmission() == 0;
 }
 
-uint32_t rtc_time_source()
+uint32_t dws_rtc_time_source()
 {
-    return rtc_read_epoch();
+    return dws_rtc_read_epoch();
 }
 
 #else // host build: no I2C. The BCD<->epoch conversions above are host-tested.
 
-bool rtc_begin()
+bool dws_rtc_begin()
 {
     return true;
 }
-uint32_t rtc_read_epoch()
+uint32_t dws_rtc_read_epoch()
 {
     return 0;
 }
-bool rtc_set_epoch(uint32_t)
+bool dws_rtc_set_epoch(uint32_t)
 {
     return false;
 }
-uint32_t rtc_time_source()
+uint32_t dws_rtc_time_source()
 {
     return 0;
 }

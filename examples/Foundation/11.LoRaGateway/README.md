@@ -9,7 +9,7 @@ simulated feed, this drives an actual **Semtech SX127x / RFM95-96** over SPI and
 its frames to the [gateway](../10.RadioGateway/README.md).
 
 ```
-RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> dws_gateway_uplink()
+RFM95 RX --SPI--> dws_lora_recv() --> dws_lora_frame_parse() --> dws_gateway_uplink()
                                                               |
                                            envelope + topic  lora/0/<from>
                                                               |
@@ -18,26 +18,26 @@ RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> dws_gateway_uplink()
 
 The `services/lora` module has two layers, and only the first is hardware-specific:
 
-- **Driver** - the SX127x register protocol over a `lora_bus` (two callbacks that read /
+- **Driver** - the SX127x register protocol over a `dws_lora_bus` (two callbacks that read /
   write a chip register). Here they are a few SPI transfers; that is the _only_ code tied
   to your board.
-- **Codec** - `lora_frame_parse` / `lora_frame_build` handle the RadioHead 4-byte header
+- **Codec** - `dws_lora_frame_parse` / `dws_lora_frame_build` handle the RadioHead 4-byte header
   (`to` / `from` / `id` / `flags`) that sits on top of the header-less LoRa PHY.
 
 ```cpp
-lora_config cfg = {}; cfg.freq_hz = 915000000; cfg.spreading = 7; cfg.bandwidth = 7;
+dws_lora_config cfg = {}; cfg.freq_hz = 915000000; cfg.spreading = 7; cfg.bandwidth = 7;
 cfg.coding_rate = 1; cfg.sync_word = 0x12; cfg.tx_power = 17;
-lora_init(&bus, &cfg);           // verifies the chip id, applies the config
-lora_set_rx(&bus);               // listen
+dws_lora_init(&bus, &cfg);           // verifies the chip id, applies the config
+dws_lora_set_rx(&bus);               // listen
 
-int n = lora_recv(&bus, buf, sizeof(buf), &rssi);   // -> a frame, or -1
-lora_header h; const uint8_t *payload; uint16_t plen;
-lora_frame_parse(buf, n, &h, &payload, &plen);
+int n = dws_lora_recv(&bus, buf, sizeof(buf), &rssi);   // -> a frame, or -1
+dws_lora_header h; const uint8_t *payload; uint16_t plen;
+dws_lora_frame_parse(buf, n, &h, &payload, &plen);
 dws_gateway_uplink(0, h.from, payload, plen, rssi);      // bridge northbound
 ```
 
-A **downlink** (a northbound command) is the mirror: `lora_frame_build()` then
-`lora_send()`, driven by the gateway port's transmit callback.
+A **downlink** (a northbound command) is the mirror: `dws_lora_frame_build()` then
+`dws_lora_send()`, driven by the gateway port's transmit callback.
 
 ## Wiring (ESP32 <-> RFM95)
 

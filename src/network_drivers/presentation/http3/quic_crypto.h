@@ -2,21 +2,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_crypto.h
+ * @file dws_quic_crypto.h
  * @brief QUIC packet protection: Initial secrets, AEAD payload protection, header protection,
  *        and the Retry integrity tag (RFC 9001).
  *
- * This ties the HKDF key schedule (quic_hkdf) and AEAD_AES_128_GCM (quic_aead) into the two QUIC
+ * This ties the HKDF key schedule (dws_quic_hkdf) and AEAD_AES_128_GCM (dws_quic_aead) into the two QUIC
  * packet-protection operations of RFC 9001 sec 5:
  *
- *  - quic_derive_initial_secrets() runs the sec 5.2 Initial key derivation: a fixed salt and the
+ *  - dws_quic_derive_initial_secrets() runs the sec 5.2 Initial key derivation: a fixed salt and the
  *    client's Destination Connection ID produce the client and server {key, iv, hp} triples that
  *    protect Initial packets (the only keys available before the TLS handshake yields more).
- *  - quic_packet_protect() / quic_packet_unprotect() perform sec 5.3 AEAD payload protection and
+ *  - dws_quic_packet_protect() / dws_quic_packet_unprotect() perform sec 5.3 AEAD payload protection and
  *    sec 5.4 header protection together, on a whole packet in a buffer. They take a {key, iv, hp}
  *    triple and a header form, so the same code protects Initial, Handshake, and 1-RTT packets -
  *    only the secrets differ. AES-128-GCM header protection samples a 16-byte AES-ECB block.
- *  - quic_retry_integrity_tag() computes the sec 5.8 Retry Integrity Tag (a fixed-key AEAD over the
+ *  - dws_quic_retry_integrity_tag() computes the sec 5.8 Retry Integrity Tag (a fixed-key AEAD over the
  *    Retry Pseudo-Packet).
  *
  * Pure, zero heap, host-tested against RFC 9001 Appendix A (client Initial A.2, server Initial A.3,
@@ -59,7 +59,7 @@ struct QuicInitialSecrets
  * HKDF-Expand-Label ("client in" / "server in") of that, and key/iv/hp are expanded from the
  * traffic secret. @p dcid is the Destination Connection ID from the client's first Initial packet.
  */
-void quic_derive_initial_secrets(const uint8_t *dcid, size_t dcid_len, QuicInitialSecrets *out);
+void dws_quic_derive_initial_secrets(const uint8_t *dcid, size_t dcid_len, QuicInitialSecrets *out);
 
 /**
  * @brief Expand one traffic secret into a {key, iv, hp} triple (RFC 9001 sec 5.1 labels).
@@ -68,7 +68,7 @@ void quic_derive_initial_secrets(const uint8_t *dcid, size_t dcid_len, QuicIniti
  * Initial derivation uses this internally; the Handshake and 1-RTT levels call it directly on the
  * TLS-derived handshake / application traffic secrets so every level shares one code path.
  */
-void quic_keys_from_secret(const uint8_t secret[QUIC_HKDF_HASH_LEN], QuicPacketKeys *out);
+void dws_quic_keys_from_secret(const uint8_t secret[QUIC_HKDF_HASH_LEN], QuicPacketKeys *out);
 
 /**
  * @brief Protect one QUIC packet in place: AEAD-seal the payload, then apply header protection.
@@ -89,8 +89,8 @@ void quic_keys_from_secret(const uint8_t secret[QUIC_HKDF_HASH_LEN], QuicPacketK
  * @param is_long      True for a long header (Initial/Handshake), false for a 1-RTT short header.
  * @return total protected packet length, or 0 on a capacity/parameter error.
  */
-size_t quic_packet_protect(uint8_t *pkt, size_t cap, size_t pn_offset, uint8_t pn_len, uint64_t full_pn,
-                           size_t payload_len, const QuicPacketKeys *keys, bool is_long);
+size_t dws_quic_packet_protect(uint8_t *pkt, size_t cap, size_t pn_offset, uint8_t pn_len, uint64_t full_pn,
+                               size_t payload_len, const QuicPacketKeys *keys, bool is_long);
 
 /**
  * @brief Remove header protection and AEAD-open one QUIC packet in place (RFC 9001 sec 5.3/5.4).
@@ -111,8 +111,8 @@ size_t quic_packet_protect(uint8_t *pkt, size_t cap, size_t pn_offset, uint8_t p
  * @param out_pn       Receives the reconstructed full packet number (may be NULL).
  * @return plaintext length, or (size_t)-1 on parameter error or AEAD authentication failure.
  */
-size_t quic_packet_unprotect(uint8_t *pkt, size_t pn_offset, size_t length, uint64_t largest_pn,
-                             const QuicPacketKeys *keys, bool is_long, uint8_t *out, uint64_t *out_pn);
+size_t dws_quic_packet_unprotect(uint8_t *pkt, size_t pn_offset, size_t length, uint64_t largest_pn,
+                                 const QuicPacketKeys *keys, bool is_long, uint8_t *out, uint64_t *out_pn);
 
 /**
  * @brief Compute the Retry Integrity Tag (RFC 9001 sec 5.8).
@@ -127,8 +127,8 @@ size_t quic_packet_unprotect(uint8_t *pkt, size_t pn_offset, size_t length, uint
  * @param retry_len      Length of @p retry.
  * @param tag            Output 16-byte integrity tag.
  */
-void quic_retry_integrity_tag(const uint8_t *odcid, size_t odcid_len, const uint8_t *retry, size_t retry_len,
-                              uint8_t tag[16]);
+void dws_quic_retry_integrity_tag(const uint8_t *odcid, size_t odcid_len, const uint8_t *retry, size_t retry_len,
+                                  uint8_t tag[16]);
 
 #endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_CRYPTO_H

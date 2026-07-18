@@ -46,7 +46,7 @@ struct nrf_bus
     void *ctx;
 };
 
-/** @brief Radio configuration applied by nrf24_init(). */
+/** @brief Radio configuration applied by dws_nrf24_init(). */
 struct nrf_config
 {
     const uint8_t *address; ///< 5-byte pipe-0 / TX address (RX and TX share it here).
@@ -60,26 +60,26 @@ struct nrf_config
  * @return true; false if a written register does not read back - i.e. the bus is not
  *         talking to the chip.
  */
-bool nrf24_init(const nrf_bus *bus, const nrf_config *cfg);
+bool dws_nrf24_init(const nrf_bus *bus, const nrf_config *cfg);
 
 /**
- * @brief Transmit @p len bytes (zero-padded to DWS_NRF24_PAYLOAD). Poll nrf24_tx_done().
+ * @brief Transmit @p len bytes (zero-padded to DWS_NRF24_PAYLOAD). Poll dws_nrf24_tx_done().
  * @return true; false if @p len exceeds DWS_NRF24_PAYLOAD.
  */
-bool nrf24_send(const nrf_bus *bus, const uint8_t *data, uint8_t len);
+bool dws_nrf24_send(const nrf_bus *bus, const uint8_t *data, uint8_t len);
 
 /** @brief True once a transmit has finished (STATUS TX_DS); clears the flag. */
-bool nrf24_tx_done(const nrf_bus *bus);
+bool dws_nrf24_tx_done(const nrf_bus *bus);
 
-/** @brief Enter receive mode (PRX + CE high); then poll nrf24_recv(). */
-void nrf24_set_rx(const nrf_bus *bus);
+/** @brief Enter receive mode (PRX + CE high); then poll dws_nrf24_recv(). */
+void dws_nrf24_set_rx(const nrf_bus *bus);
 
 /**
  * @brief If a frame is waiting, copy it into @p buf and report the pipe it arrived on.
  * @param[out] pipe set to the receiving pipe number 0..5 (may be null).
  * @return the payload width (DWS_NRF24_PAYLOAD, capped at @p cap), or -1 if none.
  */
-int nrf24_recv(const nrf_bus *bus, uint8_t *buf, uint8_t cap, uint8_t *pipe);
+int dws_nrf24_recv(const nrf_bus *bus, uint8_t *buf, uint8_t cap, uint8_t *pipe);
 
 #endif // DWS_ENABLE_NRF24
 

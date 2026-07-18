@@ -30,8 +30,8 @@
 #define SPB_MET_BOOL 14
 #define SPB_MET_STRING 15
 
-size_t spb_build_topic(char *buf, size_t cap, const char *group, const char *message_type, const char *edge_node,
-                       const char *device)
+size_t dws_spb_build_topic(char *buf, size_t cap, const char *group, const char *message_type, const char *edge_node,
+                           const char *device)
 {
     if (!buf || !group || !message_type || !edge_node)
         return 0;
@@ -67,64 +67,65 @@ size_t spb_build_topic(char *buf, size_t cap, const char *group, const char *mes
     return p;
 }
 
-size_t spb_build_metric(uint8_t *buf, size_t cap, const SpbMetric *m)
+size_t dws_spb_build_metric(uint8_t *buf, size_t cap, const SpbMetric *m)
 {
     if (!buf || !m)
         return 0;
     PbWriter w;
-    pb_writer_init(&w, buf, cap);
+    dws_pb_writer_init(&w, buf, cap);
     if (m->name)
-        pb_string(&w, SPB_MET_NAME, m->name);
+        dws_pb_string(&w, SPB_MET_NAME, m->name);
     if (m->has_alias)
-        pb_uint64(&w, SPB_MET_ALIAS, m->alias);
+        dws_pb_uint64(&w, SPB_MET_ALIAS, m->alias);
     if (m->has_timestamp)
-        pb_uint64(&w, SPB_MET_TIMESTAMP, m->timestamp);
-    pb_uint64(&w, SPB_MET_DATATYPE, m->datatype); // datatype is a uint32; the varint covers it
+        dws_pb_uint64(&w, SPB_MET_TIMESTAMP, m->timestamp);
+    dws_pb_uint64(&w, SPB_MET_DATATYPE, m->datatype); // datatype is a uint32; the varint covers it
     switch (m->kind)
     {
     case SpbMetricKind::SPB_M_INT:
-        pb_uint64(&w, SPB_MET_INT, m->int_value);
+        dws_pb_uint64(&w, SPB_MET_INT, m->int_value);
         break;
     case SpbMetricKind::SPB_M_LONG:
-        pb_uint64(&w, SPB_MET_LONG, m->long_value);
+        dws_pb_uint64(&w, SPB_MET_LONG, m->long_value);
         break;
     case SpbMetricKind::SPB_M_FLOAT:
-        pb_float(&w, SPB_MET_FLOAT, m->float_value);
+        dws_pb_float(&w, SPB_MET_FLOAT, m->float_value);
         break;
     case SpbMetricKind::SPB_M_DOUBLE:
-        pb_double(&w, SPB_MET_DOUBLE, m->double_value);
+        dws_pb_double(&w, SPB_MET_DOUBLE, m->double_value);
         break;
     case SpbMetricKind::SPB_M_BOOL:
-        pb_bool(&w, SPB_MET_BOOL, m->bool_value);
+        dws_pb_bool(&w, SPB_MET_BOOL, m->bool_value);
         break;
     case SpbMetricKind::SPB_M_STRING:
         if (m->string_value)
-            pb_string(&w, SPB_MET_STRING, m->string_value);
+            dws_pb_string(&w, SPB_MET_STRING, m->string_value);
         break;
     }
-    return pb_writer_finish(&w);
+    return dws_pb_writer_finish(&w);
 }
 
-size_t spb_build_payload(uint8_t *buf, size_t cap, uint64_t timestamp, uint64_t seq, const SpbMetric *metrics, size_t n)
+size_t dws_spb_build_payload(uint8_t *buf, size_t cap, uint64_t timestamp, uint64_t seq, const SpbMetric *metrics,
+                             size_t n)
 {
     if (!buf || (n && !metrics))
         return 0;
     PbWriter w;
-    pb_writer_init(&w, buf, cap);
-    pb_uint64(&w, SPB_PL_TIMESTAMP, timestamp);
+    dws_pb_writer_init(&w, buf, cap);
+    dws_pb_uint64(&w, SPB_PL_TIMESTAMP, timestamp);
     for (size_t i = 0; i < n; i++)
     {
         // Serialize each Metric submessage into a bounded temp, then add it as a
         // length-delimited field (Payload.metrics). A metric stays well under this bound
         // unless it carries a large string, in which case the build fails closed.
         uint8_t metric[DWS_SPB_METRIC_MAX];
-        size_t mlen = spb_build_metric(metric, sizeof(metric), &metrics[i]);
+        size_t mlen = dws_spb_build_metric(metric, sizeof(metric), &metrics[i]);
         if (!mlen)
             return 0;
-        pb_bytes(&w, SPB_PL_METRICS, metric, mlen);
+        dws_pb_bytes(&w, SPB_PL_METRICS, metric, mlen);
     }
-    pb_uint64(&w, SPB_PL_SEQ, seq);
-    return pb_writer_finish(&w);
+    dws_pb_uint64(&w, SPB_PL_SEQ, seq);
+    return dws_pb_writer_finish(&w);
 }
 
 #endif // DWS_ENABLE_SPARKPLUG

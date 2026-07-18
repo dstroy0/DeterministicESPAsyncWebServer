@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // CoAP over DTLS (coaps.h) end-to-end. An in-test DTLS 1.3 client completes the handshake against
-// dtls_conn, then sends a CoAP GET inside a DTLS application record; dws_coaps_process decrypts it, runs
+// dws_dtls_conn, then sends a CoAP GET inside a DTLS application record; dws_coaps_process decrypts it, runs
 // dws_coap_server_process against a registered resource, and returns the CoAP response in a DTLS record
 // that the client decrypts and checks. A byte off anywhere - transcript, keys, epoch, CoAP encoding -
 // would fail the AEAD open or the response check.
@@ -154,7 +154,7 @@ static bool sh_keyshare(const uint8_t *sh, size_t len, uint8_t pub[32])
 static size_t frag_to_tls(const uint8_t *payload, size_t plen, uint8_t *tls_out)
 {
     DtlsHsHeader hh;
-    if (!dtls_hs_header_parse(payload, plen, &hh) || hh.frag_offset != 0 || hh.frag_length != hh.length)
+    if (!dws_dtls_hs_header_parse(payload, plen, &hh) || hh.frag_offset != 0 || hh.frag_length != hh.length)
         return 0;
     tls_out[0] = hh.msg_type;
     tls_out[1] = (uint8_t)(hh.length >> 16);
@@ -195,10 +195,10 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
     ssh_sha256_init(&tr);
     ssh_sha256_update(&tr, ch, ch_len);
     uint8_t ch_frag[300];
-    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
-                                      sizeof(ch_frag));
+    size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                          sizeof(ch_frag));
     uint8_t ch_rec[320];
-    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+    size_t ch_rl = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
 
     uint8_t flight[2048];
     int fl = dws_dtls_conn_process(conn, ch_rec, ch_rl, flight, sizeof(flight));
@@ -206,7 +206,7 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
 
     size_t off = 0;
     DtlsPlaintext pt;
-    size_t rl = dtls_plaintext_parse(flight, (size_t)fl, &pt);
+    size_t rl = dws_dtls_plaintext_parse(flight, (size_t)fl, &pt);
     TEST_ASSERT_TRUE(rl > 0);
     off += rl;
     uint8_t sh[512];
@@ -222,10 +222,10 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
     uint8_t h[32];
     SshSha256Ctx tmp = tr;
     ssh_sha256_final(&tmp, h);
-    tls13_ks_early(&DTLS13_KDF, &cks);
-    tls13_ks_handshake(&cks, ecdhe, h, 32);
+    dws_tls13_ks_early(&DTLS13_KDF, &cks);
+    dws_tls13_ks_handshake(&cks, ecdhe, h, 32);
     DtlsRecordKeys srv_read;
-    dtls_record_keys_derive(&srv_read, DtlsCipher::AES_128_GCM_SHA256, 2, cks.server_hs_traffic);
+    dws_dtls_record_keys_derive(&srv_read, DtlsCipher::AES_128_GCM_SHA256, 2, cks.server_hs_traffic);
 
     uint64_t exp_seq = 0;
     while (off < (size_t)fl)
@@ -234,7 +234,8 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
         TEST_ASSERT_TRUE(crl > 0);
         uint8_t inner[512];
         DtlsCiphertext info;
-        TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&srv_read, exp_seq, flight + off, crl, inner, sizeof(inner), &info));
+        TEST_ASSERT_TRUE(
+            dws_dtls_ciphertext_unprotect(&srv_read, exp_seq, flight + off, crl, inner, sizeof(inner), &info));
         exp_seq = info.seq + 1;
         off += crl;
         uint8_t msg[512];
@@ -246,24 +247,25 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
     uint8_t h_sfin[32];
     SshSha256Ctx s2 = tr;
     ssh_sha256_final(&s2, h_sfin);
-    tls13_ks_master(&cks, h_sfin);
+    dws_tls13_ks_master(&cks, h_sfin);
     uint8_t cfin_verify[32];
-    tls13_finished_mac(&DTLS13_KDF, cks.client_hs_traffic, h_sfin, cfin_verify);
+    dws_tls13_finished_mac(&DTLS13_KDF, cks.client_hs_traffic, h_sfin, cfin_verify);
     uint8_t cfin[64];
-    size_t cfin_len = tls13_build_finished(cfin, sizeof(cfin), cfin_verify);
+    size_t cfin_len = dws_tls13_build_finished(cfin, sizeof(cfin), cfin_verify);
     DtlsRecordKeys cli_write;
-    dtls_record_keys_derive(&cli_write, DtlsCipher::AES_128_GCM_SHA256, 2, cks.client_hs_traffic);
+    dws_dtls_record_keys_derive(&cli_write, DtlsCipher::AES_128_GCM_SHA256, 2, cks.client_hs_traffic);
     uint8_t cfin_frag[80];
-    size_t cff = dtls_hs_frag_build(cfin[0], 1, (uint32_t)(cfin_len - 4), 0, cfin + 4, (uint32_t)(cfin_len - 4),
-                                    cfin_frag, sizeof(cfin_frag));
+    size_t cff = dws_dtls_hs_frag_build(cfin[0], 1, (uint32_t)(cfin_len - 4), 0, cfin + 4, (uint32_t)(cfin_len - 4),
+                                        cfin_frag, sizeof(cfin_frag));
     uint8_t cfin_rec[128];
-    size_t cfr = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec, sizeof(cfin_rec));
+    size_t cfr =
+        dws_dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec, sizeof(cfin_rec));
     uint8_t out2[64];
     TEST_ASSERT_TRUE(dws_dtls_conn_process(conn, cfin_rec, cfr, out2, sizeof(out2)) > 0);
     TEST_ASSERT_TRUE(dws_dtls_conn_established(conn));
 
-    dtls_record_keys_derive(cli_app_read, DtlsCipher::AES_128_GCM_SHA256, 3, cks.server_ap_traffic);
-    dtls_record_keys_derive(cli_app_write, DtlsCipher::AES_128_GCM_SHA256, 3, cks.client_ap_traffic);
+    dws_dtls_record_keys_derive(cli_app_read, DtlsCipher::AES_128_GCM_SHA256, 3, cks.server_ap_traffic);
+    dws_dtls_record_keys_derive(cli_app_write, DtlsCipher::AES_128_GCM_SHA256, 3, cks.client_ap_traffic);
 }
 
 static void test_coap_over_dtls(void)
@@ -275,8 +277,8 @@ static void test_coap_over_dtls(void)
     // A CoAP CON GET /temp (Ver 1, TKL 0, MID 0x1234; Uri-Path option 11 = "temp").
     const uint8_t coap_get[] = {0x40, 0x01, 0x12, 0x34, 0xB4, 't', 'e', 'm', 'p'};
     uint8_t app_rec[128];
-    size_t ar = dtls_ciphertext_protect(&cli_app_write, 0, DTLS_CT_APPLICATION_DATA, coap_get, sizeof(coap_get),
-                                        app_rec, sizeof(app_rec));
+    size_t ar = dws_dtls_ciphertext_protect(&cli_app_write, 0, DTLS_CT_APPLICATION_DATA, coap_get, sizeof(coap_get),
+                                            app_rec, sizeof(app_rec));
     TEST_ASSERT_TRUE(ar > 0);
 
     uint8_t out[256];
@@ -286,7 +288,8 @@ static void test_coap_over_dtls(void)
     // Decrypt the response: an epoch-3 application record carrying the CoAP answer.
     uint8_t coap_resp[256];
     DtlsCiphertext info;
-    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&cli_app_read, 1, out, (size_t)on, coap_resp, sizeof(coap_resp), &info));
+    TEST_ASSERT_TRUE(
+        dws_dtls_ciphertext_unprotect(&cli_app_read, 1, out, (size_t)on, coap_resp, sizeof(coap_resp), &info));
     TEST_ASSERT_EQUAL_UINT8(DTLS_CT_APPLICATION_DATA, info.content_type);
 
     // CoAP response: piggybacked ACK, code 2.05 Content (0x45), MID echoed, token echoed (none),
@@ -310,14 +313,14 @@ static void test_coap_over_dtls_replay_dropped(void)
 
     const uint8_t coap_get[] = {0x40, 0x01, 0x12, 0x34, 0xB4, 't', 'e', 'm', 'p'};
     uint8_t app_rec[128];
-    size_t ar = dtls_ciphertext_protect(&cli_app_write, 0, DTLS_CT_APPLICATION_DATA, coap_get, sizeof(coap_get),
-                                        app_rec, sizeof(app_rec));
+    size_t ar = dws_dtls_ciphertext_protect(&cli_app_write, 0, DTLS_CT_APPLICATION_DATA, coap_get, sizeof(coap_get),
+                                            app_rec, sizeof(app_rec));
     uint8_t out[256];
     TEST_ASSERT_TRUE(dws_coaps_process(&conn, app_rec, ar, out, sizeof(out)) > 0);     // first: answered
     TEST_ASSERT_EQUAL_INT(0, dws_coaps_process(&conn, app_rec, ar, out, sizeof(out))); // replay: dropped
 }
 
-// An established connection whose decrypted CoAP message yields no response drives the resp_len == 0
+// An established connection whose decrypted CoAP message yields no response drives the dws_resp_len == 0
 // path: dws_coaps_process must return 0 without sealing a record. A CoAP ACK (not a request, RFC 7252
 // §4.2) is ignored by dws_coap_server_process, so it produces zero response bytes.
 static void test_coaps_no_coap_response(void)
@@ -328,8 +331,8 @@ static void test_coaps_no_coap_response(void)
 
     const uint8_t coap_ack[] = {0x60, 0x00, 0x12, 0x34}; // Ver 1, Type ACK (2), TKL 0, MID 0x1234
     uint8_t app_rec[128];
-    size_t ar = dtls_ciphertext_protect(&cli_app_write, 0, DTLS_CT_APPLICATION_DATA, coap_ack, sizeof(coap_ack),
-                                        app_rec, sizeof(app_rec));
+    size_t ar = dws_dtls_ciphertext_protect(&cli_app_write, 0, DTLS_CT_APPLICATION_DATA, coap_ack, sizeof(coap_ack),
+                                            app_rec, sizeof(app_rec));
     TEST_ASSERT_TRUE(ar > 0);
 
     uint8_t out[256];
@@ -392,10 +395,10 @@ static void test_coaps_forwards_handshake(void)
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
     uint8_t ch_frag[300];
-    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
-                                      sizeof(ch_frag));
+    size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                          sizeof(ch_frag));
     uint8_t ch_rec[320];
-    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+    size_t ch_rl = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
 
     TEST_ASSERT_FALSE(dws_dtls_conn_established(&conn));
     uint8_t flight[2048];

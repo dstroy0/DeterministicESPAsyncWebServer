@@ -37,28 +37,28 @@
 // --- command builders: write a NUL-terminated command into @p buf, return its length or 0 ---
 
 /** @brief Generic `<addr><body>!` command (body is the command letters, e.g. "M" or "D0"). */
-size_t sdi12_build(char *buf, size_t cap, char addr, const char *body);
+size_t dws_sdi12_build(char *buf, size_t cap, char addr, const char *body);
 
 /** @brief Acknowledge-active command `a!`. */
-size_t sdi12_build_ack(char *buf, size_t cap, char addr);
+size_t dws_sdi12_build_ack(char *buf, size_t cap, char addr);
 
 /** @brief Send-identification command `aI!`. */
-size_t sdi12_build_identify(char *buf, size_t cap, char addr);
+size_t dws_sdi12_build_identify(char *buf, size_t cap, char addr);
 
 /** @brief Start-measurement command `aM!` (or `aMC!` when @p with_crc). */
-size_t sdi12_build_measure(char *buf, size_t cap, char addr, bool with_crc);
+size_t dws_sdi12_build_measure(char *buf, size_t cap, char addr, bool with_crc);
 
 /** @brief Concurrent-measurement command `aC!` (or `aCC!` when @p with_crc). */
-size_t sdi12_build_concurrent(char *buf, size_t cap, char addr, bool with_crc);
+size_t dws_sdi12_build_concurrent(char *buf, size_t cap, char addr, bool with_crc);
 
 /** @brief Send-data command `aD<n>!` (@p d_index 0..9). */
-size_t sdi12_build_data(char *buf, size_t cap, char addr, uint8_t d_index);
+size_t dws_sdi12_build_data(char *buf, size_t cap, char addr, uint8_t d_index);
 
 /** @brief Change-address command `aA<b>!` (@p new_addr is the new sensor address). */
-size_t sdi12_build_change_address(char *buf, size_t cap, char addr, char new_addr);
+size_t dws_sdi12_build_change_address(char *buf, size_t cap, char addr, char new_addr);
 
 /** @brief Address-query command `?!` (asks the single connected sensor for its address). */
-size_t sdi12_build_query_address(char *buf, size_t cap);
+size_t dws_sdi12_build_query_address(char *buf, size_t cap);
 
 // --- response parsing ---
 
@@ -67,29 +67,29 @@ size_t sdi12_build_query_address(char *buf, size_t cap);
  * ready, @p num_values = how many values will be available. Works for both the 1-digit (`aM!`)
  * and 2-digit (`aC!`) value-count forms. @p addr (optional) receives the echoed address.
  */
-bool sdi12_parse_measure(const char *resp, size_t len, char *addr, uint16_t *ready_sec, uint8_t *num_values);
+bool dws_sdi12_parse_measure(const char *resp, size_t len, char *addr, uint16_t *ready_sec, uint8_t *num_values);
 
 /**
  * @brief Split a data response `a<+/-value...><CR><LF>` into floats. Skips the leading address,
  * decodes each sign-prefixed number, and stops at CR/LF or the buffer end. Returns the count
  * via @p n (capped at @p max).
  */
-bool sdi12_parse_values(const char *resp, size_t len, float *out, size_t max, size_t *n);
+bool dws_sdi12_parse_values(const char *resp, size_t len, float *out, size_t max, size_t *n);
 
 // --- CRC (RFC-free SDI-12 16-bit CRC) ---
 
 /** @brief Compute the SDI-12 CRC-16 over @p data. */
-uint16_t sdi12_crc16(const uint8_t *data, size_t len);
+uint16_t dws_sdi12_crc16(const uint8_t *data, size_t len);
 
 /** @brief Encode a CRC into its 3 printable ASCII octets (out[0..2]). */
-void sdi12_crc_encode(uint16_t crc, char out[SDI12_CRC_CHARS]);
+void dws_sdi12_crc_encode(uint16_t crc, char out[SDI12_CRC_CHARS]);
 
 /**
  * @brief Verify a CRC-protected response: the 3 octets before the trailing `<CR><LF>` must be
  * the CRC of everything before them. @p len should include the data and the 3 CRC octets (the
  * `<CR><LF>` may or may not be included).
  */
-bool sdi12_check_crc(const char *resp, size_t len);
+bool dws_sdi12_check_crc(const char *resp, size_t len);
 
 #endif // DWS_ENABLE_SDI12
 #endif // DETERMINISTICESPASYNCWEBSERVER_SDI12_H

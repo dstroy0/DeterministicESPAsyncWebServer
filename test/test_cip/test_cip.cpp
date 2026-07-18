@@ -20,7 +20,7 @@ void tearDown()
 void test_epath_8bit()
 {
     uint8_t buf[16];
-    size_t n = cip_build_epath(buf, sizeof(buf), 0x01, 0x01, 0x07, true);
+    size_t n = dws_cip_build_epath(buf, sizeof(buf), 0x01, 0x01, 0x07, true);
     const uint8_t expect[] = {0x20, 0x01, 0x24, 0x01, 0x30, 0x07};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
@@ -30,7 +30,7 @@ void test_epath_8bit()
 void test_epath_16bit()
 {
     uint8_t buf[16];
-    size_t n = cip_build_epath(buf, sizeof(buf), 0x0100, 0x01, 0, false);
+    size_t n = dws_cip_build_epath(buf, sizeof(buf), 0x0100, 0x01, 0, false);
     const uint8_t expect[] = {0x21, 0x00, 0x00, 0x01, 0x24, 0x01}; // class 0x0100 (16-bit), instance 1 (8-bit)
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
@@ -40,7 +40,7 @@ void test_epath_16bit()
 void test_get_attr_single()
 {
     uint8_t buf[16];
-    size_t n = cip_build_get_attr_single(buf, sizeof(buf), 0x01, 0x01, 0x07);
+    size_t n = dws_cip_build_get_attr_single(buf, sizeof(buf), 0x01, 0x01, 0x07);
     const uint8_t expect[] = {
         0x0E,                              // Get_Attribute_Single
         0x03,                              // path size = 3 words
@@ -55,7 +55,8 @@ void test_build_request_with_data()
     const uint8_t epath[] = {0x20, 0x01, 0x24, 0x01, 0x30, 0x07};
     const uint8_t data[] = {0xAB, 0xCD};
     uint8_t buf[16];
-    size_t n = cip_build_request(buf, sizeof(buf), CIP_SC_SET_ATTR_SINGLE, epath, sizeof(epath), data, sizeof(data));
+    size_t n =
+        dws_cip_build_request(buf, sizeof(buf), CIP_SC_SET_ATTR_SINGLE, epath, sizeof(epath), data, sizeof(data));
     const uint8_t expect[] = {0x10, 0x03, 0x20, 0x01, 0x24, 0x01, 0x30, 0x07, 0xAB, 0xCD};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
@@ -65,7 +66,7 @@ void test_parse_response_ok()
 {
     const uint8_t resp[] = {0x8E, 0x00, 0x00, 0x00, 'A', 'c', 'm', 'e'}; // reply, status OK, no addl, data
     CipResponse r;
-    TEST_ASSERT_TRUE(cip_parse_response(resp, sizeof(resp), &r));
+    TEST_ASSERT_TRUE(dws_cip_parse_response(resp, sizeof(resp), &r));
     TEST_ASSERT_EQUAL_HEX8(0x8E, r.service); // Get_Attribute_Single reply
     TEST_ASSERT_EQUAL_HEX8(CIP_STATUS_SUCCESS, r.general_status);
     TEST_ASSERT_EQUAL_size_t(4, r.data_len);
@@ -77,7 +78,7 @@ void test_parse_response_additional_status()
 {
     const uint8_t resp[] = {0x8E, 0x00, 0x1F, 0x01, 0xAA, 0xBB, 0x12, 0x34}; // addl size 1 word (AA BB), data 12 34
     CipResponse r;
-    TEST_ASSERT_TRUE(cip_parse_response(resp, sizeof(resp), &r));
+    TEST_ASSERT_TRUE(dws_cip_parse_response(resp, sizeof(resp), &r));
     TEST_ASSERT_EQUAL_HEX8(0x1F, r.general_status);
     TEST_ASSERT_EQUAL_size_t(2, r.data_len);
     TEST_ASSERT_EQUAL_HEX8(0x12, r.data[0]);
@@ -87,7 +88,7 @@ void test_parse_response_error()
 {
     const uint8_t resp[] = {0x8E, 0x00, 0x05, 0x00}; // status 0x05 = path destination unknown, no data
     CipResponse r;
-    TEST_ASSERT_TRUE(cip_parse_response(resp, sizeof(resp), &r));
+    TEST_ASSERT_TRUE(dws_cip_parse_response(resp, sizeof(resp), &r));
     TEST_ASSERT_EQUAL_HEX8(0x05, r.general_status);
     TEST_ASSERT_EQUAL_size_t(0, r.data_len);
 }
@@ -96,12 +97,12 @@ void test_rejects_bad()
 {
     CipResponse r;
     const uint8_t short_resp[] = {0x8E, 0x00, 0x00}; // < 4 octets
-    TEST_ASSERT_FALSE(cip_parse_response(short_resp, sizeof(short_resp), &r));
+    TEST_ASSERT_FALSE(dws_cip_parse_response(short_resp, sizeof(short_resp), &r));
     const uint8_t bad_addl[] = {0x8E, 0x00, 0x00, 0x05}; // addl size 5 words overruns
-    TEST_ASSERT_FALSE(cip_parse_response(bad_addl, sizeof(bad_addl), &r));
+    TEST_ASSERT_FALSE(dws_cip_parse_response(bad_addl, sizeof(bad_addl), &r));
 
     uint8_t small[4];
-    TEST_ASSERT_EQUAL_size_t(0, cip_build_get_attr_single(small, sizeof(small), 1, 1, 7)); // needs 8
+    TEST_ASSERT_EQUAL_size_t(0, dws_cip_build_get_attr_single(small, sizeof(small), 1, 1, 7)); // needs 8
 }
 
 // EPATH and request builders fail closed on a null buffer, an 8-bit/16-bit segment
@@ -109,17 +110,17 @@ void test_rejects_bad()
 void test_cip_build_guards()
 {
     uint8_t buf[16];
-    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(nullptr, sizeof(buf), 1, 1, 1, true)); // null buffer
-    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(buf, 1, 1, 1, 1, false));              // 8-bit segment, cap < 2
-    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(buf, 3, 0x1234, 1, 1, false));         // 16-bit segment, cap < 4
-    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(buf, 2, 1, 1, 1, false));              // instance segment does not fit
-    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(buf, 4, 1, 1, 1, true));               // attribute segment does not fit
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_epath(nullptr, sizeof(buf), 1, 1, 1, true)); // null buffer
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_epath(buf, 1, 1, 1, 1, false));              // 8-bit segment, cap < 2
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_epath(buf, 3, 0x1234, 1, 1, false));         // 16-bit segment, cap < 4
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_epath(buf, 2, 1, 1, 1, false)); // instance segment does not fit
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_epath(buf, 4, 1, 1, 1, true));  // attribute segment does not fit
 
     uint8_t ep[4] = {0x20, 1, 0x24, 1};
-    TEST_ASSERT_EQUAL_UINT(0, cip_build_request(nullptr, sizeof(buf), 0x0E, ep, 4, nullptr, 0));  // null buffer
-    TEST_ASSERT_EQUAL_UINT(0, cip_build_request(buf, sizeof(buf), 0x0E, nullptr, 4, nullptr, 0)); // null epath
-    TEST_ASSERT_EQUAL_UINT(0, cip_build_request(buf, sizeof(buf), 0x0E, ep, 3, nullptr, 0));      // odd epath length
-    TEST_ASSERT_EQUAL_UINT(0, cip_build_request(buf, sizeof(buf), 0x0E, ep, 4, nullptr, 5)); // data length w/o data
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_request(nullptr, sizeof(buf), 0x0E, ep, 4, nullptr, 0));  // null buffer
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_request(buf, sizeof(buf), 0x0E, nullptr, 4, nullptr, 0)); // null epath
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_request(buf, sizeof(buf), 0x0E, ep, 3, nullptr, 0)); // odd epath length
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_request(buf, sizeof(buf), 0x0E, ep, 4, nullptr, 5)); // data length w/o data
 }
 
 int main()

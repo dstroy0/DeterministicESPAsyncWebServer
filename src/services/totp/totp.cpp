@@ -21,7 +21,7 @@ namespace
 constexpr int BLOCK = 64; // SHA-1 block size
 
 // HMAC-SHA1 over an 8-byte message (the HOTP/TOTP counter).
-void hmac_sha1_8(const uint8_t *key, size_t keylen, const uint8_t msg[8], uint8_t out[SHA1_DIGEST_LEN])
+void dws_hmac_sha1_8(const uint8_t *key, size_t keylen, const uint8_t msg[8], uint8_t out[SHA1_DIGEST_LEN])
 {
     uint8_t k[BLOCK] = {0};
     if (keylen > BLOCK)
@@ -67,7 +67,7 @@ uint32_t dws_hotp(const uint8_t *key, size_t keylen, uint64_t counter, uint8_t d
         counter >>= 8;
     }
     uint8_t mac[SHA1_DIGEST_LEN];
-    hmac_sha1_8(key, keylen, msg, mac);
+    dws_hmac_sha1_8(key, keylen, msg, mac);
 
     int off = mac[SHA1_DIGEST_LEN - 1] & 0x0F; // dynamic truncation (RFC 4226 §5.3)
     uint32_t bin = ((uint32_t)(mac[off] & 0x7F) << 24) | ((uint32_t)mac[off + 1] << 16) |

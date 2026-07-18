@@ -6,7 +6,7 @@
 // (run `tcpdump -i any -w -` style capture, or a tiny socket that writes a .pcap Wireshark opens
 // as DLT_IEEE802_11). Capture is strictly passive; a rate cap protects the wired uplink.
 //
-// Data path:  Wi-Fi radio --promisc_begin--> sink --dws_forward_ingress--> ETH send cb --UDP--> collector
+// Data path:  Wi-Fi radio --dws_promisc_begin--> sink --dws_forward_ingress--> ETH send cb --UDP--> collector
 //
 // Build flags (whole build), Ethernet tuned here for a LAN8720 board:
 //   DWS_ENABLE_PROMISC=1 DWS_ENABLE_FORWARD=1 DWS_ENABLE_ETHERNET=1
@@ -84,7 +84,7 @@ void setup()
     dws_forward_add_if(IF_ETH, dws_if_kind::DWS_IF_ETH, eth_send, nullptr);
     dws_forward_add_rule(IF_WIFI, IF_ETH, dws_fwd_action::DWS_FWD_ALLOW, 2000); // <= 2000 frames/s to the wire
 
-    promisc_begin(CAPTURE_CHANNEL, on_frame);
+    dws_promisc_begin(CAPTURE_CHANNEL, on_frame);
     Serial.printf("Capturing on channel %u -> forwarding to %s:%u (PCAP over UDP)\n", CAPTURE_CHANNEL, COLLECTOR_IP,
                   COLLECTOR_PORT);
 }

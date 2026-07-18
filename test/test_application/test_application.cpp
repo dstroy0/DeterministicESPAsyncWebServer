@@ -79,7 +79,7 @@ void setUp()
     ws_init(); // isolate ws_pool[] between tests (a leftover WS slot makes http_parse skip it)
 #endif
 #if DWS_ENABLE_SSE
-    sse_init(); // isolate sse_pool[] between tests
+    dws_sse_init(); // isolate dws_sse_pool[] between tests
 #endif
     g_server = new DWS();
 }
@@ -1169,8 +1169,8 @@ void test_metrics_emits_prometheus()
 #endif
 
 #if DWS_ENABLE_SSE
-// Regression: sse_do_upgrade() must store the request path by VALUE before
-// http_reset() zeroes the parser buffer, so a later path-matched sse_broadcast()
+// Regression: dws_sse_do_upgrade() must store the request path by VALUE before
+// http_reset() zeroes the parser buffer, so a later path-matched dws_sse_broadcast()
 // reaches the client. (A dangling path pointer made broadcasts silently miss.)
 void test_sse_broadcast_after_upgrade_matches_path()
 {
@@ -1186,8 +1186,8 @@ void test_sse_broadcast_after_upgrade_matches_path()
     http_parse(0);
 
     tcp_capture_reset();
-    g_server->handle(); // dispatch -> sse_do_upgrade (200 text/event-stream)
-    g_server->sse_broadcast("/events", "hello", "msg");
+    g_server->handle(); // dispatch -> dws_sse_do_upgrade (200 text/event-stream)
+    g_server->dws_sse_broadcast("/events", "hello", "msg");
     const char *out = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(out, "text/event-stream")); // upgrade happened
     TEST_ASSERT_NOT_NULL(strstr(out, "data: hello"));       // broadcast matched the stored path
@@ -1249,29 +1249,29 @@ void test_ws_send_api()
 #endif
 
 #if DWS_ENABLE_SSE
-// The SSE send API: sse_send writes an event/id/data block to the bound slot;
-// bad-id / inactive guards send nothing; sse_broadcast skips connections whose
+// The SSE send API: dws_sse_send writes an event/id/data block to the bound slot;
+// bad-id / inactive guards send nothing; dws_sse_broadcast skips connections whose
 // stored path does not match.
 void test_sse_send_api()
 {
-    sse_init();
+    dws_sse_init();
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].proto = ConnProto::PROTO_HTTP;
     conn_pool[0].pcb = &_mock_pcb;
-    SseConn *sse = sse_alloc(0, "/events");
+    SseConn *sse = dws_sse_alloc(0, "/events");
     TEST_ASSERT_NOT_NULL(sse);
 
     // Guards send nothing.
     tcp_capture_reset();
-    g_server->sse_send(MAX_SSE_CONNS, "x"); // id >= MAX
-    g_server->sse_send(1, "x");             // in range, inactive
+    g_server->dws_sse_send(MAX_SSE_CONNS, "x"); // id >= MAX
+    g_server->dws_sse_send(1, "x");             // in range, inactive
     TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
 
     // A live send emits the event, id, and data fields (RFC-style SSE block).
     tcp_capture_reset();
-    g_server->sse_send(0, "hi", "msg", "42");
+    g_server->dws_sse_send(0, "hi", "msg", "42");
     const char *out = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(out, "event: msg"));
     TEST_ASSERT_NOT_NULL(strstr(out, "id: 42"));
@@ -1279,7 +1279,7 @@ void test_sse_send_api()
 
     // Broadcast to a non-matching path skips the connection (no output).
     tcp_capture_reset();
-    g_server->sse_broadcast("/other", "skip");
+    g_server->dws_sse_broadcast("/other", "skip");
     TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
     tcp_capture_disable();
 }
@@ -1591,19 +1591,19 @@ void test_ws_sse_upgrade_failure_paths()
 }
 
 #if DWS_ENABLE_SSE
-// An SSE upgrade with the SSE pool exhausted -> sse_alloc fails, connection aborted after
+// An SSE upgrade with the SSE pool exhausted -> dws_sse_alloc fails, connection aborted after
 // the optimistic 200 event-stream header.
 void test_sse_upgrade_pool_exhausted()
 {
     g_server->on_sse("/events", nullptr);
-    sse_alloc(1, "/a");
-    sse_alloc(2, "/b"); // fill the 2-slot sse_pool (MAX_SSE_CONNS)
+    dws_sse_alloc(1, "/a");
+    dws_sse_alloc(2, "/b"); // fill the 2-slot dws_sse_pool (MAX_SSE_CONNS)
     arm_slot(0, "GET /events HTTP/1.1\r\nHost: x\r\n\r\n");
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
     g_server->handle();
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "text/event-stream")); // header sent before the pool check
-    sse_init();                                                        // release the pool for later tests
+    dws_sse_init();                                                    // release the pool for later tests
     tcp_capture_disable();
 }
 #endif

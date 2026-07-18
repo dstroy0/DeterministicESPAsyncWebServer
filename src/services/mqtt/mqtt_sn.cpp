@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-uint8_t mqttsn_make_flags(bool dup, uint8_t qos, bool retain, bool will, bool clean, uint8_t topic_id_type)
+uint8_t dws_mqttsn_make_flags(bool dup, uint8_t qos, bool retain, bool will, bool clean, uint8_t topic_id_type)
 {
     uint8_t f = 0;
     if (dup)
@@ -75,7 +75,7 @@ static uint16_t rd16(const uint8_t *p)
     return (uint16_t)(((uint16_t)p[0] << 8) | p[1]);
 }
 
-size_t mqttsn_build_connect(uint8_t *buf, size_t cap, uint8_t flags, uint16_t duration, const char *client_id)
+size_t dws_mqttsn_build_connect(uint8_t *buf, size_t cap, uint8_t flags, uint16_t duration, const char *client_id)
 {
     if (!buf || !client_id)
         return 0;
@@ -91,7 +91,7 @@ size_t mqttsn_build_connect(uint8_t *buf, size_t cap, uint8_t flags, uint16_t du
     return total;
 }
 
-size_t mqttsn_build_register(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, const char *topic_name)
+size_t dws_mqttsn_build_register(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, const char *topic_name)
 {
     if (!buf || !topic_name)
         return 0;
@@ -107,7 +107,7 @@ size_t mqttsn_build_register(uint8_t *buf, size_t cap, uint16_t topic_id, uint16
     return total;
 }
 
-size_t mqttsn_build_regack(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, uint8_t ret_code)
+size_t dws_mqttsn_build_regack(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, uint8_t ret_code)
 {
     if (!buf)
         return 0;
@@ -122,8 +122,8 @@ size_t mqttsn_build_regack(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t
     return total;
 }
 
-size_t mqttsn_build_publish(uint8_t *buf, size_t cap, uint8_t flags, uint16_t topic_id, uint16_t msg_id,
-                            const uint8_t *data, size_t data_len)
+size_t dws_mqttsn_build_publish(uint8_t *buf, size_t cap, uint8_t flags, uint16_t topic_id, uint16_t msg_id,
+                                const uint8_t *data, size_t data_len)
 {
     if (!buf || (data_len && !data))
         return 0;
@@ -140,7 +140,7 @@ size_t mqttsn_build_publish(uint8_t *buf, size_t cap, uint8_t flags, uint16_t to
     return total;
 }
 
-size_t mqttsn_build_puback(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, uint8_t ret_code)
+size_t dws_mqttsn_build_puback(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t msg_id, uint8_t ret_code)
 {
     if (!buf)
         return 0;
@@ -155,7 +155,7 @@ size_t mqttsn_build_puback(uint8_t *buf, size_t cap, uint16_t topic_id, uint16_t
     return total;
 }
 
-size_t mqttsn_build_subscribe_name(uint8_t *buf, size_t cap, uint8_t flags, uint16_t msg_id, const char *topic_name)
+size_t dws_mqttsn_build_subscribe_name(uint8_t *buf, size_t cap, uint8_t flags, uint16_t msg_id, const char *topic_name)
 {
     if (!buf || !topic_name)
         return 0;
@@ -170,7 +170,7 @@ size_t mqttsn_build_subscribe_name(uint8_t *buf, size_t cap, uint8_t flags, uint
     return total;
 }
 
-size_t mqttsn_build_subscribe_id(uint8_t *buf, size_t cap, uint8_t flags, uint16_t msg_id, uint16_t topic_id)
+size_t dws_mqttsn_build_subscribe_id(uint8_t *buf, size_t cap, uint8_t flags, uint16_t msg_id, uint16_t topic_id)
 {
     if (!buf)
         return 0;
@@ -184,7 +184,7 @@ size_t mqttsn_build_subscribe_id(uint8_t *buf, size_t cap, uint8_t flags, uint16
     return total;
 }
 
-size_t mqttsn_build_pingreq(uint8_t *buf, size_t cap, const char *client_id)
+size_t dws_mqttsn_build_pingreq(uint8_t *buf, size_t cap, const char *client_id)
 {
     if (!buf)
         return 0;
@@ -197,7 +197,7 @@ size_t mqttsn_build_pingreq(uint8_t *buf, size_t cap, const char *client_id)
     return total;
 }
 
-size_t mqttsn_build_disconnect(uint8_t *buf, size_t cap, bool with_duration, uint16_t duration)
+size_t dws_mqttsn_build_disconnect(uint8_t *buf, size_t cap, bool with_duration, uint16_t duration)
 {
     if (!buf)
         return 0;
@@ -209,7 +209,7 @@ size_t mqttsn_build_disconnect(uint8_t *buf, size_t cap, bool with_duration, uin
     return total;
 }
 
-size_t mqttsn_build_searchgw(uint8_t *buf, size_t cap, uint8_t radius)
+size_t dws_mqttsn_build_searchgw(uint8_t *buf, size_t cap, uint8_t radius)
 {
     if (!buf)
         return 0;
@@ -220,7 +220,7 @@ size_t mqttsn_build_searchgw(uint8_t *buf, size_t cap, uint8_t radius)
     return total;
 }
 
-bool mqttsn_parse_header(const uint8_t *buf, size_t len, MqttsnHeader *out, size_t *consumed)
+bool dws_mqttsn_parse_header(const uint8_t *buf, size_t len, MqttsnHeader *out, size_t *consumed)
 {
     if (!buf || !out || !consumed || len < 2)
         return false;
@@ -249,7 +249,7 @@ bool mqttsn_parse_header(const uint8_t *buf, size_t len, MqttsnHeader *out, size
     return true;
 }
 
-bool mqttsn_parse_connack(const uint8_t *payload, size_t len, uint8_t *ret_code)
+bool dws_mqttsn_parse_connack(const uint8_t *payload, size_t len, uint8_t *ret_code)
 {
     if (!payload || len < 1)
         return false;
@@ -258,7 +258,8 @@ bool mqttsn_parse_connack(const uint8_t *payload, size_t len, uint8_t *ret_code)
     return true;
 }
 
-bool mqttsn_parse_regack(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id, uint8_t *ret_code)
+bool dws_mqttsn_parse_regack(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id,
+                             uint8_t *ret_code)
 {
     if (!payload || len < 5)
         return false;
@@ -271,13 +272,14 @@ bool mqttsn_parse_regack(const uint8_t *payload, size_t len, uint16_t *topic_id,
     return true;
 }
 
-bool mqttsn_parse_puback(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id, uint8_t *ret_code)
+bool dws_mqttsn_parse_puback(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id,
+                             uint8_t *ret_code)
 {
-    return mqttsn_parse_regack(payload, len, topic_id, msg_id, ret_code); // identical layout
+    return dws_mqttsn_parse_regack(payload, len, topic_id, msg_id, ret_code); // identical layout
 }
 
-bool mqttsn_parse_suback(const uint8_t *payload, size_t len, uint8_t *flags, uint16_t *topic_id, uint16_t *msg_id,
-                         uint8_t *ret_code)
+bool dws_mqttsn_parse_suback(const uint8_t *payload, size_t len, uint8_t *flags, uint16_t *topic_id, uint16_t *msg_id,
+                             uint8_t *ret_code)
 {
     if (!payload || len < 6)
         return false;
@@ -292,8 +294,8 @@ bool mqttsn_parse_suback(const uint8_t *payload, size_t len, uint8_t *flags, uin
     return true;
 }
 
-bool mqttsn_parse_publish(const uint8_t *payload, size_t len, uint8_t *flags, uint16_t *topic_id, uint16_t *msg_id,
-                          const uint8_t **data, size_t *data_len)
+bool dws_mqttsn_parse_publish(const uint8_t *payload, size_t len, uint8_t *flags, uint16_t *topic_id, uint16_t *msg_id,
+                              const uint8_t **data, size_t *data_len)
 {
     if (!payload || len < 5)
         return false;
@@ -310,8 +312,8 @@ bool mqttsn_parse_publish(const uint8_t *payload, size_t len, uint8_t *flags, ui
     return true;
 }
 
-bool mqttsn_parse_register(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id,
-                           const char **topic_name, size_t *topic_name_len)
+bool dws_mqttsn_parse_register(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id,
+                               const char **topic_name, size_t *topic_name_len)
 {
     if (!payload || len < 4)
         return false;

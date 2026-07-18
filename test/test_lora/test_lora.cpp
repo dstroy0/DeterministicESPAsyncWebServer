@@ -45,11 +45,11 @@ static void mock_write(uint8_t reg, uint8_t val, void *ctx)
     c->reg[reg & 0x7F] = val;
 }
 
-static lora_bus g_bus = {mock_read, mock_write, &g_chip};
+static dws_lora_bus g_bus = {mock_read, mock_write, &g_chip};
 
-static lora_config default_cfg()
+static dws_lora_config default_cfg()
 {
-    lora_config c = {};
+    dws_lora_config c = {};
     c.freq_hz = 915000000UL;
     c.spreading = 7;
     c.bandwidth = 7; // 125 kHz
@@ -72,16 +72,16 @@ void tearDown()
 
 void test_frame_build_then_parse()
 {
-    lora_header h = {0xAA, 0x02, 0x03, 0x00};
+    dws_lora_header h = {0xAA, 0x02, 0x03, 0x00};
     const uint8_t pay[3] = {'h', 'i', '!'};
     uint8_t frame[16];
-    uint16_t n = lora_frame_build(&h, pay, 3, frame, sizeof(frame));
+    uint16_t n = dws_lora_frame_build(&h, pay, 3, frame, sizeof(frame));
     TEST_ASSERT_EQUAL_UINT16(7, n); // 4 header + 3 payload
 
-    lora_header out = {};
+    dws_lora_header out = {};
     const uint8_t *p = nullptr;
     uint16_t pl = 0;
-    TEST_ASSERT_TRUE(lora_frame_parse(frame, n, &out, &p, &pl));
+    TEST_ASSERT_TRUE(dws_lora_frame_parse(frame, n, &out, &p, &pl));
     TEST_ASSERT_EQUAL_UINT8(0xAA, out.to);
     TEST_ASSERT_EQUAL_UINT8(0x02, out.from);
     TEST_ASSERT_EQUAL_UINT8(0x03, out.id);
@@ -91,25 +91,25 @@ void test_frame_build_then_parse()
 
 void test_frame_parse_rejects_short()
 {
-    lora_header h = {};
+    dws_lora_header h = {};
     const uint8_t raw[3] = {1, 2, 3};
-    TEST_ASSERT_FALSE(lora_frame_parse(raw, 3, &h, nullptr, nullptr)); // shorter than the header
+    TEST_ASSERT_FALSE(dws_lora_frame_parse(raw, 3, &h, nullptr, nullptr)); // shorter than the header
 }
 
 void test_frame_build_bounds()
 {
-    lora_header h = {};
+    dws_lora_header h = {};
     uint8_t pay[8] = {0};
     uint8_t small[5];
-    TEST_ASSERT_EQUAL_UINT16(0, lora_frame_build(&h, pay, 8, small, sizeof(small))); // 12 > cap 5
+    TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(&h, pay, 8, small, sizeof(small))); // 12 > cap 5
 }
 
 // --- Driver -----------------------------------------------------------------------------
 
 void test_init_verifies_chip_and_lands_in_standby()
 {
-    lora_config c = default_cfg();
-    TEST_ASSERT_TRUE(lora_init(&g_bus, &c));
+    dws_lora_config c = default_cfg();
+    TEST_ASSERT_TRUE(dws_lora_init(&g_bus, &c));
     TEST_ASSERT_EQUAL_HEX8(0x81, g_chip.reg[0x01]); // RegOpMode = LoRa | STANDBY
     TEST_ASSERT_EQUAL_HEX8(0x12, g_chip.reg[0x39]); // RegSyncWord
 }
@@ -117,14 +117,14 @@ void test_init_verifies_chip_and_lands_in_standby()
 void test_init_fails_on_wrong_version()
 {
     g_chip.reg[0x42] = 0x00; // not an SX127x
-    lora_config c = default_cfg();
-    TEST_ASSERT_FALSE(lora_init(&g_bus, &c));
+    dws_lora_config c = default_cfg();
+    TEST_ASSERT_FALSE(dws_lora_init(&g_bus, &c));
 }
 
 void test_init_programs_frequency()
 {
-    lora_config c = default_cfg(); // 915 MHz
-    lora_init(&g_bus, &c);
+    dws_lora_config c = default_cfg(); // 915 MHz
+    dws_lora_init(&g_bus, &c);
     uint32_t frf = ((uint32_t)g_chip.reg[0x06] << 16) | ((uint32_t)g_chip.reg[0x07] << 8) | g_chip.reg[0x08];
     // freq = frf * FSTEP, FSTEP = 32e6 / 2^19; reconstruct and check it is ~915 MHz.
     uint32_t freq = (uint32_t)(((uint64_t)frf * 32000000UL) >> 19);
@@ -133,10 +133,10 @@ void test_init_programs_frequency()
 
 void test_send_loads_fifo_and_starts_tx()
 {
-    lora_config c = default_cfg();
-    lora_init(&g_bus, &c);
+    dws_lora_config c = default_cfg();
+    dws_lora_init(&g_bus, &c);
     const uint8_t frame[6] = {0x01, 0x02, 0x03, 0x00, 0xDE, 0xAD};
-    TEST_ASSERT_TRUE(lora_send(&g_bus, frame, 6));
+    TEST_ASSERT_TRUE(dws_lora_send(&g_bus, frame, 6));
     TEST_ASSERT_EQUAL_HEX8(0x83, g_chip.reg[0x01]); // RegOpMode = LoRa | TX
     TEST_ASSERT_EQUAL_UINT8(6, g_chip.reg[0x22]);   // RegPayloadLength
     TEST_ASSERT_EQUAL_MEMORY(frame, g_chip.fifo, 6);
@@ -144,15 +144,15 @@ void test_send_loads_fifo_and_starts_tx()
 
 void test_tx_done_flag()
 {
-    TEST_ASSERT_FALSE(lora_tx_done(&g_bus)); // no flag
-    g_chip.reg[0x12] = 0x08;                 // RegIrqFlags TxDone
-    TEST_ASSERT_TRUE(lora_tx_done(&g_bus));
+    TEST_ASSERT_FALSE(dws_lora_tx_done(&g_bus)); // no flag
+    g_chip.reg[0x12] = 0x08;                     // RegIrqFlags TxDone
+    TEST_ASSERT_TRUE(dws_lora_tx_done(&g_bus));
     TEST_ASSERT_EQUAL_HEX8(0xFF, g_chip.reg[0x12]); // flags cleared
 }
 
 void test_set_rx_enters_continuous()
 {
-    lora_set_rx(&g_bus);
+    dws_lora_set_rx(&g_bus);
     TEST_ASSERT_EQUAL_HEX8(0x85, g_chip.reg[0x01]); // RegOpMode = LoRa | RX_CONTINUOUS
 }
 
@@ -167,7 +167,7 @@ void test_recv_reads_frame_and_rssi()
 
     uint8_t buf[16];
     int16_t rssi = 0;
-    int n = lora_recv(&g_bus, buf, sizeof(buf), &rssi);
+    int n = dws_lora_recv(&g_bus, buf, sizeof(buf), &rssi);
     TEST_ASSERT_EQUAL_INT(5, n);
     TEST_ASSERT_EQUAL_MEMORY(frame, buf, 5);
     TEST_ASSERT_EQUAL_INT16(-37, rssi);
@@ -177,7 +177,7 @@ void test_recv_reads_frame_and_rssi()
 void test_recv_no_packet()
 {
     uint8_t buf[16];
-    TEST_ASSERT_EQUAL_INT(-1, lora_recv(&g_bus, buf, sizeof(buf), nullptr)); // no RxDone
+    TEST_ASSERT_EQUAL_INT(-1, dws_lora_recv(&g_bus, buf, sizeof(buf), nullptr)); // no RxDone
 }
 
 void test_recv_crc_error_dropped()
@@ -185,7 +185,7 @@ void test_recv_crc_error_dropped()
     g_chip.reg[0x12] = 0x40 | 0x20; // RxDone | PayloadCrcError
     g_chip.reg[0x13] = 4;
     uint8_t buf[16];
-    TEST_ASSERT_EQUAL_INT(-1, lora_recv(&g_bus, buf, sizeof(buf), nullptr));
+    TEST_ASSERT_EQUAL_INT(-1, dws_lora_recv(&g_bus, buf, sizeof(buf), nullptr));
     TEST_ASSERT_EQUAL_HEX8(0xFF, g_chip.reg[0x12]); // IRQ still cleared
 }
 
@@ -199,21 +199,21 @@ void test_recv_truncates_to_cap()
     g_chip.reg[0x13] = 10;
     g_chip.reg[0x10] = 0;
     uint8_t buf[4];
-    int n = lora_recv(&g_bus, buf, sizeof(buf), nullptr);
+    int n = dws_lora_recv(&g_bus, buf, sizeof(buf), nullptr);
     TEST_ASSERT_EQUAL_INT(4, n); // capped
     TEST_ASSERT_EQUAL_MEMORY(frame, buf, 4);
 }
 
 void test_frame_parse_build_guards()
 {
-    lora_header hdr = {};
+    dws_lora_header hdr = {};
     const uint8_t *payload = nullptr;
     uint16_t payload_len = 0;
     uint8_t too_short[1] = {0};
-    TEST_ASSERT_FALSE(lora_frame_parse(too_short, sizeof(too_short), &hdr, &payload, &payload_len)); // too short
+    TEST_ASSERT_FALSE(dws_lora_frame_parse(too_short, sizeof(too_short), &hdr, &payload, &payload_len)); // too short
     uint8_t out[4];
     uint8_t pay[8] = {0};
-    TEST_ASSERT_EQUAL_UINT16(0, lora_frame_build(&hdr, pay, sizeof(pay), out, 2)); // cap too small
+    TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(&hdr, pay, sizeof(pay), out, 2)); // cap too small
 }
 
 int main()

@@ -37,23 +37,23 @@
 // ---------------------------------------------------------------------------
 
 /**
- * @brief SSE connection state stored in sse_pool[].
+ * @brief SSE connection state stored in dws_sse_pool[].
  *
  * Allocated when the SSE handshake (200 + headers) is sent.  slot_id ties
  * this entry back to conn_pool[] and the underlying TCP PCB.
  */
 struct SseConn
 {
-    uint8_t sse_id;  ///< Index into sse_pool[] (set at init).
-    uint8_t slot_id; ///< Owning TCP slot in conn_pool[].
-    bool active;     ///< True when this entry is in use.
+    uint8_t dws_sse_id; ///< Index into dws_sse_pool[] (set at init).
+    uint8_t slot_id;    ///< Owning TCP slot in conn_pool[].
+    bool active;        ///< True when this entry is in use.
 
-    /** Path this client subscribed to (for sse_broadcast() matching). */
+    /** Path this client subscribed to (for dws_sse_broadcast() matching). */
     char path[MAX_PATH_LEN];
 };
 
 /** @brief Pool of SSE connection state, one per MAX_SSE_CONNS. */
-extern SseConn sse_pool[MAX_SSE_CONNS];
+extern SseConn dws_sse_pool[MAX_SSE_CONNS];
 
 // ---------------------------------------------------------------------------
 // SSE pool API
@@ -64,7 +64,7 @@ extern SseConn sse_pool[MAX_SSE_CONNS];
  *
  * Called once from DWS::begin().
  */
-void sse_init();
+void dws_sse_init();
 
 /**
  * @brief Allocate an SseConn and bind it to a TCP slot.
@@ -73,21 +73,21 @@ void sse_init();
  * @param path     URL path the client subscribed to (stored for broadcast).
  * @return Pointer to the allocated SseConn, or nullptr if the pool is full.
  */
-SseConn *sse_alloc(uint8_t slot_id, const char *path);
+SseConn *dws_sse_alloc(uint8_t slot_id, const char *path);
 
 /**
  * @brief Find the SseConn for a given TCP slot, or nullptr.
  *
  * @param slot_id  TCP connection slot index.
  */
-SseConn *sse_find(uint8_t slot_id);
+SseConn *dws_sse_find(uint8_t slot_id);
 
 /**
  * @brief Free the SseConn associated with a TCP slot.
  *
  * @param slot_id  TCP connection slot index.
  */
-void sse_free(uint8_t slot_id);
+void dws_sse_free(uint8_t slot_id);
 
 /**
  * @brief Format one SSE event record into a caller buffer (no transport).
@@ -95,7 +95,7 @@ void sse_free(uint8_t slot_id);
  * Emits `event: <event>\n` (if event), `id: <id>\n` (if id), then
  * `data: <data>\n\n` per the WHATWG event-stream format.  data must not be
  * nullptr.  Pure: no connection state, so it is unit-testable and benchable
- * on its own; sse_write() wraps it with the dws_conn_send() I/O.
+ * on its own; dws_sse_write() wraps it with the dws_conn_send() I/O.
  *
  * @param buf    Destination buffer.
  * @param n      Size of @p buf.
@@ -104,7 +104,7 @@ void sse_free(uint8_t slot_id);
  * @param id     Event ID (optional).
  * @return Bytes written (excluding the terminator), or 0 on empty/overflow.
  */
-int sse_format(char *buf, size_t n, const char *data, const char *event, const char *id);
+int dws_sse_format(char *buf, size_t n, const char *data, const char *event, const char *id);
 
 /**
  * @brief Write one SSE event record to a client.
@@ -121,6 +121,6 @@ int sse_format(char *buf, size_t n, const char *data, const char *event, const c
  * @param id     Event ID (optional).
  * @return true on success, false if the TCP slot is not active.
  */
-bool sse_write(SseConn *sse, const char *data, const char *event, const char *id);
+bool dws_sse_write(SseConn *sse, const char *data, const char *event, const char *id);
 
 #endif

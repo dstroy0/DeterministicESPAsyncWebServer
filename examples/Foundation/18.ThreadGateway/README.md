@@ -10,7 +10,7 @@ OpenThread **radio co-processor** (RCP - an nRF52840 / EFR32), which speaks **sp
 payload northbound - the basis of a Thread / Matter border router.
 
 ```
-Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> dws_gateway_uplink()
+Thread RCP --UART--> dws_spinel_frame_decode() --> spinel payload -> dws_gateway_uplink()
                                                                       |
                                                envelope + topic  thread/0/<tid>
                                                                       |
@@ -22,12 +22,12 @@ bytes, and terminates with a Flag `0x7E`. `services/thread` does the framing:
 
 ```cpp
 uint8_t payload[256]; uint16_t plen;
-int n = spinel_frame_decode(buf, len, payload, sizeof(payload), &plen);  // >0 / need-more / -1
+int n = dws_spinel_frame_decode(buf, len, payload, sizeof(payload), &plen);  // >0 / need-more / -1
 if (n > 0)
     dws_gateway_uplink(0, tid, payload, plen, 0);
 ```
 
-`spinel_frame_encode()` builds a frame the same way (this sketch sends a spinel RESET at
+`dws_spinel_frame_encode()` builds a frame the same way (this sketch sends a spinel RESET at
 boot). Note the FCS is CRC-16/**X-25** (reflected, final XOR), transmitted low byte first -
 distinct from Zigbee's ASH CRC. The codec is host-tested against the X-25 catalog check
 value (`0x906E`) and the byte-stuffing in `test/test_thread`.

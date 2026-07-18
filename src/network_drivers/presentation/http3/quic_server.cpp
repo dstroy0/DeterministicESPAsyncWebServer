@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_server.cpp
- * @brief HTTP/3 server glue - implementation. See quic_server.h.
+ * @file dws_quic_server.cpp
+ * @brief HTTP/3 server glue - implementation. See dws_quic_server.h.
  */
 
 #include "network_drivers/presentation/http3/quic_server.h"
@@ -33,7 +33,7 @@
 // accidental DRAM overflow: move the pool to PSRAM, or acknowledge the internal-DRAM cost.
 #if defined(ARDUINO) && !DWS_QUIC_SERVER_IN_PSRAM && !DWS_QUIC_SERVER_ACK_DRAM
 #error                                                                                                                 \
-    "DeterministicESPAsyncWebServer: DWS_ENABLE_HTTP3 - the quic_server QuicConn+H3Conn pool + ingest ring are tens of KB. Set DWS_QUIC_SERVER_IN_PSRAM=1 on a PSRAM board (S3 / P4 / WROVER built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, tools/psram/README.md), OR set DWS_QUIC_SERVER_ACK_DRAM=1 to accept the internal-DRAM cost (fits a small pool on a roomy chip)."
+    "DeterministicESPAsyncWebServer: DWS_ENABLE_HTTP3 - the dws_quic_server QuicConn+H3Conn pool + ingest ring are tens of KB. Set DWS_QUIC_SERVER_IN_PSRAM=1 on a PSRAM board (S3 / P4 / WROVER built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, tools/psram/README.md), OR set DWS_QUIC_SERVER_ACK_DRAM=1 to accept the internal-DRAM cost (fits a small pool on a roomy chip)."
 #endif
 #if DWS_QUIC_SERVER_IN_PSRAM && defined(ARDUINO)
 #include <esp_attr.h>
@@ -182,8 +182,8 @@ QuicSlot *alloc_slot()
 }
 
 // The HTTP/3 engine surfaces a completed request here; forward it to the application by conn id.
-void h3_on_request(void *app, H3Conn * /*h3*/, uint64_t stream_id, const char *method, const char *path,
-                   const char *authority, const uint8_t *body, size_t body_len)
+void dws_h3_on_request(void *app, H3Conn * /*h3*/, uint64_t stream_id, const char *method, const char *path,
+                       const char *authority, const uint8_t *body, size_t body_len)
 {
     QuicSlot *s = (QuicSlot *)app;
     if (s_quic.on_request)
@@ -202,7 +202,7 @@ QuicSlot *open_conn(const QuicLongHeader *lh, const char *ip, uint16_t port)
     tc.cert_der = s_quic.cfg.cert_der;
     tc.cert_len = s_quic.cfg.cert_len;
     memcpy(tc.ed25519_seed, s_quic.cfg.ed25519_seed, sizeof tc.ed25519_seed);
-    quic_tp_defaults(&tc.params);
+    dws_quic_tp_defaults(&tc.params);
     // A real HTTP/3 endpoint must advertise flow-control room, or every request stream (and the
     // client's control / QPACK streams) is blocked - the RFC 9000 sec 18.2 defaults are all zero.
     tc.params.initial_max_data = 1048576;
@@ -221,9 +221,9 @@ QuicSlot *open_conn(const QuicLongHeader *lh, const char *ip, uint16_t port)
     s_quic.cfg.rng(our_scid, sizeof our_scid);
 
     QuicConnCallbacks cb;
-    memset(&cb, 0, sizeof cb); // h3_conn_init installs the real callbacks
-    quic_conn_init(&s->qc, &tc, lh->dcid, lh->dcid_len, lh->scid, lh->scid_len, our_scid, DWS_QUIC_SCID_LEN, &cb);
-    h3_conn_init(&s->h3, &s->qc, h3_on_request, s);
+    memset(&cb, 0, sizeof cb); // dws_h3_conn_init installs the real callbacks
+    dws_quic_conn_init(&s->qc, &tc, lh->dcid, lh->dcid_len, lh->scid, lh->scid_len, our_scid, DWS_QUIC_SCID_LEN, &cb);
+    dws_h3_conn_init(&s->h3, &s->qc, dws_h3_on_request, s);
 
     copy_str(s->peer_ip, sizeof s->peer_ip, ip);
     s->peer_port = port;
@@ -237,9 +237,9 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
     *is_initial = false;
     if (len < 1)
         return nullptr; // GCOVR_EXCL_LINE  poll only routes ring entries; ring_push rejects len==0, so len>=1 here
-    if (quic_is_long_header(dg[0]))
+    if (dws_quic_is_long_header(dg[0]))
     {
-        if (!quic_parse_long_header(dg, len, lh_out))
+        if (!dws_quic_parse_long_header(dg, len, lh_out))
             return nullptr;
         for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
         {
@@ -274,13 +274,13 @@ void flush_and_reap(uint32_t now_ms)
         QuicSlot *s = &s_qpool.pool[i];
         if (!s->used)
             continue;
-        quic_conn_on_timeout(&s->qc, now_ms); // retransmit a lost handshake flight (PTO)
+        dws_quic_conn_on_timeout(&s->qc, now_ms); // retransmit a lost handshake flight (PTO)
         size_t n;
-        while ((n = quic_conn_send(&s->qc, out, sizeof out)) > 0)
+        while ((n = dws_quic_conn_send(&s->qc, out, sizeof out)) > 0)
             server_send(s->peer_ip, s->peer_port, out, n);
         // Reap a closed connection, or one idle past the timeout (wrap-safe delta) so a client that
         // never closes cannot leak the fixed pool.
-        if (quic_conn_is_closed(&s->qc) || (uint32_t)(now_ms - s->last_ms) >= DWS_QUIC_IDLE_MS)
+        if (dws_quic_conn_is_closed(&s->qc) || (uint32_t)(now_ms - s->last_ms) >= DWS_QUIC_IDLE_MS)
             s->used = false;
     }
 }
@@ -333,7 +333,7 @@ void dws_quic_server_poll(uint32_t now_ms)
         if (!s)
             continue;
         s->last_ms = now_ms; // liveness for idle reaping
-        quic_conn_recv(&s->qc, ig.data, ig.len);
+        dws_quic_conn_recv(&s->qc, ig.data, ig.len);
     }
     flush_and_reap(now_ms);
 }
@@ -344,7 +344,7 @@ bool dws_quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, c
     QuicSlot *s = slot_by_id(conn_id);
     if (!s)
         return false;
-    return h3_conn_respond(&s->h3, stream_id, status, content_type, body, body_len);
+    return dws_h3_conn_respond(&s->h3, stream_id, status, content_type, body, body_len);
 }
 
 uint8_t dws_quic_server_active_conns(void)

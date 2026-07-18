@@ -2,26 +2,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file dtls_handshake.h
+ * @file dws_dtls_handshake.h
  * @brief DTLS 1.3 handshake framing and reliability (RFC 9147 §5, §7).
  *
- * The datagram-reliability layer that sits between the DTLS record layer (dtls_record) and the
- * reused TLS 1.3 message builders (tls13_msg). TLS 1.3 assumes an in-order reliable byte stream;
+ * The datagram-reliability layer that sits between the DTLS record layer (dws_dtls_record) and the
+ * reused TLS 1.3 message builders (dws_tls13_msg). TLS 1.3 assumes an in-order reliable byte stream;
  * DTLS carries the same handshake messages over lossy, reorderable datagrams, so each message gains
  * a 12-byte DTLS handshake header (RFC 9147 §5.2) that lets a fragment be placed independently of
  * the record that carried it, and lost flights are recovered with acknowledgements (§7) rather than
  * TCP retransmission.
  *
  * This file is pure framing - no crypto state, no sockets. It provides:
- *   - the 12-byte handshake header (@ref dtls_hs_header_parse / @ref dtls_hs_frag_build);
+ *   - the 12-byte handshake header (@ref dws_dtls_hs_header_parse / @ref dws_dtls_hs_frag_build);
  *   - overlap-tolerant message reassembly (@ref DtlsHsReasm), modelled on the QUIC CRYPTO-stream
  *     reassembler - a fragment may arrive split, duplicated, or overlapping (§5.4);
- *   - the ACK message (@ref dtls_ack_build / @ref dtls_ack_parse, content type 26, §7);
- *   - the stateless HelloRetryRequest cookie (@ref dtls_cookie_make / @ref dtls_cookie_verify,
+ *   - the ACK message (@ref dws_dtls_ack_build / @ref dws_dtls_ack_parse, content type 26, §7);
+ *   - the stateless HelloRetryRequest cookie (@ref dws_dtls_cookie_make / @ref dws_dtls_cookie_verify,
  *     the §5.1 return-routability / anti-amplification defence).
  *
- * The handshake state machine that drives these (flights, epochs, PTO) is dtls_conn; the TLS 1.3
- * message bodies and key schedule are reused verbatim from the HTTP/3 stack (tls13_msg, tls13_kdf).
+ * The handshake state machine that drives these (flights, epochs, PTO) is dws_dtls_conn; the TLS 1.3
+ * message bodies and key schedule are reused verbatim from the HTTP/3 stack (dws_tls13_msg, dws_tls13_kdf).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -42,7 +42,7 @@
 static constexpr size_t DTLS_HS_HDR_LEN = 12;
 
 /** @brief message_hash synthetic-message type used when wrapping ClientHello1 for a HelloRetryRequest
- *         transcript (RFC 8446 §4.4.1). Framing constant; the transcript itself lives in dtls_conn. */
+ *         transcript (RFC 8446 §4.4.1). Framing constant; the transcript itself lives in dws_dtls_conn. */
 static constexpr uint8_t DTLS_HS_TYPE_MESSAGE_HASH = 254;
 
 // ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ struct DtlsHsHeader
  *
  * @return bytes consumed (DTLS_HS_HDR_LEN + fragment_length), or 0 if malformed / truncated.
  */
-size_t dtls_hs_header_parse(const uint8_t *p, size_t len, DtlsHsHeader *out);
+size_t dws_dtls_hs_header_parse(const uint8_t *p, size_t len, DtlsHsHeader *out);
 
 /**
  * @brief Build one DTLS handshake message fragment: the 12-byte header followed by the fragment body.
@@ -81,8 +81,8 @@ size_t dtls_hs_header_parse(const uint8_t *p, size_t len, DtlsHsHeader *out);
  * @param frag_len     number of fragment bytes.
  * @return total bytes written (DTLS_HS_HDR_LEN + @p frag_len), or 0 on overflow / range error.
  */
-size_t dtls_hs_frag_build(uint8_t msg_type, uint16_t msg_seq, uint32_t full_len, uint32_t frag_offset,
-                          const uint8_t *frag, uint32_t frag_len, uint8_t *out, size_t out_cap);
+size_t dws_dtls_hs_frag_build(uint8_t msg_type, uint16_t msg_seq, uint32_t full_len, uint32_t frag_offset,
+                              const uint8_t *frag, uint32_t frag_len, uint8_t *out, size_t out_cap);
 
 // ---------------------------------------------------------------------------
 // Message reassembly (RFC 9147 §5.4): overlap-tolerant, no heap
@@ -118,7 +118,7 @@ struct DtlsHsReasm
  * @param buf      body buffer the reassembled message is written into.
  * @param buf_cap  capacity of @p buf; a message longer than this is rejected.
  */
-void dtls_hs_reasm_init(DtlsHsReasm *r, uint16_t msg_seq, uint8_t *buf, size_t buf_cap);
+void dws_dtls_hs_reasm_init(DtlsHsReasm *r, uint16_t msg_seq, uint8_t *buf, size_t buf_cap);
 
 /**
  * @brief Feed one parsed fragment into the reassembler.
@@ -130,7 +130,7 @@ void dtls_hs_reasm_init(DtlsHsReasm *r, uint16_t msg_seq, uint8_t *buf, size_t b
  *         bytes), 0 if accepted but incomplete (or not this message), -1 on error (length overflow,
  *         inconsistent length, or too many distinct ranges).
  */
-int dtls_hs_reasm_add(DtlsHsReasm *r, const DtlsHsHeader *frag);
+int dws_dtls_hs_reasm_add(DtlsHsReasm *r, const DtlsHsHeader *frag);
 
 // ---------------------------------------------------------------------------
 // ACK message (RFC 9147 §7): content type 26
@@ -149,7 +149,7 @@ struct DtlsRecordNumber
  *        numbers, big-endian epoch then sequence_number.
  * @return body bytes written (2 + 16*count), or 0 on overflow.
  */
-size_t dtls_ack_build(const DtlsRecordNumber *nums, size_t count, uint8_t *out, size_t out_cap);
+size_t dws_dtls_ack_build(const DtlsRecordNumber *nums, size_t count, uint8_t *out, size_t out_cap);
 
 /**
  * @brief Parse an ACK message body into record numbers.
@@ -158,7 +158,7 @@ size_t dtls_ack_build(const DtlsRecordNumber *nums, size_t count, uint8_t *out, 
  * @param out_count  receives the number of record numbers parsed.
  * @return true on a well-formed ACK that fits in @p out; false if malformed or too many entries.
  */
-bool dtls_ack_parse(const uint8_t *body, size_t len, DtlsRecordNumber *out, size_t out_cap, size_t *out_count);
+bool dws_dtls_ack_parse(const uint8_t *body, size_t len, DtlsRecordNumber *out, size_t out_cap, size_t *out_count);
 
 // ---------------------------------------------------------------------------
 // HelloRetryRequest cookie (RFC 9147 §5.1): stateless return-routability
@@ -178,14 +178,15 @@ static constexpr size_t DTLS_COOKIE_MAX = 128;
  * state machine needs to resume statelessly after the retry (e.g. the ClientHello1 transcript hash
  * plus the selected group).
  *
- * @param hmac_key     32-byte server secret (rotate periodically per §5.1).
+ * @param dws_hmac_key     32-byte server secret (rotate periodically per §5.1).
  * @param timestamp    monotonic value stamped into the cookie for freshness checks.
  * @param payload      opaque server state to carry through the retry.
  * @param client_addr  serialized client address, mixed into the MAC.
  * @return cookie bytes written, or 0 on overflow / oversized payload.
  */
-size_t dtls_cookie_make(const uint8_t hmac_key[32], uint64_t timestamp, const uint8_t *payload, size_t payload_len,
-                        const uint8_t *client_addr, size_t addr_len, uint8_t *out, size_t out_cap);
+size_t dws_dtls_cookie_make(const uint8_t dws_hmac_key[32], uint64_t timestamp, const uint8_t *payload,
+                            size_t payload_len, const uint8_t *client_addr, size_t addr_len, uint8_t *out,
+                            size_t out_cap);
 
 /**
  * @brief Validate a cookie echoed in a second ClientHello and recover its payload.
@@ -194,16 +195,16 @@ size_t dtls_cookie_make(const uint8_t hmac_key[32], uint64_t timestamp, const ui
  * checks the timestamp is within (@p now - @p max_age, @p now]. A cookie minted for a different
  * client address fails the MAC check.
  *
- * @param now          current timestamp in the same units as @ref dtls_cookie_make.
+ * @param now          current timestamp in the same units as @ref dws_dtls_cookie_make.
  * @param max_age      maximum accepted age; 0 disables the freshness check.
  * @param payload_out  receives the carried payload on success.
  * @param payload_cap  capacity of @p payload_out.
  * @param payload_len_out  receives the payload length on success.
  * @return true if the cookie is authentic, fresh, and bound to @p client_addr.
  */
-bool dtls_cookie_verify(const uint8_t hmac_key[32], uint64_t now, uint64_t max_age, const uint8_t *client_addr,
-                        size_t addr_len, const uint8_t *cookie, size_t cookie_len, uint8_t *payload_out,
-                        size_t payload_cap, size_t *payload_len_out);
+bool dws_dtls_cookie_verify(const uint8_t dws_hmac_key[32], uint64_t now, uint64_t max_age, const uint8_t *client_addr,
+                            size_t addr_len, const uint8_t *cookie, size_t cookie_len, uint8_t *payload_out,
+                            size_t payload_cap, size_t *payload_len_out);
 
 #endif // DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_DTLS_HANDSHAKE_H

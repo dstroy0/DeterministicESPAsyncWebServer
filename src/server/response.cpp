@@ -101,7 +101,7 @@ void DWS::send_template(uint8_t slot_id, int code, const char *content_type, con
     size_t body_len = tmpl_walk(slot_id, tmpl, resolver, false);
 
     bool keep;
-    const char *cl = resp_conn_hdr(slot_id, &keep);
+    const char *cl = dws_resp_conn_hdr(slot_id, &keep);
 
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
@@ -118,7 +118,7 @@ void DWS::send_template(uint8_t slot_id, int code, const char *content_type, con
     if (!head && body_len > 0)
         tmpl_walk(slot_id, tmpl, resolver, true);
 
-    resp_end(slot_id, code, (int)body_len, keep);
+    dws_resp_end(slot_id, code, (int)body_len, keep);
 }
 
 // ---------------------------------------------------------------------------
@@ -144,7 +144,7 @@ void DWS::send_chunked(uint8_t slot_id, int code, const char *content_type, Chun
     }
 
     bool keep;
-    const char *cl = resp_conn_hdr(slot_id, &keep);
+    const char *cl = dws_resp_conn_hdr(slot_id, &keep);
 
     // RFC 7230 3.3.1: chunked is an HTTP/1.1 transfer-coding - it MUST NOT be sent
     // to an HTTP/1.0 (or unknown-version) client. Fall back to a close-delimited
@@ -176,7 +176,7 @@ void DWS::send_chunked(uint8_t slot_id, int code, const char *content_type, Chun
     // HEAD carries the headers but no body or terminator.
     if (req_is_head(slot_id) || !source)
     {
-        resp_end(slot_id, code, 0, keep);
+        dws_resp_end(slot_id, code, 0, keep);
         return;
     }
 
@@ -237,7 +237,7 @@ void DWS::chunk_send_pump(uint8_t slot_id)
                 dws_conn_send(slot_id, "0\r\n\r\n", 5); // terminating chunk (1.1 only)
             dws_conn_flush(slot_id);
             s.active = false;
-            resp_end(slot_id, s.status, s.total, s.keep); // raw: keep==false -> connection close ends the body
+            dws_resp_end(slot_id, s.status, s.total, s.keep); // raw: keep==false -> connection close ends the body
             return;
         }
         if (n > cap)
@@ -460,11 +460,11 @@ static const char *metrics_var(const char *name)
         return s_metrics.uptime;
     if (!strcmp(name, "requests_total"))
         return s_metrics.requests;
-    if (!strcmp(name, "resp_2xx"))
+    if (!strcmp(name, "dws_resp_2xx"))
         return s_metrics.n2xx;
-    if (!strcmp(name, "resp_4xx"))
+    if (!strcmp(name, "dws_resp_4xx"))
         return s_metrics.n4xx;
-    if (!strcmp(name, "resp_5xx"))
+    if (!strcmp(name, "dws_resp_5xx"))
         return s_metrics.n5xx;
     if (!strcmp(name, "active_conns"))
         return s_metrics.active;

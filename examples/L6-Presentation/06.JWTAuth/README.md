@@ -10,13 +10,13 @@ no sessions, no per-client state, and no heap - verification is a hash check.
 Only HS256 is supported (the deterministic, shared-secret choice for a
 constrained device).
 
-**Verify the signature.** `jwt_bearer_valid()` checks the whole
+**Verify the signature.** `dws_jwt_bearer_valid()` checks the whole
 `Authorization` header against the secret. The full header is in
 `req->authorization` - JWTs exceed `MAX_VAL_LEN`, so the parser captures the
 authorization header whole when `DWS_ENABLE_JWT` is set:
 
 ```cpp
-if (!jwt_bearer_valid(req->authorization, (const uint8_t *)JWT_SECRET, strlen(JWT_SECRET))) {
+if (!dws_jwt_bearer_valid(req->authorization, (const uint8_t *)JWT_SECRET, strlen(JWT_SECRET))) {
     server.add_response_header(id, "WWW-Authenticate", "Bearer");
     server.send(id, 401, "text/plain", "invalid or missing token");
     return;
@@ -25,19 +25,19 @@ if (!jwt_bearer_valid(req->authorization, (const uint8_t *)JWT_SECRET, strlen(JW
 
 **Authorize on a claim.** Beyond "is it valid," you can gate on claims. Step past
 the `"Bearer "` scheme to get the bare token, then read a claim with
-`jwt_claim_str()` - here requiring `role == admin` (else `403`):
+`dws_jwt_claim_str()` - here requiring `role == admin` (else `403`):
 
 ```cpp
 const char *tok = req->authorization + 7;        // skip "Bearer "
 while (*tok == ' ') tok++;
 char role[16];
-if (!jwt_claim_str(tok, strlen(tok), "role", role, sizeof(role)) || strcmp(role, "admin") != 0) {
+if (!dws_jwt_claim_str(tok, strlen(tok), "role", role, sizeof(role)) || strcmp(role, "admin") != 0) {
     server.send(id, 403, "text/plain", "forbidden: admin role required");
     return;
 }
 ```
 
-For OAuth2-style space-separated scopes, `jwt_scope_allows(scope, "telemetry:write")`
+For OAuth2-style space-separated scopes, `dws_jwt_scope_allows(scope, "telemetry:write")`
 tests one scope within the `scope` claim (shown commented in the source).
 
 **Minting a token.** Sign `{"sub":...,"role":"admin","exp":...}` with HS256 and
@@ -85,28 +85,28 @@ static void protected_handler(uint8_t id, HttpReq *req)
 {
     // req->authorization holds the FULL Authorization header (JWTs exceed
     // MAX_VAL_LEN; the parser captures it whole when DWS_ENABLE_JWT is set).
-    if (!jwt_bearer_valid(req->authorization, (const uint8_t *)JWT_SECRET, strlen(JWT_SECRET)))
+    if (!dws_jwt_bearer_valid(req->authorization, (const uint8_t *)JWT_SECRET, strlen(JWT_SECRET)))
     {
         server.add_response_header(id, "WWW-Authenticate", "Bearer");
         server.send(id, 401, "text/plain", "invalid or missing token");
         return;
     }
 
-    // Granular authorization from a token claim. jwt_claim_str / jwt_scope_allows
+    // Granular authorization from a token claim. dws_jwt_claim_str / dws_jwt_scope_allows
     // take the bare token, so step past the "Bearer " scheme first.
     const char *tok = req->authorization + 7;
     while (*tok == ' ')
         tok++;
     char role[16];
-    if (!jwt_claim_str(tok, strlen(tok), "role", role, sizeof(role)) || strcmp(role, "admin") != 0)
+    if (!dws_jwt_claim_str(tok, strlen(tok), "role", role, sizeof(role)) || strcmp(role, "admin") != 0)
     {
         server.send(id, 403, "text/plain", "forbidden: admin role required");
         return;
     }
     // For OAuth2 space-separated scopes, gate on the "scope" claim instead:
     //   char scope[64];
-    //   if (jwt_claim_str(tok, strlen(tok), "scope", scope, sizeof(scope)) &&
-    //       jwt_scope_allows(scope, "telemetry:write")) { ... }
+    //   if (dws_jwt_claim_str(tok, strlen(tok), "scope", scope, sizeof(scope)) &&
+    //       dws_jwt_scope_allows(scope, "telemetry:write")) { ... }
 
     server.send(id, 200, "text/plain", "welcome admin - your token is valid");
 }

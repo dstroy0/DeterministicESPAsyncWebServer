@@ -31,7 +31,7 @@ bool emit_option(uint8_t *out, size_t *o, size_t cap, uint16_t delta, const uint
     if (delta < 13)
         dn = (uint8_t)delta;
     // GCOVR_EXCL_START  delta is always 11 (first Uri-Path option) or 0 (later ones) from the sole caller
-    // wisun_build_coap, so an option delta never reaches the 13/14 extended-encoding branches.
+    // dws_wisun_build_coap, so an option delta never reaches the 13/14 extended-encoding branches.
     else if (delta < 269)
     {
         dn = 13;
@@ -76,8 +76,8 @@ bool emit_option(uint8_t *out, size_t *o, size_t cap, uint16_t delta, const uint
 }
 } // namespace
 
-size_t wisun_build_coap(uint8_t type, uint8_t code, uint16_t msg_id, const uint8_t *token, uint8_t tkl,
-                        const char *uri_path, const uint8_t *payload, size_t plen, uint8_t *out, size_t cap)
+size_t dws_wisun_build_coap(uint8_t type, uint8_t code, uint16_t msg_id, const uint8_t *token, uint8_t tkl,
+                            const char *uri_path, const uint8_t *payload, size_t plen, uint8_t *out, size_t cap)
 {
     if (!out || tkl > 8 || (tkl && !token) || (plen && !payload))
         return 0;
@@ -122,7 +122,7 @@ size_t wisun_build_coap(uint8_t type, uint8_t code, uint16_t msg_id, const uint8
     return o;
 }
 
-void wisun_init(WisunFan *fan, const DWSIp *border_router, WisunNode *storage, size_t cap)
+void dws_wisun_init(WisunFan *fan, const DWSIp *border_router, WisunNode *storage, size_t cap)
 {
     if (!fan)
         return;
@@ -135,12 +135,12 @@ void wisun_init(WisunFan *fan, const DWSIp *border_router, WisunNode *storage, s
     fan->count = 0;
 }
 
-int wisun_node_register(WisunFan *fan, const DWSIp *addr, uint32_t now)
+int dws_wisun_node_register(WisunFan *fan, const DWSIp *addr, uint32_t now)
 {
     if (!fan || !fan->nodes || !addr)
         return -1;
     size_t idx = 0;
-    if (wisun_node_find(fan, addr, &idx))
+    if (dws_wisun_node_find(fan, addr, &idx))
     {
         fan->nodes[idx].joined = true;
         fan->nodes[idx].last_seen = now;
@@ -154,7 +154,7 @@ int wisun_node_register(WisunFan *fan, const DWSIp *addr, uint32_t now)
     return (int)fan->count++;
 }
 
-bool wisun_node_find(const WisunFan *fan, const DWSIp *addr, size_t *idx)
+bool dws_wisun_node_find(const WisunFan *fan, const DWSIp *addr, size_t *idx)
 {
     if (!fan || !fan->nodes || !addr)
         return false;
@@ -168,7 +168,7 @@ bool wisun_node_find(const WisunFan *fan, const DWSIp *addr, size_t *idx)
     return false;
 }
 
-size_t wisun_joined_count(const WisunFan *fan)
+size_t dws_wisun_joined_count(const WisunFan *fan)
 {
     if (!fan || !fan->nodes)
         return 0;
@@ -179,7 +179,7 @@ size_t wisun_joined_count(const WisunFan *fan)
     return c;
 }
 
-size_t wisun_nodes_json(const WisunFan *fan, char *out, size_t cap)
+size_t dws_wisun_nodes_json(const WisunFan *fan, char *out, size_t cap)
 {
     if (!fan || !out || cap == 0)
         return 0;

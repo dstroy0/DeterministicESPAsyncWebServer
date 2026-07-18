@@ -26,138 +26,138 @@ void test_uint()
 {
     uint8_t b[16];
     MsgpackWriter w;
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_uint(&w, 0);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_uint(&w, 0);
     uint8_t e0[] = {0x00};
-    check(b, msgpack_len(&w), e0, 1);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_uint(&w, 127);
+    check(b, dws_msgpack_len(&w), e0, 1);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_uint(&w, 127);
     uint8_t e7f[] = {0x7f};
-    check(b, msgpack_len(&w), e7f, 1);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_uint(&w, 128);
+    check(b, dws_msgpack_len(&w), e7f, 1);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_uint(&w, 128);
     uint8_t e80[] = {0xcc, 0x80};
-    check(b, msgpack_len(&w), e80, 2);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_uint(&w, 256);
+    check(b, dws_msgpack_len(&w), e80, 2);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_uint(&w, 256);
     uint8_t e256[] = {0xcd, 0x01, 0x00};
-    check(b, msgpack_len(&w), e256, 3);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_uint(&w, 65536);
+    check(b, dws_msgpack_len(&w), e256, 3);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_uint(&w, 65536);
     uint8_t e64k[] = {0xce, 0x00, 0x01, 0x00, 0x00};
-    check(b, msgpack_len(&w), e64k, 5);
+    check(b, dws_msgpack_len(&w), e64k, 5);
 }
 
 void test_int()
 {
     uint8_t b[16];
     MsgpackWriter w;
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_int(&w, -1);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_int(&w, -1);
     uint8_t e[] = {0xff};
-    check(b, msgpack_len(&w), e, 1);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_int(&w, -32);
+    check(b, dws_msgpack_len(&w), e, 1);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_int(&w, -32);
     uint8_t e32[] = {0xe0};
-    check(b, msgpack_len(&w), e32, 1);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_int(&w, -33);
+    check(b, dws_msgpack_len(&w), e32, 1);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_int(&w, -33);
     uint8_t e33[] = {0xd0, 0xdf};
-    check(b, msgpack_len(&w), e33, 2);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_int(&w, -129);
+    check(b, dws_msgpack_len(&w), e33, 2);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_int(&w, -129);
     uint8_t e129[] = {0xd1, 0xff, 0x7f};
-    check(b, msgpack_len(&w), e129, 3);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_int(&w, 42); // positive via msgpack_int -> fixint
+    check(b, dws_msgpack_len(&w), e129, 3);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_int(&w, 42); // positive via dws_msgpack_int -> fixint
     uint8_t e42[] = {0x2a};
-    check(b, msgpack_len(&w), e42, 1);
+    check(b, dws_msgpack_len(&w), e42, 1);
 }
 
 void test_str()
 {
     uint8_t b[40];
     MsgpackWriter w;
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_str(&w, "");
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_str(&w, "");
     uint8_t e[] = {0xa0};
-    check(b, msgpack_len(&w), e, 1);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_str(&w, "a");
+    check(b, dws_msgpack_len(&w), e, 1);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_str(&w, "a");
     uint8_t e2[] = {0xa1, 0x61};
-    check(b, msgpack_len(&w), e2, 2);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_str(&w, "hello");
+    check(b, dws_msgpack_len(&w), e2, 2);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_str(&w, "hello");
     uint8_t e3[] = {0xa5, 0x68, 0x65, 0x6c, 0x6c, 0x6f};
-    check(b, msgpack_len(&w), e3, 6);
+    check(b, dws_msgpack_len(&w), e3, 6);
 }
 
 void test_bytes()
 {
     uint8_t b[16];
     MsgpackWriter w;
-    msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_init(&w, b, sizeof(b));
     uint8_t data[] = {1, 2, 3};
-    msgpack_bytes(&w, data, 3);
+    dws_msgpack_bytes(&w, data, 3);
     uint8_t e[] = {0xc4, 0x03, 0x01, 0x02, 0x03};
-    check(b, msgpack_len(&w), e, 5);
+    check(b, dws_msgpack_len(&w), e, 5);
 }
 
 void test_simple()
 {
     uint8_t b[8];
     MsgpackWriter w;
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_bool(&w, false);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_bool(&w, false);
     uint8_t e[] = {0xc2};
-    check(b, msgpack_len(&w), e, 1);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_bool(&w, true);
+    check(b, dws_msgpack_len(&w), e, 1);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_bool(&w, true);
     uint8_t e2[] = {0xc3};
-    check(b, msgpack_len(&w), e2, 1);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_nil(&w);
+    check(b, dws_msgpack_len(&w), e2, 1);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_nil(&w);
     uint8_t e3[] = {0xc0};
-    check(b, msgpack_len(&w), e3, 1);
+    check(b, dws_msgpack_len(&w), e3, 1);
 }
 
 void test_float()
 {
     uint8_t b[8];
     MsgpackWriter w;
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_float(&w, 1.0f);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_float(&w, 1.0f);
     uint8_t e[] = {0xca, 0x3f, 0x80, 0x00, 0x00};
-    check(b, msgpack_len(&w), e, 5);
+    check(b, dws_msgpack_len(&w), e, 5);
 }
 
 void test_array_and_map()
 {
     uint8_t b[16];
     MsgpackWriter w;
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_array(&w, 3);
-    msgpack_uint(&w, 1);
-    msgpack_uint(&w, 2);
-    msgpack_uint(&w, 3);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_array(&w, 3);
+    dws_msgpack_uint(&w, 1);
+    dws_msgpack_uint(&w, 2);
+    dws_msgpack_uint(&w, 3);
     uint8_t e[] = {0x93, 0x01, 0x02, 0x03};
-    check(b, msgpack_len(&w), e, 4);
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_map(&w, 1);
-    msgpack_uint(&w, 1);
-    msgpack_uint(&w, 2);
+    check(b, dws_msgpack_len(&w), e, 4);
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_map(&w, 1);
+    dws_msgpack_uint(&w, 1);
+    dws_msgpack_uint(&w, 2);
     uint8_t e2[] = {0x81, 0x01, 0x02};
-    check(b, msgpack_len(&w), e2, 3);
+    check(b, dws_msgpack_len(&w), e2, 3);
 }
 
 void test_overflow_fails_closed()
 {
     uint8_t b[2];
     MsgpackWriter w;
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_uint(&w, 65536); // needs 5 bytes
-    TEST_ASSERT_FALSE(msgpack_ok(&w));
-    TEST_ASSERT_EQUAL_size_t(5, msgpack_len(&w));
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_uint(&w, 65536); // needs 5 bytes
+    TEST_ASSERT_FALSE(dws_msgpack_ok(&w));
+    TEST_ASSERT_EQUAL_size_t(5, dws_msgpack_len(&w));
 }
 
 // ---------------------------------------------------------------------------
@@ -170,23 +170,23 @@ void test_decode_uint()
     uint8_t in[] = {0x00, 0x7f, 0xcc, 0x80, 0xcd, 0x01, 0x00, 0xce, 0x00, 0x01, 0x00,
                     0x00, 0xcf, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
     MsgpackReader r;
-    msgpack_reader_init(&r, in, sizeof(in));
+    dws_msgpack_reader_init(&r, in, sizeof(in));
     uint64_t v;
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_UINT, msgpack_peek(&r));
-    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_UINT, dws_msgpack_peek(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(0, v);
-    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(127, v);
-    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(128, v);
-    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(256, v);
-    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(65536, v);
-    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(0x100000000ULL, v);
-    TEST_ASSERT_TRUE(msgpack_reader_ok(&r));
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, msgpack_peek(&r)); // exhausted
+    TEST_ASSERT_TRUE(dws_msgpack_reader_ok(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, dws_msgpack_peek(&r)); // exhausted
 }
 
 void test_decode_int()
@@ -194,24 +194,24 @@ void test_decode_int()
     // negative fixint (-1, -32), int8 (-128), int16 (-32768), int32 (-2147483648)
     uint8_t in[] = {0xff, 0xe0, 0xd0, 0x80, 0xd1, 0x80, 0x00, 0xd2, 0x80, 0x00, 0x00, 0x00};
     MsgpackReader r;
-    msgpack_reader_init(&r, in, sizeof(in));
+    dws_msgpack_reader_init(&r, in, sizeof(in));
     int64_t v;
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INT, msgpack_peek(&r));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INT, dws_msgpack_peek(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(-1, v);
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(-32, v);
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(-128, v);
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(-32768, v);
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(-2147483648LL, v);
-    TEST_ASSERT_TRUE(msgpack_reader_ok(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_reader_ok(&r));
     // read_int also accepts an unsigned encoding
     uint8_t u[] = {0xcc, 0x80};
-    msgpack_reader_init(&r, u, sizeof(u));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    dws_msgpack_reader_init(&r, u, sizeof(u));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(128, v);
 }
 
@@ -219,16 +219,16 @@ void test_decode_str_and_bytes()
 {
     uint8_t in[] = {0xa3, 'a', 'b', 'c', 0xc4, 0x02, 0xde, 0xad}; // fixstr "abc", bin8 {de ad}
     MsgpackReader r;
-    msgpack_reader_init(&r, in, sizeof(in));
+    dws_msgpack_reader_init(&r, in, sizeof(in));
     const char *s;
     size_t n;
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_STR, msgpack_peek(&r));
-    TEST_ASSERT_TRUE(msgpack_read_str(&r, &s, &n));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_STR, dws_msgpack_peek(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_read_str(&r, &s, &n));
     TEST_ASSERT_EQUAL_size_t(3, n);
     TEST_ASSERT_EQUAL_CHAR_ARRAY("abc", s, 3);
     const uint8_t *bin;
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_BIN, msgpack_peek(&r));
-    TEST_ASSERT_TRUE(msgpack_read_bytes(&r, &bin, &n));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_BIN, dws_msgpack_peek(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_read_bytes(&r, &bin, &n));
     TEST_ASSERT_EQUAL_size_t(2, n);
     TEST_ASSERT_EQUAL_UINT8(0xde, bin[0]);
     TEST_ASSERT_EQUAL_UINT8(0xad, bin[1]);
@@ -238,23 +238,23 @@ void test_decode_simple_and_float()
 {
     uint8_t in[] = {0xc0, 0xc2, 0xc3, 0xca, 0x3f, 0x80, 0x00, 0x00}; // nil false true float32(1.0)
     MsgpackReader r;
-    msgpack_reader_init(&r, in, sizeof(in));
+    dws_msgpack_reader_init(&r, in, sizeof(in));
     bool bv;
     float fv;
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_NIL, msgpack_peek(&r));
-    TEST_ASSERT_TRUE(msgpack_read_nil(&r));
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_BOOL, msgpack_peek(&r));
-    TEST_ASSERT_TRUE(msgpack_read_bool(&r, &bv));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_NIL, dws_msgpack_peek(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_read_nil(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_BOOL, dws_msgpack_peek(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_read_bool(&r, &bv));
     TEST_ASSERT_FALSE(bv);
-    TEST_ASSERT_TRUE(msgpack_read_bool(&r, &bv));
+    TEST_ASSERT_TRUE(dws_msgpack_read_bool(&r, &bv));
     TEST_ASSERT_TRUE(bv);
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_FLOAT, msgpack_peek(&r));
-    TEST_ASSERT_TRUE(msgpack_read_float(&r, &fv));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_FLOAT, dws_msgpack_peek(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_read_float(&r, &fv));
     TEST_ASSERT_EQUAL_FLOAT(1.0f, fv);
     // float64 (0xcb) narrows to float
     uint8_t d[] = {0xcb, 0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18}; // pi as double
-    msgpack_reader_init(&r, d, sizeof(d));
-    TEST_ASSERT_TRUE(msgpack_read_float(&r, &fv));
+    dws_msgpack_reader_init(&r, d, sizeof(d));
+    TEST_ASSERT_TRUE(dws_msgpack_read_float(&r, &fv));
     TEST_ASSERT_FLOAT_WITHIN(0.0001f, 3.14159f, fv);
 }
 
@@ -262,25 +262,25 @@ void test_decode_array_and_map()
 {
     uint8_t in[] = {0x93, 0x01, 0x02, 0x03, 0x81, 0xa1, 'k', 0x2a}; // [1,2,3] {"k":42}
     MsgpackReader r;
-    msgpack_reader_init(&r, in, sizeof(in));
+    dws_msgpack_reader_init(&r, in, sizeof(in));
     size_t count;
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_ARRAY, msgpack_peek(&r));
-    TEST_ASSERT_TRUE(msgpack_read_array(&r, &count));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_ARRAY, dws_msgpack_peek(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_read_array(&r, &count));
     TEST_ASSERT_EQUAL_size_t(3, count);
     uint64_t v;
     for (size_t i = 0; i < count; i++)
     {
-        TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+        TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &v));
         TEST_ASSERT_EQUAL_UINT64(i + 1, v);
     }
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_MAP, msgpack_peek(&r));
-    TEST_ASSERT_TRUE(msgpack_read_map(&r, &count));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_MAP, dws_msgpack_peek(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_read_map(&r, &count));
     TEST_ASSERT_EQUAL_size_t(1, count);
     const char *s;
     size_t n;
-    TEST_ASSERT_TRUE(msgpack_read_str(&r, &s, &n));
+    TEST_ASSERT_TRUE(dws_msgpack_read_str(&r, &s, &n));
     TEST_ASSERT_EQUAL_CHAR_ARRAY("k", s, 1);
-    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(42, v);
 }
 
@@ -289,39 +289,39 @@ void test_decode_roundtrip()
     // Encode a small document, then decode it back and check each field.
     uint8_t b[64];
     MsgpackWriter w;
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_map(&w, 3);
-    msgpack_str(&w, "id");
-    msgpack_uint(&w, 4242);
-    msgpack_str(&w, "t");
-    msgpack_float(&w, 21.5f);
-    msgpack_str(&w, "ok");
-    msgpack_bool(&w, true);
-    TEST_ASSERT_TRUE(msgpack_ok(&w));
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_map(&w, 3);
+    dws_msgpack_str(&w, "id");
+    dws_msgpack_uint(&w, 4242);
+    dws_msgpack_str(&w, "t");
+    dws_msgpack_float(&w, 21.5f);
+    dws_msgpack_str(&w, "ok");
+    dws_msgpack_bool(&w, true);
+    TEST_ASSERT_TRUE(dws_msgpack_ok(&w));
 
     MsgpackReader r;
-    msgpack_reader_init(&r, b, msgpack_len(&w));
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
     size_t count;
-    TEST_ASSERT_TRUE(msgpack_read_map(&r, &count));
+    TEST_ASSERT_TRUE(dws_msgpack_read_map(&r, &count));
     TEST_ASSERT_EQUAL_size_t(3, count);
     const char *k;
     size_t kn;
     uint64_t uv;
     float fv;
     bool bv;
-    TEST_ASSERT_TRUE(msgpack_read_str(&r, &k, &kn));
+    TEST_ASSERT_TRUE(dws_msgpack_read_str(&r, &k, &kn));
     TEST_ASSERT_EQUAL_CHAR_ARRAY("id", k, 2);
-    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &uv));
+    TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &uv));
     TEST_ASSERT_EQUAL_UINT64(4242, uv);
-    TEST_ASSERT_TRUE(msgpack_read_str(&r, &k, &kn));
+    TEST_ASSERT_TRUE(dws_msgpack_read_str(&r, &k, &kn));
     TEST_ASSERT_EQUAL_CHAR_ARRAY("t", k, 1);
-    TEST_ASSERT_TRUE(msgpack_read_float(&r, &fv));
+    TEST_ASSERT_TRUE(dws_msgpack_read_float(&r, &fv));
     TEST_ASSERT_EQUAL_FLOAT(21.5f, fv);
-    TEST_ASSERT_TRUE(msgpack_read_str(&r, &k, &kn));
+    TEST_ASSERT_TRUE(dws_msgpack_read_str(&r, &k, &kn));
     TEST_ASSERT_EQUAL_CHAR_ARRAY("ok", k, 2);
-    TEST_ASSERT_TRUE(msgpack_read_bool(&r, &bv));
+    TEST_ASSERT_TRUE(dws_msgpack_read_bool(&r, &bv));
     TEST_ASSERT_TRUE(bv);
-    TEST_ASSERT_TRUE(msgpack_reader_ok(&r));
+    TEST_ASSERT_TRUE(dws_msgpack_reader_ok(&r));
 }
 
 void test_decode_fails_closed()
@@ -329,31 +329,31 @@ void test_decode_fails_closed()
     MsgpackReader r;
     // truncated uint16 (header says read 2 more bytes, only 1 present)
     uint8_t t1[] = {0xcd, 0x01};
-    msgpack_reader_init(&r, t1, sizeof(t1));
+    dws_msgpack_reader_init(&r, t1, sizeof(t1));
     uint64_t v;
-    TEST_ASSERT_FALSE(msgpack_read_uint(&r, &v));
-    TEST_ASSERT_FALSE(msgpack_reader_ok(&r));
+    TEST_ASSERT_FALSE(dws_msgpack_read_uint(&r, &v));
+    TEST_ASSERT_FALSE(dws_msgpack_reader_ok(&r));
     // truncated str (len 5, only 2 bytes present)
     uint8_t t2[] = {0xa5, 'h', 'i'};
-    msgpack_reader_init(&r, t2, sizeof(t2));
+    dws_msgpack_reader_init(&r, t2, sizeof(t2));
     const char *s;
     size_t n;
-    TEST_ASSERT_FALSE(msgpack_read_str(&r, &s, &n));
-    TEST_ASSERT_FALSE(msgpack_reader_ok(&r));
+    TEST_ASSERT_FALSE(dws_msgpack_read_str(&r, &s, &n));
+    TEST_ASSERT_FALSE(dws_msgpack_reader_ok(&r));
     // type mismatch: read_uint on a bool
     uint8_t t3[] = {0xc3};
-    msgpack_reader_init(&r, t3, sizeof(t3));
-    TEST_ASSERT_FALSE(msgpack_read_uint(&r, &v));
-    TEST_ASSERT_FALSE(msgpack_reader_ok(&r));
+    dws_msgpack_reader_init(&r, t3, sizeof(t3));
+    TEST_ASSERT_FALSE(dws_msgpack_read_uint(&r, &v));
+    TEST_ASSERT_FALSE(dws_msgpack_reader_ok(&r));
     // unsupported byte (0xc1) peeks INVALID and any read fails
     uint8_t t4[] = {0xc1};
-    msgpack_reader_init(&r, t4, sizeof(t4));
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, msgpack_peek(&r));
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, (int64_t *)&v));
+    dws_msgpack_reader_init(&r, t4, sizeof(t4));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, dws_msgpack_peek(&r));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, (int64_t *)&v));
     // empty buffer
-    msgpack_reader_init(&r, t4, 0);
-    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, msgpack_peek(&r));
-    TEST_ASSERT_FALSE(msgpack_read_nil(&r));
+    dws_msgpack_reader_init(&r, t4, 0);
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, dws_msgpack_peek(&r));
+    TEST_ASSERT_FALSE(dws_msgpack_read_nil(&r));
 }
 
 // Round-trip every wide encoding so both the encoder width branches (u64, i32,
@@ -369,95 +369,95 @@ void test_wide_roundtrip()
     const char *sp;
     const uint8_t *bp;
 
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_uint(&w, 0x123456789ULL); // uint64 (0xcf)
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_uint(&w, 0x123456789ULL); // uint64 (0xcf)
     TEST_ASSERT_EQUAL_UINT8(0xcf, b[0]);
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &uv));
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &uv));
     TEST_ASSERT_EQUAL_UINT64(0x123456789ULL, uv);
 
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_int(&w, -70000); // int32 (0xd2)
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_int(&w, -70000); // int32 (0xd2)
     TEST_ASSERT_EQUAL_UINT8(0xd2, b[0]);
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &iv));
     TEST_ASSERT_EQUAL_INT64(-70000, iv);
 
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_int(&w, -5000000000LL); // int64 (0xd3)
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_int(&w, -5000000000LL); // int64 (0xd3)
     TEST_ASSERT_EQUAL_UINT8(0xd3, b[0]);
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &iv));
     TEST_ASSERT_EQUAL_INT64(-5000000000LL, iv);
 
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_int(&w, 5000000000LL); // positive crossing into a wide int
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &iv));
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_int(&w, 5000000000LL); // positive crossing into a wide int
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &iv));
     TEST_ASSERT_EQUAL_INT64(5000000000LL, iv);
 
     char s40[41];
     for (int i = 0; i < 40; i++)
         s40[i] = 'x';
     s40[40] = '\0';
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_str(&w, s40); // str8 (0xd9)
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_str(&w, s40); // str8 (0xd9)
     TEST_ASSERT_EQUAL_UINT8(0xd9, b[0]);
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_str(&r, &sp, &n));
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_str(&r, &sp, &n));
     TEST_ASSERT_EQUAL_size_t(40, n);
 
     char s300[301];
     for (int i = 0; i < 300; i++)
         s300[i] = 'y';
     s300[300] = '\0';
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_str(&w, s300); // str16 (0xda)
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_str(&w, s300); // str16 (0xda)
     TEST_ASSERT_EQUAL_UINT8(0xda, b[0]);
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_str(&r, &sp, &n));
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_str(&r, &sp, &n));
     TEST_ASSERT_EQUAL_size_t(300, n);
 
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_str_n(&w, "hi", 2); // explicit-length fixstr
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_str(&r, &sp, &n));
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_str_n(&w, "hi", 2); // explicit-length fixstr
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_str(&r, &sp, &n));
     TEST_ASSERT_EQUAL_size_t(2, n);
 
     static uint8_t big[300];
     for (int i = 0; i < 300; i++)
         big[i] = (uint8_t)i;
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_bytes(&w, big, 300); // bin16 (0xc5)
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_bytes(&w, big, 300); // bin16 (0xc5)
     TEST_ASSERT_EQUAL_UINT8(0xc5, b[0]);
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_bytes(&r, &bp, &n));
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_bytes(&r, &bp, &n));
     TEST_ASSERT_EQUAL_size_t(300, n);
 
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_array(&w, 20); // array16 (0xdc)
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_array(&w, 20); // array16 (0xdc)
     for (int i = 0; i < 20; i++)
-        msgpack_uint(&w, (uint64_t)i);
+        dws_msgpack_uint(&w, (uint64_t)i);
     TEST_ASSERT_EQUAL_UINT8(0xdc, b[0]);
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_array(&r, &cnt));
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_array(&r, &cnt));
     TEST_ASSERT_EQUAL_size_t(20, cnt);
     for (int i = 0; i < 20; i++)
     {
-        TEST_ASSERT_TRUE(msgpack_read_uint(&r, &uv));
+        TEST_ASSERT_TRUE(dws_msgpack_read_uint(&r, &uv));
         TEST_ASSERT_EQUAL_UINT64((uint64_t)i, uv);
     }
 
-    msgpack_init(&w, b, sizeof(b));
-    msgpack_map(&w, 20); // map16 (0xde)
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_map(&w, 20); // map16 (0xde)
     for (int i = 0; i < 20; i++)
     {
-        msgpack_uint(&w, (uint64_t)i);
-        msgpack_uint(&w, (uint64_t)i);
+        dws_msgpack_uint(&w, (uint64_t)i);
+        dws_msgpack_uint(&w, (uint64_t)i);
     }
     TEST_ASSERT_EQUAL_UINT8(0xde, b[0]);
-    msgpack_reader_init(&r, b, msgpack_len(&w));
-    TEST_ASSERT_TRUE(msgpack_read_map(&r, &cnt));
+    dws_msgpack_reader_init(&r, b, dws_msgpack_len(&w));
+    TEST_ASSERT_TRUE(dws_msgpack_read_map(&r, &cnt));
     TEST_ASSERT_EQUAL_size_t(20, cnt);
 }
 
@@ -470,23 +470,23 @@ void test_decode_wide_fails_closed()
     size_t n;
     // str16 header claims 300 bytes, body absent
     uint8_t t1[] = {0xda, 0x01, 0x2c, 'a'};
-    msgpack_reader_init(&r, t1, sizeof(t1));
-    TEST_ASSERT_FALSE(msgpack_read_str(&r, &s, &n));
-    TEST_ASSERT_FALSE(msgpack_reader_ok(&r));
+    dws_msgpack_reader_init(&r, t1, sizeof(t1));
+    TEST_ASSERT_FALSE(dws_msgpack_read_str(&r, &s, &n));
+    TEST_ASSERT_FALSE(dws_msgpack_reader_ok(&r));
     // bin16 truncated header (only one length byte)
     uint8_t t2[] = {0xc5, 0x01};
-    msgpack_reader_init(&r, t2, sizeof(t2));
-    TEST_ASSERT_FALSE(msgpack_read_bytes(&r, &bp, &n));
+    dws_msgpack_reader_init(&r, t2, sizeof(t2));
+    TEST_ASSERT_FALSE(dws_msgpack_read_bytes(&r, &bp, &n));
     // array16 header truncated
     uint8_t t3[] = {0xdc, 0x00};
-    msgpack_reader_init(&r, t3, sizeof(t3));
+    dws_msgpack_reader_init(&r, t3, sizeof(t3));
     size_t cnt;
-    TEST_ASSERT_FALSE(msgpack_read_array(&r, &cnt));
+    TEST_ASSERT_FALSE(dws_msgpack_read_array(&r, &cnt));
     // uint64 truncated
     uint8_t t4[] = {0xcf, 0x00, 0x00};
-    msgpack_reader_init(&r, t4, sizeof(t4));
+    dws_msgpack_reader_init(&r, t4, sizeof(t4));
     uint64_t uv;
-    TEST_ASSERT_FALSE(msgpack_read_uint(&r, &uv));
+    TEST_ASSERT_FALSE(dws_msgpack_read_uint(&r, &uv));
 }
 
 // str32/bin32/array32/map32 headers (len/count > 0xffff): the widest encoder branch.
@@ -496,40 +496,40 @@ void test_encode_wide32()
     static uint8_t data[0x10000]; // 65536 bytes -> forces the 32-bit length form
     MsgpackWriter w;
 
-    msgpack_init(&w, out, sizeof(out));
-    msgpack_str_n(&w, (const char *)data, 0x10000); // str32 (0xdb)
-    TEST_ASSERT_TRUE(msgpack_ok(&w));
+    dws_msgpack_init(&w, out, sizeof(out));
+    dws_msgpack_str_n(&w, (const char *)data, 0x10000); // str32 (0xdb)
+    TEST_ASSERT_TRUE(dws_msgpack_ok(&w));
     TEST_ASSERT_EQUAL_UINT8(0xdb, out[0]);
-    TEST_ASSERT_EQUAL_size_t(5 + 0x10000, msgpack_len(&w));
+    TEST_ASSERT_EQUAL_size_t(5 + 0x10000, dws_msgpack_len(&w));
     // decode it back: exercises read_blob's 32-bit (f32) length branch
     MsgpackReader r;
-    msgpack_reader_init(&r, out, msgpack_len(&w));
+    dws_msgpack_reader_init(&r, out, dws_msgpack_len(&w));
     const char *sp;
     size_t n;
-    TEST_ASSERT_TRUE(msgpack_read_str(&r, &sp, &n));
+    TEST_ASSERT_TRUE(dws_msgpack_read_str(&r, &sp, &n));
     TEST_ASSERT_EQUAL_size_t(0x10000, n);
 
-    msgpack_init(&w, out, sizeof(out));
-    msgpack_bytes(&w, data, 0x10000); // bin32 (0xc6)
+    dws_msgpack_init(&w, out, sizeof(out));
+    dws_msgpack_bytes(&w, data, 0x10000); // bin32 (0xc6)
     TEST_ASSERT_EQUAL_UINT8(0xc6, out[0]);
 
     uint8_t hdr[8];
-    msgpack_init(&w, hdr, sizeof(hdr));
-    msgpack_array(&w, 0x10000); // array32 (0xdd)
+    dws_msgpack_init(&w, hdr, sizeof(hdr));
+    dws_msgpack_array(&w, 0x10000); // array32 (0xdd)
     TEST_ASSERT_EQUAL_UINT8(0xdd, hdr[0]);
-    TEST_ASSERT_EQUAL_size_t(5, msgpack_len(&w));
+    TEST_ASSERT_EQUAL_size_t(5, dws_msgpack_len(&w));
 
-    msgpack_init(&w, hdr, sizeof(hdr));
-    msgpack_map(&w, 0x10000); // map32 (0xdf)
+    dws_msgpack_init(&w, hdr, sizeof(hdr));
+    dws_msgpack_map(&w, 0x10000); // map32 (0xdf)
     TEST_ASSERT_EQUAL_UINT8(0xdf, hdr[0]);
-    TEST_ASSERT_EQUAL_size_t(5, msgpack_len(&w));
+    TEST_ASSERT_EQUAL_size_t(5, dws_msgpack_len(&w));
 }
 
 static void peek_is(uint8_t byte, MsgpackType want)
 {
     MsgpackReader r;
-    msgpack_reader_init(&r, &byte, 1);
-    TEST_ASSERT_EQUAL(want, msgpack_peek(&r));
+    dws_msgpack_reader_init(&r, &byte, 1);
+    TEST_ASSERT_EQUAL(want, dws_msgpack_peek(&r));
 }
 
 // peek reports the right type for every wide (multi-byte) format marker.
@@ -558,24 +558,24 @@ void test_read_int_all_widths()
     MsgpackReader r;
     int64_t v;
     uint8_t fixp[] = {0x05}; // positive fixint via read_int
-    msgpack_reader_init(&r, fixp, sizeof(fixp));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    dws_msgpack_reader_init(&r, fixp, sizeof(fixp));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(5, v);
     uint8_t u16[] = {0xcd, 0x01, 0x00}; // uint16 via read_int
-    msgpack_reader_init(&r, u16, sizeof(u16));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    dws_msgpack_reader_init(&r, u16, sizeof(u16));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(256, v);
     uint8_t u32[] = {0xce, 0x00, 0x01, 0x00, 0x00}; // uint32 via read_int
-    msgpack_reader_init(&r, u32, sizeof(u32));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    dws_msgpack_reader_init(&r, u32, sizeof(u32));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(65536, v);
     uint8_t u64[] = {0xcf, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00}; // uint64 via read_int
-    msgpack_reader_init(&r, u64, sizeof(u64));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    dws_msgpack_reader_init(&r, u64, sizeof(u64));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(0x100000000LL, v);
     uint8_t i64[] = {0xd3, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00}; // int64
-    msgpack_reader_init(&r, i64, sizeof(i64));
-    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    dws_msgpack_reader_init(&r, i64, sizeof(i64));
+    TEST_ASSERT_TRUE(dws_msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64((int64_t)0xffffffff00000000ULL, v);
 }
 
@@ -591,22 +591,22 @@ void test_read_on_empty_reader()
     const char *s;
     const uint8_t *bp;
     size_t n, c;
-    msgpack_reader_init(&r, &dummy, 0);
-    TEST_ASSERT_FALSE(msgpack_read_uint(&r, &uv));
-    msgpack_reader_init(&r, &dummy, 0);
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv));
-    msgpack_reader_init(&r, &dummy, 0);
-    TEST_ASSERT_FALSE(msgpack_read_bool(&r, &bv));
-    msgpack_reader_init(&r, &dummy, 0);
-    TEST_ASSERT_FALSE(msgpack_read_float(&r, &fv));
-    msgpack_reader_init(&r, &dummy, 0);
-    TEST_ASSERT_FALSE(msgpack_read_str(&r, &s, &n));
-    msgpack_reader_init(&r, &dummy, 0);
-    TEST_ASSERT_FALSE(msgpack_read_bytes(&r, &bp, &n));
-    msgpack_reader_init(&r, &dummy, 0);
-    TEST_ASSERT_FALSE(msgpack_read_array(&r, &c));
-    msgpack_reader_init(&r, &dummy, 0);
-    TEST_ASSERT_FALSE(msgpack_read_map(&r, &c));
+    dws_msgpack_reader_init(&r, &dummy, 0);
+    TEST_ASSERT_FALSE(dws_msgpack_read_uint(&r, &uv));
+    dws_msgpack_reader_init(&r, &dummy, 0);
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, &dummy, 0);
+    TEST_ASSERT_FALSE(dws_msgpack_read_bool(&r, &bv));
+    dws_msgpack_reader_init(&r, &dummy, 0);
+    TEST_ASSERT_FALSE(dws_msgpack_read_float(&r, &fv));
+    dws_msgpack_reader_init(&r, &dummy, 0);
+    TEST_ASSERT_FALSE(dws_msgpack_read_str(&r, &s, &n));
+    dws_msgpack_reader_init(&r, &dummy, 0);
+    TEST_ASSERT_FALSE(dws_msgpack_read_bytes(&r, &bp, &n));
+    dws_msgpack_reader_init(&r, &dummy, 0);
+    TEST_ASSERT_FALSE(dws_msgpack_read_array(&r, &c));
+    dws_msgpack_reader_init(&r, &dummy, 0);
+    TEST_ASSERT_FALSE(dws_msgpack_read_map(&r, &c));
 }
 
 // A typed reader on a byte of the wrong family fails closed (default/else branches).
@@ -619,21 +619,21 @@ void test_read_wrong_type_byte()
     const char *s;
     const uint8_t *bp;
     size_t n, c;
-    msgpack_reader_init(&r, &nilb, 1);
-    TEST_ASSERT_FALSE(msgpack_read_bool(&r, &bv));
-    msgpack_reader_init(&r, &nilb, 1);
-    TEST_ASSERT_FALSE(msgpack_read_float(&r, &fv));
-    msgpack_reader_init(&r, &nilb, 1);
-    TEST_ASSERT_FALSE(msgpack_read_str(&r, &s, &n));
-    msgpack_reader_init(&r, &nilb, 1);
-    TEST_ASSERT_FALSE(msgpack_read_bytes(&r, &bp, &n));
-    msgpack_reader_init(&r, &nilb, 1);
-    TEST_ASSERT_FALSE(msgpack_read_array(&r, &c));
-    msgpack_reader_init(&r, &nilb, 1);
-    TEST_ASSERT_FALSE(msgpack_read_map(&r, &c));
+    dws_msgpack_reader_init(&r, &nilb, 1);
+    TEST_ASSERT_FALSE(dws_msgpack_read_bool(&r, &bv));
+    dws_msgpack_reader_init(&r, &nilb, 1);
+    TEST_ASSERT_FALSE(dws_msgpack_read_float(&r, &fv));
+    dws_msgpack_reader_init(&r, &nilb, 1);
+    TEST_ASSERT_FALSE(dws_msgpack_read_str(&r, &s, &n));
+    dws_msgpack_reader_init(&r, &nilb, 1);
+    TEST_ASSERT_FALSE(dws_msgpack_read_bytes(&r, &bp, &n));
+    dws_msgpack_reader_init(&r, &nilb, 1);
+    TEST_ASSERT_FALSE(dws_msgpack_read_array(&r, &c));
+    dws_msgpack_reader_init(&r, &nilb, 1);
+    TEST_ASSERT_FALSE(dws_msgpack_read_map(&r, &c));
     int64_t iv;
-    msgpack_reader_init(&r, &nilb, 1);
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv)); // switch default
+    dws_msgpack_reader_init(&r, &nilb, 1);
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv)); // switch default
 }
 
 // Each width's argument bytes are truncated: take_be fails and the read returns false.
@@ -646,53 +646,53 @@ void test_read_truncated_widths()
     const char *s;
     size_t n, c;
     uint8_t u8[] = {0xcc};
-    msgpack_reader_init(&r, u8, sizeof(u8)); // uint8 arg missing
-    TEST_ASSERT_FALSE(msgpack_read_uint(&r, &uv));
+    dws_msgpack_reader_init(&r, u8, sizeof(u8)); // uint8 arg missing
+    TEST_ASSERT_FALSE(dws_msgpack_read_uint(&r, &uv));
     uint8_t u32[] = {0xce, 0x00, 0x00};
-    msgpack_reader_init(&r, u32, sizeof(u32)); // uint32 short
-    TEST_ASSERT_FALSE(msgpack_read_uint(&r, &uv));
+    dws_msgpack_reader_init(&r, u32, sizeof(u32)); // uint32 short
+    TEST_ASSERT_FALSE(dws_msgpack_read_uint(&r, &uv));
     uint8_t iu8[] = {0xcc};
-    msgpack_reader_init(&r, iu8, sizeof(iu8));
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, iu8, sizeof(iu8));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
     uint8_t iu16[] = {0xcd, 0x00};
-    msgpack_reader_init(&r, iu16, sizeof(iu16));
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, iu16, sizeof(iu16));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
     uint8_t iu32[] = {0xce, 0x00, 0x00};
-    msgpack_reader_init(&r, iu32, sizeof(iu32));
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, iu32, sizeof(iu32));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
     uint8_t iu64[] = {0xcf, 0x00};
-    msgpack_reader_init(&r, iu64, sizeof(iu64));
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, iu64, sizeof(iu64));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
     uint8_t i8[] = {0xd0};
-    msgpack_reader_init(&r, i8, sizeof(i8));
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, i8, sizeof(i8));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
     uint8_t i16[] = {0xd1, 0x00};
-    msgpack_reader_init(&r, i16, sizeof(i16));
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, i16, sizeof(i16));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
     uint8_t i32[] = {0xd2, 0x00, 0x00};
-    msgpack_reader_init(&r, i32, sizeof(i32));
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, i32, sizeof(i32));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
     uint8_t i64[] = {0xd3, 0x00, 0x00};
-    msgpack_reader_init(&r, i64, sizeof(i64));
-    TEST_ASSERT_FALSE(msgpack_read_int(&r, &iv));
+    dws_msgpack_reader_init(&r, i64, sizeof(i64));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
     uint8_t f32[] = {0xca, 0x00, 0x00};
-    msgpack_reader_init(&r, f32, sizeof(f32)); // float32 short
-    TEST_ASSERT_FALSE(msgpack_read_float(&r, &fv));
+    dws_msgpack_reader_init(&r, f32, sizeof(f32)); // float32 short
+    TEST_ASSERT_FALSE(dws_msgpack_read_float(&r, &fv));
     uint8_t f64[] = {0xcb, 0x00, 0x00};
-    msgpack_reader_init(&r, f64, sizeof(f64)); // float64 short
-    TEST_ASSERT_FALSE(msgpack_read_float(&r, &fv));
+    dws_msgpack_reader_init(&r, f64, sizeof(f64)); // float64 short
+    TEST_ASSERT_FALSE(dws_msgpack_read_float(&r, &fv));
     uint8_t s8[] = {0xd9};
-    msgpack_reader_init(&r, s8, sizeof(s8)); // str8 length missing
-    TEST_ASSERT_FALSE(msgpack_read_str(&r, &s, &n));
+    dws_msgpack_reader_init(&r, s8, sizeof(s8)); // str8 length missing
+    TEST_ASSERT_FALSE(dws_msgpack_read_str(&r, &s, &n));
     uint8_t s32[] = {0xdb, 0x00, 0x00};
-    msgpack_reader_init(&r, s32, sizeof(s32)); // str32 length short
-    TEST_ASSERT_FALSE(msgpack_read_str(&r, &s, &n));
+    dws_msgpack_reader_init(&r, s32, sizeof(s32)); // str32 length short
+    TEST_ASSERT_FALSE(dws_msgpack_read_str(&r, &s, &n));
     uint8_t a32[] = {0xdd, 0x00, 0x00};
-    msgpack_reader_init(&r, a32, sizeof(a32)); // array32 count short
-    TEST_ASSERT_FALSE(msgpack_read_array(&r, &c));
+    dws_msgpack_reader_init(&r, a32, sizeof(a32)); // array32 count short
+    TEST_ASSERT_FALSE(dws_msgpack_read_array(&r, &c));
     uint8_t m32[] = {0xdf, 0x00, 0x00};
-    msgpack_reader_init(&r, m32, sizeof(m32)); // map32 count short
-    TEST_ASSERT_FALSE(msgpack_read_map(&r, &c));
+    dws_msgpack_reader_init(&r, m32, sizeof(m32)); // map32 count short
+    TEST_ASSERT_FALSE(dws_msgpack_read_map(&r, &c));
 }
 
 int main()

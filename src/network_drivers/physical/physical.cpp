@@ -94,7 +94,7 @@ bool net_global_ipv6(DWSIp *out)
     return false;
 }
 
-bool ipv6_ready(void)
+bool dws_ipv6_ready(void)
 {
     DWSIp tmp;
     return net_global_ipv6(&tmp);
@@ -108,7 +108,7 @@ bool net_global_ipv6(DWSIp *)
 {
     return false;
 }
-bool ipv6_ready(void)
+bool dws_ipv6_ready(void)
 {
     return false;
 }
@@ -156,7 +156,7 @@ bool net_global_ipv6(DWSIp *)
 {
     return false;
 }
-bool ipv6_ready(void)
+bool dws_ipv6_ready(void)
 {
     return false;
 }

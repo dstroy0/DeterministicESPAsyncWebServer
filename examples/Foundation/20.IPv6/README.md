@@ -12,7 +12,7 @@ turning IPv6 on for the network interface:
 init_wifi_physical(SSID, PASSWORD);
 while (!wifi_ready()) delay(250);
 init_ipv6_physical();            // enable IPv6 (SLAAC) on the Wi-Fi netif
-while (!ipv6_ready()) delay(250); // waits for a global (routable) v6 address
+while (!dws_ipv6_ready()) delay(250); // waits for a global (routable) v6 address
 ```
 
 `DWS_ENABLE_IPV6` gates the bring-up. `init_ipv6_physical()` enables IPv6 on the netif

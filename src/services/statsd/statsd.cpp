@@ -6,7 +6,7 @@
  * @brief StatsD metrics client - implementation. See statsd.h.
  *
  * The value and sample-rate are rendered by hand (no printf %lld/%f, which need extra
- * newlib support on some targets), then statsd_format assembles the line and the transport
+ * newlib support on some targets), then dws_statsd_format assembles the line and the transport
  * UDP service sends it.
  */
 
@@ -94,8 +94,8 @@ bool app(char *out, size_t cap, size_t *pos, const char *s, size_t n)
 }
 } // namespace
 
-size_t statsd_format(char *out, size_t cap, const char *name, const char *value, StatsdType type, float rate,
-                     const char *tags)
+size_t dws_statsd_format(char *out, size_t cap, const char *name, const char *value, StatsdType type, float rate,
+                         const char *tags)
 {
     if (!out || cap == 0 || !name || !name[0] || !value)
         return 0;
@@ -150,13 +150,13 @@ void emit(const StatsdCtx &c, const char *name, const char *value, StatsdType ty
     if (!c.ready)
         return;
     char line[DWS_STATSD_LINE_MAX];
-    size_t n = statsd_format(line, sizeof(line), name, value, type, rate, c.tags[0] ? c.tags : nullptr);
+    size_t n = dws_statsd_format(line, sizeof(line), name, value, type, rate, c.tags[0] ? c.tags : nullptr);
     if (n)
         dws_udp_sendto(c.host, c.port, (const uint8_t *)line, n);
 }
 } // namespace
 
-void statsd_begin(const char *host, uint16_t port, const char *global_tags)
+void dws_statsd_begin(const char *host, uint16_t port, const char *global_tags)
 {
     if (!host)
     {
@@ -176,42 +176,42 @@ void statsd_begin(const char *host, uint16_t port, const char *global_tags)
     s_statsd.ready = true;
 }
 
-void statsd_count(const char *name, int64_t delta)
+void dws_statsd_count(const char *name, int64_t delta)
 {
     char v[24];
     v[i64_str(v, delta)] = '\0';
     emit(s_statsd, name, v, StatsdType::STATSD_COUNTER, 1.0f);
 }
 
-void statsd_count_sampled(const char *name, int64_t delta, float rate)
+void dws_statsd_count_sampled(const char *name, int64_t delta, float rate)
 {
     char v[24];
     v[i64_str(v, delta)] = '\0';
     emit(s_statsd, name, v, StatsdType::STATSD_COUNTER, rate);
 }
 
-void statsd_gauge(const char *name, int64_t value)
+void dws_statsd_gauge(const char *name, int64_t value)
 {
     char v[24];
     v[i64_str(v, value)] = '\0';
     emit(s_statsd, name, v, StatsdType::STATSD_GAUGE, 1.0f);
 }
 
-void statsd_gauge_delta(const char *name, int64_t delta)
+void dws_statsd_gauge_delta(const char *name, int64_t delta)
 {
     char v[24];
     v[i64_delta_str(v, delta)] = '\0';
     emit(s_statsd, name, v, StatsdType::STATSD_GAUGE, 1.0f);
 }
 
-void statsd_timing(const char *name, uint32_t ms)
+void dws_statsd_timing(const char *name, uint32_t ms)
 {
     char v[16];
     v[u64_str(v, ms)] = '\0';
     emit(s_statsd, name, v, StatsdType::STATSD_TIMING, 1.0f);
 }
 
-void statsd_set(const char *name, const char *member)
+void dws_statsd_set(const char *name, const char *member)
 {
     emit(s_statsd, name, member ? member : "", StatsdType::STATSD_SET, 1.0f);
 }

@@ -18,21 +18,21 @@ write a tiny command interpreter, not a byte pump.
 
 ```cpp
 server.listen(23, PROTO_TELNET); // open the Telnet port
-telnet_on_command(on_command);   // register the line handler
+dws_telnet_on_command(on_command);   // register the line handler
 server.begin(80);                // also start HTTP; begin() activates every listener
 ```
 
 **A line-at-a-time command handler.** The callback receives a fully-edited line
-and the connection id; reply with `telnet_print` / `telnet_println` /
-`telnet_printf`. This example is a minimal shell with `help`, `heap`, `uptime`,
+and the connection id; reply with `dws_telnet_print` / `dws_telnet_println` /
+`dws_telnet_printf`. This example is a minimal shell with `help`, `heap`, `uptime`,
 and an echo fallback:
 
 ```cpp
 void on_command(const char *line, uint8_t conn_id) {
     if (strcmp(line, "heap") == 0)
-        telnet_printf("free heap: %u bytes\r\n", ESP.getFreeHeap());
+        dws_telnet_printf("free heap: %u bytes\r\n", ESP.getFreeHeap());
     else if (line[0])
-        telnet_printf("echo: %s\r\n", line);
+        dws_telnet_printf("echo: %s\r\n", line);
 }
 ```
 
@@ -70,7 +70,7 @@ added explanatory comments:
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/presentation/telnet/telnet.h" // telnet_on_command / telnet_printf
+#include "network_drivers/presentation/telnet/telnet.h" // dws_telnet_on_command / dws_telnet_printf
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
@@ -83,13 +83,13 @@ void on_command(const char *line, uint8_t conn_id)
 {
     (void)conn_id;
     if (strcmp(line, "help") == 0)
-        telnet_println("commands: help, heap, uptime, <echo>");
+        dws_telnet_println("commands: help, heap, uptime, <echo>");
     else if (strcmp(line, "heap") == 0)
-        telnet_printf("free heap: %u bytes\r\n", ESP.getFreeHeap());
+        dws_telnet_printf("free heap: %u bytes\r\n", ESP.getFreeHeap());
     else if (strcmp(line, "uptime") == 0)
-        telnet_printf("uptime: %lu ms\r\n", millis());
+        dws_telnet_printf("uptime: %lu ms\r\n", millis());
     else if (line[0])                       // non-empty -> echo it
-        telnet_printf("echo: %s\r\n", line);
+        dws_telnet_printf("echo: %s\r\n", line);
 }
 
 void setup()
@@ -107,7 +107,7 @@ void setup()
     WiFi.setSleep(false);                    // keep the radio responsive for the session
 
     server.listen(23, PROTO_TELNET);         // open the Telnet port
-    telnet_on_command(on_command);
+    dws_telnet_on_command(on_command);
 
     server.begin(80);                        // also start HTTP (begin() activates all listeners)
     Serial.println("Telnet on port 23 (try: telnet <ip>)");

@@ -39,7 +39,7 @@ static uint32_t get32(const uint8_t *p)
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 
-size_t eip_build(uint8_t *buf, size_t cap, const EipHeader *h, const uint8_t *data, size_t data_len)
+size_t dws_eip_build(uint8_t *buf, size_t cap, const EipHeader *h, const uint8_t *data, size_t data_len)
 {
     if (!buf || !h || (data_len && !data) || data_len > 0xFFFF)
         return 0;
@@ -62,7 +62,7 @@ size_t eip_build(uint8_t *buf, size_t cap, const EipHeader *h, const uint8_t *da
     return p;
 }
 
-bool eip_parse(const uint8_t *buf, size_t len, EipHeader *out, const uint8_t **data, size_t *data_len)
+bool dws_eip_parse(const uint8_t *buf, size_t len, EipHeader *out, const uint8_t **data, size_t *data_len)
 {
     if (!buf || !out || len < EIP_HEADER_SIZE)
         return false;
@@ -81,7 +81,7 @@ bool eip_parse(const uint8_t *buf, size_t len, EipHeader *out, const uint8_t **d
     return true;
 }
 
-size_t eip_build_register_session(uint8_t *buf, size_t cap, const uint8_t sender_context[8])
+size_t dws_eip_build_register_session(uint8_t *buf, size_t cap, const uint8_t sender_context[8])
 {
     EipHeader h;
     memset(&h, 0, sizeof(h));
@@ -91,16 +91,16 @@ size_t eip_build_register_session(uint8_t *buf, size_t cap, const uint8_t sender
     uint8_t data[4];
     put16(data, 1);     // protocol version
     put16(data + 2, 0); // options flags
-    return eip_build(buf, cap, &h, data, sizeof(data));
+    return dws_eip_build(buf, cap, &h, data, sizeof(data));
 }
 
-size_t eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_handle, const uint8_t sender_context[8],
-                              uint16_t timeout, const uint8_t *cip, size_t cip_len)
+size_t dws_eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_handle, const uint8_t sender_context[8],
+                                  uint16_t timeout, const uint8_t *cip, size_t dws_cip_len)
 {
-    if (!buf || (cip_len && !cip) || cip_len > 0xFFFF)
+    if (!buf || (dws_cip_len && !cip) || dws_cip_len > 0xFFFF)
         return 0;
     // command data: interface handle(4) + timeout(2) + CPF{ count(2) + null item(4) + unconn item(4+cip) }
-    size_t data_len = 4 + 2 + 2 + 4 + 4 + cip_len;
+    size_t data_len = 4 + 2 + 2 + 4 + 4 + dws_cip_len;
     size_t total = EIP_HEADER_SIZE + data_len;
     if (total > cap || data_len > 0xFFFF)
         return 0;
@@ -113,7 +113,7 @@ size_t eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_handle,
     h.session_handle = session_handle;
     if (sender_context)
         memcpy(h.sender_context, sender_context, 8);
-    if (eip_build(buf, cap, &h, nullptr, 0) == 0) // writes only the 24-octet header, length 0
+    if (dws_eip_build(buf, cap, &h, nullptr, 0) == 0) // writes only the 24-octet header, length 0
         return 0; // GCOVR_EXCL_LINE  unreachable: total>cap above already proved cap>=40>EIP_HEADER_SIZE, so this can't
                   // fail
     // Patch the length field (offset 2) to the real command-data length.
@@ -126,16 +126,16 @@ size_t eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_handle,
     p += put16(buf + p, EIP_CPF_NULL);
     p += put16(buf + p, 0); // null address item length
     p += put16(buf + p, EIP_CPF_UNCONNECTED_DATA);
-    p += put16(buf + p, (uint16_t)cip_len);
-    if (cip_len)
+    p += put16(buf + p, (uint16_t)dws_cip_len);
+    if (dws_cip_len)
     {
-        memcpy(buf + p, cip, cip_len);
-        p += cip_len;
+        memcpy(buf + p, cip, dws_cip_len);
+        p += dws_cip_len;
     }
     return p;
 }
 
-bool eip_parse_send_rr_data(const uint8_t *data, size_t data_len, const uint8_t **cip, size_t *cip_len)
+bool dws_eip_parse_send_rr_data(const uint8_t *data, size_t data_len, const uint8_t **cip, size_t *dws_cip_len)
 {
     if (!data || data_len < 8) // interface handle(4) + timeout(2) + item count(2)
         return false;
@@ -155,8 +155,8 @@ bool eip_parse_send_rr_data(const uint8_t *data, size_t data_len, const uint8_t 
         {
             if (cip)
                 *cip = data + pos;
-            if (cip_len)
-                *cip_len = ilen;
+            if (dws_cip_len)
+                *dws_cip_len = ilen;
             return true;
         }
         pos += ilen;

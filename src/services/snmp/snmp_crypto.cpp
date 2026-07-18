@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file snmp_crypto.cpp
+ * @file dws_snmp_crypto.cpp
  * @brief USM key localization (SHA-256) + AES-128-CFB implementation.
  */
 
@@ -16,7 +16,7 @@
 // Zero key material with a volatile loop the compiler cannot optimize away. A
 // plain memset() whose result is never observed (the buffer dies at return) may
 // be elided as a dead store, leaving secrets on the stack. Same idiom as ssh_wipe.
-static inline void snmp_wipe(void *p, size_t n)
+static inline void dws_snmp_wipe(void *p, size_t n)
 {
     volatile uint8_t *v = (volatile uint8_t *)p;
     while (n--)
@@ -31,8 +31,8 @@ static inline void snmp_wipe(void *p, size_t n)
 // defensively (well above any real passphrase) so a non-terminated password cannot over-read.
 static constexpr size_t SNMP_USM_PASS_MAX = 256;
 
-void snmp_usm_localize_key(const char *password, const uint8_t *engine_id, size_t engine_id_len,
-                           uint8_t key_out[SNMP_USM_KEY_LEN])
+void dws_snmp_usm_localize_key(const char *password, const uint8_t *engine_id, size_t engine_id_len,
+                               uint8_t key_out[SNMP_USM_KEY_LEN])
 {
     size_t pwlen = password ? strnlen(password, SNMP_USM_PASS_MAX) : 0;
     if (pwlen == 0)
@@ -67,8 +67,8 @@ void snmp_usm_localize_key(const char *password, const uint8_t *engine_id, size_
     ssh_sha256_update(&ctx, ku, SNMP_USM_KEY_LEN);
     ssh_sha256_final(&ctx, key_out);
 
-    snmp_wipe(ku, sizeof(ku));
-    snmp_wipe(block, sizeof(block));
+    dws_snmp_wipe(ku, sizeof(ku));
+    dws_snmp_wipe(block, sizeof(block));
 }
 
 // ---------------------------------------------------------------------------
@@ -149,8 +149,8 @@ static void aes128_encrypt_block(const uint8_t rk[176], const uint8_t in[16], ui
     memcpy(out, s, 16);
 }
 
-void snmp_aes128_cfb(const uint8_t key[16], const uint8_t iv[16], const uint8_t *in, uint8_t *out, size_t len,
-                     bool encrypt)
+void dws_snmp_aes128_cfb(const uint8_t key[16], const uint8_t iv[16], const uint8_t *in, uint8_t *out, size_t len,
+                         bool encrypt)
 {
     uint8_t rk[176];
     aes128_key_schedule(key, rk);
@@ -189,9 +189,9 @@ void snmp_aes128_cfb(const uint8_t key[16], const uint8_t iv[16], const uint8_t 
         off += bl;
     }
 
-    snmp_wipe(rk, sizeof(rk));
-    snmp_wipe(ks, sizeof(ks));
-    snmp_wipe(fb, sizeof(fb));
+    dws_snmp_wipe(rk, sizeof(rk));
+    dws_snmp_wipe(ks, sizeof(ks));
+    dws_snmp_wipe(fb, sizeof(fb));
 }
 
 #endif // DWS_ENABLE_SNMP_V3

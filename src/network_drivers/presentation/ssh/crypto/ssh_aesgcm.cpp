@@ -7,7 +7,7 @@
  *
  * Arduino: the AES-256 block is mbedtls_aes_crypt_ecb() (ESP32 HW accelerator). Native: a compact
  * software AES-256 (shared forward S-box + GF(2^8) xtime, no large tables). GHASH and the counter
- * loop are software on both targets; the GF(2^128) reduction mirrors quic_aead.cpp (independent
+ * loop are software on both targets; the GF(2^128) reduction mirrors dws_quic_aead.cpp (independent
  * module: AES-256 vs AES-128 and a different build gate, so it is kept self-contained here).
  */
 

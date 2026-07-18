@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file snmp_ber.h
+ * @file dws_snmp_ber.h
  * @brief Zero-heap ASN.1 BER encoder/decoder for the SNMP agent (DWS_ENABLE_SNMP).
  *
  * A minimal, bounded TLV codec covering exactly the types SNMP uses: INTEGER,
@@ -64,18 +64,19 @@ struct BerEnc
     bool ok;
 };
 
-void ber_enc_init(BerEnc *e, uint8_t *buf, size_t cap);
+void dws_ber_enc_init(BerEnc *e, uint8_t *buf, size_t cap);
 
-bool ber_put_integer(BerEnc *e, long v);                                       ///< INTEGER (signed, minimal)
-bool ber_put_uint(BerEnc *e, uint8_t tag, uint32_t v);                         ///< non-negative int with @p tag
-bool ber_put_octet_string(BerEnc *e, uint8_t tag, const uint8_t *d, size_t n); ///< OCTET STRING / IpAddress / Opaque
-bool ber_put_null(BerEnc *e);                                                  ///< NULL
-bool ber_put_oid(BerEnc *e, const uint32_t *arcs, size_t n);                   ///< OBJECT IDENTIFIER (n >= 2)
-bool ber_put_tlv(BerEnc *e, uint8_t tag, const uint8_t *val, size_t n);        ///< raw primitive TLV
-bool ber_put_raw(BerEnc *e, const uint8_t *bytes, size_t n);                   ///< append pre-encoded bytes verbatim
+bool dws_ber_put_integer(BerEnc *e, long v);               ///< INTEGER (signed, minimal)
+bool dws_ber_put_uint(BerEnc *e, uint8_t tag, uint32_t v); ///< non-negative int with @p tag
+bool dws_ber_put_octet_string(BerEnc *e, uint8_t tag, const uint8_t *d,
+                              size_t n);                                    ///< OCTET STRING / IpAddress / Opaque
+bool dws_ber_put_null(BerEnc *e);                                           ///< NULL
+bool dws_ber_put_oid(BerEnc *e, const uint32_t *arcs, size_t n);            ///< OBJECT IDENTIFIER (n >= 2)
+bool dws_ber_put_tlv(BerEnc *e, uint8_t tag, const uint8_t *val, size_t n); ///< raw primitive TLV
+bool dws_ber_put_raw(BerEnc *e, const uint8_t *bytes, size_t n);            ///< append pre-encoded bytes verbatim
 
-size_t ber_seq_begin(BerEnc *e, uint8_t tag); ///< open a constructed type; returns a token
-void ber_seq_end(BerEnc *e, size_t token);    ///< close it (back-patch the length)
+size_t dws_ber_seq_begin(BerEnc *e, uint8_t tag); ///< open a constructed type; returns a token
+void dws_ber_seq_end(BerEnc *e, size_t token);    ///< close it (back-patch the length)
 
 // ---------------------------------------------------------------------------
 // Decoder - forward reader over a buffer.
@@ -88,16 +89,16 @@ struct BerDec
     bool ok;
 };
 
-void ber_dec_init(BerDec *d, const uint8_t *buf, size_t len);
+void dws_ber_dec_init(BerDec *d, const uint8_t *buf, size_t len);
 
 /** @brief Read a tag + length; on success @p d->pos is left at the value. */
-bool ber_read_header(BerDec *d, uint8_t *tag, size_t *length);
+bool dws_ber_read_header(BerDec *d, uint8_t *tag, size_t *length);
 /** @brief Read an INTEGER into @p out. */
-bool ber_read_integer(BerDec *d, long *out);
+bool dws_ber_read_integer(BerDec *d, long *out);
 /** @brief Read an OBJECT IDENTIFIER into @p arcs (capacity @p max); count in @p n. */
-bool ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n);
+bool dws_ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n);
 /** @brief Advance the cursor past @p length value bytes. */
-bool ber_skip(BerDec *d, size_t length);
+bool dws_ber_skip(BerDec *d, size_t length);
 
 #endif // DWS_ENABLE_SNMP
 

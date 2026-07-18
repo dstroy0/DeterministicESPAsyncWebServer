@@ -16,9 +16,9 @@
  * acknowledged by a single-byte **ACK (0x06)**, or rejected with **NAK (0x15)** / **CAN
  * (0x18)**.
  *
- * zwave_build_frame() assembles a data frame carrying a function command, zwave_parse_frame()
- * frames + verifies one, and zwave_is_ack() / zwave_is_nak() / zwave_is_can() /
- * zwave_build_ack() handle the flow-control bytes. The per-command payload (GetVersion,
+ * dws_zwave_build_frame() assembles a data frame carrying a function command, dws_zwave_parse_frame()
+ * frames + verifies one, and dws_zwave_is_ack() / dws_zwave_is_nak() / dws_zwave_is_can() /
+ * dws_zwave_build_ack() handle the flow-control bytes. The per-command payload (GetVersion,
  * SendData, AddNodeToNetwork, an ApplicationCommandHandler report, ...) is the application's.
  * Pure - you carry the bytes over your UART - so it is fully host-testable.
  *
@@ -46,7 +46,7 @@ struct Zwave
 };
 
 /** @brief Data-frame type. */
-enum class zwave_type : uint8_t
+enum class dws_zwave_type : uint8_t
 {
     ZWAVE_REQ = 0x00, ///< request
     ZWAVE_RES = 0x01, ///< response
@@ -57,8 +57,8 @@ enum class zwave_type : uint8_t
  * @return the total frame length, or 0 if it would not fit @p cap or @p data_len exceeds
  *         DWS_ZWAVE_MAX_DATA.
  */
-uint16_t zwave_build_frame(zwave_type type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out,
-                           uint16_t cap);
+uint16_t dws_zwave_build_frame(dws_zwave_type type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out,
+                               uint16_t cap);
 
 /**
  * @brief Frame one data frame from the front of @p raw and verify the checksum.
@@ -71,18 +71,18 @@ uint16_t zwave_build_frame(zwave_type type, uint8_t cmd, const uint8_t *data, ui
  *         control byte (ACK / NAK / CAN) is not a data frame - test it with the helpers
  *         below before calling this.
  */
-int zwave_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *type, uint8_t *cmd, const uint8_t **pdata,
-                      uint8_t *pdata_len);
+int dws_zwave_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *type, uint8_t *cmd, const uint8_t **pdata,
+                          uint8_t *pdata_len);
 
 /** @brief True if @p b is the ACK control byte. */
-bool zwave_is_ack(uint8_t b);
+bool dws_zwave_is_ack(uint8_t b);
 /** @brief True if @p b is the NAK control byte. */
-bool zwave_is_nak(uint8_t b);
+bool dws_zwave_is_nak(uint8_t b);
 /** @brief True if @p b is the CAN control byte. */
-bool zwave_is_can(uint8_t b);
+bool dws_zwave_is_can(uint8_t b);
 
 /** @brief Write the single ACK byte into @p out. @return 1, or 0 if @p cap < 1. */
-uint16_t zwave_build_ack(uint8_t *out, uint16_t cap);
+uint16_t dws_zwave_build_ack(uint8_t *out, uint16_t cap);
 
 #endif // DWS_ENABLE_ZWAVE
 

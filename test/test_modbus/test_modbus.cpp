@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Unit tests for the Modbus TCP slave core (services/modbus): the data model and
-// the MBAP/PDU codec (modbus_process_adu). No sockets - pure host tests.
+// the MBAP/PDU codec (dws_modbus_process_adu). No sockets - pure host tests.
 
 #include "services/modbus/modbus.h"
 #include <string.h>
 #include <unity.h>
 
-// Last write reported via modbus_on_write().
+// Last write reported via dws_modbus_on_write().
 static uint8_t g_wfc;
 static uint16_t g_wstart, g_wcount;
 static int g_wcalls;
@@ -22,8 +22,8 @@ static void on_write(uint8_t fc, uint16_t start, uint16_t count)
 
 void setUp()
 {
-    modbus_server_init();
-    modbus_on_write(on_write);
+    dws_modbus_server_init();
+    dws_modbus_on_write(on_write);
     g_wfc = 0;
     g_wstart = g_wcount = 0;
     g_wcalls = 0;
@@ -56,14 +56,14 @@ static uint16_t rd16(const uint8_t *p)
 
 void test_read_holding_registers()
 {
-    modbus_set_holding_reg(0, 0x1234);
-    modbus_set_holding_reg(1, 0xABCD);
-    modbus_set_holding_reg(2, 0x0001);
+    dws_modbus_set_holding_reg(0, 0x1234);
+    dws_modbus_set_holding_reg(1, 0xABCD);
+    dws_modbus_set_holding_reg(2, 0x0001);
 
     uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x03}; // FC3, start 0, qty 3
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 0x0001, 0x11, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
 
     TEST_ASSERT_EQUAL_size_t(7 + 2 + 6, n);           // MBAP + fc + bytecount + 3*2
     TEST_ASSERT_EQUAL_UINT16(0x0001, rd16(resp));     // tid echoed
@@ -79,11 +79,11 @@ void test_read_holding_registers()
 
 void test_read_input_registers()
 {
-    modbus_set_input_reg(5, 0xBEEF);
+    dws_modbus_set_input_reg(5, 0xBEEF);
     uint8_t pdu[] = {0x04, 0x00, 0x05, 0x00, 0x01};
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 0x0002, 0x01, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 2 + 2, n);
     TEST_ASSERT_EQUAL_UINT8(0x04, resp[7]);
     TEST_ASSERT_EQUAL_UINT16(0xBEEF, rd16(resp + 9));
@@ -91,15 +91,15 @@ void test_read_input_registers()
 
 void test_read_coils_packs_bits()
 {
-    modbus_set_coil(0, true);
-    modbus_set_coil(1, false);
-    modbus_set_coil(2, true);
-    modbus_set_coil(9, true); // second byte, bit 1
+    dws_modbus_set_coil(0, true);
+    dws_modbus_set_coil(1, false);
+    dws_modbus_set_coil(2, true);
+    dws_modbus_set_coil(9, true); // second byte, bit 1
 
     uint8_t pdu[] = {0x01, 0x00, 0x00, 0x00, 0x0A}; // FC1, start 0, qty 10
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 1, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 2 + 2, n); // 10 bits -> 2 bytes
     TEST_ASSERT_EQUAL_UINT8(0x01, resp[7]);
     TEST_ASSERT_EQUAL_UINT8(2, resp[8]);
@@ -112,10 +112,10 @@ void test_write_single_coil()
     uint8_t pdu[] = {0x05, 0x00, 0x03, 0xFF, 0x00}; // set coil 3 ON
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 5, n);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(pdu, resp + 7, 5); // echo
-    TEST_ASSERT_TRUE(modbus_get_coil(3));
+    TEST_ASSERT_TRUE(dws_modbus_get_coil(3));
     TEST_ASSERT_EQUAL_INT(1, g_wcalls);
     TEST_ASSERT_EQUAL_UINT8(0x05, g_wfc);
     TEST_ASSERT_EQUAL_UINT16(3, g_wstart);
@@ -126,9 +126,9 @@ void test_write_single_register()
     uint8_t pdu[] = {0x06, 0x00, 0x0A, 0x12, 0x34};
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 5, n);
-    TEST_ASSERT_EQUAL_UINT16(0x1234, modbus_get_holding_reg(10));
+    TEST_ASSERT_EQUAL_UINT16(0x1234, dws_modbus_get_holding_reg(10));
     TEST_ASSERT_EQUAL_INT(1, g_wcalls);
 }
 
@@ -137,13 +137,13 @@ void test_write_multiple_registers()
     uint8_t pdu[] = {0x10, 0x00, 0x02, 0x00, 0x02, 0x04, 0xAA, 0xBB, 0xCC, 0xDD};
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 5, n);
     TEST_ASSERT_EQUAL_UINT8(0x10, resp[7]);
     TEST_ASSERT_EQUAL_UINT16(2, rd16(resp + 8));  // start
     TEST_ASSERT_EQUAL_UINT16(2, rd16(resp + 10)); // qty
-    TEST_ASSERT_EQUAL_UINT16(0xAABB, modbus_get_holding_reg(2));
-    TEST_ASSERT_EQUAL_UINT16(0xCCDD, modbus_get_holding_reg(3));
+    TEST_ASSERT_EQUAL_UINT16(0xAABB, dws_modbus_get_holding_reg(2));
+    TEST_ASSERT_EQUAL_UINT16(0xCCDD, dws_modbus_get_holding_reg(3));
     TEST_ASSERT_EQUAL_UINT16(2, g_wcount);
 }
 
@@ -153,13 +153,13 @@ void test_write_multiple_coils()
     uint8_t pdu[] = {0x0F, 0x00, 0x00, 0x00, 0x05, 0x01, 0x0D};
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 5, n);
-    TEST_ASSERT_TRUE(modbus_get_coil(0));
-    TEST_ASSERT_FALSE(modbus_get_coil(1));
-    TEST_ASSERT_TRUE(modbus_get_coil(2));
-    TEST_ASSERT_TRUE(modbus_get_coil(3));
-    TEST_ASSERT_FALSE(modbus_get_coil(4));
+    TEST_ASSERT_TRUE(dws_modbus_get_coil(0));
+    TEST_ASSERT_FALSE(dws_modbus_get_coil(1));
+    TEST_ASSERT_TRUE(dws_modbus_get_coil(2));
+    TEST_ASSERT_TRUE(dws_modbus_get_coil(3));
+    TEST_ASSERT_FALSE(dws_modbus_get_coil(4));
     TEST_ASSERT_EQUAL_UINT16(5, g_wcount);
 }
 
@@ -168,7 +168,7 @@ void test_exception_illegal_function()
     uint8_t pdu[] = {0x7F, 0x00, 0x00}; // unsupported FC
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 2, n);
     TEST_ASSERT_EQUAL_UINT8(0x7F | 0x80, resp[7]);
     TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_FUNCTION, resp[8]);
@@ -180,7 +180,7 @@ void test_exception_illegal_address()
     uint8_t pdu[] = {0x03, 0x00, 0x3C, 0x00, 0x0A}; // start 60, qty 10 -> 70 > 64
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 2, n);
     TEST_ASSERT_EQUAL_UINT8(0x03 | 0x80, resp[7]);
     TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, resp[8]);
@@ -191,7 +191,7 @@ void test_exception_illegal_value()
     uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x00}; // qty 0
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 2, n);
     TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);
 }
@@ -201,7 +201,7 @@ void test_write_single_coil_bad_value()
     uint8_t pdu[] = {0x05, 0x00, 0x00, 0x12, 0x34}; // not 0x0000/0xFF00
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_UINT8(0x05 | 0x80, resp[7]);
     TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);
     TEST_ASSERT_EQUAL_INT(0, g_wcalls); // not applied
@@ -213,7 +213,7 @@ void test_non_modbus_protocol_id_ignored()
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
     req[3] = 0x01; // corrupt the protocol id (must be 0)
-    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(0, n); // not a Modbus frame -> no response
 }
 
@@ -222,16 +222,16 @@ void test_truncated_frame_ignored()
     uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x03};
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = modbus_process_adu(req, rl - 2, resp, sizeof(resp)); // drop 2 bytes
-    TEST_ASSERT_EQUAL_size_t(0, n);                                 // length field disagrees -> wait/ignore
+    size_t n = dws_modbus_process_adu(req, rl - 2, resp, sizeof(resp)); // drop 2 bytes
+    TEST_ASSERT_EQUAL_size_t(0, n);                                     // length field disagrees -> wait/ignore
 }
 
 // Run a PDU through the TCP ADU path and return the response length.
-static size_t run_pdu(const uint8_t *pdu, size_t plen, uint8_t *resp, size_t resp_cap)
+static size_t run_pdu(const uint8_t *pdu, size_t plen, uint8_t *resp, size_t dws_resp_cap)
 {
     uint8_t req[300];
     size_t rl = build_adu(req, 1, 1, pdu, plen);
-    return modbus_process_adu(req, rl, resp, resp_cap);
+    return dws_modbus_process_adu(req, rl, resp, dws_resp_cap);
 }
 
 // Assert a PDU yields a Modbus exception (fc|0x80, code).
@@ -247,16 +247,16 @@ static void assert_exception(const uint8_t *pdu, size_t plen, uint8_t fc, uint8_
 // Discrete inputs, out-of-range accessors, and an FC2 read (never exercised elsewhere).
 void test_discrete_and_input_accessors()
 {
-    modbus_set_discrete_input(3, true);
-    modbus_set_discrete_input(0xFFFF, true); // out of range -> ignored
-    TEST_ASSERT_TRUE(modbus_get_discrete_input(3));
-    TEST_ASSERT_FALSE(modbus_get_discrete_input(2));
-    TEST_ASSERT_FALSE(modbus_get_discrete_input(0xFFFF)); // out of range -> false
-    TEST_ASSERT_EQUAL_UINT16(0, modbus_get_input_reg(0xFFFF));
-    modbus_set_coil(0xFFFF, true); // out-of-range coil / holding ignored
-    TEST_ASSERT_FALSE(modbus_get_coil(0xFFFF));
-    modbus_set_holding_reg(0xFFFF, 1);
-    TEST_ASSERT_EQUAL_UINT16(0, modbus_get_holding_reg(0xFFFF));
+    dws_modbus_set_discrete_input(3, true);
+    dws_modbus_set_discrete_input(0xFFFF, true); // out of range -> ignored
+    TEST_ASSERT_TRUE(dws_modbus_get_discrete_input(3));
+    TEST_ASSERT_FALSE(dws_modbus_get_discrete_input(2));
+    TEST_ASSERT_FALSE(dws_modbus_get_discrete_input(0xFFFF)); // out of range -> false
+    TEST_ASSERT_EQUAL_UINT16(0, dws_modbus_get_input_reg(0xFFFF));
+    dws_modbus_set_coil(0xFFFF, true); // out-of-range coil / holding ignored
+    TEST_ASSERT_FALSE(dws_modbus_get_coil(0xFFFF));
+    dws_modbus_set_holding_reg(0xFFFF, 1);
+    TEST_ASSERT_EQUAL_UINT16(0, dws_modbus_get_holding_reg(0xFFFF));
 
     const uint8_t pdu[] = {0x02, 0x00, 0x03, 0x00, 0x01}; // FC2 read 1 discrete input @3
     uint8_t resp[64];
@@ -361,12 +361,12 @@ void test_rtu_crc16_known_vector()
 
 void test_rtu_read_holding_roundtrip()
 {
-    modbus_set_holding_reg(0, 0x1234);
-    modbus_set_holding_reg(1, 0xABCD);
+    dws_modbus_set_holding_reg(0, 0x1234);
+    dws_modbus_set_holding_reg(1, 0xABCD);
     const uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x02}; // read 2 holding regs @0
     uint8_t req[16], resp[64];
     size_t rl = build_rtu(req, 0x11, pdu, sizeof(pdu));
-    size_t n = modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11);
+    size_t n = dws_modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11);
     TEST_ASSERT_GREATER_THAN(0, n);
     TEST_ASSERT_EQUAL_HEX8(0x11, resp[0]); // echoed slave address
     TEST_ASSERT_EQUAL_HEX8(0x03, resp[1]); // function code
@@ -385,7 +385,7 @@ void test_rtu_bad_crc_dropped()
     uint8_t req[16], resp[64];
     size_t rl = build_rtu(req, 0x11, pdu, sizeof(pdu));
     req[rl - 1] ^= 0xFF; // corrupt the CRC
-    TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11));
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11));
 }
 
 void test_rtu_wrong_address_dropped()
@@ -393,39 +393,40 @@ void test_rtu_wrong_address_dropped()
     const uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x01};
     uint8_t req[16], resp[64];
     size_t rl = build_rtu(req, 0x05, pdu, sizeof(pdu));
-    TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11)); // addressed to 0x05, not us
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11)); // addressed to 0x05, not us
 }
 
 void test_rtu_broadcast_executes_without_reply()
 {
     const uint8_t pdu[] = {0x06, 0x00, 0x00, 0xBE, 0xEF}; // write single reg @0 = 0xBEEF
     uint8_t req[16], resp[64];
-    size_t rl = build_rtu(req, 0x00, pdu, sizeof(pdu));                                     // broadcast address 0
-    TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11)); // no reply
-    TEST_ASSERT_EQUAL_HEX16(0xBEEF, modbus_get_holding_reg(0));                             // but executed
+    size_t rl = build_rtu(req, 0x00, pdu, sizeof(pdu));                                         // broadcast address 0
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11)); // no reply
+    TEST_ASSERT_EQUAL_HEX16(0xBEEF, dws_modbus_get_holding_reg(0));                             // but executed
 }
 
 void test_rtu_edge_cases()
 {
     uint8_t resp[64];
     const uint8_t tiny[3] = {0x11, 0x03, 0x00};
-    TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(tiny, sizeof(tiny), resp, sizeof(resp), 0x11)); // < 4
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_rtu_process_adu(tiny, sizeof(tiny), resp, sizeof(resp), 0x11)); // < 4
 
     // A valid frame whose reply cannot fit sends nothing (PDU handler returns 0).
     const uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x01};
     uint8_t req[16];
     size_t rl = build_rtu(req, 0x11, pdu, sizeof(pdu));
-    TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(req, rl, resp, 4, 0x11)); // out_cap tiny
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_rtu_process_adu(req, rl, resp, 4, 0x11)); // out_cap tiny
 }
 #endif // DWS_ENABLE_MODBUS_RTU
 
 void test_server_init_bounds_and_handler()
 {
-    modbus_server_init();
-    modbus_set_coil(0xFFFF, true);
-    TEST_ASSERT_FALSE(modbus_get_coil(0xFFFF));                  // out of range -> false
-    TEST_ASSERT_EQUAL_UINT16(0, modbus_get_holding_reg(0xFFFF)); // out of range -> 0
-    (void)modbus_proto_handler();
+    dws_modbus_server_init();
+    dws_modbus_set_coil(0xFFFF, true);
+    TEST_ASSERT_FALSE(dws_modbus_get_coil(0xFFFF));                  // out of range -> false
+    TEST_ASSERT_EQUAL_UINT16(0, dws_modbus_get_holding_reg(0xFFFF)); // out of range -> 0
+    (void)dws_modbus_proto_handler();
 }
 
 int main()

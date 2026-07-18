@@ -60,10 +60,10 @@ struct SenmlRecord
 };
 
 /** @brief Build a SenML-JSON pack. Returns bytes written (excluding NUL), or 0 on overflow. */
-size_t senml_json_build(char *buf, size_t cap, const SenmlRecord *records, size_t count);
+size_t dws_senml_json_build(char *buf, size_t cap, const SenmlRecord *records, size_t count);
 
 /** @brief Build a SenML-CBOR pack (a CBOR array of integer-keyed maps). Returns bytes, or 0. */
-size_t senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records, size_t count);
+size_t dws_senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records, size_t count);
 
 #endif // DWS_ENABLE_SENML
 

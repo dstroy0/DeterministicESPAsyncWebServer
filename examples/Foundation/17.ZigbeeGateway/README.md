@@ -10,7 +10,7 @@ Silicon Labs **EmberZNet** network co-processor (NCP), which speaks **EZSP** ove
 DATA frame carrying an EZSP callback (an incoming Zigbee message) is bridged northbound.
 
 ```
-Zigbee NCP --UART--> ash_frame_decode() --> EZSP payload -> dws_gateway_uplink()
+Zigbee NCP --UART--> dws_ash_frame_decode() --> EZSP payload -> dws_gateway_uplink()
                                                                  |
                                           envelope + topic  zigbee/0/<node>
                                                                  |
@@ -22,12 +22,12 @@ bytes, and terminates with a Flag `0x7E`. `services/zigbee` does the framing:
 
 ```cpp
 uint8_t control, payload[128]; uint16_t plen;
-int n = ash_frame_decode(buf, len, &control, payload, sizeof(payload), &plen);
+int n = dws_ash_frame_decode(buf, len, &control, payload, sizeof(payload), &plen);
 if (n > 0 && (control & 0x80) == 0 /* DATA frame */)
     dws_gateway_uplink(0, node, payload, plen, 0);
 ```
 
-`ash_frame_encode()` builds a frame the same way (this sketch sends an ASH `RST` at boot).
+`dws_ash_frame_encode()` builds a frame the same way (this sketch sends an ASH `RST` at boot).
 The CRC is CRC-16/CCITT; the codec is host-tested against the documented RST frame
 (`C0 38 BC 7E`) and the byte-stuffing in `test/test_zigbee`.
 

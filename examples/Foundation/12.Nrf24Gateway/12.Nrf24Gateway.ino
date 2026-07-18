@@ -5,7 +5,7 @@
 // an SPI transfer plus a CE-set callback - the only board-specific code. Its hardware pipes
 // address the frame, so the "source" is the pipe number (no in-payload codec).
 //
-//   nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> dws_gateway_uplink(port, pipe, ...)
+//   nRF24 RX --SPI--> dws_nrf24_recv() -> pipe + payload -> dws_gateway_uplink(port, pipe, ...)
 //                                                              |
 //                                           envelope + topic  nrf24/0/<pipe>
 //                                                              |
@@ -53,12 +53,12 @@ static bool northbound_publish(const dws_gateway_msg *m, void *)
 // Downlink: transmit a command out the radio (the gateway maps dst_addr -> the frame).
 static bool radio_tx(uint8_t, uint16_t, const uint8_t *payload, uint16_t len, void *)
 {
-    if (len > DWS_NRF24_PAYLOAD || !nrf24_send(&g_bus, payload, (uint8_t)len))
+    if (len > DWS_NRF24_PAYLOAD || !dws_nrf24_send(&g_bus, payload, (uint8_t)len))
         return false;
     uint32_t t0 = millis();
-    while (!nrf24_tx_done(&g_bus) && millis() - t0 < 500)
+    while (!dws_nrf24_tx_done(&g_bus) && millis() - t0 < 500)
         delay(1);
-    nrf24_set_rx(&g_bus); // back to listening
+    dws_nrf24_set_rx(&g_bus); // back to listening
     return true;
 }
 
@@ -79,7 +79,7 @@ void setup()
     cfg.channel = 76;
     cfg.data_rate = 0; // 1 Mbps
     cfg.tx_power = 3;  // 0 dBm
-    if (!nrf24_init(&g_bus, &cfg))
+    if (!dws_nrf24_init(&g_bus, &cfg))
     {
         Serial.println("no nRF24L01+ found on SPI - check wiring");
         return;
@@ -94,7 +94,7 @@ void setup()
     dws_gateway_set_uplink_cb(northbound_publish, nullptr);
     dws_gateway_set_topic_prefix("nrf24");
 
-    nrf24_set_rx(&g_bus);
+    dws_nrf24_set_rx(&g_bus);
     Serial.println("nRF24 gateway: RX -> pipe/payload -> publish (nrf24/0/<pipe>)");
 }
 
@@ -102,7 +102,7 @@ void loop()
 {
     uint8_t buf[DWS_NRF24_PAYLOAD];
     uint8_t pipe = 0;
-    int n = nrf24_recv(&g_bus, buf, sizeof(buf), &pipe);
+    int n = dws_nrf24_recv(&g_bus, buf, sizeof(buf), &pipe);
     if (n > 0)
         dws_gateway_uplink(RADIO_PORT, pipe, buf, (uint16_t)n, 0); // pipe = source address
     delay(2);

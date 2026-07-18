@@ -148,8 +148,8 @@ layer built first, then the store codecs on top. Substrate before stores.
       FS / SD: a write-ahead log with a CRC per record and an A/B superblock commit marker, so an
       interrupted write is discarded (never half-applied) on the next mount. Zero-heap, bounded, static
       buffers. `DWS_ENABLE_WAL` = the pure record codec (`services/wal/wal.h`) + the durable store
-      (`wal_store.h`: A/B superblock + `wal_store_checkpoint` + mount/tail-replay over a `WalDev`
-      block-device seam) + the `fs::FS` binding (`wal_fs.h`, preallocated file, random-access over
+      (`dws_wal_store.h`: A/B superblock + `dws_wal_store_checkpoint` + mount/tail-replay over a `WalDev`
+      block-device seam) + the `fs::FS` binding (`dws_wal_fs.h`, preallocated file, random-access over
       `File::seek`/`flush`). Host-tested (13 cases: CRC vector, torn/truncated-tail recovery, checkpoint
       durability, superblock fallback) **and hardware-verified on an SD card over SPI** (checkpoint
       recovery, torn-tail drop, byte-level payload persistence, and survival across a chip reset all
@@ -162,7 +162,7 @@ layer built first, then the store codecs on top. Substrate before stores.
       (`dws_dbm_compact` merges only the live keys - latest value each, no tombstones - into a freshly
       formatted destination store, checkpoints it, then rebinds the handle and rebuilds the index; fails
       closed leaving the original log intact on any I/O error so no data is lost; `dws_dbm_live_bytes`
-      pairs with `wal_store_used` to measure the dead fraction and decide when to compact). Host-tested over
+      pairs with `dws_wal_store_used` to measure the dead fraction and decide when to compact). Host-tested over
       a RAM device (11 cases: overwrite, tombstone resurrection, persistence across remount with/without
       checkpoint, collisions, index-full fail-closed, bounds, max-value round-trip, compaction reclaims
       space + preserves the live set, compaction fails closed on a too-small destination) and **HW-verified
@@ -171,22 +171,22 @@ layer built first, then the store codecs on top. Substrate before stores.
 - [x] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
       encoding) - reader + bounded writer, both done. Not the full SQLite amalgamation (heap + stdio,
       incompatible with the no-stdlib zero-heap model). `DWS_ENABLE_SQLITE` - **reading is complete**
-      (`services/sqlite/sqlite_format.h`): database header, b-tree page header, cell pointers, the
+      (`services/sqlite/dws_sqlite_format.h`): database header, b-tree page header, cell pointers, the
       leaf-table cell (rowid + payload + overflow detection), a record cursor (header varints -> typed
       column values), int/float decoders, and a **multi-page table cursor** that walks an interior
       b-tree over `rootpage` in rowid order with a bounded descent stack + two page buffers (works over
-      any page source via a reader callback: RAM, wal_fs, fs::FS). **Overflow-page chains are now
-      followed** (`sqlite_read_payload` reassembles a record across its linked overflow pages - 4-byte
+      any page source via a reader callback: RAM, dws_wal_fs, fs::FS). **Overflow-page chains are now
+      followed** (`dws_sqlite_read_payload` reassembles a record across its linked overflow pages - 4-byte
       next-page pointer + content per page - into a caller buffer with a bounded page count and a
       fail-closed capacity guard; the table cursor transparently reassembles an overflowing row when given
-      an overflow buffer via `sqlite_table_cursor_set_overflow_buf`, else it yields the in-page prefix as
-      before). Host-tested against real sqlite3-CLI files (14 cases): the `sqlite_schema` row
+      an overflow buffer via `dws_sqlite_table_cursor_set_overflow_buf`, else it yields the in-page prefix as
+      before). Host-tested against real sqlite3-CLI files (14 cases): the `dws_sqlite_schema` row
       column-by-column, a full scan of a 40-row 2-level b-tree, and byte-exact reassembly of 1000- and
       3000-byte TEXT columns spanning multi-page overflow chains (+ a short-buffer fail-closed case), and
       **HW-verified on an ESP32-S3** (interior-root descent + multi-page reassembly + bounds, all byte-exact
-      on the Xtensa). A **bounded writer** now completes the item: `sqlite_encode_record` (minimal integer
-      serial types, TEXT/BLOB/FLOAT/NULL) + `sqlite_varint_encode` + `sqlite_build_table_db`, which emits a
-      fresh two-page single-table database (page 1 = header + the `sqlite_schema` row, page 2 = the table's
+      on the Xtensa). A **bounded writer** now completes the item: `dws_sqlite_encode_record` (minimal integer
+      serial types, TEXT/BLOB/FLOAT/NULL) + `dws_sqlite_varint_encode` + `dws_sqlite_build_table_db`, which emits a
+      fresh two-page single-table database (page 1 = header + the `dws_sqlite_schema` row, page 2 = the table's
       leaf b-tree) straight into a caller buffer, zero-heap, failing closed if a row would overflow a page or
       the rows do not fit one leaf (no page splitting / overflow pages / interior maintenance - a multi-page
       writer is the follow-up). Host-tested (18 cases total: varint + record round-trips, a full build read
@@ -232,7 +232,7 @@ layer built first, then the store codecs on top. Substrate before stores.
       ~4.4 -> ~15.9 MB/s), roughly halving `record_encode` / `store_append` / dbm `put`; same 3.6x on the
       host. Byte-identical output (the CRC-32 check-vector `0xCBF43926` and all wal/dbm/docstore tests
       still pass). See FEATURE_PERFORMANCE section 4.
-- [x] **`resp_encode_command` was ~20 us on-device** (formatted length prefixes with `snprintf`). _(done)_
+- [x] **`dws_resp_encode_command` was ~20 us on-device** (formatted length prefixes with `snprintf`). _(done)_
       Replaced with a hand-rolled decimal writer: **~6x faster** on the ESP32-S3 (19.9 -> 3.3 us), ~5x on
       the host (329 -> 65 ns), byte-identical output (all 14 native_redis tests pass).
 
@@ -243,8 +243,8 @@ Two link layers reach a CNC controller: legacy **RS-232** (drip-feed / DNC) and 
 - [x] RS-232 DNC codec _(done)_: G-code (RS-274 / ISO 6983) line framing to drip-feed a program to a controller, with software flow control (XON/XOFF = DC1 `0x11` / DC3 `0x13`), `%` program start/end markers, and EIA RS-244 vs ISO 7-bit tape handling. Transport-agnostic so the same framing rides RS-232 or a socket. `DWS_ENABLE_DNC` (services/dnc): `dws_dnc_iso_to_eia`/`dws_dnc_eia_to_iso` translate either tape code (EIA RS-244 is a distinct odd-parity 8-track code, parity in channel 5, EOB = 0x80, rewind-stop = EIA End-of-Record 0x0B, uppercase-only; ISO is ASCII with optional even parity); `dws_dnc_encode_block` + `dws_dnc_encode_marker` + `dws_dnc_encode_leader` frame a program; `DncDecoder` reassembles the wire stream back into ASCII G-code lines (fail-closed, drops an over-long block whole); `DncFlow` tracks XON/XOFF on the **reverse** channel (kept out of the forward decode, since EIA `3` is 0x13 = DC3). The EIA table is validated by an odd-parity + exact-inverse host guardrail; full encode -> decode round-trips pass for both codes (`native_dnc`, 13 cases). _Follow-up:_ an example that drip-feeds over `Serial` with live XON/XOFF (needs a UART-wired controller to verify), and the Ethernet DNC item below reuses this framing over a socket.
 - [x] Ethernet DNC _(done, HW-verified)_: stream the same G-code framing over a plain TCP socket (network drip-feed) for controllers that expose a raw program port. **Engine shipped** (services/dnc/dnc_stream): `dnc_stream` drip-feeds a whole program - leader / `%` markers / one block per line / trailer - over a send/recv seam, pausing on a reverse-channel XOFF and resuming on XON. Transport-agnostic (the same engine serves Ethernet DNC over a TCP socket or the RS-232 UART follow-up); host-tested end to end with a scripted mock controller that decodes the stream back and exercises the pause-resume path (`native_dnc`, +8 cases = 22). New knob `DWS_DNC_XOFF_MAX_POLLS`. **Example shipped** (`examples/L7-Application/69.EthernetDnc`): drip-feeds a program to a controller's raw TCP program port on a real device (WiFi -> dws_client -> dnc_stream), with the `cl_send`/`cl_recv` seam glue (a non-blocking reverse-channel read for XON/XOFF); a from-scratch README including a machine-less test (capture the stream with an `nc` listener) + a DncStreamResult troubleshooting table; ESP32-compile-verified via `pio ci` (esp32dev, Flash 68.7%). **HW-verified 2026-07-13** on an ESP32-S3 over a W5500 wired link to a TCP capture sink: the drip is **byte-exact** (108-byte framing - 16 NUL leader, `%`CRLF, CR-before-LF blocks, `%`CRLF, 16 NUL trailer - matched an independently-computed reference), and the **XON/XOFF pacing** path works (0 bytes sent during a 3 s reverse-channel XOFF hold, then the full identical program after XON).
 - [ ] Fanuc FOCAS: client codec for the Fanuc Open CNC API (FOCAS1/2 over Ethernet) - read position/status/alarms and program up/download. Proprietary wire format; reverse from manuals plus a real controller.
-- [x] FTP client _(done)_: many controllers (Fanuc, Haas, Mazak, Heidenhain) expose program storage over FTP - a small RFC 959 client (control + passive data channel) to push/pull `.nc` files. `DWS_ENABLE_FTP` (services/ftp): the pure wire codec - `ftp_build_command` / `ftp_build_port` / `ftp_build_eprt` (RFC 2428) build control commands, `ftp_parse_reply` detects a complete single/multi-line 3-digit reply and reports the bytes consumed, and `ftp_parse_pasv` / `ftp_parse_epsv` decode the data-channel address. Reply / PASV / EPSV parsing verified against authentic strings captured from a live FTP server (`native_ftp`, 13 cases); the two sockets are the application's. _Follow-up:_ an example that runs a RETR/STOR over the `dws_client` transport (needs a real FTP server / controller to HW-verify), and the SMB/CIFS item below for Windows-share storage.
-- [~] SMB/CIFS client: Windows-share program storage is the other common file path - a minimal SMB2 client (negotiate / session-setup / tree-connect / create / read / write) to read and write programs on a share. **Increment 1 shipped** (`DWS_ENABLE_SMB`, services/smb): the pure SMB2 wire codec - the Direct-TCP transport frame, the 64-byte little-endian sync header (`smb2_build_header`/`smb2_parse_header`, ProtocolId + StructureSize validated), the NEGOTIATE request builder (dialects 2.0.2/2.1/3.0/3.0.2 + client GUID), and the NEGOTIATE response parser (chosen dialect, server GUID, max sizes, the SPNEGO/NTLM security token, bounds-checked). Field layout verified vs MS-SMB2 §2.2.1.2/§2.2.3/§2.2.4; `native_smb`, 6 cases. **Increment 2 shipped** (services/smb/smb_md): the NTLM digests the lib lacked - **MD4 (RFC 1320), MD5 (RFC 1321), HMAC-MD5 (RFC 2104)**, streaming + zero-heap, KAT-verified against the RFC vectors + the well-known NT hash of "password" (`test_smb_crypto`, 5 cases). **Increment 3 shipped** (services/smb/ntlm): the NTLMv2 response computation (MS-NLMP §3.3.2) - `ntlm_nt_hash`, `ntlm_ntowfv2`, `ntlm_v2_response` (NTProofStr / NtChallengeResponse / SessionBaseKey), verified byte-for-byte vs the MS-NLMP §4.2 worked example (`test_ntlm`, 3 cases). **Increment 4 shipped** (services/smb/ntlmssp): the NTLMSSP message codec (MS-NLMP §2.2.1) - `ntlmssp_build_negotiate` (type 1), `ntlmssp_parse_challenge` (type 2, extracts server challenge + target info, bounds-checked), `ntlmssp_build_authenticate` (type 3, Len/MaxLen/Offset payload layout); an end-to-end test parses a CHALLENGE, computes the NTLMv2 response, and confirms the AUTHENTICATE carries it (`test_ntlmssp`, 5 cases). **Increment 5 shipped** (services/smb/spnego): the SPNEGO GSS-API DER wrapping (RFC 4178) - `spnego_wrap_negotiate` (the `[APPLICATION 0]` InitialContextToken advertising the NTLM mech OID + the NTLMSSP NEGOTIATE mechToken), `spnego_parse_response` (extracts the CHALLENGE responseToken from the server NegTokenResp, skipping negState/supportedMech), and `spnego_wrap_authenticate` (the reply NegTokenResp); zero-heap definite-length DER, verified byte-exact + round-trip + independently vs `openssl asn1parse` (`test_spnego`, 4 cases). **Increment 6 shipped** (services/smb/smb2): the SMB2 SESSION_SETUP request/response framing (MS-SMB2 §2.2.5/§2.2.6) - `smb2_build_session_setup` (SecurityMode + PreviousSessionId + the SPNEGO security buffer at offset 88, echoing the server SessionId on round 2) and `smb2_parse_session_setup_response` (StructureSize 9, SessionFlags, server security buffer, bounds-checked; the caller reads SessionId + STATUS_MORE_PROCESSING_REQUIRED/SUCCESS from the header); an end-to-end test routes a full auth round through framing -> SPNEGO -> NTLMSSP and recovers the server challenge intact (`test_smb2`, now 10 cases). **Increment 7 shipped** (services/smb/smb2): the file commands TREE_CONNECT / CREATE / CLOSE (MS-SMB2 §2.2.9-§2.2.16) - `smb2_build_tree_connect` + parse (connect `\\server\share`, TreeId from the response header, ShareType disk/pipe/print), `smb2_build_create` + parse (open/create with DesiredAccess/ShareAccess/CreateDisposition/CreateOptions, returns the 16-byte FileId + EndofFile), `smb2_build_close` + parse (`test_smb2`, now 15 cases). **Increment 8 shipped** (services/smb/smb2): READ / WRITE (MS-SMB2 §2.2.19-§2.2.22) - `smb2_build_read` + parse (read a length at a file offset, response data returned bounds-checked as a pointer into the message) and `smb2_build_write` + parse (write a buffer at an offset, response reports the byte count) (`test_smb2`, now 19 cases). **The SMB2 client codec is complete**: NEGOTIATE -> SESSION_SETUP (NTLMv2 over SPNEGO) -> TREE_CONNECT -> CREATE -> READ / WRITE -> CLOSE. **Client engine shipped** (services/smb/smb_client): `smb_open` drives the whole NEGOTIATE -> two-round NTLMv2 SESSION_SETUP -> TREE_CONNECT -> CREATE handshake over a send/recv seam (Direct-TCP framing + the NTLMSSP/SPNEGO token flow + MsvAvTimestamp extraction handled internally) and returns an `SmbHandle`; `smb_read` / `smb_write` loop the READ / WRITE commands in DWS_SMB_BUF-sized chunks (read stops at a short read / STATUS_END_OF_FILE, write grows the cached file size); `smb_close` releases the handle - a POSIX-like open/read/write/close surface, host-tested end to end with a scripted mock SMB2 server (`test_smb_client`, 10 cases: the handshake happy path + auth failure / bad share / not found / IO error / arg validation, plus multi-chunk read, read-past-EOF, multi-chunk write, and a byte-exact write-then-read round trip). **Example shipped** (`examples/L7-Application/68.SmbFileClient`): reads a file off a share on a real device (WiFi -> dws_client:445 -> smb_open/smb_read/smb_close), showing the `cl_send`/`cl_recv` glue that binds the send/recv seam to `dws_client`; a from-scratch README (set up a Samba share, the CHANGE ME fields, an SmbResult troubleshooting table); ESP32-compile-verified via `pio ci` (esp32dev, Flash 69.4%). _Only remainder:_ HW-verify the round trip against a real Samba / Windows share (needs a share to point at). SMB 3.1.1 (negotiate contexts + preauth integrity) + the NTLMSSP MIC + SMB2 signing are later options.
+- [x] FTP client _(done)_: many controllers (Fanuc, Haas, Mazak, Heidenhain) expose program storage over FTP - a small RFC 959 client (control + passive data channel) to push/pull `.nc` files. `DWS_ENABLE_FTP` (services/ftp): the pure wire codec - `dws_ftp_build_command` / `dws_ftp_build_port` / `dws_ftp_build_eprt` (RFC 2428) build control commands, `dws_ftp_parse_reply` detects a complete single/multi-line 3-digit reply and reports the bytes consumed, and `dws_ftp_parse_pasv` / `dws_ftp_parse_epsv` decode the data-channel address. Reply / PASV / EPSV parsing verified against authentic strings captured from a live FTP server (`native_ftp`, 13 cases); the two sockets are the application's. _Follow-up:_ an example that runs a RETR/STOR over the `dws_client` transport (needs a real FTP server / controller to HW-verify), and the SMB/CIFS item below for Windows-share storage.
+- [~] SMB/CIFS client: Windows-share program storage is the other common file path - a minimal SMB2 client (negotiate / session-setup / tree-connect / create / read / write) to read and write programs on a share. **Increment 1 shipped** (`DWS_ENABLE_SMB`, services/smb): the pure SMB2 wire codec - the Direct-TCP transport frame, the 64-byte little-endian sync header (`dws_smb2_build_header`/`dws_smb2_parse_header`, ProtocolId + StructureSize validated), the NEGOTIATE request builder (dialects 2.0.2/2.1/3.0/3.0.2 + client GUID), and the NEGOTIATE response parser (chosen dialect, server GUID, max sizes, the SPNEGO/NTLM security token, bounds-checked). Field layout verified vs MS-SMB2 §2.2.1.2/§2.2.3/§2.2.4; `native_smb`, 6 cases. **Increment 2 shipped** (services/smb/smb_md): the NTLM digests the lib lacked - **MD4 (RFC 1320), MD5 (RFC 1321), HMAC-MD5 (RFC 2104)**, streaming + zero-heap, KAT-verified against the RFC vectors + the well-known NT hash of "password" (`test_smb_crypto`, 5 cases). **Increment 3 shipped** (services/smb/ntlm): the NTLMv2 response computation (MS-NLMP §3.3.2) - `dws_ntlm_nt_hash`, `dws_ntlm_ntowfv2`, `dws_ntlm_v2_response` (NTProofStr / NtChallengeResponse / SessionBaseKey), verified byte-for-byte vs the MS-NLMP §4.2 worked example (`test_ntlm`, 3 cases). **Increment 4 shipped** (services/smb/ntlmssp): the NTLMSSP message codec (MS-NLMP §2.2.1) - `dws_ntlmssp_build_negotiate` (type 1), `dws_ntlmssp_parse_challenge` (type 2, extracts server challenge + target info, bounds-checked), `dws_ntlmssp_build_authenticate` (type 3, Len/MaxLen/Offset payload layout); an end-to-end test parses a CHALLENGE, computes the NTLMv2 response, and confirms the AUTHENTICATE carries it (`test_ntlmssp`, 5 cases). **Increment 5 shipped** (services/smb/spnego): the SPNEGO GSS-API DER wrapping (RFC 4178) - `dws_spnego_wrap_negotiate` (the `[APPLICATION 0]` InitialContextToken advertising the NTLM mech OID + the NTLMSSP NEGOTIATE mechToken), `dws_spnego_parse_response` (extracts the CHALLENGE responseToken from the server NegTokenResp, skipping negState/supportedMech), and `dws_spnego_wrap_authenticate` (the reply NegTokenResp); zero-heap definite-length DER, verified byte-exact + round-trip + independently vs `openssl asn1parse` (`test_spnego`, 4 cases). **Increment 6 shipped** (services/smb/smb2): the SMB2 SESSION_SETUP request/response framing (MS-SMB2 §2.2.5/§2.2.6) - `dws_smb2_build_session_setup` (SecurityMode + PreviousSessionId + the SPNEGO security buffer at offset 88, echoing the server SessionId on round 2) and `dws_smb2_parse_session_setup_response` (StructureSize 9, SessionFlags, server security buffer, bounds-checked; the caller reads SessionId + STATUS_MORE_PROCESSING_REQUIRED/SUCCESS from the header); an end-to-end test routes a full auth round through framing -> SPNEGO -> NTLMSSP and recovers the server challenge intact (`test_smb2`, now 10 cases). **Increment 7 shipped** (services/smb/smb2): the file commands TREE_CONNECT / CREATE / CLOSE (MS-SMB2 §2.2.9-§2.2.16) - `dws_smb2_build_tree_connect` + parse (connect `\\server\share`, TreeId from the response header, ShareType disk/pipe/print), `dws_smb2_build_create` + parse (open/create with DesiredAccess/ShareAccess/CreateDisposition/CreateOptions, returns the 16-byte FileId + EndofFile), `dws_smb2_build_close` + parse (`test_smb2`, now 15 cases). **Increment 8 shipped** (services/smb/smb2): READ / WRITE (MS-SMB2 §2.2.19-§2.2.22) - `dws_smb2_build_read` + parse (read a length at a file offset, response data returned bounds-checked as a pointer into the message) and `dws_smb2_build_write` + parse (write a buffer at an offset, response reports the byte count) (`test_smb2`, now 19 cases). **The SMB2 client codec is complete**: NEGOTIATE -> SESSION_SETUP (NTLMv2 over SPNEGO) -> TREE_CONNECT -> CREATE -> READ / WRITE -> CLOSE. **Client engine shipped** (services/smb/smb_client): `smb_open` drives the whole NEGOTIATE -> two-round NTLMv2 SESSION_SETUP -> TREE_CONNECT -> CREATE handshake over a send/recv seam (Direct-TCP framing + the NTLMSSP/SPNEGO token flow + MsvAvTimestamp extraction handled internally) and returns an `SmbHandle`; `smb_read` / `smb_write` loop the READ / WRITE commands in DWS_SMB_BUF-sized chunks (read stops at a short read / STATUS_END_OF_FILE, write grows the cached file size); `smb_close` releases the handle - a POSIX-like open/read/write/close surface, host-tested end to end with a scripted mock SMB2 server (`test_smb_client`, 10 cases: the handshake happy path + auth failure / bad share / not found / IO error / arg validation, plus multi-chunk read, read-past-EOF, multi-chunk write, and a byte-exact write-then-read round trip). **Example shipped** (`examples/L7-Application/68.SmbFileClient`): reads a file off a share on a real device (WiFi -> dws_client:445 -> smb_open/smb_read/smb_close), showing the `cl_send`/`cl_recv` glue that binds the send/recv seam to `dws_client`; a from-scratch README (set up a Samba share, the CHANGE ME fields, an SmbResult troubleshooting table); ESP32-compile-verified via `pio ci` (esp32dev, Flash 69.4%). _Only remainder:_ HW-verify the round trip against a real Samba / Windows share (needs a share to point at). SMB 3.1.1 (negotiate contexts + preauth integrity) + the NTLMSSP MIC + SMB2 signing are later options.
 - [x] MTConnect follow-ups _(done)_: the `probe` (device model) document - `dws_mtc_devices_begin/add_item/end` build an MTConnectDevices doc (a `<Device>` with its `<DataItems>`, optional `name`/`units`); the `asset` document - `dws_mtc_assets_begin` + `dws_mtc_assets_cutting_tool_begin`/`_tool_life`/`_cutting_tool_end` + `dws_mtc_assets_end` build an MTConnectAssets doc (a `<CuttingTool>` with its `<CuttingToolLifeCycle>`/`<ToolLife>`, optional `serialNumber`/`toolId`/`deviceUuid`/`timestamp`/`limit`); and the streaming `sample` sequence cursor - `DetwsMtcSampleBuffer` (a fixed ring, `dws_mtc_sample_buffer_init`/`_add`) with `dws_mtc_sample_query` replaying a from/count window as an MTConnectStreams document whose header carries firstSequence/lastSequence/nextSequence (MTC1.4 §6.7, oldest evicted + firstSequence advances when full). All tested in `test_mtconnect` (12 cases). The MTConnect agent's read documents (current/sample/probe/asset) are now complete.
 
 ### Routing / forwarding / inspection
@@ -491,8 +491,8 @@ Open follow-ups discovered during the above:
       ESP32 toolchain. _Full abbreviated-handshake HW proof is blocked by the same
       stock-Arduino DRAM limit as concurrent TLS (the ~48 KB `DWS_TLS_ARENA_SIZE`
       plus MQTT + transport overflows DRAM; needs a smaller-record ESP-IDF build)._
-- [x] **SNMPv3 _inform_** _(done)_ - `snmp_inform_v3()` (symmetric with
-      `snmp_inform_v2c()` / `snmp_trap_v3()`) builds + sends an authenticated (authPriv
+- [x] **SNMPv3 _inform_** _(done)_ - `dws_snmp_inform_v3()` (symmetric with
+      `dws_snmp_inform_v2c()` / `dws_snmp_trap_v3()`) builds + sends an authenticated (authPriv
       when a privacy password is set) USM `InformRequest`; the caller owns the
       `request_id` the receiver echoes in its Response and retransmits for confirmed
       delivery. Host-tested via a new opt-in UDP capture seam (`test_snmp_v3`
@@ -545,7 +545,7 @@ Open follow-ups discovered during the above:
       dual-homed with Wi-Fi - once the link has an IP. Example 19.Ethernet; ESP32-compiled.
       Remaining: verify against a PHY board.
 - [~] **IPv6 dual-stack** - _phase 1 landed (v4.83.0); phase 2 landed (v4.89.0)._ `DWS_ENABLE_IPV6`
-      enables IPv6 on the netif (`init_ipv6_physical` / `net_global_ipv6` / `ipv6_ready`); the
+      enables IPv6 on the netif (`init_ipv6_physical` / `net_global_ipv6` / `dws_ipv6_ready`); the
       listeners already bind `IPADDR_TYPE_ANY`, so the server accepts v6 once an address is up. The
       `DWSIp` address core (`network_drivers/network/ip.h`) parses / formats / classifies both
       families (`native_det_ip`; RFC 4291 + 5952). Example 20.IPv6; both cores compiled. **Phase 2
@@ -674,8 +674,8 @@ shipped work:
       BSS bucket table keyed by source IPv4 with a per-address fixed window,
       host-tested in `test_transport`.
 
-- [x] **[`base64_decode()`](@ref base64_decode) has no output-capacity guard (Basic-auth ingestion).**
-      _(done)_ `base64_decode()` now takes a `dst_cap` parameter
+- [x] **[`dws_base64_decode()`](@ref dws_base64_decode) has no output-capacity guard (Basic-auth ingestion).**
+      _(done)_ `dws_base64_decode()` now takes a `dst_cap` parameter
       (`base64.cpp`/`.h`, both platforms) and bounds every write; an over-capacity
       decode returns 0 instead of overrunning. `check_basic_auth()`
       (`dwserver.cpp`) passes `sizeof(decoded) - 1`, leaving
@@ -980,7 +980,7 @@ by how often a deployed device needs it.
       validator still works.
 
 - [x] **SNTP time sync (`DWS_ENABLE_NTP`).** _(done)_ [`dws_ntp_begin()`](@ref dws_ntp_begin)/
-      `_synced()`/`_epoch()`/`_http_date()` (`src/services/ntp_service.*`) wrap
+      `_synced()`/`_epoch()`/`_http_date()` (`src/services/dws_ntp_service.*`) wrap
       `configTzTime` (ESP-IDF SNTP) and format an RFC 7231 `Date`. `examples/40.SNTP`
       exposes `GET /time`; firmware links. (Auto-emitting the `Date` response
       header is left to the app via the helper - kept off the hot path.)
@@ -1041,14 +1041,14 @@ by how often a deployed device needs it.
       Shared base (codec + PDU + MIB) is native-testable.
   - [x] BER codec (RFC indefinite-free definite-length TLV): INTEGER, OCTET
         STRING, NULL, OID (base-128), SEQUENCE, and the SNMP application types.
-        `src/services/snmp/snmp_ber.*`, KAT-tested (`env:native_snmp`).
+        `src/services/snmp/dws_snmp_ber.*`, KAT-tested (`env:native_snmp`).
   - [x] v1/v2c agent (community-string access, RFC 1157 / 3416): GET / GETNEXT /
         GETBULK / SET dispatch over a fixed MIB-II-style table, per-varbind v2c
         exceptions (`noSuchObject`/`endOfMibView`) and v1 error-status/-index,
-        SET gated by a separate read-write community. `snmp_agent_process()` is a
+        SET gated by a separate read-write community. `dws_snmp_agent_process()` is a
         pure, host-testable core (13 tests); the transport-layer UDP service
         (`dws_udp_listen`) on :161 carries datagrams (the same service the
-        provisioning DNS responder uses). `snmp_agent_*` API, example `33.SNMP`.
+        provisioning DNS responder uses). `dws_snmp_agent_*` API, example `33.SNMP`.
         **HW-verified** with a UDP client: `snmpget`/walk of the system group in
         OID order, GetBulk, dynamic Gauge32, SET authorization (RO→noAccess,
         RW→success), v1 `noSuchName`, and unknown-community drop all behave per
@@ -1056,14 +1056,14 @@ by how often a deployed device needs it.
   - [x] v3 (USM, RFC 3414): gated behind `DWS_ENABLE_SNMP_V3` (default off).
         Auth = `usmHMAC192SHA256` (HMAC-SHA-256, 24-byte; RFC 7860, reusing the
         SSH SHA-256/HMAC), privacy = `usmAesCfb128` (AES-128-CFB, RFC 3826 - a
-        compact portable AES added in `snmp_crypto`). Implements the v3 message
+        compact portable AES added in `dws_snmp_crypto`). Implements the v3 message
         framing (msgGlobalData + msgSecurityParameters + scopedPDU), engine
         discovery (Report `usmStatsUnknownEngineIDs`), the timeliness window
-        (engineBoots/engineTime; boots persists via `snmp_v3_set_boots()` from
+        (engineBoots/engineTime; boots persists via `dws_snmp_v3_set_boots()` from
         NVS), USM error Reports (unknownUserNames / wrongDigests /
         notInTimeWindows / decryptionErrors), and key localization (RFC 3414
-        §2.6). `snmp_v3_*` API; `snmp_v3_process()` reuses the shared
-        [`snmp_dispatch_pdu()`](@ref snmp_dispatch_pdu) MIB core. Native tests
+        §2.6). `dws_snmp_v3_*` API; `dws_snmp_v3_process()` reuses the shared
+        [`dws_snmp_dispatch_pdu()`](@ref dws_snmp_dispatch_pdu) MIB core. Native tests
         (`env:native_snmp_v3`): SHA-256 localization KAT (hashlib-grounded),
         AES-128 FIPS-197 KAT, and the full discovery -> authNoPriv -> authPriv
         flow. **HW-verified** against an independent manager (pycryptodome AES +
@@ -1088,19 +1088,19 @@ by how often a deployed device needs it.
       compare, all in fixed stack/BSS - no sessions, no heap
       (`src/services/jwt/*`). Host-tested (`native_jwt`); example `21.JWTAuth`.
       **Time claims now enforced (opt-in via the caller's clock):** the `*_at`
-      variants ([`jwt_time_valid`](@ref jwt_time_valid),
-      [`jwt_verify_hs256_at`](@ref jwt_verify_hs256_at),
-      [`jwt_bearer_valid_at`](@ref jwt_bearer_valid_at)) reject on `exp` (RFC 7519
+      variants ([`dws_jwt_time_valid`](@ref dws_jwt_time_valid),
+      [`dws_jwt_verify_hs256_at`](@ref dws_jwt_verify_hs256_at),
+      [`dws_jwt_bearer_valid_at`](@ref dws_jwt_bearer_valid_at)) reject on `exp` (RFC 7519
       §4.1.4) and `nbf` (§4.1.5) with a skew leeway, given `now = (long)dws_time_now()`
       (`DWS_ENABLE_NTP` / any time source); passing `now = 0` on a clockless device
       skips the time check so the signature still gates. `iat` is informational
-      (read via `jwt_claim_int`). The base signature-only functions are unchanged.
+      (read via `dws_jwt_claim_int`). The base signature-only functions are unchanged.
       _Out of scope:_ RS256/ES256 (asymmetric, allocation-heavy).
 
 - [x] **Remote syslog ([`DWS_ENABLE_SYSLOG`](@ref DWS_ENABLE_SYSLOG)).**
       _(done)_ RFC 5424 log lines shipped as UDP datagrams via the transport UDP
-      service (`src/services/syslog/*`): a pure host-testable `syslog_format()`
-      builds one line into a caller buffer, an ESP32-only `syslog_log()` sends it.
+      service (`src/services/syslog/*`): a pure host-testable `dws_syslog_format()`
+      builds one line into a caller buffer, an ESP32-only `dws_syslog_log()` sends it.
       Host-tested (`native_syslog`); example `41.Syslog`.
 
 - [x] **Streaming file upload ([`DWS_ENABLE_UPLOAD`](@ref DWS_ENABLE_UPLOAD)).**
@@ -1204,7 +1204,7 @@ Operator / sysadmin:
 <details>
 <summary><b>Expand Housekeeping (low) items</b></summary>
 
-- [x] **Native `base64_decode()` accepts `=` outside the trailing pad.** _(done)_
+- [x] **Native `dws_base64_decode()` accepts `=` outside the trailing pad.** _(done)_
       `b64_val()` no longer treats `=` as a value; the decoder validates padding
       positionally - full 4-char quads only, `=` permitted only as 1-2 trailing
       chars of the final quad (`base64.cpp`). Misplaced padding and non-multiple-

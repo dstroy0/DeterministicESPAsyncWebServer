@@ -13,19 +13,19 @@
 #include "services/smb/smb_md.h"
 #include <string.h>
 
-void ntlm_nt_hash(const char *password, uint8_t nt_hash[16])
+void dws_ntlm_nt_hash(const char *password, uint8_t nt_hash[16])
 {
     MdCtx c;
-    md4_init(&c);
+    dws_md4_init(&c);
     for (const char *p = password; *p; p++)
     {
         uint8_t pair[2] = {(uint8_t)*p, 0}; // UTF-16LE (ASCII/UTF-8 code unit + high byte 0)
-        md4_update(&c, pair, 2);
+        dws_md4_update(&c, pair, 2);
     }
-    md4_final(&c, nt_hash);
+    dws_md4_final(&c, nt_hash);
 }
 
-bool ntlm_ntowfv2(const uint8_t nt_hash[16], const char *user, const char *domain, uint8_t owf[16])
+bool dws_ntlm_ntowfv2(const uint8_t nt_hash[16], const char *user, const char *domain, uint8_t owf[16])
 {
     uint8_t buf[512]; // UTF-16LE of Uppercase(user) + domain; 256 chars max
     size_t n = 0;
@@ -46,14 +46,14 @@ bool ntlm_ntowfv2(const uint8_t nt_hash[16], const char *user, const char *domai
         buf[n++] = (uint8_t)*p;
         buf[n++] = 0;
     }
-    hmac_md5(nt_hash, 16, buf, n, owf);
+    dws_hmac_md5(nt_hash, 16, buf, n, owf);
     return true;
 }
 
 // HMAC-MD5 over a two-part message (the key here is always the 16-byte NTOWFv2, < 64 bytes,
 // so no key-shortening is needed).
-static void hmac_md5_2(const uint8_t key[16], const uint8_t *m1, size_t l1, const uint8_t *m2, size_t l2,
-                       uint8_t out[16])
+static void dws_hmac_md5_2(const uint8_t key[16], const uint8_t *m1, size_t l1, const uint8_t *m2, size_t l2,
+                           uint8_t out[16])
 {
     uint8_t ipad[64];
     uint8_t opad[64];
@@ -65,25 +65,25 @@ static void hmac_md5_2(const uint8_t key[16], const uint8_t *m1, size_t l1, cons
     }
     uint8_t inner[16];
     MdCtx c;
-    md5_init(&c);
-    md5_update(&c, ipad, 64);
-    md5_update(&c, m1, l1);
+    dws_md5_init(&c);
+    dws_md5_update(&c, ipad, 64);
+    dws_md5_update(&c, m1, l1);
     if (m2 && l2)
-        md5_update(&c, m2, l2);
-    md5_final(&c, inner);
-    md5_init(&c);
-    md5_update(&c, opad, 64);
-    md5_update(&c, inner, 16);
-    md5_final(&c, out);
+        dws_md5_update(&c, m2, l2);
+    dws_md5_final(&c, inner);
+    dws_md5_init(&c);
+    dws_md5_update(&c, opad, 64);
+    dws_md5_update(&c, inner, 16);
+    dws_md5_final(&c, out);
 }
 
-size_t ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challenge[8], const uint8_t client_challenge[8],
-                        const uint8_t timestamp[8], const uint8_t *target_info, size_t ti_len, uint8_t *out,
-                        size_t out_cap, uint8_t session_key[16])
+size_t dws_ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challenge[8], const uint8_t client_challenge[8],
+                            const uint8_t timestamp[8], const uint8_t *target_info, size_t ti_len, uint8_t *out,
+                            size_t out_cap, uint8_t session_key[16])
 {
     const size_t temp_len = 2 + 6 + 8 + 8 + 4 + ti_len + 4; // MS-NLMP temp layout
-    const size_t resp_len = 16 + temp_len;                  // NTProofStr(16) + temp
-    if (!out || resp_len > out_cap)
+    const size_t dws_resp_len = 16 + temp_len;              // NTProofStr(16) + temp
+    if (!out || dws_resp_len > out_cap)
         return 0;
 
     // Build temp in place at out+16, so the result is NTProofStr(16) || temp contiguously.
@@ -104,11 +104,11 @@ size_t ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challenge[8]
     memset(temp + k, 0, 4); // Z(4) trailer; temp_len (line 83) already accounts for it, so k is done
 
     uint8_t ntproof[16];
-    hmac_md5_2(owf, server_challenge, 8, temp, temp_len, ntproof);
+    dws_hmac_md5_2(owf, server_challenge, 8, temp, temp_len, ntproof);
     memcpy(out, ntproof, 16); // out = NTProofStr || temp
     if (session_key)
-        hmac_md5(owf, 16, ntproof, 16, session_key);
-    return resp_len;
+        dws_hmac_md5(owf, 16, ntproof, 16, session_key);
+    return dws_resp_len;
 }
 
 #endif // DWS_ENABLE_SMB

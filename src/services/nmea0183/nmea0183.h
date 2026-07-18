@@ -40,26 +40,26 @@ struct Nmea0183
 };
 
 /** @brief XOR checksum over @p len octets (the sentence body between `$` and `*`). */
-uint8_t nmea0183_checksum(const char *s, size_t len);
+uint8_t dws_nmea0183_checksum(const char *s, size_t len);
 
 /**
  * @brief Build a sentence from @p body (e.g. "GPGGA,123519,..."): writes `$<body>*HH\r\n` and
  * NUL-terminates. Returns the length (excluding the NUL) or 0 on overflow.
  */
-size_t nmea0183_build(char *buf, size_t cap, const char *body);
+size_t dws_nmea0183_build(char *buf, size_t cap, const char *body);
 
 /**
  * @brief Parse a sentence: requires a leading `$`/`!`, validates the `*HH` XOR checksum, and
  * splits the comma-separated fields. Fills @p out (field 0 is the address; talker / type are
  * derived from it). Returns false on a bad frame or checksum.
  */
-bool nmea0183_parse(const char *s, size_t len, Nmea0183 *out);
+bool dws_nmea0183_parse(const char *s, size_t len, Nmea0183 *out);
 
 /** @brief Decode field @p idx as a float (false if absent / empty / non-numeric). */
-bool nmea0183_field_float(const Nmea0183 *m, uint8_t idx, float *out);
+bool dws_nmea0183_field_float(const Nmea0183 *m, uint8_t idx, float *out);
 
 /** @brief Decode field @p idx as a long integer (false if absent / empty / non-numeric). */
-bool nmea0183_field_int(const Nmea0183 *m, uint8_t idx, long *out);
+bool dws_nmea0183_field_int(const Nmea0183 *m, uint8_t idx, long *out);
 
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

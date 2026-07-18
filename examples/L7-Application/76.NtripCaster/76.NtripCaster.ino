@@ -105,7 +105,7 @@ void setup()
     Serial1.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
     pinMode(PPS_PIN, INPUT);
     attachInterrupt(digitalPinToInterrupt(PPS_PIN), on_pps, RISING);
-    gnss_survey_reset(&s_survey);
+    dws_gnss_survey_reset(&s_survey);
 
     init_wifi_physical(SSID, PASSWORD);
     Serial.print("Connecting to WiFi");
@@ -144,18 +144,18 @@ void loop()
     if (read_nmea_line(line, sizeof(line), &len))
     {
         Nmea0183 m;
-        if (nmea0183_parse(line, strlen(line), &m) && m.type[0] == 'G' && m.type[1] == 'G' && m.type[2] == 'A')
+        if (dws_nmea0183_parse(line, strlen(line), &m) && m.type[0] == 'G' && m.type[1] == 'G' && m.type[2] == 'A')
         {
             if (!s_surveyed)
             {
-                if (gnss_survey_add_gga(&s_survey, &m))
+                if (dws_gnss_survey_add_gga(&s_survey, &m))
                 {
-                    uint32_t n = gnss_survey_count(&s_survey);
+                    uint32_t n = dws_gnss_survey_count(&s_survey);
                     if (n % 10 == 0)
-                        Serial.printf("survey: %u fixes, spread %.2f m\n", n, gnss_survey_accuracy_m(&s_survey));
-                    if (gnss_survey_complete(&s_survey, SURVEY_MIN_OBS, SURVEY_ACC_LIMIT_M))
+                        Serial.printf("survey: %u fixes, spread %.2f m\n", n, dws_gnss_survey_accuracy_m(&s_survey));
+                    if (dws_gnss_survey_complete(&s_survey, SURVEY_MIN_OBS, SURVEY_ACC_LIMIT_M))
                     {
-                        gnss_survey_mean(&s_survey, &s_base_ecef);
+                        dws_gnss_survey_mean(&s_survey, &s_base_ecef);
                         s_surveyed = true;
                         Serial.printf("survey COMPLETE after %u fixes; serving 1005 for /%s\n", n, MOUNTPOINT);
                     }
@@ -169,8 +169,8 @@ void loop()
     {
         s_last_bcast_ms = millis();
         uint8_t frame[32];
-        size_t n = rtcm3_build_1005(frame, sizeof(frame), STATION_ID, gnss_ecef_m_to_01mm(s_base_ecef.x),
-                                    gnss_ecef_m_to_01mm(s_base_ecef.y), gnss_ecef_m_to_01mm(s_base_ecef.z));
+        size_t n = dws_rtcm3_build_1005(frame, sizeof(frame), STATION_ID, dws_gnss_ecef_m_to_01mm(s_base_ecef.x),
+                                        dws_gnss_ecef_m_to_01mm(s_base_ecef.y), dws_gnss_ecef_m_to_01mm(s_base_ecef.z));
         int sent = dws_ntrip_caster_broadcast(MOUNTPOINT, frame, n);
         if (sent > 0)
             Serial.printf("1005 -> %d rover(s)  [pps=%u]\n", sent, s_pps_count);
@@ -223,32 +223,32 @@ void setup()
 }
 
 // Feed one RTCM byte into the sync/parse buffer; decode any complete 1005 frames.
-static void rtcm_push(uint8_t b)
+static void dws_rtcm_push(uint8_t b)
 {
     if (s_rtcm_len < sizeof(s_rtcm))
         s_rtcm[s_rtcm_len++] = b;
 
     for (;;)
     {
-        size_t off = rtcm3_sync(s_rtcm, s_rtcm_len); // drop bytes before the next 0xD3 preamble
+        size_t off = dws_rtcm3_sync(s_rtcm, s_rtcm_len); // drop bytes before the next 0xD3 preamble
         if (off > 0)
         {
             memmove(s_rtcm, s_rtcm + off, s_rtcm_len - off);
             s_rtcm_len -= off;
         }
         Rtcm3Frame f;
-        size_t used = rtcm3_frame_parse(s_rtcm, s_rtcm_len, &f);
+        size_t used = dws_rtcm3_frame_parse(s_rtcm, s_rtcm_len, &f);
         if (used == 0)
             return; // need more bytes for a full frame
 
         if (f.crc_ok && f.msg_type == 1005)
         {
             Rtcm3StationArp arp;
-            if (rtcm3_parse_1005(f.payload, f.payload_len, &arp))
+            if (dws_rtcm3_parse_1005(f.payload, f.payload_len, &arp))
             {
                 GnssEcef e = {arp.ecef_x_01mm / 10000.0, arp.ecef_y_01mm / 10000.0, arp.ecef_z_01mm / 10000.0};
                 GnssGeodetic g;
-                gnss_ecef_to_geodetic(&e, &g);
+                dws_gnss_ecef_to_geodetic(&e, &g);
                 Serial.printf("RTCM 1005 sta=%u  ECEF %.3f, %.3f, %.3f m  ->  %.7f, %.7f  h=%.2f m  [pps=%u]\n",
                               arp.station_id, e.x, e.y, e.z, g.lat_deg, g.lon_deg, g.height_m, s_pps_count);
             }
@@ -288,7 +288,7 @@ void loop()
             }
             continue;
         }
-        rtcm_push(b);
+        dws_rtcm_push(b);
     }
 }
 #endif

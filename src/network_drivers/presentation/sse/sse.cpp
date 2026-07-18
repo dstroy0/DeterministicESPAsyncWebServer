@@ -11,59 +11,59 @@
 #include <stdio.h>
 #include <string.h>
 
-SseConn sse_pool[MAX_SSE_CONNS];
+SseConn dws_sse_pool[MAX_SSE_CONNS];
 
-void sse_init()
+void dws_sse_init()
 {
     for (int i = 0; i < MAX_SSE_CONNS; i++)
     {
-        sse_pool[i] = {};
-        sse_pool[i].sse_id = (uint8_t)i;
+        dws_sse_pool[i] = {};
+        dws_sse_pool[i].dws_sse_id = (uint8_t)i;
     }
 }
 
-SseConn *sse_alloc(uint8_t slot_id, const char *path)
+SseConn *dws_sse_alloc(uint8_t slot_id, const char *path)
 {
     for (int i = 0; i < MAX_SSE_CONNS; i++)
     {
-        if (!sse_pool[i].active)
+        if (!dws_sse_pool[i].active)
         {
-            sse_pool[i] = {};
-            sse_pool[i].sse_id = (uint8_t)i;
-            sse_pool[i].slot_id = slot_id;
-            sse_pool[i].active = true;
-            strncpy(sse_pool[i].path, path, MAX_PATH_LEN - 1);
-            sse_pool[i].path[MAX_PATH_LEN - 1] = '\0';
-            return &sse_pool[i];
+            dws_sse_pool[i] = {};
+            dws_sse_pool[i].dws_sse_id = (uint8_t)i;
+            dws_sse_pool[i].slot_id = slot_id;
+            dws_sse_pool[i].active = true;
+            strncpy(dws_sse_pool[i].path, path, MAX_PATH_LEN - 1);
+            dws_sse_pool[i].path[MAX_PATH_LEN - 1] = '\0';
+            return &dws_sse_pool[i];
         }
     }
     return nullptr;
 }
 
-SseConn *sse_find(uint8_t slot_id)
+SseConn *dws_sse_find(uint8_t slot_id)
 {
     for (int i = 0; i < MAX_SSE_CONNS; i++)
     {
-        if (sse_pool[i].active && sse_pool[i].slot_id == slot_id)
-            return &sse_pool[i];
+        if (dws_sse_pool[i].active && dws_sse_pool[i].slot_id == slot_id)
+            return &dws_sse_pool[i];
     }
     return nullptr;
 }
 
-void sse_free(uint8_t slot_id)
+void dws_sse_free(uint8_t slot_id)
 {
     for (int i = 0; i < MAX_SSE_CONNS; i++)
     {
-        if (sse_pool[i].active && sse_pool[i].slot_id == slot_id)
+        if (dws_sse_pool[i].active && dws_sse_pool[i].slot_id == slot_id)
         {
-            sse_pool[i] = {};
-            sse_pool[i].sse_id = (uint8_t)i;
+            dws_sse_pool[i] = {};
+            dws_sse_pool[i].dws_sse_id = (uint8_t)i;
             return;
         }
     }
 }
 
-int sse_format(char *buf, size_t n, const char *data, const char *event, const char *id)
+int dws_sse_format(char *buf, size_t n, const char *data, const char *event, const char *id)
 {
     if (!data || n == 0)
         return 0;
@@ -85,13 +85,13 @@ int sse_format(char *buf, size_t n, const char *data, const char *event, const c
     return pos;
 }
 
-bool sse_write(SseConn *sse, const char *data, const char *event, const char *id)
+bool dws_sse_write(SseConn *sse, const char *data, const char *event, const char *id)
 {
     if (!dws_conn_active(sse->slot_id))
         return false;
 
     char buf[SSE_BUF_SIZE];
-    int pos = sse_format(buf, sizeof(buf), data, event, id);
+    int pos = dws_sse_format(buf, sizeof(buf), data, event, id);
     if (pos <= 0)
         return false;
 

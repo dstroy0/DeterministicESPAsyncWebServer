@@ -69,7 +69,7 @@ void setup()
     Serial.print("IPv4: ");
     Serial.println(WiFi.localIP());
     Serial.print("Waiting for a global IPv6 address");
-    for (int i = 0; i < 40 && !ipv6_ready(); i++)
+    for (int i = 0; i < 40 && !dws_ipv6_ready(); i++)
     {
         delay(250);
         Serial.print('.');

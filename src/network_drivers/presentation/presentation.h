@@ -91,7 +91,7 @@ const struct ProtoHandler *http_proto_handler(void);
  * @brief Install the HTTP per-slot poll pump (the routing core's instance-bound `on_poll`).
  *
  * HTTP is the one protocol whose poll needs the `DWS` instance (routing), so the
- * application layer installs its pump here at `begin()` - the TX-seam (`resp_sink`) counterpart
+ * application layer installs its pump here at `begin()` - the TX-seam (`dws_resp_sink`) counterpart
  * for the poll direction. With it set, HTTP plugs into the uniform `ProtoHandler::on_poll` seam
  * exactly like every other protocol, so the L5/worker dispatch loop has no HTTP special case.
  */

@@ -67,7 +67,7 @@ static int two(const char *p)
 static void gps_feed_sentence(const char *line, size_t len)
 {
     Nmea0183 s;
-    if (!nmea0183_parse(line, len, &s))
+    if (!dws_nmea0183_parse(line, len, &s))
         return;
     if (strcmp(s.type, "RMC") != 0 || s.field_count < 10)
         return;
@@ -115,7 +115,7 @@ static uint32_t gps_time_source()
         return 0; // fix went stale (antenna unplugged?) - let the next source answer
     return g_gps_epoch + age;
 }
-static uint32_t ntp_upstream_source()
+static uint32_t dws_ntp_upstream_source()
 {
     return dws_ntp_synced() ? (uint32_t)dws_ntp_epoch() : 0;
 }
@@ -138,10 +138,10 @@ void setup()
 
     // GPS is the primary (stratum 1); the public NTP pool is the fallback.
     dws_time_source_add("gps", 1, gps_time_source);
-    dws_time_source_add("ntp", 2, ntp_upstream_source);
+    dws_time_source_add("ntp", 2, dws_ntp_upstream_source);
     dws_ntp_begin(); // start the upstream SNTP client for the fallback
 
-    if (ntp_server_begin(1, NTP_REFID_GPS))
+    if (dws_ntp_server_begin(1, NTP_REFID_GPS))
         Serial.println("NTP server listening on UDP/123 (point your devices at this IP)");
     else
         Serial.println("NTP server failed to bind :123");

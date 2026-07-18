@@ -345,7 +345,7 @@ bool DWS::keepalive_eval(uint8_t slot_id)
 // Every response path now addresses the connection by slot alone - the transport
 // resolves the pcb internally, the same way the RX read path does (no pcb is
 // threaded through the app layer, so the send target can never disagree).
-void DWS::resp_end(uint8_t slot_id, int code, int body_len, bool keep, bool pre_flushed)
+void DWS::dws_resp_end(uint8_t slot_id, int code, int body_len, bool keep, bool pre_flushed)
 {
     if (!pre_flushed)
         dws_conn_flush(slot_id); // a pre_flushed caller already did tcp_output in its final send
@@ -357,7 +357,7 @@ void DWS::resp_end(uint8_t slot_id, int code, int body_len, bool keep, bool pre_
 
 // Resolve the Connection response header (and report keep-alive intent) in one
 // place so every response path agrees. Keep-alive compiled out always closes.
-const char *DWS::resp_conn_hdr(uint8_t slot_id, bool *keep_out)
+const char *DWS::dws_resp_conn_hdr(uint8_t slot_id, bool *keep_out)
 {
     bool keep = false;
 #if DWS_ENABLE_KEEPALIVE
@@ -431,7 +431,7 @@ struct InstanceCtx
 {
     DWS *worker_server = nullptr;
 #if DWS_ENABLE_HTTP3
-    bool h3_running = false;
+    bool dws_h3_running = false;
 #endif
     DWS *http_instance = nullptr;
 };
@@ -447,7 +447,7 @@ static void dws_pump_trampoline(int worker_id)
 #endif
 
 #if DWS_ENABLE_HTTP3
-// The quic_server request seam has no DWS type; this trampoline forwards a completed
+// The dws_quic_server request seam has no DWS type; this trampoline forwards a completed
 // HTTP/3 request into the instance's shared route dispatcher (app == the DWS *).
 static void dws_h3_request_trampoline(void *app, uint32_t conn_id, uint64_t stream_id, const char *method,
                                       const char *path, const char *authority, const uint8_t *body, size_t body_len)
@@ -519,7 +519,7 @@ int32_t DWS::begin(const WebServerConfig *cfg)
         for (int i = 0; i < 32; i++)
             sec[i] = (uint8_t)(0xA5 ^ i);
 #endif
-        csrf_set_secret(sec, sizeof(sec));
+        dws_csrf_set_secret(sec, sizeof(sec));
     }
 #endif
     for (uint8_t i = 0; i < MAX_CONNS; i++)
@@ -528,7 +528,7 @@ int32_t DWS::begin(const WebServerConfig *cfg)
     ws_init();
 #endif
 #if DWS_ENABLE_SSE
-    sse_init();
+    dws_sse_init();
 #endif
     for (uint8_t i = 0; i < _listener_count; i++)
     {
@@ -546,7 +546,7 @@ int32_t DWS::begin(const WebServerConfig *cfg)
         h3cfg.cert_len = _h3_cert_len;
         memcpy(h3cfg.ed25519_seed, _h3_seed, sizeof(h3cfg.ed25519_seed));
         h3cfg.rng = dws_h3_rng;
-        s_inst.h3_running = dws_quic_server_begin(_h3_port, &h3cfg, dws_h3_request_trampoline, this);
+        s_inst.dws_h3_running = dws_quic_server_begin(_h3_port, &h3cfg, dws_h3_request_trampoline, this);
     }
 #endif
 #ifdef ARDUINO
@@ -567,7 +567,7 @@ int32_t DWS::begin(uint16_t port, const WebServerConfig *cfg)
 }
 
 #if DWS_ENABLE_HTTP3
-bool DWS::h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8_t ed25519_seed[32], uint16_t port)
+bool DWS::dws_h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8_t ed25519_seed[32], uint16_t port)
 {
     if (!cert_der || cert_len == 0 || !ed25519_seed)
         return false;
@@ -580,12 +580,12 @@ bool DWS::h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8_t ed2551
 }
 
 // Response sink for the HTTP/3 dispatch slot: route (code, content_type, body) onto the QUIC stream
-// the request arrived on (ids stashed on the slot by dispatch_h3_request). Installed as conn->resp_sink
+// the request arrived on (ids stashed on the slot by dispatch_h3_request). Installed as conn->dws_resp_sink
 // so send()/send_empty() stay protocol-agnostic.
-static bool h3_resp_sink(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
+static bool dws_h3_resp_sink(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
 {
     TcpConn *c = &conn_pool[slot];
-    return dws_quic_server_respond(c->h3_conn_id, c->h3_stream, code, content_type, (const uint8_t *)body, len);
+    return dws_quic_server_respond(c->dws_h3_conn_id, c->dws_h3_stream, code, content_type, (const uint8_t *)body, len);
 }
 
 void DWS::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *method, const char *path,
@@ -595,7 +595,7 @@ void DWS::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *
     HttpReq *r = &http_pool[slot];
     http_reset(slot);
 
-    // Map the semantic request fields into the shared HttpReq (as h2_server does per stream).
+    // Map the semantic request fields into the shared HttpReq (as dws_h2_server does per stream).
     size_t mn = strnlen(method, sizeof(r->method));
     if (mn >= sizeof(r->method))
         mn = sizeof(r->method) - 1;
@@ -646,18 +646,18 @@ void DWS::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *
     // response back onto this stream (no TCP pcb here - the sink owns the QUIC framing).
     TcpConn *c = &conn_pool[slot];
     c->h3 = 1;
-    c->h3_conn_id = conn_id;
-    c->h3_stream = stream_id;
-    c->resp_sink = h3_resp_sink;
+    c->dws_h3_conn_id = conn_id;
+    c->dws_h3_stream = stream_id;
+    c->dws_resp_sink = dws_h3_resp_sink;
     c->iface = DWSIface::DETIFACE_STA;
     c->state = ConnState::CONN_ACTIVE;
     c->pcb = nullptr;
 
-    match_and_execute(slot); // -> handler -> send() -> resp_sink -> dws_quic_server_respond()
+    match_and_execute(slot); // -> handler -> send() -> dws_resp_sink -> dws_quic_server_respond()
 
     // Release the dispatch slot for the next request (a no-response handler simply leaves the stream open).
     c->h3 = 0;
-    c->resp_sink = nullptr;
+    c->dws_resp_sink = nullptr;
     c->state = ConnState::CONN_FREE;
     http_reset(slot);
 }
@@ -726,7 +726,7 @@ void DWS::stop()
     ws_init();
 #endif
 #if DWS_ENABLE_SSE
-    sse_init();
+    dws_sse_init();
 #endif
 }
 
@@ -840,7 +840,7 @@ void DWS::on_sse(const char *path, SseConnectHandler on_connect)
     Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
     r->type = RouteType::ROUTE_SSE;
-    r->sse_connect = on_connect;
+    r->dws_sse_connect = on_connect;
 }
 #endif // DWS_ENABLE_SSE
 
@@ -1029,7 +1029,7 @@ void DWS::service_once(int worker_id)
 #if DWS_ENABLE_HTTP3
     // Drive the QUIC/HTTP-3 server: ingest queued datagrams, run the engines (which dispatch requests
     // through this instance's routes), flush replies. One worker owns it, so requests stay single-threaded.
-    if (worker_id == 0 && s_inst.h3_running)
+    if (worker_id == 0 && s_inst.dws_h3_running)
         dws_quic_server_poll(dws_millis());
 #endif
 
@@ -1159,7 +1159,7 @@ void DWS::http_poll_slot(uint8_t i)
 
 #if DWS_ENABLE_SSE
     // SSE slot - connection stays open, nothing to parse from client
-    if (sse_find(i))
+    if (dws_sse_find(i))
         return;
 #endif // DWS_ENABLE_SSE
 
@@ -1328,14 +1328,14 @@ bool DWS::route_admits(const Route *r, uint8_t slot_id, HttpReq *req) const
 }
 
 #if DWS_ENABLE_CSRF
-bool DWS::csrf_gate(uint8_t slot_id, HttpReq *req, HttpMethod method)
+bool DWS::dws_csrf_gate(uint8_t slot_id, HttpReq *req, HttpMethod method)
 {
     // Built-in token endpoint: GET /csrf issues a signed token (also set as the
     // csrf cookie) for clients to echo in X-CSRF-Token on state-changing requests.
     if (method == HttpMethod::HTTP_GET && strcmp(req->path, "/csrf") == 0)
     {
         char tok[CSRF_TOKEN_BUF];
-        if (csrf_issue(tok, sizeof(tok)) > 0)
+        if (dws_csrf_issue(tok, sizeof(tok)) > 0)
         {
             set_cookie(slot_id, "csrf", tok, "Path=/; SameSite=Strict");
             char body[CSRF_TOKEN_BUF + 16];
@@ -1355,7 +1355,7 @@ bool DWS::csrf_gate(uint8_t slot_id, HttpReq *req, HttpMethod method)
         method == HttpMethod::HTTP_DELETE)
     {
         const char *tok = http_get_header(req, "X-CSRF-Token");
-        if (!tok || !csrf_verify(tok))
+        if (!tok || !dws_csrf_verify(tok))
         {
             send(slot_id, 403, DWS_MIME_TEXT_PLAIN, "CSRF token missing or invalid");
             return true;
@@ -1440,7 +1440,7 @@ bool DWS::dispatch_matched_route(uint8_t slot_id, HttpReq *req, HttpMethod metho
 #if DWS_ENABLE_SSE
     if (r->type == RouteType::ROUTE_SSE)
     {
-        if (!sse_do_upgrade(slot_id, req, r->sse_connect))
+        if (!dws_sse_do_upgrade(slot_id, req, r->dws_sse_connect))
             send(slot_id, 503, DWS_MIME_TEXT_PLAIN, "Service Unavailable");
         return true;
     }
@@ -1516,7 +1516,7 @@ void DWS::match_and_execute(uint8_t slot_id)
     }
 
 #if DWS_ENABLE_CSRF
-    if (csrf_gate(slot_id, req, method))
+    if (dws_csrf_gate(slot_id, req, method))
         return;
 #endif
 
@@ -1595,9 +1595,9 @@ void DWS::send(uint8_t slot_id, int code, const char *content_type, const uint8_
     // dispatch time; route through it and let it own its framing + connection lifecycle. This runs
     // before the HTTP/1.1 pcb check because that check is a TCP-transport concern (the HTTP/3 slot
     // has no pcb by design, and an h2 connection manages its own).
-    if (conn->resp_sink)
+    if (conn->dws_resp_sink)
     {
-        conn->resp_sink(slot_id, code, content_type, payload, body_len);
+        conn->dws_resp_sink(slot_id, code, content_type, payload, body_len);
         return;
     }
 #endif
@@ -1610,7 +1610,7 @@ void DWS::send(uint8_t slot_id, int code, const char *content_type, const uint8_
     int payload_len = (int)(body_len > 0xFFFF ? 0xFFFF : body_len);
 
     bool keep;
-    const char *cl = resp_conn_hdr(slot_id, &keep);
+    const char *cl = dws_resp_conn_hdr(slot_id, &keep);
 
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
@@ -1620,7 +1620,7 @@ void DWS::send(uint8_t slot_id, int code, const char *content_type, const uint8_
                         code, status_text(code), content_type, payload_len);
     hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
-    // The slot stays ConnState::CONN_ACTIVE through the write for both paths; resp_end then
+    // The slot stays ConnState::CONN_ACTIVE through the write for both paths; dws_resp_end then
     // begins the ConnState::CONN_CLOSING dwell on the close path (finalized once ACKed).
 
     bool head = req_is_head(slot_id);
@@ -1628,7 +1628,7 @@ void DWS::send(uint8_t slot_id, int code, const char *content_type, const uint8_
     // HEAD responses carry the headers (incl. Content-Length) but no body. For a
     // body that fits the header scratch, coalesce headers+body into a single send
     // so the response costs one tcpip_thread round-trip instead of two. The final
-    // write also carries the flush (dws_conn_send_flush), so resp_end skips it -
+    // write also carries the flush (dws_conn_send_flush), so dws_resp_end skips it -
     // a keep-alive small response is now one marshal (write+output) instead of two.
     if (!head && payload_len > 0 && (size_t)hlen + (size_t)payload_len <= sizeof(header))
     {
@@ -1645,7 +1645,7 @@ void DWS::send(uint8_t slot_id, int code, const char *content_type, const uint8_
         dws_conn_send_flush(slot_id, header, (u16_t)hlen);
     }
 
-    resp_end(slot_id, code, payload_len, keep, /*pre_flushed=*/true);
+    dws_resp_end(slot_id, code, payload_len, keep, /*pre_flushed=*/true);
 }
 
 /*
@@ -1664,9 +1664,9 @@ void DWS::send_empty(uint8_t slot_id, int code)
         return;
     TcpConn *conn = &conn_pool[slot_id];
 #if DWS_ENABLE_HTTP2 || DWS_ENABLE_HTTP3
-    if (conn->resp_sink)
+    if (conn->dws_resp_sink)
     {
-        conn->resp_sink(slot_id, code, "text/plain", "", 0);
+        conn->dws_resp_sink(slot_id, code, "text/plain", "", 0);
         return;
     }
 #endif
@@ -1677,7 +1677,7 @@ void DWS::send_empty(uint8_t slot_id, int code)
     }
 
     bool keep;
-    const char *cl = resp_conn_hdr(slot_id, &keep);
+    const char *cl = dws_resp_conn_hdr(slot_id, &keep);
 
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
@@ -1688,7 +1688,7 @@ void DWS::send_empty(uint8_t slot_id, int code)
 
     dws_conn_send_flush(slot_id, header, (u16_t)hlen);
 
-    resp_end(slot_id, code, 0, keep, /*pre_flushed=*/true);
+    dws_resp_end(slot_id, code, 0, keep, /*pre_flushed=*/true);
 }
 
 void DWS::redirect(uint8_t slot_id, int code, const char *location)
@@ -1717,7 +1717,7 @@ void DWS::redirect(uint8_t slot_id, int code, const char *location)
     }
 
     bool keep;
-    const char *cl = resp_conn_hdr(slot_id, &keep);
+    const char *cl = dws_resp_conn_hdr(slot_id, &keep);
 
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
@@ -1729,5 +1729,5 @@ void DWS::redirect(uint8_t slot_id, int code, const char *location)
 
     dws_conn_send_flush(slot_id, header, (u16_t)hlen);
 
-    resp_end(slot_id, code, 0, keep, /*pre_flushed=*/true);
+    dws_resp_end(slot_id, code, 0, keep, /*pre_flushed=*/true);
 }

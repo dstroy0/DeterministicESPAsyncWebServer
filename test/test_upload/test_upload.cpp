@@ -39,7 +39,7 @@ void setUp()
         http_reset(i);
     }
     ws_init();
-    sse_init();
+    dws_sse_init();
     fs::mock_fs_reset();
     fs::mock_fs_write_reset();
     tcp_capture_reset();

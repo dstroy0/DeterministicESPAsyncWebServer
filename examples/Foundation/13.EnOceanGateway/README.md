@@ -12,7 +12,7 @@ chip driver here - the module does the RF, so the "driver" is purely the **ESP3 
 codec**.
 
 ```
-TCM310 --UART--> esp3_parse() --> RADIO_ERP1 sender + payload -> dws_gateway_uplink()
+TCM310 --UART--> dws_esp3_parse() --> RADIO_ERP1 sender + payload -> dws_gateway_uplink()
                                                                        |
                                                 envelope + topic  enocean/0/<sender>
                                                                        |
@@ -24,15 +24,15 @@ The codec accumulates the byte stream and frames one telegram at a time, verifyi
 CRC-8s and resynchronising on garbage:
 
 ```cpp
-esp3_packet pkt;
-int n = esp3_parse(buf, len, &pkt);   // >0 = a telegram, 0 = need more, -1 = drop a byte
+dws_esp3_packet pkt;
+int n = dws_esp3_parse(buf, len, &pkt);   // >0 = a telegram, 0 = need more, -1 = drop a byte
 if (n > 0 && pkt.type == ESP3_RADIO_ERP1) {
     const uint8_t *sender = pkt.data + pkt.data_len - 5;  // 4-byte id + status
     dws_gateway_uplink(0, (sender[2] << 8) | sender[3], pkt.data, pkt.data_len - 5, 0);
 }
 ```
 
-`esp3_build()` assembles a telegram the same way (for sending a common command / a
+`dws_esp3_build()` assembles a telegram the same way (for sending a common command / a
 teach-in reply). The codec is pure - you feed it the UART bytes - and fully host-tested
 (CRC-8 known answers, round trip, malformed framing, resync) in `test/test_enocean`.
 

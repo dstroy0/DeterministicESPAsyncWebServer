@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file tls13_msg.h
+ * @file dws_tls13_msg.h
  * @brief TLS 1.3 handshake messages for the QUIC handshake (RFC 8446 sec 4).
  *
  * The wire formats of the handshake messages a QUIC server exchanges: it parses the client's
@@ -15,7 +15,7 @@
  * key share X25519, and an Ed25519 certificate (the only signature scheme we produce - the in-tree
  * crypto has Ed25519 but no ECDSA P-256 or RSA-PSS). A ClientHello that offers none of these is a
  * handshake failure, decided by the state machine that drives this module. QUIC transport parameters
- * ride in the quic_transport_parameters extension (codepoint 0x39, RFC 9001 sec 8.2).
+ * ride in the dws_quic_transport_parameters extension (codepoint 0x39, RFC 9001 sec 8.2).
  *
  * Pure, zero heap, host-tested against the RFC 8448 sec 3 ServerHello / Certificate / Finished bytes
  * and by ClientHello field extraction + an Ed25519 CertificateVerify sign/verify round-trip.
@@ -55,7 +55,7 @@ struct TlsHs
 #define TLS_VERSION_1_3 0x0304               ///< supported_versions selected value (TLS 1.3)
 static constexpr uint16_t TLS_VERSION_DTLS_1_3 = 0xFEFC;    ///< supported_versions selected value (DTLS 1.3, RFC 9147)
 static constexpr uint16_t TLS_LEGACY_VERSION_DTLS = 0xFEFD; ///< legacy_version on the wire for DTLS (DTLS 1.2)
-#define TLS_EXT_QUIC_TRANSPORT_PARAMS 0x0039                ///< quic_transport_parameters (RFC 9001 sec 8.2)
+#define TLS_EXT_QUIC_TRANSPORT_PARAMS 0x0039                ///< dws_quic_transport_parameters (RFC 9001 sec 8.2)
 
 /** @brief What the state machine needs out of a parsed ClientHello (pointers alias the input). */
 struct Tls13ClientHello
@@ -69,12 +69,12 @@ struct Tls13ClientHello
     bool has_hybrid_share;          ///< key_share carried an X25519MLKEM768 entry
     const uint8_t *client_mlkem_ek; ///< the client's ML-KEM-768 encapsulation key (1184 B, aliases input)
 #endif
-    bool offers_tls13;      ///< supported_versions contains 0x0304
-    bool offers_x25519;     ///< supported_groups contains x25519
-    bool offers_ed25519;    ///< signature_algorithms contains ed25519
-    bool offers_h3_alpn;    ///< ALPN contains "h3"
-    const uint8_t *quic_tp; ///< raw quic_transport_parameters extension body (or NULL)
-    size_t quic_tp_len;
+    bool offers_tls13;          ///< supported_versions contains 0x0304
+    bool offers_x25519;         ///< supported_groups contains x25519
+    bool offers_ed25519;        ///< signature_algorithms contains ed25519
+    bool offers_h3_alpn;        ///< ALPN contains "h3"
+    const uint8_t *dws_quic_tp; ///< raw dws_quic_transport_parameters extension body (or NULL)
+    size_t dws_quic_tp_len;
     const uint8_t *sni; ///< first server_name host_name (or NULL), not NUL-terminated
     size_t sni_len;
     const uint8_t *cookie; ///< cookie extension body echoed after a HelloRetryRequest (or NULL); DTLS §5.1
@@ -92,7 +92,7 @@ struct Tls13ClientHello
  * @return false if it is not a well-formed ClientHello. Missing/!supported extensions are reported
  * through the offers_* flags rather than failing the parse, so the caller can send the right alert.
  */
-bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *out, bool dtls = false);
+bool dws_tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *out, bool dtls = false);
 
 /**
  * @brief Build a ServerHello (RFC 8446 sec 4.1.3) selecting TLS 1.3 / AES-128-GCM-SHA256 and a
@@ -110,22 +110,23 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
  * @param conn_id_len      length of @p conn_id (0..255).
  * @return bytes written, or 0 on overflow.
  */
-size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
-                                uint8_t session_id_len, const uint8_t *share, size_t share_len = 32,
-                                uint16_t group = TLS_GROUP_X25519, bool dtls = false, const uint8_t *conn_id = nullptr,
-                                size_t conn_id_len = 0);
+size_t dws_tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
+                                    uint8_t session_id_len, const uint8_t *share, size_t share_len = 32,
+                                    uint16_t group = TLS_GROUP_X25519, bool dtls = false,
+                                    const uint8_t *conn_id = nullptr, size_t conn_id_len = 0);
 
 /**
  * @brief Build EncryptedExtensions (RFC 8446 sec 4.3.1) carrying ALPN "h3" and the server's
- * quic_transport_parameters (@p quic_tp, from quic_tp_encode). @return bytes written, or 0.
+ * dws_quic_transport_parameters (@p dws_quic_tp, from dws_quic_tp_encode). @return bytes written, or 0.
  */
-size_t tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t *quic_tp, size_t quic_tp_len);
+size_t dws_tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t *dws_quic_tp,
+                                            size_t dws_quic_tp_len);
 
 /**
  * @brief Build a Certificate message (RFC 8446 sec 4.4.2) with an empty request context and one
  * CertificateEntry wrapping @p cert_der (DER X.509) with no entry extensions. @return bytes written.
  */
-size_t tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert_der, size_t cert_len);
+size_t dws_tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert_der, size_t cert_len);
 
 /**
  * @brief Build a CertificateVerify (RFC 8446 sec 4.4.3) with an Ed25519 signature.
@@ -138,13 +139,13 @@ size_t tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert_der
  * @param seed             32-byte Ed25519 private seed.
  * @return bytes written, or 0 on overflow.
  */
-size_t tls13_build_cert_verify(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], const uint8_t seed[32]);
+size_t dws_tls13_build_cert_verify(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], const uint8_t seed[32]);
 
 /**
  * @brief Build a Finished message (RFC 8446 sec 4.4.4) carrying @p verify_data (from
- * tls13_finished_mac). @return bytes written, or 0 on overflow.
+ * dws_tls13_finished_mac). @return bytes written, or 0 on overflow.
  */
-size_t tls13_build_finished(uint8_t *out, size_t cap, const uint8_t verify_data[32]);
+size_t dws_tls13_build_finished(uint8_t *out, size_t cap, const uint8_t verify_data[32]);
 
 /**
  * @brief Assemble the sec 4.4.3 signed content into @p out (64*0x20 || context || 0x00 || hash).
@@ -153,7 +154,7 @@ size_t tls13_build_finished(uint8_t *out, size_t cap, const uint8_t verify_data[
  * added, and so it is directly unit-testable. @p is_server picks the "server"/"client" context word.
  * @return content length written (always 98 + 32), or 0 on overflow.
  */
-size_t tls13_cert_verify_content(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], bool is_server);
+size_t dws_tls13_cert_verify_content(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], bool is_server);
 
 // ---------------------------------------------------------------------------
 // HelloRetryRequest + cookie (RFC 8446 §4.1.4), used by the DTLS 1.3 handshake
@@ -161,11 +162,11 @@ size_t tls13_cert_verify_content(uint8_t *out, size_t cap, const uint8_t transcr
 
 /** @brief The fixed HelloRetryRequest random - SHA-256("HelloRetryRequest"), RFC 8446 §4.1.3. A
  *  ServerHello carrying this random _is_ a HelloRetryRequest. 32 bytes. */
-extern const uint8_t tls13_hrr_random[32];
+extern const uint8_t dws_tls13_hrr_random[32];
 
 /**
  * @brief Build a HelloRetryRequest (RFC 8446 §4.1.4): a ServerHello whose random is
- * @ref tls13_hrr_random, selecting TLS 1.3 / AES-128-GCM-SHA256, asking the client to retry with a
+ * @ref dws_tls13_hrr_random, selecting TLS 1.3 / AES-128-GCM-SHA256, asking the client to retry with a
  * key_share for @p selected_group, and echoing @p cookie in the cookie extension (§4.2.2).
  *
  * @param session_id      legacy_session_id_echo (the client's, echoed verbatim; may be NULL if len 0).
@@ -175,22 +176,22 @@ extern const uint8_t tls13_hrr_random[32];
  *                        false for the TLS 1.3 ones (0x0303 / 0x0304).
  * @return bytes written, or 0 on overflow.
  */
-size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *session_id, uint8_t session_id_len,
-                                       uint16_t selected_group, const uint8_t *cookie, size_t cookie_len,
-                                       bool dtls = false);
+size_t dws_tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *session_id, uint8_t session_id_len,
+                                           uint16_t selected_group, const uint8_t *cookie, size_t cookie_len,
+                                           bool dtls = false);
 
 /**
  * @brief Build an EncryptedExtensions (RFC 8446 §4.3.1) with an empty extension list - the DTLS
  * profile carries no ALPN or transport parameters. @return bytes written, or 0 on overflow.
  */
-size_t tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap);
+size_t dws_tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap);
 
 /**
  * @brief Write the synthetic @c message_hash handshake message that replaces ClientHello1 in the
  * transcript when a HelloRetryRequest is used (RFC 8446 §4.4.1): @c message_hash (254), a 24-bit
  * length of 32, then @p ch1_hash. @return bytes written (36), or 0 on overflow.
  */
-size_t tls13_build_message_hash(uint8_t *out, size_t cap, const uint8_t ch1_hash[32]);
+size_t dws_tls13_build_message_hash(uint8_t *out, size_t cap, const uint8_t ch1_hash[32]);
 
 #endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_TLS13_MSG_H

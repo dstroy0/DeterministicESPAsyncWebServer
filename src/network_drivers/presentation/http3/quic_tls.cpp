@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_tls.cpp
- * @brief TLS 1.3 server handshake state machine for QUIC (see quic_tls.h).
+ * @file dws_quic_tls.cpp
+ * @brief TLS 1.3 server handshake state machine for QUIC (see dws_quic_tls.h).
  */
 
 #include "network_drivers/presentation/http3/quic_tls.h"
@@ -13,7 +13,7 @@
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #if DWS_ENABLE_PQC_KEX
-#include "network_drivers/presentation/pqc/mlkem.h" // mlkem768_encaps (X25519MLKEM768 hybrid)
+#include "network_drivers/presentation/pqc/mlkem.h" // dws_mlkem768_encaps (X25519MLKEM768 hybrid)
 #endif
 #include <string.h>
 
@@ -65,7 +65,7 @@ bool emit(QuicTls *qt, uint8_t *flight, size_t cap, size_t *plen, size_t written
 bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
 {
     Tls13ClientHello ch;
-    if (!tls13_parse_client_hello(msg, msg_len, &ch))
+    if (!dws_tls13_parse_client_hello(msg, msg_len, &ch))
     {
         fail(qt, TlsAlert::TLS_ALERT_DECODE_ERROR);
         return false;
@@ -90,12 +90,12 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
         fail(qt, TlsAlert::TLS_ALERT_NO_APPLICATION_PROTOCOL);
         return false;
     }
-    if (!ch.quic_tp)
+    if (!ch.dws_quic_tp)
     {
         fail(qt, TlsAlert::TLS_ALERT_MISSING_EXTENSION);
         return false;
     }
-    if (!quic_tp_parse(ch.quic_tp, ch.quic_tp_len, &qt->peer))
+    if (!dws_quic_tp_parse(ch.dws_quic_tp, ch.dws_quic_tp_len, &qt->peer))
     {
         fail(qt, TlsAlert::TLS_ALERT_ILLEGAL_PARAMETER);
         return false;
@@ -113,7 +113,7 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     if (use_hybrid)
     {
         uint8_t ml_ss[32];
-        if (!mlkem768_encaps(ch.client_mlkem_ek, qt->cfg.mlkem_m, server_share, ml_ss))
+        if (!dws_mlkem768_encaps(ch.client_mlkem_ek, qt->cfg.mlkem_m, server_share, ml_ss))
         {
             fail(qt, TlsAlert::TLS_ALERT_HANDSHAKE_FAILURE); // malformed ML-KEM key
             return false;
@@ -145,8 +145,8 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     ssh_sha256_update(&qt->transcript, msg, msg_len);
 
     // ServerHello (Initial-level flight).
-    size_t n = tls13_build_server_hello(qt->flight_initial, sizeof(qt->flight_initial), qt->cfg.random, ch.session_id,
-                                        ch.session_id_len, server_share, share_len, group);
+    size_t n = dws_tls13_build_server_hello(qt->flight_initial, sizeof(qt->flight_initial), qt->cfg.random,
+                                            ch.session_id, ch.session_id_len, server_share, share_len, group);
     qt->flight_initial_len = 0;
     if (!emit(qt, qt->flight_initial, sizeof(qt->flight_initial), &qt->flight_initial_len, n))
         return false; // GCOVR_EXCL_LINE  ServerHello always fits flight_initial (classical <=~160B; the
@@ -155,48 +155,48 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     // Handshake keys from Transcript-Hash(ClientHello..ServerHello).
     uint8_t hash[32];
     snapshot_hash(&qt->transcript, hash);
-    tls13_ks_early(&TLS13_KDF, &qt->ks);
-    tls13_ks_handshake(&qt->ks, ecdhe, hash, ecdhe_len);
-    quic_keys_from_secret(qt->ks.client_hs_traffic, &qt->hs_client);
-    quic_keys_from_secret(qt->ks.server_hs_traffic, &qt->hs_server);
+    dws_tls13_ks_early(&TLS13_KDF, &qt->ks);
+    dws_tls13_ks_handshake(&qt->ks, ecdhe, hash, ecdhe_len);
+    dws_quic_keys_from_secret(qt->ks.client_hs_traffic, &qt->hs_client);
+    dws_quic_keys_from_secret(qt->ks.server_hs_traffic, &qt->hs_server);
     qt->hs_keys_ready = true;
 
     // Handshake-level flight: EncryptedExtensions, Certificate, CertificateVerify, Finished.
     qt->flight_hs_len = 0;
     uint8_t tp_enc[512];
-    size_t tp_len = quic_tp_encode(&qt->cfg.params, tp_enc, sizeof(tp_enc));
+    size_t tp_len = dws_quic_tp_encode(&qt->cfg.params, tp_enc, sizeof(tp_enc));
 
-    n = tls13_build_encrypted_extensions(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len,
-                                         tp_enc, tp_len);
+    n = dws_tls13_build_encrypted_extensions(qt->flight_hs + qt->flight_hs_len,
+                                             sizeof(qt->flight_hs) - qt->flight_hs_len, tp_enc, tp_len);
     if (!emit(qt, qt->flight_hs, sizeof(qt->flight_hs), &qt->flight_hs_len, n))
         return false; // GCOVR_EXCL_LINE  EncryptedExtensions (tp <= tp_enc[512]) always fits flight_hs[2048]
 
-    n = tls13_build_certificate(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len,
-                                qt->cfg.cert_der, qt->cfg.cert_len);
+    n = dws_tls13_build_certificate(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len,
+                                    qt->cfg.cert_der, qt->cfg.cert_len);
     if (!emit(qt, qt->flight_hs, sizeof(qt->flight_hs), &qt->flight_hs_len, n))
         return false;
 
     // CertificateVerify signs Transcript-Hash(ClientHello..Certificate).
     snapshot_hash(&qt->transcript, hash);
-    n = tls13_build_cert_verify(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len, hash,
-                                qt->cfg.ed25519_seed);
+    n = dws_tls13_build_cert_verify(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len, hash,
+                                    qt->cfg.ed25519_seed);
     if (!emit(qt, qt->flight_hs, sizeof(qt->flight_hs), &qt->flight_hs_len, n))
         return false;
 
     // Server Finished over Transcript-Hash(ClientHello..CertificateVerify).
     snapshot_hash(&qt->transcript, hash);
     uint8_t verify[32];
-    tls13_finished_mac(&TLS13_KDF, qt->ks.server_hs_traffic, hash, verify);
-    n = tls13_build_finished(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len, verify);
+    dws_tls13_finished_mac(&TLS13_KDF, qt->ks.server_hs_traffic, hash, verify);
+    n = dws_tls13_build_finished(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len, verify);
     if (!emit(qt, qt->flight_hs, sizeof(qt->flight_hs), &qt->flight_hs_len, n))
         return false;
 
     // 1-RTT keys from Transcript-Hash(ClientHello..server Finished); also the hash we verify the
     // client Finished against.
     snapshot_hash(&qt->transcript, qt->hs_finished_hash);
-    tls13_ks_master(&qt->ks, qt->hs_finished_hash);
-    quic_keys_from_secret(qt->ks.client_ap_traffic, &qt->ap_client);
-    quic_keys_from_secret(qt->ks.server_ap_traffic, &qt->ap_server);
+    dws_tls13_ks_master(&qt->ks, qt->hs_finished_hash);
+    dws_quic_keys_from_secret(qt->ks.client_ap_traffic, &qt->ap_client);
+    dws_quic_keys_from_secret(qt->ks.server_ap_traffic, &qt->ap_server);
     qt->ap_keys_ready = true;
 
     qt->state = QtlsState::QTLS_WAIT_FINISHED;
@@ -211,7 +211,7 @@ bool process_client_finished(QuicTls *qt, const uint8_t *msg, size_t msg_len)
         return false;
     }
     uint8_t expected[32];
-    tls13_finished_mac(&TLS13_KDF, qt->ks.client_hs_traffic, qt->hs_finished_hash, expected);
+    dws_tls13_finished_mac(&TLS13_KDF, qt->ks.client_hs_traffic, qt->hs_finished_hash, expected);
     uint8_t diff = 0;
     for (int i = 0; i < 32; i++)
         diff |= (uint8_t)(expected[i] ^ msg[4 + i]);
@@ -239,7 +239,7 @@ bool process_message(QuicTls *qt, int level, const uint8_t *msg, size_t msg_len)
 }
 } // namespace
 
-void quic_tls_server_init(QuicTls *qt, const QuicTlsConfig *cfg)
+void dws_quic_tls_server_init(QuicTls *qt, const QuicTlsConfig *cfg)
 {
     memset(qt, 0, sizeof(*qt));
     qt->cfg = *cfg;
@@ -247,7 +247,7 @@ void quic_tls_server_init(QuicTls *qt, const QuicTlsConfig *cfg)
     qt->state = QtlsState::QTLS_START;
 }
 
-size_t quic_tls_recv_crypto(QuicTls *qt, int level, const uint8_t *data, size_t len)
+size_t dws_quic_tls_recv_crypto(QuicTls *qt, int level, const uint8_t *data, size_t len)
 {
     if (qt->state == QtlsState::QTLS_FAILED)
         return len; // drain; the connection is closing
@@ -267,7 +267,7 @@ size_t quic_tls_recv_crypto(QuicTls *qt, int level, const uint8_t *data, size_t 
     return off;
 }
 
-const uint8_t *quic_tls_flight(const QuicTls *qt, int level, size_t *len)
+const uint8_t *dws_quic_tls_flight(const QuicTls *qt, int level, size_t *len)
 {
     if (level == QuicEnc::QUIC_ENC_INITIAL)
     {
@@ -283,7 +283,7 @@ const uint8_t *quic_tls_flight(const QuicTls *qt, int level, size_t *len)
     return nullptr;
 }
 
-const QuicPacketKeys *quic_tls_keys(const QuicTls *qt, int level, bool is_server)
+const QuicPacketKeys *dws_quic_tls_keys(const QuicTls *qt, int level, bool is_server)
 {
     if (level == QuicEnc::QUIC_ENC_HANDSHAKE && qt->hs_keys_ready)
         return is_server ? &qt->hs_server : &qt->hs_client;
@@ -292,7 +292,7 @@ const QuicPacketKeys *quic_tls_keys(const QuicTls *qt, int level, bool is_server
     return nullptr;
 }
 
-const QuicTransportParams *quic_tls_peer_params(const QuicTls *qt)
+const QuicTransportParams *dws_quic_tls_peer_params(const QuicTls *qt)
 {
     return qt->have_peer ? &qt->peer : nullptr;
 }

@@ -44,21 +44,21 @@ enum class ScpMode : uint8_t
  * @param cmd not NUL-terminated (@p cmd_len bytes). @return the mode; @p path_out gets the (NUL-terminated)
  *         target, ScpMode::INVALID on a command we do not support.
  */
-ScpMode scp_parse_cmd(const char *cmd, size_t cmd_len, char *path_out, size_t path_cap);
+ScpMode dws_scp_parse_cmd(const char *cmd, size_t cmd_len, char *path_out, size_t path_cap);
 
 /**
  * @brief Parse a control line `C<mode> <size> <name>` (a trailing '\n' optional) into its fields.
  * @return true on a well-formed `C` line; @p mode_out is the octal permission bits, @p size_out the byte
  *         count, @p name_out the (NUL-terminated) filename. Only file records (`C`) are handled (not `D`/`E`).
  */
-bool scp_parse_cline(const char *line, size_t len, uint32_t *mode_out, uint64_t *size_out, char *name_out,
-                     size_t name_cap);
+bool dws_scp_parse_cline(const char *line, size_t len, uint32_t *mode_out, uint64_t *size_out, char *name_out,
+                         size_t name_cap);
 
 /**
  * @brief Build a control line `C<mode> <size> <name>\n` for a source transfer. @return the length written, or
  *        0 if it would not fit @p cap.
  */
-size_t scp_build_cline(uint32_t mode, uint64_t size, const char *name, char *out, size_t cap);
+size_t dws_scp_build_cline(uint32_t mode, uint64_t size, const char *name, char *out, size_t cap);
 
 #endif // DWS_ENABLE_SSH_SCP
 

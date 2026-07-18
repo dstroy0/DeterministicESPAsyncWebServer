@@ -23,7 +23,7 @@ void test_mlkem768_encaps_kat()
 {
     uint8_t ct[MLKEM768_CT_BYTES];
     uint8_t ss[MLKEM768_SS_BYTES];
-    bool ok = mlkem768_encaps(kat_ek, kat_m, ct, ss);
+    bool ok = dws_mlkem768_encaps(kat_ek, kat_m, ct, ss);
     TEST_ASSERT_TRUE(ok);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_ct, ct, MLKEM768_CT_BYTES);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_ss, ss, MLKEM768_SS_BYTES);
@@ -38,7 +38,7 @@ void test_mlkem768_encaps_varies_with_m()
     m2[0] ^= 0xFF;
     uint8_t ct[MLKEM768_CT_BYTES];
     uint8_t ss[MLKEM768_SS_BYTES];
-    TEST_ASSERT_TRUE(mlkem768_encaps(kat_ek, m2, ct, ss));
+    TEST_ASSERT_TRUE(dws_mlkem768_encaps(kat_ek, m2, ct, ss));
     TEST_ASSERT_NOT_EQUAL(0, memcmp(ss, kat_ss, MLKEM768_SS_BYTES));
     TEST_ASSERT_NOT_EQUAL(0, memcmp(ct, kat_ct, MLKEM768_CT_BYTES));
 }
@@ -53,7 +53,7 @@ void test_mlkem768_rejects_malformed_ek()
     bad[1] = (uint8_t)(bad[1] | 0x0F);
     uint8_t ct[MLKEM768_CT_BYTES];
     uint8_t ss[MLKEM768_SS_BYTES];
-    TEST_ASSERT_FALSE(mlkem768_encaps(bad, kat_m, ct, ss));
+    TEST_ASSERT_FALSE(dws_mlkem768_encaps(bad, kat_m, ct, ss));
 }
 
 int main()

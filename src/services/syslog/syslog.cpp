@@ -40,8 +40,8 @@ static void copy_field(char *dst, size_t cap, const char *src)
     dst[cap - 1] = '\0';
 }
 
-void syslog_init(const char *server_ip, uint16_t port, const char *hostname, const char *appname,
-                 SyslogFacility facility)
+void dws_syslog_init(const char *server_ip, uint16_t port, const char *hostname, const char *appname,
+                     SyslogFacility facility)
 {
     copy_field(s_syslog.server_ip, sizeof(s_syslog.server_ip), server_ip);
     s_syslog.port = port;
@@ -51,8 +51,8 @@ void syslog_init(const char *server_ip, uint16_t port, const char *hostname, con
     s_syslog.ready = (s_syslog.server_ip[0] != '\0');
 }
 
-size_t syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSeverity severity, const char *hostname,
-                     const char *appname, const char *msg)
+size_t dws_syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSeverity severity, const char *hostname,
+                         const char *appname, const char *msg)
 {
     if (!out || cap == 0)
         return 0;
@@ -73,12 +73,12 @@ size_t syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSever
     return (size_t)n;
 }
 
-bool syslog_log(SyslogSeverity severity, const char *msg)
+bool dws_syslog_log(SyslogSeverity severity, const char *msg)
 {
     if (!s_syslog.ready)
         return false;
-    size_t n = syslog_format(s_syslog.buf, sizeof(s_syslog.buf), s_syslog.facility, severity, s_syslog.hostname,
-                             s_syslog.appname, msg);
+    size_t n = dws_syslog_format(s_syslog.buf, sizeof(s_syslog.buf), s_syslog.facility, severity, s_syslog.hostname,
+                                 s_syslog.appname, msg);
     if (n == 0)
         return false;
     return dws_udp_sendto(s_syslog.server_ip, s_syslog.port, (const uint8_t *)s_syslog.buf, n);

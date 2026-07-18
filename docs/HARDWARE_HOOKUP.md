@@ -235,7 +235,7 @@ a frame, then hand it to the codec.
   parity, 1 stop bit (8E1)**; **9600 8N1** is also very common. Every device on a
   bus must use the **same** baud and framing. Each slave has a **unit address**
   from **1 to 247** (0 is a broadcast with no reply).
-- **Codec:** `modbus_rtu_process_adu()` validates the CRC-16 and the unit address
+- **Codec:** `dws_modbus_rtu_process_adu()` validates the CRC-16 and the unit address
   and dispatches to the host-tested PDU layer; a bad CRC or a non-matching
   address is dropped silently, exactly as the spec requires. See
   `src/services/modbus/modbus.h`.
@@ -249,7 +249,7 @@ a frame, then hand it to the codec.
   supports both check types: **BCC** (a simple checksum) and **CRC-16/ARC**;
   match what the PLC channel is configured for. Node/station addressing lives in
   the PCCC application header carried inside the frame.
-- **Codec:** `df1_build_frame` / `df1_parse_frame` handle the `DLE STX ... DLE
+- **Codec:** `dws_df1_build_frame` / `dws_df1_parse_frame` handle the `DLE STX ... DLE
 ETX` framing and byte-stuffing. See `src/services/df1/df1.h`.
 
 ### Host Link (Omron)
@@ -259,7 +259,7 @@ ETX` framing and byte-stuffing. See `src/services/df1/df1.h`.
 - **Settings:** a typical Omron host-link port is **9600 baud, 7 data bits, even
   parity, 2 stop bits (7E2)**; confirm the PLC's setting. Each PLC has a **unit
   number 00-31** that begins every command frame.
-- **Codec:** `hostlink_build` / `hostlink_parse` build the `@` + unit + code +
+- **Codec:** `dws_hostlink_build` / `dws_hostlink_parse` build the `@` + unit + code +
   text + FCS + `*`CR ASCII frame and validate the XOR checksum (FCS). See
   `src/services/hostlink/hostlink.h`.
 
@@ -283,11 +283,11 @@ address 1-250.
 
 The codec is the framing + record layer:
 
-- Wake / address a meter: `mbus_build_snd_nke(buf, cap, addr)` (link reset), then
-  `mbus_build_req_ud2(buf, cap, addr, fcb)` to request data (toggle `fcb` each
+- Wake / address a meter: `dws_mbus_build_snd_nke(buf, cap, addr)` (link reset), then
+  `dws_mbus_build_req_ud2(buf, cap, addr, fcb)` to request data (toggle `fcb` each
   poll).
-- Parse the reply: `mbus_parse()` validates the frame and gives you C / A / CI +
-  the user data; then walk the values with `mbus_record_next()` (each record's
+- Parse the reply: `dws_mbus_parse()` validates the frame and gives you C / A / CI +
+  the user data; then walk the values with `dws_mbus_record_next()` (each record's
   DIF gives the data type/length, the VIF the unit).
 
 A natural **wireless meter gateway**: poll meters over the M-Bus and publish the
@@ -305,13 +305,13 @@ of the ready-made SDI-12 interface boards) between a UART and the bus.
 
 A measurement is two steps: start it, wait, then fetch:
 
-- `sdi12_build_measure(buf, cap, addr, false)` sends `aM!`; parse the reply with
-  `sdi12_parse_measure()` to learn how many seconds to wait and how many values
+- `dws_sdi12_build_measure(buf, cap, addr, false)` sends `aM!`; parse the reply with
+  `dws_sdi12_parse_measure()` to learn how many seconds to wait and how many values
   to expect.
-- After the wait, `sdi12_build_data(buf, cap, addr, 0)` sends `aD0!`; split the
-  reply into floats with `sdi12_parse_values()`.
+- After the wait, `dws_sdi12_build_data(buf, cap, addr, 0)` sends `aD0!`; split the
+  reply into floats with `dws_sdi12_parse_values()`.
 - For the CRC-protected forms (`aMC!` / `aCC!`), check the reply with
-  `sdi12_check_crc()`.
+  `dws_sdi12_check_crc()`.
 
 Poll a sensor string and publish the readings over Wi-Fi. See
 `src/services/sdi12/sdi12.h`.
@@ -323,14 +323,14 @@ at **250 kbit/s, 8N2** - so wire the same RS-485 transceiver (a `MAX485` is the
 classic cheap part) as in the RS-485 section above. DMX is one-way and positional:
 each fixture listens on a start address and reads N consecutive channel slots.
 
-- Send a universe: fill a channel array and `dmx_build(buf, cap, DMX_SC_DIMMER,
+- Send a universe: fill a channel array and `dws_dmx_build(buf, cap, DMX_SC_DIMMER,
 channels, n)`; your transport sends a **break** then the returned bytes.
-- `dmx_get_channel()` reads a 1-based channel from a received packet.
+- `dws_dmx_get_channel()` reads a 1-based channel from a received packet.
 
 **RDM** (ANSI E1.20) adds two-way device management on the same pair (the
 transceiver must be switched to receive for the reply, and RDM needs proper
-direction timing). Build a request with `rdm_build()` (set the destination /
-source `rdm_uid()`, command class, and PID) and read a reply with `rdm_parse()`,
+direction timing). Build a request with `dws_rdm_build()` (set the destination /
+source `dws_rdm_uid()`, command class, and PID) and read a reply with `dws_rdm_parse()`,
 which checks the RDM checksum. Discover, address, and configure fixtures from a
 web UI - a tidy **wireless lighting controller**. See `src/services/dmx/dmx.h`.
 
@@ -342,11 +342,11 @@ transceiver) - typically **9600 baud, 8N1** (older units 4800). Full-size marine
 instruments use **RS-422**, so for those add an RS-422 receiver. It is mostly
 one-way (the receiver talks; you listen).
 
-- Read a fix: accumulate a line, then `nmea0183_parse(line, len, &m)`. Check
+- Read a fix: accumulate a line, then `dws_nmea0183_parse(line, len, &m)`. Check
   `m.type` ("GGA", "RMC", "VTG", ...) and pull fields with
-  `nmea0183_field_float()` / `nmea0183_field_int()` (field 0 is the address;
+  `dws_nmea0183_field_float()` / `dws_nmea0183_field_int()` (field 0 is the address;
   data fields are 1..n).
-- To send (e.g. configuration to a receiver), `nmea0183_build()` adds the `$`,
+- To send (e.g. configuration to a receiver), `dws_nmea0183_build()` adds the `$`,
   checksum, and CR/LF around your comma-separated body.
 
 Decode position / speed / heading and republish it over Wi-Fi (a web map, MQTT,
@@ -366,10 +366,10 @@ the three SDCI rates (**COM1 4.8 / COM2 38.4 / COM3 230.4 kbit/s**).
 This codec is the data-link **message** layer - in particular the SDCI checksum,
 which is the easy thing to get wrong:
 
-- Master message: lay out the M-sequence (the `iol_mc()` control octet, any
-  on-request / process octets, and an `iol_ckt()` checksum/type octet), then
-  `iol_finalize(msg, len, check_index)` fills the checksum.
-- Device reply: `iol_verify(msg, len, check_index)` checks the reply's
+- Master message: lay out the M-sequence (the `dws_iol_mc()` control octet, any
+  on-request / process octets, and an `dws_iol_ckt()` checksum/type octet), then
+  `dws_iol_finalize(msg, len, check_index)` fills the checksum.
+- Device reply: `dws_iol_verify(msg, len, check_index)` checks the reply's
   checksum/status octet; read its Event and PD-valid flags.
 
 The per-device M-sequence and ISDU layout come from the device's IODD profile.
@@ -406,13 +406,13 @@ for CAN in factory automation: motion drives, I/O blocks, sensors. Each node has
 an id 1-127. The codec builds and parses the messages; your sketch moves the
 frames with the TWAI driver (or the MCP2515):
 
-- Bring a node up: `canopen_build_nmt(&frame, CANOPEN_NMT_START, node)`.
-- Read an object (expedited SDO): `canopen_build_sdo_read(&frame, node, index,
-sub)`, send it, then `canopen_parse_sdo_response()` on the reply.
-- Write an object: `canopen_build_sdo_write(...)`.
-- Watch liveness: `canopen_parse_heartbeat()` on each `0x700+node` frame;
-  `canopen_parse_emcy()` on emergencies.
-- Receive process data: `canopen_parse()` classifies each frame, and a TPDO's
+- Bring a node up: `dws_canopen_build_nmt(&frame, CANOPEN_NMT_START, node)`.
+- Read an object (expedited SDO): `dws_canopen_build_sdo_read(&frame, node, index,
+sub)`, send it, then `dws_canopen_parse_sdo_response()` on the reply.
+- Write an object: `dws_canopen_build_sdo_write(...)`.
+- Watch liveness: `dws_canopen_parse_heartbeat()` on each `0x700+node` frame;
+  `dws_canopen_parse_emcy()` on emergencies.
+- Receive process data: `dws_canopen_parse()` classifies each frame, and a TPDO's
   `data[]` is the raw mapped payload.
 
 This is the classic **wireless bridge**: poll CANopen drives over the wire and
@@ -428,16 +428,16 @@ terminators), but it uses **29-bit extended** ids, almost always at **250
 kbit/s**. The codec packs and unpacks the id (priority / PGN / source /
 destination) and handles multi-packet messages:
 
-- Decode a received frame: `j1939_decode_id(frame.id, &id)` gives you the PGN,
+- Decode a received frame: `dws_j1939_decode_id(frame.id, &id)` gives you the PGN,
   source, and destination; the 8 data octets are the parameter group's signals
   (SPNs), which you scale per the PGN definition.
-- Ask a device for a PGN: `j1939_build_request(&frame, my_addr, dest, pgn)`.
-- Announce your address: `j1939_build_address_claim(&frame, my_addr,
-j1939_build_name(...))`.
+- Ask a device for a PGN: `dws_j1939_build_request(&frame, my_addr, dest, pgn)`.
+- Announce your address: `dws_j1939_build_address_claim(&frame, my_addr,
+dws_j1939_build_name(...))`.
 - Long messages (> 8 octets, e.g. diagnostics): feed every received frame to
-  `j1939_tp_feed(&rx, &frame)`; when it returns `J1939_TP_COMPLETE`, `rx.buf`
-  holds the reassembled message for `rx.pgn`. To send one, `j1939_build_bam_cm()`
-  then a `j1939_build_tp_dt()` per 7-octet chunk.
+  `dws_j1939_tp_feed(&rx, &frame)`; when it returns `J1939_TP_COMPLETE`, `rx.buf`
+  holds the reassembled message for `rx.pgn`. To send one, `dws_j1939_build_bam_cm()`
+  then a `dws_j1939_build_tp_dt()` per 7-octet chunk.
 
 A classic **wireless gateway**: decode engine / transmission / genset PGNs off
 the bus and publish them over MQTT or a web dashboard. See
@@ -453,16 +453,16 @@ ordinary CAN, so the **same transceiver wiring** as above applies (use 125, 250,
 or 500 kbit/s; each node has a MAC id 0-63).
 
 This module supplies the DeviceNet-specific link layer; you build the CIP message
-body with the `cip_*` functions (enable `DWS_ENABLE_CIP`):
+body with the `dws_cip_*` functions (enable `DWS_ENABLE_CIP`):
 
-- Address a frame: `devicenet_encode_id(&id, DEVICENET_GROUP_2, msg_id, mac)`
-  picks the message group + MAC id; `devicenet_decode_id()` reverses it.
-- Send a short explicit request: build the CIP body with `cip_*`, then
-  `devicenet_build_explicit(&frame, group, msg_id, mac, body, len)` prepends the
+- Address a frame: `dws_devicenet_encode_id(&id, DEVICENET_GROUP_2, msg_id, mac)`
+  picks the message group + MAC id; `dws_devicenet_decode_id()` reverses it.
+- Send a short explicit request: build the CIP body with `dws_cip_*`, then
+  `dws_devicenet_build_explicit(&frame, group, msg_id, mac, body, len)` prepends the
   message-header octet (fits when the body is <= 7 octets).
 - Receive a long response: feed each frame's data octets to
-  `devicenet_frag_feed(&rx, body, len)`; on `DEVICENET_FRAG_COMPLETE`, `rx.buf`
-  holds the reassembled CIP response to parse with `cip_*`.
+  `dws_devicenet_frag_feed(&rx, body, len)`; on `DEVICENET_FRAG_COMPLETE`, `rx.buf`
+  holds the reassembled CIP response to parse with `dws_cip_*`.
 
 Bridge a DeviceNet segment onto Wi-Fi the same way as the other CAN buses. See
 `src/services/devicenet/devicenet.h`.
@@ -479,12 +479,12 @@ NMEA 2000 carries most data either in a single 8-octet frame or via **Fast
 Packet** (up to 223 octets). The codec reuses the J1939 id functions and adds
 Fast Packet:
 
-- Receive: decode the id with `j1939_decode_id()`; for a single-frame PGN read
+- Receive: decode the id with `dws_j1939_decode_id()`; for a single-frame PGN read
   the 8 octets directly, and for a Fast Packet PGN feed each frame to
-  `n2k_fastpacket_feed(&rx, &frame)` until `N2K_FP_COMPLETE`, then parse
+  `dws_n2k_fastpacket_feed(&rx, &frame)` until `N2K_FP_COMPLETE`, then parse
   `rx.buf` per the PGN definition.
-- Send: `n2k_build_single()` for short PGNs, or loop
-  `n2k_fastpacket_build_frame()` over `n2k_fastpacket_num_frames()` for long ones.
+- Send: `dws_n2k_build_single()` for short PGNs, or loop
+  `dws_n2k_fastpacket_build_frame()` over `dws_n2k_fastpacket_num_frames()` for long ones.
 
 Bridge the backbone onto Wi-Fi: turn boat data into a web dashboard or MQTT feed.
 See `src/services/nmea2000/nmea2000.h`.
@@ -531,7 +531,7 @@ the ESP32's built-in Wi-Fi supplies the link.
 - **Settings:** **TCP port 502.** The request carries a **unit identifier**
   (often 1, or 255/0xFF for a native TCP device). No serial parity or baud here;
   Modbus TCP wraps the same PDU in an MBAP header.
-- **Codec:** the same `modbus_*` data model and PDU dispatch as RTU, minus the
+- **Codec:** the same `dws_modbus_*` data model and PDU dispatch as RTU, minus the
   CRC (TCP already guarantees integrity). See `src/services/modbus/modbus.h`.
 
 ### SunSpec
@@ -543,7 +543,7 @@ the ESP32's built-in Wi-Fi supplies the link.
 - **Settings:** the device exposes a chain of "models" beginning at a base
   holding register (commonly **40000**, sometimes 50000) marked by the ASCII
   **`SunS`** signature. Read that register block over Modbus, then walk it.
-- **Codec:** `sunspec_check_marker` / `sunspec_begin` / `sunspec_next_model` plus
+- **Codec:** `dws_sunspec_check_marker` / `dws_sunspec_begin` / `dws_sunspec_next_model` plus
   typed point readers. Makes a solar inverter, meter, or battery interoperable.
   See `src/services/sunspec/sunspec.h`.
 
@@ -555,8 +555,8 @@ the ESP32's built-in Wi-Fi supplies the link.
   **rack and slot** number that identify the CPU (for example rack 0 / slot 1 or
   slot 2 on an S7-300, rack 0 / slot 1 on an S7-1200/1500); the PLC must also
   permit "PUT/GET" access for external reads.
-- **Codec:** `s7_build_setup` / `s7_build_read_request` / `s7_parse_header` /
-  `s7_read_next_item`, wrapped with `cotp_build_dt` + `tpkt_build`. See
+- **Codec:** `dws_s7_build_setup` / `dws_s7_build_read_request` / `dws_s7_parse_header` /
+  `dws_s7_read_next_item`, wrapped with `dws_cotp_build_dt` + `dws_tpkt_build`. See
   `src/services/s7comm/s7comm.h`.
 
 ### MELSEC (Mitsubishi)
@@ -566,7 +566,7 @@ the ESP32's built-in Wi-Fi supplies the link.
 - **Settings:** **TCP or UDP**, on the **port you configure on the PLC** (MC
   protocol has no fixed IANA port). This codec speaks the **binary 3E** frame.
   Pick word or bit devices (D, M, X, Y, R, ...) by their device code.
-- **Codec:** `melsec_build_read` / `melsec_parse_response`. See
+- **Codec:** `dws_melsec_build_read` / `dws_melsec_parse_response`. See
   `src/services/melsec/melsec.h`.
 
 ### FINS (Omron)
@@ -577,8 +577,8 @@ the ESP32's built-in Wi-Fi supplies the link.
 - **Settings:** **FINS/UDP, port 9600** by default. Addressing is a
   **network / node / unit** triple for both source and destination; the node
   number usually matches the last octet of the PLC's IP by convention.
-- **Codec:** `fins_build_command` / `fins_build_memory_area_read` /
-  `fins_parse_response`, carried over this library's UDP transport
+- **Codec:** `dws_fins_build_command` / `dws_fins_build_memory_area_read` /
+  `dws_fins_parse_response`, carried over this library's UDP transport
   (`dws_udp_sendto`). See `src/services/fins/fins.h`.
 
 ### BACnet/IP
@@ -600,7 +600,7 @@ the ESP32's built-in Wi-Fi supplies the link.
   then send requests); **UDP port 2222** carries implicit (cyclic I/O) data. CIP
   addresses objects by a **class / instance / attribute** path (an EPATH).
 - **Codec:** `enip_*` builds the 24-byte encapsulation header and CPF items;
-  `cip_build_epath` + `cip_build_get_attribute_single` build the CIP request. See
+  `dws_cip_build_epath` + `dws_cip_build_get_attribute_single` build the CIP request. See
   `src/services/enip/enip.h` and `src/services/cip/cip.h`.
 
 ### DNP3 and C37.118 over IP
@@ -621,13 +621,13 @@ the ESP32's built-in Wi-Fi supplies the link.
 transports and this codec does both:
 
 - **-104 over TCP (port 2404)** - no extra hardware beyond Wi-Fi. Open the link
-  with a U-format `STARTDT act` (`iec104_build_u`), then exchange I-format APDUs
-  (`iec104_build_i` wraps an ASDU; `iec104_parse` reads one back) and acknowledge
-  with S-format. Build the ASDU with `iec_asdu_build_header` + `iec_put_ioa` and
+  with a U-format `STARTDT act` (`dws_iec104_build_u`), then exchange I-format APDUs
+  (`dws_iec104_build_i` wraps an ASDU; `dws_iec104_parse` reads one back) and acknowledge
+  with S-format. Build the ASDU with `dws_iec_asdu_build_header` + `dws_iec_put_ioa` and
   the type-specific information elements.
 - **-101 over serial** - wire an RS-232 or RS-485 transceiver as in the serial
-  section. Frame with `iec101_build_fixed` / `iec101_build_variable` and parse
-  with `iec101_parse` (the ASDU payload is identical to -104's).
+  section. Frame with `dws_iec101_build_fixed` / `dws_iec101_build_variable` and parse
+  with `dws_iec101_parse` (the ASDU payload is identical to -104's).
 
 This makes a clean **protocol-converting gateway**: terminate -101 from an old
 RTU on the serial side and re-expose it as -104 over Wi-Fi (or vice-versa), since
@@ -643,7 +643,7 @@ both share the ASDU layer. See `src/services/iec60870/iec60870.h`.
   `opc.tcp://<ip>:4840`). This library implements **SecurityPolicy `None`** (no
   message encryption), so configure the peer to allow an unencrypted endpoint, or
   put the link on a trusted/segmented network.
-- **Codec:** see `src/services/opcua/` and `src/services/opcua_client/`.
+- **Codec:** see `src/services/opcua/` and `src/services/dws_opcua_client/`.
 
 ### SNMP (agent and traps)
 
@@ -714,7 +714,7 @@ All the I2C drivers bring the bus up through one shared helper (`dws_i2c_begin()
 > 50 MHz RMII clock there, GPIO 16/17. So with an RMII PHY enabled you **must** move
 > the peripheral buses off those pins: set `-DDWS_I2C_SDA_PIN=32
 -DDWS_I2C_SCL_PIN=33` (or any free pair) to relocate the I2C sensors, and pass
-> **alternate RX/TX** to `ld2410_begin(rx, tx)` / your GPS
+> **alternate RX/TX** to `dws_ld2410_begin(rx, tx)` / your GPS
 > `Serial.begin(baud, SERIAL_8N1, rx, tx)` (e.g. GPIO 4 / 2). Avoid the other RMII
 > pins (19, 23, 25, 26, 27, 18) and the strapping pins (0, 2, 5, 12, 15). On an S3 with
 > a W5500 there is no RMII clash, but still keep the I2C/UART pins clear of the SPI pins
@@ -724,13 +724,13 @@ All the I2C drivers bring the bus up through one shared helper (`dws_i2c_begin()
 
 - **RTC (DS3231 / DS1307), `DWS_ENABLE_RTC`** - a battery-backed clock chip at I2C
   0x68 so the board knows the time the instant it boots, offline. Wire SDA/SCL, fit its
-  coin cell, and register `rtc_time_source` with the time-source chain;
-  `rtc_read_epoch()` / `rtc_set_epoch()` read and set it. Example 61.Rtc.
+  coin cell, and register `dws_rtc_time_source` with the time-source chain;
+  `dws_rtc_read_epoch()` / `dws_rtc_set_epoch()` read and set it. Example 61.Rtc.
 - **GPS (u-blox GT-U7), `DWS_ENABLE_NMEA0183`** - the GT-U7 is a u-blox-7 GPS that
   streams **NMEA 0183** sentences over a plain 3.3 V UART at **9600 baud** (it also has
   a **PPS** pin that pulses once a second for precise timing). Wire its **TX to an
   ESP32 RX** (its RX is optional - only needed to send it config). Accumulate a line
-  and `nmea0183_parse()` it, then read the fix with the field helpers - see
+  and `dws_nmea0183_parse()` it, then read the fix with the field helpers - see
   [NMEA 0183](#nmea-0183-gps--marine) above and example 58.Nmea0183. In a time-source
   chain it is the best source: **GPS -> RTC -> upstream NTP** (feed all three to the
   NTP server to serve time to your whole LAN).
@@ -739,27 +739,27 @@ All the I2C drivers bring the bus up through one shared helper (`dws_i2c_begin()
 
 - **LD2410 mmWave radar, `DWS_ENABLE_LD2410`** - a 24 GHz presence sensor that sees a
   still person (breathing), in the dark, through thin walls - over a UART at **256000
-  baud**. Cross the data wires (module TX -> ESP32 RX). `ld2410_poll()` decodes each
-  frame; `ld2410_present()` / `ld2410_distance_cm()` act on it. Example 62.Ld2410.
+  baud**. Cross the data wires (module TX -> ESP32 RX). `dws_ld2410_poll()` decodes each
+  frame; `dws_ld2410_present()` / `dws_ld2410_distance_cm()` act on it. Example 62.Ld2410.
 - **MPR121 capacitive touch, `DWS_ENABLE_MPR121`** - turns 12 wires or pads into
-  touch buttons (I2C 0x5A). `mpr121_read_touched()` returns a 12-bit mask. Example
+  touch buttons (I2C 0x5A). `dws_mpr121_read_touched()` returns a 12-bit mask. Example
   63.Mpr121.
 - **SHT3x temperature / humidity, `DWS_ENABLE_SHT3X`** - a CRC-checked Sensirion
-  sensor (I2C 0x44). `sht3x_read()` returns temperature and humidity in integer
+  sensor (I2C 0x44). `dws_sht3x_read()` returns temperature and humidity in integer
   milli-units. Example 64.Sht3x.
 - **ADS1115 16-bit ADC, `DWS_ENABLE_ADS1115`** - four precise analog inputs with a
-  programmable gain (I2C 0x48). `ads1115_read_uv()` gives a channel's voltage in
+  programmable gain (I2C 0x48). `dws_ads1115_read_uv()` gives a channel's voltage in
   microvolts. Example 66.Ads1115.
 - **INA219 current / power, `DWS_ENABLE_INA219`** - sits **in series** with a load
   (Vin+ -> shunt -> Vin-) and reports voltage, current, and power (I2C 0x40).
-  `ina219_read_current_ua()` / `ina219_read_power_uw()`. Example 67.Ina219.
+  `dws_ina219_read_current_ua()` / `dws_ina219_read_power_uw()`. Example 67.Ina219.
 
 ### Actuation: servos and LEDs
 
 - **PCA9685 16-channel PWM, `DWS_ENABLE_PCA9685`** - drives up to 16 servos or LEDs
   from the I2C bus (0x40), with its own precise PWM timer. Power the **servos** from the
   board's `V+` screw terminal (a separate 5-6 V supply), never the ESP32.
-  `pca9685_set_servo_us()` positions a servo; `pca9685_set_pwm()` dims an LED. Example
+  `dws_pca9685_set_servo_us()` positions a servo; `dws_pca9685_set_pwm()` dims an LED. Example
   65.Pca9685.
 
 These all follow the same shape as the field-bus codecs: a pure codec you can unit-test

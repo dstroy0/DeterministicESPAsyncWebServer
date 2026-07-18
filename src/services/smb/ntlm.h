@@ -33,7 +33,7 @@
 #include <stdint.h>
 
 /** @brief The NT hash: MD4 of the UTF-16LE password (@p password is ASCII/UTF-8, NUL-terminated). */
-void ntlm_nt_hash(const char *password, uint8_t nt_hash[16]);
+void dws_ntlm_nt_hash(const char *password, uint8_t nt_hash[16]);
 
 /**
  * @brief NTOWFv2 = HMAC-MD5(NThash, UTF-16LE(Uppercase(user) + domain)).
@@ -41,12 +41,12 @@ void ntlm_nt_hash(const char *password, uint8_t nt_hash[16]);
  * Only the @p user is uppercased (ASCII), not the @p domain (MS-NLMP). Both are NUL-terminated.
  * @return true; false if user + domain exceed the internal 256-char scratch.
  */
-bool ntlm_ntowfv2(const uint8_t nt_hash[16], const char *user, const char *domain, uint8_t owf[16]);
+bool dws_ntlm_ntowfv2(const uint8_t nt_hash[16], const char *user, const char *domain, uint8_t owf[16]);
 
 /**
  * @brief Compute the NTLMv2 NtChallengeResponse (NTProofStr + temp) and the session base key.
  *
- * @param owf              NTOWFv2 (from ntlm_ntowfv2).
+ * @param owf              NTOWFv2 (from dws_ntlm_ntowfv2).
  * @param server_challenge the 8-byte challenge from the server's CHALLENGE_MESSAGE.
  * @param client_challenge the 8-byte client-generated challenge.
  * @param timestamp        the 8-byte little-endian FILETIME (may be zero).
@@ -54,9 +54,9 @@ bool ntlm_ntowfv2(const uint8_t nt_hash[16], const char *user, const char *domai
  * @param session_key      receives the 16-byte SessionBaseKey (may be null).
  * @return the NtChallengeResponse length written to @p out (48 + @p ti_len), or 0 on overflow.
  */
-size_t ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challenge[8], const uint8_t client_challenge[8],
-                        const uint8_t timestamp[8], const uint8_t *target_info, size_t ti_len, uint8_t *out,
-                        size_t out_cap, uint8_t session_key[16]);
+size_t dws_ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challenge[8], const uint8_t client_challenge[8],
+                            const uint8_t timestamp[8], const uint8_t *target_info, size_t ti_len, uint8_t *out,
+                            size_t out_cap, uint8_t session_key[16]);
 
 #endif // DWS_ENABLE_SMB
 

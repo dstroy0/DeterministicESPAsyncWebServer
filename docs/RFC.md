@@ -192,7 +192,7 @@ fixed MIB table. Conformance:
   private enterprise subtree. `GetNext` / `GetBulk` walk objects in lexicographic
   OID order.
 
-The decode/dispatch/encode core ([`snmp_agent_process()`](@ref snmp_agent_process))
+The decode/dispatch/encode core ([`dws_snmp_agent_process()`](@ref dws_snmp_agent_process))
 is transport-independent and host-tested; only the UDP socket is ESP32-specific.
 SNMP security properties (cleartext community strings, no v1/v2c authentication):
 [SECURITY.md](SECURITY.md).
@@ -245,11 +245,11 @@ Registers, 0x04 Read Input Registers, 0x05 Write Single Coil, 0x06 Write Single
 Register, 0x0F Write Multiple Coils, 0x10 Write Multiple Registers. An unsupported
 function returns exception 0x01 (Illegal Function), an out-of-range address 0x02
 (Illegal Data Address), and a bad quantity/value 0x03 (Illegal Data Value). The
-codec ([`modbus_process_adu()`](@ref modbus_process_adu)) is transport-independent
+codec ([`dws_modbus_process_adu()`](@ref dws_modbus_process_adu)) is transport-independent
 and host-tested; the TCP framing (one ADU per MBAP length, pipelined out of the rx
 ring) is dispatched through the PROTO_MODBUS connection handler. The application
 reads and writes the model with the accessor functions and is notified of client
-writes via [`modbus_on_write()`](@ref modbus_on_write). Modbus has no
+writes via [`dws_modbus_on_write()`](@ref dws_modbus_on_write). Modbus has no
 authentication or encryption - run it only on a trusted control network.
 
 ## CoAP server (RFC 7252)
@@ -307,21 +307,21 @@ is mandatory - omitting it is rejected by compliant clients). Supported flow:
 - **Attribute / view services:** `Read` (Part 4 §5.10) and `Write` decode/encode scalar
   `Variant`/`DataValue` (Boolean, Int32, UInt32, Float, Double, String); `Browse` (Part 4
   §5.8.2) returns `ReferenceDescription`s. The application supplies the address space via
-  registered resolvers ([`opcua_set_read_handler`](@ref opcua_set_read_handler) /
-  [`opcua_set_write_handler`](@ref opcua_set_write_handler) /
-  [`opcua_set_browse_handler`](@ref opcua_set_browse_handler)); an unknown NodeId yields
+  registered resolvers ([`dws_opcua_set_read_handler`](@ref dws_opcua_set_read_handler) /
+  [`dws_opcua_set_write_handler`](@ref dws_opcua_set_write_handler) /
+  [`dws_opcua_set_browse_handler`](@ref dws_opcua_set_browse_handler)); an unknown NodeId yields
   `BadNodeIdUnknown`.
 - **Teardown / errors:** `CloseSession`, `CLO` CloseSecureChannel (closes the socket),
   and a `ServiceFault` (`BadServiceUnsupported`) for any unsupported service so a client
   never stalls.
 
 The built-in-type codec, framing, and all service request/response builders are
-transport-independent and host-tested; only [`opcua_rx()`](@ref opcua_rx) (the
+transport-independent and host-tested; only [`dws_opcua_rx()`](@ref dws_opcua_rx) (the
 PROTO_OPCUA data handler) is ESP32-specific. Interoperability is verified against a
 third-party client (Python `asyncua`): connect (handshake → secure channel → session →
 activate), browse the Objects folder, and read/write live values. An optional matching
 **client** ([`DWS_ENABLE_OPCUA_CLIENT`](@ref DWS_ENABLE_OPCUA_CLIENT),
-`services/opcua_client`) builds the requests and parses the responses, transport-agnostic.
+`services/dws_opcua_client`) builds the requests and parses the responses, transport-agnostic.
 
 **Security properties:** SecurityPolicy is `None` - messages are neither signed nor
 encrypted and the user identity is Anonymous, so (like cleartext SNMP v1/v2c) the OPC UA
@@ -334,7 +334,7 @@ Optional ([`DWS_ENABLE_SYSLOG`](@ref DWS_ENABLE_SYSLOG), default off) syslog
 client over UDP. Each line is `<PRI>1 TIMESTAMP HOSTNAME APP-NAME PROCID MSGID
 STRUCTURED-DATA MSG`, where `PRI = facility*8 + severity` and TIMESTAMP / PROCID /
 MSGID / STRUCTURED-DATA are the NILVALUE `-` (the device has no wall clock or PID).
-Fire-and-forget; the formatter ([`syslog_format()`](@ref syslog_format)) is
+Fire-and-forget; the formatter ([`dws_syslog_format()`](@ref dws_syslog_format)) is
 host-tested and the datagram is sent via the transport-layer UDP service.
 
 ## JWT bearer tokens (RFC 7519 / 7515 / 7518)
@@ -343,8 +343,8 @@ Optional ([`DWS_ENABLE_JWT`](@ref DWS_ENABLE_JWT), default off). Verifies a
 compact-serialization JWS (RFC 7515) JSON Web Token (RFC 7519):
 `base64url(header).base64url(payload).base64url(signature)` with `alg=HS256`
 (HMAC-SHA-256, RFC 7518). The signature is recomputed over `header.payload` and
-compared in constant time ([`jwt_bearer_valid()`](@ref jwt_bearer_valid)); integer
-claims such as `exp` are readable via [`jwt_claim_int()`](@ref jwt_claim_int) for
+compared in constant time ([`dws_jwt_bearer_valid()`](@ref dws_jwt_bearer_valid)); integer
+claims such as `exp` are readable via [`dws_jwt_claim_int()`](@ref dws_jwt_claim_int) for
 the handler to enforce. The full `Authorization` header is captured (a bearer
 token exceeds the normal header-value cap). Shared-secret caveat:
 [SECURITY.md](SECURITY.md).

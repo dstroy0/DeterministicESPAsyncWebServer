@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file gnss_survey.cpp
- * @brief GNSS survey-in: WGS84 geodetic <-> ECEF + fixed-position averaging. See gnss_survey.h.
+ * @file dws_gnss_survey.cpp
+ * @brief GNSS survey-in: WGS84 geodetic <-> ECEF + fixed-position averaging. See dws_gnss_survey.h.
  */
 
 #include "services/gnss/gnss_survey.h"
@@ -28,7 +28,7 @@ const double DEG2RAD = 0.017453292519943295;       // pi / 180
 const double RAD2DEG = 57.29577951308232;          // 180 / pi
 } // namespace
 
-void gnss_geodetic_to_ecef(const GnssGeodetic *g, GnssEcef *e)
+void dws_gnss_geodetic_to_ecef(const GnssGeodetic *g, GnssEcef *e)
 {
     double lat = g->lat_deg * DEG2RAD;
     double lon = g->lon_deg * DEG2RAD;
@@ -42,7 +42,7 @@ void gnss_geodetic_to_ecef(const GnssGeodetic *g, GnssEcef *e)
     e->z = (n * (1.0 - WGS84_E2) + g->height_m) * slat;
 }
 
-void gnss_ecef_to_geodetic(const GnssEcef *e, GnssGeodetic *g)
+void dws_gnss_ecef_to_geodetic(const GnssEcef *e, GnssGeodetic *g)
 {
     double p = sqrt(e->x * e->x + e->y * e->y);
     g->lon_deg = atan2(e->y, e->x) * RAD2DEG;
@@ -66,7 +66,7 @@ void gnss_ecef_to_geodetic(const GnssEcef *e, GnssGeodetic *g)
     g->height_m = p / cos(lat) - n;
 }
 
-int64_t gnss_ecef_m_to_01mm(double metres)
+int64_t dws_gnss_ecef_m_to_01mm(double metres)
 {
     double v = metres * 10000.0; // metres -> 0.1 mm
     return (int64_t)(v >= 0.0 ? v + 0.5 : v - 0.5);
@@ -76,12 +76,12 @@ int64_t gnss_ecef_m_to_01mm(double metres)
 // Survey-in accumulator.
 // ---------------------------------------------------------------------------------------------
 
-void gnss_survey_reset(GnssSurvey *s)
+void dws_gnss_survey_reset(GnssSurvey *s)
 {
     memset(s, 0, sizeof(*s));
 }
 
-void gnss_survey_add_ecef(GnssSurvey *s, const GnssEcef *e)
+void dws_gnss_survey_add_ecef(GnssSurvey *s, const GnssEcef *e)
 {
     if (!s->has_origin)
     {
@@ -102,19 +102,19 @@ void gnss_survey_add_ecef(GnssSurvey *s, const GnssEcef *e)
     s->count++;
 }
 
-void gnss_survey_add_geodetic(GnssSurvey *s, const GnssGeodetic *g)
+void dws_gnss_survey_add_geodetic(GnssSurvey *s, const GnssGeodetic *g)
 {
     GnssEcef e;
-    gnss_geodetic_to_ecef(g, &e);
-    gnss_survey_add_ecef(s, &e);
+    dws_gnss_geodetic_to_ecef(g, &e);
+    dws_gnss_survey_add_ecef(s, &e);
 }
 
-uint32_t gnss_survey_count(const GnssSurvey *s)
+uint32_t dws_gnss_survey_count(const GnssSurvey *s)
 {
     return s->count;
 }
 
-bool gnss_survey_mean(const GnssSurvey *s, GnssEcef *out)
+bool dws_gnss_survey_mean(const GnssSurvey *s, GnssEcef *out)
 {
     if (s->count == 0)
         return false;
@@ -125,7 +125,7 @@ bool gnss_survey_mean(const GnssSurvey *s, GnssEcef *out)
     return true;
 }
 
-double gnss_survey_accuracy_m(const GnssSurvey *s)
+double dws_gnss_survey_accuracy_m(const GnssSurvey *s)
 {
     if (s->count < 2)
         return 0.0;
@@ -145,9 +145,9 @@ double gnss_survey_accuracy_m(const GnssSurvey *s)
     return sqrt(vx + vy + vz);
 }
 
-bool gnss_survey_complete(const GnssSurvey *s, uint32_t min_obs, double acc_limit_m)
+bool dws_gnss_survey_complete(const GnssSurvey *s, uint32_t min_obs, double acc_limit_m)
 {
-    return s->count >= min_obs && s->count >= 2 && gnss_survey_accuracy_m(s) <= acc_limit_m;
+    return s->count >= min_obs && s->count >= 2 && dws_gnss_survey_accuracy_m(s) <= acc_limit_m;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ bool dm_to_deg(const char *field, uint8_t len, double *out)
 }
 } // namespace
 
-bool gnss_gga_to_geodetic(const Nmea0183 *m, GnssGeodetic *out)
+bool dws_gnss_gga_to_geodetic(const Nmea0183 *m, GnssGeodetic *out)
 {
     if (!m || !out || m->type[0] != 'G' || m->type[1] != 'G' || m->type[2] != 'A')
         return false;
@@ -182,7 +182,7 @@ bool gnss_gga_to_geodetic(const Nmea0183 *m, GnssGeodetic *out)
         return false;
 
     long quality = 0;
-    if (!nmea0183_field_int(m, 6, &quality) || quality <= 0) // 0 = no fix
+    if (!dws_nmea0183_field_int(m, 6, &quality) || quality <= 0) // 0 = no fix
         return false;
 
     double lat = 0.0;
@@ -197,10 +197,10 @@ bool gnss_gga_to_geodetic(const Nmea0183 *m, GnssGeodetic *out)
         lon = -lon;
 
     float msl = 0.0f;
-    if (!nmea0183_field_float(m, 9, &msl)) // orthometric (mean-sea-level) altitude
+    if (!dws_nmea0183_field_float(m, 9, &msl)) // orthometric (mean-sea-level) altitude
         return false;
     float geoid = 0.0f;
-    nmea0183_field_float(m, 11, &geoid); // geoid separation; absent -> 0 (ellipsoidal height = MSL)
+    dws_nmea0183_field_float(m, 11, &geoid); // geoid separation; absent -> 0 (ellipsoidal height = MSL)
 
     out->lat_deg = lat;
     out->lon_deg = lon;
@@ -208,12 +208,12 @@ bool gnss_gga_to_geodetic(const Nmea0183 *m, GnssGeodetic *out)
     return true;
 }
 
-bool gnss_survey_add_gga(GnssSurvey *s, const Nmea0183 *m)
+bool dws_gnss_survey_add_gga(GnssSurvey *s, const Nmea0183 *m)
 {
     GnssGeodetic g;
-    if (!gnss_gga_to_geodetic(m, &g))
+    if (!dws_gnss_gga_to_geodetic(m, &g))
         return false;
-    gnss_survey_add_geodetic(s, &g);
+    dws_gnss_survey_add_geodetic(s, &g);
     return true;
 }
 

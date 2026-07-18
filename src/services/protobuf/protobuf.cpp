@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-void pb_writer_init(PbWriter *w, uint8_t *buf, size_t cap)
+void dws_pb_writer_init(PbWriter *w, uint8_t *buf, size_t cap)
 {
     w->buf = buf;
     w->cap = cap;
@@ -20,7 +20,7 @@ void pb_writer_init(PbWriter *w, uint8_t *buf, size_t cap)
     w->error = false;
 }
 
-bool pb_write_varint(PbWriter *w, uint64_t v)
+bool dws_pb_write_varint(PbWriter *w, uint64_t v)
 {
     if (w->error)
         return false;
@@ -44,13 +44,13 @@ bool pb_write_varint(PbWriter *w, uint64_t v)
     return true;
 }
 
-bool pb_write_tag(PbWriter *w, uint32_t field, uint8_t wire_type)
+bool dws_pb_write_tag(PbWriter *w, uint32_t field, uint8_t wire_type)
 {
-    return pb_write_varint(w, ((uint64_t)field << 3) | (wire_type & 0x07)); // tag = field<<3 | wire(low 3 bits)
+    return dws_pb_write_varint(w, ((uint64_t)field << 3) | (wire_type & 0x07)); // tag = field<<3 | wire(low 3 bits)
 }
 
 // Append @p n raw little-endian octets of @p v.
-static bool pb_write_le(PbWriter *w, uint64_t v, size_t n)
+static bool dws_pb_write_le(PbWriter *w, uint64_t v, size_t n)
 {
     if (w->error)
         return false;
@@ -64,54 +64,54 @@ static bool pb_write_le(PbWriter *w, uint64_t v, size_t n)
     return true;
 }
 
-bool pb_uint64(PbWriter *w, uint32_t field, uint64_t v)
+bool dws_pb_uint64(PbWriter *w, uint32_t field, uint64_t v)
 {
-    return pb_write_tag(w, field, PB_WT_VARINT) && pb_write_varint(w, v);
+    return dws_pb_write_tag(w, field, PB_WT_VARINT) && dws_pb_write_varint(w, v);
 }
 
-bool pb_int64(PbWriter *w, uint32_t field, int64_t v)
+bool dws_pb_int64(PbWriter *w, uint32_t field, int64_t v)
 {
-    return pb_uint64(w, field, (uint64_t)v); // two's complement; negatives take 10 bytes
+    return dws_pb_uint64(w, field, (uint64_t)v); // two's complement; negatives take 10 bytes
 }
 
-bool pb_sint64(PbWriter *w, uint32_t field, int64_t v)
+bool dws_pb_sint64(PbWriter *w, uint32_t field, int64_t v)
 {
     uint64_t zz = ((uint64_t)v << 1) ^ (uint64_t)(v >> 63); // ZigZag
-    return pb_uint64(w, field, zz);
+    return dws_pb_uint64(w, field, zz);
 }
 
-bool pb_bool(PbWriter *w, uint32_t field, bool v)
+bool dws_pb_bool(PbWriter *w, uint32_t field, bool v)
 {
-    return pb_uint64(w, field, v ? 1 : 0);
+    return dws_pb_uint64(w, field, v ? 1 : 0);
 }
 
-bool pb_fixed32(PbWriter *w, uint32_t field, uint32_t v)
+bool dws_pb_fixed32(PbWriter *w, uint32_t field, uint32_t v)
 {
-    return pb_write_tag(w, field, PB_WT_I32) && pb_write_le(w, v, 4);
+    return dws_pb_write_tag(w, field, PB_WT_I32) && dws_pb_write_le(w, v, 4);
 }
 
-bool pb_fixed64(PbWriter *w, uint32_t field, uint64_t v)
+bool dws_pb_fixed64(PbWriter *w, uint32_t field, uint64_t v)
 {
-    return pb_write_tag(w, field, PB_WT_I64) && pb_write_le(w, v, 8);
+    return dws_pb_write_tag(w, field, PB_WT_I64) && dws_pb_write_le(w, v, 8);
 }
 
-bool pb_float(PbWriter *w, uint32_t field, float v)
+bool dws_pb_float(PbWriter *w, uint32_t field, float v)
 {
     uint32_t bits;
     memcpy(&bits, &v, 4);
-    return pb_fixed32(w, field, bits);
+    return dws_pb_fixed32(w, field, bits);
 }
 
-bool pb_double(PbWriter *w, uint32_t field, double v)
+bool dws_pb_double(PbWriter *w, uint32_t field, double v)
 {
     uint64_t bits;
     memcpy(&bits, &v, 8);
-    return pb_fixed64(w, field, bits);
+    return dws_pb_fixed64(w, field, bits);
 }
 
-bool pb_bytes(PbWriter *w, uint32_t field, const uint8_t *data, size_t len)
+bool dws_pb_bytes(PbWriter *w, uint32_t field, const uint8_t *data, size_t len)
 {
-    if (!pb_write_tag(w, field, PB_WT_LEN) || !pb_write_varint(w, len))
+    if (!dws_pb_write_tag(w, field, PB_WT_LEN) || !dws_pb_write_varint(w, len))
         return false;
     if (w->error)
         return false;
@@ -127,22 +127,22 @@ bool pb_bytes(PbWriter *w, uint32_t field, const uint8_t *data, size_t len)
     return true;
 }
 
-bool pb_string(PbWriter *w, uint32_t field, const char *s)
+bool dws_pb_string(PbWriter *w, uint32_t field, const char *s)
 {
     if (!s)
     {
         w->error = true;
         return false;
     }
-    return pb_bytes(w, field, (const uint8_t *)s, strnlen(s, w->cap + 1));
+    return dws_pb_bytes(w, field, (const uint8_t *)s, strnlen(s, w->cap + 1));
 }
 
-size_t pb_writer_finish(PbWriter *w)
+size_t dws_pb_writer_finish(PbWriter *w)
 {
     return w->error ? 0 : w->pos;
 }
 
-bool pb_read_varint(const uint8_t *buf, size_t len, size_t *pos, uint64_t *out)
+bool dws_pb_read_varint(const uint8_t *buf, size_t len, size_t *pos, uint64_t *out)
 {
     if (!buf || !pos || !out)
         return false;
@@ -166,12 +166,12 @@ bool pb_read_varint(const uint8_t *buf, size_t len, size_t *pos, uint64_t *out)
     return false; // overlong / unterminated
 }
 
-bool pb_read_field(const uint8_t *buf, size_t len, size_t *pos, PbField *out)
+bool dws_pb_read_field(const uint8_t *buf, size_t len, size_t *pos, PbField *out)
 {
     if (!buf || !pos || !out || *pos >= len)
         return false;
     uint64_t tag;
-    if (!pb_read_varint(buf, len, pos, &tag))
+    if (!dws_pb_read_varint(buf, len, pos, &tag))
         return false;
     out->field_number = (uint32_t)(tag >> 3); // tag high bits = field number
     out->wire_type = (uint8_t)(tag & 0x07);   // tag low 3 bits = wire type
@@ -182,7 +182,7 @@ bool pb_read_field(const uint8_t *buf, size_t len, size_t *pos, PbField *out)
     switch (out->wire_type)
     {
     case PB_WT_VARINT:
-        return pb_read_varint(buf, len, pos, &out->value);
+        return dws_pb_read_varint(buf, len, pos, &out->value);
     case PB_WT_I64: {
         if (*pos + 8 > len)
             return false;
@@ -205,7 +205,7 @@ bool pb_read_field(const uint8_t *buf, size_t len, size_t *pos, PbField *out)
     }
     case PB_WT_LEN: {
         uint64_t l;
-        if (!pb_read_varint(buf, len, pos, &l))
+        if (!dws_pb_read_varint(buf, len, pos, &l))
             return false;
         if (*pos + l > len)
             return false; // payload not fully buffered
@@ -219,24 +219,24 @@ bool pb_read_field(const uint8_t *buf, size_t len, size_t *pos, PbField *out)
     }
 }
 
-int64_t pb_zigzag64(uint64_t v)
+int64_t dws_pb_zigzag64(uint64_t v)
 {
     return (int64_t)(v >> 1) ^ -(int64_t)(v & 1);
 }
 
-int32_t pb_zigzag32(uint32_t v)
+int32_t dws_pb_zigzag32(uint32_t v)
 {
     return (int32_t)(v >> 1) ^ -(int32_t)(v & 1);
 }
 
-float pb_float_bits(uint32_t bits)
+float dws_pb_float_bits(uint32_t bits)
 {
     float f;
     memcpy(&f, &bits, 4);
     return f;
 }
 
-double pb_double_bits(uint64_t bits)
+double dws_pb_double_bits(uint64_t bits)
 {
     double d;
     memcpy(&d, &bits, 8);

@@ -56,7 +56,7 @@ size_t cmd_frame(uint8_t *buf, size_t cap, uint16_t word, const uint8_t *val, si
 }
 } // namespace
 
-bool ld2410_parse_report(const uint8_t *f, size_t len, Ld2410Report *out)
+bool dws_ld2410_parse_report(const uint8_t *f, size_t len, Ld2410Report *out)
 {
     if (!f || !out || len < (size_t)(6 + LEN_BASIC + 4))
         return false;
@@ -118,7 +118,7 @@ bool ld2410_parse_report(const uint8_t *f, size_t len, Ld2410Report *out)
     return true;
 }
 
-void ld2410_stream_reset(Ld2410Stream *s)
+void dws_ld2410_stream_reset(Ld2410Stream *s)
 {
     s->pos = 0;
     s->total = 0;
@@ -126,7 +126,7 @@ void ld2410_stream_reset(Ld2410Stream *s)
     s->phase = 0;
 }
 
-bool ld2410_stream_push(Ld2410Stream *s, uint8_t b, Ld2410Report *out)
+bool dws_ld2410_stream_push(Ld2410Stream *s, uint8_t b, Ld2410Report *out)
 {
     switch (s->phase)
     {
@@ -155,7 +155,7 @@ bool ld2410_stream_push(Ld2410Stream *s, uint8_t b, Ld2410Report *out)
             uint32_t total = 6u + (uint32_t)rd16(s->buf + 4) + 4u;
             if (total > LD2410_FRAME_MAX)
             {
-                ld2410_stream_reset(s); // absurd length: drop and resync
+                dws_ld2410_stream_reset(s); // absurd length: drop and resync
                 return false;
             }
             s->total = (uint16_t)total;
@@ -166,20 +166,20 @@ bool ld2410_stream_push(Ld2410Stream *s, uint8_t b, Ld2410Report *out)
         s->buf[s->pos++] = b;
         if (s->pos >= s->total)
         {
-            bool ok = ld2410_parse_report(s->buf, s->total, out);
-            ld2410_stream_reset(s);
+            bool ok = dws_ld2410_parse_report(s->buf, s->total, out);
+            dws_ld2410_stream_reset(s);
             return ok;
         }
         return false;
     }
 }
 
-bool ld2410_present(const Ld2410Report *r)
+bool dws_ld2410_present(const Ld2410Report *r)
 {
     return r && r->state != Ld2410State::LD2410_STATE_NONE;
 }
 
-uint16_t ld2410_distance_cm(const Ld2410Report *r)
+uint16_t dws_ld2410_distance_cm(const Ld2410Report *r)
 {
     if (!r)
         return 0;
@@ -190,20 +190,20 @@ uint16_t ld2410_distance_cm(const Ld2410Report *r)
     return 0;
 }
 
-size_t ld2410_cmd_config_enable(uint8_t *buf, size_t cap)
+size_t dws_ld2410_cmd_config_enable(uint8_t *buf, size_t cap)
 {
     const uint8_t v[2] = {0x01, 0x00}; // value 0x0001
     return cmd_frame(buf, cap, 0x00FF, v, 2);
 }
-size_t ld2410_cmd_config_end(uint8_t *buf, size_t cap)
+size_t dws_ld2410_cmd_config_end(uint8_t *buf, size_t cap)
 {
     return cmd_frame(buf, cap, 0x00FE, nullptr, 0);
 }
-size_t ld2410_cmd_engineering(uint8_t *buf, size_t cap, bool on)
+size_t dws_ld2410_cmd_engineering(uint8_t *buf, size_t cap, bool on)
 {
     return cmd_frame(buf, cap, on ? 0x0062 : 0x0063, nullptr, 0);
 }
-size_t ld2410_cmd_restart(uint8_t *buf, size_t cap)
+size_t dws_ld2410_cmd_restart(uint8_t *buf, size_t cap)
 {
     return cmd_frame(buf, cap, 0x00A3, nullptr, 0);
 }
@@ -230,21 +230,21 @@ struct Ld2410Ctx
 Ld2410Ctx s_ld;
 } // namespace
 
-bool ld2410_begin(int rx_pin, int tx_pin)
+bool dws_ld2410_begin(int rx_pin, int tx_pin)
 {
-    ld2410_stream_reset(&s_ld.stream);
+    dws_ld2410_stream_reset(&s_ld.stream);
     s_ld.have = false;
     Serial2.begin(DWS_LD2410_BAUD, SERIAL_8N1, rx_pin, tx_pin);
     return true;
 }
 
-bool ld2410_poll()
+bool dws_ld2410_poll()
 {
     bool fresh = false;
     while (Serial2.available())
     {
         Ld2410Report r;
-        if (ld2410_stream_push(&s_ld.stream, (uint8_t)Serial2.read(), &r))
+        if (dws_ld2410_stream_push(&s_ld.stream, (uint8_t)Serial2.read(), &r))
         {
             s_ld.last = r;
             s_ld.have = true;
@@ -254,34 +254,34 @@ bool ld2410_poll()
     return fresh;
 }
 
-const Ld2410Report *ld2410_last()
+const Ld2410Report *dws_ld2410_last()
 {
     return s_ld.have ? &s_ld.last : nullptr;
 }
 
-bool ld2410_set_engineering(bool on)
+bool dws_ld2410_set_engineering(bool on)
 {
     uint8_t f[16];
     size_t n;
-    n = ld2410_cmd_config_enable(f, sizeof(f));
+    n = dws_ld2410_cmd_config_enable(f, sizeof(f));
     Serial2.write(f, n);
-    n = ld2410_cmd_engineering(f, sizeof(f), on);
+    n = dws_ld2410_cmd_engineering(f, sizeof(f), on);
     Serial2.write(f, n);
-    n = ld2410_cmd_config_end(f, sizeof(f));
+    n = dws_ld2410_cmd_config_end(f, sizeof(f));
     Serial2.write(f, n);
     Serial2.flush();
     return true;
 }
 
-bool ld2410_restart()
+bool dws_ld2410_restart()
 {
     uint8_t f[16];
     size_t n;
-    n = ld2410_cmd_config_enable(f, sizeof(f));
+    n = dws_ld2410_cmd_config_enable(f, sizeof(f));
     Serial2.write(f, n);
-    n = ld2410_cmd_restart(f, sizeof(f));
+    n = dws_ld2410_cmd_restart(f, sizeof(f));
     Serial2.write(f, n);
-    n = ld2410_cmd_config_end(f, sizeof(f));
+    n = dws_ld2410_cmd_config_end(f, sizeof(f));
     Serial2.write(f, n);
     Serial2.flush();
     return true;
@@ -289,23 +289,23 @@ bool ld2410_restart()
 
 #else // host build: no UART. The codec above is host-tested.
 
-bool ld2410_begin(int, int)
+bool dws_ld2410_begin(int, int)
 {
     return false;
 }
-bool ld2410_poll()
+bool dws_ld2410_poll()
 {
     return false;
 }
-const Ld2410Report *ld2410_last()
+const Ld2410Report *dws_ld2410_last()
 {
     return nullptr;
 }
-bool ld2410_set_engineering(bool)
+bool dws_ld2410_set_engineering(bool)
 {
     return false;
 }
-bool ld2410_restart()
+bool dws_ld2410_restart()
 {
     return false;
 }

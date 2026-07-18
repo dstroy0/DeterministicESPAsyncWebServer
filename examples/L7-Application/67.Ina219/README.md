@@ -52,7 +52,7 @@ real power meter you built.
 
 ## Where this fits
 
-`ina219_read_current_ua()` / `ina219_read_power_uw()` (plus `ina219_read_bus_mv()`) give you the
+`dws_ina219_read_current_ua()` / `dws_ina219_read_power_uw()` (plus `dws_ina219_read_bus_mv()`) give you the
 numbers in integer micro/milli units - no floating point. From here you can log a device's power
 draw over time, publish it over **MQTT**, chart battery drain over **WebSocket**, or trip an
 alert when something pulls too much. Example 66 measures voltage; this one measures the current
@@ -60,7 +60,7 @@ and power that go with it.
 
 ## Changing the range (shunt and LSB)
 
-`ina219_begin(addr, current_lsb_ua, shunt_mohm)` sets up the math. The defaults - `100`
+`dws_ina219_begin(addr, current_lsb_ua, shunt_mohm)` sets up the math. The defaults - `100`
 microamps per bit and a `100` milliohm (0.1 ohm) shunt - give about a 3.2 A range at ~0.1 mA
 resolution, which fits most breakouts. If your board has a different shunt, or you want finer
 resolution over a smaller range, change those two numbers; the calibration is recomputed for
@@ -73,7 +73,7 @@ you.
 - **Current reads 0 with a load connected.** The load must be _in series_ through `Vin+` ->
   `Vin-`, not wired straight to your supply. Double-check the path above.
 - **Numbers look scaled wrong.** Your board's shunt is probably not 0.1 ohm - set `shunt_mohm`
-  in `ina219_begin()` to match it.
+  in `dws_ina219_begin()` to match it.
 
 ## Build and run (PlatformIO)
 
@@ -90,10 +90,10 @@ pio ci examples/L7-Application/67.Ina219 \
 ## How it works (for the curious)
 
 The bus-voltage register holds the voltage in its upper 13 bits at 4 mV per bit
-(`ina219_bus_mv` shifts and scales it); the shunt-voltage register is signed at 10 µV per bit
-(`ina219_shunt_uv`). To read current and power directly, the chip needs a **calibration** value
-derived from the shunt resistance and your chosen current LSB: `ina219_calibration()` computes
+(`dws_ina219_bus_mv` shifts and scales it); the shunt-voltage register is signed at 10 µV per bit
+(`dws_ina219_shunt_uv`). To read current and power directly, the chip needs a **calibration** value
+derived from the shunt resistance and your chosen current LSB: `dws_ina219_calibration()` computes
 `40960000 / (current_lsb_ua * shunt_mohm)` (so 100 µA and 0.1 ohm give 4096), and
-`ina219_current_ua` / `ina219_power_uw` scale the raw registers (power's LSB is 20x the current
+`dws_ina219_current_ua` / `dws_ina219_power_uw` scale the raw registers (power's LSB is 20x the current
 LSB). All of that math is unit-tested on a PC (see `test/test_ina219`); only the register
 reads/writes run on the ESP32.

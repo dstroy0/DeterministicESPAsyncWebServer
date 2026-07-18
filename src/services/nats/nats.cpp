@@ -93,7 +93,7 @@ static size_t finish(Buf *b)
     return b->pos;
 }
 
-size_t nats_build_connect(char *buf, size_t cap, const char *options_json)
+size_t dws_nats_build_connect(char *buf, size_t cap, const char *options_json)
 {
     if (!buf || !options_json)
         return 0;
@@ -104,8 +104,8 @@ size_t nats_build_connect(char *buf, size_t cap, const char *options_json)
     return finish(&b);
 }
 
-size_t nats_build_pub(char *buf, size_t cap, const char *subject, const char *reply_to, const uint8_t *payload,
-                      size_t payload_len)
+size_t dws_nats_build_pub(char *buf, size_t cap, const char *subject, const char *reply_to, const uint8_t *payload,
+                          size_t payload_len)
 {
     if (!buf || !subject || (payload_len && !payload))
         return 0;
@@ -125,7 +125,7 @@ size_t nats_build_pub(char *buf, size_t cap, const char *subject, const char *re
     return finish(&b);
 }
 
-size_t nats_build_sub(char *buf, size_t cap, const char *subject, const char *queue, const char *sid)
+size_t dws_nats_build_sub(char *buf, size_t cap, const char *subject, const char *queue, const char *sid)
 {
     if (!buf || !subject || !sid)
         return 0;
@@ -143,7 +143,7 @@ size_t nats_build_sub(char *buf, size_t cap, const char *subject, const char *qu
     return finish(&b);
 }
 
-size_t nats_build_unsub(char *buf, size_t cap, const char *sid, uint32_t max_msgs, bool with_max)
+size_t dws_nats_build_unsub(char *buf, size_t cap, const char *sid, uint32_t max_msgs, bool with_max)
 {
     if (!buf || !sid)
         return 0;
@@ -159,14 +159,14 @@ size_t nats_build_unsub(char *buf, size_t cap, const char *sid, uint32_t max_msg
     return finish(&b);
 }
 
-size_t nats_build_ping(char *buf, size_t cap)
+size_t dws_nats_build_ping(char *buf, size_t cap)
 {
     Buf b = {buf, cap, 0, true};
     put_str(&b, "PING\r\n");
     return finish(&b);
 }
 
-size_t nats_build_pong(char *buf, size_t cap)
+size_t dws_nats_build_pong(char *buf, size_t cap)
 {
     Buf b = {buf, cap, 0, true};
     put_str(&b, "PONG\r\n");
@@ -210,7 +210,7 @@ static bool verb_is(const char *buf, size_t line_len, const char *op)
     return line_len == n || buf[n] == ' ' || buf[n] == '\t';
 }
 
-bool nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
+bool dws_nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
 {
     if (!buf || !out || !consumed)
         return false;

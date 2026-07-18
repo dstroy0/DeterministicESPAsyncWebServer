@@ -40,7 +40,7 @@ bool contains(const char *hay, uint16_t len, const char *needle)
 }
 } // namespace
 
-uint16_t sigfox_build_uplink(const uint8_t *payload, uint8_t len, char *out, uint16_t cap)
+uint16_t dws_sigfox_build_uplink(const uint8_t *payload, uint8_t len, char *out, uint16_t cap)
 {
     if (!out || !payload || len == 0 || len > DWS_SIGFOX_MAX_PAYLOAD)
         return 0;
@@ -63,15 +63,15 @@ uint16_t sigfox_build_uplink(const uint8_t *payload, uint8_t len, char *out, uin
     return p;
 }
 
-sigfox_result sigfox_parse_response(const char *buf, uint16_t len)
+dws_sigfox_result dws_sigfox_parse_response(const char *buf, uint16_t len)
 {
     if (!buf || len == 0)
-        return sigfox_result::SIGFOX_PENDING;
+        return dws_sigfox_result::SIGFOX_PENDING;
     if (contains(buf, len, "ERROR"))
-        return sigfox_result::SIGFOX_ERROR;
+        return dws_sigfox_result::SIGFOX_ERROR;
     if (contains(buf, len, "OK"))
-        return sigfox_result::SIGFOX_OK;
-    return sigfox_result::SIGFOX_PENDING;
+        return dws_sigfox_result::SIGFOX_OK;
+    return dws_sigfox_result::SIGFOX_PENDING;
 }
 
 #endif // DWS_ENABLE_SIGFOX

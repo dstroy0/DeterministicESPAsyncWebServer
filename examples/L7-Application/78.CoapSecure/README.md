@@ -71,7 +71,7 @@ aiocoap-client coaps://<ip>/hello         # aiocoap with a DTLS backend
 ```
 
 The verified reference client is the wolfSSL harness in
-[`test/servers/dtls_wolfssl`](../../../test/servers/dtls_wolfssl), which completes
+[`test/servers/dws_dtls_wolfssl`](../../../test/servers/dws_dtls_wolfssl), which completes
 the handshake and an application-data round trip against this same server core.
 
 See also [13.CoAP](../13.CoAP) (plaintext), [27.CoapObserve](../27.CoapObserve)

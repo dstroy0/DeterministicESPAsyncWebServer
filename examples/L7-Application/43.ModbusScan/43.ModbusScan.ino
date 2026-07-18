@@ -7,7 +7,7 @@
  *
  * The master/client side of Modbus: build read-request ADUs and parse the
  * responses into register values. This example self-scans - it runs the requests
- * through the on-board Modbus slave (modbus_process_adu) so the build/parse codec
+ * through the on-board Modbus slave (dws_modbus_process_adu) so the build/parse codec
  * is demonstrated end-to-end without an external device; against a real slave you
  * would send the ADU over a TCP client instead. GET /scan returns the discovered
  * holding registers as JSON.
@@ -42,21 +42,21 @@ void setup()
     WiFi.setSleep(false);
 
     // Seed a few holding registers (the "slave" data model).
-    modbus_server_init();
-    modbus_set_holding_reg(0, 1234);
-    modbus_set_holding_reg(1, 5678);
-    modbus_set_holding_reg(2, 4095);
+    dws_modbus_server_init();
+    dws_modbus_set_holding_reg(0, 1234);
+    dws_modbus_set_holding_reg(1, 5678);
+    dws_modbus_set_holding_reg(2, 4095);
     server.listen(502, ConnProto::PROTO_MODBUS); // real Modbus TCP slave on :502
 
     // /scan: read holding registers 0..3 via the master codec (self-scan).
     server.on("/scan", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         uint8_t req[16], resp[MODBUS_ADU_MAX];
         size_t rn =
-            modbus_build_read((uint8_t)ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1, 1, 0, 3, req, sizeof(req));
-        size_t pn = modbus_process_adu(req, rn, resp, sizeof(resp));
+            dws_modbus_build_read((uint8_t)ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1, 1, 0, 3, req, sizeof(req));
+        size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp));
         uint16_t regs[3];
         uint8_t ex = 0;
-        int n = modbus_parse_response(resp, pn, regs, 3, &ex);
+        int n = dws_modbus_parse_response(resp, pn, regs, 3, &ex);
         char b[96];
         if (n > 0)
             snprintf(b, sizeof(b), "{\"regs\":[%u,%u,%u]}", regs[0], regs[1], regs[2]);

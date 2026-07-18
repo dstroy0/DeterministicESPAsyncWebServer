@@ -9,17 +9,17 @@
  * heap), the MessagePack-format sibling of the CBOR / JSON writers. Each value is
  * emitted in the shortest MessagePack form (fixint / fixstr / fixarray / fixmap
  * where possible). Emit definite-length arrays and maps by writing the header
- * (msgpack_array / msgpack_map with the item count) then that many items (twice
+ * (dws_msgpack_array / dws_msgpack_map with the item count) then that many items (twice
  * that for a map: key, value, key, value, ...).
  *
  * Overflow is tracked, not crashed on: writes past the buffer set the overflow
- * flag and stop, while msgpack_len() keeps counting the bytes the full payload
- * would need, so a caller can size the buffer and check msgpack_ok().
+ * flag and stop, while dws_msgpack_len() keeps counting the bytes the full payload
+ * would need, so a caller can size the buffer and check dws_msgpack_ok().
  *
- * The decoder is a cursor: msgpack_peek() reports the next object's type and the
- * msgpack_read_* calls consume it (strings and binary point into the source buffer,
+ * The decoder is a cursor: dws_msgpack_peek() reports the next object's type and the
+ * dws_msgpack_read_* calls consume it (strings and binary point into the source buffer,
  * no copy). Any malformed or out-of-bounds read sets a sticky error - check
- * msgpack_reader_ok(). ext and the unused 0xc1 byte are reported as INVALID.
+ * dws_msgpack_reader_ok(). ext and the unused 0xc1 byte are reported as INVALID.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -44,30 +44,30 @@ struct MsgpackWriter
 };
 
 /** @brief Bind a writer to @p buf (capacity @p cap) and reset it. */
-void msgpack_init(MsgpackWriter *w, uint8_t *buf, size_t cap);
+void dws_msgpack_init(MsgpackWriter *w, uint8_t *buf, size_t cap);
 
 /** @brief Encoded length in bytes (what the full payload needs; compare to cap). */
-size_t msgpack_len(const MsgpackWriter *w);
+size_t dws_msgpack_len(const MsgpackWriter *w);
 
 /** @brief True if every value fit in the buffer. */
-bool msgpack_ok(const MsgpackWriter *w);
+bool dws_msgpack_ok(const MsgpackWriter *w);
 
-void msgpack_uint(MsgpackWriter *w, uint64_t v);                       ///< unsigned integer
-void msgpack_int(MsgpackWriter *w, int64_t v);                         ///< signed integer
-void msgpack_bytes(MsgpackWriter *w, const uint8_t *data, size_t len); ///< binary (bin family)
-void msgpack_str(MsgpackWriter *w, const char *s);                     ///< UTF-8 string (null-terminated)
-void msgpack_str_n(MsgpackWriter *w, const char *s, size_t len);       ///< UTF-8 string (explicit length)
-void msgpack_bool(MsgpackWriter *w, bool b);                           ///< true / false
-void msgpack_nil(MsgpackWriter *w);                                    ///< nil
-void msgpack_float(MsgpackWriter *w, float f);                         ///< IEEE-754 single (float32, 0xca)
-void msgpack_array(MsgpackWriter *w, size_t count);                    ///< array header
-void msgpack_map(MsgpackWriter *w, size_t count);                      ///< map header
+void dws_msgpack_uint(MsgpackWriter *w, uint64_t v);                       ///< unsigned integer
+void dws_msgpack_int(MsgpackWriter *w, int64_t v);                         ///< signed integer
+void dws_msgpack_bytes(MsgpackWriter *w, const uint8_t *data, size_t len); ///< binary (bin family)
+void dws_msgpack_str(MsgpackWriter *w, const char *s);                     ///< UTF-8 string (null-terminated)
+void dws_msgpack_str_n(MsgpackWriter *w, const char *s, size_t len);       ///< UTF-8 string (explicit length)
+void dws_msgpack_bool(MsgpackWriter *w, bool b);                           ///< true / false
+void dws_msgpack_nil(MsgpackWriter *w);                                    ///< nil
+void dws_msgpack_float(MsgpackWriter *w, float f);                         ///< IEEE-754 single (float32, 0xca)
+void dws_msgpack_array(MsgpackWriter *w, size_t count);                    ///< array header
+void dws_msgpack_map(MsgpackWriter *w, size_t count);                      ///< map header
 
 // ---------------------------------------------------------------------------
 // Decoder (cursor over a MessagePack byte buffer)
 // ---------------------------------------------------------------------------
 
-/** @brief Type of the next object (returned by msgpack_peek). */
+/** @brief Type of the next object (returned by dws_msgpack_peek). */
 enum class MsgpackType : uint8_t
 {
     MSGPACK_TYPE_UINT = 0,
@@ -92,23 +92,24 @@ struct MsgpackReader
 };
 
 /** @brief Bind a reader to @p buf (length @p len) at offset 0. */
-void msgpack_reader_init(MsgpackReader *r, const uint8_t *buf, size_t len);
+void dws_msgpack_reader_init(MsgpackReader *r, const uint8_t *buf, size_t len);
 
 /** @brief Type of the next object without consuming it. */
-MsgpackType msgpack_peek(MsgpackReader *r);
+MsgpackType dws_msgpack_peek(MsgpackReader *r);
 
 /** @brief True while no malformed read has occurred. */
-bool msgpack_reader_ok(const MsgpackReader *r);
+bool dws_msgpack_reader_ok(const MsgpackReader *r);
 
-bool msgpack_read_uint(MsgpackReader *r, uint64_t *out);                     ///< unsigned integer (fixint / uint8..64)
-bool msgpack_read_int(MsgpackReader *r, int64_t *out);                       ///< signed integer (also accepts unsigned)
-bool msgpack_read_bool(MsgpackReader *r, bool *out);                         ///< true / false
-bool msgpack_read_nil(MsgpackReader *r);                                     ///< nil
-bool msgpack_read_float(MsgpackReader *r, float *out);                       ///< float32 (0xca) or float64 (0xcb)
-bool msgpack_read_str(MsgpackReader *r, const char **out, size_t *len);      ///< str family (points into the buffer)
-bool msgpack_read_bytes(MsgpackReader *r, const uint8_t **out, size_t *len); ///< bin family (points into the buffer)
-bool msgpack_read_array(MsgpackReader *r, size_t *count);                    ///< array header (object count)
-bool msgpack_read_map(MsgpackReader *r, size_t *count);                      ///< map header (key/value pair count)
+bool dws_msgpack_read_uint(MsgpackReader *r, uint64_t *out);                ///< unsigned integer (fixint / uint8..64)
+bool dws_msgpack_read_int(MsgpackReader *r, int64_t *out);                  ///< signed integer (also accepts unsigned)
+bool dws_msgpack_read_bool(MsgpackReader *r, bool *out);                    ///< true / false
+bool dws_msgpack_read_nil(MsgpackReader *r);                                ///< nil
+bool dws_msgpack_read_float(MsgpackReader *r, float *out);                  ///< float32 (0xca) or float64 (0xcb)
+bool dws_msgpack_read_str(MsgpackReader *r, const char **out, size_t *len); ///< str family (points into the buffer)
+bool dws_msgpack_read_bytes(MsgpackReader *r, const uint8_t **out,
+                            size_t *len);                     ///< bin family (points into the buffer)
+bool dws_msgpack_read_array(MsgpackReader *r, size_t *count); ///< array header (object count)
+bool dws_msgpack_read_map(MsgpackReader *r, size_t *count);   ///< map header (key/value pair count)
 
 #endif // DWS_ENABLE_MSGPACK
 #endif // DETERMINISTICESPASYNCWEBSERVER_MSGPACK_H

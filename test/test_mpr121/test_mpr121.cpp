@@ -20,45 +20,45 @@ void tearDown()
 void test_touched_decode()
 {
     // low byte -> electrodes 0..7; here electrodes 0 and 2.
-    uint16_t m = mpr121_touched(0x05, 0x00);
+    uint16_t m = dws_mpr121_touched(0x05, 0x00);
     TEST_ASSERT_EQUAL_HEX16(0x0005, m);
-    TEST_ASSERT_TRUE(mpr121_is_touched(m, 0));
-    TEST_ASSERT_TRUE(mpr121_is_touched(m, 2));
-    TEST_ASSERT_FALSE(mpr121_is_touched(m, 1));
+    TEST_ASSERT_TRUE(dws_mpr121_is_touched(m, 0));
+    TEST_ASSERT_TRUE(dws_mpr121_is_touched(m, 2));
+    TEST_ASSERT_FALSE(dws_mpr121_is_touched(m, 1));
 
     // high byte bits 0..3 -> electrodes 8..11.
-    m = mpr121_touched(0x00, 0x0F);
+    m = dws_mpr121_touched(0x00, 0x0F);
     TEST_ASSERT_EQUAL_HEX16(0x0F00, m);
-    TEST_ASSERT_TRUE(mpr121_is_touched(m, 8));
-    TEST_ASSERT_TRUE(mpr121_is_touched(m, 11));
-    TEST_ASSERT_FALSE(mpr121_is_touched(m, 7));
-    TEST_ASSERT_FALSE(mpr121_is_touched(m, 12)); // out of range
+    TEST_ASSERT_TRUE(dws_mpr121_is_touched(m, 8));
+    TEST_ASSERT_TRUE(dws_mpr121_is_touched(m, 11));
+    TEST_ASSERT_FALSE(dws_mpr121_is_touched(m, 7));
+    TEST_ASSERT_FALSE(dws_mpr121_is_touched(m, 12)); // out of range
 }
 
 void test_prox_and_overcurrent_masked()
 {
     // Proximity (status bit 12 = high-byte bit 4) and OVCF (bit 15 = high-byte bit 7) must not
     // leak into the 12-electrode mask.
-    TEST_ASSERT_EQUAL_HEX16(0x0000, mpr121_touched(0x00, 0x10));
-    TEST_ASSERT_TRUE(mpr121_proximity(0x10));
-    TEST_ASSERT_FALSE(mpr121_proximity(0x00));
+    TEST_ASSERT_EQUAL_HEX16(0x0000, dws_mpr121_touched(0x00, 0x10));
+    TEST_ASSERT_TRUE(dws_mpr121_proximity(0x10));
+    TEST_ASSERT_FALSE(dws_mpr121_proximity(0x00));
 
-    TEST_ASSERT_EQUAL_HEX16(0x0000, mpr121_touched(0x00, 0x80));
-    TEST_ASSERT_TRUE(mpr121_overcurrent(0x80));
-    TEST_ASSERT_FALSE(mpr121_overcurrent(0x10));
+    TEST_ASSERT_EQUAL_HEX16(0x0000, dws_mpr121_touched(0x00, 0x80));
+    TEST_ASSERT_TRUE(dws_mpr121_overcurrent(0x80));
+    TEST_ASSERT_FALSE(dws_mpr121_overcurrent(0x10));
 }
 
 void test_word10()
 {
-    TEST_ASSERT_EQUAL_UINT16(1023, mpr121_word10(0xFF, 0x03)); // max 10-bit
-    TEST_ASSERT_EQUAL_UINT16(0x012A, mpr121_word10(0x2A, 0x01));
-    TEST_ASSERT_EQUAL_UINT16(0, mpr121_word10(0x00, 0x04)); // bits above 10 dropped
+    TEST_ASSERT_EQUAL_UINT16(1023, dws_mpr121_word10(0xFF, 0x03)); // max 10-bit
+    TEST_ASSERT_EQUAL_UINT16(0x012A, dws_mpr121_word10(0x2A, 0x01));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_mpr121_word10(0x00, 0x04)); // bits above 10 dropped
 }
 
 void test_build_init_bytes()
 {
     uint8_t seq[MPR121_INIT_MAX];
-    size_t n = mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, 12, 6);
+    size_t n = dws_mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, 12, 6);
     TEST_ASSERT_EQUAL_INT(82, (int)n);
 
     TEST_ASSERT_EQUAL_HEX8(0x80, seq[0]); // soft reset ...
@@ -86,21 +86,21 @@ void test_build_init_guards()
 {
     uint8_t seq[MPR121_INIT_MAX];
     // one electrode: 26 fixed + 4 threshold + 8 tail = 38 bytes; ECR enables 1 electrode.
-    size_t n = mpr121_build_init(seq, sizeof(seq), 1, 12, 6);
+    size_t n = dws_mpr121_build_init(seq, sizeof(seq), 1, 12, 6);
     TEST_ASSERT_EQUAL_INT(38, (int)n);
     TEST_ASSERT_EQUAL_HEX8(0x81, seq[n - 1]);
 
-    TEST_ASSERT_EQUAL_INT(0, (int)mpr121_build_init(seq, 10, 12, 12, 6));          // buffer too small
-    TEST_ASSERT_EQUAL_INT(0, (int)mpr121_build_init(seq, sizeof(seq), 0, 12, 6));  // n = 0
-    TEST_ASSERT_EQUAL_INT(0, (int)mpr121_build_init(seq, sizeof(seq), 13, 12, 6)); // n > 12
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(seq, 10, 12, 12, 6));          // buffer too small
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(seq, sizeof(seq), 0, 12, 6));  // n = 0
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(seq, sizeof(seq), 13, 12, 6)); // n > 12
 }
 
 void test_host_i2c_stubs()
 {
     // Host build: no I2C bus. begin() fails, register reads return 0.
-    TEST_ASSERT_FALSE(mpr121_begin(0x5A));
-    TEST_ASSERT_EQUAL_UINT16(0, mpr121_read_touched());
-    TEST_ASSERT_EQUAL_UINT16(0, mpr121_read_filtered(0));
+    TEST_ASSERT_FALSE(dws_mpr121_begin(0x5A));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_mpr121_read_touched());
+    TEST_ASSERT_EQUAL_UINT16(0, dws_mpr121_read_filtered(0));
 }
 
 int main()

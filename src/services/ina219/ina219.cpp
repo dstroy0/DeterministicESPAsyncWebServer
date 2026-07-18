@@ -11,17 +11,17 @@
 
 #if DWS_ENABLE_INA219
 
-int32_t ina219_bus_mv(uint16_t raw)
+int32_t dws_ina219_bus_mv(uint16_t raw)
 {
     return (int32_t)((raw >> 3) * 4); // value in bits [15:3], LSB 4 mV
 }
 
-int32_t ina219_shunt_uv(int16_t raw)
+int32_t dws_ina219_shunt_uv(int16_t raw)
 {
     return (int32_t)raw * 10; // LSB 10 uV, signed
 }
 
-uint16_t ina219_calibration(uint32_t current_lsb_ua, uint32_t shunt_mohm)
+uint16_t dws_ina219_calibration(uint32_t current_lsb_ua, uint32_t shunt_mohm)
 {
     uint32_t denom = current_lsb_ua * shunt_mohm;
     if (denom == 0)
@@ -31,12 +31,12 @@ uint16_t ina219_calibration(uint32_t current_lsb_ua, uint32_t shunt_mohm)
     return (uint16_t)(cal > 0xFFFF ? 0xFFFF : cal);
 }
 
-int32_t ina219_current_ua(int16_t raw, uint32_t current_lsb_ua)
+int32_t dws_ina219_current_ua(int16_t raw, uint32_t current_lsb_ua)
 {
     return (int32_t)((int64_t)raw * current_lsb_ua);
 }
 
-int32_t ina219_power_uw(int16_t raw, uint32_t current_lsb_ua)
+int32_t dws_ina219_power_uw(int16_t raw, uint32_t current_lsb_ua)
 {
     return (int32_t)((int64_t)raw * 20 * current_lsb_ua); // power LSB = 20 * current LSB
 }
@@ -86,77 +86,77 @@ bool rd16(uint8_t reg, uint16_t *v)
 }
 } // namespace
 
-bool ina219_begin(uint8_t addr, uint32_t current_lsb_ua, uint32_t shunt_mohm)
+bool dws_ina219_begin(uint8_t addr, uint32_t current_lsb_ua, uint32_t shunt_mohm)
 {
     s_ina.addr = addr ? addr : (uint8_t)DWS_INA219_I2C_ADDR;
     s_ina.lsb_ua = current_lsb_ua ? current_lsb_ua : (uint32_t)DWS_INA219_CURRENT_LSB_UA;
     dws_i2c_begin();
     bool ok = true;
     ok &= wr16(INA219_REG_CALIBRATION,
-               ina219_calibration(s_ina.lsb_ua, shunt_mohm ? shunt_mohm : (uint32_t)DWS_INA219_SHUNT_MOHM));
+               dws_ina219_calibration(s_ina.lsb_ua, shunt_mohm ? shunt_mohm : (uint32_t)DWS_INA219_SHUNT_MOHM));
     ok &= wr16(INA219_REG_CONFIG, 0x399F); // 32 V range, /8 gain (320 mV), 12-bit, continuous
     return ok;
 }
 
-bool ina219_read_bus_mv(int32_t *millivolts)
+bool dws_ina219_read_bus_mv(int32_t *millivolts)
 {
     uint16_t v = 0;
     if (!rd16(INA219_REG_BUS, &v))
         return false;
     if (millivolts)
-        *millivolts = ina219_bus_mv(v);
+        *millivolts = dws_ina219_bus_mv(v);
     return true;
 }
 
-bool ina219_read_shunt_uv(int32_t *microvolts)
+bool dws_ina219_read_shunt_uv(int32_t *microvolts)
 {
     uint16_t v = 0;
     if (!rd16(INA219_REG_SHUNT, &v))
         return false;
     if (microvolts)
-        *microvolts = ina219_shunt_uv((int16_t)v);
+        *microvolts = dws_ina219_shunt_uv((int16_t)v);
     return true;
 }
 
-bool ina219_read_current_ua(int32_t *microamps)
+bool dws_ina219_read_current_ua(int32_t *microamps)
 {
     uint16_t v = 0;
     if (!rd16(INA219_REG_CURRENT, &v))
         return false;
     if (microamps)
-        *microamps = ina219_current_ua((int16_t)v, s_ina.lsb_ua);
+        *microamps = dws_ina219_current_ua((int16_t)v, s_ina.lsb_ua);
     return true;
 }
 
-bool ina219_read_power_uw(int32_t *microwatts)
+bool dws_ina219_read_power_uw(int32_t *microwatts)
 {
     uint16_t v = 0;
     if (!rd16(INA219_REG_POWER, &v))
         return false;
     if (microwatts)
-        *microwatts = ina219_power_uw((int16_t)v, s_ina.lsb_ua);
+        *microwatts = dws_ina219_power_uw((int16_t)v, s_ina.lsb_ua);
     return true;
 }
 
 #else // host build: no I2C. The decode / calibration / scaling above are host-tested.
 
-bool ina219_begin(uint8_t, uint32_t, uint32_t)
+bool dws_ina219_begin(uint8_t, uint32_t, uint32_t)
 {
     return false;
 }
-bool ina219_read_bus_mv(int32_t *)
+bool dws_ina219_read_bus_mv(int32_t *)
 {
     return false;
 }
-bool ina219_read_shunt_uv(int32_t *)
+bool dws_ina219_read_shunt_uv(int32_t *)
 {
     return false;
 }
-bool ina219_read_current_ua(int32_t *)
+bool dws_ina219_read_current_ua(int32_t *)
 {
     return false;
 }
-bool ina219_read_power_uw(int32_t *)
+bool dws_ina219_read_power_uw(int32_t *)
 {
     return false;
 }

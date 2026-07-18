@@ -11,8 +11,8 @@ ultra-low-power telemetry from places with no Wi-Fi. A Wisol / Murata Sigfox mod
 driven by **AT commands** over UART; the only hardware-specific code is the UART carry.
 
 ```
-reading --sigfox_build_uplink()--> "AT$SF=<hex>" --UART--> modem --> Sigfox cloud
-                                                modem reply --> sigfox_parse_response()
+reading --dws_sigfox_build_uplink()--> "AT$SF=<hex>" --UART--> modem --> Sigfox cloud
+                                                modem reply --> dws_sigfox_parse_response()
 ```
 
 `services/sigfox` is a pure AT-command codec:
@@ -20,10 +20,10 @@ reading --sigfox_build_uplink()--> "AT$SF=<hex>" --UART--> modem --> Sigfox clou
 ```cpp
 uint8_t payload[4] = { ... };            // your reading, <= 12 bytes
 char cmd[32];
-uint16_t n = sigfox_build_uplink(payload, sizeof(payload), cmd, sizeof(cmd));
+uint16_t n = dws_sigfox_build_uplink(payload, sizeof(payload), cmd, sizeof(cmd));
 Serial2.write(cmd, n);                    // "AT$SF=xxxxxxxx\r\n"
 // then, over the modem reply:
-sigfox_result r = sigfox_parse_response(buf, len);  // SIGFOX_OK / _ERROR / _PENDING
+dws_sigfox_result r = dws_sigfox_parse_response(buf, len);  // SIGFOX_OK / _ERROR / _PENDING
 ```
 
 The payload is hex-encoded (uppercase, two nibbles per byte), and the response is

@@ -12,12 +12,12 @@ access-log hook.
 **Initialize the sink, then log by severity.**
 
 ```cpp
-syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SYSLOG_FAC_LOCAL0);
-syslog_log(SYSLOG_NOTICE, "device booted");
+dws_syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SYSLOG_FAC_LOCAL0);
+dws_syslog_log(SYSLOG_NOTICE, "device booted");
 ```
 
-`syslog_init(host, port, hostname, app_name, facility)` configures the UDP
-destination and the fields stamped into every message; `syslog_log(severity, msg)`
+`dws_syslog_init(host, port, hostname, app_name, facility)` configures the UDP
+destination and the fields stamped into every message; `dws_syslog_log(severity, msg)`
 emits one datagram (severities `SYSLOG_ERR` / `SYSLOG_WARNING` / `SYSLOG_INFO` /
 `SYSLOG_NOTICE`, ...).
 
@@ -29,7 +29,7 @@ severity:
 static void access_log(const char *method, const char *path, int status, int len) {
     char line[96];
     snprintf(line, sizeof(line), "%s %s -> %d (%d bytes)", method, path, status, len);
-    syslog_log(status >= 500 ? SYSLOG_ERR : status >= 400 ? SYSLOG_WARNING : SYSLOG_INFO, line);
+    dws_syslog_log(status >= 500 ? SYSLOG_ERR : status >= 400 ? SYSLOG_WARNING : SYSLOG_INFO, line);
 }
 server.on_request_log(access_log);
 ```
@@ -80,7 +80,7 @@ static void access_log(const char *method, const char *path, int status, int len
 {
     char line[96];
     snprintf(line, sizeof(line), "%s %s -> %d (%d bytes)", method, path, status, len);
-    syslog_log(status >= 500 ? SYSLOG_ERR : status >= 400 ? SYSLOG_WARNING : SYSLOG_INFO, line);
+    dws_syslog_log(status >= 500 ? SYSLOG_ERR : status >= 400 ? SYSLOG_WARNING : SYSLOG_INFO, line);
 }
 
 void setup()
@@ -98,8 +98,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SYSLOG_FAC_LOCAL0);
-    syslog_log(SYSLOG_NOTICE, "device booted");
+    dws_syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SYSLOG_FAC_LOCAL0);
+    dws_syslog_log(SYSLOG_NOTICE, "device booted");
 
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "ok"); });
     server.on_request_log(access_log); // every response is logged to syslog
@@ -123,7 +123,7 @@ void loop()
         char hb[48];
         snprintf(hb, sizeof(hb), "heartbeat uptime=%lus heap=%u", (unsigned long)(millis() / 1000),
                  (unsigned)ESP.getFreeHeap());
-        syslog_log(SYSLOG_INFO, hb);
+        dws_syslog_log(SYSLOG_INFO, hb);
     }
 }
 ```

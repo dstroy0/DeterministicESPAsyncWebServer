@@ -130,7 +130,7 @@ void put_hex16(DWSSb *b, uint16_t v)
 }
 } // namespace
 
-size_t gatt_char_json(const GattChar *chars, size_t n, char *out, size_t cap)
+size_t dws_gatt_char_json(const GattChar *chars, size_t n, char *out, size_t cap)
 {
     if (!out || cap == 0 || (n && !chars))
         return 0;

@@ -11,21 +11,21 @@ broadcasts a counter to all of them once a second.
 
 **Registering the endpoint + greeting one subscriber.** `on_sse(path, cb)` makes
 `/events` an SSE endpoint; the connect callback fires per new subscriber, where
-`sse_send()` pushes to just that client:
+`dws_sse_send()` pushes to just that client:
 
 ```cpp
-void sse_connect(uint8_t sse_id) {
-    server.sse_send(sse_id, "subscribed", "tick");   // (data, event-name) to this subscriber
+void dws_sse_connect(uint8_t dws_sse_id) {
+    server.dws_sse_send(dws_sse_id, "subscribed", "tick");   // (data, event-name) to this subscriber
 }
-server.on_sse("/events", sse_connect);
+server.on_sse("/events", dws_sse_connect);
 ```
 
-**Broadcasting to everyone.** From `loop()`, `sse_broadcast(path, data, event)`
+**Broadcasting to everyone.** From `loop()`, `dws_sse_broadcast(path, data, event)`
 sends to every subscriber of that endpoint - here a counter every second:
 
 ```cpp
 char buf[24]; snprintf(buf, sizeof(buf), "%lu", n++);
-server.sse_broadcast("/events", buf, "tick");
+server.dws_sse_broadcast("/events", buf, "tick");
 ```
 
 The third argument names the event, so the browser listens with
@@ -69,9 +69,9 @@ static const char PAGE[] = "<!doctype html><meta charset=utf-8><title>SSE</title
                            "s.addEventListener('tick',function(e){o.textContent+=e.data+'\\n'})</script>";
 
 // Fires once per new subscriber; greet just this client.
-void sse_connect(uint8_t sse_id)
+void dws_sse_connect(uint8_t dws_sse_id)
 {
-    server.sse_send(sse_id, "subscribed", "tick"); // (data, event name)
+    server.dws_sse_send(dws_sse_id, "subscribed", "tick"); // (data, event name)
 }
 
 void setup()
@@ -89,7 +89,7 @@ void setup()
     WiFi.setSleep(false);
 
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/html", PAGE); });
-    server.on_sse("/events", sse_connect); // register the SSE endpoint
+    server.on_sse("/events", dws_sse_connect); // register the SSE endpoint
     server.begin(80);
 }
 
@@ -105,7 +105,7 @@ void loop()
         last = millis();
         char buf[24];
         snprintf(buf, sizeof(buf), "%lu", n++);
-        server.sse_broadcast("/events", buf, "tick"); // (path, data, event name)
+        server.dws_sse_broadcast("/events", buf, "tick"); // (path, data, event name)
     }
 }
 ```

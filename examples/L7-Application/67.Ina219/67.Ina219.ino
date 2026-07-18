@@ -27,7 +27,7 @@ void setup()
 {
     Serial.begin(115200);
     // current LSB 100 uA/bit, 0.1 ohm (100 mohm) shunt -> up to ~3.2 A full scale.
-    if (ina219_begin(0x40, 100, 100))
+    if (dws_ina219_begin(0x40, 100, 100))
         Serial.println("INA219 ready");
     else
         Serial.println("INA219 not found - check wiring and the address (0x40)");
@@ -36,9 +36,9 @@ void setup()
 void loop()
 {
     int32_t bus_mv = 0, current_ua = 0, power_uw = 0;
-    bool ok = ina219_read_bus_mv(&bus_mv);
-    ok &= ina219_read_current_ua(&current_ua);
-    ok &= ina219_read_power_uw(&power_uw);
+    bool ok = dws_ina219_read_bus_mv(&bus_mv);
+    ok &= dws_ina219_read_current_ua(&current_ua);
+    ok &= dws_ina219_read_power_uw(&power_uw);
 
     if (ok)
     {

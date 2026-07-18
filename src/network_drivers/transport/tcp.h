@@ -93,17 +93,17 @@ struct TcpConn
     /// Self-framing protocol response sink (Layer 5 TX seam): HTTP/2 installs it at ALPN, HTTP/3 at
     /// dispatch, so the response methods route through it instead of building an HTTP/1.1 message.
     /// Null means plain HTTP/1.1 (the default builder). Extends the ProtoHandler seam to the TX side.
-    bool (*resp_sink)(uint8_t slot, int code, const char *content_type, const char *body, size_t len);
+    bool (*dws_resp_sink)(uint8_t slot, int code, const char *content_type, const char *body, size_t len);
 #endif
 #if DWS_ENABLE_HTTP2
-    uint8_t h2;         ///< Non-zero once this connection negotiated HTTP/2 (ALPN "h2").
-    uint8_t h2_checked; ///< The post-handshake ALPN check ran (once per connection).
-    uint32_t h2_stream; ///< Stream id of the request currently being dispatched (for the response).
+    uint8_t h2;             ///< Non-zero once this connection negotiated HTTP/2 (ALPN "h2").
+    uint8_t dws_h2_checked; ///< The post-handshake ALPN check ran (once per connection).
+    uint32_t dws_h2_stream; ///< Stream id of the request currently being dispatched (for the response).
 #endif
 #if DWS_ENABLE_HTTP3
-    uint8_t h3;          ///< Non-zero when this is the reserved HTTP/3 dispatch slot (no TCP pcb).
-    uint32_t h3_conn_id; ///< quic_server connection id the response routes back to.
-    uint64_t h3_stream;  ///< HTTP/3 request stream id the response is written on.
+    uint8_t h3;              ///< Non-zero when this is the reserved HTTP/3 dispatch slot (no TCP pcb).
+    uint32_t dws_h3_conn_id; ///< dws_quic_server connection id the response routes back to.
+    uint64_t dws_h3_stream;  ///< HTTP/3 request stream id the response is written on.
 #endif
 };
 

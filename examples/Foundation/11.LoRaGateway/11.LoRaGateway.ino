@@ -1,11 +1,11 @@
 // 11.LoRaGateway - a real LoRa (SX127x / RFM95) radio bridged to the gateway.
 //
 // The radio-plugin half of 10.RadioGateway: instead of a simulated feed, this drives an
-// actual Semtech SX127x over SPI. The lora_bus register-access callbacks are the only
+// actual Semtech SX127x over SPI. The dws_lora_bus register-access callbacks are the only
 // hardware-specific code (a few SPI transfers); everything above - the RadioHead frame
 // codec, the gateway envelope + publish, the downlink - is portable.
 //
-//   RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> dws_gateway_uplink()
+//   RFM95 RX --SPI--> dws_lora_recv() --> dws_lora_frame_parse() --> dws_gateway_uplink()
 //                                                                 |
 //                                              envelope + topic  lora/0/<from>
 //                                                                 |
@@ -46,7 +46,7 @@ static void spi_write(uint8_t reg, uint8_t val, void *)
     SPI.transfer(val);
     digitalWrite(PIN_NSS, HIGH);
 }
-static lora_bus g_bus = {spi_read, spi_write, nullptr};
+static dws_lora_bus g_bus = {spi_read, spi_write, nullptr};
 
 static uint8_t g_tx_id = 0;
 
@@ -62,15 +62,15 @@ static bool northbound_publish(const dws_gateway_msg *m, void *)
 // Downlink: build a frame to dst and transmit it on the radio.
 static bool radio_tx(uint8_t, uint16_t dst, const uint8_t *payload, uint16_t len, void *)
 {
-    lora_header h = {(uint8_t)dst, NODE_SELF, g_tx_id++, 0x00};
+    dws_lora_header h = {(uint8_t)dst, NODE_SELF, g_tx_id++, 0x00};
     uint8_t frame[DWS_LORA_MAX_PAYLOAD + 4];
-    uint16_t n = lora_frame_build(&h, payload, len, frame, sizeof(frame));
-    if (n == 0 || !lora_send(&g_bus, frame, (uint8_t)n))
+    uint16_t n = dws_lora_frame_build(&h, payload, len, frame, sizeof(frame));
+    if (n == 0 || !dws_lora_send(&g_bus, frame, (uint8_t)n))
         return false;
     uint32_t t0 = millis();
-    while (!lora_tx_done(&g_bus) && millis() - t0 < 2000)
+    while (!dws_lora_tx_done(&g_bus) && millis() - t0 < 2000)
         delay(1);
-    lora_set_rx(&g_bus); // back to listening
+    dws_lora_set_rx(&g_bus); // back to listening
     return true;
 }
 
@@ -91,14 +91,14 @@ void setup()
     digitalWrite(PIN_RST, HIGH);
     delay(10);
 
-    lora_config cfg = {};
+    dws_lora_config cfg = {};
     cfg.freq_hz = 915000000UL; // 868100000 in EU868
     cfg.spreading = 7;
     cfg.bandwidth = 7; // 125 kHz
     cfg.coding_rate = 1;
     cfg.sync_word = 0x12; // private network
     cfg.tx_power = 17;
-    if (!lora_init(&g_bus, &cfg))
+    if (!dws_lora_init(&g_bus, &cfg))
     {
         Serial.println("no SX127x found on SPI - check wiring");
         return;
@@ -113,7 +113,7 @@ void setup()
     dws_gateway_set_uplink_cb(northbound_publish, nullptr);
     dws_gateway_set_topic_prefix("lora");
 
-    lora_set_rx(&g_bus);
+    dws_lora_set_rx(&g_bus);
     Serial.println("LoRa gateway: SX127x RX -> codec -> publish (lora/0/<from>)");
 }
 
@@ -122,13 +122,13 @@ void loop()
     // Poll for a received frame; a production build waits on the DIO0 interrupt instead.
     uint8_t buf[DWS_LORA_MAX_PAYLOAD + 4];
     int16_t rssi = 0;
-    int n = lora_recv(&g_bus, buf, sizeof(buf), &rssi);
+    int n = dws_lora_recv(&g_bus, buf, sizeof(buf), &rssi);
     if (n > 0)
     {
-        lora_header h = {};
+        dws_lora_header h = {};
         const uint8_t *payload = nullptr;
         uint16_t plen = 0;
-        if (lora_frame_parse(buf, (uint16_t)n, &h, &payload, &plen))
+        if (dws_lora_frame_parse(buf, (uint16_t)n, &h, &payload, &plen))
             dws_gateway_uplink(RADIO_PORT, h.from, payload, plen, rssi); // bridge northbound
     }
     delay(5);

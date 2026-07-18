@@ -14,7 +14,7 @@
 
 #include "shared_primitives/endian.h"
 
-Cia402State cia402_state(uint16_t sw)
+Cia402State dws_cia402_state(uint16_t sw)
 {
     // Mask/value table from IEC 61800-7-201 (CiA 402). Order matters where masks differ.
     if ((sw & 0x4F) == 0x00)
@@ -36,7 +36,7 @@ Cia402State cia402_state(uint16_t sw)
     return Cia402State::unknown;
 }
 
-uint16_t cia402_controlword(Cia402Command cmd)
+uint16_t dws_cia402_controlword(Cia402Command cmd)
 {
     switch (cmd)
     {
@@ -57,63 +57,63 @@ uint16_t cia402_controlword(Cia402Command cmd)
     return 0x0000;
 }
 
-uint16_t cia402_enable_sequence(Cia402State state)
+uint16_t dws_cia402_enable_sequence(Cia402State state)
 {
     switch (state)
     {
     case Cia402State::fault:
     case Cia402State::fault_reaction_active:
-        return cia402_controlword(Cia402Command::fault_reset);
+        return dws_cia402_controlword(Cia402Command::fault_reset);
     case Cia402State::switch_on_disabled:
-        return cia402_controlword(Cia402Command::shutdown);
+        return dws_cia402_controlword(Cia402Command::shutdown);
     case Cia402State::ready_to_switch_on:
-        return cia402_controlword(Cia402Command::switch_on);
+        return dws_cia402_controlword(Cia402Command::switch_on);
     case Cia402State::switched_on:
     case Cia402State::quick_stop_active:
     case Cia402State::operation_enabled:
-        return cia402_controlword(Cia402Command::enable_operation);
+        return dws_cia402_controlword(Cia402Command::enable_operation);
     default: // not_ready_to_switch_on / unknown: wait, hold voltage off
-        return cia402_controlword(Cia402Command::disable_voltage);
+        return dws_cia402_controlword(Cia402Command::disable_voltage);
     }
 }
 
-bool cia402_sdo_set_controlword(CanFrame *out, uint8_t node, uint16_t controlword)
+bool dws_cia402_sdo_set_controlword(CanFrame *out, uint8_t node, uint16_t controlword)
 {
     uint8_t d[2];
     dws_wr16le(d, controlword);
-    return canopen_build_sdo_write(out, node, CIA402_OD_CONTROLWORD, 0, d, 2);
+    return dws_canopen_build_sdo_write(out, node, CIA402_OD_CONTROLWORD, 0, d, 2);
 }
 
-bool cia402_sdo_set_mode(CanFrame *out, uint8_t node, Cia402Mode mode)
+bool dws_cia402_sdo_set_mode(CanFrame *out, uint8_t node, Cia402Mode mode)
 {
     uint8_t d = (uint8_t)(int8_t)mode; // wire byte
-    return canopen_build_sdo_write(out, node, CIA402_OD_MODES_OF_OPERATION, 0, &d, 1);
+    return dws_canopen_build_sdo_write(out, node, CIA402_OD_MODES_OF_OPERATION, 0, &d, 1);
 }
 
-bool cia402_sdo_set_target_position(CanFrame *out, uint8_t node, int32_t position)
+bool dws_cia402_sdo_set_target_position(CanFrame *out, uint8_t node, int32_t position)
 {
     uint8_t d[4];
     dws_wr32le(d, (uint32_t)position);
-    return canopen_build_sdo_write(out, node, CIA402_OD_TARGET_POSITION, 0, d, 4);
+    return dws_canopen_build_sdo_write(out, node, CIA402_OD_TARGET_POSITION, 0, d, 4);
 }
 
-bool cia402_sdo_set_target_velocity(CanFrame *out, uint8_t node, int32_t velocity)
+bool dws_cia402_sdo_set_target_velocity(CanFrame *out, uint8_t node, int32_t velocity)
 {
     uint8_t d[4];
     dws_wr32le(d, (uint32_t)velocity);
-    return canopen_build_sdo_write(out, node, CIA402_OD_TARGET_VELOCITY, 0, d, 4);
+    return dws_canopen_build_sdo_write(out, node, CIA402_OD_TARGET_VELOCITY, 0, d, 4);
 }
 
-bool cia402_sdo_set_target_torque(CanFrame *out, uint8_t node, int16_t torque)
+bool dws_cia402_sdo_set_target_torque(CanFrame *out, uint8_t node, int16_t torque)
 {
     uint8_t d[2];
     dws_wr16le(d, (uint16_t)torque);
-    return canopen_build_sdo_write(out, node, CIA402_OD_TARGET_TORQUE, 0, d, 2);
+    return dws_canopen_build_sdo_write(out, node, CIA402_OD_TARGET_TORQUE, 0, d, 2);
 }
 
-bool cia402_sdo_read(CanFrame *out, uint8_t node, uint16_t index, uint8_t sub)
+bool dws_cia402_sdo_read(CanFrame *out, uint8_t node, uint16_t index, uint8_t sub)
 {
-    return canopen_build_sdo_read(out, node, index, sub);
+    return dws_canopen_build_sdo_read(out, node, index, sub);
 }
 
 // Validate an expedited SDO upload response and copy its inline payload into @p out (>= need
@@ -121,7 +121,7 @@ bool cia402_sdo_read(CanFrame *out, uint8_t node, uint16_t index, uint8_t sub)
 static bool sdo_upload_bytes(const CanFrame *f, uint16_t want_index, uint8_t need, uint8_t *out)
 {
     CanopenSdoResponse resp;
-    if (!canopen_parse_sdo_response(f, &resp))
+    if (!dws_canopen_parse_sdo_response(f, &resp))
         return false;
     if (resp.is_abort || !resp.is_upload || !resp.expedited || resp.len < need)
         return false;
@@ -131,7 +131,7 @@ static bool sdo_upload_bytes(const CanFrame *f, uint16_t want_index, uint8_t nee
     return true;
 }
 
-bool cia402_sdo_get_u16(const CanFrame *f, uint16_t want_index, uint16_t *value)
+bool dws_cia402_sdo_get_u16(const CanFrame *f, uint16_t want_index, uint16_t *value)
 {
     uint8_t d[2];
     if (!value || !sdo_upload_bytes(f, want_index, 2, d))
@@ -140,7 +140,7 @@ bool cia402_sdo_get_u16(const CanFrame *f, uint16_t want_index, uint16_t *value)
     return true;
 }
 
-bool cia402_sdo_get_i32(const CanFrame *f, uint16_t want_index, int32_t *value)
+bool dws_cia402_sdo_get_i32(const CanFrame *f, uint16_t want_index, int32_t *value)
 {
     uint8_t d[4];
     if (!value || !sdo_upload_bytes(f, want_index, 4, d))
@@ -149,7 +149,7 @@ bool cia402_sdo_get_i32(const CanFrame *f, uint16_t want_index, int32_t *value)
     return true;
 }
 
-size_t cia402_pack_command(uint8_t *buf, size_t cap, uint16_t controlword, int32_t target)
+size_t dws_cia402_pack_command(uint8_t *buf, size_t cap, uint16_t controlword, int32_t target)
 {
     if (!buf || cap < 6)
         return 0;
@@ -158,7 +158,7 @@ size_t cia402_pack_command(uint8_t *buf, size_t cap, uint16_t controlword, int32
     return p; // 6
 }
 
-bool cia402_unpack_status(const uint8_t *buf, size_t len, uint16_t *statusword, int32_t *actual)
+bool dws_cia402_unpack_status(const uint8_t *buf, size_t len, uint16_t *statusword, int32_t *actual)
 {
     if (!buf || !statusword || !actual || len < 6)
         return false;

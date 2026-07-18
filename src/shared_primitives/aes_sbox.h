@@ -6,7 +6,7 @@
  * @brief The AES forward S-box (FIPS 197 Figure 7) - one shared copy.
  *
  * The identical 256-byte substitution table was open-coded in every software-AES
- * fallback (ssh_aes256ctr, quic_aead) and the shipped SNMPv3 AES-128 (snmp_crypto).
+ * fallback (ssh_aes256ctr, dws_quic_aead) and the shipped SNMPv3 AES-128 (dws_snmp_crypto).
  * Header-only const, no heap, no <stdlib.h>; zero link cost when unused.
  *
  * @author  Douglas Quigg (dstroy0)

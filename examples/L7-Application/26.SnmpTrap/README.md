@@ -19,14 +19,14 @@ vb.oid_len = sizeof(HEAP_OID) / sizeof(uint32_t);
 vb.type = SNMP_VB_GAUGE32;
 vb.ival = (long)ESP.getFreeHeap();
 
-bool ok = snmp_trap_v2c(MANAGER, TRAP_PORT, "public",
+bool ok = dws_snmp_trap_v2c(MANAGER, TRAP_PORT, "public",
                         TRAP_OID, sizeof(TRAP_OID) / sizeof(uint32_t), &vb, 1);
 ```
 
-`snmp_trap_v2c(manager, port, community, trap_oid, trap_oid_len, varbinds, n)`
+`dws_snmp_trap_v2c(manager, port, community, trap_oid, trap_oid_len, varbinds, n)`
 sends one notification with `n` attached varbinds. Point `MANAGER` at your trap
 receiver (for example `snmptrapd` on UDP/162). For SNMPv3 traps, add
-`-DDWS_ENABLE_SNMP_V3=1` and call `snmp_trap_v3` instead.
+`-DDWS_ENABLE_SNMP_V3=1` and call `dws_snmp_trap_v3` instead.
 
 ## Build and run
 
@@ -100,7 +100,7 @@ void loop()
         vb.type = SNMP_VB_GAUGE32;
         vb.ival = (long)ESP.getFreeHeap();
 
-        bool ok = snmp_trap_v2c(MANAGER, TRAP_PORT, "public", TRAP_OID, sizeof(TRAP_OID) / sizeof(uint32_t), &vb, 1);
+        bool ok = dws_snmp_trap_v2c(MANAGER, TRAP_PORT, "public", TRAP_OID, sizeof(TRAP_OID) / sizeof(uint32_t), &vb, 1);
         Serial.printf("trap -> %s : %s (heap=%ld)\n", MANAGER, ok ? "sent" : "failed", vb.ival);
     }
 }

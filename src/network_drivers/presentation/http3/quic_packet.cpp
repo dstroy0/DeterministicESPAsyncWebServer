@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_packet.cpp
- * @brief QUIC packet headers and packet-number coding - implementation. See quic_packet.h.
+ * @file dws_quic_packet.cpp
+ * @brief QUIC packet headers and packet-number coding - implementation. See dws_quic_packet.h.
  */
 
 #include "network_drivers/presentation/http3/quic_packet.h"
@@ -27,12 +27,12 @@ void wr_be32(uint8_t *p, uint32_t v)
 }
 } // namespace
 
-bool quic_is_long_header(uint8_t first)
+bool dws_quic_is_long_header(uint8_t first)
 {
     return (first & 0x80) != 0;
 }
 
-bool quic_parse_long_header(const uint8_t *buf, size_t len, QuicLongHeader *out)
+bool dws_quic_parse_long_header(const uint8_t *buf, size_t len, QuicLongHeader *out)
 {
     if (len < 7 || !(buf[0] & 0x80)) // first byte + version(4) + dcid_len(1) + scid_len(1)
         return false;
@@ -56,8 +56,8 @@ bool quic_parse_long_header(const uint8_t *buf, size_t len, QuicLongHeader *out)
     return true;
 }
 
-size_t quic_build_long_header(uint8_t *out, size_t cap, uint8_t type, uint32_t version, const uint8_t *dcid,
-                              uint8_t dcid_len, const uint8_t *scid, uint8_t scid_len, uint8_t pn_len)
+size_t dws_quic_build_long_header(uint8_t *out, size_t cap, uint8_t type, uint32_t version, const uint8_t *dcid,
+                                  uint8_t dcid_len, const uint8_t *scid, uint8_t scid_len, uint8_t pn_len)
 {
     if (dcid_len > QUIC_MAX_CID_LEN || scid_len > QUIC_MAX_CID_LEN || pn_len < 1 || pn_len > 4)
         return 0;
@@ -77,7 +77,7 @@ size_t quic_build_long_header(uint8_t *out, size_t cap, uint8_t type, uint32_t v
     return pos;
 }
 
-bool quic_parse_short_header(const uint8_t *buf, size_t len, uint8_t dcid_len, QuicShortHeader *out)
+bool dws_quic_parse_short_header(const uint8_t *buf, size_t len, uint8_t dcid_len, QuicShortHeader *out)
 {
     if (dcid_len > QUIC_MAX_CID_LEN || len < (size_t)1 + dcid_len || (buf[0] & 0x80))
         return false;
@@ -91,8 +91,9 @@ bool quic_parse_short_header(const uint8_t *buf, size_t len, uint8_t dcid_len, Q
     return true;
 }
 
-size_t quic_build_version_negotiation(uint8_t *out, size_t cap, const uint8_t *dcid, uint8_t dcid_len,
-                                      const uint8_t *scid, uint8_t scid_len, const uint32_t *versions, size_t nversions)
+size_t dws_quic_build_version_negotiation(uint8_t *out, size_t cap, const uint8_t *dcid, uint8_t dcid_len,
+                                          const uint8_t *scid, uint8_t scid_len, const uint32_t *versions,
+                                          size_t nversions)
 {
     if (dcid_len > QUIC_MAX_CID_LEN || scid_len > QUIC_MAX_CID_LEN)
         return 0;
@@ -116,7 +117,7 @@ size_t quic_build_version_negotiation(uint8_t *out, size_t cap, const uint8_t *d
     return pos;
 }
 
-uint8_t quic_pn_length(uint64_t full_pn, int64_t largest_acked)
+uint8_t dws_quic_pn_length(uint64_t full_pn, int64_t largest_acked)
 {
     // num_unacked = full_pn + 1 when nothing acked, else full_pn - largest_acked (RFC 9000 A.2).
     uint64_t num_unacked = (largest_acked < 0) ? (full_pn + 1) : (full_pn - (uint64_t)largest_acked);
@@ -127,9 +128,9 @@ uint8_t quic_pn_length(uint64_t full_pn, int64_t largest_acked)
     return 4;
 }
 
-size_t quic_pn_encode(uint8_t *out, size_t cap, uint64_t full_pn, int64_t largest_acked)
+size_t dws_quic_pn_encode(uint8_t *out, size_t cap, uint64_t full_pn, int64_t largest_acked)
 {
-    uint8_t n = quic_pn_length(full_pn, largest_acked);
+    uint8_t n = dws_quic_pn_length(full_pn, largest_acked);
     if (n > cap)
         return 0;
     for (uint8_t i = 0; i < n; i++)
@@ -137,7 +138,7 @@ size_t quic_pn_encode(uint8_t *out, size_t cap, uint64_t full_pn, int64_t larges
     return n;
 }
 
-uint64_t quic_pn_decode(uint64_t largest_pn, uint64_t truncated_pn, uint8_t pn_nbits)
+uint64_t dws_quic_pn_decode(uint64_t largest_pn, uint64_t truncated_pn, uint8_t pn_nbits)
 {
     uint64_t expected = largest_pn + 1;
     uint64_t pn_win = (uint64_t)1 << pn_nbits;

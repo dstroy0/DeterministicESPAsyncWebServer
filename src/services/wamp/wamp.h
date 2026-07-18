@@ -60,48 +60,49 @@
 // the positional layout stays valid.
 
 /** @brief HELLO: `[1, "realm", Details]`. */
-size_t wamp_build_hello(char *buf, size_t cap, const char *realm, const char *details_json);
+size_t dws_wamp_build_hello(char *buf, size_t cap, const char *realm, const char *details_json);
 
 /** @brief GOODBYE: `[6, Details, "reason_uri"]`. */
-size_t wamp_build_goodbye(char *buf, size_t cap, const char *reason_uri, const char *details_json);
+size_t dws_wamp_build_goodbye(char *buf, size_t cap, const char *reason_uri, const char *details_json);
 
 /** @brief SUBSCRIBE: `[32, Request, Options, "topic"]`. */
-size_t wamp_build_subscribe(char *buf, size_t cap, uint64_t request, const char *topic, const char *options_json);
+size_t dws_wamp_build_subscribe(char *buf, size_t cap, uint64_t request, const char *topic, const char *options_json);
 
 /** @brief UNSUBSCRIBE: `[34, Request, SubscriptionId]`. */
-size_t wamp_build_unsubscribe(char *buf, size_t cap, uint64_t request, uint64_t subscription_id);
+size_t dws_wamp_build_unsubscribe(char *buf, size_t cap, uint64_t request, uint64_t subscription_id);
 
 /** @brief PUBLISH: `[16, Request, Options, "topic"(, Arguments(, ArgumentsKw))]`. */
-size_t wamp_build_publish(char *buf, size_t cap, uint64_t request, const char *topic, const char *options_json,
-                          const char *args_json, const char *kwargs_json);
+size_t dws_wamp_build_publish(char *buf, size_t cap, uint64_t request, const char *topic, const char *options_json,
+                              const char *args_json, const char *kwargs_json);
 
 /** @brief CALL: `[48, Request, Options, "procedure"(, Arguments(, ArgumentsKw))]`. */
-size_t wamp_build_call(char *buf, size_t cap, uint64_t request, const char *procedure, const char *options_json,
-                       const char *args_json, const char *kwargs_json);
+size_t dws_wamp_build_call(char *buf, size_t cap, uint64_t request, const char *procedure, const char *options_json,
+                           const char *args_json, const char *kwargs_json);
 
 /** @brief REGISTER: `[64, Request, Options, "procedure"]`. */
-size_t wamp_build_register(char *buf, size_t cap, uint64_t request, const char *procedure, const char *options_json);
+size_t dws_wamp_build_register(char *buf, size_t cap, uint64_t request, const char *procedure,
+                               const char *options_json);
 
 /** @brief YIELD: `[70, Request, Options(, Arguments(, ArgumentsKw))]` (replies to an INVOCATION). */
-size_t wamp_build_yield(char *buf, size_t cap, uint64_t request, const char *options_json, const char *args_json,
-                        const char *kwargs_json);
+size_t dws_wamp_build_yield(char *buf, size_t cap, uint64_t request, const char *options_json, const char *args_json,
+                            const char *kwargs_json);
 
 // ---- parser (positional access over an inbound JSON-array message) ----
 
 /** @brief Slice the raw text of the top-level array element at @p index (into @p msg). */
-bool wamp_element(const char *msg, size_t index, const char **start, size_t *len);
+bool dws_wamp_element(const char *msg, size_t index, const char **start, size_t *len);
 
 /** @brief Read the message type (element 0) as an integer. */
-bool wamp_get_type(const char *msg, int *out);
+bool dws_wamp_get_type(const char *msg, int *out);
 
 /** @brief Read the unsigned integer (e.g. a Request / Subscription / Publication id) at @p index. */
-bool wamp_get_uint(const char *msg, size_t index, uint64_t *out);
+bool dws_wamp_get_uint(const char *msg, size_t index, uint64_t *out);
 
 /**
  * @brief Copy the URI/string element at @p index (surrounding quotes stripped) into @p out.
  * @note No unescaping - WAMP URIs are restricted to unescaped characters. Bounded by @p out_cap.
  */
-bool wamp_get_uri(const char *msg, size_t index, char *out, size_t out_cap);
+bool dws_wamp_get_uri(const char *msg, size_t index, char *out, size_t out_cap);
 
 #endif // DWS_ENABLE_WAMP
 

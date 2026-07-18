@@ -68,7 +68,7 @@ static void handle_root(uint8_t slot, HttpReq *)
                      "<li>Modbus setpoint (holding reg %u): %u</li>"
                      "</ul><p>Modbus TCP on :502 &middot; SNMP on UDP:161 &middot; HTTP on :80</p>",
                      (unsigned long)(millis() / 1000), (unsigned)ESP.getFreeHeap(), (unsigned)MB_SETPOINT_HOLD_REG,
-                     (unsigned)modbus_get_holding_reg(MB_SETPOINT_HOLD_REG));
+                     (unsigned)dws_modbus_get_holding_reg(MB_SETPOINT_HOLD_REG));
     if (n < 0 || (size_t)n >= sizeof(body))
         return server.send(slot, 500, "text/plain", "render error");
     server.send(slot, 200, "text/html", body);
@@ -97,18 +97,18 @@ void setup()
     Serial.println(WiFi.localIP());
 
     // --- Fieldbus: Modbus TCP slave on :502 ---
-    modbus_server_init();
-    modbus_set_holding_reg(MB_SETPOINT_HOLD_REG, 0); // client-writable setpoint
-    modbus_set_input_reg(MB_UPTIME_INPUT_REG, 0);    // application-published uptime (read-only)
-    modbus_on_write(on_modbus_write);
+    dws_modbus_server_init();
+    dws_modbus_set_holding_reg(MB_SETPOINT_HOLD_REG, 0); // client-writable setpoint
+    dws_modbus_set_input_reg(MB_UPTIME_INPUT_REG, 0);    // application-published uptime (read-only)
+    dws_modbus_on_write(on_modbus_write);
     server.listen(502, ConnProto::PROTO_MODBUS);
 
     // --- Management: SNMP v1/v2c agent on UDP:161 ---
-    snmp_agent_init("public");
-    snmp_agent_set_system("DeterministicESPAsyncWebServer industrial gateway", "admin@example.com", "esp32-detws-gw",
-                          "plant floor");
-    snmp_agent_add_dynamic(OID_FREE_HEAP, 9, (uint8_t)SnmpTag::SNMP_GAUGE32, get_free_heap);
-    snmp_agent_begin_udp(161);
+    dws_snmp_agent_init("public");
+    dws_snmp_agent_set_system("DeterministicESPAsyncWebServer industrial gateway", "admin@example.com",
+                              "esp32-detws-gw", "plant floor");
+    dws_snmp_agent_add_dynamic(OID_FREE_HEAP, 9, (uint8_t)SnmpTag::SNMP_GAUGE32, get_free_heap);
+    dws_snmp_agent_begin_udp(161);
 
     // --- Web dashboard + start the TCP server (HTTP/80 + the Modbus listener) ---
     server.on("/", HttpMethod::HTTP_GET, handle_root);
@@ -130,6 +130,6 @@ void loop()
     if (millis() - last >= 1000)
     {
         last = millis();
-        modbus_set_input_reg(MB_UPTIME_INPUT_REG, (uint16_t)(millis() / 1000));
+        dws_modbus_set_input_reg(MB_UPTIME_INPUT_REG, (uint16_t)(millis() / 1000));
     }
 }

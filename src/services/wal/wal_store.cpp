@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file wal_store.cpp
- * @brief A/B superblock + checkpoint + mount/recover over a block-device seam (see wal_store.h).
+ * @file dws_wal_store.cpp
+ * @brief A/B superblock + checkpoint + mount/recover over a block-device seam (see dws_wal_store.h).
  */
 
 #include "services/wal/wal_store.h"
@@ -38,7 +38,7 @@ bool write_super(WalStore *s, int ab, uint64_t gen, uint64_t head, uint64_t seq)
     dws_wr64le(sb + 4, gen);
     dws_wr64le(sb + 12, head);
     dws_wr64le(sb + 20, seq);
-    dws_wr32le(sb + 28, wal_crc32(sb, SUPER_USED));
+    dws_wr32le(sb + 28, dws_wal_crc32(sb, SUPER_USED));
     return dev_write(s->dev, (uint64_t)ab * WAL_SUPER_SIZE, sb, sizeof(sb));
 }
 
@@ -50,7 +50,7 @@ bool read_super(const WalStore *s, int ab, uint64_t &gen, uint64_t &head, uint64
         return false;
     if (dws_rd32le(sb + 0) != WAL_SUPER_MAGIC)
         return false;
-    if (dws_rd32le(sb + 28) != wal_crc32(sb, SUPER_USED))
+    if (dws_rd32le(sb + 28) != dws_wal_crc32(sb, SUPER_USED))
         return false;
     gen = dws_rd64le(sb + 4);
     head = dws_rd64le(sb + 12);
@@ -63,7 +63,7 @@ bool read_super(const WalStore *s, int ab, uint64_t &gen, uint64_t &head, uint64
 
 // Replay records appended after the committed head: each is CRC self-validating, so recover them one by
 // one and stop at the first torn / short / non-record. Advances s->head and s->next_seq.
-void wal_replay_tail(WalStore *s)
+void dws_wal_replay_tail(WalStore *s)
 {
     uint8_t hdr[WAL_RECORD_HEADER];
     uint8_t chunk[256];
@@ -82,7 +82,7 @@ void wal_replay_tail(WalStore *s)
         if (off + (uint64_t)WAL_RECORD_HEADER + plen > s->data_cap)
             break; // truncated tail
         // CRC over the 16 header bytes then the payload, streamed in small chunks.
-        uint32_t crc = wal_crc32_update(wal_crc32_init(), hdr, 16);
+        uint32_t crc = dws_wal_crc32_update(dws_wal_crc32_init(), hdr, 16);
         uint64_t pos = s->data_off + off + WAL_RECORD_HEADER;
         uint32_t left = plen;
         bool read_ok = true;
@@ -94,11 +94,11 @@ void wal_replay_tail(WalStore *s)
                 read_ok = false;
                 break;
             }
-            crc = wal_crc32_update(crc, chunk, n);
+            crc = dws_wal_crc32_update(crc, chunk, n);
             pos += n;
             left -= (uint32_t)n;
         }
-        if (!read_ok || wal_crc32_final(crc) != crc_stored)
+        if (!read_ok || dws_wal_crc32_final(crc) != crc_stored)
             break; // torn / corrupt record - this is the durable end
         s->head = off + (uint64_t)WAL_RECORD_HEADER + plen;
         if (seq + 1 > s->next_seq)
@@ -107,7 +107,7 @@ void wal_replay_tail(WalStore *s)
 }
 } // namespace
 
-bool wal_store_format(WalStore *s, const WalDev *dev)
+bool dws_wal_store_format(WalStore *s, const WalDev *dev)
 {
     if (!dev || dev->size <= WAL_DATA_OFFSET)
         return false;
@@ -130,7 +130,7 @@ bool wal_store_format(WalStore *s, const WalDev *dev)
     return s->dev.sync ? s->dev.sync(s->dev.ctx) : true;
 }
 
-bool wal_store_mount(WalStore *s, const WalDev *dev)
+bool dws_wal_store_mount(WalStore *s, const WalDev *dev)
 {
     if (!dev || dev->size <= WAL_DATA_OFFSET)
         return false;
@@ -168,11 +168,11 @@ bool wal_store_mount(WalStore *s, const WalDev *dev)
     s->head = s->committed;
 
     // Recover any records appended after the committed head (each CRC self-validating).
-    wal_replay_tail(s);
+    dws_wal_replay_tail(s);
     return true;
 }
 
-bool wal_store_append(WalStore *s, const uint8_t *payload, uint32_t len)
+bool dws_wal_store_append(WalStore *s, const uint8_t *payload, uint32_t len)
 {
     uint64_t need = (uint64_t)WAL_RECORD_HEADER + len;
     if (s->head + need > s->data_cap)
@@ -182,9 +182,9 @@ bool wal_store_append(WalStore *s, const uint8_t *payload, uint32_t len)
     dws_wr32le(hdr + 0, WAL_MAGIC);
     dws_wr64le(hdr + 4, s->next_seq);
     dws_wr32le(hdr + 12, len);
-    uint32_t crc = wal_crc32_update(wal_crc32_init(), hdr, 16);
-    crc = wal_crc32_update(crc, payload, len);
-    dws_wr32le(hdr + 16, wal_crc32_final(crc));
+    uint32_t crc = dws_wal_crc32_update(dws_wal_crc32_init(), hdr, 16);
+    crc = dws_wal_crc32_update(crc, payload, len);
+    dws_wr32le(hdr + 16, dws_wal_crc32_final(crc));
 
     uint64_t at = s->data_off + s->head;
     if (!dev_write(s->dev, at, hdr, WAL_RECORD_HEADER))
@@ -196,7 +196,7 @@ bool wal_store_append(WalStore *s, const uint8_t *payload, uint32_t len)
     return true;
 }
 
-bool wal_store_checkpoint(WalStore *s)
+bool dws_wal_store_checkpoint(WalStore *s)
 {
     // Data first: the appended records must be durable before the pointer that commits them advances.
     if (s->dev.sync && !s->dev.sync(s->dev.ctx))
@@ -214,7 +214,7 @@ bool wal_store_checkpoint(WalStore *s)
     return true;
 }
 
-size_t wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scratch, size_t scratch_len)
+size_t dws_wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scratch, size_t scratch_len)
 {
     if (scratch_len < WAL_RECORD_HEADER)
         return 0;
@@ -232,9 +232,9 @@ size_t wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scra
             break; // truncated within the log, or a record too large for the caller's scratch
         if (!dev_read(s->dev, s->data_off + off, scratch, total))
             break;
-        uint32_t crc = wal_crc32_update(wal_crc32_init(), scratch, 16);
-        crc = wal_crc32_update(crc, scratch + WAL_RECORD_HEADER, plen);
-        if (wal_crc32_final(crc) != dws_rd32le(scratch + 16))
+        uint32_t crc = dws_wal_crc32_update(dws_wal_crc32_init(), scratch, 16);
+        crc = dws_wal_crc32_update(crc, scratch + WAL_RECORD_HEADER, plen);
+        if (dws_wal_crc32_final(crc) != dws_rd32le(scratch + 16))
             break;
         if (cb)
             cb(dws_rd64le(scratch + 4), off, scratch + WAL_RECORD_HEADER, plen, ctx);
@@ -244,7 +244,7 @@ size_t wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scra
     return count;
 }
 
-bool wal_store_pread(WalStore *s, uint64_t off, uint8_t *buf, size_t len)
+bool dws_wal_store_pread(WalStore *s, uint64_t off, uint8_t *buf, size_t len)
 {
     if (off + len > s->data_cap)
         return false;

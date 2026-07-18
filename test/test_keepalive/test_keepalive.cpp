@@ -46,7 +46,7 @@ void setUp()
         http_conn_open(i); // resets parser + keep-alive request tally
     }
     ws_init();
-    sse_init();
+    dws_sse_init();
     tcp_capture_reset();
 }
 

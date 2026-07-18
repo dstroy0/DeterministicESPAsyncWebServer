@@ -339,14 +339,14 @@ static int http_request(const char *method, const char *url, const char *content
 
     // The response to parse: raw wire bytes (http) or decrypted plaintext (https),
     // both land in s_http.rx.
-    size_t resp_len = 0;
+    size_t dws_resp_len = 0;
 
     if (is_https)
     {
 #if DWS_ENABLE_HTTP_CLIENT_TLS
-        int rc = dws_tls_client_run(host, (const uint8_t *)req, reqlen, s_http.rx, sizeof(s_http.rx), &resp_len,
+        int rc = dws_tls_client_run(host, (const uint8_t *)req, reqlen, s_http.rx, sizeof(s_http.rx), &dws_resp_len,
                                     cl_tls_send, cl_tls_recv, deadline);
-        CL_DBG("[hc] tls rc=%d pt_len=%u\n", rc, (unsigned)resp_len);
+        CL_DBG("[hc] tls rc=%d pt_len=%u\n", rc, (unsigned)dws_resp_len);
         if (rc < 0)
         {
             dws_client_close(s_http.cid);
@@ -371,9 +371,9 @@ static int http_request(const char *method, const char *url, const char *content
         }
         while ((int32_t)(deadline - millis()) > 0)
         {
-            size_t n = dws_client_read(s_http.cid, s_http.rx + resp_len, sizeof(s_http.rx) - resp_len);
-            resp_len += n;
-            if (resp_len >= sizeof(s_http.rx))
+            size_t n = dws_client_read(s_http.cid, s_http.rx + dws_resp_len, sizeof(s_http.rx) - dws_resp_len);
+            dws_resp_len += n;
+            if (dws_resp_len >= sizeof(s_http.rx))
                 break;
             if (dws_client_is_closed(s_http.cid) && dws_client_available(s_http.cid) == 0)
                 break;
@@ -382,15 +382,15 @@ static int http_request(const char *method, const char *url, const char *content
         }
     }
 
-    CL_DBG("[hc] done resp_len=%u\n", (unsigned)resp_len);
+    CL_DBG("[hc] done dws_resp_len=%u\n", (unsigned)dws_resp_len);
     dws_client_close(s_http.cid);
     s_http.cid = -1;
 
-    if (resp_len == 0)
+    if (dws_resp_len == 0)
         return (int)HttpClientError::HTTP_CLIENT_ERR_TIMEOUT;
 
     size_t body_off = 0, blen = 0;
-    int status = http_client_parse_response(s_http.rx, resp_len, &body_off, &blen);
+    int status = http_client_parse_response(s_http.rx, dws_resp_len, &body_off, &blen);
     if (status < 0)
         return (int)HttpClientError::HTTP_CLIENT_ERR_RESPONSE;
     if (out)

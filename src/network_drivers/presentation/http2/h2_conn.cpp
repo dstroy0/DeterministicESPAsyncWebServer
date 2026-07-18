@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file h2_conn.cpp
- * @brief HTTP/2 connection + stream engine - implementation. See h2_conn.h.
+ * @file dws_h2_conn.cpp
+ * @brief HTTP/2 connection + stream engine - implementation. See dws_h2_conn.h.
  */
 
 #include "network_drivers/presentation/http2/h2_conn.h"
@@ -53,7 +53,7 @@ void send_our_settings(H2Conn *c)
                              H2Setting::H2_SETTINGS_INITIAL_WINDOW_SIZE, H2Setting::H2_SETTINGS_MAX_FRAME_SIZE};
     const uint32_t vals[4] = {0, DWS_H2_MAX_STREAMS, 65535, DWS_H2_MAX_FRAME};
     uint8_t buf[H2_FRAME_HEADER_LEN + 4 * 6];
-    size_t n = h2_build_settings(buf, sizeof buf, ids, vals, 4);
+    size_t n = dws_h2_build_settings(buf, sizeof buf, ids, vals, 4);
     wr(c, buf, n);
 }
 
@@ -83,7 +83,7 @@ bool emit_header(void *ctx, const char *name, size_t nl, const char *val, size_t
 bool decode_block(H2Conn *c, uint32_t stream_id, const uint8_t *block, size_t len, bool end_stream)
 {
     EmitCtx e = {c, stream_id};
-    if (!hpack_decode(&c->hdec, block, len, c->hscratch, sizeof c->hscratch, emit_header, &e))
+    if (!dws_hpack_decode(&c->hdec, block, len, c->hscratch, sizeof c->hscratch, emit_header, &e))
         return false; // COMPRESSION_ERROR
     if (c->cb.on_headers_end)
         c->cb.on_headers_end(c->cb.app, stream_id, end_stream);
@@ -125,7 +125,7 @@ bool handle_headers(H2Conn *c, const H2FrameHeader *h, const uint8_t *payload)
     c->last_peer_stream = h->stream_id;
     if (!alloc_stream(c, h->stream_id))
     {
-        send_control(c, [](uint8_t *b, size_t cap) { return h2_build_rst_stream(b, cap, 0, 0); });
+        send_control(c, [](uint8_t *b, size_t cap) { return dws_h2_build_rst_stream(b, cap, 0, 0); });
         return true; // refuse quietly is fine; keep the connection
     }
 
@@ -187,9 +187,9 @@ bool handle_data(H2Conn *c, const H2FrameHeader *h, const uint8_t *payload)
     if (h->length > 0)
     {
         uint8_t wu[H2_FRAME_HEADER_LEN + 4];
-        size_t n = h2_build_window_update(wu, sizeof wu, 0, h->length);
+        size_t n = dws_h2_build_window_update(wu, sizeof wu, 0, h->length);
         wr(c, wu, n);
-        n = h2_build_window_update(wu, sizeof wu, h->stream_id, h->length);
+        n = dws_h2_build_window_update(wu, sizeof wu, h->stream_id, h->length);
         wr(c, wu, n);
     }
     return true;
@@ -198,7 +198,7 @@ bool handle_data(H2Conn *c, const H2FrameHeader *h, const uint8_t *payload)
 bool process_frame(H2Conn *c)
 {
     H2FrameHeader h;
-    h2_parse_header(c->fbuf, H2_FRAME_HEADER_LEN, &h);
+    dws_h2_parse_header(c->fbuf, H2_FRAME_HEADER_LEN, &h);
     const uint8_t *payload = c->fbuf + H2_FRAME_HEADER_LEN;
 
     // A header block must be continued only by CONTINUATION on the same stream (sec 6.10).
@@ -210,9 +210,9 @@ bool process_frame(H2Conn *c)
     case H2FrameType::H2_SETTINGS:
         if (h.flags & H2_FLAG_ACK)
             return h.length == 0; // ACK of our settings
-        if (!h2_parse_settings(payload, h.length, &c->peer))
+        if (!dws_h2_parse_settings(payload, h.length, &c->peer))
             return false;
-        send_control(c, h2_build_settings_ack);
+        send_control(c, dws_h2_build_settings_ack);
         return true;
     case H2FrameType::H2_PING:
         if (h.flags & H2_FLAG_ACK)
@@ -221,7 +221,7 @@ bool process_frame(H2Conn *c)
             return false;
         {
             uint8_t pg[H2_FRAME_HEADER_LEN + 8];
-            size_t n = h2_build_ping_ack(pg, sizeof pg, payload);
+            size_t n = dws_h2_build_ping_ack(pg, sizeof pg, payload);
             wr(c, pg, n);
         }
         return true;
@@ -264,18 +264,18 @@ bool process_frame(H2Conn *c)
 }
 } // namespace
 
-void h2_conn_init(H2Conn *c, const H2Callbacks *cb)
+void dws_h2_conn_init(H2Conn *c, const H2Callbacks *cb)
 {
     memset(c, 0, sizeof(*c));
     c->cb = *cb;
     c->phase = 0;
-    h2_settings_defaults(&c->peer);
+    dws_h2_settings_defaults(&c->peer);
     c->conn_send_window = 65535;
-    hpack_dyn_init(&c->hdec, DWS_HPACK_TABLE_BYTES);
+    dws_hpack_dyn_init(&c->hdec, DWS_HPACK_TABLE_BYTES);
     send_our_settings(c);
 }
 
-bool h2_conn_recv(H2Conn *c, const uint8_t *data, size_t len)
+bool dws_h2_conn_recv(H2Conn *c, const uint8_t *data, size_t len)
 {
     size_t off = 0;
     if (c->phase == 0)
@@ -326,8 +326,8 @@ bool h2_conn_recv(H2Conn *c, const uint8_t *data, size_t len)
     return true;
 }
 
-bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *content_type, const char *body,
-                     size_t body_len)
+bool dws_h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *content_type, const char *body,
+                         size_t body_len)
 {
     H2Stream *s = find_stream(c, stream_id);
     if (!s)
@@ -338,7 +338,7 @@ bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *cont
     size_t bo = 0;
     char num[16];
     int nl = snprintf(num, sizeof num, "%d", status);
-    size_t w = hpack_encode_header(block + bo, sizeof block - bo, ":status", 7, num, (size_t)nl);
+    size_t w = dws_hpack_encode_header(block + bo, sizeof block - bo, ":status", 7, num, (size_t)nl);
     // GCOVR_EXCL_START  :status is a decimal int (<=11 chars) into a fresh 256B block; the encode cannot overflow
     if (!w)
         return false;
@@ -349,14 +349,14 @@ bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *cont
         // Cap above the largest content-type that can fit this block even at HPACK-Huffman's best
         // 5-bit/char (~sizeof block * 8/5): a longer value can never fit, so measuring it as `2*block`
         // still trips the encode's reject below instead of being truncated into a fittable length.
-        w = hpack_encode_header(block + bo, sizeof block - bo, "content-type", 12, content_type,
-                                strnlen(content_type, sizeof block * 2));
+        w = dws_hpack_encode_header(block + bo, sizeof block - bo, "content-type", 12, content_type,
+                                    strnlen(content_type, sizeof block * 2));
         if (!w)
             return false;
         bo += w;
     }
     int cl = snprintf(num, sizeof num, "%u", (unsigned)body_len);
-    w = hpack_encode_header(block + bo, sizeof block - bo, "content-length", 14, num, (size_t)cl);
+    w = dws_hpack_encode_header(block + bo, sizeof block - bo, "content-length", 14, num, (size_t)cl);
     // GCOVR_EXCL_START  content-length is a decimal number; it cannot overflow the 256B block
     if (!w)
         return false;
@@ -364,7 +364,7 @@ bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *cont
     bo += w;
 
     uint8_t frame[H2_FRAME_HEADER_LEN + sizeof block];
-    size_t n = h2_build_headers(frame, sizeof frame, stream_id, block, bo, body_len == 0);
+    size_t n = dws_h2_build_headers(frame, sizeof frame, stream_id, block, bo, body_len == 0);
     // GCOVR_EXCL_START  frame is H2_FRAME_HEADER_LEN + sizeof block; 9 + bo (bo <= 256) always fits
     if (!n)
         return false;
@@ -381,8 +381,8 @@ bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *cont
             chunk = chunk_max;
         bool last = (sent + chunk == body_len);
         uint8_t dh[H2_FRAME_HEADER_LEN];
-        size_t hn = h2_write_header(dh, sizeof dh, (uint32_t)chunk, H2FrameType::H2_DATA, last ? H2_FLAG_END_STREAM : 0,
-                                    stream_id);
+        size_t hn = dws_h2_write_header(dh, sizeof dh, (uint32_t)chunk, H2FrameType::H2_DATA,
+                                        last ? H2_FLAG_END_STREAM : 0, stream_id);
         // GCOVR_EXCL_START  dh is exactly H2_FRAME_HEADER_LEN; a 9-byte frame header always fits
         if (!hn)
             return false;
@@ -397,10 +397,10 @@ bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *cont
     return true;
 }
 
-void h2_conn_goaway(H2Conn *c, uint32_t error)
+void dws_h2_conn_goaway(H2Conn *c, uint32_t error)
 {
     uint8_t buf[H2_FRAME_HEADER_LEN + 8];
-    size_t n = h2_build_goaway(buf, sizeof buf, c->last_peer_stream, error);
+    size_t n = dws_h2_build_goaway(buf, sizeof buf, c->last_peer_stream, error);
     wr(c, buf, n);
     c->phase = 2;
 }

@@ -15,8 +15,8 @@ static const uint8_t SECRET[32] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x7
 
 void setUp()
 {
-    csrf_reset();
-    csrf_set_secret(SECRET, sizeof(SECRET));
+    dws_csrf_reset();
+    dws_csrf_set_secret(SECRET, sizeof(SECRET));
 }
 void tearDown()
 {
@@ -26,16 +26,16 @@ void tearDown()
 void test_issue_verify_roundtrip()
 {
     char t[CSRF_TOKEN_BUF];
-    int n = csrf_issue(t, sizeof(t));
+    int n = dws_csrf_issue(t, sizeof(t));
     TEST_ASSERT_TRUE(n > 0);
-    TEST_ASSERT_TRUE(csrf_verify(t));
+    TEST_ASSERT_TRUE(dws_csrf_verify(t));
 }
 
 // The token has the documented `<nonce>.<sig>` shape and length.
 void test_token_format_and_length()
 {
     char t[CSRF_TOKEN_BUF];
-    int n = csrf_issue(t, sizeof(t));
+    int n = dws_csrf_issue(t, sizeof(t));
     TEST_ASSERT_EQUAL_INT(CSRF_NONCE_BYTES * 2 + 1 + CSRF_SIG_BYTES * 2, n);
     const char *dot = strchr(t, '.');
     TEST_ASSERT_NOT_NULL(dot);
@@ -46,76 +46,76 @@ void test_token_format_and_length()
 void test_verify_rejects_tampered_sig()
 {
     char t[CSRF_TOKEN_BUF];
-    csrf_issue(t, sizeof(t));
+    dws_csrf_issue(t, sizeof(t));
     size_t len = strlen(t);
     t[len - 1] = (t[len - 1] == 'a') ? 'b' : 'a';
-    TEST_ASSERT_FALSE(csrf_verify(t));
+    TEST_ASSERT_FALSE(dws_csrf_verify(t));
 }
 
 // Flipping a nonce character invalidates the token (the recomputed sig changes).
 void test_verify_rejects_tampered_nonce()
 {
     char t[CSRF_TOKEN_BUF];
-    csrf_issue(t, sizeof(t));
+    dws_csrf_issue(t, sizeof(t));
     t[0] = (t[0] == 'a') ? 'b' : 'a';
-    TEST_ASSERT_FALSE(csrf_verify(t));
+    TEST_ASSERT_FALSE(dws_csrf_verify(t));
 }
 
 // Malformed strings are rejected, not crashed on.
 void test_verify_rejects_garbage()
 {
-    TEST_ASSERT_FALSE(csrf_verify("notatoken"));
-    TEST_ASSERT_FALSE(csrf_verify(""));
-    TEST_ASSERT_FALSE(csrf_verify("."));
-    TEST_ASSERT_FALSE(csrf_verify("abcd.ef"));
+    TEST_ASSERT_FALSE(dws_csrf_verify("notatoken"));
+    TEST_ASSERT_FALSE(dws_csrf_verify(""));
+    TEST_ASSERT_FALSE(dws_csrf_verify("."));
+    TEST_ASSERT_FALSE(dws_csrf_verify("abcd.ef"));
 }
 
 // A token signed under one secret does not verify under another.
 void test_different_secret_rejects()
 {
     char t[CSRF_TOKEN_BUF];
-    csrf_issue(t, sizeof(t));
+    dws_csrf_issue(t, sizeof(t));
     uint8_t other[32];
     memset(other, 0xAB, sizeof(other));
-    csrf_set_secret(other, sizeof(other));
-    TEST_ASSERT_FALSE(csrf_verify(t));
+    dws_csrf_set_secret(other, sizeof(other));
+    TEST_ASSERT_FALSE(dws_csrf_verify(t));
 }
 
 // With no secret set, issuing and verifying both fail closed.
 void test_no_secret_fails_closed()
 {
-    csrf_reset();
+    dws_csrf_reset();
     char t[CSRF_TOKEN_BUF];
-    TEST_ASSERT_EQUAL_INT(0, csrf_issue(t, sizeof(t)));
-    TEST_ASSERT_FALSE(csrf_verify("0102030405060708090a0b0c.0102030405060708090a0b0c0d0e"));
+    TEST_ASSERT_EQUAL_INT(0, dws_csrf_issue(t, sizeof(t)));
+    TEST_ASSERT_FALSE(dws_csrf_verify("0102030405060708090a0b0c.0102030405060708090a0b0c0d0e"));
 }
 
 // Successive tokens differ (the nonce counter advances) and both verify.
 void test_issue_unique()
 {
     char a[CSRF_TOKEN_BUF], b[CSRF_TOKEN_BUF];
-    csrf_issue(a, sizeof(a));
-    csrf_issue(b, sizeof(b));
+    dws_csrf_issue(a, sizeof(a));
+    dws_csrf_issue(b, sizeof(b));
     TEST_ASSERT_TRUE(strcmp(a, b) != 0);
-    TEST_ASSERT_TRUE(csrf_verify(a));
-    TEST_ASSERT_TRUE(csrf_verify(b));
+    TEST_ASSERT_TRUE(dws_csrf_verify(a));
+    TEST_ASSERT_TRUE(dws_csrf_verify(b));
 }
 
 // A buffer that cannot hold a token yields 0 (no overflow).
 void test_issue_rejects_small_buffer()
 {
     char small[10];
-    TEST_ASSERT_EQUAL_INT(0, csrf_issue(small, sizeof(small)));
+    TEST_ASSERT_EQUAL_INT(0, dws_csrf_issue(small, sizeof(small)));
 }
 
 void test_reset_and_verify_guards()
 {
-    csrf_reset();                               // clears the secret
-    TEST_ASSERT_FALSE(csrf_verify("anything")); // no secret -> false
+    dws_csrf_reset();                               // clears the secret
+    TEST_ASSERT_FALSE(dws_csrf_verify("anything")); // no secret -> false
     uint8_t secret[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-    csrf_set_secret(secret, sizeof(secret));
-    TEST_ASSERT_FALSE(csrf_verify("not-a-valid-token")); // malformed token -> false
-    TEST_ASSERT_FALSE(csrf_verify(nullptr));             // null token -> false
+    dws_csrf_set_secret(secret, sizeof(secret));
+    TEST_ASSERT_FALSE(dws_csrf_verify("not-a-valid-token")); // malformed token -> false
+    TEST_ASSERT_FALSE(dws_csrf_verify(nullptr));             // null token -> false
 }
 
 int main()

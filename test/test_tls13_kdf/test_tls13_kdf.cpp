@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for the TLS 1.3 key schedule (network_drivers/presentation/http3/tls13_kdf; RFC 8446
+// Unit tests for the TLS 1.3 key schedule (network_drivers/presentation/http3/dws_tls13_kdf; RFC 8446
 // sec 7.1 / 4.4.4). Pinned to the RFC 8448 sec 3 "Simple 1-RTT Handshake" worked trace, which lists
 // every intermediate secret and the X25519 shared secret directly:
 //   - Early Secret         (Extract, salt 0, IKM 0^32).
@@ -73,7 +73,7 @@ void test_early_secret()
     uint8_t exp[32];
     hx(EARLY, exp, 32);
     Tls13KeySchedule ks;
-    tls13_ks_early(&TLS13_KDF, &ks);
+    dws_tls13_ks_early(&TLS13_KDF, &ks);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, ks.early_secret, 32);
 }
 
@@ -83,8 +83,8 @@ void test_handshake_secrets()
     hx(ECDHE, ecdhe, 32);
     hx(CH_SH_HASH, ch_sh, 32);
     Tls13KeySchedule ks;
-    tls13_ks_early(&TLS13_KDF, &ks);
-    tls13_ks_handshake(&ks, ecdhe, ch_sh);
+    dws_tls13_ks_early(&TLS13_KDF, &ks);
+    dws_tls13_ks_handshake(&ks, ecdhe, ch_sh);
 
     uint8_t exp[32];
     hx(HANDSHAKE, exp, 32);
@@ -102,9 +102,9 @@ void test_master_secrets()
     hx(CH_SH_HASH, ch_sh, 32);
     hx(CH_SFIN_HASH, ch_sfin, 32);
     Tls13KeySchedule ks;
-    tls13_ks_early(&TLS13_KDF, &ks);
-    tls13_ks_handshake(&ks, ecdhe, ch_sh);
-    tls13_ks_master(&ks, ch_sfin);
+    dws_tls13_ks_early(&TLS13_KDF, &ks);
+    dws_tls13_ks_handshake(&ks, ecdhe, ch_sh);
+    dws_tls13_ks_master(&ks, ch_sfin);
 
     uint8_t exp[32];
     hx(MASTER, exp, 32);
@@ -122,8 +122,8 @@ void test_server_hs_write_keys()
     uint8_t s_hs[32];
     hx(S_HS, s_hs, 32);
     uint8_t key[16], iv[12], exp_key[16], exp_iv[12];
-    quic_hkdf_expand_label(s_hs, "key", key, sizeof(key));
-    quic_hkdf_expand_label(s_hs, "iv", iv, sizeof(iv));
+    dws_quic_hkdf_expand_label(s_hs, "key", key, sizeof(key));
+    dws_quic_hkdf_expand_label(s_hs, "iv", iv, sizeof(iv));
     hx("3fce516009c21727d0f2e4e86ee403bc", exp_key, 16);
     hx("5d313eb2671276ee13000b30", exp_iv, 12);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_key, key, 16);
@@ -194,16 +194,16 @@ void test_server_finished()
     uint8_t s_hs[32];
     hx(S_HS, s_hs, 32);
     uint8_t verify[32], exp[32];
-    tls13_finished_mac(&TLS13_KDF, s_hs, thash, verify);
+    dws_tls13_finished_mac(&TLS13_KDF, s_hs, thash, verify);
     hx("9b9b141d906337fbd2cbdce71df4deda4ab42c309572cb7fffee5454b78f0718", exp, 32);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, verify, 32);
 }
 
-// tls13_kdf_expand_label() is the KDF-variant HKDF-Expand-Label wrapper the record-key derivations
-// call (the key-schedule steps above reach the HKDF core through tls13_derive_secret instead, so this
+// dws_tls13_kdf_expand_label() is the KDF-variant HKDF-Expand-Label wrapper the record-key derivations
+// call (the key-schedule steps above reach the HKDF core through dws_tls13_derive_secret instead, so this
 // public entry point is otherwise unexercised). RFC 8448 sec 3: HKDF-Expand-Label("tls13 " prefix,
 // server_handshake_traffic_secret, "key", 16) is the server write key - the same KAT as
-// test_server_hs_write_keys, here through the wrapper. It must equal quic_hkdf_expand_label() with the
+// test_server_hs_write_keys, here through the wrapper. It must equal dws_quic_hkdf_expand_label() with the
 // TLS 1.3 prefix, which is exactly what the wrapper forwards to.
 void test_kdf_expand_label_wrapper()
 {
@@ -211,12 +211,12 @@ void test_kdf_expand_label_wrapper()
     hx(S_HS, s_hs, 32);
 
     uint8_t key[16], exp_key[16];
-    tls13_kdf_expand_label(&TLS13_KDF, s_hs, "key", key, sizeof(key));
+    dws_tls13_kdf_expand_label(&TLS13_KDF, s_hs, "key", key, sizeof(key));
     hx("3fce516009c21727d0f2e4e86ee403bc", exp_key, 16);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_key, key, 16);
 
     uint8_t via_quic[16];
-    quic_hkdf_expand_label(s_hs, "key", via_quic, sizeof(via_quic));
+    dws_quic_hkdf_expand_label(s_hs, "key", via_quic, sizeof(via_quic));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(via_quic, key, 16);
 }
 

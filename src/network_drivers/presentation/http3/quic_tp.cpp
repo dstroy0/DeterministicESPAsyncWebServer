@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_tp.cpp
- * @brief QUIC transport parameters codec (see quic_tp.h).
+ * @file dws_quic_tp.cpp
+ * @brief QUIC transport parameters codec (see dws_quic_tp.h).
  */
 
 #include "network_drivers/presentation/http3/quic_tp.h"
@@ -13,7 +13,7 @@
 #include "network_drivers/presentation/http3/quic_varint.h"
 #include <string.h>
 
-void quic_tp_defaults(QuicTransportParams *tp)
+void dws_quic_tp_defaults(QuicTransportParams *tp)
 {
     memset(tp, 0, sizeof(*tp));
     tp->max_udp_payload_size = 65527;
@@ -27,11 +27,11 @@ namespace
 // Append one parameter: ID (varint) || Length (varint) || raw value bytes.
 bool put_param(uint8_t *out, size_t cap, size_t *p, uint64_t id, const uint8_t *val, size_t val_len)
 {
-    size_t n = quic_varint_encode(out + *p, cap - *p, id);
+    size_t n = dws_quic_varint_encode(out + *p, cap - *p, id);
     if (!n)
         return false;
     *p += n;
-    n = quic_varint_encode(out + *p, cap - *p, val_len);
+    n = dws_quic_varint_encode(out + *p, cap - *p, val_len);
     if (!n)
         return false;
     *p += n;
@@ -51,14 +51,14 @@ bool put_param(uint8_t *out, size_t cap, size_t *p, uint64_t id, const uint8_t *
 bool put_varint_param(uint8_t *out, size_t cap, size_t *p, uint64_t id, uint64_t value)
 {
     uint8_t v[8];
-    size_t vlen = quic_varint_encode(v, sizeof(v), value);
+    size_t vlen = dws_quic_varint_encode(v, sizeof(v), value);
     if (!vlen)
         return false;
     return put_param(out, cap, p, id, v, vlen);
 }
 } // namespace
 
-size_t quic_tp_encode(const QuicTransportParams *tp, uint8_t *out, size_t cap)
+size_t dws_quic_tp_encode(const QuicTransportParams *tp, uint8_t *out, size_t cap)
 {
     size_t p = 0;
     bool ok = true;
@@ -91,7 +91,7 @@ namespace
 bool value_varint(const uint8_t *val, size_t len, uint64_t *out)
 {
     size_t consumed = 0;
-    if (!quic_varint_decode(val, len, out, &consumed))
+    if (!dws_quic_varint_decode(val, len, out, &consumed))
         return false;
     return consumed == len;
 }
@@ -109,7 +109,7 @@ bool copy_cid(const uint8_t *val, size_t len, uint8_t *dst, uint8_t *dst_len, bo
 
 // Apply a connection-ID transport parameter. *handled is set true if id names a CID param (whether or
 // not the copy succeeded); false leaves it for another category. Returns false only on a bad value.
-bool quic_tp_apply_cid(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportParams *tp, bool *handled)
+bool dws_quic_tp_apply_cid(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportParams *tp, bool *handled)
 {
     *handled = true;
     switch (id)
@@ -127,7 +127,7 @@ bool quic_tp_apply_cid(uint64_t id, const uint8_t *val, size_t vlen, QuicTranspo
 }
 
 // Apply a varint-valued transport parameter with its RFC 9000 range checks. *handled is set as above.
-bool quic_tp_apply_varint(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportParams *tp, bool *handled)
+bool dws_quic_tp_apply_varint(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportParams *tp, bool *handled)
 {
     *handled = true;
     switch (id)
@@ -162,14 +162,14 @@ bool quic_tp_apply_varint(uint64_t id, const uint8_t *val, size_t vlen, QuicTran
 
 // Dispatch one parsed transport parameter to tp; false on a malformed / out-of-range value. Unknown
 // (GREASE) IDs are silently ignored, matching RFC 9000 §7.4.1.
-bool quic_tp_apply(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportParams *tp)
+bool dws_quic_tp_apply(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportParams *tp)
 {
     bool handled = false;
-    if (!quic_tp_apply_cid(id, val, vlen, tp, &handled))
+    if (!dws_quic_tp_apply_cid(id, val, vlen, tp, &handled))
         return false;
     if (handled)
         return true;
-    if (!quic_tp_apply_varint(id, val, vlen, tp, &handled))
+    if (!dws_quic_tp_apply_varint(id, val, vlen, tp, &handled))
         return false;
     if (handled)
         return true;
@@ -183,9 +183,9 @@ bool quic_tp_apply(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportPa
 }
 } // namespace
 
-bool quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp)
+bool dws_quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp)
 {
-    quic_tp_defaults(tp);
+    dws_quic_tp_defaults(tp);
     uint32_t seen = 0; // dup-guard bitmask over the known IDs (all < 32)
 
     size_t off = 0;
@@ -194,10 +194,10 @@ bool quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp)
         uint64_t id = 0;
         uint64_t vlen = 0;
         size_t c = 0;
-        if (!quic_varint_decode(buf + off, len - off, &id, &c))
+        if (!dws_quic_varint_decode(buf + off, len - off, &id, &c))
             return false;
         off += c;
-        if (!quic_varint_decode(buf + off, len - off, &vlen, &c))
+        if (!dws_quic_varint_decode(buf + off, len - off, &vlen, &c))
             return false;
         off += c;
         if (off + vlen > len)
@@ -213,7 +213,7 @@ bool quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp)
             seen |= bit;
         }
 
-        if (!quic_tp_apply(id, val, vlen, tp))
+        if (!dws_quic_tp_apply(id, val, vlen, tp))
             return false;
     }
     return true;

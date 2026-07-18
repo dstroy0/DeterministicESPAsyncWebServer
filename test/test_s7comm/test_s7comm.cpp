@@ -19,7 +19,7 @@ void tearDown()
 void test_build_setup()
 {
     uint8_t buf[32];
-    size_t n = s7_build_setup(buf, sizeof(buf), 0x0100, 1, 1, 480); // 480 = 0x01E0
+    size_t n = dws_s7_build_setup(buf, sizeof(buf), 0x0100, 1, 1, 480); // 480 = 0x01E0
     const uint8_t expect[] = {
         0x32, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x08, 0x00, 0x00, // header
         0xF0, 0x00, 0x00, 0x01, 0x00, 0x01, 0x01, 0xE0              // param
@@ -38,7 +38,7 @@ void test_build_read_request()
     item.transport_size = S7_TS_BYTE;
     item.count = 10;
     uint8_t buf[48];
-    size_t n = s7_build_read_request(buf, sizeof(buf), 0x0100, &item, 1);
+    size_t n = dws_s7_build_read_request(buf, sizeof(buf), 0x0100, &item, 1);
     const uint8_t expect[] = {
         0x32, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x0E, 0x00, 0x00,            // header (param-len 0x0E)
         0x04, 0x01,                                                            // read var, 1 item
@@ -58,7 +58,7 @@ void test_read_request_bit_address()
     item.transport_size = S7_TS_BYTE;
     item.count = 1;
     uint8_t buf[48];
-    size_t n = s7_build_read_request(buf, sizeof(buf), 1, &item, 1);
+    size_t n = dws_s7_build_read_request(buf, sizeof(buf), 1, &item, 1);
     TEST_ASSERT_GREATER_THAN(0, (int)n);
     // the 3 address octets are the last three of the item.
     TEST_ASSERT_EQUAL_HEX8(0x00, buf[n - 3]);
@@ -76,7 +76,7 @@ void test_parse_response_single()
         0x99, 0xAA // data: OK, BYTE, 80 bits = 10 bytes
     };
     S7Header h;
-    TEST_ASSERT_TRUE(s7_parse_header(resp, sizeof(resp), &h));
+    TEST_ASSERT_TRUE(dws_s7_parse_header(resp, sizeof(resp), &h));
     TEST_ASSERT_EQUAL_HEX8(S7_ROSCTR_ACK_DATA, h.rosctr);
     TEST_ASSERT_EQUAL_size_t(12, h.header_len);
     TEST_ASSERT_EQUAL_UINT16(2, h.param_len);
@@ -84,13 +84,13 @@ void test_parse_response_single()
 
     size_t off = 0;
     S7DataItem it;
-    TEST_ASSERT_TRUE(s7_read_next_item(h.data, h.data_len, &off, &it));
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(h.data, h.data_len, &off, &it));
     TEST_ASSERT_EQUAL_HEX8(S7_RET_OK, it.return_code);
     TEST_ASSERT_EQUAL_HEX8(S7_DTS_BYTE, it.transport_size);
     TEST_ASSERT_EQUAL_size_t(10, it.data_len); // 80 bits -> 10 bytes
     const uint8_t expect_data[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA};
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_data, it.data, 10);
-    TEST_ASSERT_FALSE(s7_read_next_item(h.data, h.data_len, &off, &it)); // end
+    TEST_ASSERT_FALSE(dws_s7_read_next_item(h.data, h.data_len, &off, &it)); // end
 }
 
 // Two items: the first is 3 bytes (odd) so it carries an even-pad byte; the second 2 bytes.
@@ -102,14 +102,14 @@ void test_parse_response_padding()
     };
     size_t off = 0;
     S7DataItem it;
-    TEST_ASSERT_TRUE(s7_read_next_item(data, sizeof(data), &off, &it));
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(data, sizeof(data), &off, &it));
     TEST_ASSERT_EQUAL_size_t(3, it.data_len);
     TEST_ASSERT_EQUAL_size_t(8, off); // 4 header + 3 data + 1 pad
-    TEST_ASSERT_TRUE(s7_read_next_item(data, sizeof(data), &off, &it));
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(data, sizeof(data), &off, &it));
     TEST_ASSERT_EQUAL_size_t(2, it.data_len);
     TEST_ASSERT_EQUAL_HEX8(0xDD, it.data[0]);
     TEST_ASSERT_EQUAL_size_t(sizeof(data), off);
-    TEST_ASSERT_FALSE(s7_read_next_item(data, sizeof(data), &off, &it));
+    TEST_ASSERT_FALSE(dws_s7_read_next_item(data, sizeof(data), &off, &it));
 }
 
 // An octet-string transport size has its length in bytes (not bits); an error item has no data.
@@ -118,12 +118,12 @@ void test_parse_octet_and_error()
     const uint8_t octet[] = {0xFF, 0x09, 0x00, 0x05, 0x01, 0x02, 0x03, 0x04, 0x05}; // 5 bytes
     size_t off = 0;
     S7DataItem it;
-    TEST_ASSERT_TRUE(s7_read_next_item(octet, sizeof(octet), &off, &it));
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(octet, sizeof(octet), &off, &it));
     TEST_ASSERT_EQUAL_size_t(5, it.data_len);
 
     const uint8_t err[] = {0x0A, 0x00, 0x00, 0x00}; // not found, NULL transport, 0 length
     off = 0;
-    TEST_ASSERT_TRUE(s7_read_next_item(err, sizeof(err), &off, &it));
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(err, sizeof(err), &off, &it));
     TEST_ASSERT_EQUAL_HEX8(0x0A, it.return_code);
     TEST_ASSERT_EQUAL_size_t(0, it.data_len);
 }
@@ -132,15 +132,15 @@ void test_parse_rejects_bad()
 {
     S7Header h;
     const uint8_t bad_id[] = {0x33, 0x01, 0, 0, 0, 0, 0, 0, 0, 0};
-    TEST_ASSERT_FALSE(s7_parse_header(bad_id, sizeof(bad_id), &h));
+    TEST_ASSERT_FALSE(dws_s7_parse_header(bad_id, sizeof(bad_id), &h));
     // header claims more param/data than buffered.
     const uint8_t overrun[] = {0x32, 0x01, 0, 0, 0, 1, 0, 0x20, 0, 0};
-    TEST_ASSERT_FALSE(s7_parse_header(overrun, sizeof(overrun), &h));
+    TEST_ASSERT_FALSE(dws_s7_parse_header(overrun, sizeof(overrun), &h));
 
     size_t off = 0;
     S7DataItem it;
     const uint8_t trunc[] = {0xFF, 0x04, 0x00, 0x50, 0x11}; // says 10 bytes, only 1 present
-    TEST_ASSERT_FALSE(s7_read_next_item(trunc, sizeof(trunc), &off, &it));
+    TEST_ASSERT_FALSE(dws_s7_read_next_item(trunc, sizeof(trunc), &off, &it));
 }
 
 void test_build_overflow_fails_closed()
@@ -148,8 +148,8 @@ void test_build_overflow_fails_closed()
     S7ReadItem item = {};
     item.area = S7_AREA_DB;
     uint8_t small[16];
-    TEST_ASSERT_EQUAL_size_t(0, s7_build_read_request(small, sizeof(small), 1, &item, 1)); // needs 24
-    TEST_ASSERT_EQUAL_size_t(0, s7_build_setup(small, 8, 1, 1, 1, 480));                   // needs 18
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_read_request(small, sizeof(small), 1, &item, 1)); // needs 24
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_setup(small, 8, 1, 1, 1, 480));                   // needs 18
 }
 
 // Null-pointer, empty, oversize-count and short-buffer guards on every entry point.
@@ -158,23 +158,23 @@ void test_null_and_short_guards()
     uint8_t buf[48];
     S7ReadItem item = {};
     item.area = S7_AREA_DB;
-    TEST_ASSERT_EQUAL_size_t(0, s7_build_setup(nullptr, sizeof(buf), 1, 1, 1, 480));       // null buf
-    TEST_ASSERT_EQUAL_size_t(0, s7_build_read_request(nullptr, sizeof(buf), 1, &item, 1)); // null buf
-    TEST_ASSERT_EQUAL_size_t(0, s7_build_read_request(buf, sizeof(buf), 1, nullptr, 1));   // null items
-    TEST_ASSERT_EQUAL_size_t(0, s7_build_read_request(buf, sizeof(buf), 1, &item, 0));     // n == 0
-    TEST_ASSERT_EQUAL_size_t(0, s7_build_read_request(buf, sizeof(buf), 1, &item, 0x100)); // n > 0xFF
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_setup(nullptr, sizeof(buf), 1, 1, 1, 480));       // null buf
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_read_request(nullptr, sizeof(buf), 1, &item, 1)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_read_request(buf, sizeof(buf), 1, nullptr, 1));   // null items
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_read_request(buf, sizeof(buf), 1, &item, 0));     // n == 0
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_read_request(buf, sizeof(buf), 1, &item, 0x100)); // n > 0xFF
 
     S7Header h;
-    TEST_ASSERT_FALSE(s7_parse_header(nullptr, 10, &h)); // null buf
+    TEST_ASSERT_FALSE(dws_s7_parse_header(nullptr, 10, &h)); // null buf
     const uint8_t shorthdr[9] = {S7_PROTOCOL_ID, 0x01, 0, 0, 0, 0, 0, 0, 0};
-    TEST_ASSERT_FALSE(s7_parse_header(shorthdr, sizeof(shorthdr), &h)); // len < 10
+    TEST_ASSERT_FALSE(dws_s7_parse_header(shorthdr, sizeof(shorthdr), &h)); // len < 10
     // Ack_Data ROSCTR promises a 12-octet header but only 11 octets are present.
     const uint8_t ack_short[11] = {S7_PROTOCOL_ID, S7_ROSCTR_ACK_DATA, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    TEST_ASSERT_FALSE(s7_parse_header(ack_short, sizeof(ack_short), &h)); // len < 12
+    TEST_ASSERT_FALSE(dws_s7_parse_header(ack_short, sizeof(ack_short), &h)); // len < 12
 
     size_t off = 0;
     S7DataItem it;
-    TEST_ASSERT_FALSE(s7_read_next_item(nullptr, 10, &off, &it)); // null data
+    TEST_ASSERT_FALSE(dws_s7_read_next_item(nullptr, 10, &off, &it)); // null data
 }
 
 int main()

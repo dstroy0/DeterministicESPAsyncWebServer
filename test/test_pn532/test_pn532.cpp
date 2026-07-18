@@ -26,7 +26,7 @@ void test_build_getfirmwareversion_kat()
     const uint8_t expect[9] = {0x00, 0x00, 0xFF, 0x02, 0xFE, 0xD4, 0x02, 0x2A, 0x00};
     const uint8_t cmd[1] = {0x02};
     uint8_t out[16];
-    uint16_t n = pn532_build_frame(PN532_TFI_HOST, cmd, 1, out, sizeof(out));
+    uint16_t n = dws_pn532_build_frame(PN532_TFI_HOST, cmd, 1, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT16(9, n);
     TEST_ASSERT_EQUAL_MEMORY(expect, out, 9);
 }
@@ -38,7 +38,7 @@ void test_parse_getfirmwareversion_response_kat()
     uint8_t tfi = 0;
     const uint8_t *pd = nullptr;
     uint8_t pdlen = 0;
-    int c = pn532_parse_frame(frame, sizeof(frame), &tfi, &pd, &pdlen);
+    int c = dws_pn532_parse_frame(frame, sizeof(frame), &tfi, &pd, &pdlen);
     TEST_ASSERT_EQUAL_INT(13, c);
     TEST_ASSERT_EQUAL_HEX8(PN532_TFI_PN532, tfi);
     TEST_ASSERT_EQUAL_UINT8(5, pdlen);
@@ -50,12 +50,12 @@ void test_build_then_parse_round_trip()
 {
     const uint8_t data[4] = {0x4A, 0x01, 0x00, 0xAB}; // e.g. InListPassiveTarget-ish
     uint8_t buf[24];
-    uint16_t n = pn532_build_frame(PN532_TFI_HOST, data, 4, buf, sizeof(buf));
+    uint16_t n = dws_pn532_build_frame(PN532_TFI_HOST, data, 4, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_UINT16(12, n); // 8 + 4
     uint8_t tfi = 0;
     const uint8_t *pd = nullptr;
     uint8_t pdlen = 0;
-    TEST_ASSERT_EQUAL_INT(12, pn532_parse_frame(buf, n, &tfi, &pd, &pdlen));
+    TEST_ASSERT_EQUAL_INT(12, dws_pn532_parse_frame(buf, n, &tfi, &pd, &pdlen));
     TEST_ASSERT_EQUAL_HEX8(PN532_TFI_HOST, tfi);
     TEST_ASSERT_EQUAL_UINT8(4, pdlen);
     TEST_ASSERT_EQUAL_MEMORY(data, pd, 4);
@@ -64,7 +64,7 @@ void test_build_then_parse_round_trip()
 static uint16_t sample(uint8_t *buf, uint16_t cap)
 {
     const uint8_t d[2] = {0x02, 0x00};
-    return pn532_build_frame(PN532_TFI_HOST, d, 2, buf, cap);
+    return dws_pn532_build_frame(PN532_TFI_HOST, d, 2, buf, cap);
 }
 
 void test_parse_rejects_bad_preamble_and_start()
@@ -72,10 +72,10 @@ void test_parse_rejects_bad_preamble_and_start()
     uint8_t buf[16];
     uint16_t n = sample(buf, sizeof(buf));
     buf[0] = 0x11;
-    TEST_ASSERT_EQUAL_INT(-1, pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_INT(-1, dws_pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
     n = sample(buf, sizeof(buf));
     buf[2] = 0x00; // start should be 00 FF
-    TEST_ASSERT_EQUAL_INT(-1, pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_INT(-1, dws_pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
 }
 
 void test_parse_rejects_bad_lcs()
@@ -83,7 +83,7 @@ void test_parse_rejects_bad_lcs()
     uint8_t buf[16];
     uint16_t n = sample(buf, sizeof(buf));
     buf[4] ^= 0xFF; // corrupt LCS
-    TEST_ASSERT_EQUAL_INT(-1, pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_INT(-1, dws_pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
 }
 
 void test_parse_rejects_bad_dcs()
@@ -91,46 +91,46 @@ void test_parse_rejects_bad_dcs()
     uint8_t buf[16];
     uint16_t n = sample(buf, sizeof(buf));
     buf[n - 2] ^= 0xFF; // corrupt DCS (byte before the postamble)
-    TEST_ASSERT_EQUAL_INT(-1, pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_INT(-1, dws_pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
 }
 
 void test_parse_needs_more_bytes()
 {
     uint8_t buf[16];
     uint16_t n = sample(buf, sizeof(buf));
-    TEST_ASSERT_EQUAL_INT(0, pn532_parse_frame(buf, 4, nullptr, nullptr, nullptr));     // header incomplete
-    TEST_ASSERT_EQUAL_INT(0, pn532_parse_frame(buf, n - 1, nullptr, nullptr, nullptr)); // body incomplete
+    TEST_ASSERT_EQUAL_INT(0, dws_pn532_parse_frame(buf, 4, nullptr, nullptr, nullptr));     // header incomplete
+    TEST_ASSERT_EQUAL_INT(0, dws_pn532_parse_frame(buf, n - 1, nullptr, nullptr, nullptr)); // body incomplete
 }
 
 void test_parse_rejects_over_length()
 {
     // frame_len 20 (> DWS_PN532_MAX_DATA + 1 = 9) is rejected early.
     uint8_t buf[8] = {0x00, 0x00, 0xFF, 0x14, 0xEC, 0xD5, 0x00, 0x00};
-    TEST_ASSERT_EQUAL_INT(-1, pn532_parse_frame(buf, sizeof(buf), nullptr, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_INT(-1, dws_pn532_parse_frame(buf, sizeof(buf), nullptr, nullptr, nullptr));
 }
 
 void test_ack_frame()
 {
     uint8_t ack[6];
-    TEST_ASSERT_EQUAL_UINT16(6, pn532_build_ack(ack, sizeof(ack)));
+    TEST_ASSERT_EQUAL_UINT16(6, dws_pn532_build_ack(ack, sizeof(ack)));
     const uint8_t expect[6] = {0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00};
     TEST_ASSERT_EQUAL_MEMORY(expect, ack, 6);
-    TEST_ASSERT_TRUE(pn532_is_ack(ack, 6));
+    TEST_ASSERT_TRUE(dws_pn532_is_ack(ack, 6));
 
     uint8_t buf[16];
     uint16_t n = sample(buf, sizeof(buf));
-    TEST_ASSERT_FALSE(pn532_is_ack(buf, n)); // a normal frame is not an ACK
+    TEST_ASSERT_FALSE(dws_pn532_is_ack(buf, n)); // a normal frame is not an ACK
     uint8_t small[3];
-    TEST_ASSERT_EQUAL_UINT16(0, pn532_build_ack(small, sizeof(small))); // too small
+    TEST_ASSERT_EQUAL_UINT16(0, dws_pn532_build_ack(small, sizeof(small))); // too small
 }
 
 void test_build_bounds()
 {
     uint8_t data[8] = {0};
     uint8_t small[8];
-    TEST_ASSERT_EQUAL_UINT16(0, pn532_build_frame(PN532_TFI_HOST, data, 4, small, sizeof(small))); // 12 > 8
+    TEST_ASSERT_EQUAL_UINT16(0, dws_pn532_build_frame(PN532_TFI_HOST, data, 4, small, sizeof(small))); // 12 > 8
     uint8_t big[64];
-    TEST_ASSERT_EQUAL_UINT16(0, pn532_build_frame(PN532_TFI_HOST, big, 9, big, sizeof(big))); // 9 > MAX_DATA 8
+    TEST_ASSERT_EQUAL_UINT16(0, dws_pn532_build_frame(PN532_TFI_HOST, big, 9, big, sizeof(big))); // 9 > MAX_DATA 8
 }
 
 void test_frame_parse_and_ack_guards()
@@ -138,10 +138,10 @@ void test_frame_parse_and_ack_guards()
     uint8_t tfi = 0;
     const uint8_t *pdata = nullptr;
     uint8_t pdata_len = 0;
-    TEST_ASSERT_EQUAL_INT(0, pn532_parse_frame(nullptr, 10, &tfi, &pdata, &pdata_len)); // null raw
+    TEST_ASSERT_EQUAL_INT(0, dws_pn532_parse_frame(nullptr, 10, &tfi, &pdata, &pdata_len)); // null raw
     uint8_t tiny[1] = {0};
-    TEST_ASSERT_FALSE(pn532_is_ack(tiny, sizeof(tiny))); // too short
-    TEST_ASSERT_FALSE(pn532_is_ack(nullptr, 6));         // null
+    TEST_ASSERT_FALSE(dws_pn532_is_ack(tiny, sizeof(tiny))); // too short
+    TEST_ASSERT_FALSE(dws_pn532_is_ack(nullptr, 6));         // null
 }
 
 int main()

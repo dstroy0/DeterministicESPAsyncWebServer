@@ -29,12 +29,12 @@ struct SshChannelCtx
     SshRemoteForwardCancelCb rfwd_cancel_cb = nullptr;
     SshForwardConfirmCb forward_confirm_cb = nullptr;
 #if DWS_ENABLE_SSH_SFTP
-    SshSftpOpenCb sftp_open_cb = nullptr;
-    SshSftpDataCb sftp_data_cb = nullptr;
+    SshSftpOpenCb dws_sftp_open_cb = nullptr;
+    SshSftpDataCb dws_sftp_data_cb = nullptr;
 #endif
 #if DWS_ENABLE_SSH_SCP
-    SshScpOpenCb scp_open_cb = nullptr;
-    SshScpDataCb scp_data_cb = nullptr;
+    SshScpOpenCb dws_scp_open_cb = nullptr;
+    SshScpDataCb dws_scp_data_cb = nullptr;
 #endif
 };
 static SshChannelCtx s_chcb;
@@ -47,22 +47,22 @@ void dws_ssh_channel_set_data_cb(SshChannelDataCb cb)
 #if DWS_ENABLE_SSH_SFTP
 void dws_ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb)
 {
-    s_chcb.sftp_open_cb = cb;
+    s_chcb.dws_sftp_open_cb = cb;
 }
 void dws_ssh_channel_set_sftp_data_cb(SshSftpDataCb cb)
 {
-    s_chcb.sftp_data_cb = cb;
+    s_chcb.dws_sftp_data_cb = cb;
 }
 #endif
 
 #if DWS_ENABLE_SSH_SCP
 void dws_ssh_channel_set_scp_open_cb(SshScpOpenCb cb)
 {
-    s_chcb.scp_open_cb = cb;
+    s_chcb.dws_scp_open_cb = cb;
 }
 void dws_ssh_channel_set_scp_data_cb(SshScpDataCb cb)
 {
-    s_chcb.scp_data_cb = cb;
+    s_chcb.dws_scp_data_cb = cb;
 }
 #endif
 
@@ -474,8 +474,8 @@ int dws_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len
         {
             accept = true;
             c->type = SshChanType::SSH_CHAN_SFTP;
-            if (s_chcb.sftp_open_cb)
-                s_chcb.sftp_open_cb(i, c->local_id);
+            if (s_chcb.dws_sftp_open_cb)
+                s_chcb.dws_sftp_open_cb(i, c->local_id);
         }
     }
 #endif
@@ -488,8 +488,8 @@ int dws_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len
         if (rd_string(payload, len, &off, &arg, &arg_len) && arg_len >= 4 && memcmp(arg, "scp ", 4) == 0)
         {
             c->type = SshChanType::SSH_CHAN_SCP;
-            if (s_chcb.scp_open_cb)
-                s_chcb.scp_open_cb(i, c->local_id, (const char *)arg, arg_len);
+            if (s_chcb.dws_scp_open_cb)
+                s_chcb.dws_scp_open_cb(i, c->local_id, (const char *)arg, arg_len);
         }
     }
 #endif
@@ -544,14 +544,14 @@ int dws_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, u
             break;
 #if DWS_ENABLE_SSH_SFTP
         case SshChanType::SSH_CHAN_SFTP: // SSH_FXP_* bytes -> the SFTP binding
-            if (s_chcb.sftp_data_cb)
-                s_chcb.sftp_data_cb(i, c->local_id, data, dlen);
+            if (s_chcb.dws_sftp_data_cb)
+                s_chcb.dws_sftp_data_cb(i, c->local_id, data, dlen);
             break;
 #endif
 #if DWS_ENABLE_SSH_SCP
         case SshChanType::SSH_CHAN_SCP: // RCP protocol bytes -> the SCP binding
-            if (s_chcb.scp_data_cb)
-                s_chcb.scp_data_cb(i, c->local_id, data, dlen);
+            if (s_chcb.dws_scp_data_cb)
+                s_chcb.dws_scp_data_cb(i, c->local_id, data, dlen);
             break;
 #endif
         default: // SSH_CHAN_SESSION: shell/exec bytes -> the application

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file lwm2m_tlv.cpp
+ * @file dws_lwm2m_tlv.cpp
  * @brief OMA LwM2M TLV writer + reader (pure, host-tested).
  */
 
@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-void lwm2m_tlv_init(Lwm2mTlvWriter *w, uint8_t *buf, size_t cap)
+void dws_lwm2m_tlv_init(Lwm2mTlvWriter *w, uint8_t *buf, size_t cap)
 {
     w->buf = buf;
     w->cap = cap;
@@ -20,7 +20,7 @@ void lwm2m_tlv_init(Lwm2mTlvWriter *w, uint8_t *buf, size_t cap)
     w->error = false;
 }
 
-bool lwm2m_tlv_write(Lwm2mTlvWriter *w, uint8_t id_type, uint16_t id, const uint8_t *value, size_t value_len)
+bool dws_lwm2m_tlv_write(Lwm2mTlvWriter *w, uint8_t id_type, uint16_t id, const uint8_t *value, size_t value_len)
 {
     if (!w || (value_len && !value))
         return false;
@@ -74,7 +74,7 @@ bool lwm2m_tlv_write(Lwm2mTlvWriter *w, uint8_t id_type, uint16_t id, const uint
     return true;
 }
 
-bool lwm2m_tlv_write_int(Lwm2mTlvWriter *w, uint16_t id, int64_t v)
+bool dws_lwm2m_tlv_write_int(Lwm2mTlvWriter *w, uint16_t id, int64_t v)
 {
     size_t n;
     if (v >= -128 && v <= 127)
@@ -88,38 +88,38 @@ bool lwm2m_tlv_write_int(Lwm2mTlvWriter *w, uint16_t id, int64_t v)
     uint8_t b[8];
     for (size_t i = 0; i < n; i++)
         b[i] = (uint8_t)((uint64_t)v >> (8 * (n - 1 - i)));
-    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, b, n);
+    return dws_lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, b, n);
 }
 
-bool lwm2m_tlv_write_bool(Lwm2mTlvWriter *w, uint16_t id, bool v)
+bool dws_lwm2m_tlv_write_bool(Lwm2mTlvWriter *w, uint16_t id, bool v)
 {
     uint8_t b = v ? 1 : 0;
-    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, &b, 1);
+    return dws_lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, &b, 1);
 }
 
-bool lwm2m_tlv_write_string(Lwm2mTlvWriter *w, uint16_t id, const char *s)
+bool dws_lwm2m_tlv_write_string(Lwm2mTlvWriter *w, uint16_t id, const char *s)
 {
     if (!s)
         return false;
-    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, (const uint8_t *)s, strnlen(s, w->cap + 1));
+    return dws_lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, (const uint8_t *)s, strnlen(s, w->cap + 1));
 }
 
-bool lwm2m_tlv_write_float(Lwm2mTlvWriter *w, uint16_t id, double v)
+bool dws_lwm2m_tlv_write_float(Lwm2mTlvWriter *w, uint16_t id, double v)
 {
     uint64_t bits;
     memcpy(&bits, &v, 8);
     uint8_t b[8];
     for (size_t i = 0; i < 8; i++)
         b[i] = (uint8_t)(bits >> (8 * (7 - i))); // big-endian
-    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, b, 8);
+    return dws_lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, b, 8);
 }
 
-size_t lwm2m_tlv_finish(Lwm2mTlvWriter *w)
+size_t dws_lwm2m_tlv_finish(Lwm2mTlvWriter *w)
 {
     return w->error ? 0 : w->pos;
 }
 
-bool lwm2m_tlv_read(const uint8_t *buf, size_t len, size_t *pos, Lwm2mTlv *out)
+bool dws_lwm2m_tlv_read(const uint8_t *buf, size_t len, size_t *pos, Lwm2mTlv *out)
 {
     if (!buf || !pos || !out || *pos >= len)
         return false;
@@ -155,7 +155,7 @@ bool lwm2m_tlv_read(const uint8_t *buf, size_t len, size_t *pos, Lwm2mTlv *out)
     return true;
 }
 
-bool lwm2m_tlv_value_int(const uint8_t *value, size_t len, int64_t *out)
+bool dws_lwm2m_tlv_value_int(const uint8_t *value, size_t len, int64_t *out)
 {
     if (!value || (len != 1 && len != 2 && len != 4 && len != 8))
         return false;

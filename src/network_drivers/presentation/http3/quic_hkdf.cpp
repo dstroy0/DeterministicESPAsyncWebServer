@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_hkdf.cpp
- * @brief HKDF-SHA256 and TLS 1.3 HKDF-Expand-Label (see quic_hkdf.h).
+ * @file dws_quic_hkdf.cpp
+ * @brief HKDF-SHA256 and TLS 1.3 HKDF-Expand-Label (see dws_quic_hkdf.h).
  */
 
 #include "network_drivers/presentation/http3/quic_hkdf.h"
@@ -13,8 +13,8 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include <string.h>
 
-void quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm, size_t ikm_len,
-                       uint8_t prk[QUIC_HKDF_HASH_LEN])
+void dws_quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm, size_t ikm_len,
+                           uint8_t prk[QUIC_HKDF_HASH_LEN])
 {
     // RFC 5869 sec 2.2: PRK = HMAC-Hash(salt, IKM). ssh_hmac_sha256 pre-hashes keys > 64 bytes and
     // zero-pads shorter ones, which is exactly HMAC's own key handling, so the salt goes in as-is.
@@ -53,8 +53,8 @@ void hkdf_expand(const uint8_t prk[QUIC_HKDF_HASH_LEN], const uint8_t *info, siz
 }
 } // namespace
 
-void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, const uint8_t *context,
-                                size_t context_len, uint8_t *out, size_t out_len, const char *label_prefix)
+void dws_quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, const uint8_t *context,
+                                    size_t context_len, uint8_t *out, size_t out_len, const char *label_prefix)
 {
     // HkdfLabel (RFC 8446 sec 7.1): uint16 length | opaque label<..> = label_prefix + label | opaque context.
     // The prefix is "tls13 " for TLS/QUIC (RFC 8446) or "dtls13" for DTLS 1.3 (RFC 9147 sec 5.9); the
@@ -86,10 +86,10 @@ void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const 
     hkdf_expand(secret, info, p, out, out_len);
 }
 
-void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len,
-                            const char *label_prefix)
+void dws_quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out,
+                                size_t out_len, const char *label_prefix)
 {
-    quic_hkdf_expand_label_ctx(secret, label, nullptr, 0, out, out_len, label_prefix);
+    dws_quic_hkdf_expand_label_ctx(secret, label, nullptr, 0, out, out_len, label_prefix);
 }
 
 #endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS

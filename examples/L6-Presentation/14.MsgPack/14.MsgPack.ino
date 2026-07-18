@@ -9,7 +9,7 @@
  * zero-heap MessagePack writer into a stack buffer and streams the bytes as
  * application/msgpack (via the binary-safe chunked writer). POST /decode runs the
  * other direction: it parses a posted MessagePack map with the cursor decoder
- * (msgpack_peek / msgpack_read_*, no heap, pointing into the request buffer) and
+ * (dws_msgpack_peek / dws_msgpack_read_*, no heap, pointing into the request buffer) and
  * echoes the parsed integer fields as text. MessagePack is a widely-supported
  * compact binary format - the same idea as the CBOR example, in the format your
  * stack may prefer.
@@ -43,7 +43,7 @@ struct MpCtx
     uint8_t buf[64];
     size_t len, off;
 };
-static size_t msgpack_source(uint8_t *out, size_t cap, void *vctx)
+static size_t dws_msgpack_source(uint8_t *out, size_t cap, void *vctx)
 {
     MpCtx *c = (MpCtx *)vctx;
     if (c->off >= c->len)
@@ -58,29 +58,29 @@ static size_t msgpack_source(uint8_t *out, size_t cap, void *vctx)
 
 // Decodes a posted MessagePack map of {string: integer} and echoes each parsed
 // field as "key=value" text. Shows the cursor decoder: read the map header, then
-// each key (str) and value (int), checking msgpack_reader_ok() at the end.
+// each key (str) and value (int), checking dws_msgpack_reader_ok() at the end.
 static void on_decode(uint8_t id, HttpReq *req)
 {
     MsgpackReader r;
-    msgpack_reader_init(&r, req->body, req->body_len);
+    dws_msgpack_reader_init(&r, req->body, req->body_len);
     size_t count;
-    if (!msgpack_read_map(&r, &count))
+    if (!dws_msgpack_read_map(&r, &count))
     {
         server.send(id, 400, "text/plain", "expected a MessagePack map");
         return;
     }
     char out[160];
     size_t o = 0;
-    for (size_t i = 0; i < count && msgpack_reader_ok(&r); i++)
+    for (size_t i = 0; i < count && dws_msgpack_reader_ok(&r); i++)
     {
         const char *key;
         size_t klen;
         int64_t val;
-        if (!msgpack_read_str(&r, &key, &klen) || !msgpack_read_int(&r, &val))
+        if (!dws_msgpack_read_str(&r, &key, &klen) || !dws_msgpack_read_int(&r, &val))
             break;
         o += snprintf(out + o, sizeof(out) - o, "%.*s=%lld\n", (int)klen, key, (long long)val);
     }
-    if (!msgpack_reader_ok(&r))
+    if (!dws_msgpack_reader_ok(&r))
     {
         server.send(id, 400, "text/plain", "malformed MessagePack");
         return;
@@ -105,17 +105,17 @@ void setup()
     server.on("/telemetry.msgpack", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         static MpCtx ctx; // static: must outlive send_chunked
         MsgpackWriter w;
-        msgpack_init(&w, ctx.buf, sizeof(ctx.buf));
-        msgpack_map(&w, 3);
-        msgpack_str(&w, "heap");
-        msgpack_uint(&w, ESP.getFreeHeap());
-        msgpack_str(&w, "uptime");
-        msgpack_uint(&w, millis() / 1000);
-        msgpack_str(&w, "rssi");
-        msgpack_int(&w, WiFi.RSSI());
-        ctx.len = msgpack_ok(&w) ? msgpack_len(&w) : 0;
+        dws_msgpack_init(&w, ctx.buf, sizeof(ctx.buf));
+        dws_msgpack_map(&w, 3);
+        dws_msgpack_str(&w, "heap");
+        dws_msgpack_uint(&w, ESP.getFreeHeap());
+        dws_msgpack_str(&w, "uptime");
+        dws_msgpack_uint(&w, millis() / 1000);
+        dws_msgpack_str(&w, "rssi");
+        dws_msgpack_int(&w, WiFi.RSSI());
+        ctx.len = dws_msgpack_ok(&w) ? dws_msgpack_len(&w) : 0;
         ctx.off = 0;
-        server.send_chunked(id, 200, "application/msgpack", msgpack_source, &ctx);
+        server.send_chunked(id, 200, "application/msgpack", dws_msgpack_source, &ctx);
     });
     server.on("/decode", HttpMethod::HTTP_POST, on_decode);
     server.begin(80);

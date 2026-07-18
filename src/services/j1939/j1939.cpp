@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-bool j1939_encode_id(uint32_t *id, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da)
+bool dws_j1939_encode_id(uint32_t *id, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da)
 {
     if (!id || priority > 7 || pgn > 0x3FFFFu)
         return false;
@@ -27,7 +27,7 @@ bool j1939_encode_id(uint32_t *id, uint8_t priority, uint32_t pgn, uint8_t sa, u
     return true;
 }
 
-bool j1939_decode_id(uint32_t id, J1939Id *out)
+bool dws_j1939_decode_id(uint32_t id, J1939Id *out)
 {
     if (!out)
         return false;
@@ -56,7 +56,7 @@ bool j1939_decode_id(uint32_t id, J1939Id *out)
 static bool ext_frame(CanFrame *f, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, uint8_t dlc)
 {
     uint32_t id;
-    if (!j1939_encode_id(&id, priority, pgn, sa, da))
+    if (!dws_j1939_encode_id(&id, priority, pgn, sa, da))
         return false;
     f->id = id;
     f->extended = true;
@@ -66,8 +66,8 @@ static bool ext_frame(CanFrame *f, uint8_t priority, uint32_t pgn, uint8_t sa, u
     return true;
 }
 
-bool j1939_build_message(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
-                         uint8_t len)
+bool dws_j1939_build_message(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
+                             uint8_t len)
 {
     if (!out || len > DWS_CAN_MAX_DLC || (len && !data))
         return false;
@@ -78,7 +78,7 @@ bool j1939_build_message(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t 
     return true;
 }
 
-bool j1939_build_request(CanFrame *out, uint8_t sa, uint8_t da, uint32_t requested_pgn)
+bool dws_j1939_build_request(CanFrame *out, uint8_t sa, uint8_t da, uint32_t requested_pgn)
 {
     if (!out || requested_pgn > 0x3FFFFu)
         return false;
@@ -92,9 +92,9 @@ bool j1939_build_request(CanFrame *out, uint8_t sa, uint8_t da, uint32_t request
     return true;
 }
 
-uint64_t j1939_build_name(bool arbitrary_address_capable, uint8_t industry_group, uint8_t vehicle_system_instance,
-                          uint8_t vehicle_system, uint8_t function, uint8_t function_instance, uint8_t ecu_instance,
-                          uint16_t manufacturer_code, uint32_t identity_number)
+uint64_t dws_j1939_build_name(bool arbitrary_address_capable, uint8_t industry_group, uint8_t vehicle_system_instance,
+                              uint8_t vehicle_system, uint8_t function, uint8_t function_instance, uint8_t ecu_instance,
+                              uint16_t manufacturer_code, uint32_t identity_number)
 {
     // NAME bit layout (J1939-81), LSB first:
     //  [0..20] identity number, [21..31] manufacturer code, [32..34] ECU instance,
@@ -113,7 +113,7 @@ uint64_t j1939_build_name(bool arbitrary_address_capable, uint8_t industry_group
     return n;
 }
 
-bool j1939_build_address_claim(CanFrame *out, uint8_t sa, uint64_t name)
+bool dws_j1939_build_address_claim(CanFrame *out, uint8_t sa, uint64_t name)
 {
     // Address Claimed (priority 6, broadcast): NAME as 8 octets, little-endian.
     if (!ext_frame(out, 6, J1939_PGN_ADDRESS_CLAIM, sa, J1939_ADDR_GLOBAL, 8))
@@ -124,12 +124,12 @@ bool j1939_build_address_claim(CanFrame *out, uint8_t sa, uint64_t name)
     return true;
 }
 
-uint8_t j1939_tp_num_packets(uint16_t total_size)
+uint8_t dws_j1939_tp_num_packets(uint16_t total_size)
 {
     return (uint8_t)((total_size + (J1939_TP_DT_LEN - 1)) / J1939_TP_DT_LEN);
 }
 
-bool j1939_build_bam_cm(CanFrame *out, uint8_t sa, uint32_t pgn, uint16_t total_size)
+bool dws_j1939_build_bam_cm(CanFrame *out, uint8_t sa, uint32_t pgn, uint16_t total_size)
 {
     if (!out || total_size < 9 || total_size > DWS_J1939_TP_MAX || pgn > 0x3FFFFu)
         return false; // BAM is for 9..1785 octet messages
@@ -138,15 +138,15 @@ bool j1939_build_bam_cm(CanFrame *out, uint8_t sa, uint32_t pgn, uint16_t total_
     out->data[0] = J1939_TP_CM_BAM;
     out->data[1] = (uint8_t)total_size; // message size, little-endian
     out->data[2] = (uint8_t)(total_size >> 8);
-    out->data[3] = j1939_tp_num_packets(total_size); // total packets
-    out->data[4] = 0xFF;                             // reserved
-    out->data[5] = (uint8_t)pgn;                     // transported PGN, little-endian
+    out->data[3] = dws_j1939_tp_num_packets(total_size); // total packets
+    out->data[4] = 0xFF;                                 // reserved
+    out->data[5] = (uint8_t)pgn;                         // transported PGN, little-endian
     out->data[6] = (uint8_t)(pgn >> 8);
     out->data[7] = (uint8_t)(pgn >> 16);
     return true;
 }
 
-bool j1939_build_tp_dt(CanFrame *out, uint8_t sa, uint8_t da, uint8_t seq, const uint8_t *chunk, uint8_t chunk_len)
+bool dws_j1939_build_tp_dt(CanFrame *out, uint8_t sa, uint8_t da, uint8_t seq, const uint8_t *chunk, uint8_t chunk_len)
 {
     if (!out || seq == 0 || chunk_len == 0 || chunk_len > J1939_TP_DT_LEN || !chunk)
         return false;
@@ -157,18 +157,18 @@ bool j1939_build_tp_dt(CanFrame *out, uint8_t sa, uint8_t da, uint8_t seq, const
     return true;
 }
 
-void j1939_tp_reset(J1939TpRx *rx)
+void dws_j1939_tp_reset(J1939TpRx *rx)
 {
     if (rx)
         memset(rx, 0, sizeof(*rx));
 }
 
-J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
+J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
 {
     if (!rx || !f || !f->extended)
         return J1939TpResult::J1939_TP_IGNORED;
     J1939Id id;
-    if (!j1939_decode_id(f->id, &id))
+    if (!dws_j1939_decode_id(f->id, &id))
         return J1939TpResult::J1939_TP_IGNORED; // GCOVR_EXCL_LINE  unreachable: decode_id only fails on a null out, and
                                                 // &id is non-null
 
@@ -180,7 +180,7 @@ J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
         uint16_t total = (uint16_t)(f->data[1] | (f->data[2] << 8));
         uint8_t packets = f->data[3];
         uint32_t pgn = (uint32_t)f->data[5] | ((uint32_t)f->data[6] << 8) | ((uint32_t)f->data[7] << 16);
-        if (total < 9 || total > DWS_J1939_TP_MAX || packets != j1939_tp_num_packets(total))
+        if (total < 9 || total > DWS_J1939_TP_MAX || packets != dws_j1939_tp_num_packets(total))
             return J1939TpResult::J1939_TP_ERROR;
         rx->active = true;
         rx->sa = id.sa;
@@ -199,7 +199,7 @@ J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
         uint8_t seq = f->data[0];
         if (seq != rx->next_seq)
         {
-            j1939_tp_reset(rx);
+            dws_j1939_tp_reset(rx);
             return J1939TpResult::J1939_TP_ERROR; // out-of-sequence: abort the session
         }
         uint16_t remaining = (uint16_t)(rx->total_size - rx->received);

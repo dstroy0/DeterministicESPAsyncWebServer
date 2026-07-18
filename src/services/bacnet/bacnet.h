@@ -61,10 +61,10 @@
 // ---- BVLC ----
 
 /** @brief Wrap an NPDU in a BVLC envelope. Returns total octets, or 0 on overflow. */
-size_t bvlc_build(uint8_t *buf, size_t cap, uint8_t function, const uint8_t *npdu, size_t npdu_len);
+size_t dws_bvlc_build(uint8_t *buf, size_t cap, uint8_t function, const uint8_t *npdu, size_t dws_npdu_len);
 
 /** @brief Parse a BVLC envelope; reports the function and the NPDU slice. */
-bool bvlc_parse(const uint8_t *buf, size_t len, uint8_t *function, const uint8_t **npdu, size_t *npdu_len);
+bool dws_bvlc_parse(const uint8_t *buf, size_t len, uint8_t *function, const uint8_t **npdu, size_t *dws_npdu_len);
 
 // ---- NPDU ----
 
@@ -73,8 +73,8 @@ bool bvlc_parse(const uint8_t *buf, size_t len, uint8_t *function, const uint8_t
  *        (DNET / DLEN / DADR) and the hop count are emitted (DLEN 0 + @p dnet 0xFFFF is a
  *        remote/global broadcast).
  */
-size_t npdu_build(uint8_t *buf, size_t cap, bool expecting_reply, uint8_t priority, bool has_dest, uint16_t dnet,
-                  const uint8_t *dadr, uint8_t dadr_len, uint8_t hop_count, const uint8_t *apdu, size_t apdu_len);
+size_t dws_npdu_build(uint8_t *buf, size_t cap, bool expecting_reply, uint8_t priority, bool has_dest, uint16_t dnet,
+                      const uint8_t *dadr, uint8_t dadr_len, uint8_t hop_count, const uint8_t *apdu, size_t apdu_len);
 
 /** @brief A parsed NPDU. @ref apdu points INTO the source buffer. */
 struct NpduInfo
@@ -91,7 +91,7 @@ struct NpduInfo
 };
 
 /** @brief Parse + validate an NPDU (version, control, optional addressing) and slice the APDU. */
-bool npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out);
+bool dws_npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out);
 
 #endif // DWS_ENABLE_BACNET
 

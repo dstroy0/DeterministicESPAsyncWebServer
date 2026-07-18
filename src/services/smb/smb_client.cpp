@@ -131,8 +131,8 @@ static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx)
 {
     uint8_t guid[16];
     esp_fill_random(guid, 16);
-    size_t mlen = smb2_build_negotiate(s_smb.tx + 4, sizeof(s_smb.tx) - 4, guid,
-                                       Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED);
+    size_t mlen = dws_smb2_build_negotiate(s_smb.tx + 4, sizeof(s_smb.tx) - 4, guid,
+                                           Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED);
     if (!mlen)
         return SmbResult::SMB_ERR_OVERFLOW;
     SmbResult rt = SmbResult::SMB_ERR_IO;
@@ -140,7 +140,7 @@ static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx)
     if (rl < 0)
         return rt;
     Smb2NegotiateResp neg;
-    if (!smb2_parse_negotiate_response(s_smb.rx, (size_t)rl, &neg))
+    if (!dws_smb2_parse_negotiate_response(s_smb.rx, (size_t)rl, &neg))
         return SmbResult::SMB_ERR_PROTOCOL;
     return SmbResult::SMB_OK;
 }
@@ -153,10 +153,10 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, Smb
     // 2. SESSION_SETUP round 1: NTLMSSP NEGOTIATE wrapped in SPNEGO
     uint8_t ntneg[64];
     uint8_t sp1[128];
-    size_t ntneg_n = ntlmssp_build_negotiate(ntneg, sizeof(ntneg), NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS);
-    size_t sp1_n = spnego_wrap_negotiate(ntneg, ntneg_n, sp1, sizeof(sp1));
-    size_t mlen = smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 1, 0,
-                                           Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, sp1, sp1_n);
+    size_t ntneg_n = dws_ntlmssp_build_negotiate(ntneg, sizeof(ntneg), NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS);
+    size_t sp1_n = dws_spnego_wrap_negotiate(ntneg, ntneg_n, sp1, sizeof(sp1));
+    size_t mlen = dws_smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 1, 0,
+                                               Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, sp1, sp1_n);
     if (!mlen)
         return SmbResult::SMB_ERR_OVERFLOW;
     SmbResult rt = SmbResult::SMB_ERR_IO;
@@ -164,53 +164,54 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, Smb
     if (rl < 0)
         return rt;
     Smb2Header h1;
-    if (!smb2_parse_header(s_smb.rx, (size_t)rl, &h1) || h1.status != Smb2Status::SMB2_STATUS_MORE_PROCESSING_REQUIRED)
+    if (!dws_smb2_parse_header(s_smb.rx, (size_t)rl, &h1) ||
+        h1.status != Smb2Status::SMB2_STATUS_MORE_PROCESSING_REQUIRED)
         return SmbResult::SMB_ERR_AUTH;
     *session_id = h1.session_id;
     Smb2SessionSetupResp ss1;
-    if (!smb2_parse_session_setup_response(s_smb.rx, (size_t)rl, &ss1) || !ss1.sec_buf)
+    if (!dws_smb2_parse_session_setup_response(s_smb.rx, (size_t)rl, &ss1) || !ss1.sec_buf)
         return SmbResult::SMB_ERR_PROTOCOL;
     const uint8_t *chal_tok = nullptr;
     size_t chal_len = 0;
-    if (!spnego_parse_response(ss1.sec_buf, ss1.sec_buf_len, &chal_tok, &chal_len))
+    if (!dws_spnego_parse_response(ss1.sec_buf, ss1.sec_buf_len, &chal_tok, &chal_len))
         return SmbResult::SMB_ERR_PROTOCOL;
     NtlmChallenge ch;
-    if (!ntlmssp_parse_challenge(chal_tok, chal_len, &ch))
+    if (!dws_ntlmssp_parse_challenge(chal_tok, chal_len, &ch))
         return SmbResult::SMB_ERR_PROTOCOL;
 
     // 3. Compute the NTLMv2 response, wrap the AUTHENTICATE in SPNEGO
     uint8_t nt_hash[16];
     uint8_t owf[16];
-    ntlm_nt_hash(cfg->pass, nt_hash);
-    if (!ntlm_ntowfv2(nt_hash, cfg->user, domain, owf))
+    dws_ntlm_nt_hash(cfg->pass, nt_hash);
+    if (!dws_ntlm_ntowfv2(nt_hash, cfg->user, domain, owf))
         return SmbResult::SMB_ERR_OVERFLOW;
     uint8_t cli_chal[8];
     uint8_t ts[8];
     uint8_t skey[16];
     esp_fill_random(cli_chal, 8);
     find_av_timestamp(ch.target_info, ch.target_info_len, ts);
-    size_t nt_len = ntlm_v2_response(owf, ch.server_challenge, cli_chal, ts, ch.target_info, ch.target_info_len,
-                                     s_smb.nt_resp, sizeof(s_smb.nt_resp), skey);
+    size_t nt_len = dws_ntlm_v2_response(owf, ch.server_challenge, cli_chal, ts, ch.target_info, ch.target_info_len,
+                                         s_smb.nt_resp, sizeof(s_smb.nt_resp), skey);
     if (!nt_len)
         return SmbResult::SMB_ERR_OVERFLOW;
-    size_t ntauth_n = ntlmssp_build_authenticate(s_smb.ntauth, sizeof(s_smb.ntauth), nullptr, 0, s_smb.nt_resp, nt_len,
-                                                 domain, cfg->user, cfg->workstation, ch.flags);
+    size_t ntauth_n = dws_ntlmssp_build_authenticate(s_smb.ntauth, sizeof(s_smb.ntauth), nullptr, 0, s_smb.nt_resp,
+                                                     nt_len, domain, cfg->user, cfg->workstation, ch.flags);
     if (!ntauth_n)
         return SmbResult::SMB_ERR_OVERFLOW;
-    size_t sp2_n = spnego_wrap_authenticate(s_smb.ntauth, ntauth_n, s_smb.sp2, sizeof(s_smb.sp2));
+    size_t sp2_n = dws_spnego_wrap_authenticate(s_smb.ntauth, ntauth_n, s_smb.sp2, sizeof(s_smb.sp2));
     if (!sp2_n)
         return SmbResult::SMB_ERR_OVERFLOW;
 
     // 4. SESSION_SETUP round 2 (echo the server SessionId)
-    mlen = smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 2, *session_id,
-                                    Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, s_smb.sp2, sp2_n);
+    mlen = dws_smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 2, *session_id,
+                                        Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, s_smb.sp2, sp2_n);
     if (!mlen)
         return SmbResult::SMB_ERR_OVERFLOW;
     rl = smb_round_trip(send, recv, ctx, mlen, &rt);
     if (rl < 0)
         return rt;
     Smb2Header h2;
-    if (!smb2_parse_header(s_smb.rx, (size_t)rl, &h2))
+    if (!dws_smb2_parse_header(s_smb.rx, (size_t)rl, &h2))
         return SmbResult::SMB_ERR_PROTOCOL;
     if (h2.status != Smb2Status::SMB2_STATUS_SUCCESS)
         return SmbResult::SMB_ERR_AUTH;
@@ -224,7 +225,7 @@ static SmbResult smb_tree_connect(const SmbConfig *cfg, uint64_t session_id, Smb
     size_t utf16_n = utf16le(cfg->share, s_smb.utf16, sizeof(s_smb.utf16));
     if (!utf16_n)
         return SmbResult::SMB_ERR_OVERFLOW;
-    size_t mlen = smb2_build_tree_connect(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 3, session_id, s_smb.utf16, utf16_n);
+    size_t mlen = dws_smb2_build_tree_connect(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 3, session_id, s_smb.utf16, utf16_n);
     if (!mlen)
         return SmbResult::SMB_ERR_OVERFLOW;
     SmbResult rt = SmbResult::SMB_ERR_IO;
@@ -233,9 +234,9 @@ static SmbResult smb_tree_connect(const SmbConfig *cfg, uint64_t session_id, Smb
         return rt;
     Smb2Header h3;
     Smb2TreeConnectResp tc;
-    if (!smb2_parse_header(s_smb.rx, (size_t)rl, &h3) || h3.status != Smb2Status::SMB2_STATUS_SUCCESS)
+    if (!dws_smb2_parse_header(s_smb.rx, (size_t)rl, &h3) || h3.status != Smb2Status::SMB2_STATUS_SUCCESS)
         return SmbResult::SMB_ERR_PROTOCOL;
-    if (!smb2_parse_tree_connect_response(s_smb.rx, (size_t)rl, &tc))
+    if (!dws_smb2_parse_tree_connect_response(s_smb.rx, (size_t)rl, &tc))
         return SmbResult::SMB_ERR_PROTOCOL;
     *tree_id = h3.tree_id;
     return SmbResult::SMB_OK;
@@ -249,9 +250,9 @@ static SmbResult smb_create(const SmbConfig *cfg, SmbHandle *h, uint64_t session
     if (!utf16_n)
         return SmbResult::SMB_ERR_OVERFLOW;
     size_t mlen =
-        smb2_build_create(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 4, session_id, tree_id, cfg->desired_access,
-                          Smb2ShareAccess::SMB2_FILE_SHARE_READ | Smb2ShareAccess::SMB2_FILE_SHARE_WRITE,
-                          cfg->disposition, Smb2CreateOptions::SMB2_FILE_NON_DIRECTORY_FILE, s_smb.utf16, utf16_n);
+        dws_smb2_build_create(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 4, session_id, tree_id, cfg->desired_access,
+                              Smb2ShareAccess::SMB2_FILE_SHARE_READ | Smb2ShareAccess::SMB2_FILE_SHARE_WRITE,
+                              cfg->disposition, Smb2CreateOptions::SMB2_FILE_NON_DIRECTORY_FILE, s_smb.utf16, utf16_n);
     if (!mlen)
         return SmbResult::SMB_ERR_OVERFLOW;
     SmbResult rt = SmbResult::SMB_ERR_IO;
@@ -260,9 +261,9 @@ static SmbResult smb_create(const SmbConfig *cfg, SmbHandle *h, uint64_t session
         return rt;
     Smb2Header h4;
     Smb2CreateResp cr;
-    if (!smb2_parse_header(s_smb.rx, (size_t)rl, &h4) || h4.status != Smb2Status::SMB2_STATUS_SUCCESS)
+    if (!dws_smb2_parse_header(s_smb.rx, (size_t)rl, &h4) || h4.status != Smb2Status::SMB2_STATUS_SUCCESS)
         return SmbResult::SMB_ERR_PROTOCOL;
-    if (!smb2_parse_create_response(s_smb.rx, (size_t)rl, &cr))
+    if (!dws_smb2_parse_create_response(s_smb.rx, (size_t)rl, &cr))
         return SmbResult::SMB_ERR_PROTOCOL;
     h->session_id = session_id;
     h->tree_id = tree_id;
@@ -302,7 +303,8 @@ SmbResult smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx)
         return SmbResult::SMB_ERR_ARG;
     uint8_t tx[128];
     uint8_t rx[128];
-    size_t mlen = smb2_build_close(tx + 4, sizeof(tx) - 4, h->next_message_id, h->session_id, h->tree_id, h->file_id);
+    size_t mlen =
+        dws_smb2_build_close(tx + 4, sizeof(tx) - 4, h->next_message_id, h->session_id, h->tree_id, h->file_id);
     if (!mlen)
         return SmbResult::SMB_ERR_OVERFLOW;
     if (!send_msg(send, ctx, tx, mlen))
@@ -312,9 +314,9 @@ SmbResult smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx)
         return rl == -2 ? SmbResult::SMB_ERR_OVERFLOW : SmbResult::SMB_ERR_IO;
     Smb2Header hd;
     Smb2CloseResp cl;
-    if (!smb2_parse_header(rx, (size_t)rl, &hd) || hd.status != Smb2Status::SMB2_STATUS_SUCCESS)
+    if (!dws_smb2_parse_header(rx, (size_t)rl, &hd) || hd.status != Smb2Status::SMB2_STATUS_SUCCESS)
         return SmbResult::SMB_ERR_PROTOCOL;
-    if (!smb2_parse_close_response(rx, (size_t)rl, &cl))
+    if (!dws_smb2_parse_close_response(rx, (size_t)rl, &cl))
         return SmbResult::SMB_ERR_PROTOCOL;
     h->next_message_id++;
     return SmbResult::SMB_OK;
@@ -333,8 +335,8 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
         size_t want = cap - total;
         if (want > chunk_max)
             want = chunk_max;
-        size_t mlen = smb2_build_read(s_smb.tx + 4, sizeof(s_smb.tx) - 4, h->next_message_id, h->session_id, h->tree_id,
-                                      h->file_id, (uint32_t)want, offset + total);
+        size_t mlen = dws_smb2_build_read(s_smb.tx + 4, sizeof(s_smb.tx) - 4, h->next_message_id, h->session_id,
+                                          h->tree_id, h->file_id, (uint32_t)want, offset + total);
         if (!mlen)
             return SmbResult::SMB_ERR_OVERFLOW;
         SmbResult rt = SmbResult::SMB_ERR_IO;
@@ -342,7 +344,7 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
         if (rl < 0)
             return rt;
         Smb2Header hd;
-        if (!smb2_parse_header(s_smb.rx, (size_t)rl, &hd))
+        if (!dws_smb2_parse_header(s_smb.rx, (size_t)rl, &hd))
             return SmbResult::SMB_ERR_PROTOCOL;
         h->next_message_id++;
         if (hd.status == Smb2Status::SMB2_STATUS_END_OF_FILE)
@@ -350,7 +352,7 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
         if (hd.status != Smb2Status::SMB2_STATUS_SUCCESS)
             return SmbResult::SMB_ERR_PROTOCOL;
         Smb2ReadResp r;
-        if (!smb2_parse_read_response(s_smb.rx, (size_t)rl, &r) || r.data_len > want)
+        if (!dws_smb2_parse_read_response(s_smb.rx, (size_t)rl, &r) || r.data_len > want)
             return SmbResult::SMB_ERR_PROTOCOL;
         if (r.data_len == 0)
             break;
@@ -376,8 +378,8 @@ SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t l
         size_t want = len - total;
         if (want > chunk_max)
             want = chunk_max;
-        size_t mlen = smb2_build_write(s_smb.tx + 4, sizeof(s_smb.tx) - 4, h->next_message_id, h->session_id,
-                                       h->tree_id, h->file_id, data + total, want, offset + total);
+        size_t mlen = dws_smb2_build_write(s_smb.tx + 4, sizeof(s_smb.tx) - 4, h->next_message_id, h->session_id,
+                                           h->tree_id, h->file_id, data + total, want, offset + total);
         if (!mlen)
             return SmbResult::SMB_ERR_OVERFLOW;
         if (!send_msg(send, ctx, s_smb.tx, mlen))
@@ -386,13 +388,13 @@ SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t l
         if (rl < 0)
             return rl == -2 ? SmbResult::SMB_ERR_OVERFLOW : SmbResult::SMB_ERR_IO;
         Smb2Header hd;
-        if (!smb2_parse_header(s_smb.rx, (size_t)rl, &hd))
+        if (!dws_smb2_parse_header(s_smb.rx, (size_t)rl, &hd))
             return SmbResult::SMB_ERR_PROTOCOL;
         h->next_message_id++;
         if (hd.status != Smb2Status::SMB2_STATUS_SUCCESS)
             return SmbResult::SMB_ERR_PROTOCOL;
         Smb2WriteResp w;
-        if (!smb2_parse_write_response(s_smb.rx, (size_t)rl, &w) || w.count == 0 || w.count > want)
+        if (!dws_smb2_parse_write_response(s_smb.rx, (size_t)rl, &w) || w.count == 0 || w.count > want)
             return SmbResult::SMB_ERR_PROTOCOL; // no progress or a bogus count
         total += w.count;
     }

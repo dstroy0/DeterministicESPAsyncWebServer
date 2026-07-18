@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_DF1
 
-uint8_t df1_bcc(const uint8_t *data, size_t len)
+uint8_t dws_df1_bcc(const uint8_t *data, size_t len)
 {
     uint8_t s = 0;
     for (size_t i = 0; i < len; i++)
@@ -30,12 +30,12 @@ static uint16_t crc16(uint16_t crc, const uint8_t *data, size_t len)
     return crc;
 }
 
-uint16_t df1_crc(const uint8_t *data, size_t len)
+uint16_t dws_df1_crc(const uint8_t *data, size_t len)
 {
     return crc16(0x0000, data, len);
 }
 
-size_t df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_len, Df1Check check)
+size_t dws_df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_len, Df1Check check)
 {
     if (!buf || (data_len && !data))
         return 0;
@@ -70,12 +70,12 @@ size_t df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t dat
     }
     else
     {
-        buf[p++] = df1_bcc(data, data_len); // BCC excludes the ETX
+        buf[p++] = dws_df1_bcc(data, data_len); // BCC excludes the ETX
     }
     return p;
 }
 
-bool df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *out, size_t out_cap, size_t *out_len)
+bool dws_df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *out, size_t out_cap, size_t *out_len)
 {
     size_t checklen = (check == Df1Check::DF1_CHECK_CRC) ? 2 : 1;
     if (!buf || !out || len < 4 + checklen) // DLE STX DLE ETX + check
@@ -134,7 +134,7 @@ bool df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *ou
     {
         if (i + 1 > len)
             return false;
-        if (df1_bcc(out, o) != buf[i])
+        if (dws_df1_bcc(out, o) != buf[i])
             return false;
     }
     if (out_len)

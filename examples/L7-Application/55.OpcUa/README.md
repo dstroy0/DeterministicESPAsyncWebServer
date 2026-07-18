@@ -17,7 +17,7 @@ just another protocol on its own port, sharing the HTTP server's pool and event 
 for a node id (false -> `BadNodeIdUnknown`):
 
 ```cpp
-static bool opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out) {
+static bool dws_opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out) {
     if (ns != 1 || attribute != OPCUA_ATTR_VALUE) return false;
     switch (id) {
     case 1:  out->type = OPCUA_VAR_UINT32; out->u32 = millis() / 1000;    return true; // Uptime
@@ -32,7 +32,7 @@ Write returns an OPC UA StatusCode - `0` (Good) on success, or a Bad code the cl
 surfaces:
 
 ```cpp
-static uint32_t opcua_write(uint16_t ns, uint32_t id, uint32_t attribute, const OpcUaVariant *value) {
+static uint32_t dws_opcua_write(uint16_t ns, uint32_t id, uint32_t attribute, const OpcUaVariant *value) {
     if (ns == 1 && id == 10 && attribute == OPCUA_ATTR_VALUE && value->type == OPCUA_VAR_UINT32) {
         setpoint = value->u32; return 0; // Good
     }
@@ -46,9 +46,9 @@ variables show up in a client's address-space tree.
 **Register the handlers, then listen before `begin()`:**
 
 ```cpp
-opcua_set_read_handler(opcua_read);
-opcua_set_write_handler(opcua_write);
-opcua_set_browse_handler(opcua_browse);
+dws_opcua_set_read_handler(dws_opcua_read);
+dws_opcua_set_write_handler(dws_opcua_write);
+dws_opcua_set_browse_handler(dws_opcua_browse);
 server.listen(4840, PROTO_OPCUA); // before begin() - it activates the listeners
 server.begin(80);
 ```
@@ -91,7 +91,7 @@ static uint32_t setpoint = 100; // a writable variable, exposed at ns=1;i=10
 // Read resolver: map a tiny address space (namespace 1) onto live values. A client
 // Reads node ns=1;i=1 (uptime), i=2 (free heap), i=3 (a Double) or i=10 (the writable
 // setpoint). Return false for anything else and the server answers BadNodeIdUnknown.
-static bool opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out)
+static bool dws_opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out)
 {
     if (ns != 1 || attribute != OPCUA_ATTR_VALUE)
         return false;
@@ -120,7 +120,7 @@ static bool opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVarian
 
 // Write resolver: only ns=1;i=10 (the setpoint) is writable. Returns a StatusCode -
 // Good (0) on success, or a Bad code the client surfaces as the write result.
-static uint32_t opcua_write(uint16_t ns, uint32_t id, uint32_t attribute, const OpcUaVariant *value)
+static uint32_t dws_opcua_write(uint16_t ns, uint32_t id, uint32_t attribute, const OpcUaVariant *value)
 {
     if (ns == 1 && id == 10 && attribute == OPCUA_ATTR_VALUE && value->type == OPCUA_VAR_UINT32)
     {
@@ -132,7 +132,7 @@ static uint32_t opcua_write(uint16_t ns, uint32_t id, uint32_t attribute, const 
 
 // Browse resolver: the standard Objects folder (ns=0;i=85) organizes our three
 // variables (ns=1;i=1..3). Browsing anything else is BadNodeIdUnknown.
-static int32_t opcua_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
+static int32_t dws_opcua_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
 {
     if (ns != 0 || id != 85) // i=85 == Objects folder
         return -1;
@@ -164,9 +164,9 @@ void setup()
     WiFi.setSleep(false);
 
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA on :4840"); });
-    opcua_set_read_handler(opcua_read);     // serve Reads for ns=1;i=1..3,10
-    opcua_set_write_handler(opcua_write);   // accept Writes to ns=1;i=10 (the setpoint)
-    opcua_set_browse_handler(opcua_browse); // list those under the Objects folder
+    dws_opcua_set_read_handler(dws_opcua_read);     // serve Reads for ns=1;i=1..3,10
+    dws_opcua_set_write_handler(dws_opcua_write);   // accept Writes to ns=1;i=10 (the setpoint)
+    dws_opcua_set_browse_handler(dws_opcua_browse); // list those under the Objects folder
     server.listen(4840, PROTO_OPCUA);       // OPC UA Binary endpoint - before begin() (it activates listeners)
     server.begin(80);
     Serial.println("OPC UA endpoint: opc.tcp://<ip>:4840 (handshake + SecureChannel + Session + Read/Write + Browse)");

@@ -15,12 +15,12 @@ objects (static, dynamic via a getter, or writable via a setter), then start the
 agent:
 
 ```cpp
-snmp_agent_init("public");              // read-only community
-snmp_agent_set_rw_community("private"); // authorizes Set
-snmp_agent_set_system("...desc...", "admin@example.com", "esp32-detws", "lab bench");
-snmp_agent_add_dynamic(OID_FREE_HEAP, 9, SNMP_GAUGE32, get_free_heap); // computed each Get
-snmp_agent_add_integer(OID_LED, 9, 0, set_led);                        // writable
-snmp_agent_begin_udp(161);
+dws_snmp_agent_init("public");              // read-only community
+dws_snmp_agent_set_rw_community("private"); // authorizes Set
+dws_snmp_agent_set_system("...desc...", "admin@example.com", "esp32-detws", "lab bench");
+dws_snmp_agent_add_dynamic(OID_FREE_HEAP, 9, SNMP_GAUGE32, get_free_heap); // computed each Get
+dws_snmp_agent_add_integer(OID_LED, 9, 0, set_led);                        // writable
+dws_snmp_agent_begin_udp(161);
 ```
 
 **Dynamic + writable objects.** A dynamic getter fills an `SnmpValue` on each Get;
@@ -36,8 +36,8 @@ bool set_led(const SnmpValue *in) {
 ```
 
 **Optional SNMPv3 (USM).** Adding `-DDWS_ENABLE_SNMP_V3=1` enables an authPriv
-user (HMAC-SHA-256 auth + AES-128 privacy): `snmp_v3_init` / `snmp_v3_set_boots` /
-`snmp_v3_set_user`. For outbound trap notifications, see
+user (HMAC-SHA-256 auth + AES-128 privacy): `dws_snmp_v3_init` / `dws_snmp_v3_set_boots` /
+`dws_snmp_v3_set_user`. For outbound trap notifications, see
 [26.SnmpTrap](../26.SnmpTrap).
 
 ## Build and run
@@ -124,23 +124,23 @@ void setup()
     WiFi.setSleep(false);
 
     // Build the MIB: standard system group + private objects.
-    snmp_agent_init("public");              // read-only community
-    snmp_agent_set_rw_community("private"); // read-write community (authorizes Set)
-    snmp_agent_set_system("DeterministicESPAsyncWebServer SNMP agent", "admin@example.com", "esp32-detws", "lab bench");
-    snmp_agent_add_dynamic(OID_FREE_HEAP, 9, SNMP_GAUGE32, get_free_heap);
-    snmp_agent_add_integer(OID_LED, 9, 0, set_led); // writable
+    dws_snmp_agent_init("public");              // read-only community
+    dws_snmp_agent_set_rw_community("private"); // read-write community (authorizes Set)
+    dws_snmp_agent_set_system("DeterministicESPAsyncWebServer SNMP agent", "admin@example.com", "esp32-detws", "lab bench");
+    dws_snmp_agent_add_dynamic(OID_FREE_HEAP, 9, SNMP_GAUGE32, get_free_heap);
+    dws_snmp_agent_add_integer(OID_LED, 9, 0, set_led); // writable
 
 #if DWS_ENABLE_SNMP_V3
     // SNMPv3 USM: a single authPriv user (HMAC-SHA-256 + AES-128). For a unique
     // engine ID, derive it from the chip MAC; persist/increment engineBoots in NVS.
-    snmp_v3_init(nullptr, 0);
-    snmp_v3_set_boots(1);
-    snmp_v3_set_user("detws", "authpass12", "privpass12");
+    dws_snmp_v3_init(nullptr, 0);
+    dws_snmp_v3_set_boots(1);
+    dws_snmp_v3_set_user("detws", "authpass12", "privpass12");
     Serial.println("SNMPv3 user 'detws' enabled (authPriv: SHA-256 / AES-128)");
 #endif
 
     // Bind the agent to UDP/161 (raw lwIP, callback-driven).
-    snmp_agent_begin_udp(161);
+    dws_snmp_agent_begin_udp(161);
     Serial.println("SNMP agent listening on UDP/161 (try: snmpwalk -v2c -c public <ip> system)");
 
     int32_t result = server.begin(80);

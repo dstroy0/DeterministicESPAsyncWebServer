@@ -20,7 +20,7 @@ void tearDown()
 void test_build_open()
 {
     uint8_t buf[32];
-    size_t n = focas_build_open(buf, sizeof(buf));
+    size_t n = dws_focas_build_open(buf, sizeof(buf));
     const uint8_t expect[] = {0xA0, 0xA0, 0xA0, 0xA0, 0x00, 0x01, 0x01, 0x01, 0x00, 0x02, 0x00, 0x02};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_size_t(12, n);
@@ -31,7 +31,7 @@ void test_build_open()
 void test_build_close()
 {
     uint8_t buf[32];
-    size_t n = focas_build_close(buf, sizeof(buf));
+    size_t n = dws_focas_build_close(buf, sizeof(buf));
     const uint8_t expect[] = {0xA0, 0xA0, 0xA0, 0xA0, 0x00, 0x01, 0x02, 0x01, 0x00, 0x00};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
@@ -41,7 +41,7 @@ void test_build_close()
 void test_build_sysinfo()
 {
     uint8_t buf[64];
-    size_t n = focas_build_sysinfo(buf, sizeof(buf));
+    size_t n = dws_focas_build_sysinfo(buf, sizeof(buf));
     const uint8_t expect[] = {
         0xA0, 0xA0, 0xA0, 0xA0,             // magic
         0x00, 0x01,                         // version 1
@@ -63,7 +63,7 @@ void test_build_sysinfo()
 void test_build_read_position()
 {
     uint8_t buf[64];
-    size_t n = focas_build_read_position(buf, sizeof(buf), FocasPosKind::absolute, 0);
+    size_t n = dws_focas_build_read_position(buf, sizeof(buf), FocasPosKind::absolute, 0);
     TEST_ASSERT_EQUAL_size_t(36, n);
     TEST_ASSERT_EQUAL_HEX8(0x21, buf[6]);  // command frame
     TEST_ASSERT_EQUAL_HEX8(0x26, buf[15]); // c3 = 0x26
@@ -78,7 +78,7 @@ void test_build_read_position()
 void test_build_read_param()
 {
     uint8_t buf[64];
-    size_t n = focas_build_read_param(buf, sizeof(buf), 6510, 6510, 1);
+    size_t n = dws_focas_build_read_param(buf, sizeof(buf), 6510, 6510, 1);
     TEST_ASSERT_EQUAL_size_t(36, n);
     TEST_ASSERT_EQUAL_HEX8(0x0E, buf[15]); // c3 = 0x0e
     // v1 = 6510 = 0x0000196E at buf offset 16.
@@ -98,7 +98,8 @@ void test_build_request_extra()
 {
     uint8_t buf[64];
     const uint8_t extra[] = {0xAA, 0xBB, 0xCC};
-    size_t n = focas_build_request(buf, sizeof(buf), FocasCommand::set_macro, 500, 0, 0, 0, 0, extra, sizeof(extra));
+    size_t n =
+        dws_focas_build_request(buf, sizeof(buf), FocasCommand::set_macro, 500, 0, 0, 0, 0, extra, sizeof(extra));
     TEST_ASSERT_EQUAL_size_t(10 + 26 + 3, n);
     // payload length field = 26 + 3 = 29.
     TEST_ASSERT_EQUAL_HEX8(0x00, buf[8]);
@@ -127,7 +128,7 @@ void test_parse_sysinfo_response()
         0x30, 0x33                          // axes "03"
     };
     FocasResponse resp;
-    TEST_ASSERT_TRUE(focas_parse_command_frame(frame, sizeof(frame), &resp));
+    TEST_ASSERT_TRUE(dws_focas_parse_command_frame(frame, sizeof(frame), &resp));
     TEST_ASSERT_EQUAL_UINT16(1, resp.c1);
     TEST_ASSERT_EQUAL_UINT16(1, resp.c2);
     TEST_ASSERT_EQUAL_UINT16(0x18, resp.c3);
@@ -135,7 +136,7 @@ void test_parse_sysinfo_response()
     TEST_ASSERT_EQUAL_UINT16(18, resp.data_len);
 
     FocasSysInfo si;
-    TEST_ASSERT_TRUE(focas_parse_sysinfo(resp.data, resp.data_len, &si));
+    TEST_ASSERT_TRUE(dws_focas_parse_sysinfo(resp.data, resp.data_len, &si));
     TEST_ASSERT_EQUAL_UINT16(0, si.add_info);
     TEST_ASSERT_EQUAL_UINT16(8, si.max_axis);
     TEST_ASSERT_EQUAL_STRING("30", si.cnc_type);
@@ -156,12 +157,12 @@ void test_parse_alarm_and_status()
         0x00, 0x00, 0x00, 0x10                                      // alarm bitmask, bit 4
     };
     FocasResponse resp;
-    TEST_ASSERT_TRUE(focas_parse_command_frame(frame, sizeof(frame), &resp));
+    TEST_ASSERT_TRUE(dws_focas_parse_command_frame(frame, sizeof(frame), &resp));
     TEST_ASSERT_EQUAL_UINT16(0x1A, resp.c3);
     TEST_ASSERT_EQUAL_INT16(-10, resp.status); // signed return code
 
     uint32_t alarm = 0;
-    TEST_ASSERT_TRUE(focas_parse_alarm(resp.data, resp.data_len, &alarm));
+    TEST_ASSERT_TRUE(dws_focas_parse_alarm(resp.data, resp.data_len, &alarm));
     TEST_ASSERT_EQUAL_HEX32(0x00000010, alarm);
 }
 
@@ -171,63 +172,63 @@ void test_decode8_value()
     // 123.456 mm = 123456 / 10^3.
     const uint8_t v[] = {0x00, 0x01, 0xE2, 0x40, 0x00, 0x0A, 0x00, 0x03};
     FocasValue fv;
-    TEST_ASSERT_TRUE(focas_decode8(v, sizeof(v), &fv));
+    TEST_ASSERT_TRUE(dws_focas_decode8(v, sizeof(v), &fv));
     TEST_ASSERT_TRUE(fv.valid);
     TEST_ASSERT_EQUAL_INT32(123456, fv.data);
     TEST_ASSERT_EQUAL_UINT8(10, fv.base);
     TEST_ASSERT_EQUAL_UINT8(3, fv.exp);
-    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 123.456f, focas_value_f(&fv));
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 123.456f, dws_focas_value_f(&fv));
 
     // Negative: -5.00 = -500 / 10^2.
     const uint8_t neg[] = {0xFF, 0xFF, 0xFE, 0x0C, 0x00, 0x0A, 0x00, 0x02};
     FocasValue nv;
-    TEST_ASSERT_TRUE(focas_decode8(neg, sizeof(neg), &nv));
+    TEST_ASSERT_TRUE(dws_focas_decode8(neg, sizeof(neg), &nv));
     TEST_ASSERT_EQUAL_INT32(-500, nv.data);
-    TEST_ASSERT_FLOAT_WITHIN(0.0005f, -5.0f, focas_value_f(&nv));
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, -5.0f, dws_focas_value_f(&nv));
 
     // 0xFFFF sentinel in octets 6-7 -> no value.
     const uint8_t none[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0xFF, 0xFF};
     FocasValue none_v;
-    TEST_ASSERT_FALSE(focas_decode8(none, sizeof(none), &none_v));
+    TEST_ASSERT_FALSE(dws_focas_decode8(none, sizeof(none), &none_v));
     TEST_ASSERT_FALSE(none_v.valid);
-    TEST_ASSERT_EQUAL_FLOAT(0.0f, focas_value_f(&none_v));
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, dws_focas_value_f(&none_v));
 }
 
 void test_build_overflow_fails_closed()
 {
     uint8_t tiny[8]; // open needs 12
-    TEST_ASSERT_EQUAL_size_t(0, focas_build_open(tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_focas_build_open(tiny, sizeof(tiny)));
     uint8_t small[20]; // sysinfo needs 36
-    TEST_ASSERT_EQUAL_size_t(0, focas_build_sysinfo(small, sizeof(small)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_focas_build_sysinfo(small, sizeof(small)));
 }
 
 void test_parse_guards()
 {
     FocasFrame f;
-    TEST_ASSERT_FALSE(focas_parse_frame(nullptr, 32, &f));
+    TEST_ASSERT_FALSE(dws_focas_parse_frame(nullptr, 32, &f));
     const uint8_t shortbuf[6] = {0xA0, 0xA0, 0xA0, 0xA0, 0x00, 0x01};
-    TEST_ASSERT_FALSE(focas_parse_frame(shortbuf, sizeof(shortbuf), &f)); // < 10
+    TEST_ASSERT_FALSE(dws_focas_parse_frame(shortbuf, sizeof(shortbuf), &f)); // < 10
 
     // Bad magic.
     uint8_t badmagic[FOCAS_FRAME_HDR_LEN] = {0};
     badmagic[0] = 0xA1;
-    TEST_ASSERT_FALSE(focas_parse_frame(badmagic, sizeof(badmagic), &f));
+    TEST_ASSERT_FALSE(dws_focas_parse_frame(badmagic, sizeof(badmagic), &f));
 
     // Envelope length promises more payload than the buffer holds.
     const uint8_t liar[] = {0xA0, 0xA0, 0xA0, 0xA0, 0x00, 0x01, 0x21, 0x02, 0x00, 0xFF};
-    TEST_ASSERT_FALSE(focas_parse_frame(liar, sizeof(liar), &f));
+    TEST_ASSERT_FALSE(dws_focas_parse_frame(liar, sizeof(liar), &f));
 
     // A valid frame of the wrong type is rejected by the command-frame convenience parser.
     uint8_t openresp[] = {0xA0, 0xA0, 0xA0, 0xA0, 0x00, 0x01, 0x01, 0x02, 0x00, 0x00};
     FocasResponse r;
-    TEST_ASSERT_TRUE(focas_parse_frame(openresp, sizeof(openresp), &f));
+    TEST_ASSERT_TRUE(dws_focas_parse_frame(openresp, sizeof(openresp), &f));
     TEST_ASSERT_TRUE(f.type == FocasFrameType::open_resp);
-    TEST_ASSERT_FALSE(focas_parse_command_frame(openresp, sizeof(openresp), &r));
+    TEST_ASSERT_FALSE(dws_focas_parse_command_frame(openresp, sizeof(openresp), &r));
 
     // Response claims more data than the payload carries.
     const uint8_t badlen[] = {0x00, 0x01, 0x00, 0x01, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0xAA};
     FocasResponse r2;
-    TEST_ASSERT_FALSE(focas_parse_response(badlen, sizeof(badlen), &r2)); // says 0x40, 1 follows
+    TEST_ASSERT_FALSE(dws_focas_parse_response(badlen, sizeof(badlen), &r2)); // says 0x40, 1 follows
 }
 
 int main()

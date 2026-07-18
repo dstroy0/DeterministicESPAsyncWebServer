@@ -21,44 +21,44 @@ void tearDown()
 void test_bus_mv()
 {
     // 3300 mV -> value 825 (0x339) in bits [15:3] -> register 825<<3 = 0x19C8.
-    TEST_ASSERT_EQUAL_INT32(3300, ina219_bus_mv(0x19C8));
+    TEST_ASSERT_EQUAL_INT32(3300, dws_ina219_bus_mv(0x19C8));
     // The low status bits (CNVR bit1, OVF bit0) must not affect the value.
-    TEST_ASSERT_EQUAL_INT32(3300, ina219_bus_mv(0x19CB));
-    TEST_ASSERT_EQUAL_INT32(0, ina219_bus_mv(0));
+    TEST_ASSERT_EQUAL_INT32(3300, dws_ina219_bus_mv(0x19CB));
+    TEST_ASSERT_EQUAL_INT32(0, dws_ina219_bus_mv(0));
 }
 
 void test_shunt_uv()
 {
-    TEST_ASSERT_EQUAL_INT32(3200, ina219_shunt_uv(320));   // 320 * 10 uV
-    TEST_ASSERT_EQUAL_INT32(-1000, ina219_shunt_uv(-100)); // signed
-    TEST_ASSERT_EQUAL_INT32(0, ina219_shunt_uv(0));
+    TEST_ASSERT_EQUAL_INT32(3200, dws_ina219_shunt_uv(320));   // 320 * 10 uV
+    TEST_ASSERT_EQUAL_INT32(-1000, dws_ina219_shunt_uv(-100)); // signed
+    TEST_ASSERT_EQUAL_INT32(0, dws_ina219_shunt_uv(0));
 }
 
 void test_calibration()
 {
-    TEST_ASSERT_EQUAL_UINT16(4096, ina219_calibration(100, 100)); // 100 uA LSB, 0.1 ohm shunt
-    TEST_ASSERT_EQUAL_UINT16(8192, ina219_calibration(50, 100));  // finer LSB -> larger cal
-    TEST_ASSERT_EQUAL_UINT16(0, ina219_calibration(0, 100));      // guard: zero denominator
+    TEST_ASSERT_EQUAL_UINT16(4096, dws_ina219_calibration(100, 100)); // 100 uA LSB, 0.1 ohm shunt
+    TEST_ASSERT_EQUAL_UINT16(8192, dws_ina219_calibration(50, 100));  // finer LSB -> larger cal
+    TEST_ASSERT_EQUAL_UINT16(0, dws_ina219_calibration(0, 100));      // guard: zero denominator
 }
 
 void test_current_and_power()
 {
     // current = raw * current_LSB (uA); power = raw * 20 * current_LSB (uW).
-    TEST_ASSERT_EQUAL_INT32(100000, ina219_current_ua(1000, 100)); // 100 mA
-    TEST_ASSERT_EQUAL_INT32(-50000, ina219_current_ua(-500, 100)); // signed
-    TEST_ASSERT_EQUAL_INT32(1000000, ina219_power_uw(500, 100));   // 1 W
+    TEST_ASSERT_EQUAL_INT32(100000, dws_ina219_current_ua(1000, 100)); // 100 mA
+    TEST_ASSERT_EQUAL_INT32(-50000, dws_ina219_current_ua(-500, 100)); // signed
+    TEST_ASSERT_EQUAL_INT32(1000000, dws_ina219_power_uw(500, 100));   // 1 W
 }
 
 void test_host_i2c_stubs_fail_closed()
 {
     // On a host build there is no I2C: begin and every read fail closed (return false), so a caller
     // never mistakes an unavailable sensor for a zero reading.
-    TEST_ASSERT_FALSE(ina219_begin(0x40, 100, 100));
+    TEST_ASSERT_FALSE(dws_ina219_begin(0x40, 100, 100));
     int32_t v = 123;
-    TEST_ASSERT_FALSE(ina219_read_bus_mv(&v));
-    TEST_ASSERT_FALSE(ina219_read_shunt_uv(&v));
-    TEST_ASSERT_FALSE(ina219_read_current_ua(&v));
-    TEST_ASSERT_FALSE(ina219_read_power_uw(&v));
+    TEST_ASSERT_FALSE(dws_ina219_read_bus_mv(&v));
+    TEST_ASSERT_FALSE(dws_ina219_read_shunt_uv(&v));
+    TEST_ASSERT_FALSE(dws_ina219_read_current_ua(&v));
+    TEST_ASSERT_FALSE(dws_ina219_read_power_uw(&v));
 }
 
 int main()

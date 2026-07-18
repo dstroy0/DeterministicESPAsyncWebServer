@@ -52,12 +52,12 @@ static const uint8_t SIG[8] = {'N', 'T', 'L', 'M', 'S', 'S', 'P', 0};
 void test_build_negotiate()
 {
     uint8_t buf[64];
-    size_t n = ntlmssp_build_negotiate(buf, sizeof(buf), NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS);
+    size_t n = dws_ntlmssp_build_negotiate(buf, sizeof(buf), NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS);
     TEST_ASSERT_EQUAL_size_t(32, n);
     TEST_ASSERT_EQUAL_MEMORY(SIG, buf, 8);
     TEST_ASSERT_EQUAL_UINT32(1, r32(buf + 8)); // MessageType NEGOTIATE
     TEST_ASSERT_EQUAL_UINT32(NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS, r32(buf + 12));
-    TEST_ASSERT_EQUAL_size_t(0, ntlmssp_build_negotiate(buf, 16, 0)); // overflow
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntlmssp_build_negotiate(buf, 16, 0)); // overflow
 }
 
 // Build a CHALLENGE message with the given server challenge + target info at offset 48.
@@ -86,7 +86,7 @@ void test_parse_challenge()
     size_t n = build_challenge(m, sc, ti, (uint16_t)ti_len);
 
     NtlmChallenge ch;
-    TEST_ASSERT_TRUE(ntlmssp_parse_challenge(m, n, &ch));
+    TEST_ASSERT_TRUE(dws_ntlmssp_parse_challenge(m, n, &ch));
     TEST_ASSERT_EQUAL_MEMORY(sc, ch.server_challenge, 8);
     TEST_ASSERT_EQUAL_UINT16(ti_len, ch.target_info_len);
     TEST_ASSERT_EQUAL_MEMORY(ti, ch.target_info, ti_len);
@@ -103,14 +103,14 @@ void test_parse_challenge_rejects()
 
     memcpy(bad, m, n);
     bad[0] = 'X'; // bad signature
-    TEST_ASSERT_FALSE(ntlmssp_parse_challenge(bad, n, &ch));
+    TEST_ASSERT_FALSE(dws_ntlmssp_parse_challenge(bad, n, &ch));
     memcpy(bad, m, n);
     w32(bad + 8, 3); // wrong MessageType
-    TEST_ASSERT_FALSE(ntlmssp_parse_challenge(bad, n, &ch));
+    TEST_ASSERT_FALSE(dws_ntlmssp_parse_challenge(bad, n, &ch));
     memcpy(bad, m, n);
     w16(bad + 40, 9000); // target info length past the message
-    TEST_ASSERT_FALSE(ntlmssp_parse_challenge(bad, n, &ch));
-    TEST_ASSERT_FALSE(ntlmssp_parse_challenge(m, 40, &ch)); // truncated
+    TEST_ASSERT_FALSE(dws_ntlmssp_parse_challenge(bad, n, &ch));
+    TEST_ASSERT_FALSE(dws_ntlmssp_parse_challenge(m, 40, &ch)); // truncated
 }
 
 void test_build_authenticate()
@@ -118,8 +118,8 @@ void test_build_authenticate()
     uint8_t nt[48];
     memset(nt, 0xEE, sizeof(nt));
     uint8_t buf[256];
-    size_t n =
-        ntlmssp_build_authenticate(buf, sizeof(buf), nullptr, 0, nt, sizeof(nt), "Domain", "User", "WS", 0x12345678);
+    size_t n = dws_ntlmssp_build_authenticate(buf, sizeof(buf), nullptr, 0, nt, sizeof(nt), "Domain", "User", "WS",
+                                              0x12345678);
     TEST_ASSERT_GREATER_THAN_size_t(64, n);
     TEST_ASSERT_EQUAL_MEMORY(SIG, buf, 8);
     TEST_ASSERT_EQUAL_UINT32(3, r32(buf + 8)); // AUTHENTICATE
@@ -139,8 +139,8 @@ void test_build_authenticate()
     const uint8_t user16[8] = {'U', 0, 's', 0, 'e', 0, 'r', 0};
     TEST_ASSERT_EQUAL_MEMORY(user16, buf + u_off, 8);
 
-    TEST_ASSERT_EQUAL_size_t(
-        0, ntlmssp_build_authenticate(buf, 80, nullptr, 0, nt, sizeof(nt), "Domain", "User", nullptr, 0)); // overflow
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntlmssp_build_authenticate(buf, 80, nullptr, 0, nt, sizeof(nt), "Domain", "User",
+                                                               nullptr, 0)); // overflow
 }
 
 // End to end (MS-NLMP 4.2): parse a CHALLENGE, compute the NTLMv2 response, embed it in an
@@ -155,19 +155,19 @@ void test_end_to_end()
     uint8_t chal[128];
     size_t cn = build_challenge(chal, sc, ti, (uint16_t)ti_len);
     NtlmChallenge ch;
-    TEST_ASSERT_TRUE(ntlmssp_parse_challenge(chal, cn, &ch));
+    TEST_ASSERT_TRUE(dws_ntlmssp_parse_challenge(chal, cn, &ch));
 
     uint8_t nt_hash[16], owf[16];
-    ntlm_nt_hash("Password", nt_hash);
-    ntlm_ntowfv2(nt_hash, "User", "Domain", owf);
+    dws_ntlm_nt_hash("Password", nt_hash);
+    dws_ntlm_ntowfv2(nt_hash, "User", "Domain", owf);
     uint8_t nt_resp[256], skey[16];
-    size_t nt_len = ntlm_v2_response(owf, ch.server_challenge, cli, time, ch.target_info, ch.target_info_len, nt_resp,
-                                     sizeof(nt_resp), skey);
+    size_t nt_len = dws_ntlm_v2_response(owf, ch.server_challenge, cli, time, ch.target_info, ch.target_info_len,
+                                         nt_resp, sizeof(nt_resp), skey);
     TEST_ASSERT_GREATER_THAN_size_t(0, nt_len);
 
     uint8_t auth[512];
-    size_t an = ntlmssp_build_authenticate(auth, sizeof(auth), nullptr, 0, nt_resp, nt_len, "Domain", "User", nullptr,
-                                           ch.flags);
+    size_t an = dws_ntlmssp_build_authenticate(auth, sizeof(auth), nullptr, 0, nt_resp, nt_len, "Domain", "User",
+                                               nullptr, ch.flags);
     TEST_ASSERT_GREATER_THAN_size_t(0, an);
 
     uint32_t nt_off = r32(auth + 24);

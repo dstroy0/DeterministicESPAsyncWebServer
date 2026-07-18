@@ -20,7 +20,7 @@ void tearDown()
 void test_build_read_bytes()
 {
     uint8_t buf[32];
-    size_t n = melsec_build_read(buf, sizeof(buf), MELSEC_DEV_D, 100, 5, 0x0010);
+    size_t n = dws_melsec_build_read(buf, sizeof(buf), MELSEC_DEV_D, 100, 5, 0x0010);
     const uint8_t expect[] = {
         0x50, 0x00,       // subheader (request)
         0x00,             // network
@@ -44,7 +44,7 @@ void test_build_read_bytes()
 void test_head_device_24bit()
 {
     uint8_t buf[32];
-    size_t n = melsec_build_read(buf, sizeof(buf), MELSEC_DEV_M, 0x012345, 1, 0);
+    size_t n = dws_melsec_build_read(buf, sizeof(buf), MELSEC_DEV_M, 0x012345, 1, 0);
     TEST_ASSERT_GREATER_THAN(0, (int)n);
     TEST_ASSERT_EQUAL_HEX8(0x45, buf[15]);
     TEST_ASSERT_EQUAL_HEX8(0x23, buf[16]);
@@ -62,7 +62,7 @@ void test_parse_response_ok()
         0x11, 0x11, 0x22, 0x22, 0x33, 0x33, 0x44, 0x44, 0x55, 0x55 // 5 word values
     };
     MelsecResponse r;
-    TEST_ASSERT_TRUE(melsec_parse_response(resp, sizeof(resp), &r));
+    TEST_ASSERT_TRUE(dws_melsec_parse_response(resp, sizeof(resp), &r));
     TEST_ASSERT_EQUAL_HEX16(MELSEC_ENDCODE_OK, r.end_code);
     TEST_ASSERT_EQUAL_size_t(10, r.data_len);
     TEST_ASSERT_EQUAL_HEX8(0x11, r.data[0]);
@@ -74,7 +74,7 @@ void test_parse_response_error()
     const uint8_t resp[] = {0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x02, 0x00, // length = 2 (end code only)
                             0x51, 0xC0};                                          // end code 0xC051 (LE)
     MelsecResponse r;
-    TEST_ASSERT_TRUE(melsec_parse_response(resp, sizeof(resp), &r));
+    TEST_ASSERT_TRUE(dws_melsec_parse_response(resp, sizeof(resp), &r));
     TEST_ASSERT_EQUAL_HEX16(0xC051, r.end_code);
     TEST_ASSERT_EQUAL_size_t(0, r.data_len);
 }
@@ -83,16 +83,16 @@ void test_parse_rejects_bad()
 {
     MelsecResponse r;
     const uint8_t bad_sub[] = {0x50, 0x00, 0, 0xFF, 0xFF, 0x03, 0, 0x02, 0, 0, 0}; // request subheader, not response
-    TEST_ASSERT_FALSE(melsec_parse_response(bad_sub, sizeof(bad_sub), &r));
+    TEST_ASSERT_FALSE(dws_melsec_parse_response(bad_sub, sizeof(bad_sub), &r));
     const uint8_t trunc[] = {0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03,
                              0x00, 0x0C, 0x00, 0x00, 0x00, 0x11}; // says 12, only 3 follow
-    TEST_ASSERT_FALSE(melsec_parse_response(trunc, sizeof(trunc), &r));
+    TEST_ASSERT_FALSE(dws_melsec_parse_response(trunc, sizeof(trunc), &r));
 }
 
 void test_build_overflow_fails_closed()
 {
     uint8_t small[16];
-    TEST_ASSERT_EQUAL_size_t(0, melsec_build_read(small, sizeof(small), MELSEC_DEV_D, 0, 1, 0)); // needs 21
+    TEST_ASSERT_EQUAL_size_t(0, dws_melsec_build_read(small, sizeof(small), MELSEC_DEV_D, 0, 1, 0)); // needs 21
 }
 
 // The response parser rejects a null/short buffer and a data-length field smaller than
@@ -100,12 +100,12 @@ void test_build_overflow_fails_closed()
 void test_parse_guards()
 {
     MelsecResponse r;
-    TEST_ASSERT_FALSE(melsec_parse_response(nullptr, 16, &r)); // null buf
+    TEST_ASSERT_FALSE(dws_melsec_parse_response(nullptr, 16, &r)); // null buf
     const uint8_t shortr[10] = {0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x02, 0x00, 0x00};
-    TEST_ASSERT_FALSE(melsec_parse_response(shortr, sizeof(shortr), &r)); // len < minimum
+    TEST_ASSERT_FALSE(dws_melsec_parse_response(shortr, sizeof(shortr), &r)); // len < minimum
     // Valid response header but the length field claims 1 octet - less than the end code.
     const uint8_t tiny_len[11] = {0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00};
-    TEST_ASSERT_FALSE(melsec_parse_response(tiny_len, sizeof(tiny_len), &r));
+    TEST_ASSERT_FALSE(dws_melsec_parse_response(tiny_len, sizeof(tiny_len), &r));
 }
 
 int main()

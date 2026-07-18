@@ -45,15 +45,15 @@ void proto_register_builtins(void)
 {
     register_if(ConnProto::PROTO_HTTP, http_proto_handler()); // always present (the core request/response protocol)
 #if DWS_ENABLE_TELNET
-    register_if(ConnProto::PROTO_TELNET, telnet_proto_handler());
+    register_if(ConnProto::PROTO_TELNET, dws_telnet_proto_handler());
 #endif
 #if DWS_ENABLE_SSH
     register_if(ConnProto::PROTO_SSH, ssh_proto_handler());
 #endif
 #if DWS_ENABLE_MODBUS
-    register_if(ConnProto::PROTO_MODBUS, modbus_proto_handler());
+    register_if(ConnProto::PROTO_MODBUS, dws_modbus_proto_handler());
 #endif
 #if DWS_ENABLE_OPCUA
-    register_if(ConnProto::PROTO_OPCUA, opcua_proto_handler());
+    register_if(ConnProto::PROTO_OPCUA, dws_opcua_proto_handler());
 #endif
 }

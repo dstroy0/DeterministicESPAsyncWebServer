@@ -36,21 +36,21 @@
  *        SESSION_SETUP security buffer).
  * @return the token length written to @p out, or 0 on overflow.
  */
-size_t spnego_wrap_negotiate(const uint8_t *ntlm, size_t ntlm_len, uint8_t *out, size_t cap);
+size_t dws_spnego_wrap_negotiate(const uint8_t *ntlm, size_t dws_ntlm_len, uint8_t *out, size_t cap);
 
 /**
  * @brief Extract the responseToken (the NTLMSSP CHALLENGE) from a server NegTokenResp.
- * @param resp_token receives a pointer INTO @p blob; @p resp_len its length.
+ * @param dws_resp_token receives a pointer INTO @p blob; @p dws_resp_len its length.
  * @return true if a `[2]` responseToken OCTET STRING was found and is within bounds.
  */
-bool spnego_parse_response(const uint8_t *blob, size_t len, const uint8_t **resp_token, size_t *resp_len);
+bool dws_spnego_parse_response(const uint8_t *blob, size_t len, const uint8_t **dws_resp_token, size_t *dws_resp_len);
 
 /**
  * @brief Wrap an NTLMSSP AUTHENTICATE token in a SPNEGO NegTokenResp (the second SESSION_SETUP
  *        security buffer).
  * @return the token length written to @p out, or 0 on overflow.
  */
-size_t spnego_wrap_authenticate(const uint8_t *ntlm, size_t ntlm_len, uint8_t *out, size_t cap);
+size_t dws_spnego_wrap_authenticate(const uint8_t *ntlm, size_t dws_ntlm_len, uint8_t *out, size_t cap);
 
 #endif // DWS_ENABLE_SMB
 

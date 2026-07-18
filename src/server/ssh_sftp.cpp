@@ -140,13 +140,13 @@ void send_resp(SftpSession *s, size_t n)
 }
 void send_status(SftpSession *s, uint32_t id, uint32_t code, const char *msg)
 {
-    send_resp(s, sftp_build_status(id, code, msg, s_sftp.out, SFTP_RESP_CAP));
+    send_resp(s, dws_sftp_build_status(id, code, msg, s_sftp.out, SFTP_RESP_CAP));
 }
 void send_handle(SftpSession *s, uint32_t id, int hi)
 {
     uint8_t hb[4] = {(uint8_t)((uint32_t)hi >> 24), (uint8_t)((uint32_t)hi >> 16), (uint8_t)((uint32_t)hi >> 8),
                      (uint8_t)hi};
-    send_resp(s, sftp_build_handle(id, hb, 4, s_sftp.out, SFTP_RESP_CAP));
+    send_resp(s, dws_sftp_build_handle(id, hb, 4, s_sftp.out, SFTP_RESP_CAP));
 }
 // Map an fs errno-free open failure to a plausible SFTP status: a write open that fails is FAILURE, a read
 // open that fails is NO_SUCH_FILE (the common case a client distinguishes).
@@ -183,12 +183,12 @@ size_t build_entry(fs::File &c, uint8_t *ent, size_t cap)
     SftpAttrs a;
     attrs_from_file(c, &a);
     char ln[SFTP_ENTRY_MAX];
-    sftp_format_longname(c.isDirectory(), a.permissions, a.size, a.mtime, base, ln, sizeof(ln));
+    dws_sftp_format_longname(c.isDirectory(), a.permissions, a.size, a.mtime, base, ln, sizeof(ln));
     SftpWriter w;
-    sftp_wr_init(&w, ent, cap); // reserves a 4-byte length prefix we discard below
-    sftp_wr_string(&w, base, (uint32_t)strlen(base));
-    sftp_wr_string(&w, ln, (uint32_t)strlen(ln));
-    sftp_wr_attrs(&w, &a);
+    dws_sftp_wr_init(&w, ent, cap); // reserves a 4-byte length prefix we discard below
+    dws_sftp_wr_string(&w, base, (uint32_t)strlen(base));
+    dws_sftp_wr_string(&w, ln, (uint32_t)strlen(ln));
+    dws_sftp_wr_attrs(&w, &a);
     if (w.ovf)
         return 0;
     size_t el = w.off - 4;
@@ -204,16 +204,16 @@ void do_readdir(SftpSession *s, uint32_t id, SftpHandle *H)
         return;
     }
     SftpWriter w;
-    sftp_wr_init(&w, s_sftp.out, SFTP_RESP_CAP);
-    sftp_wr_u8(&w, SSH_FXP_NAME);
-    sftp_wr_u32(&w, id);
-    size_t count_at = sftp_wr_pos(&w);
-    sftp_wr_u32(&w, 0); // count placeholder
+    dws_sftp_wr_init(&w, s_sftp.out, SFTP_RESP_CAP);
+    dws_sftp_wr_u8(&w, SSH_FXP_NAME);
+    dws_sftp_wr_u32(&w, id);
+    size_t count_at = dws_sftp_wr_pos(&w);
+    dws_sftp_wr_u32(&w, 0); // count placeholder
     uint32_t count = 0;
 
     if (H->has_pending) // an entry that did not fit last call
     {
-        sftp_wr_bytes(&w, H->pend, H->pend_len);
+        dws_sftp_wr_bytes(&w, H->pend, H->pend_len);
         H->has_pending = false;
         count++;
     }
@@ -229,12 +229,12 @@ void do_readdir(SftpSession *s, uint32_t id, SftpHandle *H)
         size_t el = build_entry(c, ent, sizeof(ent));
         c.close();
         if (el == 0)
-            continue;                                 // entry could not be serialized (pathological name) - skip it
-        if (sftp_wr_pos(&w) + el > SFTP_RESP_CAP - 8) // would not fit this NAME response
+            continue;                                     // entry could not be serialized (pathological name) - skip it
+        if (dws_sftp_wr_pos(&w) + el > SFTP_RESP_CAP - 8) // would not fit this NAME response
         {
             if (count == 0) // first entry too big for an empty response - emit it anyway (best effort)
             {
-                sftp_wr_bytes(&w, ent, el);
+                dws_sftp_wr_bytes(&w, ent, el);
                 count++;
             }
             else // stash it for the next READDIR
@@ -245,7 +245,7 @@ void do_readdir(SftpSession *s, uint32_t id, SftpHandle *H)
             }
             break;
         }
-        sftp_wr_bytes(&w, ent, el);
+        dws_sftp_wr_bytes(&w, ent, el);
         count++;
     }
 
@@ -254,8 +254,8 @@ void do_readdir(SftpSession *s, uint32_t id, SftpHandle *H)
         send_status(s, id, SSH_FX_EOF, "");
         return;
     }
-    sftp_wr_patch_u32(&w, count_at, count);
-    size_t n = sftp_wr_finish(&w);
+    dws_sftp_wr_patch_u32(&w, count_at, count);
+    size_t n = dws_sftp_wr_finish(&w);
     send_resp(s, n);
 }
 
@@ -263,16 +263,16 @@ void do_readdir(SftpSession *s, uint32_t id, SftpHandle *H)
 void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
 {
     SftpReader r;
-    sftp_rd_init(&r, buf + 4, total - 4);
-    uint8_t type = sftp_rd_u8(&r);
+    dws_sftp_rd_init(&r, buf + 4, total - 4);
+    uint8_t type = dws_sftp_rd_u8(&r);
 
     if (type == SSH_FXP_INIT)
     {
-        send_resp(s, sftp_build_version(s_sftp.out, SFTP_RESP_CAP));
+        send_resp(s, dws_sftp_build_version(s_sftp.out, SFTP_RESP_CAP));
         return;
     }
 
-    uint32_t id = sftp_rd_u32(&r);
+    uint32_t id = dws_sftp_rd_u32(&r);
     if (!r.ok)
         return;
 
@@ -281,14 +281,14 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
     case SSH_FXP_OPEN: {
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
-        if (!sftp_rd_string(&r, &p, &pl))
+        if (!dws_sftp_rd_string(&r, &p, &pl))
         {
             send_status(s, id, SSH_FX_BAD_MESSAGE, "");
             return;
         }
-        uint32_t pflags = sftp_rd_u32(&r);
+        uint32_t pflags = dws_sftp_rd_u32(&r);
         SftpAttrs a;
-        sftp_rd_attrs(&r, &a);
+        dws_sftp_rd_attrs(&r, &a);
         char disk[DWS_SFTP_PATH_MAX];
         if (resolve(p, pl, disk, sizeof(disk)) != 0)
         {
@@ -329,7 +329,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
     case SSH_FXP_CLOSE: {
         const uint8_t *h = nullptr;
         uint32_t hl = 0;
-        sftp_rd_string(&r, &h, &hl);
+        dws_sftp_rd_string(&r, &h, &hl);
         int hi = handle_index(s, h, hl);
         if (hi < 0)
         {
@@ -343,9 +343,9 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
     case SSH_FXP_READ: {
         const uint8_t *h = nullptr;
         uint32_t hl = 0;
-        sftp_rd_string(&r, &h, &hl);
-        uint64_t off = sftp_rd_u64(&r);
-        uint32_t rlen = sftp_rd_u32(&r);
+        dws_sftp_rd_string(&r, &h, &hl);
+        uint64_t off = dws_sftp_rd_u64(&r);
+        uint32_t rlen = dws_sftp_rd_u32(&r);
         int hi = handle_index(s, h, hl);
         if (!r.ok || hi < 0 || s->handles[hi].is_dir)
         {
@@ -361,13 +361,13 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
             send_status(s, id, SSH_FX_EOF, "");
             return;
         }
-        send_resp(s, sftp_build_data(id, s_sftp.rbuf, (uint32_t)got, s_sftp.out, SFTP_RESP_CAP));
+        send_resp(s, dws_sftp_build_data(id, s_sftp.rbuf, (uint32_t)got, s_sftp.out, SFTP_RESP_CAP));
         return;
     }
     case SSH_FXP_OPENDIR: {
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
-        sftp_rd_string(&r, &p, &pl);
+        dws_sftp_rd_string(&r, &p, &pl);
         char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
@@ -402,7 +402,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
     case SSH_FXP_READDIR: {
         const uint8_t *h = nullptr;
         uint32_t hl = 0;
-        sftp_rd_string(&r, &h, &hl);
+        dws_sftp_rd_string(&r, &h, &hl);
         int hi = handle_index(s, h, hl);
         if (hi < 0 || !s->handles[hi].is_dir)
         {
@@ -416,7 +416,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
     case SSH_FXP_LSTAT: {
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
-        sftp_rd_string(&r, &p, &pl);
+        dws_sftp_rd_string(&r, &p, &pl);
         char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
@@ -432,13 +432,13 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         SftpAttrs a;
         attrs_from_file(f, &a);
         f.close();
-        send_resp(s, sftp_build_attrs(id, &a, s_sftp.out, SFTP_RESP_CAP));
+        send_resp(s, dws_sftp_build_attrs(id, &a, s_sftp.out, SFTP_RESP_CAP));
         return;
     }
     case SSH_FXP_FSTAT: {
         const uint8_t *h = nullptr;
         uint32_t hl = 0;
-        sftp_rd_string(&r, &h, &hl);
+        dws_sftp_rd_string(&r, &h, &hl);
         int hi = handle_index(s, h, hl);
         if (hi < 0)
         {
@@ -447,13 +447,13 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         }
         SftpAttrs a;
         attrs_from_file(s->handles[hi].file, &a);
-        send_resp(s, sftp_build_attrs(id, &a, s_sftp.out, SFTP_RESP_CAP));
+        send_resp(s, dws_sftp_build_attrs(id, &a, s_sftp.out, SFTP_RESP_CAP));
         return;
     }
     case SSH_FXP_REMOVE: {
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
-        sftp_rd_string(&r, &p, &pl);
+        dws_sftp_rd_string(&r, &p, &pl);
         char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
@@ -466,7 +466,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
     case SSH_FXP_MKDIR: {
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
-        sftp_rd_string(&r, &p, &pl);
+        dws_sftp_rd_string(&r, &p, &pl);
         char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
@@ -479,7 +479,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
     case SSH_FXP_RMDIR: {
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
-        sftp_rd_string(&r, &p, &pl);
+        dws_sftp_rd_string(&r, &p, &pl);
         char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
@@ -494,8 +494,8 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         uint32_t ol = 0;
         const uint8_t *np = nullptr;
         uint32_t nl = 0;
-        sftp_rd_string(&r, &op, &ol);
-        sftp_rd_string(&r, &np, &nl);
+        dws_sftp_rd_string(&r, &op, &ol);
+        dws_sftp_rd_string(&r, &np, &nl);
         char od[DWS_SFTP_PATH_MAX];
         char nd[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(op, ol, od, sizeof(od)) != 0 || resolve(np, nl, nd, sizeof(nd)) != 0)
@@ -509,7 +509,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
     case SSH_FXP_REALPATH: {
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
-        sftp_rd_string(&r, &p, &pl);
+        dws_sftp_rd_string(&r, &p, &pl);
         if (!r.ok)
         {
             send_status(s, id, SSH_FX_BAD_MESSAGE, "");
@@ -541,8 +541,8 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         a.size = 0;
         a.atime = a.mtime = 0;
         char ln[64];
-        sftp_format_longname(true, a.permissions, 0, 0, cpath, ln, sizeof(ln));
-        send_resp(s, sftp_build_name1(id, cpath, ln, &a, s_sftp.out, SFTP_RESP_CAP));
+        dws_sftp_format_longname(true, a.permissions, 0, 0, cpath, ln, sizeof(ln));
+        send_resp(s, dws_sftp_build_name1(id, cpath, ln, &a, s_sftp.out, SFTP_RESP_CAP));
         return;
     }
     case SSH_FXP_SETSTAT:
@@ -576,15 +576,15 @@ bool process_acc(SftpSession *s)
         if (type == SSH_FXP_WRITE)
         {
             SftpReader r;
-            sftp_rd_init(&r, s->acc + 4, s->acc_len - 4);
-            sftp_rd_u8(&r); // type
-            uint32_t id = sftp_rd_u32(&r);
+            dws_sftp_rd_init(&r, s->acc + 4, s->acc_len - 4);
+            dws_sftp_rd_u8(&r); // type
+            uint32_t id = dws_sftp_rd_u32(&r);
             const uint8_t *h = nullptr;
             uint32_t hl = 0;
-            if (!sftp_rd_string(&r, &h, &hl))
+            if (!dws_sftp_rd_string(&r, &h, &hl))
                 return true; // the handle has not fully arrived - wait
-            uint64_t off = sftp_rd_u64(&r);
-            uint32_t datalen = sftp_rd_u32(&r);
+            uint64_t off = dws_sftp_rd_u64(&r);
+            uint32_t datalen = dws_sftp_rd_u32(&r);
             if (!r.ok)
                 return true; // the WRITE header has not fully arrived - wait
 
@@ -625,7 +625,7 @@ bool process_acc(SftpSession *s)
 }
 
 // --- channel callbacks ----------------------------------------------------------------------------
-void sftp_on_open(uint8_t slot, uint32_t channel)
+void dws_sftp_on_open(uint8_t slot, uint32_t channel)
 {
     if (slot >= MAX_SSH_CONNS)
         return;
@@ -641,7 +641,7 @@ void sftp_on_open(uint8_t slot, uint32_t channel)
     // The SFTP VERSION reply is sent when the client's INIT packet arrives.
 }
 
-void sftp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len)
+void dws_sftp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len)
 {
     if (slot >= MAX_SSH_CONNS)
         return;
@@ -694,8 +694,8 @@ void dws_ssh_sftp_begin(fs::FS &fs, const char *root)
     }
     if (!s_sftp.registered)
     {
-        dws_ssh_channel_set_sftp_open_cb(sftp_on_open);
-        dws_ssh_channel_set_sftp_data_cb(sftp_on_data);
+        dws_ssh_channel_set_sftp_open_cb(dws_sftp_on_open);
+        dws_ssh_channel_set_sftp_data_cb(dws_sftp_on_data);
         s_sftp.registered = true;
     }
 }

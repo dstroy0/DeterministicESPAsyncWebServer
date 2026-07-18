@@ -12,23 +12,23 @@
 
 #include <string.h>
 
-size_t bvlc_build(uint8_t *buf, size_t cap, uint8_t function, const uint8_t *npdu, size_t npdu_len)
+size_t dws_bvlc_build(uint8_t *buf, size_t cap, uint8_t function, const uint8_t *npdu, size_t dws_npdu_len)
 {
-    if (!buf || (npdu_len && !npdu))
+    if (!buf || (dws_npdu_len && !npdu))
         return 0;
-    size_t total = BVLC_HEADER_SIZE + npdu_len;
+    size_t total = BVLC_HEADER_SIZE + dws_npdu_len;
     if (total > 0xFFFF || total > cap)
         return 0;
     buf[0] = BVLC_TYPE_BIP;
     buf[1] = function;
     buf[2] = (uint8_t)(total >> 8); // length, big-endian, the whole BVLL
     buf[3] = (uint8_t)(total & 0xFF);
-    if (npdu_len)
-        memcpy(buf + BVLC_HEADER_SIZE, npdu, npdu_len);
+    if (dws_npdu_len)
+        memcpy(buf + BVLC_HEADER_SIZE, npdu, dws_npdu_len);
     return total;
 }
 
-bool bvlc_parse(const uint8_t *buf, size_t len, uint8_t *function, const uint8_t **npdu, size_t *npdu_len)
+bool dws_bvlc_parse(const uint8_t *buf, size_t len, uint8_t *function, const uint8_t **npdu, size_t *dws_npdu_len)
 {
     if (!buf || len < BVLC_HEADER_SIZE || buf[0] != BVLC_TYPE_BIP)
         return false;
@@ -39,13 +39,13 @@ bool bvlc_parse(const uint8_t *buf, size_t len, uint8_t *function, const uint8_t
         *function = buf[1];
     if (npdu)
         *npdu = buf + BVLC_HEADER_SIZE;
-    if (npdu_len)
-        *npdu_len = total - BVLC_HEADER_SIZE;
+    if (dws_npdu_len)
+        *dws_npdu_len = total - BVLC_HEADER_SIZE;
     return true;
 }
 
-size_t npdu_build(uint8_t *buf, size_t cap, bool expecting_reply, uint8_t priority, bool has_dest, uint16_t dnet,
-                  const uint8_t *dadr, uint8_t dadr_len, uint8_t hop_count, const uint8_t *apdu, size_t apdu_len)
+size_t dws_npdu_build(uint8_t *buf, size_t cap, bool expecting_reply, uint8_t priority, bool has_dest, uint16_t dnet,
+                      const uint8_t *dadr, uint8_t dadr_len, uint8_t hop_count, const uint8_t *apdu, size_t apdu_len)
 {
     if (!buf || (apdu_len && !apdu) || (dadr_len && !dadr))
         return 0;
@@ -83,7 +83,7 @@ size_t npdu_build(uint8_t *buf, size_t cap, bool expecting_reply, uint8_t priori
     return p;
 }
 
-bool npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out)
+bool dws_npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out)
 {
     if (!buf || !out || len < 2 || buf[0] != NPDU_VERSION)
         return false;

@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_tls.h
+ * @file dws_quic_tls.h
  * @brief TLS 1.3 server handshake state machine for QUIC (RFC 9001 / RFC 8446).
  *
  * Drives the server side of the TLS 1.3 handshake that QUIC carries in CRYPTO frames. It ties the
- * key schedule (tls13_kdf), the handshake messages (tls13_msg), and the transport parameters
- * (quic_tp) together: it runs the transcript hash, consumes the client's ClientHello, produces the
+ * key schedule (dws_tls13_kdf), the handshake messages (dws_tls13_msg), and the transport parameters
+ * (dws_quic_tp) together: it runs the transcript hash, consumes the client's ClientHello, produces the
  * server flight (ServerHello at the Initial level; EncryptedExtensions + Certificate +
  * CertificateVerify + Finished at the Handshake level), derives the Handshake and 1-RTT packet keys
  * for both directions, and verifies the client's Finished.
  *
- * The transport engine (quic_conn) owns CRYPTO stream reassembly and packet protection; this module
- * is transport-free. It consumes an in-order byte run (quic_tls_recv_crypto returns how many bytes it
- * used) and exposes the outbound flight per encryption level (quic_tls_flight), so it is fully
+ * The transport engine (dws_quic_conn) owns CRYPTO stream reassembly and packet protection; this module
+ * is transport-free. It consumes an in-order byte run (dws_quic_tls_recv_crypto returns how many bytes it
+ * used) and exposes the outbound flight per encryption level (dws_quic_tls_flight), so it is fully
  * host-testable by feeding it a captured ClientHello and inspecting the flight and derived keys.
  *
  * Profile: TLS_AES_128_GCM_SHA256, X25519, Ed25519 certificate, no PSK / 0-RTT / HelloRetryRequest /
@@ -104,7 +104,7 @@ struct QuicTls
 };
 
 /** @brief Initialize a server handshake with @p cfg (copied). Resets the transcript and state. */
-void quic_tls_server_init(QuicTls *qt, const QuicTlsConfig *cfg);
+void dws_quic_tls_server_init(QuicTls *qt, const QuicTlsConfig *cfg);
 
 /**
  * @brief Feed in-order CRYPTO stream bytes for encryption level @p level.
@@ -115,23 +115,23 @@ void quic_tls_server_init(QuicTls *qt, const QuicTlsConfig *cfg);
  * state to QtlsState::QTLS_FAILED and an alert. @return the number of leading bytes of @p data consumed (a
  * partial trailing message is left for the next call).
  */
-size_t quic_tls_recv_crypto(QuicTls *qt, int level, const uint8_t *data, size_t len);
+size_t dws_quic_tls_recv_crypto(QuicTls *qt, int level, const uint8_t *data, size_t len);
 
 /**
  * @brief The pending outbound CRYPTO flight for @p level (QuicEnc::QUIC_ENC_INITIAL / QuicEnc::QUIC_ENC_HANDSHAKE).
  * @return a pointer to the flight bytes and its length via @p len (0 if none). The transport engine
  * fragments these into CRYPTO frames and tracks its own send offset / retransmission.
  */
-const uint8_t *quic_tls_flight(const QuicTls *qt, int level, size_t *len);
+const uint8_t *dws_quic_tls_flight(const QuicTls *qt, int level, size_t *len);
 
 /**
  * @brief The packet-protection keys for @p level (QuicEnc::QUIC_ENC_HANDSHAKE / QuicEnc::QUIC_ENC_APP), @p is_server
  * picking the seal (server) or open (client) direction. @return NULL if those keys are not ready.
  */
-const QuicPacketKeys *quic_tls_keys(const QuicTls *qt, int level, bool is_server);
+const QuicPacketKeys *dws_quic_tls_keys(const QuicTls *qt, int level, bool is_server);
 
 /** @brief The client's parsed transport parameters (valid once the ClientHello is processed). */
-const QuicTransportParams *quic_tls_peer_params(const QuicTls *qt);
+const QuicTransportParams *dws_quic_tls_peer_params(const QuicTls *qt);
 
 #endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_TLS_H

@@ -7,18 +7,18 @@
 
 // Keccak-f[1600] permutation constants (FIPS 202): iota round constants, rho rotation offsets, and
 // the rho/pi lane-permutation order.
-static const uint64_t keccak_rc[24] = {
+static const uint64_t dws_keccak_rc[24] = {
     0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL, 0x8000000080008000ULL, 0x000000000000808bULL,
     0x0000000080000001ULL, 0x8000000080008081ULL, 0x8000000000008009ULL, 0x000000000000008aULL, 0x0000000000000088ULL,
     0x0000000080008009ULL, 0x000000008000000aULL, 0x000000008000808bULL, 0x800000000000008bULL, 0x8000000000008089ULL,
     0x8000000000008003ULL, 0x8000000000008002ULL, 0x8000000000000080ULL, 0x000000000000800aULL, 0x800000008000000aULL,
     0x8000000080008081ULL, 0x8000000000008080ULL, 0x0000000080000001ULL, 0x8000000080008008ULL};
 
-static const uint8_t keccak_rot[24] = {1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
-                                       27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44};
+static const uint8_t dws_keccak_rot[24] = {1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
+                                           27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44};
 
-static const uint8_t keccak_pi[24] = {10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
-                                      15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1};
+static const uint8_t dws_keccak_pi[24] = {10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
+                                          15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1};
 
 static inline uint64_t rotl64(uint64_t x, unsigned n)
 {
@@ -43,9 +43,9 @@ static void keccakf(uint64_t st[25])
         uint64_t t = st[1];
         for (int i = 0; i < 24; i++)
         {
-            int j = keccak_pi[i];
+            int j = dws_keccak_pi[i];
             uint64_t tmp = st[j];
-            st[j] = rotl64(t, keccak_rot[i]);
+            st[j] = rotl64(t, dws_keccak_rot[i]);
             t = tmp;
         }
         // Chi
@@ -57,7 +57,7 @@ static void keccakf(uint64_t st[25])
                 st[j + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
         }
         // Iota
-        st[0] ^= keccak_rc[r];
+        st[0] ^= dws_keccak_rc[r];
     }
 }
 
@@ -73,7 +73,7 @@ static inline uint8_t st_get_byte(const uint64_t st[25], size_t p)
     return (uint8_t)(st[p >> 3] >> (8 * (p & 7)));
 }
 
-void keccak_absorb(KeccakCtx *c, uint32_t rate, const uint8_t *in, size_t inlen, uint8_t domain)
+void dws_keccak_absorb(KeccakCtx *c, uint32_t rate, const uint8_t *in, size_t inlen, uint8_t domain)
 {
     for (int i = 0; i < 25; i++)
         c->st[i] = 0;
@@ -95,7 +95,7 @@ void keccak_absorb(KeccakCtx *c, uint32_t rate, const uint8_t *in, size_t inlen,
     c->out_pos = rate; // force a permutation on the first squeeze
 }
 
-void keccak_squeeze(KeccakCtx *c, uint8_t *out, size_t outlen)
+void dws_keccak_squeeze(KeccakCtx *c, uint8_t *out, size_t outlen)
 {
     while (outlen)
     {
@@ -118,34 +118,34 @@ void keccak_squeeze(KeccakCtx *c, uint8_t *out, size_t outlen)
 void sha3_256(uint8_t out[32], const uint8_t *in, size_t inlen)
 {
     KeccakCtx c;
-    keccak_absorb(&c, KECCAK_RATE_SHA3_256, in, inlen, 0x06);
-    keccak_squeeze(&c, out, 32);
+    dws_keccak_absorb(&c, KECCAK_RATE_SHA3_256, in, inlen, 0x06);
+    dws_keccak_squeeze(&c, out, 32);
 }
 
 void sha3_512(uint8_t out[64], const uint8_t *in, size_t inlen)
 {
     KeccakCtx c;
-    keccak_absorb(&c, KECCAK_RATE_SHA3_512, in, inlen, 0x06);
-    keccak_squeeze(&c, out, 64);
+    dws_keccak_absorb(&c, KECCAK_RATE_SHA3_512, in, inlen, 0x06);
+    dws_keccak_squeeze(&c, out, 64);
 }
 
 void shake128(uint8_t *out, size_t outlen, const uint8_t *in, size_t inlen)
 {
     KeccakCtx c;
-    keccak_absorb(&c, KECCAK_RATE_SHAKE128, in, inlen, 0x1F);
-    keccak_squeeze(&c, out, outlen);
+    dws_keccak_absorb(&c, KECCAK_RATE_SHAKE128, in, inlen, 0x1F);
+    dws_keccak_squeeze(&c, out, outlen);
 }
 
 void shake256(uint8_t *out, size_t outlen, const uint8_t *in, size_t inlen)
 {
     KeccakCtx c;
-    keccak_absorb(&c, KECCAK_RATE_SHAKE256, in, inlen, 0x1F);
-    keccak_squeeze(&c, out, outlen);
+    dws_keccak_absorb(&c, KECCAK_RATE_SHAKE256, in, inlen, 0x1F);
+    dws_keccak_squeeze(&c, out, outlen);
 }
 
-void shake128_absorb(KeccakCtx *c, const uint8_t *in, size_t inlen)
+void dws_shake128_absorb(KeccakCtx *c, const uint8_t *in, size_t inlen)
 {
-    keccak_absorb(c, KECCAK_RATE_SHAKE128, in, inlen, 0x1F);
+    dws_keccak_absorb(c, KECCAK_RATE_SHAKE128, in, inlen, 0x1F);
 }
 
 #endif // DWS_ENABLE_PQC_KEX

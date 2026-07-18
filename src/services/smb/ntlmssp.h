@@ -59,7 +59,7 @@ struct NtlmChallenge
  * @brief Build a NEGOTIATE_MESSAGE (type 1) with @p flags and empty domain/workstation.
  * @return message length (32), or 0 if @p cap < 32.
  */
-size_t ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags);
+size_t dws_ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags);
 
 /**
  * @brief Parse a CHALLENGE_MESSAGE (type 2): extract the flags, the 8-byte server challenge, and
@@ -67,21 +67,21 @@ size_t ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags);
  * @return true on a valid CHALLENGE; false on a bad signature / type / truncation / out-of-bounds
  *         target info.
  */
-bool ntlmssp_parse_challenge(const uint8_t *msg, size_t len, NtlmChallenge *out);
+bool dws_ntlmssp_parse_challenge(const uint8_t *msg, size_t len, NtlmChallenge *out);
 
 /**
  * @brief Build an AUTHENTICATE_MESSAGE (type 3) carrying the LM + NT responses and the identity.
  *
  * @param lm_resp / lm_len  the LM(v2) response (may be null/0).
- * @param nt_resp / nt_len  the NtChallengeResponse from ntlm_v2_response.
+ * @param nt_resp / nt_len  the NtChallengeResponse from dws_ntlm_v2_response.
  * @param domain / user / workstation  ASCII/UTF-8 identity strings (encoded UTF-16LE); user
  *        and domain are typically required, workstation is optional (may be null).
  * @param flags  the NegotiateFlags to echo (usually the server's from the CHALLENGE).
  * @return total message length, or 0 on overflow. No Version, no MIC, no session-key exchange.
  */
-size_t ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_resp, size_t lm_len,
-                                  const uint8_t *nt_resp, size_t nt_len, const char *domain, const char *user,
-                                  const char *workstation, uint32_t flags);
+size_t dws_ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_resp, size_t lm_len,
+                                      const uint8_t *nt_resp, size_t nt_len, const char *domain, const char *user,
+                                      const char *workstation, uint32_t flags);
 
 #endif // DWS_ENABLE_SMB
 

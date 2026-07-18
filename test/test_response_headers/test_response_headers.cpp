@@ -115,7 +115,7 @@ void setUp()
         http_reset(i);
     }
     ws_init();
-    sse_init();
+    dws_sse_init();
     tcp_capture_reset();
     dws_ntp_set_test_epoch(0); // clockless by default; Date tests opt in
 }
@@ -252,11 +252,11 @@ void test_ntp_host_seam_accessors()
     dws_ntp_set_test_epoch(0);
     TEST_ASSERT_FALSE(dws_ntp_synced());
     TEST_ASSERT_EQUAL_INT(0, (long)dws_ntp_epoch());
-    TEST_ASSERT_EQUAL_UINT32(0, ntp_time_source()); // registry adapter: 0 when unsynced
+    TEST_ASSERT_EQUAL_UINT32(0, dws_ntp_time_source()); // registry adapter: 0 when unsynced
     dws_ntp_set_test_epoch(784111777);
     TEST_ASSERT_TRUE(dws_ntp_synced());
     TEST_ASSERT_EQUAL_INT(784111777, (long)dws_ntp_epoch());
-    TEST_ASSERT_EQUAL_UINT32(784111777, ntp_time_source()); // registry adapter mirrors the epoch
+    TEST_ASSERT_EQUAL_UINT32(784111777, dws_ntp_time_source()); // registry adapter mirrors the epoch
     // http_date guards: null out / zero cap both return 0 without writing.
     char buf[40];
     TEST_ASSERT_EQUAL_UINT(0, dws_ntp_http_date(nullptr, sizeof(buf)));

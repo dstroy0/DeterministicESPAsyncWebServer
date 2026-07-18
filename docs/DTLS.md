@@ -18,7 +18,7 @@ HTTP/3 - no second TLS stack.
 > implementation: the record layer (RFC 9147 §4), the handshake framing and reliability primitives
 > (§5, §7), and the **server-side handshake state machine** (§5-6) are implemented, and the
 > **wolfSSL DTLS 1.3 client completes a full handshake and an application-data round trip** against
-> it ([`test/servers/dtls_wolfssl`](../test/servers/dtls_wolfssl/README.md)) - both directly and
+> it ([`test/servers/dws_dtls_wolfssl`](../test/servers/dws_dtls_wolfssl/README.md)) - both directly and
 > through a **HelloRetryRequest** group renegotiation. This is the one-round-trip full handshake
 > (`TLS_AES_128_GCM_SHA256` / X25519 / Ed25519, no PSK / 0-RTT / client auth); a client that does not
 > offer an X25519 key_share up front is answered with an HRR carrying an address-bound cookie and
@@ -157,7 +157,7 @@ is re-acknowledged.
 
 Most importantly, the handshake is checked against a **real reference implementation**: the wolfSSL
 DTLS 1.3 client completes a handshake and an application-data exchange with the server
-([`test/servers/dtls_wolfssl`](../test/servers/dtls_wolfssl/README.md)), once leading with its default
+([`test/servers/dws_dtls_wolfssl`](../test/servers/dws_dtls_wolfssl/README.md)), once leading with its default
 group so the server drives a **HelloRetryRequest** to X25519, and once offering X25519 directly. This
 is the strongest evidence the wire format is right, and it caught three DTLS-vs-TLS conformance bugs the
 self-referential KATs could not - the `legacy_cookie` field, the DTLS version codepoints, and the
@@ -171,7 +171,7 @@ schedule, so the record layer and the handshake cannot disagree on it.
 | Area                           | Standard                  | Status                                                                                                                     |
 | ------------------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | DTLSPlaintext / DTLSCiphertext | RFC 9147 §4               | Implemented - unified header build/parse, DTLSPlaintext build/parse                                                        |
-| Record AEAD (AEAD_AES_128_GCM) | RFC 9147 §4.2, SP 800-38D | Implemented - TLS 1.3 nonce (§4.2.2), header-as-AAD; reuses `quic_aead`                                                    |
+| Record AEAD (AEAD_AES_128_GCM) | RFC 9147 §4.2, SP 800-38D | Implemented - TLS 1.3 nonce (§4.2.2), header-as-AAD; reuses `dws_quic_aead`                                                |
 | Sequence-number encryption     | RFC 9147 §4.2.3           | Implemented - `AES-ECB(sn_key, ct[0..15])` mask; `sn` key via HKDF-Expand-Label                                            |
 | Sequence-number reconstruction | RFC 9147 §4.2.2           | Implemented - closest-to-expected (RFC 9000 App. A.3)                                                                      |
 | Anti-replay window             | RFC 9147 §4.5.1           | Implemented - 64-record sliding window                                                                                     |

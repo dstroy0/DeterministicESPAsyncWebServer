@@ -71,25 +71,26 @@ void test_hmac_md5_vectors()
 
     uint8_t k1[16];
     memset(k1, 0x0b, sizeof(k1));
-    hmac_md5(k1, sizeof(k1), (const uint8_t *)"Hi There", 8, d);
+    dws_hmac_md5(k1, sizeof(k1), (const uint8_t *)"Hi There", 8, d);
     to_hex(d, hex);
     TEST_ASSERT_EQUAL_STRING("9294727a3638bb1c13f48ef8158bfc9d", hex); // RFC 2104 case 1
 
-    hmac_md5((const uint8_t *)"Jefe", 4, (const uint8_t *)"what do ya want for nothing?", 28, d);
+    dws_hmac_md5((const uint8_t *)"Jefe", 4, (const uint8_t *)"what do ya want for nothing?", 28, d);
     to_hex(d, hex);
     TEST_ASSERT_EQUAL_STRING("750c783e6ab0b503eaa86e310a5db738", hex);
 
     uint8_t k3[16], m3[50];
     memset(k3, 0xaa, sizeof(k3));
     memset(m3, 0xdd, sizeof(m3));
-    hmac_md5(k3, sizeof(k3), m3, sizeof(m3), d);
+    dws_hmac_md5(k3, sizeof(k3), m3, sizeof(m3), d);
     to_hex(d, hex);
     TEST_ASSERT_EQUAL_STRING("56be34521d144c88dbb8c733f0e8b3f6", hex);
 
     // a key longer than the 64-byte block is hashed down first (RFC 2104)
     uint8_t klong[80];
     memset(klong, 0xaa, sizeof(klong));
-    hmac_md5(klong, sizeof(klong), (const uint8_t *)"Test Using Larger Than Block-Size Key - Hash Key First", 54, d);
+    dws_hmac_md5(klong, sizeof(klong), (const uint8_t *)"Test Using Larger Than Block-Size Key - Hash Key First", 54,
+                 d);
     to_hex(d, hex);
     TEST_ASSERT_EQUAL_STRING("6b1ab7fe4bd7bf8f0b62e6ce61b9d0cd", hex); // RFC 2202 case 6
 }
@@ -102,11 +103,11 @@ void test_streaming_equals_oneshot()
     uint8_t one[16], strm[16];
     md5((const uint8_t *)s, n, one);
     MdCtx c;
-    md5_init(&c);
-    md5_update(&c, (const uint8_t *)s, 10);
-    md5_update(&c, (const uint8_t *)s + 10, 1); // odd split across the buffer boundary
-    md5_update(&c, (const uint8_t *)s + 11, n - 11);
-    md5_final(&c, strm);
+    dws_md5_init(&c);
+    dws_md5_update(&c, (const uint8_t *)s, 10);
+    dws_md5_update(&c, (const uint8_t *)s + 10, 1); // odd split across the buffer boundary
+    dws_md5_update(&c, (const uint8_t *)s + 11, n - 11);
+    dws_md5_final(&c, strm);
     TEST_ASSERT_EQUAL_MEMORY(one, strm, 16);
 }
 

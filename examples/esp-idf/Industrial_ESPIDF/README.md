@@ -50,8 +50,8 @@ snmpget  -v2c -c public <ip> 1.3.6.1.4.1.49374.10.0   # free heap (Gauge32)
 
 Every subsystem is behind a `DWS_ENABLE_*` flag that defaults **off**; only the core HTTP server is
 on. The flags are checked inside the library's own `.cpp` sources (compiled by the repo-root
-component), so a `#define` in `main.cpp` alone would **not** reach them - `modbus_server_init()` /
-`snmp_agent_init()` would fail to link. The ESP-IDF way (the equivalent of Arduino's `build_opt.h` or
+component), so a `#define` in `main.cpp` alone would **not** reach them - `dws_modbus_server_init()` /
+`dws_snmp_agent_init()` would fail to link. The ESP-IDF way (the equivalent of Arduino's `build_opt.h` or
 PlatformIO's `build_flags`) is a global compile definition in the project's top `CMakeLists.txt`,
 before `project()`:
 

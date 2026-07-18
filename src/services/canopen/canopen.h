@@ -96,7 +96,7 @@ enum class CanopenType : uint8_t
     CANOPEN_T_HEARTBEAT,
 };
 
-/** @brief A classified CANopen frame (the function code + node, from canopen_parse). */
+/** @brief A classified CANopen frame (the function code + node, from dws_canopen_parse). */
 struct CanopenMsg
 {
     CanopenType type;
@@ -104,7 +104,7 @@ struct CanopenMsg
     uint8_t pdo_num; ///< 1..4 for TPDO / RPDO, else 0
 };
 
-/** @brief A decoded SDO initiate response (from canopen_parse_sdo_response). */
+/** @brief A decoded SDO initiate response (from dws_canopen_parse_sdo_response). */
 struct CanopenSdoResponse
 {
     uint16_t index;      ///< object index echoed by the server
@@ -120,47 +120,49 @@ struct CanopenSdoResponse
 // --- builders: fill *out and return true; false on a bad argument ---
 
 /** @brief NMT node-control frame. @p node_id 0 addresses all nodes. */
-bool canopen_build_nmt(CanFrame *out, uint8_t command, uint8_t node_id);
+bool dws_canopen_build_nmt(CanFrame *out, uint8_t command, uint8_t node_id);
 
 /** @brief SYNC frame (zero-length, broadcast). */
-bool canopen_build_sync(CanFrame *out);
+bool dws_canopen_build_sync(CanFrame *out);
 
 /** @brief Heartbeat / boot-up frame for @p node_id reporting @p state. */
-bool canopen_build_heartbeat(CanFrame *out, uint8_t node_id, uint8_t state);
+bool dws_canopen_build_heartbeat(CanFrame *out, uint8_t node_id, uint8_t state);
 
 /** @brief Emergency (EMCY) frame: 16-bit error code (LE), error register, 5 manufacturer octets. */
-bool canopen_build_emcy(CanFrame *out, uint8_t node_id, uint16_t error_code, uint8_t error_reg, const uint8_t msef[5]);
+bool dws_canopen_build_emcy(CanFrame *out, uint8_t node_id, uint16_t error_code, uint8_t error_reg,
+                            const uint8_t msef[5]);
 
 /** @brief Transmit-PDO frame (@p pdo_num 1..4): up to 8 raw mapped octets. */
-bool canopen_build_tpdo(CanFrame *out, uint8_t pdo_num, uint8_t node_id, const uint8_t *data, uint8_t len);
+bool dws_canopen_build_tpdo(CanFrame *out, uint8_t pdo_num, uint8_t node_id, const uint8_t *data, uint8_t len);
 
 /** @brief Receive-PDO frame (@p pdo_num 1..4): up to 8 raw mapped octets. */
-bool canopen_build_rpdo(CanFrame *out, uint8_t pdo_num, uint8_t node_id, const uint8_t *data, uint8_t len);
+bool dws_canopen_build_rpdo(CanFrame *out, uint8_t pdo_num, uint8_t node_id, const uint8_t *data, uint8_t len);
 
 /** @brief SDO expedited upload (read) request for object @p index / @p sub on @p node_id. */
-bool canopen_build_sdo_read(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub);
+bool dws_canopen_build_sdo_read(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub);
 
 /** @brief SDO expedited download (write) of @p len (1..4) octets to @p index / @p sub. */
-bool canopen_build_sdo_write(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub, const uint8_t *data,
-                             uint8_t len);
+bool dws_canopen_build_sdo_write(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub, const uint8_t *data,
+                                 uint8_t len);
 
 /** @brief SDO abort frame. @p to_server true => client->server (0x600), false => server->client (0x580). */
-bool canopen_build_sdo_abort(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub, uint32_t abort_code,
-                             bool to_server);
+bool dws_canopen_build_sdo_abort(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub, uint32_t abort_code,
+                                 bool to_server);
 
 // --- parsers ---
 
 /** @brief Classify any frame by COB-ID into its CANopen function + node. */
-bool canopen_parse(const CanFrame *f, CanopenMsg *out);
+bool dws_canopen_parse(const CanFrame *f, CanopenMsg *out);
 
 /** @brief Decode an EMCY frame (must be a 0x080+node, 8-octet frame). */
-bool canopen_parse_emcy(const CanFrame *f, uint8_t *node_id, uint16_t *error_code, uint8_t *error_reg, uint8_t msef[5]);
+bool dws_canopen_parse_emcy(const CanFrame *f, uint8_t *node_id, uint16_t *error_code, uint8_t *error_reg,
+                            uint8_t msef[5]);
 
 /** @brief Decode a heartbeat frame (0x700+node, 1 octet). */
-bool canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *state);
+bool dws_canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *state);
 
 /** @brief Decode an SDO server response (0x580+node): upload data, download ack, or abort. */
-bool canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out);
+bool dws_canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out);
 
 #endif // DWS_ENABLE_CANOPEN
 #endif // DETERMINISTICESPASYNCWEBSERVER_CANOPEN_H

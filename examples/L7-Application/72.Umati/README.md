@@ -26,7 +26,7 @@ MachineTool
 ```
 
 You fill a `UmatiMachineTool` struct and refresh its live fields each `loop()` from your machine I/O;
-the server reads straight out of it. `umati_install(&mt)` binds the struct and registers the OPC UA
+the server reads straight out of it. `dws_umati_install(&mt)` binds the struct and registers the OPC UA
 Browse + Read resolvers - that is the whole wiring.
 
 ## What you teach

@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-bool devicenet_encode_id(uint32_t *id, DeviceNetGroup group, uint8_t msg_id, uint8_t mac_id)
+bool dws_devicenet_encode_id(uint32_t *id, DeviceNetGroup group, uint8_t msg_id, uint8_t mac_id)
 {
     if (!id || mac_id > DEVICENET_MAC_MASK)
         return false;
@@ -43,7 +43,7 @@ bool devicenet_encode_id(uint32_t *id, DeviceNetGroup group, uint8_t msg_id, uin
     }
 }
 
-bool devicenet_decode_id(uint32_t can_id, DeviceNetId *out)
+bool dws_devicenet_decode_id(uint32_t can_id, DeviceNetId *out)
 {
     if (!out)
         return false;
@@ -79,36 +79,36 @@ bool devicenet_decode_id(uint32_t can_id, DeviceNetId *out)
     return false; // 0x7F0..0x7FF are invalid identifiers
 }
 
-uint8_t devicenet_msg_header(bool frag, bool xid, uint8_t mac_id)
+uint8_t dws_devicenet_msg_header(bool frag, bool xid, uint8_t mac_id)
 {
     return (uint8_t)((frag ? DEVICENET_HDR_FRAG : 0u) | (xid ? DEVICENET_HDR_XID : 0u) | (mac_id & DEVICENET_MAC_MASK));
 }
 
-uint8_t devicenet_frag_octet(uint8_t type, uint8_t count)
+uint8_t dws_devicenet_frag_octet(uint8_t type, uint8_t count)
 {
     return (uint8_t)((type & DEVICENET_FRAG_TYPE_MASK) | (count & DEVICENET_FRAG_COUNT_MASK));
 }
 
-bool devicenet_build_explicit(CanFrame *out, DeviceNetGroup group, uint8_t msg_id, uint8_t mac_id, const uint8_t *body,
-                              uint8_t body_len)
+bool dws_devicenet_build_explicit(CanFrame *out, DeviceNetGroup group, uint8_t msg_id, uint8_t mac_id,
+                                  const uint8_t *body, uint8_t body_len)
 {
     if (!out || body_len > 7 || (body_len && !body)) // 1 header octet + up to 7 body octets
         return false;
     uint32_t id;
-    if (!devicenet_encode_id(&id, group, msg_id, mac_id))
+    if (!dws_devicenet_encode_id(&id, group, msg_id, mac_id))
         return false;
     out->id = id;
     out->extended = false;
     out->rtr = false;
     out->dlc = (uint8_t)(1 + body_len);
     memset(out->data, 0, sizeof(out->data));
-    out->data[0] = devicenet_msg_header(false, false, mac_id); // not fragmented
+    out->data[0] = dws_devicenet_msg_header(false, false, mac_id); // not fragmented
     if (body_len)
         memcpy(out->data + 1, body, body_len);
     return true;
 }
 
-void devicenet_frag_reset(DeviceNetFragRx *rx)
+void dws_devicenet_frag_reset(DeviceNetFragRx *rx)
 {
     if (rx)
         memset(rx, 0, sizeof(*rx));
@@ -124,14 +124,14 @@ static bool frag_append(DeviceNetFragRx *rx, const uint8_t *p, uint8_t n)
     return true;
 }
 
-DeviceNetFragResult devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *body, uint8_t body_len)
+DeviceNetFragResult dws_devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *body, uint8_t body_len)
 {
     if (!rx || !body || body_len < 1)
         return DeviceNetFragResult::DEVICENET_FRAG_IGNORED;
 
     if (!(body[0] & DEVICENET_HDR_FRAG)) // a complete, non-fragmented message in one frame
     {
-        devicenet_frag_reset(rx);
+        dws_devicenet_frag_reset(rx);
         if (body_len > 1 && !frag_append(rx, body + 1, (uint8_t)(body_len - 1)))
             return DeviceNetFragResult::DEVICENET_FRAG_ERR; // GCOVR_EXCL_LINE  unreachable: reset()->len 0, then a
                                                             // single append of <=254 (uint8 body_len-1) < 256=MSG_MAX
@@ -147,7 +147,7 @@ DeviceNetFragResult devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *body
     switch (type)
     {
     case DEVICENET_FRAG_FIRST:
-        devicenet_frag_reset(rx);
+        dws_devicenet_frag_reset(rx);
         rx->active = true;
         rx->next_count = (uint8_t)((count + 1u) & DEVICENET_FRAG_COUNT_MASK);
         if (data_len && !frag_append(rx, data, data_len))
@@ -158,12 +158,12 @@ DeviceNetFragResult devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *body
     case DEVICENET_FRAG_MIDDLE:
         if (!rx->active || count != rx->next_count)
         {
-            devicenet_frag_reset(rx);
+            dws_devicenet_frag_reset(rx);
             return DeviceNetFragResult::DEVICENET_FRAG_ERR;
         }
         if (data_len && !frag_append(rx, data, data_len))
         {
-            devicenet_frag_reset(rx);
+            dws_devicenet_frag_reset(rx);
             return DeviceNetFragResult::DEVICENET_FRAG_ERR;
         }
         rx->next_count = (uint8_t)((count + 1u) & DEVICENET_FRAG_COUNT_MASK);
@@ -171,12 +171,12 @@ DeviceNetFragResult devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *body
     case DEVICENET_FRAG_LAST:
         if (!rx->active || count != rx->next_count)
         {
-            devicenet_frag_reset(rx);
+            dws_devicenet_frag_reset(rx);
             return DeviceNetFragResult::DEVICENET_FRAG_ERR;
         }
         if (data_len && !frag_append(rx, data, data_len))
         {
-            devicenet_frag_reset(rx);
+            dws_devicenet_frag_reset(rx);
             return DeviceNetFragResult::DEVICENET_FRAG_ERR;
         }
         rx->active = false;

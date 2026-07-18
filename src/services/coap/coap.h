@@ -172,17 +172,17 @@ bool dws_coap_server_add_resource(const char *path, uint8_t methods, CoapHandler
  * @param req      request datagram bytes.
  * @param req_len  number of bytes in @p req.
  * @param resp     destination buffer for the response datagram.
- * @param resp_cap capacity of @p resp.
+ * @param dws_resp_cap capacity of @p resp.
  * @return number of response bytes written, or 0 to send nothing.
  */
-size_t dws_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap);
+size_t dws_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t dws_resp_cap);
 
 /**
  * @brief Like dws_coap_server_process(), but include an Observe option (RFC 7641) in
  *        a successful (2.xx) response carrying the notification sequence
  *        @p observe_seq (a value < 0 omits it). Used by the Observe transport.
  */
-size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap,
+size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t dws_resp_cap,
                                   int32_t observe_seq);
 
 // ---------------------------------------------------------------------------

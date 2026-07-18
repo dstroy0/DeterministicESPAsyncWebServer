@@ -158,9 +158,9 @@ void test_pcap_headers()
 
 void test_host_stubs_and_short_frame()
 {
-    TEST_ASSERT_FALSE(promisc_begin(6, nullptr)); // host: esp_wifi unavailable
-    promisc_set_channel(11);
-    promisc_end();
+    TEST_ASSERT_FALSE(dws_promisc_begin(6, nullptr)); // host: esp_wifi unavailable
+    dws_promisc_set_channel(11);
+    dws_promisc_end();
     WifiFrameInfo info;
     uint8_t too_short[2] = {0x08, 0x00};
     TEST_ASSERT_FALSE(wifi_frame_parse(too_short, sizeof(too_short), &info));

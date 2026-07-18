@@ -19,7 +19,7 @@
  * retransmission timer, and reaps idle or failed connections. The engines therefore only ever run in
  * one context. On host builds there is no UDP; datagrams are injected with dws_coaps_server_ingest() and
  * replies captured through an output sink, so the whole server is host-testable by shuttling byte
- * buffers to an in-test DTLS client, exactly like dtls_conn and dws_coaps_process themselves.
+ * buffers to an in-test DTLS client, exactly like dws_dtls_conn and dws_coaps_process themselves.
  *
  * Constrained-friendly: unlike the HTTP/3 pool this is not PSRAM-gated - a small DtlsConn pool fits
  * internal DRAM, which is the whole point of CoAP. Raise DWS_COAPS_MAX_CONNS for more simultaneous

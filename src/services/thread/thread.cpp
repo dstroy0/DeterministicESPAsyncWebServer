@@ -41,7 +41,7 @@ bool put_stuffed(uint8_t *out, uint16_t *p, uint16_t cap, uint8_t b)
 }
 } // namespace
 
-uint8_t spinel_pack_uint(uint32_t value, uint8_t *out, uint8_t cap)
+uint8_t dws_spinel_pack_uint(uint32_t value, uint8_t *out, uint8_t cap)
 {
     if (!out)
         return 0;
@@ -59,7 +59,7 @@ uint8_t spinel_pack_uint(uint32_t value, uint8_t *out, uint8_t cap)
     return n;
 }
 
-int spinel_unpack_uint(const uint8_t *raw, uint8_t len, uint32_t *value)
+int dws_spinel_unpack_uint(const uint8_t *raw, uint8_t len, uint32_t *value)
 {
     if (!raw)
         return 0;
@@ -82,18 +82,18 @@ int spinel_unpack_uint(const uint8_t *raw, uint8_t len, uint32_t *value)
     return 0; // truncated - need more bytes
 }
 
-uint16_t spinel_command_build(uint8_t header, uint32_t cmd, uint32_t prop, const uint8_t *value, uint16_t value_len,
-                              uint8_t *out, uint16_t cap)
+uint16_t dws_spinel_command_build(uint8_t header, uint32_t cmd, uint32_t prop, const uint8_t *value, uint16_t value_len,
+                                  uint8_t *out, uint16_t cap)
 {
     if (!out || cap < 1 || (value == nullptr && value_len > 0))
         return 0;
     uint16_t p = 0;
     out[p++] = header;
-    uint8_t n = spinel_pack_uint(cmd, out + p, (uint8_t)(cap - p));
+    uint8_t n = dws_spinel_pack_uint(cmd, out + p, (uint8_t)(cap - p));
     if (n == 0)
         return 0;
     p += n;
-    n = spinel_pack_uint(prop, out + p, (uint8_t)(cap > p ? cap - p : 0));
+    n = dws_spinel_pack_uint(prop, out + p, (uint8_t)(cap > p ? cap - p : 0));
     if (n == 0)
         return 0;
     p += n;
@@ -104,8 +104,8 @@ uint16_t spinel_command_build(uint8_t header, uint32_t cmd, uint32_t prop, const
     return (uint16_t)(p + value_len);
 }
 
-int spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, uint32_t *cmd, uint32_t *prop,
-                         const uint8_t **value, uint16_t *value_len)
+int dws_spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, uint32_t *cmd, uint32_t *prop,
+                             const uint8_t **value, uint16_t *value_len)
 {
     if (!payload || len < 1)
         return -1;
@@ -113,11 +113,11 @@ int spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, 
     uint8_t h = payload[p++];
     uint32_t c = 0;
     uint32_t pr = 0;
-    int n = spinel_unpack_uint(payload + p, (uint8_t)((len - p) > 255 ? 255 : (len - p)), &c);
+    int n = dws_spinel_unpack_uint(payload + p, (uint8_t)((len - p) > 255 ? 255 : (len - p)), &c);
     if (n <= 0)
         return -1;
     p += (uint16_t)n;
-    n = spinel_unpack_uint(payload + p, (uint8_t)((len - p) > 255 ? 255 : (len - p)), &pr);
+    n = dws_spinel_unpack_uint(payload + p, (uint8_t)((len - p) > 255 ? 255 : (len - p)), &pr);
     if (n <= 0)
         return -1;
     p += (uint16_t)n;
@@ -134,7 +134,7 @@ int spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, 
     return (int)p;
 }
 
-uint16_t spinel_fcs(const uint8_t *buf, uint16_t len)
+uint16_t dws_spinel_fcs(const uint8_t *buf, uint16_t len)
 {
     uint16_t crc = 0xFFFF;
     for (uint16_t i = 0; i < len; i++)
@@ -146,11 +146,11 @@ uint16_t spinel_fcs(const uint8_t *buf, uint16_t len)
     return (uint16_t)(crc ^ 0xFFFF);
 }
 
-uint16_t spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)
+uint16_t dws_spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)
 {
     if (!out || len > DWS_THREAD_MAX_DATA || (payload == nullptr && len > 0))
         return 0;
-    uint16_t fcs = spinel_fcs(payload, len);
+    uint16_t fcs = dws_spinel_fcs(payload, len);
     uint16_t p = 0;
     for (uint16_t i = 0; i < len; i++)
         if (!put_stuffed(out, &p, cap, payload[i]))
@@ -164,7 +164,7 @@ uint16_t spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out,
     return p;
 }
 
-int spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint16_t pay_cap, uint16_t *pay_len)
+int dws_spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint16_t pay_cap, uint16_t *pay_len)
 {
     if (!raw)
         return 0;
@@ -193,7 +193,7 @@ int spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint
     if (n < 2)
         return -1; // need at least the FCS
     uint16_t plen = (uint16_t)(n - 2);
-    uint16_t fcs = spinel_fcs(un, plen);
+    uint16_t fcs = dws_spinel_fcs(un, plen);
     if ((uint16_t)(un[plen] | (un[plen + 1] << 8)) != fcs)
         return -1; // FCS mismatch (transmitted low byte first)
     if (plen > pay_cap)

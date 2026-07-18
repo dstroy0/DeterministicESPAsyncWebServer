@@ -172,28 +172,28 @@ struct Smb2NegotiateResp
  *        big-endian length) into @p out.
  * @return total bytes written (4 + @p msg_len), or 0 on overflow / a length that does not fit 24 bits.
  */
-size_t smb2_transport_frame(uint8_t *out, size_t cap, const uint8_t *msg, size_t msg_len);
+size_t dws_smb2_transport_frame(uint8_t *out, size_t cap, const uint8_t *msg, size_t msg_len);
 
 /**
  * @brief Read the Direct-TCP transport length prefix.
  * @return the SMB2 message length that follows the 4-byte prefix, or 0 if @p len < 4 or the first
  *         byte is non-zero (an invalid Direct-TCP frame).
  */
-uint32_t smb2_transport_len(const uint8_t *buf, size_t len);
+uint32_t dws_smb2_transport_len(const uint8_t *buf, size_t len);
 
 /**
  * @brief Build a 64-byte SMB2 sync header into @p buf.
  * @return SMB2_HEADER_SIZE, or 0 if @p cap < 64.
  */
-size_t smb2_build_header(uint8_t *buf, size_t cap, Smb2Command command, uint16_t credit_request, uint64_t message_id,
-                         uint32_t tree_id, uint64_t session_id);
+size_t dws_smb2_build_header(uint8_t *buf, size_t cap, Smb2Command command, uint16_t credit_request,
+                             uint64_t message_id, uint32_t tree_id, uint64_t session_id);
 
 /**
  * @brief Parse a 64-byte SMB2 sync header (validates ProtocolId + StructureSize).
  * @return true on a valid header; false if @p len < 64, ProtocolId != `FE 53 4D 42`, or
  *         StructureSize != 64.
  */
-bool smb2_parse_header(const uint8_t *buf, size_t len, Smb2Header *out);
+bool dws_smb2_parse_header(const uint8_t *buf, size_t len, Smb2Header *out);
 
 /**
  * @brief Build a NEGOTIATE request (header + body) offering SMB 2.0.2 / 2.1 / 3.0 / 3.0.2.
@@ -201,7 +201,7 @@ bool smb2_parse_header(const uint8_t *buf, size_t len, Smb2Header *out);
  * @param security_mode SMB2_NEGOTIATE_SIGNING_ENABLED and/or _REQUIRED.
  * @return total message bytes (no transport prefix), or 0 on overflow.
  */
-size_t smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_guid[16], uint16_t security_mode);
+size_t dws_smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_guid[16], uint16_t security_mode);
 
 /**
  * @brief Parse a NEGOTIATE response message (the SMB2 header + §2.2.4 body).
@@ -211,7 +211,7 @@ size_t smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_guid[
  *         and the security buffer within bounds); false otherwise. On success @p out->sec_buf points
  *         into @p msg (or is nullptr when SecurityBufferLength is 0).
  */
-bool smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2NegotiateResp *out);
+bool dws_smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2NegotiateResp *out);
 
 /** @brief Parsed SESSION_SETUP response (MS-SMB2 §2.2.6). */
 struct Smb2SessionSetupResp
@@ -233,14 +233,14 @@ struct Smb2SessionSetupResp
  * @param security_mode SMB2_NEGOTIATE_SIGNING_ENABLED and/or _REQUIRED (one byte on the wire).
  * @return total message bytes (no transport prefix), or 0 on overflow / empty token.
  */
-size_t smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
-                                uint8_t security_mode, const uint8_t *sec_buf, size_t sec_len);
+size_t dws_smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
+                                    uint8_t security_mode, const uint8_t *sec_buf, size_t sec_len);
 
 /**
  * @brief Parse a SESSION_SETUP response message (the SMB2 header + §2.2.6 body).
  *
  * The caller reads the SessionId (to echo on the next round) and the NT status
- * (SMB2_STATUS_MORE_PROCESSING_REQUIRED vs SMB2_STATUS_SUCCESS) from smb2_parse_header on the same
+ * (SMB2_STATUS_MORE_PROCESSING_REQUIRED vs SMB2_STATUS_SUCCESS) from dws_smb2_parse_header on the same
  * @p msg; this extracts the SessionFlags and the server security buffer.
  *
  * @param msg the SMB2 message (starting at the sync header, transport prefix already stripped).
@@ -248,15 +248,15 @@ size_t smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, u
  *         security buffer within bounds); false otherwise. On success @p out->sec_buf points into
  *         @p msg (or is nullptr when SecurityBufferLength is 0).
  */
-bool smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2SessionSetupResp *out);
+bool dws_smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2SessionSetupResp *out);
 
 /**
  * @brief Build a TREE_CONNECT request (header + §2.2.9 body) for a share path.
  * @param path_utf16 the UNC path `\\server\share` in UTF-16LE (no NUL); @p path_len its byte length.
  * @return total message bytes (no transport prefix), or 0 on overflow / empty path.
  */
-size_t smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
-                               const uint8_t *path_utf16, size_t path_len);
+size_t dws_smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
+                                   const uint8_t *path_utf16, size_t path_len);
 
 /** @brief Parsed TREE_CONNECT response (MS-SMB2 §2.2.10). The TreeId is in the response header. */
 struct Smb2TreeConnectResp
@@ -269,9 +269,9 @@ struct Smb2TreeConnectResp
 
 /**
  * @brief Parse a TREE_CONNECT response message (validates command + StructureSize 16).
- * @return true on a well-formed response; the caller reads the TreeId from smb2_parse_header.
+ * @return true on a well-formed response; the caller reads the TreeId from dws_smb2_parse_header.
  */
-bool smb2_parse_tree_connect_response(const uint8_t *msg, size_t len, Smb2TreeConnectResp *out);
+bool dws_smb2_parse_tree_connect_response(const uint8_t *msg, size_t len, Smb2TreeConnectResp *out);
 
 /**
  * @brief Build a CREATE request (header + §2.2.13 body) to open/create a file on the tree.
@@ -283,9 +283,9 @@ bool smb2_parse_tree_connect_response(const uint8_t *msg, size_t len, Smb2TreeCo
  * @param create_options     SMB2_FILE_NON_DIRECTORY_FILE for a regular file.
  * @return total message bytes (no transport prefix), or 0 on overflow.
  */
-size_t smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
-                         uint32_t desired_access, uint32_t share_access, uint32_t create_disposition,
-                         uint32_t create_options, const uint8_t *name_utf16, size_t name_len);
+size_t dws_smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                             uint32_t desired_access, uint32_t share_access, uint32_t create_disposition,
+                             uint32_t create_options, const uint8_t *name_utf16, size_t name_len);
 
 /** @brief Parsed CREATE response (MS-SMB2 §2.2.14). */
 struct Smb2CreateResp
@@ -300,14 +300,14 @@ struct Smb2CreateResp
  * @brief Parse a CREATE response message (validates command + StructureSize 89, FileId in bounds).
  * @return true on a well-formed response.
  */
-bool smb2_parse_create_response(const uint8_t *msg, size_t len, Smb2CreateResp *out);
+bool dws_smb2_parse_create_response(const uint8_t *msg, size_t len, Smb2CreateResp *out);
 
 /**
  * @brief Build a CLOSE request (header + §2.2.15 body) for an open FileId.
  * @return total message bytes (no transport prefix), or 0 on overflow.
  */
-size_t smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
-                        const uint8_t file_id[16]);
+size_t dws_smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                            const uint8_t file_id[16]);
 
 /** @brief Parsed CLOSE response (MS-SMB2 §2.2.16). */
 struct Smb2CloseResp
@@ -320,14 +320,14 @@ struct Smb2CloseResp
  * @brief Parse a CLOSE response message (validates command + StructureSize 60).
  * @return true on a well-formed response.
  */
-bool smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *out);
+bool dws_smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *out);
 
 /**
  * @brief Build a READ request (header + §2.2.19 body) for @p length bytes at @p offset of an open file.
  * @return total message bytes (no transport prefix), or 0 on overflow.
  */
-size_t smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
-                       const uint8_t file_id[16], uint32_t length, uint64_t offset);
+size_t dws_smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                           const uint8_t file_id[16], uint32_t length, uint64_t offset);
 
 /** @brief Parsed READ response (MS-SMB2 §2.2.20). */
 struct Smb2ReadResp
@@ -340,14 +340,14 @@ struct Smb2ReadResp
  * @brief Parse a READ response message (validates command + StructureSize 17, data within bounds).
  * @return true on a well-formed response.
  */
-bool smb2_parse_read_response(const uint8_t *msg, size_t len, Smb2ReadResp *out);
+bool dws_smb2_parse_read_response(const uint8_t *msg, size_t len, Smb2ReadResp *out);
 
 /**
  * @brief Build a WRITE request (header + §2.2.21 body) writing @p data at @p offset of an open file.
  * @return total message bytes (no transport prefix), or 0 on overflow / empty data.
  */
-size_t smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
-                        const uint8_t file_id[16], const uint8_t *data, size_t data_len, uint64_t offset);
+size_t dws_smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                            const uint8_t file_id[16], const uint8_t *data, size_t data_len, uint64_t offset);
 
 /** @brief Parsed WRITE response (MS-SMB2 §2.2.22). */
 struct Smb2WriteResp
@@ -359,7 +359,7 @@ struct Smb2WriteResp
  * @brief Parse a WRITE response message (validates command + StructureSize 17).
  * @return true on a well-formed response.
  */
-bool smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *out);
+bool dws_smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *out);
 
 #endif // DWS_ENABLE_SMB
 

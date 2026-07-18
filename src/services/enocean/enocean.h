@@ -12,8 +12,8 @@
  *        | data[data-len] | opt[opt-len] | CRC8D
  *
  * where CRC8H protects the 4 header bytes and CRC8D protects the data + optional data (both
- * CRC-8, polynomial 0x07, init 0). esp3_parse() frames one telegram out of a byte stream,
- * resynchronising on a bad sync / CRC, and esp3_build() assembles one. This is the radio-
+ * CRC-8, polynomial 0x07, init 0). dws_esp3_parse() frames one telegram out of a byte stream,
+ * resynchronising on a bad sync / CRC, and dws_esp3_build() assembles one. This is the radio-
  * plugin codec for the gateway: an inbound RADIO_ERP1 telegram carries a sender id (its
  * source address) and payload; bridge it northbound with dws_gateway_uplink(). Pure - you feed
  * it the UART bytes - so it is fully host-testable. See example 13.EnOceanGateway.
@@ -36,7 +36,7 @@
 #define ESP3_SYNC 0x55
 
 /** @brief ESP3 packet types (the common ones). */
-enum class esp3_type : uint8_t
+enum class dws_esp3_type : uint8_t
 {
     ESP3_RADIO_ERP1 = 0x01,
     ESP3_RESPONSE = 0x02,
@@ -49,17 +49,17 @@ enum class esp3_type : uint8_t
 };
 
 /** @brief A parsed ESP3 telegram (pointers alias the caller's buffer). */
-struct esp3_packet
+struct dws_esp3_packet
 {
     const uint8_t *data; ///< data field
     const uint8_t *opt;  ///< optional-data field
     uint16_t data_len;   ///< data length
     uint8_t opt_len;     ///< optional-data length
-    esp3_type type;      ///< packet type (esp3_type)
+    dws_esp3_type type;  ///< packet type (dws_esp3_type)
 };
 
 /** @brief CRC-8 used by ESP3 (polynomial 0x07, MSB-first, init 0x00). */
-uint8_t esp3_crc8(const uint8_t *buf, uint16_t len);
+uint8_t dws_esp3_crc8(const uint8_t *buf, uint16_t len);
 
 /**
  * @brief Frame one ESP3 telegram from the front of @p raw.
@@ -68,15 +68,15 @@ uint8_t esp3_crc8(const uint8_t *buf, uint16_t len);
  *         valid telegram start (wrong sync, header CRC, data CRC, or an over-length data
  *         field) - the caller should drop one byte and retry to resynchronise.
  */
-int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out);
+int dws_esp3_parse(const uint8_t *raw, uint16_t len, dws_esp3_packet *out);
 
 /**
  * @brief Assemble an ESP3 telegram into @p out.
  * @return the total telegram length, or 0 if it would not fit @p cap or @p data_len exceeds
  *         DWS_ENOCEAN_MAX_DATA.
  */
-uint16_t esp3_build(esp3_type type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
-                    uint8_t *out, uint16_t cap);
+uint16_t dws_esp3_build(dws_esp3_type type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
+                        uint8_t *out, uint16_t cap);
 
 #endif // DWS_ENABLE_ENOCEAN
 

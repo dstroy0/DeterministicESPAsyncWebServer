@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_frame.h
+ * @file dws_quic_frame.h
  * @brief QUIC frame parsing and building (RFC 9000 sec 19).
  *
  * The payload of a QUIC packet is a sequence of frames, each `Frame Type (i)` followed by
@@ -44,7 +44,7 @@ struct QuicFrameType
     static constexpr uint8_t QUIC_FT_HANDSHAKE_DONE = 0x1e;
     // Frames the minimal server does not act on but MUST still parse (skip) so a well-formed frame from
     // a real client is not rejected as a FRAME_ENCODING_ERROR (RFC 9000 sec 12.4). Grouped by wire shape
-    // in quic_frame_parse(): 3 varints (RESET_STREAM), 2 varints (STOP_SENDING / MAX_STREAM_DATA /
+    // in dws_quic_frame_parse(): 3 varints (RESET_STREAM), 2 varints (STOP_SENDING / MAX_STREAM_DATA /
     // STREAM_DATA_BLOCKED), 1 varint (MAX_STREAMS / DATA_BLOCKED / STREAMS_BLOCKED / RETIRE_CONNECTION_ID),
     // and the length-prefixed / fixed-width shapes (NEW_TOKEN, NEW_CONNECTION_ID, PATH_CHALLENGE/RESPONSE).
     static constexpr uint8_t QUIC_FT_RESET_STREAM = 0x04;
@@ -125,28 +125,28 @@ struct QuicFrame
 };
 
 /** @brief Parse one frame at @p buf. @return bytes consumed, or 0 on malformed / truncated input. */
-size_t quic_frame_parse(const uint8_t *buf, size_t len, QuicFrame *out);
+size_t dws_quic_frame_parse(const uint8_t *buf, size_t len, QuicFrame *out);
 
 // --- Builders (server side) ------------------------------------------------------------------
 
 /** @brief @p n PADDING frames (n zero bytes). @return n, or 0 if it does not fit. */
-size_t quic_build_padding(uint8_t *out, size_t cap, size_t n);
+size_t dws_quic_build_padding(uint8_t *out, size_t cap, size_t n);
 /** @brief A PING frame. */
-size_t quic_build_ping(uint8_t *out, size_t cap);
+size_t dws_quic_build_ping(uint8_t *out, size_t cap);
 /** @brief A HANDSHAKE_DONE frame. */
-size_t quic_build_handshake_done(uint8_t *out, size_t cap);
+size_t dws_quic_build_handshake_done(uint8_t *out, size_t cap);
 /** @brief A single-range ACK frame (ACK Range Count 0): Largest, ACK Delay, First ACK Range. */
-size_t quic_build_ack(uint8_t *out, size_t cap, uint64_t largest, uint64_t delay, uint64_t first_range);
+size_t dws_quic_build_ack(uint8_t *out, size_t cap, uint64_t largest, uint64_t delay, uint64_t first_range);
 /** @brief A CRYPTO frame carrying @p len bytes at stream @p offset. */
-size_t quic_build_crypto(uint8_t *out, size_t cap, uint64_t offset, const uint8_t *data, size_t len);
+size_t dws_quic_build_crypto(uint8_t *out, size_t cap, uint64_t offset, const uint8_t *data, size_t len);
 /** @brief A STREAM frame (LEN always set; OFF set when @p offset > 0; FIN per @p fin). */
-size_t quic_build_stream(uint8_t *out, size_t cap, uint64_t id, uint64_t offset, const uint8_t *data, size_t len,
-                         bool fin);
+size_t dws_quic_build_stream(uint8_t *out, size_t cap, uint64_t id, uint64_t offset, const uint8_t *data, size_t len,
+                             bool fin);
 /** @brief A MAX_DATA frame. */
-size_t quic_build_max_data(uint8_t *out, size_t cap, uint64_t max);
+size_t dws_quic_build_max_data(uint8_t *out, size_t cap, uint64_t max);
 /** @brief A transport CONNECTION_CLOSE (0x1c) with the triggering @p frame_type and a reason phrase. */
-size_t quic_build_connection_close(uint8_t *out, size_t cap, uint64_t error_code, uint64_t frame_type,
-                                   const char *reason, size_t reason_len);
+size_t dws_quic_build_connection_close(uint8_t *out, size_t cap, uint64_t error_code, uint64_t frame_type,
+                                       const char *reason, size_t reason_len);
 
 #endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_FRAME_H

@@ -46,28 +46,28 @@ struct Sen0192Motion
 };
 
 /** @brief Initialize a tracker: @p active_high sets the motion polarity, @p hold_ms the presence hold. */
-void sen0192_motion_init(Sen0192Motion *m, uint32_t hold_ms, bool active_high);
+void dws_sen0192_motion_init(Sen0192Motion *m, uint32_t hold_ms, bool active_high);
 
 /**
  * @brief Feed one sampled line level at @p now_ms.
  * @return true iff this sample started a new presence (a clear -> present edge).
  */
-bool sen0192_motion_update(Sen0192Motion *m, bool level_high, uint32_t now_ms);
+bool dws_sen0192_motion_update(Sen0192Motion *m, bool level_high, uint32_t now_ms);
 
 /**
  * @brief Re-evaluate presence against the hold window at @p now_ms without a new sample (call each tick so
  *        presence clears on time even when no fresh sample arrives). @return the current presence.
  */
-bool sen0192_motion_tick(Sen0192Motion *m, uint32_t now_ms);
+bool dws_sen0192_motion_tick(Sen0192Motion *m, uint32_t now_ms);
 
 /** @brief Current presence (respecting the hold window). */
-bool sen0192_motion_present(const Sen0192Motion *m);
+bool dws_sen0192_motion_present(const Sen0192Motion *m);
 
 /** @brief Number of clear -> present transitions since init. */
-uint32_t sen0192_motion_events(const Sen0192Motion *m);
+uint32_t dws_sen0192_motion_events(const Sen0192Motion *m);
 
 /** @brief Milliseconds since the last active-level sample (0 if none yet). */
-uint32_t sen0192_motion_active_age_ms(const Sen0192Motion *m, uint32_t now_ms);
+uint32_t dws_sen0192_motion_active_age_ms(const Sen0192Motion *m, uint32_t now_ms);
 
 // --- ESP32 binding (GPIO poll; no-ops on a host build) ---------------------------------------
 
@@ -75,16 +75,16 @@ uint32_t sen0192_motion_active_age_ms(const Sen0192Motion *m, uint32_t now_ms);
  * @brief Configure DWS_SEN0192_PIN as an input and start tracking (polarity / hold from ServerConfig).
  * @return true on ESP32, false on a host build.
  */
-bool sen0192_begin(void);
+bool dws_sen0192_begin(void);
 
 /** @brief Sample the pin now (via dws_millis()). @return true iff a new presence just started. */
-bool sen0192_poll(void);
+bool dws_sen0192_poll(void);
 
 /** @brief Current presence. */
-bool sen0192_present(void);
+bool dws_sen0192_present(void);
 
-/** @brief Count of motion events (clear -> present transitions) since sen0192_begin(). */
-uint32_t sen0192_motion_count(void);
+/** @brief Count of motion events (clear -> present transitions) since dws_sen0192_begin(). */
+uint32_t dws_sen0192_motion_count(void);
 
 #endif // DWS_ENABLE_SEN0192
 

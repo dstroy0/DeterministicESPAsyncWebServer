@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file modbus_master.cpp
+ * @file dws_modbus_master.cpp
  * @brief Modbus TCP master codec - build read requests, parse responses (pure).
  */
 
@@ -10,8 +10,8 @@
 
 #if DWS_ENABLE_MODBUS_MASTER
 
-size_t modbus_build_read(uint8_t fc, uint16_t txid, uint8_t unit, uint16_t start, uint16_t count, uint8_t *out,
-                         size_t cap)
+size_t dws_modbus_build_read(uint8_t fc, uint16_t txid, uint8_t unit, uint16_t start, uint16_t count, uint8_t *out,
+                             size_t cap)
 {
     if (!out || cap < 12)
         return 0;
@@ -37,7 +37,8 @@ size_t modbus_build_read(uint8_t fc, uint16_t txid, uint8_t unit, uint16_t start
     return 12;
 }
 
-int modbus_parse_response(const uint8_t *adu, size_t len, uint16_t *regs_out, size_t max_regs, uint8_t *exception_out)
+int dws_modbus_parse_response(const uint8_t *adu, size_t len, uint16_t *regs_out, size_t max_regs,
+                              uint8_t *exception_out)
 {
     if (exception_out)
         *exception_out = 0;

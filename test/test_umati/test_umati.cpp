@@ -62,7 +62,7 @@ void setUp(void)
     g_mt.produced_part_count = 7;
     g_mt.message_text = "Door open";
     g_mt.message_severity = 500;
-    umati_bind(&g_mt);
+    dws_umati_bind(&g_mt);
 }
 void tearDown(void)
 {
@@ -71,7 +71,7 @@ void tearDown(void)
 // Browse a node into a fixed buffer; returns the count.
 static int32_t browse(uint16_t ns, uint32_t id, OpcUaReference *refs, uint32_t cap)
 {
-    return umati_browse(ns, id, refs, cap);
+    return dws_umati_browse(ns, id, refs, cap);
 }
 static const OpcUaReference *find_ref(const OpcUaReference *refs, int32_t n, const char *name)
 {
@@ -159,11 +159,11 @@ static void test_browse_leaf_and_unknown_return_negative(void)
 static void test_read_identification(void)
 {
     OpcUaVariant v;
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_STRING, v.type);
     TEST_ASSERT_EQUAL_STRING("Acme Machines", v.str);
 
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_ID_YEAR, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_ID_YEAR, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_UINT32, v.type);
     TEST_ASSERT_EQUAL_UINT32(2026, v.u32);
 }
@@ -171,39 +171,39 @@ static void test_read_identification(void)
 static void test_read_monitoring_values(void)
 {
     OpcUaVariant v;
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_MON_OPMODE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_MON_OPMODE, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_INT32, v.type);
     TEST_ASSERT_EQUAL_INT32((int32_t)UmatiOperationMode::UMATI_OP_AUTOMATIC, v.i32);
 
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_CH_STATE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_CH_STATE, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_INT32((int32_t)UmatiChannelState::UMATI_CH_RUNNING, v.i32);
 
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_CH_FEEDOVR, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_CH_FEEDOVR, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_DOUBLE, v.type);
     TEST_ASSERT_TRUE(v.f64 == 85.0); // exact value; the suite compares doubles with == (Unity double asserts off)
 
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_SP_SPEED, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_SP_SPEED, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_TRUE(v.f64 == 1200.0);
 
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_SP_ROTATING, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_SP_ROTATING, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_BOOL, v.type);
     TEST_ASSERT_TRUE(v.b);
 
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_AX_X_POS, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_AX_X_POS, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_TRUE(v.f64 == 10.5);
 
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_CH_ACTIVEPROG, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_CH_ACTIVEPROG, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_STRING("PART_A.NC", v.str);
 }
 
 static void test_read_production_and_notification(void)
 {
     OpcUaVariant v;
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_PROD_PARTCOUNT, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_PROD_PARTCOUNT, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_UINT32(7, v.u32);
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_NOTIF_MESSAGE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_NOTIF_MESSAGE, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_STRING("Door open", v.str);
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_NOTIF_SEVERITY, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_NOTIF_SEVERITY, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_UINT32(500, v.u32);
 }
 
@@ -211,7 +211,7 @@ static void test_read_null_string_served_as_empty(void)
 {
     g_mt.ident.model = nullptr; // a null field must not crash - served as ""
     OpcUaVariant v;
-    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, 5102 /*Model*/, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, 5102 /*Model*/, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_STRING, v.type);
     TEST_ASSERT_EQUAL_STRING("", v.str);
     TEST_ASSERT_EQUAL_INT32(0, v.str_len);
@@ -220,18 +220,18 @@ static void test_read_null_string_served_as_empty(void)
 static void test_read_rejects_unknown_ns_attr_and_node(void)
 {
     OpcUaVariant v;
-    TEST_ASSERT_FALSE(umati_read(DWS_UMATI_NS, 999999, OPCUA_ATTR_VALUE, &v));         // unknown node
-    TEST_ASSERT_FALSE(umati_read(7, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));         // wrong namespace
-    TEST_ASSERT_FALSE(umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, 12 /*!Value*/, &v)); // not the Value attribute
+    TEST_ASSERT_FALSE(dws_umati_read(DWS_UMATI_NS, 999999, OPCUA_ATTR_VALUE, &v));         // unknown node
+    TEST_ASSERT_FALSE(dws_umati_read(7, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));         // wrong namespace
+    TEST_ASSERT_FALSE(dws_umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, 12 /*!Value*/, &v)); // not the Value attribute
 }
 
 static void test_read_before_bind_is_a_clean_miss(void)
 {
-    umati_bind(nullptr); // no model bound
+    dws_umati_bind(nullptr); // no model bound
     OpcUaVariant v;
-    TEST_ASSERT_FALSE(umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_FALSE(dws_umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
     OpcUaReference refs[4];
-    TEST_ASSERT_EQUAL_INT32(-1, umati_browse(0, 85, refs, 4));
+    TEST_ASSERT_EQUAL_INT32(-1, dws_umati_browse(0, 85, refs, 4));
 }
 
 int main(void)

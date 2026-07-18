@@ -36,7 +36,7 @@ void test_build_command_bytes()
     FinsHeader h = make_header();
     const uint8_t params[] = {0xAB, 0xCD};
     uint8_t buf[32];
-    size_t n = fins_build_command(buf, sizeof(buf), &h, 0x05, 0x01, params, sizeof(params));
+    size_t n = dws_fins_build_command(buf, sizeof(buf), &h, 0x05, 0x01, params, sizeof(params));
     TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 2, n);
     const uint8_t expect[] = {0x80, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00, 0x02, 0x00, 0x2A, // header
                               0x05, 0x01,                                                 // MRC, SRC
@@ -50,7 +50,7 @@ void test_memory_area_read()
     FinsHeader h = make_header();
     uint8_t buf[32];
     // area 0xB0 (DM), word 100 = 0x0064, bit 0, read 10 words.
-    size_t n = fins_build_memory_area_read(buf, sizeof(buf), &h, 0xB0, 100, 0, 10);
+    size_t n = dws_fins_build_memory_area_read(buf, sizeof(buf), &h, 0xB0, 100, 0, 10);
     TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 6, n);
     TEST_ASSERT_EQUAL_HEX8(0x01, buf[10]); // MRC
     TEST_ASSERT_EQUAL_HEX8(0x01, buf[11]); // SRC
@@ -67,10 +67,10 @@ void test_parse_command()
     FinsHeader h = make_header();
     const uint8_t params[] = {0xB0, 0x00, 0x64, 0x00, 0x00, 0x0A};
     uint8_t buf[32];
-    size_t n = fins_build_command(buf, sizeof(buf), &h, 0x01, 0x01, params, sizeof(params));
+    size_t n = dws_fins_build_command(buf, sizeof(buf), &h, 0x01, 0x01, params, sizeof(params));
 
     FinsCommand c;
-    TEST_ASSERT_TRUE(fins_parse_command(buf, n, &c));
+    TEST_ASSERT_TRUE(dws_fins_parse_command(buf, n, &c));
     TEST_ASSERT_EQUAL_HEX8(FINS_ICF_COMMAND, c.header.icf);
     TEST_ASSERT_EQUAL_HEX8(0x01, c.header.da1);
     TEST_ASSERT_EQUAL_HEX8(0x2A, c.header.sid);
@@ -90,7 +90,7 @@ void test_parse_response_ok()
         0x12, 0x34, 0x56, 0x78                                      // 2 data words
     };
     FinsResponse r;
-    TEST_ASSERT_TRUE(fins_parse_response(resp, sizeof(resp), &r));
+    TEST_ASSERT_TRUE(dws_fins_parse_response(resp, sizeof(resp), &r));
     TEST_ASSERT_EQUAL_HEX8(FINS_ICF_RESPONSE, r.header.icf);
     TEST_ASSERT_EQUAL_HEX8(0x2A, r.header.sid); // echoes the request SID
     TEST_ASSERT_EQUAL_HEX8(0x01, r.mrc);
@@ -107,7 +107,7 @@ void test_parse_response_error()
     const uint8_t resp[] = {0xC0, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00,
                             0x01, 0x00, 0x2A, 0x01, 0x01, 0x01, 0x01}; // MRES/SRES = 0x0101 (e.g. local node error)
     FinsResponse r;
-    TEST_ASSERT_TRUE(fins_parse_response(resp, sizeof(resp), &r));
+    TEST_ASSERT_TRUE(dws_fins_parse_response(resp, sizeof(resp), &r));
     TEST_ASSERT_EQUAL_HEX8(0x01, r.mres);
     TEST_ASSERT_EQUAL_HEX8(0x01, r.sres);
     TEST_ASSERT_EQUAL_size_t(0, r.data_len);
@@ -117,21 +117,21 @@ void test_overflow_and_truncation()
 {
     FinsHeader h = make_header();
     uint8_t small[8]; // smaller than even the header
-    TEST_ASSERT_EQUAL_size_t(0, fins_build_command(small, sizeof(small), &h, 1, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_command(small, sizeof(small), &h, 1, 1, nullptr, 0));
     // Null destination / header / a param length with no params array.
     uint8_t big[32];
-    TEST_ASSERT_EQUAL_size_t(0, fins_build_command(nullptr, sizeof(big), &h, 1, 1, nullptr, 0));
-    TEST_ASSERT_EQUAL_size_t(0, fins_build_command(big, sizeof(big), nullptr, 1, 1, nullptr, 0));
-    TEST_ASSERT_EQUAL_size_t(0, fins_build_command(big, sizeof(big), &h, 1, 1, nullptr, 4));
+    TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_command(nullptr, sizeof(big), &h, 1, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_command(big, sizeof(big), nullptr, 1, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_command(big, sizeof(big), &h, 1, 1, nullptr, 4));
 
     FinsCommand c;
     const uint8_t short_buf[] = {0x80, 0x00, 0x02, 0x00}; // too short for header + MRC/SRC
-    TEST_ASSERT_FALSE(fins_parse_command(short_buf, sizeof(short_buf), &c));
+    TEST_ASSERT_FALSE(dws_fins_parse_command(short_buf, sizeof(short_buf), &c));
 
     FinsResponse r;
     const uint8_t short_resp[] = {0xC0, 0x00, 0x02, 0x00, 0x02, 0x00,
                                   0x00, 0x01, 0x00, 0x2A, 0x01, 0x01}; // no end code
-    TEST_ASSERT_FALSE(fins_parse_response(short_resp, sizeof(short_resp), &r));
+    TEST_ASSERT_FALSE(dws_fins_parse_response(short_resp, sizeof(short_resp), &r));
 }
 
 int main()

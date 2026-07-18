@@ -52,11 +52,11 @@ static void dash_layout_handler(uint8_t slot_id, HttpReq *req)
         s_dashr.srv->send(slot_id, 200, DWS_MIME_JSON, buf);
 }
 
-static void dash_sse_connect(uint8_t sse_id)
+static void dash_sse_connect(uint8_t dws_sse_id)
 {
     char buf[DWS_DASHBOARD_JSON_BUF];
     if (s_dashr.srv && dws_dashboard_values_json(buf, sizeof(buf)) > 0)
-        s_dashr.srv->sse_send(sse_id, buf); // seed the new client with the latest values
+        s_dashr.srv->dws_sse_send(dws_sse_id, buf); // seed the new client with the latest values
 }
 
 #if DWS_ENABLE_WEBSOCKET
@@ -103,7 +103,7 @@ void dws_dashboard_publish()
         return;
     char buf[DWS_DASHBOARD_JSON_BUF];
     if (dws_dashboard_values_json(buf, sizeof(buf)) > 0)
-        s_dashr.srv->sse_broadcast(s_dashr.stream_path, buf);
+        s_dashr.srv->dws_sse_broadcast(s_dashr.stream_path, buf);
 }
 
 #endif // DWS_ENABLE_DASHBOARD

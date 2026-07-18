@@ -161,7 +161,7 @@ bool dws_dbm_open(DetwsDbm *db, WalStore *wal)
     db->wal = wal;
     ReplayCtx rc = {db, false};
     uint8_t scratch[WAL_RECORD_HEADER + DBM_HDR + DWS_DBM_KEY_MAX + DWS_DBM_VAL_MAX];
-    wal_store_scan(wal, replay_cb, &rc, scratch, sizeof(scratch));
+    dws_wal_store_scan(wal, replay_cb, &rc, scratch, sizeof(scratch));
     return !rc.overflow;
 }
 
@@ -182,8 +182,8 @@ bool dws_dbm_put(DetwsDbm *db, const char *key, uint16_t key_len, const uint8_t 
     memcpy(rec + DBM_HDR, key, key_len);
     if (val_len)
         memcpy(rec + DBM_HDR + key_len, val, val_len);
-    uint64_t old_head = wal_store_used(db->wal);
-    if (!wal_store_append(db->wal, rec, (uint32_t)(DBM_HDR + key_len + val_len)))
+    uint64_t old_head = dws_wal_store_used(db->wal);
+    if (!dws_wal_store_append(db->wal, rec, (uint32_t)(DBM_HDR + key_len + val_len)))
         return false; // WAL full: index unchanged
 
     DetwsDbmSlot *s = &db->slots[slot];
@@ -207,7 +207,7 @@ long dws_dbm_get(DetwsDbm *db, const char *key, uint16_t key_len, uint8_t *buf, 
     DetwsDbmSlot *s = &db->slots[slot];
     if (s->val_len > cap)
         return -1;
-    if (s->val_len && !wal_store_pread(db->wal, s->val_off, buf, s->val_len))
+    if (s->val_len && !dws_wal_store_pread(db->wal, s->val_off, buf, s->val_len))
         return -1;
     return (long)s->val_len;
 }
@@ -223,7 +223,7 @@ bool dws_dbm_del(DetwsDbm *db, const char *key, uint16_t key_len)
     put_u16(rec + 1, key_len);
     put_u32(rec + 3, 0);
     memcpy(rec + DBM_HDR, key, key_len);
-    if (!wal_store_append(db->wal, rec, (uint32_t)(DBM_HDR + key_len)))
+    if (!dws_wal_store_append(db->wal, rec, (uint32_t)(DBM_HDR + key_len)))
         return false; // WAL full: key stays live
     db->slots[slot].state = 2;
     db->count--;
@@ -242,7 +242,7 @@ uint32_t dws_dbm_count(DetwsDbm *db)
 
 bool dws_dbm_sync(DetwsDbm *db)
 {
-    return wal_store_checkpoint(db->wal);
+    return dws_wal_store_checkpoint(db->wal);
 }
 
 uint32_t dws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx)
@@ -287,12 +287,12 @@ bool dws_dbm_compact(DetwsDbm *db, WalStore *dst)
         put_u32(rec + 3, s->val_len);
         memcpy(rec + DBM_HDR, s->key, s->key_len);
         // On any failure, return before rebinding so db keeps using its intact original log (no data loss).
-        if (s->val_len && !wal_store_pread(db->wal, s->val_off, rec + DBM_HDR + s->key_len, s->val_len))
+        if (s->val_len && !dws_wal_store_pread(db->wal, s->val_off, rec + DBM_HDR + s->key_len, s->val_len))
             return false;
-        if (!wal_store_append(dst, rec, (uint32_t)(DBM_HDR + s->key_len + s->val_len)))
+        if (!dws_wal_store_append(dst, rec, (uint32_t)(DBM_HDR + s->key_len + s->val_len)))
             return false; // destination too small
     }
-    if (!wal_store_checkpoint(dst))
+    if (!dws_wal_store_checkpoint(dst))
         return false;
     return dws_dbm_open(db, dst); // rebind to the compacted log + rebuild the index with fresh offsets
 }

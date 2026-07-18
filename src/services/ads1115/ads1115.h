@@ -11,8 +11,8 @@
  * by a 16-bit read of the conversion register; the signed result scales to a voltage by the
  * selected gain's full-scale range.
  *
- * This codec is pure and host-tested: ::ads1115_config_single builds the config word for a
- * single-shot single-ended reading, and ::ads1115_raw_to_uv converts the signed sample to
+ * This codec is pure and host-tested: ::dws_ads1115_config_single builds the config word for a
+ * single-shot single-ended reading, and ::dws_ads1115_raw_to_uv converts the signed sample to
  * microvolts. On an ESP32 the binding writes the config, waits for the conversion, and reads it
  * back over I2C (Wire); only that touches hardware.
  *
@@ -61,20 +61,20 @@ struct Ads1115DataRate
  * (0..3) at gain @p gain and data rate @p dr (comparator disabled). Out-of-range fields fall
  * back to channel 0 / gain +/-2.048 V / 128 SPS.
  */
-uint16_t ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr);
+uint16_t dws_ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr);
 
 /** @brief Convert a signed 16-bit sample to microvolts for @p gain's full-scale range. */
-int32_t ads1115_raw_to_uv(int16_t raw, uint8_t gain);
+int32_t dws_ads1115_raw_to_uv(int16_t raw, uint8_t gain);
 
 // --- ESP32 binding (I2C via Wire; no-ops on a host build) ------------------------------------
 
 /** @brief Initialize the I2C bus for the ADS1115 at @p addr. @return true on ESP32. */
-bool ads1115_begin(uint8_t addr);
+bool dws_ads1115_begin(uint8_t addr);
 
 /** @brief Single-shot read of @p channel (0..3) at @p gain into @p raw. @return false on error. */
-bool ads1115_read_raw(uint8_t channel, uint8_t gain, int16_t *raw);
+bool dws_ads1115_read_raw(uint8_t channel, uint8_t gain, int16_t *raw);
 
 /** @brief Single-shot read of @p channel at @p gain, converted to microvolts in @p microvolts. */
-bool ads1115_read_uv(uint8_t channel, uint8_t gain, int32_t *microvolts);
+bool dws_ads1115_read_uv(uint8_t channel, uint8_t gain, int32_t *microvolts);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_ADS1115_H

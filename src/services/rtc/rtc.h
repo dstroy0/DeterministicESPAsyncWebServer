@@ -35,30 +35,30 @@
  * @param epoch  out: seconds since 1970-01-01 UTC.
  * @return true on a valid time; false if a field is out of range (bad/uninitialized RTC).
  */
-bool rtc_regs_to_epoch(const uint8_t regs[RTC_REG_COUNT], uint32_t *epoch);
+bool dws_rtc_regs_to_epoch(const uint8_t regs[RTC_REG_COUNT], uint32_t *epoch);
 
 /**
  * @brief Convert a Unix timestamp to the 7 RTC time registers (BCD, 24-hour). Pure - no I2C.
  * The day-of-week register is filled (1=Mon..7=Sun) for completeness.
  */
-void rtc_epoch_to_regs(uint32_t epoch, uint8_t regs[RTC_REG_COUNT]);
+void dws_rtc_epoch_to_regs(uint32_t epoch, uint8_t regs[RTC_REG_COUNT]);
 
 /** @brief Initialize the I2C bus for the RTC. @return true on a host build (no-op) or on ESP32. */
-bool rtc_begin();
+bool dws_rtc_begin();
 
 /**
  * @brief Read the current time from the RTC over I2C.
  * @return seconds since 1970-01-01 UTC, or 0 if the RTC is absent / holds an invalid time.
  */
-uint32_t rtc_read_epoch();
+uint32_t dws_rtc_read_epoch();
 
 /** @brief Set the RTC to @p epoch over I2C. @return true if the write succeeded. */
-bool rtc_set_epoch(uint32_t epoch);
+bool dws_rtc_set_epoch(uint32_t epoch);
 
 /**
- * @brief A ::TimeSourceFn wrapper (returns rtc_read_epoch()) to register with
+ * @brief A ::TimeSourceFn wrapper (returns dws_rtc_read_epoch()) to register with
  * dws_time_source_add(). @return the RTC time, or 0 when unavailable.
  */
-uint32_t rtc_time_source();
+uint32_t dws_rtc_time_source();
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_RTC_H

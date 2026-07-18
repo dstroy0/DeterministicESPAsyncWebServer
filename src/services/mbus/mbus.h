@@ -109,20 +109,20 @@ struct MbusRecord
 // --- builders: write into @p buf (cap), return frame length or 0 on overflow ---
 
 /** @brief Single-character acknowledge (0xE5). */
-size_t mbus_build_ack(uint8_t *buf, size_t cap);
+size_t dws_mbus_build_ack(uint8_t *buf, size_t cap);
 
 /** @brief Short frame: 10 C A CS 16. */
-size_t mbus_build_short(uint8_t *buf, size_t cap, uint8_t c, uint8_t a);
+size_t dws_mbus_build_short(uint8_t *buf, size_t cap, uint8_t c, uint8_t a);
 
 /** @brief Long frame: 68 L L 68 C A CI [data] CS 16. @p data_len 0 builds a control frame. */
-size_t mbus_build_long(uint8_t *buf, size_t cap, uint8_t c, uint8_t a, uint8_t ci, const uint8_t *data,
-                       uint8_t data_len);
+size_t dws_mbus_build_long(uint8_t *buf, size_t cap, uint8_t c, uint8_t a, uint8_t ci, const uint8_t *data,
+                           uint8_t data_len);
 
 /** @brief Convenience: a SND_NKE (link reset) short frame to address @p a. */
-size_t mbus_build_snd_nke(uint8_t *buf, size_t cap, uint8_t a);
+size_t dws_mbus_build_snd_nke(uint8_t *buf, size_t cap, uint8_t a);
 
 /** @brief Convenience: a REQ_UD2 short frame to address @p a (@p fcb toggles the FCB bit). */
-size_t mbus_build_req_ud2(uint8_t *buf, size_t cap, uint8_t a, bool fcb);
+size_t dws_mbus_build_req_ud2(uint8_t *buf, size_t cap, uint8_t a, bool fcb);
 
 // --- parser ---
 
@@ -130,19 +130,19 @@ size_t mbus_build_req_ud2(uint8_t *buf, size_t cap, uint8_t a, bool fcb);
  * @brief Parse one M-Bus frame from @p buf. Validates the start/stop octets, the doubled
  * length, and the checksum. On success fills @p out and sets @p consumed to the frame length.
  */
-bool mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed);
+bool dws_mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed);
 
 // --- variable-data records (DIF / VIF) ---
 
 /** @brief Map a DIF low-nibble coding to its fixed data length (0 for variable / none). */
-uint8_t mbus_dif_data_len(uint8_t coding);
+uint8_t dws_mbus_dif_data_len(uint8_t coding);
 
 /**
  * @brief Walk one data record at @p *pos within a long-frame body (the octets after CI).
  * Skips DIFE / VIFE extension chains, decodes the data length (incl. the LVAR variable form),
  * and advances @p *pos past the record. Returns false at the end of data or on overflow.
  */
-bool mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *out);
+bool dws_mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *out);
 
 #endif // DWS_ENABLE_MBUS
 #endif // DETERMINISTICESPASYNCWEBSERVER_MBUS_H

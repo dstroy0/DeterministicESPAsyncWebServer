@@ -60,25 +60,25 @@ uint32_t crc32_step(uint32_t crc, const uint8_t *d, size_t n)
 }
 } // namespace
 
-uint32_t wal_crc32(const uint8_t *data, size_t len)
+uint32_t dws_wal_crc32(const uint8_t *data, size_t len)
 {
     return crc32_step(0xFFFFFFFFu, data, len) ^ 0xFFFFFFFFu;
 }
 
-uint32_t wal_crc32_init(void)
+uint32_t dws_wal_crc32_init(void)
 {
     return 0xFFFFFFFFu;
 }
-uint32_t wal_crc32_update(uint32_t crc, const uint8_t *d, size_t n)
+uint32_t dws_wal_crc32_update(uint32_t crc, const uint8_t *d, size_t n)
 {
     return crc32_step(crc, d, n);
 }
-uint32_t wal_crc32_final(uint32_t crc)
+uint32_t dws_wal_crc32_final(uint32_t crc)
 {
     return crc ^ 0xFFFFFFFFu;
 }
 
-size_t wal_record_encode(uint8_t *out, size_t cap, uint64_t seq, const uint8_t *payload, uint32_t len)
+size_t dws_wal_record_encode(uint8_t *out, size_t cap, uint64_t seq, const uint8_t *payload, uint32_t len)
 {
     size_t need = (size_t)WAL_RECORD_HEADER + len;
     if (out == nullptr || need > cap)
@@ -95,7 +95,7 @@ size_t wal_record_encode(uint8_t *out, size_t cap, uint64_t seq, const uint8_t *
     return need;
 }
 
-size_t wal_replay(const uint8_t *img, size_t len, WalRecordCb cb, void *ctx)
+size_t dws_wal_replay(const uint8_t *img, size_t len, WalRecordCb cb, void *ctx)
 {
     size_t off = 0;
     while (off + WAL_RECORD_HEADER <= len)

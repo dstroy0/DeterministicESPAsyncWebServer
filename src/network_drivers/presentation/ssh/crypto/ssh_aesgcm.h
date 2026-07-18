@@ -17,7 +17,7 @@
  * never changes. The counter therefore lives in the context and advances once per sealed/opened packet
  * - this is what makes the cipher stateful and requires whole-packet atomicity in the packet layer.
  *
- * PLATFORM SELECTION (mirrors ssh_aes256ctr / quic_aead)
+ * PLATFORM SELECTION (mirrors ssh_aes256ctr / dws_quic_aead)
  * On Arduino (ESP32) the AES-256 block is mbedtls, routed to the hardware AES accelerator. On native
  * host builds a compact software AES-256 is used so the whole AEAD is unit-testable off-target. GHASH
  * and the counter loop are the same software on both targets.

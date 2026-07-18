@@ -12,8 +12,8 @@
  * (top 4 bits error flags, low 12 bits data MSB) plus a DATA LSB register, combining into 28 bits, with
  * `f_sensor = data / 2^28 * f_ref` and `L = 1 / (C * (2*pi*f)^2)` derived by the app from the tank C.
  *
- * This codec is pure and host-tested: ::ldc1614_data combines the register pair, ::ldc1614_error pulls
- * the flags, ::ldc1614_sensor_freq_hz scales to frequency, and ::ldc1614_build_config emits a
+ * This codec is pure and host-tested: ::dws_ldc1614_data combines the register pair, ::dws_ldc1614_error pulls
+ * the flags, ::dws_ldc1614_sensor_freq_hz scales to frequency, and ::dws_ldc1614_build_config emits a
  * single-channel bring-up. On an ESP32 the binding replays that config and reads the channel over I2C;
  * only that touches hardware. Bridge the readings northbound like any sensor.
  */
@@ -45,13 +45,13 @@
 #define LDC1614_CONFIG_MAX 21
 
 /** @brief Combine a DATA MSB register (low 12 bits) and DATA LSB register into the 28-bit result. */
-uint32_t ldc1614_data(uint16_t msb_reg, uint16_t lsb_reg);
+uint32_t dws_ldc1614_data(uint16_t msb_reg, uint16_t lsb_reg);
 
 /** @brief The 4 error flags from the top of a DATA MSB register (bits 15:12). */
-uint8_t ldc1614_error(uint16_t msb_reg);
+uint8_t dws_ldc1614_error(uint16_t msb_reg);
 
 /** @brief Sensor frequency in Hz for a 28-bit result against a reference clock: data / 2^28 * fref. */
-uint64_t ldc1614_sensor_freq_hz(uint32_t data28, uint32_t fref_hz);
+uint64_t dws_ldc1614_sensor_freq_hz(uint32_t data28, uint32_t fref_hz);
 
 /**
  * @brief Emit a single-channel (CH0) continuous-conversion bring-up as `(reg, val_msb, val_lsb)` triples.
@@ -60,14 +60,14 @@ uint64_t ldc1614_sensor_freq_hz(uint32_t data28, uint32_t fref_hz);
  * (CONFIG starts the conversion). Replay each triple as a 16-bit I2C register write.
  * @return bytes written (7 * 3 = 21), or 0 if @p cap < LDC1614_CONFIG_MAX.
  */
-size_t ldc1614_build_config(uint8_t *buf, size_t cap, uint16_t rcount, uint16_t settlecount);
+size_t dws_ldc1614_build_config(uint8_t *buf, size_t cap, uint16_t rcount, uint16_t settlecount);
 
 // --- ESP32 binding (I2C via Wire; no-ops on a host build) ------------------------------------
 
 /** @brief Verify the device id and apply the CH0 config at @p addr. @return true if present + acked. */
-bool ldc1614_begin(uint8_t addr, uint16_t rcount, uint16_t settlecount);
+bool dws_ldc1614_begin(uint8_t addr, uint16_t rcount, uint16_t settlecount);
 
 /** @brief Read channel 0's 28-bit conversion result into @p out. @return false on I2C error. */
-bool ldc1614_read_ch0(uint32_t *out);
+bool dws_ldc1614_read_ch0(uint32_t *out);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_LDC1614_H

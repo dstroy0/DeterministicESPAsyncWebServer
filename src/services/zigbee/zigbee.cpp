@@ -49,7 +49,7 @@ bool put_stuffed(uint8_t *out, uint16_t *p, uint16_t cap, uint8_t b)
 }
 } // namespace
 
-uint16_t ash_crc16(const uint8_t *buf, uint16_t len)
+uint16_t dws_ash_crc16(const uint8_t *buf, uint16_t len)
 {
     uint16_t crc = 0xFFFF;
     for (uint16_t i = 0; i < len; i++)
@@ -57,7 +57,7 @@ uint16_t ash_crc16(const uint8_t *buf, uint16_t len)
     return crc;
 }
 
-uint16_t ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)
+uint16_t dws_ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)
 {
     if (!out || len > DWS_ZIGBEE_MAX_DATA || (payload == nullptr && len > 0))
         return 0;
@@ -80,8 +80,8 @@ uint16_t ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len,
     return p;
 }
 
-int ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t *payload, uint16_t pay_cap,
-                     uint16_t *pay_len)
+int dws_ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t *payload, uint16_t pay_cap,
+                         uint16_t *pay_len)
 {
     if (!raw)
         return 0;
@@ -111,7 +111,7 @@ int ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t
     if (n < 3)
         return -1; // need at least control + CRC(2)
     uint16_t body = (uint16_t)(n - 2);
-    uint16_t crc = ash_crc16(un, body);
+    uint16_t crc = dws_ash_crc16(un, body);
     if ((uint16_t)((un[n - 2] << 8) | un[n - 1]) != crc)
         return -1; // CRC mismatch
 

@@ -25,7 +25,7 @@ void tearDown(void)
 {
 }
 
-// --- RAM-backed WalDev (same shape as the dbm / wal_store tests) ---------------------------------
+// --- RAM-backed WalDev (same shape as the dbm / dws_wal_store tests) ---------------------------------
 struct RamDisk
 {
     uint8_t *buf;
@@ -74,13 +74,13 @@ static void fresh(void)
     g_d.buf = g_disk;
     g_d.size = sizeof(g_disk);
     g_dev = dev_over(&g_d);
-    TEST_ASSERT_TRUE(wal_store_format(&g_wal, &g_dev));
+    TEST_ASSERT_TRUE(dws_wal_store_format(&g_wal, &g_dev));
     TEST_ASSERT_TRUE(dws_dbm_open(&g_db, &g_wal));
 }
 static bool reboot(void)
 {
     g_dev = dev_over(&g_d);
-    if (!wal_store_mount(&g_wal, &g_dev))
+    if (!dws_wal_store_mount(&g_wal, &g_dev))
         return false;
     return dws_dbm_open(&g_db, &g_wal);
 }

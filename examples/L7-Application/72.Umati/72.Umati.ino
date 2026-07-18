@@ -11,7 +11,7 @@
  * in loop(). Any umati / OPC UA client (the umati dashboard, UaExpert, python asyncua) browses the
  * MachineTool and reads live values by their standard BrowseNames - the same shape across vendors.
  *
- *   umati_install(&mt)                    -> registers the OPC UA Browse + Read resolvers
+ *   dws_umati_install(&mt)                    -> registers the OPC UA Browse + Read resolvers
  *   server.listen(4840, PROTO_OPCUA)      -> the OPC UA / umati endpoint
  *
  * Builds on example 55.OpcUa (the OPC UA Binary server); umati is the machine-tool model on top. The
@@ -69,7 +69,7 @@ void setup()
     mt.message_text = ""; // no active message
     mt.message_severity = 0;
 
-    umati_install(&mt); // bind + register the OPC UA Browse/Read resolvers
+    dws_umati_install(&mt); // bind + register the OPC UA Browse/Read resolvers
     server.on("/", HttpMethod::HTTP_GET,
               [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "umati MachineTool on :4840"); });
     server.listen(4840, ConnProto::PROTO_OPCUA); // OPC UA / umati endpoint - before begin()

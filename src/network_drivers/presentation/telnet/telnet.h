@@ -18,7 +18,7 @@
  * Usage:
  * @code
  *   server.listen(23, ConnProto::PROTO_TELNET);     // open the Telnet port
- *   telnet_on_command(my_cmd_handler);   // void(const char *line, uint8_t id)
+ *   dws_telnet_on_command(my_cmd_handler);   // void(const char *line, uint8_t id)
  * @endcode
  */
 
@@ -37,34 +37,34 @@ typedef void (*TelnetCommandCb)(const char *line, uint8_t conn_id);
 // ---- Application API ------------------------------------------------------
 
 /** @brief Register the per-line command handler. */
-void telnet_on_command(TelnetCommandCb cb);
+void dws_telnet_on_command(TelnetCommandCb cb);
 
 /** @brief Send text to every connected Telnet client (no trailing newline added). */
-void telnet_print(const char *s);
+void dws_telnet_print(const char *s);
 
 /** @brief Send text + CRLF to every connected Telnet client. */
-void telnet_println(const char *s);
+void dws_telnet_println(const char *s);
 
 /** @brief printf-style broadcast to every connected Telnet client (bounded by TELNET_BUF_SIZE). */
-void telnet_printf(const char *fmt, ...);
+void dws_telnet_printf(const char *fmt, ...);
 
 /** @brief Number of connected Telnet clients. */
-uint8_t telnet_client_count();
+uint8_t dws_telnet_client_count();
 
 // ---- Connection layer (called by the session layer for ConnProto::PROTO_TELNET slots) -
 
 /** @brief A Telnet connection was accepted on TCP slot @p slot. */
-void telnet_accept(uint8_t slot);
+void dws_telnet_accept(uint8_t slot);
 
 /** @brief Drain and process received bytes for the Telnet connection on @p slot. */
-void telnet_rx(uint8_t slot);
+void dws_telnet_rx(uint8_t slot);
 
 /** @brief The Telnet connection on @p slot closed; release its state. */
-void telnet_close(uint8_t slot);
+void dws_telnet_close(uint8_t slot);
 
 /** @brief The Telnet ProtoHandler (accessor; installed by the builtins list, no session dep). */
 struct ProtoHandler;
-const struct ProtoHandler *telnet_proto_handler(void);
+const struct ProtoHandler *dws_telnet_proto_handler(void);
 
 #endif // DWS_ENABLE_TELNET
 

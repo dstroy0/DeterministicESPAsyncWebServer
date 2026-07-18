@@ -12,7 +12,7 @@
 
 #if DWS_ENABLE_SHT3X
 
-uint8_t sht3x_crc8(const uint8_t *data, size_t len)
+uint8_t dws_sht3x_crc8(const uint8_t *data, size_t len)
 {
     uint8_t crc = 0xFF; // Sensirion CRC-8: poly 0x31, init 0xFF, MSB-first, no final XOR
     for (size_t i = 0; i < len; i++)
@@ -24,28 +24,28 @@ uint8_t sht3x_crc8(const uint8_t *data, size_t len)
     return crc;
 }
 
-int32_t sht3x_temp_mc(uint16_t raw)
+int32_t dws_sht3x_temp_mc(uint16_t raw)
 {
     // T[C] = -45 + 175 * raw / 65535, in milli-degrees (64-bit to avoid overflow).
     return (int32_t)(-45000 + (int64_t)175000 * raw / 65535);
 }
 
-int32_t sht3x_rh_mpct(uint16_t raw)
+int32_t dws_sht3x_rh_mpct(uint16_t raw)
 {
     int32_t v = (int32_t)((int64_t)100000 * raw / 65535); // RH[%] = 100 * raw / 65535
     return v > 100000 ? 100000 : v;
 }
 
-bool sht3x_parse(const uint8_t resp[6], int32_t *temp_mc, int32_t *rh_mpct)
+bool dws_sht3x_parse(const uint8_t resp[6], int32_t *temp_mc, int32_t *rh_mpct)
 {
-    if (!resp || sht3x_crc8(resp, 2) != resp[2] || sht3x_crc8(resp + 3, 2) != resp[5])
+    if (!resp || dws_sht3x_crc8(resp, 2) != resp[2] || dws_sht3x_crc8(resp + 3, 2) != resp[5])
         return false;
     uint16_t traw = (uint16_t)(((uint16_t)resp[0] << 8) | resp[1]);
     uint16_t hraw = (uint16_t)(((uint16_t)resp[3] << 8) | resp[4]);
     if (temp_mc)
-        *temp_mc = sht3x_temp_mc(traw);
+        *temp_mc = dws_sht3x_temp_mc(traw);
     if (rh_mpct)
-        *rh_mpct = sht3x_rh_mpct(hraw);
+        *rh_mpct = dws_sht3x_rh_mpct(hraw);
     return true;
 }
 
@@ -78,7 +78,7 @@ bool send_cmd(uint16_t cmd)
 }
 } // namespace
 
-bool sht3x_begin(uint8_t addr)
+bool dws_sht3x_begin(uint8_t addr)
 {
     s_sht.addr = addr ? addr : (uint8_t)DWS_SHT3X_I2C_ADDR;
     dws_i2c_begin();
@@ -87,7 +87,7 @@ bool sht3x_begin(uint8_t addr)
     return ok;
 }
 
-bool sht3x_read(int32_t *temp_mc, int32_t *rh_mpct)
+bool dws_sht3x_read(int32_t *temp_mc, int32_t *rh_mpct)
 {
     if (!send_cmd(SHT3X_CMD_SINGLE_HIGH))
         return false;
@@ -97,16 +97,16 @@ bool sht3x_read(int32_t *temp_mc, int32_t *rh_mpct)
     uint8_t r[6];
     for (int i = 0; i < 6; i++)
         r[i] = (uint8_t)Wire.read();
-    return sht3x_parse(r, temp_mc, rh_mpct);
+    return dws_sht3x_parse(r, temp_mc, rh_mpct);
 }
 
 #else // host build: no I2C. The CRC + conversion above are host-tested.
 
-bool sht3x_begin(uint8_t)
+bool dws_sht3x_begin(uint8_t)
 {
     return false;
 }
-bool sht3x_read(int32_t *, int32_t *)
+bool dws_sht3x_read(int32_t *, int32_t *)
 {
     return false;
 }

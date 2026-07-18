@@ -23,7 +23,7 @@
  *
  * The parser is non-mutating: it reports the command, header key/value slices, and body
  * as pointers INTO the source buffer (header values are still escaped - decode one with
- * @ref stomp_unescape when needed). The builder escapes header keys/values for you.
+ * @ref dws_stomp_unescape when needed). The builder escapes header keys/values for you.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -68,8 +68,8 @@ struct StompFrame
  * @param body_len    body length in bytes.
  * @return bytes written (including the terminating NUL), or 0 on overflow / bad input.
  */
-size_t stomp_build_frame(char *buf, size_t cap, const char *command, const char *const *header_keys,
-                         const char *const *header_vals, size_t nheaders, const char *body, size_t body_len);
+size_t dws_stomp_build_frame(char *buf, size_t cap, const char *command, const char *const *header_keys,
+                             const char *const *header_vals, size_t nheaders, const char *body, size_t body_len);
 
 /**
  * @brief Parse one STOMP frame at the head of [buf, buf+len).
@@ -82,19 +82,19 @@ size_t stomp_build_frame(char *buf, size_t cap, const char *command, const char 
  * @return true on a complete frame; false if the buffer holds an incomplete or malformed
  *         frame (then @p out / @p consumed are unspecified).
  */
-bool stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t *consumed);
+bool dws_stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t *consumed);
 
 /**
  * @brief Find a header by name; returns the RAW (still escaped) value slice.
  * @return true and fills @p val / @p val_len on the first match (per spec), else false.
  */
-bool stomp_header(const StompFrame *f, const char *name, const char **val, size_t *val_len);
+bool dws_stomp_header(const StompFrame *f, const char *name, const char **val, size_t *val_len);
 
 /**
  * @brief Decode STOMP 1.2 header escapes (`\r` `\n` `\c` `\\`) from @p src into @p dst.
  * @return decoded length, or 0 on overflow or an invalid escape sequence.
  */
-size_t stomp_unescape(char *dst, size_t cap, const char *src, size_t src_len);
+size_t dws_stomp_unescape(char *dst, size_t cap, const char *src, size_t src_len);
 
 #endif // DWS_ENABLE_STOMP
 

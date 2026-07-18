@@ -17,7 +17,7 @@
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
 #include "services/clock.h"                                        // dws_millis() (re-key timer)
 #if DWS_ENABLE_PQC_KEX
-#include "network_drivers/presentation/pqc/mlkem.h" // mlkem768_encaps (PQ/T hybrid KEX responder)
+#include "network_drivers/presentation/pqc/mlkem.h" // dws_mlkem768_encaps (PQ/T hybrid KEX responder)
 #endif
 #if DWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h" // s2c compression negotiation
@@ -915,7 +915,7 @@ static int hybrid_mlkem_x25519(uint8_t i, const uint8_t *payload, size_t len, ui
     uint8_t m[32];
     ssh_rng_fill(m, sizeof(m));
     uint8_t k_pq[32];
-    bool ok = mlkem768_encaps(ek, m, s_reply, k_pq); // ciphertext -> s_reply[0..1087]
+    bool ok = dws_mlkem768_encaps(ek, m, s_reply, k_pq); // ciphertext -> s_reply[0..1087]
     ssh_wipe(m, sizeof(m));
     if (!ok)
         return -1; // malformed encapsulation key (FIPS 203 modulus check)

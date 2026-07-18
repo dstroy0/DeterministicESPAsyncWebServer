@@ -51,26 +51,26 @@
 // ---- TPKT ----
 
 /** @brief Wrap @p payload in a TPKT envelope. Returns total octets, or 0 on overflow. */
-size_t tpkt_build(uint8_t *buf, size_t cap, const uint8_t *payload, size_t payload_len);
+size_t dws_tpkt_build(uint8_t *buf, size_t cap, const uint8_t *payload, size_t payload_len);
 
 /**
  * @brief Parse a TPKT envelope; reports the X.224 payload slice and bytes consumed.
  * @return true on a complete, version-3 packet; false on bad version / truncation.
  */
-bool tpkt_parse(const uint8_t *buf, size_t len, const uint8_t **payload, size_t *payload_len, size_t *consumed);
+bool dws_tpkt_parse(const uint8_t *buf, size_t len, const uint8_t **payload, size_t *payload_len, size_t *consumed);
 
 // ---- COTP (X.224 class 0) ----
 
 /** @brief Build a COTP Data TPDU around @p data: `LI=2, 0xF0, (EOT|0)` + data. */
-size_t cotp_build_dt(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_len, bool eot);
+size_t dws_cotp_build_dt(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_len, bool eot);
 
 /**
  * @brief Build a COTP Connection Request: `LI 0xE0 dst-ref(0) src-ref class(0)` + a TPDU-size
  *        parameter + any @p extra_params (e.g. the S7 src/dst TSAP parameters).
  * @param tpdu_size_code the TPDU-size exponent (e.g. 0x0A = 1024).
  */
-size_t cotp_build_cr(uint8_t *buf, size_t cap, uint16_t src_ref, uint8_t tpdu_size_code, const uint8_t *extra_params,
-                     size_t extra_len);
+size_t dws_cotp_build_cr(uint8_t *buf, size_t cap, uint16_t src_ref, uint8_t tpdu_size_code,
+                         const uint8_t *extra_params, size_t extra_len);
 
 /** @brief A parsed COTP header. For DT, @ref data is the user data; for CR/CC, the refs. */
 struct CotpHeader
@@ -84,7 +84,7 @@ struct CotpHeader
 };
 
 /** @brief Parse a COTP TPDU (typically the TPKT payload). */
-bool cotp_parse(const uint8_t *buf, size_t len, CotpHeader *out);
+bool dws_cotp_parse(const uint8_t *buf, size_t len, CotpHeader *out);
 
 #endif // DWS_ENABLE_COTP
 

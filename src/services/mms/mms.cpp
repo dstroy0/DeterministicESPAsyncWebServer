@@ -89,7 +89,7 @@ size_t int_content(uint32_t v, uint8_t *buf)
 // Decode a BER definite length at pdu[at]. Sets *value and *hdr (octets the length field spans: 1 for
 // short form, 1+nb for long form). Returns false for an out-of-bounds field or an unsupported long form
 // (nb outside 1..2). Only short/2-byte lengths occur in the PDUs this codec accepts.
-bool ber_len(const uint8_t *pdu, size_t len, size_t at, size_t *value, size_t *hdr)
+bool dws_ber_len(const uint8_t *pdu, size_t len, size_t at, size_t *value, size_t *hdr)
 {
     if (at >= len)
         return false;
@@ -199,7 +199,7 @@ bool dws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
     size_t off = 1;
     size_t body_len = 0;
     size_t lhdr = 0;
-    if (!ber_len(pdu, len, off, &body_len, &lhdr))
+    if (!dws_ber_len(pdu, len, off, &body_len, &lhdr))
         return false;
     off += lhdr;
     if (off + body_len > len)
@@ -224,7 +224,7 @@ bool dws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
         size_t sp = p + 1;
         size_t slen = 0;
         size_t hdr = 0;
-        if (!ber_len(pdu, len, sp, &slen, &hdr))
+        if (!dws_ber_len(pdu, len, sp, &slen, &hdr))
             return false;
         if (sp + hdr + slen > len)
             return false;

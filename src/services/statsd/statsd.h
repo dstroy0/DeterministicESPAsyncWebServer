@@ -14,7 +14,7 @@
  * Types: counter (`c`), gauge (`g`, absolute or a signed `+`/`-` delta), timing (`ms`), and
  * set (`s`). Optional sample rate (`|@0.1`) and DogStatsD tags (`|#env:prod,host:a`).
  *
- * The line builder (statsd_format) is pure and host-tested; the emit helpers format the value
+ * The line builder (dws_statsd_format) is pure and host-tested; the emit helpers format the value
  * and send via the transport UDP service (dws_udp_sendto), so they are host-testable through
  * its capture seam too. Zero heap; gated by DWS_ENABLE_STATSD.
  *
@@ -49,8 +49,8 @@ enum class StatsdType : uint8_t
  * @param tags   DogStatsD tag string "k:v,k2:v2" (no leading `#`), or nullptr for none.
  * @return       line length (excluding the NUL), or 0 on a bad argument or overflow.
  */
-size_t statsd_format(char *out, size_t cap, const char *name, const char *value, StatsdType type, float rate,
-                     const char *tags);
+size_t dws_statsd_format(char *out, size_t cap, const char *name, const char *value, StatsdType type, float rate,
+                         const char *tags);
 
 /**
  * @brief Point the client at a collector and set optional global tags (added to every metric).
@@ -58,24 +58,24 @@ size_t statsd_format(char *out, size_t cap, const char *name, const char *value,
  * @param port        UDP port (0 selects DWS_STATSD_PORT).
  * @param global_tags DogStatsD tags applied to every metric, or nullptr.
  */
-void statsd_begin(const char *host, uint16_t port, const char *global_tags);
+void dws_statsd_begin(const char *host, uint16_t port, const char *global_tags);
 
 /** @brief Increment a counter by @p delta (may be negative). */
-void statsd_count(const char *name, int64_t delta);
+void dws_statsd_count(const char *name, int64_t delta);
 
 /** @brief Increment a counter, annotated with sample @p rate (0,1] so the server scales up. */
-void statsd_count_sampled(const char *name, int64_t delta, float rate);
+void dws_statsd_count_sampled(const char *name, int64_t delta, float rate);
 
 /** @brief Set a gauge to an absolute @p value. */
-void statsd_gauge(const char *name, int64_t value);
+void dws_statsd_gauge(const char *name, int64_t value);
 
 /** @brief Adjust a gauge by a signed @p delta (sent as a `+`/`-` gauge update). */
-void statsd_gauge_delta(const char *name, int64_t delta);
+void dws_statsd_gauge_delta(const char *name, int64_t delta);
 
 /** @brief Record a timing/duration of @p ms milliseconds. */
-void statsd_timing(const char *name, uint32_t ms);
+void dws_statsd_timing(const char *name, uint32_t ms);
 
 /** @brief Add a unique @p member to a set (counts distinct values server-side). */
-void statsd_set(const char *name, const char *member);
+void dws_statsd_set(const char *name, const char *member);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_STATSD_H

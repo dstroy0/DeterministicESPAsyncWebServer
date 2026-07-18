@@ -323,12 +323,12 @@ void DWS::dav_send_status(uint8_t slot_id, int code, const char *extra_headers)
         return;
     }
     bool keep;
-    const char *cl = resp_conn_hdr(slot_id, &keep);
+    const char *cl = dws_resp_conn_hdr(slot_id, &keep);
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header), "HTTP/1.1 %d %s\r\n%sContent-Length: 0\r\n%s\r\n", code,
                         status_text(code), extra_headers ? extra_headers : "", cl);
     dws_conn_send(slot_id, header, (u16_t)hlen);
-    resp_end(slot_id, code, 0, keep);
+    dws_resp_end(slot_id, code, 0, keep);
 }
 
 bool DWS::try_serve_dav(uint8_t slot_id, HttpReq *req)

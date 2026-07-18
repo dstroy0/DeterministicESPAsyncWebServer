@@ -61,7 +61,7 @@ static const uint8_t PAGE1[512] = {
 void test_db_header_real_file(void)
 {
     SqliteDbHeader h;
-    TEST_ASSERT_TRUE(sqlite_parse_db_header(PAGE1, sizeof(PAGE1), &h));
+    TEST_ASSERT_TRUE(dws_sqlite_parse_db_header(PAGE1, sizeof(PAGE1), &h));
     TEST_ASSERT_EQUAL_UINT32(512, h.page_size);
     TEST_ASSERT_EQUAL_UINT8(1, h.write_version); // legacy rollback journal
     TEST_ASSERT_EQUAL_UINT8(1, h.read_version);
@@ -69,8 +69,8 @@ void test_db_header_real_file(void)
     TEST_ASSERT_EQUAL_UINT32(2, h.page_count);    // matches PRAGMA page_count
     TEST_ASSERT_EQUAL_UINT32(1, h.schema_cookie); // matches PRAGMA schema_version
     TEST_ASSERT_EQUAL_UINT32(4, h.schema_format);
-    TEST_ASSERT_EQUAL_UINT32(1, h.text_encoding);        // UTF-8
-    TEST_ASSERT_EQUAL_UINT32(3046001, h.sqlite_version); // SQLite 3.46.1
+    TEST_ASSERT_EQUAL_UINT32(1, h.text_encoding);            // UTF-8
+    TEST_ASSERT_EQUAL_UINT32(3046001, h.dws_sqlite_version); // SQLite 3.46.1
     TEST_ASSERT_EQUAL_UINT32(0, h.freelist_first);
 }
 
@@ -81,17 +81,17 @@ void test_db_header_rejects_bad_magic(void)
         bad[i] = PAGE1[i];
     bad[0] = 'X'; // corrupt the magic
     SqliteDbHeader h;
-    TEST_ASSERT_FALSE(sqlite_parse_db_header(bad, sizeof(bad), &h));
+    TEST_ASSERT_FALSE(dws_sqlite_parse_db_header(bad, sizeof(bad), &h));
     // Too short also fails.
-    TEST_ASSERT_FALSE(sqlite_parse_db_header(PAGE1, 99, &h));
+    TEST_ASSERT_FALSE(dws_sqlite_parse_db_header(PAGE1, 99, &h));
 }
 
 void test_btree_header_real_page1(void)
 {
     SqliteBtreeHeader b;
     // Page 1's b-tree header follows the 100-byte database header.
-    TEST_ASSERT_TRUE(sqlite_parse_btree_header(PAGE1, sizeof(PAGE1), 100, &b));
-    TEST_ASSERT_EQUAL_UINT8(SqliteBtree::SQLITE_BTREE_LEAF_TABLE, b.type); // 13 - the sqlite_schema table
+    TEST_ASSERT_TRUE(dws_sqlite_parse_btree_header(PAGE1, sizeof(PAGE1), 100, &b));
+    TEST_ASSERT_EQUAL_UINT8(SqliteBtree::SQLITE_BTREE_LEAF_TABLE, b.type); // 13 - the dws_sqlite_schema table
     TEST_ASSERT_EQUAL_UINT16(0, b.first_freeblock);
     TEST_ASSERT_EQUAL_UINT16(1, b.cell_count); // one schema row (the CREATE TABLE)
     TEST_ASSERT_EQUAL_UINT32(463, b.cell_content_start);
@@ -106,10 +106,10 @@ void test_btree_header_rejects_bad_type(void)
         page[i] = 0;
     page[0] = 99; // not a valid b-tree page type
     SqliteBtreeHeader b;
-    TEST_ASSERT_FALSE(sqlite_parse_btree_header(page, sizeof(page), 0, &b));
+    TEST_ASSERT_FALSE(dws_sqlite_parse_btree_header(page, sizeof(page), 0, &b));
     // A valid leaf type but the header runs past the buffer.
     page[0] = SqliteBtree::SQLITE_BTREE_LEAF_TABLE;
-    TEST_ASSERT_FALSE(sqlite_parse_btree_header(page, 4, 0, &b));
+    TEST_ASSERT_FALSE(dws_sqlite_parse_btree_header(page, 4, 0, &b));
 }
 
 void test_first_cell_varints(void)
@@ -119,10 +119,10 @@ void test_first_cell_varints(void)
     TEST_ASSERT_EQUAL_UINT32(463, cell_off);
     // A leaf-table cell begins with: payload-length varint, then rowid varint.
     uint64_t payload_len = 0, rowid = 0;
-    size_t n = sqlite_varint_decode(PAGE1 + cell_off, sizeof(PAGE1) - cell_off, &payload_len);
+    size_t n = dws_sqlite_varint_decode(PAGE1 + cell_off, sizeof(PAGE1) - cell_off, &payload_len);
     TEST_ASSERT_EQUAL_size_t(1, n);
     TEST_ASSERT_EQUAL_UINT64(47, payload_len); // 0x2f
-    size_t n2 = sqlite_varint_decode(PAGE1 + cell_off + n, sizeof(PAGE1) - cell_off - n, &rowid);
+    size_t n2 = dws_sqlite_varint_decode(PAGE1 + cell_off + n, sizeof(PAGE1) - cell_off - n, &rowid);
     TEST_ASSERT_EQUAL_size_t(1, n2);
     TEST_ASSERT_EQUAL_UINT64(1, rowid);
 }
@@ -131,110 +131,110 @@ void test_varint_spec_vectors(void)
 {
     uint64_t v = 0;
     const uint8_t a[] = {0x00};
-    TEST_ASSERT_EQUAL_size_t(1, sqlite_varint_decode(a, 1, &v));
+    TEST_ASSERT_EQUAL_size_t(1, dws_sqlite_varint_decode(a, 1, &v));
     TEST_ASSERT_EQUAL_UINT64(0, v);
 
     const uint8_t b[] = {0x7f};
-    TEST_ASSERT_EQUAL_size_t(1, sqlite_varint_decode(b, 1, &v));
+    TEST_ASSERT_EQUAL_size_t(1, dws_sqlite_varint_decode(b, 1, &v));
     TEST_ASSERT_EQUAL_UINT64(127, v);
 
     const uint8_t c[] = {0x81, 0x00}; // 0x80 continuation -> (1<<7)|0 = 128
-    TEST_ASSERT_EQUAL_size_t(2, sqlite_varint_decode(c, 2, &v));
+    TEST_ASSERT_EQUAL_size_t(2, dws_sqlite_varint_decode(c, 2, &v));
     TEST_ASSERT_EQUAL_UINT64(128, v);
 
     const uint8_t d[] = {0x82, 0x2f}; // (2<<7)|0x2f = 303
-    TEST_ASSERT_EQUAL_size_t(2, sqlite_varint_decode(d, 2, &v));
+    TEST_ASSERT_EQUAL_size_t(2, dws_sqlite_varint_decode(d, 2, &v));
     TEST_ASSERT_EQUAL_UINT64(303, v);
 
     // All nine bytes set -> the full 64-bit value.
     const uint8_t big[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-    TEST_ASSERT_EQUAL_size_t(9, sqlite_varint_decode(big, 9, &v));
+    TEST_ASSERT_EQUAL_size_t(9, dws_sqlite_varint_decode(big, 9, &v));
     TEST_ASSERT_EQUAL_UINT64(0xFFFFFFFFFFFFFFFFull, v);
 
     // Incomplete varint (continuation bit set but no more bytes) fails closed.
     const uint8_t inc[] = {0x81};
-    TEST_ASSERT_EQUAL_size_t(0, sqlite_varint_decode(inc, 1, &v));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sqlite_varint_decode(inc, 1, &v));
 }
 
 void test_serial_type_sizes(void)
 {
-    TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(0)); // NULL
-    TEST_ASSERT_EQUAL_UINT64(1, sqlite_serial_type_size(1));
-    TEST_ASSERT_EQUAL_UINT64(2, sqlite_serial_type_size(2));
-    TEST_ASSERT_EQUAL_UINT64(3, sqlite_serial_type_size(3));
-    TEST_ASSERT_EQUAL_UINT64(4, sqlite_serial_type_size(4));
-    TEST_ASSERT_EQUAL_UINT64(6, sqlite_serial_type_size(5));
-    TEST_ASSERT_EQUAL_UINT64(8, sqlite_serial_type_size(6));
-    TEST_ASSERT_EQUAL_UINT64(8, sqlite_serial_type_size(7));  // float64
-    TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(8));  // int 0
-    TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(9));  // int 1
-    TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(10)); // reserved
-    TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(11)); // reserved
-    TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(12)); // BLOB len 0
-    TEST_ASSERT_EQUAL_UINT64(1, sqlite_serial_type_size(14)); // BLOB len 1
-    TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(13)); // TEXT len 0
-    TEST_ASSERT_EQUAL_UINT64(1, sqlite_serial_type_size(15)); // TEXT len 1  (seen in the real record)
-    TEST_ASSERT_EQUAL_UINT64(5, sqlite_serial_type_size(23)); // TEXT len 5  ("table", the real record)
+    TEST_ASSERT_EQUAL_UINT64(0, dws_sqlite_serial_type_size(0)); // NULL
+    TEST_ASSERT_EQUAL_UINT64(1, dws_sqlite_serial_type_size(1));
+    TEST_ASSERT_EQUAL_UINT64(2, dws_sqlite_serial_type_size(2));
+    TEST_ASSERT_EQUAL_UINT64(3, dws_sqlite_serial_type_size(3));
+    TEST_ASSERT_EQUAL_UINT64(4, dws_sqlite_serial_type_size(4));
+    TEST_ASSERT_EQUAL_UINT64(6, dws_sqlite_serial_type_size(5));
+    TEST_ASSERT_EQUAL_UINT64(8, dws_sqlite_serial_type_size(6));
+    TEST_ASSERT_EQUAL_UINT64(8, dws_sqlite_serial_type_size(7));  // float64
+    TEST_ASSERT_EQUAL_UINT64(0, dws_sqlite_serial_type_size(8));  // int 0
+    TEST_ASSERT_EQUAL_UINT64(0, dws_sqlite_serial_type_size(9));  // int 1
+    TEST_ASSERT_EQUAL_UINT64(0, dws_sqlite_serial_type_size(10)); // reserved
+    TEST_ASSERT_EQUAL_UINT64(0, dws_sqlite_serial_type_size(11)); // reserved
+    TEST_ASSERT_EQUAL_UINT64(0, dws_sqlite_serial_type_size(12)); // BLOB len 0
+    TEST_ASSERT_EQUAL_UINT64(1, dws_sqlite_serial_type_size(14)); // BLOB len 1
+    TEST_ASSERT_EQUAL_UINT64(0, dws_sqlite_serial_type_size(13)); // TEXT len 0
+    TEST_ASSERT_EQUAL_UINT64(1, dws_sqlite_serial_type_size(15)); // TEXT len 1  (seen in the real record)
+    TEST_ASSERT_EQUAL_UINT64(5, dws_sqlite_serial_type_size(23)); // TEXT len 5  ("table", the real record)
 }
 
-// Read the one real row on page 1: the sqlite_schema entry describing table t.
+// Read the one real row on page 1: the dws_sqlite_schema entry describing table t.
 // Columns are (type, name, tbl_name, rootpage, sql) = ("table","t","t",2,"CREATE TABLE t(a INTEGER, b TEXT)").
 void test_read_schema_row(void)
 {
     SqliteBtreeHeader b;
-    TEST_ASSERT_TRUE(sqlite_parse_btree_header(PAGE1, sizeof(PAGE1), 100, &b));
-    uint32_t cp = sqlite_cell_pointer(PAGE1, sizeof(PAGE1), &b, 100, 0);
+    TEST_ASSERT_TRUE(dws_sqlite_parse_btree_header(PAGE1, sizeof(PAGE1), 100, &b));
+    uint32_t cp = dws_sqlite_cell_pointer(PAGE1, sizeof(PAGE1), &b, 100, 0);
     TEST_ASSERT_EQUAL_UINT32(463, cp);
 
     SqliteTableLeafCell cell;
-    TEST_ASSERT_TRUE(sqlite_parse_table_leaf_cell(PAGE1, sizeof(PAGE1), 512, 0, cp, &cell));
+    TEST_ASSERT_TRUE(dws_sqlite_parse_table_leaf_cell(PAGE1, sizeof(PAGE1), 512, 0, cp, &cell));
     TEST_ASSERT_EQUAL_UINT64(1, cell.rowid);
     TEST_ASSERT_EQUAL_UINT32(47, cell.payload_len);
     TEST_ASSERT_FALSE(cell.has_overflow);
     TEST_ASSERT_EQUAL_UINT32(47, cell.local_len);
 
     SqliteRecordCursor c;
-    TEST_ASSERT_TRUE(sqlite_record_begin(&c, PAGE1 + cell.local_off, cell.local_len));
+    TEST_ASSERT_TRUE(dws_sqlite_record_begin(&c, PAGE1 + cell.local_off, cell.local_len));
     uint64_t st = 0;
     const uint8_t *v = nullptr;
     uint32_t vl = 0;
 
-    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // type
-    TEST_ASSERT_EQUAL_UINT64(23, st);                       // text, 5 bytes
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&c, &st, &v, &vl)); // type
+    TEST_ASSERT_EQUAL_UINT64(23, st);                           // text, 5 bytes
     TEST_ASSERT_EQUAL_UINT32(5, vl);
     TEST_ASSERT_EQUAL_MEMORY("table", v, 5);
 
-    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // name
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&c, &st, &v, &vl)); // name
     TEST_ASSERT_EQUAL_UINT32(1, vl);
     TEST_ASSERT_EQUAL_MEMORY("t", v, 1);
 
-    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // tbl_name
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&c, &st, &v, &vl)); // tbl_name
     TEST_ASSERT_EQUAL_MEMORY("t", v, 1);
 
-    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // rootpage
-    TEST_ASSERT_EQUAL_UINT64(1, st);                        // 1-byte int
-    TEST_ASSERT_EQUAL_INT64(2, sqlite_column_int(st, v, vl));
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&c, &st, &v, &vl)); // rootpage
+    TEST_ASSERT_EQUAL_UINT64(1, st);                            // 1-byte int
+    TEST_ASSERT_EQUAL_INT64(2, dws_sqlite_column_int(st, v, vl));
 
-    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // sql
-    TEST_ASSERT_EQUAL_UINT64(79, st);                       // text, 33 bytes
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&c, &st, &v, &vl)); // sql
+    TEST_ASSERT_EQUAL_UINT64(79, st);                           // text, 33 bytes
     TEST_ASSERT_EQUAL_UINT32(33, vl);
     TEST_ASSERT_EQUAL_MEMORY("CREATE TABLE t(a INTEGER, b TEXT)", v, 33);
 
-    TEST_ASSERT_FALSE(sqlite_record_next(&c, &st, &v, &vl)); // exactly five columns
+    TEST_ASSERT_FALSE(dws_sqlite_record_next(&c, &st, &v, &vl)); // exactly five columns
 }
 
 void test_column_int_signextend(void)
 {
     const uint8_t m1[] = {0xFF};
-    TEST_ASSERT_EQUAL_INT64(-1, sqlite_column_int(1, m1, 1));
+    TEST_ASSERT_EQUAL_INT64(-1, dws_sqlite_column_int(1, m1, 1));
     const uint8_t p127[] = {0x7F};
-    TEST_ASSERT_EQUAL_INT64(127, sqlite_column_int(1, p127, 1));
+    TEST_ASSERT_EQUAL_INT64(127, dws_sqlite_column_int(1, p127, 1));
     const uint8_t m2[] = {0xFF, 0xFE};
-    TEST_ASSERT_EQUAL_INT64(-2, sqlite_column_int(2, m2, 2));
+    TEST_ASSERT_EQUAL_INT64(-2, dws_sqlite_column_int(2, m2, 2));
     const uint8_t big[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00}; // 256 as a 64-bit int
-    TEST_ASSERT_EQUAL_INT64(256, sqlite_column_int(6, big, 8));
-    TEST_ASSERT_EQUAL_INT64(0, sqlite_column_int(8, nullptr, 0)); // constant 0
-    TEST_ASSERT_EQUAL_INT64(1, sqlite_column_int(9, nullptr, 0)); // constant 1
+    TEST_ASSERT_EQUAL_INT64(256, dws_sqlite_column_int(6, big, 8));
+    TEST_ASSERT_EQUAL_INT64(0, dws_sqlite_column_int(8, nullptr, 0)); // constant 0
+    TEST_ASSERT_EQUAL_INT64(1, dws_sqlite_column_int(9, nullptr, 0)); // constant 1
 }
 
 // A payload larger than the local max for a 512-byte page must be flagged as overflowing.
@@ -248,7 +248,7 @@ void test_leaf_cell_overflow_detection(void)
     page[101] = 0x5E;
     page[102] = 0x01;
     SqliteTableLeafCell cell;
-    TEST_ASSERT_TRUE(sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 100, &cell));
+    TEST_ASSERT_TRUE(dws_sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 100, &cell));
     TEST_ASSERT_EQUAL_UINT64(1, cell.rowid);
     TEST_ASSERT_EQUAL_UINT32(478, cell.payload_len);
     TEST_ASSERT_TRUE(cell.has_overflow);
@@ -279,18 +279,18 @@ void test_table_cursor_multipage(void)
     // The table's root page (page 2) is an interior table page, so this exercises the descent stack.
     SqliteBtreeHeader bh;
     TEST_ASSERT_TRUE(
-        sqlite_parse_btree_header(DB_MULTIPAGE + DB_MP_PAGE_SIZE, sizeof(DB_MULTIPAGE) - DB_MP_PAGE_SIZE, 0, &bh));
+        dws_sqlite_parse_btree_header(DB_MULTIPAGE + DB_MP_PAGE_SIZE, sizeof(DB_MULTIPAGE) - DB_MP_PAGE_SIZE, 0, &bh));
     TEST_ASSERT_EQUAL_UINT8(SqliteBtree::SQLITE_BTREE_INTERIOR_TABLE, bh.type);
 
     MemDb db = {DB_MULTIPAGE, sizeof(DB_MULTIPAGE)};
     static uint8_t leaf[512], work[512];
     SqliteTableCursor c;
-    TEST_ASSERT_TRUE(sqlite_table_cursor_begin(&c, mem_read, &db, DB_MP_PAGE_SIZE, 0, 2, leaf, work));
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, mem_read, &db, DB_MP_PAGE_SIZE, 0, 2, leaf, work));
 
     uint32_t n = 0;
     uint64_t rowid = 0;
     SqliteRecordCursor row;
-    while (sqlite_table_cursor_next(&c, &rowid, &row))
+    while (dws_sqlite_table_cursor_next(&c, &rowid, &row))
     {
         n++;
         TEST_ASSERT_EQUAL_UINT64(n, rowid); // rowids 1..40, in order, across pages
@@ -298,16 +298,16 @@ void test_table_cursor_multipage(void)
         uint64_t st = 0;
         const uint8_t *v = nullptr;
         uint32_t vl = 0;
-        TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // column a (INTEGER) == rowid
-        TEST_ASSERT_EQUAL_INT64((int64_t)n, sqlite_column_int(st, v, vl));
+        TEST_ASSERT_TRUE(dws_sqlite_record_next(&row, &st, &v, &vl)); // column a (INTEGER) == rowid
+        TEST_ASSERT_EQUAL_INT64((int64_t)n, dws_sqlite_column_int(st, v, vl));
 
-        TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // column b (TEXT)
+        TEST_ASSERT_TRUE(dws_sqlite_record_next(&row, &st, &v, &vl)); // column b (TEXT)
         char expect[64];
         snprintf(expect, sizeof(expect), "row%04d-abcdefghijklmnopqrstuvwxyz", (int)n);
         TEST_ASSERT_EQUAL_UINT32((uint32_t)strlen(expect), vl);
         TEST_ASSERT_EQUAL_MEMORY(expect, v, vl);
 
-        TEST_ASSERT_FALSE(sqlite_record_next(&row, &st, &v, &vl)); // exactly two columns
+        TEST_ASSERT_FALSE(dws_sqlite_record_next(&row, &st, &v, &vl)); // exactly two columns
     }
     TEST_ASSERT_EQUAL_UINT32(DB_MP_ROWS, n); // every row visited exactly once
 }
@@ -328,9 +328,9 @@ static void assert_text_run(SqliteRecordCursor *row, uint32_t len, char ch)
     uint64_t st = 0;
     const uint8_t *v = nullptr;
     uint32_t vl = 0;
-    TEST_ASSERT_TRUE(sqlite_record_next(row, &st, &v, &vl)); // column a (INTEGER id)
-    TEST_ASSERT_TRUE(sqlite_record_next(row, &st, &v, &vl)); // column b (TEXT data)
-    TEST_ASSERT_EQUAL_UINT64(13u + 2u * len, st);            // TEXT serial type = 13 + 2*len
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(row, &st, &v, &vl)); // column a (INTEGER id)
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(row, &st, &v, &vl)); // column b (TEXT data)
+    TEST_ASSERT_EQUAL_UINT64(13u + 2u * len, st);                // TEXT serial type = 13 + 2*len
     TEST_ASSERT_EQUAL_UINT32(len, vl);
     for (uint32_t i = 0; i < vl; i++)
         TEST_ASSERT_EQUAL_UINT8((uint8_t)ch, v[i]);
@@ -343,8 +343,8 @@ static void assert_text_eq(SqliteRecordCursor *row, const char *s)
     const uint8_t *v = nullptr;
     uint32_t vl = 0;
     uint32_t len = (uint32_t)strlen(s);
-    TEST_ASSERT_TRUE(sqlite_record_next(row, &st, &v, &vl)); // column a (INTEGER id)
-    TEST_ASSERT_TRUE(sqlite_record_next(row, &st, &v, &vl)); // column b (TEXT data)
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(row, &st, &v, &vl)); // column a (INTEGER id)
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(row, &st, &v, &vl)); // column b (TEXT data)
     TEST_ASSERT_EQUAL_UINT64(13u + 2u * len, st);
     TEST_ASSERT_EQUAL_UINT32(len, vl);
     TEST_ASSERT_EQUAL_MEMORY(s, v, vl);
@@ -362,14 +362,14 @@ static bool find_overflow_cell(uint8_t *leaf_out, SqliteTableLeafCell *cell_out)
             continue;
         size_t off = (pg == 1) ? 100 : 0;
         SqliteBtreeHeader bh;
-        if (!sqlite_parse_btree_header(page, OVF_PAGE_SIZE, off, &bh) ||
+        if (!dws_sqlite_parse_btree_header(page, OVF_PAGE_SIZE, off, &bh) ||
             bh.type != SqliteBtree::SQLITE_BTREE_LEAF_TABLE)
             continue;
         for (uint16_t i = 0; i < bh.cell_count; i++)
         {
-            uint32_t cp = sqlite_cell_pointer(page, OVF_PAGE_SIZE, &bh, off, i);
+            uint32_t cp = dws_sqlite_cell_pointer(page, OVF_PAGE_SIZE, &bh, off, i);
             SqliteTableLeafCell cell;
-            if (cp && sqlite_parse_table_leaf_cell(page, OVF_PAGE_SIZE, OVF_PAGE_SIZE, 0, cp, &cell) &&
+            if (cp && dws_sqlite_parse_table_leaf_cell(page, OVF_PAGE_SIZE, OVF_PAGE_SIZE, 0, cp, &cell) &&
                 cell.has_overflow)
             {
                 memcpy(leaf_out, page, OVF_PAGE_SIZE);
@@ -381,7 +381,7 @@ static bool find_overflow_cell(uint8_t *leaf_out, SqliteTableLeafCell *cell_out)
     return false;
 }
 
-// Reassemble an overflowing row's payload directly with sqlite_read_payload and verify the full TEXT.
+// Reassemble an overflowing row's payload directly with dws_sqlite_read_payload and verify the full TEXT.
 void test_overflow_read_payload(void)
 {
     static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE], payload[4096];
@@ -390,16 +390,16 @@ void test_overflow_read_payload(void)
     TEST_ASSERT_TRUE(cell.has_overflow);
     TEST_ASSERT_TRUE(cell.local_len < cell.payload_len); // the record really spills onto overflow pages
     TEST_ASSERT_TRUE(
-        sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, payload, sizeof(payload), work));
+        dws_sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, payload, sizeof(payload), work));
 
     // The reassembled record decodes to (id INTEGER, data TEXT) where data is a run of one character.
     SqliteRecordCursor row;
-    TEST_ASSERT_TRUE(sqlite_record_begin(&row, payload, cell.payload_len));
+    TEST_ASSERT_TRUE(dws_sqlite_record_begin(&row, payload, cell.payload_len));
     uint64_t st = 0;
     const uint8_t *v = nullptr;
     uint32_t vl = 0;
-    TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // id
-    TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // data (TEXT)
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&row, &st, &v, &vl)); // id
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&row, &st, &v, &vl)); // data (TEXT)
     TEST_ASSERT_TRUE(vl == OVF_ROW2_LEN || vl == OVF_ROW3_LEN);
     TEST_ASSERT_EQUAL_UINT64(13u + 2u * vl, st);
     char ch = (char)v[0];
@@ -408,7 +408,7 @@ void test_overflow_read_payload(void)
         TEST_ASSERT_EQUAL_UINT8((uint8_t)ch, v[i]); // every byte survived the chain intact
 }
 
-// A non-overflow cell reassembles trivially: sqlite_read_payload copies the in-page prefix and succeeds.
+// A non-overflow cell reassembles trivially: dws_sqlite_read_payload copies the in-page prefix and succeeds.
 void test_read_payload_nonoverflow(void)
 {
     static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE], out[OVF_PAGE_SIZE];
@@ -421,7 +421,7 @@ void test_read_payload_nonoverflow(void)
     cell.local_off = 8;
     cell.local_len = 50;
     cell.has_overflow = false;
-    TEST_ASSERT_TRUE(sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, out, sizeof(out), work));
+    TEST_ASSERT_TRUE(dws_sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, out, sizeof(out), work));
     TEST_ASSERT_EQUAL_MEMORY(leaf + 8, out, 50);
 }
 
@@ -443,7 +443,8 @@ void test_read_payload_bad_overflow_pointer(void)
     leaf[ptr + 1] = 0x00;
     leaf[ptr + 2] = 0x27;
     leaf[ptr + 3] = 0x0f; // 9999
-    TEST_ASSERT_FALSE(sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, out, sizeof(out), work));
+    TEST_ASSERT_FALSE(
+        dws_sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, out, sizeof(out), work));
 }
 
 // A short output buffer must fail closed, not overrun.
@@ -453,7 +454,8 @@ void test_overflow_read_payload_bounds(void)
     SqliteTableLeafCell cell;
     TEST_ASSERT_TRUE(find_overflow_cell(leaf, &cell));
     uint8_t tiny[16]; // far smaller than the >=1000-byte overflowing payload
-    TEST_ASSERT_FALSE(sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, tiny, sizeof(tiny), work));
+    TEST_ASSERT_FALSE(
+        dws_sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, tiny, sizeof(tiny), work));
 }
 
 // Drive the table cursor with an overflow buffer: every row (incl. the overflowing ones) fully reassembled.
@@ -461,13 +463,13 @@ void test_overflow_cursor(void)
 {
     static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE], ovf[4096];
     SqliteTableCursor c;
-    TEST_ASSERT_TRUE(sqlite_table_cursor_begin(&c, ovf_read, nullptr, OVF_PAGE_SIZE, 0, OVF_ROOTPAGE, leaf, work));
-    sqlite_table_cursor_set_overflow_buf(&c, ovf, sizeof(ovf));
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, ovf_read, nullptr, OVF_PAGE_SIZE, 0, OVF_ROOTPAGE, leaf, work));
+    dws_sqlite_table_cursor_set_overflow_buf(&c, ovf, sizeof(ovf));
 
     uint64_t rowid = 0;
     SqliteRecordCursor row;
     uint32_t n = 0;
-    while (sqlite_table_cursor_next(&c, &rowid, &row))
+    while (dws_sqlite_table_cursor_next(&c, &rowid, &row))
     {
         n++;
         TEST_ASSERT_EQUAL_UINT64(n, rowid);
@@ -501,16 +503,16 @@ void test_varint_encode_roundtrip(void)
     for (unsigned k = 0; k < sizeof(vals) / sizeof(vals[0]); k++)
     {
         uint8_t buf[9];
-        size_t n = sqlite_varint_encode(vals[k], buf, sizeof(buf));
+        size_t n = dws_sqlite_varint_encode(vals[k], buf, sizeof(buf));
         TEST_ASSERT_TRUE(n >= 1 && n <= 9);
         uint64_t back = 0;
-        size_t m = sqlite_varint_decode(buf, n, &back);
+        size_t m = dws_sqlite_varint_decode(buf, n, &back);
         TEST_ASSERT_EQUAL_size_t(n, m); // encode and decode agree on the length
         TEST_ASSERT_EQUAL_UINT64(vals[k], back);
     }
     // A capacity that is one short must fail closed.
     uint8_t one[1];
-    TEST_ASSERT_EQUAL_size_t(0, sqlite_varint_encode(128, one, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sqlite_varint_encode(128, one, 1));
 }
 
 void test_encode_record_roundtrip(void)
@@ -524,36 +526,36 @@ void test_encode_record_roundtrip(void)
     cols[4] = {SqliteColType::SQLITE_COL_INT, 0, 0, nullptr, 0}; // the constant 0 (serial type 8, 0 bytes)
 
     uint8_t rec[128];
-    uint32_t rl = sqlite_encode_record(cols, 5, rec, sizeof(rec));
+    uint32_t rl = dws_sqlite_encode_record(cols, 5, rec, sizeof(rec));
     TEST_ASSERT_TRUE(rl > 0);
 
     SqliteRecordCursor rc;
-    TEST_ASSERT_TRUE(sqlite_record_begin(&rc, rec, rl));
+    TEST_ASSERT_TRUE(dws_sqlite_record_begin(&rc, rec, rl));
     uint64_t st = 0;
     const uint8_t *v = nullptr;
     uint32_t vl = 0;
 
-    TEST_ASSERT_TRUE(sqlite_record_next(&rc, &st, &v, &vl)); // INT -12345
-    TEST_ASSERT_EQUAL_INT64(-12345, sqlite_column_int(st, v, vl));
-    TEST_ASSERT_TRUE(sqlite_record_next(&rc, &st, &v, &vl)); // TEXT "hello"
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&rc, &st, &v, &vl)); // INT -12345
+    TEST_ASSERT_EQUAL_INT64(-12345, dws_sqlite_column_int(st, v, vl));
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&rc, &st, &v, &vl)); // TEXT "hello"
     TEST_ASSERT_EQUAL_UINT64(13u + 2u * 5u, st);
     TEST_ASSERT_EQUAL_UINT32(5, vl);
     TEST_ASSERT_EQUAL_MEMORY("hello", v, 5);
-    TEST_ASSERT_TRUE(sqlite_record_next(&rc, &st, &v, &vl)); // FLOAT 3.14159
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&rc, &st, &v, &vl)); // FLOAT 3.14159
     TEST_ASSERT_EQUAL_UINT64(7, st);
     // Unity's double asserts are disabled in this build; compare the IEEE-754 bit pattern instead (the
     // decoder reads back the exact 8 bytes we wrote, so it is bit-exact).
-    double got = sqlite_column_float(v, vl), want = 3.14159;
+    double got = dws_sqlite_column_float(v, vl), want = 3.14159;
     uint64_t got_bits = 0, want_bits = 0;
     memcpy(&got_bits, &got, 8);
     memcpy(&want_bits, &want, 8);
     TEST_ASSERT_EQUAL_HEX64(want_bits, got_bits);
-    TEST_ASSERT_TRUE(sqlite_record_next(&rc, &st, &v, &vl)); // NULL
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&rc, &st, &v, &vl)); // NULL
     TEST_ASSERT_EQUAL_UINT64(0, st);
-    TEST_ASSERT_TRUE(sqlite_record_next(&rc, &st, &v, &vl)); // INT 0 (constant)
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&rc, &st, &v, &vl)); // INT 0 (constant)
     TEST_ASSERT_EQUAL_UINT64(8, st);
-    TEST_ASSERT_EQUAL_INT64(0, sqlite_column_int(st, v, vl));
-    TEST_ASSERT_FALSE(sqlite_record_next(&rc, &st, &v, &vl)); // exactly five columns
+    TEST_ASSERT_EQUAL_INT64(0, dws_sqlite_column_int(st, v, vl));
+    TEST_ASSERT_FALSE(dws_sqlite_record_next(&rc, &st, &v, &vl)); // exactly five columns
 }
 
 void test_build_table_db_roundtrip(void)
@@ -574,51 +576,51 @@ void test_build_table_db_roundtrip(void)
     }
 
     static uint8_t img[1024]; // 2 * 512
-    uint32_t len = sqlite_build_table_db(512, "t", "CREATE TABLE t(a INTEGER, b TEXT)", rows, 3, img, sizeof(img));
+    uint32_t len = dws_sqlite_build_table_db(512, "t", "CREATE TABLE t(a INTEGER, b TEXT)", rows, 3, img, sizeof(img));
     TEST_ASSERT_EQUAL_UINT32(1024, len);
 
     // The database header parses and reports what we wrote.
     SqliteDbHeader h;
-    TEST_ASSERT_TRUE(sqlite_parse_db_header(img, len, &h));
+    TEST_ASSERT_TRUE(dws_sqlite_parse_db_header(img, len, &h));
     TEST_ASSERT_EQUAL_UINT32(512, h.page_size);
     TEST_ASSERT_EQUAL_UINT32(2, h.page_count);
     TEST_ASSERT_EQUAL_UINT32(1, h.text_encoding);
 
-    // The sqlite_schema row on page 1: type='table', name='t', rootpage=2, sql=the CREATE.
+    // The dws_sqlite_schema row on page 1: type='table', name='t', rootpage=2, sql=the CREATE.
     SqliteBtreeHeader p1;
-    TEST_ASSERT_TRUE(sqlite_parse_btree_header(img, 512, 100, &p1));
+    TEST_ASSERT_TRUE(dws_sqlite_parse_btree_header(img, 512, 100, &p1));
     TEST_ASSERT_EQUAL_UINT16(1, p1.cell_count);
-    uint32_t mcp = sqlite_cell_pointer(img, 512, &p1, 100, 0);
+    uint32_t mcp = dws_sqlite_cell_pointer(img, 512, &p1, 100, 0);
     SqliteTableLeafCell mcell;
-    TEST_ASSERT_TRUE(sqlite_parse_table_leaf_cell(img, 512, 512, 0, mcp, &mcell));
+    TEST_ASSERT_TRUE(dws_sqlite_parse_table_leaf_cell(img, 512, 512, 0, mcp, &mcell));
     SqliteRecordCursor mrec;
-    TEST_ASSERT_TRUE(sqlite_record_begin(&mrec, img + mcell.local_off, mcell.local_len));
+    TEST_ASSERT_TRUE(dws_sqlite_record_begin(&mrec, img + mcell.local_off, mcell.local_len));
     uint64_t st = 0;
     const uint8_t *v = nullptr;
     uint32_t vl = 0;
-    TEST_ASSERT_TRUE(sqlite_record_next(&mrec, &st, &v, &vl)); // type
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&mrec, &st, &v, &vl)); // type
     TEST_ASSERT_EQUAL_MEMORY("table", v, 5);
-    TEST_ASSERT_TRUE(sqlite_record_next(&mrec, &st, &v, &vl)); // name
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&mrec, &st, &v, &vl)); // name
     TEST_ASSERT_EQUAL_MEMORY("t", v, 1);
-    TEST_ASSERT_TRUE(sqlite_record_next(&mrec, &st, &v, &vl)); // tbl_name
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&mrec, &st, &v, &vl)); // tbl_name
     TEST_ASSERT_EQUAL_MEMORY("t", v, 1);
-    TEST_ASSERT_TRUE(sqlite_record_next(&mrec, &st, &v, &vl)); // rootpage
-    TEST_ASSERT_EQUAL_INT64(2, sqlite_column_int(st, v, vl));
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&mrec, &st, &v, &vl)); // rootpage
+    TEST_ASSERT_EQUAL_INT64(2, dws_sqlite_column_int(st, v, vl));
 
     // The table rows on page 2, read via the cursor.
     MemDb db = {img, len};
     static uint8_t leaf[512], work[512];
     SqliteTableCursor c;
-    TEST_ASSERT_TRUE(sqlite_table_cursor_begin(&c, mem_read, &db, 512, 0, 2, leaf, work));
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, mem_read, &db, 512, 0, 2, leaf, work));
     uint64_t rowid = 0;
     SqliteRecordCursor row;
     int n = 0;
-    while (sqlite_table_cursor_next(&c, &rowid, &row))
+    while (dws_sqlite_table_cursor_next(&c, &rowid, &row))
     {
         TEST_ASSERT_EQUAL_UINT64((uint64_t)(n + 1), rowid);
-        TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // a INTEGER
-        TEST_ASSERT_EQUAL_INT64(spec[n].a, sqlite_column_int(st, v, vl));
-        TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // b TEXT
+        TEST_ASSERT_TRUE(dws_sqlite_record_next(&row, &st, &v, &vl)); // a INTEGER
+        TEST_ASSERT_EQUAL_INT64(spec[n].a, dws_sqlite_column_int(st, v, vl));
+        TEST_ASSERT_TRUE(dws_sqlite_record_next(&row, &st, &v, &vl)); // b TEXT
         TEST_ASSERT_EQUAL_UINT32((uint32_t)strlen(spec[n].b), vl);
         TEST_ASSERT_EQUAL_MEMORY(spec[n].b, v, vl);
         n++;
@@ -658,17 +660,17 @@ void test_encode_record_int_widths(void)
     {
         SqliteValue col = {SqliteColType::SQLITE_COL_INT, cases[k].v, 0, nullptr, 0};
         uint8_t rec[32];
-        uint32_t rl = sqlite_encode_record(&col, 1, rec, sizeof(rec));
+        uint32_t rl = dws_sqlite_encode_record(&col, 1, rec, sizeof(rec));
         TEST_ASSERT_TRUE(rl > 0);
         SqliteRecordCursor rc;
-        TEST_ASSERT_TRUE(sqlite_record_begin(&rc, rec, rl));
+        TEST_ASSERT_TRUE(dws_sqlite_record_begin(&rc, rec, rl));
         uint64_t st = 0;
         const uint8_t *v = nullptr;
         uint32_t vl = 0;
-        TEST_ASSERT_TRUE(sqlite_record_next(&rc, &st, &v, &vl));
+        TEST_ASSERT_TRUE(dws_sqlite_record_next(&rc, &st, &v, &vl));
         TEST_ASSERT_EQUAL_UINT64(cases[k].st, st); // minimal serial type
-        TEST_ASSERT_EQUAL_INT64(cases[k].v, sqlite_column_int(st, v, vl));
-        TEST_ASSERT_FALSE(sqlite_record_next(&rc, &st, &v, &vl)); // single column
+        TEST_ASSERT_EQUAL_INT64(cases[k].v, dws_sqlite_column_int(st, v, vl));
+        TEST_ASSERT_FALSE(dws_sqlite_record_next(&rc, &st, &v, &vl)); // single column
     }
 }
 
@@ -678,14 +680,14 @@ void test_encode_record_blob(void)
     const uint8_t blob[] = {0x00, 0xff, 0x10, 0x00, 0x7f, 0x80};
     SqliteValue col = {SqliteColType::SQLITE_COL_BLOB, 0, 0, blob, sizeof(blob)};
     uint8_t rec[32];
-    uint32_t rl = sqlite_encode_record(&col, 1, rec, sizeof(rec));
+    uint32_t rl = dws_sqlite_encode_record(&col, 1, rec, sizeof(rec));
     TEST_ASSERT_TRUE(rl > 0);
     SqliteRecordCursor rc;
-    TEST_ASSERT_TRUE(sqlite_record_begin(&rc, rec, rl));
+    TEST_ASSERT_TRUE(dws_sqlite_record_begin(&rc, rec, rl));
     uint64_t st = 0;
     const uint8_t *v = nullptr;
     uint32_t vl = 0;
-    TEST_ASSERT_TRUE(sqlite_record_next(&rc, &st, &v, &vl));
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&rc, &st, &v, &vl));
     TEST_ASSERT_EQUAL_UINT64(12u + 2u * sizeof(blob), st); // BLOB serial type
     TEST_ASSERT_EQUAL_UINT32(sizeof(blob), vl);
     TEST_ASSERT_EQUAL_MEMORY(blob, v, sizeof(blob));
@@ -703,7 +705,7 @@ void test_build_table_db_page_overflow_fails_closed(void)
         rows[r] = {(uint64_t)(r + 1), rowvals[r], 1};
     }
     static uint8_t img[1024];
-    TEST_ASSERT_EQUAL_UINT32(0, sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", rows, 60, img, sizeof(img)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", rows, 60, img, sizeof(img)));
 }
 
 void test_build_table_db_fails_closed(void)
@@ -714,11 +716,12 @@ void test_build_table_db_fails_closed(void)
     SqliteValue col = {SqliteColType::SQLITE_COL_TEXT, 0, 0, big, sizeof(big)};
     SqliteRow row = {1, &col, 1};
     static uint8_t img[1024];
-    TEST_ASSERT_EQUAL_UINT32(0, sqlite_build_table_db(512, "t", "CREATE TABLE t(b TEXT)", &row, 1, img, sizeof(img)));
+    TEST_ASSERT_EQUAL_UINT32(0,
+                             dws_sqlite_build_table_db(512, "t", "CREATE TABLE t(b TEXT)", &row, 1, img, sizeof(img)));
     // Too small an output buffer also fails closed.
     SqliteValue small = {SqliteColType::SQLITE_COL_INT, 1, 0, nullptr, 0};
     SqliteRow r2 = {1, &small, 1};
-    TEST_ASSERT_EQUAL_UINT32(0, sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", &r2, 1, img, 512));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", &r2, 1, img, 512));
 }
 
 int main(void)

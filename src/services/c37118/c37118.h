@@ -63,7 +63,7 @@
 #define C37118_MIN_FRAME 16 ///< header (14) + CHK (2), no payload
 
 /** @brief CRC-CCITT (0x1021, init 0xFFFF, no reflection, no final mask). */
-uint16_t c37118_crc(const uint8_t *data, size_t len);
+uint16_t dws_c37118_crc(const uint8_t *data, size_t len);
 
 /**
  * @brief Build a frame: SYNC + FRAMESIZE + IDCODE + SOC + FRACSEC + payload + CHK.
@@ -71,11 +71,12 @@ uint16_t c37118_crc(const uint8_t *data, size_t len);
  * @param version version nibble (e.g. C37118_VERSION_2011).
  * @return total octets written, or 0 on overflow / bad input.
  */
-size_t c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t version, uint16_t idcode, uint32_t soc,
-                          uint32_t fracsec, const uint8_t *payload, size_t payload_len);
+size_t dws_c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t version, uint16_t idcode, uint32_t soc,
+                              uint32_t fracsec, const uint8_t *payload, size_t payload_len);
 
 /** @brief Build a Command frame (DATA = the 16-bit command word), version 2011. */
-size_t c37118_build_command(uint8_t *buf, size_t cap, uint16_t idcode, uint32_t soc, uint32_t fracsec, uint16_t cmd);
+size_t dws_c37118_build_command(uint8_t *buf, size_t cap, uint16_t idcode, uint32_t soc, uint32_t fracsec,
+                                uint16_t cmd);
 
 /** @brief A parsed frame; @ref data points INTO the source buffer (between FRACSEC and CHK). */
 struct C37118Frame
@@ -95,10 +96,10 @@ struct C37118Frame
  * @return true on a complete, CRC-valid frame; false on a bad SYNC, truncation, an
  *         out-of-range FRAMESIZE, or a CHK mismatch.
  */
-bool c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out);
+bool dws_c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out);
 
 /** @brief Read the command word from a parsed Command frame. */
-bool c37118_parse_command(const C37118Frame *f, uint16_t *cmd);
+bool dws_c37118_parse_command(const C37118Frame *f, uint16_t *cmd);
 
 #endif // DWS_ENABLE_C37118
 

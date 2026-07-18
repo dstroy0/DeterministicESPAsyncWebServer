@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_hkdf.h
+ * @file dws_quic_hkdf.h
  * @brief HKDF-SHA256 (RFC 5869) and TLS 1.3 HKDF-Expand-Label (RFC 8446 sec 7.1).
  *
  * QUIC packet protection keys are derived with the TLS 1.3 key schedule (RFC 9001 sec 5.2):
@@ -41,8 +41,8 @@
  * @param ikm_len   Input keying material length.
  * @param prk       Output pseudo-random key, must be QUIC_HKDF_HASH_LEN bytes.
  */
-void quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm, size_t ikm_len,
-                       uint8_t prk[QUIC_HKDF_HASH_LEN]);
+void dws_quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm, size_t ikm_len,
+                           uint8_t prk[QUIC_HKDF_HASH_LEN]);
 
 /** @brief The RFC 8446 sec 7.1 HKDF-Expand-Label prefix used by TLS 1.3 and QUIC. DTLS 1.3 overrides
  *  it with "dtls13" (RFC 9147 sec 5.9); callers that need it pass it explicitly. */
@@ -63,13 +63,13 @@ static constexpr char QUIC_HKDF_LABEL_PREFIX[] = "tls13 ";
  * @param out_len       Number of output bytes requested.
  * @param label_prefix  HkdfLabel prefix; defaults to the TLS 1.3 "tls13 " prefix. DTLS 1.3 passes "dtls13".
  */
-void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len,
-                            const char *label_prefix = QUIC_HKDF_LABEL_PREFIX);
+void dws_quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out,
+                                size_t out_len, const char *label_prefix = QUIC_HKDF_LABEL_PREFIX);
 
 /**
  * @brief HKDF-Expand-Label with an explicit context (RFC 8446 sec 7.1, the general form).
  *
- * Identical to quic_hkdf_expand_label() but the HkdfLabel context is @p context (0..255 bytes)
+ * Identical to dws_quic_hkdf_expand_label() but the HkdfLabel context is @p context (0..255 bytes)
  * instead of empty. The TLS 1.3 key schedule's Derive-Secret (sec 7.1) is exactly this with the
  * context set to a Transcript-Hash, so the whole handshake key schedule layers on this one routine.
  *
@@ -81,9 +81,9 @@ void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char
  * @param out_len      Number of output bytes requested.
  * @param label_prefix HkdfLabel prefix; defaults to the TLS 1.3 "tls13 " prefix. DTLS 1.3 passes "dtls13".
  */
-void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, const uint8_t *context,
-                                size_t context_len, uint8_t *out, size_t out_len,
-                                const char *label_prefix = QUIC_HKDF_LABEL_PREFIX);
+void dws_quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, const uint8_t *context,
+                                    size_t context_len, uint8_t *out, size_t out_len,
+                                    const char *label_prefix = QUIC_HKDF_LABEL_PREFIX);
 
 #endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_HKDF_H

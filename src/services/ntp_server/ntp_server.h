@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ntp_server.h
+ * @file dws_ntp_server.h
  * @brief NTP/SNTP time server (RFC 5905 / RFC 4330 server mode) on UDP/123.
  *
  * The device answers client NTP requests from its own clock, so a LAN with no path to the
@@ -12,9 +12,9 @@
  * the client's transmit stamp as the origin so the client can compute round-trip delay)
  * and sends it back. Zero heap; gated by DWS_ENABLE_NTP_SERVER (default off).
  *
- * The response builder (ntp_server_build_response) is pure - it takes the request bytes and
+ * The response builder (dws_ntp_server_build_response) is pure - it takes the request bytes and
  * the current NTP-epoch time and writes the reply - so it is fully host-tested with no lwIP.
- * ntp_server_begin() binds UDP/123 via the transport UDP service and drives it from
+ * dws_ntp_server_begin() binds UDP/123 via the transport UDP service and drives it from
  * `dws_time_now()` (seconds) plus a `dws_millis()`-derived sub-second fraction.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -44,20 +44,20 @@
  *
  * Echoes the request's protocol version, copies the client's transmit timestamp into the
  * response's origin field, and stamps the reference / receive / transmit times with
- * (@p ntp_secs, @p ntp_frac). Leap indicator 0, root dispersion ~1 s (a coarse clock).
+ * (@p dws_ntp_secs, @p dws_ntp_frac). Leap indicator 0, root dispersion ~1 s (a coarse clock).
  *
  * @param req       the received request bytes.
  * @param req_len   length of @p req (must be >= NTP_PACKET_LEN).
  * @param stratum   stratum to advertise (1-15).
  * @param refid     reference identifier (e.g. NTP_REFID_LOCL).
- * @param ntp_secs  current time, seconds since the NTP epoch (Unix seconds + NTP_UNIX_OFFSET).
- * @param ntp_frac  sub-second fraction as a 32-bit binary fraction of a second.
+ * @param dws_ntp_secs  current time, seconds since the NTP epoch (Unix seconds + NTP_UNIX_OFFSET).
+ * @param dws_ntp_frac  sub-second fraction as a 32-bit binary fraction of a second.
  * @param out       output buffer.
  * @param out_cap   capacity of @p out (must be >= NTP_PACKET_LEN).
  * @return          NTP_PACKET_LEN on success, or 0 if a length is too small.
  */
-size_t ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t stratum, uint32_t refid, uint32_t ntp_secs,
-                                 uint32_t ntp_frac, uint8_t *out, size_t out_cap);
+size_t dws_ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t stratum, uint32_t refid,
+                                     uint32_t dws_ntp_secs, uint32_t dws_ntp_frac, uint8_t *out, size_t out_cap);
 
 /**
  * @brief Start answering NTP requests on UDP/123 from the device's own clock.
@@ -70,6 +70,6 @@ size_t ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t str
  * @param refid   the reference identifier to advertise (NTP_REFID_LOCL, NTP_REFID_GPS, ...).
  * @return true if the UDP listener bound; false on a host build or if the port is taken.
  */
-bool ntp_server_begin(uint8_t stratum, uint32_t refid = NTP_REFID_LOCL);
+bool dws_ntp_server_begin(uint8_t stratum, uint32_t refid = NTP_REFID_LOCL);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_NTP_SERVER_H

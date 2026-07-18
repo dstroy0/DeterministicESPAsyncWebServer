@@ -36,7 +36,7 @@ static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
 // Fallback used only to *set* the RTC the first time we reach the internet.
-static uint32_t ntp_source()
+static uint32_t dws_ntp_source()
 {
     return dws_ntp_synced() ? (uint32_t)dws_ntp_epoch() : 0;
 }
@@ -44,10 +44,10 @@ static uint32_t ntp_source()
 void setup()
 {
     Serial.begin(115200);
-    rtc_begin();
+    dws_rtc_begin();
 
     // The RTC gives us time immediately - before WiFi, before anything - if it is set.
-    uint32_t boot = rtc_read_epoch();
+    uint32_t boot = dws_rtc_read_epoch();
     Serial.printf("RTC at boot: %lu %s\n", (unsigned long)boot, boot ? "(battery-backed time!)" : "(not set yet)");
 
     init_wifi_physical(SSID, PASSWORD);
@@ -62,25 +62,25 @@ void setup()
     WiFi.setSleep(false);
 
     // The RTC is the primary source; upstream NTP is only for setting it.
-    dws_time_source_add("rtc", 1, rtc_time_source);
-    dws_time_source_add("ntp", 2, ntp_source);
+    dws_time_source_add("rtc", 1, dws_rtc_time_source);
+    dws_time_source_add("ntp", 2, dws_ntp_source);
     dws_ntp_begin();
 }
 
 void loop()
 {
     // Self-initialize: once we have accurate internet time and the RTC is unset/wrong, write it.
-    static bool rtc_set = false;
-    if (!rtc_set && dws_ntp_synced())
+    static bool dws_rtc_set = false;
+    if (!dws_rtc_set && dws_ntp_synced())
     {
-        uint32_t rtc_now = rtc_read_epoch();
-        uint32_t ntp_now = (uint32_t)dws_ntp_epoch();
-        if (rtc_now == 0 || (ntp_now > rtc_now ? ntp_now - rtc_now : rtc_now - ntp_now) > 5)
+        uint32_t dws_rtc_now = dws_rtc_read_epoch();
+        uint32_t dws_ntp_now = (uint32_t)dws_ntp_epoch();
+        if (dws_rtc_now == 0 || (dws_ntp_now > dws_rtc_now ? dws_ntp_now - dws_rtc_now : dws_rtc_now - dws_ntp_now) > 5)
         {
-            if (rtc_set_epoch(ntp_now))
-                Serial.printf("RTC set from NTP: %lu\n", (unsigned long)ntp_now);
+            if (dws_rtc_set_epoch(dws_ntp_now))
+                Serial.printf("RTC set from NTP: %lu\n", (unsigned long)dws_ntp_now);
         }
-        rtc_set = true;
+        dws_rtc_set = true;
     }
 
     static uint32_t last = 0;

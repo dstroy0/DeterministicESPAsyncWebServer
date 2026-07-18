@@ -127,7 +127,7 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
   is advisory (a token is issued but not enforced). `PUT` streams to the file as the
   body arrives, and `COPY`/`MOVE` handle both files and collections (recursive).
 - **SNMP:** the v3 engine ID defaults to a placeholder enterprise OID; pass your own
-  to `snmp_v3_init()`. (Trap and the confirmed _inform_ are implemented for both v2c
+  to `dws_snmp_v3_init()`. (Trap and the confirmed _inform_ are implemented for both v2c
   and v3; the caller drives inform retransmission until the receiver's Response arrives.)
 - **Telnet** is plaintext - no auth or encryption; use it only on a trusted LAN
   (prefer SSH or the WebSocket terminal otherwise).

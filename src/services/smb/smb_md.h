@@ -34,20 +34,20 @@ struct MdCtx
     uint32_t buf_len; ///< bytes currently in @ref buf
 };
 
-void md5_init(MdCtx *c);
-void md5_update(MdCtx *c, const uint8_t *data, size_t len);
-void md5_final(MdCtx *c, uint8_t out[16]);
+void dws_md5_init(MdCtx *c);
+void dws_md5_update(MdCtx *c, const uint8_t *data, size_t len);
+void dws_md5_final(MdCtx *c, uint8_t out[16]);
 /** @brief One-shot MD5. */
 void md5(const uint8_t *data, size_t len, uint8_t out[16]);
 
-void md4_init(MdCtx *c);
-void md4_update(MdCtx *c, const uint8_t *data, size_t len);
-void md4_final(MdCtx *c, uint8_t out[16]);
+void dws_md4_init(MdCtx *c);
+void dws_md4_update(MdCtx *c, const uint8_t *data, size_t len);
+void dws_md4_final(MdCtx *c, uint8_t out[16]);
 /** @brief One-shot MD4 (the NT-hash primitive). */
 void md4(const uint8_t *data, size_t len, uint8_t out[16]);
 
 /** @brief HMAC-MD5 (RFC 2104): the NTLMv2 MAC primitive. */
-void hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg_len, uint8_t out[16]);
+void dws_hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg_len, uint8_t out[16]);
 
 #endif // DWS_ENABLE_SMB
 

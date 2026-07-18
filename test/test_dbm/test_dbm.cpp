@@ -18,7 +18,7 @@ void tearDown(void)
 {
 }
 
-// RAM-backed WalDev (same shape as the wal_store tests).
+// RAM-backed WalDev (same shape as the dws_wal_store tests).
 struct RamDisk
 {
     uint8_t *buf;
@@ -75,14 +75,14 @@ static void fresh(void)
     g_d.buf = g_disk;
     g_d.size = sizeof(g_disk);
     g_dev = dev_over(&g_d);
-    TEST_ASSERT_TRUE(wal_store_format(&g_wal, &g_dev));
+    TEST_ASSERT_TRUE(dws_wal_store_format(&g_wal, &g_dev));
     TEST_ASSERT_TRUE(dws_dbm_open(&g_db, &g_wal));
 }
 // Remount the store + reopen the dbm over the SAME disk bytes (a "reboot").
 static bool reboot(void)
 {
     g_dev = dev_over(&g_d);
-    if (!wal_store_mount(&g_wal, &g_dev))
+    if (!dws_wal_store_mount(&g_wal, &g_dev))
         return false;
     return dws_dbm_open(&g_db, &g_wal);
 }
@@ -266,7 +266,7 @@ static WalStore *fresh_dest(uint64_t size)
     g_d2.buf = g_disk2;
     g_d2.size = size;
     g_dev2 = dev_over(&g_d2);
-    TEST_ASSERT_TRUE(wal_store_format(&g_wal2, &g_dev2));
+    TEST_ASSERT_TRUE(dws_wal_store_format(&g_wal2, &g_dev2));
     return &g_wal2;
 }
 
@@ -287,7 +287,7 @@ void test_compact_reclaims_space(void)
     TEST_ASSERT_TRUE(dws_dbm_del(&g_db, "k3", 2));
     TEST_ASSERT_EQUAL_UINT32(3, dws_dbm_count(&g_db)); // k1,k2,k4 live
 
-    uint64_t used_before = wal_store_used(&g_wal);
+    uint64_t used_before = dws_wal_store_used(&g_wal);
     uint64_t live = dws_dbm_live_bytes(&g_db);
     TEST_ASSERT_TRUE(live < used_before); // the log carries reclaimable dead space
 
@@ -303,7 +303,7 @@ void test_compact_reclaims_space(void)
     TEST_ASSERT_FALSE(dws_dbm_contains(&g_db, "k3", 2));
 
     // The compacted log is smaller than the churned one and holds only the live records.
-    uint64_t used_after = wal_store_used(&g_wal2);
+    uint64_t used_after = dws_wal_store_used(&g_wal2);
     TEST_ASSERT_TRUE(used_after < used_before);
     TEST_ASSERT_TRUE(used_after >= live);
 

@@ -203,7 +203,7 @@ void setUp()
         http_reset(i);
     }
     ws_init();
-    sse_init();
+    dws_sse_init();
     tcp_capture_reset();
     mock_sndbuf() = MOCK_SNDBUF_DEFAULT; // reopen the window a backpressure test may have shrunk
     g_log_status = 0;

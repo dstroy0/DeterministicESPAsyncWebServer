@@ -15,7 +15,7 @@
  *     layout -> src / dst / bssid, sequence number, header length). Pure.
  *   - pcap_* : build the classic libpcap global + per-record headers (DLT_IEEE802_11) so a
  *     forwarded frame is a valid PCAP stream a wired Wireshark / tcpdump can read. Pure.
- *   - promisc_begin() / _set_channel() / _end(): esp_wifi_set_promiscuous() bring-up whose rx
+ *   - dws_promisc_begin() / _set_channel() / _end(): esp_wifi_set_promiscuous() bring-up whose rx
  *     callback copies each frame (with RSSI + channel) to the registered sink. ESP32 only.
  *
  * Capture is strictly passive (no injection) and fail-closed: the sink is expected to drop, not
@@ -77,7 +77,7 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out);
  * @param rssi    received signal strength (dBm).
  * @param channel the channel it was captured on.
  */
-typedef void (*promisc_sink_fn)(const uint8_t *frame, uint16_t len, int8_t rssi, uint8_t channel);
+typedef void (*dws_promisc_sink_fn)(const uint8_t *frame, uint16_t len, int8_t rssi, uint8_t channel);
 
 /**
  * @brief Start promiscuous capture on @p channel; every frame is delivered to @p sink.
@@ -85,13 +85,13 @@ typedef void (*promisc_sink_fn)(const uint8_t *frame, uint16_t len, int8_t rssi,
  * Requires Wi-Fi to be initialized (e.g. WiFi.mode(WIFI_STA)). Returns immediately.
  * @return true if capture started; false if @p sink is null or on host builds.
  */
-bool promisc_begin(uint8_t channel, promisc_sink_fn sink);
+bool dws_promisc_begin(uint8_t channel, dws_promisc_sink_fn sink);
 
 /** @brief Retune the capture to a different channel (1..14). */
-void promisc_set_channel(uint8_t channel);
+void dws_promisc_set_channel(uint8_t channel);
 
 /** @brief Stop promiscuous capture. */
-void promisc_end(void);
+void dws_promisc_end(void);
 
 #endif // DWS_ENABLE_PROMISC
 

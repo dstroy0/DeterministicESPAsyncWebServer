@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file h3_frame.h
+ * @file dws_h3_frame.h
  * @brief HTTP/3 framing (RFC 9114 sec 7) over QUIC varints.
  *
  * An HTTP/3 frame is `Type (varint) | Length (varint) | Frame Payload`. This module parses that
@@ -52,38 +52,38 @@ struct H3Frame
     size_t header_len; ///< bytes of the type + length varints
 };
 
-/** @brief The settings we track, with defaults after h3_settings_defaults(). */
+/** @brief The settings we track, with defaults after dws_h3_settings_defaults(). */
 struct H3Settings
 {
-    uint64_t qpack_max_table_capacity; ///< default 0
-    uint64_t max_field_section_size;   ///< default "unlimited"
-    uint64_t qpack_blocked_streams;    ///< default 0
+    uint64_t dws_qpack_max_table_capacity; ///< default 0
+    uint64_t max_field_section_size;       ///< default "unlimited"
+    uint64_t dws_qpack_blocked_streams;    ///< default 0
 };
 
 /** @brief Parse a frame header (type + length varints) at @p buf. @return false if truncated. */
-bool h3_frame_parse(const uint8_t *buf, size_t len, H3Frame *out);
+bool dws_h3_frame_parse(const uint8_t *buf, size_t len, H3Frame *out);
 
 /** @brief Write a frame header (type + length varints). @return bytes written, or 0 on overflow. */
-size_t h3_frame_write_header(uint8_t *out, size_t cap, uint64_t type, uint64_t length);
+size_t dws_h3_frame_write_header(uint8_t *out, size_t cap, uint64_t type, uint64_t length);
 
 /** @brief True if @p type is a reserved HTTP/2 frame type (0x02/0x06/0x08/0x09) - a connection error. */
-bool h3_frame_type_reserved(uint64_t type);
+bool dws_h3_frame_type_reserved(uint64_t type);
 
 /** @brief Fill @p s with the RFC default settings. */
-void h3_settings_defaults(H3Settings *s);
+void dws_h3_settings_defaults(H3Settings *s);
 /** @brief Apply a SETTINGS payload (id, value varint pairs) to @p s. @return false if malformed. */
-bool h3_parse_settings(const uint8_t *payload, size_t len, H3Settings *s);
+bool dws_h3_parse_settings(const uint8_t *payload, size_t len, H3Settings *s);
 
 // --- Frame builders (write a complete frame including its header) -----------------------------
 
 /** @brief DATA frame wrapping @p data. */
-size_t h3_build_data(uint8_t *out, size_t cap, const uint8_t *data, size_t len);
+size_t dws_h3_build_data(uint8_t *out, size_t cap, const uint8_t *data, size_t len);
 /** @brief HEADERS frame wrapping a QPACK-encoded field section @p block. */
-size_t h3_build_headers(uint8_t *out, size_t cap, const uint8_t *block, size_t len);
+size_t dws_h3_build_headers(uint8_t *out, size_t cap, const uint8_t *block, size_t len);
 /** @brief SETTINGS frame from @p n (id, value) pairs. */
-size_t h3_build_settings(uint8_t *out, size_t cap, const uint64_t *ids, const uint64_t *vals, size_t n);
+size_t dws_h3_build_settings(uint8_t *out, size_t cap, const uint64_t *ids, const uint64_t *vals, size_t n);
 /** @brief GOAWAY frame carrying @p stream_id (RFC 9114 sec 7.2.6). */
-size_t h3_build_goaway(uint8_t *out, size_t cap, uint64_t stream_id);
+size_t dws_h3_build_goaway(uint8_t *out, size_t cap, uint64_t stream_id);
 
 #endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_H3_FRAME_H

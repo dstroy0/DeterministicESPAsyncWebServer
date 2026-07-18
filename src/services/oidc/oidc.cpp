@@ -15,7 +15,7 @@
 
 #if DWS_ENABLE_OIDC
 
-#include "network_drivers/presentation/base64/base64.h" // shared base64url_decode
+#include "network_drivers/presentation/base64/base64.h" // shared dws_base64url_decode
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/session/scratch.h" // per-dispatch arena (keeps the decode buffers off the worker stack)
 
@@ -24,7 +24,7 @@
 
 namespace
 {
-// base64url decoding is shared with JWT in the base64 module (base64url_decode).
+// base64url decoding is shared with JWT in the base64 module (dws_base64url_decode).
 
 // Bounded substring search of [hs, he) for the NUL-terminated needle.
 const char *mem_find(const char *hs, const char *he, const char *needle)
@@ -227,14 +227,14 @@ bool parse_rsa_jwk(const char *s, const char *e, DetwsOidcKey *key)
     if (!get_str(s, e, "n", b64, sizeof(b64)))
         return false;
     uint8_t tmp[DWS_OIDC_RSA_BYTES + 8];
-    size_t nlen = base64url_decode(b64, strnlen(b64, sizeof(b64)), tmp, sizeof(tmp));
+    size_t nlen = dws_base64url_decode(b64, strnlen(b64, sizeof(b64)), tmp, sizeof(tmp));
     if (nlen == 0 || !right_align(tmp, nlen, key->n, DWS_OIDC_RSA_BYTES))
         return false;
 
     if (!get_str(s, e, "e", b64, sizeof(b64)))
         return false;
     uint8_t e_tmp[8];
-    size_t elen = base64url_decode(b64, strnlen(b64, sizeof(b64)), e_tmp, sizeof(e_tmp));
+    size_t elen = dws_base64url_decode(b64, strnlen(b64, sizeof(b64)), e_tmp, sizeof(e_tmp));
     if (elen == 0 || !right_align(e_tmp, elen, key->e, 4))
         return false;
     key->loaded = true;
@@ -251,7 +251,7 @@ bool dws_oidc_token_kid(const char *token, size_t token_len, char *kid_out, size
     if (!split3(token, token_len, seg, seglen))
         return false;
     uint8_t hdr[512];
-    size_t hn = base64url_decode(seg[0], seglen[0], hdr, sizeof(hdr) - 1);
+    size_t hn = dws_base64url_decode(seg[0], seglen[0], hdr, sizeof(hdr) - 1);
     if (hn == 0)
         return false;
     hdr[hn] = '\0';
@@ -324,7 +324,7 @@ DetwsOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, co
         return DetwsOidcResult::DWS_OIDC_ERR_FORMAT; // scratch exhausted: fail closed
 
     // Header: require alg == RS256 (rejects alg:none / HS256 confusion).
-    size_t hn = base64url_decode(seg[0], seglen[0], hdr, hdr_cap - 1);
+    size_t hn = dws_base64url_decode(seg[0], seglen[0], hdr, hdr_cap - 1);
     if (hn == 0)
         return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
     hdr[hn] = '\0';
@@ -333,7 +333,7 @@ DetwsOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, co
         return DetwsOidcResult::DWS_OIDC_ERR_ALG;
 
     // Signature: RSA-2048 -> exactly 256 bytes.
-    if (base64url_decode(seg[2], seglen[2], sig, DWS_OIDC_RSA_BYTES) != DWS_OIDC_RSA_BYTES)
+    if (dws_base64url_decode(seg[2], seglen[2], sig, DWS_OIDC_RSA_BYTES) != DWS_OIDC_RSA_BYTES)
         return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
 
     // Verify over the signing input "header.payload" (ssh_rsa_verify hashes it). RS256 = SHA-256.
@@ -343,7 +343,7 @@ DetwsOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, co
         return DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE;
 
     // Claims (trusted only now that the signature is valid).
-    size_t pn = base64url_decode(seg[1], seglen[1], pl, DWS_OIDC_MAX_LEN - 1);
+    size_t pn = dws_base64url_decode(seg[1], seglen[1], pl, DWS_OIDC_MAX_LEN - 1);
     if (pn == 0)
         return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
     pl[pn] = '\0';

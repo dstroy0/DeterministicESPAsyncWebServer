@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for the NTP server response codec (services/ntp_server_build_response): a pure
+// Unit tests for the NTP server response codec (services/dws_ntp_server_build_response): a pure
 // RFC 5905 server-mode reply builder - version echo, mode/LI/stratum, origin-timestamp copy,
 // reference/receive/transmit stamps, big-endian encoding, and the length guards.
 
@@ -44,7 +44,7 @@ void test_happy_path_fields()
     make_request(req, 4, 6, 0xDEADBEEFu, 0x12345678u);
     uint32_t secs = 0xE6C50000u, frac = 0x80000000u; // arbitrary NTP time, half-second fraction
 
-    size_t n = ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, secs, frac, out, sizeof(out));
+    size_t n = dws_ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, secs, frac, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT(NTP_PACKET_LEN, n);
 
     TEST_ASSERT_EQUAL_UINT8(0, out[0] >> 6);         // LI = 0 (in sync)
@@ -64,7 +64,7 @@ void test_origin_is_client_transmit()
 {
     uint8_t req[NTP_PACKET_LEN], out[NTP_PACKET_LEN];
     make_request(req, 4, 6, 0xCAFEF00Du, 0x0000FFFFu);
-    ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 2, out, sizeof(out));
+    dws_ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 2, out, sizeof(out));
     // Origin timestamp (bytes 24..31) must be a byte-exact copy of the request's transmit stamp.
     TEST_ASSERT_EQUAL_UINT8_ARRAY(req + 40, out + 24, 8);
     TEST_ASSERT_EQUAL_UINT32(0xCAFEF00Du, rd_be32(out + 24));
@@ -77,7 +77,7 @@ void test_version_echo()
     for (uint8_t vn = 1; vn <= 4; vn++)
     {
         make_request(req, vn, 6, 1, 1);
-        ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
+        dws_ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
         TEST_ASSERT_EQUAL_UINT8(vn, (out[0] >> 3) & 0x7);
         TEST_ASSERT_EQUAL_UINT8(4, out[0] & 0x7); // always answers as server
     }
@@ -87,10 +87,10 @@ void test_poll_echo_and_default()
 {
     uint8_t req[NTP_PACKET_LEN], out[NTP_PACKET_LEN];
     make_request(req, 4, 10, 1, 1);
-    ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
+    dws_ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT8(10, out[2]); // echoes the client's poll
     make_request(req, 4, 0, 1, 1);
-    ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
+    dws_ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT8(6, out[2]); // default when the client sent 0
 }
 
@@ -98,7 +98,7 @@ void test_stratum_passthrough()
 {
     uint8_t req[NTP_PACKET_LEN], out[NTP_PACKET_LEN];
     make_request(req, 4, 6, 1, 1);
-    ntp_server_build_response(req, sizeof(req), 7, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
+    dws_ntp_server_build_response(req, sizeof(req), 7, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT8(7, out[1]);
 }
 
@@ -106,7 +106,7 @@ void test_big_endian_encoding()
 {
     uint8_t req[NTP_PACKET_LEN], out[NTP_PACKET_LEN];
     make_request(req, 4, 6, 1, 1);
-    ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 0x01020304u, 0x0A0B0C0Du, out, sizeof(out));
+    dws_ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 0x01020304u, 0x0A0B0C0Du, out, sizeof(out));
     // Transmit seconds, big-endian.
     TEST_ASSERT_EQUAL_UINT8(0x01, out[40]);
     TEST_ASSERT_EQUAL_UINT8(0x02, out[41]);
@@ -120,17 +120,17 @@ void test_length_guards()
 {
     uint8_t req[NTP_PACKET_LEN], out[NTP_PACKET_LEN];
     make_request(req, 4, 6, 1, 1);
-    TEST_ASSERT_EQUAL_UINT(0, ntp_server_build_response(req, 47, 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out)));
-    TEST_ASSERT_EQUAL_UINT(0, ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, 47));
-    TEST_ASSERT_EQUAL_UINT(0, ntp_server_build_response(nullptr, 48, 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out)));
-    TEST_ASSERT_EQUAL_UINT(0, ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, nullptr, 48));
+    TEST_ASSERT_EQUAL_UINT(0, dws_ntp_server_build_response(req, 47, 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, dws_ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, 47));
+    TEST_ASSERT_EQUAL_UINT(0, dws_ntp_server_build_response(nullptr, 48, 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, dws_ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, nullptr, 48));
 }
 
 void test_root_dispersion_advertised()
 {
     uint8_t req[NTP_PACKET_LEN], out[NTP_PACKET_LEN];
     make_request(req, 4, 6, 1, 1);
-    ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
+    dws_ntp_server_build_response(req, sizeof(req), 3, NTP_REFID_LOCL, 1, 1, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT32(0x00010000u, rd_be32(out + 8)); // ~1 s dispersion (coarse clock)
     TEST_ASSERT_EQUAL_UINT32(0u, rd_be32(out + 4));          // root delay 0
 }

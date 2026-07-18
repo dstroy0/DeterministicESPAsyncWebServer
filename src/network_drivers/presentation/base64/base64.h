@@ -34,7 +34,7 @@
  * @param src_len Number of input bytes.
  * @param dst     Output buffer (null-terminated Base64 string).
  */
-void base64_encode(const uint8_t *src, size_t src_len, char *dst);
+void dws_base64_encode(const uint8_t *src, size_t src_len, char *dst);
 
 /**
  * @brief Decode a null-terminated Base64 string.
@@ -51,17 +51,17 @@ void base64_encode(const uint8_t *src, size_t src_len, char *dst);
  * @param dst_cap Capacity of @p dst in bytes.
  * @return        Number of bytes written to @p dst, or 0 on error / overflow.
  */
-size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap);
+size_t dws_base64_decode(const char *src, uint8_t *dst, size_t dst_cap);
 
 /**
  * @brief Encode @p src_len bytes as base64url (RFC 4648 section 5): '-' / '_' in
  *        place of '+' / '/', and no '=' padding.
  *
  * Writes a null-terminated string into @p dst, which must hold at least
- * `((src_len + 2) / 3) * 4 + 1` bytes (the same as base64_encode; the URL form is
+ * `((src_len + 2) / 3) * 4 + 1` bytes (the same as dws_base64_encode; the URL form is
  * never longer). @return the number of characters written.
  */
-size_t base64url_encode(const uint8_t *src, size_t src_len, char *dst);
+size_t dws_base64url_encode(const uint8_t *src, size_t src_len, char *dst);
 
 /**
  * @brief Decode @p src_len characters of base64url (RFC 4648 section 5, '-'/'_'
@@ -73,6 +73,6 @@ size_t base64url_encode(const uint8_t *src, size_t src_len, char *dst);
  * bytes; returns the number written, or 0 on an invalid character or if the
  * output would exceed @p dst_cap (the write is bounded - no overflow).
  */
-size_t base64url_decode(const char *src, size_t src_len, uint8_t *dst, size_t dst_cap);
+size_t dws_base64url_decode(const char *src, size_t src_len, uint8_t *dst, size_t dst_cap);
 
 #endif

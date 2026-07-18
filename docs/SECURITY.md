@@ -726,7 +726,7 @@ mechanism here is linker symbol isolation rather than hardware isolation, which
 raises the attack bar significantly without requiring hardware security features.
 
 **Contrast with the alternative:** If all SSH state were in a single
-`SshConn` struct with fields in the order `rx_buf, aes_key, hmac_key`, then a
+`SshConn` struct with fields in the order `rx_buf, aes_key, dws_hmac_key`, then a
 one-byte overflow past `rx_buf` immediately reaches `aes_key`. The separate-
 symbol layout eliminates that risk.
 
@@ -919,7 +919,7 @@ users / wrong digests / out-of-window times with the standard USM Report PDUs.
 Keys are derived once from the passwords (RFC 3414 §2.6 localization), so no
 password material is recomputed per request. Operational notes: passwords must be
 >= 8 characters; persist and increment `engineBoots` in NVS
-([`snmp_v3_set_boots()`](@ref snmp_v3_set_boots)) so the timeliness window
+([`dws_snmp_v3_set_boots()`](@ref dws_snmp_v3_set_boots)) so the timeliness window
 survives reboots; give each device a unique engine ID (derive from the MAC).
 
 **What the agent does enforce**
@@ -927,7 +927,7 @@ survives reboots; give each device a unique engine ID (derive from the MAC).
 - **Two communities, least-privilege by default.** The read-only community
   (default `public`) authorizes only `Get` / `GetNext` / `GetBulk`. `Set` is
   refused (`noAccess`) unless a distinct read-write community is configured via
-  [`snmp_agent_set_rw_community()`](@ref snmp_agent_set_rw_community); if none is
+  [`dws_snmp_agent_set_rw_community()`](@ref dws_snmp_agent_set_rw_community); if none is
   set, the agent is effectively read-only. Writable objects must additionally
   opt in with a setter callback (others answer `notWritable`).
 - **Unknown community → silent drop.** A datagram whose community matches neither

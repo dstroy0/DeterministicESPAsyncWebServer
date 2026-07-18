@@ -77,16 +77,16 @@ void test_char_json(void)
         {0x0025, 0x2A37, GattProp::GATT_PROP_READ | GattProp::GATT_PROP_NOTIFY}, // Heart Rate Measurement
         {0x0031, 0x2A6E, GattProp::GATT_PROP_READ}};                             // Temperature
     char buf[160];
-    size_t n = gatt_char_json(chars, 2, buf, sizeof(buf));
+    size_t n = dws_gatt_char_json(chars, 2, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
     TEST_ASSERT_EQUAL_STRING(
         "[{\"handle\":37,\"uuid\":\"0x2a37\",\"props\":18},{\"handle\":49,\"uuid\":\"0x2a6e\",\"props\":2}]", buf);
     // Empty.
-    gatt_char_json(nullptr, 0, buf, sizeof(buf));
+    dws_gatt_char_json(nullptr, 0, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_STRING("[]", buf);
     // Overflow: a buffer too small returns 0.
     char tiny[8];
-    TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(chars, 2, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gatt_char_json(chars, 2, tiny, sizeof(tiny)));
 }
 
 // att_read_rsp build + the build-time guards (null out / null value / tiny caps).
@@ -127,14 +127,14 @@ void test_parse_guards_and_opcodes(void)
     TEST_ASSERT_EQUAL_HEX8(0xFF, p.opcode);
 }
 
-// gatt_char_json rejects a null output, a zero cap, and a null array with a nonzero count.
+// dws_gatt_char_json rejects a null output, a zero cap, and a null array with a nonzero count.
 void test_char_json_guards(void)
 {
     GattChar c = {0x10, 0x2A00, GattProp::GATT_PROP_READ};
     char out[64];
-    TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(&c, 1, nullptr, sizeof(out)));
-    TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(&c, 1, out, 0));
-    TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(nullptr, 1, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gatt_char_json(&c, 1, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gatt_char_json(&c, 1, out, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gatt_char_json(nullptr, 1, out, sizeof(out)));
 }
 
 int main(void)

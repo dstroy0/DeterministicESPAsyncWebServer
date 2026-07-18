@@ -8,18 +8,18 @@
  * Split like the CoAP/SNMP services into a pure, host-testable core and an
  * ESP32-only TCP transport:
  *
- *  - modbus_process_adu() takes a complete Modbus TCP ADU (MBAP header + PDU) and
+ *  - dws_modbus_process_adu() takes a complete Modbus TCP ADU (MBAP header + PDU) and
  *    produces the response ADU in a caller buffer - no sockets, no heap. It is
  *    unit-tested on the host (env:native_modbus).
- *  - modbus_rx() is the ConnProto::PROTO_MODBUS data handler dispatched by the session layer;
+ *  - dws_modbus_rx() is the ConnProto::PROTO_MODBUS data handler dispatched by the session layer;
  *    it frames ADUs out of the rx ring and feeds them through
- *    modbus_process_adu(). The slave keeps no per-connection state (a partial
+ *    dws_modbus_process_adu(). The slave keeps no per-connection state (a partial
  *    frame waits in the rx ring), so no accept/close hooks are needed. Open the
  *    port with listen(502, ConnProto::PROTO_MODBUS).
  *
  * The data model is four fixed BSS tables (coils, discrete inputs, holding
  * registers, input registers). The application reads and writes them with the
- * accessors below; a write arriving from a client also fires modbus_on_write().
+ * accessors below; a write arriving from a client also fires dws_modbus_on_write().
  *
  * Supported function codes: 0x01 Read Coils, 0x02 Read Discrete Inputs,
  * 0x03 Read Holding Registers, 0x04 Read Input Registers, 0x05 Write Single Coil,
@@ -77,19 +77,19 @@ typedef void (*ModbusWriteCb)(uint8_t fc, uint16_t start, uint16_t count);
 // ---------------------------------------------------------------------------
 
 /** @brief Zero the entire data model and clear the write callback. */
-void modbus_server_init();
+void dws_modbus_server_init();
 
 /** @brief Register a callback invoked after each client write (nullable). */
-void modbus_on_write(ModbusWriteCb cb);
+void dws_modbus_on_write(ModbusWriteCb cb);
 
-bool modbus_get_coil(uint16_t addr);                        ///< Read a coil (false if out of range).
-void modbus_set_coil(uint16_t addr, bool on);               ///< Set a coil (no-op if out of range).
-bool modbus_get_discrete_input(uint16_t addr);              ///< Read a discrete input.
-void modbus_set_discrete_input(uint16_t addr, bool on);     ///< Set a discrete input (application side).
-uint16_t modbus_get_holding_reg(uint16_t addr);             ///< Read a holding register (0 if out of range).
-void modbus_set_holding_reg(uint16_t addr, uint16_t value); ///< Set a holding register.
-uint16_t modbus_get_input_reg(uint16_t addr);               ///< Read an input register.
-void modbus_set_input_reg(uint16_t addr, uint16_t value);   ///< Set an input register (application side).
+bool dws_modbus_get_coil(uint16_t addr);                        ///< Read a coil (false if out of range).
+void dws_modbus_set_coil(uint16_t addr, bool on);               ///< Set a coil (no-op if out of range).
+bool dws_modbus_get_discrete_input(uint16_t addr);              ///< Read a discrete input.
+void dws_modbus_set_discrete_input(uint16_t addr, bool on);     ///< Set a discrete input (application side).
+uint16_t dws_modbus_get_holding_reg(uint16_t addr);             ///< Read a holding register (0 if out of range).
+void dws_modbus_set_holding_reg(uint16_t addr, uint16_t value); ///< Set a holding register.
+uint16_t dws_modbus_get_input_reg(uint16_t addr);               ///< Read an input register.
+void dws_modbus_set_input_reg(uint16_t addr, uint16_t value);   ///< Set an input register (application side).
 
 // ---------------------------------------------------------------------------
 // Core processing (host-testable; no sockets, no heap)
@@ -106,7 +106,7 @@ void modbus_set_input_reg(uint16_t addr, uint16_t value);   ///< Set an input re
  *
  * @return number of response bytes written, or 0 to send nothing.
  */
-size_t modbus_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap);
+size_t dws_modbus_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, size_t dws_resp_cap);
 
 #if DWS_ENABLE_MODBUS_RTU
 /**
@@ -120,7 +120,8 @@ size_t modbus_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, siz
  *
  * @return number of RTU response bytes written, or 0 to send nothing.
  */
-size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap, uint8_t my_addr);
+size_t dws_modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, size_t dws_resp_cap,
+                                  uint8_t my_addr);
 #endif
 
 // ---------------------------------------------------------------------------
@@ -128,11 +129,11 @@ size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp,
 // ---------------------------------------------------------------------------
 
 /** @brief Frame and process received Modbus ADUs for the connection on @p slot. */
-void modbus_rx(uint8_t slot);
+void dws_modbus_rx(uint8_t slot);
 
 /** @brief The Modbus ProtoHandler (accessor; nullptr on host builds; installed by the builtins list). */
 struct ProtoHandler;
-const struct ProtoHandler *modbus_proto_handler(void);
+const struct ProtoHandler *dws_modbus_proto_handler(void);
 
 #endif // DWS_ENABLE_MODBUS
 

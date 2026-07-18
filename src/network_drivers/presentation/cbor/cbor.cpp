@@ -13,17 +13,17 @@
 #include "shared_primitives/bytes.h"
 #include <string.h>
 
-void cbor_init(CborWriter *w, uint8_t *buf, size_t cap)
+void dws_cbor_init(CborWriter *w, uint8_t *buf, size_t cap)
 {
     dws_bw_init(w, buf, cap);
 }
 
-size_t cbor_len(const CborWriter *w)
+size_t dws_cbor_len(const CborWriter *w)
 {
     return dws_bw_len(w);
 }
 
-bool cbor_ok(const CborWriter *w)
+bool dws_cbor_ok(const CborWriter *w)
 {
     return dws_bw_ok(w);
 }
@@ -65,12 +65,12 @@ static void head(CborWriter *w, uint8_t major, uint64_t val)
     }
 }
 
-void cbor_uint(CborWriter *w, uint64_t v)
+void dws_cbor_uint(CborWriter *w, uint64_t v)
 {
     head(w, 0, v);
 }
 
-void cbor_int(CborWriter *w, int64_t v)
+void dws_cbor_int(CborWriter *w, int64_t v)
 {
     if (v >= 0)
         head(w, 0, (uint64_t)v);
@@ -78,36 +78,36 @@ void cbor_int(CborWriter *w, int64_t v)
         head(w, 1, (uint64_t)(-1 - v)); // major 1 encodes -1 - n
 }
 
-void cbor_bytes(CborWriter *w, const uint8_t *data, size_t len)
+void dws_cbor_bytes(CborWriter *w, const uint8_t *data, size_t len)
 {
     head(w, 2, (uint64_t)len);
     for (size_t i = 0; i < len; i++)
         put(w, data[i]);
 }
 
-void cbor_text_n(CborWriter *w, const char *s, size_t len)
+void dws_cbor_text_n(CborWriter *w, const char *s, size_t len)
 {
     head(w, 3, (uint64_t)len);
     for (size_t i = 0; i < len; i++)
         put(w, (uint8_t)s[i]);
 }
 
-void cbor_text(CborWriter *w, const char *s)
+void dws_cbor_text(CborWriter *w, const char *s)
 {
-    cbor_text_n(w, s, s ? strnlen(s, w->cap + 1) : 0);
+    dws_cbor_text_n(w, s, s ? strnlen(s, w->cap + 1) : 0);
 }
 
-void cbor_bool(CborWriter *w, bool b)
+void dws_cbor_bool(CborWriter *w, bool b)
 {
     put(w, b ? 0xf5 : 0xf4);
 }
 
-void cbor_null(CborWriter *w)
+void dws_cbor_null(CborWriter *w)
 {
     put(w, 0xf6);
 }
 
-void cbor_float(CborWriter *w, float f)
+void dws_cbor_float(CborWriter *w, float f)
 {
     uint32_t bits;
     memcpy(&bits, &f, sizeof(bits));
@@ -115,12 +115,12 @@ void cbor_float(CborWriter *w, float f)
     dws_bw_put_be(w, bits, 4);
 }
 
-void cbor_array(CborWriter *w, size_t count)
+void dws_cbor_array(CborWriter *w, size_t count)
 {
     head(w, 4, (uint64_t)count);
 }
 
-void cbor_map(CborWriter *w, size_t count)
+void dws_cbor_map(CborWriter *w, size_t count)
 {
     head(w, 5, (uint64_t)count);
 }
@@ -129,12 +129,12 @@ void cbor_map(CborWriter *w, size_t count)
 // Decoder
 // ---------------------------------------------------------------------------
 
-void cbor_reader_init(CborReader *r, const uint8_t *buf, size_t len)
+void dws_cbor_reader_init(CborReader *r, const uint8_t *buf, size_t len)
 {
     dws_br_init(r, buf, len);
 }
 
-bool cbor_reader_ok(const CborReader *r)
+bool dws_cbor_reader_ok(const CborReader *r)
 {
     return dws_br_ok(r);
 }
@@ -180,7 +180,7 @@ static bool read_head(CborReader *r, uint8_t *major, uint64_t *val)
     return dws_br_take_be(r, need, val);
 }
 
-CborType cbor_peek(CborReader *r)
+CborType dws_cbor_peek(CborReader *r)
 {
     if (r->err || r->pos >= r->len)
         return CborType::CBOR_TYPE_INVALID;
@@ -214,7 +214,7 @@ CborType cbor_peek(CborReader *r)
     }
 }
 
-bool cbor_read_uint(CborReader *r, uint64_t *out)
+bool dws_cbor_read_uint(CborReader *r, uint64_t *out)
 {
     uint8_t m;
     uint64_t v;
@@ -229,7 +229,7 @@ bool cbor_read_uint(CborReader *r, uint64_t *out)
     return true;
 }
 
-bool cbor_read_int(CborReader *r, int64_t *out)
+bool dws_cbor_read_int(CborReader *r, int64_t *out)
 {
     uint8_t m;
     uint64_t v;
@@ -247,7 +247,7 @@ bool cbor_read_int(CborReader *r, int64_t *out)
     return true;
 }
 
-bool cbor_read_bool(CborReader *r, bool *out)
+bool dws_cbor_read_bool(CborReader *r, bool *out)
 {
     if (r->err || r->pos >= r->len)
     {
@@ -268,7 +268,7 @@ bool cbor_read_bool(CborReader *r, bool *out)
     return true;
 }
 
-bool cbor_read_null(CborReader *r)
+bool dws_cbor_read_null(CborReader *r)
 {
     if (r->err || r->pos >= r->len || r->buf[r->pos] != 0xf6)
     {
@@ -279,7 +279,7 @@ bool cbor_read_null(CborReader *r)
     return true;
 }
 
-bool cbor_read_float(CborReader *r, float *out)
+bool dws_cbor_read_float(CborReader *r, float *out)
 {
     if (r->err || r->pos >= r->len)
     {
@@ -328,17 +328,17 @@ static bool read_str(CborReader *r, uint8_t want_major, const uint8_t **out, siz
     return true;
 }
 
-bool cbor_read_text(CborReader *r, const char **out, size_t *len)
+bool dws_cbor_read_text(CborReader *r, const char **out, size_t *len)
 {
     return read_str(r, 3, (const uint8_t **)out, len);
 }
 
-bool cbor_read_bytes(CborReader *r, const uint8_t **out, size_t *len)
+bool dws_cbor_read_bytes(CborReader *r, const uint8_t **out, size_t *len)
 {
     return read_str(r, 2, out, len);
 }
 
-bool cbor_read_array(CborReader *r, size_t *count)
+bool dws_cbor_read_array(CborReader *r, size_t *count)
 {
     uint8_t m;
     uint64_t v;
@@ -353,7 +353,7 @@ bool cbor_read_array(CborReader *r, size_t *count)
     return true;
 }
 
-bool cbor_read_map(CborReader *r, size_t *count)
+bool dws_cbor_read_map(CborReader *r, size_t *count)
 {
     uint8_t m;
     uint64_t v;

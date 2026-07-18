@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file dtls_record.h
+ * @file dws_dtls_record.h
  * @brief DTLS 1.3 record layer (RFC 9147 §4).
  *
  * The datagram counterpart to the TLS 1.3 record layer: it protects and unprotects individual
  * UDP-carried records. This is the transport-specific half of DTLS 1.3; the handshake it carries
- * reuses the TLS 1.3 crypto that already backs HTTP/3 (tls13_*, quic_hkdf, quic_aead).
+ * reuses the TLS 1.3 crypto that already backs HTTP/3 (dws_tls13_*, dws_quic_hkdf, dws_quic_aead).
  *
  * Two record shapes (RFC 9147 §4):
  *   - **DTLSPlaintext** - the classic 13-byte header (type, legacy_version, epoch, 48-bit sequence
@@ -19,7 +19,7 @@
  *
  * ─ Reuse ─
  *   AEAD (AEAD_AES_128_GCM) and the AES-128 block used for sequence-number encryption come from
- *   quic_aead; key/iv/sn derivation from quic_hkdf (HKDF-Expand-Label). Phase 1 supports the one
+ *   dws_quic_aead; key/iv/sn derivation from dws_quic_hkdf (HKDF-Expand-Label). Phase 1 supports the one
  *   cipher suite the whole hand-rolled TLS 1.3 stack uses: TLS_AES_128_GCM_SHA256.
  *
  * Pure, zero heap, host-tested. Not the mbedTLS TCP-TLS engine (network_drivers/tls) - this is the
@@ -90,7 +90,7 @@ struct DtlsRecordKeys
  * RFC 8446 §7.3 + RFC 9147 §4.2.3: key = HKDF-Expand-Label(secret,"key",""), iv = "iv", and the
  * sequence-number key = HKDF-Expand-Label(secret,"sn","") (all with the "tls13 " prefix).
  */
-void dtls_record_keys_derive(DtlsRecordKeys *out, DtlsCipher cipher, uint16_t epoch, const uint8_t secret[32]);
+void dws_dtls_record_keys_derive(DtlsRecordKeys *out, DtlsCipher cipher, uint16_t epoch, const uint8_t secret[32]);
 
 // ---------------------------------------------------------------------------
 // DTLSPlaintext (RFC 9147 §4): unencrypted record (initial handshake flight, alerts)
@@ -100,8 +100,8 @@ void dtls_record_keys_derive(DtlsRecordKeys *out, DtlsCipher cipher, uint16_t ep
  * @brief Build a DTLSPlaintext record.
  * @return total bytes written (DTLS_PLAINTEXT_HDR_LEN + @p frag_len), or 0 on overflow.
  */
-size_t dtls_plaintext_build(uint8_t content_type, uint16_t epoch, uint64_t seq, const uint8_t *fragment,
-                            size_t frag_len, uint8_t *out, size_t out_cap);
+size_t dws_dtls_plaintext_build(uint8_t content_type, uint16_t epoch, uint64_t seq, const uint8_t *fragment,
+                                size_t frag_len, uint8_t *out, size_t out_cap);
 
 /** @brief Parsed view of a DTLSPlaintext record (fields point into the caller's buffer). */
 struct DtlsPlaintext
@@ -117,7 +117,7 @@ struct DtlsPlaintext
  * @brief Parse a DTLSPlaintext record, validating legacy_version and the length field.
  * @return total record length consumed (13 + length), or 0 if malformed / truncated.
  */
-size_t dtls_plaintext_parse(const uint8_t *rec, size_t rec_len, DtlsPlaintext *out);
+size_t dws_dtls_plaintext_parse(const uint8_t *rec, size_t rec_len, DtlsPlaintext *out);
 
 // ---------------------------------------------------------------------------
 // DTLSCiphertext (RFC 9147 §4): AEAD-protected record with the unified header
@@ -139,11 +139,11 @@ size_t dtls_plaintext_parse(const uint8_t *rec, size_t rec_len, DtlsPlaintext *o
  *
  * @return bytes written, or 0 on overflow / unsupported cipher / an over-long CID.
  */
-size_t dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uint8_t content_type, const uint8_t *plaintext,
-                               size_t pt_len, uint8_t *out, size_t out_cap, const uint8_t *cid = nullptr,
-                               size_t cid_len = 0);
+size_t dws_dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uint8_t content_type,
+                                   const uint8_t *plaintext, size_t pt_len, uint8_t *out, size_t out_cap,
+                                   const uint8_t *cid = nullptr, size_t cid_len = 0);
 
-/** @brief Result of a successful @ref dtls_ciphertext_unprotect. */
+/** @brief Result of a successful @ref dws_dtls_ciphertext_unprotect. */
 struct DtlsCiphertext
 {
     uint8_t content_type; ///< recovered inner content type (last non-zero byte of the inner plaintext)
@@ -169,9 +169,9 @@ struct DtlsCiphertext
  * @return true on success (@p out / @p info filled); false on a malformed header, an epoch-bit
  *         mismatch, an unexpected / mismatched connection id, a failed AEAD tag, or an output overflow.
  */
-bool dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, const uint8_t *rec, size_t rec_len,
-                               uint8_t *out, size_t out_cap, DtlsCiphertext *info,
-                               const uint8_t *expected_cid = nullptr, size_t expected_cid_len = 0);
+bool dws_dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, const uint8_t *rec, size_t rec_len,
+                                   uint8_t *out, size_t out_cap, DtlsCiphertext *info,
+                                   const uint8_t *expected_cid = nullptr, size_t expected_cid_len = 0);
 
 // ---------------------------------------------------------------------------
 // Anti-replay sliding window (RFC 9147 §4.5.1)
@@ -186,16 +186,16 @@ struct DtlsReplayWindow
 };
 
 /** @brief Reset a replay window to empty. */
-void dtls_replay_init(DtlsReplayWindow *w);
+void dws_dtls_replay_init(DtlsReplayWindow *w);
 
 /**
  * @brief Test whether @p seq may be accepted (new and within the window).
  * @return true if @p seq is new and in-window; false if it is a replay or older than the window.
  */
-bool dtls_replay_check(const DtlsReplayWindow *w, uint64_t seq);
+bool dws_dtls_replay_check(const DtlsReplayWindow *w, uint64_t seq);
 
 /** @brief Record @p seq as accepted, advancing the window. Call only after a successful deprotect. */
-void dtls_replay_mark(DtlsReplayWindow *w, uint64_t seq);
+void dws_dtls_replay_mark(DtlsReplayWindow *w, uint64_t seq);
 
 #endif // DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_DTLS_RECORD_H

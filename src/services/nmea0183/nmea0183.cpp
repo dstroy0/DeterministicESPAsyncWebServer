@@ -13,7 +13,7 @@
 #include "shared_primitives/numparse.h"
 #include <string.h>
 
-uint8_t nmea0183_checksum(const char *s, size_t len)
+uint8_t dws_nmea0183_checksum(const char *s, size_t len)
 {
     uint8_t cs = 0;
     for (size_t i = 0; i < len; i++)
@@ -38,7 +38,7 @@ static int hex_val(char c)
     return -1;
 }
 
-size_t nmea0183_build(char *buf, size_t cap, const char *body)
+size_t dws_nmea0183_build(char *buf, size_t cap, const char *body)
 {
     if (!buf || !body)
         return 0;
@@ -46,7 +46,7 @@ size_t nmea0183_build(char *buf, size_t cap, const char *body)
     size_t total = 1 + blen + 1 + 2 + 2; // '$' + body + '*' + HH + CRLF
     if (cap < total + 1)                 // + NUL
         return 0;
-    uint8_t cs = nmea0183_checksum(body, blen);
+    uint8_t cs = dws_nmea0183_checksum(body, blen);
     size_t p = 0;
     buf[p++] = '$';
     memcpy(buf + p, body, blen);
@@ -60,7 +60,7 @@ size_t nmea0183_build(char *buf, size_t cap, const char *body)
     return p;
 }
 
-bool nmea0183_parse(const char *s, size_t len, Nmea0183 *out)
+bool dws_nmea0183_parse(const char *s, size_t len, Nmea0183 *out)
 {
     if (!s || !out || len < 4 || (s[0] != '$' && s[0] != '!'))
         return false;
@@ -87,7 +87,7 @@ bool nmea0183_parse(const char *s, size_t len, Nmea0183 *out)
     if (hi < 0 || lo < 0)
         return false;
     uint8_t expect = (uint8_t)((hi << 4) | lo);
-    if (nmea0183_checksum(s + 1, star - 1) != expect)
+    if (dws_nmea0183_checksum(s + 1, star - 1) != expect)
         return false;
 
     // Split the payload s[1..star-1] on commas (field 0 is the address).
@@ -123,7 +123,7 @@ bool nmea0183_parse(const char *s, size_t len, Nmea0183 *out)
     return true;
 }
 
-bool nmea0183_field_float(const Nmea0183 *m, uint8_t idx, float *out)
+bool dws_nmea0183_field_float(const Nmea0183 *m, uint8_t idx, float *out)
 {
     if (!m || !out || idx >= m->field_count || m->field_len[idx] == 0)
         return false;
@@ -136,7 +136,7 @@ bool nmea0183_field_float(const Nmea0183 *m, uint8_t idx, float *out)
     return true;
 }
 
-bool nmea0183_field_int(const Nmea0183 *m, uint8_t idx, long *out)
+bool dws_nmea0183_field_int(const Nmea0183 *m, uint8_t idx, long *out)
 {
     if (!m || !out || idx >= m->field_count || m->field_len[idx] == 0)
         return false;

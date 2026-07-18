@@ -13,17 +13,17 @@
 #include "shared_primitives/bytes.h"
 #include <string.h>
 
-void msgpack_init(MsgpackWriter *w, uint8_t *buf, size_t cap)
+void dws_msgpack_init(MsgpackWriter *w, uint8_t *buf, size_t cap)
 {
     dws_bw_init(w, buf, cap);
 }
 
-size_t msgpack_len(const MsgpackWriter *w)
+size_t dws_msgpack_len(const MsgpackWriter *w)
 {
     return dws_bw_len(w);
 }
 
-bool msgpack_ok(const MsgpackWriter *w)
+bool dws_msgpack_ok(const MsgpackWriter *w)
 {
     return dws_bw_ok(w);
 }
@@ -41,7 +41,7 @@ static void put_be(MsgpackWriter *w, uint64_t val, int nbytes)
     dws_bw_put_be(w, val, nbytes);
 }
 
-void msgpack_uint(MsgpackWriter *w, uint64_t v)
+void dws_msgpack_uint(MsgpackWriter *w, uint64_t v)
 {
     if (v <= 0x7f)
         put(w, (uint8_t)v); // positive fixint
@@ -67,11 +67,11 @@ void msgpack_uint(MsgpackWriter *w, uint64_t v)
     }
 }
 
-void msgpack_int(MsgpackWriter *w, int64_t v)
+void dws_msgpack_int(MsgpackWriter *w, int64_t v)
 {
     if (v >= 0)
     {
-        msgpack_uint(w, (uint64_t)v);
+        dws_msgpack_uint(w, (uint64_t)v);
         return;
     }
     if (v >= -32)
@@ -98,7 +98,7 @@ void msgpack_int(MsgpackWriter *w, int64_t v)
     }
 }
 
-void msgpack_str_n(MsgpackWriter *w, const char *s, size_t len)
+void dws_msgpack_str_n(MsgpackWriter *w, const char *s, size_t len)
 {
     if (len <= 31)
         put(w, (uint8_t)(0xa0 | len)); // fixstr
@@ -121,12 +121,12 @@ void msgpack_str_n(MsgpackWriter *w, const char *s, size_t len)
         put(w, (uint8_t)s[i]);
 }
 
-void msgpack_str(MsgpackWriter *w, const char *s)
+void dws_msgpack_str(MsgpackWriter *w, const char *s)
 {
-    msgpack_str_n(w, s, s ? strnlen(s, w->cap + 1) : 0);
+    dws_msgpack_str_n(w, s, s ? strnlen(s, w->cap + 1) : 0);
 }
 
-void msgpack_bytes(MsgpackWriter *w, const uint8_t *data, size_t len)
+void dws_msgpack_bytes(MsgpackWriter *w, const uint8_t *data, size_t len)
 {
     if (len <= 0xff)
     {
@@ -147,17 +147,17 @@ void msgpack_bytes(MsgpackWriter *w, const uint8_t *data, size_t len)
         put(w, data[i]);
 }
 
-void msgpack_bool(MsgpackWriter *w, bool b)
+void dws_msgpack_bool(MsgpackWriter *w, bool b)
 {
     put(w, b ? 0xc3 : 0xc2);
 }
 
-void msgpack_nil(MsgpackWriter *w)
+void dws_msgpack_nil(MsgpackWriter *w)
 {
     put(w, 0xc0);
 }
 
-void msgpack_float(MsgpackWriter *w, float f)
+void dws_msgpack_float(MsgpackWriter *w, float f)
 {
     uint32_t bits;
     memcpy(&bits, &f, sizeof(bits));
@@ -165,7 +165,7 @@ void msgpack_float(MsgpackWriter *w, float f)
     put_be(w, bits, 4);
 }
 
-void msgpack_array(MsgpackWriter *w, size_t count)
+void dws_msgpack_array(MsgpackWriter *w, size_t count)
 {
     if (count <= 15)
         put(w, (uint8_t)(0x90 | count)); // fixarray
@@ -181,7 +181,7 @@ void msgpack_array(MsgpackWriter *w, size_t count)
     }
 }
 
-void msgpack_map(MsgpackWriter *w, size_t count)
+void dws_msgpack_map(MsgpackWriter *w, size_t count)
 {
     if (count <= 15)
         put(w, (uint8_t)(0x80 | count)); // fixmap
@@ -201,12 +201,12 @@ void msgpack_map(MsgpackWriter *w, size_t count)
 // Decoder
 // ---------------------------------------------------------------------------
 
-void msgpack_reader_init(MsgpackReader *r, const uint8_t *buf, size_t len)
+void dws_msgpack_reader_init(MsgpackReader *r, const uint8_t *buf, size_t len)
 {
     dws_br_init(r, buf, len);
 }
 
-bool msgpack_reader_ok(const MsgpackReader *r)
+bool dws_msgpack_reader_ok(const MsgpackReader *r)
 {
     return dws_br_ok(r);
 }
@@ -218,7 +218,7 @@ static bool take_be(MsgpackReader *r, size_t nbytes, uint64_t *out)
     return dws_br_take_be(r, nbytes, out);
 }
 
-MsgpackType msgpack_peek(MsgpackReader *r)
+MsgpackType dws_msgpack_peek(MsgpackReader *r)
 {
     if (r->err || r->pos >= r->len)
         return MsgpackType::MSGPACK_TYPE_INVALID;
@@ -274,7 +274,7 @@ MsgpackType msgpack_peek(MsgpackReader *r)
     }
 }
 
-bool msgpack_read_uint(MsgpackReader *r, uint64_t *out)
+bool dws_msgpack_read_uint(MsgpackReader *r, uint64_t *out)
 {
     if (r->err || r->pos >= r->len)
     {
@@ -315,7 +315,7 @@ bool msgpack_read_uint(MsgpackReader *r, uint64_t *out)
     return true;
 }
 
-bool msgpack_read_int(MsgpackReader *r, int64_t *out)
+bool dws_msgpack_read_int(MsgpackReader *r, int64_t *out)
 {
     if (r->err || r->pos >= r->len)
     {
@@ -384,7 +384,7 @@ bool msgpack_read_int(MsgpackReader *r, int64_t *out)
     }
 }
 
-bool msgpack_read_bool(MsgpackReader *r, bool *out)
+bool dws_msgpack_read_bool(MsgpackReader *r, bool *out)
 {
     if (r->err || r->pos >= r->len)
     {
@@ -405,7 +405,7 @@ bool msgpack_read_bool(MsgpackReader *r, bool *out)
     return true;
 }
 
-bool msgpack_read_nil(MsgpackReader *r)
+bool dws_msgpack_read_nil(MsgpackReader *r)
 {
     if (r->err || r->pos >= r->len || r->buf[r->pos] != 0xc0)
     {
@@ -416,7 +416,7 @@ bool msgpack_read_nil(MsgpackReader *r)
     return true;
 }
 
-bool msgpack_read_float(MsgpackReader *r, float *out)
+bool dws_msgpack_read_float(MsgpackReader *r, float *out)
 {
     if (r->err || r->pos >= r->len)
     {
@@ -500,12 +500,12 @@ static bool read_blob(MsgpackReader *r, bool want_str, const uint8_t **out, size
     return true;
 }
 
-bool msgpack_read_str(MsgpackReader *r, const char **out, size_t *len)
+bool dws_msgpack_read_str(MsgpackReader *r, const char **out, size_t *len)
 {
     return read_blob(r, true, (const uint8_t **)out, len);
 }
 
-bool msgpack_read_bytes(MsgpackReader *r, const uint8_t **out, size_t *len)
+bool dws_msgpack_read_bytes(MsgpackReader *r, const uint8_t **out, size_t *len)
 {
     return read_blob(r, false, out, len);
 }
@@ -549,12 +549,12 @@ static bool read_count(MsgpackReader *r, bool want_map, size_t *count)
     return true;
 }
 
-bool msgpack_read_array(MsgpackReader *r, size_t *count)
+bool dws_msgpack_read_array(MsgpackReader *r, size_t *count)
 {
     return read_count(r, false, count);
 }
 
-bool msgpack_read_map(MsgpackReader *r, size_t *count)
+bool dws_msgpack_read_map(MsgpackReader *r, size_t *count)
 {
     return read_count(r, true, count);
 }

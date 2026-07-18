@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-uint16_t dnp3_crc(const uint8_t *data, size_t len)
+uint16_t dws_dnp3_crc(const uint8_t *data, size_t len)
 {
     uint16_t crc = 0x0000;
     for (size_t i = 0; i < len; i++)
@@ -27,14 +27,14 @@ uint16_t dnp3_crc(const uint8_t *data, size_t len)
 // Append a CRC over [data, data+n) low octet first.
 static size_t put_crc(uint8_t *p, const uint8_t *data, size_t n)
 {
-    uint16_t crc = dnp3_crc(data, n);
+    uint16_t crc = dws_dnp3_crc(data, n);
     p[0] = (uint8_t)(crc & 0xFF);
     p[1] = (uint8_t)(crc >> 8);
     return DNP3_CRC_LEN;
 }
 
-size_t dnp3_build_frame(uint8_t *buf, size_t cap, uint8_t control, uint16_t dest, uint16_t src,
-                        const uint8_t *user_data, size_t user_data_len)
+size_t dws_dnp3_build_frame(uint8_t *buf, size_t cap, uint8_t control, uint16_t dest, uint16_t src,
+                            const uint8_t *user_data, size_t user_data_len)
 {
     if (!buf || (user_data_len && !user_data) || user_data_len > DNP3_MAX_USER_DATA)
         return 0;
@@ -68,8 +68,8 @@ size_t dnp3_build_frame(uint8_t *buf, size_t cap, uint8_t control, uint16_t dest
     return total;
 }
 
-bool dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *out_user, size_t out_cap,
-                      size_t *out_user_len)
+bool dws_dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *out_user, size_t out_cap,
+                          size_t *out_user_len)
 {
     if (!buf || !out || len < DNP3_HEADER_BLOCK_LEN)
         return false;
@@ -83,7 +83,7 @@ bool dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *o
         return false; // GCOVR_EXCL_LINE  unreachable: LEN is a uint8 (<=255) so user_len = LEN-5 <= 250 =
                       // DNP3_MAX_USER_DATA
 
-    uint16_t hcrc = dnp3_crc(buf, DNP3_HEADER_LEN);
+    uint16_t hcrc = dws_dnp3_crc(buf, DNP3_HEADER_LEN);
     if ((uint16_t)(buf[DNP3_HEADER_LEN] | (buf[DNP3_HEADER_LEN + 1] << 8)) != hcrc)
         return false; // header CRC mismatch
 
@@ -102,7 +102,7 @@ bool dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *o
         size_t blk = user_len - off;
         if (blk > DNP3_BLOCK_LEN)
             blk = DNP3_BLOCK_LEN;
-        uint16_t bcrc = dnp3_crc(buf + p, blk);
+        uint16_t bcrc = dws_dnp3_crc(buf + p, blk);
         if ((uint16_t)(buf[p + blk] | (buf[p + blk + 1] << 8)) != bcrc)
             return false; // block CRC mismatch
         memcpy(out_user + off, buf + p, blk);

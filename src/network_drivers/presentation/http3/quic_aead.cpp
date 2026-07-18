@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_aead.cpp
- * @brief AES-128 block cipher and AEAD_AES_128_GCM (see quic_aead.h).
+ * @file dws_quic_aead.cpp
+ * @brief AES-128 block cipher and AEAD_AES_128_GCM (see dws_quic_aead.h).
  *
  * Arduino: the AES block is mbedtls_aes_crypt_ecb() (ESP32 HW accelerator). Native: a compact
  * software AES-128 (forward S-box + GF(2^8) xtime, no large tables). GHASH and the counter loop
@@ -23,18 +23,18 @@
 
 #ifdef ARDUINO
 
-void quic_aes128_init(QuicAes128 *ctx, const uint8_t key[16])
+void dws_quic_aes128_init(QuicAes128 *ctx, const uint8_t key[16])
 {
     mbedtls_aes_init(&ctx->mbed);
     mbedtls_aes_setkey_enc(&ctx->mbed, key, 128);
 }
 
-void quic_aes128_encrypt_block(QuicAes128 *ctx, const uint8_t in[16], uint8_t out[16])
+void dws_quic_aes128_encrypt_block(QuicAes128 *ctx, const uint8_t in[16], uint8_t out[16])
 {
     mbedtls_aes_crypt_ecb(&ctx->mbed, MBEDTLS_AES_ENCRYPT, in, out);
 }
 
-void quic_aes128_wipe(QuicAes128 *ctx)
+void dws_quic_aes128_wipe(QuicAes128 *ctx)
 {
     mbedtls_aes_free(&ctx->mbed);
 }
@@ -43,17 +43,17 @@ void quic_aes128_wipe(QuicAes128 *ctx)
 
 #include "shared_primitives/aes_block.h"
 
-void quic_aes128_init(QuicAes128 *ctx, const uint8_t key[16])
+void dws_quic_aes128_init(QuicAes128 *ctx, const uint8_t key[16])
 {
     dws_aes_key_expand(key, 4, ctx->rk);
 }
 
-void quic_aes128_encrypt_block(QuicAes128 *ctx, const uint8_t in[16], uint8_t out[16])
+void dws_quic_aes128_encrypt_block(QuicAes128 *ctx, const uint8_t in[16], uint8_t out[16])
 {
     dws_aes_encrypt_block(ctx->rk, 10, in, out);
 }
 
-void quic_aes128_wipe(QuicAes128 *ctx)
+void dws_quic_aes128_wipe(QuicAes128 *ctx)
 {
     volatile uint8_t *p = (volatile uint8_t *)ctx;
     for (size_t i = 0; i < sizeof(QuicAes128); i++)
@@ -103,7 +103,7 @@ void gctr(QuicAes128 *aes, uint8_t ctr[16], const uint8_t *in, size_t len, uint8
     size_t off = 0;
     while (off < len)
     {
-        quic_aes128_encrypt_block(aes, ctr, ks);
+        dws_quic_aes128_encrypt_block(aes, ctr, ks);
         inc32(ctr);
         size_t take = len - off;
         if (take > 16)
@@ -120,7 +120,7 @@ void gcm_core(QuicAes128 *aes, const uint8_t nonce[12], const uint8_t *aad, size
               size_t cipher_len, uint8_t j0[16], uint8_t tag[16])
 {
     uint8_t h[16] = {0};
-    quic_aes128_encrypt_block(aes, h, h); // H = E(K, 0^128)
+    dws_quic_aes128_encrypt_block(aes, h, h); // H = E(K, 0^128)
     GhashKey ghk;
     ghash_key_init(&ghk, h);
 
@@ -141,17 +141,17 @@ void gcm_core(QuicAes128 *aes, const uint8_t nonce[12], const uint8_t *aad, size
     ghash_mul(&ghk, s);
 
     uint8_t ej0[16];
-    quic_aes128_encrypt_block(aes, j0, ej0);
+    dws_quic_aes128_encrypt_block(aes, j0, ej0);
     for (int i = 0; i < 16; i++)
         tag[i] = s[i] ^ ej0[i];
 }
 } // namespace
 
-void quic_aes128_gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
-                          const uint8_t *pt, size_t pt_len, uint8_t *out)
+void dws_quic_aes128_gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
+                              const uint8_t *pt, size_t pt_len, uint8_t *out)
 {
     QuicAes128 aes;
-    quic_aes128_init(&aes, key);
+    dws_quic_aes128_init(&aes, key);
 
     // Encrypt first (counter starts at inc32(J0)), then GHASH the resulting ciphertext.
     uint8_t j0[16];
@@ -170,18 +170,18 @@ void quic_aes128_gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const 
     gcm_core(&aes, nonce, aad, aad_len, out, pt_len, j0b, tag);
     memcpy(out + pt_len, tag, QUIC_AEAD_TAG_LEN);
 
-    quic_aes128_wipe(&aes);
+    dws_quic_aes128_wipe(&aes);
 }
 
-bool quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
-                          const uint8_t *ct, size_t ct_len, uint8_t *out)
+bool dws_quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
+                              const uint8_t *ct, size_t ct_len, uint8_t *out)
 {
     if (ct_len < QUIC_AEAD_TAG_LEN)
         return false;
     size_t pt_len = ct_len - QUIC_AEAD_TAG_LEN;
 
     QuicAes128 aes;
-    quic_aes128_init(&aes, key);
+    dws_quic_aes128_init(&aes, key);
 
     // Authenticate over the received ciphertext before producing any plaintext.
     uint8_t j0[16];
@@ -193,7 +193,7 @@ bool quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const 
         diff |= (uint8_t)(tag[i] ^ ct[pt_len + i]);
     if (diff != 0)
     {
-        quic_aes128_wipe(&aes);
+        dws_quic_aes128_wipe(&aes);
         return false;
     }
 
@@ -202,7 +202,7 @@ bool quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const 
     inc32(ctr);
     gctr(&aes, ctr, ct, pt_len, out);
 
-    quic_aes128_wipe(&aes);
+    dws_quic_aes128_wipe(&aes);
     return true;
 }
 

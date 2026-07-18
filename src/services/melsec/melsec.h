@@ -88,8 +88,8 @@
  * @param monitoring_timer the CPU monitoring timer (units of 250 ms; 0 = wait indefinitely).
  * @return total octets written (21), or 0 on overflow / bad input.
  */
-size_t melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t head_device, uint16_t points,
-                         uint16_t monitoring_timer);
+size_t dws_melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t head_device, uint16_t points,
+                             uint16_t monitoring_timer);
 
 /** @brief A parsed 3E response. @ref data points INTO the source buffer (LE word values). */
 struct MelsecResponse
@@ -100,7 +100,7 @@ struct MelsecResponse
 };
 
 /** @brief Parse + validate a binary 3E response (subheader 0xD0 0x00, length, end code, data). */
-bool melsec_parse_response(const uint8_t *buf, size_t len, MelsecResponse *out);
+bool dws_melsec_parse_response(const uint8_t *buf, size_t len, MelsecResponse *out);
 
 #endif // DWS_ENABLE_MELSEC
 

@@ -165,61 +165,61 @@ struct FocasValue
 // ---------------------------------------------------------------------------------------------
 
 /// Open the session (payload = FRAME_DST). Send first; expect a 0x0102 response frame.
-size_t focas_build_open(uint8_t *buf, size_t cap);
+size_t dws_focas_build_open(uint8_t *buf, size_t cap);
 
 /// Close the session (empty payload). Send last; expect a 0x0202 response frame.
-size_t focas_build_close(uint8_t *buf, size_t cap);
+size_t dws_focas_build_close(uint8_t *buf, size_t cap);
 
 /// Generic command: selector + five i32 arguments + optional trailing `extra` bytes.
-size_t focas_build_request(uint8_t *buf, size_t cap, FocasCmd cmd, int32_t v1, int32_t v2, int32_t v3, int32_t v4,
-                           int32_t v5, const uint8_t *extra, size_t extra_len);
+size_t dws_focas_build_request(uint8_t *buf, size_t cap, FocasCmd cmd, int32_t v1, int32_t v2, int32_t v3, int32_t v4,
+                               int32_t v5, const uint8_t *extra, size_t extra_len);
 
 /// SysInfo (1/1/0x18): no arguments. Response = FocasSysInfo.
-size_t focas_build_sysinfo(uint8_t *buf, size_t cap);
+size_t dws_focas_build_sysinfo(uint8_t *buf, size_t cap);
 
 /// Alarm status (1/1/0x1a): no arguments. Response = a big-endian u32 alarm bitmask.
-size_t focas_build_read_alarm(uint8_t *buf, size_t cap);
+size_t dws_focas_build_read_alarm(uint8_t *buf, size_t cap);
 
 /// Read CNC parameter(s) (1/1/0x0e): parameter range [first, last], axis (0 = not axis-specific).
-size_t focas_build_read_param(uint8_t *buf, size_t cap, int32_t first, int32_t last, int32_t axis);
+size_t dws_focas_build_read_param(uint8_t *buf, size_t cap, int32_t first, int32_t last, int32_t axis);
 
 /// Read macro variables (1/1/0x15): variable range [first, last]. Response values are 8-octet.
-size_t focas_build_read_macro(uint8_t *buf, size_t cap, int32_t first, int32_t last);
+size_t dws_focas_build_read_macro(uint8_t *buf, size_t cap, int32_t first, int32_t last);
 
 /// Read position/axis data (1/1/0x26): `kind` (FocasPosKind), `axis` (0 = all). 8-octet values.
-size_t focas_build_read_position(uint8_t *buf, size_t cap, int32_t kind, int32_t axis);
+size_t dws_focas_build_read_position(uint8_t *buf, size_t cap, int32_t kind, int32_t axis);
 
 /// Read actual feedrate (1/1/0x24): no arguments. Response = one 8-octet value.
-size_t focas_build_read_feedrate(uint8_t *buf, size_t cap);
+size_t dws_focas_build_read_feedrate(uint8_t *buf, size_t cap);
 
 /// Read actual spindle speed (1/1/0x25): no arguments. Response = one 8-octet value.
-size_t focas_build_read_spindle(uint8_t *buf, size_t cap);
+size_t dws_focas_build_read_spindle(uint8_t *buf, size_t cap);
 
 // ---------------------------------------------------------------------------------------------
 // Response parsers. Each returns false on a short/garbled buffer.
 // ---------------------------------------------------------------------------------------------
 
 /// Validate the 10-octet envelope (magic + version) and expose the payload (into `buf`).
-bool focas_parse_frame(const uint8_t *buf, size_t len, FocasFrame *out);
+bool dws_focas_parse_frame(const uint8_t *buf, size_t len, FocasFrame *out);
 
 /// Decode a command-response payload (echoed selector + status + length + data) into `out`.
-bool focas_parse_response(const uint8_t *payload, size_t payload_len, FocasResponse *out);
+bool dws_focas_parse_response(const uint8_t *payload, size_t payload_len, FocasResponse *out);
 
 /// Convenience: validate a whole command-response frame (type 0x2102) straight into `out`.
-bool focas_parse_command_frame(const uint8_t *buf, size_t len, FocasResponse *out);
+bool dws_focas_parse_command_frame(const uint8_t *buf, size_t len, FocasResponse *out);
 
 /// SysInfo response data: ODBSYS (addinfo + maxaxis + cnctype + mttype + series + version + axes).
-bool focas_parse_sysinfo(const uint8_t *data, size_t data_len, FocasSysInfo *out);
+bool dws_focas_parse_sysinfo(const uint8_t *data, size_t data_len, FocasSysInfo *out);
 
 /// Alarm response data: a single big-endian u32 alarm bitmask.
-bool focas_parse_alarm(const uint8_t *data, size_t data_len, uint32_t *alarm_status);
+bool dws_focas_parse_alarm(const uint8_t *data, size_t data_len, uint32_t *alarm_status);
 
 /// Decode one FOCAS 8-octet value at `chunk`. Returns true only for a usable value (`out->valid`
 /// is set the same way); false if fewer than 8 octets are available.
-bool focas_decode8(const uint8_t *chunk, size_t len, FocasValue *out);
+bool dws_focas_decode8(const uint8_t *chunk, size_t len, FocasValue *out);
 
 /// The scaled value `data / base^exp` as a float (0 for an invalid value).
-float focas_value_f(const FocasValue *v);
+float dws_focas_value_f(const FocasValue *v);
 
 #endif // DWS_ENABLE_FOCAS
 

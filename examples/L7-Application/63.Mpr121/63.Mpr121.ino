@@ -30,7 +30,7 @@ void setup()
     Serial.begin(115200);
     pinMode(LED_PIN, OUTPUT);
 
-    if (mpr121_begin(0x5A))
+    if (dws_mpr121_begin(0x5A))
         Serial.println("MPR121 ready - touch a pad (ELE0..ELE11)");
     else
         Serial.println("MPR121 not found - check wiring and the ADDR pin (address 0x5A)");
@@ -39,15 +39,15 @@ void setup()
 void loop()
 {
     static uint16_t last = 0;
-    uint16_t now = mpr121_read_touched();
+    uint16_t now = dws_mpr121_read_touched();
 
     if (now != last)
     {
         // Report each electrode that just changed (press or release).
         for (uint8_t e = 0; e < MPR121_ELECTRODES; e++)
         {
-            bool was = mpr121_is_touched(last, e);
-            bool is = mpr121_is_touched(now, e);
+            bool was = dws_mpr121_is_touched(last, e);
+            bool is = dws_mpr121_is_touched(now, e);
             if (is && !was)
                 Serial.printf("electrode %u touched\n", e);
             else if (was && !is)

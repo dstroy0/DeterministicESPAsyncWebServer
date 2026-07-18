@@ -26,7 +26,7 @@
 void setup()
 {
     Serial.begin(115200);
-    if (sht3x_begin(0x44))
+    if (dws_sht3x_begin(0x44))
         Serial.println("SHT3x ready");
     else
         Serial.println("SHT3x not found - check wiring and the ADDR pin (address 0x44)");
@@ -35,7 +35,7 @@ void setup()
 void loop()
 {
     int32_t temp_mc = 0, rh_mpct = 0; // milli-degrees C, milli-percent RH
-    if (sht3x_read(&temp_mc, &rh_mpct))
+    if (dws_sht3x_read(&temp_mc, &rh_mpct))
     {
         // Print the milli-units as X.XXX by hand (no float formatting needed).
         long t_whole = temp_mc / 1000;

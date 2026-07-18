@@ -5,7 +5,7 @@
  * @file dbm.h
  * @brief Log-structured hash key-value store on the WAL (DWS_ENABLE_DBM, requires DWS_ENABLE_WAL).
  *
- * A Bitcask-style key-value store: the value data lives append-only in the write-ahead log (wal_store.h)
+ * A Bitcask-style key-value store: the value data lives append-only in the write-ahead log (dws_wal_store.h)
  * and an in-RAM open-addressed hash index maps each live key to where its latest value sits in the log.
  * This is the design the measured SD envelope wants (docs/FEATURE_PERFORMANCE.md): every write is one of
  * the WAL's fast sequential appends, never a slow durable random write.
@@ -97,7 +97,7 @@ uint32_t dws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx);
 
 /**
  * @brief Bytes the live keys would occupy after a compaction (the summed framed size of one WAL record per
- * live key). The current log (::wal_store_used on the bound store) is always at least this large; the
+ * live key). The current log (::dws_wal_store_used on the bound store) is always at least this large; the
  * difference is reclaimable dead space from overwritten and deleted keys. Pair the two to decide when the
  * dead fraction is worth a ::dws_dbm_compact.
  */

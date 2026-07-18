@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file dtls_conn.h
+ * @file dws_dtls_conn.h
  * @brief DTLS 1.3 server handshake state machine (RFC 9147 §5-6).
  *
  * The transport-neutral core that drives one DTLS 1.3 server handshake: it consumes inbound
  * datagrams and produces the outbound flight, wiring the reused TLS 1.3 message builders and key
- * schedule (tls13_msg, tls13_kdf) through the DTLS record layer (dtls_record) and handshake framing
- * (dtls_handshake). Like dws_coap_server_process it has no sockets - the UDP glue (a later CoAPs
+ * schedule (dws_tls13_msg, dws_tls13_kdf) through the DTLS record layer (dws_dtls_record) and handshake framing
+ * (dws_dtls_handshake). Like dws_coap_server_process it has no sockets - the UDP glue (a later CoAPs
  * front-end) feeds it datagrams and sends whatever it emits.
  *
  * Profile: the single spec-valid suite the whole hand-rolled TLS 1.3 stack uses -
@@ -26,7 +26,7 @@
  * stateless, address-bound cookie and renegotiates the group to X25519 (RFC 9147 §5.1); the second
  * ClientHello must echo the cookie before any asymmetric crypto is spent. Full ACK/timeout
  * retransmission (§5.8, §7) beyond the Finished acknowledgement is a follow-on increment; the framing
- * it needs already exists in dtls_handshake.
+ * it needs already exists in dws_dtls_handshake.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026

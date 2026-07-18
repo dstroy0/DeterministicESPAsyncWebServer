@@ -20,7 +20,7 @@ void test_build_uplink_hex_encode()
 {
     const uint8_t payload[2] = {0xAB, 0x12};
     char out[32];
-    uint16_t n = sigfox_build_uplink(payload, 2, out, sizeof(out));
+    uint16_t n = dws_sigfox_build_uplink(payload, 2, out, sizeof(out));
     TEST_ASSERT_EQUAL_STRING("AT$SF=AB12\r\n", out);
     TEST_ASSERT_EQUAL_UINT16(12, n);
 }
@@ -29,7 +29,7 @@ void test_build_uplink_single_byte()
 {
     const uint8_t payload[1] = {0x0F};
     char out[32];
-    uint16_t n = sigfox_build_uplink(payload, 1, out, sizeof(out));
+    uint16_t n = dws_sigfox_build_uplink(payload, 1, out, sizeof(out));
     TEST_ASSERT_EQUAL_STRING("AT$SF=0F\r\n", out);
     TEST_ASSERT_EQUAL_UINT16(10, n);
 }
@@ -38,35 +38,35 @@ void test_build_uplink_bounds()
 {
     uint8_t big[13] = {0};
     char out[64];
-    TEST_ASSERT_EQUAL_UINT16(0, sigfox_build_uplink(big, 13, out, sizeof(out))); // > 12-byte cap
-    TEST_ASSERT_EQUAL_UINT16(0, sigfox_build_uplink(big, 0, out, sizeof(out)));  // empty
+    TEST_ASSERT_EQUAL_UINT16(0, dws_sigfox_build_uplink(big, 13, out, sizeof(out))); // > 12-byte cap
+    TEST_ASSERT_EQUAL_UINT16(0, dws_sigfox_build_uplink(big, 0, out, sizeof(out)));  // empty
     uint8_t p[4] = {1, 2, 3, 4};
     char small[10];
-    TEST_ASSERT_EQUAL_UINT16(0, sigfox_build_uplink(p, 4, small, sizeof(small))); // needs 17, cap 10
+    TEST_ASSERT_EQUAL_UINT16(0, dws_sigfox_build_uplink(p, 4, small, sizeof(small))); // needs 17, cap 10
 }
 
 void test_parse_response_ok()
 {
-    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_OK, sigfox_parse_response("OK\r\n", 4));
+    TEST_ASSERT_EQUAL_INT(dws_sigfox_result::SIGFOX_OK, dws_sigfox_parse_response("OK\r\n", 4));
 }
 
 void test_parse_response_error()
 {
-    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_ERROR, sigfox_parse_response("ERROR\r\n", 7));
+    TEST_ASSERT_EQUAL_INT(dws_sigfox_result::SIGFOX_ERROR, dws_sigfox_parse_response("ERROR\r\n", 7));
 }
 
 void test_parse_response_pending()
 {
-    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_PENDING,
-                          sigfox_parse_response("AT$SF=AB12\r\n", 12)); // echo, no verdict yet
-    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_PENDING, sigfox_parse_response("", 0));
+    TEST_ASSERT_EQUAL_INT(dws_sigfox_result::SIGFOX_PENDING,
+                          dws_sigfox_parse_response("AT$SF=AB12\r\n", 12)); // echo, no verdict yet
+    TEST_ASSERT_EQUAL_INT(dws_sigfox_result::SIGFOX_PENDING, dws_sigfox_parse_response("", 0));
 }
 
 void test_parse_response_error_wins()
 {
     // If a buffer holds both (e.g. an echoed "OK" token then an ERROR), ERROR is reported.
     const char *both = "sending OK... ERROR";
-    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_ERROR, sigfox_parse_response(both, (uint16_t)strlen(both)));
+    TEST_ASSERT_EQUAL_INT(dws_sigfox_result::SIGFOX_ERROR, dws_sigfox_parse_response(both, (uint16_t)strlen(both)));
 }
 
 int main()

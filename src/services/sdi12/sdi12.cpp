@@ -13,7 +13,7 @@
 #include "shared_primitives/numparse.h"
 #include <string.h>
 
-size_t sdi12_build(char *buf, size_t cap, char addr, const char *body)
+size_t dws_sdi12_build(char *buf, size_t cap, char addr, const char *body)
 {
     if (!buf || !body)
         return 0;
@@ -28,46 +28,46 @@ size_t sdi12_build(char *buf, size_t cap, char addr, const char *body)
     return n;
 }
 
-size_t sdi12_build_ack(char *buf, size_t cap, char addr)
+size_t dws_sdi12_build_ack(char *buf, size_t cap, char addr)
 {
-    return sdi12_build(buf, cap, addr, "");
+    return dws_sdi12_build(buf, cap, addr, "");
 }
 
-size_t sdi12_build_identify(char *buf, size_t cap, char addr)
+size_t dws_sdi12_build_identify(char *buf, size_t cap, char addr)
 {
-    return sdi12_build(buf, cap, addr, "I");
+    return dws_sdi12_build(buf, cap, addr, "I");
 }
 
-size_t sdi12_build_measure(char *buf, size_t cap, char addr, bool with_crc)
+size_t dws_sdi12_build_measure(char *buf, size_t cap, char addr, bool with_crc)
 {
-    return sdi12_build(buf, cap, addr, with_crc ? "MC" : "M");
+    return dws_sdi12_build(buf, cap, addr, with_crc ? "MC" : "M");
 }
 
-size_t sdi12_build_concurrent(char *buf, size_t cap, char addr, bool with_crc)
+size_t dws_sdi12_build_concurrent(char *buf, size_t cap, char addr, bool with_crc)
 {
-    return sdi12_build(buf, cap, addr, with_crc ? "CC" : "C");
+    return dws_sdi12_build(buf, cap, addr, with_crc ? "CC" : "C");
 }
 
-size_t sdi12_build_data(char *buf, size_t cap, char addr, uint8_t d_index)
+size_t dws_sdi12_build_data(char *buf, size_t cap, char addr, uint8_t d_index)
 {
     if (d_index > 9)
         return 0;
     char body[3] = {'D', (char)('0' + d_index), '\0'};
-    return sdi12_build(buf, cap, addr, body);
+    return dws_sdi12_build(buf, cap, addr, body);
 }
 
-size_t sdi12_build_change_address(char *buf, size_t cap, char addr, char new_addr)
+size_t dws_sdi12_build_change_address(char *buf, size_t cap, char addr, char new_addr)
 {
     char body[3] = {'A', new_addr, '\0'};
-    return sdi12_build(buf, cap, addr, body);
+    return dws_sdi12_build(buf, cap, addr, body);
 }
 
-size_t sdi12_build_query_address(char *buf, size_t cap)
+size_t dws_sdi12_build_query_address(char *buf, size_t cap)
 {
-    return sdi12_build(buf, cap, '?', "");
+    return dws_sdi12_build(buf, cap, '?', "");
 }
 
-bool sdi12_parse_measure(const char *resp, size_t len, char *addr, uint16_t *ready_sec, uint8_t *num_values)
+bool dws_sdi12_parse_measure(const char *resp, size_t len, char *addr, uint16_t *ready_sec, uint8_t *num_values)
 {
     if (!resp || len < 5) // a<ttt><n> is at least 5 octets
         return false;
@@ -89,7 +89,7 @@ bool sdi12_parse_measure(const char *resp, size_t len, char *addr, uint16_t *rea
     return true;
 }
 
-bool sdi12_parse_values(const char *resp, size_t len, float *out, size_t max, size_t *n)
+bool dws_sdi12_parse_values(const char *resp, size_t len, float *out, size_t max, size_t *n)
 {
     if (!resp || !out || !n)
         return false;
@@ -123,7 +123,7 @@ bool sdi12_parse_values(const char *resp, size_t len, float *out, size_t max, si
     return true;
 }
 
-uint16_t sdi12_crc16(const uint8_t *data, size_t len)
+uint16_t dws_sdi12_crc16(const uint8_t *data, size_t len)
 {
     uint16_t crc = 0;
     for (size_t i = 0; i < len; i++)
@@ -135,14 +135,14 @@ uint16_t sdi12_crc16(const uint8_t *data, size_t len)
     return crc;
 }
 
-void sdi12_crc_encode(uint16_t crc, char out[SDI12_CRC_CHARS])
+void dws_sdi12_crc_encode(uint16_t crc, char out[SDI12_CRC_CHARS])
 {
     out[0] = (char)(0x40u | (crc >> 12)); // top bits
     out[1] = (char)(0x40u | ((crc >> 6) & 0x3Fu));
     out[2] = (char)(0x40u | (crc & 0x3Fu));
 }
 
-bool sdi12_check_crc(const char *resp, size_t len)
+bool dws_sdi12_check_crc(const char *resp, size_t len)
 {
     if (!resp)
         return false;
@@ -153,7 +153,7 @@ bool sdi12_check_crc(const char *resp, size_t len)
         return false;
     size_t data_len = len - SDI12_CRC_CHARS;
     char enc[SDI12_CRC_CHARS];
-    sdi12_crc_encode(sdi12_crc16((const uint8_t *)resp, data_len), enc);
+    dws_sdi12_crc_encode(dws_sdi12_crc16((const uint8_t *)resp, data_len), enc);
     return memcmp(enc, resp + data_len, SDI12_CRC_CHARS) == 0;
 }
 

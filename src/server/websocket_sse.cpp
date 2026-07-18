@@ -16,12 +16,12 @@
 #include "network_drivers/transport/tcp.h" // conn_pool, dws_conn_*, TcpConn/ConnState
 #include "server/dwserver_internal.h"
 #if DWS_ENABLE_WEBSOCKET
-#include "network_drivers/presentation/base64/base64.h"       // base64_decode/encode
+#include "network_drivers/presentation/base64/base64.h"       // dws_base64_decode/encode
 #include "network_drivers/presentation/sha1/sha1.h"           // sha1, SHA1_DIGEST_LEN
 #include "network_drivers/presentation/websocket/websocket.h" // ws_pool, WsConn, ws_alloc/send_frame/close
 #endif
 #if DWS_ENABLE_SSE
-#include "network_drivers/presentation/sse/sse.h" // sse_pool, SseConn, sse_alloc/write
+#include "network_drivers/presentation/sse/sse.h" // dws_sse_pool, SseConn, dws_sse_alloc/write
 #endif
 #include <stdio.h>
 #include <string.h>
@@ -55,7 +55,7 @@ static bool ws_accept_key(const char *client_key, char *out)
     }
     // RFC 6455 4.2.1: the Sec-WebSocket-Key must base64-decode to exactly 16 bytes.
     uint8_t raw[24];
-    if (base64_decode(client_key, raw, sizeof(raw)) != 16)
+    if (dws_base64_decode(client_key, raw, sizeof(raw)) != 16)
     {
         out[0] = '\0';
         return false;
@@ -67,7 +67,7 @@ static bool ws_accept_key(const char *client_key, char *out)
 
     uint8_t digest[SHA1_DIGEST_LEN];
     sha1((const uint8_t *)concat, key_len + magic_len, digest);
-    base64_encode(digest, SHA1_DIGEST_LEN, out);
+    dws_base64_encode(digest, SHA1_DIGEST_LEN, out);
     return true;
 }
 
@@ -177,7 +177,7 @@ bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect)
 /**
  * @brief Send the HTTP 200 + SSE headers and promote the slot to SSE mode.
  */
-bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
+bool dws_sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
 {
     if (!dws_conn_active(slot_id))
         return false;
@@ -192,13 +192,13 @@ bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
 
     // Copy the path BEFORE resetting the parser: http_reset() zeroes the whole
     // HttpReq (including req->path), so a pointer into it would dangle. The saved
-    // path is what sse_broadcast() matches against.
+    // path is what dws_sse_broadcast() matches against.
     char path[MAX_PATH_LEN];
     strncpy(path, req->path, sizeof(path) - 1);
     path[sizeof(path) - 1] = '\0';
     http_reset(slot_id);
 
-    SseConn *sse = sse_alloc(slot_id, path);
+    SseConn *sse = dws_sse_alloc(slot_id, path);
     if (!sse)
     {
         dws_conn_abort_slot(slot_id); // transport owns detach + reset + RST
@@ -206,7 +206,7 @@ bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
     }
 
     if (on_connect)
-        on_connect(sse->sse_id);
+        on_connect(sse->dws_sse_id);
 
     return true;
 }
@@ -263,28 +263,28 @@ void DWS::ws_disconnect(uint8_t ws_id)
 // ---------------------------------------------------------------------------
 
 #if DWS_ENABLE_SSE
-void DWS::sse_send(uint8_t sse_id, const char *data, const char *event, const char *id)
+void DWS::dws_sse_send(uint8_t dws_sse_id, const char *data, const char *event, const char *id)
 {
-    if (sse_id >= MAX_SSE_CONNS || !sse_pool[sse_id].active)
+    if (dws_sse_id >= MAX_SSE_CONNS || !dws_sse_pool[dws_sse_id].active)
         return;
-    SseConn *sse = &sse_pool[sse_id];
-    if (sse_write(sse, data, event, id))
+    SseConn *sse = &dws_sse_pool[dws_sse_id];
+    if (dws_sse_write(sse, data, event, id))
     {
         if (dws_conn_active(sse->slot_id))
             dws_conn_flush(sse->slot_id);
     }
 }
 
-void DWS::sse_broadcast(const char *path, const char *data, const char *event, const char *id)
+void DWS::dws_sse_broadcast(const char *path, const char *data, const char *event, const char *id)
 {
     for (int i = 0; i < MAX_SSE_CONNS; i++)
     {
-        if (!sse_pool[i].active)
+        if (!dws_sse_pool[i].active)
             continue;
-        if (strcmp(sse_pool[i].path, path) != 0)
+        if (strcmp(dws_sse_pool[i].path, path) != 0)
             continue;
-        SseConn *sse = &sse_pool[i];
-        if (sse_write(sse, data, event, id))
+        SseConn *sse = &dws_sse_pool[i];
+        if (dws_sse_write(sse, data, event, id))
         {
             if (dws_conn_active(sse->slot_id))
                 dws_conn_flush(sse->slot_id);

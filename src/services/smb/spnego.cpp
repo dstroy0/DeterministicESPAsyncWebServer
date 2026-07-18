@@ -78,11 +78,11 @@ static bool der_read(const uint8_t *buf, size_t len, size_t *pos, uint8_t *tag, 
     return true;
 }
 
-size_t spnego_wrap_negotiate(const uint8_t *ntlm, size_t ntlm_len, uint8_t *out, size_t cap)
+size_t dws_spnego_wrap_negotiate(const uint8_t *ntlm, size_t dws_ntlm_len, uint8_t *out, size_t cap)
 {
     if (!ntlm)
         return 0;
-    size_t octet = tlv_size(ntlm_len);         // OCTET STRING(mechToken)
+    size_t octet = tlv_size(dws_ntlm_len);     // OCTET STRING(mechToken)
     size_t mt = tlv_size(octet);               // [2] mechToken
     size_t seqof = tlv_size(sizeof(NTLM_OID)); // SEQUENCE OF { NTLM OID }
     size_t mtypes = tlv_size(seqof);           // [0] mechTypes
@@ -104,20 +104,20 @@ size_t spnego_wrap_negotiate(const uint8_t *ntlm, size_t ntlm_len, uint8_t *out,
     memcpy(out + p, NTLM_OID, sizeof(NTLM_OID));
     p += sizeof(NTLM_OID);
     wr_tag_len(out, &p, 0xa2, octet); // [2] mechToken
-    wr_tag_len(out, &p, 0x04, ntlm_len);
-    memcpy(out + p, ntlm, ntlm_len);
-    p += ntlm_len;
+    wr_tag_len(out, &p, 0x04, dws_ntlm_len);
+    memcpy(out + p, ntlm, dws_ntlm_len);
+    p += dws_ntlm_len;
     return p;
 }
 
-size_t spnego_wrap_authenticate(const uint8_t *ntlm, size_t ntlm_len, uint8_t *out, size_t cap)
+size_t dws_spnego_wrap_authenticate(const uint8_t *ntlm, size_t dws_ntlm_len, uint8_t *out, size_t cap)
 {
     if (!ntlm)
         return 0;
-    size_t octet = tlv_size(ntlm_len); // OCTET STRING(responseToken)
-    size_t rt = tlv_size(octet);       // [2] responseToken
-    size_t seq = tlv_size(rt);         // SEQUENCE
-    size_t total = tlv_size(seq);      // [1] NegTokenResp
+    size_t octet = tlv_size(dws_ntlm_len); // OCTET STRING(responseToken)
+    size_t rt = tlv_size(octet);           // [2] responseToken
+    size_t seq = tlv_size(rt);             // SEQUENCE
+    size_t total = tlv_size(seq);          // [1] NegTokenResp
     if (!out || total > cap)
         return 0;
 
@@ -125,15 +125,15 @@ size_t spnego_wrap_authenticate(const uint8_t *ntlm, size_t ntlm_len, uint8_t *o
     wr_tag_len(out, &p, 0xa1, seq);   // [1] NegTokenResp
     wr_tag_len(out, &p, 0x30, rt);    // SEQUENCE
     wr_tag_len(out, &p, 0xa2, octet); // [2] responseToken
-    wr_tag_len(out, &p, 0x04, ntlm_len);
-    memcpy(out + p, ntlm, ntlm_len);
-    p += ntlm_len;
+    wr_tag_len(out, &p, 0x04, dws_ntlm_len);
+    memcpy(out + p, ntlm, dws_ntlm_len);
+    p += dws_ntlm_len;
     return p;
 }
 
-bool spnego_parse_response(const uint8_t *blob, size_t len, const uint8_t **resp_token, size_t *resp_len)
+bool dws_spnego_parse_response(const uint8_t *blob, size_t len, const uint8_t **dws_resp_token, size_t *dws_resp_len)
 {
-    if (!blob || !resp_token || !resp_len)
+    if (!blob || !dws_resp_token || !dws_resp_len)
         return false;
     size_t pos = 0;
     size_t cstart;
@@ -162,8 +162,8 @@ bool spnego_parse_response(const uint8_t *blob, size_t len, const uint8_t **resp
             uint8_t t2;
             if (!der_read(blob, cstart + clen, &q, &t2, &cl2, &cs2) || t2 != 0x04)
                 return false;
-            *resp_token = blob + cs2;
-            *resp_len = cl2;
+            *dws_resp_token = blob + cs2;
+            *dws_resp_len = cl2;
             return true;
         }
     }

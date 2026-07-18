@@ -5,7 +5,7 @@
  * @file 56.OpcUaClient.ino
  * @brief OPC UA Binary client - drive a server over TCP (DWS_ENABLE_OPCUA_CLIENT).
  *
- * services/opcua_client builds OPC UA requests and parses responses; it is
+ * services/dws_opcua_client builds OPC UA requests and parses responses; it is
  * transport-agnostic, so the app owns the socket. This sketch runs the OPC UA
  * server (services/opcua) on :4840 AND, once connected, opens a plain Arduino
  * WiFiClient to its own address and walks the full client sequence against it:
@@ -129,33 +129,33 @@ static void run_client(IPAddress ip)
         return;
     }
     OpcUaClient c;
-    opcua_client_init(&c);
+    dws_opcua_client_init(&c);
     OpcUaAckInfo ack;
     size_t n;
 
-    n = exchange(sock, opcua_client_hello("opc.tcp://self:4840", c_req, sizeof(c_req)));
-    if (!n || !opcua_client_on_ack(c_resp, n, &ack))
+    n = exchange(sock, dws_opcua_client_hello("opc.tcp://self:4840", c_req, sizeof(c_req)));
+    if (!n || !dws_opcua_client_on_ack(c_resp, n, &ack))
     {
         Serial.println("[opcua-client] HELLO/ACK failed");
         return;
     }
-    n = exchange(sock, opcua_client_open(&c, c_req, sizeof(c_req)));
-    if (!n || !opcua_client_on_open(&c, c_resp, n))
+    n = exchange(sock, dws_opcua_client_open(&c, c_req, sizeof(c_req)));
+    if (!n || !dws_opcua_client_on_open(&c, c_resp, n))
     {
         Serial.println("[opcua-client] OpenSecureChannel failed");
         return;
     }
-    n = exchange(sock, opcua_client_get_endpoints(&c, "opc.tcp://self:4840", c_req, sizeof(c_req)));
+    n = exchange(sock, dws_opcua_client_get_endpoints(&c, "opc.tcp://self:4840", c_req, sizeof(c_req)));
     Serial.printf("[opcua-client] GetEndpoints -> %d endpoint(s)\n",
-                  n ? (int)opcua_client_on_get_endpoints(c_resp, n) : -1);
-    n = exchange(sock, opcua_client_create_session(&c, "esp32", "opc.tcp://self:4840", c_req, sizeof(c_req)));
-    if (!n || !opcua_client_on_create_session(&c, c_resp, n))
+                  n ? (int)dws_opcua_client_on_get_endpoints(c_resp, n) : -1);
+    n = exchange(sock, dws_opcua_client_create_session(&c, "esp32", "opc.tcp://self:4840", c_req, sizeof(c_req)));
+    if (!n || !dws_opcua_client_on_create_session(&c, c_resp, n))
     {
         Serial.println("[opcua-client] CreateSession failed");
         return;
     }
-    n = exchange(sock, opcua_client_activate_session(&c, c_req, sizeof(c_req)));
-    if (!n || !opcua_client_on_activate_session(c_resp, n))
+    n = exchange(sock, dws_opcua_client_activate_session(&c, c_req, sizeof(c_req)));
+    if (!n || !dws_opcua_client_on_activate_session(c_resp, n))
     {
         Serial.println("[opcua-client] ActivateSession failed");
         return;
@@ -163,19 +163,19 @@ static void run_client(IPAddress ip)
     Serial.printf("[opcua-client] session active (channel=%u token=%u)\n", c.channel_id, c.token_id);
 
     // Browse the Objects folder.
-    n = exchange(sock, opcua_client_browse(&c, 0, 85, c_req, sizeof(c_req)));
+    n = exchange(sock, dws_opcua_client_browse(&c, 0, 85, c_req, sizeof(c_req)));
     OpcUaClientRef refs[4];
-    int32_t nrefs = n ? opcua_client_on_browse(c_resp, n, refs, 4) : -1;
+    int32_t nrefs = n ? dws_opcua_client_on_browse(c_resp, n, refs, 4) : -1;
     for (int32_t i = 0; i < nrefs; i++)
         Serial.printf("[opcua-client] browse: %s -> ns%u;i=%u\n", refs[i].browse_name, refs[i].target_ns,
                       refs[i].target_id);
 
     // Read the two variables.
     OpcUaReadItem items[2] = {{1, 1, true, OPCUA_ATTR_VALUE}, {1, 2, true, OPCUA_ATTR_VALUE}};
-    n = exchange(sock, opcua_client_read(&c, items, 2, c_req, sizeof(c_req)));
+    n = exchange(sock, dws_opcua_client_read(&c, items, 2, c_req, sizeof(c_req)));
     OpcUaVariant vals[2];
     uint32_t sts[2];
-    int32_t nv = n ? opcua_client_on_read(c_resp, n, vals, sts, 2) : -1;
+    int32_t nv = n ? dws_opcua_client_on_read(c_resp, n, vals, sts, 2) : -1;
     if (nv == 2)
         Serial.printf("[opcua-client] read: Uptime=%u Temperature=%.1f\n", vals[0].u32, vals[1].f64);
 
@@ -188,19 +188,19 @@ static void run_client(IPAddress ip)
     wi[0].attribute = OPCUA_ATTR_VALUE;
     wi[0].value.type = OpcUaVariantType::OPCUA_VAR_UINT32;
     wi[0].value.u32 = 555;
-    n = exchange(sock, opcua_client_write(&c, wi, 1, c_req, sizeof(c_req)));
+    n = exchange(sock, dws_opcua_client_write(&c, wi, 1, c_req, sizeof(c_req)));
     uint32_t wres[1];
-    int32_t nw = n ? opcua_client_on_write(c_resp, n, wres, 1) : -1;
+    int32_t nw = n ? dws_opcua_client_on_write(c_resp, n, wres, 1) : -1;
     OpcUaReadItem rb[1] = {{1, 3, true, OPCUA_ATTR_VALUE}};
-    n = exchange(sock, opcua_client_read(&c, rb, 1, c_req, sizeof(c_req)));
+    n = exchange(sock, dws_opcua_client_read(&c, rb, 1, c_req, sizeof(c_req)));
     OpcUaVariant rbv[1];
     uint32_t rbs[1];
-    int32_t nrb = n ? opcua_client_on_read(c_resp, n, rbv, rbs, 1) : -1;
+    int32_t nrb = n ? dws_opcua_client_on_read(c_resp, n, rbv, rbs, 1) : -1;
     if (nw == 1 && nrb == 1)
         Serial.printf("[opcua-client] write setpoint=555 (status 0x%08X), read-back=%u\n", wres[0], rbv[0].u32);
 
-    exchange(sock, opcua_client_close_session(&c, c_req, sizeof(c_req)));
-    sock.write(c_req, opcua_client_close_channel(c_req, sizeof(c_req)));
+    exchange(sock, dws_opcua_client_close_session(&c, c_req, sizeof(c_req)));
+    sock.write(c_req, dws_opcua_client_close_channel(c_req, sizeof(c_req)));
     sock.stop();
     Serial.println("[opcua-client] done");
 }
@@ -217,10 +217,10 @@ void setup()
 
     static char url[48];
     snprintf(url, sizeof(url), "opc.tcp://%s:4840", WiFi.localIP().toString().c_str());
-    opcua_set_endpoint_url(url); // advertised in GetEndpoints / CreateSession
-    opcua_set_read_handler(srv_read);
-    opcua_set_write_handler(srv_write);
-    opcua_set_browse_handler(srv_browse);
+    dws_opcua_set_endpoint_url(url); // advertised in GetEndpoints / CreateSession
+    dws_opcua_set_read_handler(srv_read);
+    dws_opcua_set_write_handler(srv_write);
+    dws_opcua_set_browse_handler(srv_browse);
     server.on("/", HttpMethod::HTTP_GET,
               [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA client demo"); });
     server.listen(4840, ConnProto::PROTO_OPCUA); // server endpoint, before begin()

@@ -72,7 +72,7 @@ static bool tree_content_eq(const char *path, const char *exp)
     fs::MockNode *n = fs::_tree_find(path);
     return n && !n->is_dir && n->len == strlen(exp) && memcmp(n->data, exp, n->len) == 0;
 }
-static bool resp_status(int code)
+static bool dws_resp_status(int code)
 {
     char want[20];
     snprintf(want, sizeof(want), "HTTP/1.1 %d", code);
@@ -102,7 +102,7 @@ void setUp()
         http_reset(i);
     }
     ws_init();
-    sse_init();
+    dws_sse_init();
     tcp_capture_reset();
     fs::mock_fs_tree_enable(); // directory-capable, empty tree
     server.dav("/dav", davfs, "/dav");
@@ -124,7 +124,7 @@ void test_copy_collection_recursive()
 {
     populate_src();
     feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/dst\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(201));
+    TEST_ASSERT_TRUE(dws_resp_status(201));
     TEST_ASSERT_TRUE(tree_is_dir("/dav/dst"));
     TEST_ASSERT_TRUE(tree_content_eq("/dav/dst/a.txt", "alpha"));
     TEST_ASSERT_TRUE(tree_content_eq("/dav/dst/b.txt", "bravo"));
@@ -139,7 +139,7 @@ void test_copy_collection_depth0_shallow()
 {
     populate_src();
     feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/shallow\r\nDepth: 0\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(201));
+    TEST_ASSERT_TRUE(dws_resp_status(201));
     TEST_ASSERT_TRUE(tree_is_dir("/dav/shallow"));
     TEST_ASSERT_FALSE(tree_has("/dav/shallow/a.txt")); // members not copied
     TEST_ASSERT_FALSE(tree_has("/dav/shallow/sub"));
@@ -154,13 +154,13 @@ void test_copy_overwrite_semantics()
     tree_put("/dav/dst/stale.txt", "old");
 
     feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/dst\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(204));                // replaced
+    TEST_ASSERT_TRUE(dws_resp_status(204));            // replaced
     TEST_ASSERT_FALSE(tree_has("/dav/dst/stale.txt")); // target cleared first
     TEST_ASSERT_TRUE(tree_content_eq("/dav/dst/a.txt", "alpha"));
 
     rearm();
     feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/dst\r\nOverwrite: F\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(412));
+    TEST_ASSERT_TRUE(dws_resp_status(412));
 }
 
 // MOVE of a collection re-paths the whole tree and removes the source.
@@ -168,7 +168,7 @@ void test_move_collection_recursive()
 {
     populate_src();
     feed_and_handle(0, "MOVE /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/moved\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(201));
+    TEST_ASSERT_TRUE(dws_resp_status(201));
     TEST_ASSERT_TRUE(tree_content_eq("/dav/moved/sub/c.txt", "charlie"));
     TEST_ASSERT_FALSE(tree_has("/dav/src"));
     TEST_ASSERT_FALSE(tree_has("/dav/src/sub/c.txt"));
@@ -179,7 +179,7 @@ void test_delete_collection_recursive()
 {
     populate_src();
     feed_and_handle(0, "DELETE /dav/src HTTP/1.1\r\nHost: x\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(204));
+    TEST_ASSERT_TRUE(dws_resp_status(204));
     TEST_ASSERT_FALSE(tree_has("/dav/src"));
     TEST_ASSERT_FALSE(tree_has("/dav/src/a.txt"));
     TEST_ASSERT_FALSE(tree_has("/dav/src/sub/c.txt"));
@@ -191,7 +191,7 @@ void test_propfind_depth0_collection_only()
     populate_src();
     feed_and_handle(0, "PROPFIND /dav/src HTTP/1.1\r\nHost: x\r\nDepth: 0\r\n\r\n");
     const char *r = tcp_captured();
-    TEST_ASSERT_TRUE(resp_status(207));
+    TEST_ASSERT_TRUE(dws_resp_status(207));
     TEST_ASSERT_NOT_NULL(strstr(r, "/dav/src"));
     TEST_ASSERT_NULL(strstr(r, "a.txt")); // members are not listed at Depth 0
 }
@@ -202,7 +202,7 @@ void test_propfind_depth1_lists_members()
     populate_src();
     feed_and_handle(0, "PROPFIND /dav/src HTTP/1.1\r\nHost: x\r\nDepth: 1\r\n\r\n");
     const char *r = tcp_captured();
-    TEST_ASSERT_TRUE(resp_status(207));
+    TEST_ASSERT_TRUE(dws_resp_status(207));
     TEST_ASSERT_NOT_NULL(strstr(r, "a.txt"));
     TEST_ASSERT_NOT_NULL(strstr(r, "b.txt"));
     TEST_ASSERT_NOT_NULL(strstr(r, "sub")); // the subcollection is a member
@@ -212,12 +212,12 @@ void test_propfind_depth1_lists_members()
 void test_mkcol_create_and_conflict()
 {
     feed_and_handle(0, "MKCOL /dav/newdir HTTP/1.1\r\nHost: x\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(201));
+    TEST_ASSERT_TRUE(dws_resp_status(201));
     TEST_ASSERT_TRUE(tree_is_dir("/dav/newdir"));
 
     rearm();
     feed_and_handle(0, "MKCOL /dav/newdir HTTP/1.1\r\nHost: x\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(405)); // already exists
+    TEST_ASSERT_TRUE(dws_resp_status(405)); // already exists
 }
 
 // DELETE of a single file removes just that file (204), leaving siblings intact.
@@ -225,7 +225,7 @@ void test_delete_single_file()
 {
     populate_src();
     feed_and_handle(0, "DELETE /dav/src/a.txt HTTP/1.1\r\nHost: x\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(204));
+    TEST_ASSERT_TRUE(dws_resp_status(204));
     TEST_ASSERT_FALSE(tree_has("/dav/src/a.txt"));
     TEST_ASSERT_TRUE(tree_content_eq("/dav/src/b.txt", "bravo")); // sibling untouched
 }
@@ -235,7 +235,7 @@ void test_options_advertises_dav()
 {
     feed_and_handle(0, "OPTIONS /dav/ HTTP/1.1\r\nHost: x\r\n\r\n");
     const char *r = tcp_captured();
-    TEST_ASSERT_TRUE(resp_status(200) || resp_status(204));
+    TEST_ASSERT_TRUE(dws_resp_status(200) || dws_resp_status(204));
     TEST_ASSERT_NOT_NULL(strstr(r, "DAV:"));     // compliance class header
     TEST_ASSERT_NOT_NULL(strstr(r, "PROPFIND")); // Allow lists the DAV methods
 }
@@ -246,7 +246,7 @@ void test_get_file_through_mount()
     populate_src();
     feed_and_handle(0, "GET /dav/src/a.txt HTTP/1.1\r\nHost: x\r\n\r\n");
     const char *r = tcp_captured();
-    TEST_ASSERT_TRUE(resp_status(200));
+    TEST_ASSERT_TRUE(dws_resp_status(200));
     TEST_ASSERT_NOT_NULL(strstr(r, "alpha"));
 }
 
@@ -287,7 +287,7 @@ void test_put_stream_create()
 {
     const char *body = "hello world";
     feed_put(0, "/dav/up.txt", (const uint8_t *)body, strlen(body));
-    TEST_ASSERT_TRUE(resp_status(201));
+    TEST_ASSERT_TRUE(dws_resp_status(201));
     TEST_ASSERT_TRUE(tree_content_eq("/dav/up.txt", "hello world"));
 }
 
@@ -297,7 +297,7 @@ void test_put_stream_overwrite()
     tree_put("/dav/up.txt", "stale contents");
     const char *body = "new";
     feed_put(0, "/dav/up.txt", (const uint8_t *)body, strlen(body));
-    TEST_ASSERT_TRUE(resp_status(204));
+    TEST_ASSERT_TRUE(dws_resp_status(204));
     TEST_ASSERT_TRUE(tree_content_eq("/dav/up.txt", "new"));
 }
 
@@ -306,7 +306,7 @@ void test_put_stream_overwrite()
 void test_put_empty_buffered()
 {
     feed_and_handle(0, "PUT /dav/empty.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(201));
+    TEST_ASSERT_TRUE(dws_resp_status(201));
     TEST_ASSERT_TRUE(tree_has("/dav/empty.txt"));
 }
 
@@ -317,7 +317,7 @@ void test_put_stream_write_fails_507()
     static uint8_t big[2100];
     memset(big, 'A', sizeof(big)); // > MockNode::data (2048) -> write() short-returns
     feed_put(0, "/dav/big.txt", big, sizeof(big));
-    TEST_ASSERT_TRUE(resp_status(507));
+    TEST_ASSERT_TRUE(dws_resp_status(507));
 }
 
 // When the FS cannot open the target (here: the mock's node table is full), the
@@ -332,7 +332,7 @@ void test_put_stream_open_fails_409()
     }
     const char *body = "abc";
     feed_put(0, "/dav/overflow.txt", (const uint8_t *)body, strlen(body));
-    TEST_ASSERT_TRUE(resp_status(409));
+    TEST_ASSERT_TRUE(dws_resp_status(409));
 }
 
 // A ".." in the target is rejected at the stream-begin resolve (so it never
@@ -341,7 +341,7 @@ void test_put_stream_traversal_403()
 {
     const char *body = "abc";
     feed_put(0, "/dav/../secret", (const uint8_t *)body, strlen(body));
-    TEST_ASSERT_TRUE(resp_status(403));
+    TEST_ASSERT_TRUE(dws_resp_status(403));
 }
 
 // The stream-begin hook fires for any bodied request: a non-PUT method and a
@@ -354,7 +354,7 @@ void test_put_stream_begin_declines()
     // PUT to a path outside any DAV mount: begin finds no route and declines.
     const char *body = "abc";
     feed_put(0, "/nomatch/y.txt", (const uint8_t *)body, strlen(body));
-    TEST_ASSERT_TRUE(resp_status(404)); // no route -> not found
+    TEST_ASSERT_TRUE(dws_resp_status(404)); // no route -> not found
 }
 
 // A streamed PUT torn down before completion (peer reset) runs the abort hook,
@@ -376,12 +376,12 @@ void test_lock_unlock_advisory()
     populate_src();
     feed_and_handle(0, "LOCK /dav/src/a.txt HTTP/1.1\r\nHost: x\r\n\r\n");
     const char *r = tcp_captured();
-    TEST_ASSERT_TRUE(resp_status(200));
+    TEST_ASSERT_TRUE(dws_resp_status(200));
     TEST_ASSERT_NOT_NULL(strstr(r, "Lock-Token"));
 
     rearm();
     feed_and_handle(0, "UNLOCK /dav/src/a.txt HTTP/1.1\r\nHost: x\r\nLock-Token: <urn:x>\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(204));
+    TEST_ASSERT_TRUE(dws_resp_status(204));
 }
 
 // The WebDAV method error paths: bad/foreign/traversal destinations, missing sources, and a
@@ -389,38 +389,38 @@ void test_lock_unlock_advisory()
 void test_webdav_error_paths()
 {
     feed_and_handle(0, "DELETE /dav/nope HTTP/1.1\r\nHost: x\r\n\r\n"); // no such resource
-    TEST_ASSERT_TRUE(resp_status(404));
+    TEST_ASSERT_TRUE(dws_resp_status(404));
 
     rearm();
     populate_src();
     feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\n\r\n"); // no Destination
-    TEST_ASSERT_TRUE(resp_status(400));
+    TEST_ASSERT_TRUE(dws_resp_status(400));
 
     rearm();
     feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /other/x\r\n\r\n"); // foreign mount
-    TEST_ASSERT_TRUE(resp_status(502));
+    TEST_ASSERT_TRUE(dws_resp_status(502));
 
     rearm();
     feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/../x\r\n\r\n"); // traversal
-    TEST_ASSERT_TRUE(resp_status(403));
+    TEST_ASSERT_TRUE(dws_resp_status(403));
 
     rearm();
     feed_and_handle(0, "COPY /dav/gone HTTP/1.1\r\nHost: x\r\nDestination: /dav/x\r\n\r\n"); // no such source
-    TEST_ASSERT_TRUE(resp_status(404));
+    TEST_ASSERT_TRUE(dws_resp_status(404));
 
     rearm();
     tree_mkdir("/dav/mvdst");
     feed_and_handle(0, "MOVE /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/mvdst\r\n\r\n"); // replace existing
-    TEST_ASSERT_TRUE(resp_status(204));
+    TEST_ASSERT_TRUE(dws_resp_status(204));
 
     rearm();
     feed_and_handle(0, "PROPFIND /dav/nope HTTP/1.1\r\nHost: x\r\nDepth: 0\r\n\r\n"); // no such resource
-    TEST_ASSERT_TRUE(resp_status(404));
+    TEST_ASSERT_TRUE(dws_resp_status(404));
 
     rearm();
     populate_src();
     feed_and_handle(0, "PROPFIND /dav/src HTTP/1.1\r\nHost: x\r\nDepth: infinity\r\n\r\n"); // finite-depth only
-    TEST_ASSERT_TRUE(resp_status(403));
+    TEST_ASSERT_TRUE(dws_resp_status(403));
 }
 
 // A tree deeper than the recursion bound (8) is refused by both the recursive delete and copy,
@@ -436,12 +436,12 @@ void test_webdav_deep_tree_rejected()
         tree_mkdir(p);
     }
     feed_and_handle(0, "DELETE /dav/deep HTTP/1.1\r\nHost: x\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(403));      // dav_rm_recursive refuses past depth 8
+    TEST_ASSERT_TRUE(dws_resp_status(403));  // dav_rm_recursive refuses past depth 8
     TEST_ASSERT_TRUE(tree_has("/dav/deep")); // nothing was removed
 
     rearm();
     feed_and_handle(0, "COPY /dav/deep HTTP/1.1\r\nHost: x\r\nDestination: /dav/dcopy\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(409)); // dav_copy_recursive refuses past depth 8
+    TEST_ASSERT_TRUE(dws_resp_status(409)); // dav_copy_recursive refuses past depth 8
 }
 
 // PROPFIND of a directory with more members than the listing cap (DWS_WEBDAV_MAX_ENTRIES) stops at
@@ -456,16 +456,16 @@ void test_webdav_propfind_limit_and_proppatch()
         tree_put(p, "x");
     }
     feed_and_handle(0, "PROPFIND /dav/big HTTP/1.1\r\nHost: x\r\nDepth: 1\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(207)); // listing truncated at the entry cap
+    TEST_ASSERT_TRUE(dws_resp_status(207)); // listing truncated at the entry cap
 
     rearm();
     tree_put("/dav/file.txt", "data");
     feed_and_handle(0, "PROPPATCH /dav/file.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(207)); // properties refused, request accepted
+    TEST_ASSERT_TRUE(dws_resp_status(207)); // properties refused, request accepted
 
     rearm();
     feed_and_handle(0, "PROPPATCH /dav/nope HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(404));
+    TEST_ASSERT_TRUE(dws_resp_status(404));
 }
 
 // COPY when the FS node table is exhausted: the destination file / collection cannot be created, so
@@ -482,11 +482,11 @@ void test_webdav_copy_fs_table_full()
             break;
     }
     feed_and_handle(0, "COPY /dav/f.txt HTTP/1.1\r\nHost: x\r\nDestination: /dav/fc\r\n\r\n"); // dst open("w") fails
-    TEST_ASSERT_TRUE(resp_status(409));
+    TEST_ASSERT_TRUE(dws_resp_status(409));
 
     rearm();
     feed_and_handle(0, "COPY /dav/d HTTP/1.1\r\nHost: x\r\nDestination: /dav/dc\r\n\r\n"); // mkdir(dst) fails
-    TEST_ASSERT_TRUE(resp_status(409));
+    TEST_ASSERT_TRUE(dws_resp_status(409));
 }
 
 // WebDAV method-handler edges: GET/HEAD on a missing resource (404) and on a collection
@@ -496,21 +496,21 @@ void test_webdav_copy_fs_table_full()
 void test_webdav_get_put_dest_edges()
 {
     feed_and_handle(0, "GET /dav/missing.txt HTTP/1.1\r\nHost: x\r\n\r\n"); // no such resource
-    TEST_ASSERT_TRUE(resp_status(404));
+    TEST_ASSERT_TRUE(dws_resp_status(404));
 
     rearm();
     feed_and_handle(0, "HEAD /dav/missing.txt HTTP/1.1\r\nHost: x\r\n\r\n"); // same open-fail guard
-    TEST_ASSERT_TRUE(resp_status(404));
+    TEST_ASSERT_TRUE(dws_resp_status(404));
 
     rearm();
     tree_mkdir("/dav/adir");
     feed_and_handle(0, "GET /dav/adir HTTP/1.1\r\nHost: x\r\n\r\n"); // GET on a collection
-    TEST_ASSERT_TRUE(resp_status(405));
+    TEST_ASSERT_TRUE(dws_resp_status(405));
 
     rearm();
     tree_put("/dav/f.txt", "hi");
     feed_and_handle(0, "COPY /dav/f.txt HTTP/1.1\r\nHost: x\r\nDestination: /dav/g.txt/\r\n\r\n"); // trailing slash
-    TEST_ASSERT_TRUE(resp_status(201));       // created at the slash-stripped path
+    TEST_ASSERT_TRUE(dws_resp_status(201));   // created at the slash-stripped path
     TEST_ASSERT_TRUE(tree_has("/dav/g.txt")); // no trailing-slash node
 
     rearm();
@@ -522,7 +522,7 @@ void test_webdav_get_put_dest_edges()
             break;
     }
     feed_and_handle(0, "PUT /dav/newfile.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n"); // open("w") fails
-    TEST_ASSERT_TRUE(resp_status(409));
+    TEST_ASSERT_TRUE(dws_resp_status(409));
 }
 
 // COPY whose destination filesystem path would overflow the 256-byte path buffer: a deep
@@ -543,7 +543,7 @@ void test_webdav_copy_dest_path_too_long_414()
     // dest sub-path "/destination_file_name.txt" (26 chars) + the 240-char root overflows 256.
     snprintf(req, sizeof(req), "COPY /d2/s HTTP/1.1\r\nHost: x\r\nDestination: /d2/destination_file_name.txt\r\n\r\n");
     feed_and_handle(0, req);
-    TEST_ASSERT_TRUE(resp_status(414));
+    TEST_ASSERT_TRUE(dws_resp_status(414));
 }
 
 // The recursive delete/copy helpers re-open each node defensively (a core can invalidate
@@ -556,7 +556,7 @@ void test_webdav_recursive_open_failure()
     tree_put("/dav/locked.txt", "data");
     fs::_mock_open_fail_path() = "/dav/locked.txt";
     feed_and_handle(0, "DELETE /dav/locked.txt HTTP/1.1\r\nHost: x\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(403));
+    TEST_ASSERT_TRUE(dws_resp_status(403));
     fs::_mock_open_fail_path() = "";
     TEST_ASSERT_TRUE(tree_has("/dav/locked.txt")); // nothing removed
 
@@ -565,7 +565,7 @@ void test_webdav_recursive_open_failure()
     populate_src();
     fs::_mock_open_fail_path() = "/dav/src/a.txt"; // a child that openNextFile finds but open() rejects
     feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/cdst\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(409));
+    TEST_ASSERT_TRUE(dws_resp_status(409));
     fs::_mock_open_fail_path() = "";
 }
 
@@ -580,7 +580,7 @@ void test_webdav_source_path_too_long_414()
     longroot[sizeof(longroot) - 1] = '\0'; // 254-char fs root: root + "/x" == 256, the join fails
     server.dav("/d3", davfs, longroot);
     feed_and_handle(0, "GET /d3/x HTTP/1.1\r\nHost: x\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(414));
+    TEST_ASSERT_TRUE(dws_resp_status(414));
 }
 
 // dav() route registration edges: a prefix already ending in '*' is stored verbatim (no
@@ -592,7 +592,7 @@ void test_webdav_dav_wildcard_and_route_full()
     server.dav("/w*", davfs, "/w");
     tree_put("/w/f.txt", "hi");
     feed_and_handle(0, "GET /w/f.txt HTTP/1.1\r\nHost: x\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(200));
+    TEST_ASSERT_TRUE(dws_resp_status(200));
 
     // (b) Fill the route table, then a further dav() mount is dropped -> its path 404s.
     rearm();
@@ -604,7 +604,7 @@ void test_webdav_dav_wildcard_and_route_full()
     }
     server.dav("/dropped", davfs, "/d"); // table full -> dropped
     feed_and_handle(0, "GET /dropped/x HTTP/1.1\r\nHost: x\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(404)); // never registered
+    TEST_ASSERT_TRUE(dws_resp_status(404)); // never registered
 }
 
 int main()

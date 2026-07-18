@@ -19,62 +19,62 @@ void tearDown()
 
 void test_prescale()
 {
-    TEST_ASSERT_EQUAL_UINT8(121, pca9685_prescale(50)); // classic servo frequency
-    TEST_ASSERT_EQUAL_UINT8(30, pca9685_prescale(200)); //
-    TEST_ASSERT_EQUAL_UINT8(5, pca9685_prescale(1000)); //
-    TEST_ASSERT_EQUAL_UINT8(253, pca9685_prescale(24)); // near the low-frequency end
-    TEST_ASSERT_EQUAL_UINT8(3, pca9685_prescale(1526)); // clamps at PRESCALE_MIN
-    TEST_ASSERT_EQUAL_UINT8(3, pca9685_prescale(4000)); // above range -> min
-    TEST_ASSERT_EQUAL_UINT8(255, pca9685_prescale(0));  // guard: no divide by zero
+    TEST_ASSERT_EQUAL_UINT8(121, dws_pca9685_prescale(50)); // classic servo frequency
+    TEST_ASSERT_EQUAL_UINT8(30, dws_pca9685_prescale(200)); //
+    TEST_ASSERT_EQUAL_UINT8(5, dws_pca9685_prescale(1000)); //
+    TEST_ASSERT_EQUAL_UINT8(253, dws_pca9685_prescale(24)); // near the low-frequency end
+    TEST_ASSERT_EQUAL_UINT8(3, dws_pca9685_prescale(1526)); // clamps at PRESCALE_MIN
+    TEST_ASSERT_EQUAL_UINT8(3, dws_pca9685_prescale(4000)); // above range -> min
+    TEST_ASSERT_EQUAL_UINT8(255, dws_pca9685_prescale(0));  // guard: no divide by zero
 }
 
 void test_channel_reg()
 {
-    TEST_ASSERT_EQUAL_HEX8(0x06, pca9685_channel_reg(0));
-    TEST_ASSERT_EQUAL_HEX8(0x0A, pca9685_channel_reg(1));
-    TEST_ASSERT_EQUAL_HEX8(0x42, pca9685_channel_reg(15));
-    TEST_ASSERT_EQUAL_HEX8(0x00, pca9685_channel_reg(16)); // out of range
+    TEST_ASSERT_EQUAL_HEX8(0x06, dws_pca9685_channel_reg(0));
+    TEST_ASSERT_EQUAL_HEX8(0x0A, dws_pca9685_channel_reg(1));
+    TEST_ASSERT_EQUAL_HEX8(0x42, dws_pca9685_channel_reg(15));
+    TEST_ASSERT_EQUAL_HEX8(0x00, dws_pca9685_channel_reg(16)); // out of range
 }
 
 void test_us_to_count()
 {
-    TEST_ASSERT_EQUAL_UINT16(307, pca9685_us_to_count(1500, 50));   // servo mid (1.5 ms of 20 ms)
-    TEST_ASSERT_EQUAL_UINT16(102, pca9685_us_to_count(500, 50));    // servo min
-    TEST_ASSERT_EQUAL_UINT16(512, pca9685_us_to_count(2500, 50));   // servo max
-    TEST_ASSERT_EQUAL_UINT16(4095, pca9685_us_to_count(20000, 50)); // a full period clamps to max
+    TEST_ASSERT_EQUAL_UINT16(307, dws_pca9685_us_to_count(1500, 50));   // servo mid (1.5 ms of 20 ms)
+    TEST_ASSERT_EQUAL_UINT16(102, dws_pca9685_us_to_count(500, 50));    // servo min
+    TEST_ASSERT_EQUAL_UINT16(512, dws_pca9685_us_to_count(2500, 50));   // servo max
+    TEST_ASSERT_EQUAL_UINT16(4095, dws_pca9685_us_to_count(20000, 50)); // a full period clamps to max
 }
 
 void test_set_pwm_bytes()
 {
     uint8_t b[5];
     // channel 0, on=0, off=307 (0x133) -> reg 0x06, off_l 0x33, off_h 0x01.
-    TEST_ASSERT_EQUAL_INT(5, (int)pca9685_set_pwm_bytes(b, sizeof(b), 0, 0, 307));
+    TEST_ASSERT_EQUAL_INT(5, (int)dws_pca9685_set_pwm_bytes(b, sizeof(b), 0, 0, 307));
     const uint8_t want0[5] = {0x06, 0x00, 0x00, 0x33, 0x01};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(want0, b, 5);
 
     // channel 15, off=4095 (0xFFF) -> reg 0x42, off_l 0xFF, off_h 0x0F.
-    TEST_ASSERT_EQUAL_INT(5, (int)pca9685_set_pwm_bytes(b, sizeof(b), 15, 0, 4095));
+    TEST_ASSERT_EQUAL_INT(5, (int)dws_pca9685_set_pwm_bytes(b, sizeof(b), 15, 0, 4095));
     const uint8_t want15[5] = {0x42, 0x00, 0x00, 0xFF, 0x0F};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(want15, b, 5);
 
     // full-on flag (bit 12) must survive into ON_H bit 4.
-    TEST_ASSERT_EQUAL_INT(5, (int)pca9685_set_pwm_bytes(b, sizeof(b), 0, PCA9685_FULL_ON, 0));
+    TEST_ASSERT_EQUAL_INT(5, (int)dws_pca9685_set_pwm_bytes(b, sizeof(b), 0, PCA9685_FULL_ON, 0));
     const uint8_t want_full[5] = {0x06, 0x00, 0x10, 0x00, 0x00};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(want_full, b, 5);
 
     // guards
-    TEST_ASSERT_EQUAL_INT(0, (int)pca9685_set_pwm_bytes(b, 4, 0, 0, 0));  // buffer too small
-    TEST_ASSERT_EQUAL_INT(0, (int)pca9685_set_pwm_bytes(b, 5, 16, 0, 0)); // channel out of range
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_pca9685_set_pwm_bytes(b, 4, 0, 0, 0));  // buffer too small
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_pca9685_set_pwm_bytes(b, 5, 16, 0, 0)); // channel out of range
 }
 
 void test_prescale_zero_and_host_stubs()
 {
     // Zero frequency takes the max-prescale early return.
-    TEST_ASSERT_TRUE(pca9685_prescale(0) > 0);
+    TEST_ASSERT_TRUE(dws_pca9685_prescale(0) > 0);
     // Host build: the I2C bind functions all fail closed.
-    TEST_ASSERT_FALSE(pca9685_begin(0x40, 50));
-    TEST_ASSERT_FALSE(pca9685_set_pwm(0, 0, 2048));
-    TEST_ASSERT_FALSE(pca9685_set_servo_us(0, 1500));
+    TEST_ASSERT_FALSE(dws_pca9685_begin(0x40, 50));
+    TEST_ASSERT_FALSE(dws_pca9685_set_pwm(0, 0, 2048));
+    TEST_ASSERT_FALSE(dws_pca9685_set_servo_us(0, 1500));
 }
 
 int main()

@@ -31,14 +31,14 @@ const uint8_t FIFO = 0x3F;
 // The chip status byte's state field (bits 6-4).
 const uint8_t STATE_IDLE = 0;
 
-void write_reg(const cc1101_bus *b, uint8_t addr, uint8_t val)
+void write_reg(const dws_cc1101_bus *b, uint8_t addr, uint8_t val)
 {
     uint8_t tx[2] = {addr, val}; // header = address (write, single), then value
     uint8_t rx[2] = {0, 0};
     b->spi(tx, rx, 2, b->ctx);
 }
 
-uint8_t read_reg(const cc1101_bus *b, uint8_t addr, bool status)
+uint8_t read_reg(const dws_cc1101_bus *b, uint8_t addr, bool status)
 {
     // Status registers (0x30-0x3D) require the burst bit to distinguish them from strobes.
     uint8_t hdr = (uint8_t)(addr | READ | (status ? BURST : 0));
@@ -48,14 +48,14 @@ uint8_t read_reg(const cc1101_bus *b, uint8_t addr, bool status)
     return rx[1];
 }
 
-void strobe(const cc1101_bus *b, uint8_t cmd)
+void strobe(const dws_cc1101_bus *b, uint8_t cmd)
 {
     uint8_t tx[1] = {cmd};
     uint8_t rx[1] = {0};
     b->spi(tx, rx, 1, b->ctx);
 }
 
-uint8_t status_byte(const cc1101_bus *b)
+uint8_t status_byte(const dws_cc1101_bus *b)
 {
     uint8_t tx[1] = {(uint8_t)(0x3D | READ | BURST)}; // SNOP as a read returns the status byte
     uint8_t rx[1] = {0};
@@ -64,14 +64,14 @@ uint8_t status_byte(const cc1101_bus *b)
 }
 } // namespace
 
-int16_t cc1101_rssi_dbm(uint8_t raw)
+int16_t dws_cc1101_rssi_dbm(uint8_t raw)
 {
     // TI CC1101 datasheet: dBm = (raw >= 128 ? (raw - 256) : raw) / 2 - 74.
     int16_t r = raw >= 128 ? (int16_t)raw - 256 : (int16_t)raw;
     return (int16_t)(r / 2 - 74);
 }
 
-bool cc1101_init(const cc1101_bus *bus, const cc1101_config *cfg)
+bool dws_cc1101_init(const dws_cc1101_bus *bus, const dws_cc1101_config *cfg)
 {
     if (!bus || !bus->spi || !cfg)
         return false;
@@ -83,7 +83,7 @@ bool cc1101_init(const cc1101_bus *bus, const cc1101_config *cfg)
     return ver != 0x00 && ver != 0xFF; // a floating bus reads all-0 or all-1
 }
 
-bool cc1101_send(const cc1101_bus *bus, const uint8_t *data, uint8_t len)
+bool dws_cc1101_send(const dws_cc1101_bus *bus, const uint8_t *data, uint8_t len)
 {
     if (!bus || !bus->spi || !data || len == 0 || len > 63)
         return false;
@@ -101,7 +101,7 @@ bool cc1101_send(const cc1101_bus *bus, const uint8_t *data, uint8_t len)
     return true;
 }
 
-bool cc1101_tx_done(const cc1101_bus *bus)
+bool dws_cc1101_tx_done(const dws_cc1101_bus *bus)
 {
     if (!bus || !bus->spi)
         return false;
@@ -109,7 +109,7 @@ bool cc1101_tx_done(const cc1101_bus *bus)
     return st == STATE_IDLE;
 }
 
-void cc1101_set_rx(const cc1101_bus *bus)
+void dws_cc1101_set_rx(const dws_cc1101_bus *bus)
 {
     if (!bus || !bus->spi)
         return;
@@ -118,7 +118,7 @@ void cc1101_set_rx(const cc1101_bus *bus)
     strobe(bus, STROBE_SRX);
 }
 
-int cc1101_recv(const cc1101_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi_dbm)
+int dws_cc1101_recv(const dws_cc1101_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi_dbm)
 {
     if (!bus || !bus->spi || !buf)
         return -1;
@@ -140,7 +140,7 @@ int cc1101_recv(const cc1101_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi_
         tx[1 + i] = 0;
     bus->spi(tx, rx, (uint8_t)(1 + n), bus->ctx);
     if (rssi_dbm)
-        *rssi_dbm = cc1101_rssi_dbm(rx[1 + len]); // first appended status byte is raw RSSI
+        *rssi_dbm = dws_cc1101_rssi_dbm(rx[1 + len]); // first appended status byte is raw RSSI
     uint8_t out = len < cap ? len : cap;
     for (uint8_t i = 0; i < out; i++)
         buf[i] = rx[1 + i];

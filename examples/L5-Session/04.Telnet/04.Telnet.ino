@@ -8,7 +8,7 @@
  * Opens a Telnet listener via server.listen(23, ConnProto::PROTO_TELNET). The server
  * negotiates echo + character mode, edits the line for you (backspace works),
  * and delivers each completed line to the command callback; respond with
- * telnet_print/println/printf.
+ * dws_telnet_print/println/printf.
  *
  * Telnet is PLAINTEXT - no auth, no encryption. Use only on a trusted LAN;
  * prefer SSH (29.SSH) or the WebSocket terminal (35.WebTerminal) otherwise.
@@ -38,13 +38,13 @@ void on_command(const char *line, uint8_t conn_id)
 {
     (void)conn_id;
     if (strcmp(line, "help") == 0)
-        telnet_println("commands: help, heap, uptime, <echo>");
+        dws_telnet_println("commands: help, heap, uptime, <echo>");
     else if (strcmp(line, "heap") == 0)
-        telnet_printf("free heap: %u bytes\r\n", ESP.getFreeHeap());
+        dws_telnet_printf("free heap: %u bytes\r\n", ESP.getFreeHeap());
     else if (strcmp(line, "uptime") == 0)
-        telnet_printf("uptime: %lu ms\r\n", millis());
+        dws_telnet_printf("uptime: %lu ms\r\n", millis());
     else if (line[0])
-        telnet_printf("echo: %s\r\n", line);
+        dws_telnet_printf("echo: %s\r\n", line);
 }
 
 void setup()
@@ -62,7 +62,7 @@ void setup()
     WiFi.setSleep(false);
 
     server.listen(23, ConnProto::PROTO_TELNET); // open the Telnet port
-    telnet_on_command(on_command);
+    dws_telnet_on_command(on_command);
 
     server.begin(80); // also start HTTP (begin() activates all listeners)
     Serial.println("Telnet on port 23 (try: telnet <ip>)");

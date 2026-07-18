@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file tls13_kdf.h
+ * @file dws_tls13_kdf.h
  * @brief TLS 1.3 key schedule (RFC 8446 sec 7.1) for the QUIC handshake.
  *
  * QUIC runs TLS 1.3 as its handshake protocol (RFC 9001), and mbedTLS exposes no QUIC-TLS callback
@@ -16,7 +16,7 @@
  * the handshake messages so far, so this module has no dependency on the message wire formats and is
  * host-testable in isolation against the RFC 8448 sec 3 worked trace (which lists every intermediate
  * secret and the (EC)DHE input directly). The QUIC packet-protection keys ({key, iv, hp}) are then
- * derived from these traffic secrets by quic_keys_from_secret() (RFC 9001 sec 5.1).
+ * derived from these traffic secrets by dws_quic_keys_from_secret() (RFC 9001 sec 5.1).
  *
  * Pure, zero heap, host-tested against RFC 8448 sec 3.
  *
@@ -30,7 +30,7 @@
 #include "ServerConfig.h"
 
 // Shared by the HTTP/3 (QUIC) handshake and the DTLS 1.3 handshake - both run the same TLS 1.3 key
-// schedule (see tls13_msg.h for the matching guard on the message layer).
+// schedule (see dws_tls13_msg.h for the matching guard on the message layer).
 #if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include <stddef.h>
@@ -58,15 +58,15 @@ extern const Tls13Kdf DTLS13_KDF;
 /**
  * @brief The running key-schedule state for one handshake (server side).
  *
- * Filled in three steps as the handshake progresses: tls13_ks_early() (which also binds the @ref
- * Tls13Kdf variant) before any (EC)DHE, tls13_ks_handshake() once ClientHello..ServerHello is hashed
- * and the shared secret is known, and tls13_ks_master() once ClientHello..server Finished is hashed.
+ * Filled in three steps as the handshake progresses: dws_tls13_ks_early() (which also binds the @ref
+ * Tls13Kdf variant) before any (EC)DHE, dws_tls13_ks_handshake() once ClientHello..ServerHello is hashed
+ * and the shared secret is known, and dws_tls13_ks_master() once ClientHello..server Finished is hashed.
  * Each step also derives that level's client and server traffic secrets, from which the record/packet
  * keys are made.
  */
 struct Tls13KeySchedule
 {
-    const Tls13Kdf *kdf;                         ///< variant (label prefix) bound by tls13_ks_early()
+    const Tls13Kdf *kdf;                         ///< variant (label prefix) bound by dws_tls13_ks_early()
     uint8_t early_secret[TLS13_SECRET_LEN];      ///< HKDF-Extract(0, PSK|0) - no-PSK: Extract(0, 0^32)
     uint8_t handshake_secret[TLS13_SECRET_LEN];  ///< HKDF-Extract(Derive(early,"derived"), (EC)DHE)
     uint8_t master_secret[TLS13_SECRET_LEN];     ///< HKDF-Extract(Derive(handshake,"derived"), 0^32)
@@ -82,8 +82,8 @@ struct Tls13KeySchedule
  * The record-key derivations (key/iv/sn) call this so the label prefix follows the negotiated
  * protocol without the record layer knowing the prefix string.
  */
-void tls13_kdf_expand_label(const Tls13Kdf *kdf, const uint8_t secret[TLS13_SECRET_LEN], const char *label,
-                            uint8_t *out, size_t out_len);
+void dws_tls13_kdf_expand_label(const Tls13Kdf *kdf, const uint8_t secret[TLS13_SECRET_LEN], const char *label,
+                                uint8_t *out, size_t out_len);
 
 /**
  * @brief Derive-Secret (RFC 8446 sec 7.1): HKDF-Expand-Label(secret, label, transcript_hash, 32).
@@ -94,26 +94,26 @@ void tls13_kdf_expand_label(const Tls13Kdf *kdf, const uint8_t secret[TLS13_SECR
  * @param transcript_hash  Transcript-Hash of the relevant messages (32 bytes; H("") for "derived").
  * @param out              32-byte derived secret.
  */
-void tls13_derive_secret(const Tls13Kdf *kdf, const uint8_t secret[TLS13_SECRET_LEN], const char *label,
-                         const uint8_t transcript_hash[TLS13_SECRET_LEN], uint8_t out[TLS13_SECRET_LEN]);
+void dws_tls13_derive_secret(const Tls13Kdf *kdf, const uint8_t secret[TLS13_SECRET_LEN], const char *label,
+                             const uint8_t transcript_hash[TLS13_SECRET_LEN], uint8_t out[TLS13_SECRET_LEN]);
 
 /** @brief Step 1: bind the @p kdf variant and compute early_secret = HKDF-Extract(0, 0^32) (no-PSK). */
-void tls13_ks_early(const Tls13Kdf *kdf, Tls13KeySchedule *ks);
+void dws_tls13_ks_early(const Tls13Kdf *kdf, Tls13KeySchedule *ks);
 
 /**
  * @brief Step 2: handshake_secret and the client/server handshake traffic secrets.
  *
  * handshake_secret = HKDF-Extract(Derive-Secret(early, "derived", H("")), @p ecdhe); the traffic
  * secrets are Derive-Secret(handshake_secret, "c hs traffic"/"s hs traffic", @p ch_sh_hash). The
- * variant bound by tls13_ks_early() is used throughout.
+ * variant bound by dws_tls13_ks_early() is used throughout.
  *
  * @param ecdhe       The (EC)DHE shared secret: 32 bytes for X25519, or the 64-byte concatenation
  *                    ML-KEM_secret || X25519_secret for the X25519MLKEM768 hybrid group.
  * @param ch_sh_hash  Transcript-Hash of ClientHello..ServerHello.
  * @param ecdhe_len   Length of @p ecdhe (32 for X25519, 64 for the hybrid).
  */
-void tls13_ks_handshake(Tls13KeySchedule *ks, const uint8_t *ecdhe, const uint8_t ch_sh_hash[TLS13_SECRET_LEN],
-                        size_t ecdhe_len = TLS13_SECRET_LEN);
+void dws_tls13_ks_handshake(Tls13KeySchedule *ks, const uint8_t *ecdhe, const uint8_t ch_sh_hash[TLS13_SECRET_LEN],
+                            size_t ecdhe_len = TLS13_SECRET_LEN);
 
 /**
  * @brief Step 3: master_secret and the client/server application traffic secrets.
@@ -123,7 +123,7 @@ void tls13_ks_handshake(Tls13KeySchedule *ks, const uint8_t *ecdhe, const uint8_
  *
  * @param ch_sfin_hash  Transcript-Hash of ClientHello..server Finished.
  */
-void tls13_ks_master(Tls13KeySchedule *ks, const uint8_t ch_sfin_hash[TLS13_SECRET_LEN]);
+void dws_tls13_ks_master(Tls13KeySchedule *ks, const uint8_t ch_sfin_hash[TLS13_SECRET_LEN]);
 
 /**
  * @brief The Finished verify_data (RFC 8446 sec 4.4.4).
@@ -137,8 +137,8 @@ void tls13_ks_master(Tls13KeySchedule *ks, const uint8_t ch_sfin_hash[TLS13_SECR
  * @param transcript_hash  Transcript-Hash of the handshake up to but excluding this Finished.
  * @param out              32-byte verify_data.
  */
-void tls13_finished_mac(const Tls13Kdf *kdf, const uint8_t base_secret[TLS13_SECRET_LEN],
-                        const uint8_t transcript_hash[TLS13_SECRET_LEN], uint8_t out[TLS13_SECRET_LEN]);
+void dws_tls13_finished_mac(const Tls13Kdf *kdf, const uint8_t base_secret[TLS13_SECRET_LEN],
+                            const uint8_t transcript_hash[TLS13_SECRET_LEN], uint8_t out[TLS13_SECRET_LEN]);
 
 #endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_TLS13_KDF_H

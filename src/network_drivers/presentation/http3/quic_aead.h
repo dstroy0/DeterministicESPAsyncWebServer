@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_aead.h
+ * @file dws_quic_aead.h
  * @brief AES-128 block cipher and AEAD_AES_128_GCM (RFC 5116 / NIST SP 800-38D).
  *
  * The QUIC Initial packet protection AEAD is AEAD_AES_128_GCM (RFC 9001 sec 5.3), and header
@@ -52,13 +52,13 @@ struct QuicAes128
 #endif
 
 /** @brief Load a 128-bit key and expand the encryption key schedule. */
-void quic_aes128_init(QuicAes128 *ctx, const uint8_t key[16]);
+void dws_quic_aes128_init(QuicAes128 *ctx, const uint8_t key[16]);
 
 /** @brief Encrypt one 16-byte block (ECB). @p in and @p out may alias. */
-void quic_aes128_encrypt_block(QuicAes128 *ctx, const uint8_t in[16], uint8_t out[16]);
+void dws_quic_aes128_encrypt_block(QuicAes128 *ctx, const uint8_t in[16], uint8_t out[16]);
 
 /** @brief Wipe the key schedule (and release mbedtls state on Arduino). */
-void quic_aes128_wipe(QuicAes128 *ctx);
+void dws_quic_aes128_wipe(QuicAes128 *ctx);
 
 // ---------------------------------------------------------------------------
 // AEAD_AES_128_GCM (96-bit nonce, 128-bit tag)
@@ -78,8 +78,8 @@ void quic_aes128_wipe(QuicAes128 *ctx);
  * @param pt_len   Plaintext length.
  * @param out      Output: ciphertext || tag (@p pt_len + 16 bytes).
  */
-void quic_aes128_gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
-                          const uint8_t *pt, size_t pt_len, uint8_t *out);
+void dws_quic_aes128_gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
+                              const uint8_t *pt, size_t pt_len, uint8_t *out);
 
 /**
  * @brief Open: AEAD_AES_128_GCM verify-and-decrypt.
@@ -90,8 +90,8 @@ void quic_aes128_gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const 
  *
  * @return true if the tag is valid (plaintext written), false otherwise.
  */
-bool quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
-                          const uint8_t *ct, size_t ct_len, uint8_t *out);
+bool dws_quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
+                              const uint8_t *ct, size_t ct_len, uint8_t *out);
 
 #endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_AEAD_H

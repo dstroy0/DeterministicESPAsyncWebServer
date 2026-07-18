@@ -9,9 +9,9 @@
  * the transport-layer UDP service (dws_udp_sendto). Split, like the other
  * network services, into a pure host-testable formatter and an ESP32-only send:
  *
- *  - syslog_format() builds one RFC 5424 line into a caller buffer (no sockets,
+ *  - dws_syslog_format() builds one RFC 5424 line into a caller buffer (no sockets,
  *    no heap) - unit-tested on the host (env:native_syslog).
- *  - syslog_log() formats into a static scratch buffer and sends it to the
+ *  - dws_syslog_log() formats into a static scratch buffer and sends it to the
  *    configured server (a no-op stub off-target).
  *
  * Emitted line: `<PRI>1 - HOSTNAME APP-NAME - - - MSG`, where PRI = facility*8 +
@@ -61,16 +61,16 @@ enum class SyslogFacility : uint8_t
  * @param appname   APP-NAME field (copied; pass nullptr/"" for "-").
  * @param facility  syslog facility (default LOCAL0).
  */
-void syslog_init(const char *server_ip, uint16_t port, const char *hostname, const char *appname,
-                 SyslogFacility facility = SyslogFacility::SYSLOG_FAC_LOCAL0);
+void dws_syslog_init(const char *server_ip, uint16_t port, const char *hostname, const char *appname,
+                     SyslogFacility facility = SyslogFacility::SYSLOG_FAC_LOCAL0);
 
 /**
  * @brief Format one RFC 5424 line into @p out (host-testable; no sockets/heap).
  *
  * @return number of bytes written (excl. NUL), or 0 if it would not fit @p cap.
  */
-size_t syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSeverity severity, const char *hostname,
-                     const char *appname, const char *msg);
+size_t dws_syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSeverity severity, const char *hostname,
+                         const char *appname, const char *msg);
 
 /**
  * @brief Format @p msg at @p severity and send it to the configured server.
@@ -78,7 +78,7 @@ size_t syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSever
  * @return true if the datagram was queued; false if not yet configured, the line
  *         overflowed DWS_SYSLOG_MSG_MAX, or the send failed (host build).
  */
-bool syslog_log(SyslogSeverity severity, const char *msg);
+bool dws_syslog_log(SyslogSeverity severity, const char *msg);
 
 #endif // DWS_ENABLE_SYSLOG
 

@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-size_t tpkt_build(uint8_t *buf, size_t cap, const uint8_t *payload, size_t payload_len)
+size_t dws_tpkt_build(uint8_t *buf, size_t cap, const uint8_t *payload, size_t payload_len)
 {
     if (!buf || (payload_len && !payload))
         return 0;
@@ -28,7 +28,7 @@ size_t tpkt_build(uint8_t *buf, size_t cap, const uint8_t *payload, size_t paylo
     return total;
 }
 
-bool tpkt_parse(const uint8_t *buf, size_t len, const uint8_t **payload, size_t *payload_len, size_t *consumed)
+bool dws_tpkt_parse(const uint8_t *buf, size_t len, const uint8_t **payload, size_t *payload_len, size_t *consumed)
 {
     if (!buf || len < TPKT_HEADER_SIZE)
         return false;
@@ -46,7 +46,7 @@ bool tpkt_parse(const uint8_t *buf, size_t len, const uint8_t **payload, size_t 
     return true;
 }
 
-size_t cotp_build_dt(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_len, bool eot)
+size_t dws_cotp_build_dt(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_len, bool eot)
 {
     if (!buf || (data_len && !data))
         return 0;
@@ -61,8 +61,8 @@ size_t cotp_build_dt(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_
     return total;
 }
 
-size_t cotp_build_cr(uint8_t *buf, size_t cap, uint16_t src_ref, uint8_t tpdu_size_code, const uint8_t *extra_params,
-                     size_t extra_len)
+size_t dws_cotp_build_cr(uint8_t *buf, size_t cap, uint16_t src_ref, uint8_t tpdu_size_code,
+                         const uint8_t *extra_params, size_t extra_len)
 {
     if (!buf || (extra_len && !extra_params))
         return 0;
@@ -90,7 +90,7 @@ size_t cotp_build_cr(uint8_t *buf, size_t cap, uint16_t src_ref, uint8_t tpdu_si
     return p;
 }
 
-bool cotp_parse(const uint8_t *buf, size_t len, CotpHeader *out)
+bool dws_cotp_parse(const uint8_t *buf, size_t len, CotpHeader *out)
 {
     if (!buf || !out || len < 2)
         return false;

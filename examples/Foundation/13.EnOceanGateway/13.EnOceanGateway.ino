@@ -3,10 +3,10 @@
 // A UART radio plugin (see 10.RadioGateway): an EnOcean serial gateway module (TCM 310 /
 // USB 300) streams ESP3 telegrams at 57600 baud. Unlike the SPI radios, there is no chip
 // driver - the module does the RF, and the "driver" is purely the ESP3 framing codec.
-// We accumulate incoming bytes, frame telegrams with esp3_parse(), pull the sender id +
+// We accumulate incoming bytes, frame telegrams with dws_esp3_parse(), pull the sender id +
 // payload out of a RADIO_ERP1 telegram, and bridge it northbound.
 //
-//   TCM310 --UART--> esp3_parse() --> RADIO_ERP1 sender + payload -> dws_gateway_uplink()
+//   TCM310 --UART--> dws_esp3_parse() --> RADIO_ERP1 sender + payload -> dws_gateway_uplink()
 //                                                                         |
 //                                                  envelope + topic  enocean/0/<sender>
 //                                                                         |
@@ -61,8 +61,8 @@ void loop()
     // Frame as many telegrams as the buffer holds.
     for (;;)
     {
-        esp3_packet pkt = {};
-        int n = esp3_parse(g_buf, g_len, &pkt);
+        dws_esp3_packet pkt = {};
+        int n = dws_esp3_parse(g_buf, g_len, &pkt);
         if (n == 0)
             break; // need more bytes
         if (n < 0) // junk at the front: drop one byte and resync
@@ -71,7 +71,7 @@ void loop()
             continue;
         }
         // A RADIO_ERP1 telegram ends with a 4-byte sender id + 1 status byte.
-        if (pkt.type == esp3_type::ESP3_RADIO_ERP1 && pkt.data_len >= 6)
+        if (pkt.type == dws_esp3_type::ESP3_RADIO_ERP1 && pkt.data_len >= 6)
         {
             const uint8_t *sender = pkt.data + pkt.data_len - 5;
             uint16_t src = (uint16_t)((sender[2] << 8) | sender[3]); // low 16 bits of the id

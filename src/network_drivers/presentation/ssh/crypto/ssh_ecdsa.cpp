@@ -708,8 +708,8 @@ bool on_curve(const uint32_t x[8], const uint32_t y[8])
 // ---- RFC 6979 deterministic nonce (HMAC-SHA256 DRBG, hlen = qlen = 256) ----
 
 // out = HMAC-SHA256(key, V || (tag>=0 ? tag||x||e : nothing)).
-void hmac_cat(uint8_t out[32], const uint8_t key[32], const uint8_t *v, size_t vlen, const int tag, const uint8_t *x,
-              const uint8_t *e)
+void dws_hmac_cat(uint8_t out[32], const uint8_t key[32], const uint8_t *v, size_t vlen, const int tag,
+                  const uint8_t *x, const uint8_t *e)
 {
     uint8_t buf[97]; // 32 (V) + 1 (tag) + 32 (x) + 32 (e)
     size_t n = 0;
@@ -772,14 +772,14 @@ bool ecdsa_sign_core(uint8_t sig[64], const uint8_t h1[32], const uint32_t d[8])
     uint8_t K[32];
     memset(V, 0x01, 32);
     memset(K, 0x00, 32);
-    hmac_cat(K, K, V, 32, 0x00, x_oct, h_oct);
-    hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
-    hmac_cat(K, K, V, 32, 0x01, x_oct, h_oct);
-    hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
+    dws_hmac_cat(K, K, V, 32, 0x00, x_oct, h_oct);
+    dws_hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
+    dws_hmac_cat(K, K, V, 32, 0x01, x_oct, h_oct);
+    dws_hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
 
     for (int guard = 0; guard < 64; guard++)
     {
-        hmac_cat(V, K, V, 32, -1, nullptr, nullptr); // T = HMAC_K(V), one block
+        dws_hmac_cat(V, K, V, 32, -1, nullptr, nullptr); // T = HMAC_K(V), one block
         uint32_t k[8];
         load_be(k, V); // bits2int(T)
         if (ecdsa_try_sign(k, d, e, sig))
@@ -788,7 +788,7 @@ bool ecdsa_sign_core(uint8_t sig[64], const uint8_t h1[32], const uint32_t d[8])
         memcpy(buf, V, 32);
         buf[32] = 0x00;
         ssh_hmac_sha256(K, 32, buf, 33, K);
-        hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
+        dws_hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
     }
     return false;
 }

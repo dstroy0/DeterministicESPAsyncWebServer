@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ntp_server.cpp
- * @brief NTP server (RFC 5905 server mode) - implementation. See ntp_server.h.
+ * @file dws_ntp_server.cpp
+ * @brief NTP server (RFC 5905 server mode) - implementation. See dws_ntp_server.h.
  */
 
 #include "services/ntp_server/ntp_server.h"
@@ -24,8 +24,8 @@ void put_be32(uint8_t *p, uint32_t v)
 }
 } // namespace
 
-size_t ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t stratum, uint32_t refid, uint32_t ntp_secs,
-                                 uint32_t ntp_frac, uint8_t *out, size_t out_cap)
+size_t dws_ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t stratum, uint32_t refid,
+                                     uint32_t dws_ntp_secs, uint32_t dws_ntp_frac, uint8_t *out, size_t out_cap)
 {
     if (!req || !out || req_len < NTP_PACKET_LEN || out_cap < NTP_PACKET_LEN)
         return 0;
@@ -40,13 +40,13 @@ size_t ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t str
     // Root delay (4..7) stays 0; root dispersion (8..11) ~ 1 s to advertise a coarse clock.
     put_be32(out + 8, 0x00010000u);
     put_be32(out + 12, refid);
-    put_be32(out + 16, ntp_secs); // reference timestamp (when our clock was last good = now)
-    put_be32(out + 20, ntp_frac);
-    memcpy(out + 24, req + 40, 8); // origin timestamp = the client's transmit timestamp
-    put_be32(out + 32, ntp_secs);  // receive timestamp
-    put_be32(out + 36, ntp_frac);
-    put_be32(out + 40, ntp_secs); // transmit timestamp
-    put_be32(out + 44, ntp_frac);
+    put_be32(out + 16, dws_ntp_secs); // reference timestamp (when our clock was last good = now)
+    put_be32(out + 20, dws_ntp_frac);
+    memcpy(out + 24, req + 40, 8);    // origin timestamp = the client's transmit timestamp
+    put_be32(out + 32, dws_ntp_secs); // receive timestamp
+    put_be32(out + 36, dws_ntp_frac);
+    put_be32(out + 40, dws_ntp_secs); // transmit timestamp
+    put_be32(out + 44, dws_ntp_frac);
     return NTP_PACKET_LEN;
 }
 
@@ -68,7 +68,7 @@ struct NtpServerCtx
 NtpServerCtx s_ntp;
 
 // UDP handler: answer each request from the current time (silent if we have none).
-void ntp_server_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
+void dws_ntp_server_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     uint32_t unix_secs = dws_time_now();
@@ -79,23 +79,23 @@ void ntp_server_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *
     uint32_t frac = (uint32_t)(((uint64_t)(dws_millis() % 1000u) << 32) / 1000u);
 
     uint8_t resp[NTP_PACKET_LEN];
-    size_t n = ntp_server_build_response(data, len, s_ntp.stratum, s_ntp.refid, unix_secs + NTP_UNIX_OFFSET, frac, resp,
-                                         sizeof(resp));
+    size_t n = dws_ntp_server_build_response(data, len, s_ntp.stratum, s_ntp.refid, unix_secs + NTP_UNIX_OFFSET, frac,
+                                             resp, sizeof(resp));
     if (n)
         dws_udp_send(peer, resp, n);
 }
 } // namespace
 
-bool ntp_server_begin(uint8_t stratum, uint32_t refid)
+bool dws_ntp_server_begin(uint8_t stratum, uint32_t refid)
 {
     s_ntp.stratum = stratum;
     s_ntp.refid = refid;
-    return dws_udp_listen(123, ntp_server_udp_handler, nullptr);
+    return dws_udp_listen(123, dws_ntp_server_udp_handler, nullptr);
 }
 
 #else // host build: no lwIP. The codec above is host-tested; the binding is a stub.
 
-bool ntp_server_begin(uint8_t, uint32_t)
+bool dws_ntp_server_begin(uint8_t, uint32_t)
 {
     return false;
 }

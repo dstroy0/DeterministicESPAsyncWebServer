@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file h2_server.cpp
- * @brief HTTP/2 engine <-> request-pipeline bridge - implementation. See h2_server.h.
+ * @file dws_h2_server.cpp
+ * @brief HTTP/2 engine <-> request-pipeline bridge - implementation. See dws_h2_server.h.
  */
 
 #include "network_drivers/presentation/http2/h2_server.h"
@@ -124,7 +124,7 @@ void cb_header(void *app, uint32_t, const char *n, size_t nl, const char *v, siz
 void cb_headers_end(void *app, uint32_t sid, bool)
 {
     uint8_t slot = (uint8_t)(uintptr_t)app;
-    conn_pool[slot].h2_stream = sid;
+    conn_pool[slot].dws_h2_stream = sid;
     http_pool[slot].parse_state = ParseState::PARSE_COMPLETE; // the worker's handle() loop dispatches it
 }
 
@@ -148,7 +148,7 @@ void dws_h2_server_open(uint8_t slot)
     cb.on_data = cb_data;
     cb.io = (void *)(uintptr_t)slot;
     cb.app = (void *)(uintptr_t)slot;
-    h2_conn_init(&s_h2.pool[slot], &cb); // emits our SETTINGS through cb_write
+    dws_h2_conn_init(&s_h2.pool[slot], &cb); // emits our SETTINGS through cb_write
     http_parser_reset(&http_pool[slot]);
 }
 
@@ -158,9 +158,9 @@ void dws_h2_server_data(uint8_t slot)
     int n;
     while ((n = dws_tls_read(slot, buf, sizeof buf)) > 0)
     {
-        if (!h2_conn_recv(&s_h2.pool[slot], buf, (size_t)n))
+        if (!dws_h2_conn_recv(&s_h2.pool[slot], buf, (size_t)n))
         {
-            h2_conn_goaway(&s_h2.pool[slot], 1 /* PROTOCOL_ERROR */);
+            dws_h2_conn_goaway(&s_h2.pool[slot], 1 /* PROTOCOL_ERROR */);
             return;
         }
     }
@@ -168,7 +168,7 @@ void dws_h2_server_data(uint8_t slot)
 
 bool dws_h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
 {
-    bool ok = h2_conn_respond(&s_h2.pool[slot], conn_pool[slot].h2_stream, code, content_type, body, len);
+    bool ok = dws_h2_conn_respond(&s_h2.pool[slot], conn_pool[slot].dws_h2_stream, code, content_type, body, len);
     http_parser_reset(&http_pool[slot]); // ready for the next stream; keep the connection open
     return ok;
 }
@@ -176,8 +176,8 @@ bool dws_h2_server_respond(uint8_t slot, int code, const char *content_type, con
 void dws_h2_server_close(uint8_t slot)
 {
     conn_pool[slot].h2 = 0;
-    conn_pool[slot].h2_checked = 0;
-    conn_pool[slot].resp_sink = nullptr;
+    conn_pool[slot].dws_h2_checked = 0;
+    conn_pool[slot].dws_resp_sink = nullptr;
 }
 
 #endif // DWS_ENABLE_HTTP2 && DWS_ENABLE_TLS

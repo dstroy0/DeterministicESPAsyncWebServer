@@ -61,13 +61,13 @@ static bool setup_l2()
 {
     if (!SD.begin())
         return false;
-    if (!wal_fs_prealloc(SD, "/edgecache.wal", L2_WAL_BYTES))
+    if (!dws_wal_fs_prealloc(SD, "/edgecache.wal", L2_WAL_BYTES))
         return false;
     g_wal_file = SD.open("/edgecache.wal", "r+"); // random read+write, no truncation
     if (!g_wal_file)
         return false;
-    WalDev dev = wal_fs_dev(&g_wal_file, L2_WAL_BYTES);
-    if (!wal_store_mount(&g_wal, &dev) && !wal_store_format(&g_wal, &dev)) // recover, else initialize
+    WalDev dev = dws_wal_fs_dev(&g_wal_file, L2_WAL_BYTES);
+    if (!dws_wal_store_mount(&g_wal, &dev) && !dws_wal_store_format(&g_wal, &dev)) // recover, else initialize
         return false;
     if (!dws_dbm_open(&g_l2, &g_wal)) // rebuild the index by replaying the log (this is reboot recovery)
         return false;

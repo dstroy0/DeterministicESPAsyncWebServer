@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 §4.1.4 / §4.4.1): the
+// TLS 1.3 messages the DTLS 1.3 handshake adds to dws_tls13_msg (RFC 8446 §4.1.4 / §4.4.1): the
 // HelloRetryRequest builder, the cookie extension parse, the empty EncryptedExtensions, and the
 // message_hash transcript wrapper. Compiled with DWS_ENABLE_DTLS (not HTTP/3) to prove the module
 // builds and works for the DTLS path. The HelloRetryRequest is pinned byte-for-byte, anchored on the
@@ -44,15 +44,16 @@ static const uint8_t HRR_WIRE[66] = {0x02, 0x00, 0x00, 0x3e,                    
 static void test_hrr_magic_symbol(void)
 {
     // The builder and the RFC constant agree.
-    TEST_ASSERT_EQUAL_MEMORY(HRR_MAGIC, tls13_hrr_random, 32);
+    TEST_ASSERT_EQUAL_MEMORY(HRR_MAGIC, dws_tls13_hrr_random, 32);
 }
 
 static void test_hrr_build_kat(void)
 {
     const uint8_t cookie[4] = {0xAA, 0xBB, 0xCC, 0xDD};
     uint8_t out[128];
-    size_t n = tls13_build_hello_retry_request(out, sizeof(out), nullptr, 0, TLS_GROUP_X25519, cookie, sizeof(cookie),
-                                               /*dtls=*/true);
+    size_t n =
+        dws_tls13_build_hello_retry_request(out, sizeof(out), nullptr, 0, TLS_GROUP_X25519, cookie, sizeof(cookie),
+                                            /*dtls=*/true);
     TEST_ASSERT_EQUAL_size_t(sizeof(HRR_WIRE), n);
     TEST_ASSERT_EQUAL_MEMORY(HRR_WIRE, out, sizeof(HRR_WIRE));
     // The random field carries the magic, i.e. this ServerHello is a HelloRetryRequest.
@@ -64,8 +65,8 @@ static void test_hrr_echoes_session_id(void)
     const uint8_t sid[4] = {0xDE, 0xAD, 0xBE, 0xEF};
     const uint8_t cookie[2] = {0x01, 0x02};
     uint8_t out[128];
-    size_t n = tls13_build_hello_retry_request(out, sizeof(out), sid, sizeof(sid), TLS_GROUP_X25519, cookie,
-                                               sizeof(cookie), /*dtls=*/true);
+    size_t n = dws_tls13_build_hello_retry_request(out, sizeof(out), sid, sizeof(sid), TLS_GROUP_X25519, cookie,
+                                                   sizeof(cookie), /*dtls=*/true);
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_UINT8(sizeof(sid), out[38]);        // legacy_session_id_echo length
     TEST_ASSERT_EQUAL_MEMORY(sid, out + 39, sizeof(sid)); // echoed verbatim
@@ -77,7 +78,7 @@ static void test_message_hash(void)
     for (unsigned i = 0; i < 32; i++)
         h[i] = (uint8_t)(0x80 + i);
     uint8_t out[40];
-    size_t n = tls13_build_message_hash(out, sizeof(out), h);
+    size_t n = dws_tls13_build_message_hash(out, sizeof(out), h);
     TEST_ASSERT_EQUAL_size_t(36, n);
     // message_hash(254) || uint24(32) || Hash(CH1)
     TEST_ASSERT_EQUAL_UINT8(254, out[0]);
@@ -90,7 +91,7 @@ static void test_message_hash(void)
 static void test_empty_encrypted_extensions(void)
 {
     uint8_t out[16];
-    size_t n = tls13_build_encrypted_extensions_empty(out, sizeof(out));
+    size_t n = dws_tls13_build_encrypted_extensions_empty(out, sizeof(out));
     const uint8_t want[6] = {0x08, 0x00, 0x00, 0x02, 0x00, 0x00}; // EE, len 2, extensions length 0
     TEST_ASSERT_EQUAL_size_t(sizeof(want), n);
     TEST_ASSERT_EQUAL_MEMORY(want, out, sizeof(want));
@@ -136,7 +137,7 @@ static void test_client_hello_cookie_parse(void)
     ch[body_len_at + 2] = (uint8_t)body_len;
 
     Tls13ClientHello hello;
-    TEST_ASSERT_TRUE(tls13_parse_client_hello(ch, p, &hello));
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(ch, p, &hello));
     TEST_ASSERT_NOT_NULL(hello.cookie);
     TEST_ASSERT_EQUAL_size_t(sizeof(cookie), hello.cookie_len);
     TEST_ASSERT_EQUAL_MEMORY(cookie, hello.cookie, sizeof(cookie));

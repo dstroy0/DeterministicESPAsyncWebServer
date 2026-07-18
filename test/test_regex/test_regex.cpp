@@ -42,7 +42,7 @@ void setUp()
         http_reset(i);
     }
     ws_init();
-    sse_init();
+    dws_sse_init();
     tcp_capture_reset();
     g_called = false;
 }

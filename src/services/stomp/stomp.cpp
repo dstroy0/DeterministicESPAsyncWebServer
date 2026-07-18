@@ -53,8 +53,8 @@ static bool emit_escaped_str(char *buf, size_t cap, size_t *pos, const char *s)
     return true;
 }
 
-size_t stomp_build_frame(char *buf, size_t cap, const char *command, const char *const *header_keys,
-                         const char *const *header_vals, size_t nheaders, const char *body, size_t body_len)
+size_t dws_stomp_build_frame(char *buf, size_t cap, const char *command, const char *const *header_keys,
+                             const char *const *header_vals, size_t nheaders, const char *body, size_t body_len)
 {
     if (!buf || cap == 0 || !command || (nheaders && (!header_keys || !header_vals)))
         return 0;
@@ -130,7 +130,7 @@ static size_t line_len(const char *buf, size_t start, size_t nl)
     return end - start;
 }
 
-bool stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t *consumed)
+bool dws_stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t *consumed)
 {
     if (!buf || !out || !consumed)
         return false;
@@ -230,7 +230,7 @@ bool stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t *con
     return true;
 }
 
-bool stomp_header(const StompFrame *f, const char *name, const char **val, size_t *val_len)
+bool dws_stomp_header(const StompFrame *f, const char *name, const char **val, size_t *val_len)
 {
     if (!f || !name)
         return false;
@@ -248,7 +248,7 @@ bool stomp_header(const StompFrame *f, const char *name, const char **val, size_
     return false;
 }
 
-size_t stomp_unescape(char *dst, size_t cap, const char *src, size_t src_len)
+size_t dws_stomp_unescape(char *dst, size_t cap, const char *src, size_t src_len)
 {
     if (!dst || !src)
         return 0;

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file dtls_record.cpp
- * @brief DTLS 1.3 record layer (RFC 9147 §4). See dtls_record.h.
+ * @file dws_dtls_record.cpp
+ * @brief DTLS 1.3 record layer (RFC 9147 §4). See dws_dtls_record.h.
  */
 
 #include "network_drivers/presentation/dtls/dtls_record.h"
@@ -51,23 +51,23 @@ uint64_t seq_decode(uint64_t expected, uint64_t truncated, unsigned bits)
 }
 } // namespace
 
-void dtls_record_keys_derive(DtlsRecordKeys *out, DtlsCipher cipher, uint16_t epoch, const uint8_t secret[32])
+void dws_dtls_record_keys_derive(DtlsRecordKeys *out, DtlsCipher cipher, uint16_t epoch, const uint8_t secret[32])
 {
     out->cipher = cipher;
     out->epoch = epoch;
     // AEAD_AES_128_GCM: 16-byte key, 12-byte IV, 16-byte sequence-number key. The DTLS 1.3 variant
     // carries the "dtls13" HKDF-Expand-Label prefix (RFC 9147 §4.2.3 / §5.9).
-    tls13_kdf_expand_label(&DTLS13_KDF, secret, "key", out->key, sizeof(out->key));
-    tls13_kdf_expand_label(&DTLS13_KDF, secret, "iv", out->iv, sizeof(out->iv));
-    tls13_kdf_expand_label(&DTLS13_KDF, secret, "sn", out->sn_key, sizeof(out->sn_key));
+    dws_tls13_kdf_expand_label(&DTLS13_KDF, secret, "key", out->key, sizeof(out->key));
+    dws_tls13_kdf_expand_label(&DTLS13_KDF, secret, "iv", out->iv, sizeof(out->iv));
+    dws_tls13_kdf_expand_label(&DTLS13_KDF, secret, "sn", out->sn_key, sizeof(out->sn_key));
 }
 
 // ---------------------------------------------------------------------------
 // DTLSPlaintext
 // ---------------------------------------------------------------------------
 
-size_t dtls_plaintext_build(uint8_t content_type, uint16_t epoch, uint64_t seq, const uint8_t *fragment,
-                            size_t frag_len, uint8_t *out, size_t out_cap)
+size_t dws_dtls_plaintext_build(uint8_t content_type, uint16_t epoch, uint64_t seq, const uint8_t *fragment,
+                                size_t frag_len, uint8_t *out, size_t out_cap)
 {
     size_t total = DTLS_PLAINTEXT_HDR_LEN + frag_len;
     if (total > out_cap || frag_len > 0xFFFF)
@@ -90,7 +90,7 @@ size_t dtls_plaintext_build(uint8_t content_type, uint16_t epoch, uint64_t seq, 
     return total;
 }
 
-size_t dtls_plaintext_parse(const uint8_t *rec, size_t rec_len, DtlsPlaintext *out)
+size_t dws_dtls_plaintext_parse(const uint8_t *rec, size_t rec_len, DtlsPlaintext *out)
 {
     if (rec_len < DTLS_PLAINTEXT_HDR_LEN)
         return 0;
@@ -112,8 +112,9 @@ size_t dtls_plaintext_parse(const uint8_t *rec, size_t rec_len, DtlsPlaintext *o
 // DTLSCiphertext
 // ---------------------------------------------------------------------------
 
-size_t dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uint8_t content_type, const uint8_t *plaintext,
-                               size_t pt_len, uint8_t *out, size_t out_cap, const uint8_t *cid, size_t cid_len)
+size_t dws_dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uint8_t content_type,
+                                   const uint8_t *plaintext, size_t pt_len, uint8_t *out, size_t out_cap,
+                                   const uint8_t *cid, size_t cid_len)
 {
     if (keys->cipher != DtlsCipher::AES_128_GCM_SHA256)
         return 0;
@@ -148,23 +149,23 @@ size_t dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uint8_t
     build_nonce(keys->iv, seq, nonce);
     // AAD = the whole unified header (including any connection id) carrying the plaintext sequence
     // number (before §4.2.3 encryption).
-    quic_aes128_gcm_seal(keys->key, nonce, out, hdr_len, out + hdr_len, inner_len, out + hdr_len);
+    dws_quic_aes128_gcm_seal(keys->key, nonce, out, hdr_len, out + hdr_len, inner_len, out + hdr_len);
 
     // Encrypt the sequence number (RFC 9147 §4.2.3): mask = AES-ECB(sn_key, ciphertext[0..15]).
     // enc_len = inner_len + 16 >= 17, so the 16-byte sample is always available.
     QuicAes128 sn;
-    quic_aes128_init(&sn, keys->sn_key);
+    dws_quic_aes128_init(&sn, keys->sn_key);
     uint8_t mask[16];
-    quic_aes128_encrypt_block(&sn, out + hdr_len, mask);
-    quic_aes128_wipe(&sn);
+    dws_quic_aes128_encrypt_block(&sn, out + hdr_len, mask);
+    dws_quic_aes128_wipe(&sn);
     out[seq_off] ^= mask[0];
     out[seq_off + 1] ^= mask[1];
     return total;
 }
 
-bool dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, const uint8_t *rec, size_t rec_len,
-                               uint8_t *out, size_t out_cap, DtlsCiphertext *info, const uint8_t *expected_cid,
-                               size_t expected_cid_len)
+bool dws_dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, const uint8_t *rec, size_t rec_len,
+                                   uint8_t *out, size_t out_cap, DtlsCiphertext *info, const uint8_t *expected_cid,
+                                   size_t expected_cid_len)
 {
     if (keys->cipher != DtlsCipher::AES_128_GCM_SHA256 || rec_len < 1)
         return false;
@@ -221,10 +222,10 @@ bool dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, co
 
     // Decrypt the sequence number (RFC 9147 §4.2.3).
     QuicAes128 sn;
-    quic_aes128_init(&sn, keys->sn_key);
+    dws_quic_aes128_init(&sn, keys->sn_key);
     uint8_t mask[16];
-    quic_aes128_encrypt_block(&sn, enc, mask);
-    quic_aes128_wipe(&sn);
+    dws_quic_aes128_encrypt_block(&sn, enc, mask);
+    dws_quic_aes128_wipe(&sn);
     uint64_t trunc = 0;
     for (size_t i = 0; i < seq_len; i++)
     {
@@ -239,7 +240,7 @@ bool dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, co
 
     uint8_t nonce[12];
     build_nonce(keys->iv, full_seq, nonce);
-    if (!quic_aes128_gcm_open(keys->key, nonce, hdr, hdr_len, enc, enc_len, out))
+    if (!dws_quic_aes128_gcm_open(keys->key, nonce, hdr, hdr_len, enc, enc_len, out))
         return false;
 
     // Strip zero padding: the last non-zero byte of the inner plaintext is the content type (RFC 8446 §5.2).
@@ -259,14 +260,14 @@ bool dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, co
 // Anti-replay sliding window (RFC 9147 §4.5.1)
 // ---------------------------------------------------------------------------
 
-void dtls_replay_init(DtlsReplayWindow *w)
+void dws_dtls_replay_init(DtlsReplayWindow *w)
 {
     w->highest = 0;
     w->bitmap = 0;
     w->seeded = false;
 }
 
-bool dtls_replay_check(const DtlsReplayWindow *w, uint64_t seq)
+bool dws_dtls_replay_check(const DtlsReplayWindow *w, uint64_t seq)
 {
     if (!w->seeded || seq > w->highest)
         return true; // first record, or ahead of the window
@@ -276,7 +277,7 @@ bool dtls_replay_check(const DtlsReplayWindow *w, uint64_t seq)
     return ((w->bitmap >> diff) & 1u) == 0; // set bit => already seen (replay)
 }
 
-void dtls_replay_mark(DtlsReplayWindow *w, uint64_t seq)
+void dws_dtls_replay_mark(DtlsReplayWindow *w, uint64_t seq)
 {
     if (!w->seeded)
     {

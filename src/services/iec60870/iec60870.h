@@ -111,39 +111,39 @@ struct IecAsduHeader
 // --- IEC 60870-5-104 APCI (over TCP) ---
 
 /** @brief Build an I-format APDU carrying @p asdu (numbered with @p ns / @p nr). */
-size_t iec104_build_i(uint8_t *buf, size_t cap, uint16_t ns, uint16_t nr, const uint8_t *asdu, size_t asdu_len);
+size_t dws_iec104_build_i(uint8_t *buf, size_t cap, uint16_t ns, uint16_t nr, const uint8_t *asdu, size_t asdu_len);
 
 /** @brief Build an S-format (supervisory) APDU acknowledging up to @p nr. */
-size_t iec104_build_s(uint8_t *buf, size_t cap, uint16_t nr);
+size_t dws_iec104_build_s(uint8_t *buf, size_t cap, uint16_t nr);
 
 /** @brief Build a U-format APDU with command @p u_cmd (IEC104_STARTDT_ACT, ...). */
-size_t iec104_build_u(uint8_t *buf, size_t cap, uint8_t u_cmd);
+size_t dws_iec104_build_u(uint8_t *buf, size_t cap, uint8_t u_cmd);
 
 /** @brief Parse one -104 APDU. Fills @p out and @p consumed (the whole APDU length). */
-bool iec104_parse(const uint8_t *buf, size_t len, Iec104Apci *out, size_t *consumed);
+bool dws_iec104_parse(const uint8_t *buf, size_t len, Iec104Apci *out, size_t *consumed);
 
 // --- ASDU header + Information Object Address (shared by -101 and -104) ---
 
 /** @brief Build the 6-octet ASDU header (type id, VSQ, COT[2], common address[2]). */
-size_t iec_asdu_build_header(uint8_t *buf, size_t cap, const IecAsduHeader *h);
+size_t dws_iec_asdu_build_header(uint8_t *buf, size_t cap, const IecAsduHeader *h);
 
 /** @brief Parse the 6-octet ASDU header; @p consumed is 6 on success. */
-bool iec_asdu_parse_header(const uint8_t *buf, size_t len, IecAsduHeader *out, size_t *consumed);
+bool dws_iec_asdu_parse_header(const uint8_t *buf, size_t len, IecAsduHeader *out, size_t *consumed);
 
 /** @brief Write a 3-octet Information Object Address (little-endian). */
-size_t iec_put_ioa(uint8_t *buf, size_t cap, uint32_t ioa);
+size_t dws_iec_put_ioa(uint8_t *buf, size_t cap, uint32_t ioa);
 
 /** @brief Read a 3-octet Information Object Address (little-endian). */
-uint32_t iec_get_ioa(const uint8_t *p);
+uint32_t dws_iec_get_ioa(const uint8_t *p);
 
 // --- IEC 60870-5-101 FT1.2 link frames (over serial) ---
 
 /** @brief Build a fixed-length frame: 10 C A CS 16 (1-octet link address). */
-size_t iec101_build_fixed(uint8_t *buf, size_t cap, uint8_t control, uint8_t addr);
+size_t dws_iec101_build_fixed(uint8_t *buf, size_t cap, uint8_t control, uint8_t addr);
 
 /** @brief Build a variable-length frame: 68 L L 68 C A <asdu> CS 16 (1-octet link address). */
-size_t iec101_build_variable(uint8_t *buf, size_t cap, uint8_t control, uint8_t addr, const uint8_t *asdu,
-                             uint8_t asdu_len);
+size_t dws_iec101_build_variable(uint8_t *buf, size_t cap, uint8_t control, uint8_t addr, const uint8_t *asdu,
+                                 uint8_t asdu_len);
 
 /** @brief A parsed -101 FT1.2 frame. */
 struct Iec101Frame
@@ -156,7 +156,7 @@ struct Iec101Frame
 };
 
 /** @brief Parse one -101 FT1.2 frame (validates start/stop, doubled length, sum checksum). */
-bool iec101_parse(const uint8_t *buf, size_t len, Iec101Frame *out, size_t *consumed);
+bool dws_iec101_parse(const uint8_t *buf, size_t len, Iec101Frame *out, size_t *consumed);
 
 #endif // DWS_ENABLE_IEC60870
 #endif // DETERMINISTICESPASYNCWEBSERVER_IEC60870_H

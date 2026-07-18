@@ -42,13 +42,13 @@
  * @param arg the argument, or nullptr / "" for a bare verb (no trailing space).
  * @return bytes written (excluding the NUL terminator), or 0 on overflow / bad input.
  */
-size_t ftp_build_command(char *buf, size_t cap, const char *verb, const char *arg);
+size_t dws_ftp_build_command(char *buf, size_t cap, const char *verb, const char *arg);
 
 /**
  * @brief Build an active-mode `PORT h1,h2,h3,h4,p1,p2<CRLF>` from an IPv4 address + port.
  * @return bytes written (excluding NUL), or 0 on overflow.
  */
-size_t ftp_build_port(char *buf, size_t cap, const uint8_t ip[4], uint16_t port);
+size_t dws_ftp_build_port(char *buf, size_t cap, const uint8_t ip[4], uint16_t port);
 
 /**
  * @brief Build an extended active-mode `EPRT<SP>|net-prt|net-addr|port|<CRLF>` (RFC 2428).
@@ -56,7 +56,7 @@ size_t ftp_build_port(char *buf, size_t cap, const uint8_t ip[4], uint16_t port)
  * @param ipv6   false => net-prt 1 (IPv4), true => net-prt 2 (IPv6).
  * @return bytes written (excluding NUL), or 0 on overflow.
  */
-size_t ftp_build_eprt(char *buf, size_t cap, const char *ip_str, bool ipv6, uint16_t port);
+size_t dws_ftp_build_eprt(char *buf, size_t cap, const char *ip_str, bool ipv6, uint16_t port);
 
 /**
  * @brief Detect and measure a complete control-channel reply at the head of @p buf.
@@ -68,7 +68,7 @@ size_t ftp_build_eprt(char *buf, size_t cap, const char *ip_str, bool ipv6, uint
  * @return true if a complete reply is present; false if the buffer holds only a partial reply
  *         (need more bytes) or a malformed head (then @p code / @p consumed are unspecified).
  */
-bool ftp_parse_reply(const char *buf, size_t len, int *code, size_t *consumed);
+bool dws_ftp_parse_reply(const char *buf, size_t len, int *code, size_t *consumed);
 
 /**
  * @brief Decode the data address from a `227` passive-mode reply.
@@ -78,7 +78,7 @@ bool ftp_parse_reply(const char *buf, size_t len, int *code, size_t *consumed);
  *
  * @return true on a well-formed tuple, false otherwise (then @p ip / @p port are unspecified).
  */
-bool ftp_parse_pasv(const char *buf, size_t len, uint8_t ip[4], uint16_t *port);
+bool dws_ftp_parse_pasv(const char *buf, size_t len, uint8_t ip[4], uint16_t *port);
 
 /**
  * @brief Decode the port from a `229` extended-passive reply `(<d><d><d>port<d>)` (RFC 2428).
@@ -87,18 +87,18 @@ bool ftp_parse_pasv(const char *buf, size_t len, uint8_t ip[4], uint16_t *port);
  *
  * @return true on a well-formed reply, false otherwise (then @p port is unspecified).
  */
-bool ftp_parse_epsv(const char *buf, size_t len, uint16_t *port);
+bool dws_ftp_parse_epsv(const char *buf, size_t len, uint16_t *port);
 
 /** @brief First digit of a reply code (1 preliminary, 2 complete, 3 intermediate, 4/5 error), or 0. */
-static inline int ftp_reply_class(int code)
+static inline int dws_ftp_reply_class(int code)
 {
     return (code >= 100 && code <= 599) ? code / 100 : 0;
 }
 
 /** @brief A 2xx positive-completion reply. */
-static inline bool ftp_reply_ok(int code)
+static inline bool dws_ftp_reply_ok(int code)
 {
-    return ftp_reply_class(code) == 2;
+    return dws_ftp_reply_class(code) == 2;
 }
 
 #endif // DWS_ENABLE_FTP

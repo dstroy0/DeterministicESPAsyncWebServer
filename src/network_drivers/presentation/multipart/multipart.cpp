@@ -41,7 +41,7 @@ static char *extract_quoted_param(char *src, const char *key)
     return p;
 }
 
-bool multipart_parse(HttpReq *req, Multipart *mp)
+bool dws_multipart_parse(HttpReq *req, Multipart *mp)
 {
     mp->part_count = 0;
 
@@ -161,7 +161,7 @@ bool multipart_parse(HttpReq *req, Multipart *mp)
     return mp->part_count > 0;
 }
 
-const char *multipart_get_field(const Multipart *mp, const char *field)
+const char *dws_multipart_get_field(const Multipart *mp, const char *field)
 {
     for (int i = 0; i < mp->part_count; i++)
     {

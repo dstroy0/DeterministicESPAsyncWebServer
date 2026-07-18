@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file dtls_handshake.cpp
- * @brief DTLS 1.3 handshake framing and reliability (RFC 9147 §5, §7). See dtls_handshake.h.
+ * @file dws_dtls_handshake.cpp
+ * @brief DTLS 1.3 handshake framing and reliability (RFC 9147 §5, §7). See dws_dtls_handshake.h.
  */
 
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
@@ -85,7 +85,7 @@ int reasm_merge(DtlsHsReasm *r, uint32_t lo, uint32_t hi)
 // Handshake message header (RFC 9147 §5.2)
 // ---------------------------------------------------------------------------
 
-size_t dtls_hs_header_parse(const uint8_t *p, size_t len, DtlsHsHeader *out)
+size_t dws_dtls_hs_header_parse(const uint8_t *p, size_t len, DtlsHsHeader *out)
 {
     if (len < DTLS_HS_HDR_LEN)
         return 0;
@@ -102,8 +102,8 @@ size_t dtls_hs_header_parse(const uint8_t *p, size_t len, DtlsHsHeader *out)
     return DTLS_HS_HDR_LEN + out->frag_length;
 }
 
-size_t dtls_hs_frag_build(uint8_t msg_type, uint16_t msg_seq, uint32_t full_len, uint32_t frag_offset,
-                          const uint8_t *frag, uint32_t frag_len, uint8_t *out, size_t out_cap)
+size_t dws_dtls_hs_frag_build(uint8_t msg_type, uint16_t msg_seq, uint32_t full_len, uint32_t frag_offset,
+                              const uint8_t *frag, uint32_t frag_len, uint8_t *out, size_t out_cap)
 {
     if (full_len > 0xFFFFFF || frag_offset > 0xFFFFFF || frag_len > 0xFFFFFF)
         return 0; // uint24 fields
@@ -133,7 +133,7 @@ size_t dtls_hs_frag_build(uint8_t msg_type, uint16_t msg_seq, uint32_t full_len,
 // Message reassembly (RFC 9147 §5.4)
 // ---------------------------------------------------------------------------
 
-void dtls_hs_reasm_init(DtlsHsReasm *r, uint16_t msg_seq, uint8_t *buf, size_t buf_cap)
+void dws_dtls_hs_reasm_init(DtlsHsReasm *r, uint16_t msg_seq, uint8_t *buf, size_t buf_cap)
 {
     r->active = false;
     r->have_len = false;
@@ -145,7 +145,7 @@ void dtls_hs_reasm_init(DtlsHsReasm *r, uint16_t msg_seq, uint8_t *buf, size_t b
     r->range_count = 0;
 }
 
-int dtls_hs_reasm_add(DtlsHsReasm *r, const DtlsHsHeader *frag)
+int dws_dtls_hs_reasm_add(DtlsHsReasm *r, const DtlsHsHeader *frag)
 {
     if (frag->msg_seq != r->msg_seq)
         return 0; // a different message; the state machine decides what to do with it
@@ -182,7 +182,7 @@ int dtls_hs_reasm_add(DtlsHsReasm *r, const DtlsHsHeader *frag)
 // ACK message (RFC 9147 §7)
 // ---------------------------------------------------------------------------
 
-size_t dtls_ack_build(const DtlsRecordNumber *nums, size_t count, uint8_t *out, size_t out_cap)
+size_t dws_dtls_ack_build(const DtlsRecordNumber *nums, size_t count, uint8_t *out, size_t out_cap)
 {
     size_t list_len = count * 16;
     if (list_len > 0xFFFF)
@@ -202,7 +202,7 @@ size_t dtls_ack_build(const DtlsRecordNumber *nums, size_t count, uint8_t *out, 
     return total;
 }
 
-bool dtls_ack_parse(const uint8_t *body, size_t len, DtlsRecordNumber *out, size_t out_cap, size_t *out_count)
+bool dws_dtls_ack_parse(const uint8_t *body, size_t len, DtlsRecordNumber *out, size_t out_cap, size_t *out_count)
 {
     if (len < 2)
         return false;
@@ -227,8 +227,9 @@ bool dtls_ack_parse(const uint8_t *body, size_t len, DtlsRecordNumber *out, size
 // HelloRetryRequest cookie (RFC 9147 §5.1)
 // ---------------------------------------------------------------------------
 
-size_t dtls_cookie_make(const uint8_t hmac_key[32], uint64_t timestamp, const uint8_t *payload, size_t payload_len,
-                        const uint8_t *client_addr, size_t addr_len, uint8_t *out, size_t out_cap)
+size_t dws_dtls_cookie_make(const uint8_t dws_hmac_key[32], uint64_t timestamp, const uint8_t *payload,
+                            size_t payload_len, const uint8_t *client_addr, size_t addr_len, uint8_t *out,
+                            size_t out_cap)
 {
     if (payload_len > 0xFFFF)
         return 0;
@@ -245,7 +246,7 @@ size_t dtls_cookie_make(const uint8_t hmac_key[32], uint64_t timestamp, const ui
     // MAC covers version || timestamp || client_addr || payload_len || payload: the address is
     // authenticated (so a cookie cannot be replayed from another peer) without being stored.
     SshHmacCtx h;
-    ssh_hmac_sha256_init(&h, hmac_key, 32);
+    ssh_hmac_sha256_init(&h, dws_hmac_key, 32);
     ssh_hmac_sha256_update(&h, out, 9);
     ssh_hmac_sha256_update(&h, client_addr, addr_len);
     ssh_hmac_sha256_update(&h, out + 9, 2 + payload_len);
@@ -253,9 +254,9 @@ size_t dtls_cookie_make(const uint8_t hmac_key[32], uint64_t timestamp, const ui
     return total;
 }
 
-bool dtls_cookie_verify(const uint8_t hmac_key[32], uint64_t now, uint64_t max_age, const uint8_t *client_addr,
-                        size_t addr_len, const uint8_t *cookie, size_t cookie_len, uint8_t *payload_out,
-                        size_t payload_cap, size_t *payload_len_out)
+bool dws_dtls_cookie_verify(const uint8_t dws_hmac_key[32], uint64_t now, uint64_t max_age, const uint8_t *client_addr,
+                            size_t addr_len, const uint8_t *cookie, size_t cookie_len, uint8_t *payload_out,
+                            size_t payload_cap, size_t *payload_len_out)
 {
     if (cookie_len < 1 + 8 + 2 + SSH_HMAC_SHA256_LEN || cookie[0] != 1)
         return false;
@@ -267,7 +268,7 @@ bool dtls_cookie_verify(const uint8_t hmac_key[32], uint64_t now, uint64_t max_a
         return false;
     uint8_t mac[SSH_HMAC_SHA256_LEN];
     SshHmacCtx h;
-    ssh_hmac_sha256_init(&h, hmac_key, 32);
+    ssh_hmac_sha256_init(&h, dws_hmac_key, 32);
     ssh_hmac_sha256_update(&h, cookie, 9);
     ssh_hmac_sha256_update(&h, client_addr, addr_len);
     ssh_hmac_sha256_update(&h, cookie + 9, 2 + payload_len);

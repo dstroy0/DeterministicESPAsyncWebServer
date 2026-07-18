@@ -91,7 +91,7 @@ int auth_send_b64(SmtpSendFn send, SmtpRecvFn recv, void *ctx, const char *secre
     size_t slen = strnlen(secret, sizeof(b64));
     if (((slen + 2) / 3) * 4 + 3 >= sizeof(b64)) // b64 + CRLF must fit
         return (int)SmtpResult::SMTP_ERR_OVERFLOW;
-    base64_encode((const uint8_t *)secret, slen, b64);
+    dws_base64_encode((const uint8_t *)secret, slen, b64);
     int n = snprintf(line, sizeof(line), "%s\r\n", b64);
     if (n < 0 || (size_t)n >= sizeof(line))
         return (int)SmtpResult::SMTP_ERR_OVERFLOW; // GCOVR_EXCL_LINE  b64+CRLF was just checked to fit

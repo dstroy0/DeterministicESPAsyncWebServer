@@ -62,24 +62,24 @@ struct N2kFastPacketRx
 };
 
 /** @brief Number of Fast Packet frames needed for @p total_len octets. */
-uint8_t n2k_fastpacket_num_frames(uint16_t total_len);
+uint8_t dws_n2k_fastpacket_num_frames(uint16_t total_len);
 
 /**
  * @brief Build Fast Packet frame @p frame_idx (0-based) of a message.
  * @p seq is the 0..7 sequence counter for this message; @p total_len is the whole payload.
  */
-bool n2k_fastpacket_build_frame(CanFrame *out, uint8_t seq, uint8_t frame_idx, uint8_t priority, uint32_t pgn,
-                                uint8_t sa, uint8_t da, const uint8_t *data, uint16_t total_len);
+bool dws_n2k_fastpacket_build_frame(CanFrame *out, uint8_t seq, uint8_t frame_idx, uint8_t priority, uint32_t pgn,
+                                    uint8_t sa, uint8_t da, const uint8_t *data, uint16_t total_len);
 
 /** @brief Reset a Fast Packet reassembly context to idle. */
-void n2k_fastpacket_reset(N2kFastPacketRx *rx);
+void dws_n2k_fastpacket_reset(N2kFastPacketRx *rx);
 
 /** @brief Feed a received frame to the Fast Packet reassembler; see @ref N2kFpResult. */
-N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f);
+N2kFpResult dws_n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f);
 
 /** @brief Build a single-frame (<= 8 octet) NMEA 2000 message (a thin wrap of J1939). */
-bool n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
-                      uint8_t len);
+bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
+                          uint8_t len);
 
 #endif // DWS_ENABLE_NMEA2000
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA2000_H

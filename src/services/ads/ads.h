@@ -68,22 +68,22 @@ enum class AdsCommand : uint16_t
     read_write = 0x0009,
 };
 
-/// AMS header state-flag bits (octets 18-19). A TCP request is `ads_command`; a response ORs in
+/// AMS header state-flag bits (octets 18-19). A TCP request is `dws_ads_command`; a response ORs in
 /// `response`. Grouped as constants (not an enum) because they are a bitmask.
 struct AdsStateFlags
 {
-    static constexpr uint16_t response = 0x0001;    ///< set on a response, clear on a request
-    static constexpr uint16_t no_return = 0x0002;   ///< no response expected
-    static constexpr uint16_t ads_command = 0x0004; ///< ADS command (set for TCP)
-    static constexpr uint16_t sys_command = 0x0008; ///< system command
-    static constexpr uint16_t high_prio = 0x0010;   ///< high priority
-    static constexpr uint16_t timestamp = 0x0020;   ///< a timestamp is appended
-    static constexpr uint16_t udp = 0x0040;         ///< carried over UDP
+    static constexpr uint16_t response = 0x0001;        ///< set on a response, clear on a request
+    static constexpr uint16_t no_return = 0x0002;       ///< no response expected
+    static constexpr uint16_t dws_ads_command = 0x0004; ///< ADS command (set for TCP)
+    static constexpr uint16_t sys_command = 0x0008;     ///< system command
+    static constexpr uint16_t high_prio = 0x0010;       ///< high priority
+    static constexpr uint16_t timestamp = 0x0020;       ///< a timestamp is appended
+    static constexpr uint16_t udp = 0x0040;             ///< carried over UDP
     static constexpr uint16_t init_command = 0x0080;
     static constexpr uint16_t broadcast = 0x8000;
 
-    static constexpr uint16_t request = ads_command;          ///< 0x0004
-    static constexpr uint16_t reply = ads_command | response; ///< 0x0005
+    static constexpr uint16_t request = dws_ads_command;          ///< 0x0004
+    static constexpr uint16_t reply = dws_ads_command | response; ///< 0x0005
 };
 
 /// ADS device state used by ReadState / WriteControl (a subset of ADSSTATE).
@@ -173,7 +173,7 @@ struct AdsReadResult
 struct AdsReadStateResult
 {
     uint32_t result;
-    uint16_t ads_state;
+    uint16_t dws_ads_state;
     uint16_t device_state;
 };
 
@@ -193,60 +193,61 @@ struct AdsDeviceInfo
 // ---------------------------------------------------------------------------------------------
 
 /// ReadDeviceInfo (cmd 1): no payload. Response = AdsDeviceInfo.
-size_t ads_build_read_device_info(uint8_t *buf, size_t cap, const AdsRequest *r);
+size_t dws_ads_build_read_device_info(uint8_t *buf, size_t cap, const AdsRequest *r);
 
 /// ReadState (cmd 4): no payload. Response = AdsReadStateResult.
-size_t ads_build_read_state(uint8_t *buf, size_t cap, const AdsRequest *r);
+size_t dws_ads_build_read_state(uint8_t *buf, size_t cap, const AdsRequest *r);
 
 /// Read (cmd 2): IndexGroup + IndexOffset + Length. Response = AdsReadResult.
-size_t ads_build_read(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
-                      uint32_t read_len);
+size_t dws_ads_build_read(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
+                          uint32_t read_len);
 
 /// Write (cmd 3): IndexGroup + IndexOffset + Length + Data. Response = a single result u32.
-size_t ads_build_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
-                       const uint8_t *data, uint32_t len);
+size_t dws_ads_build_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
+                           const uint8_t *data, uint32_t len);
 
 /// ReadWrite (cmd 9): IndexGroup + IndexOffset + ReadLen + WriteLen + WriteData. The workhorse
 /// for symbol-by-name (write the name to `sym_hnd_by_name`, read back the 4-octet handle).
 /// Response = AdsReadResult.
-size_t ads_build_read_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group, uint32_t index_offset,
-                            uint32_t read_len, const uint8_t *write_data, uint32_t write_len);
+size_t dws_ads_build_read_write(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group,
+                                uint32_t index_offset, uint32_t read_len, const uint8_t *write_data,
+                                uint32_t write_len);
 
 /// WriteControl (cmd 5): AdsState + DeviceState + Length + Data. Response = a single result u32.
-size_t ads_build_write_control(uint8_t *buf, size_t cap, const AdsRequest *r, uint16_t ads_state, uint16_t device_state,
-                               const uint8_t *data, uint32_t len);
+size_t dws_ads_build_write_control(uint8_t *buf, size_t cap, const AdsRequest *r, uint16_t dws_ads_state,
+                                   uint16_t device_state, const uint8_t *data, uint32_t len);
 
 /// AddDeviceNotification (cmd 6): subscribe to a symbol. Response = result u32 + handle u32
-/// (parse with ads_parse_add_notification). max_delay / cycle_time are in 100 ns units.
-size_t ads_build_add_notification(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group,
-                                  uint32_t index_offset, uint32_t length, AdsTransMode mode, uint32_t max_delay,
-                                  uint32_t cycle_time);
+/// (parse with dws_ads_parse_add_notification). max_delay / cycle_time are in 100 ns units.
+size_t dws_ads_build_add_notification(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t index_group,
+                                      uint32_t index_offset, uint32_t length, AdsTransMode mode, uint32_t max_delay,
+                                      uint32_t cycle_time);
 
 /// DeleteDeviceNotification (cmd 7): NotificationHandle. Response = a single result u32.
-size_t ads_build_del_notification(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t notification_handle);
+size_t dws_ads_build_del_notification(uint8_t *buf, size_t cap, const AdsRequest *r, uint32_t notification_handle);
 
 // ---------------------------------------------------------------------------------------------
-// Response parsers. `ads_parse_ams_header` validates the framing and exposes the payload; the
+// Response parsers. `dws_ads_parse_ams_header` validates the framing and exposes the payload; the
 // per-command parsers then decode that payload. Each returns false on a short/garbled buffer.
 // ---------------------------------------------------------------------------------------------
 
 /// Validate the AMS/TCP + AMS framing and fill `out` (its `data` points into `buf`).
-bool ads_parse_ams_header(const uint8_t *buf, size_t len, AdsAmsHeader *out);
+bool dws_ads_parse_ams_header(const uint8_t *buf, size_t len, AdsAmsHeader *out);
 
 /// Read / ReadWrite response payload: Result(4) + Length(4) + Data(Length).
-bool ads_parse_read(const uint8_t *data, size_t data_len, AdsReadResult *out);
+bool dws_ads_parse_read(const uint8_t *data, size_t data_len, AdsReadResult *out);
 
 /// Write / WriteControl / DeleteNotification response payload: a single Result(4).
-bool ads_parse_result(const uint8_t *data, size_t data_len, uint32_t *result);
+bool dws_ads_parse_result(const uint8_t *data, size_t data_len, uint32_t *result);
 
 /// ReadState response payload: Result(4) + AdsState(2) + DeviceState(2).
-bool ads_parse_read_state(const uint8_t *data, size_t data_len, AdsReadStateResult *out);
+bool dws_ads_parse_read_state(const uint8_t *data, size_t data_len, AdsReadStateResult *out);
 
 /// ReadDeviceInfo response payload: Result(4) + Major(1) + Minor(1) + Build(2) + Name(16).
-bool ads_parse_read_device_info(const uint8_t *data, size_t data_len, AdsDeviceInfo *out);
+bool dws_ads_parse_read_device_info(const uint8_t *data, size_t data_len, AdsDeviceInfo *out);
 
 /// AddDeviceNotification response payload: Result(4) + NotificationHandle(4).
-bool ads_parse_add_notification(const uint8_t *data, size_t data_len, uint32_t *result, uint32_t *handle);
+bool dws_ads_parse_add_notification(const uint8_t *data, size_t data_len, uint32_t *result, uint32_t *handle);
 
 /// Callback invoked once per sample while walking a DeviceNotification (cmd 8) payload.
 /// `timestamp` is the raw Windows FILETIME (100 ns ticks since 1601-01-01 UTC).
@@ -256,7 +257,7 @@ using AdsNotificationSampleFn = void (*)(uint32_t notification_handle, const uin
 /// Walk a DeviceNotification payload (Length + Stamps, each stamp = Timestamp + Samples + the
 /// per-sample handle/size/data), calling `on_sample` for every sample. Returns false if the
 /// buffer is truncated or internally inconsistent.
-bool ads_parse_notification(const uint8_t *data, size_t data_len, AdsNotificationSampleFn on_sample, void *user);
+bool dws_ads_parse_notification(const uint8_t *data, size_t data_len, AdsNotificationSampleFn on_sample, void *user);
 
 #endif // DWS_ENABLE_ADS
 

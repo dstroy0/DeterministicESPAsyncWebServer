@@ -28,7 +28,7 @@
  * Flash, open Serial @ 115200 for the IP, then from a host with a DTLS 1.3 CoAP client:
  *   coap-client -m get coaps://<ip>/info      # libcoap built with DTLS 1.3 (accept the demo cert)
  *   aiocoap-client coaps://<ip>/hello         # aiocoap with a DTLS backend
- * The verified reference client is the wolfSSL harness in test/servers/dtls_wolfssl.
+ * The verified reference client is the wolfSSL harness in test/servers/dws_dtls_wolfssl.
  *
  * NOTE: optional services are gated by compile flags the *library* sources must also see. The
  * `#define`s below document intent, but for PlatformIO enable them for the whole build, e.g.:

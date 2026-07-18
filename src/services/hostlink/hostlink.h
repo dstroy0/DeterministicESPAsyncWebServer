@@ -34,7 +34,7 @@
 #include <stdint.h>
 
 /** @brief FCS: 8-bit XOR of [data, data+len). */
-uint8_t hostlink_fcs(const char *data, size_t len);
+uint8_t dws_hostlink_fcs(const char *data, size_t len);
 
 /**
  * @brief Build a frame: `@UU` + header_code(2) + text + FCS(2 hex) + `*` + CR.
@@ -45,7 +45,8 @@ uint8_t hostlink_fcs(const char *data, size_t len);
  *        byte; the return value is the frame length, so callers may also treat @p buf as a
  *        C-string.
  */
-size_t hostlink_build(char *buf, size_t cap, uint8_t node, const char *header_code, const char *text, size_t text_len);
+size_t dws_hostlink_build(char *buf, size_t cap, uint8_t node, const char *header_code, const char *text,
+                          size_t text_len);
 
 /** @brief A parsed frame; @ref text points INTO the source buffer (after the header, before the FCS). */
 struct HostlinkFrame
@@ -60,10 +61,10 @@ struct HostlinkFrame
  * @brief Parse + FCS-validate a frame (command or response).
  * @return true on a complete, FCS-valid `@...*CR` frame; false otherwise.
  */
-bool hostlink_parse(const char *buf, size_t len, HostlinkFrame *out);
+bool dws_hostlink_parse(const char *buf, size_t len, HostlinkFrame *out);
 
 /** @brief Read a response's 2-char end code (the first two text characters) as a byte. */
-bool hostlink_end_code(const HostlinkFrame *f, uint8_t *code);
+bool dws_hostlink_end_code(const HostlinkFrame *f, uint8_t *code);
 
 #endif // DWS_ENABLE_HOSTLINK
 

@@ -87,7 +87,7 @@ struct GattChar
  * @brief Serialize a characteristic table as `[{"handle":H,"uuid":"0xXXXX","props":P},...]` for the web.
  * @return length written (excl NUL), or 0 on overflow / bad args.
  */
-size_t gatt_char_json(const GattChar *chars, size_t n, char *out, size_t cap);
+size_t dws_gatt_char_json(const GattChar *chars, size_t n, char *out, size_t cap);
 
 #endif // DWS_ENABLE_BLE_GATT
 #endif // DETERMINISTICESPASYNCWEBSERVER_BLE_GATT_H

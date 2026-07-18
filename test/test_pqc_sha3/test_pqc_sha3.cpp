@@ -73,7 +73,7 @@ void test_shake_empty()
     TEST_ASSERT_EQUAL_HEX8_ARRAY(want, got, 32);
 }
 
-// The incremental XOF (shake128_absorb + repeated keccak_squeeze) must produce the same stream as one
+// The incremental XOF (dws_shake128_absorb + repeated dws_keccak_squeeze) must produce the same stream as one
 // shot, including across the 168-octet block boundary that ML-KEM's rejection sampler crosses.
 void test_shake_stream_continuity()
 {
@@ -83,10 +83,10 @@ void test_shake_stream_continuity()
     shake128(oneshot, sizeof(oneshot), msg, sizeof(msg));
 
     KeccakCtx ctx;
-    shake128_absorb(&ctx, msg, sizeof(msg));
+    dws_shake128_absorb(&ctx, msg, sizeof(msg));
     uint8_t split[200];
-    keccak_squeeze(&ctx, split, 120);      // first block plus into the second
-    keccak_squeeze(&ctx, split + 120, 80); // continues past the 168-octet boundary
+    dws_keccak_squeeze(&ctx, split, 120);      // first block plus into the second
+    dws_keccak_squeeze(&ctx, split + 120, 80); // continues past the 168-octet boundary
     TEST_ASSERT_EQUAL_HEX8_ARRAY(oneshot, split, sizeof(oneshot));
 }
 

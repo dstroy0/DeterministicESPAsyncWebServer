@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-uint8_t hostlink_fcs(const char *data, size_t len)
+uint8_t dws_hostlink_fcs(const char *data, size_t len)
 {
     uint8_t f = 0;
     for (size_t i = 0; i < len; i++)
@@ -37,7 +37,8 @@ static int hex_val(char c)
     return -1;
 }
 
-size_t hostlink_build(char *buf, size_t cap, uint8_t node, const char *header_code, const char *text, size_t text_len)
+size_t dws_hostlink_build(char *buf, size_t cap, uint8_t node, const char *header_code, const char *text,
+                          size_t text_len)
 {
     if (!buf || !header_code || node > 99 || (text_len && !text))
         return 0;
@@ -58,16 +59,16 @@ size_t hostlink_build(char *buf, size_t cap, uint8_t node, const char *header_co
         memcpy(buf + p, text, text_len);
         p += text_len;
     }
-    uint8_t f = hostlink_fcs(buf, p); // XOR over '@' .. end of text
+    uint8_t f = dws_hostlink_fcs(buf, p); // XOR over '@' .. end of text
     buf[p++] = hex_digit((uint8_t)(f >> 4));
     buf[p++] = hex_digit((uint8_t)(f & 0x0F));
     buf[p++] = '*';
     buf[p++] = '\r';
-    buf[p] = '\0'; // NUL-terminate so callers may treat the ASCII frame as a string (matches sdi12_build)
+    buf[p] = '\0'; // NUL-terminate so callers may treat the ASCII frame as a string (matches dws_sdi12_build)
     return p;
 }
 
-bool hostlink_parse(const char *buf, size_t len, HostlinkFrame *out)
+bool dws_hostlink_parse(const char *buf, size_t len, HostlinkFrame *out)
 {
     // minimum: @ UU XX FF * CR = 1 + 2 + 2 + 2 + 1 + 1 = 9
     if (!buf || !out || len < 9)
@@ -83,7 +84,7 @@ bool hostlink_parse(const char *buf, size_t len, HostlinkFrame *out)
     if (hi < 0 || lo < 0)
         return false;
     uint8_t got = (uint8_t)((hi << 4) | lo);
-    if (hostlink_fcs(buf, fcs_pos) != got) // XOR over '@' .. last text char
+    if (dws_hostlink_fcs(buf, fcs_pos) != got) // XOR over '@' .. last text char
         return false;
 
     out->node = (uint8_t)((buf[1] - '0') * 10 + (buf[2] - '0'));
@@ -95,7 +96,7 @@ bool hostlink_parse(const char *buf, size_t len, HostlinkFrame *out)
     return true;
 }
 
-bool hostlink_end_code(const HostlinkFrame *f, uint8_t *code)
+bool dws_hostlink_end_code(const HostlinkFrame *f, uint8_t *code)
 {
     if (!f || f->text_len < 2)
         return false;

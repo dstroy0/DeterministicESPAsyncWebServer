@@ -103,7 +103,7 @@ void cmd(const nrf_bus *b, uint8_t c)
 }
 } // namespace
 
-bool nrf24_init(const nrf_bus *bus, const nrf_config *cfg)
+bool dws_nrf24_init(const nrf_bus *bus, const nrf_config *cfg)
 {
     if (!bus || !bus->spi || !bus->ce || !cfg || !cfg->address)
         return false;
@@ -137,7 +137,7 @@ bool nrf24_init(const nrf_bus *bus, const nrf_config *cfg)
     return true;
 }
 
-bool nrf24_send(const nrf_bus *bus, const uint8_t *data, uint8_t len)
+bool dws_nrf24_send(const nrf_bus *bus, const uint8_t *data, uint8_t len)
 {
     if (!bus || !data || len == 0 || len > DWS_NRF24_PAYLOAD)
         return false;
@@ -156,7 +156,7 @@ bool nrf24_send(const nrf_bus *bus, const uint8_t *data, uint8_t len)
     return true;
 }
 
-bool nrf24_tx_done(const nrf_bus *bus)
+bool dws_nrf24_tx_done(const nrf_bus *bus)
 {
     if (!bus)
         return false;
@@ -168,7 +168,7 @@ bool nrf24_tx_done(const nrf_bus *bus)
     return false;
 }
 
-void nrf24_set_rx(const nrf_bus *bus)
+void dws_nrf24_set_rx(const nrf_bus *bus)
 {
     if (!bus)
         return;
@@ -177,7 +177,7 @@ void nrf24_set_rx(const nrf_bus *bus)
     bus->ce(true, bus->ctx);
 }
 
-int nrf24_recv(const nrf_bus *bus, uint8_t *buf, uint8_t cap, uint8_t *pipe)
+int dws_nrf24_recv(const nrf_bus *bus, uint8_t *buf, uint8_t cap, uint8_t *pipe)
 {
     if (!bus || !buf)
         return -1;

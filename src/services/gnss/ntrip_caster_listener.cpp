@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ntrip_caster_listener.cpp
- * @brief Server-side NTRIP caster listener (see ntrip_caster_listener.h). Answers PROTO_NTRIP_CASTER rover
- *        requests via the pure ntrip_caster codec and fans RTCM corrections out to subscribed rovers.
+ * @file dws_ntrip_caster_listener.cpp
+ * @brief Server-side NTRIP caster listener (see dws_ntrip_caster_listener.h). Answers PROTO_NTRIP_CASTER rover
+ *        requests via the pure dws_ntrip_caster codec and fans RTCM corrections out to subscribed rovers.
  */
 
 #include "services/gnss/ntrip_caster_listener.h"
@@ -115,7 +115,7 @@ void serve_sourcetable(CasterRover *r, NtripVersion version)
     NtripMount list[DWS_NTRIP_MAX_MOUNTS];
     size_t nm = mounts_on_listener(dws_conn_listener_id(r->conn_slot), list, DWS_NTRIP_MAX_MOUNTS);
     char buf[DWS_NTRIP_REQ_MAX + 256];
-    size_t n = ntrip_build_sourcetable(buf, sizeof(buf), version, list, nm);
+    size_t n = dws_ntrip_build_sourcetable(buf, sizeof(buf), version, list, nm);
     reply_and_close(r, buf, n);
 }
 
@@ -125,7 +125,7 @@ void dispatch(CasterRover *r, const NtripRequest *req)
     char buf[192];
     if (!req->is_get)
     {
-        size_t n = ntrip_build_error_response(buf, sizeof(buf), req->version);
+        size_t n = dws_ntrip_build_error_response(buf, sizeof(buf), req->version);
         reply_and_close(r, buf, n);
         return;
     }
@@ -142,11 +142,11 @@ void dispatch(CasterRover *r, const NtripRequest *req)
     }
     if (!auth_ok(req, s_ctx.mounts[mi].auth_b64))
     {
-        size_t n = ntrip_build_unauthorized_response(buf, sizeof(buf), req->version);
+        size_t n = dws_ntrip_build_unauthorized_response(buf, sizeof(buf), req->version);
         reply_and_close(r, buf, n);
         return;
     }
-    size_t n = ntrip_build_stream_response(buf, sizeof(buf), req->version);
+    size_t n = dws_ntrip_build_stream_response(buf, sizeof(buf), req->version);
     if (n == 0 || !dws_conn_active(r->conn_slot) || !dws_conn_send(r->conn_slot, buf, (u16_t)n))
     {
         r->active = false;
@@ -199,7 +199,7 @@ void caster_on_data(uint8_t slot)
         r->req_len += (uint16_t)got;
     }
     NtripRequest req;
-    if (ntrip_request_parse(r->req, r->req_len, &req))
+    if (dws_ntrip_request_parse(r->req, r->req_len, &req))
     {
         dispatch(r, &req);
         return;
@@ -207,7 +207,7 @@ void caster_on_data(uint8_t slot)
     if (r->req_len >= sizeof(r->req) - 1) // request too large without a header terminator
     {
         char buf[64];
-        size_t n = ntrip_build_error_response(buf, sizeof(buf), NtripVersion::NTRIP_V1);
+        size_t n = dws_ntrip_build_error_response(buf, sizeof(buf), NtripVersion::NTRIP_V1);
         reply_and_close(r, buf, n);
     }
 }

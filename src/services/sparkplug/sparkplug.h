@@ -75,15 +75,15 @@ struct SpbMetric
 };
 
 /** @brief Build the `spBv1.0/...` topic. @p device may be null for a node-level topic. */
-size_t spb_build_topic(char *buf, size_t cap, const char *group, const char *message_type, const char *edge_node,
-                       const char *device);
+size_t dws_spb_build_topic(char *buf, size_t cap, const char *group, const char *message_type, const char *edge_node,
+                           const char *device);
 
 /** @brief Serialize one Metric (a Tahu Metric protobuf message). Returns length, or 0. */
-size_t spb_build_metric(uint8_t *buf, size_t cap, const SpbMetric *m);
+size_t dws_spb_build_metric(uint8_t *buf, size_t cap, const SpbMetric *m);
 
 /** @brief Serialize a Payload: timestamp + the @p n metrics + seq. Returns length, or 0. */
-size_t spb_build_payload(uint8_t *buf, size_t cap, uint64_t timestamp, uint64_t seq, const SpbMetric *metrics,
-                         size_t n);
+size_t dws_spb_build_payload(uint8_t *buf, size_t cap, uint64_t timestamp, uint64_t seq, const SpbMetric *metrics,
+                             size_t n);
 
 #endif // DWS_ENABLE_SPARKPLUG
 

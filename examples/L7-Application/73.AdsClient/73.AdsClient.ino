@@ -106,9 +106,9 @@ static void run_client(IPAddress ip)
 
     // 1) ReadDeviceInfo.
     r = next_request();
-    n = exchange(sock, ads_build_read_device_info(c_req, sizeof(c_req), &r));
+    n = exchange(sock, dws_ads_build_read_device_info(c_req, sizeof(c_req), &r));
     AdsDeviceInfo di;
-    if (n && ads_parse_ams_header(c_resp, n, &h) && ads_parse_read_device_info(h.data, h.data_len, &di) &&
+    if (n && dws_ads_parse_ams_header(c_resp, n, &h) && dws_ads_parse_read_device_info(h.data, h.data_len, &di) &&
         di.result == 0)
         Serial.printf("[ads] device: %s v%u.%u build %u\n", di.device_name, di.version_major, di.version_minor,
                       di.version_build);
@@ -117,26 +117,27 @@ static void run_client(IPAddress ip)
 
     // 2) ReadState.
     r = next_request();
-    n = exchange(sock, ads_build_read_state(c_req, sizeof(c_req), &r));
+    n = exchange(sock, dws_ads_build_read_state(c_req, sizeof(c_req), &r));
     AdsReadStateResult st;
-    if (n && ads_parse_ams_header(c_resp, n, &h) && ads_parse_read_state(h.data, h.data_len, &st) && st.result == 0)
+    if (n && dws_ads_parse_ams_header(c_resp, n, &h) && dws_ads_parse_read_state(h.data, h.data_len, &st) &&
+        st.result == 0)
     {
-        const char *name = st.ads_state == (uint16_t)AdsState::run      ? "RUN"
-                           : st.ads_state == (uint16_t)AdsState::stop   ? "STOP"
-                           : st.ads_state == (uint16_t)AdsState::config ? "CONFIG"
-                                                                        : "?";
-        Serial.printf("[ads] state: %s (%u)\n", name, st.ads_state);
+        const char *name = st.dws_ads_state == (uint16_t)AdsState::run      ? "RUN"
+                           : st.dws_ads_state == (uint16_t)AdsState::stop   ? "STOP"
+                           : st.dws_ads_state == (uint16_t)AdsState::config ? "CONFIG"
+                                                                            : "?";
+        Serial.printf("[ads] state: %s (%u)\n", name, st.dws_ads_state);
     }
     else
         Serial.println("[ads] ReadState failed");
 
     // 3) ReadWrite: resolve the symbol name to a handle.
     r = next_request();
-    n = exchange(sock, ads_build_read_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_hnd_by_name, 0, 4,
-                                            (const uint8_t *)SYMBOL, (uint32_t)strlen(SYMBOL)));
+    n = exchange(sock, dws_ads_build_read_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_hnd_by_name, 0, 4,
+                                                (const uint8_t *)SYMBOL, (uint32_t)strlen(SYMBOL)));
     AdsReadResult rr;
-    if (!n || !ads_parse_ams_header(c_resp, n, &h) || !ads_parse_read(h.data, h.data_len, &rr) || rr.result != 0 ||
-        rr.len < 4)
+    if (!n || !dws_ads_parse_ams_header(c_resp, n, &h) || !dws_ads_parse_read(h.data, h.data_len, &rr) ||
+        rr.result != 0 || rr.len < 4)
     {
         Serial.printf("[ads] handle for '%s' failed\n", SYMBOL);
         sock.stop();
@@ -147,8 +148,8 @@ static void run_client(IPAddress ip)
 
     // 4) Read the symbol value (INT32) by handle.
     r = next_request();
-    n = exchange(sock, ads_build_read(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_val_by_handle, handle, 4));
-    if (n && ads_parse_ams_header(c_resp, n, &h) && ads_parse_read(h.data, h.data_len, &rr) && rr.result == 0 &&
+    n = exchange(sock, dws_ads_build_read(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_val_by_handle, handle, 4));
+    if (n && dws_ads_parse_ams_header(c_resp, n, &h) && dws_ads_parse_read(h.data, h.data_len, &rr) && rr.result == 0 &&
         rr.len >= 4)
     {
         int32_t val = (int32_t)((uint32_t)rr.data[0] | ((uint32_t)rr.data[1] << 8) | ((uint32_t)rr.data[2] << 16) |
@@ -161,7 +162,7 @@ static void run_client(IPAddress ip)
     // 5) Release the handle (Write the 4-octet handle to index group 0xF006).
     r = next_request();
     uint8_t hb[4] = {(uint8_t)handle, (uint8_t)(handle >> 8), (uint8_t)(handle >> 16), (uint8_t)(handle >> 24)};
-    exchange(sock, ads_build_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_release_handle, 0, hb, 4));
+    exchange(sock, dws_ads_build_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_release_handle, 0, hb, 4));
 
     sock.stop();
     Serial.println("[ads] done");

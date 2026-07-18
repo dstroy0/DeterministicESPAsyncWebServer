@@ -25,11 +25,11 @@ static bool ct_eq(const char *a, const char *b, size_t n)
 }
 
 // base64url encode/decode are shared with OIDC in the base64 module
-// (base64url_encode / base64url_decode).
+// (dws_base64url_encode / dws_base64url_decode).
 
 // Split a compact JWT into header.payload (signing input) and the signature.
 // Requires exactly two '.' separators. Returns false on a malformed shape.
-static bool jwt_split(const char *token, size_t token_len, size_t *signing_len, const char **sig, size_t *sig_len)
+static bool dws_jwt_split(const char *token, size_t token_len, size_t *signing_len, const char **sig, size_t *sig_len)
 {
     const char *d1 = (const char *)memchr(token, '.', token_len);
     if (!d1)
@@ -50,10 +50,10 @@ static bool jwt_split(const char *token, size_t token_len, size_t *signing_len, 
 // RFC 7515 §5.2: the algorithm used MUST be the one named by the JWS header "alg".
 // Decode the header segment and require alg == "HS256" - this rejects "none",
 // RS256, HS384, and any other algorithm-substitution attempt before the HMAC check.
-static bool jwt_header_alg_is_hs256(const char *header, size_t hlen)
+static bool dws_jwt_header_alg_is_hs256(const char *header, size_t hlen)
 {
     uint8_t buf[96];
-    size_t n = base64url_decode(header, hlen, buf, sizeof(buf) - 1);
+    size_t n = dws_base64url_decode(header, hlen, buf, sizeof(buf) - 1);
     if (n == 0)
         return false;
     buf[n] = '\0';
@@ -69,7 +69,7 @@ static bool jwt_header_alg_is_hs256(const char *header, size_t hlen)
     return strncmp(p, "HS256", 5) == 0 && p[5] == '"';
 }
 
-bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len)
+bool dws_jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len)
 {
     if (!token || token_len < 5 || token_len > DWS_JWT_MAX_LEN)
         return false;
@@ -77,12 +77,12 @@ bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret
     size_t signing_len;
     size_t sig_len;
     const char *sig;
-    if (!jwt_split(token, token_len, &signing_len, &sig, &sig_len))
+    if (!dws_jwt_split(token, token_len, &signing_len, &sig, &sig_len))
         return false;
 
     // Validate the declared algorithm matches what we verify (RFC 7515 §5.2).
     const char *d1 = (const char *)memchr(token, '.', token_len);
-    if (!jwt_header_alg_is_hs256(token, (size_t)(d1 - token)))
+    if (!dws_jwt_header_alg_is_hs256(token, (size_t)(d1 - token)))
         return false;
 
     // HS256 -> 32-byte MAC -> 43 base64url chars (no padding).
@@ -93,57 +93,57 @@ bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret
     ssh_hmac_sha256(secret, secret_len, (const uint8_t *)token, signing_len, mac);
 
     char computed[48];
-    if (base64url_encode(mac, sizeof(mac), computed) != 43)
+    if (dws_base64url_encode(mac, sizeof(mac), computed) != 43)
         return false;
     return ct_eq(computed, sig, 43);
 }
 
-bool jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t secret_len)
+bool dws_jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t secret_len)
 {
     if (!auth_header || strncasecmp(auth_header, "Bearer ", 7) != 0)
         return false;
     const char *tok = auth_header + 7;
     while (*tok == ' ')
         tok++;
-    return jwt_verify_hs256(tok, strnlen(tok, DWS_JWT_MAX_LEN + 1), secret, secret_len);
+    return dws_jwt_verify_hs256(tok, strnlen(tok, DWS_JWT_MAX_LEN + 1), secret, secret_len);
 }
 
-bool jwt_time_valid(const char *token, size_t token_len, long now_epoch, long leeway_s)
+bool dws_jwt_time_valid(const char *token, size_t token_len, long now_epoch, long leeway_s)
 {
     if (!token || now_epoch <= 0)
         return true; // no wall clock -> time claims cannot be evaluated (the signature is the gate)
 
     // Subtraction form (not exp + leeway) so a far-future claim cannot overflow `long`.
     long exp = 0;
-    if (jwt_claim_int(token, token_len, "exp", &exp) && now_epoch - exp > leeway_s)
+    if (dws_jwt_claim_int(token, token_len, "exp", &exp) && now_epoch - exp > leeway_s)
         return false; // expired (RFC 7519 §4.1.4)
 
     long nbf = 0;
-    if (jwt_claim_int(token, token_len, "nbf", &nbf) && nbf - now_epoch > leeway_s)
+    if (dws_jwt_claim_int(token, token_len, "nbf", &nbf) && nbf - now_epoch > leeway_s)
         return false; // not yet valid (RFC 7519 §4.1.5)
 
     return true;
 }
 
-bool jwt_verify_hs256_at(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len, long now_epoch,
-                         long leeway_s)
+bool dws_jwt_verify_hs256_at(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len,
+                             long now_epoch, long leeway_s)
 {
-    return jwt_verify_hs256(token, token_len, secret, secret_len) &&
-           jwt_time_valid(token, token_len, now_epoch, leeway_s);
+    return dws_jwt_verify_hs256(token, token_len, secret, secret_len) &&
+           dws_jwt_time_valid(token, token_len, now_epoch, leeway_s);
 }
 
-bool jwt_bearer_valid_at(const char *auth_header, const uint8_t *secret, size_t secret_len, long now_epoch,
-                         long leeway_s)
+bool dws_jwt_bearer_valid_at(const char *auth_header, const uint8_t *secret, size_t secret_len, long now_epoch,
+                             long leeway_s)
 {
     if (!auth_header || strncasecmp(auth_header, "Bearer ", 7) != 0)
         return false;
     const char *tok = auth_header + 7;
     while (*tok == ' ')
         tok++;
-    return jwt_verify_hs256_at(tok, strnlen(tok, DWS_JWT_MAX_LEN + 1), secret, secret_len, now_epoch, leeway_s);
+    return dws_jwt_verify_hs256_at(tok, strnlen(tok, DWS_JWT_MAX_LEN + 1), secret, secret_len, now_epoch, leeway_s);
 }
 
-bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *out)
+bool dws_jwt_claim_int(const char *token, size_t token_len, const char *name, long *out)
 {
     if (!token || !name || !out)
         return false;
@@ -159,7 +159,7 @@ bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *
     size_t payload_len = (size_t)(d2 - payload);
 
     uint8_t buf[DWS_JWT_MAX_LEN];
-    size_t n = base64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
+    size_t n = dws_base64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
     if (n == 0)
         return false;
     buf[n] = '\0';
@@ -189,7 +189,7 @@ bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *
     return true;
 }
 
-bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *out, size_t out_cap)
+bool dws_jwt_claim_str(const char *token, size_t token_len, const char *name, char *out, size_t out_cap)
 {
     if (!token || !name || !out || out_cap == 0)
         return false;
@@ -206,7 +206,7 @@ bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *
     size_t payload_len = (size_t)(d2 - payload);
 
     uint8_t buf[DWS_JWT_MAX_LEN];
-    size_t n = base64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
+    size_t n = dws_base64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
     if (n == 0)
         return false;
     buf[n] = '\0';
@@ -240,7 +240,7 @@ bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *
     return true;
 }
 
-bool jwt_scope_allows(const char *scope_claim, const char *required)
+bool dws_jwt_scope_allows(const char *scope_claim, const char *required)
 {
     if (!scope_claim || !required || !*required)
         return false;

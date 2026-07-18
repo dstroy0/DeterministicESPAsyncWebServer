@@ -18,7 +18,7 @@
  * GeneralStatus(1)  AdditionalStatusSize(1, words)  [additional status]  ServiceData`.
  *
  * Service codes + the logical-segment encoding are verified against the Wireshark CIP
- * dissector. This codec is the CIP message; wrap it with `eip_build_send_rr_data`.
+ * dissector. This codec is the CIP message; wrap it with `dws_eip_build_send_rr_data`.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -57,16 +57,16 @@
  * @param with_attribute include the attribute segment.
  * @return EPATH length in octets (always even / word-aligned), or 0 on overflow.
  */
-size_t cip_build_epath(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id, uint16_t attribute_id,
-                       bool with_attribute);
+size_t dws_cip_build_epath(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id, uint16_t attribute_id,
+                           bool with_attribute);
 
 /** @brief Build a CIP request: service + path size (words) + EPATH + service data. */
-size_t cip_build_request(uint8_t *buf, size_t cap, uint8_t service, const uint8_t *epath, size_t epath_len,
-                         const uint8_t *data, size_t data_len);
+size_t dws_cip_build_request(uint8_t *buf, size_t cap, uint8_t service, const uint8_t *epath, size_t epath_len,
+                             const uint8_t *data, size_t data_len);
 
 /** @brief Build a Get_Attribute_Single request for class/instance/attribute. */
-size_t cip_build_get_attr_single(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id,
-                                 uint16_t attribute_id);
+size_t dws_cip_build_get_attr_single(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id,
+                                     uint16_t attribute_id);
 
 /** @brief A parsed CIP response. @ref data points INTO the source buffer. */
 struct CipResponse
@@ -78,7 +78,7 @@ struct CipResponse
 };
 
 /** @brief Parse a CIP response (service + status + additional status + data). */
-bool cip_parse_response(const uint8_t *buf, size_t len, CipResponse *out);
+bool dws_cip_parse_response(const uint8_t *buf, size_t len, CipResponse *out);
 
 #endif // DWS_ENABLE_CIP
 

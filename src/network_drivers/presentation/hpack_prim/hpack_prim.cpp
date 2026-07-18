@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file hpack_prim.cpp
- * @brief Shared HPACK/QPACK field-coding primitives - implementation. See hpack_prim.h.
+ * @file dws_hpack_prim.cpp
+ * @brief Shared HPACK/QPACK field-coding primitives - implementation. See dws_hpack_prim.h.
  *
  * The Huffman code (Appendix B) and the canonical Huffman decode tables are generated verbatim
  * from RFC 7541. RFC 9204 (QPACK) references the same integer coding and Huffman table.
@@ -89,7 +89,7 @@ const uint16_t DEC_SYM[257] = {
 
 } // namespace
 
-size_t hpack_encode_int(uint8_t *out, size_t cap, uint8_t prefix_bits, uint8_t flags, uint32_t value)
+size_t dws_hpack_encode_int(uint8_t *out, size_t cap, uint8_t prefix_bits, uint8_t flags, uint32_t value)
 {
     uint8_t max = (uint8_t)((1u << prefix_bits) - 1);
     if (cap < 1)
@@ -115,7 +115,7 @@ size_t hpack_encode_int(uint8_t *out, size_t cap, uint8_t prefix_bits, uint8_t f
     return i;
 }
 
-bool hpack_decode_int(const uint8_t *in, size_t len, uint8_t prefix_bits, size_t *consumed, uint32_t *value)
+bool dws_hpack_decode_int(const uint8_t *in, size_t len, uint8_t prefix_bits, size_t *consumed, uint32_t *value)
 {
     if (len < 1)
         return false;
@@ -143,7 +143,7 @@ bool hpack_decode_int(const uint8_t *in, size_t len, uint8_t prefix_bits, size_t
     return true;
 }
 
-size_t hpack_huff_len(const char *s, size_t n)
+size_t dws_hpack_huff_len(const char *s, size_t n)
 {
     size_t bits = 0;
     for (size_t i = 0; i < n; i++)
@@ -151,7 +151,7 @@ size_t hpack_huff_len(const char *s, size_t n)
     return (bits + 7) / 8;
 }
 
-size_t hpack_huff_encode(uint8_t *out, size_t cap, const char *s, size_t n)
+size_t dws_hpack_huff_encode(uint8_t *out, size_t cap, const char *s, size_t n)
 {
     uint64_t acc = 0;
     int nbits = 0;
@@ -179,7 +179,7 @@ size_t hpack_huff_encode(uint8_t *out, size_t cap, const char *s, size_t n)
     return o;
 }
 
-bool hpack_huff_decode(const uint8_t *in, size_t n, char *out, size_t cap, size_t *out_len)
+bool dws_hpack_huff_decode(const uint8_t *in, size_t n, char *out, size_t cap, size_t *out_len)
 {
     uint32_t code = 0;
     int len = 0;
@@ -226,21 +226,21 @@ bool hpack_huff_decode(const uint8_t *in, size_t n, char *out, size_t cap, size_
 
 // --- string literal (RFC 7541 sec 5.2; RFC 9204 reuses it verbatim) -------------------------------
 
-bool hpack_decode_str(const uint8_t *block, size_t len, size_t *pos, char *out, size_t cap, size_t *out_len)
+bool dws_hpack_decode_str(const uint8_t *block, size_t len, size_t *pos, char *out, size_t cap, size_t *out_len)
 {
     if (*pos >= len)
         return false;
     bool huff = (block[*pos] & 0x80) != 0;
     size_t c = 0;
     uint32_t slen = 0;
-    if (!hpack_decode_int(block + *pos, len - *pos, 7, &c, &slen))
+    if (!dws_hpack_decode_int(block + *pos, len - *pos, 7, &c, &slen))
         return false;
     *pos += c;
     if (*pos + slen > len)
         return false;
     if (huff)
     {
-        if (!hpack_huff_decode(block + *pos, slen, out, cap, out_len))
+        if (!dws_hpack_huff_decode(block + *pos, slen, out, cap, out_len))
             return false;
     }
     else
@@ -254,20 +254,20 @@ bool hpack_decode_str(const uint8_t *block, size_t len, size_t *pos, char *out, 
     return true;
 }
 
-size_t hpack_encode_str(uint8_t *out, size_t cap, const char *s, size_t n)
+size_t dws_hpack_encode_str(uint8_t *out, size_t cap, const char *s, size_t n)
 {
-    size_t hl = hpack_huff_len(s, n);
+    size_t hl = dws_hpack_huff_len(s, n);
     if (hl < n)
     {
-        size_t hdr = hpack_encode_int(out, cap, 7, 0x80, (uint32_t)hl);
+        size_t hdr = dws_hpack_encode_int(out, cap, 7, 0x80, (uint32_t)hl);
         if (!hdr)
             return 0;
-        size_t body = hpack_huff_encode(out + hdr, cap - hdr, s, n);
+        size_t body = dws_hpack_huff_encode(out + hdr, cap - hdr, s, n);
         if (body != hl)
             return 0;
         return hdr + body;
     }
-    size_t hdr = hpack_encode_int(out, cap, 7, 0x00, (uint32_t)n);
+    size_t hdr = dws_hpack_encode_int(out, cap, 7, 0x00, (uint32_t)n);
     if (!hdr || hdr + n > cap)
         return 0;
     memcpy(out + hdr, s, n);

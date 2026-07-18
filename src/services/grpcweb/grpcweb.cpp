@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-size_t grpcweb_frame(uint8_t *buf, size_t cap, uint8_t flags, const uint8_t *body, size_t body_len)
+size_t dws_grpcweb_frame(uint8_t *buf, size_t cap, uint8_t flags, const uint8_t *body, size_t body_len)
 {
     if (!buf || (body_len && !body) || body_len > 0xFFFFFFFFu)
         return 0;
@@ -29,9 +29,9 @@ size_t grpcweb_frame(uint8_t *buf, size_t cap, uint8_t flags, const uint8_t *bod
     return total;
 }
 
-size_t grpcweb_frame_message(uint8_t *buf, size_t cap, const uint8_t *msg, size_t msg_len, bool compressed)
+size_t dws_grpcweb_frame_message(uint8_t *buf, size_t cap, const uint8_t *msg, size_t msg_len, bool compressed)
 {
-    return grpcweb_frame(buf, cap, compressed ? GRPCWEB_FLAG_COMPRESSED : 0, msg, msg_len);
+    return dws_grpcweb_frame(buf, cap, compressed ? GRPCWEB_FLAG_COMPRESSED : 0, msg, msg_len);
 }
 
 // Append a NUL-terminated string at *pos with bounds check; advance *pos. False on overflow.
@@ -70,7 +70,7 @@ static bool put_int(uint8_t *buf, size_t cap, size_t *pos, int v)
     return true;
 }
 
-size_t grpcweb_frame_trailer(uint8_t *buf, size_t cap, int status, const char *message)
+size_t dws_grpcweb_frame_trailer(uint8_t *buf, size_t cap, int status, const char *message)
 {
     if (!buf || cap < GRPCWEB_PREFIX_LEN)
         return 0;
@@ -93,7 +93,7 @@ size_t grpcweb_frame_trailer(uint8_t *buf, size_t cap, int status, const char *m
     return pos;
 }
 
-bool grpcweb_parse(const uint8_t *buf, size_t len, GrpcWebFrame *out, size_t *consumed)
+bool dws_grpcweb_parse(const uint8_t *buf, size_t len, GrpcWebFrame *out, size_t *consumed)
 {
     if (!buf || !out || !consumed || len < GRPCWEB_PREFIX_LEN)
         return false;
@@ -109,7 +109,7 @@ bool grpcweb_parse(const uint8_t *buf, size_t len, GrpcWebFrame *out, size_t *co
     return true;
 }
 
-bool grpcweb_trailer_status(const uint8_t *body, size_t len, int *status)
+bool dws_grpcweb_trailer_status(const uint8_t *body, size_t len, int *status)
 {
     if (!body)
         return false;

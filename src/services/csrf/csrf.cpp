@@ -53,7 +53,7 @@ void sign_nonce(const CsrfCtx &c, const uint8_t *nonce, size_t nlen, char *sig_h
 
 } // namespace
 
-void csrf_set_secret(const uint8_t *secret, size_t len)
+void dws_csrf_set_secret(const uint8_t *secret, size_t len)
 {
     if (!secret)
     {
@@ -64,7 +64,7 @@ void csrf_set_secret(const uint8_t *secret, size_t len)
     memcpy(s_csrf.secret, secret, s_csrf.secret_len);
 }
 
-int csrf_issue(char *out, size_t cap)
+int dws_csrf_issue(char *out, size_t cap)
 {
     if (s_csrf.secret_len == 0 || !out || cap < CSRF_TOKEN_BUF)
         return 0;
@@ -83,7 +83,7 @@ int csrf_issue(char *out, size_t cap)
     return (n > 0 && (size_t)n < cap) ? n : 0;
 }
 
-bool csrf_verify(const char *token)
+bool dws_csrf_verify(const char *token)
 {
     if (s_csrf.secret_len == 0 || !token)
         return false;
@@ -109,7 +109,7 @@ bool csrf_verify(const char *token)
     return ct_equal(sig, expect, CSRF_SIG_BYTES * 2);
 }
 
-void csrf_reset(void)
+void dws_csrf_reset(void)
 {
     memset(s_csrf.secret, 0, sizeof(s_csrf.secret));
     s_csrf.secret_len = 0;

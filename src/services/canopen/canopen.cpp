@@ -27,7 +27,7 @@ static bool valid_node(uint8_t node_id)
     return node_id >= 1 && node_id <= 127;
 }
 
-bool canopen_build_nmt(CanFrame *out, uint8_t command, uint8_t node_id)
+bool dws_canopen_build_nmt(CanFrame *out, uint8_t command, uint8_t node_id)
 {
     if (!out || node_id > 127) // 0 = all nodes
         return false;
@@ -37,7 +37,7 @@ bool canopen_build_nmt(CanFrame *out, uint8_t command, uint8_t node_id)
     return true;
 }
 
-bool canopen_build_sync(CanFrame *out)
+bool dws_canopen_build_sync(CanFrame *out)
 {
     if (!out)
         return false;
@@ -45,7 +45,7 @@ bool canopen_build_sync(CanFrame *out)
     return true;
 }
 
-bool canopen_build_heartbeat(CanFrame *out, uint8_t node_id, uint8_t state)
+bool dws_canopen_build_heartbeat(CanFrame *out, uint8_t node_id, uint8_t state)
 {
     if (!out || !valid_node(node_id))
         return false;
@@ -54,7 +54,8 @@ bool canopen_build_heartbeat(CanFrame *out, uint8_t node_id, uint8_t state)
     return true;
 }
 
-bool canopen_build_emcy(CanFrame *out, uint8_t node_id, uint16_t error_code, uint8_t error_reg, const uint8_t msef[5])
+bool dws_canopen_build_emcy(CanFrame *out, uint8_t node_id, uint16_t error_code, uint8_t error_reg,
+                            const uint8_t msef[5])
 {
     if (!out || !valid_node(node_id))
         return false;
@@ -89,12 +90,12 @@ static bool build_pdo(CanFrame *out, uint8_t pdo_num, bool transmit, uint8_t nod
     return true;
 }
 
-bool canopen_build_tpdo(CanFrame *out, uint8_t pdo_num, uint8_t node_id, const uint8_t *data, uint8_t len)
+bool dws_canopen_build_tpdo(CanFrame *out, uint8_t pdo_num, uint8_t node_id, const uint8_t *data, uint8_t len)
 {
     return build_pdo(out, pdo_num, true, node_id, data, len);
 }
 
-bool canopen_build_rpdo(CanFrame *out, uint8_t pdo_num, uint8_t node_id, const uint8_t *data, uint8_t len)
+bool dws_canopen_build_rpdo(CanFrame *out, uint8_t pdo_num, uint8_t node_id, const uint8_t *data, uint8_t len)
 {
     return build_pdo(out, pdo_num, false, node_id, data, len);
 }
@@ -107,7 +108,7 @@ static void sdo_set_object(CanFrame *f, uint16_t index, uint8_t sub)
     f->data[3] = sub;
 }
 
-bool canopen_build_sdo_read(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub)
+bool dws_canopen_build_sdo_read(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub)
 {
     if (!out || !valid_node(node_id))
         return false;
@@ -117,8 +118,8 @@ bool canopen_build_sdo_read(CanFrame *out, uint8_t node_id, uint16_t index, uint
     return true;
 }
 
-bool canopen_build_sdo_write(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub, const uint8_t *data,
-                             uint8_t len)
+bool dws_canopen_build_sdo_write(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub, const uint8_t *data,
+                                 uint8_t len)
 {
     if (!out || !valid_node(node_id) || len < 1 || len > 4 || !data)
         return false;
@@ -130,8 +131,8 @@ bool canopen_build_sdo_write(CanFrame *out, uint8_t node_id, uint16_t index, uin
     return true;
 }
 
-bool canopen_build_sdo_abort(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub, uint32_t abort_code,
-                             bool to_server)
+bool dws_canopen_build_sdo_abort(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub, uint32_t abort_code,
+                                 bool to_server)
 {
     if (!out || !valid_node(node_id))
         return false;
@@ -145,7 +146,7 @@ bool canopen_build_sdo_abort(CanFrame *out, uint8_t node_id, uint16_t index, uin
     return true;
 }
 
-bool canopen_parse(const CanFrame *f, CanopenMsg *out)
+bool dws_canopen_parse(const CanFrame *f, CanopenMsg *out)
 {
     if (!f || !out || f->extended)
         return false; // CANopen default profile is 11-bit standard frames
@@ -228,7 +229,8 @@ bool canopen_parse(const CanFrame *f, CanopenMsg *out)
     }
 }
 
-bool canopen_parse_emcy(const CanFrame *f, uint8_t *node_id, uint16_t *error_code, uint8_t *error_reg, uint8_t msef[5])
+bool dws_canopen_parse_emcy(const CanFrame *f, uint8_t *node_id, uint16_t *error_code, uint8_t *error_reg,
+                            uint8_t msef[5])
 {
     if (!f || f->extended || f->dlc < 8)
         return false;
@@ -247,7 +249,7 @@ bool canopen_parse_emcy(const CanFrame *f, uint8_t *node_id, uint16_t *error_cod
     return true;
 }
 
-bool canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *state)
+bool dws_canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *state)
 {
     if (!f || f->extended || f->dlc < 1)
         return false;
@@ -262,7 +264,7 @@ bool canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *state
     return true;
 }
 
-bool canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out)
+bool dws_canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out)
 {
     if (!f || !out || f->extended || f->dlc < 8)
         return false;

@@ -17,8 +17,8 @@
  * bytes stuffed (as 0x7D, byte XOR 0x20) are the Flag 0x7E, the Escape 0x7D, XON 0x11, and
  * XOFF 0x13.
  *
- * spinel_frame_encode() wraps a payload; spinel_frame_decode() finds the flag, removes the
- * stuffing, and verifies the FCS. spinel_fcs() is the shared checksum. The spinel command
+ * dws_spinel_frame_encode() wraps a payload; dws_spinel_frame_decode() finds the flag, removes the
+ * stuffing, and verifies the FCS. dws_spinel_fcs() is the shared checksum. The spinel command
  * inside (a property get/set/insert, an 802.15.4 stream) is the application's. Pure - you
  * carry the bytes over your UART - so it is fully host-testable.
  *
@@ -56,7 +56,7 @@ struct SpinelCmd
 };
 
 /** @brief HDLC frame check sequence: CRC-16/X-25 over @p buf. */
-uint16_t spinel_fcs(const uint8_t *buf, uint16_t len);
+uint16_t dws_spinel_fcs(const uint8_t *buf, uint16_t len);
 
 // --- Spinel command layer (rides inside a decoded HDLC frame's payload) ---------------
 
@@ -65,22 +65,22 @@ uint16_t spinel_fcs(const uint8_t *buf, uint16_t len);
  *        continuation) into @p out.
  * @return the number of bytes written (1..5), or 0 if it would not fit @p cap.
  */
-uint8_t spinel_pack_uint(uint32_t value, uint8_t *out, uint8_t cap);
+uint8_t dws_spinel_pack_uint(uint32_t value, uint8_t *out, uint8_t cap);
 
 /**
  * @brief Decode a spinel packed unsigned integer from the front of @p raw.
  * @return the bytes consumed (> 0, value in @p value), 0 if more bytes are needed, or -1 if
  *         the encoding overflows a uint32.
  */
-int spinel_unpack_uint(const uint8_t *raw, uint8_t len, uint32_t *value);
+int dws_spinel_unpack_uint(const uint8_t *raw, uint8_t len, uint32_t *value);
 
 /**
  * @brief Build a spinel property-command payload (`header | CMD | PROP | value`) - the
  *        content of an HDLC frame - into @p out. CMD and PROP are packed integers.
  * @return the payload length, or 0 if it would not fit @p cap.
  */
-uint16_t spinel_command_build(uint8_t header, uint32_t cmd, uint32_t prop, const uint8_t *value, uint16_t value_len,
-                              uint8_t *out, uint16_t cap);
+uint16_t dws_spinel_command_build(uint8_t header, uint32_t cmd, uint32_t prop, const uint8_t *value, uint16_t value_len,
+                                  uint8_t *out, uint16_t cap);
 
 /**
  * @brief Parse a spinel property-command payload (from a decoded HDLC frame).
@@ -91,15 +91,15 @@ uint16_t spinel_command_build(uint8_t header, uint32_t cmd, uint32_t prop, const
  * @param[out] value_len the value length.
  * @return the value offset (> 0), or -1 if the header / command / property is malformed.
  */
-int spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, uint32_t *cmd, uint32_t *prop,
-                         const uint8_t **value, uint16_t *value_len);
+int dws_spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, uint32_t *cmd, uint32_t *prop,
+                             const uint8_t **value, uint16_t *value_len);
 
 /**
  * @brief Encode an HDLC-lite frame: @p payload + FCS, byte-stuffed, flag-terminated.
  * @return the encoded frame length, or 0 if @p len exceeds DWS_THREAD_MAX_DATA or the
  *         stuffed frame would not fit @p cap.
  */
-uint16_t spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap);
+uint16_t dws_spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap);
 
 /**
  * @brief Decode one HDLC-lite frame from the front of @p raw: find the flag, remove the
@@ -109,7 +109,7 @@ uint16_t spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out,
  *         (need more), or -1 if the frame is malformed (too short, bad FCS, dangling escape,
  *         or the payload overflows @p pay_cap) - the caller drops one byte and retries.
  */
-int spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint16_t pay_cap, uint16_t *pay_len);
+int dws_spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint16_t pay_cap, uint16_t *pay_len);
 
 #endif // DWS_ENABLE_THREAD
 

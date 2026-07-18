@@ -180,21 +180,21 @@ static void test_aes128gcm(void)
         snprintf(m, sizeof(m), "AES128GCM tcId=%d", v.tc);
 
         // seal: out == ciphertext || tag (ciphertext is empty when plaintext is)
-        quic_aes128_gcm_seal(key, iv, alen ? aad : nullptr, alen, plen ? pt : nullptr, plen, sealed);
+        dws_quic_aes128_gcm_seal(key, iv, alen ? aad : nullptr, alen, plen ? pt : nullptr, plen, sealed);
         if (clen)
             TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(ct, sealed, clen, m);
         TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(tag, sealed + plen, 16, m);
 
         // open: recovers the plaintext and authenticates
-        bool ok = quic_aes128_gcm_open(key, iv, alen ? aad : nullptr, alen, sealed, plen + 16, opened);
+        bool ok = dws_quic_aes128_gcm_open(key, iv, alen ? aad : nullptr, alen, sealed, plen + 16, opened);
         TEST_ASSERT_TRUE_MESSAGE(ok, m);
         if (plen)
             TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(pt, opened, plen, m);
 
         // negative: a flipped tag byte must fail authentication
         sealed[plen + 15] ^= 0x80;
-        TEST_ASSERT_FALSE_MESSAGE(quic_aes128_gcm_open(key, iv, alen ? aad : nullptr, alen, sealed, plen + 16, opened),
-                                  m);
+        TEST_ASSERT_FALSE_MESSAGE(
+            dws_quic_aes128_gcm_open(key, iv, alen ? aad : nullptr, alen, sealed, plen + 16, opened), m);
     }
 }
 
@@ -280,7 +280,7 @@ static void test_hkdf_extract(void)
         uint8_t salt[MAXB], ikm[MAXB], want[32], got[32];
         size_t slen = hexdec(v.salt, salt), ilen = hexdec(v.ikm, ikm);
         hexdec(v.prk, want);
-        quic_hkdf_extract(slen ? salt : nullptr, slen, ikm, ilen, got);
+        dws_quic_hkdf_extract(slen ? salt : nullptr, slen, ikm, ilen, got);
         char m[48];
         snprintf(m, sizeof(m), "HKDF-Extract tcId=%d", v.tc);
         TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(want, got, 32, m);

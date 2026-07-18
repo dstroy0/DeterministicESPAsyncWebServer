@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ntrip_caster.cpp
- * @brief NTRIP caster protocol codec - request parse + response / source-table build. See ntrip_caster.h.
+ * @file dws_ntrip_caster.cpp
+ * @brief NTRIP caster protocol codec - request parse + response / source-table build. See dws_ntrip_caster.h.
  */
 
 #include "services/gnss/ntrip_caster.h"
@@ -109,7 +109,7 @@ void scan_headers(const char *buf, const char *end, NtripRequest *out)
 }
 } // namespace
 
-bool ntrip_request_parse(const char *buf, size_t len, NtripRequest *out)
+bool dws_ntrip_request_parse(const char *buf, size_t len, NtripRequest *out)
 {
     memset(out, 0, sizeof(*out));
     out->version = NtripVersion::NTRIP_V1;
@@ -160,7 +160,7 @@ bool ntrip_request_parse(const char *buf, size_t len, NtripRequest *out)
     return true;
 }
 
-size_t ntrip_build_stream_response(char *out, size_t cap, NtripVersion version)
+size_t dws_ntrip_build_stream_response(char *out, size_t cap, NtripVersion version)
 {
     int n;
     if (version == NtripVersion::NTRIP_V2)
@@ -177,7 +177,7 @@ size_t ntrip_build_stream_response(char *out, size_t cap, NtripVersion version)
     return (size_t)n;
 }
 
-size_t ntrip_build_error_response(char *out, size_t cap, NtripVersion version)
+size_t dws_ntrip_build_error_response(char *out, size_t cap, NtripVersion version)
 {
     int n;
     if (version == NtripVersion::NTRIP_V2)
@@ -189,7 +189,7 @@ size_t ntrip_build_error_response(char *out, size_t cap, NtripVersion version)
     return (size_t)n;
 }
 
-size_t ntrip_build_unauthorized_response(char *out, size_t cap, NtripVersion version)
+size_t dws_ntrip_build_unauthorized_response(char *out, size_t cap, NtripVersion version)
 {
     int n;
     if (version == NtripVersion::NTRIP_V2)
@@ -205,7 +205,7 @@ size_t ntrip_build_unauthorized_response(char *out, size_t cap, NtripVersion ver
     return (size_t)n;
 }
 
-size_t ntrip_build_str_record(char *out, size_t cap, const NtripMount *m)
+size_t dws_ntrip_build_str_record(char *out, size_t cap, const NtripMount *m)
 {
     if (!m || !m->mountpoint)
         return 0;
@@ -227,8 +227,8 @@ size_t ntrip_build_str_record(char *out, size_t cap, const NtripMount *m)
     return (size_t)n;
 }
 
-size_t ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, const NtripMount *mounts,
-                               size_t mount_count)
+size_t dws_ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, const NtripMount *mounts,
+                                   size_t mount_count)
 {
     static const char ENDLINE[] = "ENDSOURCETABLE\r\n";
 
@@ -237,7 +237,7 @@ size_t ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, cons
     char rec[192];
     for (size_t i = 0; i < mount_count; i++)
     {
-        size_t rn = ntrip_build_str_record(rec, sizeof(rec), &mounts[i]);
+        size_t rn = dws_ntrip_build_str_record(rec, sizeof(rec), &mounts[i]);
         if (rn == 0)
             return 0;
         body_len += rn + 2; // + CRLF
@@ -268,7 +268,7 @@ size_t ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, cons
     size_t pos = (size_t)hn;
     for (size_t i = 0; i < mount_count; i++)
     {
-        size_t rn = ntrip_build_str_record(out + pos, cap - pos, &mounts[i]);
+        size_t rn = dws_ntrip_build_str_record(out + pos, cap - pos, &mounts[i]);
         if (rn == 0 || pos + rn + 2 >= cap)
             return 0;
         pos += rn;

@@ -15,7 +15,7 @@
 static const size_t FTP_SENT = (size_t)-1; // "overflowed" sentinel threaded through the emitters
 
 // Append raw bytes; propagates the overflow sentinel.
-static size_t ftp_emit(char *buf, size_t cap, size_t n, const char *s, size_t slen)
+static size_t dws_ftp_emit(char *buf, size_t cap, size_t n, const char *s, size_t slen)
 {
     // Overflow-safe bound: n <= cap is invariant (every non-sentinel return is <= cap), but guard
     // n > cap explicitly so cap - n provably cannot underflow; written as subtraction so a huge
@@ -29,7 +29,7 @@ static size_t ftp_emit(char *buf, size_t cap, size_t n, const char *s, size_t sl
 }
 
 // Append an unsigned decimal; propagates the overflow sentinel.
-static size_t ftp_emit_uint(char *buf, size_t cap, size_t n, unsigned v)
+static size_t dws_ftp_emit_uint(char *buf, size_t cap, size_t n, unsigned v)
 {
     if (n == FTP_SENT)
         return FTP_SENT;
@@ -51,7 +51,7 @@ static size_t ftp_emit_uint(char *buf, size_t cap, size_t n, unsigned v)
 }
 
 // Finish: on no overflow and room for the NUL, terminate and return the length; else 0.
-static size_t ftp_finish(char *buf, size_t cap, size_t n)
+static size_t dws_ftp_finish(char *buf, size_t cap, size_t n)
 {
     if (n == FTP_SENT || n >= cap) // no room for the NUL (n == cap); n <= cap invariant avoids n + 1 overflow
         return 0;
@@ -59,66 +59,66 @@ static size_t ftp_finish(char *buf, size_t cap, size_t n)
     return n;
 }
 
-size_t ftp_build_command(char *buf, size_t cap, const char *verb, const char *arg)
+size_t dws_ftp_build_command(char *buf, size_t cap, const char *verb, const char *arg)
 {
     if (!buf || !verb || !verb[0])
         return 0;
     size_t n = 0;
-    n = ftp_emit(buf, cap, n, verb, strnlen(verb, cap));
+    n = dws_ftp_emit(buf, cap, n, verb, strnlen(verb, cap));
     if (arg && arg[0])
     {
-        n = ftp_emit(buf, cap, n, " ", 1);
-        n = ftp_emit(buf, cap, n, arg, strnlen(arg, cap));
+        n = dws_ftp_emit(buf, cap, n, " ", 1);
+        n = dws_ftp_emit(buf, cap, n, arg, strnlen(arg, cap));
     }
-    n = ftp_emit(buf, cap, n, "\r\n", 2);
-    return ftp_finish(buf, cap, n);
+    n = dws_ftp_emit(buf, cap, n, "\r\n", 2);
+    return dws_ftp_finish(buf, cap, n);
 }
 
-size_t ftp_build_port(char *buf, size_t cap, const uint8_t ip[4], uint16_t port)
+size_t dws_ftp_build_port(char *buf, size_t cap, const uint8_t ip[4], uint16_t port)
 {
     if (!buf || !ip)
         return 0;
     size_t n = 0;
-    n = ftp_emit(buf, cap, n, "PORT ", 5);
+    n = dws_ftp_emit(buf, cap, n, "PORT ", 5);
     for (int i = 0; i < 4; i++)
     {
-        n = ftp_emit_uint(buf, cap, n, ip[i]);
-        n = ftp_emit(buf, cap, n, ",", 1);
+        n = dws_ftp_emit_uint(buf, cap, n, ip[i]);
+        n = dws_ftp_emit(buf, cap, n, ",", 1);
     }
-    n = ftp_emit_uint(buf, cap, n, (unsigned)(port >> 8));
-    n = ftp_emit(buf, cap, n, ",", 1);
-    n = ftp_emit_uint(buf, cap, n, (unsigned)(port & 0xFF));
-    n = ftp_emit(buf, cap, n, "\r\n", 2);
-    return ftp_finish(buf, cap, n);
+    n = dws_ftp_emit_uint(buf, cap, n, (unsigned)(port >> 8));
+    n = dws_ftp_emit(buf, cap, n, ",", 1);
+    n = dws_ftp_emit_uint(buf, cap, n, (unsigned)(port & 0xFF));
+    n = dws_ftp_emit(buf, cap, n, "\r\n", 2);
+    return dws_ftp_finish(buf, cap, n);
 }
 
-size_t ftp_build_eprt(char *buf, size_t cap, const char *ip_str, bool ipv6, uint16_t port)
+size_t dws_ftp_build_eprt(char *buf, size_t cap, const char *ip_str, bool ipv6, uint16_t port)
 {
     if (!buf || !ip_str || !ip_str[0])
         return 0;
     size_t n = 0;
-    n = ftp_emit(buf, cap, n, "EPRT |", 6);
-    n = ftp_emit(buf, cap, n, ipv6 ? "2" : "1", 1);
-    n = ftp_emit(buf, cap, n, "|", 1);
-    n = ftp_emit(buf, cap, n, ip_str, strnlen(ip_str, cap));
-    n = ftp_emit(buf, cap, n, "|", 1);
-    n = ftp_emit_uint(buf, cap, n, port);
-    n = ftp_emit(buf, cap, n, "|\r\n", 3);
-    return ftp_finish(buf, cap, n);
+    n = dws_ftp_emit(buf, cap, n, "EPRT |", 6);
+    n = dws_ftp_emit(buf, cap, n, ipv6 ? "2" : "1", 1);
+    n = dws_ftp_emit(buf, cap, n, "|", 1);
+    n = dws_ftp_emit(buf, cap, n, ip_str, strnlen(ip_str, cap));
+    n = dws_ftp_emit(buf, cap, n, "|", 1);
+    n = dws_ftp_emit_uint(buf, cap, n, port);
+    n = dws_ftp_emit(buf, cap, n, "|\r\n", 3);
+    return dws_ftp_finish(buf, cap, n);
 }
 
-static bool ftp_is_3digit(const char *p)
+static bool dws_ftp_is_3digit(const char *p)
 {
     return p[0] >= '0' && p[0] <= '9' && p[1] >= '0' && p[1] <= '9' && p[2] >= '0' && p[2] <= '9';
 }
 
-static int ftp_code3(const char *p)
+static int dws_ftp_code3(const char *p)
 {
     return (p[0] - '0') * 100 + (p[1] - '0') * 10 + (p[2] - '0');
 }
 
 // Index just past the LF of the line starting at @p start, or 0 if the line is not yet complete.
-static size_t ftp_line_end(const char *buf, size_t len, size_t start)
+static size_t dws_ftp_line_end(const char *buf, size_t len, size_t start)
 {
     for (size_t i = start; i < len; i++)
         if (buf[i] == '\n')
@@ -126,16 +126,16 @@ static size_t ftp_line_end(const char *buf, size_t len, size_t start)
     return 0;
 }
 
-bool ftp_parse_reply(const char *buf, size_t len, int *code, size_t *consumed)
+bool dws_ftp_parse_reply(const char *buf, size_t len, int *code, size_t *consumed)
 {
-    if (!buf || len < 4 || !ftp_is_3digit(buf))
+    if (!buf || len < 4 || !dws_ftp_is_3digit(buf))
         return false;
-    int first = ftp_code3(buf);
+    int first = dws_ftp_code3(buf);
     char sep = buf[3];
 
     if (sep == ' ')
     {
-        size_t eol = ftp_line_end(buf, len, 0);
+        size_t eol = dws_ftp_line_end(buf, len, 0);
         if (!eol)
             return false; // line not fully received
         *code = first;
@@ -146,21 +146,21 @@ bool ftp_parse_reply(const char *buf, size_t len, int *code, size_t *consumed)
         return false; // malformed: the separator must be SP or '-'
 
     // Multiline: end at the first line that begins with the same code followed by a space.
-    size_t pos = ftp_line_end(buf, len, 0);
+    size_t pos = dws_ftp_line_end(buf, len, 0);
     if (!pos)
         return false;
     while (pos < len)
     {
-        if (len - pos >= 4 && ftp_is_3digit(buf + pos) && ftp_code3(buf + pos) == first && buf[pos + 3] == ' ')
+        if (len - pos >= 4 && dws_ftp_is_3digit(buf + pos) && dws_ftp_code3(buf + pos) == first && buf[pos + 3] == ' ')
         {
-            size_t eol = ftp_line_end(buf, len, pos);
+            size_t eol = dws_ftp_line_end(buf, len, pos);
             if (!eol)
                 return false; // terminator line not fully received
             *code = first;
             *consumed = eol;
             return true;
         }
-        size_t eol = ftp_line_end(buf, len, pos);
+        size_t eol = dws_ftp_line_end(buf, len, pos);
         if (!eol)
             return false; // partial continuation line; need more
         pos = eol;
@@ -168,7 +168,7 @@ bool ftp_parse_reply(const char *buf, size_t len, int *code, size_t *consumed)
     return false; // no terminator yet
 }
 
-bool ftp_parse_pasv(const char *buf, size_t len, uint8_t ip[4], uint16_t *port)
+bool dws_ftp_parse_pasv(const char *buf, size_t len, uint8_t ip[4], uint16_t *port)
 {
     if (!buf || !ip || !port)
         return false;
@@ -208,7 +208,7 @@ bool ftp_parse_pasv(const char *buf, size_t len, uint8_t ip[4], uint16_t *port)
     return true;
 }
 
-bool ftp_parse_epsv(const char *buf, size_t len, uint16_t *port)
+bool dws_ftp_parse_epsv(const char *buf, size_t len, uint16_t *port)
 {
     if (!buf || !port)
         return false;

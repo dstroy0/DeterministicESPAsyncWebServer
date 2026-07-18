@@ -15,9 +15,9 @@
  * The reserved bytes that get stuffed (as 0x7D followed by byte XOR 0x20) are the Flag
  * 0x7E, the Escape 0x7D, XON 0x11, XOFF 0x13, Substitute 0x18, and Cancel 0x1A.
  *
- * ash_frame_encode() wraps a control byte + payload into a stuffed, CRC'd, flag-terminated
- * frame; ash_frame_decode() finds the flag, removes the stuffing, and verifies the CRC.
- * ash_crc16() is the shared CRC. The EZSP command the payload carries (version query, an
+ * dws_ash_frame_encode() wraps a control byte + payload into a stuffed, CRC'd, flag-terminated
+ * frame; dws_ash_frame_decode() finds the flag, removes the stuffing, and verifies the CRC.
+ * dws_ash_crc16() is the shared CRC. The EZSP command the payload carries (version query, an
  * incoming APS message, a network-init) is the application's. Pure - you carry the bytes
  * over your UART - so it is fully host-testable.
  *
@@ -46,14 +46,14 @@ struct Ash
 };
 
 /** @brief CRC-16/CCITT (polynomial 0x1021, MSB-first, init 0xFFFF) over @p buf. */
-uint16_t ash_crc16(const uint8_t *buf, uint16_t len);
+uint16_t dws_ash_crc16(const uint8_t *buf, uint16_t len);
 
 /**
  * @brief Encode an ASH frame: [control | payload] + CRC-16, byte-stuffed, flag-terminated.
  * @return the encoded frame length, or 0 if @p len exceeds DWS_ZIGBEE_MAX_DATA or the
  *         stuffed frame would not fit @p cap.
  */
-uint16_t ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap);
+uint16_t dws_ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap);
 
 /**
  * @brief Decode one ASH frame from the front of @p raw: find the flag, remove the stuffing,
@@ -64,8 +64,8 @@ uint16_t ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len,
  *         (need more), or -1 if the framed content is malformed (too short, bad CRC, or the
  *         payload overflows @p pay_cap) - the caller drops one byte and retries.
  */
-int ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t *payload, uint16_t pay_cap,
-                     uint16_t *pay_len);
+int dws_ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t *payload, uint16_t pay_cap,
+                         uint16_t *pay_len);
 
 #endif // DWS_ENABLE_ZIGBEE
 

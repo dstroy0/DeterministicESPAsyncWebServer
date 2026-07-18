@@ -60,7 +60,7 @@ bool eth_ready(void);
  *
  * Turns on IPv6 for the netif so it acquires a SLAAC link-local address and, if the network
  * advertises a prefix, a global address. Returns immediately (address configuration is
- * asynchronous); poll ipv6_ready(). The listeners already bind IPADDR_TYPE_ANY, so the server
+ * asynchronous); poll dws_ipv6_ready(). The listeners already bind IPADDR_TYPE_ANY, so the server
  * answers over IPv6 as soon as an address is up.
  *
  * @return true if IPv6 was enabled; false if disabled at build time or on host builds.
@@ -75,7 +75,7 @@ bool init_ipv6_physical(void);
 bool net_global_ipv6(DWSIp *out);
 
 /** @brief True once the interface has a global IPv6 address (see net_global_ipv6()). */
-bool ipv6_ready(void);
+bool dws_ipv6_ready(void);
 
 /**
  * @brief Which interface currently carries outbound traffic.

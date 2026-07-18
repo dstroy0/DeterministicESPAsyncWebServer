@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file quic_tp.h
- * @brief QUIC transport parameters (RFC 9000 sec 18) carried in the TLS quic_transport_parameters
+ * @file dws_quic_tp.h
+ * @brief QUIC transport parameters (RFC 9000 sec 18) carried in the TLS dws_quic_transport_parameters
  *        extension (RFC 9001 sec 8.2).
  *
  * Each endpoint states its transport limits (flow-control windows, stream limits, idle timeout, and
@@ -79,7 +79,7 @@ struct QuicTransportParams
 };
 
 /** @brief Fill @p tp with the RFC 9000 sec 18.2 default values (all connection IDs absent). */
-void quic_tp_defaults(QuicTransportParams *tp);
+void dws_quic_tp_defaults(QuicTransportParams *tp);
 
 /**
  * @brief Encode the server's transport parameters into @p out.
@@ -89,7 +89,7 @@ void quic_tp_defaults(QuicTransportParams *tp);
  * initial_max_streams_* limits, max_idle_timeout, max_udp_payload_size, active_connection_id_limit,
  * and disable_active_migration (only if set). @return bytes written, or 0 on overflow.
  */
-size_t quic_tp_encode(const QuicTransportParams *tp, uint8_t *out, size_t cap);
+size_t dws_quic_tp_encode(const QuicTransportParams *tp, uint8_t *out, size_t cap);
 
 /**
  * @brief Parse a peer's transport parameters (starting from the spec defaults).
@@ -100,7 +100,7 @@ size_t quic_tp_encode(const QuicTransportParams *tp, uint8_t *out, size_t cap);
  * ack_delay_exponent > 20, max_ack_delay >= 2^14, max_udp_payload_size < 1200,
  * active_connection_id_limit < 2, or a non-zero-length disable_active_migration.
  */
-bool quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp);
+bool dws_quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp);
 
 #endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_TP_H

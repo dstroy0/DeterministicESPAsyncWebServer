@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file h3_conn.cpp
- * @brief HTTP/3 application engine over QUIC streams (see h3_conn.h).
+ * @file dws_h3_conn.cpp
+ * @brief HTTP/3 application engine over QUIC streams (see dws_h3_conn.h).
  */
 
 #include "network_drivers/presentation/http3/h3_conn.h"
@@ -16,7 +16,7 @@
 
 namespace
 {
-H3Stream *h3_stream_get(H3Conn *h3, uint64_t id, bool create)
+H3Stream *dws_h3_stream_get(H3Conn *h3, uint64_t id, bool create)
 {
     H3Stream *free_slot = nullptr;
     for (size_t i = 0; i < DWS_H3_MAX_STREAMS; i++)
@@ -70,7 +70,7 @@ void dispatch_request(H3Conn *h3, H3Stream *st)
     while (off < st->buf_len)
     {
         H3Frame fr;
-        if (!h3_frame_parse(st->buf + off, st->buf_len - off, &fr))
+        if (!dws_h3_frame_parse(st->buf + off, st->buf_len - off, &fr))
             break;
         size_t payload = off + fr.header_len;
         if (payload + fr.length > st->buf_len)
@@ -79,7 +79,7 @@ void dispatch_request(H3Conn *h3, H3Stream *st)
         if (fr.type == H3FrameType::H3_HEADERS)
         {
             ReqEmit e = {st};
-            qpack_decode(fp, (size_t)fr.length, scratch, sizeof(scratch), req_emit, &e);
+            dws_qpack_decode(fp, (size_t)fr.length, scratch, sizeof(scratch), req_emit, &e);
             st->have_headers = true;
         }
         else if (fr.type == H3FrameType::H3_DATA)
@@ -111,11 +111,11 @@ void append(H3Stream *st, const uint8_t *data, size_t len)
 
 // Read the leading stream-type varint of a uni stream and set st->role; consumes it from the buffer.
 // Returns false if more bytes are needed (nothing consumed).
-bool h3_classify_uni_stream(H3Stream *st)
+bool dws_h3_classify_uni_stream(H3Stream *st)
 {
     uint64_t type = 0;
     size_t c = 0;
-    if (!quic_varint_decode(st->buf, st->buf_len, &type, &c))
+    if (!dws_quic_varint_decode(st->buf, st->buf_len, &type, &c))
         return false; // need more bytes for the varint
     st->type_read = true;
     if (type == 0x00)
@@ -132,20 +132,20 @@ bool h3_classify_uni_stream(H3Stream *st)
 }
 
 // Parse whatever complete frames the control stream holds (SETTINGS first), consuming them.
-void h3_consume_control(H3Conn *h3, H3Stream *st)
+void dws_h3_consume_control(H3Conn *h3, H3Stream *st)
 {
     size_t off = 0;
     while (off < st->buf_len)
     {
         H3Frame fr;
-        if (!h3_frame_parse(st->buf + off, st->buf_len - off, &fr))
+        if (!dws_h3_frame_parse(st->buf + off, st->buf_len - off, &fr))
             break;
         if (off + fr.header_len + fr.length > st->buf_len)
             break;
         if (fr.type == H3FrameType::H3_SETTINGS)
         {
-            h3_settings_defaults(&h3->peer_settings);
-            h3_parse_settings(st->buf + off + fr.header_len, (size_t)fr.length, &h3->peer_settings);
+            dws_h3_settings_defaults(&h3->peer_settings);
+            dws_h3_parse_settings(st->buf + off + fr.header_len, (size_t)fr.length, &h3->peer_settings);
         }
         off += fr.header_len + (size_t)fr.length;
     }
@@ -156,7 +156,7 @@ void h3_consume_control(H3Conn *h3, H3Stream *st)
 void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *data, size_t len, bool fin)
 {
     H3Conn *h3 = (H3Conn *)app;
-    H3Stream *st = h3_stream_get(h3, stream_id, true);
+    H3Stream *st = dws_h3_stream_get(h3, stream_id, true);
     if (!st)
         return;
 
@@ -166,12 +166,13 @@ void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *da
     append(st, data, len);
 
     // A unidirectional stream begins with a stream-type varint; classify it once.
-    if (st->role != H3StreamRole::H3_ROLE_REQUEST && !st->type_read && st->buf_len >= 1 && !h3_classify_uni_stream(st))
+    if (st->role != H3StreamRole::H3_ROLE_REQUEST && !st->type_read && st->buf_len >= 1 &&
+        !dws_h3_classify_uni_stream(st))
         return; // need more bytes for the varint
 
     if (st->role == H3StreamRole::H3_ROLE_CONTROL)
     {
-        h3_consume_control(h3, st);
+        dws_h3_consume_control(h3, st);
         return;
     }
     if (st->role != H3StreamRole::H3_ROLE_REQUEST)
@@ -193,24 +194,24 @@ void on_handshake_done(void *app, QuicConn *qc)
 
     // Server control stream (id 3): stream type 0x00 + SETTINGS.
     uint8_t buf[64];
-    size_t p = quic_varint_encode(buf, sizeof(buf), 0x00);
+    size_t p = dws_quic_varint_encode(buf, sizeof(buf), 0x00);
     const uint64_t ids[] = {H3Setting::H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY,
                             H3Setting::H3_SETTINGS_QPACK_BLOCKED_STREAMS};
     const uint64_t vals[] = {0, 0};
-    p += h3_build_settings(buf + p, sizeof(buf) - p, ids, vals, 2);
-    quic_conn_stream_send(qc, 3, buf, p, false);
+    p += dws_h3_build_settings(buf + p, sizeof(buf) - p, ids, vals, 2);
+    dws_quic_conn_stream_send(qc, 3, buf, p, false);
 
     // QPACK encoder (id 7, type 0x02) and decoder (id 11, type 0x03) streams: type byte only.
     uint8_t t;
-    size_t n = quic_varint_encode(&t, 1, 0x02);
-    quic_conn_stream_send(qc, 7, &t, n, false);
-    n = quic_varint_encode(&t, 1, 0x03);
-    quic_conn_stream_send(qc, 11, &t, n, false);
+    size_t n = dws_quic_varint_encode(&t, 1, 0x02);
+    dws_quic_conn_stream_send(qc, 7, &t, n, false);
+    n = dws_quic_varint_encode(&t, 1, 0x03);
+    dws_quic_conn_stream_send(qc, 11, &t, n, false);
     h3->next_uni_id = 15;
 }
 } // namespace
 
-void h3_conn_init(H3Conn *h3, QuicConn *qc, H3RequestFn on_request, void *app)
+void dws_h3_conn_init(H3Conn *h3, QuicConn *qc, H3RequestFn on_request, void *app)
 {
     memset(h3, 0, sizeof(*h3));
     h3->qc = qc;
@@ -219,34 +220,34 @@ void h3_conn_init(H3Conn *h3, QuicConn *qc, H3RequestFn on_request, void *app)
     h3->next_uni_id = 3;
     for (size_t i = 0; i < DWS_H3_MAX_STREAMS; i++)
         h3->streams[i].id = UINT64_MAX;
-    h3_settings_defaults(&h3->peer_settings);
+    dws_h3_settings_defaults(&h3->peer_settings);
 
     QuicConnCallbacks cb = {on_stream_data, on_handshake_done, h3};
     qc->cb = cb;
 }
 
-bool h3_conn_respond(H3Conn *h3, uint64_t stream_id, int status, const char *content_type, const uint8_t *body,
-                     size_t body_len)
+bool dws_h3_conn_respond(H3Conn *h3, uint64_t stream_id, int status, const char *content_type, const uint8_t *body,
+                         size_t body_len)
 {
-    H3Stream *st = h3_stream_get(h3, stream_id, false);
+    H3Stream *st = dws_h3_stream_get(h3, stream_id, false);
     if (st)
         st->responded = true;
 
     // QPACK field section: prefix + :status + optional content-type + content-length.
     uint8_t block[256];
-    size_t bp = qpack_encode_prefix(block, sizeof(block));
+    size_t bp = dws_qpack_encode_prefix(block, sizeof(block));
     char st3[4];
     st3[0] = (char)('0' + (status / 100) % 10);
     st3[1] = (char)('0' + (status / 10) % 10);
     st3[2] = (char)('0' + status % 10);
     st3[3] = '\0';
-    bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":status", 7, st3, 3);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":status", 7, st3, 3);
     if (content_type)
         // Cap above the largest content-type that can fit this block even at QPACK-Huffman's best
         // 5-bit/char (~sizeof block * 8/5), so an over-long value trips the encode's reject below
-        // instead of being truncated into a fittable length (see the matching h2_conn note).
-        bp += qpack_encode_header(block + bp, sizeof(block) - bp, "content-type", 12, content_type,
-                                  strnlen(content_type, sizeof(block) * 2));
+        // instead of being truncated into a fittable length (see the matching dws_h2_conn note).
+        bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, "content-type", 12, content_type,
+                                      strnlen(content_type, sizeof(block) * 2));
     char clen[16];
     size_t cl = 0;
     {
@@ -262,21 +263,21 @@ bool h3_conn_respond(H3Conn *h3, uint64_t stream_id, int status, const char *con
         while (n)
             clen[cl++] = tmp[--n];
     }
-    bp += qpack_encode_header(block + bp, sizeof(block) - bp, "content-length", 14, clen, cl);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, "content-length", 14, clen, cl);
 
     // HEADERS frame + DATA frame, sent on the request stream with FIN.
     uint8_t out[DWS_H3_STREAM_BUF];
-    size_t op = h3_build_headers(out, sizeof(out), block, bp);
+    size_t op = dws_h3_build_headers(out, sizeof(out), block, bp);
     if (!op)
         return false;
     if (body_len)
     {
-        size_t dn = h3_build_data(out + op, sizeof(out) - op, body, body_len);
+        size_t dn = dws_h3_build_data(out + op, sizeof(out) - op, body, body_len);
         if (!dn)
             return false;
         op += dn;
     }
-    return quic_conn_stream_send(h3->qc, stream_id, out, op, true) == op;
+    return dws_quic_conn_stream_send(h3->qc, stream_id, out, op, true) == op;
 }
 
 #endif // DWS_ENABLE_HTTP3

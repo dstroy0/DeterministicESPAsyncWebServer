@@ -13,8 +13,8 @@
 #include "shared_primitives/endian.h"
 #include <string.h>
 
-size_t melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t head_device, uint16_t points,
-                         uint16_t monitoring_timer)
+size_t dws_melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t head_device, uint16_t points,
+                             uint16_t monitoring_timer)
 {
     if (!buf || cap < MELSEC_3E_READ_REQ_LEN)
         return 0;
@@ -39,7 +39,7 @@ size_t melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t
     return p; // == MELSEC_3E_READ_REQ_LEN
 }
 
-bool melsec_parse_response(const uint8_t *buf, size_t len, MelsecResponse *out)
+bool dws_melsec_parse_response(const uint8_t *buf, size_t len, MelsecResponse *out)
 {
     // subheader(2)+net(1)+pc(1)+io(2)+multidrop(1)+length(2)+endcode(2) = MELSEC_3E_RES_MIN_LEN
     if (!buf || !out || len < MELSEC_3E_RES_MIN_LEN)

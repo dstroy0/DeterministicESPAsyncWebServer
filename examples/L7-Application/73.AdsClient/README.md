@@ -7,19 +7,19 @@
 ADS (Automation Device Specification) is the protocol Beckhoff's TwinCAT PC-based
 control speaks - the most common way to read and write a Beckhoff PLC over the
 network. It rides on AMS (Automation Message Specification) over TCP port 48898.
-`services/ads` is a pure codec: `ads_build_*` produce complete on-wire frames
-(AMS/TCP header + 32-octet AMS header + the command payload) and `ads_parse_*`
+`services/ads` is a pure codec: `dws_ads_build_*` produce complete on-wire frames
+(AMS/TCP header + 32-octet AMS header + the command payload) and `dws_ads_parse_*`
 decode the replies. The sketch owns the socket (a plain `WiFiClient`) and runs a
 small sequence against a real router:
 
 ```cpp
 AdsRequest r = next_request();                 // target/source AMSNetId + invoke id
-size_t n = ads_build_read_state(c_req, sizeof(c_req), &r);
+size_t n = dws_ads_build_read_state(c_req, sizeof(c_req), &r);
 // ...write c_req, read the AMS/TCP-framed reply into c_resp...
 AdsAmsHeader h;
 AdsReadStateResult st;
-ads_parse_ams_header(c_resp, n, &h);
-ads_parse_read_state(h.data, h.data_len, &st); // st.ads_state == 5 -> RUN
+dws_ads_parse_ams_header(c_resp, n, &h);
+dws_ads_parse_read_state(h.data, h.data_len, &st); // st.dws_ads_state == 5 -> RUN
 ```
 
 **Reading a symbol by name** is the two-step ADS idiom: `ReadWrite` the symbol name
@@ -27,13 +27,13 @@ to index group `0xF003` to get a 4-octet handle, then `Read` the value from inde
 group `0xF005` at that handle (and `Write` the handle back to `0xF006` to release it):
 
 ```cpp
-ads_build_read_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_hnd_by_name,
+dws_ads_build_read_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_hnd_by_name,
                      0, 4, (const uint8_t *)"MAIN.nCounter", 13); // name -> handle
-ads_build_read(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_val_by_handle, handle, 4);
+dws_ads_build_read(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_val_by_handle, handle, 4);
 ```
 
 The codec also covers `ReadDeviceInfo`, `Write`, `WriteControl`, and device
-notifications (`ads_build_add_notification` / `ads_parse_notification` to subscribe
+notifications (`dws_ads_build_add_notification` / `dws_ads_parse_notification` to subscribe
 to a symbol and walk the pushed samples).
 
 ## Prerequisites (real TwinCAT router)

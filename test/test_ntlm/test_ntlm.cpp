@@ -42,13 +42,13 @@ void test_ntowfv2()
 {
     uint8_t nt[16], owf[16];
     char hex[33];
-    ntlm_nt_hash("Password", nt);
-    TEST_ASSERT_TRUE(ntlm_ntowfv2(nt, "User", "Domain", owf));
+    dws_ntlm_nt_hash("Password", nt);
+    TEST_ASSERT_TRUE(dws_ntlm_ntowfv2(nt, "User", "Domain", owf));
     to_hex(owf, 16, hex);
     // MS-NLMP 4.2.4.1 published value
     TEST_ASSERT_EQUAL_STRING("0c868a403bfd7a93a3001ef22ef02e3f", hex);
     // the NT hash of "password" (lowercase) is the well-known 8846f7ea...
-    ntlm_nt_hash("password", nt);
+    dws_ntlm_nt_hash("password", nt);
     to_hex(nt, 16, hex);
     TEST_ASSERT_EQUAL_STRING("8846f7eaee8fb117ad06bdd830b7586c", hex);
 }
@@ -56,8 +56,8 @@ void test_ntowfv2()
 void test_ntlmv2_response()
 {
     uint8_t nt[16], owf[16];
-    ntlm_nt_hash("Password", nt);
-    ntlm_ntowfv2(nt, "User", "Domain", owf);
+    dws_ntlm_nt_hash("Password", nt);
+    dws_ntlm_ntowfv2(nt, "User", "Domain", owf);
 
     uint8_t srv[8], cli[8], ti[64];
     unhex("0123456789abcdef", srv);
@@ -66,7 +66,7 @@ void test_ntlmv2_response()
     size_t ti_len = unhex("02000c0044006f006d00610069006e0001000c0053006500720076006500720000000000", ti);
 
     uint8_t out[256], skey[16];
-    size_t n = ntlm_v2_response(owf, srv, cli, time, ti, ti_len, out, sizeof(out), skey);
+    size_t n = dws_ntlm_v2_response(owf, srv, cli, time, ti, ti_len, out, sizeof(out), skey);
     TEST_ASSERT_EQUAL_size_t(48 + ti_len, n);
 
     char hex[513];
@@ -85,7 +85,7 @@ void test_ntlmv2_response()
 void test_fail_closed()
 {
     uint8_t owf[16] = {0}, srv[8] = {0}, cli[8] = {0}, time[8] = {0}, ti[4] = {0}, out[16], skey[16];
-    TEST_ASSERT_EQUAL_size_t(0, ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), out, sizeof(out), skey));
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), out, sizeof(out), skey));
 }
 
 // A user long enough that its UTF-16LE expansion overflows the 256-char (512-byte) scratch: the
@@ -96,7 +96,7 @@ void test_ntowfv2_user_overflow()
     char user[300];
     memset(user, 'a', sizeof(user) - 1); // 299 chars -> 598 bytes UTF-16LE, over the 512-byte buffer
     user[sizeof(user) - 1] = 0;
-    TEST_ASSERT_FALSE(ntlm_ntowfv2(nt, user, "X", owf));
+    TEST_ASSERT_FALSE(dws_ntlm_ntowfv2(nt, user, "X", owf));
 }
 
 // A user that fits but a domain that pushes the concatenation over the scratch: the domain loop's
@@ -110,7 +110,7 @@ void test_ntowfv2_domain_overflow()
     char domain[40];
     memset(domain, 'c', 39); // 39 chars -> tips n past 512 in the domain loop
     domain[39] = 0;
-    TEST_ASSERT_FALSE(ntlm_ntowfv2(nt, user, domain, owf));
+    TEST_ASSERT_FALSE(dws_ntlm_ntowfv2(nt, user, domain, owf));
 }
 
 // A user char that is >= 'a' but > 'z' ('{') exercises the ASCII-uppercase compound guard's
@@ -118,14 +118,14 @@ void test_ntowfv2_domain_overflow()
 void test_ntowfv2_upper_high_char()
 {
     uint8_t nt[16] = {0}, owf[16];
-    TEST_ASSERT_TRUE(ntlm_ntowfv2(nt, "a{z", "", owf));
+    TEST_ASSERT_TRUE(dws_ntlm_ntowfv2(nt, "a{z", "", owf));
 }
 
 // A null out buffer fails closed before any write (ntlm.cpp:86, the !out side of the guard).
 void test_v2_response_null_out()
 {
     uint8_t owf[16] = {0}, srv[8] = {0}, cli[8] = {0}, time[8] = {0}, ti[4] = {0}, skey[16];
-    TEST_ASSERT_EQUAL_size_t(0, ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), nullptr, 100, skey));
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), nullptr, 100, skey));
 }
 
 // A null session_key skips the SessionBaseKey derivation (ntlm.cpp:109 false side); the returned
@@ -133,8 +133,8 @@ void test_v2_response_null_out()
 void test_v2_response_null_skey()
 {
     uint8_t nt[16], owf[16];
-    ntlm_nt_hash("Password", nt);
-    ntlm_ntowfv2(nt, "User", "Domain", owf);
+    dws_ntlm_nt_hash("Password", nt);
+    dws_ntlm_ntowfv2(nt, "User", "Domain", owf);
 
     uint8_t srv[8], cli[8], ti[64];
     unhex("0123456789abcdef", srv);
@@ -143,7 +143,7 @@ void test_v2_response_null_skey()
     size_t ti_len = unhex("02000c0044006f006d00610069006e0001000c0053006500720076006500720000000000", ti);
 
     uint8_t out[256];
-    size_t n = ntlm_v2_response(owf, srv, cli, time, ti, ti_len, out, sizeof(out), nullptr);
+    size_t n = dws_ntlm_v2_response(owf, srv, cli, time, ti, ti_len, out, sizeof(out), nullptr);
     TEST_ASSERT_EQUAL_size_t(48 + ti_len, n);
     char hex[513];
     to_hex(out, 16, hex);

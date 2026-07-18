@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ntrip_caster.h
+ * @file dws_ntrip_caster.h
  * @brief NTRIP caster protocol codec (DWS_ENABLE_NTRIP_CASTER) - the pure, host-tested core.
  *
  * NTRIP (Networked Transport of RTCM via Internet Protocol) is how a GNSS base's RTCM corrections reach
@@ -18,7 +18,7 @@
  * This file parses a rover request (mountpoint, version, optional HTTP Basic credentials) and builds the
  * caster's responses - the stream-accept line, an error line, and the RTCM source table (one `STR;...`
  * record per mountpoint per the NTRIP source-table format, terminated by `ENDSOURCETABLE`). It touches no
- * sockets; the listener glue (ntrip_caster_listener.h) drives it and pumps bytes. Zero heap.
+ * sockets; the listener glue (dws_ntrip_caster_listener.h) drives it and pumps bytes. Zero heap.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -60,28 +60,28 @@ struct NtripRequest
  *         filled; false if more bytes are still needed. A completed request with @c is_get false is a
  *         malformed / unsupported request the caller should reject.
  */
-bool ntrip_request_parse(const char *buf, size_t len, NtripRequest *out);
+bool dws_ntrip_request_parse(const char *buf, size_t len, NtripRequest *out);
 
 /**
  * @brief Build the stream-accept response the caster sends before streaming RTCM to a rover.
  * @return bytes written (excluding any NUL), or 0 on overflow. V1 = "ICY 200 OK\r\n\r\n";
  *         V2 = an HTTP/1.1 200 response with Content-Type: gnss/data.
  */
-size_t ntrip_build_stream_response(char *out, size_t cap, NtripVersion version);
+size_t dws_ntrip_build_stream_response(char *out, size_t cap, NtripVersion version);
 
 /**
  * @brief Build an error response for an unknown mountpoint / bad request.
  * @return bytes written, or 0 on overflow. V1 = a bare "SOURCETABLE 200 OK" fallback is NOT used here;
  *         this emits a 404-style line ("HTTP/1.1 404 Not Found" for V2, "ERROR - Bad Request" for V1).
  */
-size_t ntrip_build_error_response(char *out, size_t cap, NtripVersion version);
+size_t dws_ntrip_build_error_response(char *out, size_t cap, NtripVersion version);
 
 /**
  * @brief Build an unauthorized response for a mountpoint that requires (and did not get valid) HTTP
  *        Basic credentials. V2 = "HTTP/1.1 401 Unauthorized" with a WWW-Authenticate: Basic challenge;
  *        V1 = "ERROR - Bad Password". @return bytes written, or 0 on overflow.
  */
-size_t ntrip_build_unauthorized_response(char *out, size_t cap, NtripVersion version);
+size_t dws_ntrip_build_unauthorized_response(char *out, size_t cap, NtripVersion version);
 
 /** @brief One mountpoint's source-table (`STR;...`) description. Unset string fields default sensibly. */
 struct NtripMount
@@ -101,15 +101,15 @@ struct NtripMount
  * @brief Build one NTRIP source-table `STR;...` record (no trailing CRLF) for @p m into @p out.
  * @return bytes written (excluding NUL), or 0 on overflow.
  */
-size_t ntrip_build_str_record(char *out, size_t cap, const NtripMount *m);
+size_t dws_ntrip_build_str_record(char *out, size_t cap, const NtripMount *m);
 
 /**
  * @brief Build a full source-table response: the status/header block, one `STR;...\r\n` per mountpoint,
  *        then `ENDSOURCETABLE\r\n`. The Content-Length (V2) / body length (V1) is computed for you.
  * @return total bytes written (excluding NUL), or 0 on overflow.
  */
-size_t ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, const NtripMount *mounts,
-                               size_t mount_count);
+size_t dws_ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, const NtripMount *mounts,
+                                   size_t mount_count);
 
 #endif // DWS_ENABLE_NTRIP_CASTER
 

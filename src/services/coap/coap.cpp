@@ -245,7 +245,7 @@ static size_t emit_options_payload(uint8_t *resp, size_t cap, size_t n, uint8_t 
 // Core processing (no sockets, no heap)
 // ---------------------------------------------------------------------------
 
-size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap,
+size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t dws_resp_cap,
                                   int32_t observe_seq)
 {
     if (req_len < 4)
@@ -267,14 +267,14 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
     // reject a CON with an RST; stay silent for a NON.
     if (ver != 1 || tkl > COAP_MAX_TOKEN)
         return (type == CoapType::COAP_TYPE_CON)
-                   ? emit_header(resp, resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
+                   ? emit_header(resp, dws_resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
                    : 0;
 
     const uint8_t *p = req + 4;
     const uint8_t *end = req + req_len;
     if (p + tkl > end)
         return (type == CoapType::COAP_TYPE_CON)
-                   ? emit_header(resp, resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
+                   ? emit_header(resp, dws_resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
                    : 0;
     const uint8_t *token = p;
     p += tkl;
@@ -282,7 +282,7 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
     // An empty message (Code 0.00): CON is a ping -> RST; anything else -> ignore.
     if (code == 0)
         return (type == CoapType::COAP_TYPE_CON)
-                   ? emit_header(resp, resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
+                   ? emit_header(resp, dws_resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
                    : 0;
 
 #if DWS_ENABLE_COAP_OBSERVE
@@ -419,9 +419,11 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
     }
 
     if (bad)
-        return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, mid, token, tkl);
+        return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, mid, token,
+                           tkl);
     if (bad_option)
-        return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid, token, tkl);
+        return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid, token,
+                           tkl);
 
     if (path_len == 0)
     {
@@ -433,8 +435,8 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
     // "A request with an unrecognized or unsupported Method Code MUST generate a 4.05
     // (Method Not Allowed) piggybacked response."
     if ((code >> 5) != 0 || code < (uint8_t)CoapMethod::COAP_GET || code > (uint8_t)CoapMethod::COAP_DELETE)
-        return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, mid, token,
-                           tkl);
+        return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, mid,
+                           token, tkl);
 
     // The response the emit path below serializes (block-wise if large). Filled
     // either by the .well-known/core discovery listing or by a resource handler.
@@ -451,8 +453,8 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
     if (strcmp(s_coap.path, "/.well-known/core") == 0)
     {
         if (code != (uint8_t)CoapMethod::COAP_GET)
-            return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, mid,
-                               token, tkl);
+            return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED,
+                               mid, token, tkl);
         size_t pl = 0;
         for (size_t i = 0; i < s_coap.res_count; i++)
         {
@@ -475,11 +477,11 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
     {
         const CoapResource *r = find_resource(s_coap, s_coap.path);
         if (!r)
-            return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_NOT_FOUND, mid, token,
+            return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_NOT_FOUND, mid, token,
                                tkl);
         if (!(r->methods & (1u << code)))
-            return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, mid,
-                               token, tkl);
+            return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED,
+                               mid, token, tkl);
 
         const uint8_t *eff_payload = payload;
         size_t eff_payload_len = payload_len;
@@ -493,8 +495,8 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
             uint8_t more = (uint8_t)((b >> 3) & 1);
             uint8_t szx = (uint8_t)(b & 7);
             if (szx == 7) // reserved block size
-                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid, token,
-                                   tkl);
+                return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid,
+                                   token, tkl);
             uint32_t bsize = 1u << (szx + 4);
             if (num == 0) // first block starts a fresh transfer
             {
@@ -506,14 +508,14 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
             if (szx != s_coap.b1_szx || (size_t)num * bsize != s_coap.b1_len)
             {
                 s_coap.b1_len = 0;
-                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_REQUEST_INCOMPLETE,
+                return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_REQUEST_INCOMPLETE,
                                    mid, token, tkl);
             }
             if (s_coap.b1_len + payload_len > sizeof(s_coap.b1))
             {
                 s_coap.b1_len = 0;
-                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_REQUEST_TOO_LARGE, mid,
-                                   token, tkl);
+                return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_REQUEST_TOO_LARGE,
+                                   mid, token, tkl);
             }
             if (payload_len)
                 memcpy(s_coap.b1 + s_coap.b1_len, payload, payload_len);
@@ -523,11 +525,11 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
             {
                 // More blocks coming: acknowledge with 2.31 Continue + Block1 echo
                 // (no representation yet; the handler runs only on the final block).
-                size_t cn = emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, mid,
+                size_t cn = emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, mid,
                                         token, tkl);
                 if (cn == 0)
                     return 0;
-                return emit_options_payload(resp, resp_cap, cn, (uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, -1,
+                return emit_options_payload(resp, dws_resp_cap, cn, (uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, -1,
                                             CoapContentFormat::COAP_CF_NONE, -1,
                                             (int32_t)((num << 4) | (1u << 3) | szx), nullptr, 0);
             }
@@ -570,8 +572,8 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
             num = b >> 4;
             szx = (uint8_t)(b & 7);
             if (szx == 7)
-                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid, token,
-                                   tkl);
+                return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid,
+                                   token, tkl);
             if (szx > DWS_COAP_BLOCK_SZX_MAX)
                 szx = DWS_COAP_BLOCK_SZX_MAX;
             block_wise = true; // the client asked for block-wise transfer
@@ -586,7 +588,7 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
             size_t off = (size_t)num * bsize;
             // A block number past the end of the representation is a bad request.
             if (off > cresp.payload_len || (off == cresp.payload_len && num > 0))
-                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, mid,
+                return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, mid,
                                    token, tkl);
             size_t this_len = cresp.payload_len - off;
             uint8_t more = 0;
@@ -603,16 +605,16 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
 #endif
 
     // Build the response: header + token + options (ascending order) + payload.
-    size_t n = emit_header(resp, resp_cap, rsp_type, cresp.code, mid, token, tkl);
+    size_t n = emit_header(resp, dws_resp_cap, rsp_type, cresp.code, mid, token, tkl);
     if (n == 0)
         return 0;
-    return emit_options_payload(resp, resp_cap, n, cresp.code, observe_seq, cresp.content_format, block2_echo,
+    return emit_options_payload(resp, dws_resp_cap, n, cresp.code, observe_seq, cresp.content_format, block2_echo,
                                 block1_echo, cresp.payload, cresp.payload_len);
 }
 
-size_t dws_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap)
+size_t dws_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t dws_resp_cap)
 {
-    return dws_coap_server_process_ex(req, req_len, resp, resp_cap, -1); // no Observe option
+    return dws_coap_server_process_ex(req, req_len, resp, dws_resp_cap, -1); // no Observe option
 }
 
 // ---------------------------------------------------------------------------

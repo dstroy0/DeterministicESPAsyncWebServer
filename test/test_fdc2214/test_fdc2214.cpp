@@ -17,24 +17,24 @@ void tearDown(void)
 void test_data_combine(void)
 {
     // MSB register: error flags 0x3 in top nibble, data MSB 0xABC; LSB register 0x1234.
-    uint32_t d = fdc2214_data(0x3ABC, 0x1234);
+    uint32_t d = dws_fdc2214_data(0x3ABC, 0x1234);
     TEST_ASSERT_EQUAL_HEX32(0x0ABC1234, d); // error nibble masked out of the 28-bit result
-    TEST_ASSERT_EQUAL_UINT8(0x3, fdc2214_error(0x3ABC));
-    TEST_ASSERT_EQUAL_UINT8(0x0, fdc2214_error(0x0ABC));
+    TEST_ASSERT_EQUAL_UINT8(0x3, dws_fdc2214_error(0x3ABC));
+    TEST_ASSERT_EQUAL_UINT8(0x0, dws_fdc2214_error(0x0ABC));
 }
 
 void test_freq_scale(void)
 {
     // data = 2^27 (half scale), fref = 40 MHz -> f_sensor = 20 MHz.
-    TEST_ASSERT_EQUAL_UINT64(20000000ULL, fdc2214_sensor_freq_hz(1u << 27, 40000000u));
+    TEST_ASSERT_EQUAL_UINT64(20000000ULL, dws_fdc2214_sensor_freq_hz(1u << 27, 40000000u));
     // data = 2^28-... full scale approx fref.
-    TEST_ASSERT_EQUAL_UINT64(0ULL, fdc2214_sensor_freq_hz(0, 40000000u));
+    TEST_ASSERT_EQUAL_UINT64(0ULL, dws_fdc2214_sensor_freq_hz(0, 40000000u));
 }
 
 void test_build_config(void)
 {
     uint8_t buf[FDC2214_CONFIG_MAX];
-    size_t n = fdc2214_build_config(buf, sizeof(buf), 0xFFFF, 0x0400);
+    size_t n = dws_fdc2214_build_config(buf, sizeof(buf), 0xFFFF, 0x0400);
     TEST_ASSERT_EQUAL_size_t(21, n); // 7 triples
     // First triple: RCOUNT_CH0 = 0xFFFF.
     TEST_ASSERT_EQUAL_HEX8(FDC2214_REG_RCOUNT_CH0, buf[0]);
@@ -53,7 +53,7 @@ void test_build_config(void)
 void test_build_config_too_small(void)
 {
     uint8_t small[10];
-    TEST_ASSERT_EQUAL_size_t(0, fdc2214_build_config(small, sizeof(small), 0xFFFF, 0x0400));
+    TEST_ASSERT_EQUAL_size_t(0, dws_fdc2214_build_config(small, sizeof(small), 0xFFFF, 0x0400));
 }
 
 int main(void)

@@ -97,11 +97,11 @@ namespace
 // One named owner, unreachable from any other translation unit.
 struct PromiscCtx
 {
-    promisc_sink_fn sink = nullptr;
+    dws_promisc_sink_fn sink = nullptr;
 };
 PromiscCtx s_promisc;
 
-void promisc_rx(void *buf, wifi_promiscuous_pkt_type_t)
+void dws_promisc_rx(void *buf, wifi_promiscuous_pkt_type_t)
 {
     if (!s_promisc.sink || !buf)
         return;
@@ -113,23 +113,23 @@ void promisc_rx(void *buf, wifi_promiscuous_pkt_type_t)
 }
 } // namespace
 
-bool promisc_begin(uint8_t channel, promisc_sink_fn sink)
+bool dws_promisc_begin(uint8_t channel, dws_promisc_sink_fn sink)
 {
     if (!sink)
         return false;
     s_promisc.sink = sink;
     esp_wifi_set_promiscuous(true);
-    esp_wifi_set_promiscuous_rx_cb(&promisc_rx);
+    esp_wifi_set_promiscuous_rx_cb(&dws_promisc_rx);
     esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
     return true;
 }
 
-void promisc_set_channel(uint8_t channel)
+void dws_promisc_set_channel(uint8_t channel)
 {
     esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
 }
 
-void promisc_end(void)
+void dws_promisc_end(void)
 {
     esp_wifi_set_promiscuous(false);
     s_promisc.sink = nullptr;
@@ -137,15 +137,15 @@ void promisc_end(void)
 
 #else // host build - no radio
 
-bool promisc_begin(uint8_t, promisc_sink_fn)
+bool dws_promisc_begin(uint8_t, dws_promisc_sink_fn)
 {
     return false;
 }
-void promisc_set_channel(uint8_t)
+void dws_promisc_set_channel(uint8_t)
 {
     // host build: no radio, no channel to set
 }
-void promisc_end(void)
+void dws_promisc_end(void)
 {
     // host build: no radio, nothing to stop
 }

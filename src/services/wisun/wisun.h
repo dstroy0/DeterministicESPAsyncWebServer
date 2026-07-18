@@ -13,8 +13,8 @@
  * built PDU to the node's address over `dws_udp`; the specific devboard only sets which border router you
  * point at, not this code.
  *
- * Pure: `wisun_build_coap` frames an RFC 7252 request (header + Uri-Path options + payload), the node
- * registry tracks the mesh, and `wisun_nodes_json` exposes it to the web. No heap, no stdlib,
+ * Pure: `dws_wisun_build_coap` frames an RFC 7252 request (header + Uri-Path options + payload), the node
+ * registry tracks the mesh, and `dws_wisun_nodes_json` exposes it to the web. No heap, no stdlib,
  * host-testable.
  */
 
@@ -49,8 +49,8 @@ struct WisunCoap
  * @param plen    payload length.
  * @return the PDU length, or 0 on overflow / bad args (tkl > 8).
  */
-size_t wisun_build_coap(uint8_t type, uint8_t code, uint16_t msg_id, const uint8_t *token, uint8_t tkl,
-                        const char *uri_path, const uint8_t *payload, size_t plen, uint8_t *out, size_t cap);
+size_t dws_wisun_build_coap(uint8_t type, uint8_t code, uint16_t msg_id, const uint8_t *token, uint8_t tkl,
+                            const char *uri_path, const uint8_t *payload, size_t plen, uint8_t *out, size_t cap);
 
 /** @brief One FAN mesh node behind the border router. */
 struct WisunNode
@@ -70,25 +70,25 @@ struct WisunFan
 };
 
 /** @brief Initialize the connector over caller storage. */
-void wisun_init(WisunFan *fan, const DWSIp *border_router, WisunNode *storage, size_t cap);
+void dws_wisun_init(WisunFan *fan, const DWSIp *border_router, WisunNode *storage, size_t cap);
 
 /**
  * @brief Register (or refresh) a node by address; sets joined + last_seen.
  * @return the node index, or -1 if the table is full / bad args.
  */
-int wisun_node_register(WisunFan *fan, const DWSIp *addr, uint32_t now);
+int dws_wisun_node_register(WisunFan *fan, const DWSIp *addr, uint32_t now);
 
 /** @brief Find a node by address. @p idx (may be null) receives the index. @return found. */
-bool wisun_node_find(const WisunFan *fan, const DWSIp *addr, size_t *idx);
+bool dws_wisun_node_find(const WisunFan *fan, const DWSIp *addr, size_t *idx);
 
 /** @brief Number of joined nodes. */
-size_t wisun_joined_count(const WisunFan *fan);
+size_t dws_wisun_joined_count(const WisunFan *fan);
 
 /**
  * @brief Serialize the node table as `[{"addr":"..","joined":bool},...]` for the web.
  * @return length written (excl NUL), or 0 on overflow / bad args.
  */
-size_t wisun_nodes_json(const WisunFan *fan, char *out, size_t cap);
+size_t dws_wisun_nodes_json(const WisunFan *fan, char *out, size_t cap);
 
 #endif // DWS_ENABLE_WISUN
 #endif // DETERMINISTICESPASYNCWEBSERVER_WISUN_H

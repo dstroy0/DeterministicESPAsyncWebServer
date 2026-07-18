@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file gnss_survey.h
+ * @file dws_gnss_survey.h
  * @brief GNSS survey-in: WGS84 geodetic <-> ECEF + fixed-position averaging (DWS_ENABLE_NTRIP_CASTER).
  *
  * An RTK / DGPS base must advertise its own antenna position precisely. A stationary receiver's
@@ -49,13 +49,13 @@ struct GnssEcef
 };
 
 /** @brief WGS84 geodetic -> ECEF (exact closed form). */
-void gnss_geodetic_to_ecef(const GnssGeodetic *g, GnssEcef *e);
+void dws_gnss_geodetic_to_ecef(const GnssGeodetic *g, GnssEcef *e);
 
 /** @brief ECEF -> WGS84 geodetic (iterative; converges to sub-millimetre in a few passes). */
-void gnss_ecef_to_geodetic(const GnssEcef *e, GnssGeodetic *g);
+void dws_gnss_ecef_to_geodetic(const GnssEcef *e, GnssGeodetic *g);
 
-/** @brief Round metres to RTCM's 0.1 mm integer units (half away from zero) for rtcm3_build_1005/1006. */
-int64_t gnss_ecef_m_to_01mm(double metres);
+/** @brief Round metres to RTCM's 0.1 mm integer units (half away from zero) for dws_rtcm3_build_1005/1006. */
+int64_t dws_gnss_ecef_m_to_01mm(double metres);
 
 /**
  * @brief Survey-in accumulator: a running mean ECEF and 3-D spread over the fixes fed to it.
@@ -80,31 +80,31 @@ struct GnssSurvey
 };
 
 /** @brief Reset a survey to empty (no fixes). */
-void gnss_survey_reset(GnssSurvey *s);
+void dws_gnss_survey_reset(GnssSurvey *s);
 
 /** @brief Fold one ECEF fix into the survey. */
-void gnss_survey_add_ecef(GnssSurvey *s, const GnssEcef *e);
+void dws_gnss_survey_add_ecef(GnssSurvey *s, const GnssEcef *e);
 
 /** @brief Fold one geodetic fix into the survey (converts to ECEF first). */
-void gnss_survey_add_geodetic(GnssSurvey *s, const GnssGeodetic *g);
+void dws_gnss_survey_add_geodetic(GnssSurvey *s, const GnssGeodetic *g);
 
 /** @brief Number of fixes accumulated so far. */
-uint32_t gnss_survey_count(const GnssSurvey *s);
+uint32_t dws_gnss_survey_count(const GnssSurvey *s);
 
 /** @brief Mean ECEF position. @return false (and leaves @p out untouched) if no fixes yet. */
-bool gnss_survey_mean(const GnssSurvey *s, GnssEcef *out);
+bool dws_gnss_survey_mean(const GnssSurvey *s, GnssEcef *out);
 
 /**
  * @brief 3-D standard deviation of the accumulated fixes, in metres (sqrt of the summed per-axis
  *        population variances). @return 0 with fewer than two fixes.
  */
-double gnss_survey_accuracy_m(const GnssSurvey *s);
+double dws_gnss_survey_accuracy_m(const GnssSurvey *s);
 
 /**
  * @brief Whether the survey has converged: at least @p min_obs fixes and a 3-D spread within
  *        @p acc_limit_m metres. Mirrors a u-blox TMODE3 survey-in's min-observations / accuracy-limit gate.
  */
-bool gnss_survey_complete(const GnssSurvey *s, uint32_t min_obs, double acc_limit_m);
+bool dws_gnss_survey_complete(const GnssSurvey *s, uint32_t min_obs, double acc_limit_m);
 
 #if DWS_ENABLE_NMEA0183
 struct Nmea0183;
@@ -114,10 +114,10 @@ struct Nmea0183;
  *        separation). @return false if @p m is not a GGA, the fix quality is 0 (no fix), or a field is
  *        missing / malformed.
  */
-bool gnss_gga_to_geodetic(const Nmea0183 *m, GnssGeodetic *out);
+bool dws_gnss_gga_to_geodetic(const Nmea0183 *m, GnssGeodetic *out);
 
 /** @brief Parse a GGA and, if it carries a valid fix, fold it into the survey. @return true if added. */
-bool gnss_survey_add_gga(GnssSurvey *s, const Nmea0183 *m);
+bool dws_gnss_survey_add_gga(GnssSurvey *s, const Nmea0183 *m);
 #endif
 
 #endif // DWS_ENABLE_NTRIP_CASTER

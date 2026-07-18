@@ -37,8 +37,8 @@ static size_t write_job_header(uint8_t *buf, uint16_t pdu_ref, uint16_t param_le
     return p; // 10
 }
 
-size_t s7_build_setup(uint8_t *buf, size_t cap, uint16_t pdu_ref, uint16_t max_amq_calling, uint16_t max_amq_called,
-                      uint16_t pdu_size)
+size_t dws_s7_build_setup(uint8_t *buf, size_t cap, uint16_t pdu_ref, uint16_t max_amq_calling, uint16_t max_amq_called,
+                          uint16_t pdu_size)
 {
     if (!buf)
         return 0;
@@ -55,7 +55,7 @@ size_t s7_build_setup(uint8_t *buf, size_t cap, uint16_t pdu_ref, uint16_t max_a
     return p;
 }
 
-size_t s7_build_read_request(uint8_t *buf, size_t cap, uint16_t pdu_ref, const S7ReadItem *items, size_t n)
+size_t dws_s7_build_read_request(uint8_t *buf, size_t cap, uint16_t pdu_ref, const S7ReadItem *items, size_t n)
 {
     if (!buf || !items || n == 0 || n > 0xFF)
         return 0;
@@ -84,7 +84,7 @@ size_t s7_build_read_request(uint8_t *buf, size_t cap, uint16_t pdu_ref, const S
     return p;
 }
 
-bool s7_parse_header(const uint8_t *buf, size_t len, S7Header *out)
+bool dws_s7_parse_header(const uint8_t *buf, size_t len, S7Header *out)
 {
     if (!buf || !out || len < 10)
         return false;
@@ -111,7 +111,7 @@ bool s7_parse_header(const uint8_t *buf, size_t len, S7Header *out)
     return true;
 }
 
-bool s7_read_next_item(const uint8_t *data, size_t data_len, size_t *offset, S7DataItem *out)
+bool dws_s7_read_next_item(const uint8_t *data, size_t data_len, size_t *offset, S7DataItem *out)
 {
     if (!data || !offset || !out)
         return false;

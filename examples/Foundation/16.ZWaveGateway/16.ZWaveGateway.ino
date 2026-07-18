@@ -5,7 +5,7 @@
 // node reports (an ApplicationCommandHandler frame), we pull the source node id + payload
 // and publish it northbound. Each data frame is acknowledged with a single ACK byte.
 //
-//   Z-Wave mesh --UART--> zwave_parse_frame() --> node + payload -> dws_gateway_uplink()
+//   Z-Wave mesh --UART--> dws_zwave_parse_frame() --> node + payload -> dws_gateway_uplink()
 //                                                                        |
 //                                                 envelope + topic  zwave/0/<node>
 //                                                                        |
@@ -59,7 +59,7 @@ void setup()
     dws_gateway_set_topic_prefix("zwave");
 
     uint8_t frame[8];
-    uint16_t n = zwave_build_frame(zwave_type::ZWAVE_REQ, 0x15, nullptr, 0, frame, sizeof(frame)); // GetVersion
+    uint16_t n = dws_zwave_build_frame(dws_zwave_type::ZWAVE_REQ, 0x15, nullptr, 0, frame, sizeof(frame)); // GetVersion
     Serial2.write(frame, n);
     Serial.println("Z-Wave gateway: Serial API -> codec -> publish (zwave/0/<node>)");
 }
@@ -74,14 +74,14 @@ void loop()
         if (g_len == 0)
             break;
         // Single-byte control frames (ACK / NAK / CAN) are consumed and ignored.
-        if (zwave_is_ack(g_buf[0]) || zwave_is_nak(g_buf[0]) || zwave_is_can(g_buf[0]))
+        if (dws_zwave_is_ack(g_buf[0]) || dws_zwave_is_nak(g_buf[0]) || dws_zwave_is_can(g_buf[0]))
         {
             drop_front(1);
             continue;
         }
         uint8_t type = 0, cmd = 0, pdlen = 0;
         const uint8_t *pd = nullptr;
-        int n = zwave_parse_frame(g_buf, g_len, &type, &cmd, &pd, &pdlen);
+        int n = dws_zwave_parse_frame(g_buf, g_len, &type, &cmd, &pd, &pdlen);
         if (n == 0)
             break; // need more
         if (n < 0)

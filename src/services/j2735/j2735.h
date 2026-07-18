@@ -46,26 +46,26 @@ struct UperReader
     bool ok; ///< cleared on read past the end.
 };
 
-void uper_writer_init(UperWriter *w, uint8_t *buf, size_t cap);
+void dws_uper_writer_init(UperWriter *w, uint8_t *buf, size_t cap);
 /** @return the number of whole octets produced (rounds the bit length up), or 0 if the writer overflowed. */
-size_t uper_writer_finish(UperWriter *w);
+size_t dws_uper_writer_finish(UperWriter *w);
 
 /** @brief Write @p nbits low bits of @p value, MSB-first. */
-void uper_put_bits(UperWriter *w, uint32_t value, unsigned nbits);
+void dws_uper_put_bits(UperWriter *w, uint32_t value, unsigned nbits);
 /** @brief Write a BOOLEAN (1 bit). */
-void uper_put_bool(UperWriter *w, bool v);
+void dws_uper_put_bool(UperWriter *w, bool v);
 /** @brief Write a constrained INTEGER in [lo, hi] as (value-lo) in ceil(log2(hi-lo+1)) bits. */
-void uper_put_cint(UperWriter *w, int64_t value, int64_t lo, int64_t hi);
+void dws_uper_put_cint(UperWriter *w, int64_t value, int64_t lo, int64_t hi);
 
-void uper_reader_init(UperReader *r, const uint8_t *buf, size_t nbits);
+void dws_uper_reader_init(UperReader *r, const uint8_t *buf, size_t nbits);
 /** @brief Read @p nbits bits, MSB-first, into the low bits of the result. */
-uint32_t uper_get_bits(UperReader *r, unsigned nbits);
-bool uper_get_bool(UperReader *r);
+uint32_t dws_uper_get_bits(UperReader *r, unsigned nbits);
+bool dws_uper_get_bool(UperReader *r);
 /** @brief Read a constrained INTEGER in [lo, hi]. */
-int64_t uper_get_cint(UperReader *r, int64_t lo, int64_t hi);
+int64_t dws_uper_get_cint(UperReader *r, int64_t lo, int64_t hi);
 
 /** @brief Number of bits a constrained INTEGER in [lo, hi] occupies (0 when lo == hi). */
-unsigned uper_cint_bits(int64_t lo, int64_t hi);
+unsigned dws_uper_cint_bits(int64_t lo, int64_t hi);
 
 /** @brief The J2735 BSMcoreData safety kernel (values in J2735 units; see the SAE ranges). */
 struct J2735BsmCore

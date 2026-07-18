@@ -2,21 +2,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file wal_fs.h
+ * @file dws_wal_fs.h
  * @brief Bind the WAL store's ::WalDev block-device seam to a real fs::FS file (DWS_ENABLE_WAL, ESP32 only).
  *
- * The store in wal_store.h does all I/O through three function pointers so its logic stays pure and
+ * The store in dws_wal_store.h does all I/O through three function pointers so its logic stays pure and
  * host-testable; this header is the thin, device-only adapter that points those pointers at a preallocated
  * fs::File on any Arduino filesystem - an SD card or LittleFS. Random access uses `File::seek`, and the
  * durability barrier is `File::flush`.
  *
  * Usage:
  * @code
- *   wal_fs_prealloc(SD, "/wal.bin", 256 * 1024);       // once: fixed-size, zero-filled backing file
+ *   dws_wal_fs_prealloc(SD, "/wal.bin", 256 * 1024);       // once: fixed-size, zero-filled backing file
  *   fs::File f = SD.open("/wal.bin", "r+");             // random read+write, no truncation
- *   WalDev dev = wal_fs_dev(&f, 256 * 1024);
+ *   WalDev dev = dws_wal_fs_dev(&f, 256 * 1024);
  *   WalStore s;
- *   wal_store_mount(&s, &dev) || wal_store_format(&s, &dev);   // recover, or initialize a fresh file
+ *   dws_wal_store_mount(&s, &dev) || dws_wal_store_format(&s, &dev);   // recover, or initialize a fresh file
  * @endcode
  *
  * The backing file is preallocated to a fixed size so every store offset lands inside it and `seek`+`write`
@@ -62,7 +62,7 @@ inline bool fs_sync(void *ctx)
  * @brief Ensure @p path on @p fsys exists and is at least @p size bytes (created zero-filled if missing/short).
  * @return true on success. Call once before opening the file for the store.
  */
-inline bool wal_fs_prealloc(fs::FS &fsys, const char *path, uint64_t size)
+inline bool dws_wal_fs_prealloc(fs::FS &fsys, const char *path, uint64_t size)
 {
     if (fsys.exists(path))
     {
@@ -99,7 +99,7 @@ inline bool wal_fs_prealloc(fs::FS &fsys, const char *path, uint64_t size)
  * @brief Build a ::WalDev that reads/writes @p f (an open "r+" file) as a @p size-byte block device.
  * @note @p f must stay open for as long as the returned ::WalDev (and any ::WalStore mounted on it) is used.
  */
-inline WalDev wal_fs_dev(fs::File *f, uint64_t size)
+inline WalDev dws_wal_fs_dev(fs::File *f, uint64_t size)
 {
     WalDev d;
     d.read = dws_wal_fs_detail::fs_read;

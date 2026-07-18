@@ -189,13 +189,13 @@ static void gen_matrix_entry(int16_t out[MK_N], const uint8_t rho[32], uint8_t i
     seed[32] = i;
     seed[33] = j;
     KeccakCtx ctx;
-    shake128_absorb(&ctx, seed, sizeof(seed));
+    dws_shake128_absorb(&ctx, seed, sizeof(seed));
 
     unsigned count = 0;
     while (count < MK_N)
     {
         uint8_t buf[KECCAK_RATE_SHAKE128]; // 168 = 56*3, no 3-octet group straddles a block
-        keccak_squeeze(&ctx, buf, sizeof(buf));
+        dws_keccak_squeeze(&ctx, buf, sizeof(buf));
         for (unsigned p = 0; p + 3 <= sizeof(buf) && count < MK_N; p += 3)
         {
             uint16_t d1 = (uint16_t)(buf[p] | ((uint16_t)(buf[p + 1] & 0xF) << 8));
@@ -308,8 +308,8 @@ static void k_pke_encrypt(uint8_t ct[MLKEM768_CT_BYTES], const uint8_t ek[MLKEM7
     poly_compress4(ct + MK_K * 320, v);
 }
 
-bool mlkem768_encaps(const uint8_t ek[MLKEM768_EK_BYTES], const uint8_t m[MLKEM768_MSG_BYTES],
-                     uint8_t ct[MLKEM768_CT_BYTES], uint8_t ss[MLKEM768_SS_BYTES])
+bool dws_mlkem768_encaps(const uint8_t ek[MLKEM768_EK_BYTES], const uint8_t m[MLKEM768_MSG_BYTES],
+                         uint8_t ct[MLKEM768_CT_BYTES], uint8_t ss[MLKEM768_SS_BYTES])
 {
     if (!check_ek(ek))
         return false;

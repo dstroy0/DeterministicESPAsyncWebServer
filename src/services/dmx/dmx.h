@@ -66,13 +66,13 @@
  * @brief Assemble a DMX512 packet body: [start code][channel slots]. @p n <= 512.
  * Returns the byte count (1 + n) or 0 on overflow. The break is the transport's job.
  */
-size_t dmx_build(uint8_t *buf, size_t cap, uint8_t start_code, const uint8_t *channels, uint16_t n);
+size_t dws_dmx_build(uint8_t *buf, size_t cap, uint8_t start_code, const uint8_t *channels, uint16_t n);
 
 /**
  * @brief Read channel @p ch (1-based, per DMX convention) from a received packet body.
  * Returns the slot value, or 0 if @p ch is out of range / not present.
  */
-uint8_t dmx_get_channel(const uint8_t *buf, size_t len, uint16_t ch);
+uint8_t dws_dmx_get_channel(const uint8_t *buf, size_t len, uint16_t ch);
 
 // --- RDM (ANSI E1.20) ---
 
@@ -92,22 +92,22 @@ struct RdmPacket
 };
 
 /** @brief Compose a 48-bit RDM UID from a manufacturer id and a device id. */
-uint64_t rdm_uid(uint16_t manufacturer, uint32_t device);
+uint64_t dws_rdm_uid(uint16_t manufacturer, uint32_t device);
 
 /** @brief 16-bit additive checksum over @p len octets (RDM message block). */
-uint16_t rdm_checksum(const uint8_t *buf, size_t len);
+uint16_t dws_rdm_checksum(const uint8_t *buf, size_t len);
 
 /**
  * @brief Build a full RDM packet (incl. the trailing 16-bit checksum) from @p p and its
  * parameter data. Returns the total length (26 + pdl) or 0 on overflow.
  */
-size_t rdm_build(uint8_t *buf, size_t cap, const RdmPacket *p, const uint8_t *pdata, uint8_t pdl);
+size_t dws_rdm_build(uint8_t *buf, size_t cap, const RdmPacket *p, const uint8_t *pdata, uint8_t pdl);
 
 /**
  * @brief Parse an RDM packet: validates the start codes, the message length vs PDL, and the
  * checksum. Fills @p out and @p consumed (the whole packet length).
  */
-bool rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consumed);
+bool dws_rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consumed);
 
 #endif // DWS_ENABLE_DMX
 #endif // DETERMINISTICESPASYNCWEBSERVER_DMX_H

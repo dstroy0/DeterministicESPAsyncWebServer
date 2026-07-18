@@ -48,7 +48,7 @@
 #define DNP3_LEN_OVERHEAD 5      ///< octets LEN counts beyond user data: CTRL + DEST + SRC
 
 /** @brief CRC-16/DNP (poly 0x3D65, init 0, reflected, final XOR 0xFFFF). */
-uint16_t dnp3_crc(const uint8_t *data, size_t len);
+uint16_t dws_dnp3_crc(const uint8_t *data, size_t len);
 
 /**
  * @brief Build a complete data-link frame (header block + CRC'd data blocks).
@@ -57,8 +57,8 @@ uint16_t dnp3_crc(const uint8_t *data, size_t len);
  * @param src     16-bit source address (written little-endian).
  * @return total octets written, or 0 on overflow / user_data_len > DNP3_MAX_USER_DATA.
  */
-size_t dnp3_build_frame(uint8_t *buf, size_t cap, uint8_t control, uint16_t dest, uint16_t src,
-                        const uint8_t *user_data, size_t user_data_len);
+size_t dws_dnp3_build_frame(uint8_t *buf, size_t cap, uint8_t control, uint16_t dest, uint16_t src,
+                            const uint8_t *user_data, size_t user_data_len);
 
 /** @brief A parsed data-link frame header (the user data is de-blocked separately). */
 struct Dnp3Frame
@@ -77,8 +77,8 @@ struct Dnp3Frame
  * @return true on a complete, all-CRC-valid frame; false on a bad start word, an invalid
  *         LEN, truncation, a header or block CRC mismatch, or an out_user overflow.
  */
-bool dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *out_user, size_t out_cap,
-                      size_t *out_user_len);
+bool dws_dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *out_user, size_t out_cap,
+                          size_t *out_user_len);
 
 #endif // DWS_ENABLE_DNP3
 

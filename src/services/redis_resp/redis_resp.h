@@ -75,7 +75,7 @@ struct RespReply
  * @param argc     number of arguments.
  * @return bytes written (excluding any NUL), or 0 on overflow / bad input.
  */
-size_t resp_encode_command(char *buf, size_t cap, const char *const *args, const size_t *arg_lens, size_t argc);
+size_t dws_resp_encode_command(char *buf, size_t cap, const char *const *args, const size_t *arg_lens, size_t argc);
 
 /**
  * @brief Parse one RESP value at the head of [buf, buf+len).
@@ -85,7 +85,7 @@ size_t resp_encode_command(char *buf, size_t cap, const char *const *args, const
  * @return true on a complete value; false if the buffer holds an incomplete or
  *         malformed value (then @p out / @p consumed are unspecified).
  */
-bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed);
+bool dws_resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed);
 
 #endif // DWS_ENABLE_REDIS
 

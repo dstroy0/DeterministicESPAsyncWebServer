@@ -47,15 +47,15 @@ void setUp()
         http_reset(i);
     }
     ws_init();
-    sse_init();
+    dws_sse_init();
     tcp_capture_reset();
 #if DWS_ENABLE_CSRF
     // With CSRF compiled in, state-changing methods are gated before dispatch; set a secret so a valid
-    // token can be issued (csrf_issue/verify no-op without one), letting the unsafe-method tests below
+    // token can be issued (dws_csrf_issue/verify no-op without one), letting the unsafe-method tests below
     // reach the 405/Allow method dispatch as a legitimate token-bearing client would.
-    static const uint8_t csrf_key[16] = {0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x4b, 0x65,
-                                         0x79, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36};
-    csrf_set_secret(csrf_key, sizeof(csrf_key));
+    static const uint8_t dws_csrf_key[16] = {0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x4b, 0x65,
+                                             0x79, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36};
+    dws_csrf_set_secret(dws_csrf_key, sizeof(dws_csrf_key));
 #endif
 }
 
@@ -79,7 +79,7 @@ static void feed_unsafe(uint8_t slot, const char *method, const char *path)
     char reqbuf[256];
 #if DWS_ENABLE_CSRF
     char tok[CSRF_TOKEN_BUF];
-    csrf_issue(tok, sizeof(tok));
+    dws_csrf_issue(tok, sizeof(tok));
     snprintf(reqbuf, sizeof(reqbuf), "%s %s HTTP/1.1\r\nX-CSRF-Token: %s\r\n\r\n", method, path, tok);
 #else
     snprintf(reqbuf, sizeof(reqbuf), "%s %s HTTP/1.1\r\n\r\n", method, path);

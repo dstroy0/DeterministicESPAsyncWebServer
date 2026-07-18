@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file snmp_ber.cpp
+ * @file dws_snmp_ber.cpp
  * @brief ASN.1 BER codec implementation for the SNMP agent.
  */
 
@@ -16,7 +16,7 @@
 // Encoder
 // ---------------------------------------------------------------------------
 
-void ber_enc_init(BerEnc *e, uint8_t *buf, size_t cap)
+void dws_ber_enc_init(BerEnc *e, uint8_t *buf, size_t cap)
 {
     e->buf = buf;
     e->cap = cap;
@@ -63,7 +63,7 @@ static void enc_len(BerEnc *e, size_t length)
         enc_byte(e, tmp[i]);
 }
 
-bool ber_put_tlv(BerEnc *e, uint8_t tag, const uint8_t *val, size_t n)
+bool dws_ber_put_tlv(BerEnc *e, uint8_t tag, const uint8_t *val, size_t n)
 {
     enc_byte(e, tag);
     enc_len(e, n);
@@ -71,13 +71,13 @@ bool ber_put_tlv(BerEnc *e, uint8_t tag, const uint8_t *val, size_t n)
     return e->ok;
 }
 
-bool ber_put_raw(BerEnc *e, const uint8_t *bytes, size_t n)
+bool dws_ber_put_raw(BerEnc *e, const uint8_t *bytes, size_t n)
 {
     enc_bytes(e, bytes, n);
     return e->ok;
 }
 
-bool ber_put_integer(BerEnc *e, long v)
+bool dws_ber_put_integer(BerEnc *e, long v)
 {
     // Minimal two's-complement encoding.
     uint8_t tmp[8];
@@ -98,7 +98,7 @@ bool ber_put_integer(BerEnc *e, long v)
     return e->ok;
 }
 
-bool ber_put_uint(BerEnc *e, uint8_t tag, uint32_t v)
+bool dws_ber_put_uint(BerEnc *e, uint8_t tag, uint32_t v)
 {
     // Non-negative integer: big-endian, minimal, with a leading 0x00 if the top
     // bit would otherwise make it look negative.
@@ -120,12 +120,12 @@ bool ber_put_uint(BerEnc *e, uint8_t tag, uint32_t v)
     return e->ok;
 }
 
-bool ber_put_octet_string(BerEnc *e, uint8_t tag, const uint8_t *d, size_t n)
+bool dws_ber_put_octet_string(BerEnc *e, uint8_t tag, const uint8_t *d, size_t n)
 {
-    return ber_put_tlv(e, tag, d, n);
+    return dws_ber_put_tlv(e, tag, d, n);
 }
 
-bool ber_put_null(BerEnc *e)
+bool dws_ber_put_null(BerEnc *e)
 {
     enc_byte(e, (uint8_t)SnmpTag::BER_NULL);
     enc_byte(e, 0x00);
@@ -154,7 +154,7 @@ static void oid_emit_arc(uint8_t *tmp, size_t cap, size_t *t, uint32_t v, BerEnc
     }
 }
 
-bool ber_put_oid(BerEnc *e, const uint32_t *arcs, size_t n)
+bool dws_ber_put_oid(BerEnc *e, const uint32_t *arcs, size_t n)
 {
     if (n < 2)
     {
@@ -168,10 +168,10 @@ bool ber_put_oid(BerEnc *e, const uint32_t *arcs, size_t n)
     oid_emit_arc(tmp, sizeof(tmp), &t, first, e);
     for (size_t i = 2; i < n; i++)
         oid_emit_arc(tmp, sizeof(tmp), &t, arcs[i], e);
-    return ber_put_tlv(e, (uint8_t)SnmpTag::BER_OID, tmp, t);
+    return dws_ber_put_tlv(e, (uint8_t)SnmpTag::BER_OID, tmp, t);
 }
 
-size_t ber_seq_begin(BerEnc *e, uint8_t tag)
+size_t dws_ber_seq_begin(BerEnc *e, uint8_t tag)
 {
     enc_byte(e, tag);
     size_t token = e->len; // position of the (reserved) length field
@@ -181,7 +181,7 @@ size_t ber_seq_begin(BerEnc *e, uint8_t tag)
     return token;
 }
 
-void ber_seq_end(BerEnc *e, size_t token)
+void dws_ber_seq_end(BerEnc *e, size_t token)
 {
     if (!e->ok)
         return;
@@ -200,7 +200,7 @@ void ber_seq_end(BerEnc *e, size_t token)
 // Decoder
 // ---------------------------------------------------------------------------
 
-void ber_dec_init(BerDec *d, const uint8_t *buf, size_t len)
+void dws_ber_dec_init(BerDec *d, const uint8_t *buf, size_t len)
 {
     d->buf = buf;
     d->len = len;
@@ -208,7 +208,7 @@ void ber_dec_init(BerDec *d, const uint8_t *buf, size_t len)
     d->ok = (buf != nullptr);
 }
 
-bool ber_read_header(BerDec *d, uint8_t *tag, size_t *length)
+bool dws_ber_read_header(BerDec *d, uint8_t *tag, size_t *length)
 {
     if (!d->ok || d->pos >= d->len)
     {
@@ -253,11 +253,11 @@ bool ber_read_header(BerDec *d, uint8_t *tag, size_t *length)
     return true;
 }
 
-bool ber_read_integer(BerDec *d, long *out)
+bool dws_ber_read_integer(BerDec *d, long *out)
 {
     uint8_t tag;
     size_t len;
-    if (!ber_read_header(d, &tag, &len) || tag != (uint8_t)SnmpTag::BER_INTEGER || len == 0 || len > 8)
+    if (!dws_ber_read_header(d, &tag, &len) || tag != (uint8_t)SnmpTag::BER_INTEGER || len == 0 || len > 8)
     {
         d->ok = false;
         return false;
@@ -272,11 +272,11 @@ bool ber_read_integer(BerDec *d, long *out)
     return true;
 }
 
-bool ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n)
+bool dws_ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n)
 {
     uint8_t tag;
     size_t len;
-    if (!ber_read_header(d, &tag, &len) || tag != (uint8_t)SnmpTag::BER_OID || len == 0 || max < 2)
+    if (!dws_ber_read_header(d, &tag, &len) || tag != (uint8_t)SnmpTag::BER_OID || len == 0 || max < 2)
     {
         d->ok = false;
         return false;
@@ -317,9 +317,9 @@ bool ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n)
     return true;
 }
 
-bool ber_skip(BerDec *d, size_t length)
+bool dws_ber_skip(BerDec *d, size_t length)
 {
-    if (!d->ok || d->pos > d->len || length > d->len - d->pos) // wrap-safe (see ber_read_header)
+    if (!d->ok || d->pos > d->len || length > d->len - d->pos) // wrap-safe (see dws_ber_read_header)
     {
         d->ok = false;
         return false;

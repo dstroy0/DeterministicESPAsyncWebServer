@@ -24,7 +24,7 @@ static void wr_field(uint8_t *f, uint16_t len, uint32_t off)
     dws_wr32le(f + 4, off);
 }
 
-size_t ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags)
+size_t dws_ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags)
 {
     if (!buf || cap < 32)
         return 0;
@@ -37,7 +37,7 @@ size_t ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags)
     return 32;
 }
 
-bool ntlmssp_parse_challenge(const uint8_t *msg, size_t len, NtlmChallenge *out)
+bool dws_ntlmssp_parse_challenge(const uint8_t *msg, size_t len, NtlmChallenge *out)
 {
     if (!msg || !out || len < 48) // through TargetInfoFields
         return false;
@@ -81,9 +81,9 @@ static size_t utf16_len(const char *s)
     return n * 2;
 }
 
-size_t ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_resp, size_t lm_len,
-                                  const uint8_t *nt_resp, size_t nt_len, const char *domain, const char *user,
-                                  const char *workstation, uint32_t flags)
+size_t dws_ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_resp, size_t lm_len,
+                                      const uint8_t *nt_resp, size_t nt_len, const char *domain, const char *user,
+                                      const char *workstation, uint32_t flags)
 {
     const size_t HDR = 64; // fixed part (no Version, no MIC)
     size_t dlen = utf16_len(domain);

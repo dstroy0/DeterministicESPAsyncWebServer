@@ -11,24 +11,24 @@
 
 #if DWS_ENABLE_VL53L0X
 
-uint16_t vl53l0x_range_mm(uint8_t hi, uint8_t lo)
+uint16_t dws_vl53l0x_range_mm(uint8_t hi, uint8_t lo)
 {
     return (uint16_t)((hi << 8) | lo);
 }
 
-bool vl53l0x_data_ready(uint8_t interrupt_status)
+bool dws_vl53l0x_data_ready(uint8_t interrupt_status)
 {
     return (interrupt_status & 0x07) != 0;
 }
 
-uint8_t vl53l0x_range_status(uint8_t range_status_reg)
+uint8_t dws_vl53l0x_range_status(uint8_t range_status_reg)
 {
     return (uint8_t)((range_status_reg >> 3) & 0x0F);
 }
 
-bool vl53l0x_range_valid(uint8_t range_status_reg)
+bool dws_vl53l0x_range_valid(uint8_t range_status_reg)
 {
-    return vl53l0x_range_status(range_status_reg) == VL53L0X_RANGE_VALID;
+    return dws_vl53l0x_range_status(range_status_reg) == VL53L0X_RANGE_VALID;
 }
 
 #if defined(ARDUINO)
@@ -81,7 +81,7 @@ bool rn(uint8_t reg, uint8_t *buf, uint8_t n)
 }
 } // namespace
 
-bool vl53l0x_begin(uint8_t addr)
+bool dws_vl53l0x_begin(uint8_t addr)
 {
     dws_i2c_begin();
     s_vl.addr = addr;
@@ -91,18 +91,18 @@ bool vl53l0x_begin(uint8_t addr)
     return w8(VL53L0X_REG_SYSRANGE_START, 0x02); // continuous back-to-back ranging
 }
 
-bool vl53l0x_read_mm(uint16_t *mm)
+bool dws_vl53l0x_read_mm(uint16_t *mm)
 {
     if (!mm)
         return false;
     uint8_t irq = 0;
-    if (!r8(VL53L0X_REG_RESULT_INTERRUPT_STATUS, &irq) || !vl53l0x_data_ready(irq))
+    if (!r8(VL53L0X_REG_RESULT_INTERRUPT_STATUS, &irq) || !dws_vl53l0x_data_ready(irq))
         return false;
     uint8_t buf[12];
     if (!rn(VL53L0X_REG_RESULT_RANGE_STATUS, buf, 12))
         return false;
-    bool valid = vl53l0x_range_valid(buf[0]);
-    *mm = vl53l0x_range_mm(buf[10], buf[11]); // distance at RESULT_RANGE_STATUS + 10/11
+    bool valid = dws_vl53l0x_range_valid(buf[0]);
+    *mm = dws_vl53l0x_range_mm(buf[10], buf[11]); // distance at RESULT_RANGE_STATUS + 10/11
     w8(VL53L0X_REG_SYSTEM_INTERRUPT_CLEAR, 0x01);
     return valid;
 }

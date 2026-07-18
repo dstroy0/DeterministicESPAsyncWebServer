@@ -76,9 +76,9 @@ void ws_close(uint8_t ws_id)
     (void)ws_id;
 }
 
-void sse_connect(uint8_t sse_id)
+void dws_sse_connect(uint8_t dws_sse_id)
 {
-    server.sse_send(sse_id, "subscribed", "tick");
+    server.dws_sse_send(dws_sse_id, "subscribed", "tick");
 }
 
 void setup()
@@ -97,7 +97,7 @@ void setup()
     WiFi.setSleep(false);
 
     server.on_ws("/ws", ws_connect, ws_message, ws_close);
-    server.on_sse("/events", sse_connect);
+    server.on_sse("/events", dws_sse_connect);
 
     int32_t result = server.begin_tls(443, (const uint8_t *)SERVER_CERT_PEM, sizeof(SERVER_CERT_PEM),
                                       (const uint8_t *)SERVER_KEY_PEM, sizeof(SERVER_KEY_PEM));
@@ -119,6 +119,6 @@ void loop()
         last = millis();
         char buf[24];
         snprintf(buf, sizeof(buf), "%lu", (unsigned long)n++);
-        server.sse_broadcast("/events", buf, "tick");
+        server.dws_sse_broadcast("/events", buf, "tick");
     }
 }

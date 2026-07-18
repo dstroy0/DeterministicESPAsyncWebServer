@@ -36,7 +36,7 @@ static bool put_len_prefix(char *buf, size_t cap, size_t *pos, char tag, size_t 
     return true;
 }
 
-size_t resp_encode_command(char *buf, size_t cap, const char *const *args, const size_t *arg_lens, size_t argc)
+size_t dws_resp_encode_command(char *buf, size_t cap, const char *const *args, const size_t *arg_lens, size_t argc)
 {
     if (!buf || cap == 0 || !args || argc == 0)
         return 0;
@@ -279,7 +279,7 @@ static bool parse_aggregate(const uint8_t *buf, uint8_t type, size_t header_from
     return true;
 }
 
-bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed)
+bool dws_resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed)
 {
     if (!buf || len < 3 || !out || !consumed) // shortest value is "+\r\n" style; need a type + CRLF
         return false;
