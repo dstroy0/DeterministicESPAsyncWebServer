@@ -1327,7 +1327,17 @@
     "mountpoints",
     "asctime",
     "storeability",
-    "HDRS"
+    "HDRS",
+    "FSTAT",
+    "OPENDIR",
+    "REALPATH",
+    "SETSTAT",
+    "filexfer",
+    "localfile",
+    "longname",
+    "longnames",
+    "malforming",
+    "secsh"
   ],
   "ignorePaths": [
     "node_modules/**",

@@ -171,7 +171,15 @@ deployments must generate their own key with the steps above and keep it secret.
 
 ## Limitations
 
-- One `session` channel per connection (no port-forwarding / X11).
+- `DETWS_SSH_MAX_CHANNELS` channels per connection (default 1). Port forwarding
+  (`ssh -L` / `ssh -R`, `DETWS_SSH_PORT_FORWARD`), the **SFTP** subsystem
+  (`DETWS_ENABLE_SSH_SFTP`) and **SCP** upload (`DETWS_ENABLE_SSH_SCP`) are all
+  available (opt-in); X11 forwarding is not.
+- SCP serves only the SINK (upload) direction; use SFTP `get` to download.
+- On connection teardown the server closes the TCP without a graceful
+  `SSH_MSG_DISCONNECT`, so a client may print a "broken pipe" at the very end of an
+  otherwise-successful session (a plain `ssh <host> exit` shows it too). The data
+  transfer is unaffected. A graceful disconnect is a planned follow-up.
 - The native-build software RSA/AES/bignum paths are not constant-time; they are
   compiled out of firmware (`#ifndef ARDUINO`) and exist only for host tests. On
   ESP32 the hardware/mbedTLS paths are used. Native RSA _signing_ and

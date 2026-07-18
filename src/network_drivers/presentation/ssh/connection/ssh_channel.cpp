@@ -28,6 +28,14 @@ struct SshChannelCtx
     SshRemoteForwardOpenCb rfwd_open_cb = nullptr;
     SshRemoteForwardCancelCb rfwd_cancel_cb = nullptr;
     SshForwardConfirmCb forward_confirm_cb = nullptr;
+#if DETWS_ENABLE_SSH_SFTP
+    SshSftpOpenCb sftp_open_cb = nullptr;
+    SshSftpDataCb sftp_data_cb = nullptr;
+#endif
+#if DETWS_ENABLE_SSH_SCP
+    SshScpOpenCb scp_open_cb = nullptr;
+    SshScpDataCb scp_data_cb = nullptr;
+#endif
 };
 static SshChannelCtx s_chcb;
 
@@ -35,6 +43,28 @@ void ssh_channel_set_data_cb(SshChannelDataCb cb)
 {
     s_chcb.data_cb = cb;
 }
+
+#if DETWS_ENABLE_SSH_SFTP
+void ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb)
+{
+    s_chcb.sftp_open_cb = cb;
+}
+void ssh_channel_set_sftp_data_cb(SshSftpDataCb cb)
+{
+    s_chcb.sftp_data_cb = cb;
+}
+#endif
+
+#if DETWS_ENABLE_SSH_SCP
+void ssh_channel_set_scp_open_cb(SshScpOpenCb cb)
+{
+    s_chcb.scp_open_cb = cb;
+}
+void ssh_channel_set_scp_data_cb(SshScpDataCb cb)
+{
+    s_chcb.scp_data_cb = cb;
+}
+#endif
 
 void ssh_channel_set_forward_open_cb(SshForwardOpenCb cb)
 {
@@ -432,6 +462,36 @@ int ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, ui
         (rtype_len == 5 && memcmp(rtype, "shell", 5) == 0) || (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0) ||
         (rtype_len == 7 && memcmp(rtype, "pty-req", 7) == 0) || (rtype_len == 3 && memcmp(rtype, "env", 3) == 0);
 
+#if DETWS_ENABLE_SSH_SFTP
+    // subsystem "sftp": not in the base accept set, so accept it here and tag the channel for the SFTP binding.
+    if (rtype_len == 9 && memcmp(rtype, "subsystem", 9) == 0)
+    {
+        const uint8_t *arg = nullptr;
+        uint32_t arg_len = 0;
+        if (rd_string(payload, len, &off, &arg, &arg_len) && arg_len == 4 && memcmp(arg, "sftp", 4) == 0)
+        {
+            accept = true;
+            c->type = SshChanType::SSH_CHAN_SFTP;
+            if (s_chcb.sftp_open_cb)
+                s_chcb.sftp_open_cb(i, c->local_id);
+        }
+    }
+#endif
+#if DETWS_ENABLE_SSH_SCP
+    // exec "scp …": already accepted (exec is in the base set); tag the channel + hand the command to the binding.
+    if (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0)
+    {
+        const uint8_t *arg = nullptr;
+        uint32_t arg_len = 0;
+        if (rd_string(payload, len, &off, &arg, &arg_len) && arg_len >= 4 && memcmp(arg, "scp ", 4) == 0)
+        {
+            c->type = SshChanType::SSH_CHAN_SCP;
+            if (s_chcb.scp_open_cb)
+                s_chcb.scp_open_cb(i, c->local_id, (const char *)arg, arg_len);
+        }
+    }
+#endif
+
     if (!want_reply)
         return 0;
 
@@ -472,14 +532,29 @@ int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8
 
     if (dlen > 0)
     {
-        if (c->type != SshChanType::SSH_CHAN_SESSION) // forwarded TCP bytes (ssh -L / -R) -> the forward owner
+        switch (c->type)
         {
+        case SshChanType::SSH_CHAN_DIRECT_TCPIP:
+        case SshChanType::SSH_CHAN_FORWARDED_TCPIP: // forwarded TCP bytes (ssh -L / -R) -> the forward owner
             if (s_chcb.forward_data_cb)
                 s_chcb.forward_data_cb(i, c->local_id, data, dlen);
-        }
-        else if (s_chcb.data_cb) // session bytes -> the application
-        {
-            s_chcb.data_cb(i, c->local_id, data, dlen);
+            break;
+#if DETWS_ENABLE_SSH_SFTP
+        case SshChanType::SSH_CHAN_SFTP: // SSH_FXP_* bytes -> the SFTP binding
+            if (s_chcb.sftp_data_cb)
+                s_chcb.sftp_data_cb(i, c->local_id, data, dlen);
+            break;
+#endif
+#if DETWS_ENABLE_SSH_SCP
+        case SshChanType::SSH_CHAN_SCP: // RCP protocol bytes -> the SCP binding
+            if (s_chcb.scp_data_cb)
+                s_chcb.scp_data_cb(i, c->local_id, data, dlen);
+            break;
+#endif
+        default: // SSH_CHAN_SESSION: shell/exec bytes -> the application
+            if (s_chcb.data_cb)
+                s_chcb.data_cb(i, c->local_id, data, dlen);
+            break;
         }
     }
 

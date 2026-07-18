@@ -237,342 +237,353 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
     SshPacketState *s = &ssh_pkt[i];
     SshKeyMat *km = &ssh_keys[i];
 
-    // Append to receive buffer.
-    size_t space = SSH_PKT_BUF_SIZE - s->rx_len;
-    if (len > space)
+    // Consume the input incrementally: append as much as fits the (single-packet) receive buffer, extract
+    // every complete packet to drain it, then append more. So one TCP read carrying several pipelined packets
+    // - e.g. a large SFTP write fragmented into back-to-back CHANNEL_DATA messages - is processed instead of
+    // being rejected when the read exceeds SSH_PKT_BUF_SIZE.
+    while (len > 0)
     {
-        // Buffer overflow - discard and disconnect.
-        ssh_wipe(s->rx_buf, s->rx_len);
-        s->rx_len = 0;
-        return -1;
-    }
-    memcpy(s->rx_buf + s->rx_len, data, len);
-    s->rx_len += len;
-
-    // Extract complete packets.
-    while (s->rx_len >= 4)
-    {
-        if (s->enc_in && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305)
+        size_t space = SSH_PKT_BUF_SIZE - s->rx_len;
+        if (space == 0)
         {
-            // chacha20-poly1305@openssh.com. Keyed by the sequence number, so decrypting the
-            // length is stateless/repeatable - no cipher-state peek/restore is needed.
-            if (s->rx_len < 4) // GCOVR_EXCL_LINE  the enclosing while already requires rx_len >= 4
-                break;         // GCOVR_EXCL_LINE  (defensive re-check)
-
-            uint32_t pkt_len = ssh_chachapoly_get_length(km->chacha_key_c2s, s->seq_no_recv, s->rx_buf);
-            if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - SSH_CHACHAPOLY_TAG_LEN)
-            {
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1;
-            }
-            size_t wire_need = 4 + pkt_len + SSH_CHACHAPOLY_TAG_LEN;
-            if (s->rx_len < wire_need)
-                break; // incomplete packet
-
-            const size_t scratch_sz = 4 + pkt_len; // plaintext = length(4) || (pad_len||payload||pad)
-            ScratchScope scratch_scope;
-            uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
-            if (!scratch)
-            {
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1;
-            }
-
-            // Verify the Poly1305 tag over the ciphertext, then decrypt. No plaintext on failure.
-            if (!ssh_chachapoly_decrypt(km->chacha_key_c2s, s->seq_no_recv, scratch, s->rx_buf, pkt_len))
-            {
-                ssh_wipe(scratch, scratch_sz);
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1; // caller must close connection
-            }
-
-            if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
-            {
-                ssh_wipe(scratch, scratch_sz);
-                return -1;
-            }
-            s->seq_no_recv++;
-
-            uint8_t pad_len_byte = scratch[4];
-            if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
-            {
-                ssh_wipe(scratch, scratch_sz);
-                return -1;
-            }
-            size_t payload_len = pkt_len - 1 - pad_len_byte;
-            uint8_t msg_type = scratch[5];
-            handler(i, msg_type, scratch + 5, payload_len);
-
-            size_t consumed = wire_need;
-            memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
-            s->rx_len -= consumed;
-            ssh_wipe(scratch, scratch_sz);
+            // The buffer is full yet no complete packet could be extracted -> a single packet larger than the
+            // buffer. Discard and disconnect.
+            ssh_wipe(s->rx_buf, s->rx_len);
+            s->rx_len = 0;
+            return -1;
         }
-        else if (s->enc_in && km->cipher_mode == SSH_CIPHER_AES256GCM)
+        size_t take = len < space ? len : space;
+        memcpy(s->rx_buf + s->rx_len, data, take);
+        s->rx_len += take;
+        data += take;
+        len -= take;
+
+        // Extract complete packets.
+        while (s->rx_len >= 4)
         {
-            // aes256-gcm@openssh.com (RFC 5647): the 4-byte packet_length is sent in the clear and is
-            // the AEAD's additional authenticated data; the 16-byte GCM tag is verified over
-            // (length || ciphertext) BEFORE any plaintext is produced.
-            if (s->rx_len < 4)
-                break;
-            uint32_t pkt_len = read_u32_be(s->rx_buf);
-            // The encrypted portion (pkt_len) must be a positive whole number of AES blocks.
-            if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - SSH_AESGCM_TAG_LEN || (pkt_len % 16) != 0)
+            if (s->enc_in && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305)
             {
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1;
-            }
-            size_t wire_need = 4 + pkt_len + SSH_AESGCM_TAG_LEN;
-            if (s->rx_len < wire_need)
-                break; // incomplete packet
+                // chacha20-poly1305@openssh.com. Keyed by the sequence number, so decrypting the
+                // length is stateless/repeatable - no cipher-state peek/restore is needed.
+                if (s->rx_len < 4) // GCOVR_EXCL_LINE  the enclosing while already requires rx_len >= 4
+                    break;         // GCOVR_EXCL_LINE  (defensive re-check)
 
-            const size_t scratch_sz = pkt_len; // plaintext = padding_length || payload || padding
-            ScratchScope scratch_scope;
-            uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
-            if (!scratch)
-            {
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1;
-            }
+                uint32_t pkt_len = ssh_chachapoly_get_length(km->chacha_key_c2s, s->seq_no_recv, s->rx_buf);
+                if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - SSH_CHACHAPOLY_TAG_LEN)
+                {
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1;
+                }
+                size_t wire_need = 4 + pkt_len + SSH_CHACHAPOLY_TAG_LEN;
+                if (s->rx_len < wire_need)
+                    break; // incomplete packet
 
-            // Verify the GCM tag over (length || ciphertext), then decrypt. No plaintext on failure.
-            if (!ssh_aesgcm_open(&km->gcm_c2s, s->rx_buf, 4, s->rx_buf + 4, pkt_len, s->rx_buf + 4 + pkt_len, scratch))
-            {
+                const size_t scratch_sz = 4 + pkt_len; // plaintext = length(4) || (pad_len||payload||pad)
+                ScratchScope scratch_scope;
+                uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
+                if (!scratch)
+                {
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1;
+                }
+
+                // Verify the Poly1305 tag over the ciphertext, then decrypt. No plaintext on failure.
+                if (!ssh_chachapoly_decrypt(km->chacha_key_c2s, s->seq_no_recv, scratch, s->rx_buf, pkt_len))
+                {
+                    ssh_wipe(scratch, scratch_sz);
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1; // caller must close connection
+                }
+
+                if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
+                {
+                    ssh_wipe(scratch, scratch_sz);
+                    return -1;
+                }
+                s->seq_no_recv++;
+
+                uint8_t pad_len_byte = scratch[4];
+                if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
+                {
+                    ssh_wipe(scratch, scratch_sz);
+                    return -1;
+                }
+                size_t payload_len = pkt_len - 1 - pad_len_byte;
+                uint8_t msg_type = scratch[5];
+                handler(i, msg_type, scratch + 5, payload_len);
+
+                size_t consumed = wire_need;
+                memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
+                s->rx_len -= consumed;
                 ssh_wipe(scratch, scratch_sz);
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1; // caller must close connection
             }
-
-            if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
+            else if (s->enc_in && km->cipher_mode == SSH_CIPHER_AES256GCM)
             {
+                // aes256-gcm@openssh.com (RFC 5647): the 4-byte packet_length is sent in the clear and is
+                // the AEAD's additional authenticated data; the 16-byte GCM tag is verified over
+                // (length || ciphertext) BEFORE any plaintext is produced.
+                if (s->rx_len < 4)
+                    break;
+                uint32_t pkt_len = read_u32_be(s->rx_buf);
+                // The encrypted portion (pkt_len) must be a positive whole number of AES blocks.
+                if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - SSH_AESGCM_TAG_LEN || (pkt_len % 16) != 0)
+                {
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1;
+                }
+                size_t wire_need = 4 + pkt_len + SSH_AESGCM_TAG_LEN;
+                if (s->rx_len < wire_need)
+                    break; // incomplete packet
+
+                const size_t scratch_sz = pkt_len; // plaintext = padding_length || payload || padding
+                ScratchScope scratch_scope;
+                uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
+                if (!scratch)
+                {
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1;
+                }
+
+                // Verify the GCM tag over (length || ciphertext), then decrypt. No plaintext on failure.
+                if (!ssh_aesgcm_open(&km->gcm_c2s, s->rx_buf, 4, s->rx_buf + 4, pkt_len, s->rx_buf + 4 + pkt_len,
+                                     scratch))
+                {
+                    ssh_wipe(scratch, scratch_sz);
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1; // caller must close connection
+                }
+
+                if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
+                {
+                    ssh_wipe(scratch, scratch_sz);
+                    return -1;
+                }
+                s->seq_no_recv++;
+
+                uint8_t pad_len_byte = scratch[0];
+                if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
+                {
+                    ssh_wipe(scratch, scratch_sz);
+                    return -1;
+                }
+                size_t payload_len = pkt_len - 1 - pad_len_byte;
+                uint8_t msg_type = scratch[1];
+                handler(i, msg_type, scratch + 1, payload_len);
+
+                size_t consumed = wire_need;
+                memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
+                s->rx_len -= consumed;
                 ssh_wipe(scratch, scratch_sz);
-                return -1;
             }
-            s->seq_no_recv++;
-
-            uint8_t pad_len_byte = scratch[0];
-            if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
+            else if (s->enc_in && ssh_mac_is_etm(km->mac_mode))
             {
-                ssh_wipe(scratch, scratch_sz);
-                return -1;
-            }
-            size_t payload_len = pkt_len - 1 - pad_len_byte;
-            uint8_t msg_type = scratch[1];
-            handler(i, msg_type, scratch + 1, payload_len);
+                // aes256-ctr + encrypt-then-MAC: the 4-byte packet_length is sent in the clear, and the
+                // MAC is verified over (length || ciphertext) BEFORE anything is decrypted.
+                if (s->rx_len < 4)
+                    break;
+                uint32_t pkt_len = read_u32_be(s->rx_buf);
+                size_t mac_tag = ssh_mac_len(km->mac_mode);
+                // The encrypted portion (pkt_len) must be a positive whole number of AES blocks.
+                if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 || (pkt_len % 16) != 0)
+                {
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1;
+                }
+                size_t wire_need = 4 + pkt_len + mac_tag;
+                if (s->rx_len < wire_need)
+                    break; // incomplete packet
 
-            size_t consumed = wire_need;
-            memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
-            s->rx_len -= consumed;
-            ssh_wipe(scratch, scratch_sz);
-        }
-        else if (s->enc_in && ssh_mac_is_etm(km->mac_mode))
-        {
-            // aes256-ctr + encrypt-then-MAC: the 4-byte packet_length is sent in the clear, and the
-            // MAC is verified over (length || ciphertext) BEFORE anything is decrypted.
-            if (s->rx_len < 4)
-                break;
-            uint32_t pkt_len = read_u32_be(s->rx_buf);
-            size_t mac_tag = ssh_mac_len(km->mac_mode);
-            // The encrypted portion (pkt_len) must be a positive whole number of AES blocks.
-            if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 || (pkt_len % 16) != 0)
-            {
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1;
-            }
-            size_t wire_need = 4 + pkt_len + mac_tag;
-            if (s->rx_len < wire_need)
-                break; // incomplete packet
-
-            uint8_t expected_mac[64];
-            compute_mac_mode(km->mac_mode, km->mac_key_c2s, s->seq_no_recv, s->rx_buf, 4 + pkt_len, expected_mac);
-            if (ct_memcmp(expected_mac, s->rx_buf + 4 + pkt_len, mac_tag) != 0)
-            {
+                uint8_t expected_mac[64];
+                compute_mac_mode(km->mac_mode, km->mac_key_c2s, s->seq_no_recv, s->rx_buf, 4 + pkt_len, expected_mac);
+                if (ct_memcmp(expected_mac, s->rx_buf + 4 + pkt_len, mac_tag) != 0)
+                {
+                    ssh_wipe(expected_mac, sizeof(expected_mac));
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1; // caller must close connection
+                }
                 ssh_wipe(expected_mac, sizeof(expected_mac));
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1; // caller must close connection
-            }
-            ssh_wipe(expected_mac, sizeof(expected_mac));
 
-            if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
-                return -1;
-            s->seq_no_recv++;
+                if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
+                    return -1;
+                s->seq_no_recv++;
 
-            // MAC verified -> decrypt the payload (advances c2s_ctx by exactly pkt_len/16 blocks).
-            const size_t scratch_sz = SSH_PKT_BUF_SIZE;
-            ScratchScope scratch_scope;
-            uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
-            if (!scratch)
-            {
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1;
-            }
-            memcpy(scratch, s->rx_buf + 4, pkt_len);
-            ssh_aes256ctr_crypt(&km->c2s_ctx, scratch, scratch, pkt_len);
+                // MAC verified -> decrypt the payload (advances c2s_ctx by exactly pkt_len/16 blocks).
+                const size_t scratch_sz = SSH_PKT_BUF_SIZE;
+                ScratchScope scratch_scope;
+                uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
+                if (!scratch)
+                {
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1;
+                }
+                memcpy(scratch, s->rx_buf + 4, pkt_len);
+                ssh_aes256ctr_crypt(&km->c2s_ctx, scratch, scratch, pkt_len);
 
-            // scratch = padding_length || payload || padding.
-            uint8_t pad_len_byte = scratch[0];
-            if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
-            {
+                // scratch = padding_length || payload || padding.
+                uint8_t pad_len_byte = scratch[0];
+                if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
+                {
+                    ssh_wipe(scratch, scratch_sz);
+                    return -1;
+                }
+                size_t payload_len = pkt_len - 1 - pad_len_byte;
+                uint8_t msg_type = scratch[1];
+                handler(i, msg_type, scratch + 1, payload_len);
+
+                size_t consumed = wire_need;
+                memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
+                s->rx_len -= consumed;
                 ssh_wipe(scratch, scratch_sz);
-                return -1;
             }
-            size_t payload_len = pkt_len - 1 - pad_len_byte;
-            uint8_t msg_type = scratch[1];
-            handler(i, msg_type, scratch + 1, payload_len);
-
-            size_t consumed = wire_need;
-            memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
-            s->rx_len -= consumed;
-            ssh_wipe(scratch, scratch_sz);
-        }
-        else if (s->enc_in)
-        {
-            // aes256-ctr + encrypt-and-MAC. We need the first cipher block (16 bytes) for the length.
-            if (s->rx_len < 16)
-                break; // wait for more data
-
-            // --- Peek packet_length WITHOUT permanently advancing the cipher ---
-            // AES-CTR is stateful: decrypting bytes advances the counter.  To
-            // read the length without committing, snapshot the CTR streaming
-            // state (counter/keystream/pos - the key schedule is invariant and
-            // may hold internal pointers on mbedtls, so we never copy it),
-            // decrypt the first block, then restore.  Nothing is consumed yet.
-            uint8_t saved_counter[16];
-            uint8_t saved_keystream[16];
-            uint8_t saved_pos;
-            memcpy(saved_counter, km->c2s_ctx.counter, 16);
-            memcpy(saved_keystream, km->c2s_ctx.keystream, 16);
-            saved_pos = km->c2s_ctx.pos;
-
-            uint8_t len_block[16];
-            memcpy(len_block, s->rx_buf, 16);
-            ssh_aes256ctr_crypt(&km->c2s_ctx, len_block, len_block, 16);
-            uint32_t pkt_len = read_u32_be(len_block);
-            ssh_wipe(len_block, sizeof(len_block));
-
-            // Restore the cipher to the packet boundary (un-peek).
-            memcpy(km->c2s_ctx.counter, saved_counter, 16);
-            memcpy(km->c2s_ctx.keystream, saved_keystream, 16);
-            km->c2s_ctx.pos = saved_pos;
-            ssh_wipe(saved_keystream, sizeof(saved_keystream));
-
-            // Validate length.  The encrypted portion (4 + pkt_len) must be a
-            // whole number of AES blocks (RFC 4253 §6 padding guarantees this).
-            size_t enc_len = 4 + pkt_len;
-            if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 || (enc_len % 16) != 0)
+            else if (s->enc_in)
             {
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1;
-            }
+                // aes256-ctr + encrypt-and-MAC. We need the first cipher block (16 bytes) for the length.
+                if (s->rx_len < 16)
+                    break; // wait for more data
 
-            size_t mac_tag = ssh_mac_len(km->mac_mode);
-            size_t wire_need = enc_len + mac_tag;
-            if (s->rx_len < wire_need)
-                break; // incomplete packet; cipher state already restored
+                // --- Peek packet_length WITHOUT permanently advancing the cipher ---
+                // AES-CTR is stateful: decrypting bytes advances the counter.  To
+                // read the length without committing, snapshot the CTR streaming
+                // state (counter/keystream/pos - the key schedule is invariant and
+                // may hold internal pointers on mbedtls, so we never copy it),
+                // decrypt the first block, then restore.  Nothing is consumed yet.
+                uint8_t saved_counter[16];
+                uint8_t saved_keystream[16];
+                uint8_t saved_pos;
+                memcpy(saved_counter, km->c2s_ctx.counter, 16);
+                memcpy(saved_keystream, km->c2s_ctx.keystream, 16);
+                saved_pos = km->c2s_ctx.pos;
 
-            // Borrow this packet's plaintext scratch from the shared arena. The
-            // scope guard reclaims it on every exit path, so multiple packets in
-            // one call reuse the same space instead of accumulating; an exhausted
-            // arena fails closed (discard + disconnect).
-            const size_t scratch_sz = SSH_PKT_BUF_SIZE + 64;
-            ScratchScope scratch_scope;
-            uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
-            if (!scratch)
-            {
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1;
-            }
+                uint8_t len_block[16];
+                memcpy(len_block, s->rx_buf, 16);
+                ssh_aes256ctr_crypt(&km->c2s_ctx, len_block, len_block, 16);
+                uint32_t pkt_len = read_u32_be(len_block);
+                ssh_wipe(len_block, sizeof(len_block));
 
-            // Full packet present.  Decrypt EXACTLY the encrypted portion,
-            // which advances c2s_ctx by exactly enc_len/16 blocks and leaves
-            // the cipher aligned on the next packet boundary.
-            memcpy(scratch, s->rx_buf, enc_len);
-            ssh_aes256ctr_crypt(&km->c2s_ctx, scratch, scratch, enc_len);
+                // Restore the cipher to the packet boundary (un-peek).
+                memcpy(km->c2s_ctx.counter, saved_counter, 16);
+                memcpy(km->c2s_ctx.keystream, saved_keystream, 16);
+                km->c2s_ctx.pos = saved_pos;
+                ssh_wipe(saved_keystream, sizeof(saved_keystream));
 
-            // Verify MAC over seq_no || plaintext(scratch[0..enc_len)).
-            const uint8_t *rx_mac = s->rx_buf + enc_len; // MAC is sent in clear
-            uint8_t expected_mac[64];
-            compute_mac_mode(km->mac_mode, km->mac_key_c2s, s->seq_no_recv, scratch, enc_len, expected_mac);
+                // Validate length.  The encrypted portion (4 + pkt_len) must be a
+                // whole number of AES blocks (RFC 4253 §6 padding guarantees this).
+                size_t enc_len = 4 + pkt_len;
+                if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 || (enc_len % 16) != 0)
+                {
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1;
+                }
 
-            if (ct_memcmp(expected_mac, rx_mac, mac_tag) != 0)
-            {
-                // MAC failure: zero everything and disconnect.
-                ssh_wipe(scratch, scratch_sz);
+                size_t mac_tag = ssh_mac_len(km->mac_mode);
+                size_t wire_need = enc_len + mac_tag;
+                if (s->rx_len < wire_need)
+                    break; // incomplete packet; cipher state already restored
+
+                // Borrow this packet's plaintext scratch from the shared arena. The
+                // scope guard reclaims it on every exit path, so multiple packets in
+                // one call reuse the same space instead of accumulating; an exhausted
+                // arena fails closed (discard + disconnect).
+                const size_t scratch_sz = SSH_PKT_BUF_SIZE + 64;
+                ScratchScope scratch_scope;
+                uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
+                if (!scratch)
+                {
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1;
+                }
+
+                // Full packet present.  Decrypt EXACTLY the encrypted portion,
+                // which advances c2s_ctx by exactly enc_len/16 blocks and leaves
+                // the cipher aligned on the next packet boundary.
+                memcpy(scratch, s->rx_buf, enc_len);
+                ssh_aes256ctr_crypt(&km->c2s_ctx, scratch, scratch, enc_len);
+
+                // Verify MAC over seq_no || plaintext(scratch[0..enc_len)).
+                const uint8_t *rx_mac = s->rx_buf + enc_len; // MAC is sent in clear
+                uint8_t expected_mac[64];
+                compute_mac_mode(km->mac_mode, km->mac_key_c2s, s->seq_no_recv, scratch, enc_len, expected_mac);
+
+                if (ct_memcmp(expected_mac, rx_mac, mac_tag) != 0)
+                {
+                    // MAC failure: zero everything and disconnect.
+                    ssh_wipe(scratch, scratch_sz);
+                    ssh_wipe(expected_mac, sizeof(expected_mac));
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1; // caller must close connection
+                }
                 ssh_wipe(expected_mac, sizeof(expected_mac));
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1; // caller must close connection
-            }
-            ssh_wipe(expected_mac, sizeof(expected_mac));
 
-            // MAC verified.  Sequence overflow guard.
-            if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
-            {
+                // MAC verified.  Sequence overflow guard.
+                if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
+                {
+                    ssh_wipe(scratch, scratch_sz);
+                    return -1;
+                }
+                s->seq_no_recv++;
+
+                // Extract payload: scratch[5 .. 5 + payload_len - 1]
+                uint8_t pad_len_byte = scratch[4];
+                // RFC 4253 6: there MUST be at least 4 bytes of padding, and it cannot
+                // exceed the packet (which would underflow payload_len).
+                if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
+                {
+                    ssh_wipe(scratch, scratch_sz);
+                    return -1;
+                }
+                size_t payload_len = pkt_len - 1 - pad_len_byte;
+                uint8_t msg_type = scratch[5];
+                handler(i, msg_type, scratch + 5, payload_len);
+
+                // Consume from rx_buf.
+                size_t consumed = wire_need;
+                memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
+                s->rx_len -= consumed;
                 ssh_wipe(scratch, scratch_sz);
-                return -1;
             }
-            s->seq_no_recv++;
-
-            // Extract payload: scratch[5 .. 5 + payload_len - 1]
-            uint8_t pad_len_byte = scratch[4];
-            // RFC 4253 6: there MUST be at least 4 bytes of padding, and it cannot
-            // exceed the packet (which would underflow payload_len).
-            if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
+            else
             {
-                ssh_wipe(scratch, scratch_sz);
-                return -1;
+                // Unencrypted path (during initial handshake / before NEWKEYS).
+                uint32_t pkt_len = read_u32_be(s->rx_buf);
+                if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4)
+                {
+                    ssh_wipe(s->rx_buf, s->rx_len);
+                    s->rx_len = 0;
+                    return -1;
+                }
+                size_t wire_need = 4 + pkt_len; // no MAC before NEWKEYS
+                if (s->rx_len < wire_need)
+                    break;
+
+                if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
+                    return -1;
+                s->seq_no_recv++;
+
+                uint8_t pad_len_byte = s->rx_buf[4];
+                if (pad_len_byte >= pkt_len)
+                    return -1;
+                size_t payload_len = pkt_len - 1 - pad_len_byte;
+                uint8_t msg_type = s->rx_buf[5];
+                handler(i, msg_type, s->rx_buf + 5, payload_len);
+
+                size_t consumed = wire_need;
+                memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
+                s->rx_len -= consumed;
             }
-            size_t payload_len = pkt_len - 1 - pad_len_byte;
-            uint8_t msg_type = scratch[5];
-            handler(i, msg_type, scratch + 5, payload_len);
-
-            // Consume from rx_buf.
-            size_t consumed = wire_need;
-            memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
-            s->rx_len -= consumed;
-            ssh_wipe(scratch, scratch_sz);
-        }
-        else
-        {
-            // Unencrypted path (during initial handshake / before NEWKEYS).
-            uint32_t pkt_len = read_u32_be(s->rx_buf);
-            if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4)
-            {
-                ssh_wipe(s->rx_buf, s->rx_len);
-                s->rx_len = 0;
-                return -1;
-            }
-            size_t wire_need = 4 + pkt_len; // no MAC before NEWKEYS
-            if (s->rx_len < wire_need)
-                break;
-
-            if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
-                return -1;
-            s->seq_no_recv++;
-
-            uint8_t pad_len_byte = s->rx_buf[4];
-            if (pad_len_byte >= pkt_len)
-                return -1;
-            size_t payload_len = pkt_len - 1 - pad_len_byte;
-            uint8_t msg_type = s->rx_buf[5];
-            handler(i, msg_type, s->rx_buf + 5, payload_len);
-
-            size_t consumed = wire_need;
-            memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
-            s->rx_len -= consumed;
-        }
-    }
+        } // extract-complete-packets loop
+    } // incremental-append loop
 
     return 0;
 }

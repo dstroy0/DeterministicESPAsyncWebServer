@@ -1,0 +1,111 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file scp.cpp
+ * @brief SCP (RCP) protocol wire codec - implementation. See scp.h.
+ */
+
+#include "services/scp/scp.h"
+
+#if DETWS_ENABLE_SSH_SCP
+
+#include <stdio.h>
+#include <string.h>
+
+ScpMode scp_parse_cmd(const char *cmd, size_t cmd_len, char *path_out, size_t path_cap)
+{
+    if (!cmd || !path_out || path_cap == 0)
+        return ScpMode::INVALID;
+    ScpMode mode = ScpMode::INVALID;
+    const char *last_tok = nullptr; // the last non-flag token is the target path
+    size_t last_len = 0;
+    size_t i = 0;
+    while (i < cmd_len)
+    {
+        while (i < cmd_len && cmd[i] == ' ')
+            i++;
+        if (i >= cmd_len)
+            break;
+        size_t start = i;
+        while (i < cmd_len && cmd[i] != ' ')
+            i++;
+        size_t tlen = i - start;
+        if (tlen >= 2 && cmd[start] == '-')
+        {
+            // a flag token: -t / -f set the role; -v / -r / -p / -d and combinations are ignored.
+            for (size_t k = 1; k < tlen; k++)
+            {
+                if (cmd[start + k] == 't')
+                    mode = ScpMode::SINK;
+                else if (cmd[start + k] == 'f')
+                    mode = ScpMode::SOURCE;
+            }
+        }
+        else
+        {
+            last_tok = cmd + start; // "scp" then the path; the last one wins
+            last_len = tlen;
+        }
+    }
+    if (mode == ScpMode::INVALID || !last_tok || last_len == 0 || last_len >= path_cap)
+        return ScpMode::INVALID;
+    memcpy(path_out, last_tok, last_len);
+    path_out[last_len] = '\0';
+    return mode;
+}
+
+bool scp_parse_cline(const char *line, size_t len, uint32_t *mode_out, uint64_t *size_out, char *name_out,
+                     size_t name_cap)
+{
+    if (!line || len < 1 || line[0] != 'C') // only plain file records (not D/E directory records)
+        return false;
+    size_t i = 1;
+
+    uint32_t mode = 0;
+    size_t ms = i;
+    while (i < len && line[i] >= '0' && line[i] <= '7')
+    {
+        mode = mode * 8 + (uint32_t)(line[i] - '0');
+        i++;
+    }
+    if (i == ms || i >= len || line[i] != ' ')
+        return false;
+    i++;
+
+    uint64_t size = 0;
+    size_t ss = i;
+    while (i < len && line[i] >= '0' && line[i] <= '9')
+    {
+        size = size * 10 + (uint64_t)(line[i] - '0');
+        i++;
+    }
+    if (i == ss || i >= len || line[i] != ' ')
+        return false;
+    i++;
+
+    size_t ns = i;
+    while (i < len && line[i] != '\n' && line[i] != '\0')
+        i++;
+    size_t nlen = i - ns;
+    if (nlen == 0 || nlen >= name_cap)
+        return false;
+    memcpy(name_out, line + ns, nlen);
+    name_out[nlen] = '\0';
+
+    if (mode_out)
+        *mode_out = mode;
+    if (size_out)
+        *size_out = size;
+    return true;
+}
+
+size_t scp_build_cline(uint32_t mode, uint64_t size, const char *name, char *out, size_t cap)
+{
+    int n = snprintf(out, cap, "C%04o %llu %s\n", (unsigned)(mode & 07777), (unsigned long long)size, name);
+    if (n <= 0 || (size_t)n >= cap)
+        return 0;
+    return (size_t)n;
+}
+
+#endif // DETWS_ENABLE_SSH_SCP

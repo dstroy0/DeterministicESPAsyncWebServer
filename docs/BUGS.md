@@ -8,6 +8,39 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH transport dropped a TCP read that carried several pipelined packets (SFTP write)
+
+- **Status:** FIXED (2026-07-17). Found by the **HW bring-up of the SFTP server** on an ESP32-S3 + SD card,
+  driven by the real OpenSSH `sftp` client - the exact whole-firmware path host tests cannot reach.
+- **Symptom:** a small (< 2 KB) `put` round-tripped byte-exact, but any larger `put` reset the connection during
+  the first `SSH2_FXP_WRITE` (client saw "broken pipe"); the device did not crash (heap stable, no panic).
+- **Root cause (two layers):** (1) the `CHANNEL_OPEN_CONFIRMATION` advertised `SSH_CHAN_MAX_PACKET` = 32768 as
+  the max packet we can receive, but the transport rejects any inbound packet larger than `SSH_PKT_BUF_SIZE`
+  (2048) - so a peer that believed the advertisement (an SFTP write) sent a packet the transport threw away.
+  (2) more fundamentally, `ssh_pkt_recv()` appended the whole incoming read to its `SSH_PKT_BUF_SIZE` buffer
+  _before_ extracting packets and disconnected if the read exceeded the remaining space - so a single TCP read
+  carrying several back-to-back CHANNEL_DATA messages (which is exactly how a client pipelines a large SFTP
+  write's fragments) overflowed the buffer even though every individual packet fit. Interactive shells never
+  send enough at once to hit either.
+- **Fix:** (1) derive `SSH_CHAN_MAX_PACKET` from `SSH_PKT_BUF_SIZE` (`- 64`) so we never advertise more than we
+  can receive, and it scales when the buffer is raised for throughput. (2) `ssh_pkt_recv()` now consumes its
+  input **incrementally** - append as much as fits, extract every complete packet to drain the buffer, then
+  append more - so a multi-packet read is processed instead of rejected. Re-flashed: a 60 KB `put`/`get`
+  round-trips byte-exact over the SD card, and `native_ssh` + `native_ssh_conn` (209 cases) stay green.
+
+## SFTP READDIR NAME response carried a garbage 4-byte prefix per entry
+
+- **Status:** FIXED (2026-07-17). Found by the same SFTP HW bring-up: `put`/`get` worked byte-exact but any
+  `ls` on a non-empty directory reset the connection.
+- **Root cause:** `build_entry()` serialized a directory entry with an `SftpWriter`, which reserves a 4-byte
+  packet-length prefix, and returned the entry length - but the entry _data_ started at `ent + 4`, while
+  `do_readdir()` copied from `ent[0]`. So every NAME entry was prefixed with 4 bytes of the discarded length
+  field, malforming the response; the client rejected it and disconnected.
+- **Fix:** `build_entry()` drops the reserved prefix (`memmove(ent, ent + 4, len)`) so the entry bytes start at
+  `ent[0]`. Re-flashed: `ls -l` lists files with correct sizes / longnames, and rename / rm take effect.
+
+---
+
 ## Edge-cache mesh serving node RST'd the response before it drained (immediate close)
 
 - **Status:** FIXED (2026-07-17). Found by the **two-rig HW bring-up** of the new mesh sibling cache

@@ -323,8 +323,14 @@
       "tests": ["test_provisioning"]
     },
     "native_ssh": {
-      "desc": "SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DETWS_SSH_MAX_CHANNELS=3) to exercise routing",
-      "flags": ["-DDETWS_SSH_MAX_CHANNELS=3"],
+      "desc": "SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DETWS_SSH_MAX_CHANNELS=3) to exercise routing; SFTP/SCP subsystem routing on (FILE_SERVING satisfies the guard)",
+      "flags": [
+        "-DDETWS_SSH_MAX_CHANNELS=3",
+        "-DDETWS_ENABLE_SSH=1",
+        "-DDETWS_ENABLE_FILE_SERVING=1",
+        "-DDETWS_ENABLE_SSH_SFTP=1",
+        "-DDETWS_ENABLE_SSH_SCP=1"
+      ],
       "src": [
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
@@ -462,6 +468,26 @@
         "+<network_drivers/presentation/ssh/connection/ssh_conn.cpp>"
       ],
       "tests": ["test_ssh_conn"]
+    },
+    "native_ssh_sftp": {
+      "desc": "SFTP protocol v3 wire codec (services/sftp): the SSH_FXP_* request reader + response builders\n(VERSION / STATUS / HANDLE / DATA / ATTRS / NAME), the ATTRS blob encode/decode round-trip (size / perms /\nmtime + the flag word, skipping unknown/extended fields), packet length-framing (need-more vs\nmalformed/too-big), and the ls -l longname formatter. Pure host tests (no fs / no SSH). FILE_SERVING is set\nonly to satisfy the SFTP dependency guard; no file code is linked.",
+      "flags": [
+        "-DDETWS_ENABLE_SSH=1",
+        "-DDETWS_ENABLE_FILE_SERVING=1",
+        "-DDETWS_ENABLE_SSH_SFTP=1"
+      ],
+      "src": ["+<services/sftp/sftp.cpp>"],
+      "tests": ["test_ssh_sftp"]
+    },
+    "native_scp": {
+      "desc": "SCP (RCP) protocol wire codec (services/scp): parse an `scp -t/-f <path>` exec command into its\nsink/source role + target, parse + build the `C<mode> <size> <name>` control line (octal mode, decimal\nsize, name; malformed lines rejected), and the ack byte constants. Pure host tests. FILE_SERVING satisfies\nthe SCP dependency guard.",
+      "flags": [
+        "-DDETWS_ENABLE_SSH=1",
+        "-DDETWS_ENABLE_FILE_SERVING=1",
+        "-DDETWS_ENABLE_SSH_SCP=1"
+      ],
+      "src": ["+<services/scp/scp.cpp>"],
+      "tests": ["test_scp"]
     },
     "native_app": {
       "desc": "Full stack including Layer 7 application",

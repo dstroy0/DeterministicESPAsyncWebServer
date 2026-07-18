@@ -31,9 +31,11 @@
 /** @brief Channel type (RFC 4254). */
 enum class SshChanType : uint8_t
 {
-    SSH_CHAN_SESSION = 0,        ///< "session" - shell / exec / data
-    SSH_CHAN_DIRECT_TCPIP = 1,   ///< "direct-tcpip" - client-initiated TCP forward (ssh -L)
-    SSH_CHAN_FORWARDED_TCPIP = 2 ///< "forwarded-tcpip" - server-initiated TCP forward (ssh -R)
+    SSH_CHAN_SESSION = 0,         ///< "session" - shell / exec / data
+    SSH_CHAN_DIRECT_TCPIP = 1,    ///< "direct-tcpip" - client-initiated TCP forward (ssh -L)
+    SSH_CHAN_FORWARDED_TCPIP = 2, ///< "forwarded-tcpip" - server-initiated TCP forward (ssh -R)
+    SSH_CHAN_SFTP = 3,            ///< a "session" running the "sftp" subsystem (DETWS_ENABLE_SSH_SFTP)
+    SSH_CHAN_SCP = 4              ///< a "session" running an `exec "scp …"` (DETWS_ENABLE_SSH_SCP)
 };
 
 /** @brief Per-connection channel state. */
@@ -117,6 +119,24 @@ typedef void (*SshForwardConfirmCb)(uint8_t slot, uint32_t channel, bool ok);
 /** @brief Install the forwarded-tcpip open-confirmation callback (opt-in, ssh -R). */
 void ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb);
 
+#if DETWS_ENABLE_SSH_SFTP
+/** @brief A `subsystem "sftp"` request was accepted on @p channel; the binding starts an SFTP session. */
+typedef void (*SshSftpOpenCb)(uint8_t slot, uint32_t channel);
+/** @brief Inbound bytes on an SFTP channel (the raw SSH_FXP_* stream) - kept out of the session data cb. */
+typedef void (*SshSftpDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
+void ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb);
+void ssh_channel_set_sftp_data_cb(SshSftpDataCb cb);
+#endif
+
+#if DETWS_ENABLE_SSH_SCP
+/** @brief An `exec "scp …"` request was accepted on @p channel (@p cmd is @p cmd_len bytes, not NUL-terminated). */
+typedef void (*SshScpOpenCb)(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len);
+/** @brief Inbound bytes on an SCP channel (the RCP protocol stream). */
+typedef void (*SshScpDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
+void ssh_channel_set_scp_open_cb(SshScpOpenCb cb);
+void ssh_channel_set_scp_data_cb(SshScpDataCb cb);
+#endif
+
 /**
  * @brief Open a server-initiated "forwarded-tcpip" channel (RFC 4254 §7.2, ssh -R).
  *
@@ -179,9 +199,11 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
 /**
  * @brief Handle SSH_MSG_CHANNEL_REQUEST.
  *
- * "shell", "exec", and "pty-req" are accepted; anything else is refused. When
- * want_reply is set, CHANNEL_SUCCESS / CHANNEL_FAILURE is written to @p out and
- * *@p out_len > 0; otherwise *@p out_len is 0.
+ * "shell", "exec", "pty-req", and "env" are accepted; anything else is refused - except that when
+ * DETWS_ENABLE_SSH_SFTP is set a `subsystem "sftp"` is accepted (the channel is tagged SSH_CHAN_SFTP and the
+ * sftp-open callback fires), and when DETWS_ENABLE_SSH_SCP is set an `exec "scp …"` is additionally tagged
+ * SSH_CHAN_SCP (the scp-open callback fires with the command). When want_reply is set, CHANNEL_SUCCESS /
+ * CHANNEL_FAILURE is written to @p out and *@p out_len > 0; otherwise *@p out_len is 0.
  * @return 0 on success, -1 if malformed.
  */
 int ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,

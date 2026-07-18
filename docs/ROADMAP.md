@@ -494,12 +494,19 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
           in `ssh/crypto/ssh_ecdsa` (ESP32 `mbedtls_ecdh_compute_shared`, HW; native software P-256), added
           `ssh_ecdsa_p256_ecdh()`. Negotiated in `kex_algorithms`. Byte-exact vs the RFC 5903 §8.1 shared-secret
           KAT + a negotiation test + an e2e KEXDH that verifies the host signature over the reconstructed hash.
-- [ ] **SFTP + SCP subsystem over SSH** (XL, high value - ties to G-code deployment) - Cyclone has both SFTP
-      and SCP client+server; we have an SSH transport + shell/exec but no file-transfer subsystem. An SFTP
-      _server_ subsystem (the SSH_FXP_* packet protocol over an SSH channel) is the standards-track southbound
-      path for the **secure machine-agent G-code push** goal - drop NC programs onto the device (or drip them
-      to a controller via the shipped `services/dnc`) over the one authenticated SSH port. Fixed-BSS handle
-      table, streamed reads/writes, no heap.
+- [x] **SFTP + SCP subsystem over SSH** (XL, high value - ties to G-code deployment) _(done, HW-verified)_ -
+      Cyclone has both SFTP and SCP client+server; we now have the **server** side. `DETWS_ENABLE_SSH_SFTP`
+      (services/sftp + server/ssh_sftp) - an SFTP v3 server subsystem (`SSH_FXP_*` over a session channel) with
+      a fixed-BSS handle table, streamed reads/writes, no heap, serving an `fs::FS` mount via
+      `det_ssh_sftp_begin(fs, root)`: OPEN/READ/WRITE/OPENDIR/READDIR/STAT/MKDIR/RMDIR/REMOVE/RENAME/REALPATH,
+      the `..` traversal guard (server/fs_path). `DETWS_ENABLE_SSH_SCP` (services/scp + server/ssh_scp) - the
+      rcp SINK direction (`scp file device:/path`) via `exec "scp -t"`. The standards-track southbound path for
+      **secure machine-agent G-code push** (drop NC programs on the device, or drip them to a controller via
+      `services/dnc`) over the one authenticated SSH port. Pure codecs host-tested (native_ssh_sftp, native_scp);
+      HW-verified vs the OpenSSH `sftp`/`scp` clients on an ESP32-S3 + SD card (60 KB byte-exact). The HW run
+      caught + fixed a latent SSH transport bug (a TCP read carrying several pipelined packets - a large SFTP
+      write - overflowed the single-packet receive buffer; now drained incrementally). _Follow-ups:_ the SCP
+      SOURCE (download) direction, recursive SCP, and a graceful `SSH_MSG_DISCONNECT` on teardown.
 - [ ] **TLS Raw Public Keys (RFC 7250)** (M) - Cyclone supports RPK; a cert-less TLS credential (bare
       SubjectPublicKeyInfo, no X.509 chain) is a natural fit for constrained, provisioned ESP32 fleets where a
       pinned key beats a full PKI - smaller handshakes, no cert parsing. Expose/enable it on the TLS path.

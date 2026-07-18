@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **240 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **242 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -251,6 +251,7 @@ The native test matrix has **240 environments**, one per feature, generated from
 | `native_rtc` | `ETWS_ENABLE_RTC=1` | `test_rtc` | DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in 24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation, and a round-trip over the 2000... |
 | `native_rtcm3` | `ETWS_ENABLE_NTRIP_CASTER=1` | `test_rtcm3` | RTCM 3.x framing + station-reference codec (services/gnss/rtcm3), the pure core of the GNSS RTK base / NTRIP caster: the transport frame (0xD3 preamble, 10-bit length, CRC-24Q), MSB-first bit I/O, and... |
 | `native_s7comm` | `ETWS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
+| `native_scp` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_FILE_SERVING=1`, `ETWS_ENABLE_SSH_SCP=1` | `test_scp` | SCP (RCP) protocol wire codec (services/scp): parse an `scp -t/-f <path>` exec command into its sink/source role + target, parse + build the `C<mode> <size> <name>` control line (octal mode, decimal s... |
 | `native_scratch` | default | `test_scratch` | Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset semantics, alignment, and fail-closed exhaustion. |
 | `native_sdi12` | `ETWS_ENABLE_SDI12=1` | `test_sdi12` | SDI-12 sensor-bus codec (services/sdi12): the command builders, the measurement response parser (atttn), the data-value splitter, and the SDI-12 CRC (compute/encode/verify). |
 | `native_sen0192` | `ETWS_ENABLE_SEN0192=1` | `test_sen0192` | SEN0192 microwave motion sensor presence state machine (services/sen0192): presence asserts on an active sample and holds for the configured window after the last active sample, clears after it, count... |
@@ -271,7 +272,7 @@ The native test matrix has **240 environments**, one per feature, generated from
 | `native_spa_router` | `ETWS_ENABLE_SPA_ROUTER=1` | `test_spa_router` | Single-page-app micro-routing (services/spa_router): the serve-file / serve-shell / passthrough decision from a request path (extension test + API prefix). |
 | `native_sparkplug` | `ETWS_ENABLE_SPARKPLUG=1` | `test_sparkplug` | Sparkplug B codec (services/sparkplug): the topic builder + the Metric / Payload protobuf serializers (over the protobuf codec). |
 | `native_sqlite` | `ETWS_ENABLE_SQLITE=1` | `test_sqlite` | SQLite3 on-disk file-format reader (services/sqlite): the 100-byte database header, the b-tree page header, the record varint, and record serial types, parsed by hand. |
-| `native_ssh` | `ETWS_SSH_MAX_CHANNELS=3` | `test_ssh_crypto`, `test_ssh_transport`, `test_ssh_auth`, `test_ssh_channel`, `test_ssh_server` | SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DETWS_SSH_MAX_CHANNELS=3) to exercise routing |
+| `native_ssh` | `ETWS_SSH_MAX_CHANNELS=3`, `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_FILE_SERVING=1`, `ETWS_ENABLE_SSH_SFTP=1`, `ETWS_ENABLE_SSH_SCP=1` | `test_ssh_crypto`, `test_ssh_transport`, `test_ssh_auth`, `test_ssh_channel`, `test_ssh_server` | SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DETWS_SSH_MAX_CHANNELS=3) to exercise routing; SFTP/SCP subsystem routing on (FILE_SERVING satisfies the guard) |
 | `native_ssh_aesgcm` | default | `test_ssh_aesgcm` | AES-256-GCM AEAD for aes256-gcm@openssh.com (RFC 5647) host-tested here: seal/open vs the NIST/McGrew AES-256-GCM Test Case 16 vector, tamper rejection, and the invocation-counter advance. |
 | `native_ssh_chachapoly` | default | `test_ssh_chachapoly` | chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC 8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction (length decode, encrypt... |
 | `native_ssh_comp` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_SSH_ZLIB=1`, `ETWS_ENABLE_WS_DEFLATE=1` | `test_ssh_comp` | SSH s2c compression WIRING with the full SSH stack built with DETWS_ENABLE_SSH_ZLIB=1: the compression owner (ssh_comp) + its NEWKEYS / USERAUTH_SUCCESS activation + the packet-layer compress path in ... |
@@ -280,6 +281,7 @@ The native test matrix has **240 environments**, one per feature, generated from
 | `native_ssh_ed25519` | default | `test_ssh_ed25519` | Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth): SHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). |
 | `native_ssh_hardened` | `ETWS_SSH_ALLOW_PASSWORD=0` | `test_ssh_hardening` | SSH built with password auth disabled (publickey-only hardening) |
 | `native_ssh_pqc` | `ETWS_SSH_MAX_CHANNELS=3`, `ETWS_ENABLE_PQC_KEX=1` | `test_ssh_pqc` | mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the full SSH transport built with DETWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. |
+| `native_ssh_sftp` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_FILE_SERVING=1`, `ETWS_ENABLE_SSH_SFTP=1` | `test_ssh_sftp` | SFTP protocol v3 wire codec (services/sftp): the SSH_FXP_* request reader + response builders (VERSION / STATUS / HANDLE / DATA / ATTRS / NAME), the ATTRS blob encode/decode round-trip (size / perms /... |
 | `native_ssh_zlib` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_SSH_ZLIB=1`, `ETWS_ENABLE_WS_DEFLATE=1` | `test_ssh_zlib` | SSH server-to-client streaming compressor (zlib@openssh.com / zlib): a context-takeover DEFLATE stream (persistent sliding window across packets, sync-flush per packet, zlib wrapper). |
 | `native_statsd` | `ETWS_ENABLE_STATSD=1` | `test_statsd` | StatsD metrics client (services/statsd): the pure line formatter (name:value\|type, sample rate, DogStatsD tags) plus the count/gauge/timing/set emit helpers, whose sent bytes are captured through the... |
 | `native_stomp` | `ETWS_ENABLE_STOMP=1` | `test_stomp` | STOMP 1.2 frame codec (services/stomp): the zero-heap frame builder (command + escaped headers + NUL body) + the non-mutating parser (command/header slices/body, honoring content-length) + escape/unes... |
@@ -530,7 +532,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3207 test cases** across **260 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3210 test cases** across **260 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -29984,7 +29986,7 @@ A thorough directory of all **3207 test cases** across **260 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_channel (37 tests)</b></summary>
+<summary><b>test_ssh_channel (40 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_chan_slot_and_msgtype_guards</b> &mdash; <i>Chan slot and msgtype guards</i></summary>
@@ -30415,6 +30417,43 @@ A thorough directory of all **3207 test cases** across **260 suites**. Expand a 
       * <code>Assert equal int (0, data_cb_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, fwd_data_channel);</code>
       * <code>Assert equal memory ("payload", fwd_data, 7)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sftp_subsystem_routes</b> &mdash; <i>Sftp subsystem routes</i></summary>
+
+    * **Objective**: Sftp subsystem routes
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
+      * <code>Assert equal int (1, sftp_open_count)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(id, sftp_open_channel);</code>
+      * <code>Assert equal int (0, ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (1, sftp_data_count)</code>
+      * <code>Assert equal int (0, data_cb_count)</code>
+      * <code>Assert equal memory ("FXP", sftp_data_buf, 3)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unknown_subsystem_refused</b> &mdash; <i>Unknown subsystem refused</i></summary>
+
+    * **Objective**: Unknown subsystem refused
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scp_exec_routes</b> &mdash; <i>Scp exec routes</i></summary>
+
+    * **Objective**: Scp exec routes
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
+      * <code>Assert equal int (1, scp_open_count)</code>
+      * <code>Assert equal memory ("scp -t /gcode/part.nc", scp_cmd, scp_cmd_len)</code>
+      * <code>Assert equal int (0, ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (1, scp_data_count)</code>
   </details>
 
 </details>

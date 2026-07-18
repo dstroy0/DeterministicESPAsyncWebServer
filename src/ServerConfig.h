@@ -5183,6 +5183,53 @@
 #endif
 
 /**
+ * @brief SFTP server subsystem over SSH (SSH_FXP_* v3, draft-ietf-secsh-filexfer-02). Default off.
+ *
+ * When set, an SSH client's `subsystem` request for "sftp" opens an SFTP session over the channel and the
+ * device serves files from an fs::FS mount (SD / LittleFS) bound via det_ssh_sftp_begin(fs, root):
+ * open/read/write/opendir/readdir/stat/mkdir/rmdir/remove/rename/realpath, with a fixed handle table and
+ * streamed reads/writes (zero heap). The standards-track southbound path for secure file / G-code push over
+ * the one authenticated SSH port. Requires DETWS_ENABLE_SSH + DETWS_ENABLE_FILE_SERVING (the fs::FS seam).
+ */
+#ifndef DETWS_ENABLE_SSH_SFTP
+#define DETWS_ENABLE_SSH_SFTP 0
+#endif
+
+/**
+ * @brief SCP server over SSH (the legacy RCP protocol via `exec "scp -t/-f"`). Default off.
+ *
+ * When set, `scp file board:/path` (sink) and `scp board:/path file` (source) transfer a file to/from the
+ * fs::FS mount bound by det_ssh_sftp_begin. Reuses the SFTP fs binding + path-traversal guard. v1 carries its
+ * error/ack bytes inline on the channel (no CHANNEL_EXTENDED_DATA). Requires SSH + FILE_SERVING.
+ */
+#ifndef DETWS_ENABLE_SSH_SCP
+#define DETWS_ENABLE_SSH_SCP 0
+#endif
+
+/** @brief Max concurrent open SFTP handles (files + dirs) per SSH connection. */
+#ifndef DETWS_SFTP_MAX_HANDLES
+#define DETWS_SFTP_MAX_HANDLES 4
+#endif
+
+/** @brief SFTP packet-assembly buffer per SFTP channel (bytes); bounds one non-streamed request/response. */
+#ifndef DETWS_SFTP_PKT_BUF
+#define DETWS_SFTP_PKT_BUF 2048
+#endif
+
+/**
+ * @brief Largest SSH_FXP_DATA payload returned for one READ (a short read - the client re-requests). Kept
+ *        within one SSH packet (SSH_PKT_BUF_SIZE minus framing), so bump SSH_PKT_BUF_SIZE too for throughput.
+ */
+#ifndef DETWS_SFTP_MAX_READ
+#define DETWS_SFTP_MAX_READ 1024
+#endif
+
+/** @brief Largest absolute path the SFTP/SCP server resolves (mount root + request path). */
+#ifndef DETWS_SFTP_PATH_MAX
+#define DETWS_SFTP_PATH_MAX 256
+#endif
+
+/**
  * @brief SSH server-to-client compression (`zlib@openssh.com` / `zlib`, RFC 4253 sec 6.2). Default off.
  *
  * When set, the server advertises `zlib@openssh.com` (delayed, OpenSSH's default) and `zlib` for the
@@ -5835,6 +5882,19 @@ enum class DetIface : uint8_t
 #error "DeterministicESPAsyncWebServer: DETWS_ENABLE_SSH_ZLIB requires DETWS_ENABLE_SSH"
 #endif
 
+#if DETWS_ENABLE_SSH_SFTP && !DETWS_ENABLE_SSH
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_SSH_SFTP requires DETWS_ENABLE_SSH"
+#endif
+#if DETWS_ENABLE_SSH_SFTP && !DETWS_ENABLE_FILE_SERVING
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_SSH_SFTP requires DETWS_ENABLE_FILE_SERVING (the fs::FS seam)"
+#endif
+#if DETWS_ENABLE_SSH_SCP && !DETWS_ENABLE_SSH
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_SSH_SCP requires DETWS_ENABLE_SSH"
+#endif
+#if DETWS_ENABLE_SSH_SCP && !DETWS_ENABLE_FILE_SERVING
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_SSH_SCP requires DETWS_ENABLE_FILE_SERVING (the fs::FS seam)"
+#endif
+
 #if DETWS_ENABLE_SSH_ZLIB
 // Window must be a power of two in [256, 32768] (32 KB is zlib's max; the client's inflate window).
 #if (DETWS_SSH_ZLIB_WINDOW & (DETWS_SSH_ZLIB_WINDOW - 1)) != 0 || DETWS_SSH_ZLIB_WINDOW < 256 ||                       \
@@ -5972,9 +6032,17 @@ static_assert((unsigned)ConnProto::PROTO_MESH < DETWS_PROTO_MAX,
 #ifndef SSH_CHAN_WINDOW
 #define SSH_CHAN_WINDOW 32768u
 #endif
-/** @brief Maximum SSH channel data payload the server accepts per message. */
+/**
+ * @brief Maximum SSH channel data payload the server advertises it can receive per message.
+ *
+ * This is what a peer may put in one SSH_MSG_CHANNEL_DATA, so it MUST fit one inbound SSH packet: the
+ * transport rejects any packet larger than SSH_PKT_BUF_SIZE, so advertising more than that (minus the
+ * channel-data + packet framing + MAC + padding) makes a peer that sends a bigger message - e.g. an SFTP
+ * WRITE - trip the packet-too-large check and drop the connection. Derived from SSH_PKT_BUF_SIZE so it scales
+ * when that buffer is raised (e.g. for higher SFTP throughput). Interactive shells never approach it.
+ */
 #ifndef SSH_CHAN_MAX_PACKET
-#define SSH_CHAN_MAX_PACKET 32768u
+#define SSH_CHAN_MAX_PACKET (SSH_PKT_BUF_SIZE - 64u)
 #endif
 /**
  * @brief Re-key when either packet sequence number reaches this value.

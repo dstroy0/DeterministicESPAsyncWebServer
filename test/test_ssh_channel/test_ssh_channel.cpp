@@ -981,6 +981,133 @@ void test_chan_global_request_reply_caps()
     TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, g, n, out, &ol, 0)); // 232
 }
 
+#if DETWS_ENABLE_SSH_SFTP
+static int sftp_open_count;
+static uint32_t sftp_open_channel;
+static int sftp_data_count;
+static uint8_t sftp_data_buf[64];
+static size_t sftp_data_n;
+static void t_sftp_open(uint8_t slot, uint32_t ch)
+{
+    (void)slot;
+    sftp_open_channel = ch;
+    sftp_open_count++;
+}
+static void t_sftp_data(uint8_t slot, uint32_t ch, const uint8_t *d, size_t n)
+{
+    (void)slot;
+    (void)ch;
+    sftp_data_n = n < sizeof(sftp_data_buf) ? n : sizeof(sftp_data_buf);
+    memcpy(sftp_data_buf, d, sftp_data_n);
+    sftp_data_count++;
+}
+
+// A "subsystem" "sftp" request is accepted (unlike other subsystems), tags the channel, fires the sftp-open
+// callback, and thereafter routes channel data to the sftp cb - not the session data cb.
+void test_sftp_subsystem_routes()
+{
+    sftp_open_count = 0;
+    sftp_data_count = 0;
+    data_cb_count = 0;
+    ssh_channel_set_sftp_open_cb(t_sftp_open);
+    ssh_channel_set_sftp_data_cb(t_sftp_data);
+    uint32_t id = open_session(7, 32768);
+
+    uint8_t rq[64];
+    size_t n = 0;
+    rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(rq + n, id);
+    n += 4;
+    n += put_string(rq + n, "subsystem");
+    rq[n++] = 1; // want_reply
+    n += put_string(rq + n, "sftp");
+    uint8_t out[64];
+    size_t ol = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, out[0]);
+    TEST_ASSERT_EQUAL_INT(1, sftp_open_count);
+    TEST_ASSERT_EQUAL_UINT32(id, sftp_open_channel);
+
+    uint8_t dp[32];
+    size_t dn = make_data(dp, id, "FXP");
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(1, sftp_data_count);
+    TEST_ASSERT_EQUAL_INT(0, data_cb_count); // the session data cb is NOT called for an sftp channel
+    TEST_ASSERT_EQUAL_MEMORY("FXP", sftp_data_buf, 3);
+}
+
+// An unknown subsystem is still refused.
+void test_unknown_subsystem_refused()
+{
+    open_session(7, 32768);
+    uint8_t rq[64];
+    size_t n = 0;
+    rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(rq + n, 0);
+    n += 4;
+    n += put_string(rq + n, "subsystem");
+    rq[n++] = 1;
+    n += put_string(rq + n, "netconf");
+    uint8_t out[64];
+    size_t ol = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_FAILURE, out[0]);
+}
+#endif // DETWS_ENABLE_SSH_SFTP
+
+#if DETWS_ENABLE_SSH_SCP
+static int scp_open_count;
+static char scp_cmd[64];
+static size_t scp_cmd_len;
+static int scp_data_count;
+static void t_scp_open(uint8_t slot, uint32_t ch, const char *cmd, size_t cl)
+{
+    (void)slot;
+    (void)ch;
+    scp_cmd_len = cl < sizeof(scp_cmd) ? cl : sizeof(scp_cmd);
+    memcpy(scp_cmd, cmd, scp_cmd_len);
+    scp_open_count++;
+}
+static void t_scp_data(uint8_t slot, uint32_t ch, const uint8_t *d, size_t n)
+{
+    (void)slot;
+    (void)ch;
+    (void)d;
+    (void)n;
+    scp_data_count++;
+}
+
+// An exec "scp …" is accepted (exec already is), tags the channel SCP, hands the command to the scp cb, and
+// routes channel data to the scp cb.
+void test_scp_exec_routes()
+{
+    scp_open_count = 0;
+    scp_data_count = 0;
+    ssh_channel_set_scp_open_cb(t_scp_open);
+    ssh_channel_set_scp_data_cb(t_scp_data);
+    uint32_t id = open_session(8, 32768);
+    uint8_t rq[64];
+    size_t n = 0;
+    rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(rq + n, id);
+    n += 4;
+    n += put_string(rq + n, "exec");
+    rq[n++] = 1;
+    n += put_string(rq + n, "scp -t /gcode/part.nc");
+    uint8_t out[64];
+    size_t ol = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, out[0]);
+    TEST_ASSERT_EQUAL_INT(1, scp_open_count);
+    TEST_ASSERT_EQUAL_MEMORY("scp -t /gcode/part.nc", scp_cmd, scp_cmd_len);
+
+    uint8_t dp[32];
+    size_t dn = make_data(dp, id, "C0644");
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(1, scp_data_count);
+}
+#endif // DETWS_ENABLE_SSH_SCP
+
 int main()
 {
     UNITY_BEGIN();
@@ -1021,5 +1148,12 @@ int main()
     RUN_TEST(test_forwarded_failure_frees_channel);
     RUN_TEST(test_forwarded_confirm_unknown_rejected);
     RUN_TEST(test_forwarded_inbound_data_routes_to_forward_cb);
+#if DETWS_ENABLE_SSH_SFTP
+    RUN_TEST(test_sftp_subsystem_routes);
+    RUN_TEST(test_unknown_subsystem_refused);
+#endif
+#if DETWS_ENABLE_SSH_SCP
+    RUN_TEST(test_scp_exec_routes);
+#endif
     return UNITY_END();
 }
