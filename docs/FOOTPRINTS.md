@@ -31,7 +31,7 @@ from each example's `pio ci` size report and aggregated into
 | `DNC`                                                                                                     | L7-Application/69.EthernetDnc           | 716.7 KB (56.0%) | 59.7 KB (18.6%)  |
 | `DNS_RESOLVER`                                                                                            | L7-Application/48.DnsResolver           | 740.6 KB (57.9%) | 81.1 KB (25.4%)  |
 | `DNS_SERVER`                                                                                              | L7-Application/60.DnsServer             | 708.7 KB (55.4%) | 44.9 KB (14.0%)  |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT`                                                                       | L7-Application/79.EdgeCache             | 755.5 KB (59.0%) | 116.5 KB (36.4%) |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT`                                                                       | L7-Application/79.EdgeCache             | 755.6 KB (59.0%) | 116.5 KB (36.4%) |
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH`                                                             | L7-Application/80.MeshCache             | 760.2 KB (59.4%) | 121.3 KB (37.9%) |
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH+EDGE_CACHE_SLOTS+EDGE_FETCH_SLOTS+MESH_MAX_PEERS`            | L7-Application/80.MeshCache             | 760.0 KB (59.4%) | 112.6 KB (35.2%) |
 | `ENOCEAN+GATEWAY`                                                                                         | Foundation/13.EnOceanGateway            | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
