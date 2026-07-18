@@ -1044,12 +1044,12 @@ Feature Tables workflow from `docs/footprints.json`.
 | `ZWAVE+GATEWAY` | `Foundation/16.ZWaveGateway` | 268,905 | 21,848 |
 | `THREAD+GATEWAY` | `Foundation/18.ThreadGateway` | 269,137 | 22,616 |
 | `ZIGBEE+GATEWAY` | `Foundation/17.ZigbeeGateway` | 269,237 | 22,104 |
-| `DMA+PREEMPT_QUEUE+DMA_SIMULATE` | `Foundation/07.DmaIngest` | 269,401 | 28,600 |
+| `DMA+PREEMPT_QUEUE+DMA_SIMULATE` | `Foundation/07.DmaIngest` | 269,385 | 28,600 |
 | `core/02.SSHCryptoSelfTest` | `L5-Session/02.SSHCryptoSelfTest` | 269,537 | 21,476 |
 | `SEN0192` | `L7-Application/77.Sen0192` | 269,805 | 21,488 |
-| `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | `Foundation/10.RadioGateway` | 270,557 | 28,720 |
+| `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | `Foundation/10.RadioGateway` | 270,541 | 28,720 |
 | `LD2410` | `L7-Application/62.Ld2410` | 270,681 | 21,576 |
-| `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/09.InterfaceForward` | 270,813 | 29,096 |
+| `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/09.InterfaceForward` | 270,797 | 29,096 |
 | `NRF24+GATEWAY` | `Foundation/12.Nrf24Gateway` | 276,105 | 21,680 |
 | `LORA+GATEWAY` | `Foundation/11.LoRaGateway` | 276,329 | 21,688 |
 | `PCA9685` | `L7-Application/65.Pca9685` | 284,601 | 21,800 |
@@ -1067,13 +1067,13 @@ Feature Tables workflow from `docs/footprints.json`.
 | `COAP+COAP_OBSERVE` | `L7-Application/27.CoapObserve` | 729,369 | 46,104 |
 | `ESPNOW` | `L7-Application/53.EspNow` | 731,293 | 43,576 |
 | `DNC` | `L7-Application/69.EthernetDnc` | 733,857 | 61,112 |
-| `HTTP_CLIENT` | `L7-Application/23.HttpClient` | 734,573 | 63,160 |
+| `HTTP_CLIENT` | `L7-Application/23.HttpClient` | 734,557 | 63,160 |
 | `SMTP` | `L7-Application/57.SmtpAlert` | 734,705 | 61,112 |
 | `MQTT` | `L7-Application/24.MqttClient` | 736,413 | 65,320 |
 | `SMB` | `L7-Application/68.SmbFileClient` | 742,457 | 65,208 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/58.NtpServer` | 748,109 | 46,668 |
 | `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 752,169 | 81,792 |
-| `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,269 | 81,784 |
+| `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,253 | 81,784 |
 | `core/02.CORS` | `L7-Application/02.CORS` | 752,333 | 81,784 |
 | `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 752,409 | 81,784 |
 | `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 752,409 | 81,784 |
@@ -1097,8 +1097,8 @@ Feature Tables workflow from `docs/footprints.json`.
 | `OTA_ROLLBACK` | `L7-Application/44.OtaRollback` | 753,401 | 81,792 |
 | `core/03.Multipart` | `L6-Presentation/03.Multipart` | 753,497 | 81,784 |
 | `TOTP` | `L7-Application/45.Totp` | 753,517 | 81,816 |
-| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,697 | 81,784 |
-| `LOGBUF` | `L7-Application/41.LogBuffer` | 753,877 | 84,904 |
+| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,681 | 81,784 |
+| `LOGBUF` | `L7-Application/41.LogBuffer` | 753,861 | 84,904 |
 | `CSRF` | `L7-Application/33.Csrf` | 753,941 | 81,840 |
 | `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 753,961 | 81,784 |
 | `MODBUS` | `L7-Application/30.ModbusTcp` | 754,093 | 82,064 |
@@ -1111,45 +1111,45 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TELNET` | `L5-Session/04.Telnet` | 754,581 | 82,320 |
 | `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,633 | 84,776 |
 | `CBOR` | `L6-Presentation/13.Cbor` | 754,717 | 81,864 |
-| `IPV6` | `Foundation/20.IPv6` | 754,821 | 81,784 |
-| `core/03.Expert` | `Foundation/03.Expert` | 755,069 | 81,808 |
+| `IPV6` | `Foundation/20.IPv6` | 754,805 | 81,784 |
+| `core/03.Expert` | `Foundation/03.Expert` | 755,053 | 81,808 |
 | `SYSLOG` | `L7-Application/19.Syslog` | 755,741 | 83,640 |
 | `MSGPACK` | `L6-Presentation/14.MsgPack` | 756,017 | 81,864 |
-| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,373 | 81,928 |
+| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,309 | 81,928 |
 | `core/02.Json` | `L6-Presentation/02.Json` | 756,433 | 81,792 |
 | `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,701 | 81,848 |
-| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 757,025 | 89,984 |
+| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 757,009 | 89,984 |
 | `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 757,169 | 81,864 |
 | `GRAPHQL` | `L7-Application/52.GraphQL` | 757,285 | 86,192 |
 | `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,329 | 81,852 |
 | `OTA` | `L7-Application/16.OTA` | 757,669 | 102,128 |
-| `COAP` | `L7-Application/13.CoAP` | 758,001 | 84,296 |
+| `COAP` | `L7-Application/13.CoAP` | 757,985 | 84,296 |
 | `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,329 | 83,072 |
-| `PROVISIONING` | `L7-Application/17.Provisioning` | 760,021 | 83,356 |
+| `PROVISIONING` | `L7-Application/17.Provisioning` | 760,005 | 83,356 |
 | `OPCUA` | `L7-Application/55.OpcUa` | 760,497 | 92,072 |
-| `core/02.Advanced` | `Foundation/02.Advanced` | 761,093 | 81,896 |
+| `core/02.Advanced` | `Foundation/02.Advanced` | 761,077 | 81,896 |
 | `TELEMETRY` | `L7-Application/34.Telemetry` | 761,201 | 82,108 |
 | `SNMP` | `L7-Application/14.SNMP` | 761,237 | 94,192 |
-| `RELAY` | `L7-Application/70.PortForward` | 762,365 | 116,400 |
+| `RELAY` | `L7-Application/70.PortForward` | 762,349 | 116,400 |
 | `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 763,053 | 101,536 |
 | `PROMISC+FORWARD+ETHERNET` | `Foundation/21.WifiCapture` | 764,637 | 47,520 |
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,285 | 104,608 |
 | `OIDC` | `L7-Application/50.OidcAuth` | 766,149 | 99,856 |
-| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,301 | 81,800 |
+| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,285 | 81,800 |
 | `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,653 | 45,372 |
 | `OPCUA+UMATI` | `L7-Application/72.Umati` | 767,217 | 92,216 |
-| `NTRIP_CASTER` | `L7-Application/76.NtripCaster` | 770,525 | 84,700 |
+| `NTRIP_CASTER` | `L7-Application/76.NtripCaster` | 770,477 | 84,700 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Foundation/22.CanCapture` | 771,165 | 45,516 |
 | `ADS` | `L7-Application/73.AdsClient` | 771,933 | 45,440 |
 | `DASHBOARD` | `L7-Application/35.Dashboard` | 773,173 | 82,152 |
 | `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,549 | 83,404 |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,661 | 119,264 |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,645 | 119,264 |
 | `MDNS` | `L7-Application/15.mDNS` | 777,813 | 83,688 |
-| `NTP` | `L7-Application/18.SNTP` | 778,073 | 84,336 |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH` | `L7-Application/80.MeshCache` | 778,449 | 124,240 |
+| `NTP` | `L7-Application/18.SNTP` | 778,057 | 84,336 |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH` | `L7-Application/80.MeshCache` | 778,433 | 124,240 |
 | `IFACE_BRIDGE` | `L7-Application/75.InterfaceBridge` | 780,393 | 82,632 |
 | `COAP+DTLS` | `L7-Application/78.CoapSecure` | 780,501 | 102,864 |
-| `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 783,461 | 95,936 |
+| `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 783,445 | 95,936 |
 | `ETHERNET` | `Foundation/19.Ethernet` | 791,209 | 81,836 |
 | `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Foundation/23.EthernetW5500` | 791,225 | 81,836 |
 | `core/10.FileServing` | `L7-Application/10.FileServing` | 793,713 | 81,824 |
@@ -1167,7 +1167,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+TLS_ARENA_SIZE` | `L6-Presentation/07.SecureWebSocket` | 856,485 | 105,652 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/06.TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,829 | 122,356 |
-| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/06.TlsResumption` | 857,341 | 105,812 |
+| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/06.TlsResumption` | 857,325 | 105,812 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/04.mTLS` | 857,497 | 105,988 |
 | `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/04.SSHSftp` | 880,945 | 118,508 |
 
@@ -1359,7 +1359,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DWS_ENABLE_NRF24` | `0` | Enable the nRF24L01+ radio driver (default off). |
 | `DWS_ENABLE_NTCIP` | `0` | Opt-in NTCIP transportation-device object identifiers. |
 | `DWS_ENABLE_NTP` | `0` | SNTP wall-clock time sync via the ESP-IDF SNTP client. |
-| `DWS_ENABLE_NTP_SERVER` | `0` | NTP/SNTP time server (RFC 5905 / RFC 4330 server mode) on UDP/123 (services/ntp_server). |
+| `DWS_ENABLE_NTP_SERVER` | `0` | NTP/SNTP time server (RFC 5905 / RFC 4330 server mode) on UDP/123 (services/dws_ntp_server). |
 | `DWS_ENABLE_NTRIP_CASTER` | `0` | GNSS RTK base station + NTRIP caster (services/gnss). |
 | `DWS_ENABLE_NTS` | `0` | Opt-in Network Time Security (NTS, RFC 8915) wire codec. |
 | `DWS_ENABLE_OAUTH2` | `0` | OAuth2 token-endpoint client. |
@@ -1547,7 +1547,7 @@ guards at compile time.
 | `DWS_H3_MAX_STREAMS` | `8` | Maximum concurrent request streams per HTTP/3 connection. |
 | `DWS_HPACK_MAX_ENTRIES` | `128` | Max HPACK dynamic-table entries (>= DWS_HPACK_TABLE_BYTES / 32, the min entry size). |
 | `DWS_HPACK_TABLE_BYTES` | `4096` | Per-connection HPACK dynamic-table size in bytes (our decoder; advertised to the peer as SETTINGS_HEADER_TABLE_SIZE). |
-| `DWS_HTTP3_PORT` | `443` | UDP port the HTTP/3 (QUIC) server binds by default (used by DWS::h3_cert). |
+| `DWS_HTTP3_PORT` | `443` | UDP port the HTTP/3 (QUIC) server binds by default (used by DWS::dws_h3_cert). |
 | `DWS_HTTP_CLIENT_BUF_SIZE` | `2048` | Receive buffer (and max response size) for the outbound HTTP client, bytes. |
 | `DWS_HTTP_CLIENT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for the https:// client, bytes. |
 | `DWS_HTTP_CLIENT_TIMEOUT_MS` | `8000` | Outbound HTTP client connect/response timeout in milliseconds. |
@@ -1645,7 +1645,7 @@ guards at compile time.
 | `DWS_STATSD_LINE_MAX` | `256` | Stack buffer for one StatsD line (bytes; caps metric name + value + tags). |
 | `DWS_STATSD_PORT` | `8125` | Default StatsD collector UDP port (StatsD/Graphite standard). |
 | `DWS_STOMP_MAX_HEADERS` | `16` | Max header lines parsed per STOMP frame (extras beyond this are ignored). |
-| `DWS_SYSLOG_DEFAULT_PORT` | `514` | Default syslog collector UDP port (RFC 5426 well-known 514; overridable at runtime via syslog_init and here for a non-standard collector). |
+| `DWS_SYSLOG_DEFAULT_PORT` | `514` | Default syslog collector UDP port (RFC 5426 well-known 514; overridable at runtime via dws_syslog_init and here for a non-standard collector). |
 | `DWS_SYSLOG_FIELD_MAX` | `32` | Maximum syslog HOSTNAME / APP-NAME field length (including NUL). |
 | `DWS_SYSLOG_MSG_MAX` | `256` | Maximum formatted syslog datagram length in bytes (RFC 5424 line). |
 | `DWS_TCP_NODELAY` | `1` | Disable Nagle's algorithm (set TCP_NODELAY) on every accepted connection. |

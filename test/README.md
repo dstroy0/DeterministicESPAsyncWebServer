@@ -129,10 +129,10 @@ The native test matrix has **242 environments**, one per feature, generated from
 | `native_dns_server` | `WS_ENABLE_DNS_SERVER=1` | `test_dns_server` | Authoritative DNS server (services/dns_server): the pure A-record response builder (QNAME parse, compressed A answer, NXDOMAIN, non-A query, header flags, malformed guards) and the built-in name->IP t... |
 | `native_docstore` | `WS_ENABLE_WAL=1`, `WS_ENABLE_DBM=1`, `WS_ENABLE_DOCSTORE=1` | `test_docstore` | Local JSON document store on the WAL (services/docstore): JSON documents addressed by id, stored via dbm on the write-ahead log, plus top-level field queries (find documents whose JSON field equals a ... |
 | `native_dshot` | `WS_ENABLE_DSHOT=1` | `test_dshot` | DShot ESC throttle codec (services/dshot): the 16-bit frame (11-bit value + telemetry + 4-bit nibble-xor CRC), the bidirectional inverted-CRC variant, decode/validate, and per-rate bit timing. |
-| `native_dtls` | `WS_ENABLE_DTLS=1` | `test_dtls_record` | DTLS 1.3 record layer (network_drivers/presentation/dtls/dws_dtls_record, RFC 9147 sec 4): DTLSPlaintext + DTLSCiphertext protect/unprotect, the unified header, sequence-number encryption (sec 4.2.3) and ... |
-| `native_dtls_conn` | `WS_ENABLE_DTLS=1` | `test_dtls_conn` | DTLS 1.3 server handshake state machine (network_drivers/presentation/dtls/dws_dtls_conn, RFC 9147 sec 5-6): the one-round-trip full handshake (TLS_AES_128_GCM_SHA256 / X25519 / Ed25519) over the DTLS rec... |
-| `native_dtls_hs` | `WS_ENABLE_DTLS=1` | `test_dtls_handshake` | DTLS 1.3 handshake framing + reliability (network_drivers/presentation/dtls/dws_dtls_handshake, RFC 9147 sec 5 + 7): the 12-byte DTLS handshake header, overlap-tolerant message reassembly, the ACK message... |
-| `native_dtls_tls13` | `WS_ENABLE_DTLS=1` | `test_dtls_tls13` | TLS 1.3 messages the DTLS 1.3 handshake adds to dws_tls13_msg (RFC 8446 sec 4.1.4 / 4.4.1), compiled for the DTLS path (DWS_ENABLE_DTLS, not HTTP/3): the HelloRetryRequest builder, the cookie extension pa... |
+| `native_dtls` | `WS_ENABLE_DTLS=1` | `test_dtls_record` | DTLS 1.3 record layer (network_drivers/presentation/dtls/dtls_record, RFC 9147 sec 4): DTLSPlaintext + DTLSCiphertext protect/unprotect, the unified header, sequence-number encryption (sec 4.2.3) and ... |
+| `native_dtls_conn` | `WS_ENABLE_DTLS=1` | `test_dtls_conn` | DTLS 1.3 server handshake state machine (network_drivers/presentation/dtls/dtls_conn, RFC 9147 sec 5-6): the one-round-trip full handshake (TLS_AES_128_GCM_SHA256 / X25519 / Ed25519) over the DTLS rec... |
+| `native_dtls_hs` | `WS_ENABLE_DTLS=1` | `test_dtls_handshake` | DTLS 1.3 handshake framing + reliability (network_drivers/presentation/dtls/dtls_handshake, RFC 9147 sec 5 + 7): the 12-byte DTLS handshake header, overlap-tolerant message reassembly, the ACK message... |
+| `native_dtls_tls13` | `WS_ENABLE_DTLS=1` | `test_dtls_tls13` | TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 sec 4.1.4 / 4.4.1), compiled for the DTLS path (DWS_ENABLE_DTLS, not HTTP/3): the HelloRetryRequest builder, the cookie extension pa... |
 | `native_edge_cache` | `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1`, `WS_ENABLE_RANGE=1` | `test_edge_cache`, `test_edge_fetch` | CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response header-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime + Expires-Date +... |
 | `native_edge_cache_sd` | `WS_ENABLE_WAL=1`, `WS_ENABLE_DBM=1`, `WS_DBM_VAL_MAX=1024`, `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1` | `test_edge_cache_sd` | CDN edge-cache L2 SD-persistence tier (services/edge_cache/edge_cache_sd): the entry <-> dbm-value serialization roundtrip (all response metadata, Vary variants, binary and max-size bodies), the spill... |
 | `native_edge_mesh` | `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1`, `WS_ENABLE_EDGE_MESH=1` | `test_edge_mesh` | CDN edge-cache mesh sibling-cache codec (services/edge_cache/edge_mesh): the request/response wire frames (build + tri-state accumulating parse over partial reads, magic/version/opcode validation), th... |
@@ -148,18 +148,18 @@ The native test matrix has **242 environments**, one per feature, generated from
 | `native_forward` | `WS_ENABLE_FORWARD=1`, `WS_FWD_MAX_IFACES=4`, `WS_FWD_MAX_RULES=4`, `WS_FWD_MAX_ACL=4`, `WS_FWD_MAX_ROUTES=4`, `WS_FWD_INSPECT=1` | `test_forward` | Interface forwarding plane (services/forward), v5 bridge / router: default-deny, an ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the source, the per-rule rate cap (hos... |
 | `native_ftp` | `WS_ENABLE_FTP=1` | `test_ftp` | FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command builders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the PASV / EPSV data-address decoders. |
 | `native_gateway` | `WS_ENABLE_GATEWAY=1`, `WS_GW_MAX_PORTS=4` | `test_gateway` | Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an uplink envelopes a received frame (src address / port / rssi / seq) and publishes it, fail-closed on no sink / unkno... |
-| `native_gnss_survey` | `WS_ENABLE_NTRIP_CASTER=1`, `WS_ENABLE_NMEA0183=1`, `UNITY_INCLUDE_DOUBLE` | `test_gnss_survey` | GNSS survey-in core (services/gnss/dws_gnss_survey): the exact WGS84 geodetic<->ECEF transform (matched against pyproj EPSG:4979->EPSG:4978), the shifted-origin position averager with a 3-D accuracy estim... |
+| `native_gnss_survey` | `WS_ENABLE_NTRIP_CASTER=1`, `WS_ENABLE_NMEA0183=1`, `UNITY_INCLUDE_DOUBLE` | `test_gnss_survey` | GNSS survey-in core (services/gnss/gnss_survey): the exact WGS84 geodetic<->ECEF transform (matched against pyproj EPSG:4979->EPSG:4978), the shifted-origin position averager with a 3-D accuracy estim... |
 | `native_goose` | `WS_ENABLE_GOOSE=1` | `test_goose` | IEC 61850 GOOSE publisher codec (services/goose): the BER IECGoosePdu (gocbRef..allData, minimal-length INTEGERs with the positive leading-zero rule) + the GOOSE header + Ethernet frame (ethertype 0x8... |
 | `native_gpio_map` | `WS_ENABLE_GPIO_MAP=1` | `test_gpio_map` | GPIO pin-mapper / browser diag core (services/gpio_map): direction names, JSON serializer, control-POST parser, output guard - all pure and host-tested. |
 | `native_graphql` | `WS_ENABLE_GRAPHQL=1` | `test_graphql` | GraphQL query subset (services/graphql) - pure parser + executor, host-tested with a demo resolver. |
 | `native_grpcweb` | `WS_ENABLE_GRPC_WEB=1` | `test_grpcweb` | gRPC-Web message framing codec (services/grpcweb): the 5-octet length-prefixed message frame builder + the 0x80 trailers frame (grpc-status / grpc-message) + the frame parser. |
 | `native_guardrails` | `WS_ENABLE_GUARDRAILS=1` | `test_guardrails` | Heap/stack guardrails (services/guardrails): threshold evaluator + JSON, host-tested. |
-| `native_h2conn` | `WS_ENABLE_HTTP2=1` | `test_h2_conn` | HTTP/2 connection engine (network_drivers/presentation/http2/dws_h2_conn, RFC 9113): initial SETTINGS on init, preface + client SETTINGS -> SETTINGS ACK, decoding a real HPACK-encoded request into the hea... |
-| `native_h2frame` | `WS_ENABLE_HTTP2=1` | `test_h2_frame` | HTTP/2 binary framing (network_drivers/presentation/http2/dws_h2_frame, RFC 9113): the 9-byte frame header parse/write (24-bit length, reserved-bit masking), SETTINGS build + parse with validation, and th... |
-| `native_h3_conn` | `WS_ENABLE_HTTP3=1` | `test_h3_conn` | HTTP/3 application engine (network_drivers/presentation/http3/dws_h3_conn, RFC 9114): drives dws_h3_conn through the dws_quic_conn callback seam - a QPACK-encoded request on a request stream dispatches the right ... |
-| `native_h3_e2e` | `WS_ENABLE_HTTP3=1` | `test_h3_e2e` | End-to-end HTTP/3 capstone (network_drivers/presentation/http3): a QUIC client in the test completes the TLS 1.3 handshake against a dws_quic_conn + dws_h3_conn server, sends a real HTTP/3 GET (QPACK HEADERS ... |
-| `native_h3_server` | `WS_ENABLE_HTTP3=1` | `test_h3_server` | HTTP/3 dispatch bridge end-to-end through DWS (the full Layer-7 app built with DWS_ENABLE_HTTP3=1): a QUIC client completes the handshake and sends an HTTP/3 GET, dws_quic_server routes it to the reserved... |
-| `native_h3frame` | `WS_ENABLE_HTTP3=1` | `test_h3_frame` | HTTP/3 framing (network_drivers/presentation/http3/dws_h3_frame, RFC 9114 sec 7): the type+length varint header parse/write (incl. |
+| `native_h2conn` | `WS_ENABLE_HTTP2=1` | `test_h2_conn` | HTTP/2 connection engine (network_drivers/presentation/http2/h2_conn, RFC 9113): initial SETTINGS on init, preface + client SETTINGS -> SETTINGS ACK, decoding a real HPACK-encoded request into the hea... |
+| `native_h2frame` | `WS_ENABLE_HTTP2=1` | `test_h2_frame` | HTTP/2 binary framing (network_drivers/presentation/http2/h2_frame, RFC 9113): the 9-byte frame header parse/write (24-bit length, reserved-bit masking), SETTINGS build + parse with validation, and th... |
+| `native_h3_conn` | `WS_ENABLE_HTTP3=1` | `test_h3_conn` | HTTP/3 application engine (network_drivers/presentation/http3/h3_conn, RFC 9114): drives h3_conn through the quic_conn callback seam - a QPACK-encoded request on a request stream dispatches the right ... |
+| `native_h3_e2e` | `WS_ENABLE_HTTP3=1` | `test_h3_e2e` | End-to-end HTTP/3 capstone (network_drivers/presentation/http3): a QUIC client in the test completes the TLS 1.3 handshake against a quic_conn + h3_conn server, sends a real HTTP/3 GET (QPACK HEADERS ... |
+| `native_h3_server` | `WS_ENABLE_HTTP3=1` | `test_h3_server` | HTTP/3 dispatch bridge end-to-end through DWS (the full Layer-7 app built with DWS_ENABLE_HTTP3=1): a QUIC client completes the handshake and sends an HTTP/3 GET, quic_server routes it to the reserved... |
+| `native_h3frame` | `WS_ENABLE_HTTP3=1` | `test_h3_frame` | HTTP/3 framing (network_drivers/presentation/http3/h3_frame, RFC 9114 sec 7): the type+length varint header parse/write (incl. |
 | `native_happy_eyeballs` | `WS_ENABLE_HAPPY_EYEBALLS=1` | `test_happy_eyeballs` | Dual-stack Happy Eyeballs selection (services/happy_eyeballs): RFC 6724 destination preference scoring, the candidate-list sort + RFC 8305 address-family interleave, and the Connection Attempt Delay g... |
 | `native_hart` | `WS_ENABLE_HART=1` | `test_hart` | HART / HART-IP codec (services/hart): the HART command frame (longitudinal XOR checksum, short + long addressing) build/parse and the 8-octet HART-IP message header. |
 | `native_hostlink` | `WS_ENABLE_HOSTLINK=1` | `test_hostlink` | Omron Host Link (C-mode) frame codec (services/hostlink): the FCS (XOR), the ASCII command builder (@UU + header + text + FCS + *CR), and the FCS-validating parser + end-code reader. |
@@ -192,7 +192,7 @@ The native test matrix has **242 environments**, one per feature, generated from
 | `native_melsec` | `WS_ENABLE_MELSEC=1` | `test_melsec` | Mitsubishi MELSEC MC binary 3E codec (services/melsec): the batch-read request builder (little-endian, subheader 0x5000, command 0x0401, device code + 24-bit head device) + the 0xD000 response parser. |
 | `native_mms` | `WS_ENABLE_MMS=1` | `test_mms` | IEC 61850 MMS PDU codec (services/mms): the BER confirmed-request/response Read PDUs (invokeID + read service + named ObjectName), build + parse. |
 | `native_modbus` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_RTU=1` | `test_modbus` | Modbus TCP slave core + RTU framing (Modbus Application Protocol): the data model + MBAP/PDU codec + the RTU ADU codec (CRC16 + [addr][PDU][CRC]). |
-| `native_modbus_master` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_MASTER=1` | `test_modbus_master` | Modbus master codec + scanner (services/modbus/dws_modbus_master): build read requests, parse responses; host-tested as a round-trip against the slave codec. |
+| `native_modbus_master` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_MASTER=1` | `test_modbus_master` | Modbus master codec + scanner (services/modbus/modbus_master): build read requests, parse responses; host-tested as a round-trip against the slave codec. |
 | `native_mpr121` | `WS_ENABLE_MPR121=1` | `test_mpr121` | MPR121 capacitive-touch codec (services/mpr121): decoding the touch-status word into an electrode bitmask (masking proximity / over-current), the per-electrode touched test, the proximity / over-curre... |
 | `native_mqtt` | `WS_ENABLE_MQTT=1` | `test_mqtt` |  |
 | `native_mqtt_sn` | `WS_ENABLE_MQTT_SN=1` | `test_mqtt_sn` | MQTT-SN v1.2 wire codec (services/mqtt/mqtt_sn): the zero-heap message builders (CONNECT/REGISTER/PUBLISH/SUBSCRIBE/PINGREQ/DISCONNECT/SEARCHGW) + the Length+MsgType header parser (1- and 3-octet form... |
@@ -206,14 +206,14 @@ The native test matrix has **242 environments**, one per feature, generated from
 | `native_nmea2000` | `WS_ENABLE_NMEA2000=1` | `test_nmea2000` | NMEA 2000 codec (services/nmea2000): single-frame messages plus the Fast Packet transport (frame count, build, reassembly), built on the J1939 id codec (implied). |
 | `native_nrf24` | `WS_ENABLE_NRF24=1`, `WS_NRF24_PAYLOAD=8` | `test_nrf24` | nRF24L01+ driver (services/nrf24), v5 radio plugin: the Nordic SPI command protocol (STATUS shifted out first, W/R_REGISTER, W_TX/R_RX_PAYLOAD, write-1-to-clear) exercised against a mock chip - init /... |
 | `native_ntcip` | `WS_ENABLE_NTCIP=1` | `test_ntcip` | NTCIP transportation object OIDs (services/ntcip): the NTCIP 1202 signal-controller + 1203 DMS object roots under 1.3.6.1.4.1.1206.4.2 and the OID builder (root + instance index), for the shipped SNMP... |
-| `native_ntp_server` | `WS_ENABLE_NTP_SERVER=1` | `test_ntp_server` | NTP/SNTP server (RFC 5905 server mode) response codec (dws_ntp_server_build_response): version echo, mode/LI/stratum, origin-timestamp copy, reference/receive/transmit stamps, big-endian encoding, and the... |
-| `native_ntrip_caster` | `WS_ENABLE_NTRIP_CASTER=1` | `test_ntrip_caster` | NTRIP caster protocol codec (services/gnss/dws_ntrip_caster): rover request parsing (mountpoint, NTRIP 1.0/2.0 version, HTTP Basic auth), the stream-accept / error responses, and the RTCM source table (ST... |
+| `native_ntp_server` | `WS_ENABLE_NTP_SERVER=1` | `test_ntp_server` | NTP/SNTP server (RFC 5905 server mode) response codec (ntp_server_build_response): version echo, mode/LI/stratum, origin-timestamp copy, reference/receive/transmit stamps, big-endian encoding, and the... |
+| `native_ntrip_caster` | `WS_ENABLE_NTRIP_CASTER=1` | `test_ntrip_caster` | NTRIP caster protocol codec (services/gnss/ntrip_caster): rover request parsing (mountpoint, NTRIP 1.0/2.0 version, HTTP Basic auth), the stream-accept / error responses, and the RTCM source table (ST... |
 | `native_nts` | `WS_ENABLE_NTS=1` | `test_nts` | Network Time Security codec (services/nts, RFC 8915): the NTS-KE TLV records (build the standard request, parse a response) and the NTS NTP extension-field framing (unique id / cookie, RFC 7822 4-byte... |
 | `native_oauth2` | `WS_ENABLE_OAUTH2=1` | `test_oauth2` | OAuth2 token-endpoint client (services/oauth2) - the form-body builder + JSON token-response parser are host-tested (the parser reuses the JSON reader); the HTTP exchange is ESP32-only. |
 | `native_observability` | `WS_ENABLE_OBSERVABILITY=1` | `test_observability` | Transport observability (DWS_ENABLE_OBSERVABILITY): the dws_conn_on_event hook, by-reason counters, the live CONN_CLOSING gauge, and that the real lwIP callbacks (recv FIN / error / timeout / local cl... |
 | `native_ocit` | `WS_ENABLE_OCIT=1` | `test_ocit` | OCIT-Outstations message codec (services/ocit): the object message ([msg-type][object-type][instance][data-type][value]) build + parse and the typed-value accessors. |
 | `native_oidc` | `WS_ENABLE_OIDC=1` | `test_oidc` | OIDC RS256 ID-token verifier (services/oidc). |
-| `native_opcua` | `WS_ENABLE_OPCUA=1` | `test_opcua` | OPC UA Binary increment 1 (services/opcua) - the type codec, UACP framing, and Hello/Acknowledge handshake are host-tested here; the TCP server (dws_opcua_rx) is ESP32-only. |
+| `native_opcua` | `WS_ENABLE_OPCUA=1` | `test_opcua` | OPC UA Binary increment 1 (services/opcua) - the type codec, UACP framing, and Hello/Acknowledge handshake are host-tested here; the TCP server (opcua_rx) is ESP32-only. |
 | `native_opcua_client` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_OPCUA_CLIENT=1` | `test_opcua_client` |  |
 | `native_openadr` | `WS_ENABLE_OPENADR=1` | `test_openadr` | OpenADR 3.0 JSON codec (services/openadr): the event (programID + eventName + interval payloads) and report (VEN reading) JSON documents build, with escaping + a no-stdlib 3-decimal formatter. |
 | `native_ota` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_OTA=1` | `test_http_ota` | Parser streaming-body hook (OTA) - exercises http_parser with DWS_ENABLE_OTA=1 using a mock sink (no ESP32 Update dependency). |
@@ -233,15 +233,15 @@ The native test matrix has **242 environments**, one per feature, generated from
 | `native_proxy_protocol` | `WS_ENABLE_PROXY_PROTOCOL=1` | `test_proxy_protocol` | HAProxy PROXY protocol codec (services/proxy_protocol): the v1 (text) + v2 (binary) TCP/IPv4 header builders and the unified parser (recover the real client IP behind a load balancer). |
 | `native_psram_pool` | `WS_ENABLE_PSRAM_POOL=1` | `test_psram_pool` | Buffer placement policy + DMA ping-pong (services/psram_pool): dws_psram_place picks DRAM vs PSRAM by size / DMA requirement / free-heap headroom (large-cold to PSRAM, small-hot + DMA to DRAM, leaving... |
 | `native_qpack` | `WS_ENABLE_HTTP3=1` | `test_qpack` | QPACK field-section compression for HTTP/3 (network_drivers/presentation/http3/qpack, RFC 9204): the Appendix B.1 worked example (literal field line with a static name reference), the encoder's exact ... |
-| `native_quic_conn` | `WS_ENABLE_HTTP3=1` | `test_quic_conn` | QUIC v1 server connection engine (network_drivers/presentation/http3/dws_quic_conn, RFC 9000 / RFC 9001): the test acts as a QUIC client - builds real Initial / Handshake / 1-RTT packets and drives a serv... |
-| `native_quic_crypto` | `WS_ENABLE_HTTP3=1` | `test_quic_crypto` | QUIC Initial packet crypto (network_drivers/presentation/http3/dws_quic_hkdf + dws_quic_aead + dws_quic_crypto, RFC 9001): HKDF-Expand-Label key derivation, AEAD_AES_128_GCM (software AES-128 + GHASH) and header ... |
-| `native_quic_frame` | `WS_ENABLE_HTTP3=1` | `test_quic_frame` | QUIC frame codec (network_drivers/presentation/http3/dws_quic_frame, RFC 9000 sec 19): builder/parser round-trips for PADDING/PING/HANDSHAKE_DONE, ACK (single-range + a hand-built multi-range-with-ECN cur... |
-| `native_quic_packet` | `WS_ENABLE_HTTP3=1` | `test_quic_packet` | QUIC packet header + packet-number codec (network_drivers/presentation/http3/dws_quic_packet, RFC 9000 sec 17): the long-header build/parse round-trip, a Version Negotiation packet (Version 0 + supported-... |
-| `native_quic_server` | `WS_ENABLE_HTTP3=1` | `test_quic_server` | HTTP/3 server glue (network_drivers/presentation/http3/dws_quic_server): the UDP-facing pool that routes datagrams by Destination Connection ID to a pool of QuicConn + H3Conn engines. |
-| `native_quic_tls` | `WS_ENABLE_HTTP3=1` | `test_quic_tls` | TLS 1.3 server handshake state machine for QUIC (network_drivers/presentation/http3/ dws_quic_tls, RFC 9001 / RFC 8446): a full interop round-trip - drive the server with a hand-built ClientHello, run the... |
+| `native_quic_conn` | `WS_ENABLE_HTTP3=1` | `test_quic_conn` | QUIC v1 server connection engine (network_drivers/presentation/http3/quic_conn, RFC 9000 / RFC 9001): the test acts as a QUIC client - builds real Initial / Handshake / 1-RTT packets and drives a serv... |
+| `native_quic_crypto` | `WS_ENABLE_HTTP3=1` | `test_quic_crypto` | QUIC Initial packet crypto (network_drivers/presentation/http3/quic_hkdf + quic_aead + quic_crypto, RFC 9001): HKDF-Expand-Label key derivation, AEAD_AES_128_GCM (software AES-128 + GHASH) and header ... |
+| `native_quic_frame` | `WS_ENABLE_HTTP3=1` | `test_quic_frame` | QUIC frame codec (network_drivers/presentation/http3/quic_frame, RFC 9000 sec 19): builder/parser round-trips for PADDING/PING/HANDSHAKE_DONE, ACK (single-range + a hand-built multi-range-with-ECN cur... |
+| `native_quic_packet` | `WS_ENABLE_HTTP3=1` | `test_quic_packet` | QUIC packet header + packet-number codec (network_drivers/presentation/http3/quic_packet, RFC 9000 sec 17): the long-header build/parse round-trip, a Version Negotiation packet (Version 0 + supported-... |
+| `native_quic_server` | `WS_ENABLE_HTTP3=1` | `test_quic_server` | HTTP/3 server glue (network_drivers/presentation/http3/quic_server): the UDP-facing pool that routes datagrams by Destination Connection ID to a pool of QuicConn + H3Conn engines. |
+| `native_quic_tls` | `WS_ENABLE_HTTP3=1` | `test_quic_tls` | TLS 1.3 server handshake state machine for QUIC (network_drivers/presentation/http3/ quic_tls, RFC 9001 / RFC 8446): a full interop round-trip - drive the server with a hand-built ClientHello, run the... |
 | `native_quic_tls_pqc` | `WS_ENABLE_HTTP3=1`, `WS_ENABLE_PQC_KEX=1`, `WS_WORKER_TASK_STACK=16384` | `test_quic_tls` | TLS 1.3 QUIC handshake with the X25519MLKEM768 post-quantum hybrid group (IANA 0x11ec, DWS_ENABLE_PQC_KEX=1): drives the server with a hybrid ClientHello, then verifies it as a conforming client - ML-... |
-| `native_quic_tp` | `WS_ENABLE_HTTP3=1` | `test_quic_tp` | QUIC transport parameters codec (network_drivers/presentation/http3/dws_quic_tp, RFC 9000 sec 18): the sec 18.2 defaults, an encode/parse round-trip over the connection IDs + every varint parameter + the ... |
-| `native_quic_varint` | `WS_ENABLE_HTTP3=1` | `test_quic_varint` | QUIC variable-length integer codec (network_drivers/presentation/http3/dws_quic_varint, RFC 9000 sec 16) - the foundational HTTP/3 primitive: the Appendix A.1 worked examples (1/2/4/8 byte encodings), the... |
+| `native_quic_tp` | `WS_ENABLE_HTTP3=1` | `test_quic_tp` | QUIC transport parameters codec (network_drivers/presentation/http3/quic_tp, RFC 9000 sec 18): the sec 18.2 defaults, an encode/parse round-trip over the connection IDs + every varint parameter + the ... |
+| `native_quic_varint` | `WS_ENABLE_HTTP3=1` | `test_quic_varint` | QUIC variable-length integer codec (network_drivers/presentation/http3/quic_varint, RFC 9000 sec 16) - the foundational HTTP/3 primitive: the Appendix A.1 worked examples (1/2/4/8 byte encodings), the... |
 | `native_radio_power` | `WS_ENABLE_RADIO_POWER=1` | `test_radio_power` | WiFi radio power controls (services/radio_power): modem-sleep mode names host-tested; the apply/readback are ESP32-only (esp_wifi). |
 | `native_radio_sniff` | `WS_ENABLE_RADIO_SNIFF=1` | `test_radio_sniff` | Receive-only radio channel sniffer -> pcap (services/radio_sniff): the int->float32 RSSI encode, the pcap global header (DLT 802.15.4 TAP), and the per-frame TAP record (RSSI + channel TLVs + MAC fram... |
 | `native_range` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_RANGE=1` | `test_range` | HTTP Range requests / 206 Partial Content (RFC 7233): full server built with DWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with seek()) via the tcp_write capture mock. |
@@ -291,8 +291,8 @@ The native test matrix has **242 environments**, one per feature, generated from
 | `native_telnet` | `WS_ENABLE_TELNET=1` | `test_telnet` | Telnet server (RFC 854 IAC negotiation + line editing) wired through the real transport ring buffer; output checked via the tcp_write capture mock. |
 | `native_thread` | `WS_ENABLE_THREAD=1`, `WS_THREAD_MAX_DATA=64` | `test_thread` | Thread spinel / HDLC-lite framing codec (services/thread), v5 radio plugin: the FCS (CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the byte-stuffing of reserve... |
 | `native_time_source` | `WS_ENABLE_TIME_SOURCE=1` | `test_time_source` | Multi-source time fallback matrix (services/time_source): priority-ordered query of user time sources with first-valid-wins fallback. |
-| `native_tls13_kdf` | `WS_ENABLE_HTTP3=1` | `test_tls13_kdf` | TLS 1.3 key schedule for the QUIC handshake (network_drivers/presentation/http3/dws_tls13_kdf, RFC 8446 sec 7.1 / 4.4.4): Early/Handshake/Master secret Extract chain, client/server handshake + application... |
-| `native_tls13_msg` | `WS_ENABLE_HTTP3=1` | `test_tls13_msg` | TLS 1.3 handshake messages for the QUIC handshake (network_drivers/presentation/http3/ dws_tls13_msg, RFC 8446 sec 4): ClientHello parse (X25519 key_share + capability flags), and the server flight. |
+| `native_tls13_kdf` | `WS_ENABLE_HTTP3=1` | `test_tls13_kdf` | TLS 1.3 key schedule for the QUIC handshake (network_drivers/presentation/http3/tls13_kdf, RFC 8446 sec 7.1 / 4.4.4): Early/Handshake/Master secret Extract chain, client/server handshake + application... |
+| `native_tls13_msg` | `WS_ENABLE_HTTP3=1` | `test_tls13_msg` | TLS 1.3 handshake messages for the QUIC handshake (network_drivers/presentation/http3/ tls13_msg, RFC 8446 sec 4): ClientHello parse (X25519 key_share + capability flags), and the server flight. |
 | `native_tls_policy` | `WS_ENABLE_TLS_POLICY=1` | `test_tls_policy` | TLS version negotiation + pinned cipher policy (services/tls_policy): the server-style version pick (highest supported not above the client's), the version name, cipher selection by server preference ... |
 | `native_totp` | `WS_ENABLE_TOTP=1` | `test_totp` | TOTP two-factor (services/totp): HMAC-SHA1 HOTP/TOTP + base32, host-tested against the RFC 6238 vectors (builds on the software SHA-1). |
 | `native_tsan` | `g`, `O1`, `fsanitize=thread`, `pthread` | `test_concurrency` | Same harness under ThreadSanitizer: proves ZERO data races on the slot fields (the DWSAtomic acquire/release happens-before lets the plain rx_buffer[] writes be read on the other core safely). |
@@ -846,8 +846,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Build read device info and del
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[22]);                               // cmd 1 (ReadDeviceInfo)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[26]);                               // cbData 0</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[22]);                                   // cmd 1 (ReadDeviceInfo)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[26]);                                   // cbData 0</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ads_build_read_device_info(buf, 8, &r)); // buffer too small</code>
       * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 4, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x07, buf[22]);          // cmd 7 (DeleteNotification)</code>
@@ -870,7 +870,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 12, dws_ads_build_write(buf, sizeof(buf), &r, 0x4020, 0, nullptr, 0));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ads_build_write(buf, 40, &r, 0x4020, 0, val, 4)); // needs 54</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ads_build_read_write(buf, sizeof(buf), &r, 0xF003, 0, 4, nullptr, 12));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 16, dws_ads_build_read_write(buf, sizeof(buf), &r, 0xF003, 0, 4, nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 16,</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ads_build_read_write(buf, 40, &r, 0xF003, 0, 4, val, 4)); // needs 58</code>
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
   </details>
@@ -886,7 +886,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[ADS_HDR_LEN + 4]); // length 2</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xAA, buf[ADS_HDR_LEN + 8]); // copied data</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xBB, buf[ADS_HDR_LEN + 9]);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ads_build_write_control(buf, sizeof(buf), &r, 0, 0, nullptr, 4));      // len && !data</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ads_build_write_control(buf, sizeof(buf), &r, 0, 0, nullptr, 4)); // len && !data</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ads_build_write_control(buf, 40, &r, 0, 0, payload, sizeof(payload))); // needs 48</code>
   </details>
 
@@ -979,7 +979,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: An out-of-range gain code clamps to GAIN_2 (its FSR), so the conversion never indexes past the
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(dws_ads1115_raw_to_uv(16384, Ads1115Gain::ADS1115_GAIN_2), dws_ads1115_raw_to_uv(16384, 99));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(dws_ads1115_raw_to_uv(16384, Ads1115Gain::ADS1115_GAIN_2),</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1081,8 +1081,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Build and parse guards
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_frame(nullptr, sizeof(buf), 1, 0, payload, sizeof(payload))); // null buf</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_frame(buf, sizeof(buf), 1, 0, nullptr, 4));                   // null payload</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_frame(buf, 4, 1, 0, payload, sizeof(payload)));               // cap &lt; total</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_frame(buf, sizeof(buf), 1, 0, nullptr, 4));     // null payload</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_frame(buf, 4, 1, 0, payload, sizeof(payload))); // cap &lt; total</code>
       * <code>Assert false (dws_amqp_parse_frame(tiny, sizeof(tiny), &fr, &consumed))</code>
   </details>
 
@@ -2250,8 +2250,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal uint (0, dws_bvlc_build(nullptr, sizeof(buf), 0x0A, npdu, 4))</code>
       * <code>Assert equal uint (0, dws_bvlc_build(buf, sizeof(buf), 0x0A, nullptr, 5))</code>
-      * <code>Assert equal uint (0, dws_npdu_build(nullptr, sizeof(buf), false, 0, false, 0, nullptr, 0, 0, npdu, 4))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT(0,</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
       * <code>Assert false (dws_npdu_parse(dest_trunc, 2, &info))</code>
       * <code>Assert false (dws_npdu_parse(src_trunc, 2, &info))</code>
       * <code>Assert false (dws_npdu_parse(src_overrun, 6, &info))</code>
@@ -2707,7 +2707,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(2, m.pdo_num);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(7, m.node_id);</code>
       * <code>Assert true (dws_canopen_build_rpdo(&f, 4, 1, payload, 8))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0x501, f.id);                       // RPDO4 base 0x500 + 1</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x501, f.id);                           // RPDO4 base 0x500 + 1</code>
       * <code>Assert false (dws_canopen_build_tpdo(&f, 5, 1, payload, 1))</code>
       * <code>Assert false (dws_canopen_build_tpdo(&f, 1, 1, payload, 9))</code>
   </details>
@@ -2718,7 +2718,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Sdo read request
     * **Assertions**:
       * <code>Assert true (dws_canopen_build_sdo_read(&f, 0x20, 0x1018, 1))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0x620, f.id);                         // 0x600 + 0x20</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x620, f.id);                             // 0x600 + 0x20</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(8, f.dlc);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x40, f.data[0]); // upload initiate</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x18, f.data[1]); // index LE</code>
@@ -6337,7 +6337,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert false (dws_devicenet_encode_id(&id, DeviceNetGroup::DEVICENET_GROUP_3, 8, 0))</code>
       * <code>Assert false (dws_devicenet_encode_id(&id, (DeviceNetGroup)99, 0, 0))</code>
       * <code>Assert false (dws_devicenet_decode_id(0x100, nullptr))</code>
-      * <code>Assert false (dws_devicenet_build_explicit(&f, DeviceNetGroup::DEVICENET_GROUP_2, 8, 0, one, 1))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6358,10 +6358,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Frag overflow
     * **Assertions**:
-      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_STARTED, dws_devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_STARTED,</code>
       * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_ERR, dws_devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
       * <code>Assert false (rx.active)</code>
-      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_STARTED, dws_devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_STARTED,</code>
       * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_ERR, dws_devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
   </details>
 
@@ -6465,9 +6465,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert false (dws_df1_parse_frame(nullptr, 8, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
       * <code>Assert false (dws_df1_parse_frame(ok5, sizeof(ok5), Df1Check::DF1_CHECK_BCC, nullptr, 0, &out_len))</code>
       * <code>TEST_ASSERT_FALSE(</code>
-      * <code>Assert false (dws_df1_parse_frame(dle_end, sizeof(dle_end), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
       * <code>Assert false (dws_df1_parse_frame(dframe, dn, Df1Check::DF1_CHECK_BCC, out, 0, &out_len))</code>
-      * <code>Assert false (dws_df1_parse_frame(bad_ctrl, sizeof(bad_ctrl), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
       * <code>Assert false (dws_df1_parse_frame(no_end, sizeof(no_end), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
       * <code>TEST_ASSERT_FALSE(</code>
       * <code>Assert false (dws_df1_parse_frame(cbuf, cn, Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len))</code>
@@ -8180,7 +8180,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (n &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(ctx, buf + 12, 8);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_eip_build_send_rr_data(nullptr, sizeof(buf), 1, nullptr, 5, data, 2)); // null buf</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_eip_build_send_rr_data(buf, sizeof(buf), 1, nullptr, 5, nullptr, 2)); // dws_cip_len && !cip</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
       * <code>Assert false (dws_eip_parse_send_rr_data(nullptr, 8, &cip, &clen))</code>
       * <code>Assert false (dws_eip_parse_send_rr_data(tooshort, sizeof(tooshort), &cip, &clen))</code>
       * <code>Assert false (dws_eip_parse_send_rr_data(trunc_item, sizeof(trunc_item), &cip, &clen))</code>
@@ -10623,7 +10623,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame_trailer(buf, 8, 0, nullptr));            // status key overflows</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame_trailer(buf, sizeof(buf), -1, nullptr)); // negative status</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame_trailer(buf, 17, 5, nullptr));           // status digits overflow</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame_trailer(buf, 24, 0, "msg"));             // grpc-message line overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame_trailer(buf, 24, 0, "msg")); // grpc-message line overflows</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10977,7 +10977,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The reserved high bit of the stream id must be ignored on parse.
     * **Assertions**:
-      * <code>Assert equal int (9, (int)dws_h2_write_header(b, sizeof b, 0x123456, H2FrameType::H2_HEADERS, 0x05, 0x7FFFFFFF))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(9,</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, b, 9);</code>
       * <code>Assert true (dws_h2_parse_header(b, 9, &h))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x123456, h.length);</code>
@@ -16380,7 +16380,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Truncated frame ignored
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, n);                                 // length field disagrees -&gt; wait/ignore</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, n);                                     // length field disagrees -&gt; wait/ignore</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16454,7 +16454,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Rtu wrong address dropped
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11)); // addressed to 0x05, not us</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16968,7 +16968,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(MQTTSN_FLAG_WILL, f & MQTTSN_FLAG_WILL);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(MQTTSN_FLAG_CLEAN, f & MQTTSN_FLAG_CLEAN);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(MQTTSN_TOPIC_SHORT, f & MQTTSN_FLAG_TOPICIDTYPE_MASK);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(3, (uint8_t)((dws_mqttsn_make_flags(false, 3, false, false, false, 0) & MQTTSN_FLAG_QOS_MASK) &gt;&gt;</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18725,7 +18725,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal memory (nt, buf + nt_field_off, 48)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(8, u_len);</code>
       * <code>Assert equal memory (user16, buf + u_off, 8)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntlmssp_build_authenticate(buf, 80, nullptr, 0, nt, sizeof(nt), "Domain", "User",</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19698,7 +19698,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal uint (0, dws_opcua_build_ack(nullptr, big, sizeof(big)))</code>
       * <code>Assert equal uint (0, dws_opcua_build_ack(&hello, nullptr, sizeof(big)))</code>
       * <code>Assert equal uint (0, dws_opcua_build_open_response(nullptr, 1, 1, 1, 0, 1, big, sizeof(big)))</code>
-      * <code>Assert equal uint (0, dws_opcua_build_create_session_response(nullptr, 1, 1, 0.0, &info, 1, 0, big, sizeof(big)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(0,</code>
       * <code>Assert equal uint (0, dws_opcua_build_get_endpoints_response(nullptr, &info, 1, 0, big, sizeof(big)))</code>
       * <code>Assert equal uint (0, dws_opcua_build_service_fault(nullptr, 0, 1, 0, big, sizeof(big)))</code>
       * <code>Assert equal uint (0, dws_opcua_build_activate_session_response(nullptr, 1, 0, big, sizeof(big)))</code>
@@ -19708,7 +19708,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal uint (0, dws_opcua_build_close_session_response(nullptr, 1, 0, big, sizeof(big)))</code>
       * <code>Assert equal uint (0, dws_opcua_build_ack(&hello, tiny, sizeof(tiny)))</code>
       * <code>Assert equal uint (0, dws_opcua_build_open_response(&oc, 1, 1, 1, 0, 1, tiny, sizeof(tiny)))</code>
-      * <code>Assert equal uint (0, dws_opcua_build_create_session_response(&msg, 1, 1, 0.0, &info, 1, 0, tiny, sizeof(tiny)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(0,</code>
       * <code>Assert equal uint (0, dws_opcua_build_read_response(&rr, nullptr, nullptr, 1, 0, tiny, sizeof(tiny)))</code>
   </details>
 
@@ -20247,7 +20247,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_ua_r_u32(&r)); // MessageSecurityMode = None</code>
       * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), &sl))</code>
       * <code>Assert equal string (OPCUA_POLICY_NONE_URI, s)</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(1, dws_ua_r_i32(&r));           // UserIdentityTokens[] count</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, dws_ua_r_i32(&r));       // UserIdentityTokens[] count</code>
       * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), &sl))</code>
       * <code>Assert equal string ("anonymous", s)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_ua_r_u32(&r));            // TokenType = Anonymous</code>
@@ -23926,7 +23926,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal int (0, (int)dws_quic_build_version_negotiation(out, 4, cid, 2, cid, 2, 0, 0))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(0,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal int (0, (int)dws_quic_pn_encode(pn, 1, 0x123456, -1))</code>
       * <code>Assert equal int (4, (int)dws_quic_pn_length(0xFFFFFFFFull, -1))</code>
   </details>
@@ -24130,7 +24130,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(10, qt.alert); // unexpected_message</code>
-      * <code>Assert equal uint (sizeof(more), dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, more, sizeof(more)))</code>
+      * <code>Assert equal uint (sizeof(more)</code>
       * <code>Assert null (dws_quic_tls_flight(&qt, QuicEnc::QUIC_ENC_APP, &l))</code>
       * <code>Assert equal uint (0, l)</code>
       * <code>Assert null (dws_quic_tls_keys(&fresh, QuicEnc::QUIC_ENC_HANDSHAKE, true))</code>
@@ -26724,7 +26724,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(64 + 24, n);</code>
       * <code>Assert true (dws_smb2_parse_header(buf, n, &h))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_CLOSE, h.command);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(24, r16(b + 0));                             // StructureSize</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(24, r16(b + 0));                                 // StructureSize</code>
       * <code>Assert equal memory (fid, b + 8, 16)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_close(buf, 80, 4, 0, 0, fid)); // overflow</code>
       * <code>Assert true (dws_smb2_parse_close_response(m, 64 + 60, &r))</code>
@@ -26742,12 +26742,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (dws_smb2_parse_header(buf, n, &h))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_READ, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(49, r16(b + 0));                                   // StructureSize</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(80, b[2]);                                           // Padding = header + 16</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0x10000, r32(b + 4));                              // Length</code>
-      * <code>TEST_ASSERT_EQUAL_HEX64(0x1000ULL, r64(b + 8));                             // Offset</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(49, r16(b + 0));                                       // StructureSize</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(80, b[2]);                                               // Padding = header + 16</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x10000, r32(b + 4));                                  // Length</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x1000ULL, r64(b + 8));                                 // Offset</code>
       * <code>Assert equal memory (fid, b + 16, 16)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, r32(b + 32));                                   // MinimumCount</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, r32(b + 32));                                       // MinimumCount</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_read(buf, 100, 5, 0, 0, fid, 1, 0)); // overflow</code>
   </details>
 
@@ -28131,7 +28131,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Invalid varbind type
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28140,8 +28140,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Build v2c null args
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_notify_build_v2c(nullptr, 128, "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_notify_build_v2c(buf, sizeof(buf), nullptr, (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_notify_build_v2c(buf, sizeof(buf), nullptr, (uint8_t)SnmpTag::SNMP_PDU_TRAPV2,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28907,7 +28907,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(2, h.page_count);    // matches PRAGMA page_count</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, h.schema_cookie); // matches PRAGMA schema_version</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(4, h.schema_format);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, h.text_encoding);        // UTF-8</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, h.text_encoding);            // UTF-8</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3046001, h.dws_sqlite_version); // SQLite 3.46.1</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, h.freelist_first);</code>
   </details>
@@ -29012,7 +29012,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(47, cell.local_len);</code>
       * <code>Assert true (dws_sqlite_record_begin(&c, PAGE1 + cell.local_off, cell.local_len))</code>
       * <code>Assert true (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT64(23, st);                       // text, 5 bytes</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(23, st);                           // text, 5 bytes</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, vl);</code>
       * <code>Assert equal memory ("table", v, 5)</code>
       * <code>Assert true (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
@@ -29021,10 +29021,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
       * <code>Assert equal memory ("t", v, 1)</code>
       * <code>Assert true (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT64(1, st);                        // 1-byte int</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, st);                            // 1-byte int</code>
       * <code>TEST_ASSERT_EQUAL_INT64(2, dws_sqlite_column_int(st, v, vl));</code>
       * <code>Assert true (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT64(79, st);                       // text, 33 bytes</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(79, st);                           // text, 33 bytes</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(33, vl);</code>
       * <code>Assert equal memory ("CREATE TABLE t(a INTEGER, b TEXT)", v, 33)</code>
       * <code>Assert false (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
@@ -29105,7 +29105,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The 4-byte first-overflow pointer sits right after the local prefix: point it at page 9999, which
     * **Assertions**:
-      * <code>Assert false (dws_sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, out, sizeof(out), work))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29114,7 +29114,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Overflow read payload bounds
     * **Assertions**:
       * <code>Assert true (find_overflow_cell(leaf, &cell))</code>
-      * <code>Assert false (dws_sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, tiny, sizeof(tiny), work))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29233,7 +29233,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A single row larger than one leaf page can hold must fail closed (bounded writer, no overflow pages).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", "CREATE TABLE t(b TEXT)", &row, 1, img, sizeof(img)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0,</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", &r2, 1, img, 512));</code>
   </details>
 
@@ -31892,10 +31892,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Format guards
     * **Assertions**:
-      * <code>Assert equal uint (0, dws_statsd_format(out, sizeof(out), "x", "1", (StatsdType)'z', 1.0f, nullptr))</code>
-      * <code>Assert equal uint (0, dws_statsd_format(out, sizeof(out), nullptr, "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(0,</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
       * <code>Assert equal uint (0, dws_statsd_format(out, sizeof(out), "", "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr))</code>
-      * <code>Assert equal uint (0, dws_statsd_format(out, sizeof(out), "x", nullptr, StatsdType::STATSD_COUNTER, 1.0f, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
       * <code>TEST_ASSERT_EQUAL_UINT(</code>
   </details>
 
@@ -32298,7 +32298,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Guard clauses return 0.
     * **Assertions**:
-      * <code>Assert equal uint (0, dws_syslog_format(nullptr, sizeof(buf), (SyslogFacility)0, (SyslogSeverity)0, "h", "a", "m"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
       * <code>Assert equal uint (0, dws_syslog_format(buf, 0, (SyslogFacility)0, (SyslogSeverity)0, "h", "a", "m"))</code>
       * <code>Assert equal string ("&lt;191&gt;1 - h a - - - m", buf)</code>
   </details>
@@ -34041,7 +34041,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Simulate a power loss mid-write of record 2: only part of it made it to media.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(r0, durable);                    // only record 1 is durable</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(r0, durable);                        // only record 1 is durable</code>
       * <code>Assert equal int (1, c.n)</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(1, c.seq[0]);</code>
   </details>
@@ -36332,8 +36332,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build coap rejects bad args
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, tok, 9, "x",</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, tok, 9,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36363,7 +36363,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert false (dws_wisun_node_find(&fan, &c, nullptr))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, dws_wisun_joined_count(&fan));</code>
       * <code>Assert equal int (-1, dws_wisun_node_register(&fan, &a, 1))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36389,8 +36389,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Coap arg guards
     * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(0, 1, 1, nullptr, 9, "/a", nullptr, 0, out, sizeof(out)));  // tkl &gt; 8</code>
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, out, 3)); // cap &lt; 4+tkl</code>
@@ -36984,7 +36984,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build bounds
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_zwave_build_frame(dws_zwave_type::ZWAVE_REQ, 0x13, data, 4, small, sizeof(small))); // 9 &gt; 6</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(</code>
   </details>
 
