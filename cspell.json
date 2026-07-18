@@ -1340,7 +1340,10 @@
     "secsh",
     "bitio",
     "fmtbuf",
-    "DDWS"
+    "DDWS",
+    "bdet",
+    "behaviour",
+    "behavioural"
   ],
   "ignorePaths": [
     "node_modules/**",
