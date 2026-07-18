@@ -30025,7 +30025,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Chan open cap guards
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, unk, n, out, &ol, 10)); // unknown type -&gt; failure cap&lt;17 (143)</code>
+      * <code>TEST_ASSERT_EQUAL_INT(-1,</code>
       * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, ses, n, out, &ol, 10)); // session -&gt; confirm cap&lt;17 (157)</code>
   </details>
 
@@ -30037,8 +30037,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal int (-1, det_ssh_channel_open_forwarded(0, nullptr, 80, "x", 90, out, &ol, sizeof(out)))</code>
       * <code>Assert equal int (-1, det_ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, 10))</code>
       * <code>Assert equal int (-1, det_ssh_channel_handle_request(0, rq, n, out, &ol, 3)); // want_reply cap&lt;5 (439)</code>
-      * <code>TEST_ASSERT_EQUAL_INT(-1,</code>
-      * <code>Assert equal int (-1, det_ssh_channel_build_close(0, 99, out, &ol, sizeof(out)));               // null chan (553)</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
+      * <code>Assert equal int (-1, det_ssh_channel_build_close(0, 99, out, &ol, sizeof(out))); // null chan (553)</code>
       * <code>Assert equal int (-1, det_ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, sizeof(out)))</code>
   </details>
 
@@ -30379,7 +30379,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal int (1, confirm_count)</code>
       * <code>Assert true (confirm_ok)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, confirm_channel);</code>
-      * <code>TEST_ASSERT_EQUAL_INT(0,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_DATA, dout[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(99u, rd_u32(dout + 1)); // addressed to the peer's channel id</code>
   </details>
@@ -30557,7 +30557,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (-1, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
       * <code>Assert equal int (-1, det_ssh_conn_close_channel(j, 0))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(-1,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
   </details>
 
   <details style="margin-left: 20px;">
