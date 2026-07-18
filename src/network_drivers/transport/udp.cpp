@@ -175,7 +175,7 @@ bool dws_udp_listen(uint16_t port, DWSUdpHandler handler, void *ctx)
     return false; // pool exhausted
 }
 
-bool dws_udp_send(struct DWSUdpPeer *peer, const uint8_t *data, size_t len)
+bool dws_udp_send(const struct DWSUdpPeer *peer, const uint8_t *data, size_t len)
 {
     if (!peer || !peer->pcb || !peer->addr || !data || len == 0)
         return false;
@@ -355,7 +355,7 @@ void dws_udp_reset_listeners()
     s_udp.listener_sendto_ok = true;
 }
 
-bool dws_udp_send(struct DWSUdpPeer *peer, const uint8_t *data, size_t len)
+bool dws_udp_send(const struct DWSUdpPeer *peer, const uint8_t *data, size_t len)
 {
     (void)peer;
     return host_capture(data, len);

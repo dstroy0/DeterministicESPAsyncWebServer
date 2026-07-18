@@ -88,7 +88,7 @@ size_t edge_key_canon(const char *method, const char *host, const char *path, co
 void edge_key_digest(const char *canon, size_t len, uint8_t digest[32]);
 
 /** @brief Request-header lookup used to build the Vary secondary key; return nullptr when absent. */
-typedef const char *(*EdgeHdrLookup)(void *ctx, const char *name);
+using EdgeHdrLookup = const char *(*)(void *ctx, const char *name);
 
 /**
  * @brief Serialize a request's values for each field-name in a response `Vary` header into @p out
@@ -101,7 +101,7 @@ bool edge_vary_serialize(const char *vary_header, EdgeHdrLookup lookup, void *ct
 
 // --- L1 RAM store: entries, LRU, TTL, purge ------------------------------------------------------
 
-#define EDGE_LRU_NONE 0xFFFFu
+constexpr uint16_t EDGE_LRU_NONE = 0xFFFFu;
 
 /** @brief One cached object (fixed-size, zero-heap). */
 struct EdgeEntry
@@ -123,7 +123,11 @@ struct EdgeEntry
     long initial_age;                   ///< corrected initial age at store
     uint32_t insert_ms;                 ///< monotonic store time (TTL/age base)
     uint32_t last_used_ms;              ///< recency
-    uint16_t lru_prev, lru_next;        ///< intrusive LRU indices (EDGE_LRU_NONE = end)
+    struct                              ///< intrusive LRU node (EDGE_LRU_NONE = end)
+    {
+        uint16_t prev;
+        uint16_t next;
+    } lru;
     uint16_t body_len;
     uint8_t body[DWS_EDGE_BODY_MAX];
 };
@@ -131,9 +135,17 @@ struct EdgeEntry
 /** @brief Cache observability counters. */
 struct EdgeCacheStats
 {
-    uint32_t hits, misses, revalidations_304, replaces_200;
-    uint32_t stores, evictions, purges, l2_spills, l2_promotes;
-    uint32_t mesh_hits, mesh_misses; ///< sibling pulls served (DWS_ENABLE_EDGE_MESH) / peer queries that missed
+    uint32_t hits;
+    uint32_t misses;
+    uint32_t revalidations_304;
+    uint32_t replaces_200;
+    uint32_t stores;
+    uint32_t evictions;
+    uint32_t purges;
+    uint32_t l2_spills;
+    uint32_t l2_promotes;
+    uint32_t mesh_hits;   ///< sibling pulls served (DWS_ENABLE_EDGE_MESH)
+    uint32_t mesh_misses; ///< peer queries that missed
     uint64_t bytes_stored;
 };
 
@@ -144,13 +156,14 @@ struct EdgeCacheStats
  * engine ever depending on dbm: the glue installs the callback, the engine only calls it. @p victim is
  * still fully populated (not yet unlinked). Transient passthrough entries (empty key) are not offered.
  */
-typedef void (*EdgeEvictFn)(void *ctx, const EdgeEntry *victim);
+using EdgeEvictFn = void (*)(void *ctx, const EdgeEntry *victim);
 
 /** @brief The L1 store: a fixed pool of entries with an intrusive MRU..LRU list. */
 struct EdgeCacheStore
 {
     EdgeEntry entries[DWS_EDGE_CACHE_SLOTS];
-    uint16_t lru_head, lru_tail; ///< head = MRU, tail = LRU (EDGE_LRU_NONE when empty)
+    uint16_t lru_head; ///< MRU end (EDGE_LRU_NONE when empty)
+    uint16_t lru_tail; ///< LRU end (EDGE_LRU_NONE when empty)
     EdgeCacheStats stats;
     EdgeEvictFn on_evict; ///< nullptr = no L2 write-back; else called with each evicted victim
     void *evict_ctx;      ///< opaque context passed to on_evict
@@ -207,7 +220,7 @@ uint32_t edge_store_purge(EdgeCacheStore *s, const char *canon);
 uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix);
 
 /** @brief Unlink @p e and free its slot (no stat bump). Used to release a transient passthrough entry. */
-void edge_store_free_entry(EdgeCacheStore *s, EdgeEntry *e);
+void edge_store_free_entry(EdgeCacheStore *s, const EdgeEntry *e);
 
 // --- storeability (RFC 9111 sec 3) ---------------------------------------------------------------
 

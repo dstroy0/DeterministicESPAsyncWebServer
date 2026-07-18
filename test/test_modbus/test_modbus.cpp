@@ -201,7 +201,7 @@ void test_write_single_coil_bad_value()
     uint8_t pdu[] = {0x05, 0x00, 0x00, 0x12, 0x34}; // not 0x0000/0xFF00
     uint8_t req[260], resp[260];
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
-    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
+    dws_modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_UINT8(0x05 | 0x80, resp[7]);
     TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);
     TEST_ASSERT_EQUAL_INT(0, g_wcalls); // not applied

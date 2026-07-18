@@ -39,6 +39,9 @@
 #include "services/edge_cache/edge_cache.h"
 #include <stddef.h>
 #include <stdint.h>
+#if DWS_ENABLE_DBM
+#include "services/dbm/dbm.h" // dbm handle type for the L2 put/get/purge helpers below
+#endif
 
 /**
  * @brief Worst-case serialized value size of one entry (every metadata string full + a max-size body).
@@ -70,8 +73,6 @@ size_t edge_sd_serialize(const EdgeEntry *e, uint8_t *out, size_t cap);
 bool edge_sd_deserialize(const uint8_t *buf, size_t len, EdgeEntry *e);
 
 #if DWS_ENABLE_DBM
-
-#include "services/dbm/dbm.h"
 
 /**
  * @brief Write @p e back to the L2 store (keyed by its digest), using @p scratch to serialize.

@@ -447,7 +447,7 @@ size_t dws_mtc_sample_query(DetwsMtcSampleBuffer *b, char *buf, size_t cap, uint
     for (uint32_t e = 0; e < to_emit; e++)
     {
         uint32_t k = (uint32_t)((start - first) + e);
-        DetwsMtcObservation *o = &b->obs[(oldest_idx + k) % DWS_MTC_SAMPLE_BUFFER];
+        const DetwsMtcObservation *o = &b->obs[(oldest_idx + k) % DWS_MTC_SAMPLE_BUFFER];
         dws_mtc_streams_add(&s, o->cat, o->type, o->data_id, o->seq, o->timestamp, o->value);
     }
     return dws_mtc_streams_end(&s);

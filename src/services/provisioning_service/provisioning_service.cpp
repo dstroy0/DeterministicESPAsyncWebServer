@@ -228,7 +228,9 @@ bool dws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_ca
         psk[0] = '\0';
     return false;
 }
-void dws_provisioning_begin(DWS &server, const char *ap_ssid)
+// server can't be a const ref: the Arduino build's dws_provisioning_begin() registers routes via
+// server.on(); this host stub just ignores it (hence the const-ref suggestion here is a false positive).
+void dws_provisioning_begin(DWS &server, const char *ap_ssid) // NOSONAR
 {
     (void)server;
     (void)ap_ssid;

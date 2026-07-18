@@ -583,9 +583,9 @@ class DWS
 
 #if DWS_ENABLE_WEBSOCKET
     /// @brief Invoke the registered WS message handler for a completed frame on @p ws.
-    void ws_dispatch_message(WsConn *ws);
+    void ws_dispatch_message(const WsConn *ws) const;
     /// @brief Invoke the registered WS close handler for @p ws.
-    void ws_dispatch_close(WsConn *ws);
+    void ws_dispatch_close(const WsConn *ws) const;
 #endif
 
   public:
@@ -1093,7 +1093,7 @@ class DWS
      *
      * @return false if the slot is invalid or the worker's defer queue is full.
      */
-    bool defer(uint8_t slot, dws_deferred_fn fn, void *arg);
+    bool defer(uint8_t slot, dws_deferred_fn fn, void *arg) const;
 
     /**
      * @brief Send an HTTP response with a body and close the connection.

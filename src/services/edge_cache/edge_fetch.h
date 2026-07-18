@@ -54,7 +54,8 @@ struct EdgeFetch
     uint32_t got; ///< bytes accumulated
     int status;   ///< HTTP status (valid when DONE)
     size_t head_len;
-    size_t body_off, body_len;
+    size_t body_off;
+    size_t body_len;
     uint8_t buf[DWS_EDGE_FETCH_BUF];
 };
 

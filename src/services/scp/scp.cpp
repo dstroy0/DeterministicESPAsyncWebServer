@@ -13,6 +13,22 @@
 #include <stdio.h>
 #include <string.h>
 
+namespace
+{
+// Apply one scp flag token (e.g. "-t", "-rf"): -t selects the sink role, -f the source; other letters
+// (-v/-r/-p/-d and combinations) are accepted and ignored.
+void apply_scp_flags(const char *tok, size_t tlen, ScpMode *mode)
+{
+    for (size_t k = 1; k < tlen; k++)
+    {
+        if (tok[k] == 't')
+            *mode = ScpMode::SINK;
+        else if (tok[k] == 'f')
+            *mode = ScpMode::SOURCE;
+    }
+}
+} // namespace
+
 ScpMode dws_scp_parse_cmd(const char *cmd, size_t cmd_len, char *path_out, size_t path_cap)
 {
     if (!cmd || !path_out || path_cap == 0)
@@ -32,16 +48,7 @@ ScpMode dws_scp_parse_cmd(const char *cmd, size_t cmd_len, char *path_out, size_
             i++;
         size_t tlen = i - start;
         if (tlen >= 2 && cmd[start] == '-')
-        {
-            // a flag token: -t / -f set the role; -v / -r / -p / -d and combinations are ignored.
-            for (size_t k = 1; k < tlen; k++)
-            {
-                if (cmd[start + k] == 't')
-                    mode = ScpMode::SINK;
-                else if (cmd[start + k] == 'f')
-                    mode = ScpMode::SOURCE;
-            }
-        }
+            apply_scp_flags(cmd + start, tlen, &mode);
         else
         {
             last_tok = cmd + start; // "scp" then the path; the last one wins

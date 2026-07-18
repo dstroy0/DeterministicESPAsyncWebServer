@@ -984,7 +984,7 @@ static bool match_path_params(const char *route, const char *path, HttpReq *req)
  *   6. Any slot in ParseState::PARSE_URI_TOO_LONG receives an automatic 414 response.
  */
 #if DWS_ENABLE_WEBSOCKET
-void DWS::ws_dispatch_message(WsConn *ws)
+void DWS::ws_dispatch_message(const WsConn *ws) const
 {
     for (uint8_t r = 0; r < _route_count; r++)
         if (_routes[r].type == RouteType::ROUTE_WS && _routes[r].ws_message)
@@ -994,7 +994,7 @@ void DWS::ws_dispatch_message(WsConn *ws)
         }
 }
 
-void DWS::ws_dispatch_close(WsConn *ws)
+void DWS::ws_dispatch_close(const WsConn *ws) const
 {
     for (uint8_t r = 0; r < _route_count; r++)
         if (_routes[r].type == RouteType::ROUTE_WS && _routes[r].ws_close)
@@ -1197,7 +1197,7 @@ void DWS::http_poll_slot(uint8_t i)
     }
 }
 
-bool DWS::defer(uint8_t slot, dws_deferred_fn fn, void *arg)
+bool DWS::defer(uint8_t slot, dws_deferred_fn fn, void *arg) const
 {
     if (slot >= MAX_CONNS)
         return false;

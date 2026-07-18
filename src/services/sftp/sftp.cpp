@@ -248,7 +248,7 @@ size_t dws_sftp_build_status(uint32_t id, uint32_t code, const char *msg, uint8_
     dws_sftp_wr_u8(&w, SSH_FXP_STATUS);
     dws_sftp_wr_u32(&w, id);
     dws_sftp_wr_u32(&w, code);
-    size_t ml = msg ? strlen(msg) : 0;
+    size_t ml = msg ? strnlen(msg, cap) : 0;
     dws_sftp_wr_string(&w, msg ? msg : "", (uint32_t)ml);
     dws_sftp_wr_string(&w, "", 0); // language tag
     return dws_sftp_wr_finish(&w);
@@ -292,8 +292,8 @@ size_t dws_sftp_build_name1(uint32_t id, const char *name, const char *longname,
     dws_sftp_wr_u8(&w, SSH_FXP_NAME);
     dws_sftp_wr_u32(&w, id);
     dws_sftp_wr_u32(&w, 1); // one entry
-    dws_sftp_wr_string(&w, name, (uint32_t)strlen(name));
-    dws_sftp_wr_string(&w, longname, (uint32_t)strlen(longname));
+    dws_sftp_wr_string(&w, name, (uint32_t)strnlen(name, cap));
+    dws_sftp_wr_string(&w, longname, (uint32_t)strnlen(longname, cap));
     dws_sftp_wr_attrs(&w, a);
     return dws_sftp_wr_finish(&w);
 }
@@ -325,7 +325,9 @@ size_t dws_sftp_format_longname(bool is_dir, uint32_t perms, uint64_t size, uint
             out[0] = '\0';
         return 0;
     }
-    return ((size_t)n < cap) ? (size_t)n : (cap ? cap - 1 : 0);
+    if ((size_t)n < cap)
+        return (size_t)n;
+    return cap ? cap - 1 : 0;
 }
 
 #endif // DWS_ENABLE_SSH_SFTP

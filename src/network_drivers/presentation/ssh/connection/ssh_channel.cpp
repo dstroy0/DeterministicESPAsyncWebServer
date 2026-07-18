@@ -436,6 +436,51 @@ int dws_ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, u
 // CHANNEL_REQUEST → SUCCESS / FAILURE
 // ---------------------------------------------------------------------------
 
+#if DWS_ENABLE_SSH_SFTP || DWS_ENABLE_SSH_SCP
+namespace
+{
+// A subsystem/exec CHANNEL_REQUEST may name a file-transfer service (SFTP or SCP). Tag @p c and fire the
+// matching open callback when it does; @p off points at the request-specific arg and may be advanced. Flips
+// *accept true for an accepted SFTP subsystem (exec is already in the base accept set).
+void classify_file_transfer_request(uint8_t i, SshChannel *c, const uint8_t *rtype, uint32_t rtype_len,
+                                    const uint8_t *payload, size_t len, size_t *off, bool *accept)
+{
+#if !DWS_ENABLE_SSH_SFTP
+    (void)accept; // only the SFTP subsystem path flips acceptance; scp exec is already accepted
+#endif
+#if DWS_ENABLE_SSH_SFTP
+    // subsystem "sftp": not in the base accept set, so accept it here and tag the channel for the SFTP binding.
+    if (rtype_len == 9 && memcmp(rtype, "subsystem", 9) == 0)
+    {
+        const uint8_t *arg = nullptr;
+        uint32_t arg_len = 0;
+        if (rd_string(payload, len, off, &arg, &arg_len) && arg_len == 4 && memcmp(arg, "sftp", 4) == 0)
+        {
+            *accept = true;
+            c->type = SshChanType::SSH_CHAN_SFTP;
+            if (s_chcb.dws_sftp_open_cb)
+                s_chcb.dws_sftp_open_cb(i, c->local_id);
+        }
+    }
+#endif
+#if DWS_ENABLE_SSH_SCP
+    // exec "scp …": already accepted (exec is in the base set); tag the channel + hand the command to the binding.
+    if (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0)
+    {
+        const uint8_t *arg = nullptr;
+        uint32_t arg_len = 0;
+        if (rd_string(payload, len, off, &arg, &arg_len) && arg_len >= 4 && memcmp(arg, "scp ", 4) == 0)
+        {
+            c->type = SshChanType::SSH_CHAN_SCP;
+            if (s_chcb.dws_scp_open_cb)
+                s_chcb.dws_scp_open_cb(i, c->local_id, (const char *)arg, arg_len);
+        }
+    }
+#endif
+}
+} // namespace
+#endif
+
 int dws_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                    size_t cap)
 {
@@ -464,34 +509,8 @@ int dws_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len
         (rtype_len == 5 && memcmp(rtype, "shell", 5) == 0) || (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0) ||
         (rtype_len == 7 && memcmp(rtype, "pty-req", 7) == 0) || (rtype_len == 3 && memcmp(rtype, "env", 3) == 0);
 
-#if DWS_ENABLE_SSH_SFTP
-    // subsystem "sftp": not in the base accept set, so accept it here and tag the channel for the SFTP binding.
-    if (rtype_len == 9 && memcmp(rtype, "subsystem", 9) == 0)
-    {
-        const uint8_t *arg = nullptr;
-        uint32_t arg_len = 0;
-        if (rd_string(payload, len, &off, &arg, &arg_len) && arg_len == 4 && memcmp(arg, "sftp", 4) == 0)
-        {
-            accept = true;
-            c->type = SshChanType::SSH_CHAN_SFTP;
-            if (s_chcb.dws_sftp_open_cb)
-                s_chcb.dws_sftp_open_cb(i, c->local_id);
-        }
-    }
-#endif
-#if DWS_ENABLE_SSH_SCP
-    // exec "scp …": already accepted (exec is in the base set); tag the channel + hand the command to the binding.
-    if (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0)
-    {
-        const uint8_t *arg = nullptr;
-        uint32_t arg_len = 0;
-        if (rd_string(payload, len, &off, &arg, &arg_len) && arg_len >= 4 && memcmp(arg, "scp ", 4) == 0)
-        {
-            c->type = SshChanType::SSH_CHAN_SCP;
-            if (s_chcb.dws_scp_open_cb)
-                s_chcb.dws_scp_open_cb(i, c->local_id, (const char *)arg, arg_len);
-        }
-    }
+#if DWS_ENABLE_SSH_SFTP || DWS_ENABLE_SSH_SCP
+    classify_file_transfer_request(i, c, rtype, rtype_len, payload, len, &off, &accept);
 #endif
 
     if (!want_reply)

@@ -43,15 +43,15 @@ size_t dws_smb2_build_header(uint8_t *buf, size_t cap, Smb2Command command, uint
     memset(buf, 0, SMB2_HEADER_SIZE);
     memcpy(buf + 0, SMB2_PROTOCOL_ID, 4); // ProtocolId
     dws_wr16le(buf + 4, 64);              // StructureSize
-    // CreditCharge (6), Status/ChannelSequence (8) left 0
+    // bytes 6 CreditCharge and 8 Status/ChannelSequence stay zero
     dws_wr16le(buf + 12, (uint16_t)command); // Command
     dws_wr16le(buf + 14, credit_request);    // CreditRequest
-    // Flags (16) = 0 (client request), NextCommand (20) = 0
+    // byte 16 Flags stays zero for a client request; byte 20 NextCommand stays zero
     dws_wr64le(buf + 24, message_id); // MessageId
-    // Reserved (32) = 0
+    // byte 32 Reserved stays zero
     dws_wr32le(buf + 36, tree_id);    // TreeId
     dws_wr64le(buf + 40, session_id); // SessionId
-    // Signature (48..63) = 0
+    // bytes 48 through 63 Signature stay zero
     return SMB2_HEADER_SIZE;
 }
 
@@ -88,9 +88,9 @@ size_t dws_smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_g
     dws_wr16le(b + 0, 36);            // StructureSize
     dws_wr16le(b + 2, ndialects);     // DialectCount
     dws_wr16le(b + 4, security_mode); // SecurityMode
-    // Reserved (6) = 0, Capabilities (8) = 0
+    // byte 6 Reserved and byte 8 Capabilities stay zero
     memcpy(b + 12, client_guid, 16); // ClientGuid
-    // ClientStartTime (28) = 0 (only 3.1.1 reinterprets these 8 bytes as negotiate-context fields)
+    // byte 28 ClientStartTime stays zero; only 3.1.1 reinterprets these 8 bytes as negotiate-context fields
     for (uint16_t i = 0; i < ndialects; i++)
         dws_wr16le(b + 36 + i * 2, (uint16_t)dialects[i]);
     return total;
@@ -148,10 +148,10 @@ size_t dws_smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_i
     dws_wr16le(b + 0, 25); // StructureSize (fixed 24 + 1 for the variable buffer)
     b[2] = 0;              // Flags (SMB2_SESSION_FLAG_BINDING only for 3.x channel binding)
     b[3] = security_mode;  // SecurityMode (one byte here)
-    // Capabilities (4) = 0, Channel (8) = 0
+    // byte 4 Capabilities and byte 8 Channel stay zero
     dws_wr16le(b + 12, (uint16_t)(SMB2_HEADER_SIZE + body)); // SecurityBufferOffset (from the header start)
     dws_wr16le(b + 14, (uint16_t)sec_len);                   // SecurityBufferLength
-    // PreviousSessionId (16) = 0 (a fresh session)
+    // byte 16 PreviousSessionId stays zero for a fresh session
     memcpy(b + body, sec_buf, sec_len);
     return total;
 }
@@ -199,7 +199,7 @@ size_t dws_smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
     dws_wr16le(b + 0, 9); // StructureSize
-    // Flags/Reserved (2) = 0
+    // byte 2 Flags/Reserved stays zero
     dws_wr16le(b + 4, (uint16_t)(SMB2_HEADER_SIZE + body)); // PathOffset (from the header start) = 72
     dws_wr16le(b + 6, (uint16_t)path_len);                  // PathLength
     memcpy(b + body, path_utf16, path_len);                 // the \\server\share path (UTF-16LE)
@@ -239,9 +239,9 @@ size_t dws_smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
     dws_wr16le(b + 0, 57); // StructureSize (fixed 56 + 1 for the variable buffer)
-    // SecurityFlags (2) = 0, RequestedOplockLevel (3) = 0 (SMB2_OPLOCK_LEVEL_NONE)
+    // byte 2 SecurityFlags and byte 3 RequestedOplockLevel stay zero (SMB2_OPLOCK_LEVEL_NONE)
     dws_wr32le(b + 4, 2); // ImpersonationLevel = Impersonation
-    // SmbCreateFlags (8) = 0, Reserved (16) = 0
+    // byte 8 SmbCreateFlags and byte 16 Reserved stay zero
     dws_wr32le(b + 24, desired_access);                      // DesiredAccess
     dws_wr32le(b + 28, 0);                                   // FileAttributes = 0
     dws_wr32le(b + 32, share_access);                        // ShareAccess
@@ -249,7 +249,7 @@ size_t dws_smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint
     dws_wr32le(b + 40, create_options);                      // CreateOptions
     dws_wr16le(b + 44, (uint16_t)(SMB2_HEADER_SIZE + body)); // NameOffset (from the header start) = 120
     dws_wr16le(b + 46, (uint16_t)name_len);                  // NameLength
-    // CreateContextsOffset (48) = 0, CreateContextsLength (52) = 0
+    // bytes 48 CreateContextsOffset and 52 CreateContextsLength stay zero
     memcpy(b + body, name_utf16, name_len);
     return total;
 }
@@ -286,7 +286,7 @@ size_t dws_smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint6
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
     dws_wr16le(b + 0, 24); // StructureSize
-    // Flags (2) = 0 (no POSTQUERY_ATTRIB), Reserved (4) = 0
+    // byte 2 Flags stays zero (no POSTQUERY_ATTRIB); byte 4 Reserved stays zero
     memcpy(b + 8, file_id, 16); // FileId
     return total;
 }
@@ -322,13 +322,13 @@ size_t dws_smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64
     memset(b, 0, body + 1);
     dws_wr16le(b + 0, 49);                   // StructureSize
     b[2] = (uint8_t)(SMB2_HEADER_SIZE + 16); // Padding: requested data offset in the response (header + 16-byte body)
-    // Flags (3) = 0
+    // byte 3 Flags stays zero
     dws_wr32le(b + 4, length);   // Length
     dws_wr64le(b + 8, offset);   // Offset
     memcpy(b + 16, file_id, 16); // FileId
     dws_wr32le(b + 32, 1);       // MinimumCount = 1 (fail if the server returns nothing)
-    // Channel (36) = 0, RemainingBytes (40) = 0, ReadChannelInfoOffset/Length (44/46) = 0
-    // Buffer (b+48) = one 0 byte (already zeroed)
+    // bytes 36 Channel, 40 RemainingBytes and 44/46 ReadChannelInfoOffset/Length stay zero
+    // the one-byte Buffer at b+48 stays zero (already zeroed)
     return total;
 }
 
@@ -377,7 +377,7 @@ size_t dws_smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint6
     dws_wr32le(b + 4, (uint32_t)data_len);                  // Length
     dws_wr64le(b + 8, offset);                              // Offset
     memcpy(b + 16, file_id, 16);                            // FileId
-    // Channel (32) = 0, RemainingBytes (36) = 0, WriteChannelInfoOffset/Length (40/42) = 0, Flags (44) = 0
+    // bytes 32 Channel, 36 RemainingBytes, 40/42 WriteChannelInfoOffset/Length and 44 Flags stay zero
     memcpy(b + body, data, data_len); // the data to write
     return total;
 }

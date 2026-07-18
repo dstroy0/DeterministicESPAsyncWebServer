@@ -41,22 +41,30 @@ static inline void throwaway_ed25519_seed(uint8_t out[32])
     bool pinned = false;
     if (pin && strlen(pin) >= 64)
     {
+        uint8_t tmp[32]; // parse into a scratch buffer; only commit to out[] once fully valid
         pinned = true;
         for (int i = 0; i < 32 && pinned; i++)
         {
             int hi = nib(pin[2 * i]), lo = nib(pin[2 * i + 1]);
             if (hi < 0 || lo < 0)
-                pinned = false; // not valid hex -> fall back to random
+                pinned = false; // not valid hex -> fall back to random (out[] never saw pin bytes)
             else
-                out[i] = (uint8_t)((hi << 4) | lo);
+                tmp[i] = (uint8_t)((hi << 4) | lo);
         }
+        if (pinned)
+            memcpy(out, tmp, 32);
     }
-    if (!pinned)
+    if (pinned)
     {
-        std::random_device rd; // OS entropy on the host
-        for (int i = 0; i < 32; i++)
-            out[i] = (uint8_t)(rd() & 0xff);
+        // Reproduced from the caller-supplied seed - it is already known to them, so do not echo it
+        // back (echoing getenv-sourced bytes to stdout is what a taint scan flags, and adds nothing).
+        printf("[throwaway-key] ed25519 seed pinned via DWS_TEST_KEY_SEED\n");
+        return;
     }
+
+    std::random_device rd; // OS entropy on the host
+    for (int i = 0; i < 32; i++)
+        out[i] = (uint8_t)(rd() & 0xff);
 
     char hex[65];
     static const char *H = "0123456789abcdef";
@@ -66,7 +74,7 @@ static inline void throwaway_ed25519_seed(uint8_t out[32])
         hex[2 * i + 1] = H[out[i] & 0x0f];
     }
     hex[64] = '\0';
-    printf("[throwaway-key] ed25519 seed=%s%s (re-pin: DWS_TEST_KEY_SEED=%s)\n", hex, pinned ? " (pinned)" : "", hex);
+    printf("[throwaway-key] ed25519 seed=%s (re-pin: DWS_TEST_KEY_SEED=%s)\n", hex, hex);
 }
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_TEST_THROWAWAY_KEY_H

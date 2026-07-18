@@ -74,7 +74,8 @@ bool rd_time(const char **pp, int *hh, int *mm, int *ss)
 // Days since 1970-01-01 for a proleptic-Gregorian y-m-d (Howard Hinnant's civil algorithm).
 int64_t days_from_civil(int y, int m, int d)
 {
-    y -= (m <= 2);
+    if (m <= 2)
+        y -= 1;
     int64_t era = (y >= 0 ? y : y - 399) / 400;
     int64_t yoe = y - era * 400;                                  // [0, 399]
     int64_t doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1; // [0, 365]
@@ -97,12 +98,47 @@ bool k_append(char *out, size_t *pos, size_t cap, const char *s, bool lower)
 }
 } // namespace
 
+namespace
+{
+// If the header line [p, lend) is "<name>: <value>" (case-insensitive name), copy the OWS-trimmed value
+// into out[0..out_cap) and return true. Non-match returns false with no write; a value that will not fit
+// sets *overflow (the caller must then fail the whole lookup - a validator is never truncated).
+bool header_line_value(const char *p, const char *lend, const char *name, size_t namelen, char *out, size_t out_cap,
+                       bool *overflow)
+{
+    const char *colon = p;
+    while (colon < lend && *colon != ':')
+        colon++;
+    if (colon >= lend || (size_t)(colon - p) != namelen)
+        return false;
+    for (size_t i = 0; i < namelen; i++)
+        if (lc(p[i]) != lc(name[i]))
+            return false;
+    const char *v = colon + 1;
+    while (v < lend && (*v == ' ' || *v == '\t'))
+        v++;
+    const char *ve = lend;
+    while (ve > v && (ve[-1] == ' ' || ve[-1] == '\t'))
+        ve--;
+    size_t vl = (size_t)(ve - v);
+    if (vl >= out_cap)
+    {
+        *overflow = true;
+        return false; // never truncate a validator
+    }
+    for (size_t i = 0; i < vl; i++)
+        out[i] = v[i];
+    out[vl] = '\0';
+    return true;
+}
+} // namespace
+
 bool edge_header_value(const char *hdrs, size_t len, const char *name, char *out, size_t out_cap)
 {
     if (!hdrs || !name || !out || out_cap == 0)
         return false;
     out[0] = '\0';
-    size_t namelen = strlen(name);
+    size_t namelen = strnlen(name, out_cap); // header names are short literals, always < the value buffer
     const char *p = hdrs;
     const char *end = hdrs + len;
     // Skip the status line.
@@ -120,39 +156,68 @@ bool edge_header_value(const char *hdrs, size_t len, const char *name, char *out
         const char *lend = le; // exclusive; drop a trailing CR
         if (lend > p && lend[-1] == '\r')
             lend--;
-        const char *colon = p;
-        while (colon < lend && *colon != ':')
-            colon++;
-        if (colon < lend && (size_t)(colon - p) == namelen)
-        {
-            bool match = true;
-            for (size_t i = 0; i < namelen; i++)
-                if (lc(p[i]) != lc(name[i]))
-                {
-                    match = false;
-                    break;
-                }
-            if (match)
-            {
-                const char *v = colon + 1;
-                while (v < lend && (*v == ' ' || *v == '\t'))
-                    v++;
-                const char *ve = lend;
-                while (ve > v && (ve[-1] == ' ' || ve[-1] == '\t'))
-                    ve--;
-                size_t vl = (size_t)(ve - v);
-                if (vl >= out_cap)
-                    return false; // never truncate a validator
-                for (size_t i = 0; i < vl; i++)
-                    out[i] = v[i];
-                out[vl] = '\0';
-                return true;
-            }
-        }
+        bool overflow = false;
+        if (header_line_value(p, lend, name, namelen, out, out_cap, &overflow))
+            return true;
+        if (overflow)
+            return false;
         p = (le < end) ? le + 1 : end;
     }
     return false;
 }
+
+namespace
+{
+// IMF-fixdate "Sun, 06 Nov 1994 08:49:37 GMT" or RFC 850 "Sunday, 06-Nov-94 08:49:37 GMT" (from past ',').
+bool parse_date_after_comma(const char *p, int *mday, int *mon, int *year, int *hh, int *mm, int *ss)
+{
+    while (*p == ' ')
+        p++;
+    if (!rd_uint(&p, mday))
+        return false;
+    bool rfc850 = (*p == '-');
+    if (*p == '-' || *p == ' ')
+        p++;
+    else
+        return false;
+    if (!rd_month(&p, mon))
+        return false;
+    if (*p == '-')
+        p++;
+    else
+        while (*p == ' ')
+            p++;
+    if (!rd_uint(&p, year))
+        return false;
+    if (rfc850 && *year < 100) // 2-digit year window (RFC 6265-style)
+        *year += (*year < 70) ? 2000 : 1900;
+    while (*p == ' ')
+        p++;
+    return rd_time(&p, hh, mm, ss);
+}
+
+// asctime "Sun Nov  6 08:49:37 1994".
+bool parse_date_asctime(const char *p, int *mday, int *mon, int *year, int *hh, int *mm, int *ss)
+{
+    while (*p && *p != ' ')
+        p++;
+    while (*p == ' ')
+        p++;
+    if (!rd_month(&p, mon))
+        return false;
+    while (*p == ' ')
+        p++;
+    if (!rd_uint(&p, mday))
+        return false;
+    while (*p == ' ')
+        p++;
+    if (!rd_time(&p, hh, mm, ss))
+        return false;
+    while (*p == ' ')
+        p++;
+    return rd_uint(&p, year);
+}
+} // namespace
 
 int64_t edge_parse_http_date(const char *s, size_t len)
 {
@@ -176,58 +241,10 @@ int64_t edge_parse_http_date(const char *s, size_t len)
     int mm = 0;
     int ss = 0;
     const char *comma = strchr(buf, ',');
-    if (comma)
-    {
-        // IMF-fixdate "Sun, 06 Nov 1994 08:49:37 GMT" or RFC 850 "Sunday, 06-Nov-94 08:49:37 GMT".
-        const char *p = comma + 1;
-        while (*p == ' ')
-            p++;
-        if (!rd_uint(&p, &mday))
-            return -1;
-        bool rfc850 = (*p == '-');
-        if (*p == '-' || *p == ' ')
-            p++;
-        else
-            return -1;
-        if (!rd_month(&p, &mon))
-            return -1;
-        if (*p == '-')
-            p++;
-        else
-            while (*p == ' ')
-                p++;
-        if (!rd_uint(&p, &year))
-            return -1;
-        if (rfc850 && year < 100) // 2-digit year window (RFC 6265-style)
-            year += (year < 70) ? 2000 : 1900;
-        while (*p == ' ')
-            p++;
-        if (!rd_time(&p, &hh, &mm, &ss))
-            return -1;
-    }
-    else
-    {
-        // asctime "Sun Nov  6 08:49:37 1994".
-        const char *p = buf;
-        while (*p && *p != ' ')
-            p++;
-        while (*p == ' ')
-            p++;
-        if (!rd_month(&p, &mon))
-            return -1;
-        while (*p == ' ')
-            p++;
-        if (!rd_uint(&p, &mday))
-            return -1;
-        while (*p == ' ')
-            p++;
-        if (!rd_time(&p, &hh, &mm, &ss))
-            return -1;
-        while (*p == ' ')
-            p++;
-        if (!rd_uint(&p, &year))
-            return -1;
-    }
+    bool ok = comma ? parse_date_after_comma(comma + 1, &mday, &mon, &year, &hh, &mm, &ss)
+                    : parse_date_asctime(buf, &mday, &mon, &year, &hh, &mm, &ss);
+    if (!ok)
+        return -1;
 
     if (mon < 1 || mon > 12 || mday < 1 || mday > 31 || hh > 23 || mm > 59 || ss > 60)
         return -1;
@@ -282,11 +299,9 @@ size_t edge_key_canon(const char *method, const char *host, const char *path, co
         return 0;
     if (!k_append(out, &pos, out_cap, "\n", false) || !k_append(out, &pos, out_cap, path, false))
         return 0;
-    if (include_query && query && query[0])
-    {
-        if (!k_append(out, &pos, out_cap, "\n", false) || !k_append(out, &pos, out_cap, query, false))
-            return 0;
-    }
+    if (include_query && query && query[0] &&
+        (!k_append(out, &pos, out_cap, "\n", false) || !k_append(out, &pos, out_cap, query, false)))
+        return 0;
     out[pos] = '\0';
     return pos;
 }
@@ -295,6 +310,37 @@ void edge_key_digest(const char *canon, size_t len, uint8_t digest[32])
 {
     ssh_sha256((const uint8_t *)canon, len, digest);
 }
+
+namespace
+{
+// Parse one Vary field-name token at *pp (advancing past it) and, when non-empty, emit its
+// "name\x1e value \x1f" record to out so distinct names cannot alias and a present-but-empty value is
+// distinguished from an absent one. Returns false on "Vary: *" (uncacheable) or on overflow.
+bool vary_emit_one(const char **pp, EdgeHdrLookup lookup, void *ctx, char *out, size_t *pos, size_t out_cap)
+{
+    const char *p = *pp;
+    char name[48];
+    size_t nl = 0;
+    while (*p && *p != ',' && *p != ' ' && *p != '\t')
+    {
+        if (*p == '*') // Vary: * -> uncacheable
+            return false;
+        if (nl + 1 < sizeof(name))
+            name[nl++] = lc(*p);
+        p++;
+    }
+    name[nl] = '\0';
+    *pp = p;
+    if (nl == 0)
+        return true; // nothing to emit; caller advances
+    const char *val = lookup ? lookup(ctx, name) : nullptr;
+    if (!k_append(out, pos, out_cap, name, false) || !k_append(out, pos, out_cap, "\x1e", false))
+        return false;
+    if (val && !k_append(out, pos, out_cap, val, false))
+        return false;
+    return k_append(out, pos, out_cap, "\x1f", false);
+}
+} // namespace
 
 bool edge_vary_serialize(const char *vary_header, EdgeHdrLookup lookup, void *ctx, char *out, size_t out_cap)
 {
@@ -311,28 +357,7 @@ bool edge_vary_serialize(const char *vary_header, EdgeHdrLookup lookup, void *ct
             p++;
         if (!*p)
             break;
-        // one field-name token
-        char name[48];
-        size_t nl = 0;
-        while (*p && *p != ',' && *p != ' ' && *p != '\t')
-        {
-            if (*p == '*') // Vary: * -> uncacheable
-                return false;
-            if (nl + 1 < sizeof(name))
-                name[nl++] = lc(*p);
-            p++;
-        }
-        name[nl] = '\0';
-        if (nl == 0)
-            continue;
-        const char *val = lookup ? lookup(ctx, name) : nullptr;
-        // Emit "name\x1e value \x1f" so distinct names cannot alias and a present-but-empty value is
-        // distinguished from an absent one only by the name being recorded regardless.
-        if (!k_append(out, &pos, out_cap, name, false) || !k_append(out, &pos, out_cap, "\x1e", false))
-            return false;
-        if (val && !k_append(out, &pos, out_cap, val, false))
-            return false;
-        if (!k_append(out, &pos, out_cap, "\x1f", false))
+        if (!vary_emit_one(&p, lookup, ctx, out, &pos, out_cap))
             return false;
     }
     out[pos] = '\0';
@@ -346,24 +371,25 @@ namespace
 void lru_unlink(EdgeCacheStore *s, uint16_t i)
 {
     EdgeEntry *e = &s->entries[i];
-    if (e->lru_prev != EDGE_LRU_NONE)
-        s->entries[e->lru_prev].lru_next = e->lru_next;
+    if (e->lru.prev != EDGE_LRU_NONE)
+        s->entries[e->lru.prev].lru.next = e->lru.next;
     else
-        s->lru_head = e->lru_next;
-    if (e->lru_next != EDGE_LRU_NONE)
-        s->entries[e->lru_next].lru_prev = e->lru_prev;
+        s->lru_head = e->lru.next;
+    if (e->lru.next != EDGE_LRU_NONE)
+        s->entries[e->lru.next].lru.prev = e->lru.prev;
     else
-        s->lru_tail = e->lru_prev;
-    e->lru_prev = e->lru_next = EDGE_LRU_NONE;
+        s->lru_tail = e->lru.prev;
+    e->lru.next = EDGE_LRU_NONE;
+    e->lru.prev = EDGE_LRU_NONE;
 }
 
 void lru_push_front(EdgeCacheStore *s, uint16_t i)
 {
     EdgeEntry *e = &s->entries[i];
-    e->lru_prev = EDGE_LRU_NONE;
-    e->lru_next = s->lru_head;
+    e->lru.prev = EDGE_LRU_NONE;
+    e->lru.next = s->lru_head;
     if (s->lru_head != EDGE_LRU_NONE)
-        s->entries[s->lru_head].lru_prev = i;
+        s->entries[s->lru_head].lru.prev = i;
     s->lru_head = i;
     if (s->lru_tail == EDGE_LRU_NONE)
         s->lru_tail = i;
@@ -380,8 +406,12 @@ const char *key_path(const char *key)
 {
     int nl = 0;
     for (const char *p = key; *p; p++)
-        if (*p == '\n' && ++nl == 2)
+    {
+        if (*p != '\n')
+            continue;
+        if (++nl == 2)
             return p + 1;
+    }
     return nullptr;
 }
 
@@ -399,14 +429,18 @@ bool vary_is_star(const char *vary_header)
 void edge_store_init(EdgeCacheStore *s)
 {
     memset(s, 0, sizeof(*s));
-    s->lru_head = s->lru_tail = EDGE_LRU_NONE;
+    s->lru_head = EDGE_LRU_NONE;
+    s->lru_tail = EDGE_LRU_NONE;
     for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
-        s->entries[i].lru_prev = s->entries[i].lru_next = EDGE_LRU_NONE;
+    {
+        s->entries[i].lru.prev = EDGE_LRU_NONE;
+        s->entries[i].lru.next = EDGE_LRU_NONE;
+    }
 }
 
 EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *vary_key)
 {
-    size_t klen = strlen(canon);
+    size_t klen = strnlen(canon, sizeof(s->entries[0].key));
     if (klen >= sizeof(s->entries[0].key))
         return nullptr; // key too long -> non-cacheable
     uint16_t slot = EDGE_LRU_NONE;
@@ -429,18 +463,20 @@ EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *va
     }
     EdgeEntry *e = &s->entries[slot];
     memset(e, 0, sizeof(*e));
-    e->lru_prev = e->lru_next = EDGE_LRU_NONE;
+    e->lru.prev = EDGE_LRU_NONE;
+    e->lru.next = EDGE_LRU_NONE;
     e->used = true;
     memcpy(e->key, canon, klen);
     e->key[klen] = '\0';
     edge_key_digest(canon, klen, e->digest);
-    size_t vl = vary_key ? strlen(vary_key) : 0;
+    size_t vl = vary_key ? strnlen(vary_key, sizeof(e->vary_vals)) : 0;
     if (vl >= sizeof(e->vary_vals))
         vl = sizeof(e->vary_vals) - 1;
     if (vary_key)
         memcpy(e->vary_vals, vary_key, vl);
     e->vary_vals[vl] = '\0';
-    e->date_epoch = e->expires_epoch = -1;
+    e->date_epoch = -1;
+    e->expires_epoch = -1;
     lru_push_front(s, slot);
     s->stats.stores++;
     return e;
@@ -517,7 +553,7 @@ uint32_t edge_store_sweep(EdgeCacheStore *s, uint32_t now_ms)
     uint32_t n = 0;
     for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
     {
-        EdgeEntry *e = &s->entries[i];
+        const EdgeEntry *e = &s->entries[i];
         if (e->used && !edge_entry_has_validator(e) && !edge_entry_fresh(e, now_ms))
         {
             store_free(s, i);
@@ -543,7 +579,7 @@ uint32_t edge_store_purge(EdgeCacheStore *s, const char *canon)
 
 uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix)
 {
-    size_t plen = strlen(prefix);
+    size_t plen = strnlen(prefix, sizeof(s->entries[0].key));
     uint32_t n = 0;
     for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
     {
@@ -560,7 +596,7 @@ uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix)
     return n;
 }
 
-void edge_store_free_entry(EdgeCacheStore *s, EdgeEntry *e)
+void edge_store_free_entry(EdgeCacheStore *s, const EdgeEntry *e)
 {
     for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
         if (&s->entries[i] == e)
@@ -616,16 +652,16 @@ void edge_apply_304(EdgeEntry *e, const char *new_hdrs, size_t hdr_len, int64_t 
     char v[128];
     DetwsCacheControl cc;
     if (edge_header_value(new_hdrs, hdr_len, "Cache-Control", v, sizeof(v)))
-        cache_control_parse(v, strlen(v), &cc);
+        cache_control_parse(v, strnlen(v, sizeof(v)), &cc);
     else
         cache_control_init(&cc);
 
     int64_t date = -1;
     if (edge_header_value(new_hdrs, hdr_len, "Date", v, sizeof(v)))
-        date = edge_parse_http_date(v, strlen(v));
+        date = edge_parse_http_date(v, strnlen(v, sizeof(v)));
     int64_t expires = -1;
     if (edge_header_value(new_hdrs, hdr_len, "Expires", v, sizeof(v)))
-        expires = edge_parse_http_date(v, strlen(v));
+        expires = edge_parse_http_date(v, strnlen(v, sizeof(v)));
 
     int32_t age = 0;
     if (edge_header_value(new_hdrs, hdr_len, "Age", v, sizeof(v)))
@@ -642,17 +678,22 @@ void edge_apply_304(EdgeEntry *e, const char *new_hdrs, size_t hdr_len, int64_t 
     }
 
     // Adopt any validators the 304 carried (RFC 9111 4.3.4: the newer representation metadata wins).
-    if (edge_header_value(new_hdrs, hdr_len, "ETag", v, sizeof(v)) && strlen(v) < sizeof(e->etag))
-        memcpy(e->etag, v, strlen(v) + 1);
+    if (edge_header_value(new_hdrs, hdr_len, "ETag", v, sizeof(v)))
+    {
+        size_t vlen = strnlen(v, sizeof(v));
+        if (vlen < sizeof(e->etag))
+            memcpy(e->etag, v, vlen + 1);
+    }
     int64_t last_mod = -1;
     if (edge_header_value(new_hdrs, hdr_len, "Last-Modified", v, sizeof(v)))
     {
-        last_mod = edge_parse_http_date(v, strlen(v));
-        if (strlen(v) < sizeof(e->last_modified))
-            memcpy(e->last_modified, v, strlen(v) + 1);
+        size_t vlen = strnlen(v, sizeof(v));
+        last_mod = edge_parse_http_date(v, vlen);
+        if (vlen < sizeof(e->last_modified))
+            memcpy(e->last_modified, v, vlen + 1);
     }
     else if (e->last_modified[0])
-        last_mod = edge_parse_http_date(e->last_modified, strlen(e->last_modified));
+        last_mod = edge_parse_http_date(e->last_modified, strnlen(e->last_modified, sizeof(e->last_modified)));
 
     edge_entry_set_freshness(e, &cc, true, date, expires, last_mod, age, response_time_epoch, now_ms);
 }

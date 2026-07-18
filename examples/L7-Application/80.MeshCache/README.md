@@ -139,10 +139,13 @@ The cache + mesh live inside the library, so the flags must reach the whole buil
 pio ci examples/L7-Application/80.MeshCache \
   --board esp32dev \
   --lib "." \
-  --project-option="build_flags=-DDWS_ENABLE_EDGE_CACHE=1 -DDWS_ENABLE_HTTP_CACHE=1 -DDWS_ENABLE_HTTP_CLIENT=1 -DDWS_ENABLE_EDGE_MESH=1"
+  --project-option="build_flags=-DDWS_ENABLE_EDGE_CACHE=1 -DDWS_ENABLE_HTTP_CACHE=1 -DDWS_ENABLE_HTTP_CLIENT=1 -DDWS_ENABLE_EDGE_MESH=1 -DDWS_EDGE_CACHE_SLOTS=2 -DDWS_EDGE_FETCH_SLOTS=1 -DDWS_MESH_MAX_PEERS=1"
 ```
 
 (The Arduino IDE reads the flags from `build_opt.h` beside the sketch automatically.)
+
+The last three flags shrink the cache to fit the classic ESP32's smaller DRAM (the defaults
+are 4 slots / 2 fetch slots / 4 peers). Drop them, or raise the counts, on an S3 / PSRAM board.
 
 ---
 

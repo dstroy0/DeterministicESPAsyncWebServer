@@ -28,14 +28,18 @@
  * @brief Append @p fmt (printf-style) at @p out[*pos], bounded by @p cap; advances @p *pos on success.
  * @return 0 on success, or -1 if the buffer is already full or the fragment would not fit (the buffer is
  *         left truncated, so the caller fails closed rather than overflowing).
+ *
+ * This is deliberately a C-varargs printf wrapper: it exists to forward a caller's format + args straight
+ * to vsnprintf from one place, so the ellipsis and the (always-literal, internal) runtime format string
+ * are intrinsic to its purpose, not a smell.
  */
-inline int dws_fmt_append(char *out, size_t cap, size_t *pos, const char *fmt, ...)
+inline int dws_fmt_append(char *out, size_t cap, size_t *pos, const char *fmt, ...) // NOSONAR forwarding wrapper
 {
     if (*pos >= cap)
         return -1;
     va_list ap;
     va_start(ap, fmt);
-    int w = vsnprintf(out + *pos, cap - *pos, fmt, ap);
+    int w = vsnprintf(out + *pos, cap - *pos, fmt, ap); // NOSONAR fmt is an internal compile-time literal
     va_end(ap);
     if (w < 0 || (size_t)w >= cap - *pos)
         return -1;

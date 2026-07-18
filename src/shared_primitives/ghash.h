@@ -54,12 +54,18 @@ inline void ghash_key_init(GhashKey *t, const uint8_t h[16])
 {
     using dws_ghash_detail::be32;
     // M[8] = H; M[4]=H/x, M[2]=H/x^2, M[1]=H/x^3 (one GF right-shift each, reducing by R=0xe1<<120).
-    uint32_t z0 = be32(h), z1 = be32(h + 4), z2 = be32(h + 8), z3 = be32(h + 12);
+    uint32_t z0 = be32(h);
+    uint32_t z1 = be32(h + 4);
+    uint32_t z2 = be32(h + 8);
+    uint32_t z3 = be32(h + 12);
     t->M[8][0] = z0;
     t->M[8][1] = z1;
     t->M[8][2] = z2;
     t->M[8][3] = z3;
-    t->M[0][0] = t->M[0][1] = t->M[0][2] = t->M[0][3] = 0;
+    t->M[0][0] = 0;
+    t->M[0][1] = 0;
+    t->M[0][2] = 0;
+    t->M[0][3] = 0;
     for (int i = 4; i > 0; i >>= 1)
     {
         uint32_t lsb = z3 & 1u;
@@ -90,7 +96,10 @@ inline void ghash_mul(const GhashKey *t, uint8_t acc[16])
     static const uint16_t LAST4[16] = {0x0000, 0x1c20, 0x3840, 0x2460, 0x7080, 0x6ca0, 0x48c0, 0x54e0,
                                        0xe100, 0xfd20, 0xd940, 0xc560, 0x9180, 0x8da0, 0xa9c0, 0xb5e0};
     uint8_t idx = acc[15] & 0x0f;
-    uint32_t z0 = t->M[idx][0], z1 = t->M[idx][1], z2 = t->M[idx][2], z3 = t->M[idx][3];
+    uint32_t z0 = t->M[idx][0];
+    uint32_t z1 = t->M[idx][1];
+    uint32_t z2 = t->M[idx][2];
+    uint32_t z3 = t->M[idx][3];
     for (int i = 15; i >= 0; i--)
     {
         uint8_t lo = acc[i] & 0x0f;

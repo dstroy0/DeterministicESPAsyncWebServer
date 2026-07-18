@@ -58,7 +58,7 @@ extern SshChannel ssh_chan[MAX_SSH_CONNS][DWS_SSH_MAX_CHANNELS];
 
 /** @brief Application callback for inbound channel data (raw bytes), tagged with
  *  the channel id it arrived on. */
-typedef void (*SshChannelDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
+using SshChannelDataCb = void (*)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
 
 /** @brief Install the inbound-data callback (session channels). */
 void dws_ssh_channel_set_data_cb(SshChannelDataCb cb);
@@ -74,11 +74,11 @@ void dws_ssh_channel_set_data_cb(SshChannelDataCb cb);
  * If no callback is installed, all forward requests are refused - so forwarding is
  * opt-in (no open relay by default).
  */
-typedef int (*SshForwardOpenCb)(uint8_t slot, uint32_t channel, const char *host, size_t host_len, uint16_t port);
+using SshForwardOpenCb = int (*)(uint8_t slot, uint32_t channel, const char *host, size_t host_len, uint16_t port);
 
 /** @brief Inbound data on a direct-tcpip channel (the owner writes it to the
  *  forwarded TCP socket). Kept separate from the session data callback. */
-typedef void (*SshForwardDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
+using SshForwardDataCb = void (*)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
 
 /** @brief Install the direct-tcpip forward open-policy callback (opt-in). */
 void dws_ssh_channel_set_forward_open_cb(SshForwardOpenCb cb);
@@ -96,11 +96,11 @@ void dws_ssh_channel_set_forward_data_cb(SshForwardDataCb cb);
  *         when @p bind_port == 0), or < 0 to refuse. If no callback is installed every
  *         request is refused, so remote forwarding is opt-in (no listener is opened).
  */
-typedef int (*SshRemoteForwardOpenCb)(uint8_t slot, const char *bind_addr, size_t addr_len, uint16_t bind_port);
+using SshRemoteForwardOpenCb = int (*)(uint8_t slot, const char *bind_addr, size_t addr_len, uint16_t bind_port);
 
 /** @brief "cancel-tcpip-forward" request (RFC 4254 §7.1): drop a remote forward.
  *  @return 0 if a matching forward was cancelled, < 0 if none / unsupported. */
-typedef int (*SshRemoteForwardCancelCb)(uint8_t slot, const char *bind_addr, size_t addr_len, uint16_t bind_port);
+using SshRemoteForwardCancelCb = int (*)(uint8_t slot, const char *bind_addr, size_t addr_len, uint16_t bind_port);
 
 /** @brief Install the remote-forward (ssh -R) open-policy callback (opt-in). */
 void dws_ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb);
@@ -114,25 +114,25 @@ void dws_ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb);
  *        CHANNEL_OPEN_FAILURE (the owner tears the bridge down). @p channel is the
  *        local id returned by dws_ssh_channel_open_forwarded().
  */
-typedef void (*SshForwardConfirmCb)(uint8_t slot, uint32_t channel, bool ok);
+using SshForwardConfirmCb = void (*)(uint8_t slot, uint32_t channel, bool ok);
 
 /** @brief Install the forwarded-tcpip open-confirmation callback (opt-in, ssh -R). */
 void dws_ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb);
 
 #if DWS_ENABLE_SSH_SFTP
 /** @brief A `subsystem "sftp"` request was accepted on @p channel; the binding starts an SFTP session. */
-typedef void (*SshSftpOpenCb)(uint8_t slot, uint32_t channel);
+using SshSftpOpenCb = void (*)(uint8_t slot, uint32_t channel);
 /** @brief Inbound bytes on an SFTP channel (the raw SSH_FXP_* stream) - kept out of the session data cb. */
-typedef void (*SshSftpDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
+using SshSftpDataCb = void (*)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
 void dws_ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb);
 void dws_ssh_channel_set_sftp_data_cb(SshSftpDataCb cb);
 #endif
 
 #if DWS_ENABLE_SSH_SCP
 /** @brief An `exec "scp …"` request was accepted on @p channel (@p cmd is @p cmd_len bytes, not NUL-terminated). */
-typedef void (*SshScpOpenCb)(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len);
+using SshScpOpenCb = void (*)(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len);
 /** @brief Inbound bytes on an SCP channel (the RCP protocol stream). */
-typedef void (*SshScpDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
+using SshScpDataCb = void (*)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
 void dws_ssh_channel_set_scp_open_cb(SshScpOpenCb cb);
 void dws_ssh_channel_set_scp_data_cb(SshScpDataCb cb);
 #endif

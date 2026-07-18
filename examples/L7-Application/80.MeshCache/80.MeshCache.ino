@@ -21,6 +21,10 @@
  * NOTE (PlatformIO): the cache is compiled into the *library*, so the flags must reach the whole build:
  * build_flags = -DDWS_ENABLE_EDGE_CACHE=1 -DDWS_ENABLE_HTTP_CACHE=1 -DDWS_ENABLE_HTTP_CLIENT=1
  * -DDWS_ENABLE_EDGE_MESH=1. In the Arduino IDE they are set for you in build_opt.h.
+ *
+ * SIZING: build_opt.h dials the cache down (DWS_EDGE_CACHE_SLOTS=2, DWS_EDGE_FETCH_SLOTS=1,
+ * DWS_MESH_MAX_PEERS=1) so the sketch's static BSS fits the classic ESP32's smaller DRAM. On a PSRAM
+ * board bump the slots/fetch/peer counts back up (the defaults are 4/2/4) for a warmer, larger cache.
  */
 
 #define DWS_ENABLE_EDGE_CACHE 1

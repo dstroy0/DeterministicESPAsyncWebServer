@@ -129,10 +129,11 @@ struct EdgeMeshFetch
     EdgeMeshStatus st;
     int cid;
     uint32_t start_ms;
-    size_t got;                  ///< response bytes accumulated
-    size_t entry_off, entry_len; ///< the entry frame within buf (valid on HIT)
-    uint8_t *buf;                ///< caller-owned accumulation buffer
-    size_t cap;                  ///< its capacity (must be >= EDGE_MESH_RESP_MAX)
+    size_t got;       ///< response bytes accumulated
+    size_t entry_off; ///< offset of the entry frame within buf (valid on HIT)
+    size_t entry_len; ///< length of the entry frame (valid on HIT)
+    uint8_t *buf;     ///< caller-owned accumulation buffer
+    size_t cap;       ///< its capacity (must be >= EDGE_MESH_RESP_MAX)
 };
 
 /**

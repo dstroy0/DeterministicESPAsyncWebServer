@@ -69,8 +69,8 @@ size_t edge_mesh_build_request(const uint8_t digest[32], const char *canon, cons
     if (!digest || !canon || !out)
         return 0;
     const char *hdrs = req_hdrs ? req_hdrs : "";
-    size_t kl = strlen(canon);
-    size_t hl = strlen(hdrs);
+    size_t kl = strnlen(canon, DWS_EDGE_KEY_MAX);
+    size_t hl = strnlen(hdrs, DWS_MESH_HDRS_MAX);
     if (kl > 0xFFFFu || hl > 0xFFFFu)
         return 0;
     size_t need = 2 + 1 + 1 + 32 + 2 + kl + 2 + hl;
@@ -268,7 +268,7 @@ EdgeMeshStatus edge_mesh_fetch_pump(EdgeMeshFetch *m, const EdgeFetchTransport *
         m->st = EdgeMeshStatus::FAILED;
         return m->st;
     }
-    if ((uint32_t)(now_ms - m->start_ms) > DWS_MESH_QUERY_MS)
+    if (now_ms - m->start_ms > DWS_MESH_QUERY_MS)
     {
         m->st = EdgeMeshStatus::FAILED; // query deadline
         return m->st;

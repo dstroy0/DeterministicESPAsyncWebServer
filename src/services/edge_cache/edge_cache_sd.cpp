@@ -29,7 +29,7 @@ uint16_t get_u16(const uint8_t *p)
 // Append a u16 length prefix + the NUL-terminated string @p s. False (no write) on overflow.
 bool put_str(uint8_t *out, size_t cap, size_t *pos, const char *s)
 {
-    size_t sl = strlen(s);
+    size_t sl = strnlen(s, cap);
     if (sl > 0xFFFFu || *pos + 2 + sl > cap)
         return false;
     put_u16(out + *pos, (uint16_t)sl);
@@ -100,7 +100,7 @@ bool edge_sd_deserialize(const uint8_t *buf, size_t len, EdgeEntry *e)
         return false;
     memcpy(e->body, buf + pos, bl);
     e->body_len = bl;
-    edge_key_digest(e->key, strlen(e->key), e->digest); // re-derive the digest from the restored key
+    edge_key_digest(e->key, strnlen(e->key, sizeof(e->key)), e->digest); // re-derive the digest from the key
     return true;
 }
 
@@ -116,8 +116,12 @@ const char *canon_path(const char *canon)
 {
     int nl = 0;
     for (const char *p = canon; *p; p++)
-        if (*p == '\n' && ++nl == 2)
+    {
+        if (*p != '\n')
+            continue;
+        if (++nl == 2)
             return p + 1;
+    }
     return nullptr;
 }
 
@@ -178,7 +182,7 @@ uint32_t purge_matching(DetwsDbm *db, const char *prefix, uint8_t *scratch, size
         CollectCtx c;
         c.db = db;
         c.prefix = prefix;
-        c.plen = prefix ? strlen(prefix) : 0;
+        c.plen = prefix ? strnlen(prefix, DWS_EDGE_KEY_MAX) : 0;
         c.scratch = scratch;
         c.scratch_cap = scratch_cap;
         c.count = 0;

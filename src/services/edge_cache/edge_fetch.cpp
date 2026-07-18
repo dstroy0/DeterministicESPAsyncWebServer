@@ -41,6 +41,23 @@ bool hex_val(uint8_t c, int *v)
     return false;
 }
 
+// After the final zero-length chunk's size line (offset j), true once the trailer section reaches the
+// empty line (CRLF) that ends the message; false while the buffer is still short.
+bool chunked_trailer_complete(const uint8_t *b, size_t n, size_t j)
+{
+    for (;;)
+    {
+        if (j + 1 < n && b[j] == '\r' && b[j + 1] == '\n')
+            return true;
+        size_t k = j;
+        while (k < n && b[k] != '\n')
+            k++;
+        if (k >= n)
+            return false;
+        j = k + 1;
+    }
+}
+
 // True if the chunked body @p b[0..n) reaches its terminating zero-length chunk + trailer CRLF.
 bool chunked_complete(const uint8_t *b, size_t n)
 {
@@ -65,20 +82,7 @@ bool chunked_complete(const uint8_t *b, size_t n)
             return false;
         j++; // past LF
         if (sz == 0)
-        {
-            // trailer field lines until an empty line (CRLF) closes the message
-            for (;;)
-            {
-                if (j + 1 < n && b[j] == '\r' && b[j + 1] == '\n')
-                    return true;
-                size_t k = j;
-                while (k < n && b[k] != '\n')
-                    k++;
-                if (k >= n)
-                    return false;
-                j = k + 1;
-            }
-        }
+            return chunked_trailer_complete(b, n, j);
         size_t next = j + sz + 2; // chunk data + trailing CRLF
         if (next > n)
             return false;
@@ -182,7 +186,7 @@ EdgeFetchStatus edge_fetch_pump(EdgeFetch *f, const EdgeFetchTransport *t, uint3
         f->st = EdgeFetchStatus::FAILED;
         return f->st;
     }
-    if ((uint32_t)(now_ms - f->start_ms) >= DWS_EDGE_FETCH_TIMEOUT_MS)
+    if (now_ms - f->start_ms >= DWS_EDGE_FETCH_TIMEOUT_MS)
     {
         f->st = EdgeFetchStatus::FAILED;
         return f->st;

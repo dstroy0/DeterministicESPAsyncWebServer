@@ -67,7 +67,7 @@ bool dws_udp_listen(uint16_t port, DWSUdpHandler handler, void *ctx);
  * @param len   payload length.
  * @return true if the datagram was queued for transmission.
  */
-bool dws_udp_send(struct DWSUdpPeer *peer, const uint8_t *data, size_t len);
+bool dws_udp_send(const struct DWSUdpPeer *peer, const uint8_t *data, size_t len);
 
 /**
  * @brief Send a UDP datagram to an arbitrary destination (outbound client).
