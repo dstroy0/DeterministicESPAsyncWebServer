@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **250 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **251 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -304,6 +304,7 @@ The native test matrix has **250 environments**, one per feature, generated from
 | `native_totp` | `WS_ENABLE_TOTP=1` | `test_totp` | TOTP two-factor (services/totp): HMAC-SHA1 HOTP/TOTP + base32, host-tested against the RFC 6238 vectors (builds on the software SHA-1). |
 | `native_tsan` | `g`, `O1`, `fsanitize=thread`, `pthread` | `test_concurrency` | Same harness under ThreadSanitizer: proves ZERO data races on the slot fields (the DWSAtomic acquire/release happens-before lets the plain rx_buffer[] writes be read on the other core safely). |
 | `native_udp_telemetry` | `WS_ENABLE_UDP_TELEMETRY=1` | `test_udp_telemetry` | UDP telemetry line builder (services/udp_telemetry): InfluxDB line-protocol formatting, host-tested. |
+| `native_udp_transport` | default | `test_udp_transport` | UDP transport multicast receive (network_drivers/transport/udp.cpp): joining an IPv4 multicast group by dotted-quad, rejecting a non-multicast or malformed group, delivering a group datagram to the re... |
 | `native_umati` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_UMATI=1` | `test_umati` | umati / OPC UA for Machine Tools (OPC 40501-1) MachineTool model (services/umati) - the Browse hierarchy + the Read resolver over a bound UmatiMachineTool are host-tested here. |
 | `native_upload` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_UPLOAD=1`, `BODY_BUF_SIZE=64` | `test_upload` | Streaming file upload: POST body -> FS file via the parser streaming hook. |
 | `native_utmc` | `WS_ENABLE_UTMC=1` | `test_utmc` | UTMC common-database codec (services/utmc): the UTMCRequest (object id) and UTMCResponse (value + quality + timestamp) HTTP/XML documents build + the request-id parse, escaped. |
@@ -540,7 +541,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3333 test cases** across **268 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3341 test cases** across **269 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -35077,6 +35078,104 @@ A thorough directory of all **3333 test cases** across **268 suites**. Expand a 
     * **Objective**: Host stubs and line overflow
     * **Assertions**:
       * <code>Assert true (l.overflow)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_udp_transport (8 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_join_records_the_group</b> &mdash; <i>A port with no multicast listener has no group.</i></summary>
+
+    * **Objective**: A port with no multicast listener has no group.
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen_multicast("224.0.0.251", 5353, on_datagram, nullptr))</code>
+      * <code>Assert equal string ("224.0.0.251", dws_udp_joined_group(5353))</code>
+      * <code>Assert null (dws_udp_joined_group(1900))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_group_datagram_reaches_the_handler</b> &mdash; <i>Group datagram reaches the handler</i></summary>
+
+    * **Objective**: Group datagram reaches the handler
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen_multicast("224.0.0.251", 5353, on_datagram, &marker))</code>
+      * <code>Assert equal int (1, g_calls)</code>
+      * <code>Assert equal uint (17, (unsigned)g_last_len)</code>
+      * <code>Assert equal ptr (&marker, g_ctx_seen)</code>
+      * <code>Assert equal string ("192.168.1.77", g_src_ip)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(5353, g_src_port);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_counts_repeated_announcements</b> &mdash; <i>The contention-counting use case: many announcements land on one joined group.</i></summary>
+
+    * **Objective**: The contention-counting use case: many announcements land on one joined group.
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen_multicast("224.0.0.251", 5353, on_datagram, nullptr))</code>
+      * <code>Assert equal int (12, g_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rejects_non_multicast_group</b> &mdash; <i>A unicast address would bind but never deliver - fail loudly instead.</i></summary>
+
+    * **Objective**: A unicast address would bind but never deliver - fail loudly instead.
+    * **Assertions**:
+      * <code>Assert false (dws_udp_listen_multicast("192.168.1.10", 5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_listen_multicast("223.255.255.255", 5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_listen_multicast("240.0.0.1", 5353, on_datagram, nullptr))</code>
+      * <code>Assert null (dws_udp_joined_group(5353))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accepts_group_range_edges</b> &mdash; <i>Accepts group range edges</i></summary>
+
+    * **Objective**: Accepts group range edges
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen_multicast("224.0.0.1", 5000, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_leave_multicast(5000))</code>
+      * <code>Assert true (dws_udp_listen_multicast("239.255.255.250", 1900, on_datagram, nullptr))</code>
+      * <code>Assert equal string ("239.255.255.250", dws_udp_joined_group(1900))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rejects_malformed_group</b> &mdash; <i>Rejects malformed group</i></summary>
+
+    * **Objective**: Rejects malformed group
+    * **Assertions**:
+      * <code>Assert false (dws_udp_listen_multicast(nullptr, 5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_listen_multicast("", 5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_listen_multicast("224.0.0", 5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_listen_multicast("224.0.0.1.2", 5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_listen_multicast("224.0.0.256", 5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_listen_multicast("224.0.0.", 5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_listen_multicast("224.0..1", 5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_listen_multicast("224.0.0.abc", 5353, on_datagram, nullptr))</code>
+      * <code>Assert null (dws_udp_joined_group(5353))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_leave_releases_the_slot</b> &mdash; <i>Leaving twice, or leaving a port that never joined, is a no-op failure not a crash.</i></summary>
+
+    * **Objective**: Leaving twice, or leaving a port that never joined, is a no-op failure not a crash.
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen_multicast("224.0.0.251", 5353, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_leave_multicast(5353))</code>
+      * <code>Assert null (dws_udp_joined_group(5353))</code>
+      * <code>Assert false (dws_udp_leave_multicast(5353))</code>
+      * <code>Assert false (dws_udp_leave_multicast(9999))</code>
+      * <code>Assert equal int (0, g_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_leave_ignores_a_plain_listener</b> &mdash; <i>A non-multicast listener on the same port must not be torn down by a leave.</i></summary>
+
+    * **Objective**: A non-multicast listener on the same port must not be torn down by a leave.
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen(5353, on_datagram, nullptr))</code>
+      * <code>Assert false (dws_udp_leave_multicast(5353))</code>
+      * <code>Assert equal int (1, g_calls)</code>
   </details>
 
 </details>

@@ -12,6 +12,7 @@
 
 #if defined(ARDUINO)
 
+#include "lwip/igmp.h" // igmp_joingroup / _leavegroup - multicast group membership
 #include "lwip/pbuf.h"
 #include "lwip/priv/tcpip_priv.h" // tcpip_api_call - marshal raw udp_* onto tcpip_thread
 #include "lwip/udp.h"
@@ -23,6 +24,8 @@ struct UdpListener
     struct udp_pcb *pcb;
     DWSUdpHandler handler;
     void *ctx;
+    ip_addr_t group; // multicast group joined by this listener (mcast only)
+    bool mcast;      // true if this slot joined a group and must leave on teardown
     bool used;
 };
 
@@ -90,9 +93,11 @@ static void udp_trampoline(void *arg, struct udp_pcb *pcb, struct pbuf *p, const
 // marshal these ops via tcpip_api_call(), the same as the TCP transport.
 enum class DWSUdpOp : uint8_t
 {
-    UDP_OP_LISTEN,  // udp_new + bind + arm recv on s_udp.listeners[slot]
-    UDP_OP_SEND,    // send to addr:port on an existing pcb
-    UDP_OP_SEND_OUT // send to addr:port on the shared lazy outbound pcb
+    UDP_OP_LISTEN,       // udp_new + bind + arm recv on s_udp.listeners[slot]
+    UDP_OP_LISTEN_MCAST, // as LISTEN, plus SO_REUSEADDR + igmp_joingroup
+    UDP_OP_LEAVE_MCAST,  // igmp_leavegroup + udp_remove
+    UDP_OP_SEND,         // send to addr:port on an existing pcb
+    UDP_OP_SEND_OUT      // send to addr:port on the shared lazy outbound pcb
 };
 
 struct DWSUdpCall
@@ -134,6 +139,47 @@ static err_t udp_do(struct tcpip_api_call_data *c)
         }
         break;
     }
+    case DWSUdpOp::UDP_OP_LISTEN_MCAST: {
+#if LWIP_IGMP
+        struct udp_pcb *pcb = udp_new();
+        if (pcb)
+        {
+            // A well-known multicast port is usually already bound by whoever implements that
+            // protocol (the ESP-IDF mdns component holds 5353), so co-bind rather than fail.
+            // Bind IPv4-only, NOT IP_ANY_TYPE: a dual-stack ANY pcb also matches the IPv4
+            // datagrams the other responder's own socket is waiting on, and lwIP hands each
+            // datagram to the first matching pcb - which silently stops that responder answering
+            // queries even though its announcements still go out.
+            ip_set_option(pcb, SOF_REUSEADDR);
+            if (udp_bind(pcb, IP4_ADDR_ANY, k->port) == ERR_OK &&
+                igmp_joingroup(IP4_ADDR_ANY4, ip_2_ip4(&k->addr)) == ERR_OK)
+            {
+                s_udp.listeners[k->slot].pcb = pcb;
+                s_udp.listeners[k->slot].group = k->addr;
+                s_udp.listeners[k->slot].mcast = true;
+                udp_recv(pcb, udp_trampoline, &s_udp.listeners[k->slot]);
+                k->result = true;
+            }
+            else
+            {
+                udp_remove(pcb);
+            }
+        }
+#endif
+        break;
+    }
+    case DWSUdpOp::UDP_OP_LEAVE_MCAST: {
+#if LWIP_IGMP
+        UdpListener *l = &s_udp.listeners[k->slot];
+        igmp_leavegroup(IP4_ADDR_ANY4, ip_2_ip4(&l->group));
+        if (l->pcb)
+            udp_remove(l->pcb);
+        l->pcb = nullptr;
+        l->mcast = false;
+        k->result = true;
+#endif
+        break;
+    }
     case DWSUdpOp::UDP_OP_SEND:
         k->result = udp_pbuf_send(k->pcb, &k->addr, k->port, k->data, k->len);
         break;
@@ -173,6 +219,77 @@ bool dws_udp_listen(uint16_t port, DWSUdpHandler handler, void *ctx)
         return true;
     }
     return false; // pool exhausted
+}
+
+bool dws_udp_listen_multicast(const char *group_ip, uint16_t port, DWSUdpHandler handler, void *ctx)
+{
+#if LWIP_IGMP
+    if (!group_ip)
+        return false;
+    ip_addr_t group;
+    if (!ipaddr_aton(group_ip, &group) || !IP_IS_V4(&group))
+        return false;
+    // 224.0.0.0/4 - joining a unicast address would silently never deliver.
+    if (!ip4_addr_ismulticast(ip_2_ip4(&group)))
+        return false;
+
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
+    {
+        if (s_udp.listeners[i].used)
+            continue;
+        // The trampoline reads handler/ctx once recv is armed, so set them first.
+        s_udp.listeners[i].handler = handler;
+        s_udp.listeners[i].ctx = ctx;
+        s_udp.listeners[i].pcb = nullptr;
+        s_udp.listeners[i].mcast = false;
+        DWSUdpCall k;
+        memset(&k, 0, sizeof(k));
+        k.op = DWSUdpOp::UDP_OP_LISTEN_MCAST;
+        k.slot = i;
+        k.port = port;
+        k.addr = group;
+        tcpip_api_call(udp_do, &k.base); // always called off tcpip_thread (service begin())
+        if (!k.result)
+        {
+            s_udp.listeners[i].handler = nullptr;
+            return false;
+        }
+        s_udp.listeners[i].used = true;
+        return true;
+    }
+    return false; // pool exhausted
+#else
+    (void)group_ip;
+    (void)port;
+    (void)handler;
+    (void)ctx;
+    return false; // lwIP built without IGMP
+#endif
+}
+
+bool dws_udp_leave_multicast(uint16_t port)
+{
+#if LWIP_IGMP
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
+    {
+        if (!s_udp.listeners[i].used || !s_udp.listeners[i].mcast || !s_udp.listeners[i].pcb ||
+            s_udp.listeners[i].pcb->local_port != port)
+            continue;
+        DWSUdpCall k;
+        memset(&k, 0, sizeof(k));
+        k.op = DWSUdpOp::UDP_OP_LEAVE_MCAST;
+        k.slot = i;
+        tcpip_api_call(udp_do, &k.base);
+        s_udp.listeners[i].used = false;
+        s_udp.listeners[i].handler = nullptr;
+        s_udp.listeners[i].ctx = nullptr;
+        return k.result;
+    }
+    return false;
+#else
+    (void)port;
+    return false;
+#endif
 }
 
 bool dws_udp_send(const struct DWSUdpPeer *peer, const uint8_t *data, size_t len)
@@ -285,6 +402,8 @@ struct HostUdpListener
     uint16_t port;
     DWSUdpHandler handler;
     void *ctx;
+    char group[16]; // multicast group joined on this port ("" for a plain listener)
+    bool mcast;
     bool used;
 };
 struct HostUdpCtx
@@ -327,6 +446,76 @@ bool dws_udp_listen(uint16_t port, DWSUdpHandler handler, void *ctx)
     slot->ctx = ctx;
     slot->used = true;
     return true;
+}
+
+bool dws_udp_listen_multicast(const char *group_ip, uint16_t port, DWSUdpHandler handler, void *ctx)
+{
+    // Mirror the device-side validation so a host test catches a bad group before hardware does.
+    if (!group_ip)
+        return false;
+    uint32_t octet = 0;
+    int count = 0;
+    bool have_digit = false;
+    uint32_t first = 0;
+    for (const char *p = group_ip;; p++)
+    {
+        if (*p >= '0' && *p <= '9')
+        {
+            octet = octet * 10 + (uint32_t)(*p - '0');
+            have_digit = true;
+            if (octet > 255)
+                return false;
+        }
+        else if (*p == '.' || *p == '\0')
+        {
+            if (!have_digit || count == 4)
+                return false;
+            if (count == 0)
+                first = octet;
+            count++;
+            octet = 0;
+            have_digit = false;
+            if (*p == '\0')
+                break;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    if (count != 4 || first < 224 || first > 239) // 224.0.0.0/4
+        return false;
+
+    if (!dws_udp_listen(port, handler, ctx))
+        return false;
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
+        if (s_udp.lst[i].used && s_udp.lst[i].port == port)
+        {
+            strncpy(s_udp.lst[i].group, group_ip, sizeof(s_udp.lst[i].group) - 1);
+            s_udp.lst[i].group[sizeof(s_udp.lst[i].group) - 1] = '\0';
+            s_udp.lst[i].mcast = true;
+            return true;
+        }
+    return false;
+}
+
+bool dws_udp_leave_multicast(uint16_t port)
+{
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
+        if (s_udp.lst[i].used && s_udp.lst[i].mcast && s_udp.lst[i].port == port)
+        {
+            s_udp.lst[i] = {};
+            return true;
+        }
+    return false;
+}
+
+const char *dws_udp_joined_group(uint16_t port)
+{
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
+        if (s_udp.lst[i].used && s_udp.lst[i].mcast && s_udp.lst[i].port == port)
+            return s_udp.lst[i].group;
+    return nullptr;
 }
 
 void dws_udp_inject(uint16_t listen_port, const char *src_ip, uint16_t src_port, const uint8_t *data, size_t len)

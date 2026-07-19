@@ -1388,7 +1388,9 @@
     "PANID",
     "zigpy",
     "openthread",
-    "usbserjtag"
+    "usbserjtag",
+    "REUSEADDR",
+    "RXTOALL"
   ],
   "ignorePaths": [
     "node_modules/**",

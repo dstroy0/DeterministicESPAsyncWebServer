@@ -60,6 +60,36 @@ typedef void (*DWSUdpHandler)(const uint8_t *data, size_t len, const struct DWSU
 bool dws_udp_listen(uint16_t port, DWSUdpHandler handler, void *ctx);
 
 /**
+ * @brief Bind a UDP port, join an IPv4 multicast group, and route group datagrams to @p handler.
+ *
+ * The multicast counterpart to dws_udp_listen(): as well as binding the port it joins @p group_ip
+ * via IGMP on every interface, so the stack accepts datagrams addressed to the group rather than to
+ * this host. That is what lets a service *observe* a shared protocol - counting mDNS announcements
+ * on 224.0.0.251:5353, watching SSDP on 239.255.255.250:1900 - instead of only its own traffic.
+ *
+ * The socket is bound with SO_REUSEADDR, because a well-known multicast port is normally already
+ * bound by whoever implements that protocol (the ESP-IDF `mdns` component holds 5353). Without it
+ * the second bind fails and the observer never sees a packet.
+ *
+ * Observation only: joining a group does not make this device a responder for it. Reply with
+ * dws_udp_send() only if the protocol expects it.
+ *
+ * @param group_ip IPv4 multicast group, dotted-quad (224.0.0.0/4).
+ * @param port     UDP port to bind (e.g. 5353 for mDNS).
+ * @param handler  callback for each datagram received on the group.
+ * @param ctx      opaque pointer forwarded to @p handler.
+ * @return true if the port bound and the group was joined; false if the pool is full, @p group_ip
+ *         is not a multicast address, IGMP is unavailable, or on a host build.
+ */
+bool dws_udp_listen_multicast(const char *group_ip, uint16_t port, DWSUdpHandler handler, void *ctx);
+
+/**
+ * @brief Leave the multicast group joined on @p port and release its listener slot.
+ * @return true if a matching multicast listener was found and torn down.
+ */
+bool dws_udp_leave_multicast(uint16_t port);
+
+/**
  * @brief Send a datagram back to the peer captured during the handler call.
  *
  * @param peer  the token handed to the DWSUdpHandler.
@@ -122,6 +152,9 @@ size_t dws_udp_captured_len();     ///< length of the last captured datagram
 void dws_udp_inject(uint16_t listen_port, const char *src_ip, uint16_t src_port, const uint8_t *data, size_t len);
 void dws_udp_set_listener_sendto_result(bool ok); ///< force dws_udp_listener_sendto() to fail (unreachable peer)
 void dws_udp_reset_listeners();                   ///< clear all bound listeners (per-test isolation)
+
+/** @brief The multicast group joined on @p port, or nullptr if that port has no multicast listener. */
+const char *dws_udp_joined_group(uint16_t port);
 #endif
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H

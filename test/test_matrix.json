@@ -814,6 +814,12 @@
       "src": ["+<services/thread/thread.cpp>"],
       "tests": ["test_thread"]
     },
+    "native_udp_transport": {
+      "desc": "UDP transport multicast receive (network_drivers/transport/udp.cpp): joining an IPv4\nmulticast group by dotted-quad, rejecting a non-multicast or malformed group, delivering a group\ndatagram to the registered handler, and leaving the group (releasing the listener slot). Drives the\nhost UDP mock's inject seam.",
+      "flags": [],
+      "src": ["+<network_drivers/transport/udp.cpp>"],
+      "tests": ["test_udp_transport"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDWS_ENABLE_WAMP=1"],

@@ -435,6 +435,22 @@ preempting queue, so sensing shares the real-time ingest path.
   auto-sleep beacon (announce before a sleep window that would let the record lapse). Wrap-safe time math,
   pure, host-tested (`native_mdns_adaptive`). _Remaining:_ wiring the schedule to the mDNS transmit + a
   live contention counter from the WiFi driver (M).
+  **Attempted 2026-07-19 and reverted - read this before retrying.** The transmit half is solved:
+  `mdns_service_txt_item_set()` re-applied at its current value re-announces on every PCB with no goodbye
+  and no re-probe (confirmed in the component source), unlike `mdns_service_instance_name_set()` which
+  sends a bye first and would evict the record it is meant to refresh. The blocker is the counter.
+  Counting announcements by joining 224.0.0.251:5353 with a second listener **cannot coexist with the
+  ESP-IDF mdns responder**: bound after the responder the join fails outright; bound before it the join
+  succeeds but the responder goes announce-only - its service PTR still appears in `avahi-browse` while
+  every SRV/TXT/A query times out, so the device silently stops resolving. Proven on an ESP32-S3 against
+  avahi on a LAN peer, with a control build (join disabled) resolving correctly on the same hardware;
+  binding IPv4-only rather than dual-stack does not help. lwIP hands a datagram to the first matching pcb
+  and the `SO_REUSE_RXTOALL` fan-out does not rescue a raw pcb sharing a port with a socket-layer one,
+  even though both set `SO_REUSEADDR`. A contention signal therefore has to come from somewhere other
+  than a second bind on 5353 - candidate: the shipped promiscuous sniffer (`DWS_ENABLE_WIFI_SNIFFER` +
+  `DWS_ENABLE_PROMISC`), which already counts frames per channel, at the cost of running the radio
+  promiscuous. The multicast receive primitive built for this (`dws_udp_listen_multicast`) was kept: it
+  is correct and useful for any group nothing else already owns.
 - [x] Raw-UDP telemetry cast _(shipped)_ - `DWS_ENABLE_UDP_TELEMETRY`: `services/udp_telemetry` builds InfluxDB line-protocol records (`measurement field=val,...`, host-tested) and casts them to a collector over UDP via `dws_udp_sendto`, zero-heap fire-and-forget (example UdpTelemetry).
 - [x] **Static-IP fallback + TCP window auto-scaling by free RAM (M)** _(shipped)_ -
       `DWS_ENABLE_NETADAPT`: `services/netadapt` `dws_netadapt_window()` sizes the TCP receive window
