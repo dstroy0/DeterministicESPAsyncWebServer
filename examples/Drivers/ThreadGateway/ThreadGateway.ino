@@ -1,19 +1,22 @@
 // ThreadGateway - an OpenThread RCP bridged to the gateway over spinel / HDLC-lite.
 //
 // A UART radio plugin (see RadioGateway): an OpenThread radio co-processor (RCP - an
-// nRF52840 / EFR32) speaks spinel over the HDLC-lite framing on a UART, so an 802.15.4 /
-// Thread mesh is bridged to IP and the web. This decodes the HDLC-lite frames and bridges
-// the spinel payload of each one northbound.
+// nRF52840 / EFR32, or an ESP32-C6 running ot_rcp) speaks spinel over the HDLC-lite framing
+// on a UART, so an 802.15.4 / Thread mesh is bridged to IP and the web. This decodes the
+// HDLC-lite frames and both (a) decodes the named spinel property each one carries and (b)
+// bridges the raw spinel payload northbound.
 //
-//   Thread RCP --UART--> dws_spinel_frame_decode() --> spinel payload -> dws_gateway_uplink()
+//   Thread RCP --UART--> dws_spinel_frame_decode() --> spinel command -> property registry
+//                                                                     -> dws_gateway_uplink()
 //                                                                         |
 //                                                  envelope + topic  thread/0/<tid>
 //                                                                         |
 //                                                          northbound publish (MQTT/HTTP/WS)
 //
-// The HDLC-lite framing (byte-stuffing + CRC-16/X-25 FCS) is services/thread, host-tested in
-// test/test_thread. Interpreting the spinel command inside a frame (the property get/set,
-// an inbound IPv6 stream) is application work; this sketch bridges the raw spinel payload.
+// The HDLC-lite framing (byte-stuffing + CRC-16/X-25 FCS), the spinel command layer, and the
+// property registry + typed value accessors are services/thread, host-tested in
+// test/test_thread. This sketch queries NCP_VERSION / PROTOCOL_VERSION at boot and prints
+// each inbound property update by name, so the value semantics are exercised end to end.
 //
 // Build flags (whole build): DWS_ENABLE_THREAD=1 DWS_ENABLE_GATEWAY=1
 
@@ -41,6 +44,71 @@ static void drop_front(uint16_t n)
     g_len = (uint16_t)(g_len - n);
 }
 
+// Frame a spinel PROP_VALUE_GET(prop) and write it to the RCP.
+static void rcp_get(uint32_t prop)
+{
+    uint8_t payload[16];
+    uint16_t plen = dws_spinel_command_build(dws_spinel_header(0, 1), SpinelCmd::SPINEL_CMD_PROP_VALUE_GET, prop,
+                                             nullptr, 0, payload, sizeof(payload));
+    uint8_t frame[32];
+    uint16_t n = dws_spinel_frame_encode(payload, plen, frame, sizeof(frame));
+    if (n)
+        Serial2.write(frame, n);
+}
+
+// Decode a spinel command payload by its registered property type and print it by name.
+static void print_property(const uint8_t *payload, uint16_t plen)
+{
+    uint8_t header = 0;
+    uint32_t cmd = 0, prop = 0;
+    const uint8_t *val = nullptr;
+    uint16_t vlen = 0;
+    if (dws_spinel_command_parse(payload, plen, &header, &cmd, &prop, &val, &vlen) < 0)
+        return;
+    if (cmd != SpinelCmd::SPINEL_CMD_PROP_VALUE_IS)
+        return; // only report property updates
+
+    SpinelReader r;
+    dws_spinel_reader_init(&r, val, vlen);
+    const char *name = dws_spinel_prop_name(prop);
+    if (prop == SpinelProp::SPINEL_PROP_LAST_STATUS)
+    {
+        uint32_t status = 0;
+        if (dws_spinel_get_uint(&r, &status))
+            Serial.printf("  %s = %s (%u)\n", name, dws_spinel_status_name(status), status);
+    }
+    else if (prop == SpinelProp::SPINEL_PROP_NCP_VERSION || prop == SpinelProp::SPINEL_PROP_NET_NETWORK_NAME)
+    {
+        const char *s = nullptr;
+        uint16_t slen = 0;
+        if (dws_spinel_get_utf8(&r, &s, &slen))
+            Serial.printf("  %s = %.*s\n", name, (int)slen, s);
+    }
+    else if (prop == SpinelProp::SPINEL_PROP_PROTOCOL_VERSION)
+    {
+        uint32_t major = 0, minor = 0;
+        if (dws_spinel_get_uint(&r, &major) && dws_spinel_get_uint(&r, &minor))
+            Serial.printf("  %s = %u.%u\n", name, major, minor);
+    }
+    else if (prop == SpinelProp::SPINEL_PROP_MAC_15_4_PANID || prop == SpinelProp::SPINEL_PROP_MAC_15_4_SADDR)
+    {
+        uint16_t v = 0;
+        if (dws_spinel_get_u16(&r, &v))
+            Serial.printf("  %s = 0x%04X\n", name, v);
+    }
+    else if (prop == SpinelProp::SPINEL_PROP_HWADDR || prop == SpinelProp::SPINEL_PROP_MAC_15_4_LADDR)
+    {
+        const uint8_t *eui = nullptr;
+        if (dws_spinel_get_eui64(&r, &eui))
+            Serial.printf("  %s = %02X%02X%02X%02X%02X%02X%02X%02X\n", name, eui[0], eui[1], eui[2], eui[3], eui[4],
+                          eui[5], eui[6], eui[7]);
+    }
+    else
+    {
+        Serial.printf("  %s (%u bytes)\n", name, vlen);
+    }
+}
+
 void setup()
 {
     Serial.begin(115200);
@@ -55,12 +123,16 @@ void setup()
     dws_gateway_set_uplink_cb(northbound_publish, nullptr);
     dws_gateway_set_topic_prefix("thread");
 
-    // Reset the NCP: spinel RESET command (header 0x80 | CMD_RESET 0x01).
-    const uint8_t reset[2] = {0x80, 0x01};
+    // Reset the NCP: spinel RESET command (header | CMD_RESET), then query identity.
+    const uint8_t reset[2] = {dws_spinel_header(0, 0), SpinelCmd::SPINEL_CMD_RESET};
     uint8_t frame[8];
     uint16_t n = dws_spinel_frame_encode(reset, 2, frame, sizeof(frame));
     Serial2.write(frame, n);
-    Serial.println("Thread gateway: spinel/HDLC -> codec -> publish (thread/0/<tid>)");
+    delay(200);
+    rcp_get(SpinelProp::SPINEL_PROP_PROTOCOL_VERSION);
+    rcp_get(SpinelProp::SPINEL_PROP_NCP_VERSION);
+    rcp_get(SpinelProp::SPINEL_PROP_HWADDR);
+    Serial.println("Thread gateway: spinel/HDLC -> codec -> property decode + publish (thread/0/<tid>)");
 }
 
 void loop()
@@ -82,9 +154,11 @@ void loop()
             drop_front(1); // resync past a bad frame
             continue;
         }
-        // Bridge the spinel payload; the header's low 4 bits are the transaction id.
+        // Decode the named property, then bridge the spinel payload; the header's low 4 bits
+        // are the transaction id.
         if (plen > 0)
         {
+            print_property(payload, plen);
             uint16_t tid = payload[0] & 0x0F;
             dws_gateway_uplink(RADIO_PORT, tid, payload, plen, 0);
         }

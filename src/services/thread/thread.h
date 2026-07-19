@@ -52,8 +52,97 @@ struct SpinelCmd
     static constexpr uint8_t SPINEL_CMD_PROP_VALUE_SET = 3;
     static constexpr uint8_t SPINEL_CMD_PROP_VALUE_INSERT = 4;
     static constexpr uint8_t SPINEL_CMD_PROP_VALUE_REMOVE = 5;
-    static constexpr uint8_t SPINEL_CMD_PROP_VALUE_IS = 6; ///< an async property update from the NCP
+    static constexpr uint8_t SPINEL_CMD_PROP_VALUE_IS = 6;       ///< an async property update from the NCP
+    static constexpr uint8_t SPINEL_CMD_PROP_VALUE_INSERTED = 7; ///< a list property gained an entry
+    static constexpr uint8_t SPINEL_CMD_PROP_VALUE_REMOVED = 8;  ///< a list property lost an entry
 };
+
+/**
+ * @brief The spinel property ids a Thread/802.15.4 gateway reads or writes (subset of the
+ *        spinel property registry, grouped CORE / PHY / MAC / NET / IPv6 / STREAM).
+ */
+struct SpinelProp
+{
+    // Core (SPINEL_PROP_CORE__BEGIN = 0)
+    static constexpr uint32_t SPINEL_PROP_LAST_STATUS = 0;      ///< 'i'  last operation status
+    static constexpr uint32_t SPINEL_PROP_PROTOCOL_VERSION = 1; ///< 'ii' major, minor
+    static constexpr uint32_t SPINEL_PROP_NCP_VERSION = 2;      ///< 'U'  NCP version string
+    static constexpr uint32_t SPINEL_PROP_INTERFACE_TYPE = 3;   ///< 'i'  3 = Thread
+    static constexpr uint32_t SPINEL_PROP_VENDOR_ID = 4;        ///< 'i'
+    static constexpr uint32_t SPINEL_PROP_CAPS = 5;             ///< 'A(i)' capability list
+    static constexpr uint32_t SPINEL_PROP_INTERFACE_COUNT = 6;  ///< 'C'
+    static constexpr uint32_t SPINEL_PROP_HWADDR = 8;           ///< 'E'  factory EUI64
+    static constexpr uint32_t SPINEL_PROP_LOCK = 9;             ///< 'b'
+    // PHY (SPINEL_PROP_PHY__BEGIN = 0x20)
+    static constexpr uint32_t SPINEL_PROP_PHY_ENABLED = 0x20;        ///< 'b'
+    static constexpr uint32_t SPINEL_PROP_PHY_CHAN = 0x21;           ///< 'C'  802.15.4 channel
+    static constexpr uint32_t SPINEL_PROP_PHY_CHAN_SUPPORTED = 0x22; ///< 'A(C)'
+    static constexpr uint32_t SPINEL_PROP_PHY_FREQ = 0x23;           ///< 'L'  kHz
+    static constexpr uint32_t SPINEL_PROP_PHY_TX_POWER = 0x25;       ///< 'c'  dBm
+    static constexpr uint32_t SPINEL_PROP_PHY_RSSI = 0x26;           ///< 'c'  dBm
+    // MAC (SPINEL_PROP_MAC__BEGIN = 0x30)
+    static constexpr uint32_t SPINEL_PROP_MAC_SCAN_STATE = 0x30;  ///< 'C'
+    static constexpr uint32_t SPINEL_PROP_MAC_SCAN_MASK = 0x31;   ///< 'A(C)'
+    static constexpr uint32_t SPINEL_PROP_MAC_SCAN_PERIOD = 0x32; ///< 'S'  ms/channel
+    static constexpr uint32_t SPINEL_PROP_MAC_15_4_LADDR = 0x34;  ///< 'E'  extended (long) address
+    static constexpr uint32_t SPINEL_PROP_MAC_15_4_SADDR = 0x35;  ///< 'S'  short address
+    static constexpr uint32_t SPINEL_PROP_MAC_15_4_PANID = 0x36;  ///< 'S'  PAN id
+    // NET (SPINEL_PROP_NET__BEGIN = 0x40)
+    static constexpr uint32_t SPINEL_PROP_NET_SAVED = 0x40;        ///< 'b'
+    static constexpr uint32_t SPINEL_PROP_NET_IF_UP = 0x41;        ///< 'b'
+    static constexpr uint32_t SPINEL_PROP_NET_STACK_UP = 0x42;     ///< 'b'
+    static constexpr uint32_t SPINEL_PROP_NET_ROLE = 0x43;         ///< 'C'  0 detached,1 child,2 router,3 leader
+    static constexpr uint32_t SPINEL_PROP_NET_NETWORK_NAME = 0x44; ///< 'U'
+    static constexpr uint32_t SPINEL_PROP_NET_XPANID = 0x45;       ///< 'D'  8-byte extended PAN id
+    static constexpr uint32_t SPINEL_PROP_NET_NETWORK_KEY = 0x46;  ///< 'D'  16-byte network key
+    // IPv6 (SPINEL_PROP_IPV6__BEGIN = 0x60)
+    static constexpr uint32_t SPINEL_PROP_IPV6_LL_ADDR = 0x60; ///< '6'  link-local
+    static constexpr uint32_t SPINEL_PROP_IPV6_ML_ADDR = 0x61; ///< '6'  mesh-local
+    // Stream (SPINEL_PROP_STREAM__BEGIN = 0x70)
+    static constexpr uint32_t SPINEL_PROP_STREAM_DEBUG = 0x70; ///< 'U'  debug text
+    static constexpr uint32_t SPINEL_PROP_STREAM_RAW = 0x71;   ///< 'dD' raw 802.15.4 frame + metadata
+    static constexpr uint32_t SPINEL_PROP_STREAM_NET = 0x72;   ///< 'dD' IPv6 datagram + metadata
+};
+
+/** @brief spinel `LAST_STATUS` codes (a subset - the ones a gateway acts on). */
+struct SpinelStatus
+{
+    static constexpr uint32_t SPINEL_STATUS_OK = 0;
+    static constexpr uint32_t SPINEL_STATUS_FAILURE = 1;
+    static constexpr uint32_t SPINEL_STATUS_UNIMPLEMENTED = 2;
+    static constexpr uint32_t SPINEL_STATUS_INVALID_ARGUMENT = 3;
+    static constexpr uint32_t SPINEL_STATUS_INVALID_STATE = 4;
+    static constexpr uint32_t SPINEL_STATUS_INVALID_COMMAND = 5;
+    static constexpr uint32_t SPINEL_STATUS_INVALID_INTERFACE = 6;
+    static constexpr uint32_t SPINEL_STATUS_INTERNAL_ERROR = 7;
+    static constexpr uint32_t SPINEL_STATUS_SECURITY_ERROR = 8;
+    static constexpr uint32_t SPINEL_STATUS_PARSE_ERROR = 9;
+    static constexpr uint32_t SPINEL_STATUS_IN_PROGRESS = 10;
+    static constexpr uint32_t SPINEL_STATUS_NOMEM = 11;
+    static constexpr uint32_t SPINEL_STATUS_BUSY = 12;
+    static constexpr uint32_t SPINEL_STATUS_PROP_NOT_FOUND = 13;
+    static constexpr uint32_t SPINEL_STATUS_DROPPED = 14;
+    static constexpr uint32_t SPINEL_STATUS_EMPTY = 15;
+    static constexpr uint32_t SPINEL_STATUS_RESET_POWER_ON = 112; ///< 0x70..0x77 are reset causes
+};
+
+// --- Header byte (bit7 = flag, bits6-4 = interface id, bits3-0 = transaction id) --------
+
+/** @brief Build a spinel header byte for interface @p iid and transaction @p tid (tid 0 = no response wanted). */
+inline uint8_t dws_spinel_header(uint8_t iid, uint8_t tid)
+{
+    return (uint8_t)(0x80 | ((iid & 0x03) << 4) | (tid & 0x0F));
+}
+/** @brief The transaction id carried in header byte @p h. */
+inline uint8_t dws_spinel_header_tid(uint8_t h)
+{
+    return (uint8_t)(h & 0x0F);
+}
+/** @brief The interface id carried in header byte @p h. */
+inline uint8_t dws_spinel_header_iid(uint8_t h)
+{
+    return (uint8_t)((h >> 4) & 0x03);
+}
 
 /** @brief HDLC frame check sequence: CRC-16/X-25 over @p buf. */
 uint16_t dws_spinel_fcs(const uint8_t *buf, uint16_t len);
@@ -93,6 +182,87 @@ uint16_t dws_spinel_command_build(uint8_t header, uint32_t cmd, uint32_t prop, c
  */
 int dws_spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, uint32_t *cmd, uint32_t *prop,
                              const uint8_t **value, uint16_t *value_len);
+
+// --- Spinel value semantics (the typed datatypes carried in a property value) -----------
+//
+// spinel encodes a property value as a sequence of typed fields (spinel datatype format):
+//   b bool, C uint8, c int8, S uint16-LE, s int16-LE, L uint32-LE, l int32-LE, i packed-uint,
+//   E EUI64 (8B), 6 IPv6 (16B), U UTF8 (NUL-terminated), D data (rest), d data (uint16-LE len).
+// A cursor reads/writes those fields in order (an array A(t) is just a field read in a loop,
+// a struct T(...) is its fields in sequence). Any out-of-bounds read/write latches `err` so a
+// caller can run a whole sequence and check once at the end.
+
+/** @brief A read cursor over a spinel property value. */
+struct SpinelReader
+{
+    const uint8_t *buf; ///< the value bytes
+    uint16_t len;       ///< value length
+    uint16_t off;       ///< next unread offset
+    bool err;           ///< set once any read runs past the end / is malformed
+};
+
+/** @brief A write cursor building a spinel property value into a caller buffer. */
+struct SpinelWriter
+{
+    uint8_t *buf; ///< output buffer
+    uint16_t cap; ///< output capacity
+    uint16_t off; ///< bytes written so far
+    bool err;     ///< set once any write would overflow @c cap
+};
+
+void dws_spinel_reader_init(SpinelReader *r, const uint8_t *value, uint16_t len);
+bool dws_spinel_get_bool(SpinelReader *r, bool *out);
+bool dws_spinel_get_u8(SpinelReader *r, uint8_t *out);
+bool dws_spinel_get_i8(SpinelReader *r, int8_t *out);
+bool dws_spinel_get_u16(SpinelReader *r, uint16_t *out);
+bool dws_spinel_get_i16(SpinelReader *r, int16_t *out);
+bool dws_spinel_get_u32(SpinelReader *r, uint32_t *out);
+bool dws_spinel_get_i32(SpinelReader *r, int32_t *out);
+bool dws_spinel_get_uint(SpinelReader *r, uint32_t *out); ///< packed 'i'
+bool dws_spinel_get_eui64(SpinelReader *r, const uint8_t **out8);
+bool dws_spinel_get_ipv6(SpinelReader *r, const uint8_t **out16);
+/** @brief UTF8 'U': @p out points into the value, @p out_len excludes the NUL; advances past it. */
+bool dws_spinel_get_utf8(SpinelReader *r, const char **out, uint16_t *out_len);
+/** @brief Data 'D' (to end of value): @p out points into the value, @p out_len is the remainder. */
+bool dws_spinel_get_data(SpinelReader *r, const uint8_t **out, uint16_t *out_len);
+/** @brief Data 'd' (uint16-LE length prefix): reads the count, then that many bytes. */
+bool dws_spinel_get_data_wlen(SpinelReader *r, const uint8_t **out, uint16_t *out_len);
+/** @brief True if every read so far stayed in bounds. */
+bool dws_spinel_reader_ok(const SpinelReader *r);
+
+void dws_spinel_writer_init(SpinelWriter *w, uint8_t *out, uint16_t cap);
+bool dws_spinel_put_bool(SpinelWriter *w, bool v);
+bool dws_spinel_put_u8(SpinelWriter *w, uint8_t v);
+bool dws_spinel_put_i8(SpinelWriter *w, int8_t v);
+bool dws_spinel_put_u16(SpinelWriter *w, uint16_t v);
+bool dws_spinel_put_i16(SpinelWriter *w, int16_t v);
+bool dws_spinel_put_u32(SpinelWriter *w, uint32_t v);
+bool dws_spinel_put_i32(SpinelWriter *w, int32_t v);
+bool dws_spinel_put_uint(SpinelWriter *w, uint32_t v); ///< packed 'i'
+bool dws_spinel_put_eui64(SpinelWriter *w, const uint8_t *v8);
+bool dws_spinel_put_ipv6(SpinelWriter *w, const uint8_t *v16);
+bool dws_spinel_put_utf8(SpinelWriter *w, const char *s);                     ///< 'U' incl. the NUL
+bool dws_spinel_put_data(SpinelWriter *w, const uint8_t *d, uint16_t n);      ///< 'D' raw bytes
+bool dws_spinel_put_data_wlen(SpinelWriter *w, const uint8_t *d, uint16_t n); ///< 'd' uint16-LE len + bytes
+/** @brief The finished value length, or 0 if any write overflowed. */
+uint16_t dws_spinel_writer_len(const SpinelWriter *w);
+
+// --- Property registry (id -> name + primary datatype) ----------------------------------
+
+/** @brief A registry entry: a property id, its human name, and its primary spinel datatype char. */
+struct SpinelPropInfo
+{
+    uint32_t id;
+    const char *name;
+    char type; ///< the leading spinel datatype ('U','i','C','c','S','E','6','b','D', or '.')
+};
+
+/** @brief Look up a property's registry entry, or nullptr if it is not in the registry. */
+const SpinelPropInfo *dws_spinel_prop_lookup(uint32_t id);
+/** @brief A property's human name, or "UNKNOWN" if unregistered. */
+const char *dws_spinel_prop_name(uint32_t id);
+/** @brief A `LAST_STATUS` code's human name, or "UNKNOWN" if unregistered. */
+const char *dws_spinel_status_name(uint32_t status);
 
 /**
  * @brief Encode an HDLC-lite frame: @p payload + FCS, byte-stuffed, flag-terminated.

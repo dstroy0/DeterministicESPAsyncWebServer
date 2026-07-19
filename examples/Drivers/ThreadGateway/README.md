@@ -32,11 +32,32 @@ boot). Note the FCS is CRC-16/**X-25** (reflected, final XOR), transmitted low b
 distinct from Zigbee's ASH CRC. The codec is host-tested against the X-25 catalog check
 value (`0x906E`) and the byte-stuffing in `test/test_thread`.
 
-Interpreting the spinel command _inside_ a frame - the property get/set, an inbound IPv6
-stream - is application work; this sketch bridges the raw spinel payload to show the
-transport path.
+## Reading the spinel command inside a frame
 
-## Wiring (ESP32 <-> Thread RCP)
+`services/thread` also does the spinel **command** layer and the **property registry / value
+semantics**, so the sketch reads each frame's meaning, not just its bytes. A frame's payload is
+`header | command | property | value`; `dws_spinel_command_parse()` splits it, the registry names
+the property, and a typed cursor decodes the value by the property's datatype:
+
+```cpp
+uint8_t hdr; uint32_t cmd, prop; const uint8_t *val; uint16_t vlen;
+dws_spinel_command_parse(payload, plen, &hdr, &cmd, &prop, &val, &vlen);
+if (cmd == SpinelCmd::SPINEL_CMD_PROP_VALUE_IS && prop == SpinelProp::SPINEL_PROP_NCP_VERSION) {
+    SpinelReader r; dws_spinel_reader_init(&r, val, vlen);
+    const char *s; uint16_t slen;
+    if (dws_spinel_get_utf8(&r, &s, &slen))       // "OPENTHREAD/... ; ESP32C6; ..."
+        Serial.printf("%s = %.*s\n", dws_spinel_prop_name(prop), (int)slen, s);
+}
+```
+
+The cursor has an accessor per spinel datatype (`get_bool` / `get_u8` / `get_i8` / `get_u16` /
+`get_u32` / `get_uint` (packed) / `get_eui64` / `get_ipv6` / `get_utf8` / `get_data` /
+`get_data_wlen`) and matching `put_*` builders; an out-of-bounds read latches an error you check
+once with `dws_spinel_reader_ok()`. This sketch GETs `PROTOCOL_VERSION`, `NCP_VERSION`, and
+`HWADDR` at boot and prints each inbound `PROP_VALUE_IS` by name. `dws_spinel_status_name()` maps
+a `LAST_STATUS` code to text (e.g. a reset cause `0x70` -> `RESET`).
+
+## Wiring (ESP32 host <-> Thread RCP)
 
 | RCP | ESP32        |
 | --- | ------------ |
@@ -45,7 +66,34 @@ transport path.
 | VCC | 3V3          |
 | GND | GND          |
 
-115200 8N1 (an nRF52840 dongle flashed with the OpenThread RCP firmware).
+460800 8N1 (the OpenThread RCP default). The RCP is any spinel radio co-processor: an nRF52840
+dongle flashed with the OpenThread RCP firmware, an EFR32, or an **ESP32-C6 flashed with ESP-IDF's
+`ot_rcp`** (the C6 is a native 802.15.4 radio, so that route needs no external module - the host
+UART wires to the C6's RCP UART pins).
+
+## Verified against the OpenThread reference RCP
+
+The framing + command + value-semantics codec was **interop-verified (2026-07-19)** against a
+genuine **OpenThread reference RCP** - OpenThread's own `ot-rcp` binary (the same spinel
+implementation that runs on the nRF52840 / EFR32 / ESP32-C6, here built for the POSIX/simulation
+platform) - driven over a raw-mode pty by the shipped codec alone. It decoded real OpenThread
+spinel output byte-exact:
+
+```
+LAST_STATUS      = RESET (112)        # unsolicited boot frame
+PROTOCOL_VERSION = 4.3                # two packed uints
+INTERFACE_TYPE   = 3 (Thread)
+NCP_VERSION      = OPENTHREAD/5808cb4; SIMULATION; ...   # UTF8 string
+CAPS             = 5 12 24 34 513 64 65   # packed-uint array (513 exercises multi-byte packing)
+HWADDR (EUI64)   = 18B4300000000001
+PHY_CHAN         = 11
+MAC_15_4_PANID   = 0xFFFF             # LE uint16
+```
+
+7/7 properties decoded through `dws_spinel_frame_decode` + `dws_spinel_command_parse` + the typed
+accessors. Because the peer is OpenThread's own implementation (not a re-encode of our own bytes),
+this is a real conformance check, not a self-round-trip. See the `## Thread` section of
+[FEATURES.md](../../../docs/FEATURES.md).
 
 ## Build-flag note
 

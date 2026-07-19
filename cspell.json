@@ -1382,7 +1382,10 @@
     "qsort",
     "regen",
     "unconfigurable",
-    "IKEV"
+    "IKEV",
+    "HWADDR",
+    "LADDR",
+    "PANID"
   ],
   "ignorePaths": [
     "node_modules/**",

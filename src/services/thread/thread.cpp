@@ -134,6 +134,466 @@ int dws_spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *head
     return (int)p;
 }
 
+// --- Spinel value semantics -------------------------------------------------------------
+
+void dws_spinel_reader_init(SpinelReader *r, const uint8_t *value, uint16_t len)
+{
+    if (!r)
+        return;
+    r->buf = value;
+    r->len = value ? len : 0;
+    r->off = 0;
+    r->err = (value == nullptr && len > 0);
+}
+
+namespace
+{
+// Reserve n bytes at the cursor; return the read pointer or nullptr (latching err) if short.
+const uint8_t *take(SpinelReader *r, uint16_t n)
+{
+    if (!r || r->err || (uint32_t)r->off + n > r->len)
+    {
+        if (r)
+            r->err = true;
+        return nullptr;
+    }
+    const uint8_t *at = r->buf + r->off;
+    r->off = (uint16_t)(r->off + n);
+    return at;
+}
+} // namespace
+
+bool dws_spinel_get_bool(SpinelReader *r, bool *out)
+{
+    const uint8_t *b = take(r, 1);
+    if (!b)
+        return false;
+    if (out)
+        *out = (*b != 0);
+    return true;
+}
+
+bool dws_spinel_get_u8(SpinelReader *r, uint8_t *out)
+{
+    const uint8_t *b = take(r, 1);
+    if (!b)
+        return false;
+    if (out)
+        *out = b[0];
+    return true;
+}
+
+bool dws_spinel_get_i8(SpinelReader *r, int8_t *out)
+{
+    const uint8_t *b = take(r, 1);
+    if (!b)
+        return false;
+    if (out)
+        *out = (int8_t)b[0];
+    return true;
+}
+
+bool dws_spinel_get_u16(SpinelReader *r, uint16_t *out)
+{
+    const uint8_t *b = take(r, 2);
+    if (!b)
+        return false;
+    if (out)
+        *out = (uint16_t)(b[0] | (b[1] << 8));
+    return true;
+}
+
+bool dws_spinel_get_i16(SpinelReader *r, int16_t *out)
+{
+    uint16_t v = 0;
+    if (!dws_spinel_get_u16(r, &v))
+        return false;
+    if (out)
+        *out = (int16_t)v;
+    return true;
+}
+
+bool dws_spinel_get_u32(SpinelReader *r, uint32_t *out)
+{
+    const uint8_t *b = take(r, 4);
+    if (!b)
+        return false;
+    if (out)
+        *out = (uint32_t)b[0] | ((uint32_t)b[1] << 8) | ((uint32_t)b[2] << 16) | ((uint32_t)b[3] << 24);
+    return true;
+}
+
+bool dws_spinel_get_i32(SpinelReader *r, int32_t *out)
+{
+    uint32_t v = 0;
+    if (!dws_spinel_get_u32(r, &v))
+        return false;
+    if (out)
+        *out = (int32_t)v;
+    return true;
+}
+
+bool dws_spinel_get_uint(SpinelReader *r, uint32_t *out)
+{
+    if (!r || r->err)
+        return false;
+    uint32_t v = 0;
+    int n = dws_spinel_unpack_uint(r->buf + r->off, (uint8_t)((r->len - r->off) > 255 ? 255 : (r->len - r->off)), &v);
+    if (n <= 0)
+    {
+        r->err = true;
+        return false;
+    }
+    r->off = (uint16_t)(r->off + n);
+    if (out)
+        *out = v;
+    return true;
+}
+
+bool dws_spinel_get_eui64(SpinelReader *r, const uint8_t **out8)
+{
+    const uint8_t *b = take(r, 8);
+    if (!b)
+        return false;
+    if (out8)
+        *out8 = b;
+    return true;
+}
+
+bool dws_spinel_get_ipv6(SpinelReader *r, const uint8_t **out16)
+{
+    const uint8_t *b = take(r, 16);
+    if (!b)
+        return false;
+    if (out16)
+        *out16 = b;
+    return true;
+}
+
+bool dws_spinel_get_utf8(SpinelReader *r, const char **out, uint16_t *out_len)
+{
+    if (!r || r->err)
+        return false;
+    uint16_t i = r->off;
+    while (i < r->len && r->buf[i] != 0)
+        i++;
+    if (i >= r->len) // no NUL terminator in the value
+    {
+        r->err = true;
+        return false;
+    }
+    if (out)
+        *out = (const char *)(r->buf + r->off);
+    if (out_len)
+        *out_len = (uint16_t)(i - r->off);
+    r->off = (uint16_t)(i + 1); // consume the string and its NUL
+    return true;
+}
+
+bool dws_spinel_get_data(SpinelReader *r, const uint8_t **out, uint16_t *out_len)
+{
+    if (!r || r->err)
+        return false;
+    if (out)
+        *out = r->buf + r->off;
+    if (out_len)
+        *out_len = (uint16_t)(r->len - r->off);
+    r->off = r->len;
+    return true;
+}
+
+bool dws_spinel_get_data_wlen(SpinelReader *r, const uint8_t **out, uint16_t *out_len)
+{
+    uint16_t n = 0;
+    if (!dws_spinel_get_u16(r, &n))
+        return false;
+    const uint8_t *b = take(r, n);
+    if (!b)
+        return false;
+    if (out)
+        *out = b;
+    if (out_len)
+        *out_len = n;
+    return true;
+}
+
+bool dws_spinel_reader_ok(const SpinelReader *r)
+{
+    return r && !r->err;
+}
+
+void dws_spinel_writer_init(SpinelWriter *w, uint8_t *out, uint16_t cap)
+{
+    if (!w)
+        return;
+    w->buf = out;
+    w->cap = out ? cap : 0;
+    w->off = 0;
+    w->err = (out == nullptr && cap > 0);
+}
+
+namespace
+{
+// Reserve n bytes for writing; return the write pointer or nullptr (latching err) if no room.
+uint8_t *room(SpinelWriter *w, uint16_t n)
+{
+    if (!w || w->err || (uint32_t)w->off + n > w->cap)
+    {
+        if (w)
+            w->err = true;
+        return nullptr;
+    }
+    uint8_t *at = w->buf + w->off;
+    w->off = (uint16_t)(w->off + n);
+    return at;
+}
+} // namespace
+
+bool dws_spinel_put_bool(SpinelWriter *w, bool v)
+{
+    uint8_t *b = room(w, 1);
+    if (!b)
+        return false;
+    b[0] = v ? 1 : 0;
+    return true;
+}
+
+bool dws_spinel_put_u8(SpinelWriter *w, uint8_t v)
+{
+    uint8_t *b = room(w, 1);
+    if (!b)
+        return false;
+    b[0] = v;
+    return true;
+}
+
+bool dws_spinel_put_i8(SpinelWriter *w, int8_t v)
+{
+    return dws_spinel_put_u8(w, (uint8_t)v);
+}
+
+bool dws_spinel_put_u16(SpinelWriter *w, uint16_t v)
+{
+    uint8_t *b = room(w, 2);
+    if (!b)
+        return false;
+    b[0] = (uint8_t)(v & 0xFF);
+    b[1] = (uint8_t)(v >> 8);
+    return true;
+}
+
+bool dws_spinel_put_i16(SpinelWriter *w, int16_t v)
+{
+    return dws_spinel_put_u16(w, (uint16_t)v);
+}
+
+bool dws_spinel_put_u32(SpinelWriter *w, uint32_t v)
+{
+    uint8_t *b = room(w, 4);
+    if (!b)
+        return false;
+    b[0] = (uint8_t)(v & 0xFF);
+    b[1] = (uint8_t)((v >> 8) & 0xFF);
+    b[2] = (uint8_t)((v >> 16) & 0xFF);
+    b[3] = (uint8_t)((v >> 24) & 0xFF);
+    return true;
+}
+
+bool dws_spinel_put_i32(SpinelWriter *w, int32_t v)
+{
+    return dws_spinel_put_u32(w, (uint32_t)v);
+}
+
+bool dws_spinel_put_uint(SpinelWriter *w, uint32_t v)
+{
+    if (!w || w->err)
+        return false;
+    uint8_t tmp[5];
+    uint8_t n = dws_spinel_pack_uint(v, tmp, sizeof(tmp));
+    if (n == 0)
+    {
+        w->err = true;
+        return false;
+    }
+    uint8_t *b = room(w, n);
+    if (!b)
+        return false;
+    for (uint8_t i = 0; i < n; i++)
+        b[i] = tmp[i];
+    return true;
+}
+
+bool dws_spinel_put_eui64(SpinelWriter *w, const uint8_t *v8)
+{
+    if (!v8)
+    {
+        if (w)
+            w->err = true;
+        return false;
+    }
+    uint8_t *b = room(w, 8);
+    if (!b)
+        return false;
+    for (uint8_t i = 0; i < 8; i++)
+        b[i] = v8[i];
+    return true;
+}
+
+bool dws_spinel_put_ipv6(SpinelWriter *w, const uint8_t *v16)
+{
+    if (!v16)
+    {
+        if (w)
+            w->err = true;
+        return false;
+    }
+    uint8_t *b = room(w, 16);
+    if (!b)
+        return false;
+    for (uint8_t i = 0; i < 16; i++)
+        b[i] = v16[i];
+    return true;
+}
+
+bool dws_spinel_put_utf8(SpinelWriter *w, const char *s)
+{
+    if (!s)
+    {
+        if (w)
+            w->err = true;
+        return false;
+    }
+    uint16_t n = 0;
+    while (s[n] != 0)
+        n++;
+    uint8_t *b = room(w, (uint16_t)(n + 1)); // include the NUL
+    if (!b)
+        return false;
+    for (uint16_t i = 0; i <= n; i++)
+        b[i] = (uint8_t)s[i];
+    return true;
+}
+
+bool dws_spinel_put_data(SpinelWriter *w, const uint8_t *d, uint16_t n)
+{
+    if (d == nullptr && n > 0)
+    {
+        if (w)
+            w->err = true;
+        return false;
+    }
+    uint8_t *b = room(w, n);
+    if (!b)
+        return false;
+    for (uint16_t i = 0; i < n; i++)
+        b[i] = d[i];
+    return true;
+}
+
+bool dws_spinel_put_data_wlen(SpinelWriter *w, const uint8_t *d, uint16_t n)
+{
+    if (!dws_spinel_put_u16(w, n))
+        return false;
+    return dws_spinel_put_data(w, d, n);
+}
+
+uint16_t dws_spinel_writer_len(const SpinelWriter *w)
+{
+    if (!w || w->err)
+        return 0;
+    return w->off;
+}
+
+// --- Property registry ------------------------------------------------------------------
+
+namespace
+{
+const SpinelPropInfo k_props[] = {
+    {SpinelProp::SPINEL_PROP_LAST_STATUS, "LAST_STATUS", 'i'},
+    {SpinelProp::SPINEL_PROP_PROTOCOL_VERSION, "PROTOCOL_VERSION", 'i'},
+    {SpinelProp::SPINEL_PROP_NCP_VERSION, "NCP_VERSION", 'U'},
+    {SpinelProp::SPINEL_PROP_INTERFACE_TYPE, "INTERFACE_TYPE", 'i'},
+    {SpinelProp::SPINEL_PROP_VENDOR_ID, "VENDOR_ID", 'i'},
+    {SpinelProp::SPINEL_PROP_CAPS, "CAPS", 'i'},
+    {SpinelProp::SPINEL_PROP_INTERFACE_COUNT, "INTERFACE_COUNT", 'C'},
+    {SpinelProp::SPINEL_PROP_HWADDR, "HWADDR", 'E'},
+    {SpinelProp::SPINEL_PROP_LOCK, "LOCK", 'b'},
+    {SpinelProp::SPINEL_PROP_PHY_ENABLED, "PHY_ENABLED", 'b'},
+    {SpinelProp::SPINEL_PROP_PHY_CHAN, "PHY_CHAN", 'C'},
+    {SpinelProp::SPINEL_PROP_PHY_CHAN_SUPPORTED, "PHY_CHAN_SUPPORTED", 'C'},
+    {SpinelProp::SPINEL_PROP_PHY_FREQ, "PHY_FREQ", 'L'},
+    {SpinelProp::SPINEL_PROP_PHY_TX_POWER, "PHY_TX_POWER", 'c'},
+    {SpinelProp::SPINEL_PROP_PHY_RSSI, "PHY_RSSI", 'c'},
+    {SpinelProp::SPINEL_PROP_MAC_SCAN_STATE, "MAC_SCAN_STATE", 'C'},
+    {SpinelProp::SPINEL_PROP_MAC_SCAN_MASK, "MAC_SCAN_MASK", 'C'},
+    {SpinelProp::SPINEL_PROP_MAC_SCAN_PERIOD, "MAC_SCAN_PERIOD", 'S'},
+    {SpinelProp::SPINEL_PROP_MAC_15_4_LADDR, "MAC_15_4_LADDR", 'E'},
+    {SpinelProp::SPINEL_PROP_MAC_15_4_SADDR, "MAC_15_4_SADDR", 'S'},
+    {SpinelProp::SPINEL_PROP_MAC_15_4_PANID, "MAC_15_4_PANID", 'S'},
+    {SpinelProp::SPINEL_PROP_NET_SAVED, "NET_SAVED", 'b'},
+    {SpinelProp::SPINEL_PROP_NET_IF_UP, "NET_IF_UP", 'b'},
+    {SpinelProp::SPINEL_PROP_NET_STACK_UP, "NET_STACK_UP", 'b'},
+    {SpinelProp::SPINEL_PROP_NET_ROLE, "NET_ROLE", 'C'},
+    {SpinelProp::SPINEL_PROP_NET_NETWORK_NAME, "NET_NETWORK_NAME", 'U'},
+    {SpinelProp::SPINEL_PROP_NET_XPANID, "NET_XPANID", 'D'},
+    {SpinelProp::SPINEL_PROP_NET_NETWORK_KEY, "NET_NETWORK_KEY", 'D'},
+    {SpinelProp::SPINEL_PROP_IPV6_LL_ADDR, "IPV6_LL_ADDR", '6'},
+    {SpinelProp::SPINEL_PROP_IPV6_ML_ADDR, "IPV6_ML_ADDR", '6'},
+    {SpinelProp::SPINEL_PROP_STREAM_DEBUG, "STREAM_DEBUG", 'U'},
+    {SpinelProp::SPINEL_PROP_STREAM_RAW, "STREAM_RAW", 'd'},
+    {SpinelProp::SPINEL_PROP_STREAM_NET, "STREAM_NET", 'd'},
+};
+
+struct StatusName
+{
+    uint32_t code;
+    const char *name;
+};
+const StatusName k_status[] = {
+    {SpinelStatus::SPINEL_STATUS_OK, "OK"},
+    {SpinelStatus::SPINEL_STATUS_FAILURE, "FAILURE"},
+    {SpinelStatus::SPINEL_STATUS_UNIMPLEMENTED, "UNIMPLEMENTED"},
+    {SpinelStatus::SPINEL_STATUS_INVALID_ARGUMENT, "INVALID_ARGUMENT"},
+    {SpinelStatus::SPINEL_STATUS_INVALID_STATE, "INVALID_STATE"},
+    {SpinelStatus::SPINEL_STATUS_INVALID_COMMAND, "INVALID_COMMAND"},
+    {SpinelStatus::SPINEL_STATUS_INVALID_INTERFACE, "INVALID_INTERFACE"},
+    {SpinelStatus::SPINEL_STATUS_INTERNAL_ERROR, "INTERNAL_ERROR"},
+    {SpinelStatus::SPINEL_STATUS_SECURITY_ERROR, "SECURITY_ERROR"},
+    {SpinelStatus::SPINEL_STATUS_PARSE_ERROR, "PARSE_ERROR"},
+    {SpinelStatus::SPINEL_STATUS_IN_PROGRESS, "IN_PROGRESS"},
+    {SpinelStatus::SPINEL_STATUS_NOMEM, "NOMEM"},
+    {SpinelStatus::SPINEL_STATUS_BUSY, "BUSY"},
+    {SpinelStatus::SPINEL_STATUS_PROP_NOT_FOUND, "PROP_NOT_FOUND"},
+    {SpinelStatus::SPINEL_STATUS_DROPPED, "DROPPED"},
+    {SpinelStatus::SPINEL_STATUS_EMPTY, "EMPTY"},
+};
+} // namespace
+
+const SpinelPropInfo *dws_spinel_prop_lookup(uint32_t id)
+{
+    for (uint16_t i = 0; i < sizeof(k_props) / sizeof(k_props[0]); i++)
+        if (k_props[i].id == id)
+            return &k_props[i];
+    return nullptr;
+}
+
+const char *dws_spinel_prop_name(uint32_t id)
+{
+    const SpinelPropInfo *e = dws_spinel_prop_lookup(id);
+    return e ? e->name : "UNKNOWN";
+}
+
+const char *dws_spinel_status_name(uint32_t status)
+{
+    for (uint16_t i = 0; i < sizeof(k_status) / sizeof(k_status[0]); i++)
+        if (k_status[i].code == status)
+            return k_status[i].name;
+    if (status >= SpinelStatus::SPINEL_STATUS_RESET_POWER_ON &&
+        status <= SpinelStatus::SPINEL_STATUS_RESET_POWER_ON + 7)
+        return "RESET";
+    return "UNKNOWN";
+}
+
 uint16_t dws_spinel_fcs(const uint8_t *buf, uint16_t len)
 {
     uint16_t crc = 0xFFFF;

@@ -267,6 +267,281 @@ void test_thread_more_guards()
     TEST_ASSERT_EQUAL_INT(-1, dws_spinel_frame_decode(fr, frn, got, sizeof(got), &gl));
 }
 
+// --- Spinel value semantics -------------------------------------------------------------
+
+void test_spinel_value_round_trip()
+{
+    // Build a heterogeneous value with the writer, read it back with the reader.
+    uint8_t buf[64];
+    SpinelWriter w;
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    const uint8_t eui[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+    const uint8_t v6[16] = {0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0x02, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77};
+    TEST_ASSERT_TRUE(dws_spinel_put_bool(&w, true));
+    TEST_ASSERT_TRUE(dws_spinel_put_u8(&w, 0xAB));
+    TEST_ASSERT_TRUE(dws_spinel_put_i8(&w, -5));
+    TEST_ASSERT_TRUE(dws_spinel_put_u16(&w, 0x1234));
+    TEST_ASSERT_TRUE(dws_spinel_put_i16(&w, -1000));
+    TEST_ASSERT_TRUE(dws_spinel_put_u32(&w, 0xDEADBEEF));
+    TEST_ASSERT_TRUE(dws_spinel_put_i32(&w, -123456));
+    TEST_ASSERT_TRUE(dws_spinel_put_uint(&w, 200000));
+    TEST_ASSERT_TRUE(dws_spinel_put_eui64(&w, eui));
+    TEST_ASSERT_TRUE(dws_spinel_put_ipv6(&w, v6));
+    TEST_ASSERT_TRUE(dws_spinel_put_utf8(&w, "OT"));
+    uint16_t n = dws_spinel_writer_len(&w);
+    TEST_ASSERT_GREATER_THAN_UINT16(0, n);
+
+    SpinelReader r;
+    dws_spinel_reader_init(&r, buf, n);
+    bool b = false;
+    uint8_t u8 = 0;
+    int8_t i8 = 0;
+    uint16_t u16 = 0;
+    int16_t i16 = 0;
+    uint32_t u32 = 0;
+    int32_t i32 = 0;
+    uint32_t pu = 0;
+    const uint8_t *e = nullptr;
+    const uint8_t *a6 = nullptr;
+    const char *s = nullptr;
+    uint16_t slen = 0;
+    TEST_ASSERT_TRUE(dws_spinel_get_bool(&r, &b));
+    TEST_ASSERT_TRUE(dws_spinel_get_u8(&r, &u8));
+    TEST_ASSERT_TRUE(dws_spinel_get_i8(&r, &i8));
+    TEST_ASSERT_TRUE(dws_spinel_get_u16(&r, &u16));
+    TEST_ASSERT_TRUE(dws_spinel_get_i16(&r, &i16));
+    TEST_ASSERT_TRUE(dws_spinel_get_u32(&r, &u32));
+    TEST_ASSERT_TRUE(dws_spinel_get_i32(&r, &i32));
+    TEST_ASSERT_TRUE(dws_spinel_get_uint(&r, &pu));
+    TEST_ASSERT_TRUE(dws_spinel_get_eui64(&r, &e));
+    TEST_ASSERT_TRUE(dws_spinel_get_ipv6(&r, &a6));
+    TEST_ASSERT_TRUE(dws_spinel_get_utf8(&r, &s, &slen));
+    TEST_ASSERT_TRUE(dws_spinel_reader_ok(&r));
+
+    TEST_ASSERT_TRUE(b);
+    TEST_ASSERT_EQUAL_HEX8(0xAB, u8);
+    TEST_ASSERT_EQUAL_INT8(-5, i8);
+    TEST_ASSERT_EQUAL_HEX16(0x1234, u16);
+    TEST_ASSERT_EQUAL_INT16(-1000, i16);
+    TEST_ASSERT_EQUAL_HEX32(0xDEADBEEF, u32);
+    TEST_ASSERT_EQUAL_INT32(-123456, i32);
+    TEST_ASSERT_EQUAL_UINT32(200000, pu);
+    TEST_ASSERT_EQUAL_MEMORY(eui, e, 8);
+    TEST_ASSERT_EQUAL_MEMORY(v6, a6, 16);
+    TEST_ASSERT_EQUAL_UINT16(2, slen);
+    TEST_ASSERT_EQUAL_MEMORY("OT", s, 2);
+    TEST_ASSERT_EQUAL_UINT16(n, r.off); // consumed exactly the whole value
+}
+
+void test_spinel_le_wire_layout()
+{
+    // Confirm the on-wire encoding is little-endian for the fixed-width integers.
+    uint8_t buf[8];
+    SpinelWriter w;
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    dws_spinel_put_u16(&w, 0x1234);
+    dws_spinel_put_u32(&w, 0xAABBCCDD);
+    TEST_ASSERT_EQUAL_UINT16(6, dws_spinel_writer_len(&w));
+    TEST_ASSERT_EQUAL_HEX8(0x34, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x12, buf[1]);
+    TEST_ASSERT_EQUAL_HEX8(0xDD, buf[2]);
+    TEST_ASSERT_EQUAL_HEX8(0xCC, buf[3]);
+    TEST_ASSERT_EQUAL_HEX8(0xBB, buf[4]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, buf[5]);
+}
+
+void test_spinel_protocol_version_and_caps()
+{
+    // PROTOCOL_VERSION is two packed uints; CAPS is a packed-uint array - decode as a real
+    // gateway would (the reader reads successive 'i' fields).
+    uint8_t buf[16];
+    SpinelWriter w;
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    dws_spinel_put_uint(&w, 4); // major
+    dws_spinel_put_uint(&w, 3); // minor
+    uint16_t n = dws_spinel_writer_len(&w);
+
+    SpinelReader r;
+    dws_spinel_reader_init(&r, buf, n);
+    uint32_t major = 0, minor = 0;
+    TEST_ASSERT_TRUE(dws_spinel_get_uint(&r, &major));
+    TEST_ASSERT_TRUE(dws_spinel_get_uint(&r, &minor));
+    TEST_ASSERT_EQUAL_UINT32(4, major);
+    TEST_ASSERT_EQUAL_UINT32(3, minor);
+
+    // A CAPS list: {1, 4, 128, 1337} as packed uints, read to exhaustion.
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    const uint32_t caps[4] = {1, 4, 128, 1337};
+    for (int i = 0; i < 4; i++)
+        dws_spinel_put_uint(&w, caps[i]);
+    n = dws_spinel_writer_len(&w);
+    dws_spinel_reader_init(&r, buf, n);
+    int count = 0;
+    while (r.off < r.len && dws_spinel_reader_ok(&r))
+    {
+        uint32_t c = 0;
+        TEST_ASSERT_TRUE(dws_spinel_get_uint(&r, &c));
+        TEST_ASSERT_EQUAL_UINT32(caps[count], c);
+        count++;
+    }
+    TEST_ASSERT_EQUAL_INT(4, count);
+    TEST_ASSERT_TRUE(dws_spinel_reader_ok(&r));
+}
+
+void test_spinel_data_wlen_and_utf8()
+{
+    // STREAM_RAW-style 'd' data (uint16 length prefix), then STREAM_DEBUG-style 'U' text.
+    uint8_t buf[64];
+    SpinelWriter w;
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    const uint8_t frame[5] = {0x41, 0x88, 0x01, 0xAB, 0xCD};
+    TEST_ASSERT_TRUE(dws_spinel_put_data_wlen(&w, frame, 5));
+    TEST_ASSERT_TRUE(dws_spinel_put_utf8(&w, "OPENTHREAD/x"));
+    uint16_t n = dws_spinel_writer_len(&w);
+
+    SpinelReader r;
+    dws_spinel_reader_init(&r, buf, n);
+    const uint8_t *d = nullptr;
+    uint16_t dlen = 0;
+    TEST_ASSERT_TRUE(dws_spinel_get_data_wlen(&r, &d, &dlen));
+    TEST_ASSERT_EQUAL_UINT16(5, dlen);
+    TEST_ASSERT_EQUAL_MEMORY(frame, d, 5);
+    const char *s = nullptr;
+    uint16_t slen = 0;
+    TEST_ASSERT_TRUE(dws_spinel_get_utf8(&r, &s, &slen));
+    TEST_ASSERT_EQUAL_UINT16(12, slen);
+    TEST_ASSERT_EQUAL_MEMORY("OPENTHREAD/x", s, 12);
+}
+
+void test_spinel_get_data_rest()
+{
+    const uint8_t val[6] = {0x05, 0xDE, 0xAD, 0xBE, 0xEF, 0x99};
+    SpinelReader r;
+    dws_spinel_reader_init(&r, val, sizeof(val));
+    uint8_t chan = 0;
+    TEST_ASSERT_TRUE(dws_spinel_get_u8(&r, &chan)); // consume one leading field
+    TEST_ASSERT_EQUAL_HEX8(0x05, chan);
+    const uint8_t *rest = nullptr;
+    uint16_t rlen = 0;
+    TEST_ASSERT_TRUE(dws_spinel_get_data(&r, &rest, &rlen));
+    TEST_ASSERT_EQUAL_UINT16(5, rlen);
+    TEST_ASSERT_EQUAL_MEMORY(val + 1, rest, 5);
+}
+
+void test_spinel_reader_bounds_latch()
+{
+    // A too-short value latches err and every later read fails.
+    const uint8_t val[1] = {0x01};
+    SpinelReader r;
+    dws_spinel_reader_init(&r, val, sizeof(val));
+    uint32_t u32 = 0;
+    TEST_ASSERT_FALSE(dws_spinel_get_u32(&r, &u32)); // needs 4, has 1
+    TEST_ASSERT_FALSE(dws_spinel_reader_ok(&r));
+    uint8_t u8 = 0;
+    TEST_ASSERT_FALSE(dws_spinel_get_u8(&r, &u8)); // stays failed even though a byte remains
+
+    // UTF8 with no NUL terminator is malformed.
+    const uint8_t noterm[3] = {'a', 'b', 'c'};
+    dws_spinel_reader_init(&r, noterm, sizeof(noterm));
+    const char *s = nullptr;
+    uint16_t slen = 0;
+    TEST_ASSERT_FALSE(dws_spinel_get_utf8(&r, &s, &slen));
+
+    // data_wlen whose declared length runs past the buffer.
+    const uint8_t badlen[3] = {0x10, 0x00, 0xAA}; // says 16 bytes, only 1 present
+    dws_spinel_reader_init(&r, badlen, sizeof(badlen));
+    const uint8_t *d = nullptr;
+    uint16_t dlen = 0;
+    TEST_ASSERT_FALSE(dws_spinel_get_data_wlen(&r, &d, &dlen));
+}
+
+void test_spinel_writer_overflow_latch()
+{
+    uint8_t small[3];
+    SpinelWriter w;
+    dws_spinel_writer_init(&w, small, sizeof(small));
+    TEST_ASSERT_TRUE(dws_spinel_put_u16(&w, 0x1122));
+    TEST_ASSERT_FALSE(dws_spinel_put_u32(&w, 0));           // 2 used, 4 more won't fit
+    TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(&w)); // err -> length 0
+
+    // null-buffer guards.
+    SpinelWriter nw;
+    dws_spinel_writer_init(&nw, nullptr, 8);
+    TEST_ASSERT_FALSE(dws_spinel_put_u8(&nw, 1));
+    // null pointer args to put_eui64 / put_utf8 latch err.
+    uint8_t ok[16];
+    dws_spinel_writer_init(&w, ok, sizeof(ok));
+    TEST_ASSERT_FALSE(dws_spinel_put_eui64(&w, nullptr));
+    TEST_ASSERT_FALSE(dws_spinel_put_utf8(&w, nullptr));
+}
+
+void test_spinel_header_helpers()
+{
+    uint8_t h = dws_spinel_header(0, 5);
+    TEST_ASSERT_EQUAL_HEX8(0x85, h); // 0x80 flag | tid 5
+    TEST_ASSERT_EQUAL_UINT8(5, dws_spinel_header_tid(h));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_spinel_header_iid(h));
+    uint8_t h2 = dws_spinel_header(2, 3);
+    TEST_ASSERT_EQUAL_HEX8(0xA3, h2); // 0x80 | (2<<4) | 3
+    TEST_ASSERT_EQUAL_UINT8(2, dws_spinel_header_iid(h2));
+    TEST_ASSERT_EQUAL_UINT8(3, dws_spinel_header_tid(h2));
+}
+
+void test_spinel_prop_registry()
+{
+    TEST_ASSERT_EQUAL_STRING("NCP_VERSION", dws_spinel_prop_name(SpinelProp::SPINEL_PROP_NCP_VERSION));
+    TEST_ASSERT_EQUAL_STRING("MAC_15_4_PANID", dws_spinel_prop_name(SpinelProp::SPINEL_PROP_MAC_15_4_PANID));
+    TEST_ASSERT_EQUAL_STRING("UNKNOWN", dws_spinel_prop_name(0xFFFFFF));
+
+    const SpinelPropInfo *e = dws_spinel_prop_lookup(SpinelProp::SPINEL_PROP_HWADDR);
+    TEST_ASSERT_NOT_NULL(e);
+    TEST_ASSERT_EQUAL_UINT32(SpinelProp::SPINEL_PROP_HWADDR, e->id);
+    TEST_ASSERT_EQUAL_INT8('E', e->type); // EUI64
+    TEST_ASSERT_NULL(dws_spinel_prop_lookup(0x12345));
+
+    // A couple of type-char spot checks.
+    TEST_ASSERT_EQUAL_INT8('U', dws_spinel_prop_lookup(SpinelProp::SPINEL_PROP_NCP_VERSION)->type);
+    TEST_ASSERT_EQUAL_INT8('C', dws_spinel_prop_lookup(SpinelProp::SPINEL_PROP_PHY_CHAN)->type);
+    TEST_ASSERT_EQUAL_INT8('6', dws_spinel_prop_lookup(SpinelProp::SPINEL_PROP_IPV6_LL_ADDR)->type);
+}
+
+void test_spinel_status_names()
+{
+    TEST_ASSERT_EQUAL_STRING("OK", dws_spinel_status_name(SpinelStatus::SPINEL_STATUS_OK));
+    TEST_ASSERT_EQUAL_STRING("PROP_NOT_FOUND", dws_spinel_status_name(SpinelStatus::SPINEL_STATUS_PROP_NOT_FOUND));
+    TEST_ASSERT_EQUAL_STRING("RESET", dws_spinel_status_name(SpinelStatus::SPINEL_STATUS_RESET_POWER_ON));
+    TEST_ASSERT_EQUAL_STRING("RESET", dws_spinel_status_name(115)); // 0x70..0x77 are reset causes
+    TEST_ASSERT_EQUAL_STRING("UNKNOWN", dws_spinel_status_name(9999));
+}
+
+void test_spinel_last_status_decode()
+{
+    // A real NCP unsolicited frame: header | CMD_PROP_VALUE_IS | PROP_LAST_STATUS | status(i).
+    uint8_t payload[8];
+    uint8_t val[4];
+    SpinelWriter w;
+    dws_spinel_writer_init(&w, val, sizeof(val));
+    dws_spinel_put_uint(&w, SpinelStatus::SPINEL_STATUS_RESET_POWER_ON);
+    uint16_t vlen = dws_spinel_writer_len(&w);
+    uint16_t plen = dws_spinel_command_build(dws_spinel_header(0, 0), SpinelCmd::SPINEL_CMD_PROP_VALUE_IS,
+                                             SpinelProp::SPINEL_PROP_LAST_STATUS, val, vlen, payload, sizeof(payload));
+    TEST_ASSERT_GREATER_THAN_UINT16(0, plen);
+
+    uint8_t header = 0;
+    uint32_t cmd = 0, prop = 0;
+    const uint8_t *v = nullptr;
+    uint16_t got_vlen = 0;
+    TEST_ASSERT_GREATER_THAN_INT(0, dws_spinel_command_parse(payload, plen, &header, &cmd, &prop, &v, &got_vlen));
+    TEST_ASSERT_EQUAL_UINT32(SpinelCmd::SPINEL_CMD_PROP_VALUE_IS, cmd);
+    TEST_ASSERT_EQUAL_UINT32(SpinelProp::SPINEL_PROP_LAST_STATUS, prop);
+    SpinelReader r;
+    dws_spinel_reader_init(&r, v, got_vlen);
+    uint32_t status = 0;
+    TEST_ASSERT_TRUE(dws_spinel_get_uint(&r, &status));
+    TEST_ASSERT_EQUAL_UINT32(SpinelStatus::SPINEL_STATUS_RESET_POWER_ON, status);
+    TEST_ASSERT_EQUAL_STRING("RESET", dws_spinel_status_name(status));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -285,5 +560,16 @@ int main()
     RUN_TEST(test_spinel_command_through_hdlc);
     RUN_TEST(test_spinel_guards);
     RUN_TEST(test_thread_more_guards);
+    RUN_TEST(test_spinel_value_round_trip);
+    RUN_TEST(test_spinel_le_wire_layout);
+    RUN_TEST(test_spinel_protocol_version_and_caps);
+    RUN_TEST(test_spinel_data_wlen_and_utf8);
+    RUN_TEST(test_spinel_get_data_rest);
+    RUN_TEST(test_spinel_reader_bounds_latch);
+    RUN_TEST(test_spinel_writer_overflow_latch);
+    RUN_TEST(test_spinel_header_helpers);
+    RUN_TEST(test_spinel_prop_registry);
+    RUN_TEST(test_spinel_status_names);
+    RUN_TEST(test_spinel_last_status_decode);
     return UNITY_END();
 }

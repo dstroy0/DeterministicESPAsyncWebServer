@@ -296,7 +296,7 @@ The native test matrix has **250 environments**, one per feature, generated from
 | `native_syslog` | `WS_ENABLE_SYSLOG=1` | `test_syslog` | Syslog client (RFC 5424) line formatter. |
 | `native_telemetry` | `WS_ENABLE_TELEMETRY=1` | `test_telemetry` | Telemetry math (services/telemetry): moving-window stats, rate-of-change, and totalizer. |
 | `native_telnet` | `WS_ENABLE_TELNET=1` | `test_telnet` | Telnet server (RFC 854 IAC negotiation + line editing) wired through the real transport ring buffer; output checked via the tcp_write capture mock. |
-| `native_thread` | `WS_ENABLE_THREAD=1`, `WS_THREAD_MAX_DATA=64` | `test_thread` | Thread spinel / HDLC-lite framing codec (services/thread), v5 radio plugin: the FCS (CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the byte-stuffing of reserve... |
+| `native_thread` | `WS_ENABLE_THREAD=1`, `WS_THREAD_MAX_DATA=64` | `test_thread` | Thread spinel / HDLC-lite codec (services/thread), v5 radio plugin: the FCS (CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the byte-stuffing of reserved bytes,... |
 | `native_time_source` | `WS_ENABLE_TIME_SOURCE=1` | `test_time_source` | Multi-source time fallback matrix (services/time_source): priority-ordered query of user time sources with first-valid-wins fallback. |
 | `native_tls13_kdf` | `WS_ENABLE_HTTP3=1` | `test_tls13_kdf` | TLS 1.3 key schedule for the QUIC handshake (network_drivers/presentation/http3/tls13_kdf, RFC 8446 sec 7.1 / 4.4.4): Early/Handshake/Master secret Extract chain, client/server handshake + application... |
 | `native_tls13_msg` | `WS_ENABLE_HTTP3=1` | `test_tls13_msg` | TLS 1.3 handshake messages for the QUIC handshake (network_drivers/presentation/http3/ tls13_msg, RFC 8446 sec 4): ClientHello parse (X25519 key_share + capability flags), and the server flight. |
@@ -540,7 +540,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3313 test cases** across **268 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3324 test cases** across **268 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -33825,7 +33825,7 @@ A thorough directory of all **3313 test cases** across **268 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_thread (15 tests)</b></summary>
+<summary><b>test_thread (26 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fcs_x25_check_value</b> &mdash; <i>CRC-16/X-25 (poly 0x8408, init 0xFFFF, reflected, xorout 0xFFFF) of "123456789" = 0x906E.</i></summary>
@@ -33999,6 +33999,187 @@ A thorough directory of all **3313 test cases** across **268 suites**. Expand a 
       * <code>Assert equal int (0, dws_spinel_frame_decode(nullptr, 4, pay, sizeof(pay), &pl))</code>
       * <code>Assert equal int (-1, dws_spinel_frame_decode(big, 71, pay, sizeof(pay), &pl))</code>
       * <code>Assert equal int (-1, dws_spinel_frame_decode(fr, frn, got, sizeof(got), &gl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_value_round_trip</b> &mdash; <i>Build a heterogeneous value with the writer, read it back with the reader.</i></summary>
+
+    * **Objective**: Build a heterogeneous value with the writer, read it back with the reader.
+    * **Assertions**:
+      * <code>Assert true (dws_spinel_put_bool(&w, true))</code>
+      * <code>Assert true (dws_spinel_put_u8(&w, 0xAB))</code>
+      * <code>Assert true (dws_spinel_put_i8(&w, -5))</code>
+      * <code>Assert true (dws_spinel_put_u16(&w, 0x1234))</code>
+      * <code>Assert true (dws_spinel_put_i16(&w, -1000))</code>
+      * <code>Assert true (dws_spinel_put_u32(&w, 0xDEADBEEF))</code>
+      * <code>Assert true (dws_spinel_put_i32(&w, -123456))</code>
+      * <code>Assert true (dws_spinel_put_uint(&w, 200000))</code>
+      * <code>Assert true (dws_spinel_put_eui64(&w, eui))</code>
+      * <code>Assert true (dws_spinel_put_ipv6(&w, v6))</code>
+      * <code>Assert true (dws_spinel_put_utf8(&w, "OT"))</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, n);</code>
+      * <code>Assert true (dws_spinel_get_bool(&r, &b))</code>
+      * <code>Assert true (dws_spinel_get_u8(&r, &u8))</code>
+      * <code>Assert true (dws_spinel_get_i8(&r, &i8))</code>
+      * <code>Assert true (dws_spinel_get_u16(&r, &u16))</code>
+      * <code>Assert true (dws_spinel_get_i16(&r, &i16))</code>
+      * <code>Assert true (dws_spinel_get_u32(&r, &u32))</code>
+      * <code>Assert true (dws_spinel_get_i32(&r, &i32))</code>
+      * <code>Assert true (dws_spinel_get_uint(&r, &pu))</code>
+      * <code>Assert true (dws_spinel_get_eui64(&r, &e))</code>
+      * <code>Assert true (dws_spinel_get_ipv6(&r, &a6))</code>
+      * <code>Assert true (dws_spinel_get_utf8(&r, &s, &slen))</code>
+      * <code>Assert true (dws_spinel_reader_ok(&r))</code>
+      * <code>Assert true (b)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xAB, u8);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-5, i8);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x1234, u16);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(-1000, i16);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xDEADBEEF, u32);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-123456, i32);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(200000, pu);</code>
+      * <code>Assert equal memory (eui, e, 8)</code>
+      * <code>Assert equal memory (v6, a6, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, slen);</code>
+      * <code>Assert equal memory ("OT", s, 2)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(n, r.off); // consumed exactly the whole value</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_le_wire_layout</b> &mdash; <i>Confirm the on-wire encoding is little-endian for the fixed-width integers.</i></summary>
+
+    * **Objective**: Confirm the on-wire encoding is little-endian for the fixed-width integers.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(6, dws_spinel_writer_len(&w));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x34, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x12, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xDD, buf[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xCC, buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xBB, buf[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xAA, buf[5]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_protocol_version_and_caps</b> &mdash; <i>PROTOCOL_VERSION is two packed uints; CAPS is a packed-uint array - decode as a real</i></summary>
+
+    * **Objective**: PROTOCOL_VERSION is two packed uints; CAPS is a packed-uint array - decode as a real
+    * **Assertions**:
+      * <code>Assert true (dws_spinel_get_uint(&r, &major))</code>
+      * <code>Assert true (dws_spinel_get_uint(&r, &minor))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4, major);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, minor);</code>
+      * <code>Assert true (dws_spinel_get_uint(&r, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(caps[count], c);</code>
+      * <code>Assert equal int (4, count)</code>
+      * <code>Assert true (dws_spinel_reader_ok(&r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_data_wlen_and_utf8</b> &mdash; <i>STREAM_RAW-style 'd' data (uint16 length prefix), then STREAM_DEBUG-style 'U' text.</i></summary>
+
+    * **Objective**: STREAM_RAW-style 'd' data (uint16 length prefix), then STREAM_DEBUG-style 'U' text.
+    * **Assertions**:
+      * <code>Assert true (dws_spinel_put_data_wlen(&w, frame, 5))</code>
+      * <code>Assert true (dws_spinel_put_utf8(&w, "OPENTHREAD/x"))</code>
+      * <code>Assert true (dws_spinel_get_data_wlen(&r, &d, &dlen))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(5, dlen);</code>
+      * <code>Assert equal memory (frame, d, 5)</code>
+      * <code>Assert true (dws_spinel_get_utf8(&r, &s, &slen))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(12, slen);</code>
+      * <code>Assert equal memory ("OPENTHREAD/x", s, 12)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_get_data_rest</b> &mdash; <i>Spinel get data rest</i></summary>
+
+    * **Objective**: Spinel get data rest
+    * **Assertions**:
+      * <code>Assert true (dws_spinel_get_u8(&r, &chan))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x05, chan);</code>
+      * <code>Assert true (dws_spinel_get_data(&r, &rest, &rlen))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(5, rlen);</code>
+      * <code>Assert equal memory (val + 1, rest, 5)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_reader_bounds_latch</b> &mdash; <i>A too-short value latches err and every later read fails.</i></summary>
+
+    * **Objective**: A too-short value latches err and every later read fails.
+    * **Assertions**:
+      * <code>Assert false (dws_spinel_get_u32(&r, &u32))</code>
+      * <code>Assert false (dws_spinel_reader_ok(&r))</code>
+      * <code>Assert false (dws_spinel_get_u8(&r, &u8))</code>
+      * <code>Assert false (dws_spinel_get_utf8(&r, &s, &slen))</code>
+      * <code>Assert false (dws_spinel_get_data_wlen(&r, &d, &dlen))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_writer_overflow_latch</b> &mdash; <i>null-buffer guards.</i></summary>
+
+    * **Objective**: null-buffer guards.
+    * **Assertions**:
+      * <code>Assert true (dws_spinel_put_u16(&w, 0x1122))</code>
+      * <code>Assert false (dws_spinel_put_u32(&w, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(&w)); // err -&gt; length 0</code>
+      * <code>Assert false (dws_spinel_put_u8(&nw, 1))</code>
+      * <code>Assert false (dws_spinel_put_eui64(&w, nullptr))</code>
+      * <code>Assert false (dws_spinel_put_utf8(&w, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_header_helpers</b> &mdash; <i>Spinel header helpers</i></summary>
+
+    * **Objective**: Spinel header helpers
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x85, h); // 0x80 flag | tid 5</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, dws_spinel_header_tid(h));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_spinel_header_iid(h));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xA3, h2); // 0x80 | (2&lt;&lt;4) | 3</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, dws_spinel_header_iid(h2));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, dws_spinel_header_tid(h2));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_prop_registry</b> &mdash; <i>A couple of type-char spot checks.</i></summary>
+
+    * **Objective**: A couple of type-char spot checks.
+    * **Assertions**:
+      * <code>Assert equal string ("NCP_VERSION", dws_spinel_prop_name(SpinelProp::SPINEL_PROP_NCP_VERSION))</code>
+      * <code>Assert equal string ("MAC_15_4_PANID", dws_spinel_prop_name(SpinelProp::SPINEL_PROP_MAC_15_4_PANID))</code>
+      * <code>Assert equal string ("UNKNOWN", dws_spinel_prop_name(0xFFFFFF))</code>
+      * <code>Assert not null (e)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SpinelProp::SPINEL_PROP_HWADDR, e-&gt;id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8('E', e-&gt;type); // EUI64</code>
+      * <code>Assert null (dws_spinel_prop_lookup(0x12345))</code>
+      * <code>TEST_ASSERT_EQUAL_INT8('U', dws_spinel_prop_lookup(SpinelProp::SPINEL_PROP_NCP_VERSION)-&gt;type);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8('C', dws_spinel_prop_lookup(SpinelProp::SPINEL_PROP_PHY_CHAN)-&gt;type);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8('6', dws_spinel_prop_lookup(SpinelProp::SPINEL_PROP_IPV6_LL_ADDR)-&gt;type);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_status_names</b> &mdash; <i>Spinel status names</i></summary>
+
+    * **Objective**: Spinel status names
+    * **Assertions**:
+      * <code>Assert equal string ("OK", dws_spinel_status_name(SpinelStatus::SPINEL_STATUS_OK))</code>
+      * <code>Assert equal string ("PROP_NOT_FOUND", dws_spinel_status_name(SpinelStatus::SPINEL_STATUS_PROP_NOT_FOUND))</code>
+      * <code>Assert equal string ("RESET", dws_spinel_status_name(SpinelStatus::SPINEL_STATUS_RESET_POWER_ON))</code>
+      * <code>Assert equal string ("RESET", dws_spinel_status_name(115))</code>
+      * <code>Assert equal string ("UNKNOWN", dws_spinel_status_name(9999))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_last_status_decode</b> &mdash; <i>A real NCP unsolicited frame: header \| CMD_PROP_VALUE_IS \| PROP_LAST_STATUS \| status(i).</i></summary>
+
+    * **Objective**: A real NCP unsolicited frame: header \| CMD_PROP_VALUE_IS \| PROP_LAST_STATUS \| status(i).
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, plen);</code>
+      * <code>Assert greater than int (0, dws_spinel_command_parse(payload, plen, &header, &cmd, &prop, &v, &got_vlen))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SpinelCmd::SPINEL_CMD_PROP_VALUE_IS, cmd);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SpinelProp::SPINEL_PROP_LAST_STATUS, prop);</code>
+      * <code>Assert true (dws_spinel_get_uint(&r, &status))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SpinelStatus::SPINEL_STATUS_RESET_POWER_ON, status);</code>
+      * <code>Assert equal string ("RESET", dws_spinel_status_name(status))</code>
   </details>
 
 </details>

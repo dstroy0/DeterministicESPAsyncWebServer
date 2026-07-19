@@ -809,7 +809,7 @@
       "tests": ["test_zigbee"]
     },
     "native_thread": {
-      "desc": "Thread spinel / HDLC-lite framing codec (services/thread), v5 radio plugin: the FCS\n(CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the\nbyte-stuffing of reserved bytes, and malformed framing (bad FCS, dangling escape,\nbuffer-too-small, no flag). Pure host tests.",
+      "desc": "Thread spinel / HDLC-lite codec (services/thread), v5 radio plugin: the FCS\n(CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the\nbyte-stuffing of reserved bytes, malformed framing (bad FCS, dangling escape,\nbuffer-too-small, no flag), the spinel command layer (packed-uint KATs, command build/parse\nthrough HDLC), and the property registry + typed value semantics (reader/writer round trip\nacross every spinel datatype, little-endian wire layout, PROTOCOL_VERSION / CAPS decode,\nUTF8 + length-prefixed data, bounds/overflow latching, prop + status name lookup). Pure host tests.",
       "flags": ["-DDWS_ENABLE_THREAD=1", "-DDWS_THREAD_MAX_DATA=64"],
       "src": ["+<services/thread/thread.cpp>"],
       "tests": ["test_thread"]

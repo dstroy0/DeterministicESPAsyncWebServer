@@ -164,14 +164,18 @@ SPI radios:
   RSSI/LQI status + `dws_cc1101_rssi_dbm` decode, over a portable SPI bus; host-tested against a mock chip
   (`native_cc1101`). Bridges northbound via the gateway framework. Remaining: verify the RF link on the
   module (and an OOK/ASK preset variant).
-- [~] \*Thread / Matter RCP (L) - OpenThread radio co-processor (nRF52840 / EFR32)
-  over SPI (spinel framing); 802.15.4 mesh bridged to IP. **spinel / HDLC-lite framing
-    - command codec shipped** (`DWS_ENABLE_THREAD`, `services/thread`): the byte-stuffed
-      framing + CRC-16/X-25 FCS (encode/decode) that carries spinel, plus the spinel command
-      layer - the packed-uint encoding and `dws_spinel_command_build` / `_parse` for a
-      `header | CMD | PROP | value` property command - host-tested against the X-25 check value
-    - the packed-int values; example ThreadGateway bridges a real RCP. Remaining: the
-      spinel property registry / value semantics + verify against an RCP.
+- [x] \*Thread / Matter RCP (L) - OpenThread radio co-processor (nRF52840 / EFR32 / ESP32-C6)
+      over UART (spinel framing); 802.15.4 mesh bridged to IP. **Complete** (`DWS_ENABLE_THREAD`,
+      `services/thread`): the byte-stuffed HDLC-lite framing + CRC-16/X-25 FCS (encode/decode) that
+      carries spinel, the spinel command layer (packed-uint encoding + `dws_spinel_command_build` /
+      `_parse` for a `header | CMD | PROP | value` command), **and the spinel property registry +
+      typed value semantics** - `SpinelProp` / `SpinelStatus` id + status tables, `dws_spinel_prop_lookup`
+      / `_name` / `dws_spinel_status_name`, and a `SpinelReader` / `SpinelWriter` cursor with an accessor
+      per spinel datatype (bool/u8/i8/u16/i16/u32/i32/packed-uint/EUI64/IPv6/UTF8/data/len-data). Host-tested
+      (26 cases: X-25 check value, packed-int KATs, typed round trips, registry lookups) and **interop-verified
+      against the OpenThread reference RCP** (OpenThread's own `ot-rcp` over a pty): decoded real
+      NCP_VERSION / PROTOCOL_VERSION / INTERFACE_TYPE / CAPS / HWADDR / PHY_CHAN / PANID byte-exact, 7/7.
+      Example ThreadGateway decodes named properties and bridges a real RCP.
 
 UART radios:
 
