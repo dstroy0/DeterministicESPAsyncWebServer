@@ -218,6 +218,7 @@
 "native_utmc",
 "native_vfs",
 "native_vl53l0x",
+"native_vxi11",
 "native_wal",
 "native_wamp",
 "native_wave",
@@ -453,6 +454,7 @@
 "native_utmc",
 "native_vfs",
 "native_vl53l0x",
+"native_vxi11",
 "native_wal",
 "native_wamp",
 "native_wave",
@@ -688,6 +690,7 @@
 "native_utmc",
 "native_vfs",
 "native_vl53l0x",
+"native_vxi11",
 "native_wal",
 "native_wamp",
 "native_wave",
@@ -3592,6 +3595,12 @@
 "src/services/vl53l0x/vl53l0x.h": [
 "native_vl53l0x"
 ],
+"src/services/vxi11/vxi11.cpp": [
+"native_vxi11"
+],
+"src/services/vxi11/vxi11.h": [
+"native_vxi11"
+],
 "src/services/wal/wal.cpp": [
 "native_dbm",
 "native_docstore",
@@ -3827,6 +3836,7 @@
 "native_tls13_msg",
 "native_totp",
 "native_upload",
+"native_vxi11",
 "native_wal",
 "native_webdav_handler",
 "native_ws_client",

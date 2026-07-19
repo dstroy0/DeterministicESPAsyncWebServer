@@ -1578,6 +1578,12 @@
     "output": ".pio/build/native_vl53l0x/src/services/vl53l0x/vl53l0x.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_vxi11/src/services/vxi11/vxi11.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_VXI11=1 -Itest/mocks -Itest/support -Isrc src/services/vxi11/vxi11.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/vxi11/vxi11.cpp",
+    "output": ".pio/build/native_vxi11/src/services/vxi11/vxi11.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_wamp/src/services/wamp/wamp.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_WAMP=1 -Itest/mocks -Itest/support -Isrc src/services/wamp/wamp.cpp",
     "directory": "@ROOT@",
     "file": "src/services/wamp/wamp.cpp",
