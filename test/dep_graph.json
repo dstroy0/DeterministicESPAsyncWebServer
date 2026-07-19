@@ -80,6 +80,7 @@
 "native_h3_e2e",
 "native_h3_server",
 "native_h3frame",
+"native_haas_mdc",
 "native_happy_eyeballs",
 "native_hart",
 "native_hislip",
@@ -317,6 +318,7 @@
 "native_h3_e2e",
 "native_h3_server",
 "native_h3frame",
+"native_haas_mdc",
 "native_happy_eyeballs",
 "native_hart",
 "native_hislip",
@@ -554,6 +556,7 @@
 "native_h3_e2e",
 "native_h3_server",
 "native_h3frame",
+"native_haas_mdc",
 "native_happy_eyeballs",
 "native_hart",
 "native_hislip",
@@ -2843,6 +2846,12 @@
 ],
 "src/services/guardrails/guardrails.h": [
 "native_guardrails"
+],
+"src/services/haas_mdc/haas_mdc.cpp": [
+"native_haas_mdc"
+],
+"src/services/haas_mdc/haas_mdc.h": [
+"native_haas_mdc"
 ],
 "src/services/happy_eyeballs/happy_eyeballs.cpp": [
 "native_happy_eyeballs"

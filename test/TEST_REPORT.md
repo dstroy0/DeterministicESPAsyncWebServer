@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-19 03:35:04
+**Generated:** 2026-07-19 04:39:12
 **Command:** `pio test` over 244 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3563 passed - 923s
+**Result:** ✅ 3573 passed - 326s
 
 ---
 
@@ -290,6 +290,7 @@
 | `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     5 |   ✅   | 00:00:00.887 |
 | `test_ssh_aesgcm`        | `native_ssh_aesgcm`     |     3 |   ✅   | 00:00:00.796 |
 | `test_ssh_ecdsa`         | `native_ssh_ecdsa`      |    11 |   ✅   | 00:00:29.618 |
+| `test_haas_mdc`          | `native_haas_mdc`       |    10 |   ✅   | 00:00:03.474 |
 
 ---
 
@@ -7771,6 +7772,30 @@ _NIST P-256 native software-path tests (ecdsa-sha2-nistp256 signatures + ecdh-sh
 |   9 | `test_ecdh_rfc5903_shared_secret`      |   ✅   | Ecdh rfc5903 shared secret      |
 |  10 | `test_ecdh_rfc5903_pubkeys`            |   ✅   | Ecdh rfc5903 pubkeys            |
 |  11 | `test_ecdh_rejects_bad_point`          |   ✅   | Ecdh rejects bad point          |
+
+</details>
+
+---
+
+## test_haas_mdc - native_haas_mdc - ✅ 10 passed
+
+<details>
+<summary><b>Expand Suite Details</b></summary>
+
+_Unit tests for the Haas Machine Data Collection (MDC) Q-command codec (services/haas_mdc): the ?Q_
+
+|   # | Test                          | Status | Description                                                               |
+| --: | :---------------------------- | :----: | :------------------------------------------------------------------------ |
+|   1 | `test_build_q`                |   ✅   | Build q                                                                   |
+|   2 | `test_build_var`              |   ✅   | Build var                                                                 |
+|   3 | `test_parse_simple_and_value` |   ✅   | Q100 -> serial number                                                     |
+|   4 | `test_parse_status_idle`      |   ✅   | Parse status idle                                                         |
+|   5 | `test_parse_status_busy`      |   ✅   | Parse status busy                                                         |
+|   6 | `test_parse_macro`            |   ✅   | documented 6-decimal form                                                 |
+|   7 | `test_error_and_no_frame`     |   ✅   | Error and no frame                                                        |
+|   8 | `test_leading_prompt`         |   ✅   | previous response's trailing '>' prompt precedes this frame in the stream |
+|   9 | `test_field_access`           |   ✅   | Field access                                                              |
+|  10 | `test_dprnt`                  |   ✅   | a pushed DPRNT line: raw text + CRLF, no STX/ETB                          |
 
 </details>
 
