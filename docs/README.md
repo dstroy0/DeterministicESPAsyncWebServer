@@ -1111,6 +1111,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `HISLIP` | `L7-Application/HiSlip` | 743,133 | 45,304 |
 | `GPIB` | `L7-Application/Gpib` | 743,397 | 44,824 |
 | `SCPI` | `L7-Application/Scpi` | 743,413 | 45,048 |
+| `HAAS_MDC` | `L7-Application/HaasMdc` | 743,465 | 44,688 |
 | `VXI11` | `L7-Application/Vxi11` | 744,465 | 45,432 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,109 | 46,668 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 752,169 | 81,792 |
