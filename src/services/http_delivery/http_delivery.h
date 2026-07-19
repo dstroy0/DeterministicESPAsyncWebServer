@@ -56,20 +56,11 @@ DeliveryVerdict dws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t sw
  */
 size_t dws_delivery_cache_control(uint32_t max_age_s, uint32_t swr_s, char *out, size_t cap);
 
-/**
- * @brief Parse a single-range `Range: bytes=...` header against a resource of @p total bytes.
- *
- * Handles `bytes=X-Y` (clamped), `bytes=X-` (X to end), and `bytes=-N` (last N). Multi-range requests
- * (a comma) are treated as unsupported. On success @p start / @p end are the inclusive byte offsets.
- * @return 1 if a satisfiable range was parsed; 0 otherwise (caller should send the full 200 or a 416).
- */
-int dws_delivery_range(const char *range_header, uint32_t total, uint32_t *start, uint32_t *end);
-
-/**
- * @brief Build the `Content-Range` value for a 206 reply: `bytes START-END/TOTAL`.
- * @return length written (excl NUL), or 0 on overflow / bad args.
- */
-size_t dws_delivery_content_range(uint32_t start, uint32_t end, uint32_t total, char *out, size_t cap);
+// Byte-range serving is NOT here. `server/http_range.h` (`http_parse_byte_range`, DWS_ENABLE_RANGE)
+// owns the RFC 7233 range math and is already wired into static file serving and the edge cache -
+// it emits `Accept-Ranges`, the 206 `Content-Range`, and a 416 with `bytes */<size>`, which this
+// header's earlier duplicate could not signal. Two parsers for one concern is how a request ends up
+// answered by the wrong one, so the duplicate was removed rather than given a second call site.
 
 /**
  * @brief Emit the service-worker precache manifest: `{"version":"..","precache":["/a","/b",...]}`.
@@ -79,6 +70,29 @@ size_t dws_delivery_content_range(uint32_t start, uint32_t end, uint32_t total, 
  * @return length written (excl NUL), or 0 on overflow / bad args. Strings are JSON-escaped.
  */
 size_t dws_delivery_sw_manifest(const char *const *paths, size_t n, const char *version, char *out, size_t cap);
+
+#if defined(ARDUINO)
+class DWS;
+
+/**
+ * @brief Serve the service worker and its precache manifest.
+ *
+ * Registers two GET routes on @p srv, which together are the client half of the delivery story:
+ *   - `/sw.js`         the worker (a flash-resident asset; registers with `navigator.serviceWorker`)
+ *   - `/precache.json` the versioned manifest built by dws_delivery_sw_manifest()
+ *
+ * The worker precaches @p paths and then serves them stale-while-revalidate, so the browser gets the
+ * shell instantly and the device is only asked for a refresh in the background. Bump @p version
+ * whenever the shell changes: the worker names its cache after it, so a new version invalidates the
+ * old shell exactly once.
+ *
+ * @param paths   asset paths to precache (borrowed; must outlive the server).
+ * @param n       number of paths (<= DWS_DELIVERY_PRECACHE_MAX).
+ * @param version cache version tag, e.g. a firmware version string.
+ * @return true if both routes were registered.
+ */
+bool dws_delivery_serve_sw(DWS &srv, const char *const *paths, size_t n, const char *version);
+#endif // ARDUINO
 
 #endif // DWS_ENABLE_HTTP_DELIVERY
 #endif // DETERMINISTICESPASYNCWEBSERVER_HTTP_DELIVERY_H

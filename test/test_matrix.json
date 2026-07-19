@@ -1976,7 +1976,7 @@
       "tests": ["test_exc_decoder"]
     },
     "native_http_delivery": {
-      "desc": "HTTP delivery optimizations (services/http_delivery): RFC 5861 stale-while-revalidate\ndecision + Cache-Control builder, RFC 7233 byte-range delta/offset fetch (X-Y / X- / -N parse + a 206\nContent-Range), and a versioned service-worker precache manifest. Pure host tests.",
+      "desc": "HTTP delivery optimizations (services/http_delivery): the RFC 5861 stale-while-revalidate\nfreshness decision + its Cache-Control builder, and the versioned service-worker precache manifest\n(including that a full DWS_DELIVERY_PRECACHE_MAX manifest fits DWS_DELIVERY_MANIFEST_BUF and that an\noversized one fails closed rather than truncating). Byte-range serving is server/http_range.h's job,\nnot this service's. Pure host tests.",
       "flags": ["-DDWS_ENABLE_HTTP_DELIVERY=1"],
       "src": ["+<services/http_delivery/http_delivery.cpp>"],
       "tests": ["test_http_delivery"]

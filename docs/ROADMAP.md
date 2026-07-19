@@ -320,14 +320,22 @@ preempting queue, so sensing shares the real-time ingest path.
 - [x] Dashboard phase 2 _(shipped)_ - WebSocket controls (button / toggle / slider widgets send values to a `dws_dashboard_on_control` callback) and a Canvas chart widget for dense series.
 - [x] **Telemetry math** cluster _(shipped)_ - `services/telemetry`: moving-window stats (mean / variance / stddev / min / max), a rate-of-change tracker, and a trapezoidal run-time totalizer (example Telemetry).
 - [x] HTTP caching: `Cache-Control` beside ETag _(shipped)_ - `set_cache_control()` injects it into serve_file / serve_static responses.
-- [~] HTTP delivery (S-M): stale-while-revalidate, service-worker cache injection, delta/offset log fetching
-  _(cores shipped)_ - `DWS_ENABLE_HTTP_DELIVERY` (`services/http_delivery`): RFC 5861
-  `dws_delivery_swr` freshness decision + `dws_delivery_cache_control` header (stale-while-revalidate),
-  RFC 7233 `dws_delivery_range` byte-range parse (`X-Y` / `X-` / `-N`, clamped, 416/multi-range rejected)
-  plus `dws_delivery_content_range` for a 206 (delta/offset log fetch), and `dws_delivery_sw_manifest`
-  emitting the versioned `{"version":..,"precache":[..]}` a service worker consumes (SW cache injection).
-  Pure, host-tested (`native_http_delivery`). _Remaining:_ wiring the cores into the served endpoints +
-  shipping the static service-worker asset (M).
+- [x] HTTP delivery (S-M): stale-while-revalidate, service-worker cache injection, delta/offset log fetching
+      _(shipped)_ - `DWS_ENABLE_HTTP_DELIVERY` (`services/http_delivery`). **Stale-while-revalidate:** the
+      RFC 5861 `dws_delivery_swr` freshness decision + `dws_delivery_cache_control` header, wired into serving
+      by `DWS::set_cache_control_swr(max_age_s, swr_s)` so every `serve_file` / `serve_static` response carries
+      `public, max-age=N, stale-while-revalidate=M` built by the same core that makes the decision.
+      **Service-worker cache injection:** `dws_delivery_sw_manifest` emits the versioned
+      `{"version":..,"precache":[..]}`, and `dws_delivery_serve_sw()` registers `/sw.js` (a real worker shipped
+      through the web-asset pipeline that precaches the shell and serves it stale-while-revalidate client-side,
+      cache named after the version so a bump invalidates once) plus `/precache.json` (rebuilt per request;
+      answers 500 rather than truncating past `DWS_DELIVERY_MANIFEST_BUF`). **Delta/offset log fetching** is
+      `server/http_range.h` (`DWS_ENABLE_RANGE`), the single owner of the RFC 7233 range math already wired into
+      file serving and the edge cache - the duplicate parser that had sat in this service was removed rather
+      than given a second call site. Host-tested (`native_http_delivery`) and **HW-verified on an ESP32-P4
+      serving from SD**: `bytes=10-19`, `bytes=-5`, and `bytes=995-` each returned byte-exact 206 payloads with
+      the correct `Content-Range`, `bytes=5000-6000` returned 416 `bytes */1000`, served files carried the SWR
+      header, and `/sw.js` + `/precache.json` served correctly. Example HttpDelivery.
 - [x] CBOR encoder + decoder _(shipped)_ - `DWS_ENABLE_CBOR`: a zero-heap RFC 8949 writer plus a cursor decoder (`dws_cbor_peek` / `dws_cbor_read_*`, no-copy strings) over caller buffers - ints / strings / bytes / arrays / maps / bool / null / float; host-tested against the spec vectors + round-trip (example Cbor).
 - [x] MessagePack encoder + decoder _(shipped)_ - `DWS_ENABLE_MSGPACK`: a zero-heap streaming writer over a caller buffer - shortest-form ints (fixint / 8 / 16 / 32 / 64) / str / bin / arrays / maps / bool / nil / float32; overflow tracked, fails closed - plus a cursor decoder (`dws_msgpack_peek` / `dws_msgpack_read_*`, no-copy strings, fail-closed on malformed/truncated input, ext reported as INVALID) host-tested against spec vectors + round-trip and fuzzed in the pentest harness (example MsgPack, both directions). Remaining (M-L): Protobuf / FlatBuffers zero-copy.
 - [x] GraphQL bounded subset _(shipped)_ - `DWS_ENABLE_GRAPHQL`: `services/graphql` parses a query into a fixed AST pool (no heap) and emits `{"data":{...}}` shaped by the selection; schema-free (sub-selection = object, leaf = one resolver call, args collected along the path), with nesting + arguments (example GraphQL). Feature-dependent schema generation remains open (M).

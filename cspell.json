@@ -1390,7 +1390,8 @@
     "openthread",
     "usbserjtag",
     "REUSEADDR",
-    "RXTOALL"
+    "RXTOALL",
+    "precaches"
   ],
   "ignorePaths": [
     "node_modules/**",

@@ -59,6 +59,9 @@
 #if DWS_ENABLE_AUTH
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "services/clock.h" // dws_millis() for the stateless Digest nonce timestamp
+#if DWS_ENABLE_HTTP_DELIVERY
+#include "services/http_delivery/http_delivery.h" // dws_delivery_cache_control (SWR directive)
+#endif
 #if DWS_ENABLE_AUTH_LOCKOUT
 #include "services/auth_lockout/auth_lockout.h"
 #endif
@@ -890,6 +893,19 @@ void DWS::set_cache_control(const char *value)
     }
     snprintf(_cache_control_buf, CACHE_CONTROL_BUF_SIZE, "Cache-Control: %s\r\n", value);
 }
+
+#if DWS_ENABLE_HTTP_DELIVERY
+bool DWS::set_cache_control_swr(uint32_t max_age_s, uint32_t swr_s)
+{
+    // Build the directive with the RFC 5861 core so the header and the dws_delivery_swr decision
+    // can never drift apart.
+    char directive[64];
+    if (dws_delivery_cache_control(max_age_s, swr_s, directive, sizeof(directive)) == 0)
+        return false;
+    set_cache_control(directive);
+    return true;
+}
+#endif
 
 /**
  * @brief Test whether a route path matches an incoming request path.

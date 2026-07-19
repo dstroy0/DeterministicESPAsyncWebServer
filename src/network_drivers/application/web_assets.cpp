@@ -114,6 +114,41 @@ const char DWS_TERMINAL_PAGE[] =
     ";\n}\n} else if (e.key == \"ArrowDown\") {\nif (hi < hist.length) {\nhi++;\ninp.value = hist[hi] || \"\";\n}\n"
     "}\n});\nconn();</script> </body></html>";
 
+// ---- js ----
+const char DWS_SERVICE_WORKER[] =
+    "// Client half of the delivery story. The device is slow and often asleep, so the browser should not\n// wait "
+    "on it for the shell: cache the shell once, serve it from cache instantly, and refresh in the\n// background. T"
+    "hat is RFC 5861 stale-while-revalidate applied on the client, matching what\n// dws_delivery_swr decides serve"
+    "r-side.\n//\n// The manifest (dws_delivery_sw_manifest) supplies both the file list and a version tag; the cac"
+    "he is\n// named after that version, so publishing a new firmware invalidates the old shell exactly once.\n\nva"
+    "r MANIFEST_URL = \"/precache.json\";\nvar CACHE_PREFIX = \"dws-\";\n\nfunction manifest() {\n  // cache: \"no-"
+    "store\" - the manifest is the freshness signal, so it must never come from a cache.\n  return fetch(MANIFEST_U"
+    "RL, { cache: \"no-store\" }).then(function (r) {\n    if (!r.ok) throw new Error(\"manifest \" + r.status);\n "
+    "   return r.json();\n  });\n}\n\nfunction cacheName(m) {\n  return CACHE_PREFIX + (m && m.version ? m.version "
+    ": \"0\");\n}\n\nself.addEventListener(\"install\", function (e) {\n  e.waitUntil(\n    manifest()\n      .then"
+    "(function (m) {\n        return caches.open(cacheName(m)).then(function (c) {\n          return c.addAll((m &&"
+    " m.precache) || []);\n        });\n      })\n      // A failed precache must not wedge the worker: it still in"
+    "stalls and fills the cache lazily\n      // on first fetch. Losing the shell is better than losing the page.\n"
+    "      .catch(function () {})\n      .then(function () {\n        return self.skipWaiting();\n      })\n  );\n}"
+    ");\n\nself.addEventListener(\"activate\", function (e) {\n  e.waitUntil(\n    manifest()\n      .then(function"
+    " (m) {\n        var keep = cacheName(m);\n        return caches.keys().then(function (keys) {\n          retur"
+    "n Promise.all(\n            keys.map(function (k) {\n              // Only ever delete our own versioned cache"
+    "s.\n              return k.indexOf(CACHE_PREFIX) === 0 && k !== keep ? caches.delete(k) : null;\n            }"
+    ")\n          );\n        });\n      })\n      .catch(function () {})\n      .then(function () {\n        retur"
+    "n self.clients.claim();\n      })\n  );\n});\n\nself.addEventListener(\"fetch\", function (e) {\n  var req = e"
+    ".request;\n  // Only same-origin GETs are ours to cache; anything else goes straight to the network.\n  if (re"
+    "q.method !== \"GET\" || new URL(req.url).origin !== self.location.origin) return;\n  // The manifest drives in"
+    "validation, so it is never served from cache.\n  if (new URL(req.url).pathname === MANIFEST_URL) return;\n\n  "
+    "e.respondWith(\n    caches.match(req).then(function (hit) {\n      var net = fetch(req)\n        .then(functio"
+    "n (res) {\n          // Only cache a real, complete response: a 206 is a byte range, not the whole resource.\n"
+    "          if (res && res.ok && res.status === 200) {\n            var copy = res.clone();\n            caches."
+    "keys().then(function (keys) {\n              for (var i = 0; i < keys.length; i++) {\n                if (keys"
+    "[i].indexOf(CACHE_PREFIX) === 0) {\n                  caches.open(keys[i]).then(function (c) {\n              "
+    "      c.put(req, copy);\n                  });\n                  break;\n                }\n              }\n"
+    "            });\n          }\n          return res;\n        })\n        .catch(function () {\n          retur"
+    "n hit;\n        });\n      // Stale-while-revalidate: hand back the cached copy now, let the refresh land in t"
+    "he cache.\n      return hit || net;\n    })\n  );\n});\n";
+
 // ---- json ----
 const char DWS_STATS_JSON[] =
     "{\"uptime_ms\":{{uptime_ms}},\"requests\":{{requests}},\"http_2xx\":{{http_2xx}},\"http_4xx\":{{http_4xx}},\"h"

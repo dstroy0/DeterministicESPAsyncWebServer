@@ -29,6 +29,10 @@ extern const char DWS_PROV_SAVED_HTML[];
 /** @brief Self-contained WebSocket terminal page (green-phosphor CRT theme; auto ws/wss). */
 extern const char DWS_TERMINAL_PAGE[];
 
+// ---- js ----
+/** @brief Service worker: precaches the app shell from the versioned manifest and serves it stale-while-revalidate. */
+extern const char DWS_SERVICE_WORKER[];
+
 // ---- json ----
 /** @brief Runtime stats JSON (rendered via send_template); add/rename fields to taste. */
 extern const char DWS_STATS_JSON[];

@@ -3846,6 +3846,30 @@
 #endif
 
 /**
+ * @brief Most asset paths a service-worker precache manifest may list (DWS_DELIVERY_PRECACHE_MAX).
+ */
+#ifndef DWS_DELIVERY_PRECACHE_MAX
+#define DWS_DELIVERY_PRECACHE_MAX 16
+#endif
+
+/**
+ * @brief Buffer the precache manifest JSON is built into (DWS_DELIVERY_MANIFEST_BUF).
+ *
+ * Must hold `{"version":"..","precache":[..]}` for DWS_DELIVERY_PRECACHE_MAX paths; the manifest
+ * route answers 500 rather than truncating if it does not fit.
+ */
+#ifndef DWS_DELIVERY_MANIFEST_BUF
+#define DWS_DELIVERY_MANIFEST_BUF 512
+#endif
+
+#if DWS_ENABLE_HTTP_DELIVERY && (DWS_DELIVERY_PRECACHE_MAX < 1)
+#error "DeterministicESPAsyncWebServer: DWS_DELIVERY_PRECACHE_MAX must be >= 1"
+#endif
+#if DWS_ENABLE_HTTP_DELIVERY && (DWS_DELIVERY_MANIFEST_BUF < 64)
+#error "DeterministicESPAsyncWebServer: DWS_DELIVERY_MANIFEST_BUF must be >= 64"
+#endif
+
+/**
  * @brief Opt-in hardware-health diagnostics (DWS_ENABLE_HW_HEALTH).
  *
  * Four pure decision cores fed with samples the app reads from the hardware: a power-rail voltage-drop

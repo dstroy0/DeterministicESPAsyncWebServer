@@ -107,60 +107,6 @@ size_t dws_delivery_cache_control(uint32_t max_age_s, uint32_t swr_s, char *out,
     return b.len;
 }
 
-int dws_delivery_range(const char *range_header, uint32_t total, uint32_t *start, uint32_t *end)
-{
-    if (!range_header || !start || !end || total == 0)
-        return 0;
-
-    bool have_start = false;
-    bool have_end = false;
-    uint32_t s = 0;
-    uint32_t e = 0;
-    if (!parse_range_spec(range_header, &have_start, &have_end, &s, &e))
-        return 0;
-
-    uint32_t rs = 0;
-    uint32_t re = 0;
-    if (!have_start)
-    {
-        if (!have_end || e == 0) // "bytes=-" or "bytes=-0" are unsatisfiable
-            return 0;
-        rs = (e >= total) ? 0 : (total - e); // last e bytes
-        re = total - 1;
-    }
-    else
-    {
-        rs = s;
-        if (rs >= total) // 416: start past end of resource
-            return 0;
-        re = have_end ? e : (total - 1);
-        if (re >= total)
-            re = total - 1;
-        if (rs > re)
-            return 0;
-    }
-    *start = rs;
-    *end = re;
-    return 1;
-}
-
-size_t dws_delivery_content_range(uint32_t start, uint32_t end, uint32_t total, char *out, size_t cap)
-{
-    if (!out || cap == 0)
-        return 0;
-    DWSSb b = {out, cap, 0, true};
-    dws_sb_put(&b, "bytes ");
-    dws_sb_u32(&b, start);
-    dws_sb_put(&b, "-");
-    dws_sb_u32(&b, end);
-    dws_sb_put(&b, "/");
-    dws_sb_u32(&b, total);
-    if (!b.ok)
-        return 0;
-    out[b.len] = '\0';
-    return b.len;
-}
-
 size_t dws_delivery_sw_manifest(const char *const *paths, size_t n, const char *version, char *out, size_t cap)
 {
     if (!out || cap == 0 || (n && !paths))

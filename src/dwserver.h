@@ -1032,6 +1032,20 @@ class DWS
      */
     void set_cache_control(const char *value);
 
+#if DWS_ENABLE_HTTP_DELIVERY
+    /**
+     * @brief Set `Cache-Control` to an RFC 5861 stale-while-revalidate policy.
+     *
+     * Emits `public, max-age=N, stale-while-revalidate=M` on served files. Within `max_age_s` a
+     * client uses its copy outright; for `swr_s` beyond that it may serve the stale copy *and*
+     * refresh in the background - so a sleepy or busy device never blocks the page, and the visitor
+     * after it gets the fresh copy. Pass `swr_s` 0 for a plain `max-age`.
+     *
+     * @return true if the directive was built and applied.
+     */
+    bool set_cache_control_swr(uint32_t max_age_s, uint32_t swr_s);
+#endif
+
     /**
      * @brief Drive the server - call every Arduino `loop()` iteration.
      *

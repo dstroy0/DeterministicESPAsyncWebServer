@@ -169,7 +169,7 @@ The native test matrix has **251 environments**, one per feature, generated from
 | `native_hostlink` | `WS_ENABLE_HOSTLINK=1` | `test_hostlink` | Omron Host Link (C-mode) frame codec (services/hostlink): the FCS (XOR), the ASCII command builder (@UU + header + text + FCS + *CR), and the FCS-validating parser + end-code reader. |
 | `native_hpack` | `WS_ENABLE_HTTP2=1` | `test_hpack` | HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the Huffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion (C.3.1), dynamic-table i... |
 | `native_http_client` | `WS_ENABLE_HTTP_CLIENT=1` | `test_http_client` | Outbound HTTP client: URL parser + request builder + response parser. |
-| `native_http_delivery` | `WS_ENABLE_HTTP_DELIVERY=1` | `test_http_delivery` | HTTP delivery optimizations (services/http_delivery): RFC 5861 stale-while-revalidate decision + Cache-Control builder, RFC 7233 byte-range delta/offset fetch (X-Y / X- / -N parse + a 206 Content-Rang... |
+| `native_http_delivery` | `WS_ENABLE_HTTP_DELIVERY=1` | `test_http_delivery` | HTTP delivery optimizations (services/http_delivery): the RFC 5861 stale-while-revalidate freshness decision + its Cache-Control builder, and the versioned service-worker precache manifest (including ... |
 | `native_httpcache` | `WS_ENABLE_HTTP_CACHE=1` | `test_httpcache` | HTTP Cache-Control helpers (services/httpcache, RFC 9111 + 8246 + 5861): the structured directive builder + first-class origin presets (immutable asset / shared / no-store / revalidatable), the tolera... |
 | `native_hw_health` | `WS_ENABLE_HW_HEALTH=1` | `test_hw_health` | Hardware-health diagnostics (services/hw_health): power-rail voltage-drop logger (worst droop + sag/brownout counts), SPI-bus CRC audit with hysteretic clock backoff, GPIO short-circuit test (driven v... |
 | `native_iccp` | `WS_ENABLE_ICCP=1` | `test_iccp` | ICCP / TASE.2 (IEC 60870-6) Data_Value codec (services/iccp): the StateQ (state + quality) and RealQ (scaled INTEGER + quality) indication-point BER structures with optional timestamp. |
@@ -541,7 +541,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3341 test cases** across **269 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3339 test cases** across **269 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -12484,20 +12484,13 @@ A thorough directory of all **3341 test cases** across **269 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_http_delivery (8 tests)</b></summary>
+<summary><b>test_http_delivery (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_range_and_builder_edge_guards</b> &mdash; <i>Oversized start (>10 digits) -> read_u32 overflow guard rejects.</i></summary>
+    <summary><b>test_builder_edge_guards</b> &mdash; <i>Builder edge guards</i></summary>
 
-    * **Objective**: Oversized start (>10 digits) -> read_u32 overflow guard rejects.
+    * **Objective**: Builder edge guards
     * **Assertions**:
-      * <code>Assert equal int (0, dws_delivery_range("bytes=99999999999-", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, dws_delivery_range("bytes=5", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, dws_delivery_range("bytes=0-99999999999", 1000, &s, &e))</code>
-      * <code>Assert equal int (1, dws_delivery_range("bytes=0-5 ", 1000, &s, &e))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, s);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(5, e);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_content_range(0, 10, 100, nullptr, sizeof(buf))); // null out</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, 1, "v", nullptr, sizeof(buf))); // null out</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(nullptr, 2, "v", buf, sizeof(buf)));   // n&gt;0, null paths</code>
   </details>
@@ -12528,55 +12521,6 @@ A thorough directory of all **3341 test cases** across **269 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_range_forms</b> &mdash; <i>X-Y</i></summary>
-
-    * **Objective**: X-Y
-    * **Assertions**:
-      * <code>Assert equal int (1, dws_delivery_range("bytes=0-499", 1000, &s, &e))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, s);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(499, e);</code>
-      * <code>Assert equal int (1, dws_delivery_range("bytes=500-", 1000, &s, &e))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(500, s);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(999, e);</code>
-      * <code>Assert equal int (1, dws_delivery_range("bytes=-200", 1000, &s, &e))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(800, s);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(999, e);</code>
-      * <code>Assert equal int (1, dws_delivery_range("bytes=-5000", 1000, &s, &e))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, s);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(999, e);</code>
-      * <code>Assert equal int (1, dws_delivery_range("bytes=990-99999", 1000, &s, &e))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(990, s);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(999, e);</code>
-      * <code>Assert equal int (1, dws_delivery_range("  bytes=0-0", 1000, &s, &e))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, s);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, e);</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_range_rejects</b> &mdash; <i>Range rejects</i></summary>
-
-    * **Objective**: Range rejects
-    * **Assertions**:
-      * <code>Assert equal int (0, dws_delivery_range("bytes=1000-2000", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, dws_delivery_range("bytes=500-100", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, dws_delivery_range("bytes=-0", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, dws_delivery_range("bytes=-", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, dws_delivery_range("bytes=0-100,200-300", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, dws_delivery_range("items=0-100", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, dws_delivery_range("bytes=0-499", 0, &s, &e))</code>
-      * <code>Assert equal int (0, dws_delivery_range("bytes=0-abc", 1000, &s, &e))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_content_range</b> &mdash; <i>Content range</i></summary>
-
-    * **Objective**: Content range
-    * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
-      * <code>Assert equal string ("bytes 500-999/1000", buf)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
     <summary><b>test_sw_manifest</b> &mdash; <i>Empty list.</i></summary>
 
     * **Objective**: Empty list.
@@ -12587,14 +12531,25 @@ A thorough directory of all **3341 test cases** across **269 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_manifest_fits_the_served_buffer</b> &mdash; <i>One byte short of what it needs -> 0, never a partial document.</i></summary>
+
+    * **Objective**: One byte short of what it needs -> 0, never a partial document.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
+      * <code>Assert equal char ('{', buf[0])</code>
+      * <code>Assert equal char ('}', buf[n - 1])</code>
+      * <code>Assert not null (strstr(buf, "\\"version\\":\\"7.15.0\\""))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, DWS_DELIVERY_PRECACHE_MAX, "7.15.0", buf, n));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_delivery_guards_and_escape</b> &mdash; <i>Delivery guards and escape</i></summary>
 
     * **Objective**: Delivery guards and escape
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_cache_control(60, 30, nullptr, sizeof(buf))); // null out</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_cache_control(60, 30, buf, 0));               // zero cap</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_content_range(0, 10, 100, buf, 2));           // tiny cap</code>
-      * <code>Assert equal int (0, dws_delivery_range("garbage", 100, &start, &end))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert not null (strstr(buf, "\\\\\\""))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, 1, "1.0", buf, 4)); // tiny cap fails closed</code>

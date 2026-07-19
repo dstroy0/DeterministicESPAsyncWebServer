@@ -1,8 +1,8 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Host tests for services/http_delivery: RFC 5861 stale-while-revalidate, RFC 7233 byte ranges,
-// and the service-worker precache manifest.
+// Host tests for services/http_delivery: RFC 5861 stale-while-revalidate (decision + header) and
+// the service-worker precache manifest. Byte-range serving is server/http_range.h's job.
 
 #include "services/http_delivery/http_delivery.h"
 #include <string.h>
@@ -45,56 +45,6 @@ void test_cache_control(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_delivery_cache_control(3600, 30, tiny, sizeof(tiny)));
 }
 
-void test_range_forms(void)
-{
-    uint32_t s = 0, e = 0;
-    // X-Y
-    TEST_ASSERT_EQUAL_INT(1, dws_delivery_range("bytes=0-499", 1000, &s, &e));
-    TEST_ASSERT_EQUAL_UINT32(0, s);
-    TEST_ASSERT_EQUAL_UINT32(499, e);
-    // X- (from offset to end) -- the delta/offset log fetch case.
-    TEST_ASSERT_EQUAL_INT(1, dws_delivery_range("bytes=500-", 1000, &s, &e));
-    TEST_ASSERT_EQUAL_UINT32(500, s);
-    TEST_ASSERT_EQUAL_UINT32(999, e);
-    // -N (suffix / last N bytes)
-    TEST_ASSERT_EQUAL_INT(1, dws_delivery_range("bytes=-200", 1000, &s, &e));
-    TEST_ASSERT_EQUAL_UINT32(800, s);
-    TEST_ASSERT_EQUAL_UINT32(999, e);
-    // Suffix larger than resource -> whole resource.
-    TEST_ASSERT_EQUAL_INT(1, dws_delivery_range("bytes=-5000", 1000, &s, &e));
-    TEST_ASSERT_EQUAL_UINT32(0, s);
-    TEST_ASSERT_EQUAL_UINT32(999, e);
-    // End past resource -> clamped.
-    TEST_ASSERT_EQUAL_INT(1, dws_delivery_range("bytes=990-99999", 1000, &s, &e));
-    TEST_ASSERT_EQUAL_UINT32(990, s);
-    TEST_ASSERT_EQUAL_UINT32(999, e);
-    // Leading whitespace tolerated.
-    TEST_ASSERT_EQUAL_INT(1, dws_delivery_range("  bytes=0-0", 1000, &s, &e));
-    TEST_ASSERT_EQUAL_UINT32(0, s);
-    TEST_ASSERT_EQUAL_UINT32(0, e);
-}
-
-void test_range_rejects(void)
-{
-    uint32_t s = 0, e = 0;
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=1000-2000", 1000, &s, &e));     // start >= total -> 416
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=500-100", 1000, &s, &e));       // start > end
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=-0", 1000, &s, &e));            // zero suffix
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=-", 1000, &s, &e));             // empty spec
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=0-100,200-300", 1000, &s, &e)); // multi-range unsupported
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("items=0-100", 1000, &s, &e));         // wrong unit
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=0-499", 0, &s, &e));            // empty resource
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=0-abc", 1000, &s, &e));         // garbage end
-}
-
-void test_content_range(void)
-{
-    char buf[48];
-    size_t n = dws_delivery_content_range(500, 999, 1000, buf, sizeof(buf));
-    TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
-    TEST_ASSERT_EQUAL_STRING("bytes 500-999/1000", buf);
-}
-
 void test_sw_manifest(void)
 {
     const char *paths[3] = {"/", "/app.js", "/style.css"};
@@ -112,50 +62,52 @@ void test_delivery_guards_and_escape()
     char buf[256];
     TEST_ASSERT_EQUAL_size_t(0, dws_delivery_cache_control(60, 30, nullptr, sizeof(buf))); // null out
     TEST_ASSERT_EQUAL_size_t(0, dws_delivery_cache_control(60, 30, buf, 0));               // zero cap
-    TEST_ASSERT_EQUAL_size_t(0, dws_delivery_content_range(0, 10, 100, buf, 2));           // tiny cap
-    uint32_t start = 0, end = 0;
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("garbage", 100, &start, &end)); // no valid range -> ignore
-    (void)dws_delivery_range("bytes=500-600", 100, &start, &end);               // exercise the unsatisfiable path
-    const char *paths[1] = {"a\"b\\c"};                                         // quote + backslash
+    const char *paths[1] = {"a\"b\\c"};                                                    // quote + backslash
     size_t n = dws_delivery_sw_manifest(paths, 1, "1.0", buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_NOT_NULL(strstr(buf, "\\\""));                                      // escaped quote present
     TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, 1, "1.0", buf, 4)); // tiny cap fails closed
 }
 
-// Byte-range parser edges (u32 overflow guards, missing dash, trailing whitespace) and
-// the null-output guards on the content-range / service-worker-manifest builders.
-void test_range_and_builder_edge_guards(void)
+// Null-output and capacity guards on the cache-control / service-worker-manifest builders.
+// (Byte-range parsing lives in server/http_range.h and is tested by the file-serving suite.)
+void test_builder_edge_guards(void)
 {
-    uint32_t s = 0, e = 0;
-    // Oversized start (>10 digits) -> read_u32 overflow guard rejects.
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=99999999999-", 1000, &s, &e));
-    // A start with no '-' following -> reject.
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=5", 1000, &s, &e));
-    // Oversized end (>10 digits) -> reject.
-    TEST_ASSERT_EQUAL_INT(0, dws_delivery_range("bytes=0-99999999999", 1000, &s, &e));
-    // Trailing whitespace after a valid range is tolerated.
-    TEST_ASSERT_EQUAL_INT(1, dws_delivery_range("bytes=0-5 ", 1000, &s, &e));
-    TEST_ASSERT_EQUAL_UINT32(0, s);
-    TEST_ASSERT_EQUAL_UINT32(5, e);
-
     char buf[64];
-    TEST_ASSERT_EQUAL_size_t(0, dws_delivery_content_range(0, 10, 100, nullptr, sizeof(buf))); // null out
     const char *paths[1] = {"/a"};
     TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, 1, "v", nullptr, sizeof(buf))); // null out
     TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(nullptr, 2, "v", buf, sizeof(buf)));   // n>0, null paths
 }
 
+// What the /precache.json route depends on: a full-size manifest fits the shipped buffer, and an
+// oversized one fails closed (the route answers 500 rather than serving truncated JSON a service
+// worker would choke on).
+void test_manifest_fits_the_served_buffer(void)
+{
+    const char *paths[DWS_DELIVERY_PRECACHE_MAX];
+    for (size_t i = 0; i < DWS_DELIVERY_PRECACHE_MAX; i++)
+        paths[i] = "/assets/chunk-0000.js"; // a realistic worst-case path length
+
+    char buf[DWS_DELIVERY_MANIFEST_BUF];
+    size_t n = dws_delivery_sw_manifest(paths, DWS_DELIVERY_PRECACHE_MAX, "7.15.0", buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
+    TEST_ASSERT_EQUAL_CHAR('{', buf[0]);
+    TEST_ASSERT_EQUAL_CHAR('}', buf[n - 1]); // complete JSON, not truncated
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"version\":\"7.15.0\""));
+
+    // One byte short of what it needs -> 0, never a partial document.
+    TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, DWS_DELIVERY_PRECACHE_MAX, "7.15.0", buf, n));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
-    RUN_TEST(test_range_and_builder_edge_guards);
+    RUN_TEST(test_builder_edge_guards);
     RUN_TEST(test_swr_decision);
     RUN_TEST(test_cache_control);
-    RUN_TEST(test_range_forms);
-    RUN_TEST(test_range_rejects);
-    RUN_TEST(test_content_range);
     RUN_TEST(test_sw_manifest);
+    RUN_TEST(test_manifest_fits_the_served_buffer);
     RUN_TEST(test_delivery_guards_and_escape);
     return UNITY_END();
 }
