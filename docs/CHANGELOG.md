@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.15.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.15.0 - 2026-07-19</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`81dd1b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81dd1b5773d6ab047dc1b4eaffa553d390d90dd3))
+
+### Changes
+
+- Bump version: 7.14.0 → 7.15.0 ([`36a3796`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36a379636505c7aa553bdf00de4068b401c5f2c6))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`57c0aa7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57c0aa7214c3c3e8a185114996925b76f304a5f9))
+
+### Features
+
+- wire stale-while-revalidate + ship the service worker ([`97f89a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97f89a036560129cf177c6153fdce1a4567952ff))
+
+</details>
+
 ## [7.14.0] - 2026-07-19
 
 <details>
