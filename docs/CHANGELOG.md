@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.9.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.9.0 - 2026-07-19</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`94bd2b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/94bd2b43619948c3ed03b99877121bc0b884ba45))
+- update CHANGELOG.md [skip ci] ([`5841108`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5841108da45aa5c7dc0768dd55b0d32bda2f4837))
+
+### Changes
+
+- Bump version: 7.8.0 → 7.9.0 ([`aad16f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aad16f4efea6ddcc90eae6c6ba41f66d90454e9a))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d2e7424`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2e7424a0e87170d7a206cc6bf801366a5831290))
+
+### Refactor
+
+- use library transport everywhere; drop Arduino WiFi/WiFiClient ([`63800f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/63800f3615b1e88ce56d8ff9d5603cb337cdcca2))
+
+</details>
+
 ## [7.8.0] - 2026-07-19
 
 <details>
