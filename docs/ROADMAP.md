@@ -410,16 +410,16 @@ preempting queue, so sensing shares the real-time ingest path.
   pure, host-tested (`native_mdns_adaptive`). _Remaining:_ wiring the schedule to the mDNS transmit + a
   live contention counter from the WiFi driver (M).
 - [x] Raw-UDP telemetry cast _(shipped)_ - `DWS_ENABLE_UDP_TELEMETRY`: `services/udp_telemetry` builds InfluxDB line-protocol records (`measurement field=val,...`, host-tested) and casts them to a collector over UDP via `dws_udp_sendto`, zero-heap fire-and-forget (example UdpTelemetry).
-- [~] **Static-IP fallback + TCP window auto-scaling by free RAM (M)** _(decision core shipped)_ -
-  `DWS_ENABLE_NETADAPT`: `services/netadapt` `dws_netadapt_window()` sizes the TCP receive window
-  from the free heap (a reserve left untouched, then a quarter of the spare, clamped to [min, max]) so
-  a RAM-rich device gets throughput and a tight one stays alive; `dws_netadapt_dhcp_fallback()`
-  decides when to give up on DHCP and use a static IP (elapsed timeout or retry budget). Pure cores,
-  host-tested (`native_netadapt`); the app applies the results (lwIP window / netif config). Dynamic
-  socket recycling (the transport-pool concern) shipped separately as `DWS_ENABLE_SOCKPOOL`
-  (`services/sockpool`): a fixed LRU connection-slot pool that, when saturated, recycles the
-  least-recently-used slot for a new peer and reports the evicted id so the transport closes it (acquire /
-  touch / release / find), pure + host-tested (`native_sockpool`). _Remaining:_ none (cores complete).
+- [x] **Static-IP fallback + TCP window auto-scaling by free RAM (M)** _(shipped)_ -
+      `DWS_ENABLE_NETADAPT`: `services/netadapt` `dws_netadapt_window()` sizes the TCP receive window
+      from the free heap (a reserve left untouched, then a quarter of the spare, clamped to [min, max]) so
+      a RAM-rich device gets throughput and a tight one stays alive; `dws_netadapt_dhcp_fallback()`
+      decides when to give up on DHCP and use a static IP (elapsed timeout or retry budget). Pure cores,
+      host-tested (`native_netadapt`); the app applies the results (lwIP window / netif config). Dynamic
+      socket recycling (the transport-pool concern) shipped separately as `DWS_ENABLE_SOCKPOOL`
+      (`services/sockpool`): a fixed LRU connection-slot pool that, when saturated, recycles the
+      least-recently-used slot for a new peer and reports the evicted id so the transport closes it (acquire /
+      touch / release / find), pure + host-tested (`native_sockpool`). _Remaining:_ none (cores complete).
 
 ## Power & radio management
 
