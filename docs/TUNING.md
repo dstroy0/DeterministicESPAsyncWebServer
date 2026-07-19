@@ -61,14 +61,18 @@ inherited the same cramped numbers. Instead, [`src/board_profiles/`](../src/boar
 layers defaults along three independent axes, selected in [`board_profile.h`](../src/board_profiles/board_profile.h)
 (included first thing in `ServerConfig.h`):
 
-- **chip** - `classic_defaults.h` / `s3_defaults.h` / `c6_defaults.h` / `p4_defaults.h`.
-  Auto-selected from the SoC target macro (`CONFIG_IDF_TARGET_*`); classic ESP32 and
-  host builds use the classic floor. Holds HW-specific switches and chip-appropriate
-  defaults (internal SRAM, core count, crypto HW acceleration).
-- **PSRAM size** - `8mbpsram.h` / `16mbpsram.h` / `32mbpsram.h`. A given chip ships with
-  or without PSRAM, so this is its own axis. Scales the RAM-backed pools up.
-- **flash size** - `8mbflash.h` / `16mbflash.h` / `32mbflash.h`. Likewise independent; for
-  flash-backed sizing.
+- **chip** - one file per ESP-IDF die: `classic_defaults.h` (ESP32), `s2` / `s3` / `c2` /
+  `c3` / `c5` / `c6` / `c61` / `h2` / `p4` `_defaults.h`, plus preview targets `s31` / `h4` /
+  `h21` (in ESP-IDF `master` only). Auto-selected from `CONFIG_IDF_TARGET_*`; classic ESP32
+  and host builds use the classic floor. Holds each die's chip-appropriate sizing and its
+  per-die HW-crypto flags - `DWS_HW_AES` / `_SHA` / `_RSA` / `_ECC` / `_ECDSA` / `_HMAC` /
+  `_DS` - which are genuinely different across the lineup (e.g. C2/C61 have no general-purpose
+  AES peripheral and no RSA/MPI; C6 has no ECDSA; H4 has no RSA/DS), so gate a HW path on the
+  specific flag, never on "it's an ESP32". Values track each target's ESP-IDF `soc_caps.h`.
+- **PSRAM size** - `2mbpsram.h` / `4mbpsram.h` / `8mbpsram.h` / `16mbpsram.h` / `32mbpsram.h`.
+  A given chip ships with or without PSRAM, so this is its own axis. Scales the RAM-backed pools up.
+- **flash size** - `2mbflash.h` / `4mbflash.h` / `8mbflash.h` / `16mbflash.h` / `32mbflash.h`.
+  Likewise independent; for flash-backed sizing.
 
 Every profile default is `#ifndef`-guarded, so precedence is _first definition wins_:
 

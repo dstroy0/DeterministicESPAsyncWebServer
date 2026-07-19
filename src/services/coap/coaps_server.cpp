@@ -243,7 +243,7 @@ CoapsSlot *open_conn(const char *ip, uint16_t port)
 }
 
 #if defined(ARDUINO)
-void udp_ingest_cb(const uint8_t *data, size_t len, DWSUdpPeer *peer, void * /*ctx*/)
+void udp_ingest_cb(const uint8_t *data, size_t len, const DWSUdpPeer *peer, void * /*ctx*/)
 {
     char ip[16];
     uint16_t port = 0;

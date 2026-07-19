@@ -3,20 +3,39 @@
 
 /**
  * @file p4_defaults.h
- * @brief ESP32-P4 chip defaults - dual RISC-V (high performance), 768 KB SRAM, no radio.
+ * @brief ESP32-P4 die profile - dual RISC-V + FPU up to 400 MHz, 768 KB L2MEM, no radio.
  *
- * The largest internal SRAM of the supported chips and a fast dual core, so the pools get
- * the biggest no-PSRAM bump; the P4 has no built-in Wi-Fi (it pairs with a companion radio),
- * and is commonly fitted with PSRAM (a PSRAM profile, included first, scales further). HW-
- * specific switches live here. classic_defaults.h is pulled in last as the floor.
+ * The high-performance host MCU: dual RISC-V with FPU/AI, MIPI-CSI/DSI, USB-HS, and the largest
+ * internal SRAM (768 KB L2MEM). It has NO built-in radio (pairs with a companion Wi-Fi/BT chip),
+ * and is commonly fitted with high-bandwidth PSRAM up to 32 MB (a PSRAM profile, included first,
+ * scales further). Full crypto HW: AES, SHA, RSA/MPI (4096-bit), ECC, ECDSA, HMAC, DS.
+ * classic_defaults.h is the sizing floor; every macro is `#ifndef`-guarded.
  */
 
 #ifndef DWS_P4_DEFAULTS_H
 #define DWS_P4_DEFAULTS_H
 
-// --- HW-specific switches (P4 has a large crypto/DMA accelerator set) ---
-#ifndef DWS_HAS_CRYPTO_HWACCEL
-#define DWS_HAS_CRYPTO_HWACCEL 1
+// --- HW crypto accelerators (full suite, RSA up to 4096-bit) ---
+#ifndef DWS_HW_AES
+#define DWS_HW_AES 1
+#endif
+#ifndef DWS_HW_SHA
+#define DWS_HW_SHA 1
+#endif
+#ifndef DWS_HW_RSA
+#define DWS_HW_RSA 1
+#endif
+#ifndef DWS_HW_ECC
+#define DWS_HW_ECC 1
+#endif
+#ifndef DWS_HW_ECDSA
+#define DWS_HW_ECDSA 1
+#endif
+#ifndef DWS_HW_HMAC
+#define DWS_HW_HMAC 1
+#endif
+#ifndef DWS_HW_DS
+#define DWS_HW_DS 1
 #endif
 
 // --- Sizing (largest no-PSRAM bump: 768 KB SRAM + fast dual core) ---
@@ -36,5 +55,5 @@
 #define DWS_MESH_MAX_CONNS 2
 #endif
 
-#include "classic_defaults.h" // universal floor for anything not set above
-#endif                        // DWS_P4_DEFAULTS_H
+#include "classic_defaults.h"
+#endif // DWS_P4_DEFAULTS_H

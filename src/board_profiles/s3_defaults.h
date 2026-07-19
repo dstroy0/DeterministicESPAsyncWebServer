@@ -3,22 +3,41 @@
 
 /**
  * @file s3_defaults.h
- * @brief ESP32-S3 chip defaults - dual Xtensa LX7, 512 KB internal SRAM, crypto HW accel.
+ * @brief ESP32-S3 die profile - dual Xtensa LX7, 512 KB SRAM, Wi-Fi 4 + BLE 5.0, Octal PSRAM.
  *
- * More internal SRAM than the classic ESP32, so the RAM-backed pools get a modest bump even
- * with no PSRAM fitted; a PSRAM profile (included first) scales them further. HW-specific
- * switches for this SoC also live here. classic_defaults.h is pulled in last as the floor.
+ * Roomier usable DRAM than the classic ESP32 plus AI/vector DSP instructions, so the RAM-backed
+ * pools get a modest bump even with no PSRAM fitted (a PSRAM profile, included first, scales them
+ * further). Crypto HW: AES, SHA, RSA/MPI, HMAC, DS (no ECC/ECDSA). classic_defaults.h is pulled
+ * in last as the sizing floor; every macro is `#ifndef`-guarded so a -D override wins.
  */
 
 #ifndef DWS_S3_DEFAULTS_H
 #define DWS_S3_DEFAULTS_H
 
-// --- HW-specific switches (S3 has AES / SHA / RSA-MPI acceleration) ---
-#ifndef DWS_HAS_CRYPTO_HWACCEL
-#define DWS_HAS_CRYPTO_HWACCEL 1
+// --- HW crypto accelerators ---
+#ifndef DWS_HW_AES
+#define DWS_HW_AES 1
+#endif
+#ifndef DWS_HW_SHA
+#define DWS_HW_SHA 1
+#endif
+#ifndef DWS_HW_RSA
+#define DWS_HW_RSA 1
+#endif
+#ifndef DWS_HW_ECC
+#define DWS_HW_ECC 0
+#endif
+#ifndef DWS_HW_ECDSA
+#define DWS_HW_ECDSA 0
+#endif
+#ifndef DWS_HW_HMAC
+#define DWS_HW_HMAC 1
+#endif
+#ifndef DWS_HW_DS
+#define DWS_HW_DS 1
 #endif
 
-// --- Sizing (bumped over the classic floor to use the larger 512 KB SRAM) ---
+// --- Sizing (bumped over the classic floor to use the roomier DRAM) ---
 #ifndef DWS_EDGE_CACHE_SLOTS
 #define DWS_EDGE_CACHE_SLOTS 8
 #endif
@@ -35,5 +54,5 @@
 #define DWS_MESH_MAX_CONNS 2
 #endif
 
-#include "classic_defaults.h" // universal floor for anything not set above
+#include "classic_defaults.h" // sizing floor for anything not set above
 #endif                        // DWS_S3_DEFAULTS_H

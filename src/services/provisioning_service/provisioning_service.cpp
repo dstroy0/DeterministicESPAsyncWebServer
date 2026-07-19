@@ -95,7 +95,7 @@ static ProvCtx s_prov;
 // the read / clear / save paths (and, for ssid/psk, as the HTML form field names).
 
 // Catch-all DNS: answer every query with our softAP IP (captive-portal hijack).
-static void prov_dns_recv(const uint8_t *req, size_t qlen, struct DWSUdpPeer *peer, void *ctx)
+static void prov_dns_recv(const uint8_t *req, size_t qlen, const struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     if (qlen < 12)

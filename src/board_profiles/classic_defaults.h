@@ -3,18 +3,45 @@
 
 /**
  * @file classic_defaults.h
- * @brief Classic ESP32 (and host/native) default sizing - the universal conservative floor.
+ * @brief Classic ESP32 die profile + the universal conservative sizing floor.
  *
- * Dual Xtensa LX6, 320 KB internal SRAM, ~122 KB `dram0_0_seg` after the stack/BSS, no PSRAM.
- * This is the smallest supported target, so these are the conservative defaults every other
- * variant file layers on top of (each chip profile includes this last as the floor). Values
- * match the library's historical flat defaults, so classic-ESP32 behavior is unchanged.
+ * Dual Xtensa LX6, 520 KB internal SRAM (~122 KB usable `dram0_0_seg` after IRAM/reserved),
+ * no PSRAM by default. This is the smallest usable-DRAM budget of the supported targets, so its
+ * sizing doubles as the floor every other chip profile includes last (they override upward).
+ * Sizing values match the library's historical flat defaults, so classic-ESP32 and host builds
+ * are unchanged.
  *
- * Every macro is `#ifndef`-guarded, so a -D override or a richer variant profile wins.
+ * The crypto-HW flags below are the classic ESP32's accelerator set (AES, SHA, RSA/MPI - no
+ * ECC/ECDSA/HMAC/DS). Every chip profile that includes this file as the floor first defines its
+ * OWN `DWS_HW_*` flags, so these apply only to the classic-ESP32 (and, harmlessly, host) path.
+ * All macros are `#ifndef`-guarded, so a -D override or a richer variant profile always wins.
  */
 
 #ifndef DWS_CLASSIC_DEFAULTS_H
 #define DWS_CLASSIC_DEFAULTS_H
+
+// --- HW crypto accelerators (classic ESP32: AES + SHA + RSA/MPI only) ---
+#ifndef DWS_HW_AES
+#define DWS_HW_AES 1
+#endif
+#ifndef DWS_HW_SHA
+#define DWS_HW_SHA 1
+#endif
+#ifndef DWS_HW_RSA
+#define DWS_HW_RSA 1 // the MPI/bignum accelerator
+#endif
+#ifndef DWS_HW_ECC
+#define DWS_HW_ECC 0
+#endif
+#ifndef DWS_HW_ECDSA
+#define DWS_HW_ECDSA 0
+#endif
+#ifndef DWS_HW_HMAC
+#define DWS_HW_HMAC 0
+#endif
+#ifndef DWS_HW_DS
+#define DWS_HW_DS 0 // Digital Signature peripheral
+#endif
 
 // --- Edge cache (RAM-backed L1: each slot holds one cached object, ~2.6 KB) ---
 #ifndef DWS_EDGE_CACHE_SLOTS

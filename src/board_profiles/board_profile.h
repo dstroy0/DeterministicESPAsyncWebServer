@@ -39,6 +39,10 @@
 #define DWS_FLASH_MB 16
 #elif defined(CONFIG_ESPTOOLPY_FLASHSIZE_8MB)
 #define DWS_FLASH_MB 8
+#elif defined(CONFIG_ESPTOOLPY_FLASHSIZE_4MB)
+#define DWS_FLASH_MB 4
+#elif defined(CONFIG_ESPTOOLPY_FLASHSIZE_2MB)
+#define DWS_FLASH_MB 2
 #endif
 #endif
 
@@ -50,6 +54,10 @@
 #define DWS_PSRAM_MB 16
 #elif CONFIG_SPIRAM_SIZE >= (8 * 1024 * 1024)
 #define DWS_PSRAM_MB 8
+#elif CONFIG_SPIRAM_SIZE >= (4 * 1024 * 1024)
+#define DWS_PSRAM_MB 4
+#elif CONFIG_SPIRAM_SIZE >= (2 * 1024 * 1024)
+#define DWS_PSRAM_MB 2
 #endif
 #endif
 
@@ -61,6 +69,10 @@
 #include "16mbpsram.h"
 #elif DWS_PSRAM_MB >= 8
 #include "8mbpsram.h"
+#elif DWS_PSRAM_MB >= 4
+#include "4mbpsram.h"
+#elif DWS_PSRAM_MB >= 2
+#include "2mbpsram.h"
 #endif
 #endif
 
@@ -72,16 +84,41 @@
 #include "16mbflash.h"
 #elif DWS_FLASH_MB >= 8
 #include "8mbflash.h"
+#elif DWS_FLASH_MB >= 4
+#include "4mbflash.h"
+#elif DWS_FLASH_MB >= 2
+#include "2mbflash.h"
 #endif
 #endif
 
-// --- chip profile (each pulls classic_defaults.h in last as the universal floor) ---
+// --- chip profile (auto-selected from the SoC target macro; each pulls classic_defaults.h in
+//     last as the universal sizing floor). Every macro name is uppercase with no hyphen/underscore
+//     in the suffix (e.g. ...ESP32C61), verified against ESP-IDF's components/soc/<target>/.
+//     S31/H4/H21 are preview targets (in ESP-IDF master, not a stable release yet). ---
 #if defined(CONFIG_IDF_TARGET_ESP32P4)
 #include "p4_defaults.h"
-#elif defined(CONFIG_IDF_TARGET_ESP32C6)
-#include "c6_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32S31)
+#include "s31_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
 #include "s3_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32S2)
+#include "s2_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C2)
+#include "c2_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+#include "c3_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C5)
+#include "c5_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C61)
+#include "c61_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+#include "c6_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32H21)
+#include "h21_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32H2)
+#include "h2_defaults.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32H4)
+#include "h4_defaults.h"
 #else
 // Classic ESP32 and host/native builds (no SoC target macro) land here.
 #include "classic_defaults.h"

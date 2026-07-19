@@ -31,3 +31,8 @@ rig_report.json
 # local CodeQL pre-ship gate output (SARIF copied back from the WSL runner; see
 # ~/.claude/scripts/wsl_codeql.sh). The CI CodeQL workflow is the source of truth.
 .codeql-local/
+
+# Espressif datasheet PDFs pulled for local reference while building src/board_profiles/.
+# Not committed - binary, ~9 MB, and this is a published library. docs/reference/README.md
+# links the online copies instead.
+docs/reference/*.pdf
