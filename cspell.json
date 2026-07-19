@@ -1385,7 +1385,8 @@
     "IKEV",
     "HWADDR",
     "LADDR",
-    "PANID"
+    "PANID",
+    "zigpy"
   ],
   "ignorePaths": [
     "node_modules/**",

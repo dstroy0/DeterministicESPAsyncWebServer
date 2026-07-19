@@ -185,6 +185,12 @@ UART radios:
   ASH data-link (encode/decode) that carries EZSP, host-tested against the documented
   RST frame; example ZigbeeGateway bridges a real NCP. Remaining: the EZSP command
   layer (version negotiation, incomingMessageHandler) + verify against an NCP.
+  **Blocked on hardware:** this is a bridge to an _external_ EZSP/ZNP co-processor, so closing it
+  needs a Silicon Labs EmberZNet NCP (EFR32), a Digi XBee, or a TI ZNP module - none on hand, and
+  unlike Thread's spinel there is no open reference NCP to interop against in software (EmberZNet
+  and Z-Stack are proprietary; zigpy/bellows are _hosts_, not NCPs). Note an ESP32-C6/H2 does
+  **not** close this: its native 802.15.4 radio speaks Espressif's own Zigbee stack, not EZSP over
+  a UART, so it is a different architecture rather than a drop-in NCP.
 - [~] \*Z-Wave Serial API gateway (M) - Silicon Labs 500 / 700-series over UART.
   **Serial API frame codec shipped** (`DWS_ENABLE_ZWAVE`, `services/zwave`):
   SOF/LEN/Type/Cmd/Data frames + the XOR checksum + ACK/NAK/CAN, host-tested against
