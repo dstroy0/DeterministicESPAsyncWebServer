@@ -24,8 +24,8 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 > libraries): mDNS via the ESP-IDF `mdns` component, the captive-portal DNS via a
 > raw lwIP UDP socket. Each is gated by a `DWS_ENABLE_*` flag (default off).
 >
-> **Still deferred (YAGNI / large):** IPv6 dual-stack and an Ethernet PHY
-> abstraction (the two architectural tracks); concurrent TLS connections
+> **Still deferred (YAGNI / large):** an Ethernet PHY abstraction (an
+> architectural track); concurrent TLS connections
 > (`MAX_TLS_CONNS` > 1 needs a smaller-record ESP-IDF build); SSH
 > multiplexing, per-direction
 > NEWKEYS, and the KDF `K1‖K2…` extension (no current use case); moving
@@ -99,7 +99,6 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
 - **Concurrent TLS** (`MAX_TLS_CONNS`>1) - library + PSRAM build done; only the live 2-client soak remains
   (the reserved **two-rig HW test**, held per the user's "keep looping, hold the rigs").
 - **Ethernet PHY** - RMII bring-up shipped; needs a real PHY board to verify.
-- **IPv6 dual-stack** - phase 1 + 2 shipped; needs SLAAC verified on a real v6 network.
 - **CoAP scope** - `/.well-known/core` discovery shipped; separate/deferred responses + CON dedup are
   deliberately out of scope.
 - **SSH channels** - `direct-tcpip` (`ssh -L`) shipped; `forwarded-tcpip` (`ssh -R`) + X11 pending.
@@ -544,7 +543,7 @@ Open follow-ups discovered during the above:
       wired route (DETIFACE_ETH, host-tested), so the server serves over Ethernet - or
       dual-homed with Wi-Fi - once the link has an IP. Example Ethernet; ESP32-compiled.
       Remaining: verify against a PHY board.
-- [~] **IPv6 dual-stack** - _phase 1 landed (v4.83.0); phase 2 landed (v4.89.0)._ `DWS_ENABLE_IPV6`
+- [x] **IPv6 dual-stack** - _phase 1 landed (v4.83.0); phase 2 landed (v4.89.0); HW-verified 2026-07-19._ `DWS_ENABLE_IPV6`
       enables IPv6 on the netif (`init_ipv6_physical` / `net_global_ipv6` / `dws_ipv6_ready`); the
       listeners already bind `IPADDR_TYPE_ANY`, so the server accepts v6 once an address is up. The
       `DWSIp` address core (`network_drivers/network/ip.h`) parses / formats / classifies both
@@ -556,8 +555,13 @@ Open follow-ups discovered during the above:
       [`dws_ip_prefix_match`](@ref dws_ip_prefix_match) (v4 /0-32 + v6 /0-128 CIDR via
       [`listener_ip_allow_add_cidr`](@ref listener_ip_allow_add_cidr)). This replaced the interim v6
       32-bit hash key, which was collidable (see docs/BUGS.md); no abuse-prevention state is keyed on
-      a hash or a uint32 flattening any more (the audit log has no client-IP field). **Remaining:**
-      HW-verify SLAAC on a real v6 network.
+      a hash or a uint32 flattening any more (the audit log has no client-IP field). **HW-verified
+      (2026-07-19):** an ESP32-S3 (arduino-esp32 2.x) joined to a dual-stack Wi-Fi network formed a
+      full SLAAC address set via the shipped `init_ipv6_physical()` - link-local, a unique-local
+      (`fd00::/8`), and a router-advertised global (`2600:.../64`); `net_global_ipv6()` read the
+      global correctly, and the dual-stack `IPADDR_TYPE_ANY` `:80` listener answered real HTTP `GET`s
+      over both the global and the ULA (curled from an on-link Linux host, byte-exact body). The 3.x
+      path is the analogous `WiFi.enableIPv6()` (CI-compiled on the Arduino 3.x core).
 - [x] **Shared scratch-buffer pool (decided: build before permessage-deflate).** _(done)_
       Several features carry their own fixed _transient_ scratch (SSH `crypto_work`
       and the ~2 KB `ssh_pkt_recv` stack buffer, header formatting, the upcoming

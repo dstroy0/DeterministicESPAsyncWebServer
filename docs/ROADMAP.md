@@ -358,9 +358,11 @@ preempting queue, so sensing shares the real-time ingest path.
   (`native_link_manager`). _Remaining:_ the `esp_eth` PHY init on hardware + the multi-interface bridge /
   packet forwarding (the v5 interface-forwarding milestone).
 - [~] IPv6 dual-stack + fallback (L); VPN tunneling + reverse-SSH tunnel to a relay (L) _(dual-stack +
-  fallback shipped)_ - the address plumbing is `DWSIp` (RFC 4291 parse / RFC 5952 format / scope classify
-  / CIDR) and the netif bring-up is `DWS_ENABLE_IPV6` (physical layer; listeners bind
-  `IPADDR_TYPE_ANY`). The client-side fallback is `DWS_ENABLE_HAPPY_EYEBALLS` (`services/happy_eyeballs`):
+  fallback shipped + HW-verified 2026-07-19)_ - the address plumbing is `DWSIp` (RFC 4291 parse / RFC 5952
+  format / scope classify / CIDR) and the netif bring-up is `DWS_ENABLE_IPV6` (physical layer; listeners bind
+  `IPADDR_TYPE_ANY`). HW-verified on an ESP32-S3: SLAAC formed link-local + ULA + a router-advertised global,
+  and the dual-stack `:80` listener served real HTTP `GET`s over IPv6 (curled on-link over both the global and
+  the ULA). The client-side fallback is `DWS_ENABLE_HAPPY_EYEBALLS` (`services/happy_eyeballs`):
   `dws_he_pref` scores a destination (RFC 6724 scope + family), `dws_he_order` sorts a candidate list
   and interleaves the address families (RFC 8305) so successive attempts alternate v6/v4, and
   `dws_he_attempt_due` gates the next attempt by the Connection Attempt Delay - fast IPv6, quick IPv4
