@@ -220,7 +220,7 @@
     "example": "L7-Application/GpioMap",
     "flags": "-DDWS_ENABLE_GPIO_MAP=1",
     "board": "esp32dev",
-    "flash_bytes": 756701,
+    "flash_bytes": 756685,
     "ram_bytes": 81848
   },
   "GRAPHQL": {
@@ -469,11 +469,11 @@
     "ram_bytes": 21920
   },
   "PREEMPT_QUEUE": {
-    "example": "Foundation/PreemptLanes",
+    "example": "Foundation/PreemptQueue",
     "flags": "-DDWS_ENABLE_PREEMPT_QUEUE=1",
     "board": "esp32dev",
-    "flash_bytes": 268401,
-    "ram_bytes": 23936
+    "flash_bytes": 274069,
+    "ram_bytes": 23968
   },
   "PROMISC+FORWARD+ETHERNET": {
     "example": "Peripherals/WifiCapture",
@@ -516,6 +516,13 @@
     "board": "esp32dev",
     "flash_bytes": 766653,
     "ram_bytes": 45372
+  },
+  "SCPI": {
+    "example": "L7-Application/Scpi",
+    "flags": "-DDWS_ENABLE_SCPI=1",
+    "board": "esp32dev",
+    "flash_bytes": 743413,
+    "ram_bytes": 45048
   },
   "SEN0192": {
     "example": "Drivers/Sen0192",
@@ -762,12 +769,33 @@
     "flash_bytes": 268905,
     "ram_bytes": 21848
   },
+  "core/Advanced": {
+    "example": "Foundation/Advanced",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 761077,
+    "ram_bytes": 81896
+  },
   "core/Basic": {
     "example": "Foundation/Basic",
     "flags": "",
     "board": "esp32dev",
     "flash_bytes": 754421,
     "ram_bytes": 81792
+  },
+  "core/BasicAuth": {
+    "example": "L6-Presentation/BasicAuth",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 752409,
+    "ram_bytes": 81784
+  },
+  "core/CORS": {
+    "example": "L7-Application/CORS",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 752333,
+    "ram_bytes": 81784
   },
   "core/ChunkedResponse": {
     "example": "L7-Application/ChunkedResponse",
@@ -776,6 +804,34 @@
     "flash_bytes": 753065,
     "ram_bytes": 81792
   },
+  "core/DigestAuth": {
+    "example": "L6-Presentation/DigestAuth",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 752533,
+    "ram_bytes": 81784
+  },
+  "core/EthernetW5500": {
+    "example": "Peripherals/EthernetW5500",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 469573,
+    "ram_bytes": 73672
+  },
+  "core/Expert": {
+    "example": "Foundation/Expert",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 755053,
+    "ram_bytes": 81808
+  },
+  "core/FileServing": {
+    "example": "L7-Application/FileServing",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 793713,
+    "ram_bytes": 81824
+  },
   "core/FormParams": {
     "example": "L6-Presentation/FormParams",
     "flags": "",
@@ -783,18 +839,11 @@
     "flash_bytes": 753161,
     "ram_bytes": 81784
   },
-  "core/Advanced": {
-    "example": "Foundation/Advanced",
+  "core/InterfaceFilter": {
+    "example": "L7-Application/InterfaceFilter",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 761077,
-    "ram_bytes": 81896
-  },
-  "core/CORS": {
-    "example": "L7-Application/CORS",
-    "flags": "",
-    "board": "esp32dev",
-    "flash_bytes": 752333,
+    "flash_bytes": 753961,
     "ram_bytes": 81784
   },
   "core/Json": {
@@ -804,39 +853,11 @@
     "flash_bytes": 756433,
     "ram_bytes": 81792
   },
-  "core/SSHCryptoSelfTest": {
-    "example": "L5-Session/SSHCryptoSelfTest",
+  "core/MediaStreaming": {
+    "example": "L7-Application/MediaStreaming",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 269537,
-    "ram_bytes": 21476
-  },
-  "core/Expert": {
-    "example": "Foundation/Expert",
-    "flags": "",
-    "board": "esp32dev",
-    "flash_bytes": 755053,
-    "ram_bytes": 81808
-  },
-  "core/InterfaceFilter": {
-    "example": "L7-Application/InterfaceFilter",
-    "flags": "",
-    "board": "esp32dev",
-    "flash_bytes": 753961,
-    "ram_bytes": 81784
-  },
-  "core/Multipart": {
-    "example": "L6-Presentation/Multipart",
-    "flags": "",
-    "board": "esp32dev",
-    "flash_bytes": 753497,
-    "ram_bytes": 81784
-  },
-  "core/BasicAuth": {
-    "example": "L6-Presentation/BasicAuth",
-    "flags": "",
-    "board": "esp32dev",
-    "flash_bytes": 752409,
+    "flash_bytes": 752253,
     "ram_bytes": 81784
   },
   "core/Middleware": {
@@ -846,18 +867,18 @@
     "flash_bytes": 752961,
     "ram_bytes": 81784
   },
-  "core/Sysadmin": {
-    "example": "Foundation/Sysadmin",
+  "core/Multipart": {
+    "example": "L6-Presentation/Multipart",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 766285,
-    "ram_bytes": 81800
+    "flash_bytes": 753497,
+    "ram_bytes": 81784
   },
-  "core/DigestAuth": {
-    "example": "L6-Presentation/DigestAuth",
+  "core/NetEgress": {
+    "example": "L7-Application/NetEgress",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 752533,
+    "flash_bytes": 753037,
     "ram_bytes": 81784
   },
   "core/PathParams": {
@@ -881,12 +902,26 @@
     "flash_bytes": 752869,
     "ram_bytes": 81784
   },
+  "core/SSHCryptoSelfTest": {
+    "example": "L5-Session/SSHCryptoSelfTest",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 269537,
+    "ram_bytes": 21476
+  },
   "core/ServerSentEvents": {
     "example": "L6-Presentation/ServerSentEvents",
     "flags": "",
     "board": "esp32dev",
     "flash_bytes": 752969,
     "ram_bytes": 81792
+  },
+  "core/Sysadmin": {
+    "example": "Foundation/Sysadmin",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 766285,
+    "ram_bytes": 81800
   },
   "core/Templating": {
     "example": "L7-Application/Templating",
@@ -900,34 +935,6 @@
     "flags": "",
     "board": "esp32dev",
     "flash_bytes": 752785,
-    "ram_bytes": 81784
-  },
-  "core/FileServing": {
-    "example": "L7-Application/FileServing",
-    "flags": "",
-    "board": "esp32dev",
-    "flash_bytes": 793713,
-    "ram_bytes": 81824
-  },
-  "core/EthernetW5500": {
-    "example": "Peripherals/EthernetW5500",
-    "flags": "",
-    "board": "esp32dev",
-    "flash_bytes": 469573,
-    "ram_bytes": 73672
-  },
-  "core/NetEgress": {
-    "example": "L7-Application/NetEgress",
-    "flags": "",
-    "board": "esp32dev",
-    "flash_bytes": 753037,
-    "ram_bytes": 81784
-  },
-  "core/MediaStreaming": {
-    "example": "L7-Application/MediaStreaming",
-    "flags": "",
-    "board": "esp32dev",
-    "flash_bytes": 752253,
     "ram_bytes": 81784
   }
 }
