@@ -848,9 +848,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       layout + command ids verified against the Beckhoff InfoSys spec; payloads cross-checked with
       Beckhoff's ADS library, `pyads`, and Apache PLC4X. Host-tested (`native_ads`), example AdsClient.
       Fixed BSS, no heap.
-- [ ] **Heidenhain LSV/2** (M, CNC DNC) - the LSV/2 protocol Heidenhain TNC controls use for DNC + data
-      access (block-numbered telegrams with a BCC, file transfer + run/status inspection). A CNC-native
-      southbound source for the common European control, over serial and Ethernet.
+- [x] **Heidenhain LSV/2** (M, CNC DNC) - SHIPPED (`services/lsv2`, `DWS_ENABLE_LSV2`, host-tested
+      `native_lsv2`). The LSV/2 protocol Heidenhain TNC controls use for DNC + data access, over serial or
+      LSV/2-over-TCP (port 19000): the telegram framer (a 4-byte big-endian payload-length prefix + a
+      4-character command / response mnemonic + payload, the length counting the payload only), the typed
+      request builders (login / logout `A_LG` / `A_LO` with the privilege groups, the null-terminated-filename
+      file commands `R_FL` / `C_FL` / `C_FD` / `C_DC` / `C_DM` / `C_DD`, and the `R_RI` run-info request with a
+      2-byte selector), and the response readers (`T_OK`, the `T_ER` / `T_BD` two-byte error-class + error-code,
+      and the `S_*` data replies). Framing + mnemonics + payload layouts cross-checked byte-for-byte against the
+      `pyLSV2` reference. A CNC-native southbound source for the common European control alongside `services/focas` + `services/haas_mdc`. Fixed BSS, no heap; the serial / TCP link is the application's.
 - [ ] **EUROMAP 77 / 83** (M, OPC UA for plastics) - the injection-moulding / rubber-machine OPC UA
       companion specs (EUROMAP, euromap.org NodeSet), the plastics analogue of **umati**. Layers on the
       OPC UA server exactly like `services/umati` (the machine/mould/job model through the Browse + Read

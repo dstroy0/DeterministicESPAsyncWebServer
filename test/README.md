@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **247 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **248 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -188,6 +188,7 @@ The native test matrix has **247 environments**, one per feature, generated from
 | `native_logbuf` | `WS_ENABLE_LOGBUF=1` | `test_logbuf` | Rotating log ring + severity trap (services/logbuf): pure, fully host-tested. |
 | `native_lonworks` | `WS_ENABLE_LONWORKS=1` | `test_lonworks` | LonWorks / LON-IP network-variable codec (services/lonworks): the LonTalk NV PDU ([msg-code][14-bit selector][value]) build + parse and the SNVT_temp / SNVT_switch scalar encodings. |
 | `native_lora` | `WS_ENABLE_LORA=1` | `test_lora` | LoRa codec + SX127x driver (services/lora), v5 radio plugin: the RadioHead 4-byte header parse/build, and the SX127x register protocol (init / send / tx-done / set-rx / recv) exercised against a mock ... |
+| `native_lsv2` | `WS_ENABLE_LSV2=1` | `test_lsv2` | Heidenhain LSV/2 telegram codec (services/lsv2): the framer (4-byte big-endian payload-length prefix + 4-char mnemonic + payload), the typed request builders (login A_LG / logout A_LO, null-terminated... |
 | `native_lwm2m_tlv` | `WS_ENABLE_LWM2M=1` | `test_lwm2m_tlv` | OMA LwM2M TLV codec (services/lwm2m): the writer (raw + int / bool / string / float value helpers, 8-/16-bit ids, inline / 8-/16-/24-bit lengths) + the cursor reader + integer value decoding. |
 | `native_mbplus` | `WS_ENABLE_MBPLUS=1` | `test_mbplus` | Modbus Plus HDLC token-bus codec (services/mbplus): the HDLC frame (7E addr ctrl payload CRC-16/X-25 7E) build + validate and the token-rotation ring helper. |
 | `native_mbus` | `WS_ENABLE_MBUS=1` | `test_mbus` | Wired M-Bus codec (services/mbus): the ACK / short / long frame builders + parser (start/stop, doubled length, 8-bit sum checksum) and the EN 13757-3 variable-data record walker (DIF/VIF, DIFE/VIFE ch... |
@@ -537,7 +538,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3275 test cases** across **265 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3287 test cases** across **266 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -15841,6 +15842,156 @@ A thorough directory of all **3275 test cases** across **265 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (dws_lora_frame_parse(too_short, sizeof(too_short), &hdr, &payload, &payload_len))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(&hdr, pay, sizeof(pay), out, 2)); // cap too small</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_lsv2 (12 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_no_payload</b> &mdash; <i>R_ST with no payload -> exactly 8 bytes: 00 00 00 00 'R' '_' 'S' 'T'</i></summary>
+
+    * **Objective**: R_ST with no payload -> exactly 8 bytes: 00 00 00 00 'R' '_' 'S' 'T'
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
+      * <code>Assert equal memory (want, buf, 8)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_with_payload</b> &mdash; <i>length prefix counts payload only (4)</i></summary>
+
+    * **Objective**: length prefix counts payload only (4)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(12, n);</code>
+      * <code>Assert equal memory (want, buf, 12)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(buf, 8, DWS_LSV2_CMD_PARAM, pay, sizeof(pay)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_run_info</b> &mdash; <i>tiny buffer fails closed</i></summary>
+
+    * **Objective**: tiny buffer fails closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(10, n);</code>
+      * <code>Assert equal memory (want, buf, 10)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_run_info(tiny, sizeof(tiny), LSV2_RI_EXEC_STATE));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_login</b> &mdash; <i>login "INSPECT", no password -> payload "INSPECT\0" (8 bytes)</i></summary>
+
+    * **Objective**: login "INSPECT", no password -> payload "INSPECT\0" (8 bytes)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(16, n);</code>
+      * <code>Assert equal memory (want, buf, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(15, n);</code>
+      * <code>Assert equal memory (want2, buf, 15)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_logout</b> &mdash; <i>no login -> log out of everything -> empty payload, 8 bytes</i></summary>
+
+    * **Objective**: no login -> log out of everything -> empty payload, 8 bytes
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
+      * <code>Assert equal memory (want, buf, 8)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, dws_lsv2_build_logout(buf, sizeof(buf), ""));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(12, n);</code>
+      * <code>Assert equal memory (want2, buf, 12)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_filename</b> &mdash; <i>R_FL "PGM.H" -> payload "PGM.H\0" (6 bytes)</i></summary>
+
+    * **Objective**: R_FL "PGM.H" -> payload "PGM.H\0" (6 bytes)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(14, n);</code>
+      * <code>Assert equal memory (want, buf, 14)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_ok</b> &mdash; <i>Parse ok</i></summary>
+
+    * **Objective**: Parse ok
+    * **Assertions**:
+      * <code>Assert true (dws_lsv2_parse(frame, sizeof(frame), &t, &consumed))</code>
+      * <code>Assert equal memory ("T_OK", t.mnemonic, 4)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, t.payload_len);</code>
+      * <code>Assert null (t.payload)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, consumed);</code>
+      * <code>Assert true (dws_lsv2_is_ok(&t))</code>
+      * <code>Assert false (dws_lsv2_is_error(&t))</code>
+      * <code>Assert true (dws_lsv2_is(&t, DWS_LSV2_RSP_OK))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_error</b> &mdash; <i>T_ER with a 2-byte error-class + error-code payload</i></summary>
+
+    * **Objective**: T_ER with a 2-byte error-class + error-code payload
+    * **Assertions**:
+      * <code>Assert true (dws_lsv2_parse(frame, sizeof(frame), &t, nullptr))</code>
+      * <code>Assert true (dws_lsv2_is_error(&t))</code>
+      * <code>Assert false (dws_lsv2_is_ok(&t))</code>
+      * <code>Assert true (dws_lsv2_error(&t, &ec, &code))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x01, ec);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x31, code);</code>
+      * <code>Assert true (dws_lsv2_parse(xfer, sizeof(xfer), &t, nullptr))</code>
+      * <code>Assert true (dws_lsv2_is_error(&t))</code>
+      * <code>Assert true (dws_lsv2_parse(ok, sizeof(ok), &t, nullptr))</code>
+      * <code>Assert false (dws_lsv2_error(&t, &ec, &code))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_data_reply</b> &mdash; <i>S_RI run-info reply carrying 3 payload bytes</i></summary>
+
+    * **Objective**: S_RI run-info reply carrying 3 payload bytes
+    * **Assertions**:
+      * <code>Assert true (dws_lsv2_parse(frame, sizeof(frame), &t, &consumed))</code>
+      * <code>Assert true (dws_lsv2_is(&t, DWS_LSV2_RSP_RUN_INFO))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, t.payload_len);</code>
+      * <code>Assert equal memory ("\\xAA\\xBB\\xCC", t.payload, 3)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(11, consumed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_incomplete</b> &mdash; <i>fewer than 8 header bytes -> false, and out is cleared</i></summary>
+
+    * **Objective**: fewer than 8 header bytes -> false, and out is cleared
+    * **Assertions**:
+      * <code>Assert false (dws_lsv2_parse(partial, sizeof(partial), &t, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, t.payload_len);</code>
+      * <code>Assert null (t.payload)</code>
+      * <code>Assert false (dws_lsv2_parse(truncated, sizeof(truncated), &t, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_stream_multi</b> &mdash; <i>two telegrams back-to-back: T_OK then S_RI(2 bytes)</i></summary>
+
+    * **Objective**: two telegrams back-to-back: T_OK then S_RI(2 bytes)
+    * **Assertions**:
+      * <code>Assert true (dws_lsv2_parse(stream, sizeof(stream), &t, &consumed))</code>
+      * <code>Assert true (dws_lsv2_is_ok(&t))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, consumed);</code>
+      * <code>Assert true (dws_lsv2_parse(stream + off, sizeof(stream) - off, &t, &consumed))</code>
+      * <code>Assert true (dws_lsv2_is(&t, DWS_LSV2_RSP_RUN_INFO))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, t.payload_len);</code>
+      * <code>Assert equal memory ("\\x07\\x08", t.payload, 2)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(10, consumed);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(stream), off + consumed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_roundtrip</b> &mdash; <i>build then parse: run-info request survives a frame/parse round trip</i></summary>
+
+    * **Objective**: build then parse: run-info request survives a frame/parse round trip
+    * **Assertions**:
+      * <code>Assert true (dws_lsv2_parse(buf, n, &t, &consumed))</code>
+      * <code>Assert true (dws_lsv2_is(&t, DWS_LSV2_CMD_RUN_INFO))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, t.payload_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, t.payload[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(25, t.payload[1]); // LSV2_RI_OVERRIDE</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, consumed);</code>
   </details>
 
 </details>

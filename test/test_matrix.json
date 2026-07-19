@@ -895,6 +895,12 @@
       "src": ["+<services/haas_mdc/haas_mdc.cpp>"],
       "tests": ["test_haas_mdc"]
     },
+    "native_lsv2": {
+      "desc": "Heidenhain LSV/2 telegram codec (services/lsv2): the framer (4-byte big-endian payload-length\nprefix + 4-char mnemonic + payload), the typed request builders (login A_LG / logout A_LO,\nnull-terminated-filename file commands, R_RI run-info with a 2-byte big-endian selector), and the\nresponse readers (T_OK, the T_ER/T_BD 2-byte error-class + error-code, data replies, stream\nre-framing). Byte-exact vectors cross-checked against pyLSV2. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_LSV2=1"],
+      "src": ["+<services/lsv2/lsv2.cpp>"],
+      "tests": ["test_lsv2"]
+    },
     "native_senml": {
       "desc": "SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the\nJSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral\nnumbers emitted as integers. Pure host tests.",
       "flags": ["-DDWS_ENABLE_SENML=1"],

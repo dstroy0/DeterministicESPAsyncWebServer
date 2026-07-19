@@ -1765,6 +1765,24 @@
 #endif
 
 /**
+ * @brief Heidenhain LSV/2 telegram codec (`services/lsv2`).
+ *
+ * Default off. A zero-heap codec for the LSV/2 protocol Heidenhain TNC controls speak for DNC + data
+ * access over serial or Ethernet (LSV/2-over-TCP, port 19000): the telegram framer (a 4-byte
+ * big-endian payload-length prefix, a 4-character command / response mnemonic, then the payload) plus
+ * typed builders for login / logout (`A_LG` / `A_LO`), the null-terminated-filename file commands
+ * (`R_FL` load, `C_FL` send, `C_FD` delete, `C_DC` change dir, `C_DM` / `C_DD` make / delete dir), and
+ * the run-info request (`R_RI` with a 2-byte run-info selector: execution state, selected program,
+ * override, program state), and readers for the response mnemonics (`T_OK` / `T_FD` and the `T_ER` /
+ * `T_BD` two-byte error-class + error-code). A CNC-native southbound source for the common European
+ * control alongside `services/focas` / `services/haas_mdc`. Pure codec, host-tested; the serial / TCP
+ * link to the control is the application's.
+ */
+#ifndef DWS_ENABLE_LSV2
+#define DWS_ENABLE_LSV2 0
+#endif
+
+/**
  * @brief SenML (RFC 8428) measurement-pack builder (`services/senml`).
  *
  * Default off; implies DWS_ENABLE_CBOR (the SenML-CBOR form uses the CBOR writer). A
