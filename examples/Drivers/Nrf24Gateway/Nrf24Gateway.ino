@@ -19,7 +19,6 @@
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/gateway/gateway.h"
 #include "services/nrf24/nrf24.h"
-#include <Arduino.h>
 #include <SPI.h>
 
 static const int PIN_CE = 4;  // RX/TX enable

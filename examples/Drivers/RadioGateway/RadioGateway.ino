@@ -23,7 +23,6 @@
 #include "services/dma/dma.h"
 #include "services/gateway/gateway.h"
 #include "services/preempt_queue/preempt_queue.h"
-#include <Arduino.h>
 #include <string.h>
 
 static const uint8_t RADIO_PORT = 0; // DMA channel 0 == the LoRa module

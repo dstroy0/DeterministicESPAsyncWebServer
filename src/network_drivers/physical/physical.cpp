@@ -17,6 +17,8 @@
 #include "lwip/ip_addr.h"
 #include "lwip/netif.h"
 #include <WiFi.h>
+#include <esp_wifi.h> // esp_wifi_set_channel / esp_wifi_sta_get_ap_info (raw-radio bring-up + SSID readout)
+#include <string.h>   // strnlen / memcpy
 #if DWS_ENABLE_ETHERNET
 #include <ETH.h>
 #endif
@@ -30,6 +32,22 @@ bool init_wifi_physical(const char *ssid, const char *password)
 bool wifi_ready()
 {
     return WiFi.isConnected();
+}
+
+bool init_wifi_radio_physical(uint8_t channel)
+{
+    // Radio up but not associated: ESP-NOW and promiscuous capture want the PHY without an IP link.
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect();
+    if (channel)
+        esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
+    return true;
+}
+
+bool init_wifi_ap_physical(const char *ssid, const char *password)
+{
+    WiFi.mode(WIFI_AP_STA); // coexist so a station link can run alongside the softAP
+    return WiFi.softAP(ssid, password);
 }
 
 #if DWS_ENABLE_ETHERNET
@@ -126,8 +144,49 @@ DWSIface dws_net_egress(void)
     if (egress == 0)
         return DWSIface::DETIFACE_ANY;
     uint32_t sta = WiFi.isConnected() ? (uint32_t)WiFi.localIP() : 0;
-    uint32_t ap = (WiFi.getMode() & WIFI_AP) ? (uint32_t)WiFi.softAPIP() : 0;
+    uint32_t ap = dws_net_ap_ip();
     return dws_net_classify_ip(egress, sta, ap);
+}
+
+uint32_t dws_net_ap_ip(void)
+{
+    return (WiFi.getMode() & WIFI_AP) ? (uint32_t)WiFi.softAPIP() : 0;
+}
+
+int8_t dws_net_rssi(void)
+{
+    return WiFi.isConnected() ? (int8_t)WiFi.RSSI() : 0;
+}
+
+bool dws_net_mac(uint8_t out[6])
+{
+    if (!out)
+        return false;
+    WiFi.macAddress(out);
+    return true;
+}
+
+size_t dws_net_ssid(char *out, size_t cap)
+{
+    if (!out || cap == 0)
+        return 0;
+    wifi_ap_record_t info; // heap-free SSID readout (WiFi.SSID() would allocate an Arduino String)
+    if (esp_wifi_sta_get_ap_info(&info) != ESP_OK)
+    {
+        out[0] = '\0';
+        return 0;
+    }
+    size_t n = strnlen((const char *)info.ssid, sizeof(info.ssid));
+    if (n >= cap)
+        n = cap - 1;
+    memcpy(out, info.ssid, n);
+    out[n] = '\0';
+    return n;
+}
+
+uint8_t dws_net_channel(void)
+{
+    return (uint8_t)WiFi.channel();
 }
 
 #else // host build - no radio / stack
@@ -137,6 +196,14 @@ bool init_wifi_physical(const char *, const char *)
     return true;
 }
 bool wifi_ready()
+{
+    return true;
+}
+bool init_wifi_radio_physical(uint8_t)
+{
+    return true;
+}
+bool init_wifi_ap_physical(const char *, const char *)
 {
     return true;
 }
@@ -167,6 +234,28 @@ uint32_t dws_net_egress_ip(void)
 DWSIface dws_net_egress(void)
 {
     return DWSIface::DETIFACE_ANY;
+}
+uint32_t dws_net_ap_ip(void)
+{
+    return 0;
+}
+int8_t dws_net_rssi(void)
+{
+    return 0;
+}
+bool dws_net_mac(uint8_t *)
+{
+    return false;
+}
+size_t dws_net_ssid(char *out, size_t cap)
+{
+    if (out && cap)
+        out[0] = '\0';
+    return 0;
+}
+uint8_t dws_net_channel(void)
+{
+    return 0;
 }
 
 #endif // ARDUINO

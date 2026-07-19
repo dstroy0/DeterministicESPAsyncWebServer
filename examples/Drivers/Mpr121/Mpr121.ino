@@ -21,7 +21,6 @@
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/mpr121/mpr121.h"
-#include <Arduino.h>
 
 static const int LED_PIN = 2; // onboard LED on most ESP32 dev boards
 

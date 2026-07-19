@@ -36,11 +36,10 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/client.h"
 #include "services/gnss/gnss_survey.h"
 #include "services/gnss/rtcm3.h"
 #include "services/nmea0183/nmea0183.h"
-#include <Arduino.h>
-#include <WiFi.h>
 
 // --- CHANGE ME: your WiFi ---
 static const char *SSID = "YOUR_SSID";
@@ -114,9 +113,10 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    WiFi.setSleep(false);
-    Serial.print("\nBASE IP: ");
-    Serial.println(WiFi.localIP()); // <- set this as BASE_IP on the rover
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nBASE IP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF),
+                  (unsigned)((ip >> 24) & 0xFF)); // <- set this as BASE_IP on the rover
 
     NtripMount mount = {};
     mount.mountpoint = MOUNTPOINT;
@@ -131,7 +131,8 @@ void setup()
     if (li < 0 || !dws_ntrip_caster_add_mount((uint8_t)li, &mount, nullptr /*open access*/))
         Serial.println("caster add_mount failed");
     server.begin();
-    Serial.printf("NTRIP caster: %s:%u  mount /%s   (surveying in...)\n", WiFi.localIP().toString().c_str(),
+    Serial.printf("NTRIP caster: %u.%u.%u.%u:%u  mount /%s   (surveying in...)\n", (unsigned)(ip & 0xFF),
+                  (unsigned)((ip >> 8) & 0xFF), (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF),
                   CASTER_PORT, MOUNTPOINT);
 }
 
@@ -183,7 +184,7 @@ void loop()
 // --- CHANGE ME: the base board's IP (it prints "BASE IP:" at boot) ---
 static const char *BASE_IP = "192.168.1.50";
 
-WiFiClient s_client;
+int s_client = -1;
 static uint8_t s_rtcm[512]; // RTCM sync/parse buffer
 static size_t s_rtcm_len = 0;
 static bool s_streaming = false;
@@ -191,13 +192,18 @@ static bool s_streaming = false;
 static void connect_ntrip()
 {
     Serial.printf("connecting to caster %s:%u /%s ...\n", BASE_IP, CASTER_PORT, MOUNTPOINT);
-    if (!s_client.connect(BASE_IP, CASTER_PORT))
+    s_client = dws_client_open(BASE_IP, CASTER_PORT, 8000);
+    if (s_client < 0)
     {
         Serial.println("connect failed; retrying");
         return;
     }
     // NTRIP 1.0 request. (A caster that speaks 2.0 answers HTTP/1.1 200; we accept either.)
-    s_client.printf("GET /%s HTTP/1.0\r\nUser-Agent: NTRIP DWS/1.0\r\nAccept: */*\r\n\r\n", MOUNTPOINT);
+    char req[96];
+    int rn =
+        snprintf(req, sizeof(req), "GET /%s HTTP/1.0\r\nUser-Agent: NTRIP DWS/1.0\r\nAccept: */*\r\n\r\n", MOUNTPOINT);
+    if (rn > 0)
+        dws_client_send(s_client, req, (size_t)rn);
     s_streaming = false;
     s_rtcm_len = 0;
 }
@@ -216,9 +222,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    WiFi.setSleep(false);
-    Serial.print("\nROVER IP: ");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nROVER IP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
     connect_ntrip();
 }
 
@@ -264,15 +270,17 @@ static void dws_rtcm_push(uint8_t b)
 
 void loop()
 {
-    if (!s_client.connected())
+    if (dws_client_is_closed(s_client))
     {
         delay(2000);
         connect_ntrip();
         return;
     }
-    while (s_client.available())
+    while (dws_client_available(s_client))
     {
-        uint8_t b = (uint8_t)s_client.read();
+        uint8_t b = 0;
+        if (dws_client_read(s_client, &b, 1) != 1)
+            break;
         if (!s_streaming)
         {
             // Skip the response header up to the blank line; then bytes are raw RTCM.

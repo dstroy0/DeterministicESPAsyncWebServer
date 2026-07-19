@@ -24,7 +24,6 @@
 #include "network_drivers/physical/physical.h"
 #include "services/modbus/modbus.h"
 #include "services/modbus/modbus_master.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -37,9 +36,9 @@ void setup()
     init_wifi_physical(SSID, PASSWORD);
     while (!wifi_ready())
         delay(250);
-    Serial.print("IP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Seed a few holding registers (the "slave" data model).
     dws_modbus_server_init();

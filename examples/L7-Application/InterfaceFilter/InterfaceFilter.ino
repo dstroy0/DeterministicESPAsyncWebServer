@@ -9,7 +9,7 @@
  * different interfaces: a setup/config page visible only on the softAP, and an
  * app API visible only on the station link. The interface is determined by
  * comparing each connection's local IP to the softAP IP, so call
- * set_ap_ip(WiFi.softAPIP()) once after starting the AP.
+ * set_ap_ip(dws_net_ap_ip()) once after starting the AP.
  *
  * Test from a station client (your LAN):    curl http://<sta-ip>/api/data   -> 200
  *                                            curl http://<sta-ip>/setup      -> 404
@@ -19,7 +19,6 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -51,24 +50,23 @@ void setup()
     Serial.begin(115200);
 
     // AP + STA so both interfaces exist simultaneously.
-    WiFi.mode(WIFI_AP_STA);
-    WiFi.softAP(AP_SSID, AP_PASS);
-    init_wifi_physical(SSID, PASSWORD);
+    init_wifi_ap_physical(AP_SSID, AP_PASS); // softAP (also enables AP+STA coexistence)
+    init_wifi_physical(SSID, PASSWORD);      // station link
     Serial.print("Connecting to WiFi");
     while (!wifi_ready())
     {
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nSTA IP: ");
-    Serial.println(WiFi.localIP());
-    Serial.print("AP  IP: ");
-    Serial.println(WiFi.softAPIP());
+    uint32_t sta_ip = dws_net_egress_ip();
+    uint32_t ap_ip = dws_net_ap_ip();
+    Serial.printf("\nSTA IP: %u.%u.%u.%u\n", (unsigned)(sta_ip & 0xFF), (unsigned)((sta_ip >> 8) & 0xFF),
+                  (unsigned)((sta_ip >> 16) & 0xFF), (unsigned)((sta_ip >> 24) & 0xFF));
+    Serial.printf("AP  IP: %u.%u.%u.%u\n", (unsigned)(ap_ip & 0xFF), (unsigned)((ap_ip >> 8) & 0xFF),
+                  (unsigned)((ap_ip >> 16) & 0xFF), (unsigned)((ap_ip >> 24) & 0xFF));
 
-    WiFi.setSleep(false);
-
-    // Required for STA/AP classification (IPAddress converts to uint32_t).
-    server.set_ap_ip(WiFi.softAPIP());
+    // Required for STA/AP classification.
+    server.set_ap_ip(ap_ip);
 
     server.on("/setup", HttpMethod::HTTP_GET, handle_setup, DWSIface::DETIFACE_AP);   // softAP only
     server.on("/api/data", HttpMethod::HTTP_GET, handle_api, DWSIface::DETIFACE_STA); // station only

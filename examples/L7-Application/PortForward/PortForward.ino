@@ -28,8 +28,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/relay/relay_listener.h" // dws_relay_publish
-#include <Arduino.h>
-#include <WiFi.h>
 
 // --- CHANGE ME: your WiFi ---
 static const char *SSID = "YOUR_SSID";
@@ -53,9 +51,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Open the front port for the relay, then bind it to the origin.
     int32_t li = server.listen(FRONT_PORT, ConnProto::PROTO_RELAY);
@@ -65,8 +63,8 @@ void setup()
         return;
     }
     server.begin();
-    Serial.printf("relaying %s:%u  ->  %s:%u\n", WiFi.localIP().toString().c_str(), FRONT_PORT, ORIGIN_HOST,
-                  ORIGIN_PORT);
+    Serial.printf("relaying %u.%u.%u.%u:%u  ->  %s:%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF), FRONT_PORT, ORIGIN_HOST, ORIGIN_PORT);
     Serial.printf("connect to this board on port %u and you reach the origin\n", FRONT_PORT);
 }
 

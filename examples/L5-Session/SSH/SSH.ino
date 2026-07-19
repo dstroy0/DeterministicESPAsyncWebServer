@@ -47,7 +47,6 @@
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
 #include "network_drivers/presentation/ssh/connection/ssh_forward.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -102,8 +101,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Load the RSA host key's public half from NVS (the private key is read
     // per-signature into a stack buffer and wiped; never held in static RAM).

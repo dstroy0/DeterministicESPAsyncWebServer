@@ -32,7 +32,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/snmp/snmp_agent.h"
-#include <WiFi.h>
 
 // SNMPv3 (USM) is an additional gated layer. Enable it for the whole build with
 //     build_flags = -DDWS_ENABLE_SNMP=1 -DDWS_ENABLE_SNMP_V3=1
@@ -84,9 +83,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Build the MIB: standard system group + private objects.
     dws_snmp_agent_init("public");              // read-only community

@@ -11,7 +11,6 @@
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "esp_timer.h"
 #include "services/preempt_queue/preempt_queue.h"
-#include <Arduino.h>
 
 struct Reading
 {

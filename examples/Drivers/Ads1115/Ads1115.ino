@@ -21,7 +21,6 @@
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/ads1115/ads1115.h"
-#include <Arduino.h>
 
 void setup()
 {

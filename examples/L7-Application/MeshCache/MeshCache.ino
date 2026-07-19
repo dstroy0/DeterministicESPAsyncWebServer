@@ -35,8 +35,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/edge_cache/edge_cache_proxy.h"
-#include <Arduino.h>
-#include <WiFi.h>
 
 // --- CHANGE ME: your WiFi ---
 static const char *SSID = "YOUR_SSID";
@@ -87,9 +85,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Cache everything under /cdn/ from the origin, then enable the cache on the server.
     dws_edge_cache_map("/cdn/", ORIGIN);
@@ -107,8 +105,10 @@ void setup()
     server.begin(80); // serve HTTP on port 80
 
     Serial.printf("mesh edge cache in front of %s (peer %s:%u)\n", ORIGIN, PEER_IP, MESH_PORT);
-    Serial.printf("GET http://%s/cdn/<path> - a cold miss pulls from the peer (X-Cache: MESH) before the origin\n",
-                  WiFi.localIP().toString().c_str());
+    Serial.printf("GET http://%u.%u.%u.%u/cdn/<path> - a cold miss pulls from the peer (X-Cache: MESH) before the "
+                  "origin\n",
+                  (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF), (unsigned)((ip >> 16) & 0xFF),
+                  (unsigned)((ip >> 24) & 0xFF));
     Serial.println("GET /cache/stats for counters (watch mesh_hits); POST /cache/purge to invalidate /cdn/");
 }
 

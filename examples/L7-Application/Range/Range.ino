@@ -33,7 +33,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <LittleFS.h>
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -71,9 +70,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // serve_file() honors Range automatically when DWS_ENABLE_RANGE is set.
     server.on("/data.bin", HttpMethod::HTTP_GET,

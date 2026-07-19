@@ -1783,6 +1783,23 @@
 #endif
 
 /**
+ * @brief IKEv2 (RFC 7296) message + payload codec (`services/ikev2`).
+ *
+ * Default off. A zero-heap builder / parser for the Internet Key Exchange v2 wire format that
+ * negotiates IPsec security associations over UDP 500 / 4500 (NAT-T) - tier 1 (the pure framing) of an
+ * IKEv2/IPsec stack: the 28-octet IKE header and the generic payload chain (SA -> proposals ->
+ * transforms with the key-length attribute, KE, Ni/Nr nonce, IDi/IDr, CERT/CERTREQ, AUTH, N notify, D
+ * delete, TSi/TSr traffic selectors, and the SK encrypted-payload envelope). Build / parse into caller
+ * buffers only - no sockets and no crypto; the Diffie-Hellman math, the SKEYSEED / SK_* key derivation,
+ * the SK AEAD, and the IKE_SA_INIT -> IKE_AUTH state machine are later tiers that reuse the crypto the
+ * library already ships. Field layouts verified against RFC 7296 + IANA and cross-checked byte-for-byte
+ * against scapy's IKEv2 codec. Pure codec, host-tested; the UDP transport is the application's.
+ */
+#ifndef DWS_ENABLE_IKEV2
+#define DWS_ENABLE_IKEV2 0
+#endif
+
+/**
  * @brief SenML (RFC 8428) measurement-pack builder (`services/senml`).
  *
  * Default off; implies DWS_ENABLE_CBOR (the SenML-CBOR form uses the CBOR writer). A

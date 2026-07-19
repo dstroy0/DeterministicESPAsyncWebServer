@@ -21,7 +21,6 @@
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/gateway/gateway.h"
 #include "services/lora/lora.h"
-#include <Arduino.h>
 #include <SPI.h>
 
 static const int PIN_NSS = 5;   // SPI chip select

@@ -6,8 +6,8 @@
  * @brief Beckhoff ADS client - read a TwinCAT PLC over AMS/TCP (DWS_ENABLE_ADS).
  *
  * services/ads builds ADS/AMS requests and parses the responses; it is transport-
- * agnostic, so the app owns the socket. This sketch opens a plain Arduino WiFiClient
- * to a TwinCAT router on TCP 48898 and runs a small ADS sequence against it:
+ * agnostic, so the app owns the socket. This sketch opens the library's outbound TCP client
+ * (dws_client) to a TwinCAT router on TCP 48898 and runs a small ADS sequence against it:
  *
  *   ReadDeviceInfo  -> the runtime name + version
  *   ReadState       -> RUN / STOP / CONFIG
@@ -27,8 +27,8 @@
 
 #include "dwserver.h" // library entry header (also sets the src/ include root)
 #include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/client.h"
 #include "services/ads/ads.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -68,16 +68,16 @@ static AdsRequest next_request()
 }
 
 // Send one framed request, read one AMS/TCP-framed reply. Returns the total reply length.
-static size_t exchange(WiFiClient &sock, size_t reqlen)
+static size_t exchange(int cid, size_t reqlen)
 {
-    if (reqlen == 0 || sock.write(c_req, reqlen) != reqlen)
+    if (reqlen == 0 || !dws_client_send(cid, c_req, reqlen))
         return 0;
     size_t got = 0;
     uint32_t deadline = millis() + 3000;
     // Read the 6-octet AMS/TCP header first (reserved(2) + length(4)).
     while (got < ADS_AMSTCP_HDR_LEN && millis() < deadline)
-        if (sock.available())
-            got += sock.read(c_resp + got, ADS_AMSTCP_HDR_LEN - got);
+        if (dws_client_available(cid))
+            got += dws_client_read(cid, c_resp + got, ADS_AMSTCP_HDR_LEN - got);
     if (got < ADS_AMSTCP_HDR_LEN)
         return 0;
     uint32_t frame =
@@ -86,15 +86,15 @@ static size_t exchange(WiFiClient &sock, size_t reqlen)
     if (frame < ADS_AMS_HDR_LEN || total > sizeof(c_resp))
         return 0;
     while (got < total && millis() < deadline)
-        if (sock.available())
-            got += sock.read(c_resp + got, total - got);
+        if (dws_client_available(cid))
+            got += dws_client_read(cid, c_resp + got, total - got);
     return got == total ? total : 0;
 }
 
-static void run_client(IPAddress ip)
+static void run_client(const char *host)
 {
-    WiFiClient sock;
-    if (!sock.connect(ip, ADS_TCP_PORT))
+    int cid = dws_client_open(host, ADS_TCP_PORT, 8000);
+    if (cid < 0)
     {
         Serial.println("[ads] connect failed");
         return;
@@ -106,7 +106,7 @@ static void run_client(IPAddress ip)
 
     // 1) ReadDeviceInfo.
     r = next_request();
-    n = exchange(sock, dws_ads_build_read_device_info(c_req, sizeof(c_req), &r));
+    n = exchange(cid, dws_ads_build_read_device_info(c_req, sizeof(c_req), &r));
     AdsDeviceInfo di;
     if (n && dws_ads_parse_ams_header(c_resp, n, &h) && dws_ads_parse_read_device_info(h.data, h.data_len, &di) &&
         di.result == 0)
@@ -117,7 +117,7 @@ static void run_client(IPAddress ip)
 
     // 2) ReadState.
     r = next_request();
-    n = exchange(sock, dws_ads_build_read_state(c_req, sizeof(c_req), &r));
+    n = exchange(cid, dws_ads_build_read_state(c_req, sizeof(c_req), &r));
     AdsReadStateResult st;
     if (n && dws_ads_parse_ams_header(c_resp, n, &h) && dws_ads_parse_read_state(h.data, h.data_len, &st) &&
         st.result == 0)
@@ -133,14 +133,14 @@ static void run_client(IPAddress ip)
 
     // 3) ReadWrite: resolve the symbol name to a handle.
     r = next_request();
-    n = exchange(sock, dws_ads_build_read_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_hnd_by_name, 0, 4,
-                                                (const uint8_t *)SYMBOL, (uint32_t)strlen(SYMBOL)));
+    n = exchange(cid, dws_ads_build_read_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_hnd_by_name, 0, 4,
+                                               (const uint8_t *)SYMBOL, (uint32_t)strlen(SYMBOL)));
     AdsReadResult rr;
     if (!n || !dws_ads_parse_ams_header(c_resp, n, &h) || !dws_ads_parse_read(h.data, h.data_len, &rr) ||
         rr.result != 0 || rr.len < 4)
     {
         Serial.printf("[ads] handle for '%s' failed\n", SYMBOL);
-        sock.stop();
+        dws_client_close(cid);
         return;
     }
     uint32_t handle = (uint32_t)rr.data[0] | ((uint32_t)rr.data[1] << 8) | ((uint32_t)rr.data[2] << 16) |
@@ -148,7 +148,7 @@ static void run_client(IPAddress ip)
 
     // 4) Read the symbol value (INT32) by handle.
     r = next_request();
-    n = exchange(sock, dws_ads_build_read(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_val_by_handle, handle, 4));
+    n = exchange(cid, dws_ads_build_read(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_val_by_handle, handle, 4));
     if (n && dws_ads_parse_ams_header(c_resp, n, &h) && dws_ads_parse_read(h.data, h.data_len, &rr) && rr.result == 0 &&
         rr.len >= 4)
     {
@@ -162,9 +162,9 @@ static void run_client(IPAddress ip)
     // 5) Release the handle (Write the 4-octet handle to index group 0xF006).
     r = next_request();
     uint8_t hb[4] = {(uint8_t)handle, (uint8_t)(handle >> 8), (uint8_t)(handle >> 16), (uint8_t)(handle >> 24)};
-    exchange(sock, dws_ads_build_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_release_handle, 0, hb, 4));
+    exchange(cid, dws_ads_build_write(c_req, sizeof(c_req), &r, AdsIndexGroup::sym_release_handle, 0, hb, 4));
 
-    sock.stop();
+    dws_client_close(cid);
     Serial.println("[ads] done");
 }
 
@@ -174,20 +174,20 @@ void setup()
     init_wifi_physical(SSID, PASSWORD);
     while (!wifi_ready())
         delay(250);
-    IPAddress ip = WiFi.localIP();
-    Serial.print("IP: ");
-    Serial.println(ip);
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("IP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Build this device's AMSNetId from its IP (add this as a route on the PLC).
-    g_source.net_id[0] = ip[0];
-    g_source.net_id[1] = ip[1];
-    g_source.net_id[2] = ip[2];
-    g_source.net_id[3] = ip[3];
+    g_source.net_id[0] = (uint8_t)(ip & 0xFF);
+    g_source.net_id[1] = (uint8_t)((ip >> 8) & 0xFF);
+    g_source.net_id[2] = (uint8_t)((ip >> 16) & 0xFF);
+    g_source.net_id[3] = (uint8_t)((ip >> 24) & 0xFF);
     g_source.net_id[4] = 1;
     g_source.net_id[5] = 1;
     g_source.port = 32905; // arbitrary caller AMS port
-    Serial.printf("This device AMSNetId: %u.%u.%u.%u.1.1  (add as a route on the PLC)\n", ip[0], ip[1], ip[2], ip[3]);
+    Serial.printf("This device AMSNetId: %u.%u.%u.%u.1.1  (add as a route on the PLC)\n", (unsigned)(ip & 0xFF),
+                  (unsigned)((ip >> 8) & 0xFF), (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 }
 
 void loop()
@@ -196,11 +196,7 @@ void loop()
     if (!done && millis() > 2000)
     {
         done = true;
-        IPAddress plc;
-        if (plc.fromString(PLC_IP))
-            run_client(plc);
-        else
-            Serial.println("[ads] bad PLC_IP");
+        run_client(PLC_IP); // dws_client_open resolves the dotted-quad host directly
     }
     delay(10);
 }

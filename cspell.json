@@ -1373,7 +1373,15 @@
     "DPRNT",
     "Oxxxxx",
     "PCLOS",
-    "POPEN"
+    "POPEN",
+    "Wmaybe",
+    "atol",
+    "captureless",
+    "initialise",
+    "localtime",
+    "qsort",
+    "regen",
+    "unconfigurable"
   ],
   "ignorePaths": [
     "node_modules/**",

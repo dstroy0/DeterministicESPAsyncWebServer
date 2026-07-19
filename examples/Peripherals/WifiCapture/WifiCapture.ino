@@ -18,8 +18,6 @@
 #include "network_drivers/transport/udp.h"
 #include "services/forward/forward.h"
 #include "services/promisc/promisc.h"
-#include <ETH.h>
-#include <WiFi.h>
 #include <string.h>
 
 // Where to stream the captured frames on the wired side.
@@ -72,11 +70,12 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nEthernet IP: ");
-    Serial.println(ETH.localIP());
+    uint32_t ip = dws_net_egress_ip(); // Ethernet is the egress here
+    Serial.printf("\nEthernet IP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
-    // Wi-Fi radio for capture (promiscuous; no association needed).
-    WiFi.mode(WIFI_STA);
+    // Wi-Fi radio for capture (promiscuous; no association - promisc sets the capture channel).
+    init_wifi_radio_physical(0);
 
     // Forwarding plane: Wi-Fi -> Ethernet, capped so a busy channel can't swamp the uplink.
     dws_forward_reset();

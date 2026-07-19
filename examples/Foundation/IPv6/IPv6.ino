@@ -13,7 +13,6 @@
 #include "dwserver.h"
 #include "network_drivers/network/ip.h"
 #include "network_drivers/physical/physical.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -66,8 +65,9 @@ void setup()
         delay(250);
     init_ipv6_physical(); // enable IPv6 (SLAAC) on the Wi-Fi netif
 
-    Serial.print("IPv4: ");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip();
+    Serial.printf("IPv4: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
     Serial.print("Waiting for a global IPv6 address");
     for (int i = 0; i < 40 && !dws_ipv6_ready(); i++)
     {

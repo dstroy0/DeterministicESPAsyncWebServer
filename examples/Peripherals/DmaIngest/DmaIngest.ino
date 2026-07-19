@@ -19,7 +19,6 @@
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/dma/dma.h"
 #include "services/preempt_queue/preempt_queue.h"
-#include <Arduino.h>
 #include <string.h>
 
 // The preempting-queue item: a SELF-CONTAINED copy of the frame bytes, padded to the

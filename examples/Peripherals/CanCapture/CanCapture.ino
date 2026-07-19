@@ -20,7 +20,6 @@
 #include "network_drivers/transport/udp.h"
 #include "services/bus_capture/bus_capture.h"
 #include "services/forward/forward.h"
-#include <ETH.h>
 #include <string.h>
 
 static const char *COLLECTOR_IP = "192.168.1.50";
@@ -73,8 +72,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nEthernet IP: ");
-    Serial.println(ETH.localIP());
+    uint32_t ip = dws_net_egress_ip(); // Ethernet is the egress here
+    Serial.printf("\nEthernet IP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Forwarding plane: CAN -> Ethernet.
     dws_forward_reset();

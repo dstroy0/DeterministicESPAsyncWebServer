@@ -46,7 +46,6 @@
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"          // dws_ssh_rsa_load_pubkey (NVS path)
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h" // dws_ssh_hostkey_ed25519_set (embed path)
-#include <WiFi.h>
 
 #if HOST_KEY_PROVISION == 1
 // Prefer a generated key if you made one (gen_ssh_host_key.py ... --header host_key.h);
@@ -122,8 +121,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     if (!install_host_key())
         return;

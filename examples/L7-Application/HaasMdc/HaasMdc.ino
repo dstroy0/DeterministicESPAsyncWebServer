@@ -23,8 +23,9 @@
 #define DWS_ENABLE_HAAS_MDC 1
 
 #include "dwserver.h" // library entry header (also sets the src/ include root)
+#include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/client.h"
 #include "services/haas_mdc/haas_mdc.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -34,17 +35,19 @@ static const char *HAAS_IP = "192.168.1.60"; // a Haas control with MDC (Setting
 static char c_cmd[24];
 
 // Accumulate one framed reply: read bytes until the ETB (0x17) closes the payload, or a timeout.
-static size_t read_frame(WiFiClient &sock, char *out, size_t cap)
+static size_t read_frame(int cid, char *out, size_t cap)
 {
     size_t o = 0;
     unsigned long deadline = millis() + 3000;
     while (o + 1 < cap && millis() < deadline)
     {
-        if (!sock.available())
+        if (!dws_client_available(cid))
             continue;
-        char ch = (char)sock.read();
-        out[o++] = ch;
-        if (ch == (char)DWS_HAAS_MDC_ETB)
+        uint8_t ch = 0;
+        if (dws_client_read(cid, &ch, 1) != 1)
+            continue;
+        out[o++] = (char)ch;
+        if (ch == (uint8_t)DWS_HAAS_MDC_ETB)
             break;
     }
     out[o] = '\0';
@@ -52,11 +55,11 @@ static size_t read_frame(WiFiClient &sock, char *out, size_t cap)
 }
 
 // Send a query, parse its reply into r; return false on no-frame / UNKNOWN.
-static bool poll(WiFiClient &sock, size_t n, HaasMdcResp *r, const char *label)
+static bool poll(int cid, size_t n, HaasMdcResp *r, const char *label)
 {
-    sock.write((const uint8_t *)c_cmd, n);
+    dws_client_send(cid, (const uint8_t *)c_cmd, n);
     char frame[192];
-    size_t fl = read_frame(sock, frame, sizeof(frame));
+    size_t fl = read_frame(cid, frame, sizeof(frame));
     if (!dws_haas_mdc_parse(frame, fl, r))
     {
         Serial.printf("[haas] %s: no response\n", label);
@@ -70,10 +73,10 @@ static bool poll(WiFiClient &sock, size_t n, HaasMdcResp *r, const char *label)
     return true;
 }
 
-static void query_value(WiFiClient &sock, uint16_t q, const char *label)
+static void query_value(int cid, uint16_t q, const char *label)
 {
     HaasMdcResp r;
-    if (!poll(sock, dws_haas_mdc_build_q(c_cmd, sizeof(c_cmd), q), &r, label))
+    if (!poll(cid, dws_haas_mdc_build_q(c_cmd, sizeof(c_cmd), q), &r, label))
         return;
     const char *v = nullptr;
     size_t vl = 0;
@@ -81,22 +84,22 @@ static void query_value(WiFiClient &sock, uint16_t q, const char *label)
         Serial.printf("[haas] %s: %.*s\n", label, (int)vl, v);
 }
 
-static void run_session(IPAddress ip)
+static void run_session(const char *host)
 {
-    WiFiClient haas;
-    if (!haas.connect(ip, DWS_HAAS_MDC_TCP_PORT))
+    int cid = dws_client_open(host, DWS_HAAS_MDC_TCP_PORT, 8000);
+    if (cid < 0)
     {
         Serial.println("[haas] connect failed");
         return;
     }
 
-    query_value(haas, HAAS_Q_SERIAL, "serial");
-    query_value(haas, HAAS_Q_MODEL, "model");
-    query_value(haas, HAAS_Q_MODE, "mode");
+    query_value(cid, HAAS_Q_SERIAL, "serial");
+    query_value(cid, HAAS_Q_MODEL, "model");
+    query_value(cid, HAAS_Q_MODE, "mode");
 
     // Q500: program + run status + parts counter (two-branch response).
     HaasMdcResp r;
-    if (poll(haas, dws_haas_mdc_build_q(c_cmd, sizeof(c_cmd), HAAS_Q_PROGRAM_STATUS), &r, "status"))
+    if (poll(cid, dws_haas_mdc_build_q(c_cmd, sizeof(c_cmd), HAAS_Q_PROGRAM_STATUS), &r, "status"))
     {
         HaasMdcStatus s;
         if (dws_haas_mdc_parse_status(&r, &s))
@@ -110,7 +113,7 @@ static void run_session(IPAddress ip)
     }
 
     // Q600: read macro variable #100.
-    if (poll(haas, dws_haas_mdc_build_var(c_cmd, sizeof(c_cmd), 100), &r, "macro"))
+    if (poll(cid, dws_haas_mdc_build_var(c_cmd, sizeof(c_cmd), 100), &r, "macro"))
     {
         uint32_t var = 0;
         const char *val = nullptr;
@@ -119,19 +122,19 @@ static void run_session(IPAddress ip)
             Serial.printf("[haas] macro #%u = %.*s\n", (unsigned)var, (int)vl, val);
     }
 
-    haas.stop();
+    dws_client_close(cid);
     Serial.println("[haas] done");
 }
 
 void setup()
 {
     Serial.begin(115200);
-    WiFi.begin(SSID, PASSWORD);
-    while (WiFi.status() != WL_CONNECTED)
+    init_wifi_physical(SSID, PASSWORD);
+    while (!wifi_ready())
         delay(250);
-    WiFi.setSleep(false);
-    Serial.print("IP: ");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 }
 
 void loop()
@@ -140,11 +143,7 @@ void loop()
     if (!done && millis() > 2000)
     {
         done = true;
-        IPAddress ip;
-        if (ip.fromString(HAAS_IP))
-            run_session(ip);
-        else
-            Serial.println("[haas] bad HAAS_IP");
+        run_session(HAAS_IP); // dws_client_open resolves the dotted-quad host directly
     }
     delay(10);
 }

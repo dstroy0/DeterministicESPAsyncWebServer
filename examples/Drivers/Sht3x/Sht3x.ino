@@ -21,7 +21,6 @@
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/sht3x/sht3x.h"
-#include <Arduino.h>
 
 void setup()
 {

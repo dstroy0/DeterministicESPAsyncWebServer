@@ -21,7 +21,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/udp_telemetry/udp_telemetry.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -40,9 +39,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     dws_udp_telemetry_begin(COLLECTOR_IP, COLLECTOR_PORT);
 }
@@ -57,7 +56,7 @@ void loop()
         DWSLine line;
         dws_line_init(&line, buf, sizeof(buf), "esp32");
         dws_line_add_uint(&line, "heap", ESP.getFreeHeap());
-        dws_line_add_int(&line, "rssi", WiFi.RSSI());
+        dws_line_add_int(&line, "rssi", dws_net_rssi());
         dws_line_add_float(&line, "temp", temperatureRead(), 1);
         if (dws_udp_telemetry_cast(&line))
             Serial.printf("cast: %s\n", buf);

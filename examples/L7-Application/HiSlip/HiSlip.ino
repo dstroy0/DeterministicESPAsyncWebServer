@@ -24,8 +24,9 @@
 #define DWS_ENABLE_HISLIP 1
 
 #include "dwserver.h" // library entry header (also sets the src/ include root)
+#include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/client.h"
 #include "services/hislip/hislip.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -37,28 +38,28 @@ static uint8_t c_resp[512];
 
 // Read a full HiSLIP message (the 16-byte header + its payload) into c_resp. Returns true on a
 // complete message; fills @p h with the parsed header (payload starts at c_resp + 16).
-static bool hislip_recv(WiFiClient &sock, HislipHeader *h)
+static bool hislip_recv(int cid, HislipHeader *h)
 {
     size_t got = 0;
     unsigned long deadline = millis() + 3000;
     while (got < DWS_HISLIP_HEADER_LEN && millis() < deadline)
-        if (sock.available())
-            got += sock.read(c_resp + got, DWS_HISLIP_HEADER_LEN - got);
+        if (dws_client_available(cid))
+            got += dws_client_read(cid, c_resp + got, DWS_HISLIP_HEADER_LEN - got);
     if (got < DWS_HISLIP_HEADER_LEN || !dws_hislip_parse_header(c_resp, got, h))
         return false;
     size_t total = DWS_HISLIP_HEADER_LEN + (size_t)h->payload_len;
     if (total > sizeof(c_resp))
         return false;
     while (got < total && millis() < deadline)
-        if (sock.available())
-            got += sock.read(c_resp + got, total - got);
+        if (dws_client_available(cid))
+            got += dws_client_read(cid, c_resp + got, total - got);
     return got == total;
 }
 
-static void run_session(IPAddress ip)
+static void run_session(const char *host)
 {
-    WiFiClient sync_ch, async_ch;
-    if (!sync_ch.connect(ip, DWS_HISLIP_PORT))
+    int sync_cid = dws_client_open(host, DWS_HISLIP_PORT, 8000);
+    if (sync_cid < 0)
     {
         Serial.println("[hislip] sync connect failed");
         return;
@@ -66,49 +67,52 @@ static void run_session(IPAddress ip)
 
     // 1) Initialize on the sync channel (offer v1.1, vendor "DW", sub-address "hislip0").
     size_t n = dws_hislip_build_initialize(c_buf, sizeof(c_buf), DWS_HISLIP_VERSION_1_1, 0x4457, "hislip0");
-    sync_ch.write(c_buf, n);
+    dws_client_send(sync_cid, c_buf, n);
     HislipHeader h;
     HislipInitializeResponse ir;
-    if (!hislip_recv(sync_ch, &h) || !dws_hislip_parse_initialize_response(c_resp, DWS_HISLIP_HEADER_LEN, &ir))
+    if (!hislip_recv(sync_cid, &h) || !dws_hislip_parse_initialize_response(c_resp, DWS_HISLIP_HEADER_LEN, &ir))
     {
         Serial.println("[hislip] no InitializeResponse");
+        dws_client_close(sync_cid);
         return;
     }
     Serial.printf("[hislip] session=%u server-version=0x%04X overlap=%d\n", ir.session_id, ir.protocol_version,
                   ir.overlap);
 
     // 2) Bind the async channel with the negotiated SessionID.
-    if (async_ch.connect(ip, DWS_HISLIP_PORT))
+    int async_cid = dws_client_open(host, DWS_HISLIP_PORT, 8000);
+    if (async_cid >= 0)
     {
         n = dws_hislip_build_async_initialize(c_buf, sizeof(c_buf), ir.session_id);
-        async_ch.write(c_buf, n);
-        hislip_recv(async_ch, &h); // AsyncInitializeResponse (server vendor id in h.parameter)
+        dws_client_send(async_cid, c_buf, n);
+        hislip_recv(async_cid, &h); // AsyncInitializeResponse (server vendor id in h.parameter)
     }
 
     // 3) Send "*IDN?" as a DataEND on the sync channel, read the identity back.
     uint32_t msg_id = DWS_HISLIP_MESSAGE_ID_INIT;
     n = dws_hislip_build_data(c_buf, sizeof(c_buf), true, 0, msg_id, (const uint8_t *)"*IDN?\n", 6);
-    sync_ch.write(c_buf, n);
+    dws_client_send(sync_cid, c_buf, n);
     msg_id = dws_hislip_next_message_id(msg_id);
-    if (hislip_recv(sync_ch, &h) && (h.type == HislipMsg::DATA_END || h.type == HislipMsg::DATA))
+    if (hislip_recv(sync_cid, &h) && (h.type == HislipMsg::DATA_END || h.type == HislipMsg::DATA))
         Serial.printf("[hislip] *IDN? -> %.*s\n", (int)h.payload_len, (const char *)(c_resp + DWS_HISLIP_HEADER_LEN));
     else
         Serial.println("[hislip] no *IDN? response");
 
-    async_ch.stop();
-    sync_ch.stop();
+    if (async_cid >= 0)
+        dws_client_close(async_cid);
+    dws_client_close(sync_cid);
     Serial.println("[hislip] done");
 }
 
 void setup()
 {
     Serial.begin(115200);
-    WiFi.begin(SSID, PASSWORD);
-    while (WiFi.status() != WL_CONNECTED)
+    init_wifi_physical(SSID, PASSWORD);
+    while (!wifi_ready())
         delay(250);
-    WiFi.setSleep(false);
-    Serial.print("IP: ");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 }
 
 void loop()
@@ -117,11 +121,7 @@ void loop()
     if (!done && millis() > 2000)
     {
         done = true;
-        IPAddress ip;
-        if (ip.fromString(INSTRUMENT_IP))
-            run_session(ip);
-        else
-            Serial.println("[hislip] bad INSTRUMENT_IP");
+        run_session(INSTRUMENT_IP); // dws_client_open resolves the dotted-quad host directly
     }
     delay(10);
 }

@@ -16,7 +16,6 @@
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/sigfox/sigfox.h"
-#include <Arduino.h>
 
 static const int PIN_RX = 16, PIN_TX = 17; // UART2 to the Sigfox modem (9600 baud)
 

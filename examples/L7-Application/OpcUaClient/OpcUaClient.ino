@@ -7,8 +7,9 @@
  *
  * services/dws_opcua_client builds OPC UA requests and parses responses; it is
  * transport-agnostic, so the app owns the socket. This sketch runs the OPC UA
- * server (services/opcua) on :4840 AND, once connected, opens a plain Arduino
- * WiFiClient to its own address and walks the full client sequence against it:
+ * server (services/opcua) on :4840 AND, once connected, opens the library's
+ * outbound TCP client (dws_client) to its own address and walks the full client
+ * sequence against it:
  *
  *   Hello/Ack -> OpenSecureChannel -> GetEndpoints -> CreateSession -> ActivateSession
  *             -> Browse(Objects) -> Read(values) -> Write(setpoint)+read-back
@@ -26,9 +27,9 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/client.h"
 #include "services/opcua/opcua.h"
 #include "services/opcua_client/opcua_client.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -94,20 +95,20 @@ static int32_t srv_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_
     return n;
 }
 
-// --- client side: send one framed message, read one framed reply over WiFiClient ---
+// --- client side: send one framed message, read one framed reply over dws_client ---
 static uint8_t c_req[512];
 static uint8_t c_resp[2048];
 
-static size_t exchange(WiFiClient &sock, size_t reqlen)
+static size_t exchange(int cid, size_t reqlen)
 {
-    if (reqlen == 0 || sock.write(c_req, reqlen) != reqlen)
+    if (reqlen == 0 || !dws_client_send(cid, c_req, reqlen))
         return 0;
     // Read the 8-byte UACP header, then the rest of MessageSize.
     size_t got = 0;
     uint32_t deadline = millis() + 3000;
     while (got < 8 && millis() < deadline)
-        if (sock.available())
-            got += sock.read(c_resp + got, 8 - got);
+        if (dws_client_available(cid))
+            got += dws_client_read(cid, c_resp + got, 8 - got);
     if (got < 8)
         return 0;
     uint32_t size =
@@ -115,15 +116,18 @@ static size_t exchange(WiFiClient &sock, size_t reqlen)
     if (size < 8 || size > sizeof(c_resp))
         return 0;
     while (got < size && millis() < deadline)
-        if (sock.available())
-            got += sock.read(c_resp + got, size - got);
+        if (dws_client_available(cid))
+            got += dws_client_read(cid, c_resp + got, size - got);
     return got == size ? size : 0;
 }
 
-static void run_client(IPAddress ip)
+static void run_client(uint32_t ip)
 {
-    WiFiClient sock;
-    if (!sock.connect(ip, 4840))
+    char host[16];
+    snprintf(host, sizeof(host), "%u.%u.%u.%u", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+             (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
+    int cid = dws_client_open(host, 4840, 8000);
+    if (cid < 0)
     {
         Serial.println("[opcua-client] connect failed");
         return;
@@ -133,28 +137,28 @@ static void run_client(IPAddress ip)
     OpcUaAckInfo ack;
     size_t n;
 
-    n = exchange(sock, dws_opcua_client_hello("opc.tcp://self:4840", c_req, sizeof(c_req)));
+    n = exchange(cid, dws_opcua_client_hello("opc.tcp://self:4840", c_req, sizeof(c_req)));
     if (!n || !dws_opcua_client_on_ack(c_resp, n, &ack))
     {
         Serial.println("[opcua-client] HELLO/ACK failed");
         return;
     }
-    n = exchange(sock, dws_opcua_client_open(&c, c_req, sizeof(c_req)));
+    n = exchange(cid, dws_opcua_client_open(&c, c_req, sizeof(c_req)));
     if (!n || !dws_opcua_client_on_open(&c, c_resp, n))
     {
         Serial.println("[opcua-client] OpenSecureChannel failed");
         return;
     }
-    n = exchange(sock, dws_opcua_client_get_endpoints(&c, "opc.tcp://self:4840", c_req, sizeof(c_req)));
+    n = exchange(cid, dws_opcua_client_get_endpoints(&c, "opc.tcp://self:4840", c_req, sizeof(c_req)));
     Serial.printf("[opcua-client] GetEndpoints -> %d endpoint(s)\n",
                   n ? (int)dws_opcua_client_on_get_endpoints(c_resp, n) : -1);
-    n = exchange(sock, dws_opcua_client_create_session(&c, "esp32", "opc.tcp://self:4840", c_req, sizeof(c_req)));
+    n = exchange(cid, dws_opcua_client_create_session(&c, "esp32", "opc.tcp://self:4840", c_req, sizeof(c_req)));
     if (!n || !dws_opcua_client_on_create_session(&c, c_resp, n))
     {
         Serial.println("[opcua-client] CreateSession failed");
         return;
     }
-    n = exchange(sock, dws_opcua_client_activate_session(&c, c_req, sizeof(c_req)));
+    n = exchange(cid, dws_opcua_client_activate_session(&c, c_req, sizeof(c_req)));
     if (!n || !dws_opcua_client_on_activate_session(c_resp, n))
     {
         Serial.println("[opcua-client] ActivateSession failed");
@@ -163,7 +167,7 @@ static void run_client(IPAddress ip)
     Serial.printf("[opcua-client] session active (channel=%u token=%u)\n", c.channel_id, c.token_id);
 
     // Browse the Objects folder.
-    n = exchange(sock, dws_opcua_client_browse(&c, 0, 85, c_req, sizeof(c_req)));
+    n = exchange(cid, dws_opcua_client_browse(&c, 0, 85, c_req, sizeof(c_req)));
     OpcUaClientRef refs[4];
     int32_t nrefs = n ? dws_opcua_client_on_browse(c_resp, n, refs, 4) : -1;
     for (int32_t i = 0; i < nrefs; i++)
@@ -172,7 +176,7 @@ static void run_client(IPAddress ip)
 
     // Read the two variables.
     OpcUaReadItem items[2] = {{1, 1, true, OPCUA_ATTR_VALUE}, {1, 2, true, OPCUA_ATTR_VALUE}};
-    n = exchange(sock, dws_opcua_client_read(&c, items, 2, c_req, sizeof(c_req)));
+    n = exchange(cid, dws_opcua_client_read(&c, items, 2, c_req, sizeof(c_req)));
     OpcUaVariant vals[2];
     uint32_t sts[2];
     int32_t nv = n ? dws_opcua_client_on_read(c_resp, n, vals, sts, 2) : -1;
@@ -188,20 +192,20 @@ static void run_client(IPAddress ip)
     wi[0].attribute = OPCUA_ATTR_VALUE;
     wi[0].value.type = OpcUaVariantType::OPCUA_VAR_UINT32;
     wi[0].value.u32 = 555;
-    n = exchange(sock, dws_opcua_client_write(&c, wi, 1, c_req, sizeof(c_req)));
+    n = exchange(cid, dws_opcua_client_write(&c, wi, 1, c_req, sizeof(c_req)));
     uint32_t wres[1];
     int32_t nw = n ? dws_opcua_client_on_write(c_resp, n, wres, 1) : -1;
     OpcUaReadItem rb[1] = {{1, 3, true, OPCUA_ATTR_VALUE}};
-    n = exchange(sock, dws_opcua_client_read(&c, rb, 1, c_req, sizeof(c_req)));
+    n = exchange(cid, dws_opcua_client_read(&c, rb, 1, c_req, sizeof(c_req)));
     OpcUaVariant rbv[1];
     uint32_t rbs[1];
     int32_t nrb = n ? dws_opcua_client_on_read(c_resp, n, rbv, rbs, 1) : -1;
     if (nw == 1 && nrb == 1)
         Serial.printf("[opcua-client] write setpoint=555 (status 0x%08X), read-back=%u\n", wres[0], rbv[0].u32);
 
-    exchange(sock, dws_opcua_client_close_session(&c, c_req, sizeof(c_req)));
-    sock.write(c_req, dws_opcua_client_close_channel(c_req, sizeof(c_req)));
-    sock.stop();
+    exchange(cid, dws_opcua_client_close_session(&c, c_req, sizeof(c_req)));
+    dws_client_send(cid, c_req, dws_opcua_client_close_channel(c_req, sizeof(c_req)));
+    dws_client_close(cid);
     Serial.println("[opcua-client] done");
 }
 
@@ -211,12 +215,13 @@ void setup()
     init_wifi_physical(SSID, PASSWORD);
     while (!wifi_ready())
         delay(250);
-    Serial.print("IP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     static char url[48];
-    snprintf(url, sizeof(url), "opc.tcp://%s:4840", WiFi.localIP().toString().c_str());
+    snprintf(url, sizeof(url), "opc.tcp://%u.%u.%u.%u:4840", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+             (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
     dws_opcua_set_endpoint_url(url); // advertised in GetEndpoints / CreateSession
     dws_opcua_set_read_handler(srv_read);
     dws_opcua_set_write_handler(srv_write);
@@ -236,6 +241,6 @@ void loop()
     if (!done && millis() > 4000)
     {
         done = true;
-        run_client(WiFi.localIP());
+        run_client(dws_net_egress_ip()); // dws_client_open resolves the dotted-quad host directly
     }
 }

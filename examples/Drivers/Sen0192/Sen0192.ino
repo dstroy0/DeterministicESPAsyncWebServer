@@ -25,7 +25,6 @@
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/sen0192/sen0192.h"
-#include <Arduino.h>
 
 static const int LED_PIN = 2; // onboard LED on most ESP32 dev boards
 

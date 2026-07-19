@@ -17,7 +17,6 @@
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/gateway/gateway.h"
 #include "services/pn532/pn532.h"
-#include <Arduino.h>
 #include <Wire.h>
 
 static const uint8_t PN532_I2C_ADDR = 0x24;

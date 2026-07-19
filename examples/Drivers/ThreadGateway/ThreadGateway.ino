@@ -20,7 +20,6 @@
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/gateway/gateway.h"
 #include "services/thread/thread.h"
-#include <Arduino.h>
 
 static const uint8_t RADIO_PORT = 0;
 static const int PIN_RX = 16, PIN_TX = 17; // UART2 to the Thread RCP

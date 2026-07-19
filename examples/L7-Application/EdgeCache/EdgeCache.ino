@@ -27,8 +27,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/edge_cache/edge_cache_proxy.h"
-#include <Arduino.h>
-#include <WiFi.h>
 
 // --- Optional L2 (SD) persistence tier: set DWS_ENABLE_DBM=1 (with an SD card) to keep the cached set
 // across a reboot. Evicted L1 entries spill to a dbm store on the WAL; a reboot replays the log and the
@@ -113,9 +111,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Cache everything under /cdn/ from the origin, then enable the cache on the server.
     dws_edge_cache_map("/cdn/", ORIGIN);
@@ -128,7 +126,8 @@ void setup()
     server.begin(80); // serve HTTP on port 80 (begin() with no port opens no listener)
 
     Serial.printf("edge cache in front of %s\n", ORIGIN);
-    Serial.printf("GET http://%s/cdn/<path> - X-Cache: MISS then HIT\n", WiFi.localIP().toString().c_str());
+    Serial.printf("GET http://%u.%u.%u.%u/cdn/<path> - X-Cache: MISS then HIT\n", (unsigned)(ip & 0xFF),
+                  (unsigned)((ip >> 8) & 0xFF), (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
     Serial.println("GET /cache/stats for counters; POST /cache/purge to invalidate /cdn/");
 }
 

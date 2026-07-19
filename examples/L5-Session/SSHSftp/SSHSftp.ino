@@ -35,7 +35,6 @@
 #include "server/ssh_scp.h"
 #include "server/ssh_sftp.h"
 #include <LittleFS.h>
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -58,8 +57,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Mount the filesystem SFTP serves (format on first boot). Any fs::FS works (SD, LittleFS, SPIFFS).
     if (!LittleFS.begin(true))

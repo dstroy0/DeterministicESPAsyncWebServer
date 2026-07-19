@@ -20,7 +20,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/dns_server/dns_server.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -36,13 +35,13 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    IPAddress ip = WiFi.localIP();
-    Serial.print("\nIP: ");
-    Serial.println(ip);
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // The name -> IPv4 records this server will answer. Edit these for your network.
-    dws_dns_server_add("esp32.lan", ip[0], ip[1], ip[2], ip[3]); // this board, by name
+    dws_dns_server_add("esp32.lan", (uint8_t)(ip & 0xFF), (uint8_t)((ip >> 8) & 0xFF), (uint8_t)((ip >> 16) & 0xFF),
+                       (uint8_t)((ip >> 24) & 0xFF)); // this board, by name
     dws_dns_server_add("printer.lan", 192, 168, 1, 50);
     dws_dns_server_add("nas.lan", 192, 168, 1, 60);
 

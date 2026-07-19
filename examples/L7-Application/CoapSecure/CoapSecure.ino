@@ -44,7 +44,6 @@
 #include "network_drivers/physical/physical.h"
 #include "services/coap/coap.h"
 #include "services/coap/coaps_server.h"
-#include <WiFi.h>
 #include <esp_random.h> // esp_fill_random() - the ESP32 hardware CSPRNG
 
 static const char *SSID = "YOUR_SSID";
@@ -145,9 +144,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // Build the resource table once (shared by every transport), then start the DTLS front-end on 5684.
     dws_coap_server_reset();

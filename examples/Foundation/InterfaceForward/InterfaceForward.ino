@@ -23,7 +23,6 @@
 #include "services/dma/dma.h"
 #include "services/forward/forward.h"
 #include "services/preempt_queue/preempt_queue.h"
-#include <Arduino.h>
 #include <string.h>
 
 static const uint8_t IF_A = 0; // ingress interface (DMA channel 0)

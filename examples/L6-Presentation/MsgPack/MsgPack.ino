@@ -28,7 +28,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "network_drivers/presentation/msgpack/msgpack.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -98,9 +97,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     server.on("/telemetry.msgpack", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         static MpCtx ctx; // static: must outlive send_chunked
@@ -112,7 +111,7 @@ void setup()
         dws_msgpack_str(&w, "uptime");
         dws_msgpack_uint(&w, millis() / 1000);
         dws_msgpack_str(&w, "rssi");
-        dws_msgpack_int(&w, WiFi.RSSI());
+        dws_msgpack_int(&w, dws_net_rssi());
         ctx.len = dws_msgpack_ok(&w) ? dws_msgpack_len(&w) : 0;
         ctx.off = 0;
         server.send_chunked(id, 200, "application/msgpack", dws_msgpack_source, &ctx);

@@ -23,7 +23,6 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
-#include <Arduino.h>
 #include <string.h>
 
 static bool eq(const uint8_t *a, const uint8_t *b, size_t n)

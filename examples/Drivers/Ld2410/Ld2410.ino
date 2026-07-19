@@ -23,7 +23,6 @@
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/ld2410/ld2410.h"
-#include <Arduino.h>
 
 static const int RADAR_RX = 16; // ESP32 RX  <- module TX/OUT
 static const int RADAR_TX = 17; // ESP32 TX  -> module RX

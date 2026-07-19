@@ -25,7 +25,6 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include <WiFi.h>
 
 // The camera + mic drivers are ESP32-S3 / arduino-esp32-3.x only; guard so the sketch builds anywhere.
 #if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0) && defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -351,8 +350,9 @@ void setup()
         Serial.println(" failed - check SSID/PASSWORD");
         return;
     }
-    Serial.print("\nOpen http://");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip();
+    Serial.printf("\nOpen http://%u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
     server.on("/", HttpMethod::HTTP_GET, handle_root);
 #if MEDIA_SUPPORTED
     media_begin();

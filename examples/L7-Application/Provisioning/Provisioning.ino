@@ -19,7 +19,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/provisioning_service/provisioning_service.h"
-#include <WiFi.h>
 
 DWS server;
 
@@ -43,8 +42,9 @@ void setup()
         Serial.println(ssid);
         while (!wifi_ready())
             delay(250);
-        Serial.print("\nIP: ");
-        Serial.println(WiFi.localIP());
+        uint32_t ip = dws_net_egress_ip();
+        Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                      (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
         server.on("/", HttpMethod::HTTP_GET, handle_root);
         server.begin(80);

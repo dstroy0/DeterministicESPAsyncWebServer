@@ -21,9 +21,8 @@
 #define DWS_ENABLE_ESPNOW 1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
+#include "network_drivers/physical/physical.h"
 #include "services/espnow/espnow.h"
-#include <WiFi.h>
-#include <esp_wifi.h> // esp_wifi_set_channel(); not pulled in transitively by WiFi.h
 
 static const uint8_t MSG_COUNTER = 1;
 static const uint8_t CHANNEL = 1;
@@ -39,20 +38,18 @@ static void on_espnow(const uint8_t mac[6], uint8_t type, const uint8_t *payload
 void setup()
 {
     Serial.begin(115200);
-    // ESP-NOW needs the radio up but not associated; STA mode on a fixed channel.
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-    esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
+    // ESP-NOW needs the radio up but not associated; STA mode pinned to a fixed channel.
+    init_wifi_radio_physical(CHANNEL);
 
     if (!dws_espnow_begin(CHANNEL, on_espnow))
     {
         Serial.println("ESP-NOW init failed");
         return;
     }
-    Serial.print("ESP-NOW up on channel ");
-    Serial.print(CHANNEL);
-    Serial.print(", my MAC ");
-    Serial.println(WiFi.macAddress());
+    uint8_t mac[6];
+    dws_net_mac(mac);
+    Serial.printf("ESP-NOW up on channel %u, my MAC %02x:%02x:%02x:%02x:%02x:%02x\n", CHANNEL, mac[0], mac[1], mac[2],
+                  mac[3], mac[4], mac[5]);
 }
 
 void loop()

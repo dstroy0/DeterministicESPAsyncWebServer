@@ -22,6 +22,7 @@
 
 #include "ServerConfig.h" // DWSIface
 #include "network_drivers/network/ip.h"
+#include <stddef.h>
 #include <stdint.h>
 
 /**
@@ -38,6 +39,26 @@ bool init_wifi_physical(const char *ssid, const char *password);
 
 /** @brief True if the WiFi station link is up (associated + an IP is assigned). */
 bool wifi_ready();
+
+/**
+ * @brief Bring the WiFi radio up in station mode WITHOUT associating to an AP.
+ *
+ * For raw-radio use that needs the PHY running but no IP link: ESP-NOW peer messaging and
+ * promiscuous capture. Pins the radio to @p channel (1..14) when non-zero; pass 0 to leave the
+ * channel to a capture layer that sets its own (services/promisc). Returns immediately.
+ *
+ * @return true once the radio is started (always true on host builds).
+ */
+bool init_wifi_radio_physical(uint8_t channel);
+
+/**
+ * @brief Bring up a softAP, enabling AP+STA coexistence so a station link can run alongside it.
+ *
+ * @param ssid     softAP SSID (null-terminated).
+ * @param password softAP passphrase (null-terminated; >= 8 chars for WPA2, "" for an open AP).
+ * @return true if the softAP started (false on host builds).
+ */
+bool init_wifi_ap_physical(const char *ssid, const char *password);
 
 /**
  * @brief Bring up a wired Ethernet link (DWS_ENABLE_ETHERNET).
@@ -89,6 +110,27 @@ DWSIface dws_net_egress(void);
 
 /** @brief IPv4 (network byte order) of the current egress interface, or 0 if none. */
 uint32_t dws_net_egress_ip(void);
+
+/** @brief softAP IPv4 (network byte order), or 0 if the softAP is not up (and on host builds). */
+uint32_t dws_net_ap_ip(void);
+
+/** @brief Station link RSSI in dBm, or 0 if not associated (and on host builds). */
+int8_t dws_net_rssi(void);
+
+/**
+ * @brief Copy the station interface MAC (6 bytes) into @p out.
+ * @return true on success; false if @p out is null or on a host build (out is left untouched).
+ */
+bool dws_net_mac(uint8_t out[6]);
+
+/**
+ * @brief Copy the associated SSID (null-terminated) into @p out.
+ * @return the SSID length in bytes, or 0 if not associated, @p cap is 0, or on a host build.
+ */
+size_t dws_net_ssid(char *out, size_t cap);
+
+/** @brief Station WiFi channel (1..14), or 0 if not associated (and on host builds). */
+uint8_t dws_net_channel(void);
 
 /**
  * @brief Classify an egress IPv4 against the WiFi station / softAP IPs (pure helper,

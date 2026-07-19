@@ -24,8 +24,9 @@
 #define DWS_ENABLE_LSV2 1
 
 #include "dwserver.h" // library entry header (also sets the src/ include root)
+#include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/client.h"
 #include "services/lsv2/lsv2.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -37,19 +38,19 @@ static uint8_t c_rx[512];
 
 // Read one LSV/2 response telegram: first the 8-byte header (length prefix + mnemonic), then the
 // payload-length bytes the header declares (or a timeout).
-static size_t read_response(WiFiClient &sock, uint8_t *out, size_t cap)
+static size_t read_response(int cid, uint8_t *out, size_t cap)
 {
     size_t got = 0;
     unsigned long deadline = millis() + 3000;
     while (got < DWS_LSV2_HEADER_LEN && millis() < deadline)
     {
-        if (!sock.available())
+        if (!dws_client_available(cid))
             continue;
-        int ch = sock.read();
-        if (ch < 0)
+        uint8_t ch = 0;
+        if (dws_client_read(cid, &ch, 1) != 1)
             continue;
         if (got < cap)
-            out[got] = (uint8_t)ch;
+            out[got] = ch;
         got++;
     }
     if (got < DWS_LSV2_HEADER_LEN)
@@ -58,26 +59,26 @@ static size_t read_response(WiFiClient &sock, uint8_t *out, size_t cap)
     size_t need = DWS_LSV2_HEADER_LEN + plen;
     while (got < need && got < cap && millis() < deadline)
     {
-        if (!sock.available())
+        if (!dws_client_available(cid))
             continue;
-        int ch = sock.read();
-        if (ch < 0)
+        uint8_t ch = 0;
+        if (dws_client_read(cid, &ch, 1) != 1)
             continue;
-        out[got++] = (uint8_t)ch;
+        out[got++] = ch;
     }
     return got;
 }
 
 // Send a pre-built request (tx_len bytes in c_tx), parse the reply into r; false on build / no-frame.
-static bool txrx(WiFiClient &sock, size_t tx_len, Lsv2Telegram *r, const char *label)
+static bool txrx(int cid, size_t tx_len, Lsv2Telegram *r, const char *label)
 {
     if (tx_len == 0)
     {
         Serial.printf("[lsv2] %s: request build failed\n", label);
         return false;
     }
-    sock.write(c_tx, tx_len);
-    size_t n = read_response(sock, c_rx, sizeof(c_rx));
+    dws_client_send(cid, c_tx, tx_len);
+    size_t n = read_response(cid, c_rx, sizeof(c_rx));
     size_t consumed = 0;
     if (!dws_lsv2_parse(c_rx, n, r, &consumed))
     {
@@ -88,10 +89,10 @@ static bool txrx(WiFiClient &sock, size_t tx_len, Lsv2Telegram *r, const char *l
 }
 
 // Read one run-info selector and print the reply (S_RI payload, or the T_ER error class/code).
-static void query_run_info(WiFiClient &sock, uint16_t sel, const char *label)
+static void query_run_info(int cid, uint16_t sel, const char *label)
 {
     Lsv2Telegram r;
-    if (!txrx(sock, dws_lsv2_build_run_info(c_tx, sizeof(c_tx), sel), &r, label))
+    if (!txrx(cid, dws_lsv2_build_run_info(c_tx, sizeof(c_tx), sel), &r, label))
         return;
     uint8_t err_class = 0, err_code = 0;
     if (dws_lsv2_error(&r, &err_class, &err_code))
@@ -105,10 +106,10 @@ static void query_run_info(WiFiClient &sock, uint16_t sel, const char *label)
     Serial.println();
 }
 
-static void run_session(IPAddress ip)
+static void run_session(const char *host)
 {
-    WiFiClient tnc;
-    if (!tnc.connect(ip, DWS_LSV2_TCP_PORT))
+    int cid = dws_client_open(host, DWS_LSV2_TCP_PORT, 8000);
+    if (cid < 0)
     {
         Serial.println("[lsv2] connect failed");
         return;
@@ -116,34 +117,34 @@ static void run_session(IPAddress ip)
 
     // gain INSPECT (read) access rights
     Lsv2Telegram r;
-    if (!txrx(tnc, dws_lsv2_build_login(c_tx, sizeof(c_tx), DWS_LSV2_LOGIN_INSPECT, nullptr), &r, "login") ||
+    if (!txrx(cid, dws_lsv2_build_login(c_tx, sizeof(c_tx), DWS_LSV2_LOGIN_INSPECT, nullptr), &r, "login") ||
         !dws_lsv2_is_ok(&r))
     {
         Serial.println("[lsv2] login INSPECT failed");
-        tnc.stop();
+        dws_client_close(cid);
         return;
     }
     Serial.println("[lsv2] login INSPECT: T_OK");
 
-    query_run_info(tnc, LSV2_RI_EXEC_STATE, "exec-state");
-    query_run_info(tnc, LSV2_RI_SELECTED_PGM, "selected-pgm");
-    query_run_info(tnc, LSV2_RI_OVERRIDE, "override");
+    query_run_info(cid, LSV2_RI_EXEC_STATE, "exec-state");
+    query_run_info(cid, LSV2_RI_SELECTED_PGM, "selected-pgm");
+    query_run_info(cid, LSV2_RI_OVERRIDE, "override");
 
     // drop all access rights
-    txrx(tnc, dws_lsv2_build_logout(c_tx, sizeof(c_tx), nullptr), &r, "logout");
-    tnc.stop();
+    txrx(cid, dws_lsv2_build_logout(c_tx, sizeof(c_tx), nullptr), &r, "logout");
+    dws_client_close(cid);
     Serial.println("[lsv2] done");
 }
 
 void setup()
 {
     Serial.begin(115200);
-    WiFi.begin(SSID, PASSWORD);
-    while (WiFi.status() != WL_CONNECTED)
+    init_wifi_physical(SSID, PASSWORD);
+    while (!wifi_ready())
         delay(250);
-    WiFi.setSleep(false);
-    Serial.print("IP: ");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 }
 
 void loop()
@@ -152,11 +153,7 @@ void loop()
     if (!done && millis() > 2000)
     {
         done = true;
-        IPAddress ip;
-        if (ip.fromString(TNC_IP))
-            run_session(ip);
-        else
-            Serial.println("[lsv2] bad TNC_IP");
+        run_session(TNC_IP); // dws_client_open resolves the dotted-quad host directly
     }
     delay(10);
 }

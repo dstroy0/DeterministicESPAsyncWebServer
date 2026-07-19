@@ -21,7 +21,6 @@
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/ina219/ina219.h"
-#include <Arduino.h>
 
 void setup()
 {

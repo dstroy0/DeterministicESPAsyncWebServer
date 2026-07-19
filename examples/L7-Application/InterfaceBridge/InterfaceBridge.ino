@@ -34,8 +34,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/iface_bridge/iface_bridge_hw.h" // dws_iface_bridge_publish
-#include <Arduino.h>
-#include <WiFi.h>
 
 // --- CHANGE ME: your WiFi ---
 static const char *SSID = "YOUR_SSID";
@@ -58,9 +56,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     // (1) UART1 as a raw serial-device server (ser2net). unit=1 -> Serial1 @ 115200 baud.
     //     {bus, mode, unit, addr_cs, rate, spi_mode, bit_order}
@@ -76,8 +74,10 @@ void setup()
         Serial.println("SPI bridge publish failed");
 
     server.begin();
-    Serial.printf("UART stream : %s:%u  <->  Serial1\n", WiFi.localIP().toString().c_str(), UART_PORT);
-    Serial.printf("SPI txn     : %s:%u  <->  SPI CS=GPIO5\n", WiFi.localIP().toString().c_str(), SPI_PORT);
+    Serial.printf("UART stream : %u.%u.%u.%u:%u  <->  Serial1\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF), UART_PORT);
+    Serial.printf("SPI txn     : %u.%u.%u.%u:%u  <->  SPI CS=GPIO5\n", (unsigned)(ip & 0xFF),
+                  (unsigned)((ip >> 8) & 0xFF), (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF), SPI_PORT);
 }
 
 void loop()

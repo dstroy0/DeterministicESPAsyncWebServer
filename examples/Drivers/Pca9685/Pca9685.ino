@@ -22,7 +22,6 @@
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/pca9685/pca9685.h"
-#include <Arduino.h>
 
 static const uint8_t SERVO_CH = 0;
 

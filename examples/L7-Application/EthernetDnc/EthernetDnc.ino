@@ -28,8 +28,6 @@
 #include "network_drivers/physical/physical.h"
 #include "network_drivers/transport/client.h"
 #include "services/dnc/dnc_stream.h" // dnc_stream + DncCfg / DncCode
-#include <Arduino.h>
-#include <WiFi.h>
 #include <string.h>
 
 // --- CHANGE ME: your WiFi ---
@@ -113,9 +111,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     send_program();
 }

@@ -21,7 +21,6 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -298,6 +297,13 @@ void handle_get_sysinfo(uint8_t slot_id, HttpReq *req)
         return;
     }
 
+    char ssid[33];
+    dws_net_ssid(ssid, sizeof(ssid));
+    uint32_t ip = dws_net_egress_ip();
+    char ip_str[16];
+    snprintf(ip_str, sizeof(ip_str), "%u.%u.%u.%u", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+             (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
+
     char response_buf[384];
     snprintf(response_buf, sizeof(response_buf),
              "{"
@@ -314,8 +320,8 @@ void handle_get_sysinfo(uint8_t slot_id, HttpReq *req)
              "\"ip_address\":\"%s\""
              "}",
              ESP.getFreeHeap(), ESP.getMinFreeHeap(), ESP.getMaxAllocHeap(), millis(),
-             get_reset_reason_string(esp_reset_reason()), ESP.getChipRevision(), ESP.getCpuFreqMHz(), WiFi.RSSI(),
-             WiFi.SSID().c_str(), WiFi.channel(), WiFi.localIP().toString().c_str());
+             get_reset_reason_string(esp_reset_reason()), ESP.getChipRevision(), ESP.getCpuFreqMHz(), dws_net_rssi(),
+             ssid, dws_net_channel(), ip_str);
 
     server.send(slot_id, 200, "application/json", response_buf);
 }
@@ -349,8 +355,9 @@ void setup()
         Serial.print(".");
     }
     Serial.println("\nWiFi Online!");
-    Serial.print("Access the dashboard via: http://");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip();
+    Serial.printf("Access the dashboard via: http://%u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     server.set_cors("*");
 

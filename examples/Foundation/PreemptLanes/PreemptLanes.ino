@@ -16,7 +16,6 @@
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/preempt_queue/preempt_queue.h"
-#include <Arduino.h>
 
 // A queue item padded to the lane item size (the queue copies a fixed DWS_PQ_ITEM_SIZE
 // bytes, so the posted object must be at least that large).

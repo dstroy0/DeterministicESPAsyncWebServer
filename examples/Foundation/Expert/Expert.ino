@@ -25,7 +25,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "network_drivers/transport/tcp.h" // access conn_pool and ConnState
-#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -208,8 +207,9 @@ void setup()
         Serial.print(".");
     }
     Serial.println("\nWiFi online!");
-    Serial.print("Local IP: ");
-    Serial.println(WiFi.localIP());
+    uint32_t ip = dws_net_egress_ip();
+    Serial.printf("Local IP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     last_refill_time_ms = millis();
 

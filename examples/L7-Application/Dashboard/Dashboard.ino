@@ -27,7 +27,6 @@
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/dashboard/dashboard.h"
-#include <WiFi.h>
 #include <math.h>
 #include <string.h>
 
@@ -71,9 +70,9 @@ void setup()
         delay(250);
         Serial.print('.');
     }
-    Serial.print("\nIP: ");
-    Serial.println(WiFi.localIP());
-    WiFi.setSleep(false);
+    uint32_t ip = dws_net_egress_ip(); // library egress IP (network byte order), no Arduino WiFi
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
     dws_dashboard_on_control(on_control);
     dws_dashboard_begin(server, "/dashboard", WIDGETS, sizeof(WIDGETS) / sizeof(WIDGETS[0]));
@@ -92,7 +91,7 @@ void loop()
         last_ms = now;
         dws_dashboard_set("heap", (float)ESP.getFreeHeap());
         dws_dashboard_set("uptime", (float)(now / 1000));
-        dws_dashboard_set("rssi", (float)WiFi.RSSI());
+        dws_dashboard_set("rssi", (float)dws_net_rssi());
         dws_dashboard_publish();
     }
 }
