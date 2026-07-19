@@ -405,12 +405,19 @@ preempting queue, so sensing shares the real-time ingest path.
        tunnel mode first (whole-packet, simplest SPD). Gate behind its own flag; the codec + handshake tiers
        ship and test independently first. Refs: RFC 7296 (IKEv2), 4303 (ESP), 7634 (ChaCha20-Poly1305 for
        IKEv2/ESP), 8247 (algorithm requirements).
-- [~] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming _(decode + decision shipped)_ -
-  `DWS_ENABLE_WIFI_SNIFFER` (`services/wifi_sniffer`): `dws_wifi_parse` decodes an 802.11 MAC header
-  (frame-control type/subtype + flags and the addresses whose roles depend on the ToDS/FromDS bits),
-  `dws_wifi_stats_*` tallies frames by type for a traffic panel, and `dws_wifi_should_roam` is the
-  RSSI-hysteresis channel-agility roaming decision. Pure, host-tested (`native_wifi_sniffer`).
-  _Remaining:_ the promiscuous-mode radio callback + a live channel-hop scan loop on hardware (M).
+- [x] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming _(shipped)_ -
+      `DWS_ENABLE_WIFI_SNIFFER` (`services/wifi_sniffer`): `dws_wifi_parse` decodes an 802.11 MAC header
+      (frame-control type/subtype + flags and the addresses whose roles depend on the ToDS/FromDS bits),
+      `dws_wifi_stats_*` tallies frames by type for a traffic panel, `dws_wifi_scan_*` is the channel-hop
+      dwell schedule (wrap-safe, sweep-counting), `dws_wifi_survey_*` keeps the per-channel RSSI/traffic
+      survey and returns the strongest _other_ channel, and `dws_wifi_should_roam` is the RSSI-hysteresis
+      roaming decision on that candidate. With `DWS_ENABLE_PROMISC` the live binding
+      (`dws_wifi_sniffer_begin` / `_tick` / `_end`) drives the promiscuous-capture owner
+      (`services/promisc`) instead of installing a second radio callback; stats/survey are lock-free so
+      capture is never stalled by a reader. Pure parts host-tested (`native_wifi_sniffer`, 15 cases) and
+      **HW-verified on an ESP32-S3** against live 2.4 GHz traffic: 490 frames (369 mgmt / 121 data) over
+      10 channel sweeps, nine channels surveyed with real BSSIDs, and the roam decision correctly choosing
+      a -31 dBm channel over the -66 dBm one. Example WifiSniffer.
 - [x] DNS resolver + answer verification _(shipped)_ - `DWS_ENABLE_DNS_RESOLVER`: `services/dns_resolver` resolves a hostname to IPv4 (lwIP dns_gethostbyname marshalled to tcpip_thread, dotted-quad fast path) and verifies the answer - rejecting 0.0.0.0 / broadcast / loopback / multicast as spoof / DNS-rebinding indicators; classifier + verifier host-tested, HW-verified against live DNS (example DnsResolver). Remaining (M): captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
 - [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `dws_mdns_txt` / `dws_mdns_add_service`.
 - [~] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M) _(scheduler shipped)_ -

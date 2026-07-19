@@ -12,6 +12,11 @@
 
 #include <string.h>
 
+#if DWS_ENABLE_PROMISC
+#include "services/clock.h"           // dws_millis - the monotonic source
+#include "services/promisc/promisc.h" // the promiscuous-capture owner
+#endif
+
 bool dws_wifi_parse(const uint8_t *frame, size_t len, WifiFrame *out)
 {
     if (!frame || !out || len < 10) // FrameControl(2) + Duration(2) + Address1(6)
@@ -80,5 +85,209 @@ bool dws_wifi_should_roam(int8_t cur_rssi, int8_t cand_rssi, uint8_t hysteresis_
     int32_t margin = (int32_t)cand_rssi - (int32_t)cur_rssi;
     return margin > (int32_t)hysteresis_db;
 }
+
+// --- Channel-hop scan schedule ----------------------------------------------------------
+
+namespace
+{
+uint8_t clamp_channel(uint8_t c)
+{
+    if (c < 1)
+        return 1;
+    if (c > 14)
+        return 14;
+    return c;
+}
+} // namespace
+
+void dws_wifi_scan_init(WifiScan *s, uint8_t first, uint8_t last, uint16_t dwell_ms, uint32_t now_ms)
+{
+    if (!s)
+        return;
+    s->chan_first = clamp_channel(first);
+    s->chan_last = clamp_channel(last);
+    if (s->chan_last < s->chan_first)
+        s->chan_last = s->chan_first;
+    s->channel = s->chan_first;
+    s->dwell_ms = dwell_ms;
+    s->last_hop_ms = now_ms;
+    s->sweeps = 0;
+}
+
+bool dws_wifi_scan_due(const WifiScan *s, uint32_t now_ms)
+{
+    if (!s)
+        return false;
+    // Unsigned subtraction is correct across a millis() rollover.
+    return (uint32_t)(now_ms - s->last_hop_ms) >= s->dwell_ms;
+}
+
+uint8_t dws_wifi_scan_next(WifiScan *s, uint32_t now_ms)
+{
+    if (!s)
+        return 0;
+    if (s->channel >= s->chan_last)
+    {
+        s->channel = s->chan_first;
+        s->sweeps++;
+    }
+    else
+    {
+        s->channel++;
+    }
+    s->last_hop_ms = now_ms;
+    return s->channel;
+}
+
+// --- Per-channel RSSI survey ------------------------------------------------------------
+
+void dws_wifi_survey_reset(WifiSurvey *s, uint8_t first, uint8_t count)
+{
+    if (!s)
+        return;
+    memset(s, 0, sizeof(*s));
+    s->first = clamp_channel(first);
+    s->count = (count > DWS_WIFI_SNIFFER_MAX_CHANNELS) ? (uint8_t)DWS_WIFI_SNIFFER_MAX_CHANNELS : count;
+    for (uint8_t i = 0; i < DWS_WIFI_SNIFFER_MAX_CHANNELS; i++)
+        s->ch[i].best_rssi = DWS_WIFI_RSSI_NONE;
+}
+
+namespace
+{
+// Index of `channel` in the survey table, or -1 if outside the tracked range.
+int survey_index(const WifiSurvey *s, uint8_t channel)
+{
+    if (!s || channel < s->first)
+        return -1;
+    int idx = (int)channel - (int)s->first;
+    if (idx >= (int)s->count)
+        return -1;
+    return idx;
+}
+} // namespace
+
+void dws_wifi_survey_add(WifiSurvey *s, uint8_t channel, int8_t rssi, const WifiFrame *f)
+{
+    int idx = survey_index(s, channel);
+    if (idx < 0)
+        return;
+    WifiChannelSurvey *e = &s->ch[idx];
+    e->frames++;
+    if (e->best_rssi == DWS_WIFI_RSSI_NONE || rssi > e->best_rssi)
+    {
+        e->best_rssi = rssi;
+        // The transmitter address is the AP for a beacon; only present once addr2 was decoded.
+        if (f && f->naddr >= 2)
+            memcpy(e->best_bssid, f->addr2, 6);
+    }
+}
+
+const WifiChannelSurvey *dws_wifi_survey_get(const WifiSurvey *s, uint8_t channel)
+{
+    int idx = survey_index(s, channel);
+    return (idx < 0) ? nullptr : &s->ch[idx];
+}
+
+bool dws_wifi_survey_best(const WifiSurvey *s, uint8_t exclude_channel, uint8_t *out_channel, int8_t *out_rssi)
+{
+    if (!s)
+        return false;
+    bool found = false;
+    uint8_t best_ch = 0;
+    int8_t best = DWS_WIFI_RSSI_NONE;
+    for (uint8_t i = 0; i < s->count; i++)
+    {
+        uint8_t ch = (uint8_t)(s->first + i);
+        if (ch == exclude_channel || s->ch[i].best_rssi == DWS_WIFI_RSSI_NONE)
+            continue;
+        if (!found || s->ch[i].best_rssi > best)
+        {
+            found = true;
+            best = s->ch[i].best_rssi;
+            best_ch = ch;
+        }
+    }
+    if (found)
+    {
+        if (out_channel)
+            *out_channel = best_ch;
+        if (out_rssi)
+            *out_rssi = best;
+    }
+    return found;
+}
+
+#if DWS_ENABLE_PROMISC
+
+/** @brief Owned state for the live channel-hopping sniff. */
+struct WifiSnifferCtx
+{
+    WifiStats stats;
+    WifiSurvey survey;
+    WifiScan scan;
+    bool running;
+};
+
+namespace
+{
+WifiSnifferCtx s_sniffer = {};
+
+// The promisc sink: decode, tally, survey. Runs in the WiFi driver's callback context, so it only
+// touches the owned context - no allocation, no blocking.
+void sniffer_sink(const uint8_t *frame, uint16_t len, int8_t rssi, uint8_t channel)
+{
+    WifiFrame f;
+    if (!dws_wifi_parse(frame, len, &f))
+        return;
+    dws_wifi_stats_add(&s_sniffer.stats, &f);
+    dws_wifi_survey_add(&s_sniffer.survey, channel, rssi, &f);
+}
+} // namespace
+
+bool dws_wifi_sniffer_begin(uint8_t first_chan, uint8_t last_chan, uint16_t dwell_ms)
+{
+    uint32_t now = dws_millis();
+    dws_wifi_stats_reset(&s_sniffer.stats);
+    dws_wifi_scan_init(&s_sniffer.scan, first_chan, last_chan, dwell_ms, now);
+    dws_wifi_survey_reset(&s_sniffer.survey, s_sniffer.scan.chan_first,
+                          (uint8_t)(s_sniffer.scan.chan_last - s_sniffer.scan.chan_first + 1));
+    s_sniffer.running = dws_promisc_begin(s_sniffer.scan.channel, sniffer_sink);
+    return s_sniffer.running;
+}
+
+void dws_wifi_sniffer_tick(void)
+{
+    if (!s_sniffer.running)
+        return;
+    uint32_t now = dws_millis();
+    if (!dws_wifi_scan_due(&s_sniffer.scan, now))
+        return;
+    dws_promisc_set_channel(dws_wifi_scan_next(&s_sniffer.scan, now));
+}
+
+void dws_wifi_sniffer_end(void)
+{
+    if (!s_sniffer.running)
+        return;
+    dws_promisc_end();
+    s_sniffer.running = false;
+}
+
+const WifiStats *dws_wifi_sniffer_stats(void)
+{
+    return &s_sniffer.stats;
+}
+
+const WifiSurvey *dws_wifi_sniffer_survey(void)
+{
+    return &s_sniffer.survey;
+}
+
+const WifiScan *dws_wifi_sniffer_scan(void)
+{
+    return &s_sniffer.scan;
+}
+
+#endif // DWS_ENABLE_PROMISC
 
 #endif // DWS_ENABLE_WIFI_SNIFFER

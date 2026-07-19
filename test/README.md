@@ -317,7 +317,7 @@ The native test matrix has **250 environments**, one per feature, generated from
 | `native_webdav` | `WS_ENABLE_WEBDAV=1` | `test_webdav` | WebDAV server core (RFC 4918): method classification, header parsing, XML escaping, and the 207 Multi-Status builder. |
 | `native_webdav_handler` | `BODY_BUF_SIZE=512`, `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_WEBDAV=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_WEB_TERMINAL=1` | `test_webdav_handler` | WebDAV request handler over a directory-capable FS mock (recursive COPY/MOVE/DELETE) |
 | `native_webhook` | `WS_ENABLE_WEBHOOK=1` | `test_webhook` | Webhook / IFTTT builders (services/webhook): IFTTT URL + value1/2/3 JSON payload, host-tested. |
-| `native_wifi_sniffer` | `WS_ENABLE_WIFI_SNIFFER=1` | `test_wifi_sniffer` | 802.11 sniffer / traffic analyzer (services/wifi_sniffer): decode an 802.11 MAC header (frame-control type/subtype + flags, ToDS/FromDS-dependent addresses), tally frames by type, and the RSSI-hystere... |
+| `native_wifi_sniffer` | `WS_ENABLE_WIFI_SNIFFER=1` | `test_wifi_sniffer` | 802.11 sniffer / traffic analyzer (services/wifi_sniffer): decode an 802.11 MAC header (frame-control type/subtype + flags, ToDS/FromDS-dependent addresses), tally frames by type, the RSSI-hysteresis ... |
 | `native_wisun` | `WS_ENABLE_WISUN=1` | `test_wisun` | Wi-SUN FAN border-router connector (services/wisun): the CoAP client request builder (RFC 7252 header + Uri-Path options with extended-length + payload) and the FAN node registry (register / find / jo... |
 | `native_workers` | `WS_WORKER_COUNT=2` | `test_workers` | Core-partitioning invariant at N=2 (DWS_WORKER_COUNT=2): each worker reaps only its owned slots (check_timeouts ownership). |
 | `native_ws_client` | `WS_ENABLE_WS_CLIENT=1` | `test_ws_client` |  |
@@ -540,7 +540,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3324 test cases** across **268 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3333 test cases** across **268 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -37736,7 +37736,7 @@ A thorough directory of all **3324 test cases** across **268 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_wifi_sniffer (6 tests)</b></summary>
+<summary><b>test_wifi_sniffer (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_data</b> &mdash; <i>Parse data</i></summary>
@@ -37803,6 +37803,116 @@ A thorough directory of all **3324 test cases** across **268 suites**. Expand a 
     * **Objective**: Stats add null and default type
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(1, st.other);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_hops_and_wraps</b> &mdash; <i>Scan hops and wraps</i></summary>
+
+    * **Objective**: Scan hops and wraps
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, s.channel);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, s.sweeps);</code>
+      * <code>Assert false (dws_wifi_scan_due(&s, 1099))</code>
+      * <code>Assert true (dws_wifi_scan_due(&s, 1100))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, dws_wifi_scan_next(&s, 1100));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, dws_wifi_scan_next(&s, 1200));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_wifi_scan_next(&s, 1300)); // wraps</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, s.sweeps);</code>
+      * <code>Assert false (dws_wifi_scan_due(&s, 1350))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_clamps_and_single_channel</b> &mdash; <i>Scan clamps and single channel</i></summary>
+
+    * **Objective**: Scan clamps and single channel
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, s.chan_first);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(14, s.chan_last);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, s.chan_first);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, s.chan_last);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, dws_wifi_scan_next(&s, 100)); // stays put, counts a sweep</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, s.sweeps);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_wrapsafe_across_millis_rollover</b> &mdash; <i>Scan wrapsafe across millis rollover</i></summary>
+
+    * **Objective**: Scan wrapsafe across millis rollover
+    * **Assertions**:
+      * <code>Assert false (dws_wifi_scan_due(&s, 0xFFFFFFFF))</code>
+      * <code>Assert false (dws_wifi_scan_due(&s, 0x00000020))</code>
+      * <code>Assert true (dws_wifi_scan_due(&s, 0x00000024))</code>
+      * <code>Assert true (dws_wifi_scan_due(&s, 0x00000100))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_null_guards</b> &mdash; <i>Scan null guards</i></summary>
+
+    * **Objective**: Scan null guards
+    * **Assertions**:
+      * <code>Assert false (dws_wifi_scan_due(nullptr, 100))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_wifi_scan_next(nullptr, 100));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_tracks_best_rssi_per_channel</b> &mdash; <i>An untouched channel stays "nothing heard".</i></summary>
+
+    * **Objective**: An untouched channel stays "nothing heard".
+    * **Assertions**:
+      * <code>Assert not null (c1)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, c1-&gt;frames);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-55, c1-&gt;best_rssi);</code>
+      * <code>Assert equal memory (ap_b, c1-&gt;best_bssid, 6)</code>
+      * <code>Assert not null (c6)</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-60, c6-&gt;best_rssi);</code>
+      * <code>Assert not null (c3)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c3-&gt;frames);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(DWS_WIFI_RSSI_NONE, c3-&gt;best_rssi);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_out_of_range_ignored</b> &mdash; <i>Survey out of range ignored</i></summary>
+
+    * **Objective**: Survey out of range ignored
+    * **Assertions**:
+      * <code>Assert null (dws_wifi_survey_get(&s, 1))</code>
+      * <code>Assert null (dws_wifi_survey_get(&s, 9))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_wifi_survey_get(&s, 6)-&gt;frames);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_best_picks_strongest_and_excludes</b> &mdash; <i>Excluding the current channel yields the next best - the roaming candidate.</i></summary>
+
+    * **Objective**: Excluding the current channel yields the next best - the roaming candidate.
+    * **Assertions**:
+      * <code>Assert true (dws_wifi_survey_best(&s, 0, &ch, &rssi))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, ch);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-45, rssi);</code>
+      * <code>Assert true (dws_wifi_survey_best(&s, 6, &ch, &rssi))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(11, ch);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-60, rssi);</code>
+      * <code>Assert false (dws_wifi_survey_best(&empty, 0, &ch, &rssi))</code>
+      * <code>Assert false (dws_wifi_survey_best(nullptr, 0, &ch, &rssi))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_feeds_roam_decision</b> &mdash; <i>The end-to-end decision a channel-agility roam makes: survey -> best candidate -> hysteresis.</i></summary>
+
+    * **Objective**: The end-to-end decision a channel-agility roam makes: survey -> best candidate -> hysteresis.
+    * **Assertions**:
+      * <code>Assert true (dws_wifi_survey_best(&s, 1, &cand_ch, &cand_rssi))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, cand_ch);</code>
+      * <code>Assert true (dws_wifi_should_roam(-75, cand_rssi, 8))</code>
+      * <code>Assert false (dws_wifi_should_roam(-55, cand_rssi, 8))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_reset_clamps_count</b> &mdash; <i>Survey reset clamps count</i></summary>
+
+    * **Objective**: Survey reset clamps count
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_WIFI_SNIFFER_MAX_CHANNELS, s.count);</code>
+      * <code>Assert null (dws_wifi_survey_get(nullptr, 1))</code>
   </details>
 
 </details>

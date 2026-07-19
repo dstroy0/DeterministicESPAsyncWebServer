@@ -80,5 +80,109 @@ void dws_wifi_stats_add(WifiStats *s, const WifiFrame *f);
  */
 bool dws_wifi_should_roam(int8_t cur_rssi, int8_t cand_rssi, uint8_t hysteresis_db);
 
+// --- Channel-hop scan schedule ----------------------------------------------------------
+//
+// A survey walks a channel range, dwelling on each long enough to hear its traffic, then wraps.
+// The schedule is pure (wrap-safe time math on dws_millis()); driving the radio is the binding
+// below.
+
+/** @brief Channel-hop schedule across [chan_first, chan_last]. */
+struct WifiScan
+{
+    uint8_t chan_first;   ///< first channel of the sweep (1..14)
+    uint8_t chan_last;    ///< last channel of the sweep (>= chan_first)
+    uint8_t channel;      ///< channel currently dwelt on
+    uint16_t dwell_ms;    ///< dwell per channel
+    uint32_t last_hop_ms; ///< when the current dwell started
+    uint32_t sweeps;      ///< completed wraps back to chan_first
+};
+
+/** @brief Start a sweep at @p first, dwelling @p dwell_ms per channel. Clamps to 1..14 and first<=last. */
+void dws_wifi_scan_init(WifiScan *s, uint8_t first, uint8_t last, uint16_t dwell_ms, uint32_t now_ms);
+
+/** @brief True once the current channel's dwell has elapsed (wrap-safe against a millis rollover). */
+bool dws_wifi_scan_due(const WifiScan *s, uint32_t now_ms);
+
+/**
+ * @brief Advance to the next channel (wrapping to chan_first and counting a sweep) and restart the dwell.
+ * @return the new channel, or 0 if @p s is null.
+ */
+uint8_t dws_wifi_scan_next(WifiScan *s, uint32_t now_ms);
+
+// --- Per-channel RSSI survey ------------------------------------------------------------
+
+/** @brief What was heard on one channel during the survey. */
+struct WifiChannelSurvey
+{
+    uint32_t frames;       ///< frames decoded on this channel
+    int8_t best_rssi;      ///< strongest RSSI seen (dBm); DWS_WIFI_RSSI_NONE if nothing heard
+    uint8_t best_bssid[6]; ///< transmitter of the strongest frame
+};
+
+/** @brief Sentinel for "no frame heard yet" in WifiChannelSurvey::best_rssi. */
+static constexpr int8_t DWS_WIFI_RSSI_NONE = -128;
+
+/** @brief Survey across the scanned channel range (index 0 == @c first). */
+struct WifiSurvey
+{
+    WifiChannelSurvey ch[DWS_WIFI_SNIFFER_MAX_CHANNELS];
+    uint8_t first; ///< channel represented by ch[0]
+    uint8_t count; ///< channels tracked (<= DWS_WIFI_SNIFFER_MAX_CHANNELS)
+};
+
+/** @brief Clear the survey to track @p count channels starting at @p first. */
+void dws_wifi_survey_reset(WifiSurvey *s, uint8_t first, uint8_t count);
+
+/** @brief Fold one captured frame (on @p channel, at @p rssi) into the survey. Out-of-range channels are ignored. */
+void dws_wifi_survey_add(WifiSurvey *s, uint8_t channel, int8_t rssi, const WifiFrame *f);
+
+/** @brief The survey entry for @p channel, or nullptr if it is outside the tracked range. */
+const WifiChannelSurvey *dws_wifi_survey_get(const WifiSurvey *s, uint8_t channel);
+
+/**
+ * @brief Find the strongest channel heard, ignoring @p exclude_channel (pass 0 to exclude nothing).
+ * @return true if any channel had traffic; @p out_channel / @p out_rssi are then set.
+ */
+bool dws_wifi_survey_best(const WifiSurvey *s, uint8_t exclude_channel, uint8_t *out_channel, int8_t *out_rssi);
+
+#if DWS_ENABLE_PROMISC
+// --- Live capture binding (ESP32) -------------------------------------------------------
+//
+// Drives the promiscuous-capture owner (services/promisc) rather than installing a second radio
+// callback: dws_promisc_begin() delivers each frame to an internal sink that decodes it
+// (dws_wifi_parse), tallies it (dws_wifi_stats_add), and folds it into the survey. Call
+// dws_wifi_sniffer_tick() from the loop to hop channels on the dwell schedule.
+//
+// Concurrency: the sink runs in the Wi-Fi driver's callback context, so the stats and survey are
+// updated underneath a reader. They are deliberately lock-free - the accessors below hand back a
+// live snapshot that may be a frame or two ahead of a value read a moment earlier, which is the
+// right trade for a passive diagnostics panel (a lock in the radio callback would risk stalling
+// capture). Counters are aligned 32-bit and RSSI is a byte, so a reader sees whole values, never
+// torn ones; do not treat a report as an instantaneous consistent cut across channels.
+
+/**
+ * @brief Start a live channel-hopping sniff across [first_chan, last_chan].
+ *
+ * Requires Wi-Fi initialized (e.g. WiFi.mode(WIFI_STA)). Resets the stats + survey.
+ * @return true if capture started.
+ */
+bool dws_wifi_sniffer_begin(uint8_t first_chan, uint8_t last_chan, uint16_t dwell_ms);
+
+/** @brief Hop to the next channel when the dwell has elapsed. Cheap to call every loop. */
+void dws_wifi_sniffer_tick(void);
+
+/** @brief Stop capture. */
+void dws_wifi_sniffer_end(void);
+
+/** @brief The running traffic tally (never null). */
+const WifiStats *dws_wifi_sniffer_stats(void);
+
+/** @brief The per-channel survey (never null). */
+const WifiSurvey *dws_wifi_sniffer_survey(void);
+
+/** @brief The live scan schedule (never null) - current channel, sweeps completed. */
+const WifiScan *dws_wifi_sniffer_scan(void);
+#endif // DWS_ENABLE_PROMISC
+
 #endif // DWS_ENABLE_WIFI_SNIFFER
 #endif // DETERMINISTICESPASYNCWEBSERVER_WIFI_SNIFFER_H

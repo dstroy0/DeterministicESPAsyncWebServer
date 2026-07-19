@@ -3916,11 +3916,28 @@
  * The decode + decision layer for a promiscuous-mode WiFi sniffer: dws_wifi_parse decodes an 802.11
  * MAC header (frame-control type/subtype + flags and the addresses whose roles depend on ToDS/FromDS),
  * dws_wifi_stats_* tallies frames by type for a traffic panel, and dws_wifi_should_roam decides when
- * a candidate AP is enough stronger (RSSI hysteresis) to justify channel-agility roaming. The
- * promiscuous-mode radio callback stays the app's. No heap/stdlib. Default off.
+ * a candidate AP is enough stronger (RSSI hysteresis) to justify channel-agility roaming. On top of
+ * that, dws_wifi_scan_* is the channel-hop dwell schedule and dws_wifi_survey_* is the per-channel
+ * RSSI/traffic survey that supplies the roam candidate. With DWS_ENABLE_PROMISC also set, the live
+ * binding (dws_wifi_sniffer_begin / _tick / _end) drives the promiscuous-capture owner
+ * (services/promisc) so a channel-hopping sniff runs on hardware. No heap/stdlib. Default off.
  */
 #ifndef DWS_ENABLE_WIFI_SNIFFER
 #define DWS_ENABLE_WIFI_SNIFFER 0
+#endif
+
+/**
+ * @brief Channels tracked by the WiFi sniffer's per-channel survey (DWS_WIFI_SNIFFER_MAX_CHANNELS).
+ *
+ * 14 covers the full 2.4 GHz channel plan (1-14); lower it to the channels actually swept to shrink
+ * the survey table (each entry is 11 bytes).
+ */
+#ifndef DWS_WIFI_SNIFFER_MAX_CHANNELS
+#define DWS_WIFI_SNIFFER_MAX_CHANNELS 14
+#endif
+
+#if DWS_ENABLE_WIFI_SNIFFER && ((DWS_WIFI_SNIFFER_MAX_CHANNELS < 1) || (DWS_WIFI_SNIFFER_MAX_CHANNELS > 14))
+#error "DeterministicESPAsyncWebServer: DWS_WIFI_SNIFFER_MAX_CHANNELS must be 1..14"
 #endif
 
 /**

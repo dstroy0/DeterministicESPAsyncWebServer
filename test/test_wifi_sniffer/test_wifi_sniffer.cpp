@@ -102,6 +102,166 @@ void test_stats_add_null_and_default_type()
     TEST_ASSERT_EQUAL_UINT32(1, st.other);
 }
 
+// --- Channel-hop scan schedule ----------------------------------------------------------
+
+void test_scan_hops_and_wraps()
+{
+    WifiScan s;
+    dws_wifi_scan_init(&s, 1, 3, 100, 1000);
+    TEST_ASSERT_EQUAL_UINT8(1, s.channel);
+    TEST_ASSERT_EQUAL_UINT32(0, s.sweeps);
+
+    TEST_ASSERT_FALSE(dws_wifi_scan_due(&s, 1099)); // dwell not elapsed
+    TEST_ASSERT_TRUE(dws_wifi_scan_due(&s, 1100));  // exactly at the dwell
+
+    TEST_ASSERT_EQUAL_UINT8(2, dws_wifi_scan_next(&s, 1100));
+    TEST_ASSERT_EQUAL_UINT8(3, dws_wifi_scan_next(&s, 1200));
+    TEST_ASSERT_EQUAL_UINT8(1, dws_wifi_scan_next(&s, 1300)); // wraps
+    TEST_ASSERT_EQUAL_UINT32(1, s.sweeps);
+    TEST_ASSERT_FALSE(dws_wifi_scan_due(&s, 1350)); // dwell restarted on hop
+}
+
+void test_scan_clamps_and_single_channel()
+{
+    WifiScan s;
+    dws_wifi_scan_init(&s, 0, 99, 50, 0); // out-of-range clamps to 1..14
+    TEST_ASSERT_EQUAL_UINT8(1, s.chan_first);
+    TEST_ASSERT_EQUAL_UINT8(14, s.chan_last);
+
+    dws_wifi_scan_init(&s, 6, 3, 50, 0); // last < first -> single channel
+    TEST_ASSERT_EQUAL_UINT8(6, s.chan_first);
+    TEST_ASSERT_EQUAL_UINT8(6, s.chan_last);
+    TEST_ASSERT_EQUAL_UINT8(6, dws_wifi_scan_next(&s, 100)); // stays put, counts a sweep
+    TEST_ASSERT_EQUAL_UINT32(1, s.sweeps);
+}
+
+void test_scan_wrapsafe_across_millis_rollover()
+{
+    WifiScan s;
+    dws_wifi_scan_init(&s, 1, 3, 100, 0xFFFFFFC0);        // 64 ms before rollover
+    TEST_ASSERT_FALSE(dws_wifi_scan_due(&s, 0xFFFFFFFF)); // 63 ms elapsed
+    TEST_ASSERT_FALSE(dws_wifi_scan_due(&s, 0x00000020)); // 64 + 32 = 96 ms - still short
+    TEST_ASSERT_TRUE(dws_wifi_scan_due(&s, 0x00000024));  // 64 + 36 = 100 ms - due, across the wrap
+    TEST_ASSERT_TRUE(dws_wifi_scan_due(&s, 0x00000100));  // well past
+}
+
+void test_scan_null_guards()
+{
+    dws_wifi_scan_init(nullptr, 1, 3, 10, 0);
+    TEST_ASSERT_FALSE(dws_wifi_scan_due(nullptr, 100));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_wifi_scan_next(nullptr, 100));
+}
+
+// --- Per-channel survey -----------------------------------------------------------------
+
+static WifiFrame make_frame(const uint8_t *bssid)
+{
+    WifiFrame f = {};
+    f.type = WifiType::WIFI_TYPE_MGMT;
+    f.naddr = 2;
+    if (bssid)
+        memcpy(f.addr2, bssid, 6);
+    return f;
+}
+
+void test_survey_tracks_best_rssi_per_channel()
+{
+    const uint8_t ap_a[6] = {0xAA, 0, 0, 0, 0, 1};
+    const uint8_t ap_b[6] = {0xBB, 0, 0, 0, 0, 2};
+    WifiSurvey s;
+    dws_wifi_survey_reset(&s, 1, 6);
+
+    WifiFrame fa = make_frame(ap_a);
+    WifiFrame fb = make_frame(ap_b);
+    dws_wifi_survey_add(&s, 1, -70, &fa);
+    dws_wifi_survey_add(&s, 1, -55, &fb); // stronger on the same channel -> replaces
+    dws_wifi_survey_add(&s, 1, -80, &fa); // weaker -> ignored for best
+    dws_wifi_survey_add(&s, 6, -60, &fa);
+
+    const WifiChannelSurvey *c1 = dws_wifi_survey_get(&s, 1);
+    TEST_ASSERT_NOT_NULL(c1);
+    TEST_ASSERT_EQUAL_UINT32(3, c1->frames);
+    TEST_ASSERT_EQUAL_INT8(-55, c1->best_rssi);
+    TEST_ASSERT_EQUAL_MEMORY(ap_b, c1->best_bssid, 6); // the strongest frame's transmitter
+
+    const WifiChannelSurvey *c6 = dws_wifi_survey_get(&s, 6);
+    TEST_ASSERT_NOT_NULL(c6);
+    TEST_ASSERT_EQUAL_INT8(-60, c6->best_rssi);
+
+    // An untouched channel stays "nothing heard".
+    const WifiChannelSurvey *c3 = dws_wifi_survey_get(&s, 3);
+    TEST_ASSERT_NOT_NULL(c3);
+    TEST_ASSERT_EQUAL_UINT32(0, c3->frames);
+    TEST_ASSERT_EQUAL_INT8(DWS_WIFI_RSSI_NONE, c3->best_rssi);
+}
+
+void test_survey_out_of_range_ignored()
+{
+    WifiSurvey s;
+    dws_wifi_survey_reset(&s, 5, 3); // tracks 5,6,7 only
+    WifiFrame f = make_frame(nullptr);
+    dws_wifi_survey_add(&s, 1, -40, &f); // below range
+    dws_wifi_survey_add(&s, 9, -40, &f); // above range
+    dws_wifi_survey_add(&s, 6, -50, &f); // in range
+    TEST_ASSERT_NULL(dws_wifi_survey_get(&s, 1));
+    TEST_ASSERT_NULL(dws_wifi_survey_get(&s, 9));
+    TEST_ASSERT_EQUAL_UINT32(1, dws_wifi_survey_get(&s, 6)->frames);
+}
+
+void test_survey_best_picks_strongest_and_excludes()
+{
+    WifiSurvey s;
+    dws_wifi_survey_reset(&s, 1, 11);
+    WifiFrame f = make_frame(nullptr);
+    dws_wifi_survey_add(&s, 1, -70, &f);
+    dws_wifi_survey_add(&s, 6, -45, &f); // strongest
+    dws_wifi_survey_add(&s, 11, -60, &f);
+
+    uint8_t ch = 0;
+    int8_t rssi = 0;
+    TEST_ASSERT_TRUE(dws_wifi_survey_best(&s, 0, &ch, &rssi));
+    TEST_ASSERT_EQUAL_UINT8(6, ch);
+    TEST_ASSERT_EQUAL_INT8(-45, rssi);
+
+    // Excluding the current channel yields the next best - the roaming candidate.
+    TEST_ASSERT_TRUE(dws_wifi_survey_best(&s, 6, &ch, &rssi));
+    TEST_ASSERT_EQUAL_UINT8(11, ch);
+    TEST_ASSERT_EQUAL_INT8(-60, rssi);
+
+    // A silent survey has no candidate.
+    WifiSurvey empty;
+    dws_wifi_survey_reset(&empty, 1, 11);
+    TEST_ASSERT_FALSE(dws_wifi_survey_best(&empty, 0, &ch, &rssi));
+    TEST_ASSERT_FALSE(dws_wifi_survey_best(nullptr, 0, &ch, &rssi));
+}
+
+void test_survey_feeds_roam_decision()
+{
+    // The end-to-end decision a channel-agility roam makes: survey -> best candidate -> hysteresis.
+    WifiSurvey s;
+    dws_wifi_survey_reset(&s, 1, 11);
+    WifiFrame f = make_frame(nullptr);
+    dws_wifi_survey_add(&s, 1, -75, &f); // current channel, weak
+    dws_wifi_survey_add(&s, 6, -50, &f); // candidate, much stronger
+
+    uint8_t cand_ch = 0;
+    int8_t cand_rssi = 0;
+    TEST_ASSERT_TRUE(dws_wifi_survey_best(&s, 1, &cand_ch, &cand_rssi));
+    TEST_ASSERT_EQUAL_UINT8(6, cand_ch);
+    TEST_ASSERT_TRUE(dws_wifi_should_roam(-75, cand_rssi, 8));  // 25 dB better -> roam
+    TEST_ASSERT_FALSE(dws_wifi_should_roam(-55, cand_rssi, 8)); // only 5 dB -> stay
+}
+
+void test_survey_reset_clamps_count()
+{
+    WifiSurvey s;
+    dws_wifi_survey_reset(&s, 1, 200); // clamps to the table size
+    TEST_ASSERT_EQUAL_UINT8(DWS_WIFI_SNIFFER_MAX_CHANNELS, s.count);
+    dws_wifi_survey_reset(nullptr, 1, 4); // null guard
+    dws_wifi_survey_add(nullptr, 1, -50, nullptr);
+    TEST_ASSERT_NULL(dws_wifi_survey_get(nullptr, 1));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -111,5 +271,14 @@ int main(void)
     RUN_TEST(test_stats);
     RUN_TEST(test_roam);
     RUN_TEST(test_stats_add_null_and_default_type);
+    RUN_TEST(test_scan_hops_and_wraps);
+    RUN_TEST(test_scan_clamps_and_single_channel);
+    RUN_TEST(test_scan_wrapsafe_across_millis_rollover);
+    RUN_TEST(test_scan_null_guards);
+    RUN_TEST(test_survey_tracks_best_rssi_per_channel);
+    RUN_TEST(test_survey_out_of_range_ignored);
+    RUN_TEST(test_survey_best_picks_strongest_and_excludes);
+    RUN_TEST(test_survey_feeds_roam_decision);
+    RUN_TEST(test_survey_reset_clamps_count);
     return UNITY_END();
 }
