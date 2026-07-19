@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`75e7ded`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75e7ded7d00159cdcfb4cab458ddcb9380ac6bcb))
+- update CHANGELOG.md [skip ci] ([`8377abf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8377abf5fdb23c69658389042340bd682247d256))
 - update test report + coverage [skip ci] ([`1c8f9a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c8f9a065fdd067a3a5085fc2c9727ae6cffe5e7))
 - update CHANGELOG.md [skip ci] ([`ffcfa6a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffcfa6a389e2996f7f4dd7ef3bd0fd8e3fbe81d2))
 - update CHANGELOG.md [skip ci] ([`59d1d83`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/59d1d833b44743aa69ded982adc3c5ee1182151e))
@@ -19,6 +21,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4aa552e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4aa552e4cc8246266e1eb65f31bf0d1c47d74485))
 - update ESP32 build footprints [skip ci] ([`b2cb1dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b2cb1dd13088112c4be2fedf019b97e3940b215d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8cc38db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8cc38db72104e070a200e1a5a76202d9bc42870c))
 - update ESP32 build footprints [skip ci] ([`6f7dde5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f7dde581e6e26615b07585a06a2f5641c53e054))
@@ -28,6 +31,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- Heidenhain LSV/2 telegram codec + TNC example ([`b1bbeef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1bbeef79189da896daf2344114e71c8ab1aba8f))
 - Haas Machine Data Collection (MDC) Q-command codec ([`dbf09a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dbf09a7b1adeb85cf505479250c44bc466866e6b))
 
 ## [7.6.0] - 2026-07-19
