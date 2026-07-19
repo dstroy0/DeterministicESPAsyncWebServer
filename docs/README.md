@@ -1109,6 +1109,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `HAAS_MDC` | `L7-Application/HaasMdc` | 725,337 | 43,452 |
 | `DNS_SERVER` | `L7-Application/DnsServer` | 725,661 | 45,996 |
 | `IKEV2` | `L5-Session/IKEv2` | 725,953 | 43,940 |
+| `WIFI_SNIFFER+PROMISC` | `Peripherals/WifiSniffer` | 725,973 | 43,644 |
 | `VXI11` | `L7-Application/Vxi11` | 726,205 | 44,196 |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD` | `L7-Application/CoapBlock` | 727,317 | 48,372 |
 | `UDP_TELEMETRY` | `L7-Application/UdpTelemetry` | 727,921 | 44,964 |
