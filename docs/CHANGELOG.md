@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`b155626`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1556263916ebc32aad319bba5d9a659415c5ae4))
+- update CHANGELOG.md [skip ci] ([`96a3462`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96a3462d4f763520cc95b99f5228b0a3bd556481))
+
+### Documentation
+
+- close Ethernet PHY - HW-verified on an ESP32-P4 (IP101 RMII) ([`f377244`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3772446c0f831556d3c9a4367ca71896201193a))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5cb4658`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5cb4658b2513002b536bc9a498d83985e42d8258))
+
 ## [7.11.0] - 2026-07-19
 
 <details>
