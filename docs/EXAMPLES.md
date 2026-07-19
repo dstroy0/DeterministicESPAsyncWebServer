@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 136 runnable examples under `examples/`, grouped by
+The library ships 137 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -113,6 +113,7 @@ Parsing, codecs, auth, WebSocket/SSE:
 [Cbor](../examples/L6-Presentation/Cbor/README.md) ·
 [DigestAuth](../examples/L6-Presentation/DigestAuth/README.md) ·
 [FormParams](../examples/L6-Presentation/FormParams/README.md) ·
+[ForwardedTrust](../examples/L6-Presentation/ForwardedTrust/README.md) ·
 [Json](../examples/L6-Presentation/Json/README.md) ·
 [JWTAuth](../examples/L6-Presentation/JWTAuth/README.md) ·
 [MsgPack](../examples/L6-Presentation/MsgPack/README.md) ·
