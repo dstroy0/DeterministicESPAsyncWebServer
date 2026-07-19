@@ -486,12 +486,13 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 </tr>
 <tr>
   <td align="center"><a href="FEATURES.md#hislip" title="HiSLIP (High-Speed LAN Instrument Protocol, IVI-6.1) message codec. Default off. services/hislip is a zero-heap codec for the IVI Foundation's modern LXI instrument transport on TCP port 4880 - the successor to VXI-11 that carries SCPI ([DWS_ENABLE_SCPI](#scpi)) at higher throughput over two TCP channels (a synchronous SCPI command/response stream and an asynchronous out-of-band control channel), correlated by a 16-bit SessionID. `dws_hislip_build_header` / `dws_hislip_parse_header` frame the fixed 16-byte header (`&quot;HS&quot;` prologue + message type + control code + 32-bit MessageParameter + 64-bit PayloadLength, all big-endian); `dws_hislip_build_initialize` / `_initialize_response` / `_async_initialize` / `_async_initialize_response` (+ the matching parsers) drive the two-channel handshake (the MessageParameter carries `(protocol version &lt;&lt; 16) | vendor id`, then the negotiated version + SessionID); and `dws_hislip_build_data` frames a Data / DataEND message carrying a SCPI payload keyed by a MessageID (`dws_hislip_next_message_id` implements the initial-`0xFFFFFF00`, increment-by-2 rule). The full `HislipMsg` message-type enum (0-38, including the HiSLIP 2.0 TLS / SASL additions), the header byte layout, and the handshake vectors are verified against IVI-6.1 (cross-checked with the Wireshark dissector, MSL-equipment, and PyHiSLIP). Pure codec, host-tested; the two TCP connections are the application's. See src/services/hislip/hislip.h.">HiSLIP</a></td>
+  <td align="center"><a href="FEATURES.md#ikev2" title="IKEv2 (RFC 7296) message + payload codec. Default off. services/ikev2 is a zero-heap builder / parser for the Internet Key Exchange v2 wire format that negotiates IPsec security associations over UDP 500 / 4500 (NAT-T) - it is **tier 1 (the pure framing)** of an IKEv2 / IPsec stack, the standards-track &quot;secure machine bridge over untrusted networks&quot; southbound: the Diffie-Hellman math, the SKEYSEED / SK\_\* key derivation, the SK AEAD, and the IKE_SA_INIT -&gt; IKE_AUTH state machine are later tiers that reuse the crypto the library already ships. It builds / parses the **28-octet IKE header** (`dws_ike_hdr_build` / `_parse` - initiator / responder SPIs, next payload, version, exchange type, flags, message id, length, plus `dws_ike_set_length` to backfill the whole-message length) and walks the **generic payload chain** (`dws_ike_payload_iter_init` / `dws_ike_payload_next` - forward-linked by each payload's next-payload field, with `dws_ike_payload_build` for a raw payload). Typed builders + parsers cover the IKE_SA_INIT / IKE_AUTH payload set: **SA** (`dws_ike_sa_build` writes one proposal with its transforms - ENCR / PRF / INTEG / D-H / ESN - encoding the key-length attribute, and `dws_ike_sa_first_proposal` + `dws_ike_transform_iter_init` / `dws_ike_transform_next` decode the proposal -&gt; transform tree back, reading the key-length attribute), **KE** (`dws_ike_ke_build` / `_parse` - D-H group + key data), **Nonce** (Ni / Nr), **IDi / IDr** (`dws_ike_id_build` / `_parse`), **CERT / CERTREQ** (`dws_ike_cert_build`), **AUTH** (`dws_ike_auth_build` / `_parse` - PSK / RSA / digital-signature methods), **N notify** (`dws_ike_notify_build` / `_parse` - protocol + optional SPI + 16-bit type + data), **D delete** (`dws_ike_delete_build` / `_parse`), **TSi / TSr** traffic selectors (`dws_ike_ts_build` / `dws_ike_ts_count` / `dws_ike_ts_get` - IPv4 / IPv6 address ranges + port ranges), and the **SK** encrypted-payload envelope (`dws_ike_sk_build` / `_parse` frames IV + ciphertext + ICV so a later tier plugs the AEAD in). Every parser bounds-checks and fails closed on a malformed length. The header, payload, and SA / proposal / transform layouts (including the key-length transform attribute) are verified against RFC 7296 + the IANA registry and cross-checked byte-for-byte against scapy's IKEv2 codec. Pure codec, host-tested (`native_ikev2`, 16 cases); the UDP transport, the crypto, and the SA state machine are the application's / later tiers. See src/services/ikev2/ikev2.h.">IKEv2</a></td>
   <td align="center"><a href="FEATURES.md#interface-bridge" title="Opt-in user-defined address:port -&gt; hardware-bus bridge, a configurable &quot;device server&quot;. The app registers rules mapping a listen `x.x.x.x:nnnn` (TCP/UDP) to a UART, an SPI chip-select, or an I2C address (`dws_iface_bridge_map(ip, port, proto, target)`), so a network client talking to that port is transparently bridged to the bus: raw bidirectional stream passthrough for UART (a ser2net-style serial device server), or framed write-then-read transactions (`uint16 write_len || uint16 read_len || write_bytes`, big-endian) for the master-initiated SPI / I2C buses, with the bus address / chip-select / clock / mode taken from the rule's target. The fixed-capacity rule table (keyed by port+proto, carrying the full DWSIp bind address, never a flattened one) and the transaction frame codec are a pure, zero-heap, host-tested core (services/iface_bridge); the bus I/O (Serial / SPI / Wire) and the PROTO_BRIDGE connection handler are the ESP32 step (iface_bridge_hw), wired up in two calls: `server.listen(port, ConnProto::PROTO_BRIDGE)` then `dws_iface_bridge_publish(listener_id, port, proto, target)`. UART stream mode is a ser2net-style raw pipe pumped by the server poll loop; SPI/I2C transaction mode peeks a whole frame out of the connection ring, clocks it against the bus (I2C uses a repeated-start read), and returns the read bytes. Default off. See src/services/iface_bridge/iface_bridge_hw.h and examples/L7-Application/InterfaceBridge.">Interface Bridge</a></td>
   <td align="center"><a href="FEATURES.md#lsv2" title="Heidenhain LSV/2 telegram codec. Default off. services/lsv2 is a zero-heap codec for the LSV/2 protocol Heidenhain TNC controls (iTNC 530, TNC 320 / 620 / 640, ...) speak for DNC and data access over a serial link or, as implemented here, LSV/2-over-TCP (default port 19000) - so a device becomes a fixed-BSS collector for the common European CNC control, alongside the shipped Fanuc [FOCAS](#fanuc-focas), [Haas MDC](#haas-mdc), [MELSEC](#melsec), [S7comm](#s7comm) and [DNC](#dnc-cnc-drip-feed) machine-tool codecs. **Framing** (byte-exact, both directions): a telegram is a 4-byte big-endian payload-length prefix, a 4-character ASCII command / response mnemonic, then the payload - the length counts the payload only (the mnemonic is not included), so a telegram with no payload is exactly 8 bytes on the wire (a bare `T_OK` acknowledgement is `00 00 00 00 'T' '_' 'O' 'K'`). `dws_lsv2_build` frames an arbitrary mnemonic + payload and `dws_lsv2_parse` slices one complete telegram off a byte stream (reporting the consumed byte count so a caller can re-frame the rest). **Typed builders** cover the common requests: `dws_lsv2_build_login` / `dws_lsv2_build_logout` (the `A_LG` / `A_LO` privilege-group access with the `INSPECT` / `FILE` / `DNC` / `MONITOR` / `DIAGNOSTICS` / `PLCDEBUG` groups + optional password), `dws_lsv2_build_filename` (the null-terminated-filename file commands - `R_FL` load, `C_FL` send, `C_FD` delete, `C_DC` change dir, `C_DM` / `C_DD` make / delete dir), and `dws_lsv2_build_run_info` (`R_RI` with a 2-byte big-endian run-info selector: execution state / selected program / override / program state). **Response readers** decode the reply mnemonic (`dws_lsv2_is_ok` for `T_OK`, `dws_lsv2_is_error` for the `T_ER` / `T_BD` errors, `dws_lsv2_error` for their two-byte error-class + error-code, and `dws_lsv2_is` for the `S_*` data replies). The telegram framing, mnemonic set, and the login / filename / run-info payload layouts are cross-checked byte-for-byte against the pyLSV2 reference (drunsinn/pyLSV2). Pure codec, host-tested (`native_lsv2`, 12 cases); the serial / TCP link to the control is the application's. See src/services/lsv2/lsv2.h.">LSV/2</a></td>
   <td align="center"><a href="FEATURES.md#ntrip-caster" title="Opt-in GNSS RTK base station + NTRIP caster (services/gnss). Default off (implies `DWS_ENABLE_NMEA0183`). Turns the device into a differential-GNSS correction source: it surveys in a fixed antenna position and serves RTCM 3.x corrections to rovers over the network (the NTRIP protocol), so a rover applies them for RTK / DGPS accuracy instead of the ~2.5 m of a bare receiver. Three pure, zero-heap, host-tested cores plus a ConnProto listener: (1) the RTCM3 codec (services/gnss/rtcm3) - the transport frame (0xD3 preamble, 6 reserved + 10-bit length, payload, 24-bit CRC-24Q), MSB-first bit I/O, and the Stationary Antenna Reference Point messages 1005 (no height) / 1006 (with antenna height) that advertise the base's surveyed ECEF position (38-bit signed coordinates at 0.0001 m resolution), verified byte-for-byte against pyrtcm; (2) the survey-in core (services/gnss/dws_gnss_survey) - the exact WGS84 geodetic&amp;lt;-&amp;gt;ECEF transform (matched against pyproj), a shifted-origin position averager with a 3-D accuracy estimate and a min-observations / accuracy-limit convergence gate, and a GGA-fix fold (ellipsoidal height = MSL + geoid separation); (3) the NTRIP caster protocol (services/gnss/dws_ntrip_caster) - rover request parsing (mountpoint, NTRIP 1.0 / 2.0 version, optional HTTP Basic auth), the stream-accept / error / 401 responses, and the RTCM source table (STR records + ENDSOURCETABLE). The `ConnProto::PROTO_NTRIP_CASTER` listener (services/gnss/dws_ntrip_caster_listener) answers rovers and fans RTCM corrections out to every subscriber, published like the relay: `server.listen(2101, ConnProto::PROTO_NTRIP_CASTER)` then `dws_ntrip_caster_add_mount()` / `dws_ntrip_caster_broadcast()`. Example NtripCaster runs a base (survey-in + caster) and a rover (NTRIP client that CRC-validates and decodes the 1005) on two boards. Generating RTCM3 _observation_ messages (the MSM sets 1074/1077/1084/... that let a rover fix carrier-phase ambiguities for centimeter RTK) requires a receiver that outputs raw measurements (u-blox RXM-RAWX: F9P / M8T class); a raw-less module (NEO-6/7, GT-U7) can still survey in and serve the reference point + sourcetable. See src/services/gnss/dws_ntrip_caster_listener.h.">NTRIP Caster</a></td>
-  <td align="center"><a href="FEATURES.md#post-quantum-hybrid-kex" title="Post-quantum / traditional hybrid key exchange: ML-KEM-768 (FIPS 203) combined with X25519. Closes the harvest-now-decrypt-later gap - OpenSSH 9.9+ and current browsers now DEFAULT to a hybrid group, so without this the device negotiates DOWN to classical X25519. When set (and SSH is on) the server advertises `mlkem768x25519-sha256` (draft-ietf-sshm-mlkem-hybrid-kex) first in its SSH KEX list and, on selection, ML-KEM-Encaps to the client's key + X25519, combining `K = SHA256(K_PQ || K_CL)` per the RFC 9370 concatenation combiner. The device is always the KEM responder, so only Encaps ships (no KeyGen/Decaps, so none of the constant-time FO re-encryption surface). The ML-KEM core (network_drivers/presentation/pqc) is a software NTT over q=3329 with Montgomery reduction plus a Keccak/SHA-3/SHAKE sponge (FIPS 202); zero heap, peak ~7 KB of worker stack (raise `DWS_WORKER_TASK_STACK` to &gt;= `DWS_WORKER_STACK_PQC_MIN` = 16384). Byte-exact against the FIPS 203 reference (kyber-py) and verified end to end vs an independent client (ML-KEM Decaps). Wired into both transports from the one core: the SSH key exchange (`DWS_ENABLE_SSH`, `mlkem768x25519-sha256`, K = SHA256(K_PQ || K_CL), K as an RFC 4251 string) and the HTTP/3 QUIC TLS 1.3 handshake (`DWS_ENABLE_HTTP3`, the **X25519MLKEM768** group, IANA 0x11ec, ML-KEM-first client/server shares and a 64-byte ML-KEM || X25519 secret into the key schedule). A PQC-capable peer (OpenSSH 9.9+, current browsers) negotiates the hybrid; others fall back to classical X25519. Default off.">Post-Quantum Hybrid KEX</a></td>
 </tr>
 <tr>
+  <td align="center"><a href="FEATURES.md#post-quantum-hybrid-kex" title="Post-quantum / traditional hybrid key exchange: ML-KEM-768 (FIPS 203) combined with X25519. Closes the harvest-now-decrypt-later gap - OpenSSH 9.9+ and current browsers now DEFAULT to a hybrid group, so without this the device negotiates DOWN to classical X25519. When set (and SSH is on) the server advertises `mlkem768x25519-sha256` (draft-ietf-sshm-mlkem-hybrid-kex) first in its SSH KEX list and, on selection, ML-KEM-Encaps to the client's key + X25519, combining `K = SHA256(K_PQ || K_CL)` per the RFC 9370 concatenation combiner. The device is always the KEM responder, so only Encaps ships (no KeyGen/Decaps, so none of the constant-time FO re-encryption surface). The ML-KEM core (network_drivers/presentation/pqc) is a software NTT over q=3329 with Montgomery reduction plus a Keccak/SHA-3/SHAKE sponge (FIPS 202); zero heap, peak ~7 KB of worker stack (raise `DWS_WORKER_TASK_STACK` to &gt;= `DWS_WORKER_STACK_PQC_MIN` = 16384). Byte-exact against the FIPS 203 reference (kyber-py) and verified end to end vs an independent client (ML-KEM Decaps). Wired into both transports from the one core: the SSH key exchange (`DWS_ENABLE_SSH`, `mlkem768x25519-sha256`, K = SHA256(K_PQ || K_CL), K as an RFC 4251 string) and the HTTP/3 QUIC TLS 1.3 handshake (`DWS_ENABLE_HTTP3`, the **X25519MLKEM768** group, IANA 0x11ec, ML-KEM-first client/server shares and a 64-byte ML-KEM || X25519 secret into the key schedule). A PQC-capable peer (OpenSSH 9.9+, current browsers) negotiates the hybrid; others fall back to classical X25519. Default off.">Post-Quantum Hybrid KEX</a></td>
   <td align="center"><a href="FEATURES.md#scpi" title="SCPI / IEEE 488.2 instrument-control codec. Default off. services/scpi is a zero-heap codec for the text command language nearly every modern bench instrument speaks (DMMs, oscilloscopes, power supplies, function/arbitrary generators, SMUs, spectrum/network analyzers, electronic loads) over a raw TCP socket on port 5025 (also USBTMC / VXI-11 / HiSLIP / serial). The codec is symmetric: as a **controller** it builds command lines with `dws_scpi_build` (a `:`-hierarchy header + comma-separated params + newline) and `dws_scpi_common` (the 13 mandatory IEEE 488.2 commands `*IDN?` / `*RST` / `*CLS` / `*ESR?` / `*STB?` / ...), then parses replies - `dws_scpi_parse_number` (NR1/NR2/NR3, hand-rolled, no stdlib), `_parse_bool` (`1`/`0`/`ON`/`OFF`), `_parse_string` (quote-stripping with doubled-quote collapse), and `_parse_block` (the definite `#&lt;n&gt;&lt;len&gt;&lt;data&gt;` and indefinite `#0&lt;data&gt;` arbitrary block used for waveform captures); as an **instrument** it carries the IEEE 488.2 status model - `ScpiStatus` (the Status Byte, Standard Event Status Register + its enable mask, the Service Request Enable mask, and the FIFO error/event queue) with `dws_scpi_push_error` (latching the CME/EXE/DDE/QYE/... ESR class bit from the error-number range and replacing the tail with -350 &quot;Queue overflow&quot; when full), `dws_scpi_pop_error` (the `SYSTem:ERRor?` action, `0,&quot;No error&quot;` when empty), `dws_scpi_stb` (EAV/ESB/MSS computation), and `dws_scpi_cls` (`*CLS`) - plus `dws_scpi_match`, a SCPI short/long-form + numeric-suffix header matcher for dispatching an incoming command against a pattern like `&quot;SYSTem:ERRor?&quot;`. Register bits, error-number classes, and the exact standard error strings are verified against the SCPI-1999 standard and IEEE 488.2-1992. Pure codec, host-tested; the TCP/USB/serial transport is the application's. See src/services/scpi/scpi.h.">SCPI</a></td>
   <td align="center"><a href="FEATURES.md#sen0192" title="DFRobot SEN0192 10.525 GHz microwave Doppler motion sensor (single digital OUT line). Default off. Unlike a PIR it senses movement through thin non-metal enclosures and is unaffected by ambient light or temperature; unlike the LD2410 it carries no protocol - just one digital line - so services/sen0192 tracks that line as a debounced presence signal: presence asserts on an active sample and is held for `DWS_SEN0192_HOLD_MS` after the last active sample (so brief gaps between Doppler returns don't make presence flap), clears after it, and counts clear-to-present edges. The presence state machine (`Sen0192Motion`) is pure - it takes a sampled level and a timestamp, needing no clock or GPIO - and host-tested (`native_sen0192`); the ESP32 binding reads `DWS_SEN0192_PIN` each poll via dws_millis() and only that read touches hardware. The OUT pin, hold window, and polarity are ServerConfig knobs (`DWS_SEN0192_PIN` / `DWS_SEN0192_HOLD_MS` / `DWS_SEN0192_ACTIVE_HIGH`). Example Sen0192 lights the onboard LED on motion. See src/services/sen0192/sen0192.h.">SEN0192</a></td>
   <td align="center"><a href="FEATURES.md#vxi-11" title="VXI-11 (TCP/IP Instrument Protocol) codec over ONC RPC / XDR. Default off. services/vxi11 is a zero-heap codec for the legacy LXI instrument transport that predates HiSLIP ([DWS_ENABLE_HISLIP](#hislip)) - VXI-11 rides on ONC RPC (Sun RPC, RFC 5531) with XDR (RFC 4506) over TCP, carrying SCPI ([DWS_ENABLE_SCPI](#scpi)). It provides the reusable ONC-RPC framing - `dws_rpc_record_mark` / `dws_rpc_parse_record_mark` (the TCP record-marking header) and `dws_rpc_parse_reply` (the accepted-reply header with AUTH_NONE) over big-endian, 4-byte-aligned, length-prefixed XDR (no sub-word types on the wire) - plus the DEVICE_CORE procedures: `dws_vxi11_build_create_link` / `_device_write` / `_device_read` / `_device_readstb` / `_destroy_link` (program `0x0607AF` v1) with their response parsers, and the portmapper `dws_vxi11_build_getport` call that maps the program to its dynamic TCP port (the instrument channel is not on a fixed port). Device_Flags (waitlock / end / termchrset), the read `reason` bits (REQCNT / CHR / END), and the Device_ErrorCode set are covered; `dws_vxi11_error_str` names an error. The XDR struct layouts, procedure numbers, and RPC headers are verified against the VXI-11 spec + RFC 5531 / 4506 / 1833 (cross-checked with python-vxi11 and the Wireshark dissector), with a byte-exact create_link vector. Pure codec, host-tested; the TCP connection is the application's. See src/services/vxi11/vxi11.h.">VXI-11</a></td>
@@ -863,6 +864,7 @@ src/
 │   │   ├── iface_bridge.h
 │   │   ├── iface_bridge_hw.cpp
 │   │   └── iface_bridge_hw.h
+│   ├── ikev2/  (ikev2.h, ikev2.cpp)
 │   ├── ina219/  (ina219.h, ina219.cpp)
 │   ├── interbus/  (interbus.h, interbus.cpp)
 │   ├── iolink/  (iolink.h, iolink.cpp)
@@ -1078,7 +1080,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | Feature | Example | Flash (bytes) | Static RAM (bytes) |
 | :------ | :------ | ------------: | -----------------: |
 | `SIGFOX` | `Drivers/SigfoxUplink` | 267,961 | 21,464 |
-| `PREEMPT_QUEUE` | `Foundation/PreemptLanes` | 268,401 | 23,936 |
 | `ENOCEAN+GATEWAY` | `Drivers/EnOceanGateway` | 268,693 | 21,848 |
 | `ZWAVE+GATEWAY` | `Drivers/ZWaveGateway` | 268,905 | 21,848 |
 | `THREAD+GATEWAY` | `Drivers/ThreadGateway` | 269,137 | 22,616 |
@@ -1089,6 +1090,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | `Drivers/RadioGateway` | 270,541 | 28,720 |
 | `LD2410` | `Drivers/Ld2410` | 270,681 | 21,576 |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/InterfaceForward` | 270,797 | 29,096 |
+| `PREEMPT_QUEUE` | `Foundation/PreemptQueue` | 274,069 | 23,968 |
 | `NRF24+GATEWAY` | `Drivers/Nrf24Gateway` | 276,105 | 21,680 |
 | `LORA+GATEWAY` | `Drivers/LoRaGateway` | 276,329 | 21,688 |
 | `PCA9685` | `Drivers/Pca9685` | 284,601 | 21,800 |
@@ -1117,47 +1119,47 @@ Feature Tables workflow from `docs/footprints.json`.
 | `HAAS_MDC` | `L7-Application/HaasMdc` | 743,465 | 44,688 |
 | `VXI11` | `L7-Application/Vxi11` | 744,465 | 45,432 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,109 | 46,668 |
-| `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 752,169 | 81,792 |
 | `core/MediaStreaming` | `L7-Application/MediaStreaming` | 752,253 | 81,784 |
 | `core/CORS` | `L7-Application/CORS` | 752,333 | 81,784 |
 | `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/RadioPower` | 752,409 | 81,784 |
-| `core/BasicAuth` | `L6-Presentation/BasicAuth` | 752,409 | 81,784 |
 | `core/DigestAuth` | `L6-Presentation/DigestAuth` | 752,533 | 81,784 |
+| `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 752,581 | 81,796 |
 | `core/RegexRoutes` | `L7-Application/RegexRoutes` | 752,653 | 81,784 |
 | `PER_IP_THROTTLE` | `L4-Transport/PerIpThrottle` | 752,677 | 82,232 |
-| `KEEPALIVE` | `L4-Transport/KeepAlive` | 752,697 | 81,784 |
 | `DEVICE_ID` | `L7-Application/DeviceUuid` | 752,733 | 81,824 |
 | `core/PathParams` | `L7-Application/PathParams` | 752,737 | 81,784 |
 | `core/WebSocket` | `L6-Presentation/WebSocket` | 752,785 | 81,784 |
+| `core/BasicAuth` | `L6-Presentation/BasicAuth` | 752,837 | 81,788 |
 | `GUARDRAILS` | `L7-Application/Guardrails` | 752,857 | 81,792 |
 | `core/ResponseHeaders` | `L7-Application/ResponseHeaders` | 752,869 | 81,784 |
 | `core/Middleware` | `L7-Application/Middleware` | 752,961 | 81,784 |
-| `core/ServerSentEvents` | `L6-Presentation/ServerSentEvents` | 752,969 | 81,792 |
-| `DIAG` | `L7-Application/Diagnostics` | 753,025 | 81,784 |
+| `KEEPALIVE` | `L4-Transport/KeepAlive` | 752,985 | 81,788 |
 | `core/NetEgress` | `L7-Application/NetEgress` | 753,037 | 81,784 |
 | `PARTITION_MONITOR` | `L7-Application/PartitionMonitor` | 753,065 | 81,792 |
-| `core/ChunkedResponse` | `L7-Application/ChunkedResponse` | 753,065 | 81,792 |
-| `core/FormParams` | `L6-Presentation/FormParams` | 753,161 | 81,784 |
 | `AUTH_LOCKOUT` | `L6-Presentation/AuthLockout` | 753,401 | 82,360 |
 | `OTA_ROLLBACK` | `L7-Application/OtaRollback` | 753,401 | 81,792 |
-| `core/Multipart` | `L6-Presentation/Multipart` | 753,497 | 81,784 |
+| `core/ChunkedResponse` | `L7-Application/ChunkedResponse` | 753,421 | 81,804 |
+| `core/ServerSentEvents` | `L6-Presentation/ServerSentEvents` | 753,465 | 81,796 |
 | `TOTP` | `L7-Application/Totp` | 753,517 | 81,816 |
+| `core/FormParams` | `L6-Presentation/FormParams` | 753,521 | 81,788 |
 | `IP_ALLOWLIST` | `L4-Transport/IpAllowlist` | 753,681 | 81,784 |
 | `LOGBUF` | `L7-Application/LogBuffer` | 753,861 | 84,904 |
 | `CSRF` | `L7-Application/Csrf` | 753,941 | 81,840 |
 | `core/InterfaceFilter` | `L7-Application/InterfaceFilter` | 753,961 | 81,784 |
+| `core/Multipart` | `L6-Presentation/Multipart` | 754,017 | 81,788 |
 | `MODBUS` | `L7-Application/ModbusTcp` | 754,093 | 82,064 |
 | `core/Templating` | `L7-Application/Templating` | 754,137 | 81,824 |
 | `STATS` | `L7-Application/Stats` | 754,209 | 81,888 |
 | `CONTROL` | `L7-Application/PidTuning` | 754,325 | 89,856 |
-| `core/Basic` | `Foundation/Basic` | 754,421 | 81,792 |
 | `MODBUS+MODBUS_MASTER` | `L7-Application/ModbusScan` | 754,429 | 82,064 |
 | `JWT` | `L6-Presentation/JWTAuth` | 754,549 | 82,936 |
-| `TELNET` | `L5-Session/Telnet` | 754,581 | 82,320 |
 | `AUDIT_LOG` | `L7-Application/AuditLog` | 754,633 | 84,776 |
 | `CBOR` | `L6-Presentation/Cbor` | 754,717 | 81,864 |
 | `IPV6` | `Foundation/IPv6` | 754,805 | 81,784 |
-| `core/Expert` | `Foundation/Expert` | 755,053 | 81,808 |
+| `core/Basic` | `Foundation/Basic` | 754,981 | 81,804 |
+| `DIAG` | `Foundation/Configuration` | 755,021 | 77,548 |
+| `TELNET` | `L5-Session/Telnet` | 755,153 | 82,332 |
+| `core/Expert` | `Foundation/Expert` | 755,657 | 81,812 |
 | `SYSLOG` | `L7-Application/Syslog` | 755,741 | 83,640 |
 | `MSGPACK` | `L6-Presentation/MsgPack` | 756,017 | 81,864 |
 | `STATS+METRICS` | `L7-Application/PrometheusMetrics` | 756,325 | 81,928 |
@@ -1172,16 +1174,16 @@ Feature Tables workflow from `docs/footprints.json`.
 | `DNS_RESOLVER` | `L7-Application/DnsResolver` | 758,329 | 83,072 |
 | `PROVISIONING` | `L7-Application/Provisioning` | 760,005 | 83,356 |
 | `OPCUA` | `L7-Application/OpcUa` | 760,497 | 92,072 |
-| `core/Advanced` | `Foundation/Advanced` | 761,077 | 81,896 |
 | `TELEMETRY` | `L7-Application/Telemetry` | 761,201 | 82,108 |
 | `SNMP` | `L7-Application/SNMP` | 761,237 | 94,192 |
+| `core/Advanced` | `Foundation/Advanced` | 761,585 | 81,900 |
 | `RELAY` | `L7-Application/PortForward` | 762,349 | 116,400 |
 | `HTTP_CLIENT+WEBHOOK` | `L7-Application/Webhook` | 763,053 | 101,536 |
 | `PROMISC+FORWARD+ETHERNET` | `Peripherals/WifiCapture` | 764,637 | 47,520 |
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/OAuth2` | 765,285 | 104,608 |
 | `OIDC` | `L7-Application/OidcAuth` | 766,149 | 99,856 |
 | `core/Sysadmin` | `Foundation/Sysadmin` | 766,285 | 81,800 |
-| `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 766,653 | 45,372 |
+| `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,001 | 45,388 |
 | `OPCUA+UMATI` | `L7-Application/Umati` | 767,217 | 92,216 |
 | `NTRIP_CASTER` | `L7-Application/NtripCaster` | 770,477 | 84,700 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Peripherals/CanCapture` | 771,165 | 45,516 |
@@ -1205,7 +1207,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WEBDAV` | `L7-Application/WebDav` | 821,069 | 105,352 |
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/WebDav` | 821,761 | 90,856 |
 | `ETAG` | `L7-Application/ETag` | 828,489 | 83,096 |
-| `SSH` | `L5-Session/SSHHostKey` | 828,741 | 109,156 |
+| `SSH` | `L5-Session/SSHHostKey` | 829,481 | 109,176 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 831,925 | 107,236 |
@@ -1366,6 +1368,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DWS_ENABLE_ICCP` | `0` | Opt-in ICCP / TASE.2 (IEC 60870-6) inter-control-center telemetry codec. |
 | `DWS_ENABLE_IEC60870` | `0` | IEC 60870-5-101 / -104 telecontrol (SCADA) codec (`services/iec60870`). |
 | `DWS_ENABLE_IFACE_BRIDGE` | `0` | User-defined address:port -> hardware-bus bridge (services/iface_bridge). |
+| `DWS_ENABLE_IKEV2` | `0` | IKEv2 (RFC 7296) message + payload codec (`services/ikev2`). |
 | `DWS_ENABLE_INA219` | `0` | TI INA219 high-side current / power monitor (I2C). |
 | `DWS_ENABLE_INTERBUS` | `0` | Opt-in INTERBUS summation-frame fieldbus codec. |
 | `DWS_ENABLE_IOLINK` | `0` | IO-Link (SDCI, IEC 61131-9) data-link message codec (`services/iolink`). |

@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 135 runnable examples under `examples/`, grouped by
+The library ships 136 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -97,6 +97,7 @@ Connections, encryption, and flood defense:
 
 Interactive consoles:
 
+[IKEv2](../examples/L5-Session/IKEv2/README.md) ·
 [SSH](../examples/L5-Session/SSH/README.md) ·
 [SSHCryptoSelfTest](../examples/L5-Session/SSHCryptoSelfTest/README.md) ·
 [SSHHostKey](../examples/L5-Session/SSHHostKey/README.md) ·
