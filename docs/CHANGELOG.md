@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.4.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.4.0 - 2026-07-19</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`38e1580`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38e15802abf41c06715ce91033ee61c200847f72))
+- update CHANGELOG.md [skip ci] ([`4146399`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4146399508a6e0d710684f41af81f482ce53c21f))
+
+### Changes
+
+- Bump version: 7.3.0 → 7.4.0 ([`95930a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95930a9d6c8c73f426cd24faf826636050391113))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`1926087`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19260873d1f00edab9cb2da2687e2a0c99b803af))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8148c0c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8148c0c3574553a3866630a933d8240011edcae2))
+
+### Features
+
+- HiSLIP (IVI-6.1) instrument-transport codec ([`8a732cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a732cd1c9037c61ca035d5792cdfd0753e13337))
+
+</details>
+
 ## [7.3.0] - 2026-07-19
 
 <details>
