@@ -424,6 +424,12 @@ Opt-in hardware-health diagnostics. Four pure decision cores fed with samples th
 
 Opt-in HART / HART-IP process-instrument protocol codec. When set, services/hart provides the HART command-frame codec (build/parse with the longitudinal XOR checksum, short + long addressing) and the 8-octet HART-IP message header, so a device speaks HART over UDP/TCP 5094 (front-end-free) or, with a HART FSK modem, over the 4-20 mA loop. Pure, host-tested. Default off.
 
+## HiSLIP
+
+`DWS_ENABLE_HISLIP`
+
+HiSLIP (High-Speed LAN Instrument Protocol, IVI-6.1) message codec. Default off. services/hislip is a zero-heap codec for the IVI Foundation's modern LXI instrument transport on TCP port 4880 - the successor to VXI-11 that carries SCPI ([DWS_ENABLE_SCPI](#scpi)) at higher throughput over two TCP channels (a synchronous SCPI command/response stream and an asynchronous out-of-band control channel), correlated by a 16-bit SessionID. `dws_hislip_build_header` / `dws_hislip_parse_header` frame the fixed 16-byte header (`"HS"` prologue + message type + control code + 32-bit MessageParameter + 64-bit PayloadLength, all big-endian); `dws_hislip_build_initialize` / `_initialize_response` / `_async_initialize` / `_async_initialize_response` (+ the matching parsers) drive the two-channel handshake (the MessageParameter carries `(protocol version << 16) | vendor id`, then the negotiated version + SessionID); and `dws_hislip_build_data` frames a Data / DataEND message carrying a SCPI payload keyed by a MessageID (`dws_hislip_next_message_id` implements the initial-`0xFFFFFF00`, increment-by-2 rule). The full `HislipMsg` message-type enum (0-38, including the HiSLIP 2.0 TLS / SASL additions), the header byte layout, and the handshake vectors are verified against IVI-6.1 (cross-checked with the Wireshark dissector, MSL-equipment, and PyHiSLIP). Pure codec, host-tested; the two TCP connections are the application's. See src/services/hislip/hislip.h.
+
 ## Host Link
 
 `DWS_ENABLE_HOSTLINK`

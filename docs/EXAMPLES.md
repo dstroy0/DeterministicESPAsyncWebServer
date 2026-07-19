@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 130 runnable examples under `examples/`, grouped by
+The library ships 131 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -150,6 +150,7 @@ Routing, protocols, services, and clients:
 [GpioMap](../examples/L7-Application/GpioMap/README.md) ·
 [GraphQL](../examples/L7-Application/GraphQL/README.md) ·
 [Guardrails](../examples/L7-Application/Guardrails/README.md) ·
+[HiSlip](../examples/L7-Application/HiSlip/README.md) ·
 [HttpClient](../examples/L7-Application/HttpClient/README.md) ·
 [InterfaceBridge](../examples/L7-Application/InterfaceBridge/README.md) ·
 [InterfaceFilter](../examples/L7-Application/InterfaceFilter/README.md) ·

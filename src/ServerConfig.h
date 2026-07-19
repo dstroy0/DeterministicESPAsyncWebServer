@@ -1702,6 +1702,21 @@
 #endif
 
 /**
+ * @brief HiSLIP (High-Speed LAN Instrument Protocol) message codec (`services/hislip`).
+ *
+ * Default off. A zero-heap codec for the IVI Foundation's modern LXI instrument transport (IVI-6.1)
+ * on TCP port 4880 - the successor to VXI-11 that carries SCPI at higher throughput over two TCP
+ * channels (synchronous + asynchronous). `dws_hislip_build_header` / `dws_hislip_parse_header`
+ * frame the fixed 16-byte header ("HS" prologue + message type + control code + 32-bit parameter +
+ * 64-bit payload length), with helpers for the Initialize / AsyncInitialize handshake and the
+ * Data / DataEND message carrying a SCPI payload + its message id. Pairs with `DWS_ENABLE_SCPI`
+ * (the payload). Pure codec, host-tested; the two TCP connections are the application's.
+ */
+#ifndef DWS_ENABLE_HISLIP
+#define DWS_ENABLE_HISLIP 0
+#endif
+
+/**
  * @brief SenML (RFC 8428) measurement-pack builder (`services/senml`).
  *
  * Default off; implies DWS_ENABLE_CBOR (the SenML-CBOR form uses the CBOR writer). A

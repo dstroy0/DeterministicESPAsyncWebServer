@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **243 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **244 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -162,6 +162,7 @@ The native test matrix has **243 environments**, one per feature, generated from
 | `native_h3frame` | `WS_ENABLE_HTTP3=1` | `test_h3_frame` | HTTP/3 framing (network_drivers/presentation/http3/h3_frame, RFC 9114 sec 7): the type+length varint header parse/write (incl. |
 | `native_happy_eyeballs` | `WS_ENABLE_HAPPY_EYEBALLS=1` | `test_happy_eyeballs` | Dual-stack Happy Eyeballs selection (services/happy_eyeballs): RFC 6724 destination preference scoring, the candidate-list sort + RFC 8305 address-family interleave, and the Connection Attempt Delay g... |
 | `native_hart` | `WS_ENABLE_HART=1` | `test_hart` | HART / HART-IP codec (services/hart): the HART command frame (longitudinal XOR checksum, short + long addressing) build/parse and the 8-octet HART-IP message header. |
+| `native_hislip` | `WS_ENABLE_HISLIP=1` | `test_hislip` | HiSLIP (High-Speed LAN Instrument Protocol, IVI-6.1) message codec (services/hislip): the fixed 16-byte header build/parse (HS prologue + type + control + 32-bit param + 64-bit payload length, big-end... |
 | `native_hostlink` | `WS_ENABLE_HOSTLINK=1` | `test_hostlink` | Omron Host Link (C-mode) frame codec (services/hostlink): the FCS (XOR), the ASCII command builder (@UU + header + text + FCS + *CR), and the FCS-validating parser + end-code reader. |
 | `native_hpack` | `WS_ENABLE_HTTP2=1` | `test_hpack` | HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the Huffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion (C.3.1), dynamic-table i... |
 | `native_http_client` | `WS_ENABLE_HTTP_CLIENT=1` | `test_http_client` | Outbound HTTP client: URL parser + request builder + response parser. |
@@ -533,7 +534,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3234 test cases** across **261 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3245 test cases** across **262 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -11460,6 +11461,152 @@ A thorough directory of all **3234 test cases** across **261 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hart_build(0x82, addr, 5, 0, data, sizeof(data), out, 4)); // cap too small</code>
       * <code>Assert false (dws_hart_parse(nullptr, 10, &hf))</code>
       * <code>Assert false (dws_hart_parse(tiny, sizeof(tiny), &hf))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_hislip (11 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_header_roundtrip</b> &mdash; <i>prologue + fields on the wire</i></summary>
+
+    * **Objective**: prologue + fields on the wire
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('H', buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('S', buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(7, buf[2]); // DATA_END</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[3]);</code>
+      * <code>Assert equal memory (param_be, buf + 4, 4)</code>
+      * <code>Assert equal memory (len_be, buf + 8, 8)</code>
+      * <code>Assert true (dws_hislip_parse_header(buf, sizeof(buf), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)HislipMsg::DATA_END, (uint8_t)h.type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, h.control);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xDEADBEEF, h.parameter);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x0102030405060708ULL, h.payload_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_header_rejects</b> &mdash; <i>short buffer</i></summary>
+
+    * **Objective**: short buffer
+    * **Assertions**:
+      * <code>Assert true (dws_hislip_parse_header(good, 16, &h))</code>
+      * <code>Assert false (dws_hislip_parse_header(good, 15, &h))</code>
+      * <code>Assert false (dws_hislip_parse_header(bad, 16, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hislip_build_header(small, sizeof(small), HislipMsg::DATA, 0, 0, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_message_type_codes</b> &mdash; <i>Message type codes</i></summary>
+
+    * **Objective**: Message type codes
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, (uint8_t)HislipMsg::INITIALIZE);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, (uint8_t)HislipMsg::INITIALIZE_RESPONSE);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, (uint8_t)HislipMsg::DATA);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(7, (uint8_t)HislipMsg::DATA_END);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, (uint8_t)HislipMsg::TRIGGER);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(17, (uint8_t)HislipMsg::ASYNC_INITIALIZE);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(18, (uint8_t)HislipMsg::ASYNC_INITIALIZE_RESPONSE);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(23, (uint8_t)HislipMsg::ASYNC_DEVICE_CLEAR_ACKNOWLEDGE);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(24, (uint8_t)HislipMsg::ASYNC_LOCK_INFO);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(38, (uint8_t)HislipMsg::AUTHENTICATION_RESULT);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_initialize_vector</b> &mdash; <i>Build initialize vector</i></summary>
+
+    * **Objective**: Build initialize vector
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expected), n);</code>
+      * <code>Assert equal memory (expected, buf, sizeof(expected))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_initialize</b> &mdash; <i>a truncated payload (header claims 7 bytes, only 3 present) is rejected</i></summary>
+
+    * **Objective**: a truncated payload (header claims 7 bytes, only 3 present) is rejected
+    * **Assertions**:
+      * <code>Assert true (dws_hislip_parse_initialize(buf, n, &init))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(DWS_HISLIP_VERSION_2_0, init.protocol_version);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x4142, init.vendor_id);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, init.sub_address_len);</code>
+      * <code>Assert equal memory ("hislip0", init.sub_address, 7)</code>
+      * <code>Assert false (dws_hislip_parse_initialize(buf, DWS_HISLIP_HEADER_LEN + 3, &init))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_initialize_response</b> &mdash; <i>Initialize response</i></summary>
+
+    * **Objective**: Initialize response
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(16, n);</code>
+      * <code>Assert true (dws_hislip_parse_initialize_response(buf, n, &resp))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(DWS_HISLIP_VERSION_1_1, resp.protocol_version);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0042, resp.session_id);</code>
+      * <code>Assert true (resp.overlap)</code>
+      * <code>Assert true (resp.encryption_mandatory)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_async_initialize</b> &mdash; <i>AsyncInitializeResponse carries the server vendor id</i></summary>
+
+    * **Objective**: AsyncInitializeResponse carries the server vendor id
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(16, dws_hislip_build_async_initialize(buf, sizeof(buf), 0x0042));</code>
+      * <code>Assert true (dws_hislip_parse_header(buf, 16, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)HislipMsg::ASYNC_INITIALIZE, (uint8_t)h.type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x0042, h.parameter); // session id in the low 16 bits</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0, h.payload_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(16, dws_hislip_build_async_initialize_response(buf, sizeof(buf), 0x01, 0x5859));</code>
+      * <code>Assert true (dws_hislip_parse_header(buf, 16, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)HislipMsg::ASYNC_INITIALIZE_RESPONSE, (uint8_t)h.type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x5859, h.parameter);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, h.control);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_dataend_vector</b> &mdash; <i>Build dataend vector</i></summary>
+
+    * **Objective**: Build dataend vector
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expected), n);</code>
+      * <code>Assert equal memory (expected, buf, sizeof(expected))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_data_roundtrip</b> &mdash; <i>Data roundtrip</i></summary>
+
+    * **Objective**: Data roundtrip
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(16 + sizeof(payload), n);</code>
+      * <code>Assert true (dws_hislip_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)HislipMsg::DATA, (uint8_t)h.type); // not END</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x00001000, h.parameter);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(sizeof(payload), h.payload_len);</code>
+      * <code>Assert equal memory (payload, buf + 16, sizeof(payload))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_message_id_increment</b> &mdash; <i>unsigned 32-bit wrap</i></summary>
+
+    * **Objective**: unsigned 32-bit wrap
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xFFFFFF02, dws_hislip_next_message_id(DWS_HISLIP_MESSAGE_ID_INIT));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xFFFFFF04, dws_hislip_next_message_id(0xFFFFFF02));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x00000001, dws_hislip_next_message_id(0xFFFFFFFF));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x00000000, dws_hislip_next_message_id(0xFFFFFFFE));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_overflow</b> &mdash; <i>a 6-byte payload needs 22 bytes; a 20-byte buffer fails closed</i></summary>
+
+    * **Objective**: a 6-byte payload needs 22 bytes; a 20-byte buffer fails closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hislip_build_data(small, sizeof(small), true, 0, 0, (const uint8_t *)"*IDN?\\n", 6));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hislip_build_data(buf, sizeof(buf), false, 0, 0, nullptr, 4));</code>
   </details>
 
 </details>

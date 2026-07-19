@@ -1110,12 +1110,17 @@ the LXI transports (VXI-11 / HiSLIP) and a GPIB gateway extend reach to older an
       exact standard error strings verified against SCPI-1999 + IEEE 488.2-1992; host-tested
       (`native_scpi`). _Remaining (separate roadmap items):_ the HiSLIP / VXI-11 / GPIB-gateway
       transports below.
-- [ ] **HiSLIP** (M, modern LXI transport, IVI Foundation) - High-Speed LAN Instrument Protocol on
+- [x] **HiSLIP** (M, modern LXI transport, IVI Foundation) - SHIPPED (`services/hislip`,
+      `DWS_ENABLE_HISLIP`, example `L7-Application/HiSlip`). High-Speed LAN Instrument Protocol on
       **port 4880**, the current LXI transport that replaced VXI-11: a binary message protocol with
-      separate synchronous/asynchronous channels, message-type framing (Initialize / AsyncLock /
-      DataEnd / etc.), message-id sequencing, and much higher throughput than VXI-11. Carries SCPI as
-      its payload; the codec is the HiSLIP message framing + the two-channel handshake. The right
-      long-term LXI transport for high-rate instrument capture.
+      separate synchronous/asynchronous channels, message-type framing (the full `HislipMsg` enum
+      0-38 incl. the 2.0 TLS/SASL types), message-id sequencing (initial `0xFFFFFF00`, increment-by-2),
+      and much higher throughput than VXI-11. Carries SCPI as its payload; the codec is the fixed
+      16-byte header build/parse + the Initialize / AsyncInitialize two-channel handshake + Data /
+      DataEND framing. Header layout, message-type codes, and handshake vectors verified against
+      IVI-6.1 (cross-checked with the Wireshark dissector, MSL-equipment, PyHiSLIP); host-tested
+      (`native_hislip`, byte-exact vectors). _Remaining (separate roadmap items):_ VXI-11 + the
+      GPIB-gateway below.
 - [ ] **LXI / VXI-11** (M, ONC RPC instrument channel) - the older LAN eXtensions for Instrumentation
       transport: VXI-11 over ONC/Sun RPC (portmapper **port 111** -> the instrument channel), the
       `create_link` / `device_write` / `device_read` / `device_readstb` / `destroy_link` calls, plus
