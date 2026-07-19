@@ -855,19 +855,23 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       companion specs (EUROMAP, euromap.org NodeSet), the plastics analogue of **umati**. Layers on the
       OPC UA server exactly like `services/umati` (the machine/mould/job model through the Browse + Read
       resolvers out of a caller struct) - reuses the umati pattern, low risk, high value for moulding shops.
-- [ ] **CiA 402 drive profile** (M, IEC 61800-7-201) - the standardised servo/stepper drive + motion
-      profile over the existing **CANopen** (`services/canopen`) / EtherCAT-CoE: the state machine
-      (Controlword / Statusword), Modes of Operation (Profile Position / Velocity / Torque + Cyclic Sync),
-      and the target/actual position-velocity-torque objects. Turns the CAN stack into a motion master;
-      pairs with the dshot / ESC actuator set.
+- [x] **CiA 402 drive profile** (M, IEC 61800-7-201) - SHIPPED (`services/cia402`, `DWS_ENABLE_CIA402`,
+      host-tested `native_cia402`). The standardised servo/stepper drive + motion profile over the
+      existing **CANopen** (`services/canopen`) / EtherCAT-CoE: the state machine (Controlword /
+      Statusword decode with the mask/value table), Modes of Operation (Profile Position / Velocity /
+      Torque + Cyclic Sync), the enable-sequencer bring-up loop, the target/actual
+      position-velocity-torque SDO setters/getters, and cyclic PDO pack/unpack. Turns the CAN stack
+      into a motion master; pairs with the dshot / ESC actuator set.
 - [ ] **PROFIdrive** (L, Siemens drive profile) - the Siemens PROFIBUS/PROFINET drive profile (parameter
       access via PNU, the standard STW1/ZSW1 control/status telegrams + setpoint/actual) over the PROFINET stack.
 - [ ] **PackML / OMAC** (M, ISA-88 / OMAC PackTags) - the packaging-machine state model: the PackML state
       machine (Idle/Execute/Held/Suspended/Aborted/...) plus the Admin/Status/Command PackTags, usually
       surfaced over OPC UA - the state engine + tag model as a fixed-BSS service.
-- [ ] **Haas Machine Data Collection** (S, serial Q commands) - the documented Haas MDC serial protocol
+- [x] **Haas Machine Data Collection** (S, serial Q commands) - the documented Haas MDC serial protocol
       (the `Q` command set: Q100 machine serial, Q500 program+status, Q600 macro-variable read) that Haas
       CNC controls answer over RS-232 / the network port. A small, fully-documented CNC read source.
+      SHIPPED - services/haas_mdc (DWS_ENABLE_HAAS_MDC): the `?Q` query builders + the `>`-wrapped /
+      DPRNT response parser. Pure codec, host-tested (native_haas_mdc), example HaasMdc.
 - [ ] **OPC UA Robotics (OPC 40010)** - the VDMA Robotics OPC UA companion spec (the MotionDevice model:
       axes, controller, safety state), another umati-pattern model on the OPC UA server; pairs with the
       Siemens **Run MyRobot** item and **umati** for robot cells.

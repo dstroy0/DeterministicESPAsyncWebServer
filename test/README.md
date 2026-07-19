@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **246 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **247 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -161,6 +161,7 @@ The native test matrix has **246 environments**, one per feature, generated from
 | `native_h3_e2e` | `WS_ENABLE_HTTP3=1` | `test_h3_e2e` | End-to-end HTTP/3 capstone (network_drivers/presentation/http3): a QUIC client in the test completes the TLS 1.3 handshake against a quic_conn + h3_conn server, sends a real HTTP/3 GET (QPACK HEADERS ... |
 | `native_h3_server` | `WS_ENABLE_HTTP3=1` | `test_h3_server` | HTTP/3 dispatch bridge end-to-end through DWS (the full Layer-7 app built with DWS_ENABLE_HTTP3=1): a QUIC client completes the handshake and sends an HTTP/3 GET, quic_server routes it to the reserved... |
 | `native_h3frame` | `WS_ENABLE_HTTP3=1` | `test_h3_frame` | HTTP/3 framing (network_drivers/presentation/http3/h3_frame, RFC 9114 sec 7): the type+length varint header parse/write (incl. |
+| `native_haas_mdc` | `WS_ENABLE_HAAS_MDC=1` | `test_haas_mdc` | Haas Machine Data Collection (MDC) Q-command codec (services/haas_mdc): the ?Q query builders (Q100 serial, Q101 software version, Q102 model, Q104 mode, Q300 power-on time, Q500 program + run status ... |
 | `native_happy_eyeballs` | `WS_ENABLE_HAPPY_EYEBALLS=1` | `test_happy_eyeballs` | Dual-stack Happy Eyeballs selection (services/happy_eyeballs): RFC 6724 destination preference scoring, the candidate-list sort + RFC 8305 address-family interleave, and the Connection Attempt Delay g... |
 | `native_hart` | `WS_ENABLE_HART=1` | `test_hart` | HART / HART-IP codec (services/hart): the HART command frame (longitudinal XOR checksum, short + long addressing) build/parse and the 8-octet HART-IP message header. |
 | `native_hislip` | `WS_ENABLE_HISLIP=1` | `test_hislip` | HiSLIP (High-Speed LAN Instrument Protocol, IVI-6.1) message codec (services/hislip): the fixed 16-byte header build/parse (HS prologue + type + control + 32-bit param + 64-bit payload length, big-end... |
@@ -536,7 +537,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3265 test cases** across **264 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3275 test cases** across **265 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -11462,6 +11463,146 @@ A thorough directory of all **3265 test cases** across **264 suites**. Expand a 
       * <code>Assert true (g_handler_ran)</code>
       * <code>Assert true (response_ok(&ap_s))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, conn_pool[DWS_H3_DISPATCH_SLOT].h3); // dispatch slot released</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_haas_mdc (10 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_q</b> &mdash; <i>overflow fails closed</i></summary>
+
+    * **Objective**: overflow fails closed
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)dws_haas_mdc_build_q(buf, sizeof(buf), HAAS_Q_SERIAL))</code>
+      * <code>Assert equal string ("?Q100\\r", buf)</code>
+      * <code>Assert equal string ("?Q104\\r", buf)</code>
+      * <code>Assert equal string ("?Q500\\r", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_q(tiny, sizeof(tiny), HAAS_Q_SERIAL));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_var</b> &mdash; <i>Build var</i></summary>
+
+    * **Objective**: Build var
+    * **Assertions**:
+      * <code>Assert equal string ("?Q600 100\\r", buf)</code>
+      * <code>Assert equal string ("?Q600 5021\\r", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_var(tiny, sizeof(tiny), 5021));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_simple_and_value</b> &mdash; <i>Q100 -> serial number</i></summary>
+
+    * **Objective**: Q100 -> serial number
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(frame, strlen(frame), &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, r.n_fields);</code>
+      * <code>Assert equal memory ("SERIAL NUMBER", r.field[0], 13)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(13, r.field_len[0]);</code>
+      * <code>Assert true (dws_haas_mdc_value(&r, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, vl);</code>
+      * <code>Assert equal memory ("1234567", v, 7)</code>
+      * <code>Assert true (dws_haas_mdc_parse(mode, strlen(mode), &r))</code>
+      * <code>Assert true (dws_haas_mdc_value(&r, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, vl);</code>
+      * <code>Assert equal memory ("MDI", v, 3)</code>
+      * <code>Assert false (dws_haas_mdc_is_error(&r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_status_idle</b> &mdash; <i>Parse status idle</i></summary>
+
+    * **Objective**: Parse status idle
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(frame, strlen(frame), &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, r.n_fields);</code>
+      * <code>Assert true (dws_haas_mdc_parse_status(&r, &s))</code>
+      * <code>Assert false (s.busy)</code>
+      * <code>Assert equal memory ("O00010", s.program, 6)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(6, s.program_len);</code>
+      * <code>Assert equal memory ("IDLE", s.status, 4)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, s.status_len);</code>
+      * <code>Assert true (s.parts_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(42, s.parts);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_status_busy</b> &mdash; <i>Parse status busy</i></summary>
+
+    * **Objective**: Parse status busy
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(frame, strlen(frame), &r))</code>
+      * <code>Assert true (dws_haas_mdc_parse_status(&r, &s))</code>
+      * <code>Assert true (s.busy)</code>
+      * <code>Assert equal memory ("BUSY", s.status, 4)</code>
+      * <code>Assert false (s.parts_valid)</code>
+      * <code>Assert null (s.program)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_macro</b> &mdash; <i>documented 6-decimal form</i></summary>
+
+    * **Objective**: documented 6-decimal form
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(f1, strlen(f1), &r))</code>
+      * <code>Assert true (dws_haas_mdc_parse_macro(&r, &var, &val, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(100, var);</code>
+      * <code>Assert equal memory ("0.000000", val, 8)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, vl);</code>
+      * <code>Assert true (dws_haas_mdc_parse(f2, strlen(f2), &r))</code>
+      * <code>Assert true (dws_haas_mdc_parse_macro(&r, &var, &val, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5021, var);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, vl);</code>
+      * <code>Assert equal memory ("-234.567", val, 8)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_and_no_frame</b> &mdash; <i>no STX at all -> not a complete frame yet</i></summary>
+
+    * **Objective**: no STX at all -> not a complete frame yet
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(unk, strlen(unk), &r))</code>
+      * <code>Assert true (dws_haas_mdc_is_error(&r))</code>
+      * <code>Assert false (dws_haas_mdc_parse(partial, strlen(partial), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse(noetb, strlen(noetb), &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_leading_prompt</b> &mdash; <i>previous response's trailing '>' prompt precedes this frame in the stream</i></summary>
+
+    * **Objective**: previous response's trailing '>' prompt precedes this frame in the stream
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(frame, strlen(frame), &r))</code>
+      * <code>Assert true (dws_haas_mdc_value(&r, &v, &vl))</code>
+      * <code>Assert equal memory ("JOG", v, 3)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_field_access</b> &mdash; <i>Field access</i></summary>
+
+    * **Objective**: Field access
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(frame, strlen(frame), &r))</code>
+      * <code>Assert true (dws_haas_mdc_field(&r, 2, &p, &l))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(9, l); // "FEED HOLD" (interior space kept)</code>
+      * <code>Assert equal memory ("FEED HOLD", p, 9)</code>
+      * <code>Assert false (dws_haas_mdc_field(&r, 99, &p, &l))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dprnt</b> &mdash; <i>a pushed DPRNT line: raw text + CRLF, no STX/ETB</i></summary>
+
+    * **Objective**: a pushed DPRNT line: raw text + CRLF, no STX/ETB
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_dprnt_line(line, strlen(line), &t, &tl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(9, tl);</code>
+      * <code>Assert equal memory ("X-12.3456", t, 9)</code>
+      * <code>Assert true (dws_haas_mdc_dprnt_line(bracket, strlen(bracket), &t, &tl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, tl); // interior space (a DPRNT '*') preserved</code>
+      * <code>Assert equal memory ("COUNT 5", t, 7)</code>
+      * <code>Assert false (dws_haas_mdc_dprnt_line(framed, strlen(framed), &t, &tl))</code>
   </details>
 
 </details>

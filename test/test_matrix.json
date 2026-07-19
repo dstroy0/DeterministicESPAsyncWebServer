@@ -889,6 +889,12 @@
       "src": ["+<services/gpib/gpib.cpp>"],
       "tests": ["test_gpib"]
     },
+    "native_haas_mdc": {
+      "desc": "Haas Machine Data Collection (MDC) Q-command codec (services/haas_mdc): the ?Q query\nbuilders (Q100 serial, Q101 software version, Q102 model, Q104 mode, Q300 power-on time, Q500\nprogram + run status + parts counter, Q600 <var> macro/system-variable read) and the parser for the\n>-wrapped comma-delimited responses plus the unprompted DPRNT(...) lines. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_HAAS_MDC=1"],
+      "src": ["+<services/haas_mdc/haas_mdc.cpp>"],
+      "tests": ["test_haas_mdc"]
+    },
     "native_senml": {
       "desc": "SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the\nJSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral\nnumbers emitted as integers. Pure host tests.",
       "flags": ["-DDWS_ENABLE_SENML=1"],

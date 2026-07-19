@@ -1749,6 +1749,22 @@
 #endif
 
 /**
+ * @brief Haas Machine Data Collection (MDC) Q-command codec (`services/haas_mdc`).
+ *
+ * Default off. A zero-heap codec for the documented Haas Automation MDC protocol - the `?Q` command
+ * set a Haas CNC mill / lathe control answers over RS-232 or its Ethernet port: builders for the
+ * numbered queries (`?Q100` machine serial number, `?Q101` control software version, `?Q102` model,
+ * `?Q104` mode, `?Q300` power-on time, `?Q500` active program + run status + parts counter, and
+ * `?Q600 <var>` macro / system-variable read) and a parser for the `>`-wrapped, comma-delimited
+ * responses (and the unprompted `DPRNT(...)` lines a running G-code program emits). Makes the device
+ * a fixed-BSS CNC data collector that fans machine status into HTTP / MQTT. Pure codec, host-tested;
+ * the serial / TCP link to the control is the application's.
+ */
+#ifndef DWS_ENABLE_HAAS_MDC
+#define DWS_ENABLE_HAAS_MDC 0
+#endif
+
+/**
  * @brief SenML (RFC 8428) measurement-pack builder (`services/senml`).
  *
  * Default off; implies DWS_ENABLE_CBOR (the SenML-CBOR form uses the CBOR writer). A

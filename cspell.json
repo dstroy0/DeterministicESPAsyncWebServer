@@ -1364,7 +1364,11 @@
     "getport",
     "termchrset",
     "waitlock",
-    "spoll"
+    "spoll",
+    "DPRNT",
+    "Oxxxxx",
+    "PCLOS",
+    "POPEN"
   ],
   "ignorePaths": [
     "node_modules/**",
