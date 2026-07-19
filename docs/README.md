@@ -988,6 +988,7 @@ src/
 │   ├── utmc/  (utmc.h, utmc.cpp)
 │   ├── vfs/  (vfs.h, vfs.cpp)
 │   ├── vl53l0x/  (vl53l0x.h, vl53l0x.cpp)
+│   ├── vxi11/  (vxi11.h, vxi11.cpp)
 │   ├── wal/
 │   │   ├── wal.cpp
 │   │   ├── wal.h
@@ -1101,6 +1102,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SMTP` | `L7-Application/SmtpAlert` | 734,705 | 61,112 |
 | `MQTT` | `L7-Application/MqttClient` | 736,413 | 65,320 |
 | `SMB` | `L7-Application/SmbFileClient` | 742,457 | 65,208 |
+| `HISLIP` | `L7-Application/HiSlip` | 743,133 | 45,304 |
 | `SCPI` | `L7-Application/Scpi` | 743,413 | 45,048 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,109 | 46,668 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 752,169 | 81,792 |
@@ -1472,6 +1474,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DWS_ENABLE_UTMC` | `0` | Opt-in UTMC (Urban Traffic Management and Control) common-database codec. |
 | `DWS_ENABLE_VFS` | `0` | Unified virtual filesystem wrapper. |
 | `DWS_ENABLE_VL53L0X` | `0` | Opt-in VL53L0X optical time-of-flight ranging sensor. |
+| `DWS_ENABLE_VXI11` | `0` | VXI-11 (TCP/IP Instrument Protocol) codec (`services/vxi11`). |
 | `DWS_ENABLE_WAL` | `0` | Opt-in write-ahead store for atomic buffer-to-flash storage. |
 | `DWS_ENABLE_WAMP` | `0` | WAMP messaging codec (`services/wamp`). |
 | `DWS_ENABLE_WAVE` | `0` | Opt-in IEEE 1609 WAVE (WSMP + 1609.2 envelope) codec. |
