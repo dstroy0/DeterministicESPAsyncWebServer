@@ -268,7 +268,7 @@ Steady state, the `chacha20-poly1305@openssh.com` record layer runs at **~1.5 MB
   <td align="center"><a href="docs/FEATURES.md#auth-lockout" title="Opt-in per-IP brute-force lockout for HTTP auth (requires AUTH). Default off (zero cost / no behavior change). When set, the auth gate counts consecutive failed authentications per source IPv4 in a fixed BSS table; after DWS_AUTH_LOCKOUT_THRESHOLD failures the address is locked out for DWS_AUTH_LOCKOUT_BASE_MS, doubling on each further failure up to DWS_AUTH_LOCKOUT_MAX_MS. A locked address gets 429 (Retry-After) with no credential check; a successful auth clears it. Bounded memory (no heap); the table evicts idle, then least-recently-used, addresses when full.">Auth Lockout</a></td>
   <td align="center"><a href="docs/FEATURES.md#cbor" title="Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. Default off. When set, network_drivers/presentation/cbor/cbor.h provides a writer that serializes ints, strings, byte strings, arrays, maps, booleans, null, and float32 into a caller-provided buffer - a compact binary alternative to the JSON writer for telemetry. Pure, no heap, host-tested against the RFC 8949 vectors.">CBOR</a></td>
   <td align="center"><a href="docs/FEATURES.md#cloudevents" title="CloudEvents v1.0 (CNCF) event envelope. Default off. services/cloudevents makes a device's events interoperable with serverless / event-mesh consumers: `dws_cloudevents_build_json()` emits a structured `application/cloudevents+json` envelope (the required `id` / `source` / `type` plus optional `subject` / `datacontenttype` / `data`) over the JSON writer, and `dws_cloudevents_from_headers()` reads an inbound binary-mode event's `ce-*` headers. Pure and host-tested. See src/services/cloudevents.h.">CloudEvents</a></td>
-  <td align="center"><a href="docs/FEATURES.md#http-delivery" title="Opt-in HTTP delivery optimizations. Three pure cores for cheaper HTTP serving, each a real web standard: RFC 5861 stale-while-revalidate (dws_delivery_swr decision + dws_delivery_cache_control header), RFC 7233 byte-range delta/offset fetch (dws_delivery_range parse of X-Y / X- / -N + dws_delivery_content_range for a 206), and a versioned service-worker precache manifest (dws_delivery_sw_manifest). No heap/stdlib. Default off.">HTTP Delivery</a></td>
+  <td align="center"><a href="docs/FEATURES.md#http-delivery" title="Opt-in HTTP delivery optimizations that make a slow origin acceptable to a browser. Default off. **Stale-while-revalidate (RFC 5861):** `dws_delivery_swr` decides FRESH / serve-stale-and-revalidate / EXPIRED from an age against `max-age` + `stale-while-revalidate`, and `dws_delivery_cache_control` builds the matching header - wired into serving by `DWS::set_cache_control_swr(max_age_s, swr_s)`, so every `serve_file` / `serve_static` response carries `public, max-age=N, stale-while-revalidate=M` and the header can never drift from the decision. **Service worker:** `dws_delivery_sw_manifest` emits the versioned `{&quot;version&quot;:..,&quot;precache&quot;:[..]}` document, and `dws_delivery_serve_sw(srv, paths, n, version)` registers `/sw.js` (a flash-resident worker shipped through the web-asset pipeline) plus `/precache.json`; the worker precaches the shell and then serves it stale-while-revalidate client-side, naming its cache after the version so a bump invalidates the old shell exactly once, and the manifest route answers 500 rather than serving truncated JSON if it would not fit `DWS_DELIVERY_MANIFEST_BUF` (`DWS_DELIVERY_PRECACHE_MAX` paths). **Byte ranges are NOT in this service** - `server/http_range.h` (`http_parse_byte_range`, `DWS_ENABLE_RANGE`) is the single owner of the RFC 7233 range math and is already wired into static file serving and the edge cache, emitting `Accept-Ranges`, the 206 `Content-Range`, and a 416 `bytes */size`; a duplicate parser here was removed rather than given a second call site. Pure cores host-tested (`native_http_delivery`) and **HW-verified on an ESP32-P4 serving from SD**: `bytes=10-19` / `bytes=-5` / `bytes=995-` each returned byte-exact 206 payloads with the right `Content-Range`, an out-of-range request returned 416 `bytes */1000`, and served files carried the SWR header. Example HttpDelivery. See src/services/http_delivery/http_delivery.h.">HTTP Delivery</a></td>
 </tr>
 <tr>
   <td align="center"><a href="docs/FEATURES.md#http11-parser" title="RFC 7230 request parser - validates method, path, header names and values byte-by-byte before storing anything. Always on.">HTTP/1.1 Parser</a></td>
@@ -698,19 +698,19 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `OPCUA_CLIENT`      |        6.8-12.4 KB |     10.0-27.8 KB |
 | L7    | `WEBHOOK`           |            10.4 KB |          34.5 KB |
 | L7    | `RELAY`             |             9.6 KB |          49.0 KB |
+| L7    | `SNMP`              |             9.0 KB |          27.4 KB |
 | L7    | `TELEMETRY`         |             8.8 KB |          15.5 KB |
-| L7    | `SNMP`              |             8.7 KB |          27.3 KB |
 | L7    | `OPCUA`             |         6.8-8.2 KB |     10.0-25.3 KB |
-| L7    | `PROVISIONING`      |             7.8 KB |          16.8 KB |
+| L7    | `PROVISIONING`      |             8.1 KB |          16.8 KB |
 | L7    | `DNS_RESOLVER`      |             5.9 KB |          16.5 KB |
-| L7    | `COAP`              |             5.5 KB |          17.7 KB |
+| L7    | `COAP`              |             5.8 KB |          17.7 KB |
 | L7    | `OTA`               |             5.4 KB |          35.1 KB |
 | L7    | `CONFIG_IO`         |             4.8 KB |          15.3 KB |
 | L7    | `CONFIG_STORE`      |             4.8 KB |          15.3 KB |
 | L7    | `GRAPHQL`           |             4.7 KB |          19.5 KB |
 | L7    | `GPIO_MAP`          |             4.3 KB |          15.3 KB |
 | L7    | `METRICS`           |             3.8 KB |          15.4 KB |
-| L7    | `SYSLOG`            |             3.2 KB |          17.0 KB |
+| L7    | `SYSLOG`            |             3.5 KB |          17.1 KB |
 | L7    | `AUDIT_LOG`         |             2.3 KB |          18.1 KB |
 | L7    | `MODBUS_MASTER`     |             2.1 KB |          15.5 KB |
 | L7    | `CONTROL`           |             2.0 KB |          23.1 KB |
@@ -726,10 +726,10 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `DEVICE_ID`         |           < 0.5 KB |          15.3 KB |
 | L7    | `RADIO_POWER`       |           < 0.5 KB |          15.2 KB |
 | ?     | `ETHERNET`          |            38.2 KB |          15.3 KB |
-| ?     | `BUS_CAPTURE`       |            18.4 KB |         < 0.5 KB |
-| ?     | `FORWARD`           |            18.4 KB |         < 0.5 KB |
+| ?     | `BUS_CAPTURE`       |            18.7 KB |         < 0.5 KB |
+| ?     | `FORWARD`           |            18.7 KB |         < 0.5 KB |
 | ?     | `RTC`               |            13.8 KB |         < 0.5 KB |
-| ?     | `PROMISC`           |            12.6 KB |         < 0.5 KB |
+| ?     | `PROMISC`           |            12.9 KB |         < 0.5 KB |
 | -     | `WEBSOCKET`         |         0.0-3.7 KB |       0.0-1.5 KB |
 | -     | `MODBUS_RTU`        |             1.8 KB |         < 0.5 KB |
 | -     | `SSE`               |         0.0-0.6 KB |         < 0.5 KB |

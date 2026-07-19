@@ -188,7 +188,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
   <td align="center"><a href="FEATURES.md#auth-lockout" title="Opt-in per-IP brute-force lockout for HTTP auth (requires AUTH). Default off (zero cost / no behavior change). When set, the auth gate counts consecutive failed authentications per source IPv4 in a fixed BSS table; after DWS_AUTH_LOCKOUT_THRESHOLD failures the address is locked out for DWS_AUTH_LOCKOUT_BASE_MS, doubling on each further failure up to DWS_AUTH_LOCKOUT_MAX_MS. A locked address gets 429 (Retry-After) with no credential check; a successful auth clears it. Bounded memory (no heap); the table evicts idle, then least-recently-used, addresses when full.">Auth Lockout</a></td>
   <td align="center"><a href="FEATURES.md#cbor" title="Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. Default off. When set, network_drivers/presentation/cbor/cbor.h provides a writer that serializes ints, strings, byte strings, arrays, maps, booleans, null, and float32 into a caller-provided buffer - a compact binary alternative to the JSON writer for telemetry. Pure, no heap, host-tested against the RFC 8949 vectors.">CBOR</a></td>
   <td align="center"><a href="FEATURES.md#cloudevents" title="CloudEvents v1.0 (CNCF) event envelope. Default off. services/cloudevents makes a device's events interoperable with serverless / event-mesh consumers: `dws_cloudevents_build_json()` emits a structured `application/cloudevents+json` envelope (the required `id` / `source` / `type` plus optional `subject` / `datacontenttype` / `data`) over the JSON writer, and `dws_cloudevents_from_headers()` reads an inbound binary-mode event's `ce-*` headers. Pure and host-tested. See src/services/cloudevents.h.">CloudEvents</a></td>
-  <td align="center"><a href="FEATURES.md#http-delivery" title="Opt-in HTTP delivery optimizations. Three pure cores for cheaper HTTP serving, each a real web standard: RFC 5861 stale-while-revalidate (dws_delivery_swr decision + dws_delivery_cache_control header), RFC 7233 byte-range delta/offset fetch (dws_delivery_range parse of X-Y / X- / -N + dws_delivery_content_range for a 206), and a versioned service-worker precache manifest (dws_delivery_sw_manifest). No heap/stdlib. Default off.">HTTP Delivery</a></td>
+  <td align="center"><a href="FEATURES.md#http-delivery" title="Opt-in HTTP delivery optimizations that make a slow origin acceptable to a browser. Default off. **Stale-while-revalidate (RFC 5861):** `dws_delivery_swr` decides FRESH / serve-stale-and-revalidate / EXPIRED from an age against `max-age` + `stale-while-revalidate`, and `dws_delivery_cache_control` builds the matching header - wired into serving by `DWS::set_cache_control_swr(max_age_s, swr_s)`, so every `serve_file` / `serve_static` response carries `public, max-age=N, stale-while-revalidate=M` and the header can never drift from the decision. **Service worker:** `dws_delivery_sw_manifest` emits the versioned `{&quot;version&quot;:..,&quot;precache&quot;:[..]}` document, and `dws_delivery_serve_sw(srv, paths, n, version)` registers `/sw.js` (a flash-resident worker shipped through the web-asset pipeline) plus `/precache.json`; the worker precaches the shell and then serves it stale-while-revalidate client-side, naming its cache after the version so a bump invalidates the old shell exactly once, and the manifest route answers 500 rather than serving truncated JSON if it would not fit `DWS_DELIVERY_MANIFEST_BUF` (`DWS_DELIVERY_PRECACHE_MAX` paths). **Byte ranges are NOT in this service** - `server/http_range.h` (`http_parse_byte_range`, `DWS_ENABLE_RANGE`) is the single owner of the RFC 7233 range math and is already wired into static file serving and the edge cache, emitting `Accept-Ranges`, the 206 `Content-Range`, and a 416 `bytes */size`; a duplicate parser here was removed rather than given a second call site. Pure cores host-tested (`native_http_delivery`) and **HW-verified on an ESP32-P4 serving from SD**: `bytes=10-19` / `bytes=-5` / `bytes=995-` each returned byte-exact 206 payloads with the right `Content-Range`, an out-of-range request returned 416 `bytes */1000`, and served files carried the SWR header. Example HttpDelivery. See src/services/http_delivery/http_delivery.h.">HTTP Delivery</a></td>
 </tr>
 <tr>
   <td align="center"><a href="FEATURES.md#http11-parser" title="RFC 7230 request parser - validates method, path, header names and values byte-by-byte before storing anything. Always on.">HTTP/1.1 Parser</a></td>
@@ -856,7 +856,10 @@ src/
 │   ├── hislip/  (hislip.h, hislip.cpp)
 │   ├── hostlink/  (hostlink.h, hostlink.cpp)
 │   ├── http_client/  (http_client.h, http_client.cpp)
-│   ├── http_delivery/  (http_delivery.h, http_delivery.cpp)
+│   ├── http_delivery/
+│   │   ├── http_delivery.cpp
+│   │   ├── http_delivery.h
+│   │   └── http_delivery_routes.cpp
 │   ├── httpcache/  (httpcache.h, httpcache.cpp)
 │   ├── hw_health/  (hw_health.h, hw_health.cpp)
 │   ├── iccp/  (iccp.h, iccp.cpp)
@@ -1046,6 +1049,7 @@ src/
 │   │   ├── DWS_METRICS_PROM.txt
 │   │   ├── DWS_PROV_FORM.html
 │   │   ├── DWS_PROV_SAVED_HTML.html
+│   │   ├── DWS_SERVICE_WORKER.js
 │   │   ├── DWS_STATS_JSON.json
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
@@ -1107,22 +1111,22 @@ Feature Tables workflow from `docs/footprints.json`.
 | `LSV2` | `L7-Application/HeidenhainLsv2` | 725,313 | 44,068 |
 | `SCPI` | `L7-Application/Scpi` | 725,325 | 43,812 |
 | `HAAS_MDC` | `L7-Application/HaasMdc` | 725,337 | 43,452 |
-| `DNS_SERVER` | `L7-Application/DnsServer` | 725,661 | 45,996 |
+| `DNS_SERVER` | `L7-Application/DnsServer` | 725,929 | 46,044 |
 | `IKEV2` | `L5-Session/IKEv2` | 725,953 | 43,940 |
 | `WIFI_SNIFFER+PROMISC` | `Peripherals/WifiSniffer` | 725,973 | 43,644 |
 | `VXI11` | `L7-Application/Vxi11` | 726,205 | 44,196 |
-| `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD` | `L7-Application/CoapBlock` | 727,317 | 48,372 |
-| `UDP_TELEMETRY` | `L7-Application/UdpTelemetry` | 727,921 | 44,964 |
-| `SNMP+SNMP_TRAP` | `L7-Application/SnmpTrap` | 728,145 | 44,940 |
-| `STATSD` | `L7-Application/StatsdMetrics` | 728,173 | 45,100 |
-| `COAP+COAP_OBSERVE` | `L7-Application/CoapObserve` | 729,361 | 46,124 |
+| `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD` | `L7-Application/CoapBlock` | 727,597 | 48,420 |
+| `UDP_TELEMETRY` | `L7-Application/UdpTelemetry` | 728,197 | 45,012 |
+| `SNMP+SNMP_TRAP` | `L7-Application/SnmpTrap` | 728,421 | 44,988 |
+| `STATSD` | `L7-Application/StatsdMetrics` | 728,453 | 45,148 |
+| `COAP+COAP_OBSERVE` | `L7-Application/CoapObserve` | 729,669 | 46,172 |
 | `ESPNOW` | `L7-Application/EspNow` | 731,525 | 43,580 |
 | `DNC` | `L7-Application/EthernetDnc` | 733,861 | 61,124 |
 | `SMTP` | `L7-Application/SmtpAlert` | 734,617 | 61,132 |
 | `HTTP_CLIENT` | `L7-Application/HttpClient` | 734,625 | 63,180 |
 | `MQTT` | `L7-Application/MqttClient` | 736,465 | 65,340 |
 | `SMB` | `L7-Application/SmbFileClient` | 742,761 | 65,220 |
-| `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,401 | 46,660 |
+| `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,669 | 46,708 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 752,581 | 81,796 |
 | `core/CORS` | `L7-Application/CORS` | 752,749 | 81,788 |
 | `core/DigestAuth` | `L6-Presentation/DigestAuth` | 752,825 | 81,788 |
@@ -1165,7 +1169,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `CBOR` | `L6-Presentation/Cbor` | 755,245 | 81,868 |
 | `IPV6` | `Foundation/IPv6` | 755,449 | 81,788 |
 | `core/Expert` | `Foundation/Expert` | 755,657 | 81,812 |
-| `SYSLOG` | `L7-Application/Syslog` | 756,169 | 83,652 |
+| `SYSLOG` | `L7-Application/Syslog` | 756,437 | 83,700 |
 | `MSGPACK` | `L6-Presentation/MsgPack` | 756,589 | 81,868 |
 | `STATS+METRICS` | `L7-Application/PrometheusMetrics` | 756,729 | 81,932 |
 | `core/Json` | `L6-Presentation/Json` | 756,873 | 81,796 |
@@ -1176,24 +1180,24 @@ Feature Tables workflow from `docs/footprints.json`.
 | `GRAPHQL` | `L7-Application/GraphQL` | 757,701 | 86,204 |
 | `CONFIG_STORE+CONFIG_IO` | `L7-Application/ConfigExport` | 757,805 | 81,856 |
 | `OTA` | `L7-Application/OTA` | 758,353 | 102,132 |
-| `COAP` | `L7-Application/CoAP` | 758,489 | 84,308 |
+| `COAP` | `L7-Application/CoAP` | 758,781 | 84,356 |
 | `DNS_RESOLVER` | `L7-Application/DnsResolver` | 758,921 | 83,076 |
-| `PROVISIONING` | `L7-Application/Provisioning` | 760,825 | 83,376 |
+| `PROVISIONING` | `L7-Application/Provisioning` | 761,101 | 83,424 |
 | `OPCUA` | `L7-Application/OpcUa` | 761,201 | 92,076 |
 | `core/Advanced` | `Foundation/Advanced` | 761,585 | 81,900 |
-| `SNMP` | `L7-Application/SNMP` | 761,777 | 94,196 |
 | `TELEMETRY` | `L7-Application/Telemetry` | 761,829 | 82,112 |
+| `SNMP` | `L7-Application/SNMP` | 762,053 | 94,244 |
 | `RELAY` | `L7-Application/PortForward` | 762,649 | 116,404 |
 | `HTTP_CLIENT+WEBHOOK` | `L7-Application/Webhook` | 763,453 | 101,548 |
 | `OPCUA+OPCUA_CLIENT` | `L7-Application/OpcUaClient` | 765,585 | 94,692 |
-| `PROMISC+FORWARD+ETHERNET` | `Peripherals/WifiCapture` | 765,773 | 47,536 |
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/OAuth2` | 765,793 | 104,612 |
+| `PROMISC+FORWARD+ETHERNET` | `Peripherals/WifiCapture` | 766,049 | 47,584 |
 | `OIDC` | `L7-Application/OidcAuth` | 766,741 | 99,844 |
 | `core/Sysadmin` | `Foundation/Sysadmin` | 766,777 | 81,804 |
 | `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,001 | 45,388 |
 | `OPCUA+UMATI` | `L7-Application/Umati` | 767,765 | 92,220 |
 | `NTRIP_CASTER` | `L7-Application/NtripCaster` | 770,769 | 84,712 |
-| `BUS_CAPTURE+FORWARD+ETHERNET` | `Peripherals/CanCapture` | 771,713 | 45,520 |
+| `BUS_CAPTURE+FORWARD+ETHERNET` | `Peripherals/CanCapture` | 771,997 | 45,568 |
 | `DASHBOARD` | `L7-Application/Dashboard` | 773,657 | 82,164 |
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/EdgeCache` | 773,961 | 119,276 |
 | `NTP+TIME_SOURCE` | `L7-Application/TimeSourceFallback` | 774,333 | 83,396 |
@@ -1202,7 +1206,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH+EDGE_CACHE_SLOTS+EDGE_FETCH_SLOTS+MESH_MAX_PEERS` | `L7-Application/MeshCache` | 778,509 | 115,332 |
 | `NTP` | `L7-Application/SNTP` | 778,853 | 84,328 |
 | `IFACE_BRIDGE` | `L7-Application/InterfaceBridge` | 780,821 | 82,628 |
-| `COAP+DTLS` | `L7-Application/CoapSecure` | 780,973 | 102,876 |
+| `COAP+DTLS` | `L7-Application/CoapSecure` | 781,245 | 102,924 |
 | `ETHERNET` | `Peripherals/Ethernet` | 792,009 | 81,848 |
 | `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Peripherals/EthernetW5500` | 792,041 | 81,848 |
 | `core/FileServing` | `L7-Application/FileServing` | 794,249 | 81,828 |
@@ -1573,6 +1577,8 @@ guards at compile time.
 | `DWS_DASHBOARD_JSON_BUF` | `1024` | Stack buffer for the dashboard layout / values JSON (bytes). |
 | `DWS_DASHBOARD_MAX_WIDGETS` | `16` | Maximum widgets in the dashboard table (BSS value array). |
 | `DWS_DEFER_QUEUE_DEPTH` | `8` | Depth of each worker's deferred-callback queue. |
+| `DWS_DELIVERY_MANIFEST_BUF` | `512` | Buffer the precache manifest JSON is built into. |
+| `DWS_DELIVERY_PRECACHE_MAX` | `16` | Most asset paths a service-worker precache manifest may list. |
 | `DWS_DMA_BUF_SIZE` | `256` | Bytes per DMA transfer buffer (RX is double-buffered at this size). |
 | `DWS_DMA_CHANNELS` | `2` | Number of DMA channels (static-allocated; each is one peripheral link). |
 | `DWS_DMA_SIMULATE` | `1` | Route DMA transfers through the ingress/egress simulator (default on). |
