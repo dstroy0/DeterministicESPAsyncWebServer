@@ -837,6 +837,7 @@ src/
 │   │   ├── rtcm3.cpp
 │   │   └── rtcm3.h
 │   ├── goose/  (goose.h, goose.cpp)
+│   ├── gpib/  (gpib.h, gpib.cpp)
 │   ├── gpio_map/
 │   │   ├── gpio_map.cpp
 │   │   ├── gpio_map.h
@@ -1107,6 +1108,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SMB` | `L7-Application/SmbFileClient` | 742,457 | 65,208 |
 | `HISLIP` | `L7-Application/HiSlip` | 743,133 | 45,304 |
 | `SCPI` | `L7-Application/Scpi` | 743,413 | 45,048 |
+| `VXI11` | `L7-Application/Vxi11` | 744,465 | 45,432 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,109 | 46,668 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 752,169 | 81,792 |
 | `core/MediaStreaming` | `L7-Application/MediaStreaming` | 752,253 | 81,784 |
@@ -1337,6 +1339,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DWS_ENABLE_FTP` | `0` | Opt-in FTP client wire codec. |
 | `DWS_ENABLE_GATEWAY` | `0` | Enable the radio / wireless gateway bridge (default off). |
 | `DWS_ENABLE_GOOSE` | `0` | Opt-in IEC 61850 GOOSE publisher codec. |
+| `DWS_ENABLE_GPIB` | `0` | GPIB-over-LAN (Prologix-style) controller command codec (`services/gpib`). |
 | `DWS_ENABLE_GPIO_MAP` | `0` | Opt-in browser GPIO pin-mapper / diagnostics endpoint. |
 | `DWS_ENABLE_GRAPHQL` | `0` | GraphQL query subset. |
 | `DWS_ENABLE_GRPC_WEB` | `0` | gRPC-Web message framing (`services/grpcweb`). |
