@@ -842,6 +842,7 @@ src/
 │   ├── guardrails/  (guardrails.h, guardrails.cpp)
 │   ├── happy_eyeballs/  (happy_eyeballs.h, happy_eyeballs.cpp)
 │   ├── hart/  (hart.h, hart.cpp)
+│   ├── hislip/  (hislip.h, hislip.cpp)
 │   ├── hostlink/  (hostlink.h, hostlink.cpp)
 │   ├── http_client/  (http_client.h, http_client.cpp)
 │   ├── http_delivery/  (http_delivery.h, http_delivery.cpp)
@@ -1067,7 +1068,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | Feature | Example | Flash (bytes) | Static RAM (bytes) |
 | :------ | :------ | ------------: | -----------------: |
 | `SIGFOX` | `Drivers/SigfoxUplink` | 267,961 | 21,464 |
-| `PREEMPT_QUEUE` | `Foundation/PreemptLanes` | 268,401 | 23,936 |
 | `ENOCEAN+GATEWAY` | `Drivers/EnOceanGateway` | 268,693 | 21,848 |
 | `ZWAVE+GATEWAY` | `Drivers/ZWaveGateway` | 268,905 | 21,848 |
 | `THREAD+GATEWAY` | `Drivers/ThreadGateway` | 269,137 | 22,616 |
@@ -1078,6 +1078,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | `Drivers/RadioGateway` | 270,541 | 28,720 |
 | `LD2410` | `Drivers/Ld2410` | 270,681 | 21,576 |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/InterfaceForward` | 270,797 | 29,096 |
+| `PREEMPT_QUEUE` | `Foundation/PreemptQueue` | 274,069 | 23,968 |
 | `NRF24+GATEWAY` | `Drivers/Nrf24Gateway` | 276,105 | 21,680 |
 | `LORA+GATEWAY` | `Drivers/LoRaGateway` | 276,329 | 21,688 |
 | `PCA9685` | `Drivers/Pca9685` | 284,601 | 21,800 |
@@ -1099,6 +1100,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SMTP` | `L7-Application/SmtpAlert` | 734,705 | 61,112 |
 | `MQTT` | `L7-Application/MqttClient` | 736,413 | 65,320 |
 | `SMB` | `L7-Application/SmbFileClient` | 742,457 | 65,208 |
+| `SCPI` | `L7-Application/Scpi` | 743,413 | 45,048 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,109 | 46,668 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 752,169 | 81,792 |
 | `core/MediaStreaming` | `L7-Application/MediaStreaming` | 752,253 | 81,784 |
@@ -1145,7 +1147,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `MSGPACK` | `L6-Presentation/MsgPack` | 756,017 | 81,864 |
 | `STATS+METRICS` | `L7-Application/PrometheusMetrics` | 756,325 | 81,928 |
 | `core/Json` | `L6-Presentation/Json` | 756,433 | 81,792 |
-| `GPIO_MAP` | `L7-Application/GpioMap` | 756,701 | 81,848 |
+| `GPIO_MAP` | `L7-Application/GpioMap` | 756,685 | 81,848 |
 | `WS_DEFLATE` | `L6-Presentation/WebSocketCompression` | 757,009 | 89,984 |
 | `WEB_TERMINAL` | `L6-Presentation/WebTerminal` | 757,169 | 81,864 |
 | `GRAPHQL` | `L7-Application/GraphQL` | 757,285 | 86,192 |
@@ -1335,6 +1337,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DWS_ENABLE_GUARDRAILS` | `0` | Opt-in runtime heap/stack guardrails. |
 | `DWS_ENABLE_HAPPY_EYEBALLS` | `0` | Opt-in dual-stack Happy Eyeballs destination selection. |
 | `DWS_ENABLE_HART` | `0` | Opt-in HART / HART-IP process-instrument protocol codec. |
+| `DWS_ENABLE_HISLIP` | `0` | HiSLIP (High-Speed LAN Instrument Protocol) message codec (`services/hislip`). |
 | `DWS_ENABLE_HOSTLINK` | `0` | Omron Host Link (C-mode) frame codec (`services/hostlink`). |
 | `DWS_ENABLE_HTTP2` | `0` | HTTP/2 (RFC 9113) over the version-agnostic request/response core. |
 | `DWS_ENABLE_HTTP3` | `0` | HTTP/3 (RFC 9114) over QUIC (RFC 9000) - implemented, host-tested end-to-end (HW verification pending). |
