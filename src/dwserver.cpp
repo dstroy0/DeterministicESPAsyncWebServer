@@ -62,6 +62,9 @@
 #if DWS_ENABLE_AUTH_LOCKOUT
 #include "services/auth_lockout/auth_lockout.h"
 #endif
+#if DWS_ENABLE_FORWARDED_TRUST
+#include "services/forwarded_trust/forwarded_trust.h"
+#endif
 #ifdef ARDUINO
 #include <esp_system.h> // esp_random() for the Digest nonce CSPRNG
 #endif
@@ -1398,6 +1401,18 @@ bool DWS::authorize_request(uint8_t slot_id, HttpReq *req, const Route *r)
 {
 #if DWS_ENABLE_AUTH_LOCKOUT
     DWSIp cip = lockout_client_ip(slot_id);
+#if DWS_ENABLE_FORWARDED_TRUST
+    // Behind a trusted reverse proxy, key the lockout on the original client (the proxy's Forwarded /
+    // X-Forwarded-For), not the proxy's shared TCP address. Ignored for a direct/untrusted peer, so a
+    // spoofed header can neither evade a lockout nor frame another address.
+    {
+        char fbuf[DWS_IP_STR_MAX];
+        const char *fwd = http_forwarded_client(req, fbuf, sizeof(fbuf), nullptr) ? fbuf : nullptr;
+        DWSIp eff;
+        dws_forwarded_effective_ip(&cip, fwd, &eff);
+        cip = eff;
+    }
+#endif
     uint32_t now = (uint32_t)millis();
     uint32_t remain = auth_lockout_remaining_ms(&cip, now);
     if (remain > 0)

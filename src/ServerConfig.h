@@ -5134,6 +5134,30 @@
 #endif
 
 // ---------------------------------------------------------------------------
+// Trusted reverse-proxy forwarded-client resolution  (DWS_ENABLE_FORWARDED_TRUST)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Believe a `Forwarded` / `X-Forwarded-For` client address only from a trusted upstream.
+ *
+ * Default off. A forwarded header is client-spoofable, so it is honored only when the connection's
+ * real TCP peer matches a configured trusted-proxy CIDR (register one with
+ * `dws_forwarded_trust_add_cidr("10.0.0.0/8")`). When set, the per-IP auth lockout keys on the
+ * recovered original client address behind such a proxy instead of the proxy's shared TCP address, so
+ * one abusive client cannot lock out every client behind the proxy, while a direct (untrusted) peer's
+ * spoofed header is ignored. The accept-time throttle and the IP allowlist deliberately stay on the
+ * real TCP source. Requires DWS_ENABLE_AUTH_LOCKOUT.
+ */
+#ifndef DWS_ENABLE_FORWARDED_TRUST
+#define DWS_ENABLE_FORWARDED_TRUST 0
+#endif
+
+/** @brief Number of trusted-upstream CIDR rules the forwarded-client resolver holds (BSS table). */
+#ifndef DWS_TRUSTED_PROXY_MAX
+#define DWS_TRUSTED_PROXY_MAX 2
+#endif
+
+// ---------------------------------------------------------------------------
 // Brute-force auth lockout  (per-source-IP; DWS_ENABLE_AUTH_LOCKOUT)
 // ---------------------------------------------------------------------------
 
@@ -5901,6 +5925,15 @@ enum class DWSIface : uint8_t
 // one more shift (cap <= 0x80000000 => cap<<1 fits in uint32 without overflow).
 #if DWS_AUTH_LOCKOUT_MAX_MS > 0x80000000
 #error "DeterministicESPAsyncWebServer: DWS_AUTH_LOCKOUT_MAX_MS must be <= 0x80000000 (2147483648)"
+#endif
+#endif
+
+#if DWS_ENABLE_FORWARDED_TRUST
+#if !DWS_ENABLE_AUTH_LOCKOUT
+#error "DeterministicESPAsyncWebServer: DWS_ENABLE_FORWARDED_TRUST requires DWS_ENABLE_AUTH_LOCKOUT"
+#endif
+#if DWS_TRUSTED_PROXY_MAX < 1
+#error "DeterministicESPAsyncWebServer: DWS_TRUSTED_PROXY_MAX must be >= 1 when DWS_ENABLE_FORWARDED_TRUST is set"
 #endif
 #endif
 

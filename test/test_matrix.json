@@ -1662,6 +1662,19 @@
       ],
       "tests": ["test_auth_lockout"]
     },
+    "native_forwarded_trust": {
+      "desc": "Trusted-reverse-proxy forwarded-client resolver (services/forwarded_trust): a\nForwarded / X-Forwarded-For client address is honored only when the real TCP peer\nis a configured trusted-upstream CIDR, else the TCP peer is kept. Pure (no\nsockets), so it host-tests; a direct/untrusted peer's spoofed header is never\nbelieved. DWS_ENABLE_FORWARDED_TRUST (+ its required parents AUTH / AUTH_LOCKOUT)\nare set so the flag-guarded config compiles.",
+      "flags": [
+        "-DDWS_ENABLE_AUTH=1",
+        "-DDWS_ENABLE_AUTH_LOCKOUT=1",
+        "-DDWS_ENABLE_FORWARDED_TRUST=1"
+      ],
+      "src": [
+        "+<services/forwarded_trust/forwarded_trust.cpp>",
+        "+<network_drivers/network/ip.cpp>"
+      ],
+      "tests": ["test_forwarded_trust"]
+    },
     "native_csrf": {
       "desc": "Stateless HMAC-signed CSRF token (services/csrf): issue/verify with a fixed\nsecret unit-tests on the host (DWS_ENABLE_CSRF set). Pulls in the SSH\nHMAC-SHA256 + SHA-256 core.",
       "flags": ["-DDWS_ENABLE_CSRF=1"],

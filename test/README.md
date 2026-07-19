@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **249 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **250 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -146,6 +146,7 @@ The native test matrix has **249 environments**, one per feature, generated from
 | `native_flow_export` | `WS_ENABLE_FLOW_EXPORT=1` | `test_flow_export` | Flow-record export codec (services/flow_export): NetFlow v5 fixed header/record builders + the NetFlow v9 / IPFIX template-then-data cursor (length/count patching, v9 4-octet padding). |
 | `native_focas` | `WS_ENABLE_FOCAS=1` | `test_focas` | FANUC FOCAS Ethernet codec (services/focas): the big-endian frame envelope (magic/version/type/length) + open/close handshake, the generic command request (6-octet function selector + five i32 args), ... |
 | `native_forward` | `WS_ENABLE_FORWARD=1`, `WS_FWD_MAX_IFACES=4`, `WS_FWD_MAX_RULES=4`, `WS_FWD_MAX_ACL=4`, `WS_FWD_MAX_ROUTES=4`, `WS_FWD_INSPECT=1` | `test_forward` | Interface forwarding plane (services/forward), v5 bridge / router: default-deny, an ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the source, the per-rule rate cap (hos... |
+| `native_forwarded_trust` | `WS_ENABLE_AUTH=1`, `WS_ENABLE_AUTH_LOCKOUT=1`, `WS_ENABLE_FORWARDED_TRUST=1` | `test_forwarded_trust` | Trusted-reverse-proxy forwarded-client resolver (services/forwarded_trust): a Forwarded / X-Forwarded-For client address is honored only when the real TCP peer is a configured trusted-upstream CIDR, e... |
 | `native_ftp` | `WS_ENABLE_FTP=1` | `test_ftp` | FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command builders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the PASV / EPSV data-address decoders. |
 | `native_gateway` | `WS_ENABLE_GATEWAY=1`, `WS_GW_MAX_PORTS=4` | `test_gateway` | Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an uplink envelopes a received frame (src address / port / rssi / seq) and publishes it, fail-closed on no sink / unkno... |
 | `native_gnss_survey` | `WS_ENABLE_NTRIP_CASTER=1`, `WS_ENABLE_NMEA0183=1`, `UNITY_INCLUDE_DOUBLE` | `test_gnss_survey` | GNSS survey-in core (services/gnss/gnss_survey): the exact WGS84 geodetic<->ECEF transform (matched against pyproj EPSG:4979->EPSG:4978), the shifted-origin position averager with a 3-D accuracy estim... |
@@ -539,7 +540,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3303 test cases** across **267 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3313 test cases** across **268 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -9436,6 +9437,123 @@ A thorough directory of all **3303 test cases** across **267 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Drop")); // would drop, but inspector is gone</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, stats().inspect_dropped);</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_forwarded_trust (10 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_table_trusts_nothing</b> &mdash; <i>Empty table trusts nothing</i></summary>
+
+    * **Objective**: Empty table trusts nothing
+    * **Assertions**:
+      * <code>Assert false (dws_forwarded_trust_contains(&peer))</code>
+      * <code>Assert false (dws_forwarded_effective_ip(&peer, "198.51.100.9", &out))</code>
+      * <code>Assert true (dws_ip_equal(&out, &peer))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v4_cidr_membership</b> &mdash; <i>V4 cidr membership</i></summary>
+
+    * **Objective**: V4 cidr membership
+    * **Assertions**:
+      * <code>Assert true (dws_forwarded_trust_add_cidr("10.0.0.0/8"))</code>
+      * <code>Assert true (dws_forwarded_trust_contains(&in))</code>
+      * <code>Assert false (dws_forwarded_trust_contains(&out_of))</code>
+      * <code>Assert false (dws_forwarded_trust_contains(&six))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v6_cidr_and_host_route</b> &mdash; <i>V6 cidr and host route</i></summary>
+
+    * **Objective**: V6 cidr and host route
+    * **Assertions**:
+      * <code>Assert true (dws_forwarded_trust_add_cidr("2001:db8::/32"))</code>
+      * <code>Assert true (dws_forwarded_trust_add_cidr("192.0.2.5"))</code>
+      * <code>Assert true (dws_forwarded_trust_contains(&v6in))</code>
+      * <code>Assert true (dws_forwarded_trust_contains(&host))</code>
+      * <code>Assert false (dws_forwarded_trust_contains(&host_nbr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_add_cidr_rejects_malformed</b> &mdash; <i>Add cidr rejects malformed</i></summary>
+
+    * **Objective**: Add cidr rejects malformed
+    * **Assertions**:
+      * <code>Assert false (dws_forwarded_trust_add_cidr(nullptr))</code>
+      * <code>Assert false (dws_forwarded_trust_add_cidr("not-an-ip"))</code>
+      * <code>Assert false (dws_forwarded_trust_add_cidr("10.0.0.0/"))</code>
+      * <code>Assert false (dws_forwarded_trust_add_cidr("10.0.0.0/33"))</code>
+      * <code>Assert false (dws_forwarded_trust_add_cidr("2001:db8::/129"))</code>
+      * <code>Assert false (dws_forwarded_trust_add_cidr("10.0.0.0/x"))</code>
+      * <code>Assert false (dws_forwarded_trust_contains(&any))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_table_full</b> &mdash; <i>Table full</i></summary>
+
+    * **Objective**: Table full
+    * **Assertions**:
+      * <code>Assert true (dws_forwarded_trust_add_cidr(cidr))</code>
+      * <code>Assert false (dws_forwarded_trust_add_cidr("172.16.0.0/12"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_trusted_peer_honors_forwarded</b> &mdash; <i>Trusted peer honors forwarded</i></summary>
+
+    * **Objective**: Trusted peer honors forwarded
+    * **Assertions**:
+      * <code>Assert true (dws_forwarded_trust_add_cidr("10.0.0.0/8"))</code>
+      * <code>Assert true (dws_forwarded_effective_ip(&proxy, "198.51.100.42", &out))</code>
+      * <code>Assert true (dws_ip_equal(&out, &client))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_trusted_peer_honors_v6_forwarded</b> &mdash; <i>Trusted peer honors v6 forwarded</i></summary>
+
+    * **Objective**: Trusted peer honors v6 forwarded
+    * **Assertions**:
+      * <code>Assert true (dws_forwarded_trust_add_cidr("10.0.0.0/8"))</code>
+      * <code>Assert true (dws_forwarded_effective_ip(&proxy, "2001:db8::abcd", &out))</code>
+      * <code>Assert true (dws_ip_equal(&out, &client))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_untrusted_peer_ignores_forwarded</b> &mdash; <i>The attacker sets X-Forwarded-For to a victim's address to try to lock the victim out.</i></summary>
+
+    * **Objective**: The attacker sets X-Forwarded-For to a victim's address to try to lock the victim out.
+    * **Assertions**:
+      * <code>Assert true (dws_forwarded_trust_add_cidr("10.0.0.0/8"))</code>
+      * <code>Assert false (dws_forwarded_effective_ip(&attacker, "198.51.100.1", &out))</code>
+      * <code>Assert true (dws_ip_equal(&out, &attacker))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_trusted_peer_bad_token_falls_back</b> &mdash; <i>Trusted peer bad token falls back</i></summary>
+
+    * **Objective**: Trusted peer bad token falls back
+    * **Assertions**:
+      * <code>Assert true (dws_forwarded_trust_add_cidr("10.0.0.0/8"))</code>
+      * <code>Assert false (dws_forwarded_effective_ip(&proxy, "unknown", &out))</code>
+      * <code>Assert true (dws_ip_equal(&out, &proxy))</code>
+      * <code>Assert false (dws_forwarded_effective_ip(&proxy, nullptr, &out))</code>
+      * <code>Assert true (dws_ip_equal(&out, &proxy))</code>
+      * <code>Assert false (dws_forwarded_effective_ip(&proxy, "", &out))</code>
+      * <code>Assert true (dws_ip_equal(&out, &proxy))</code>
+      * <code>Assert false (dws_forwarded_effective_ip(&proxy, "0.0.0.0", &out))</code>
+      * <code>Assert true (dws_ip_equal(&out, &proxy))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_guards</b> &mdash; <i>Null guards</i></summary>
+
+    * **Objective**: Null guards
+    * **Assertions**:
+      * <code>Assert false (dws_forwarded_effective_ip(&peer, "1.2.3.4", nullptr))</code>
+      * <code>Assert false (dws_forwarded_effective_ip(nullptr, "1.2.3.4", &out))</code>
+      * <code>Assert true (dws_ip_is_unspecified(&out))</code>
   </details>
 
 </details>

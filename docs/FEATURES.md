@@ -370,6 +370,12 @@ Omron FINS frame codec. Default off. services/fins is a zero-heap command/respon
 
 Flow-record export codec. Default off. services/flow_export is a zero-heap exporter-side codec for on-device flow accounting in three formats: NetFlow v5 (the fixed 24-octet header + 48-octet record, via `flow_v5_write_header` / `flow_v5_write_record`), NetFlow v9 (RFC 3954), and IPFIX (RFC 7011). The v9 / IPFIX side is a small cursor (`FlowWriter`): begin the message (`flow_ipfix_begin` / `flow_v9_begin`), emit a Template (`flow_export_template`), open a matching Data Set and append records (`flow_export_data_begin` / `flow_export_data_record` / `flow_export_data_end`), then `flow_export_finish()` patches the IPFIX message length or the NetFlow v9 record count (and pads each v9 FlowSet to a 4-octet boundary). Field offsets verified against RFC 7011 / RFC 3954 / the published v5 layout; pure and host-tested. The flow cache (5-tuple + counters) and the UDP send (dws_udp_sendto) are the application's. See src/services/flow_export/flow_export.h.
 
+## Forwarded Trust
+
+`DWS_ENABLE_FORWARDED_TRUST`
+
+Trusted-reverse-proxy resolution of the forwarded client address (requires AUTH_LOCKOUT). Default off. A `Forwarded` (RFC 7239) / `X-Forwarded-For` header is client-spoofable, so behind a reverse proxy the per-IP auth lockout keys on the original client address the proxy reports ONLY when the request's real TCP peer matches a trusted-upstream CIDR you register with `dws_forwarded_trust_add_cidr("10.0.0.0/8")`; a direct or untrusted peer's header is ignored, and any malformed / obfuscated / unspecified token falls back to the real TCP peer. So one abusive client behind a proxy cannot lock out every client sharing the proxy's address, and no client can spoof its way out of, or another address into, a lockout. The accept-time throttle and the IP allowlist deliberately stay on the real TCP source. The trusted-CIDR table is a fixed BSS array of DWS_TRUSTED_PROXY_MAX entries (no heap); the resolver is pure and host-tested (native_forwarded_trust) and HW-verified on an ESP32-S3 (a forwarded client is locked out independently of the TCP source and of other forwarded clients). See src/services/forwarded_trust/forwarded_trust.h.
+
 ## FTP client
 
 `DWS_ENABLE_FTP`
