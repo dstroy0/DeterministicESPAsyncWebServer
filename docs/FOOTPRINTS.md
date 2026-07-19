@@ -104,7 +104,7 @@ from each example's `pio ci` size report and aggregated into
 | `SYSLOG`                                                                                                  | L7-Application/Syslog                | 738.4 KB (57.7%) | 81.7 KB (25.5%)  |
 | `TELEMETRY`                                                                                               | L7-Application/Telemetry             | 744.0 KB (58.1%) | 80.2 KB (25.1%)  |
 | `TELNET`                                                                                                  | L5-Session/Telnet                    | 737.5 KB (57.6%) | 80.4 KB (25.1%)  |
-| `THREAD+GATEWAY`                                                                                          | Drivers/ThreadGateway                | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
+| `THREAD+GATEWAY`                                                                                          | Drivers/ThreadGateway                | 265.4 KB (20.7%) | 22.1 KB (6.9%)   |
 | `TLS`                                                                                                     | L6-Presentation/SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                                                                                | L4-Transport/mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
 | `TLS+MTLS+TLS_ARENA_SIZE`                                                                                 | L4-Transport/mTLS                    | 838.0 KB (65.5%) | 103.5 KB (32.3%) |

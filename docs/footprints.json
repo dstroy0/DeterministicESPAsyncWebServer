@@ -675,7 +675,7 @@
     "example": "Drivers/ThreadGateway",
     "flags": "-DDWS_ENABLE_THREAD=1 -DDWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 269137,
+    "flash_bytes": 271797,
     "ram_bytes": 22616
   },
   "TLS": {
