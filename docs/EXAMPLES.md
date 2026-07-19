@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 137 runnable examples under `examples/`, grouped by
+The library ships 138 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -57,7 +57,8 @@ On-chip and add-on interface hardware - Ethernet (internal + W5500), CAN, Wi-Fi 
 [DmaIngest](../examples/Peripherals/DmaIngest/README.md) ·
 [Ethernet](../examples/Peripherals/Ethernet/README.md) ·
 [EthernetW5500](../examples/Peripherals/EthernetW5500/README.md) ·
-[WifiCapture](../examples/Peripherals/WifiCapture/README.md)
+[WifiCapture](../examples/Peripherals/WifiCapture/README.md) ·
+[WifiSniffer](../examples/Peripherals/WifiSniffer/README.md)
 
 ## Drivers
 
