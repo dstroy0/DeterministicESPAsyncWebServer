@@ -56,6 +56,7 @@ from each example's `pio ci` size report and aggregated into
 | `LD2410`                                                                                                  | Drivers/Ld2410                       | 264.3 KB (20.7%) | 21.1 KB (6.6%)   |
 | `LOGBUF`                                                                                                  | L7-Application/LogBuffer             | 736.2 KB (57.5%) | 82.9 KB (25.9%)  |
 | `LORA+GATEWAY`                                                                                            | Drivers/LoRaGateway                  | 269.9 KB (21.1%) | 21.2 KB (6.6%)   |
+| `LSV2`                                                                                                    | L7-Application/HeidenhainLsv2        | 725.9 KB (56.7%) | 44.2 KB (13.8%)  |
 | `MDNS`                                                                                                    | L7-Application/mDNS                  | 759.6 KB (59.3%) | 81.7 KB (25.5%)  |
 | `MODBUS`                                                                                                  | L7-Application/ModbusTcp             | 736.4 KB (57.5%) | 80.1 KB (25.0%)  |
 | `MODBUS+MODBUS_MASTER`                                                                                    | L7-Application/ModbusScan            | 736.7 KB (57.6%) | 80.1 KB (25.0%)  |

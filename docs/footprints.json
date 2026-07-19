@@ -335,6 +335,13 @@
     "flash_bytes": 276329,
     "ram_bytes": 21688
   },
+  "LSV2": {
+    "example": "L7-Application/HeidenhainLsv2",
+    "flags": "-DDWS_ENABLE_LSV2=1",
+    "board": "esp32dev",
+    "flash_bytes": 743369,
+    "ram_bytes": 45304
+  },
   "MDNS": {
     "example": "L7-Application/mDNS",
     "flags": "-DDWS_ENABLE_MDNS=1",
