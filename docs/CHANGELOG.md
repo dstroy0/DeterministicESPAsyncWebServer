@@ -2,10 +2,15 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.8.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.8.0 - 2026-07-19</b></summary>
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`b7059c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7059c36f435a7449bf4b1bc83539c8c0ca421c0))
+- update CHANGELOG.md [skip ci] ([`cfad39d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cfad39dffdf1d70ba461ede3755c447ef026a883))
 - update test report + coverage [skip ci] ([`75e7ded`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75e7ded7d00159cdcfb4cab458ddcb9380ac6bcb))
 - update CHANGELOG.md [skip ci] ([`8377abf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8377abf5fdb23c69658389042340bd682247d256))
 - update test report + coverage [skip ci] ([`1c8f9a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c8f9a065fdd067a3a5085fc2c9727ae6cffe5e7))
@@ -17,10 +22,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 7.7.0 → 7.8.0 ([`2552b3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2552b3fd7bcce17bd04a33c72770d17bf2aa4b3a))
 - Bump version: 7.6.0 → 7.7.0 ([`79dcb13`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79dcb13ce92b1e990159e72230e119ceb4c66473))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`b11a307`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b11a307d1a692621d32b3a09cce8fee1ccedecd1))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d045323`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d045323b27dc3bb37d0cd8be6900f29db27187ea))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4aa552e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4aa552e4cc8246266e1eb65f31bf0d1c47d74485))
 - update ESP32 build footprints [skip ci] ([`b2cb1dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b2cb1dd13088112c4be2fedf019b97e3940b215d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8cc38db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8cc38db72104e070a200e1a5a76202d9bc42870c))
@@ -33,6 +41,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - Heidenhain LSV/2 telegram codec + TNC example ([`b1bbeef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1bbeef79189da896daf2344114e71c8ab1aba8f))
 - Haas Machine Data Collection (MDC) Q-command codec ([`dbf09a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dbf09a7b1adeb85cf505479250c44bc466866e6b))
+
+</details>
 
 ## [7.6.0] - 2026-07-19
 
