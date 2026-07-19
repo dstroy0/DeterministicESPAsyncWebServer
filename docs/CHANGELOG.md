@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.10.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.10.0 - 2026-07-19</b></summary>
 
 ### Bug Fixes
 
@@ -10,7 +13,22 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`8b637ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b637ae9fd9270cb8dcda2ab49509aa1e4445503))
 - update CHANGELOG.md [skip ci] ([`ec15432`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec15432d087e0ce61b11d3d27dbad396b39a15e4))
+
+### Changes
+
+- Bump version: 7.9.0 → 7.10.0 ([`a3c2713`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3c271321319091e189fe251d43d1e8706eb26ba))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`ed92c91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed92c91f5d7a8284e7be48afdb2b473b2113cff4))
+
+### Features
+
+- IKEv2 (RFC 7296) message + payload codec (services/ikev2) ([`ae75a72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae75a722f97e967da80644e1999aa847cf9f7ecc))
+
+</details>
 
 ## [7.9.0] - 2026-07-19
 
