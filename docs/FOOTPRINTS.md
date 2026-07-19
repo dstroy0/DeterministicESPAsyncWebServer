@@ -43,6 +43,7 @@ from each example's `pio ci` size report and aggregated into
 | `GPIO_MAP`                                                                                                | L7-Application/GpioMap               | 739.0 KB (57.7%) | 79.9 KB (25.0%)  |
 | `GRAPHQL`                                                                                                 | L7-Application/GraphQL               | 739.5 KB (57.8%) | 84.2 KB (26.3%)  |
 | `GUARDRAILS`                                                                                              | L7-Application/Guardrails            | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |
+| `HAAS_MDC`                                                                                                | L7-Application/HaasMdc               | 726.0 KB (56.7%) | 43.6 KB (13.6%)  |
 | `HISLIP`                                                                                                  | L7-Application/HiSlip                | 725.7 KB (56.7%) | 44.2 KB (13.8%)  |
 | `HTTP_CLIENT`                                                                                             | L7-Application/HttpClient            | 717.3 KB (56.0%) | 61.7 KB (19.3%)  |
 | `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/Webhook               | 745.2 KB (58.2%) | 99.2 KB (31.0%)  |

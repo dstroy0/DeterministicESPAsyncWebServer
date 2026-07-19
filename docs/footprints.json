@@ -244,6 +244,13 @@
     "flash_bytes": 752857,
     "ram_bytes": 81792
   },
+  "HAAS_MDC": {
+    "example": "L7-Application/HaasMdc",
+    "flags": "-DDWS_ENABLE_HAAS_MDC=1",
+    "board": "esp32dev",
+    "flash_bytes": 743465,
+    "ram_bytes": 44688
+  },
   "HISLIP": {
     "example": "L7-Application/HiSlip",
     "flags": "-DDWS_ENABLE_HISLIP=1",
