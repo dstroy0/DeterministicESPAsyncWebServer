@@ -16,7 +16,7 @@
  * resynchronising on a bad sync / CRC, and dws_esp3_build() assembles one. This is the radio-
  * plugin codec for the gateway: an inbound RADIO_ERP1 telegram carries a sender id (its
  * source address) and payload; bridge it northbound with dws_gateway_uplink(). Pure - you feed
- * it the UART bytes - so it is fully host-testable. See example 13.EnOceanGateway.
+ * it the UART bytes - so it is fully host-testable. See example EnOceanGateway.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026

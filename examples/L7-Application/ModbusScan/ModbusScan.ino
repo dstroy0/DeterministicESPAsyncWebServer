@@ -1,0 +1,73 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file ModbusScan.ino
+ * @brief Modbus master codec + register scanner (DWS_ENABLE_MODBUS_MASTER).
+ *
+ * The master/client side of Modbus: build read-request ADUs and parse the
+ * responses into register values. This example self-scans - it runs the requests
+ * through the on-board Modbus slave (dws_modbus_process_adu) so the build/parse codec
+ * is demonstrated end-to-end without an external device; against a real slave you
+ * would send the ADU over a TCP client instead. GET /scan returns the discovered
+ * holding registers as JSON.
+ *
+ * NOTE: enable both flags for the whole build. In platformio.ini:
+ *     build_flags = -DDWS_ENABLE_MODBUS=1 -DDWS_ENABLE_MODBUS_MASTER=1
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
+ */
+
+#define DWS_ENABLE_MODBUS 1
+#define DWS_ENABLE_MODBUS_MASTER 1
+
+#include "dwserver.h"
+#include "network_drivers/physical/physical.h"
+#include "services/modbus/modbus.h"
+#include "services/modbus/modbus_master.h"
+#include <WiFi.h>
+
+static const char *SSID = "YOUR_SSID";
+static const char *PASSWORD = "YOUR_PASSWORD";
+
+DWS server;
+
+void setup()
+{
+    Serial.begin(115200);
+    init_wifi_physical(SSID, PASSWORD);
+    while (!wifi_ready())
+        delay(250);
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+    WiFi.setSleep(false);
+
+    // Seed a few holding registers (the "slave" data model).
+    dws_modbus_server_init();
+    dws_modbus_set_holding_reg(0, 1234);
+    dws_modbus_set_holding_reg(1, 5678);
+    dws_modbus_set_holding_reg(2, 4095);
+    server.listen(502, ConnProto::PROTO_MODBUS); // real Modbus TCP slave on :502
+
+    // /scan: read holding registers 0..3 via the master codec (self-scan).
+    server.on("/scan", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
+        uint8_t req[16], resp[MODBUS_ADU_MAX];
+        size_t rn =
+            dws_modbus_build_read((uint8_t)ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1, 1, 0, 3, req, sizeof(req));
+        size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp));
+        uint16_t regs[3];
+        uint8_t ex = 0;
+        int n = dws_modbus_parse_response(resp, pn, regs, 3, &ex);
+        char b[96];
+        if (n > 0)
+            snprintf(b, sizeof(b), "{\"regs\":[%u,%u,%u]}", regs[0], regs[1], regs[2]);
+        else
+            snprintf(b, sizeof(b), "{\"exception\":%u}", ex);
+        server.send(id, 200, "application/json", b);
+    });
+    server.begin(80);
+}
+
+void loop()
+{
+    server.handle();
+}

@@ -1350,7 +1350,16 @@
     "HWACCEL",
     "mbflash",
     "mbpsram",
-    "Datasheets"
+    "Datasheets",
+    "Nagle",
+    "beedceb",
+    "dwsdelay",
+    "ebdefea",
+    "eddaffe",
+    "pinout",
+    "unbreak",
+    "unstuff",
+    "zoomable"
   ],
   "ignorePaths": [
     "node_modules/**",

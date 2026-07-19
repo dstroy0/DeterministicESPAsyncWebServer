@@ -1,0 +1,104 @@
+// WifiCapture - capture 802.11 frames on Wi-Fi and forward them out Ethernet.
+//
+// A wireless tap: put the radio in promiscuous mode (services/promisc), and hand every captured
+// frame to the forwarding plane (services/forward), which bridges it to the Ethernet interface.
+// The Ethernet egress here streams each frame as a libpcap record over UDP to a wired collector
+// (run `tcpdump -i any -w -` style capture, or a tiny socket that writes a .pcap Wireshark opens
+// as DLT_IEEE802_11). Capture is strictly passive; a rate cap protects the wired uplink.
+//
+// Data path:  Wi-Fi radio --dws_promisc_begin--> sink --dws_forward_ingress--> ETH send cb --UDP--> collector
+//
+// Build flags (whole build), Ethernet tuned here for a LAN8720 board:
+//   DWS_ENABLE_PROMISC=1 DWS_ENABLE_FORWARD=1 DWS_ENABLE_ETHERNET=1
+//   ETH_PHY_TYPE=ETH_PHY_LAN8720 ETH_PHY_ADDR=1 ETH_PHY_POWER=-1
+//   ETH_PHY_MDC=23 ETH_PHY_MDIO=18 ETH_CLK_MODE=ETH_CLOCK_GPIO0_IN
+
+#include "dwserver.h"
+#include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/udp.h"
+#include "services/forward/forward.h"
+#include "services/promisc/promisc.h"
+#include <ETH.h>
+#include <WiFi.h>
+#include <string.h>
+
+// Where to stream the captured frames on the wired side.
+static const char *COLLECTOR_IP = "192.168.1.50";
+static const uint16_t COLLECTOR_PORT = 5555;
+static const uint8_t CAPTURE_CHANNEL = 6;
+
+// Forwarding-plane interface ids.
+enum
+{
+    IF_WIFI = 1,
+    IF_ETH = 2
+};
+
+// Ethernet egress: wrap the frame in a libpcap record (DLT_IEEE802_11) and UDP it to the
+// collector. dws_udp_sendto() routes over the default interface, which is the wired uplink.
+static bool eth_send(uint8_t, const uint8_t *frame, uint16_t len, void *)
+{
+    static uint8_t buf[DWS_PCAP_REC_HDR_LEN + 2048];
+    if (len > 2048)
+        len = 2048;
+    uint32_t us = (uint32_t)micros();
+    dws_pcap_record_header(buf, sizeof(buf), us / 1000000u, us % 1000000u, len, len);
+    memcpy(buf + DWS_PCAP_REC_HDR_LEN, frame, len);
+    return dws_udp_sendto(COLLECTOR_IP, COLLECTOR_PORT, buf, DWS_PCAP_REC_HDR_LEN + len);
+}
+
+// Wi-Fi is a source only - no rule forwards *to* it, so this is never called.
+static bool wifi_send(uint8_t, const uint8_t *, uint16_t, void *)
+{
+    return false;
+}
+
+// Capture sink: hand each frame to the forwarding plane. For high capture rates, post to the
+// FORWARD lane of the preempting queue instead of calling ingress in the radio callback.
+static void on_frame(const uint8_t *frame, uint16_t len, int8_t, uint8_t)
+{
+    dws_forward_ingress(IF_WIFI, frame, len);
+}
+
+void setup()
+{
+    Serial.begin(115200);
+
+    // Wired uplink to the collector.
+    init_eth_physical();
+    Serial.print("Bringing up Ethernet");
+    while (!eth_ready())
+    {
+        delay(250);
+        Serial.print('.');
+    }
+    Serial.print("\nEthernet IP: ");
+    Serial.println(ETH.localIP());
+
+    // Wi-Fi radio for capture (promiscuous; no association needed).
+    WiFi.mode(WIFI_STA);
+
+    // Forwarding plane: Wi-Fi -> Ethernet, capped so a busy channel can't swamp the uplink.
+    dws_forward_reset();
+    dws_forward_add_if(IF_WIFI, dws_if_kind::DWS_IF_WIFI_STA, wifi_send, nullptr);
+    dws_forward_add_if(IF_ETH, dws_if_kind::DWS_IF_ETH, eth_send, nullptr);
+    dws_forward_add_rule(IF_WIFI, IF_ETH, dws_fwd_action::DWS_FWD_ALLOW, 2000); // <= 2000 frames/s to the wire
+
+    dws_promisc_begin(CAPTURE_CHANNEL, on_frame);
+    Serial.printf("Capturing on channel %u -> forwarding to %s:%u (PCAP over UDP)\n", CAPTURE_CHANNEL, COLLECTOR_IP,
+                  COLLECTOR_PORT);
+}
+
+void loop()
+{
+    static uint32_t last = 0;
+    if (millis() - last > 5000)
+    {
+        last = millis();
+        dws_forward_stats s;
+        dws_forward_get_stats(&s);
+        Serial.printf("captured %lu, forwarded %lu, rate-dropped %lu, send-fail %lu\n", (unsigned long)s.frames_in,
+                      (unsigned long)s.forwarded, (unsigned long)s.rate_dropped, (unsigned long)s.send_fail);
+    }
+    delay(10);
+}

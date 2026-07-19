@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 129 runnable examples under `examples/`, grouped by
+The library ships 130 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -14,7 +14,7 @@ flashing. Compile one for an ESP32 board with `pio ci`:
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
   --project-option="build_flags=-DDWS_ENABLE_WEBSOCKET=1" \
-  --lib="." examples/L6-Presentation/09.WebSocket/09.WebSocket.ino
+  --lib="." examples/L6-Presentation/WebSocket/WebSocket.ino
 ```
 
 > **The build_flags gotcha.** A sketch's `#define DWS_ENABLE_X 1` only affects
@@ -37,156 +37,167 @@ pio ci --board=esp32dev --project-option="framework=arduino" \
 
 ## Foundation
 
-Start here: the core tutorial path (01-05), then the v5 hardware-integration examples - DMA, the preempting queue, forwarding, radio gateways, and capture:
+Start here: the core tutorial path (Basic -> Advanced -> Expert -> Sysadmin -> Configuration), then the server-architecture examples - the preempting task queue, lanes, and interface forwarding:
 
-[01.Basic](../examples/Foundation/01.Basic/README.md) ·
-[02.Advanced](../examples/Foundation/02.Advanced/README.md) ·
-[03.Expert](../examples/Foundation/03.Expert/README.md) ·
-[04.Sysadmin](../examples/Foundation/04.Sysadmin/README.md) ·
-[05.Configuration](../examples/Foundation/05.Configuration/README.md) ·
-[06.PreemptQueue](../examples/Foundation/06.PreemptQueue/README.md) ·
-[07.DmaIngest](../examples/Foundation/07.DmaIngest/README.md) ·
-[08.PreemptLanes](../examples/Foundation/08.PreemptLanes/README.md) ·
-[09.InterfaceForward](../examples/Foundation/09.InterfaceForward/README.md) ·
-[10.RadioGateway](../examples/Foundation/10.RadioGateway/README.md) ·
-[11.LoRaGateway](../examples/Foundation/11.LoRaGateway/README.md) ·
-[12.Nrf24Gateway](../examples/Foundation/12.Nrf24Gateway/README.md) ·
-[13.EnOceanGateway](../examples/Foundation/13.EnOceanGateway/README.md) ·
-[14.NfcGateway](../examples/Foundation/14.NfcGateway/README.md) ·
-[15.SigfoxUplink](../examples/Foundation/15.SigfoxUplink/README.md) ·
-[16.ZWaveGateway](../examples/Foundation/16.ZWaveGateway/README.md) ·
-[17.ZigbeeGateway](../examples/Foundation/17.ZigbeeGateway/README.md) ·
-[18.ThreadGateway](../examples/Foundation/18.ThreadGateway/README.md) ·
-[19.Ethernet](../examples/Foundation/19.Ethernet/README.md) ·
-[20.IPv6](../examples/Foundation/20.IPv6/README.md) ·
-[21.WifiCapture](../examples/Foundation/21.WifiCapture/README.md) ·
-[22.CanCapture](../examples/Foundation/22.CanCapture/README.md) ·
-[23.EthernetW5500](../examples/Foundation/23.EthernetW5500/README.md)
+[Advanced](../examples/Foundation/Advanced/README.md) ·
+[Basic](../examples/Foundation/Basic/README.md) ·
+[Configuration](../examples/Foundation/Configuration/README.md) ·
+[Expert](../examples/Foundation/Expert/README.md) ·
+[InterfaceForward](../examples/Foundation/InterfaceForward/README.md) ·
+[IPv6](../examples/Foundation/IPv6/README.md) ·
+[PreemptLanes](../examples/Foundation/PreemptLanes/README.md) ·
+[PreemptQueue](../examples/Foundation/PreemptQueue/README.md) ·
+[Sysadmin](../examples/Foundation/Sysadmin/README.md)
+
+## Peripherals
+
+On-chip and add-on interface hardware - Ethernet (internal + W5500), CAN, Wi-Fi capture, and DMA ingest:
+
+[CanCapture](../examples/Peripherals/CanCapture/README.md) ·
+[DmaIngest](../examples/Peripherals/DmaIngest/README.md) ·
+[Ethernet](../examples/Peripherals/Ethernet/README.md) ·
+[EthernetW5500](../examples/Peripherals/EthernetW5500/README.md) ·
+[WifiCapture](../examples/Peripherals/WifiCapture/README.md)
+
+## Drivers
+
+External chip drivers over I2C / SPI / UART - sensors, ADC / PWM / current monitors, an RTC, and radio-module gateways:
+
+[Ads1115](../examples/Drivers/Ads1115/README.md) ·
+[EnOceanGateway](../examples/Drivers/EnOceanGateway/README.md) ·
+[Ina219](../examples/Drivers/Ina219/README.md) ·
+[Ld2410](../examples/Drivers/Ld2410/README.md) ·
+[LoRaGateway](../examples/Drivers/LoRaGateway/README.md) ·
+[Mpr121](../examples/Drivers/Mpr121/README.md) ·
+[NfcGateway](../examples/Drivers/NfcGateway/README.md) ·
+[Nrf24Gateway](../examples/Drivers/Nrf24Gateway/README.md) ·
+[Pca9685](../examples/Drivers/Pca9685/README.md) ·
+[RadioGateway](../examples/Drivers/RadioGateway/README.md) ·
+[Rtc](../examples/Drivers/Rtc/README.md) ·
+[Sen0192](../examples/Drivers/Sen0192/README.md) ·
+[Sht3x](../examples/Drivers/Sht3x/README.md) ·
+[SigfoxUplink](../examples/Drivers/SigfoxUplink/README.md) ·
+[ThreadGateway](../examples/Drivers/ThreadGateway/README.md) ·
+[ZigbeeGateway](../examples/Drivers/ZigbeeGateway/README.md) ·
+[ZWaveGateway](../examples/Drivers/ZWaveGateway/README.md)
 
 ## L4 Transport
 
 Connections, encryption, and flood defense:
 
-[01.KeepAlive](../examples/L4-Transport/01.KeepAlive/README.md) ·
-[02.AcceptThrottle](../examples/L4-Transport/02.AcceptThrottle/README.md) ·
-[03.HTTPS](../examples/L4-Transport/03.HTTPS/README.md) ·
-[04.mTLS](../examples/L4-Transport/04.mTLS/README.md) ·
-[05.PerIpThrottle](../examples/L4-Transport/05.PerIpThrottle/README.md) ·
-[06.TlsResumption](../examples/L4-Transport/06.TlsResumption/README.md) ·
-[07.IpAllowlist](../examples/L4-Transport/07.IpAllowlist/README.md)
+[AcceptThrottle](../examples/L4-Transport/AcceptThrottle/README.md) ·
+[HTTPS](../examples/L4-Transport/HTTPS/README.md) ·
+[IpAllowlist](../examples/L4-Transport/IpAllowlist/README.md) ·
+[KeepAlive](../examples/L4-Transport/KeepAlive/README.md) ·
+[mTLS](../examples/L4-Transport/mTLS/README.md) ·
+[PerIpThrottle](../examples/L4-Transport/PerIpThrottle/README.md) ·
+[TlsResumption](../examples/L4-Transport/TlsResumption/README.md)
 
 ## L5 Session
 
 Interactive consoles:
 
-[01.SSH](../examples/L5-Session/01.SSH/README.md) ·
-[02.SSHCryptoSelfTest](../examples/L5-Session/02.SSHCryptoSelfTest/README.md) ·
-[03.SSHHostKey](../examples/L5-Session/03.SSHHostKey/README.md) ·
-[04.SSHSftp](../examples/L5-Session/04.SSHSftp/README.md) ·
-[04.Telnet](../examples/L5-Session/04.Telnet/README.md)
+[SSH](../examples/L5-Session/SSH/README.md) ·
+[SSHCryptoSelfTest](../examples/L5-Session/SSHCryptoSelfTest/README.md) ·
+[SSHHostKey](../examples/L5-Session/SSHHostKey/README.md) ·
+[SSHSftp](../examples/L5-Session/SSHSftp/README.md) ·
+[Telnet](../examples/L5-Session/Telnet/README.md)
 
 ## L6 Presentation
 
 Parsing, codecs, auth, WebSocket/SSE:
 
-[01.FormParams](../examples/L6-Presentation/01.FormParams/README.md) ·
-[02.Json](../examples/L6-Presentation/02.Json/README.md) ·
-[03.Multipart](../examples/L6-Presentation/03.Multipart/README.md) ·
-[04.BasicAuth](../examples/L6-Presentation/04.BasicAuth/README.md) ·
-[05.DigestAuth](../examples/L6-Presentation/05.DigestAuth/README.md) ·
-[06.JWTAuth](../examples/L6-Presentation/06.JWTAuth/README.md) ·
-[07.SecureWebSocket](../examples/L6-Presentation/07.SecureWebSocket/README.md) ·
-[08.ServerSentEvents](../examples/L6-Presentation/08.ServerSentEvents/README.md) ·
-[09.WebSocket](../examples/L6-Presentation/09.WebSocket/README.md) ·
-[10.WebTerminal](../examples/L6-Presentation/10.WebTerminal/README.md) ·
-[11.WebSocketCompression](../examples/L6-Presentation/11.WebSocketCompression/README.md) ·
-[12.AuthLockout](../examples/L6-Presentation/12.AuthLockout/README.md) ·
-[13.Cbor](../examples/L6-Presentation/13.Cbor/README.md) ·
-[14.MsgPack](../examples/L6-Presentation/14.MsgPack/README.md)
+[AuthLockout](../examples/L6-Presentation/AuthLockout/README.md) ·
+[BasicAuth](../examples/L6-Presentation/BasicAuth/README.md) ·
+[Cbor](../examples/L6-Presentation/Cbor/README.md) ·
+[DigestAuth](../examples/L6-Presentation/DigestAuth/README.md) ·
+[FormParams](../examples/L6-Presentation/FormParams/README.md) ·
+[Json](../examples/L6-Presentation/Json/README.md) ·
+[JWTAuth](../examples/L6-Presentation/JWTAuth/README.md) ·
+[MsgPack](../examples/L6-Presentation/MsgPack/README.md) ·
+[Multipart](../examples/L6-Presentation/Multipart/README.md) ·
+[SecureWebSocket](../examples/L6-Presentation/SecureWebSocket/README.md) ·
+[ServerSentEvents](../examples/L6-Presentation/ServerSentEvents/README.md) ·
+[WebSocket](../examples/L6-Presentation/WebSocket/README.md) ·
+[WebSocketCompression](../examples/L6-Presentation/WebSocketCompression/README.md) ·
+[WebTerminal](../examples/L6-Presentation/WebTerminal/README.md)
 
 ## L7 Application
 
 Routing, protocols, services, and clients:
 
-[01.ChunkedResponse](../examples/L7-Application/01.ChunkedResponse/README.md) ·
-[02.CORS](../examples/L7-Application/02.CORS/README.md) ·
-[03.InterfaceFilter](../examples/L7-Application/03.InterfaceFilter/README.md) ·
-[04.Middleware](../examples/L7-Application/04.Middleware/README.md) ·
-[05.PathParams](../examples/L7-Application/05.PathParams/README.md) ·
-[06.RegexRoutes](../examples/L7-Application/06.RegexRoutes/README.md) ·
-[07.ResponseHeaders](../examples/L7-Application/07.ResponseHeaders/README.md) ·
-[08.Templating](../examples/L7-Application/08.Templating/README.md) ·
-[09.ETag](../examples/L7-Application/09.ETag/README.md) ·
-[10.FileServing](../examples/L7-Application/10.FileServing/README.md) ·
-[11.FileUpload](../examples/L7-Application/11.FileUpload/README.md) ·
-[12.Range](../examples/L7-Application/12.Range/README.md) ·
-[13.CoAP](../examples/L7-Application/13.CoAP/README.md) ·
-[14.SNMP](../examples/L7-Application/14.SNMP/README.md) ·
-[15.mDNS](../examples/L7-Application/15.mDNS/README.md) ·
-[16.OTA](../examples/L7-Application/16.OTA/README.md) ·
-[17.Provisioning](../examples/L7-Application/17.Provisioning/README.md) ·
-[18.SNTP](../examples/L7-Application/18.SNTP/README.md) ·
-[19.Syslog](../examples/L7-Application/19.Syslog/README.md) ·
-[20.Diagnostics](../examples/L7-Application/20.Diagnostics/README.md) ·
-[21.PrometheusMetrics](../examples/L7-Application/21.PrometheusMetrics/README.md) ·
-[22.Stats](../examples/L7-Application/22.Stats/README.md) ·
-[23.HttpClient](../examples/L7-Application/23.HttpClient/README.md) ·
-[24.MqttClient](../examples/L7-Application/24.MqttClient/README.md) ·
-[25.WebSocketClient](../examples/L7-Application/25.WebSocketClient/README.md) ·
-[26.SnmpTrap](../examples/L7-Application/26.SnmpTrap/README.md) ·
-[27.CoapObserve](../examples/L7-Application/27.CoapObserve/README.md) ·
-[28.CoapBlock](../examples/L7-Application/28.CoapBlock/README.md) ·
-[29.WebDav](../examples/L7-Application/29.WebDav/README.md) ·
-[30.ModbusTcp](../examples/L7-Application/30.ModbusTcp/README.md) ·
-[31.TimeSourceFallback](../examples/L7-Application/31.TimeSourceFallback/README.md) ·
-[32.DeviceUuid](../examples/L7-Application/32.DeviceUuid/README.md) ·
-[33.Csrf](../examples/L7-Application/33.Csrf/README.md) ·
-[34.Telemetry](../examples/L7-Application/34.Telemetry/README.md) ·
-[35.Dashboard](../examples/L7-Application/35.Dashboard/README.md) ·
-[36.NetEgress](../examples/L7-Application/36.NetEgress/README.md) ·
-[37.PartitionMonitor](../examples/L7-Application/37.PartitionMonitor/README.md) ·
-[38.GpioMap](../examples/L7-Application/38.GpioMap/README.md) ·
-[39.UdpTelemetry](../examples/L7-Application/39.UdpTelemetry/README.md) ·
-[40.Guardrails](../examples/L7-Application/40.Guardrails/README.md) ·
-[41.LogBuffer](../examples/L7-Application/41.LogBuffer/README.md) ·
-[42.ConfigExport](../examples/L7-Application/42.ConfigExport/README.md) ·
-[43.ModbusScan](../examples/L7-Application/43.ModbusScan/README.md) ·
-[44.OtaRollback](../examples/L7-Application/44.OtaRollback/README.md) ·
-[45.Totp](../examples/L7-Application/45.Totp/README.md) ·
-[46.Webhook](../examples/L7-Application/46.Webhook/README.md) ·
-[47.RadioPower](../examples/L7-Application/47.RadioPower/README.md) ·
-[48.DnsResolver](../examples/L7-Application/48.DnsResolver/README.md) ·
-[49.AuditLog](../examples/L7-Application/49.AuditLog/README.md) ·
-[50.OidcAuth](../examples/L7-Application/50.OidcAuth/README.md) ·
-[51.Vfs](../examples/L7-Application/51.Vfs/README.md) ·
-[52.GraphQL](../examples/L7-Application/52.GraphQL/README.md) ·
-[53.EspNow](../examples/L7-Application/53.EspNow/README.md) ·
-[54.OAuth2](../examples/L7-Application/54.OAuth2/README.md) ·
-[55.OpcUa](../examples/L7-Application/55.OpcUa/README.md) ·
-[56.OpcUaClient](../examples/L7-Application/56.OpcUaClient/README.md) ·
-[57.SmtpAlert](../examples/L7-Application/57.SmtpAlert/README.md) ·
-[58.NtpServer](../examples/L7-Application/58.NtpServer/README.md) ·
-[59.StatsdMetrics](../examples/L7-Application/59.StatsdMetrics/README.md) ·
-[60.DnsServer](../examples/L7-Application/60.DnsServer/README.md) ·
-[61.Rtc](../examples/L7-Application/61.Rtc/README.md) ·
-[62.Ld2410](../examples/L7-Application/62.Ld2410/README.md) ·
-[63.Mpr121](../examples/L7-Application/63.Mpr121/README.md) ·
-[64.Sht3x](../examples/L7-Application/64.Sht3x/README.md) ·
-[65.Pca9685](../examples/L7-Application/65.Pca9685/README.md) ·
-[66.Ads1115](../examples/L7-Application/66.Ads1115/README.md) ·
-[67.Ina219](../examples/L7-Application/67.Ina219/README.md) ·
-[68.SmbFileClient](../examples/L7-Application/68.SmbFileClient/README.md) ·
-[69.EthernetDnc](../examples/L7-Application/69.EthernetDnc/README.md) ·
-[70.PortForward](../examples/L7-Application/70.PortForward/README.md) ·
-[71.MediaStreaming](../examples/L7-Application/71.MediaStreaming/README.md) ·
-[72.Umati](../examples/L7-Application/72.Umati/README.md) ·
-[73.AdsClient](../examples/L7-Application/73.AdsClient/README.md) ·
-[74.PidTuning](../examples/L7-Application/74.PidTuning/README.md) ·
-[75.InterfaceBridge](../examples/L7-Application/75.InterfaceBridge/README.md) ·
-[76.NtripCaster](../examples/L7-Application/76.NtripCaster/README.md) ·
-[77.Sen0192](../examples/L7-Application/77.Sen0192/README.md) ·
-[78.CoapSecure](../examples/L7-Application/78.CoapSecure/README.md) ·
-[79.EdgeCache](../examples/L7-Application/79.EdgeCache/README.md) ·
-[80.MeshCache](../examples/L7-Application/80.MeshCache/README.md)
+[AdsClient](../examples/L7-Application/AdsClient/README.md) ·
+[AuditLog](../examples/L7-Application/AuditLog/README.md) ·
+[ChunkedResponse](../examples/L7-Application/ChunkedResponse/README.md) ·
+[CoAP](../examples/L7-Application/CoAP/README.md) ·
+[CoapBlock](../examples/L7-Application/CoapBlock/README.md) ·
+[CoapObserve](../examples/L7-Application/CoapObserve/README.md) ·
+[CoapSecure](../examples/L7-Application/CoapSecure/README.md) ·
+[ConfigExport](../examples/L7-Application/ConfigExport/README.md) ·
+[CORS](../examples/L7-Application/CORS/README.md) ·
+[Csrf](../examples/L7-Application/Csrf/README.md) ·
+[Dashboard](../examples/L7-Application/Dashboard/README.md) ·
+[DeviceUuid](../examples/L7-Application/DeviceUuid/README.md) ·
+[Diagnostics](../examples/L7-Application/Diagnostics/README.md) ·
+[DnsResolver](../examples/L7-Application/DnsResolver/README.md) ·
+[DnsServer](../examples/L7-Application/DnsServer/README.md) ·
+[EdgeCache](../examples/L7-Application/EdgeCache/README.md) ·
+[EspNow](../examples/L7-Application/EspNow/README.md) ·
+[ETag](../examples/L7-Application/ETag/README.md) ·
+[EthernetDnc](../examples/L7-Application/EthernetDnc/README.md) ·
+[FileServing](../examples/L7-Application/FileServing/README.md) ·
+[FileUpload](../examples/L7-Application/FileUpload/README.md) ·
+[GpioMap](../examples/L7-Application/GpioMap/README.md) ·
+[GraphQL](../examples/L7-Application/GraphQL/README.md) ·
+[Guardrails](../examples/L7-Application/Guardrails/README.md) ·
+[HttpClient](../examples/L7-Application/HttpClient/README.md) ·
+[InterfaceBridge](../examples/L7-Application/InterfaceBridge/README.md) ·
+[InterfaceFilter](../examples/L7-Application/InterfaceFilter/README.md) ·
+[LogBuffer](../examples/L7-Application/LogBuffer/README.md) ·
+[mDNS](../examples/L7-Application/mDNS/README.md) ·
+[MediaStreaming](../examples/L7-Application/MediaStreaming/README.md) ·
+[MeshCache](../examples/L7-Application/MeshCache/README.md) ·
+[Middleware](../examples/L7-Application/Middleware/README.md) ·
+[ModbusScan](../examples/L7-Application/ModbusScan/README.md) ·
+[ModbusTcp](../examples/L7-Application/ModbusTcp/README.md) ·
+[MqttClient](../examples/L7-Application/MqttClient/README.md) ·
+[NetEgress](../examples/L7-Application/NetEgress/README.md) ·
+[NtpServer](../examples/L7-Application/NtpServer/README.md) ·
+[NtripCaster](../examples/L7-Application/NtripCaster/README.md) ·
+[OAuth2](../examples/L7-Application/OAuth2/README.md) ·
+[OidcAuth](../examples/L7-Application/OidcAuth/README.md) ·
+[OpcUa](../examples/L7-Application/OpcUa/README.md) ·
+[OpcUaClient](../examples/L7-Application/OpcUaClient/README.md) ·
+[OTA](../examples/L7-Application/OTA/README.md) ·
+[OtaRollback](../examples/L7-Application/OtaRollback/README.md) ·
+[PartitionMonitor](../examples/L7-Application/PartitionMonitor/README.md) ·
+[PathParams](../examples/L7-Application/PathParams/README.md) ·
+[PidTuning](../examples/L7-Application/PidTuning/README.md) ·
+[PortForward](../examples/L7-Application/PortForward/README.md) ·
+[PrometheusMetrics](../examples/L7-Application/PrometheusMetrics/README.md) ·
+[Provisioning](../examples/L7-Application/Provisioning/README.md) ·
+[RadioPower](../examples/L7-Application/RadioPower/README.md) ·
+[Range](../examples/L7-Application/Range/README.md) ·
+[RegexRoutes](../examples/L7-Application/RegexRoutes/README.md) ·
+[ResponseHeaders](../examples/L7-Application/ResponseHeaders/README.md) ·
+[Scpi](../examples/L7-Application/Scpi/README.md) ·
+[SmbFileClient](../examples/L7-Application/SmbFileClient/README.md) ·
+[SmtpAlert](../examples/L7-Application/SmtpAlert/README.md) ·
+[SNMP](../examples/L7-Application/SNMP/README.md) ·
+[SnmpTrap](../examples/L7-Application/SnmpTrap/README.md) ·
+[SNTP](../examples/L7-Application/SNTP/README.md) ·
+[Stats](../examples/L7-Application/Stats/README.md) ·
+[StatsdMetrics](../examples/L7-Application/StatsdMetrics/README.md) ·
+[Syslog](../examples/L7-Application/Syslog/README.md) ·
+[Telemetry](../examples/L7-Application/Telemetry/README.md) ·
+[Templating](../examples/L7-Application/Templating/README.md) ·
+[TimeSourceFallback](../examples/L7-Application/TimeSourceFallback/README.md) ·
+[Totp](../examples/L7-Application/Totp/README.md) ·
+[UdpTelemetry](../examples/L7-Application/UdpTelemetry/README.md) ·
+[Umati](../examples/L7-Application/Umati/README.md) ·
+[Vfs](../examples/L7-Application/Vfs/README.md) ·
+[WebDav](../examples/L7-Application/WebDav/README.md) ·
+[Webhook](../examples/L7-Application/Webhook/README.md) ·
+[WebSocketClient](../examples/L7-Application/WebSocketClient/README.md)
 
 <!-- END GENERATED EXAMPLE INDEX -->

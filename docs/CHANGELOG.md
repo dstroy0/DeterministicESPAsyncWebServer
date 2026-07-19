@@ -919,7 +919,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
-- document 75.InterfaceBridge pio ci build flag ([`90e5a97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90e5a9722318bdb929675d70e2cf9f022f587316))
+- document InterfaceBridge pio ci build flag ([`90e5a97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90e5a9722318bdb929675d70e2cf9f022f587316))
 
 ### CI / Build
 
@@ -1349,7 +1349,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
-- 73.AdsClient - include dwserver.h so arduino-cli resolves the src/ include root ([`cba620a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cba620a5a5b78de9412eba382d8520891d158f7b))
+- AdsClient - include dwserver.h so arduino-cli resolves the src/ include root ([`cba620a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cba620a5a5b78de9412eba382d8520891d158f7b))
 
 ### CI / Build
 
@@ -1472,7 +1472,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - update ESP32 build footprints [skip ci] ([`a720002`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7200029bfe2c350e0de52def445d17f0cbcd29d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c424151`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4241518a781ebf2ac2ae39b90851381422de07e))
-- add 71.MediaStreaming - live camera MJPEG + mic WAV (XIAO ESP32-S3 Sense) ([`2b9523f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b9523f1d1b68b2a25dfe9ecaf387c0023a6549c))
+- add MediaStreaming - live camera MJPEG + mic WAV (XIAO ESP32-S3 Sense) ([`2b9523f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b9523f1d1b68b2a25dfe9ecaf387c0023a6549c))
 - XIAO PDM mic WAV streaming over send_chunked (HW-verified) ([`d378007`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3780077a69e05dbb641198afcb5460b934358a0))
 - XIAO ESP32-S3 Sense camera MJPEG + SD storage characterization ([`111d187`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/111d187cdff3dbe7c9891ad31cd329c1a1951635))
 - re-confirm on-device HW-verify over W5500 + curl second client ([`696321b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/696321b1a52b090a2b81109f7f5dd8517ded22f1))
@@ -1696,7 +1696,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
-- fit 25.WebSocketClient in classic ESP32 DRAM ([`5f9eb40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f9eb402d64b625d3a8ee2dc0a5c7fa4e33a1d75))
+- fit WebSocketClient in classic ESP32 DRAM ([`5f9eb40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f9eb402d64b625d3a8ee2dc0a5c7fa4e33a1d75))
 
 ### CI / Build
 
@@ -2691,7 +2691,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
-- cast scoped SNMP enums in 14.SNMP/26.SnmpTrap (ESP32 CI build) ([`149dd01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/149dd014ee3caadbb19fc09da24905900d150bdc))
+- cast scoped SNMP enums in SNMP/SnmpTrap (ESP32 CI build) ([`149dd01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/149dd014ee3caadbb19fc09da24905900d150bdc))
 - two SonarCloud reliability bugs (graphql unsigned negate, redis NaN) ([`39d73c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39d73c2e283fab4599e0586e6743f97a73e5b13d))
 
 ### CI / Build
@@ -2954,7 +2954,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
-- PROTO_RELAY server listener + 70.PortForward example ([`fa3ddef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa3ddeff8c88bc86393fa301b47bd52dddfb24b7))
+- PROTO_RELAY server listener + PortForward example ([`fa3ddef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa3ddeff8c88bc86393fa301b47bd52dddfb24b7))
 
 </details>
 
@@ -3023,7 +3023,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
-- runnable Ethernet DNC example (69.EthernetDnc) ([`abfdb9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abfdb9f233f3799737a966b42f18c525e9ad4c9b))
+- runnable Ethernet DNC example (EthernetDnc) ([`abfdb9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abfdb9f233f3799737a966b42f18c525e9ad4c9b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d78f628`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d78f628601a473890dda94be49d93ea907736ba8))
 
 </details>
@@ -3070,7 +3070,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
-- runnable SMB file-client example (68.SmbFileClient) ([`55b665f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55b665fe1674b447b3ea1bdada2dd0b247904b61))
+- runnable SMB file-client example (SmbFileClient) ([`55b665f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55b665fe1674b447b3ea1bdada2dd0b247904b61))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0047ed9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0047ed96ed2cc7b8f75fcb9a6a6819fc10377ed6))
 - update ESP32 build footprints [skip ci] ([`ab96cdd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab96cdde28668e958b50cedf8abb9a537bd4f061))
 
@@ -7255,7 +7255,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Changes
 
 - Bump version: 4.98.0 → 4.99.0 ([`1ec42f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ec42f82013218e6cfb2abee6051c11a1580d378))
-- clang-format the 59.StatsdMetrics sketch (trailing-comment alignment) ([`9e62f01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e62f011204a5d74a1f6c6397dee20cb7df76f85))
+- clang-format the StatsdMetrics sketch (trailing-comment alignment) ([`9e62f01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e62f011204a5d74a1f6c6397dee20cb7df76f85))
 
 ### Documentation
 
@@ -7808,7 +7808,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- add Arduino Build workflow (esp32 3.x) + fix 06.PreemptQueue timer API ([`4e26b81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e26b81301415af0e3fce0af8bfb62a32bac9e59))
+- add Arduino Build workflow (esp32 3.x) + fix PreemptQueue timer API ([`4e26b81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e26b81301415af0e3fce0af8bfb62a32bac9e59))
 - update test report [skip ci] ([`f112264`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1122641095591753000b83e476f14872b1e0c57))
 - update CHANGELOG.md [skip ci] ([`1b9563f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b9563f72457e7207803dd49c1fca252430718df))
 
@@ -11967,7 +11967,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Changes
 
 - Bump version: 2.5.0 → 2.6.0 ([`bfa2483`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfa2483ed078cffb543e262928143d2df891b706))
-- clang-format the 61.Telemetry example ([`a59a546`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a59a54674e6674e034c8681069c0528b9ae95cb7))
+- clang-format the Telemetry example ([`a59a546`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a59a54674e6674e034c8681069c0528b9ae95cb7))
 
 ### Features
 

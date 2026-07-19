@@ -5,7 +5,7 @@ The single per-example totals in docs/footprints.json answer "how big is a build
 but not "how much does X add", because each example runs a different base profile (some strip the
 default WebSocket/SSE/file/auth, so a naive delta against one baseline goes misleadingly negative).
 
-This tool instead uses *isolated* measurements: the same fixed base sketch (examples/Foundation/01.Basic)
+This tool instead uses *isolated* measurements: the same fixed base sketch (examples/Foundation/Basic)
 built with vs without each feature flag, in two base contexts - the **default** server and a **minimal**
 server (WS/SSE/multipart/file stripped). A feature that reuses a default sub-system costs less when it is
 already linked (default context) and more when it is not (minimal context), which is exactly the spread a
@@ -160,7 +160,7 @@ def cmd_readme(ranges_json, footprints_json, readme_path):
         f"Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + WebSocket + SSE +"
         f" multipart + file serving + Basic auth) is **{dbase[0] / 1024:.0f} KB flash / {dbase[1] / 1024:.1f} KB"
         " RAM**; the chip has 1,280 KB flash / 320 KB RAM. Each feature's cost is taken from up to three real"
-        " builds: the same base sketch (`examples/Foundation/01.Basic`) built with vs without its flag in a"
+        " builds: the same base sketch (`examples/Foundation/Basic`) built with vs without its flag in a"
         " default and a minimal (WS/SSE/multipart/file stripped) server, and the feature's own example over the"
         " default server (which catches a feature like TLS or SSH whose flag links almost nothing until the"
         " sketch calls its `begin()`). The range is **best case** (least it adds, where its dependencies are"

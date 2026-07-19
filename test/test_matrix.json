@@ -865,6 +865,12 @@
       "src": ["+<services/hostlink/hostlink.cpp>"],
       "tests": ["test_hostlink"]
     },
+    "native_scpi": {
+      "desc": "SCPI / IEEE 488.2 instrument-control codec (services/scpi): the command builder\n(:-hierarchy header + params + terminator), the response parsers (numeric NR1/NR2/NR3,\nboolean, quoted string, definite/indefinite arbitrary block), the STB/ESR/ESE/SRE +\nerror-queue status model, and the SCPI short/long-form header matcher. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_SCPI=1", "-DUNITY_INCLUDE_DOUBLE"],
+      "src": ["+<services/scpi/scpi.cpp>"],
+      "tests": ["test_scpi"]
+    },
     "native_senml": {
       "desc": "SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the\nJSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral\nnumbers emitted as integers. Pure host tests.",
       "flags": ["-DDWS_ENABLE_SENML=1"],

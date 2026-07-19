@@ -85,8 +85,8 @@ preempts immediately to process it, with the priorities exposed to the user.
       above it (DMA highest, below tcpip / WiFi), so internal ingest preempts user
       work without starving networking. HW-verified (~12 us ISR-to-handler latency;
       DMA + USER lanes ran continuously with zero errors under an HTTP flood);
-      host-tested via the per-lane ring core (examples Foundation/06.PreemptQueue +
-      08.PreemptLanes).
+      host-tested via the per-lane ring core (examples Foundation/PreemptQueue +
+      PreemptLanes).
 - [x] \*User-configurable task priorities / affinity (M) _(shipped)_. Each lane's
       task priority + core pinning are set at `dws_pq_start[_lane]()` and the queue
       depth is compile-time (`DWS_PQ_DEPTH`); the no-arg API drives the USER lane so
@@ -119,7 +119,7 @@ preempts immediately to process it, with the priorities exposed to the user.
       send drops and is counted, never blocks); multi-destination fan-out for hub
       behavior. Zero-heap static tables. Host-tested (`native_forward`) + HW-verified
       (600k+ frames ingested over DMA and forwarded with zero loss / zero integrity
-      errors under an HTTP flood; example Foundation/09.InterfaceForward). This is the
+      errors under an HTTP flood; example Foundation/InterfaceForward). This is the
       generic data path the wireless gateway bridges below sit on top of.
 
 ### post-v5: RF / wireless gateway bridges
@@ -147,14 +147,14 @@ SPI radios:
   **Codec + SX127x driver shipped** (`DWS_ENABLE_LORA`, `services/lora`): the
   RadioHead 4-byte header codec + the SX1276 register protocol (init / send / recv /
   RSSI) over a portable register-access bus, host-tested against a mock chip; example
-  11.LoRaGateway drives a real RFM95 and bridges frames northbound via the gateway.
+  LoRaGateway drives a real RFM95 and bridges frames northbound via the gateway.
   Remaining: verify the RF link on the module, an SX126x variant, and a bounded
   LoRaWAN Class A uplink/downlink codec.
 - [~] \*nRF24L01+ gateway (M) - Nordic 2.4 GHz over SPI; cheap point-to-multipoint
   sensor links bridged to the web stack. **Driver shipped** (`DWS_ENABLE_NRF24`,
   `services/nrf24`): the SPI command protocol (init / send / recv, pipe-addressed,
   static payload) over an SPI + CE bus, host-tested against a mock chip; example
-  12.Nrf24Gateway bridges frames northbound via the gateway. Remaining: verify the
+  Nrf24Gateway bridges frames northbound via the gateway. Remaining: verify the
   RF link on the module (and optional dynamic-payload / auto-ack).
 - [~] \*CC1101 sub-GHz gateway (M) - TI 300-928 MHz OOK / 2-FSK over SPI; generic
   ISM-band remotes and sensors. **Driver shipped** (`DWS_ENABLE_CC1101`, `services/cc1101`): the CC1101
@@ -170,7 +170,7 @@ SPI radios:
       framing + CRC-16/X-25 FCS (encode/decode) that carries spinel, plus the spinel command
       layer - the packed-uint encoding and `dws_spinel_command_build` / `_parse` for a
       `header | CMD | PROP | value` property command - host-tested against the X-25 check value
-    - the packed-int values; example 18.ThreadGateway bridges a real RCP. Remaining: the
+    - the packed-int values; example ThreadGateway bridges a real RCP. Remaining: the
       spinel property registry / value semantics + verify against an RCP.
 
 UART radios:
@@ -179,22 +179,22 @@ UART radios:
   UART; join as coordinator and bridge Zigbee devices to MQTT. **ASH framing codec
   shipped** (`DWS_ENABLE_ZIGBEE`, `services/zigbee`): the byte-stuffed, CRC-16/CCITT
   ASH data-link (encode/decode) that carries EZSP, host-tested against the documented
-  RST frame; example 17.ZigbeeGateway bridges a real NCP. Remaining: the EZSP command
+  RST frame; example ZigbeeGateway bridges a real NCP. Remaining: the EZSP command
   layer (version negotiation, incomingMessageHandler) + verify against an NCP.
 - [~] \*Z-Wave Serial API gateway (M) - Silicon Labs 500 / 700-series over UART.
   **Serial API frame codec shipped** (`DWS_ENABLE_ZWAVE`, `services/zwave`):
   SOF/LEN/Type/Cmd/Data frames + the XOR checksum + ACK/NAK/CAN, host-tested against
-  the documented GetVersion frame; example 16.ZWaveGateway bridges a real controller.
+  the documented GetVersion frame; example ZWaveGateway bridges a real controller.
   Remaining: verify against a controller + inclusion / SendData sequences.
 - [~] \*EnOcean gateway (M) - energy-harvesting 868 MHz ESP3 protocol over UART.
   **ESP3 codec shipped** (`DWS_ENABLE_ENOCEAN`, `services/enocean`): telegram
   parse/build + the CRC-8 (poly 0x07), host-tested with known-answer CRCs and
-  malformed/resync framing; example 13.EnOceanGateway bridges a real TCM 310 over
+  malformed/resync framing; example EnOceanGateway bridges a real TCM 310 over
   UART. Remaining: verify against a module + EEP profile decoding.
 - [~] \*Sigfox uplink (S) - Wisol / Murata module over UART; tiny low-power uplinks.
   **AT-command codec shipped** (`DWS_ENABLE_SIGFOX`, `services/sigfox`): the
   `AT$SF=<hex>` uplink formatter + OK/ERROR/pending response classifier, host-tested;
-  example 15.SigfoxUplink sends a reading from a real modem. Remaining: verify against
+  example SigfoxUplink sends a reading from a real modem. Remaining: verify against
   a module + subscription.
 - [~] \*Wi-SUN FAN **connector** (L) - NOT a radio-module driver: the direct FAN
   UART modules (Rohm BP35A1 class) are obsoleted, so Wi-SUN is reached as a
@@ -215,7 +215,7 @@ I2C / SPI / UART:
   read / write bridged to an HTTP / MQTT event. **PN532 frame codec shipped**
   (`DWS_ENABLE_PN532`, `services/pn532`): normal-information-frame build/parse +
   ACK with the LCS / DCS checksums, host-tested against the documented
-  GetFirmwareVersion frames; example 14.NfcGateway reads a real PN532 over I2C.
+  GetFirmwareVersion frames; example NfcGateway reads a real PN532 over I2C.
   Remaining: verify against a reader + the MFRC522 variant.
 
 Built-in radio:
@@ -240,13 +240,13 @@ fail-closed: a full capture queue drops frames rather than stalling the live dat
       `esp_wifi_set_promiscuous`, a pure `wifi_frame_parse()` 802.11 header decoder (to/from-DS
       src/dst/bssid, QoS, WDS), and libpcap `DLT_IEEE802_11` framing. The sink feeds the
       forwarding plane, so captured frames bridge to another interface - **capture on Wi-Fi,
-      forward to Ethernet** to a wired PCAP collector (example 21.WifiCapture). Host-tested
+      forward to Ethernet** to a wired PCAP collector (example WifiCapture). Host-tested
       (`native_promisc`); both cores compiled. Northbound-over-WebSocket is a follow-on wiring.
 - [x] \*Bus listen-only capture (M) _(CAN shipped, v4.85.0)_ - `DWS_ENABLE_BUS_CAPTURE`
       (`services/bus_capture`): the TWAI controller in listen-only mode decodes every CAN frame
       without ACKing and feeds the forwarding plane, so captured frames bridge to another
       interface. `can_to_socketcan()` + libpcap `DLT_CAN_SOCKETCAN` make the stream
-      Wireshark-readable (example 22.CanCapture, host-tested `native_bus_capture`; the SocketCAN
+      Wireshark-readable (example CanCapture, host-tested `native_bus_capture`; the SocketCAN
       framing shares `shared_primitives/pcap.h` with the Wi-Fi capture). Remaining: RS-485
       receive-only decode into the same sink.
 - [~] \*Radio channel sniff (L) - the RF gateways above in receive-only mode (sniff a
@@ -299,9 +299,9 @@ preempting queue, so sensing shares the real-time ingest path.
 
 - [x] WebSocket permessage-deflate, inbound and outbound _(shipped)_ - bounded fixed-Huffman DEFLATE compresses server-to-client data frames (RSV1), with an uncompressed fallback when the result would not shrink.
 - [x] REST substrate, AJAX _(shipped)_.
-- [x] Real-time **dashboard** _(shipped, phase 1)_ - `DWS_ENABLE_DASHBOARD`: a compile-time `DWSWidget` table served as hand-rolled SVG (gauge / value / bar / sparkline, no external JS) via the `web_assets` pipeline, live over SSE; `dws_dashboard_set` / `_publish` (example 62.Dashboard). **Flagship.**
+- [x] Real-time **dashboard** _(shipped, phase 1)_ - `DWS_ENABLE_DASHBOARD`: a compile-time `DWSWidget` table served as hand-rolled SVG (gauge / value / bar / sparkline, no external JS) via the `web_assets` pipeline, live over SSE; `dws_dashboard_set` / `_publish` (example Dashboard). **Flagship.**
 - [x] Dashboard phase 2 _(shipped)_ - WebSocket controls (button / toggle / slider widgets send values to a `dws_dashboard_on_control` callback) and a Canvas chart widget for dense series.
-- [x] **Telemetry math** cluster _(shipped)_ - `services/telemetry`: moving-window stats (mean / variance / stddev / min / max), a rate-of-change tracker, and a trapezoidal run-time totalizer (example 61.Telemetry).
+- [x] **Telemetry math** cluster _(shipped)_ - `services/telemetry`: moving-window stats (mean / variance / stddev / min / max), a rate-of-change tracker, and a trapezoidal run-time totalizer (example Telemetry).
 - [x] HTTP caching: `Cache-Control` beside ETag _(shipped)_ - `set_cache_control()` injects it into serve_file / serve_static responses.
 - [~] HTTP delivery (S-M): stale-while-revalidate, service-worker cache injection, delta/offset log fetching
   _(cores shipped)_ - `DWS_ENABLE_HTTP_DELIVERY` (`services/http_delivery`): RFC 5861
@@ -311,10 +311,10 @@ preempting queue, so sensing shares the real-time ingest path.
   emitting the versioned `{"version":..,"precache":[..]}` a service worker consumes (SW cache injection).
   Pure, host-tested (`native_http_delivery`). _Remaining:_ wiring the cores into the served endpoints +
   shipping the static service-worker asset (M).
-- [x] CBOR encoder + decoder _(shipped)_ - `DWS_ENABLE_CBOR`: a zero-heap RFC 8949 writer plus a cursor decoder (`dws_cbor_peek` / `dws_cbor_read_*`, no-copy strings) over caller buffers - ints / strings / bytes / arrays / maps / bool / null / float; host-tested against the spec vectors + round-trip (example 65.Cbor).
-- [x] MessagePack encoder + decoder _(shipped)_ - `DWS_ENABLE_MSGPACK`: a zero-heap streaming writer over a caller buffer - shortest-form ints (fixint / 8 / 16 / 32 / 64) / str / bin / arrays / maps / bool / nil / float32; overflow tracked, fails closed - plus a cursor decoder (`dws_msgpack_peek` / `dws_msgpack_read_*`, no-copy strings, fail-closed on malformed/truncated input, ext reported as INVALID) host-tested against spec vectors + round-trip and fuzzed in the pentest harness (example 66.MsgPack, both directions). Remaining (M-L): Protobuf / FlatBuffers zero-copy.
-- [x] GraphQL bounded subset _(shipped)_ - `DWS_ENABLE_GRAPHQL`: `services/graphql` parses a query into a fixed AST pool (no heap) and emits `{"data":{...}}` shaped by the selection; schema-free (sub-selection = object, leaf = one resolver call, args collected along the path), with nesting + arguments (example 81.GraphQL). Feature-dependent schema generation remains open (M).
-- [x] Browser diag tools _(shipped, GPIO mapper)_ - `DWS_ENABLE_GPIO_MAP`: a compile-time pin table (number / label / direction / live level) served at GET `/gpio` as JSON, with a POST control (`pin`, `level`) that drives a mapped output; the serializer + control parser are host-tested, and the example ships a zero-dependency browser panel (example 67.GpioMap). Remaining (M): ping / tracert panel, web logic analyzer.
+- [x] CBOR encoder + decoder _(shipped)_ - `DWS_ENABLE_CBOR`: a zero-heap RFC 8949 writer plus a cursor decoder (`dws_cbor_peek` / `dws_cbor_read_*`, no-copy strings) over caller buffers - ints / strings / bytes / arrays / maps / bool / null / float; host-tested against the spec vectors + round-trip (example Cbor).
+- [x] MessagePack encoder + decoder _(shipped)_ - `DWS_ENABLE_MSGPACK`: a zero-heap streaming writer over a caller buffer - shortest-form ints (fixint / 8 / 16 / 32 / 64) / str / bin / arrays / maps / bool / nil / float32; overflow tracked, fails closed - plus a cursor decoder (`dws_msgpack_peek` / `dws_msgpack_read_*`, no-copy strings, fail-closed on malformed/truncated input, ext reported as INVALID) host-tested against spec vectors + round-trip and fuzzed in the pentest harness (example MsgPack, both directions). Remaining (M-L): Protobuf / FlatBuffers zero-copy.
+- [x] GraphQL bounded subset _(shipped)_ - `DWS_ENABLE_GRAPHQL`: `services/graphql` parses a query into a fixed AST pool (no heap) and emits `{"data":{...}}` shaped by the selection; schema-free (sub-selection = object, leaf = one resolver call, args collected along the path), with nesting + arguments (example GraphQL). Feature-dependent schema generation remains open (M).
+- [x] Browser diag tools _(shipped, GPIO mapper)_ - `DWS_ENABLE_GPIO_MAP`: a compile-time pin table (number / label / direction / live level) served at GET `/gpio` as JSON, with a POST control (`pin`, `level`) that drives a mapped output; the serializer + control parser are host-tested, and the example ships a zero-dependency browser panel (example GpioMap). Remaining (M): ping / tracert panel, web logic analyzer.
 - [~] **SPA micro-routing** + conditional UI streaming (M) _(routing decision shipped)_ -
   `DWS_ENABLE_SPA_ROUTER`: `services/spa_router` `dws_spa_route()` decides, from a request path,
   whether to serve a real asset file, serve the SPA shell (`index.html`) for an extensionless
@@ -331,8 +331,8 @@ preempting queue, so sensing shares the real-time ingest path.
 
 ## Protocols & integrations
 
-- [x] OPC UA server + client _(shipped, SecurityPolicy None)_ - `DWS_ENABLE_OPCUA`: the OPC UA Binary built-in-type codec, UA-TCP (UACP) framing, Hello/Acknowledge handshake, OpenSecureChannel, CreateSession/ActivateSession, GetEndpoints, Read/Write (Variant/DataValue), and Browse, served on PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`; example 55.OpcUa), plus an OPC UA client (example 56.OpcUaClient). Host-tested (`native_opcua`, `native_opcua_client`) and HW-verified end-to-end against the `asyncua` reference stack via the interop harness (`opcua-client` 3/3: connect+session, browse Objects, read node). Remaining (L): a secure SecurityPolicy (Basic256Sha256 encryption/signing), subscriptions / monitored items, and Node-RED integration (M).
-- [x] Modbus master codec + register scanner _(shipped)_ - `DWS_ENABLE_MODBUS_MASTER`: `services/modbus/dws_modbus_master` builds read-request ADUs and parses responses (register values or exception) so an app can poll / auto-discover a slave's registers; pure, host-tested as a full round-trip against the slave codec, HW-verified via self-scan (example 72.ModbusScan).
+- [x] OPC UA server + client _(shipped, SecurityPolicy None)_ - `DWS_ENABLE_OPCUA`: the OPC UA Binary built-in-type codec, UA-TCP (UACP) framing, Hello/Acknowledge handshake, OpenSecureChannel, CreateSession/ActivateSession, GetEndpoints, Read/Write (Variant/DataValue), and Browse, served on PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`; example OpcUa), plus an OPC UA client (example OpcUaClient). Host-tested (`native_opcua`, `native_opcua_client`) and HW-verified end-to-end against the `asyncua` reference stack via the interop harness (`opcua-client` 3/3: connect+session, browse Objects, read node). Remaining (L): a secure SecurityPolicy (Basic256Sha256 encryption/signing), subscriptions / monitored items, and Node-RED integration (M).
+- [x] Modbus master codec + register scanner _(shipped)_ - `DWS_ENABLE_MODBUS_MASTER`: `services/modbus/dws_modbus_master` builds read-request ADUs and parses responses (register values or exception) so an app can poll / auto-discover a slave's registers; pure, host-tested as a full round-trip against the slave codec, HW-verified via self-scan (example ModbusScan).
 - [~] Southbound protocol-driver framework _(framework shipped)_ - `DWS_ENABLE_SOUTHBOUND`
   (`services/southbound`): the uniform seam every field-device driver plugs into so the app polls/drives
   any southbound device (Modbus slave, BACnet controller, raw SPI/I2C/UART sensor) through one facade -
@@ -342,13 +342,13 @@ preempting queue, so sensing shares the real-time ingest path.
   master is the one such driver today. Pure registry + dispatch, host-tested (`native_southbound`).
   _Remaining:_ a Modbus adapter binding dws_modbus_master into a SouthboundDriver + the concrete atomic
   register matrix (M), both transport-gated.
-- [x] Webhooks + IFTTT _(shipped)_ - `DWS_ENABLE_WEBHOOK`: `services/webhook` builds an IFTTT Maker URL + value1/2/3 JSON payload (pure, host-tested with JSON escaping) and fires it - or any JSON to any URL (Slack/Discord/your API) - via the outbound http_client; HW-verified by a self-loopback POST (example 75.Webhook).
-- [~] Email + SMS fallbacks (SMTP + gateway) (M) - **SMTP shipped** (`DWS_ENABLE_SMTP`): `services/smtp` runs a blocking RFC 5321 send over the shared `dws_client` transport (EHLO, optional AUTH LOGIN, MAIL/RCPT/DATA with dot-stuffing, QUIT), with implicit TLS (SMTPS, port 465) when the message sets `tls` and `DWS_ENABLE_TLS` is on; zero heap, fixed buffers. The dialogue engine (`smtp_run`) is split behind a send/recv seam and host-tested against a scripted mock server (`native_smtp`, 11 cases: happy path, AUTH, dot-stuffing, multi-line replies, every error). SMS needs no new code (email-to-SMS carrier gateway address). Example 57.SmtpAlert ships a full beginner walkthrough that stands up a Postfix server. _Remaining:_ STARTTLS on the submission port (587) upgrade, and a live over-the-wire HW send (blocked in the current lab by AP client isolation + ISP port-25 filtering, same as the concurrent-TLS soak - the code compiles + boots + connects on the modern core).
-- [x] ESP-NOW peer messaging _(shipped)_ - `DWS_ENABLE_ESPNOW`: `services/espnow` adds a typed 3-byte envelope (demux by type + length check) over connectionless ESP-NOW, a bounded peer registry, and the esp_now radio binding (begin / add_peer / send / broadcast, decoded frames to a callback for bridging to WS/SSE) (example 82.EspNow). Codec + registry host-tested; ESP-NOW<->MQTT auto-bridge remains open (M).
+- [x] Webhooks + IFTTT _(shipped)_ - `DWS_ENABLE_WEBHOOK`: `services/webhook` builds an IFTTT Maker URL + value1/2/3 JSON payload (pure, host-tested with JSON escaping) and fires it - or any JSON to any URL (Slack/Discord/your API) - via the outbound http_client; HW-verified by a self-loopback POST (example Webhook).
+- [~] Email + SMS fallbacks (SMTP + gateway) (M) - **SMTP shipped** (`DWS_ENABLE_SMTP`): `services/smtp` runs a blocking RFC 5321 send over the shared `dws_client` transport (EHLO, optional AUTH LOGIN, MAIL/RCPT/DATA with dot-stuffing, QUIT), with implicit TLS (SMTPS, port 465) when the message sets `tls` and `DWS_ENABLE_TLS` is on; zero heap, fixed buffers. The dialogue engine (`smtp_run`) is split behind a send/recv seam and host-tested against a scripted mock server (`native_smtp`, 11 cases: happy path, AUTH, dot-stuffing, multi-line replies, every error). SMS needs no new code (email-to-SMS carrier gateway address). Example SmtpAlert ships a full beginner walkthrough that stands up a Postfix server. _Remaining:_ STARTTLS on the submission port (587) upgrade, and a live over-the-wire HW send (blocked in the current lab by AP client isolation + ISP port-25 filtering, same as the concurrent-TLS soak - the code compiles + boots + connects on the modern core).
+- [x] ESP-NOW peer messaging _(shipped)_ - `DWS_ENABLE_ESPNOW`: `services/espnow` adds a typed 3-byte envelope (demux by type + length check) over connectionless ESP-NOW, a bounded peer registry, and the esp_now radio binding (begin / add_peer / send / broadcast, decoded frames to a callback for bridging to WS/SSE) (example EspNow). Codec + registry host-tested; ESP-NOW<->MQTT auto-bridge remains open (M).
 
 ## Networking / connectivity
 
-- [x] Egress-interface reporting _(shipped)_ - `dws_net_egress()` / `dws_net_egress_ip()` read the live lwIP default route so the app always knows which interface (WiFi STA / softAP / Ethernet) its traffic is leaving on; the stack owns the actual failover, so no manager or polling tick is added (example 63.NetEgress).
+- [x] Egress-interface reporting _(shipped)_ - `dws_net_egress()` / `dws_net_egress_ip()` read the live lwIP default route so the app always knows which interface (WiFi STA / softAP / Ethernet) its traffic is leaving on; the stack owns the actual failover, so no manager or polling tick is added (example NetEgress).
 - [~] Ethernet PHY bring-up (L, greenlit) - a wired-PHY init alongside WiFi; failover + the egress report
   above already work once both links exist. Multi-interface bridge / graceful escalation (L)
   _(escalation policy shipped)_ - `DWS_ENABLE_LINK_MANAGER` (`services/link_manager`): a table of
@@ -395,7 +395,7 @@ preempting queue, so sensing shares the real-time ingest path.
   `dws_wifi_stats_*` tallies frames by type for a traffic panel, and `dws_wifi_should_roam` is the
   RSSI-hysteresis channel-agility roaming decision. Pure, host-tested (`native_wifi_sniffer`).
   _Remaining:_ the promiscuous-mode radio callback + a live channel-hop scan loop on hardware (M).
-- [x] DNS resolver + answer verification _(shipped)_ - `DWS_ENABLE_DNS_RESOLVER`: `services/dns_resolver` resolves a hostname to IPv4 (lwIP dns_gethostbyname marshalled to tcpip_thread, dotted-quad fast path) and verifies the answer - rejecting 0.0.0.0 / broadcast / loopback / multicast as spoof / DNS-rebinding indicators; classifier + verifier host-tested, HW-verified against live DNS (example 77.DnsResolver). Remaining (M): captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
+- [x] DNS resolver + answer verification _(shipped)_ - `DWS_ENABLE_DNS_RESOLVER`: `services/dns_resolver` resolves a hostname to IPv4 (lwIP dns_gethostbyname marshalled to tcpip_thread, dotted-quad fast path) and verifies the answer - rejecting 0.0.0.0 / broadcast / loopback / multicast as spoof / DNS-rebinding indicators; classifier + verifier host-tested, HW-verified against live DNS (example DnsResolver). Remaining (M): captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
 - [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `dws_mdns_txt` / `dws_mdns_add_service`.
 - [~] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M) _(scheduler shipped)_ -
   `DWS_ENABLE_MDNS_ADAPTIVE` (`services/mdns_adaptive`): `dws_mdns_beacon_adapt` backs the announce
@@ -405,7 +405,7 @@ preempting queue, so sensing shares the real-time ingest path.
   auto-sleep beacon (announce before a sleep window that would let the record lapse). Wrap-safe time math,
   pure, host-tested (`native_mdns_adaptive`). _Remaining:_ wiring the schedule to the mDNS transmit + a
   live contention counter from the WiFi driver (M).
-- [x] Raw-UDP telemetry cast _(shipped)_ - `DWS_ENABLE_UDP_TELEMETRY`: `services/udp_telemetry` builds InfluxDB line-protocol records (`measurement field=val,...`, host-tested) and casts them to a collector over UDP via `dws_udp_sendto`, zero-heap fire-and-forget (example 68.UdpTelemetry).
+- [x] Raw-UDP telemetry cast _(shipped)_ - `DWS_ENABLE_UDP_TELEMETRY`: `services/udp_telemetry` builds InfluxDB line-protocol records (`measurement field=val,...`, host-tested) and casts them to a collector over UDP via `dws_udp_sendto`, zero-heap fire-and-forget (example UdpTelemetry).
 - [~] **Static-IP fallback + TCP window auto-scaling by free RAM (M)** _(decision core shipped)_ -
   `DWS_ENABLE_NETADAPT`: `services/netadapt` `dws_netadapt_window()` sizes the TCP receive window
   from the free heap (a reserve left untouched, then a quarter of the spare, clamped to [min, max]) so
@@ -419,7 +419,7 @@ preempting queue, so sensing shares the real-time ingest path.
 
 ## Power & radio management
 
-- [x] Radio power _(shipped)_ - `DWS_ENABLE_RADIO_POWER`: `services/radio_power` applies a WiFi modem-sleep mode (`DWS_RADIO_WIFI_PS` none/min/max) + an optional max-TX cap (`DWS_RADIO_MAX_TX_DBM`) in one call (esp_wifi_set_ps / set_max_tx_power), trading throughput for lower average power; mode names host-tested, apply/readback HW-verified (example 76.RadioPower). Remaining: BT-coexistence preference (only relevant on a BT-enabled build).
+- [x] Radio power _(shipped)_ - `DWS_ENABLE_RADIO_POWER`: `services/radio_power` applies a WiFi modem-sleep mode (`DWS_RADIO_WIFI_PS` none/min/max) + an optional max-TX cap (`DWS_RADIO_MAX_TX_DBM`) in one call (esp_wifi_set_ps / set_max_tx_power), trading throughput for lower average power; mode names host-tested, apply/readback HW-verified (example RadioPower). Remaining: BT-coexistence preference (only relevant on a BT-enabled build).
 - [~] Dynamic network sleep modes / **sleep-cycle scheduler (M)** _(scheduler shipped)_ -
   `DWS_ENABLE_SLEEP_SCHED`: `services/sleep_sched` `dws_sleep_next()` decides, from the idle time,
   how long a low-power device should sleep (0 = awake), ramping the window from a floor up to a
@@ -430,14 +430,14 @@ preempting queue, so sensing shares the real-time ingest path.
 
 ## Security & auth
 
-- [x] Source-IP allowlist / firewall in the accept callback _(shipped)_ - `listener_ip_allow_add_cidr("192.168.1.0/24")` / `listener_ip_allowed` (IPv4 + IPv6 CIDR rules matched on the full address, `DWS_ENABLE_IP_ALLOWLIST`; example 58.IpAllowlist).
-- [x] Brute-force per-IP exponential lockout _(shipped)_ - `DWS_ENABLE_AUTH_LOCKOUT`; `auth_lockout_*` table (keyed on the full IPv4/IPv6 address) issues 429 + Retry-After on the HTTP auth gate (example 59.AuthLockout).
-- [x] CSRF token verification _(shipped)_ - `DWS_ENABLE_CSRF`; global enforcement on POST/PUT/PATCH/DELETE via a stateless HMAC-signed `X-CSRF-Token` (built-in `GET /csrf` issues it; example 60.Csrf).
-- [x] Granular API-token scoping _(shipped)_ - `dws_jwt_claim_str()` reads string claims (sub / role / scope) and `dws_jwt_scope_allows()` matches a space-separated OAuth2 scope claim, so a handler can authorize per role/scope on the verified JWT (example 21.JWTAuth).
-- [x] MFA - TOTP two-factor _(shipped)_ - `DWS_ENABLE_TOTP`: `services/totp` computes / verifies RFC 6238 time-based one-time passwords (HMAC-SHA1 on the software SHA-1, Authenticator-compatible) and decodes base32 secrets, for a second factor on top of password / JWT; host-tested against the RFC vectors, HW-verified (example 74.Totp). An external-API verifier can also be called from a handler via the http_client.
-- [x] OIDC ID-token verification + OAuth2 token exchange _(shipped)_ - RS256 relying-party verifier (`services/oidc`: JWKS key selection by kid, real RSA-2048 signature check, iss/aud/exp/nbf, claim extraction) plus the OAuth2 token-endpoint client (`services/oauth2`: authorization_code + refresh_token grants, confidential-client or PKCE, JSON token parsing; example 83.OAuth2). SAML remains open (heavy XML/canonicalization - poor fit) (L).
+- [x] Source-IP allowlist / firewall in the accept callback _(shipped)_ - `listener_ip_allow_add_cidr("192.168.1.0/24")` / `listener_ip_allowed` (IPv4 + IPv6 CIDR rules matched on the full address, `DWS_ENABLE_IP_ALLOWLIST`; example IpAllowlist).
+- [x] Brute-force per-IP exponential lockout _(shipped)_ - `DWS_ENABLE_AUTH_LOCKOUT`; `auth_lockout_*` table (keyed on the full IPv4/IPv6 address) issues 429 + Retry-After on the HTTP auth gate (example AuthLockout).
+- [x] CSRF token verification _(shipped)_ - `DWS_ENABLE_CSRF`; global enforcement on POST/PUT/PATCH/DELETE via a stateless HMAC-signed `X-CSRF-Token` (built-in `GET /csrf` issues it; example Csrf).
+- [x] Granular API-token scoping _(shipped)_ - `dws_jwt_claim_str()` reads string claims (sub / role / scope) and `dws_jwt_scope_allows()` matches a space-separated OAuth2 scope claim, so a handler can authorize per role/scope on the verified JWT (example JWTAuth).
+- [x] MFA - TOTP two-factor _(shipped)_ - `DWS_ENABLE_TOTP`: `services/totp` computes / verifies RFC 6238 time-based one-time passwords (HMAC-SHA1 on the software SHA-1, Authenticator-compatible) and decodes base32 secrets, for a second factor on top of password / JWT; host-tested against the RFC vectors, HW-verified (example Totp). An external-API verifier can also be called from a handler via the http_client.
+- [x] OIDC ID-token verification + OAuth2 token exchange _(shipped)_ - RS256 relying-party verifier (`services/oidc`: JWKS key selection by kid, real RSA-2048 signature check, iss/aud/exp/nbf, claim extraction) plus the OAuth2 token-endpoint client (`services/oauth2`: authorization_code + refresh_token grants, confidential-client or PKCE, JSON token parsing; example OAuth2). SAML remains open (heavy XML/canonicalization - poor fit) (L).
 - [x] Secure boot + flash encryption _(shipped, docs)_ - [docs/SECURE_BOOT.md](SECURE_BOOT.md): a hardening guide for ESP32 Secure Boot v2 + Flash Encryption (and NVS encryption) mapped to the secrets this library holds (SSH host key, TLS key, SNMPv3/JWT secrets, config blobs, audit-log sink). Encrypted config handshake during onboarding remains open (M).
-- [x] MAC-derived UUID _(shipped)_ - `dws_uuid_from_mac` / `dws_device_uuid` (RFC 4122 v5; example 57.DeviceUuid).
+- [x] MAC-derived UUID _(shipped)_ - `dws_uuid_from_mac` / `dws_device_uuid` (RFC 4122 v5; example DeviceUuid).
 - [x] **Modern SSH ECC: Curve25519 key exchange + Ed25519 keys** (L) _(shipped v4.94.0)_ - the SSH server now negotiates a crypto-agnostic KEX: `curve25519-sha256` + `ssh-ed25519` host key + ed25519 client auth, alongside the `diffie-hellman-group14-sha256` + `rsa-sha2-256` set, with the preference runtime-selectable (`ssh_kex_set_prefer_rsa`, default RSA). The curve backend is a bespoke constant-time X25519 / Ed25519 that fits the zero-heap / no-stdlib idiom (no micro-ecc / donna / wolfSSL dependency), with the ESP32 MPI accelerator driving field inversion on-device and a software fallback retained. RSA stays as a fallback; ed25519 host-key provisioning sits alongside the RSA DER path; crypto KATs cover both suites and the OpenSSH interop test passes with zero forced algorithms. HW-verified on an ESP32-S3 (both suites; worker stack raised to 12288 when SSH is enabled, curve peaks ~10.5 KB).
 
 ### Crypto parity vs CycloneSSL / CycloneSSH (ESP32-relevant gaps)
@@ -527,7 +527,7 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
       (§5.8, fresh-seq flight re-send on exponential backoff) are shipped, and the **CoAP-over-DTLS front-end**
       is complete - the `dws_coaps_process` bridge plus `coaps_server`, a per-peer DtlsConn pool binding UDP 5684
       (`coaps://`), driven by one `dws_coaps_server_poll()` (`native_coaps` / `native_coaps_server`; example
-      78.CoapSecure). **Connection IDs** (§9 / RFC 9146) are shipped too - the connection_id extension is
+      CoapSecure). **Connection IDs** (§9 / RFC 9146) are shipped too - the connection_id extension is
       negotiated in the handshake, every DTLSCiphertext carries the peer's CID, and `coaps_server` routes by
       CID so a session survives a client address change / NAT rebinding (`native_dtls*` + wolfSSL `--cid`
       interop). _Remaining:_ full HW-rig interop.
@@ -537,9 +537,9 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
 ## Storage & config
 
 - [x] Typed NVS config store _(shipped)_.
-- [x] Partition-map status monitor endpoint _(shipped)_ - `DWS_ENABLE_PARTITION_MONITOR`: `dws_partition_monitor_begin()` serves the flash partition table (label, kind, type/subtype, offset, size, running app slot) as JSON via `esp_partition` / `esp_ota_ops`; kind classifier + serializer host-tested (example 64.PartitionMonitor).
-- [x] Config export / restore _(shipped, schema-driven)_ - `DWS_ENABLE_CONFIG_IO`: `services/config_io` serializes a declared schema of fields to a portable `key=value` text blob and parses one back into the NVS config store - backup / migrate / bulk-provision, deterministic and zero-heap (host-tested round-trip; example 71.ConfigExport). Remaining (M): full enumeration-based export (needs NVS key iteration), ZTP multi-stage provisioning.
-- [x] Unified VFS wrapper _(shipped)_ - `DWS_ENABLE_VFS`: `services/vfs` gives one file API (open/read/write/close, exists/size/remove/rename, whole-file helpers) over a pluggable backend - a zero-heap RAM pool (deterministic, host-tested) or a real `fs::FS` (LittleFS / SD / SPIFFS) on ESP32 - so features target storage without knowing the medium (example 80.Vfs).
+- [x] Partition-map status monitor endpoint _(shipped)_ - `DWS_ENABLE_PARTITION_MONITOR`: `dws_partition_monitor_begin()` serves the flash partition table (label, kind, type/subtype, offset, size, running app slot) as JSON via `esp_partition` / `esp_ota_ops`; kind classifier + serializer host-tested (example PartitionMonitor).
+- [x] Config export / restore _(shipped, schema-driven)_ - `DWS_ENABLE_CONFIG_IO`: `services/config_io` serializes a declared schema of fields to a portable `key=value` text blob and parses one back into the NVS config store - backup / migrate / bulk-provision, deterministic and zero-heap (host-tested round-trip; example ConfigExport). Remaining (M): full enumeration-based export (needs NVS key iteration), ZTP multi-stage provisioning.
+- [x] Unified VFS wrapper _(shipped)_ - `DWS_ENABLE_VFS`: `services/vfs` gives one file API (open/read/write/close, exists/size/remove/rename, whole-file helpers) over a pluggable backend - a zero-heap RAM pool (deterministic, host-tested) or a real `fs::FS` (LittleFS / SD / SPIFFS) on ESP32 - so features target storage without knowing the medium (example Vfs).
 - [~] **Wear leveling** + log offload (server/SD) (M) _(wear-leveling shipped)_ - `DWS_ENABLE_WEARLEVEL`:
   `services/wearlevel` `dws_wearlevel_pick()` returns the least-worn slot (from per-slot write
   counts the app persists) so repeated flash/NVS writes spread evenly and the region ages together
@@ -547,7 +547,7 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
   host-tested (`native_wearlevel`; a 4000-write pick+mark loop levels every slot exactly). Log
   offload rides the existing `services/logbuf` pluggable sink (SD / syslog / HTTP). _Remaining:_
   hot-swap storage safeties (M).
-- [x] OTA rollback protection + soft-brick safeguard _(shipped)_ - `DWS_ENABLE_OTA_ROLLBACK`: `services/ota_rollback` commits a freshly-updated image once a self-test passes, or rolls back to the previous image if the self-test fails or the confirm window elapses, so a bad update self-heals; decision logic pure + host-tested, commit/rollback via esp_ota_ops, HW-verified (example 73.OtaRollback). Remaining: modular partition swapping (M).
+- [x] OTA rollback protection + soft-brick safeguard _(shipped)_ - `DWS_ENABLE_OTA_ROLLBACK`: `services/ota_rollback` commits a freshly-updated image once a self-test passes, or rolls back to the previous image if the self-test fails or the confirm window elapses, so a bad update self-heals; decision logic pure + host-tested, commit/rollback via esp_ota_ops, HW-verified (example OtaRollback). Remaining: modular partition swapping (M).
 - [~] PSRAM web buffers / zero-copy net buffers (`heap_caps_calloc(MALLOC_CAP_SPIRAM)` at begin) + asset
   offloading + COMPONENT_EMBED_TXTFILES (M); SPI DMA ping-pong buffers (M) _(placement policy shipped)_ -
   `DWS_ENABLE_PSRAM_POOL` (`services/psram_pool`): `dws_psram_place` picks DRAM vs PSRAM for a buffer
@@ -560,7 +560,7 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
 ## Observability, diagnostics & reliability
 
 - [x] Immutable audit logs _(shipped)_ - tamper-evident SHA-256 hash chain in a fixed RAM ring (moving anchor keeps the retained window verifiable), with a pluggable sink for store-and-forward to SD / syslog / an HTTP log service. (FDA 21 CFR Part 11 attestation/e-sign workflow still open.)
-- [x] Rotating log buffer + severity traps _(shipped)_ - `DWS_ENABLE_LOGBUF`: `services/logbuf` keeps the last `DWS_LOG_LINES` lines in a fixed RAM ring (oldest pruned, no heap), dumps them oldest-first for a `/logs` endpoint, and fires a trap callback on lines at/above a severity threshold (forward critical lines as an SNMP trap / webhook); pure + host-tested (example 70.LogBuffer).
+- [x] Rotating log buffer + severity traps _(shipped)_ - `DWS_ENABLE_LOGBUF`: `services/logbuf` keeps the last `DWS_LOG_LINES` lines in a fixed RAM ring (oldest pruned, no heap), dumps them oldest-first for a `/logs` endpoint, and fires a trap callback on lines at/above a severity threshold (forward critical lines as an SNMP trap / webhook); pure + host-tested (example LogBuffer).
 - [~] Core dump to SD/FTP + live exception-decoder panel (M) _(decoder shipped)_ -
   `DWS_ENABLE_EXC_DECODER` (`services/exc_decoder`): `dws_exc_parse` extracts a captured Guru
   Meditation panic dump (cause, register PC + EXCVADDR, and the `Backtrace: pc:sp ...` frames, tolerating
@@ -568,7 +568,7 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
   it for a live `/exception` panel; the browser / build server resolves the PCs to file:line against the
   firmware ELF (addr2line lives off-device). Pure, host-tested (`native_exc_decoder`). _Remaining:_ the
   core-dump-partition read + SD/FTP offload transport, and zero-overhead abstract logging (M).
-- [x] Runtime heap/stack guardrails _(shipped)_ - `DWS_ENABLE_GUARDRAILS`: `services/guardrails` samples free heap, the heap low-water mark, the largest free block (fragmentation), and a task's remaining stack, and fires a breach callback when any crosses its `DWS_GUARDRAIL_*` floor - a proactive fail-safe hook on top of the passive /metrics numbers; evaluator + JSON host-tested, served at `/health` (example 69.Guardrails).
+- [x] Runtime heap/stack guardrails _(shipped)_ - `DWS_ENABLE_GUARDRAILS`: `services/guardrails` samples free heap, the heap low-water mark, the largest free block (fragmentation), and a task's remaining stack, and fires a breach callback when any crosses its `DWS_GUARDRAIL_*` floor - a proactive fail-safe hook on top of the passive /metrics numbers; evaluator + JSON host-tested, served at `/health` (example Guardrails).
 - [x] Fail-safe safe-state + deadlock-detection WDT + watchdog-protected coroutine lifelines (M)
       _(shipped)_ - `DWS_ENABLE_FAILSAFE`: `services/failsafe`, a software watchdog. Register a
       "lifeline" (a task / worker / control loop) that must check in (`dws_failsafe_feed`) within its
@@ -589,7 +589,7 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
 
 ## Build / tooling
 
-- [x] Runtime build-flag reporter _(shipped)_ - `server.diag()` / `DWS_ENABLE_DIAG` serves a build-info JSON (example 42.Diagnostics); the feature enumeration could be extended.
+- [x] Runtime build-flag reporter _(shipped)_ - `server.diag()` / `DWS_ENABLE_DIAG` serves a build-info JSON (example Diagnostics); the feature enumeration could be extended.
 - [~] Hierarchical build-flag tree (M); virtual protocol-mocking toggles (M) _(tree shipped)_ - the
   `docs/utilities/gen_configurator.py` generator parses `src/ServerConfig.h` and builds the flags
   as a hierarchy grouped under the file's section titles, with the hard dependency edges (`#if child &&
@@ -764,7 +764,7 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       Axis_X..Z), Production, and Notification - served through the OPC UA Browse + Read resolvers out of a
       caller-owned `UmatiMachineTool` struct, with faithful BrowseNames per OPC 40501-1 (namespace
       `http://opcfoundation.org/UA/MachineTool/`). Host-tested (`native_umati`, 11/11) and ESP32-compiled
-      (example 72.Umati); a read-only monitoring model any umati / OPC UA client browses and reads by
+      (example Umati); a read-only monitoring model any umati / OPC UA client browses and reads by
       BrowseName. _Remaining:_ companion-spec TypeDefinitions + the MachineTool namespace in the server
       NamespaceArray (needs array-Variant support), multiple channels/spindles, and Equipment (tool magazine).
 - [~] **MTConnect** (L, ANSI/MTC1.4-2018) _(streams/error response codec shipped)_ -
@@ -846,7 +846,7 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       Read, Write, ReadWrite, ReadState, WriteControl, Add/Delete/DeviceNotification) that read + write PLC
       symbols by index group/offset or by handle (name -> handle via 0xF003, value via 0xF005). Header
       layout + command ids verified against the Beckhoff InfoSys spec; payloads cross-checked with
-      Beckhoff's ADS library, `pyads`, and Apache PLC4X. Host-tested (`native_ads`), example 73.AdsClient.
+      Beckhoff's ADS library, `pyads`, and Apache PLC4X. Host-tested (`native_ads`), example AdsClient.
       Fixed BSS, no heap.
 - [ ] **Heidenhain LSV/2** (M, CNC DNC) - the LSV/2 protocol Heidenhain TNC controls use for DNC + data
       access (block-numbered telegrams with a BCC, file transfer + run/status inspection). A CNC-native
@@ -1096,16 +1096,20 @@ Casting the interop net over bench and rack test equipment: a wireless ESP32 bec
 bridge/controller. SCPI is near-universal across modern instruments and is the highest-value first step;
 the LXI transports (VXI-11 / HiSLIP) and a GPIB gateway extend reach to older and higher-throughput gear.
 
-- [ ] **SCPI / IEEE 488.2** (S, universal instrument control - **high value**) - Standard Commands for
-      Programmable Instruments, the text command language nearly every modern bench instrument speaks
-      (oscilloscopes, DMMs, power supplies, function/arbitrary generators, SMUs, spectrum/network
-      analyzers, electronic loads) over a raw TCP socket on **port 5025** (also USBTMC / serial). A
-      zero-heap codec: a SCPI command builder (headers, `:` hierarchy, parameter formatting), the IEEE
-      488.2 common commands (`*IDN?` / `*RST` / `*OPC?` / `*CLS` / `*ESR?` / `*STB?`), and response
-      parsers (numeric, boolean, string, arbitrary block `#<n><len><data>` for waveform captures) + the
-      status byte / event-status register / error queue model. Makes the device a bench-instrument
-      controller or a wireless bridge that fans instrument telemetry into HTTP/MQTT. Trivially
-      host-verifiable against a Python `pyvisa` / raw-socket reference and any SCPI simulator.
+- [x] **SCPI / IEEE 488.2** (S, universal instrument control - **high value**) - SHIPPED
+      (`services/scpi`, `DWS_ENABLE_SCPI`, example `L7-Application/Scpi`). Standard Commands for Programmable Instruments,
+      the text command language nearly every modern bench instrument speaks (oscilloscopes, DMMs, power
+      supplies, function/arbitrary generators, SMUs, spectrum/network analyzers, electronic loads) over
+      a raw TCP socket on **port 5025** (also USBTMC / serial). A zero-heap codec: a SCPI command
+      builder (`dws_scpi_build` - headers, `:` hierarchy, parameter formatting), the 13 mandatory IEEE
+      488.2 common commands (`dws_scpi_common`: `*IDN?` / `*RST` / `*OPC?` / `*CLS` / `*ESR?` /
+      `*STB?` / ...), response parsers (numeric NR1/NR2/NR3, boolean, string, definite + indefinite
+      arbitrary block `#<n><len><data>` for waveform captures), the status-byte / event-status-register + enable-mask / error-queue model (`ScpiStatus`), and a SCPI short/long-form + numeric-suffix
+      header matcher (`dws_scpi_match`). Makes the device a bench-instrument controller or a wireless
+      bridge that fans instrument telemetry into HTTP/MQTT. Register bits, error-number classes, and the
+      exact standard error strings verified against SCPI-1999 + IEEE 488.2-1992; host-tested
+      (`native_scpi`). _Remaining (separate roadmap items):_ the HiSLIP / VXI-11 / GPIB-gateway
+      transports below.
 - [ ] **HiSLIP** (M, modern LXI transport, IVI Foundation) - High-Speed LAN Instrument Protocol on
       **port 4880**, the current LXI transport that replaced VXI-11: a binary message protocol with
       separate synchronous/asynchronous channels, message-type framing (Initialize / AsyncLock /
@@ -1362,7 +1366,7 @@ secret. Builds on the existing NTP client + the TLS stack + AEAD primitives; fix
 BSS, no heap, behind a build flag.
 
 > The plain (unauthenticated) NTP **server** already ships (`DWS_ENABLE_NTP_SERVER`,
-> RFC 5905 server mode on UDP/123 - see the feature reference; example 58.NtpServer pairs
+> RFC 5905 server mode on UDP/123 - see the feature reference; example NtpServer pairs
 > it with a GPS stratum-1 source + upstream-NTP fallback). NTS below hardens the time the
 > device _consumes_; a future NTS server mode could extend the server the same way.
 
@@ -1627,7 +1631,7 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
 > Every `DWS_*` sizing tunable (edge-cache slots, mesh peers, TLS arena / `MAX_TLS_CONNS` / MFL, packet
 > and handle buffers, connection tables) currently resolves to a **single flat `#ifndef` default chosen to
 > fit the smallest classic ESP32's ~120 KB `dram0_0_seg` ceiling**. That makes a heavy feature overflow DRAM
-> on a classic board, so examples have to hand-dial the tunables down in `build_opt.h` (as 80.MeshCache does:
+> on a classic board, so examples have to hand-dial the tunables down in `build_opt.h` (as MeshCache does:
 > `DWS_EDGE_CACHE_SLOTS=2` / `FETCH_SLOTS=1` / `MESH_MAX_PEERS=1`). The side effect is that an ESP32-S3 with 8 MB
 > PSRAM + 8/16 MB flash inherits those same cramped numbers - a board with 30x the RAM is capped to the
 > lowest common denominator. Fix the defaults, not each example.
@@ -1645,7 +1649,7 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
   HW-specific switches (e.g. `DWS_HAS_CRYPTO_HWACCEL`) into the crypto paths that today check `CONFIG_IDF_TARGET_*`
   directly, and populate the flash-size axis once a flash-backed default exists.
 - [ ] **Prune the per-example `build_opt.h` shrink hacks** (S) - once the tiered defaults land, revisit the
-      examples that manually dial tunables down (80.MeshCache and any others carrying a "sized down to fit
+      examples that manually dial tunables down (MeshCache and any others carrying a "sized down to fit
       classic-ESP32 DRAM" note) and drop the override where the `CLASSIC`-tier default already fits, so the
       example shows the real intended configuration on each board instead of the lowest-common-denominator one.
 - [ ] **CI: assert both ends of the range** (S) - keep the Arduino Build classic-ESP32 `dram0_0_seg` link

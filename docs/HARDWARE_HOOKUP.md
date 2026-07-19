@@ -725,13 +725,13 @@ All the I2C drivers bring the bus up through one shared helper (`dws_i2c_begin()
 - **RTC (DS3231 / DS1307), `DWS_ENABLE_RTC`** - a battery-backed clock chip at I2C
   0x68 so the board knows the time the instant it boots, offline. Wire SDA/SCL, fit its
   coin cell, and register `dws_rtc_time_source` with the time-source chain;
-  `dws_rtc_read_epoch()` / `dws_rtc_set_epoch()` read and set it. Example 61.Rtc.
+  `dws_rtc_read_epoch()` / `dws_rtc_set_epoch()` read and set it. Example Rtc.
 - **GPS (u-blox GT-U7), `DWS_ENABLE_NMEA0183`** - the GT-U7 is a u-blox-7 GPS that
   streams **NMEA 0183** sentences over a plain 3.3 V UART at **9600 baud** (it also has
   a **PPS** pin that pulses once a second for precise timing). Wire its **TX to an
   ESP32 RX** (its RX is optional - only needed to send it config). Accumulate a line
   and `dws_nmea0183_parse()` it, then read the fix with the field helpers - see
-  [NMEA 0183](#nmea-0183-gps--marine) above and example 58.Nmea0183. In a time-source
+  [NMEA 0183](#nmea-0183-gps--marine) above and the TimeSourceFallback example. In a time-source
   chain it is the best source: **GPS -> RTC -> upstream NTP** (feed all three to the
   NTP server to serve time to your whole LAN).
 
@@ -740,19 +740,19 @@ All the I2C drivers bring the bus up through one shared helper (`dws_i2c_begin()
 - **LD2410 mmWave radar, `DWS_ENABLE_LD2410`** - a 24 GHz presence sensor that sees a
   still person (breathing), in the dark, through thin walls - over a UART at **256000
   baud**. Cross the data wires (module TX -> ESP32 RX). `dws_ld2410_poll()` decodes each
-  frame; `dws_ld2410_present()` / `dws_ld2410_distance_cm()` act on it. Example 62.Ld2410.
+  frame; `dws_ld2410_present()` / `dws_ld2410_distance_cm()` act on it. Example Ld2410.
 - **MPR121 capacitive touch, `DWS_ENABLE_MPR121`** - turns 12 wires or pads into
   touch buttons (I2C 0x5A). `dws_mpr121_read_touched()` returns a 12-bit mask. Example
-  63.Mpr121.
+  Mpr121.
 - **SHT3x temperature / humidity, `DWS_ENABLE_SHT3X`** - a CRC-checked Sensirion
   sensor (I2C 0x44). `dws_sht3x_read()` returns temperature and humidity in integer
-  milli-units. Example 64.Sht3x.
+  milli-units. Example Sht3x.
 - **ADS1115 16-bit ADC, `DWS_ENABLE_ADS1115`** - four precise analog inputs with a
   programmable gain (I2C 0x48). `dws_ads1115_read_uv()` gives a channel's voltage in
-  microvolts. Example 66.Ads1115.
+  microvolts. Example Ads1115.
 - **INA219 current / power, `DWS_ENABLE_INA219`** - sits **in series** with a load
   (Vin+ -> shunt -> Vin-) and reports voltage, current, and power (I2C 0x40).
-  `dws_ina219_read_current_ua()` / `dws_ina219_read_power_uw()`. Example 67.Ina219.
+  `dws_ina219_read_current_ua()` / `dws_ina219_read_power_uw()`. Example Ina219.
 
 ### Actuation: servos and LEDs
 
@@ -760,7 +760,7 @@ All the I2C drivers bring the bus up through one shared helper (`dws_i2c_begin()
   from the I2C bus (0x40), with its own precise PWM timer. Power the **servos** from the
   board's `V+` screw terminal (a separate 5-6 V supply), never the ESP32.
   `dws_pca9685_set_servo_us()` positions a servo; `dws_pca9685_set_pwm()` dims an LED. Example
-  65.Pca9685.
+  Pca9685.
 
 These all follow the same shape as the field-bus codecs: a pure codec you can unit-test
 on a PC, and a thin binding that does the actual I2C / UART transfer on the ESP32.

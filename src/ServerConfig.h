@@ -625,7 +625,7 @@
 // Bring up a wired Ethernet link (an RMII PHY: LAN8720 / TLK110 / RTL8201 / DP83848) so the
 // server runs over Ethernet instead of (or alongside) Wi-Fi. init_eth_physical() is a thin
 // wrapper over the Arduino ETH library; the PHY pins / type / clock come from the standard
-// ETH_PHY_* build flags for your board (see example 19.Ethernet). The egress reporting
+// ETH_PHY_* build flags for your board (see example Ethernet). The egress reporting
 // (dws_net_egress -> DWSIface::DETIFACE_ETH) and the per-route interface classifier already handle a
 // wired route, so once the link has an IP the server accepts on it with no other change.
 // Default off (zero cost / the ETH library is not linked). ESP32-only.
@@ -1101,7 +1101,7 @@
 //   CLIENT_TLS          = HTTP_CLIENT_TLS || MQTT_TLS || WS_CLIENT_TLS
 //   CAPTURE_AUTH_HEADER = AUTH || JWT || OIDC
 //
-// The same tree appears in README.md and examples/Foundation/05.Configuration.
+// The same tree appears in README.md and examples/Foundation/Configuration.
 // ---------------------------------------------------------------------------
 
 /** @brief WebSocket support (RFC 6455 framing + SHA-1/base64 handshake). */
@@ -1676,6 +1676,29 @@
  */
 #ifndef DWS_ENABLE_HOSTLINK
 #define DWS_ENABLE_HOSTLINK 0
+#endif
+
+/**
+ * @brief SCPI / IEEE 488.2 instrument-control codec (`services/scpi`).
+ *
+ * Default off. A zero-heap codec for the text command language nearly every modern bench
+ * instrument speaks (DMMs, scopes, power supplies, function generators, SMUs, loads) over a raw
+ * TCP socket on port 5025: a command builder (`dws_scpi_build` joins a `:`-hierarchy header with
+ * comma-separated parameters + terminator), the IEEE 488.2 common commands (`*IDN?` / `*RST` /
+ * `*CLS` / `*ESR?` / `*STB?` / ...), response parsers (numeric NR1/NR2/NR3, boolean, quoted
+ * string, and definite/indefinite arbitrary block `#<n><len><data>` for waveform captures), the
+ * status-byte / event-status-register / error-queue model, and a SCPI short/long-form header
+ * matcher for dispatching incoming commands. Makes the device a bench-instrument controller or a
+ * wireless bridge that fans instrument telemetry into HTTP/MQTT. Pure codec, host-tested; the TCP
+ * transport is the application's.
+ */
+#ifndef DWS_ENABLE_SCPI
+#define DWS_ENABLE_SCPI 0
+#endif
+/** @brief SCPI error/event queue depth (entries). The SCPI status model requires a queue; when it
+ *  overflows the tail entry is replaced with -350 "Queue overflow" per the standard. */
+#ifndef DWS_SCPI_ERR_QUEUE
+#define DWS_SCPI_ERR_QUEUE 8
 #endif
 
 /**

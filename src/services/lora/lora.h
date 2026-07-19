@@ -18,7 +18,7 @@
  *     read and write a chip register - so the register sequence is host-testable with a mock
  *     bus and portable across whatever SPI peripheral you wire the module to.
  *
- * Wiring to the gateway (see example 11.LoRaGateway): poll dws_lora_recv(); on a frame,
+ * Wiring to the gateway (see example LoRaGateway): poll dws_lora_recv(); on a frame,
  * dws_lora_frame_parse() then dws_gateway_uplink(port, header.from, payload, len, rssi). A downlink
  * builds a frame with dws_lora_frame_build() and dws_lora_send()s it. The codec + register protocol
  * are verified on the host; the RF link itself needs the module.

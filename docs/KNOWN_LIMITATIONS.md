@@ -152,7 +152,7 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
 - **RX buffers are 2-deep ping-pong.** The event's `data` pointer is valid only until the
   buffer is reused a transfer or two later. A consumer that drains the completion in another
   task (e.g. off the preempting queue) must **copy the bytes** into the posted item, not
-  keep the pointer - see the note in `dma.h` and example `07.DmaIngest`.
+  keep the pointer - see the note in `dma.h` and example `DmaIngest`.
 
 ## Interface forwarding
 

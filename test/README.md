@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **242 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **243 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -252,6 +252,7 @@ The native test matrix has **242 environments**, one per feature, generated from
 | `native_rtcm3` | `WS_ENABLE_NTRIP_CASTER=1` | `test_rtcm3` | RTCM 3.x framing + station-reference codec (services/gnss/rtcm3), the pure core of the GNSS RTK base / NTRIP caster: the transport frame (0xD3 preamble, 10-bit length, CRC-24Q), MSB-first bit I/O, and... |
 | `native_s7comm` | `WS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
 | `native_scp` | `WS_ENABLE_SSH=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_SSH_SCP=1` | `test_scp` | SCP (RCP) protocol wire codec (services/scp): parse an `scp -t/-f <path>` exec command into its sink/source role + target, parse + build the `C<mode> <size> <name>` control line (octal mode, decimal s... |
+| `native_scpi` | `WS_ENABLE_SCPI=1`, `UNITY_INCLUDE_DOUBLE` | `test_scpi` | SCPI / IEEE 488.2 instrument-control codec (services/scpi): the command builder (:-hierarchy header + params + terminator), the response parsers (numeric NR1/NR2/NR3, boolean, quoted string, definite/... |
 | `native_scratch` | default | `test_scratch` | Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset semantics, alignment, and fail-closed exhaustion. |
 | `native_sdi12` | `WS_ENABLE_SDI12=1` | `test_sdi12` | SDI-12 sensor-bus codec (services/sdi12): the command builders, the measurement response parser (atttn), the data-value splitter, and the SDI-12 CRC (compute/encode/verify). |
 | `native_sen0192` | `WS_ENABLE_SEN0192=1` | `test_sen0192` | SEN0192 microwave motion sensor presence state machine (services/sen0192): presence asserts on an active sample and holds for the configured window after the last active sample, clears after it, count... |
@@ -532,7 +533,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3210 test cases** across **260 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3234 test cases** across **261 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -25560,6 +25561,309 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert false (dws_s7_parse_header(shorthdr, sizeof(shorthdr), &h))</code>
       * <code>Assert false (dws_s7_parse_header(ack_short, sizeof(ack_short), &h))</code>
       * <code>Assert false (dws_s7_read_next_item(nullptr, 10, &off, &it))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_scpi (24 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_common_commands</b> &mdash; <i>Common commands</i></summary>
+
+    * **Objective**: Common commands
+    * **Assertions**:
+      * <code>Assert equal string ("*CLS", dws_scpi_common(ScpiCommon::SCPI_CLS))</code>
+      * <code>Assert equal string ("*IDN?", dws_scpi_common(ScpiCommon::SCPI_IDN_Q))</code>
+      * <code>Assert equal string ("*OPC?", dws_scpi_common(ScpiCommon::SCPI_OPC_Q))</code>
+      * <code>Assert equal string ("*RST", dws_scpi_common(ScpiCommon::SCPI_RST))</code>
+      * <code>Assert equal string ("*ESR?", dws_scpi_common(ScpiCommon::SCPI_ESR_Q))</code>
+      * <code>Assert equal string ("*STB?", dws_scpi_common(ScpiCommon::SCPI_STB_Q))</code>
+      * <code>Assert equal string ("*WAI", dws_scpi_common(ScpiCommon::SCPI_WAI))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_no_args</b> &mdash; <i>Build no args</i></summary>
+
+    * **Objective**: Build no args
+    * **Assertions**:
+      * <code>Assert equal string ("*RST\\n", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_one_arg</b> &mdash; <i>Build one arg</i></summary>
+
+    * **Objective**: Build one arg
+    * **Assertions**:
+      * <code>Assert equal string ("SOURce:VOLTage 1.5\\n", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(19, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_multi_arg</b> &mdash; <i>Build multi arg</i></summary>
+
+    * **Objective**: Build multi arg
+    * **Assertions**:
+      * <code>Assert equal string ("SOUR:VOLT 1.5,MAX\\n", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(18, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_overflow_and_guards</b> &mdash; <i>header alone longer than the buffer</i></summary>
+
+    * **Objective**: header alone longer than the buffer
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(small, sizeof(small), "SOURce:VOLTage", nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(buf, sizeof(buf), "VOLT", args, 1)); // arg pushes past cap</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(nullptr, sizeof(buf), "X", nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(buf, sizeof(buf), nullptr, nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(buf, sizeof(buf), "V", bad, 1)); // null arg element</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_fmt_real</b> &mdash; <i>a tiny buffer fails closed</i></summary>
+
+    * **Objective**: a tiny buffer fails closed
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)dws_scpi_fmt_real(buf, sizeof(buf), 1.5))</code>
+      * <code>Assert equal string ("1.5", buf)</code>
+      * <code>Assert equal string ("0", buf)</code>
+      * <code>Assert equal string ("-12.25", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_fmt_real(tiny, sizeof(tiny), 123456.789));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_number</b> &mdash; <i>Parse number</i></summary>
+
+    * **Objective**: Parse number
+    * **Assertions**:
+      * <code>Assert true (dws_scpi_parse_number("42", 2, &v))</code>
+      * <code>Assert equal double (42.0, v)</code>
+      * <code>Assert true (dws_scpi_parse_number("-3.14", 5, &v))</code>
+      * <code>Assert double within (1e-9, -3.14, v)</code>
+      * <code>Assert true (dws_scpi_parse_number("1.5E3", 5, &v))</code>
+      * <code>Assert double within (1e-6, 1500.0, v)</code>
+      * <code>Assert true (dws_scpi_parse_number("2.5e-2", 6, &v))</code>
+      * <code>Assert double within (1e-12, 0.025, v)</code>
+      * <code>Assert true (dws_scpi_parse_number("+.5", 3, &v))</code>
+      * <code>Assert double within (1e-12, 0.5, v)</code>
+      * <code>Assert true (dws_scpi_parse_number("9.9E37", 6, &v))</code>
+      * <code>Assert true (v &gt; 1e37)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_number_rejects</b> &mdash; <i>Parse number rejects</i></summary>
+
+    * **Objective**: Parse number rejects
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_parse_number("", 0, &v))</code>
+      * <code>Assert false (dws_scpi_parse_number("abc", 3, &v))</code>
+      * <code>Assert false (dws_scpi_parse_number("1.5V", 4, &v))</code>
+      * <code>Assert false (dws_scpi_parse_number("1.5E", 4, &v))</code>
+      * <code>Assert false (dws_scpi_parse_number("+", 1, &v))</code>
+      * <code>Assert false (dws_scpi_parse_number("1 2", 3, &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_bool</b> &mdash; <i>Parse bool</i></summary>
+
+    * **Objective**: Parse bool
+    * **Assertions**:
+      * <code>Assert true (dws_scpi_parse_bool("1", 1, &b))</code>
+      * <code>Assert true (b)</code>
+      * <code>Assert true (dws_scpi_parse_bool("0", 1, &b))</code>
+      * <code>Assert false (b)</code>
+      * <code>Assert true (dws_scpi_parse_bool("ON", 2, &b))</code>
+      * <code>Assert true (b)</code>
+      * <code>Assert true (dws_scpi_parse_bool("off", 3, &b))</code>
+      * <code>Assert false (b)</code>
+      * <code>Assert true (dws_scpi_parse_bool("On", 2, &b))</code>
+      * <code>Assert true (b)</code>
+      * <code>Assert false (dws_scpi_parse_bool("YES", 3, &b))</code>
+      * <code>Assert false (dws_scpi_parse_bool("", 0, &b))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_string</b> &mdash; <i>single quotes</i></summary>
+
+    * **Objective**: single quotes
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(5, dws_scpi_parse_string("\\"hello\\"", 7, out, sizeof(out)));</code>
+      * <code>Assert equal string ("hello", out)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_scpi_parse_string("'abc'", 5, out, sizeof(out)));</code>
+      * <code>Assert equal string ("abc", out)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_scpi_parse_string("\\"a\\"\\"b\\"", 6, out, sizeof(out)));</code>
+      * <code>Assert equal string ("a\\"b", out)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\\"\\"", 2, out, sizeof(out)));</code>
+      * <code>Assert equal string ("", out)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("hello", 5, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\\"hello'", 7, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\\"hello\\"", 7, tiny, sizeof(tiny)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_block_definite</b> &mdash; <i>two length digits: #205HELLO -> length "05" = 5, "HELLO"</i></summary>
+
+    * **Objective**: two length digits: #205HELLO -> length "05" = 5, "HELLO"
+    * **Assertions**:
+      * <code>Assert true (dws_scpi_parse_block(blk, 7, &data, &dlen, &consumed))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dlen);</code>
+      * <code>Assert equal memory ("DATA", data, 4)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, consumed);</code>
+      * <code>Assert true (dws_scpi_parse_block(blk2, 9, &data, &dlen, &consumed))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(5, dlen);</code>
+      * <code>Assert equal memory ("HELLO", data, 5)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(9, consumed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_block_indefinite</b> &mdash; <i>Parse block indefinite</i></summary>
+
+    * **Objective**: Parse block indefinite
+    * **Assertions**:
+      * <code>Assert true (dws_scpi_parse_block(blk, 8, &data, &dlen, &consumed))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(5, dlen);</code>
+      * <code>Assert equal memory ("HELLO", data, 5)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, consumed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_block_rejects</b> &mdash; <i>truncated definite block (says 4 bytes, only 3 present)</i></summary>
+
+    * **Objective**: truncated definite block (says 4 bytes, only 3 present)
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_parse_block(trunc, 6, &data, &dlen, &consumed))</code>
+      * <code>Assert false (dws_scpi_parse_block((const uint8_t *)"hello", 5, &data, &dlen, &consumed))</code>
+      * <code>Assert false (dws_scpi_parse_block(bad, 7, &data, &dlen, &consumed))</code>
+      * <code>Assert false (dws_scpi_parse_block(noeol, 7, &data, &dlen, &consumed))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_status_error_queue_fifo</b> &mdash; <i>empty queue -> 0,"No error"</i></summary>
+
+    * **Objective**: empty queue -> 0,"No error"
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_pop_error(&s, &e))</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(0, e.number);</code>
+      * <code>Assert equal string ("No error", e.msg)</code>
+      * <code>Assert true (dws_scpi_pop_error(&s, &e))</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(-113, e.number);</code>
+      * <code>Assert equal string ("Undefined header", e.msg)</code>
+      * <code>Assert true (dws_scpi_pop_error(&s, &e))</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(-222, e.number);</code>
+      * <code>Assert equal string ("Data out of range", e.msg)</code>
+      * <code>Assert false (dws_scpi_pop_error(&s, &e))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_status_esr_class_bits</b> &mdash; <i>Status esr class bits</i></summary>
+
+    * **Objective**: Status esr class bits
+    * **Assertions**:
+      * <code>Assert bits high (SCPI_ESR_CME, s.esr)</code>
+      * <code>Assert bits high (SCPI_ESR_EXE, s.esr)</code>
+      * <code>Assert bits high (SCPI_ESR_DDE, s.esr)</code>
+      * <code>Assert bits high (SCPI_ESR_QYE, s.esr)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_status_stb_and_mss</b> &mdash; <i>an error in the queue raises EAV</i></summary>
+
+    * **Objective**: an error in the queue raises EAV
+    * **Assertions**:
+      * <code>Assert bits high (SCPI_STB_EAV, dws_scpi_stb(&s))</code>
+      * <code>Assert bits high (SCPI_STB_ESB, stb)</code>
+      * <code>Assert bits low (SCPI_STB_MSS, stb)</code>
+      * <code>Assert bits high (SCPI_STB_ESB | SCPI_STB_MSS, stb)</code>
+      * <code>Assert bits low (SCPI_STB_ESB, dws_scpi_stb(&s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_status_cls</b> &mdash; <i>Status cls</i></summary>
+
+    * **Objective**: Status cls
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, s.esr);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, s.count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SCPI_ESR_OPC, s.ese); // untouched</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SCPI_STB_EAV, s.sre); // untouched</code>
+      * <code>Assert false (dws_scpi_pop_error(&s, &e))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_status_queue_overflow</b> &mdash; <i>Status queue overflow</i></summary>
+
+    * **Objective**: Status queue overflow
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT16(-350, last);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_std_error_lookup</b> &mdash; <i>Std error lookup</i></summary>
+
+    * **Objective**: Std error lookup
+    * **Assertions**:
+      * <code>Assert equal string ("No error", dws_scpi_std_error(0))</code>
+      * <code>Assert equal string ("Undefined header", dws_scpi_std_error(-113))</code>
+      * <code>Assert equal string ("Queue overflow", dws_scpi_std_error(-350))</code>
+      * <code>Assert equal string ("Query UNTERMINATED", dws_scpi_std_error(-420))</code>
+      * <code>Assert equal string ("", dws_scpi_std_error(-999))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_match_short_long_form</b> &mdash; <i>a header may carry parameters after a space - only the header is matched</i></summary>
+
+    * **Objective**: a header may carry parameters after a space - only the header is matched
+    * **Assertions**:
+      * <code>Assert true (match("SYST:ERR?", "SYSTem:ERRor?"))</code>
+      * <code>Assert true (match("system:error?", "SYSTem:ERRor?"))</code>
+      * <code>Assert true (match("SYSTEM:ERROR?", "SYSTem:ERRor?"))</code>
+      * <code>Assert true (match("MEAS:VOLT:DC?", "MEASure:VOLTage:DC?"))</code>
+      * <code>Assert true (match("SOUR:VOLT 1.5", "SOURce:VOLTage"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_match_query_suffix</b> &mdash; <i>Match query suffix</i></summary>
+
+    * **Objective**: Match query suffix
+    * **Assertions**:
+      * <code>Assert false (match("SYST:ERR", "SYSTem:ERRor?"))</code>
+      * <code>Assert false (match("SYST:ERR?", "SYSTem:ERRor"))</code>
+      * <code>Assert true (match("SYST:ERR", "SYSTem:ERRor"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_match_numeric_suffix</b> &mdash; <i>Match numeric suffix</i></summary>
+
+    * **Objective**: Match numeric suffix
+    * **Assertions**:
+      * <code>Assert true (match("OUTP2:STAT", "OUTPut2:STATe"))</code>
+      * <code>Assert true (match("OUTP:STAT", "OUTPut:STATe"))</code>
+      * <code>Assert false (match("OUTP:STAT", "OUTPut2:STATe"))</code>
+      * <code>Assert false (match("OUTP3:STAT", "OUTPut2:STATe"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_match_common_and_root</b> &mdash; <i>Match common and root</i></summary>
+
+    * **Objective**: Match common and root
+    * **Assertions**:
+      * <code>Assert true (match("*IDN?", "*IDN?"))</code>
+      * <code>Assert true (match("*idn?", "*IDN?"))</code>
+      * <code>Assert false (match("*RST", "*IDN?"))</code>
+      * <code>Assert true (match(":SYST:ERR?", "SYSTem:ERRor?"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_match_negatives</b> &mdash; <i>Match negatives</i></summary>
+
+    * **Objective**: Match negatives
+    * **Assertions**:
+      * <code>Assert false (match("MEAS:CURR?", "MEASure:VOLTage?"))</code>
+      * <code>Assert false (match("SYST:ERR:NEXT?", "SYSTem:ERRor?"))</code>
+      * <code>Assert false (match("SYST?", "SYSTem:ERRor?"))</code>
+      * <code>Assert false (match("SYSTE:ERR?", "SYSTem:ERRor?"));     // partial (not short nor long form)</code>
   </details>
 
 </details>

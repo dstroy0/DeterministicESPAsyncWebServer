@@ -91,7 +91,7 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
-## 79.EdgeCache example opened no HTTP listener - server.begin() with no port
+## EdgeCache example opened no HTTP listener - server.begin() with no port
 
 - **Status:** FIXED (2026-07-17). Found by the **first HW bring-up** of the edge cache on an ESP32-S3: the
   board joined WiFi and its TCP stack was alive (it RST'd port 80), but nothing served - `:80` was refused.
@@ -102,7 +102,7 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
   with no argument requires a registered listener (else it returns `DETWS_ERR_NO_LISTENERS` and starts
   nothing); the single-HTTP-port form is `server.begin(80)`. A library-contract slip in the example, not a
   library defect.
-- **Fix:** `server.begin(80)` in `examples/L7-Application/79.EdgeCache`. Re-flashed; the full
+- **Fix:** `server.begin(80)` in `examples/L7-Application/EdgeCache`. Re-flashed; the full
   MISS -> HIT -> REVALIDATED(304) -> purge path then passed byte-exact against a real origin. Exactly the
   class of whole-firmware integration bug that host mock-seam tests miss and a real HW run catches.
 
@@ -211,13 +211,13 @@ SSH_KEXINIT_S_MAX` guard (which had been marked "never exceeds"). The production
 
 ---
 
-## 75.InterfaceBridge: ESP32 Build linked without its feature flag - det_bridge_publish undefined
+## InterfaceBridge: ESP32 Build linked without its feature flag - det_bridge_publish undefined
 
 - **Status:** FIXED (2026-07-15, commit 90e5a972).
-- **Symptom:** the **ESP32 Build** CI job for `75.InterfaceBridge` failed at link with an undefined reference to
+- **Symptom:** the **ESP32 Build** CI job for `InterfaceBridge` failed at link with an undefined reference to
   `det_bridge_publish()` - chronically red since the example shipped (v6.8.0).
 - **Root cause:** the ESP32 Build discovers each example's `build_flags` by scraping the first documented
-  `pio ci` command from its `README.md` (`tools/ci/example_footprints.py`). 75.InterfaceBridge's README had no
+  `pio ci` command from its `README.md` (`tools/ci/example_footprints.py`). InterfaceBridge's README had no
   such command, so CI built it with _empty_ flags: the library's `iface_bridge_hw.cpp` guards its body under
   `#if DETWS_ENABLE_IFACE_BRIDGE`, so with the flag absent `det_bridge_publish()` compiled to nothing while the
   sketch (which sets the flag only in its own translation unit) still referenced it. An in-sketch `#define`
@@ -734,7 +734,7 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
 
 - **Status:** FIXED (HW: the relay/DNAT example now forwards a file byte-exact through the ESP32;
   native_app + native_relay pass with the corrected return).
-- **Found:** 2026-07-10, on hardware, testing 70.PortForward against a real HTTP origin.
+- **Found:** 2026-07-10, on hardware, testing PortForward against a real HTTP origin.
 - **Symptom:** a connection to the published front port was accepted then RST with nothing relayed;
   `relay_on_accept`'s bind lookup found no bind, so it closed the connection. The origin never saw the
   request. No handler output at all, which made it look like the event was dropped.
@@ -753,7 +753,7 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
 - **Status:** FIXED (HW: an ESP32-S3 SMB client now connects to a real Samba server - `det_client_open`
   returns a valid slot instead of -1). Found by hardware testing; the host tests cannot catch it because
   they drive the engines through a mock send/recv seam, not the real `det_client` transport.
-- **Found:** 2026-07-10, first on-hardware run of the 68.SmbFileClient example.
+- **Found:** 2026-07-10, first on-hardware run of the SmbFileClient example.
 - **Symptom:** every outbound connection from an SMB (also DNC, relay/DNAT, SMTP, or SSH port-forward)
   build failed - `det_client_open()` returned -1 on the very first call, so the feature silently never
   talked to its peer on device.
@@ -894,11 +894,11 @@ DETWS_ENABLE_DNC` to the `DETWS_NEED_DET_CLIENT` derivation (which also force-en
 
 ## Owner-context grouping anchored the server TLS config + worker queue store (Arduino 3.x DRAM)
 
-- **Status:** FIXED (25.WebSocketClient builds on the arduino-esp32 3.x core - 37% DRAM, was 408 bytes
-  over; 03.HTTPS/04.mTLS/06.TlsResumption/07.SecureWebSocket + 01.SSH still build; native_ssh /
+- **Status:** FIXED (WebSocketClient builds on the arduino-esp32 3.x core - 37% DRAM, was 408 bytes
+  over; HTTPS/mTLS/TlsResumption/SecureWebSocket + SSH still build; native_ssh /
   native_crypto_kat 154/154).
 - **Found:** 2026-07-07, after the scratch-arena fix cleared the ESP32 (PIO 2.x) build and 4 of the 5
-  Arduino (3.x) failures. The last, `25.WebSocketClient` (a TLS WebSocket _client_), still overflowed
+  Arduino (3.x) failures. The last, `WebSocketClient` (a TLS WebSocket _client_), still overflowed
   `dram0_0_seg` by 408 bytes - but only on the arduino-esp32 3.x core, whose larger core footprint
   leaves less headroom than the 2.x core the PlatformIO job uses.
 - **Symptom:** an outbound-only WebSocket client linked ~900 bytes of server-only state it never uses:
@@ -915,7 +915,7 @@ DETWS_ENABLE_DNC` to the `DETWS_NEED_DET_CLIENT` derivation (which also force-en
 - **Fix:** split each into a hot symbol + a cold symbol - `TlsServerReadyCtx s_srv_ready` apart from
   `TlsServerCtx s_srv`; `DeferStorageCtx s_defer_store` apart from `DeferCtx s_defer`. The cold halves
   are now referenced only by server-setup / worker-start code and garbage-collect out of client-only
-  firmwares. Server examples that do use them are unchanged (03.HTTPS DRAM identical). Both new types
+  firmwares. Server examples that do use them are unchanged (HTTPS DRAM identical). Both new types
   end in `Ctx`, so the owner-context guard still passes. (`listener.cpp` +145 was left: the two splits
   already reclaimed far more than the 408-byte deficit.)
 - **Lesson (reinforced):** verify on the tightest target - the arduino-esp32 3.x core overflows where
@@ -926,8 +926,8 @@ DETWS_ENABLE_DNC` to the `DETWS_NEED_DET_CLIENT` derivation (which also force-en
 
 ## Owner-context grouping anchored the 8 KB scratch arena, overflowing TLS-example DRAM
 
-- **Status:** FIXED (all four TLS examples - 03.HTTPS, 04.mTLS, 06.TlsResumption, 07.SecureWebSocket -
-  build for esp32dev again; native_ssh 146/146 and the 01.SSH scratch-consumer build still pass).
+- **Status:** FIXED (all four TLS examples - HTTPS, mTLS, TlsResumption, SecureWebSocket -
+  build for esp32dev again; native_ssh 146/146 and the SSH scratch-consumer build still pass).
 - **Found:** 2026-07-06, RCA'ing why ESP32 Build / Arduino Build were red. Last green at `f7767ba6`,
   first red at `23e0797b` - both owner-context-refactor commits.
 - **Symptom:** the four largest TLS examples failed to link: `.dram0.bss will not fit in region
@@ -1201,7 +1201,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
 
 ---
 
-## 06.PreemptQueue example used the pre-3.0 Arduino-ESP32 timer API
+## PreemptQueue example used the pre-3.0 Arduino-ESP32 timer API
 
 - **Status:** FIXED (compiles on esp32:esp32 3.3.10; still builds on the 2.x core the
   PlatformIO CI pins).
@@ -1212,7 +1212,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
   its edge argument, and `timerAlarm()` replaced `timerAlarmWrite()` + `timerAlarmEnable()`.
   The example's ISR setup used the 2.x forms, so it failed to compile under the core an
   Arduino IDE user installs.
-- **Fix:** the timer block in `06.PreemptQueue.ino` is guarded with
+- **Fix:** the timer block in `PreemptQueue.ino` is guarded with
   `#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)` and uses the 3.x calls on the
   new core, the 2.x calls otherwise. It is the only example using that API (grep-verified).
 - **Prevention:** a new **Arduino Build** CI (`.github/workflows/arduino-build.yml`) now
@@ -1226,7 +1226,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
 
 - **Status:** FIXED (compiles clean on esp32:esp32 3.3.10 via arduino-cli; `native_espnow`
   host suite still 7/7).
-- **Found:** 2026-07-02, first compile of `53.EspNow` in the Arduino IDE toolchain
+- **Found:** 2026-07-02, first compile of `EspNow` in the Arduino IDE toolchain
   (esp32 core 3.x). The PlatformIO CI pins `espressif32 @ ^6.0.0` (Arduino-ESP32 **2.x**,
   ESP-IDF 4.4), so it never exercised the 3.x API and reported green - the break only
   showed up under the core an Arduino IDE user actually installs.
@@ -1264,7 +1264,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
   own its bytes, not point into a buffer that is reused a transfer or two later.
 - **Fix:** the callback now **copies the frame bytes into the queue item** (a self-contained
   message) instead of posting the pointer. Eliminates the dangling reference entirely
-  (error rate 8% -> 0%). The example `07.DmaIngest` uses the same copy pattern, and
+  (error rate 8% -> 0%). The example `DmaIngest` uses the same copy pattern, and
   `dma.h` now documents that a deferred (queued) consumer must copy the `len` bytes
   rather than keep the RX pointer. The pointer API itself is unchanged and correct for an
   in-callback consumer (the standard DMA-HAL shape).

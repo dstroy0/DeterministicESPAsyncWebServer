@@ -67,7 +67,7 @@ host machine, separate from the `#ifdef ARDUINO` hardware wrappers.
     pio ci --board=esp32dev \
       --project-option="framework=arduino" \
       --project-option="build_flags=-DDWS_ENABLE_WEBSOCKET=1" \
-      --lib="." examples/L6-Presentation/09.WebSocket/09.WebSocket.ino
+      --lib="." examples/L6-Presentation/WebSocket/WebSocket.ino
     ```
 
     This is the single most common "it builds for me but CI fails" gotcha. See
