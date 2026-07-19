@@ -6,11 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`12b6fbb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12b6fbb781b72768db6a136272f9b923d087c792))
 - update test report + coverage [skip ci] ([`19c756a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19c756a7262452916d607990d481b1e97a05291d))
 - update CHANGELOG.md [skip ci] ([`ccbff35`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ccbff3505bc9dd1f0d4c70a7ecc1f7a41200a5cd))
 
 ### Documentation
 
+- mark static-IP fallback + window auto-scaling done (cores complete) ([`1378b74`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1378b74f28e454dc263d65a8c6fefe70526c2575))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`28ffc03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28ffc03ee6e6431e1844cade8c61be82af506eb5))
 - close IPv6 dual-stack - HW-verified SLAAC + serving on an ESP32-S3 ([`746e22f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/746e22f091544b06ab77422cc2f3b7cb61fe41e4))
 - update ESP32 build footprints [skip ci] ([`8b5cc50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b5cc503c259b06b5f0f24629a7fe5061d7c6f2b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6a969a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a969a19ccdd7fc2b4d27cb469bb435ad31be6b1))
