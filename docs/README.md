@@ -1111,6 +1111,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `MQTT` | `L7-Application/MqttClient` | 736,413 | 65,320 |
 | `SMB` | `L7-Application/SmbFileClient` | 742,457 | 65,208 |
 | `HISLIP` | `L7-Application/HiSlip` | 743,133 | 45,304 |
+| `LSV2` | `L7-Application/HeidenhainLsv2` | 743,369 | 45,304 |
 | `GPIB` | `L7-Application/Gpib` | 743,397 | 44,824 |
 | `SCPI` | `L7-Application/Scpi` | 743,413 | 45,048 |
 | `HAAS_MDC` | `L7-Application/HaasMdc` | 743,465 | 44,688 |
