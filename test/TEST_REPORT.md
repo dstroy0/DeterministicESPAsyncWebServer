@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-19 05:01:29
+**Generated:** 2026-07-19 05:53:23
 **Command:** `pio test` over 245 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3573 passed - 943s
+**Result:** ✅ 3585 passed - 338s
 
 ---
 
@@ -291,6 +291,7 @@
 | `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     5 |   ✅   | 00:00:00.891 |
 | `test_ssh_aesgcm`        | `native_ssh_aesgcm`     |     3 |   ✅   | 00:00:00.816 |
 | `test_ssh_ecdsa`         | `native_ssh_ecdsa`      |    11 |   ✅   | 00:00:29.581 |
+| `test_lsv2`              | `native_lsv2`           |    12 |   ✅   | 00:00:09.551 |
 
 ---
 
@@ -7796,6 +7797,32 @@ _NIST P-256 native software-path tests (ecdsa-sha2-nistp256 signatures + ecdh-sh
 |   9 | `test_ecdh_rfc5903_shared_secret`      |   ✅   | Ecdh rfc5903 shared secret      |
 |  10 | `test_ecdh_rfc5903_pubkeys`            |   ✅   | Ecdh rfc5903 pubkeys            |
 |  11 | `test_ecdh_rejects_bad_point`          |   ✅   | Ecdh rejects bad point          |
+
+</details>
+
+---
+
+## test_lsv2 - native_lsv2 - ✅ 12 passed
+
+<details>
+<summary><b>Expand Suite Details</b></summary>
+
+_Unit tests for the Heidenhain LSV/2 telegram codec (services/lsv2): the framer (4-byte big-endian_
+
+|   # | Test                      | Status | Description                                                          |
+| --: | :------------------------ | :----: | :------------------------------------------------------------------- |
+|   1 | `test_build_no_payload`   |   ✅   | R_ST with no payload -> exactly 8 bytes: 00 00 00 00 'R' '_' 'S' 'T' |
+|   2 | `test_build_with_payload` |   ✅   | Build with payload                                                   |
+|   3 | `test_build_run_info`     |   ✅   | Build run info                                                       |
+|   4 | `test_build_login`        |   ✅   | login "INSPECT", no password -> payload "INSPECT\0" (8 bytes)        |
+|   5 | `test_build_logout`       |   ✅   | no login -> log out of everything -> empty payload, 8 bytes          |
+|   6 | `test_build_filename`     |   ✅   | R_FL "PGM.H" -> payload "PGM.H\0" (6 bytes)                          |
+|   7 | `test_parse_ok`           |   ✅   | Parse ok                                                             |
+|   8 | `test_parse_error`        |   ✅   | T_ER with a 2-byte error-class + error-code payload                  |
+|   9 | `test_parse_data_reply`   |   ✅   | S_RI run-info reply carrying 3 payload bytes                         |
+|  10 | `test_parse_incomplete`   |   ✅   | fewer than 8 header bytes -> false, and out is cleared               |
+|  11 | `test_parse_stream_multi` |   ✅   | two telegrams back-to-back: T_OK then S_RI(2 bytes)                  |
+|  12 | `test_roundtrip`          |   ✅   | build then parse: run-info request survives a frame/parse round trip |
 
 </details>
 

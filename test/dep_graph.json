@@ -107,6 +107,7 @@
 "native_logbuf",
 "native_lonworks",
 "native_lora",
+"native_lsv2",
 "native_lwm2m_tlv",
 "native_mbplus",
 "native_mbus",
@@ -345,6 +346,7 @@
 "native_logbuf",
 "native_lonworks",
 "native_lora",
+"native_lsv2",
 "native_lwm2m_tlv",
 "native_mbplus",
 "native_mbus",
@@ -583,6 +585,7 @@
 "native_logbuf",
 "native_lonworks",
 "native_lora",
+"native_lsv2",
 "native_lwm2m_tlv",
 "native_mbplus",
 "native_mbus",
@@ -3006,6 +3009,12 @@
 ],
 "src/services/lora/lora.h": [
 "native_lora"
+],
+"src/services/lsv2/lsv2.cpp": [
+"native_lsv2"
+],
+"src/services/lsv2/lsv2.h": [
+"native_lsv2"
 ],
 "src/services/lwm2m/lwm2m_tlv.cpp": [
 "native_lwm2m_tlv"
