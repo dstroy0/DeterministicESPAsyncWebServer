@@ -912,6 +912,12 @@
     "output": ".pio/build/native_lora/src/services/lora/lora.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_lsv2/src/services/lsv2/lsv2.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_LSV2=1 -Itest/mocks -Itest/support -Isrc src/services/lsv2/lsv2.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/lsv2/lsv2.cpp",
+    "output": ".pio/build/native_lsv2/src/services/lsv2/lsv2.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_lwm2m_tlv/src/services/lwm2m/lwm2m_tlv.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_LWM2M=1 -Itest/mocks -Itest/support -Isrc src/services/lwm2m/lwm2m_tlv.cpp",
     "directory": "@ROOT@",
     "file": "src/services/lwm2m/lwm2m_tlv.cpp",
@@ -1660,11 +1666,5 @@
     "directory": "@ROOT@",
     "file": "src/services/zwave/zwave.cpp",
     "output": ".pio/build/native_zwave/src/services/zwave/zwave.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_lsv2/src/services/lsv2/lsv2.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_LSV2=1 -Itest/mocks -Itest/support -Isrc src/services/lsv2/lsv2.cpp",
-    "directory": "@ROOT@",
-    "file": "src/services/lsv2/lsv2.cpp",
-    "output": ".pio/build/native_lsv2/src/services/lsv2/lsv2.o"
   }
 ]
