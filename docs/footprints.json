@@ -713,6 +713,13 @@
     "flash_bytes": 795973,
     "ram_bytes": 86312
   },
+  "VXI11": {
+    "example": "L7-Application/Vxi11",
+    "flags": "-DDWS_ENABLE_VXI11=1",
+    "board": "esp32dev",
+    "flash_bytes": 744465,
+    "ram_bytes": 45432
+  },
   "WEBDAV": {
     "example": "L7-Application/WebDav",
     "flags": "-DDETWS_ENABLE_WEBDAV=1",

@@ -110,6 +110,7 @@ from each example's `pio ci` size report and aggregated into
 | `UDP_TELEMETRY`                                                                                           | L7-Application/UdpTelemetry          | 711.1 KB (55.6%) | 43.9 KB (13.7%)  |
 | `UPLOAD`                                                                                                  | L7-Application/FileUpload            | 776.2 KB (60.6%) | 89.0 KB (27.8%)  |
 | `VFS`                                                                                                     | L7-Application/Vfs                   | 777.3 KB (60.7%) | 84.3 KB (26.3%)  |
+| `VXI11`                                                                                                   | L7-Application/Vxi11                 | 727.0 KB (56.8%) | 44.4 KB (13.9%)  |
 | `WEBDAV`                                                                                                  | L7-Application/WebDav                | 801.8 KB (62.6%) | 102.9 KB (32.2%) |
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE`                                                               | L7-Application/WebDav                | 802.5 KB (62.7%) | 88.7 KB (27.7%)  |
 | `WEB_TERMINAL`                                                                                            | L6-Presentation/WebTerminal          | 739.4 KB (57.8%) | 79.9 KB (25.0%)  |
