@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.14.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.14.0 - 2026-07-19</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`9708e2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9708e2fa6f502d8ae3ccca626a9435e118e54714))
+
+### Changes
+
+- Bump version: 7.13.1 → 7.14.0 ([`da195cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da195cff26449385cbc615d38d1d1991872ac80b))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`aa9ca21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aa9ca21802cbc60102abdd0639b528711db16ac7))
+
+### Features
+
+- IPv4 multicast receive (dws_udp_listen_multicast / _leave_multicast) ([`6749ece`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6749eceef74a9092e44415d4cca8ba7a147df907))
+
+</details>
+
 ## [7.13.1] - 2026-07-19
 
 <details>
