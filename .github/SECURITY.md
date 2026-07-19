@@ -9,10 +9,10 @@ on the latest release before reporting.
 Only the latest released version is supported; earlier versions receive no fixes. This table is kept
 current automatically by the release bump (`.bumpversion.cfg`).
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 7.9.0   | :white_check_mark: |
-| < 7.9.0 | :x:                |
+| Version  | Supported          |
+| -------- | ------------------ |
+| 7.10.0   | :white_check_mark: |
+| < 7.10.0 | :x:                |
 
 ## Reporting a vulnerability
 
