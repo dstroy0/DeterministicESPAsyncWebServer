@@ -93,6 +93,7 @@
 "native_iccp",
 "native_iec60870",
 "native_iface_bridge",
+"native_ikev2",
 "native_ina219",
 "native_inflate",
 "native_interbus",
@@ -332,6 +333,7 @@
 "native_iccp",
 "native_iec60870",
 "native_iface_bridge",
+"native_ikev2",
 "native_ina219",
 "native_inflate",
 "native_interbus",
@@ -571,6 +573,7 @@
 "native_iccp",
 "native_iec60870",
 "native_iface_bridge",
+"native_ikev2",
 "native_ina219",
 "native_inflate",
 "native_interbus",
@@ -2933,6 +2936,12 @@
 ],
 "src/services/iface_bridge/iface_bridge.h": [
 "native_iface_bridge"
+],
+"src/services/ikev2/ikev2.cpp": [
+"native_ikev2"
+],
+"src/services/ikev2/ikev2.h": [
+"native_ikev2"
 ],
 "src/services/ina219/ina219.cpp": [
 "native_ina219"
