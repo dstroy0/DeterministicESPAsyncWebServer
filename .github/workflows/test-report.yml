@@ -116,7 +116,7 @@ jobs:
             SEL="FULL" # first push on a branch / unknown base -> be safe
           else
             git diff --name-only "$BASE" "$HEAD" > changed_all.txt
-            SEL="$(python3 test/select_envs.py < changed_all.txt)"
+            SEL="$(python3 test/select_envs.py --base "$BASE" --head "$HEAD" < changed_all.txt)"
             grep -E '^src/.*\.(cpp|c)$' changed_all.txt > changed_src.txt || true
           fi
 

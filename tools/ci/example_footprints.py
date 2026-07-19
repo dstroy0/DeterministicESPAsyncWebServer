@@ -38,6 +38,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import affected_common as ac  # noqa: E402  (path set above)
+
 EX_ROOT = "examples"
 
 # esp32dev capacities (bytes) for the percentage columns; from the pio size report.
@@ -80,8 +83,14 @@ def all_items():
     return items
 
 
-def affected_items(items, changed):
-    """The subset of items a changed-file set touches, or the full list on any shared/core change."""
+def affected_items(items, changed, base=None, head=None):
+    """The subset of items a changed-file set touches, or the full list on any shared/core change.
+
+    src/ServerConfig.h is touched by every feature (a new default-off gate). With a diff base
+    that change is classified by content: an additive gate cannot alter any example that does not
+    opt into the new DWS_ENABLE_* flag, so it is ignored rather than forcing a full rebuild; a
+    non-additive ServerConfig.h change still falls back to FULL.
+    """
     features = set()  # src/services/<sub>/... -> feature subdir
     example_hits = []  # changed paths under examples/
     for f in changed:
@@ -90,17 +99,20 @@ def affected_items(items, changed):
             continue
         if f.startswith(f"{EX_ROOT}/"):
             example_hits.append(f)
+        elif f == "src/ServerConfig.h" and base is not None and ac.config_header_additive(
+            ac.file_at(base, f), ac.file_at(head, f)
+        ):
+            continue  # additive gate -> inert for every example that does not enable it
         elif f.startswith("src/services/") and f.count("/") >= 3:
             features.add(f.split("/")[2])  # e.g. src/services/smb/smb2.cpp -> "smb"
         elif f.startswith("src/"):
             return items  # shared/core src (dwserver, shared_primitives, a top-level services/*.h) -> FULL
-        elif (
-            f == "platformio.ini"
-            or f == "tools/ci/example_footprints.py"
-            or (f.startswith(".github/workflows/") and f.endswith("build.yml"))
+        elif f == "tools/ci/example_footprints.py" or (
+            f.startswith(".github/workflows/") and f.endswith("build.yml")
         ):
-            return items  # build config / matrix generator / the build workflow -> FULL
-        # else: docs, memory, unrelated tooling -> not build-affecting, ignore
+            return items  # matrix generator / the build workflow -> FULL (platformio.ini does not
+            # affect example builds: they use `pio ci` / arduino-cli with per-example flags)
+        # else: docs, memory, platformio.ini, unrelated tooling -> not build-affecting, ignore
 
     sel = []
     for it in items:
@@ -118,12 +130,18 @@ def affected_items(items, changed):
     return sel
 
 
-def cmd_matrix():
+def cmd_matrix(base=None, head=None):
     items = all_items()
     changed = [] if sys.stdin.isatty() else sys.stdin.read().splitlines()
     if changed:
-        items = affected_items(items, changed)
+        items = affected_items(items, changed, base=base, head=head)
     print(json.dumps(items))
+
+
+def _opt(argv, name):
+    """Return the value after --<name> in argv, or None."""
+    flag = f"--{name}"
+    return argv[argv.index(flag) + 1] if flag in argv and argv.index(flag) + 1 < len(argv) else None
 
 
 def cmd_fragment(logpath, outpath):
@@ -199,7 +217,7 @@ def cmd_table(in_path, out_path):
 
 def main():
     if len(sys.argv) >= 2 and sys.argv[1] == "matrix":
-        cmd_matrix()
+        cmd_matrix(base=_opt(sys.argv, "base"), head=_opt(sys.argv, "head"))
     elif len(sys.argv) >= 4 and sys.argv[1] == "fragment":
         cmd_fragment(sys.argv[2], sys.argv[3])
     elif len(sys.argv) >= 4 and sys.argv[1] == "merge":

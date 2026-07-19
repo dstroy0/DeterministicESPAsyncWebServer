@@ -70,7 +70,7 @@ jobs:
           if [ "$FULL" = "1" ]; then
             M="$(python tools/ci/example_footprints.py matrix </dev/null)"
           else
-            M="$(git diff --name-only "$BASE" "$HEAD" | python tools/ci/example_footprints.py matrix)"
+            M="$(git diff --name-only "$BASE" "$HEAD" | python tools/ci/example_footprints.py matrix --base "$BASE" --head "$HEAD")"
           fi
           N="$(printf '%s' "$M" | python -c 'import sys,json;print(len(json.load(sys.stdin)))')"
           echo "full=$FULL selected=$N example(s)"

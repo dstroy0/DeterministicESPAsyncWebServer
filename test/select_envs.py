@@ -41,6 +41,9 @@ ROOT = os.path.dirname(HERE)
 INI = os.path.join(ROOT, "platformio.ini")
 DEP_GRAPH = os.path.join(HERE, "dep_graph.json")
 
+sys.path.insert(0, os.path.join(ROOT, "tools", "ci"))
+import affected_common as ac  # noqa: E402  (path set above)
+
 # A changed header/source mapping (via the compiler dep graph) to at least this fraction of the
 # testable envs is a shared header - run FULL (regenerate coverage cleanly) rather than an
 # "affected" run that would merge nearly every row and overlay coverage for no changed source.
@@ -49,6 +52,12 @@ FULL_FRACTION = 0.9
 # Envs that exist in the ini but are never part of the report suite (special tooling
 # targets); never select them even when "affected".
 NEVER_SELECT = {"native_pentest", "native_codeql"}
+
+# Files EVERY feature commit touches, whose change is normally *additive* (a new gate, a
+# new env). With a diff base (--base) these are classified by content (ac.*) - an additive
+# change selects only the new env(s) / nothing, a shared change still returns FULL. Without
+# a base they fall through to FORCE_FULL_EXACT below (the safe default).
+ADDITIVE_SAFE = {"src/ServerConfig.h", "test/test_matrix.json", "platformio.ini"}
 
 # A changed file matching any of these forces FULL: it can influence how every env
 # builds or what the whole matrix looks like, so no narrow subset is trustworthy.
@@ -168,10 +177,46 @@ def load_graph():
         return {}
 
 
-def classify(changed, envs, graph, total_testable):
+def _services_dir(path):
+    """src/services/<sub>/... -> "services/<sub>/" (the build_src_filter-relative dir), else None."""
+    m = re.match(r"^src/(services/[^/]+/)", path)
+    return m.group(1) if m else None
+
+
+def _src_hits(f, src_globs):
+    """Envs that compile a changed src/ file NOT in the dep graph (a brand-new file): match its
+    build_src_filter glob directly (a listed .cpp), else - for a new header - any env whose
+    globs live in the same services/<sub>/ dir. Empty set means "cannot attribute"."""
+    rel = f[len("src/") :]
+    hits = {name for name, g in src_globs if _match_glob(rel, g)}
+    if hits:
+        return hits
+    sd = _services_dir(f)  # e.g. a new services/scpi/scpi.h -> the envs building services/scpi/*
+    if sd:
+        return {name for name, g in src_globs if g.startswith(sd)}
+    return set()
+
+
+def _classify_additive(f, base, head, known_envs):
+    """Content-aware verdict for an ADDITIVE_SAFE file: a set of affected envs, or "FULL"."""
+    old = ac.file_at(base, f)
+    new = ac.file_at(head, f)
+    if f == "src/ServerConfig.h":
+        return set() if ac.config_header_additive(old, new) else "FULL"
+    if f == "test/test_matrix.json":
+        res = ac.matrix_changed_envs(old, new)
+    else:  # platformio.ini
+        res = ac.ini_changed_envs(old, new)
+    if res == "FULL":
+        return "FULL"
+    return {e for e in res if e in known_envs}  # a new env is present in the HEAD ini we parsed
+
+
+def classify(changed, envs, graph, total_testable, base=None, head=None):
     """Return "FULL", "NONE", or a sorted list of affected env names."""
     affected = set()
     src_globs = [(name, g) for name, e in envs.items() for g in e["src"]]
+    known_envs = set(envs) - NEVER_SELECT
     test_map = {}
     for name, e in envs.items():
         for t in e["tests"]:
@@ -182,6 +227,17 @@ def classify(changed, envs, graph, total_testable):
         f = f.strip().replace("\\", "/")
         if not f:
             continue
+        # An additive gate / env change (with a diff base) selects only the new env(s), never FULL.
+        if base is not None and f in ADDITIVE_SAFE:
+            res = _classify_additive(f, base, head, known_envs)
+            if res == "FULL":
+                return "FULL"
+            if res:
+                affected |= res
+                saw_relevant = True
+            continue
+        if f.endswith(".md"):
+            continue  # markdown never affects compilation (even under a FORCE_FULL_ prefix)
         if f in FORCE_FULL_EXACT or f.startswith(FORCE_FULL_PREFIX):
             return "FULL"
         if f in IGNORE_EXACT or f.startswith(IGNORE_PREFIX):
@@ -193,15 +249,15 @@ def classify(changed, envs, graph, total_testable):
                 affected |= set(graph[f]) - NEVER_SELECT
                 saw_relevant = True
                 continue
-            if f.endswith((".cpp", ".c")):
-                rel = f[len("src/") :]
-                hits = {name for name, g in src_globs if _match_glob(rel, g)}
-                if not hits:
-                    return "FULL"  # a compiled source we cannot attribute to a feature env
+            # Absent from the graph (a brand-new file): attribute a source by its build_src_filter
+            # glob and a new header by its services/<sub>/ dir. Only a src/ file we cannot place
+            # (shared / core) falls back to FULL.
+            hits = _src_hits(f, src_globs) - NEVER_SELECT
+            if hits:
                 affected |= hits
                 saw_relevant = True
                 continue
-            return "FULL"  # a header/source absent from the graph (new file, or graph stale)
+            return "FULL"
         if f.startswith("test/"):
             m = re.match(r"^test/(test_[A-Za-z0-9_]+)(/|$)", f)
             if m:
@@ -212,8 +268,10 @@ def classify(changed, envs, graph, total_testable):
                 saw_relevant = True
                 continue
             return "FULL"  # shared test infra under test/ not caught above
-        # Anything else (unknown top-level path) -> be safe.
-        return "FULL"
+        # Anything else is a top-level path outside src/ + test/ + the build-config allowlist
+        # handled above (e.g. pentesting/, .github/*, cspell.json, root docs/scripts). It cannot
+        # affect what the native suite compiles, so it selects nothing rather than forcing FULL.
+        continue
 
     affected -= NEVER_SELECT
     if not affected:
@@ -230,6 +288,12 @@ def main():
     ap.add_argument("--full", action="store_true", help="force FULL regardless of the diff")
     ap.add_argument("--changed-file", action="append", default=[], help="a changed path (repeatable)")
     ap.add_argument("--ini", default=INI, help="platformio.ini path")
+    ap.add_argument(
+        "--base",
+        help="diff base git ref; enables content-aware classification of ServerConfig.h / "
+        "test_matrix.json / platformio.ini (an additive gate/env selects only the new env)",
+    )
+    ap.add_argument("--head", help="diff head git ref for the NEW content (default: the working tree)")
     args = ap.parse_args()
 
     if args.full:
@@ -247,7 +311,7 @@ def main():
     envs = parse_envs(args.ini)
     graph = load_graph()
     total_testable = len(set(envs) - NEVER_SELECT)
-    result = classify(changed, envs, graph, total_testable)
+    result = classify(changed, envs, graph, total_testable, base=args.base, head=args.head)
     if isinstance(result, list):
         print(" ".join(result))
     else:
