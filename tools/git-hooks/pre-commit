@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
 # Auto-fix files so the CI Code-Formatting / Markdown-Formatting / Spellcheck jobs never
 # fail on something a tool can fix:
-#   1. clang-format -i on EVERY tracked C/C++/.ino  (CI: clang-format-22 --style=file --dry-run
-#      --Werror scans the whole tree, so a drifted file fails CI on an unrelated commit; format
-#      the whole repo here and stage whatever changed, exactly matching the CI file set)
-#   2. prettier --write on staged .md/.json/.yml/.yaml  (CI: prettier --check "**/*.md")
-#   3. auto-add any unknown cspell words from the scanned set (README.md + docs/**/*.md) to
+#   1. clang-format -i on the STAGED C/C++/.ino files  (CI: clang-format-22 --style=file
+#      --dry-run --Werror)
+#   1b. a read-only drift WARNING for tracked C/C++/.ino files that are not part of this commit
+#      (CI lints the whole tree, so pre-existing drift fails CI on an unrelated commit)
+#   2. black on staged .py  (line-length from pyproject.toml)
+#   3. prettier --write on staged .md/.json/.yml/.yaml (+ src/web .html)
+#   4. auto-add any unknown cspell words from the staged docs (README.md + docs/**/*.md) to
 #      cspell.json  (CI: cspell config cspell.json over README.md + docs/**/*.md)
-#   4. regenerate the test-matrix-derived files (platformio.ini + test/README.md) when
+#   5. regenerate the test-matrix-derived files (platformio.ini + test/README.md) when
 #      test/test_matrix.json is staged  (CI: python3 test/gen_test_envs.py --check)
 # then re-stages whatever it changed.
+#
+# EVERY auto-fix step is scoped to what you are actually committing. The hook never edits or
+# stages a file you did not touch: a commit stays reviewable, and an unrelated drifted file can
+# never ride along inside it. Repo-wide drift is surfaced as a warning (step 1b) so you still
+# learn CI will fail - fix it in its own commit, which is where that change belongs.
+# Set DWS_HOOK_NO_DRIFT_SCAN=1 to skip the whole-tree drift scan.
 #
 # Install once per clone:   git config core.hooksPath tools/git-hooks
 # Uses the locally installed tools (clang-format, and prettier/cspell via npx); if a tool is
@@ -20,17 +28,38 @@ cd "$(git rev-parse --show-toplevel)" 2>/dev/null || exit 0
 # Staged (added/copied/modified) paths matching the given pathspecs, excluding build_opt.h.
 staged() { git diff --cached --name-only --diff-filter=ACM -- "$@" 2>/dev/null | grep -v '/build_opt\.h$'; }
 
-# 1) clang-format EVERY tracked C/C++/.ino (whole-repo, CI parity), then stage what changed.
-# CI lints the entire tree, not just the diff, so a file that drifted in an earlier commit
-# (e.g. a comment edit that knocked a trailing-comment column out of alignment) would keep
-# failing CI on unrelated commits. Formatting the whole set here and staging only the files
-# clang-format actually modified keeps a clean tree focused while guaranteeing CI stays green.
-if command -v clang-format >/dev/null 2>&1; then
-    git ls-files '*.cpp' '*.h' '*.hpp' '*.cc' '*.ino' | grep -v '/build_opt\.h$' |
-        xargs -d '\n' -P4 -n40 clang-format -i --style=file
-    # Stage only the C/C++/.ino files clang-format actually changed (no giant arg list -> git).
-    git diff --name-only --diff-filter=ACM | grep -E '\.(cpp|h|hpp|cc|ino)$' | grep -v '/build_opt\.h$' |
-        xargs -d '\n' -r git add --
+# 1) clang-format the STAGED C/C++/.ino files, then re-stage them.
+mapfile -t CF < <(staged '*.cpp' '*.h' '*.hpp' '*.cc' '*.ino')
+if [ "${#CF[@]}" -gt 0 ] && command -v clang-format >/dev/null 2>&1; then
+    printf '%s\n' "${CF[@]}" | xargs -d '\n' -P4 -n40 clang-format -i --style=file
+    git add -- "${CF[@]}"
+fi
+
+# 1b) Read-only drift check over the tracked C/C++/.ino files NOT in this commit. CI lints the
+# whole tree, so a file that drifted in an earlier commit fails CI on an unrelated one. Warn
+# instead of reformatting it: silently absorbing an unrelated file into this commit is what makes
+# a diff unreviewable. Nothing here writes or stages - fix the listed files in their own commit.
+if [ "${DWS_HOOK_NO_DRIFT_SCAN:-0}" != "1" ] && command -v clang-format >/dev/null 2>&1; then
+    # Candidates = tracked sources minus the staged set (those were just formatted above).
+    # Note: `list | grep -Fxv -f staged` exits 1 when it filters everything out, so it is kept
+    # out of an `&&/||` chain - `|| cat` there would re-emit the whole list.
+    ALL_SRC=$(git ls-files '*.cpp' '*.h' '*.hpp' '*.cc' '*.ino' | grep -v '/build_opt\.h$')
+    if [ "${#CF[@]}" -gt 0 ]; then
+        CANDIDATES=$(printf '%s\n' "$ALL_SRC" | grep -Fxv -f <(printf '%s\n' "${CF[@]}") || true)
+    else
+        CANDIDATES=$ALL_SRC
+    fi
+    DRIFT=$(printf '%s\n' "$CANDIDATES" | grep -v '^$' |
+        xargs -d '\n' -r -P4 -n40 clang-format --style=file --dry-run -Werror 2>&1 |
+        sed -n 's/^\(.*\):[0-9]\+:[0-9]\+: error:.*/\1/p' | sort -u)
+    if [ -n "$DRIFT" ]; then
+        COUNT=$(printf '%s\n' "$DRIFT" | grep -c .)
+        echo "pre-commit: WARNING - $COUNT tracked file(s) outside this commit are not clang-format clean;"
+        echo "            CI (clang-format --dry-run -Werror, whole tree) will fail until they are fixed:"
+        printf '%s\n' "$DRIFT" | head -10 | sed 's/^/              /'
+        [ "$COUNT" -gt 10 ] && echo "              ... and $((COUNT - 10)) more"
+        echo "            Fix separately:  clang-format -i --style=file <files>"
+    fi
 fi
 
 # 2) black (the default Python formatter; line-length from pyproject.toml)
