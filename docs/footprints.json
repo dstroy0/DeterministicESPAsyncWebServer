@@ -279,6 +279,13 @@
     "flash_bytes": 780393,
     "ram_bytes": 82632
   },
+  "IKEV2": {
+    "example": "L5-Session/IKEv2",
+    "flags": "-DDWS_ENABLE_IKEV2=1",
+    "board": "esp32dev",
+    "flash_bytes": 725953,
+    "ram_bytes": 43940
+  },
   "INA219": {
     "example": "Drivers/Ina219",
     "flags": "-DDWS_ENABLE_INA219=1",
