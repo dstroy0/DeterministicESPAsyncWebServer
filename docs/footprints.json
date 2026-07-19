@@ -237,6 +237,13 @@
     "flash_bytes": 752857,
     "ram_bytes": 81792
   },
+  "HISLIP": {
+    "example": "L7-Application/HiSlip",
+    "flags": "-DDWS_ENABLE_HISLIP=1",
+    "board": "esp32dev",
+    "flash_bytes": 743133,
+    "ram_bytes": 45304
+  },
   "HTTP_CLIENT": {
     "example": "L7-Application/HttpClient",
     "flags": "-DDWS_ENABLE_HTTP_CLIENT=1",
