@@ -39,6 +39,7 @@ from each example's `pio ci` size report and aggregated into
 | `ETAG`                                                                                                    | L7-Application/ETag                  | 809.1 KB (63.2%) | 81.1 KB (25.4%)  |
 | `ETHERNET`                                                                                                | Peripherals/Ethernet                 | 772.7 KB (60.4%) | 79.9 KB (25.0%)  |
 | `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | Peripherals/EthernetW5500            | 772.7 KB (60.4%) | 79.9 KB (25.0%)  |
+| `GPIB`                                                                                                    | L7-Application/Gpib                  | 726.0 KB (56.7%) | 43.8 KB (13.7%)  |
 | `GPIO_MAP`                                                                                                | L7-Application/GpioMap               | 739.0 KB (57.7%) | 79.9 KB (25.0%)  |
 | `GRAPHQL`                                                                                                 | L7-Application/GraphQL               | 739.5 KB (57.8%) | 84.2 KB (26.3%)  |
 | `GUARDRAILS`                                                                                              | L7-Application/Guardrails            | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |

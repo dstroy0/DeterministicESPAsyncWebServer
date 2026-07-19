@@ -216,6 +216,13 @@
     "flash_bytes": 791225,
     "ram_bytes": 81836
   },
+  "GPIB": {
+    "example": "L7-Application/Gpib",
+    "flags": "-DDWS_ENABLE_GPIB=1",
+    "board": "esp32dev",
+    "flash_bytes": 743397,
+    "ram_bytes": 44824
+  },
   "GPIO_MAP": {
     "example": "L7-Application/GpioMap",
     "flags": "-DDWS_ENABLE_GPIO_MAP=1",
