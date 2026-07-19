@@ -65,6 +65,7 @@
 "native_flow_export",
 "native_focas",
 "native_forward",
+"native_forwarded_trust",
 "native_ftp",
 "native_gateway",
 "native_gnss_survey",
@@ -305,6 +306,7 @@
 "native_flow_export",
 "native_focas",
 "native_forward",
+"native_forwarded_trust",
 "native_ftp",
 "native_gateway",
 "native_gnss_survey",
@@ -545,6 +547,7 @@
 "native_flow_export",
 "native_focas",
 "native_forward",
+"native_forwarded_trust",
 "native_ftp",
 "native_gateway",
 "native_gnss_survey",
@@ -758,6 +761,7 @@
 "native_compliance",
 "native_det_ip",
 "native_diag",
+"native_forwarded_trust",
 "native_h3_server",
 "native_happy_eyeballs",
 "native_iface_bridge",
@@ -783,6 +787,7 @@
 "native_compliance",
 "native_det_ip",
 "native_diag",
+"native_forwarded_trust",
 "native_h3_server",
 "native_happy_eyeballs",
 "native_iface_bridge",
@@ -2782,6 +2787,12 @@
 ],
 "src/services/forward/forward.h": [
 "native_forward"
+],
+"src/services/forwarded_trust/forwarded_trust.cpp": [
+"native_forwarded_trust"
+],
+"src/services/forwarded_trust/forwarded_trust.h": [
+"native_forwarded_trust"
 ],
 "src/services/ftp/ftp.cpp": [
 "native_ftp",
