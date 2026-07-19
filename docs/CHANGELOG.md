@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`263aca9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/263aca96f103f4413b2b5235dc6fba81d22a5c4b))
+
+### Documentation
+
+- record the EZSP NCP hardware blocker on the Zigbee gateway item ([`c7c8cd8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7c8cd84525879573d0d19a405e8ea732d041fd1))
+- update ESP32 build footprints [skip ci] ([`60ee335`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/60ee3355f3b6d4a7209b45233d02ceac02193e92))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2769f7a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2769f7a995acd4f1733bb51f2007e8c3fd8a1a1a))
+
 ## [7.12.0] - 2026-07-19
 
 <details>
