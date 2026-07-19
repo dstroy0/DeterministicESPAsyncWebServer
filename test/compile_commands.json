@@ -786,6 +786,12 @@
     "output": ".pio/build/native_hart/src/services/hart/hart.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_hislip/src/services/hislip/hislip.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_HISLIP=1 -Itest/mocks -Itest/support -Isrc src/services/hislip/hislip.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/hislip/hislip.cpp",
+    "output": ".pio/build/native_hislip/src/services/hislip/hislip.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_hostlink/src/services/hostlink/hostlink.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_HOSTLINK=1 -Itest/mocks -Itest/support -Isrc src/services/hostlink/hostlink.cpp",
     "directory": "@ROOT@",
     "file": "src/services/hostlink/hostlink.cpp",

@@ -81,6 +81,7 @@
 "native_h3frame",
 "native_happy_eyeballs",
 "native_hart",
+"native_hislip",
 "native_hostlink",
 "native_hpack",
 "native_http_client",
@@ -315,6 +316,7 @@
 "native_h3frame",
 "native_happy_eyeballs",
 "native_hart",
+"native_hislip",
 "native_hostlink",
 "native_hpack",
 "native_http_client",
@@ -549,6 +551,7 @@
 "native_h3frame",
 "native_happy_eyeballs",
 "native_hart",
+"native_hislip",
 "native_hostlink",
 "native_hpack",
 "native_http_client",
@@ -2841,6 +2844,12 @@
 "src/services/hart/hart.h": [
 "native_hart"
 ],
+"src/services/hislip/hislip.cpp": [
+"native_hislip"
+],
+"src/services/hislip/hislip.h": [
+"native_hislip"
+],
 "src/services/hostlink/hostlink.cpp": [
 "native_hostlink"
 ],
@@ -3793,6 +3802,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_hislip",
 "native_jwt",
 "native_keepalive",
 "native_melsec",
