@@ -552,14 +552,27 @@ src/
 ├── board_profiles/
 │   ├── 16mbflash.h
 │   ├── 16mbpsram.h
+│   ├── 2mbflash.h
+│   ├── 2mbpsram.h
 │   ├── 32mbflash.h
 │   ├── 32mbpsram.h
+│   ├── 4mbflash.h
+│   ├── 4mbpsram.h
 │   ├── 8mbflash.h
 │   ├── 8mbpsram.h
 │   ├── board_profile.h
+│   ├── c2_defaults.h
+│   ├── c3_defaults.h
+│   ├── c5_defaults.h
+│   ├── c61_defaults.h
 │   ├── c6_defaults.h
 │   ├── classic_defaults.h
+│   ├── h21_defaults.h
+│   ├── h2_defaults.h
+│   ├── h4_defaults.h
 │   ├── p4_defaults.h
+│   ├── s2_defaults.h
+│   ├── s31_defaults.h
 │   └── s3_defaults.h
 ├── network_drivers/
 │   ├── application/
