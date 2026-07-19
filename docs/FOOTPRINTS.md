@@ -119,6 +119,7 @@ from each example's `pio ci` size report and aggregated into
 | `WEBDAV`                                                                                                  | L7-Application/WebDav                | 801.8 KB (62.6%) | 102.9 KB (32.2%) |
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE`                                                               | L7-Application/WebDav                | 803.0 KB (62.7%) | 88.7 KB (27.7%)  |
 | `WEB_TERMINAL`                                                                                            | L6-Presentation/WebTerminal          | 739.8 KB (57.8%) | 80.0 KB (25.0%)  |
+| `WIFI_SNIFFER+PROMISC`                                                                                    | Peripherals/WifiSniffer              | 709.0 KB (55.4%) | 42.6 KB (13.3%)  |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS`                                                                             | L7-Application/WebSocketClient       | 811.8 KB (63.4%) | 117.7 KB (36.8%) |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE`                                                          | L7-Application/WebSocketClient       | 812.3 KB (63.5%) | 120.7 KB (37.7%) |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE`                                           | L7-Application/WebSocketClient       | 813.0 KB (63.5%) | 104.7 KB (32.7%) |

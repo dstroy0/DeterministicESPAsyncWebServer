@@ -776,6 +776,13 @@
     "flash_bytes": 757569,
     "ram_bytes": 81876
   },
+  "WIFI_SNIFFER+PROMISC": {
+    "example": "Peripherals/WifiSniffer",
+    "flags": "-DDWS_ENABLE_WIFI_SNIFFER=1 -DDWS_ENABLE_PROMISC=1",
+    "board": "esp32dev",
+    "flash_bytes": 725973,
+    "ram_bytes": 43644
+  },
   "WS_CLIENT+TLS+WS_CLIENT_TLS": {
     "example": "L7-Application/WebSocketClient",
     "flags": "-DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1",
