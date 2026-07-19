@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **244 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **245 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -304,6 +304,7 @@ The native test matrix has **244 environments**, one per feature, generated from
 | `native_utmc` | `WS_ENABLE_UTMC=1` | `test_utmc` | UTMC common-database codec (services/utmc): the UTMCRequest (object id) and UTMCResponse (value + quality + timestamp) HTTP/XML documents build + the request-id parse, escaped. |
 | `native_vfs` | `WS_ENABLE_VFS=1` | `test_vfs` | Unified VFS wrapper (services/vfs) - host-tested through its built-in RAM backend (the Arduino FS backend is ESP32-only and HW-verified). |
 | `native_vl53l0x` | `WS_ENABLE_VL53L0X=1` | `test_vl53l0x` | VL53L0X time-of-flight ranging codec (services/vl53l0x): the range byte-pair combine to millimeters, the interrupt-status data-ready decode, and the device range-status validity check. |
+| `native_vxi11` | `WS_ENABLE_VXI11=1` | `test_vxi11` | VXI-11 (TCP/IP Instrument Protocol) codec over ONC RPC / XDR (services/vxi11): the XDR write/read helpers (4-byte-aligned, big-endian, length-prefixed opaque/string), the ONC-RPC record-marking + CALL... |
 | `native_wal` | `WS_ENABLE_WAL=1` | `test_wal`, `test_wal_store` | Write-ahead store for atomic buffer-to-flash storage (services/wal): CRC32 record framing + crash-recovery replay (the atomicity core), plus the A/B superblock + checkpoint + mount layer over a block-... |
 | `native_wamp` | `WS_ENABLE_WAMP=1` | `test_wamp` | WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO / SUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional array parser (type / ids / URIs... |
 | `native_wave` | `WS_ENABLE_WAVE=1` | `test_wave` | IEEE 1609 WAVE codec (services/wave): the 1609.3 WSMP header (version + P-encoded PSID + length) build + parse, the PSID p-encoding, and the 1609.2 secured-message envelope header. |
@@ -534,7 +535,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3245 test cases** across **262 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3255 test cases** across **263 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -34446,6 +34447,132 @@ A thorough directory of all **3245 test cases** across **262 suites**. Expand a 
       * <code>Assert true (dws_vl53l0x_range_valid(0x58))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, dws_vl53l0x_range_status(4 &lt;&lt; 3));</code>
       * <code>Assert false (dws_vl53l0x_range_valid(4 &lt;&lt; 3))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_vxi11 (10 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_record_mark</b> &mdash; <i>a non-final fragment</i></summary>
+
+    * **Objective**: a non-final fragment
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dws_rpc_record_mark(buf, sizeof(buf), 64));</code>
+      * <code>Assert equal memory (expected, buf, 4)</code>
+      * <code>Assert true (dws_rpc_parse_record_mark(buf, 4, &last, &frag))</code>
+      * <code>Assert true (last)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, frag);</code>
+      * <code>Assert true (dws_rpc_parse_record_mark(partial, 4, &last, &frag))</code>
+      * <code>Assert false (last)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(16, frag);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rpc_record_mark(buf, sizeof(buf), 0x80000000u));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_create_link_vector</b> &mdash; <i>Create link vector</i></summary>
+
+    * **Objective**: Create link vector
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expected), n);</code>
+      * <code>Assert equal memory (expected, buf, sizeof(expected))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_create_link_reply</b> &mdash; <i>Create link reply</i></summary>
+
+    * **Objective**: Create link reply
+    * **Assertions**:
+      * <code>Assert true (dws_vxi11_parse_create_link_resp(b, o, &resp))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, resp.error);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x0100, resp.lid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x1234, resp.abort_port);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x4000, resp.max_recv_size);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_getport</b> &mdash; <i>spot-check the call header: prog=portmapper, proc=GETPORT, and the mapping.prog word</i></summary>
+
+    * **Objective**: spot-check the call header: prog=portmapper, proc=GETPORT, and the mapping.prog word
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)n)</code>
+      * <code>Assert equal memory (pmap_prog, buf + 16, 4)</code>
+      * <code>Assert true (dws_vxi11_parse_getport_resp(b, o, &port))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1280, port);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_device_write</b> &mdash; <i>header(40) + record-mark(4) + lid,io,lock,flags (16) + opaque(len 4 + 6 data + 2 pad = 12) = 72</i></summary>
+
+    * **Objective**: header(40) + record-mark(4) + lid,io,lock,flags (16) + opaque(len 4 + 6 data + 2 pad = 12) = 72
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(72, n);</code>
+      * <code>Assert equal memory (end_flag, buf + 56, 4)</code>
+      * <code>Assert equal memory (opaque, buf + 60, sizeof(opaque))</code>
+      * <code>Assert true (dws_vxi11_parse_write_resp(b, o, &wr))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, wr.error);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(6, wr.size);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_device_write(buf, sizeof(buf), 2, 1, 0, 0, 0, nullptr, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_device_read</b> &mdash; <i>a read reply carrying an identity string (11 bytes -> 1 pad)</i></summary>
+
+    * **Objective**: a read reply carrying an identity string (11 bytes -> 1 pad)
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)n)</code>
+      * <code>Assert true (dws_vxi11_parse_read_resp(b, o, &rr))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, rr.error);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWS_VXI11_REASON_END, rr.reason);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(11, rr.data_len);</code>
+      * <code>Assert equal memory (idn, rr.data, 11)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_readstb_and_destroy</b> &mdash; <i>Readstb and destroy</i></summary>
+
+    * **Objective**: Readstb and destroy
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)dws_vxi11_build_device_readstb(buf, sizeof(buf), 4, 0x0100, 0, 0, 10000))</code>
+      * <code>Assert true (dws_vxi11_parse_readstb_resp(b, o, &sr))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, sr.error);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x40, sr.stb);</code>
+      * <code>Assert greater than (0, (int)dws_vxi11_build_destroy_link(buf, sizeof(buf), 5, 0x0100))</code>
+      * <code>Assert true (dws_vxi11_parse_error_resp(b, o, &err))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, err);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_rejects</b> &mdash; <i>MSG_DENIED (reply_stat = 1)</i></summary>
+
+    * **Objective**: MSG_DENIED (reply_stat = 1)
+    * **Assertions**:
+      * <code>Assert false (dws_rpc_parse_reply(b, o, &xid, &astat, &off))</code>
+      * <code>Assert false (dws_rpc_parse_reply(b, o, &xid, &astat, &off))</code>
+      * <code>Assert false (dws_vxi11_parse_create_link_resp(b, o, &resp))</code>
+      * <code>Assert false (dws_rpc_parse_reply(b, 8, &xid, &astat, &off))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_str</b> &mdash; <i>Error str</i></summary>
+
+    * **Objective**: Error str
+    * **Assertions**:
+      * <code>Assert equal string ("no error", dws_vxi11_error_str(0))</code>
+      * <code>Assert equal string ("invalid link identifier", dws_vxi11_error_str(4))</code>
+      * <code>Assert equal string ("device locked by another link", dws_vxi11_error_str(11))</code>
+      * <code>Assert equal string ("I/O timeout", dws_vxi11_error_str(15))</code>
+      * <code>Assert equal string ("unknown error", dws_vxi11_error_str(999))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_overflow</b> &mdash; <i>Build overflow</i></summary>
+
+    * **Objective**: Build overflow
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_create_link(small, sizeof(small), 1, 0, false, 0, "inst0"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_create_link(nullptr, 128, 1, 0, false, 0, "inst0"));</code>
   </details>
 
 </details>

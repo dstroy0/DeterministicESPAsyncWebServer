@@ -877,6 +877,12 @@
       "src": ["+<services/hislip/hislip.cpp>"],
       "tests": ["test_hislip"]
     },
+    "native_vxi11": {
+      "desc": "VXI-11 (TCP/IP Instrument Protocol) codec over ONC RPC / XDR (services/vxi11): the XDR\nwrite/read helpers (4-byte-aligned, big-endian, length-prefixed opaque/string), the ONC-RPC\nrecord-marking + CALL/REPLY framing with AUTH_NONE, the portmapper GETPORT call, and the\nDEVICE_CORE procedures (create_link / device_write / device_read / device_readstb /\ndestroy_link). Pure host tests with byte-exact vectors.",
+      "flags": ["-DDWS_ENABLE_VXI11=1"],
+      "src": ["+<services/vxi11/vxi11.cpp>"],
+      "tests": ["test_vxi11"]
+    },
     "native_senml": {
       "desc": "SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the\nJSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral\nnumbers emitted as integers. Pure host tests.",
       "flags": ["-DDWS_ENABLE_SENML=1"],

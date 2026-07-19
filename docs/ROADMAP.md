@@ -1121,11 +1121,15 @@ the LXI transports (VXI-11 / HiSLIP) and a GPIB gateway extend reach to older an
       IVI-6.1 (cross-checked with the Wireshark dissector, MSL-equipment, PyHiSLIP); host-tested
       (`native_hislip`, byte-exact vectors). _Remaining (separate roadmap items):_ VXI-11 + the
       GPIB-gateway below.
-- [ ] **LXI / VXI-11** (M, ONC RPC instrument channel) - the older LAN eXtensions for Instrumentation
-      transport: VXI-11 over ONC/Sun RPC (portmapper **port 111** -> the instrument channel), the
-      `create_link` / `device_write` / `device_read` / `device_readstb` / `destroy_link` calls, plus
-      the LXI mDNS/VXI-11 discovery beacon. Still the fallback transport for a large installed base of
-      LAN instruments that predate HiSLIP; also introduces a reusable ONC RPC codec.
+- [x] **LXI / VXI-11** (M, ONC RPC instrument channel) - SHIPPED (`services/vxi11`,
+      `DWS_ENABLE_VXI11`, example `L7-Application/Vxi11`). The older LAN eXtensions for Instrumentation
+      transport: VXI-11 over ONC/Sun RPC (portmapper **port 111** -> the dynamic instrument channel via
+      `dws_vxi11_build_getport`), the `create_link` / `device_write` / `device_read` / `device_readstb`
+      / `destroy_link` calls with response parsers, and the **reusable ONC RPC / XDR codec**
+      (record-marking + CALL/REPLY framing with AUTH_NONE over big-endian 4-byte-aligned XDR). Verified
+      against the VXI-11 spec + RFC 5531/4506/1833 (cross-checked with python-vxi11 + the Wireshark
+      dissector); host-tested (`native_vxi11`, byte-exact create_link vector). _Remaining:_ the LXI
+      mDNS/VXI-11 discovery beacon (low-pri) and the GPIB gateway below.
 - [ ] **GPIB-over-LAN gateway** (S, Prologix-style) - the Prologix `++`-command GPIB-Ethernet gateway
       control set (`++addr`, `++read`, `++eoi`, `++mode`), so the device drives a bench of legacy
       IEEE-488 (GPIB) instruments through a common Prologix-compatible adapter - the bridge into

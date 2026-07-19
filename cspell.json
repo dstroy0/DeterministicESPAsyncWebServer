@@ -1359,7 +1359,11 @@
     "pinout",
     "unbreak",
     "unstuff",
-    "zoomable"
+    "zoomable",
+    "REQCNT",
+    "getport",
+    "termchrset",
+    "waitlock"
   ],
   "ignorePaths": [
     "node_modules/**",

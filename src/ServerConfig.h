@@ -1717,6 +1717,22 @@
 #endif
 
 /**
+ * @brief VXI-11 (TCP/IP Instrument Protocol) codec (`services/vxi11`).
+ *
+ * Default off. A zero-heap codec for the legacy LXI instrument transport that predates HiSLIP:
+ * VXI-11 over ONC RPC (Sun RPC) with XDR encoding. Provides the reusable XDR / ONC-RPC primitives
+ * (record-marking header, CALL / REPLY message framing, AUTH_NONE, length-prefixed opaque/string,
+ * 4-byte alignment) plus the DEVICE_CORE procedures - create_link / device_write / device_read /
+ * device_readstb / destroy_link (program 0x0607AF v1) - and the portmapper GETPORT call that maps
+ * the program to its TCP port. Still the fallback transport for a large installed base of LAN
+ * instruments. Pairs with `DWS_ENABLE_SCPI` (the payload). Pure codec, host-tested; the TCP
+ * connection is the application's.
+ */
+#ifndef DWS_ENABLE_VXI11
+#define DWS_ENABLE_VXI11 0
+#endif
+
+/**
  * @brief SenML (RFC 8428) measurement-pack builder (`services/senml`).
  *
  * Default off; implies DWS_ENABLE_CBOR (the SenML-CBOR form uses the CBOR writer). A
