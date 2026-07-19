@@ -171,6 +171,7 @@
 "native_rtcm3",
 "native_s7comm",
 "native_scp",
+"native_scpi",
 "native_scratch",
 "native_sdi12",
 "native_sen0192",
@@ -404,6 +405,7 @@
 "native_rtcm3",
 "native_s7comm",
 "native_scp",
+"native_scpi",
 "native_scratch",
 "native_sdi12",
 "native_sen0192",
@@ -637,6 +639,7 @@
 "native_rtcm3",
 "native_s7comm",
 "native_scp",
+"native_scpi",
 "native_scratch",
 "native_sdi12",
 "native_sen0192",
@@ -3293,6 +3296,12 @@
 ],
 "src/services/scp/scp.h": [
 "native_scp"
+],
+"src/services/scpi/scpi.cpp": [
+"native_scpi"
+],
+"src/services/scpi/scpi.h": [
+"native_scpi"
 ],
 "src/services/sdi12/sdi12.cpp": [
 "native_sdi12"
