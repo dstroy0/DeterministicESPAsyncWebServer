@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.5.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.5.0 - 2026-07-19</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`8537ef6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8537ef61278d6112343fec64262498b1673e4521))
+- update CHANGELOG.md [skip ci] ([`61d5654`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61d565428f51b889771ac59f2f5c39f95ff5009c))
+
+### Changes
+
+- Bump version: 7.4.0 → 7.5.0 ([`300b2dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/300b2dc067ab3cfd783faf4772f022e0beaa2801))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`d6f1a98`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6f1a9823761fcfa33146815fd6bce18842fb956))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e363e32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e363e32bc240f23ca455b22c323236464f38ff0e))
+
+### Features
+
+- VXI-11 instrument transport over a reusable ONC RPC / XDR codec ([`986d92c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/986d92cd1b8365755c2bde220477872348f5b009))
+
+</details>
+
 ## [7.4.0] - 2026-07-19
 
 <details>
