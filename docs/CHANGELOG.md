@@ -2,6 +2,16 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- drop stray DWS_ENABLE_IKEV2 gate swept in by the format hook ([`bd6721e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd6721e91054c0f823d11914dd38ab62ceba98e2))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ec15432`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec15432d087e0ce61b11d3d27dbad396b39a15e4))
+
 ## [7.9.0] - 2026-07-19
 
 <details>
