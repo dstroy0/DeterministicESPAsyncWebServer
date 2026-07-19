@@ -1386,7 +1386,9 @@
     "HWADDR",
     "LADDR",
     "PANID",
-    "zigpy"
+    "zigpy",
+    "openthread",
+    "usbserjtag"
   ],
   "ignorePaths": [
     "node_modules/**",

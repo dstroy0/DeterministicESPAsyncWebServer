@@ -71,28 +71,46 @@ dongle flashed with the OpenThread RCP firmware, an EFR32, or an **ESP32-C6 flas
 `ot_rcp`** (the C6 is a native 802.15.4 radio, so that route needs no external module - the host
 UART wires to the C6's RCP UART pins).
 
-## Verified against the OpenThread reference RCP
+## Verified on real hardware (ESP32-C6 RCP)
 
-The framing + command + value-semantics codec was **interop-verified (2026-07-19)** against a
-genuine **OpenThread reference RCP** - OpenThread's own `ot-rcp` binary (the same spinel
-implementation that runs on the nRF52840 / EFR32 / ESP32-C6, here built for the POSIX/simulation
-platform) - driven over a raw-mode pty by the shipped codec alone. It decoded real OpenThread
-spinel output byte-exact:
+**HW-verified (2026-07-19)** against a real **ESP32-C6 running ESP-IDF `ot_rcp`** - genuine
+OpenThread RCP firmware on a native 802.15.4 radio. The shipped codec built every byte sent and
+decoded every byte received (`dws_spinel_frame_encode`/`_decode`, `dws_spinel_command_build`/`_parse`,
+the property registry and typed accessors); nothing hand-rolled HDLC or spinel:
 
 ```
-LAST_STATUS      = RESET (112)        # unsolicited boot frame
-PROTOCOL_VERSION = 4.3                # two packed uints
-INTERFACE_TYPE   = 3 (Thread)
-NCP_VERSION      = OPENTHREAD/5808cb4; SIMULATION; ...   # UTF8 string
-CAPS             = 5 12 24 34 513 64 65   # packed-uint array (513 exercises multi-byte packing)
-HWADDR (EUI64)   = 18B4300000000001
-PHY_CHAN         = 11
-MAC_15_4_PANID   = 0xFFFF             # LE uint16
+-- reset --
+  LAST_STATUS        = RESET (114)   [tid 0]
+-- properties --
+  PROTOCOL_VERSION   = 4.3
+  INTERFACE_TYPE     = 3 (3 = Thread)
+  NCP_VERSION        = openthread-esp32/8c750b08-ec2b0d487; esp32c6;  2026-07-19 22:46:33 UTC
+  CAPS               = 5 12 24 34 513 64 65   (7 caps)
+  HWADDR             = ACEBE6FFFEC1DE00
+  PHY_CHAN           = 11
+  MAC_15_4_PANID     = 0xFFFF
+  MAC_15_4_LADDR     = 0000000000000000
+== 8/8 properties decoded by the DWS codec ==
 ```
 
-7/7 properties decoded through `dws_spinel_frame_decode` + `dws_spinel_command_parse` + the typed
-accessors. Because the peer is OpenThread's own implementation (not a re-encode of our own bytes),
-this is a real conformance check, not a self-round-trip. See the `## Thread` section of
+`HWADDR` is that chip's real factory EUI64 and `CAPS` includes `513`, which only decodes correctly
+if the packed-uint reader handles a multi-byte value. `MAC_15_4_LADDR` is all-zero because the radio
+had not been brought up - the RCP is answering honestly, and the codec reports it faithfully.
+
+**Transport note (important):** stock `ot_rcp` puts spinel on **UART0's GPIO pins**, which a devkit
+whose only host link is the native USB-Serial-JTAG cannot expose without external wiring - a host
+write to that port just times out. For this test the RCP was rebuilt with its spinel fd pointed at
+`/dev/usbserjtag` instead, so the stream rides USB. That changes only the **transport** the RCP
+firmware uses; the spinel/HDLC bytes on the wire are unchanged, which is what this codec is being
+verified against.
+
+## Also verified against the OpenThread reference RCP
+
+For protocol conformance against the reference implementation, the same codec was driven over a
+raw-mode pty against OpenThread's own `ot-rcp` (POSIX/simulation build), decoding 7/7 properties
+including `NCP_VERSION` `OPENTHREAD/5808cb4; SIMULATION; ...` and `HWADDR` `18B4300000000001`.
+Because that peer is OpenThread's own implementation rather than a re-encode of our own bytes, it
+is a real conformance check and not a self-round-trip. See the `## Thread` section of
 [FEATURES.md](../../../docs/FEATURES.md).
 
 ## Build-flag note

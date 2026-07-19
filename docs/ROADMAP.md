@@ -172,10 +172,17 @@ SPI radios:
       typed value semantics** - `SpinelProp` / `SpinelStatus` id + status tables, `dws_spinel_prop_lookup`
       / `_name` / `dws_spinel_status_name`, and a `SpinelReader` / `SpinelWriter` cursor with an accessor
       per spinel datatype (bool/u8/i8/u16/i16/u32/i32/packed-uint/EUI64/IPv6/UTF8/data/len-data). Host-tested
-      (26 cases: X-25 check value, packed-int KATs, typed round trips, registry lookups) and **interop-verified
-      against the OpenThread reference RCP** (OpenThread's own `ot-rcp` over a pty): decoded real
-      NCP_VERSION / PROTOCOL_VERSION / INTERFACE_TYPE / CAPS / HWADDR / PHY_CHAN / PANID byte-exact, 7/7.
-      Example ThreadGateway decodes named properties and bridges a real RCP.
+      (26 cases: X-25 check value, packed-int KATs, typed round trips, registry lookups) and verified
+      against a real RCP two ways: **HW-verified on an ESP32-C6 running ESP-IDF `ot_rcp`** (a native
+      802.15.4 radio) - the codec drove a spinel RESET and decoded **8/8** properties off the wire
+      (NCP_VERSION `openthread-esp32/...; esp32c6; ...`, PROTOCOL_VERSION 4.3, INTERFACE_TYPE 3, CAPS
+      including a multi-byte packed 513, the factory HWADDR EUI64 `ACEBE6FFFEC1DE00`, PHY_CHAN 11,
+      PANID, LADDR); and **interop-verified against the OpenThread reference RCP** (OpenThread's own
+      `ot-rcp` over a pty, 7/7) for conformance against the reference implementation. Note stock
+      `ot_rcp` puts spinel on UART0's GPIO pins, unreachable on a devkit whose only host link is the
+      USB-Serial-JTAG; for the C6 test its spinel fd was pointed at `/dev/usbserjtag` so the stream
+      rides USB - a transport change on the peer, not a protocol change. Example ThreadGateway decodes
+      named properties and bridges a real RCP.
 
 UART radios:
 
