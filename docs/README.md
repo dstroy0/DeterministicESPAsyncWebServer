@@ -846,6 +846,7 @@ src/
 │   ├── graphql/  (graphql.h, graphql.cpp)
 │   ├── grpcweb/  (grpcweb.h, grpcweb.cpp)
 │   ├── guardrails/  (guardrails.h, guardrails.cpp)
+│   ├── haas_mdc/  (haas_mdc.h, haas_mdc.cpp)
 │   ├── happy_eyeballs/  (happy_eyeballs.h, happy_eyeballs.cpp)
 │   ├── hart/  (hart.h, hart.cpp)
 │   ├── hislip/  (hislip.h, hislip.cpp)
@@ -1075,6 +1076,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | Feature | Example | Flash (bytes) | Static RAM (bytes) |
 | :------ | :------ | ------------: | -----------------: |
 | `SIGFOX` | `Drivers/SigfoxUplink` | 267,961 | 21,464 |
+| `PREEMPT_QUEUE` | `Foundation/PreemptLanes` | 268,401 | 23,936 |
 | `ENOCEAN+GATEWAY` | `Drivers/EnOceanGateway` | 268,693 | 21,848 |
 | `ZWAVE+GATEWAY` | `Drivers/ZWaveGateway` | 268,905 | 21,848 |
 | `THREAD+GATEWAY` | `Drivers/ThreadGateway` | 269,137 | 22,616 |
@@ -1085,7 +1087,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | `Drivers/RadioGateway` | 270,541 | 28,720 |
 | `LD2410` | `Drivers/Ld2410` | 270,681 | 21,576 |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/InterfaceForward` | 270,797 | 29,096 |
-| `PREEMPT_QUEUE` | `Foundation/PreemptQueue` | 274,069 | 23,968 |
 | `NRF24+GATEWAY` | `Drivers/Nrf24Gateway` | 276,105 | 21,680 |
 | `LORA+GATEWAY` | `Drivers/LoRaGateway` | 276,329 | 21,688 |
 | `PCA9685` | `Drivers/Pca9685` | 284,601 | 21,800 |
@@ -1346,6 +1347,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DWS_ENABLE_GRAPHQL` | `0` | GraphQL query subset. |
 | `DWS_ENABLE_GRPC_WEB` | `0` | gRPC-Web message framing (`services/grpcweb`). |
 | `DWS_ENABLE_GUARDRAILS` | `0` | Opt-in runtime heap/stack guardrails. |
+| `DWS_ENABLE_HAAS_MDC` | `0` | Haas Machine Data Collection (MDC) Q-command codec (`services/haas_mdc`). |
 | `DWS_ENABLE_HAPPY_EYEBALLS` | `0` | Opt-in dual-stack Happy Eyeballs destination selection. |
 | `DWS_ENABLE_HART` | `0` | Opt-in HART / HART-IP process-instrument protocol codec. |
 | `DWS_ENABLE_HISLIP` | `0` | HiSLIP (High-Speed LAN Instrument Protocol) message codec (`services/hislip`). |
