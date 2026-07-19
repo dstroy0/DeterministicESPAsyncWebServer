@@ -1733,6 +1733,22 @@
 #endif
 
 /**
+ * @brief GPIB-over-LAN (Prologix-style) controller command codec (`services/gpib`).
+ *
+ * Default off. A zero-heap codec for the Prologix-compatible `++` command set that drives a
+ * legacy IEEE-488 (GPIB) bench of instruments through a Prologix GPIB-Ethernet / GPIB-USB adapter
+ * (raw socket on TCP 1234): builders for the control commands (`++addr` / `++mode` / `++read` /
+ * `++eoi` / `++eos` / `++spoll` / `++clr` / `++trg` / `++ver` / ...), the data-line escaping (a
+ * leading ESC before a CR / LF / ESC / `+` byte in instrument data), and response parsers (the
+ * address / serial-poll status byte / version string). Makes the device a bridge into pre-LAN test
+ * gear that will never speak SCPI-over-TCP directly. Pure codec, host-tested; the socket / serial
+ * link to the adapter is the application's.
+ */
+#ifndef DWS_ENABLE_GPIB
+#define DWS_ENABLE_GPIB 0
+#endif
+
+/**
  * @brief SenML (RFC 8428) measurement-pack builder (`services/senml`).
  *
  * Default off; implies DWS_ENABLE_CBOR (the SenML-CBOR form uses the CBOR writer). A

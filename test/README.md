@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **245 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **246 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -150,6 +150,7 @@ The native test matrix has **245 environments**, one per feature, generated from
 | `native_gateway` | `WS_ENABLE_GATEWAY=1`, `WS_GW_MAX_PORTS=4` | `test_gateway` | Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an uplink envelopes a received frame (src address / port / rssi / seq) and publishes it, fail-closed on no sink / unkno... |
 | `native_gnss_survey` | `WS_ENABLE_NTRIP_CASTER=1`, `WS_ENABLE_NMEA0183=1`, `UNITY_INCLUDE_DOUBLE` | `test_gnss_survey` | GNSS survey-in core (services/gnss/gnss_survey): the exact WGS84 geodetic<->ECEF transform (matched against pyproj EPSG:4979->EPSG:4978), the shifted-origin position averager with a 3-D accuracy estim... |
 | `native_goose` | `WS_ENABLE_GOOSE=1` | `test_goose` | IEC 61850 GOOSE publisher codec (services/goose): the BER IECGoosePdu (gocbRef..allData, minimal-length INTEGERs with the positive leading-zero rule) + the GOOSE header + Ethernet frame (ethertype 0x8... |
+| `native_gpib` | `WS_ENABLE_GPIB=1` | `test_gpib` | GPIB-over-LAN (Prologix-style) controller command codec (services/gpib): the ++ command builders (addr / mode / read / eoi / eos / spoll / clr / trg / ver), the data-line escaping (leading ESC before ... |
 | `native_gpio_map` | `WS_ENABLE_GPIO_MAP=1` | `test_gpio_map` | GPIO pin-mapper / browser diag core (services/gpio_map): direction names, JSON serializer, control-POST parser, output guard - all pure and host-tested. |
 | `native_graphql` | `WS_ENABLE_GRAPHQL=1` | `test_graphql` | GraphQL query subset (services/graphql) - pure parser + executor, host-tested with a demo resolver. |
 | `native_grpcweb` | `WS_ENABLE_GRPC_WEB=1` | `test_grpcweb` | gRPC-Web message framing codec (services/grpcweb): the 5-octet length-prefixed message frame builder + the 0x80 trailers frame (grpc-status / grpc-message) + the frame parser. |
@@ -535,7 +536,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3255 test cases** across **263 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3265 test cases** across **264 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -10128,6 +10129,132 @@ A thorough directory of all **3255 test cases** across **263 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(nullptr, src, 0x1234, &g2, out, sizeof(out))); // null dst</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g2, out, 20));              // cap &lt; 22</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g2, out, 30)); // &gt;=22 but the PDU cannot fit</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_gpib (10 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_command_generic</b> &mdash; <i>overflow fails closed</i></summary>
+
+    * **Objective**: overflow fails closed
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)dws_gpib_command(buf, sizeof(buf), "mode 1"))</code>
+      * <code>Assert equal string ("++mode 1\\n", buf)</code>
+      * <code>Assert equal string ("++clr\\n", buf)</code>
+      * <code>Assert equal string ("++ver\\n", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_command(tiny, sizeof(tiny), "read_tmo_ms 500"));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_addr</b> &mdash; <i>Addr</i></summary>
+
+    * **Objective**: Addr
+    * **Assertions**:
+      * <code>Assert equal string ("++addr 9 96\\n", buf); // primary 9, secondary 0 (96)</code>
+      * <code>Assert equal string ("++addr 9\\n", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_addr(buf, sizeof(buf), 31, -1)); // pad out of range</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read</b> &mdash; <i>Read</i></summary>
+
+    * **Objective**: Read
+    * **Assertions**:
+      * <code>Assert equal string ("++read\\n", buf)</code>
+      * <code>Assert equal string ("++read eoi\\n", buf)</code>
+      * <code>Assert equal string ("++read 10\\n", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spoll_and_eos</b> &mdash; <i>the eos numeric mapping (a common source of bugs): 0=CR+LF, 1=CR, 2=LF, 3=None</i></summary>
+
+    * **Objective**: the eos numeric mapping (a common source of bugs): 0=CR+LF, 1=CR, 2=LF, 3=None
+    * **Assertions**:
+      * <code>Assert equal string ("++spoll\\n", buf)</code>
+      * <code>Assert equal string ("++spoll 5\\n", buf)</code>
+      * <code>Assert equal string ("++spoll 9 96\\n", buf)</code>
+      * <code>Assert equal string ("++eos 0\\n", buf)</code>
+      * <code>Assert equal string ("++eos 2\\n", buf)</code>
+      * <code>Assert equal string ("++eos 3\\n", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_data_escaping</b> &mdash; <i>Manual §8.1: 00 01 02 13 03 10 04 27 05 43 06 -> escape CR/LF/ESC/'+' with a leading ESC.</i></summary>
+
+    * **Objective**: Manual §8.1: 00 01 02 13 03 10 04 27 05 43 06 -> escape CR/LF/ESC/'+' with a leading ESC.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expected), n);</code>
+      * <code>Assert equal memory (expected, buf, sizeof(expected))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_data_plain</b> &mdash; <i>a plain SCPI command has no special bytes -> passthrough + newline</i></summary>
+
+    * **Objective**: a plain SCPI command has no special bytes -> passthrough + newline
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
+      * <code>Assert equal memory ("*IDN?\\n", buf, 6)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(plus_exp), n);</code>
+      * <code>Assert equal memory (plus_exp, buf, sizeof(plus_exp))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_build_data(two, sizeof(two), (const uint8_t *)"\\r", 1));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_is_command</b> &mdash; <i>Is command</i></summary>
+
+    * **Objective**: Is command
+    * **Assertions**:
+      * <code>Assert true (dws_gpib_is_command("++mode 1", 8))</code>
+      * <code>Assert true (dws_gpib_is_command("++", 2))</code>
+      * <code>Assert false (dws_gpib_is_command("*IDN?", 5))</code>
+      * <code>Assert false (dws_gpib_is_command("+X", 2))</code>
+      * <code>Assert false (dws_gpib_is_command("+", 1))</code>
+      * <code>Assert false (dws_gpib_is_command("", 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_decimal</b> &mdash; <i>Parse decimal</i></summary>
+
+    * **Objective**: Parse decimal
+    * **Assertions**:
+      * <code>Assert true (dws_gpib_parse_decimal("64\\r\\n", 4, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, v);</code>
+      * <code>Assert true (dws_gpib_parse_decimal(" 255 ", 5, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(255, v);</code>
+      * <code>Assert true (dws_gpib_parse_decimal("1", 1, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, v);</code>
+      * <code>Assert false (dws_gpib_parse_decimal("abc", 3, &v))</code>
+      * <code>Assert false (dws_gpib_parse_decimal("", 0, &v))</code>
+      * <code>Assert false (dws_gpib_parse_decimal("12x", 3, &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_addr</b> &mdash; <i>Parse addr</i></summary>
+
+    * **Objective**: Parse addr
+    * **Assertions**:
+      * <code>Assert true (dws_gpib_parse_addr("9 96\\r\\n", 6, &pad, &sad))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(9, pad);</code>
+      * <code>Assert equal int (96, sad)</code>
+      * <code>Assert true (dws_gpib_parse_addr("12", 2, &pad, &sad))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, pad);</code>
+      * <code>Assert equal int (-1, sad)</code>
+      * <code>Assert false (dws_gpib_parse_addr("31", 2, &pad, &sad))</code>
+      * <code>Assert false (dws_gpib_parse_addr("9 200", 5, &pad, &sad))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_version</b> &mdash; <i>no version token</i></summary>
+
+    * **Objective**: no version token
+    * **Assertions**:
+      * <code>Assert true (dws_gpib_parse_version(resp, strlen(resp), &ver, &vlen))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, vlen);</code>
+      * <code>Assert equal memory ("1.6.6.0", ver, 7)</code>
+      * <code>Assert false (dws_gpib_parse_version("AR488 controller", 16, &ver, &vlen))</code>
   </details>
 
 </details>

@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 132 runnable examples under `examples/`, grouped by
+The library ships 133 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -147,6 +147,7 @@ Routing, protocols, services, and clients:
 [EthernetDnc](../examples/L7-Application/EthernetDnc/README.md) ·
 [FileServing](../examples/L7-Application/FileServing/README.md) ·
 [FileUpload](../examples/L7-Application/FileUpload/README.md) ·
+[Gpib](../examples/L7-Application/Gpib/README.md) ·
 [GpioMap](../examples/L7-Application/GpioMap/README.md) ·
 [GraphQL](../examples/L7-Application/GraphQL/README.md) ·
 [Guardrails](../examples/L7-Application/Guardrails/README.md) ·

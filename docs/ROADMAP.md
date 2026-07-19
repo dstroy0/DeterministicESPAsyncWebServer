@@ -1130,10 +1130,16 @@ the LXI transports (VXI-11 / HiSLIP) and a GPIB gateway extend reach to older an
       against the VXI-11 spec + RFC 5531/4506/1833 (cross-checked with python-vxi11 + the Wireshark
       dissector); host-tested (`native_vxi11`, byte-exact create_link vector). _Remaining:_ the LXI
       mDNS/VXI-11 discovery beacon (low-pri) and the GPIB gateway below.
-- [ ] **GPIB-over-LAN gateway** (S, Prologix-style) - the Prologix `++`-command GPIB-Ethernet gateway
-      control set (`++addr`, `++read`, `++eoi`, `++mode`), so the device drives a bench of legacy
-      IEEE-488 (GPIB) instruments through a common Prologix-compatible adapter - the bridge into
-      pre-LAN test gear that will never speak SCPI-over-TCP directly.
+- [x] **GPIB-over-LAN gateway** (S, Prologix-style) - SHIPPED (`services/gpib`, `DWS_ENABLE_GPIB`,
+      example `L7-Application/Gpib`). The Prologix `++`-command GPIB-Ethernet gateway control set
+      (`++addr`, `++read`, `++eoi`, `++eos`, `++mode`, `++spoll`, ... via `dws_gpib_command` + typed
+      helpers), the data-line escaping (leading ESC before CR/LF/ESC/`+`, byte-exact against the
+      manual), the command-vs-data classifier, and the response parsers, so the device drives a bench
+      of legacy IEEE-488 (GPIB) instruments through a common Prologix-compatible adapter - the bridge
+      into pre-LAN test gear that will never speak SCPI-over-TCP directly. Verified against the
+      Prologix GPIB-Ethernet / GPIB-USB manuals (cross-checked with AR488); host-tested
+      (`native_gpib`). **This completes the instrument-control cluster** (SCPI + HiSLIP + VXI-11 +
+      GPIB).
 
 ### Intelligent Transportation Systems (ITS)
 

@@ -883,6 +883,12 @@
       "src": ["+<services/vxi11/vxi11.cpp>"],
       "tests": ["test_vxi11"]
     },
+    "native_gpib": {
+      "desc": "GPIB-over-LAN (Prologix-style) controller command codec (services/gpib): the ++ command\nbuilders (addr / mode / read / eoi / eos / spoll / clr / trg / ver), the data-line escaping\n(leading ESC before CR/LF/ESC/+ in instrument data), the command-vs-data classifier, and the\nresponse parsers (address, serial-poll status byte, version). Pure host tests.",
+      "flags": ["-DDWS_ENABLE_GPIB=1"],
+      "src": ["+<services/gpib/gpib.cpp>"],
+      "tests": ["test_gpib"]
+    },
     "native_senml": {
       "desc": "SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the\nJSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral\nnumbers emitted as integers. Pure host tests.",
       "flags": ["-DDWS_ENABLE_SENML=1"],

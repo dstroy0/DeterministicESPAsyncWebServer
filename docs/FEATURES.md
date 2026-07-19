@@ -382,6 +382,12 @@ FTP client wire codec (RFC 959 + RFC 2428). Default off. services/ftp is the pur
 
 Opt-in IEC 61850 GOOSE publisher codec. When set, services/goose builds the BER-encoded IECGoosePdu (gocbRef / timeAllowedToLive / datSet / goID / t / stNum / sqNum / simulation / confRev / ndsCom / numDatSetEntries / allData) and wraps it in the 8-octet GOOSE header + Ethernet frame (ethertype 0x88B8) for the fast raw-L2 substation-event publish. Pure codec (allData is a caller-encoded BER blob; the raw-L2 transmit is the device step). Default off.
 
+## GPIB
+
+`DWS_ENABLE_GPIB`
+
+GPIB-over-LAN (Prologix-style) controller command codec. Default off. services/gpib is a zero-heap codec for the Prologix-compatible `++` command set that drives a bench of legacy IEEE-488 (GPIB) instruments through a Prologix GPIB-Ethernet / GPIB-USB adapter (raw socket on TCP 1234) - the bridge into pre-LAN test gear that will never speak SCPI-over-TCP directly. It builds the control commands (`dws_gpib_command` for the generic form, plus typed `dws_gpib_addr` / `dws_gpib_read` / `dws_gpib_spoll` / `dws_gpib_eos` helpers - the `++eos` mapping 0=CR+LF / 1=CR / 2=LF / 3=None), builds an escaped data line (`dws_gpib_build_data` - a leading ESC before each CR / LF / ESC / `+` byte in the payload, then an unescaped newline, verified byte-exact against the manual's binary example), classifies a line as command-vs-data (`dws_gpib_is_command`), and parses the responses (`dws_gpib_parse_decimal` for the serial-poll status byte / SRQ / address, `dws_gpib_parse_addr`, `dws_gpib_parse_version`). Command set + escaping + port verified against the Prologix GPIB-Ethernet / GPIB-USB controller manuals (cross-checked with AR488). Carries SCPI ([DWS_ENABLE_SCPI](#scpi)) to the instrument as data. Pure codec, host-tested; the socket / serial link to the adapter is the application's. See src/services/gpib/gpib.h.
+
 ## GPIO Map
 
 `DWS_ENABLE_GPIO_MAP`
