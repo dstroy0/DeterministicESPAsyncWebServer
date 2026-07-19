@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.13.1] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.13.1 - 2026-07-19</b></summary>
 
 ### Bug Fixes
 
@@ -10,13 +13,22 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ac9c84a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac9c84afec7ef284db11bce16035f6e12472963c))
 - update test report + coverage [skip ci] ([`d68830f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d68830fc3f139fe00770ab541069ac8f3e2751ca))
 - update CHANGELOG.md [skip ci] ([`a6dca31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6dca31eaaccfe130429c9960705cf605af6e4e5))
 
+### Changes
+
+- Bump version: 7.13.0 → 7.13.1 ([`5627183`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5627183c895ef98bd16d3c47cc8d25badfc85737))
+
 ### Documentation
 
+- HW-verify the spinel codec on a real ESP32-C6 RCP (8/8) ([`baa1bac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/baa1bacd84d8b93c63c7b7f9863308f1bb37c53a))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b3c251a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3c251a8220950cf7fdad6692a0c3a7cad6b3f71))
 - update ESP32 build footprints [skip ci] ([`d7281ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7281ff366858bf607a47e3de0c276f0b60db8e2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`592446f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/592446f81a135c7b29f89e538f65e49a8bcd8e56))
+
+</details>
 
 ## [7.13.0] - 2026-07-19
 
