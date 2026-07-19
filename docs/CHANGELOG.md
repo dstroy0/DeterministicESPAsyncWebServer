@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.6.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.6.0 - 2026-07-19</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`53cd383`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53cd38380bd2fdc498ab501ba615b78934c9c12d))
+- update CHANGELOG.md [skip ci] ([`e784631`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e784631e4686121e9daea917446e734889553f2b))
+
+### Changes
+
+- Bump version: 7.5.0 → 7.6.0 ([`25b1021`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25b102170601305a63d17b34b19f3bb15ed8201a))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`859d628`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/859d62880fa15bc25af4d980d312e79f4edbdc02))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d568faf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d568fafdc0f5a865edc1bb96df3e5b7fc0079b3d))
+
+### Features
+
+- Prologix-style GPIB-over-LAN controller command codec ([`f946163`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f94616333a67046aa9994a62c5718df4a9332398))
+
+</details>
+
 ## [7.5.0] - 2026-07-19
 
 <details>
