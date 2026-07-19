@@ -2,17 +2,28 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.11.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.11.0 - 2026-07-19</b></summary>
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`1e8560d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e8560d185dca4b129411ff3c18e8e1a55eaaba2))
+- update CHANGELOG.md [skip ci] ([`29622bd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/29622bd34083a35e3316fd579f303a7f9b818430))
 - update CHANGELOG.md [skip ci] ([`dc2ce2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc2ce2d74c941e2bb402354e8ba9d50713528244))
 - update CHANGELOG.md [skip ci] ([`12b6fbb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12b6fbb781b72768db6a136272f9b923d087c792))
 - update test report + coverage [skip ci] ([`19c756a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19c756a7262452916d607990d481b1e97a05291d))
 - update CHANGELOG.md [skip ci] ([`ccbff35`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ccbff3505bc9dd1f0d4c70a7ecc1f7a41200a5cd))
 
+### Changes
+
+- Bump version: 7.10.0 → 7.11.0 ([`72b78d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72b78d20c22a07defabf9d2329959db1032feaf4))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`281024d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/281024d04a28facc8282cc58900a493914e658d3))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9d907bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9d907bf5883632430b6aed362a26f5ef523f6976))
 - mark static-IP fallback + window auto-scaling done (cores complete) ([`1378b74`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1378b74f28e454dc263d65a8c6fefe70526c2575))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`28ffc03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28ffc03ee6e6431e1844cade8c61be82af506eb5))
 - close IPv6 dual-stack - HW-verified SLAAC + serving on an ESP32-S3 ([`746e22f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/746e22f091544b06ab77422cc2f3b7cb61fe41e4))
@@ -22,6 +33,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - key the auth lockout on the real client behind a trusted proxy ([`05a763b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05a763b7868db0ffbad8078f216e7546de853aa4))
+
+</details>
 
 ## [7.10.0] - 2026-07-19
 
