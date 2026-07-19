@@ -69,6 +69,7 @@
 "native_gateway",
 "native_gnss_survey",
 "native_goose",
+"native_gpib",
 "native_gpio_map",
 "native_graphql",
 "native_grpcweb",
@@ -305,6 +306,7 @@
 "native_gateway",
 "native_gnss_survey",
 "native_goose",
+"native_gpib",
 "native_gpio_map",
 "native_graphql",
 "native_grpcweb",
@@ -541,6 +543,7 @@
 "native_gateway",
 "native_gnss_survey",
 "native_goose",
+"native_gpib",
 "native_gpio_map",
 "native_graphql",
 "native_grpcweb",
@@ -2808,6 +2811,12 @@
 ],
 "src/services/goose/goose.h": [
 "native_goose"
+],
+"src/services/gpib/gpib.cpp": [
+"native_gpib"
+],
+"src/services/gpib/gpib.h": [
+"native_gpib"
 ],
 "src/services/gpio_map/gpio_map.cpp": [
 "native_gpio_map"
