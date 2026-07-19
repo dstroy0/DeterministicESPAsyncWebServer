@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.2.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.2.0 - 2026-07-19</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`ded6624`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ded6624054e13e735ccdee5f551cf6bc5556dd39))
+- update CHANGELOG.md [skip ci] ([`965fb89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/965fb896d117e8c49fdd1526c49aee421121ab3e))
+
+### Changes
+
+- Bump version: 7.1.0 → 7.2.0 ([`9e72cd7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e72cd75163aed72484a1d1d16a3e76be7bcf24c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9812546`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9812546c433fc640ad18f42fd9ea892705bda781))
+
+### Features
+
+- per-variant defaults for the whole ESP32 lineup; fix UDP handler regression ([`fc4b828`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc4b8285718f32c6f72e186a626743f4c1c6c8c7))
+
+</details>
+
 ## [7.1.0] - 2026-07-18
 
 <details>
