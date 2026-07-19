@@ -98,7 +98,8 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
   Samba/Windows share (needs a share to point at).
 - **Concurrent TLS** (`MAX_TLS_CONNS`>1) - library + PSRAM build done; only the live 2-client soak remains
   (the reserved **two-rig HW test**, held per the user's "keep looping, hold the rigs").
-- **Ethernet PHY** - RMII bring-up shipped; needs a real PHY board to verify.
+- **Ethernet PHY** - RMII bring-up shipped + **HW-verified (2026-07-19)** on a Waveshare ESP32-P4-POE-ETH
+  (onboard IP101 PHY): the shipped `init_eth_physical()` serves real HTTP over pure wired Ethernet. See the `[x]` entry below.
 - **CoAP scope** - `/.well-known/core` discovery shipped; separate/deferred responses + CON dedup are
   deliberately out of scope.
 - **SSH channels** - `direct-tcpip` (`ssh -L`) shipped; `forwarded-tcpip` (`ssh -R`) + X11 pending.
@@ -536,13 +537,16 @@ Open follow-ups discovered during the above:
       because the test host cannot reach the device (AP client isolation on the lab WiFi + no admin
       to add a route - the same topology the interop harness works around with a device-out broker),
       not a code limitation.
-- [~] **Ethernet PHY abstraction** - _(bring-up shipped)_ `DWS_ENABLE_ETHERNET`:
+- [x] **Ethernet PHY abstraction** - _(bring-up shipped; HW-verified 2026-07-19)_ `DWS_ENABLE_ETHERNET`:
       `init_eth_physical()` / `eth_ready()` in `network_drivers/physical` wrap the Arduino
-      ETH library for an RMII PHY (LAN8720 / ...), configured by the standard `ETH_PHY_*`
-      build flags. The egress reporting + per-route interface classifier already handle a
-      wired route (DETIFACE_ETH, host-tested), so the server serves over Ethernet - or
-      dual-homed with Wi-Fi - once the link has an IP. Example Ethernet; ESP32-compiled.
-      Remaining: verify against a PHY board.
+      ETH library for an RMII PHY (LAN8720 / IP101 / ...), configured by the standard `ETH_PHY_*`
+      build flags (or a board variant that supplies them). The egress reporting + per-route interface
+      classifier already handle a wired route (DETIFACE_ETH, host-tested), so the server serves over
+      Ethernet - or dual-homed with Wi-Fi - once the link has an IP. **HW-verified on a Waveshare
+      ESP32-P4-POE-ETH** (onboard IP101 RMII PHY, arduino-esp32 3.x): the shipped `init_eth_physical()`
+      brought the PHY up (link 100M full-duplex + DHCP), `dws_net_egress_ip()` reported the wired
+      address, and the DWS server answered real HTTP `GET`s over pure wired Ethernet (no W5500, no
+      Wi-Fi) from an on-LAN host. No library change was needed. Example Ethernet.
 - [x] **IPv6 dual-stack** - _phase 1 landed (v4.83.0); phase 2 landed (v4.89.0); HW-verified 2026-07-19._ `DWS_ENABLE_IPV6`
       enables IPv6 on the netif (`init_ipv6_physical` / `net_global_ipv6` / `dws_ipv6_ready`); the
       listeners already bind `IPADDR_TYPE_ANY`, so the server accepts v6 once an address is up. The

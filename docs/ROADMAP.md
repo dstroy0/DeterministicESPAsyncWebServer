@@ -355,8 +355,10 @@ preempting queue, so sensing shares the real-time ingest path.
   interfaces (kind + priority + up/down) with deterministic best-link-up selection, graceful escalation to
   a higher-priority interface when it comes up, failover to the next best when it drops, and change
   detection so the app reconfigures the netif only on a real transition. Pure, host-tested
-  (`native_link_manager`). _Remaining:_ the `esp_eth` PHY init on hardware + the multi-interface bridge /
-  packet forwarding (the v5 interface-forwarding milestone).
+  (`native_link_manager`). The PHY init is **HW-verified (2026-07-19)** on a Waveshare ESP32-P4-POE-ETH
+  (onboard IP101 RMII PHY, arduino-esp32 3.x): the shipped `init_eth_physical()` brought the link up (100M
+  full-duplex + DHCP) and the DWS server answered real HTTP over pure wired Ethernet. _Remaining:_ the
+  multi-interface bridge / packet forwarding (the v5 interface-forwarding milestone).
 - [~] IPv6 dual-stack + fallback (L); VPN tunneling + reverse-SSH tunnel to a relay (L) _(dual-stack +
   fallback shipped + HW-verified 2026-07-19)_ - the address plumbing is `DWSIp` (RFC 4291 parse / RFC 5952
   format / scope classify / CIDR) and the netif bring-up is `DWS_ENABLE_IPV6` (physical layer; listeners bind

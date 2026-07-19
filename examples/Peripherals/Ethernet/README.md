@@ -38,6 +38,26 @@ Common boards differ - e.g. **WT32-ETH01** uses `ETH_PHY_POWER=16`, **Olimex ESP
 uses `ETH_PHY_ADDR=0 ETH_PHY_POWER=12 ETH_CLK_MODE=ETH_CLOCK_GPIO17_OUT`. Set the flags for
 your hardware.
 
+## ESP32-P4 (verified)
+
+On the **ESP32-P4** the RMII PHY drives the P4's built-in EMAC (no external SPI chip). A board
+whose arduino-esp32 variant already defines the `ETH_PHY_*` pins needs **no** `ETH_PHY_*` flags -
+`init_eth_physical()`'s no-arg `ETH.begin()` picks them up. **HW-verified (2026-07-19)** on a
+**Waveshare ESP32-P4-POE-ETH** (onboard IP101 PHY: `MDC=31 MDIO=52 POWER=51`, `EMAC_CLK_EXT_IN`,
+phy addr 0) built under arduino-esp32 3.x - link came up 100M full-duplex + DHCP and the server
+answered HTTP over pure wired Ethernet:
+
+```sh
+# arduino-esp32 3.x; the waveshare_p4_poe_eth variant supplies the IP101 pins, so only the library
+# flag is needed:
+arduino-cli compile --fqbn esp32:esp32:waveshare_p4_poe_eth \
+  --build-property "compiler.cpp.extra_flags=-DDWS_ENABLE_ETHERNET=1" \
+  examples/Peripherals/Ethernet/Ethernet.ino
+```
+
+For a P4 board without a ready-made variant, pass the pins explicitly (from the board's schematic),
+e.g. `-DDWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_IP101 -DETH_PHY_ADDR=0 -DETH_PHY_MDC=31 -DETH_PHY_MDIO=52 -DETH_PHY_POWER=51 -DETH_CLK_MODE=EMAC_CLK_EXT_IN`.
+
 ## Build-flag note
 
 The flags must reach the library build, so pass them as build flags:
