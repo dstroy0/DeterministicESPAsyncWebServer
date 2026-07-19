@@ -2,17 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.12.0] - 2026-07-19
+
+<details>
+<summary><b>Show Changelog for version 7.12.0 - 2026-07-19</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`7cf1fa6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7cf1fa6e36a0518e96c1983e80802ffc21489aa2))
 - update test report + coverage [skip ci] ([`b155626`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1556263916ebc32aad319bba5d9a659415c5ae4))
 - update CHANGELOG.md [skip ci] ([`96a3462`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96a3462d4f763520cc95b99f5228b0a3bd556481))
+
+### Changes
+
+- Bump version: 7.11.0 → 7.12.0 ([`666bce7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/666bce7f01ba0c30cf51fabed668f82c2cdd967c))
 
 ### Documentation
 
 - close Ethernet PHY - HW-verified on an ESP32-P4 (IP101 RMII) ([`f377244`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3772446c0f831556d3c9a4367ca71896201193a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5cb4658`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5cb4658b2513002b536bc9a498d83985e42d8258))
+
+### Features
+
+- close Thread/Matter RCP - spinel property registry + typed value semantics ([`2da6d82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2da6d8203bfc59d332a3a775c7a1a45741b13068))
+
+</details>
 
 ## [7.11.0] - 2026-07-19
 
