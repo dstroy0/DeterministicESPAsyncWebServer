@@ -3,8 +3,8 @@
     "example": "L4-Transport/AcceptThrottle",
     "flags": "-DDWS_ENABLE_ACCEPT_THROTTLE=1",
     "board": "esp32dev",
-    "flash_bytes": 752169,
-    "ram_bytes": 81792
+    "flash_bytes": 752581,
+    "ram_bytes": 81796
   },
   "ADS": {
     "example": "L7-Application/AdsClient",
@@ -112,11 +112,11 @@
     "ram_bytes": 81824
   },
   "DIAG": {
-    "example": "L7-Application/Diagnostics",
+    "example": "Foundation/Configuration",
     "flags": "-DDWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 753025,
-    "ram_bytes": 81784
+    "flash_bytes": 755021,
+    "ram_bytes": 77548
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
     "example": "Peripherals/DmaIngest",
@@ -311,8 +311,8 @@
     "example": "L4-Transport/KeepAlive",
     "flags": "-DDWS_ENABLE_KEEPALIVE=1",
     "board": "esp32dev",
-    "flash_bytes": 752697,
-    "ram_bytes": 81784
+    "flash_bytes": 752985,
+    "ram_bytes": 81788
   },
   "LD2410": {
     "example": "Drivers/Ld2410",
@@ -497,11 +497,11 @@
     "ram_bytes": 21920
   },
   "PREEMPT_QUEUE": {
-    "example": "Foundation/PreemptLanes",
+    "example": "Foundation/PreemptQueue",
     "flags": "-DDWS_ENABLE_PREEMPT_QUEUE=1",
     "board": "esp32dev",
-    "flash_bytes": 268401,
-    "ram_bytes": 23936
+    "flash_bytes": 274069,
+    "ram_bytes": 23968
   },
   "PROMISC+FORWARD+ETHERNET": {
     "example": "Peripherals/WifiCapture",
@@ -542,8 +542,8 @@
     "example": "Drivers/Rtc",
     "flags": "-DDWS_ENABLE_RTC=1 -DDWS_ENABLE_TIME_SOURCE=1 -DDWS_ENABLE_NTP=1",
     "board": "esp32dev",
-    "flash_bytes": 766653,
-    "ram_bytes": 45372
+    "flash_bytes": 767001,
+    "ram_bytes": 45388
   },
   "SCPI": {
     "example": "L7-Application/Scpi",
@@ -605,8 +605,8 @@
     "example": "L5-Session/SSHHostKey",
     "flags": "-DDWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 828741,
-    "ram_bytes": 109156
+    "flash_bytes": 829481,
+    "ram_bytes": 109176
   },
   "SSH+FILE_SERVING+SSH_SFTP+SSH_SCP": {
     "example": "L5-Session/SSHSftp",
@@ -654,8 +654,8 @@
     "example": "L5-Session/Telnet",
     "flags": "-DDWS_ENABLE_TELNET=1",
     "board": "esp32dev",
-    "flash_bytes": 754581,
-    "ram_bytes": 82320
+    "flash_bytes": 755153,
+    "ram_bytes": 82332
   },
   "THREAD+GATEWAY": {
     "example": "Drivers/ThreadGateway",
@@ -808,22 +808,22 @@
     "example": "Foundation/Advanced",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 761077,
-    "ram_bytes": 81896
+    "flash_bytes": 761585,
+    "ram_bytes": 81900
   },
   "core/Basic": {
     "example": "Foundation/Basic",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 754421,
-    "ram_bytes": 81792
+    "flash_bytes": 754981,
+    "ram_bytes": 81804
   },
   "core/BasicAuth": {
     "example": "L6-Presentation/BasicAuth",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 752409,
-    "ram_bytes": 81784
+    "flash_bytes": 752837,
+    "ram_bytes": 81788
   },
   "core/CORS": {
     "example": "L7-Application/CORS",
@@ -836,8 +836,8 @@
     "example": "L7-Application/ChunkedResponse",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 753065,
-    "ram_bytes": 81792
+    "flash_bytes": 753421,
+    "ram_bytes": 81804
   },
   "core/DigestAuth": {
     "example": "L6-Presentation/DigestAuth",
@@ -857,8 +857,8 @@
     "example": "Foundation/Expert",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 755053,
-    "ram_bytes": 81808
+    "flash_bytes": 755657,
+    "ram_bytes": 81812
   },
   "core/FileServing": {
     "example": "L7-Application/FileServing",
@@ -871,8 +871,8 @@
     "example": "L6-Presentation/FormParams",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 753161,
-    "ram_bytes": 81784
+    "flash_bytes": 753521,
+    "ram_bytes": 81788
   },
   "core/InterfaceFilter": {
     "example": "L7-Application/InterfaceFilter",
@@ -906,8 +906,8 @@
     "example": "L6-Presentation/Multipart",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 753497,
-    "ram_bytes": 81784
+    "flash_bytes": 754017,
+    "ram_bytes": 81788
   },
   "core/NetEgress": {
     "example": "L7-Application/NetEgress",
@@ -948,8 +948,8 @@
     "example": "L6-Presentation/ServerSentEvents",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 752969,
-    "ram_bytes": 81792
+    "flash_bytes": 753465,
+    "ram_bytes": 81796
   },
   "core/Sysadmin": {
     "example": "Foundation/Sysadmin",

@@ -8,7 +8,7 @@ from each example's `pio ci` size report and aggregated into
 
 | Feature                                                                                                   | Example                              | Flash            | RAM              |
 | --------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------- | ---------------- |
-| `ACCEPT_THROTTLE`                                                                                         | L4-Transport/AcceptThrottle          | 734.5 KB (57.4%) | 79.9 KB (25.0%)  |
+| `ACCEPT_THROTTLE`                                                                                         | L4-Transport/AcceptThrottle          | 734.9 KB (57.4%) | 79.9 KB (25.0%)  |
 | `ADS`                                                                                                     | L7-Application/AdsClient             | 753.8 KB (58.9%) | 44.4 KB (13.9%)  |
 | `ADS1115`                                                                                                 | Drivers/Ads1115                      | 280.2 KB (21.9%) | 21.3 KB (6.7%)   |
 | `AUDIT_LOG`                                                                                               | L7-Application/AuditLog              | 736.9 KB (57.6%) | 82.8 KB (25.9%)  |
@@ -24,7 +24,7 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                                                                                    | L7-Application/Csrf                  | 736.3 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DASHBOARD`                                                                                               | L7-Application/Dashboard             | 755.1 KB (59.0%) | 80.2 KB (25.1%)  |
 | `DEVICE_ID`                                                                                               | L7-Application/DeviceUuid            | 735.1 KB (57.4%) | 79.9 KB (25.0%)  |
-| `DIAG`                                                                                                    | L7-Application/Diagnostics           | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
+| `DIAG`                                                                                                    | Foundation/Configuration             | 737.3 KB (57.6%) | 75.7 KB (23.7%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`                                                                          | Peripherals/DmaIngest                | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE`                                                                  | Foundation/InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE`                                                                  | Drivers/RadioGateway                 | 264.2 KB (20.6%) | 28.0 KB (8.8%)   |
@@ -52,7 +52,7 @@ from each example's `pio ci` size report and aggregated into
 | `IPV6`                                                                                                    | Foundation/IPv6                      | 737.1 KB (57.6%) | 79.9 KB (25.0%)  |
 | `IP_ALLOWLIST`                                                                                            | L4-Transport/IpAllowlist             | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
 | `JWT`                                                                                                     | L6-Presentation/JWTAuth              | 736.9 KB (57.6%) | 81.0 KB (25.3%)  |
-| `KEEPALIVE`                                                                                               | L4-Transport/KeepAlive               | 735.1 KB (57.4%) | 79.9 KB (25.0%)  |
+| `KEEPALIVE`                                                                                               | L4-Transport/KeepAlive               | 735.3 KB (57.4%) | 79.9 KB (25.0%)  |
 | `LD2410`                                                                                                  | Drivers/Ld2410                       | 264.3 KB (20.7%) | 21.1 KB (6.6%)   |
 | `LOGBUF`                                                                                                  | L7-Application/LogBuffer             | 736.2 KB (57.5%) | 82.9 KB (25.9%)  |
 | `LORA+GATEWAY`                                                                                            | Drivers/LoRaGateway                  | 269.9 KB (21.1%) | 21.2 KB (6.6%)   |
@@ -79,13 +79,13 @@ from each example's `pio ci` size report and aggregated into
 | `PCA9685`                                                                                                 | Drivers/Pca9685                      | 277.9 KB (21.7%) | 21.3 KB (6.7%)   |
 | `PER_IP_THROTTLE`                                                                                         | L4-Transport/PerIpThrottle           | 735.0 KB (57.4%) | 80.3 KB (25.1%)  |
 | `PN532+GATEWAY`                                                                                           | Drivers/NfcGateway                   | 281.4 KB (22.0%) | 21.4 KB (6.7%)   |
-| `PREEMPT_QUEUE`                                                                                           | Foundation/PreemptLanes              | 262.1 KB (20.5%) | 23.4 KB (7.3%)   |
+| `PREEMPT_QUEUE`                                                                                           | Foundation/PreemptQueue              | 267.6 KB (20.9%) | 23.4 KB (7.3%)   |
 | `PROMISC+FORWARD+ETHERNET`                                                                                | Peripherals/WifiCapture              | 746.7 KB (58.3%) | 46.4 KB (14.5%)  |
 | `PROVISIONING`                                                                                            | L7-Application/Provisioning          | 742.2 KB (58.0%) | 81.4 KB (25.4%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`                                                                               | L7-Application/RadioPower            | 734.8 KB (57.4%) | 79.9 KB (25.0%)  |
 | `RANGE`                                                                                                   | L7-Application/Range                 | 776.4 KB (60.7%) | 79.9 KB (25.0%)  |
 | `RELAY`                                                                                                   | L7-Application/PortForward           | 744.5 KB (58.2%) | 113.7 KB (35.5%) |
-| `RTC+TIME_SOURCE+NTP`                                                                                     | Drivers/Rtc                          | 748.7 KB (58.5%) | 44.3 KB (13.8%)  |
+| `RTC+TIME_SOURCE+NTP`                                                                                     | Drivers/Rtc                          | 749.0 KB (58.5%) | 44.3 KB (13.9%)  |
 | `SCPI`                                                                                                    | L7-Application/Scpi                  | 726.0 KB (56.7%) | 44.0 KB (13.7%)  |
 | `SEN0192`                                                                                                 | Drivers/Sen0192                      | 263.5 KB (20.6%) | 21.0 KB (6.6%)   |
 | `SHT3X`                                                                                                   | Drivers/Sht3x                        | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
@@ -94,14 +94,14 @@ from each example's `pio ci` size report and aggregated into
 | `SMTP`                                                                                                    | L7-Application/SmtpAlert             | 717.5 KB (56.1%) | 59.7 KB (18.6%)  |
 | `SNMP`                                                                                                    | L7-Application/SNMP                  | 743.4 KB (58.1%) | 92.0 KB (28.7%)  |
 | `SNMP+SNMP_TRAP`                                                                                          | L7-Application/SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
-| `SSH`                                                                                                     | L5-Session/SSHHostKey                | 809.3 KB (63.2%) | 106.6 KB (33.3%) |
+| `SSH`                                                                                                     | L5-Session/SSHHostKey                | 810.0 KB (63.3%) | 106.6 KB (33.3%) |
 | `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP`                                                                       | L5-Session/SSHSftp                   | 860.4 KB (67.2%) | 115.7 KB (36.2%) |
 | `STATS`                                                                                                   | L7-Application/Stats                 | 736.5 KB (57.5%) | 80.0 KB (25.0%)  |
 | `STATS+METRICS`                                                                                           | L7-Application/PrometheusMetrics     | 738.6 KB (57.7%) | 80.0 KB (25.0%)  |
 | `STATSD`                                                                                                  | L7-Application/StatsdMetrics         | 711.4 KB (55.6%) | 44.0 KB (13.8%)  |
 | `SYSLOG`                                                                                                  | L7-Application/Syslog                | 738.0 KB (57.7%) | 81.7 KB (25.5%)  |
 | `TELEMETRY`                                                                                               | L7-Application/Telemetry             | 743.4 KB (58.1%) | 80.2 KB (25.1%)  |
-| `TELNET`                                                                                                  | L5-Session/Telnet                    | 736.9 KB (57.6%) | 80.4 KB (25.1%)  |
+| `TELNET`                                                                                                  | L5-Session/Telnet                    | 737.5 KB (57.6%) | 80.4 KB (25.1%)  |
 | `THREAD+GATEWAY`                                                                                          | Drivers/ThreadGateway                | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
 | `TLS`                                                                                                     | L6-Presentation/SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                                                                                | L4-Transport/mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
@@ -123,27 +123,27 @@ from each example's `pio ci` size report and aggregated into
 | `WS_DEFLATE`                                                                                              | L6-Presentation/WebSocketCompression | 739.3 KB (57.8%) | 87.9 KB (27.5%)  |
 | `ZIGBEE+GATEWAY`                                                                                          | Drivers/ZigbeeGateway                | 262.9 KB (20.5%) | 21.6 KB (6.7%)   |
 | `ZWAVE+GATEWAY`                                                                                           | Drivers/ZWaveGateway                 | 262.6 KB (20.5%) | 21.3 KB (6.7%)   |
-| `core/Advanced`                                                                                           | Foundation/Advanced                  | 743.2 KB (58.1%) | 80.0 KB (25.0%)  |
-| `core/Basic`                                                                                              | Foundation/Basic                     | 736.7 KB (57.6%) | 79.9 KB (25.0%)  |
-| `core/BasicAuth`                                                                                          | L6-Presentation/BasicAuth            | 734.8 KB (57.4%) | 79.9 KB (25.0%)  |
+| `core/Advanced`                                                                                           | Foundation/Advanced                  | 743.7 KB (58.1%) | 80.0 KB (25.0%)  |
+| `core/Basic`                                                                                              | Foundation/Basic                     | 737.3 KB (57.6%) | 79.9 KB (25.0%)  |
+| `core/BasicAuth`                                                                                          | L6-Presentation/BasicAuth            | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/CORS`                                                                                               | L7-Application/CORS                  | 734.7 KB (57.4%) | 79.9 KB (25.0%)  |
-| `core/ChunkedResponse`                                                                                    | L7-Application/ChunkedResponse       | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
+| `core/ChunkedResponse`                                                                                    | L7-Application/ChunkedResponse       | 735.8 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/DigestAuth`                                                                                         | L6-Presentation/DigestAuth           | 734.9 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/EthernetW5500`                                                                                      | Peripherals/EthernetW5500            | 458.6 KB (35.8%) | 71.9 KB (22.5%)  |
-| `core/Expert`                                                                                             | Foundation/Expert                    | 737.4 KB (57.6%) | 79.9 KB (25.0%)  |
+| `core/Expert`                                                                                             | Foundation/Expert                    | 737.9 KB (57.7%) | 79.9 KB (25.0%)  |
 | `core/FileServing`                                                                                        | L7-Application/FileServing           | 775.1 KB (60.6%) | 79.9 KB (25.0%)  |
-| `core/FormParams`                                                                                         | L6-Presentation/FormParams           | 735.5 KB (57.5%) | 79.9 KB (25.0%)  |
+| `core/FormParams`                                                                                         | L6-Presentation/FormParams           | 735.9 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/InterfaceFilter`                                                                                    | L7-Application/InterfaceFilter       | 736.3 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/Json`                                                                                               | L6-Presentation/Json                 | 738.7 KB (57.7%) | 79.9 KB (25.0%)  |
 | `core/MediaStreaming`                                                                                     | L7-Application/MediaStreaming        | 734.6 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/Middleware`                                                                                         | L7-Application/Middleware            | 735.3 KB (57.4%) | 79.9 KB (25.0%)  |
-| `core/Multipart`                                                                                          | L6-Presentation/Multipart            | 735.8 KB (57.5%) | 79.9 KB (25.0%)  |
+| `core/Multipart`                                                                                          | L6-Presentation/Multipart            | 736.3 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/NetEgress`                                                                                          | L7-Application/NetEgress             | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/PathParams`                                                                                         | L7-Application/PathParams            | 735.1 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/RegexRoutes`                                                                                        | L7-Application/RegexRoutes           | 735.0 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/ResponseHeaders`                                                                                    | L7-Application/ResponseHeaders       | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/SSHCryptoSelfTest`                                                                                  | L5-Session/SSHCryptoSelfTest         | 263.2 KB (20.6%) | 21.0 KB (6.6%)   |
-| `core/ServerSentEvents`                                                                                   | L6-Presentation/ServerSentEvents     | 735.3 KB (57.4%) | 79.9 KB (25.0%)  |
+| `core/ServerSentEvents`                                                                                   | L6-Presentation/ServerSentEvents     | 735.8 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/Sysadmin`                                                                                           | Foundation/Sysadmin                  | 748.3 KB (58.5%) | 79.9 KB (25.0%)  |
 | `core/Templating`                                                                                         | L7-Application/Templating            | 736.5 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/WebSocket`                                                                                          | L6-Presentation/WebSocket            | 735.1 KB (57.4%) | 79.9 KB (25.0%)  |
