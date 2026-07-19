@@ -1381,7 +1381,8 @@
     "localtime",
     "qsort",
     "regen",
-    "unconfigurable"
+    "unconfigurable",
+    "IKEV"
   ],
   "ignorePaths": [
     "node_modules/**",

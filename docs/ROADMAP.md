@@ -366,14 +366,16 @@ preempting queue, so sensing shares the real-time ingest path.
   `dws_he_attempt_due` gates the next attempt by the Connection Attempt Delay - fast IPv6, quick IPv4
   fallback. Pure, host-tested (`native_happy_eyeballs`). _Remaining:_ VPN tunneling + the reverse-SSH
   tunnel to a relay (L; the `ssh -R` tcpip-forward seam already landed).
-- [ ] **IPsec / IKEv2** (XL, the concrete VPN for the item above - **secure machine bridge over untrusted
-      networks**) - IKEv2 (RFC 7296) over UDP 500 / 4500 (NAT-T) plus the ESP datapath (RFC 4303). Splits
-      into three tractability tiers, built in order:
-    1. **IKEv2 message + payload codec** (M, tractable, matches our zero-heap codec pattern) - the 28-octet
+- [~] **IPsec / IKEv2** (XL, the concrete VPN for the item above - **secure machine bridge over untrusted
+  networks**) _(tier 1 codec shipped)_ - IKEv2 (RFC 7296) over UDP 500 / 4500 (NAT-T) plus the ESP datapath
+  (RFC 4303). Splits into three tractability tiers, built in order:
+    1. **IKEv2 message + payload codec** (M) - SHIPPED (`services/ikev2`, `DWS_ENABLE_IKEV2`, host-tested
+       `native_ikev2`; byte-exact vs scapy). The 28-octet
        header (initiator/responder SPIs, next-payload, MjVer/MnVer, exchange type, flags, message id, length)
        and the generic payload chain (next-payload + critical + length) for the payloads: **SA** (proposals ->
-       transforms: ENCR / PRF / INTEG / D-H / ESN), **KE**, **Ni/Nr** nonce, **AUTH**, **IDi/IDr**, **CERT** /
-       **CERTREQ**, **TSi/TSr** traffic selectors, **N** notify, and **SK** encrypted-payload framing. Pure
+       transforms: ENCR / PRF / INTEG / D-H / ESN, with the key-length attribute), **KE**, **Ni/Nr** nonce,
+       **AUTH**, **IDi/IDr**, **CERT** / **CERTREQ**, **TSi/TSr** traffic selectors, **N** notify, **D** delete,
+       and **SK** encrypted-payload framing. Pure
        build/parse into caller buffers, host-tested with RFC vectors. **Reuses crypto we already ship**:
        `ssh_curve25519` (D-H group 31 = X25519, and MODP groups via `ssh_bignum`), `ssh_chachapoly`
        (ChaCha20-Poly1305 per RFC 7634), `ssh_sha256/512` (PRF/INTEG HMAC), AES-GCM (the `dws_quic_aead` core) -

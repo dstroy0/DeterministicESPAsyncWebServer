@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **248 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **249 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -174,6 +174,7 @@ The native test matrix has **248 environments**, one per feature, generated from
 | `native_iccp` | `WS_ENABLE_ICCP=1` | `test_iccp` | ICCP / TASE.2 (IEC 60870-6) Data_Value codec (services/iccp): the StateQ (state + quality) and RealQ (scaled INTEGER + quality) indication-point BER structures with optional timestamp. |
 | `native_iec60870` | `WS_ENABLE_IEC60870=1` | `test_iec60870` | IEC 60870-5-101/-104 codec (services/iec60870): the -104 APCI (I/S/U), the ASDU header + 3-octet IOA, and the -101 FT1.2 fixed/variable link frames (sum checksum). |
 | `native_iface_bridge` | `WS_ENABLE_IFACE_BRIDGE=1` | `test_iface_bridge` | Interface bridge pure core (services/iface_bridge): the user-defined address:port -> bus rule table (register / find / dedup / capacity, keyed by port+proto with the full DWSIp bind address preserved)... |
+| `native_ikev2` | `WS_ENABLE_IKEV2=1` | `test_ikev2` | IKEv2 (RFC 7296) message + payload codec (services/ikev2): the 28-octet IKE header, the generic payload chain walker, the SA -> proposal -> transform tree (incl. |
 | `native_ina219` | `WS_ENABLE_INA219=1` | `test_ina219` | INA219 current/power codec (services/ina219): decoding the bus-voltage register (bits [15:3], LSB 4 mV, status bits ignored) and the shunt-voltage register (signed, LSB 10 uV), computing the calibrati... |
 | `native_inflate` | `WS_ENABLE_WS_DEFLATE=1` | `test_inflate` | RFC 1951 INFLATE core (the WebSocket permessage-deflate decompressor). |
 | `native_interbus` | `WS_ENABLE_INTERBUS=1` | `test_interbus` | INTERBUS summation-frame codec (services/interbus): the summation frame (loopback + per-device 16-bit slices + CRC-16/CCITT FCS) assemble + disassemble. |
@@ -538,7 +539,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3287 test cases** across **266 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3303 test cases** across **267 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -14055,6 +14056,237 @@ A thorough directory of all **3287 test cases** across **266 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iface_bridge_txn_build(small, sizeof(small), wr, 4, 0));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iface_bridge_txn_parse(nullptr, 10, nullptr, nullptr, nullptr));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ikev2 (16 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
+
+    * **Objective**: overflow fails closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(28, n);</code>
+      * <code>Assert equal memory (GV_HDR, buf, 28)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_hdr_build(buf, 27, &h));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hdr_parse</b> &mdash; <i>truncated header -> false</i></summary>
+
+    * **Objective**: truncated header -> false
+    * **Assertions**:
+      * <code>Assert true (dws_ike_hdr_parse(GV_HDR, sizeof(GV_HDR), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x11, h.init_spi[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x88, h.init_spi[7]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONE, h.next_payload);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_IKE_VERSION, h.version);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_SA_INIT, h.exchange);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_IKE_FLAG_INITIATOR, h.flags);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, h.message_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(28, h.length);</code>
+      * <code>Assert false (dws_ike_hdr_parse(GV_HDR, 27, &h))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hdr_set_length</b> &mdash; <i>Hdr set length</i></summary>
+
+    * **Objective**: Hdr set length
+    * **Assertions**:
+      * <code>Assert true (dws_ike_set_length(buf, sizeof(buf), 92))</code>
+      * <code>Assert true (dws_ike_hdr_parse(buf, 28, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(92, r.length);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ke</b> &mdash; <i>parse the body (after the 4-byte generic header)</i></summary>
+
+    * **Objective**: parse the body (after the 4-byte generic header)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(GV_KE), n);</code>
+      * <code>Assert equal memory (GV_KE, buf, sizeof(GV_KE))</code>
+      * <code>Assert true (dws_ike_ke_parse(GV_KE + 4, sizeof(GV_KE) - 4, &group, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(IKE_DH_MODP2048, group);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, dl);</code>
+      * <code>Assert equal memory (data, d, 8)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_nonce</b> &mdash; <i>Nonce</i></summary>
+
+    * **Objective**: Nonce
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(GV_NONCE), n);</code>
+      * <code>Assert equal memory (GV_NONCE, buf, sizeof(GV_NONCE))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_notify</b> &mdash; <i>parse</i></summary>
+
+    * **Objective**: parse
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(GV_NOTIFY), n);</code>
+      * <code>Assert equal memory (GV_NOTIFY, buf, sizeof(GV_NOTIFY))</code>
+      * <code>Assert true (dws_ike_notify_parse(GV_NOTIFY + 4, sizeof(GV_NOTIFY) - 4, &proto, &type, &spi, &ss, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, proto);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ss);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(16388, type);</code>
+      * <code>Assert null (spi)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dl);</code>
+      * <code>Assert equal memory (data, d, 4)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_delete</b> &mdash; <i>Delete</i></summary>
+
+    * **Objective**: Delete
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(GV_DELETE), n);</code>
+      * <code>Assert equal memory (GV_DELETE, buf, sizeof(GV_DELETE))</code>
+      * <code>Assert true (dws_ike_delete_parse(GV_DELETE + 4, sizeof(GV_DELETE) - 4, &proto, &ss, &num, &spis))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PROTO_IKE, proto);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ss);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, num);</code>
+      * <code>Assert null (spis)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sa_build_no_keylen</b> &mdash; <i>Sa build no keylen</i></summary>
+
+    * **Objective**: Sa build no keylen
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(GV_SA), n);</code>
+      * <code>Assert equal memory (GV_SA, buf, sizeof(GV_SA))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sa_build_keylen</b> &mdash; <i>Sa build keylen</i></summary>
+
+    * **Objective**: Sa build keylen
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(GV_SA_KEYLEN), n);</code>
+      * <code>Assert equal memory (GV_SA_KEYLEN, buf, sizeof(GV_SA_KEYLEN))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sa_parse</b> &mdash; <i>parse the SA body (proposal area, after the 4-byte generic header) from the keylen vector</i></summary>
+
+    * **Objective**: parse the SA body (proposal area, after the 4-byte generic header) from the keylen vector
+    * **Assertions**:
+      * <code>Assert true (dws_ike_sa_first_proposal(GV_SA_KEYLEN + 4, sizeof(GV_SA_KEYLEN) - 4, &prop))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, prop.proposal_num);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PROTO_IKE, prop.protocol_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, prop.spi_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, prop.num_transforms);</code>
+      * <code>Assert true (prop.last)</code>
+      * <code>Assert true (dws_ike_transform_next(&it, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_TRANSFORM_ENCR, t.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(IKE_ENCR_AES_CBC, t.id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(256, t.key_length);</code>
+      * <code>Assert false (t.last)</code>
+      * <code>Assert true (dws_ike_transform_next(&it, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_TRANSFORM_PRF, t.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(IKE_PRF_HMAC_SHA2_256, t.id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, t.key_length); // absent</code>
+      * <code>Assert true (t.last)</code>
+      * <code>Assert false (dws_ike_transform_next(&it, &t))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_id_auth</b> &mdash; <i>generic header: next=AUTH(39), len; body: id_type + 3 reserved + data</i></summary>
+
+    * **Objective**: generic header: next=AUTH(39), len; body: id_type + 3 reserved + data
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + 4 + 11, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_AUTH, buf[0]);</code>
+      * <code>Assert true (dws_ike_id_parse(buf + 4, n - 4, &id_type, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_ID_FQDN, id_type);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(11, dl);</code>
+      * <code>Assert equal memory (fqdn, d, 11)</code>
+      * <code>Assert true (dws_ike_auth_parse(buf + 4, n - 4, &method, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_AUTH_PSK, method);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dl);</code>
+      * <code>Assert equal memory (sig, d, 4)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ts</b> &mdash; <i>generic(4) + num/res(4) + selector(8 + 2*4) = 24</i></summary>
+
+    * **Objective**: generic(4) + num/res(4) + selector(8 + 2*4) = 24
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(24, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_ike_ts_count(buf + 4, n - 4));</code>
+      * <code>Assert true (dws_ike_ts_get(buf + 4, n - 4, 0, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_TS_IPV4_ADDR_RANGE, got.ts_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, got.start_port);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(65535, got.end_port);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, got.addr_len);</code>
+      * <code>Assert equal memory (start, got.start_addr, 4)</code>
+      * <code>Assert equal memory (end, got.end_addr, 4)</code>
+      * <code>Assert false (dws_ike_ts_get(buf + 4, n - 4, 1, &got))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sk_frame</b> &mdash; <i>too short for iv+icv -> false</i></summary>
+
+    * **Objective**: too short for iv+icv -> false
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + 16 + 8 + 16, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_IDI, buf[0]);</code>
+      * <code>Assert true (dws_ike_sk_parse(buf + 4, n - 4, 16, 16, &piv, &pct, &ctl, &picv))</code>
+      * <code>Assert equal memory (iv, piv, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, ctl);</code>
+      * <code>Assert equal memory (ct, pct, 8)</code>
+      * <code>Assert equal memory (icv, picv, 16)</code>
+      * <code>Assert false (dws_ike_sk_parse(buf + 4, 20, 16, 16, &piv, &pct, &ctl, &picv))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_full_build</b> &mdash; <i>Full build</i></summary>
+
+    * **Objective**: Full build
+    * **Assertions**:
+      * <code>Assert true (dws_ike_set_length(buf, sizeof(buf), (uint32_t)off))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(GV_FULL), off);</code>
+      * <code>Assert equal memory (GV_FULL, buf, sizeof(GV_FULL))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_full_chain_walk</b> &mdash; <i>Full chain walk</i></summary>
+
+    * **Objective**: Full chain walk
+    * **Assertions**:
+      * <code>Assert true (dws_ike_hdr_parse(GV_FULL, sizeof(GV_FULL), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_SA, h.next_payload);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(GV_FULL), h.length);</code>
+      * <code>Assert true (dws_ike_payload_next(&it, &pl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_SA, pl.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_KE, pl.next_payload);</code>
+      * <code>Assert true (dws_ike_sa_first_proposal(pl.body, pl.body_len, &prop))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, prop.num_transforms);</code>
+      * <code>Assert true (dws_ike_payload_next(&it, &pl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_KE, pl.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONCE, pl.next_payload);</code>
+      * <code>Assert true (dws_ike_ke_parse(pl.body, pl.body_len, &group, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(IKE_DH_MODP2048, group);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, dl);</code>
+      * <code>Assert true (dws_ike_payload_next(&it, &pl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONCE, pl.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONE, pl.next_payload);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(16, pl.body_len);</code>
+      * <code>Assert false (dws_ike_payload_next(&it, &pl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_malformed</b> &mdash; <i>a payload claiming length 3 (< 4) is rejected</i></summary>
+
+    * **Objective**: a payload claiming length 3 (< 4) is rejected
+    * **Assertions**:
+      * <code>Assert false (dws_ike_payload_next(&it, &pl))</code>
+      * <code>Assert false (dws_ike_payload_next(&it, &pl))</code>
+      * <code>Assert false (dws_ike_notify_parse(short_notify, sizeof(short_notify), &proto, &type, &spi, &ss, &d, &dl))</code>
   </details>
 
 </details>
