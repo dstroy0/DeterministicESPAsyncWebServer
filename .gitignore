@@ -36,3 +36,6 @@ rig_report.json
 # Not committed - binary, ~9 MB, and this is a published library. docs/reference/README.md
 # links the online copies instead.
 docs/reference/*.pdf
+
+# Espressif/Waveshare Flash Download Tool (local flashing GUI, ~26 MB binary) - not committed.
+tools/flash_download_tool/
