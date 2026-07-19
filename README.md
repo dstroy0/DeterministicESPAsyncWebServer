@@ -656,10 +656,6 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 
 | Layer | Feature             | Flash (best-worst) | RAM (best-worst) |
 | ----- | ------------------- | -----------------: | ---------------: |
-| Core  | `ETHERNET`          |            37.5 KB |          15.3 KB |
-| Core  | `BUS_CAPTURE`       |            17.9 KB |         < 0.5 KB |
-| Core  | `FORWARD`           |            17.9 KB |         < 0.5 KB |
-| Core  | `PROMISC`           |            11.5 KB |         < 0.5 KB |
 | Core  | `IPV6`              |             1.9 KB |          15.2 KB |
 | L4    | `IP_ALLOWLIST`      |             0.8 KB |          15.2 KB |
 | L4    | `KEEPALIVE`         |           < 0.5 KB |          15.2 KB |
@@ -690,7 +686,6 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `DASHBOARD`         |            19.9 KB |          15.6 KB |
 | L7    | `ADS`               |            18.6 KB |         < 0.5 KB |
 | L7    | `NTRIP_CASTER`      |            17.2 KB |          18.1 KB |
-| L7    | `RTC`               |            13.5 KB |         < 0.5 KB |
 | L7    | `OIDC`              |            13.0 KB |          32.9 KB |
 | L7    | `OAUTH2`            |            12.1 KB |          37.5 KB |
 | L7    | `WEBHOOK`           |            10.0 KB |          34.5 KB |
@@ -722,6 +717,11 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `GUARDRAILS`        |           < 0.5 KB |          15.2 KB |
 | L7    | `DEVICE_ID`         |           < 0.5 KB |          15.3 KB |
 | L7    | `RADIO_POWER`       |           < 0.5 KB |          15.2 KB |
+| ?     | `ETHERNET`          |            37.5 KB |          15.3 KB |
+| ?     | `BUS_CAPTURE`       |            17.9 KB |         < 0.5 KB |
+| ?     | `FORWARD`           |            17.9 KB |         < 0.5 KB |
+| ?     | `RTC`               |            13.5 KB |         < 0.5 KB |
+| ?     | `PROMISC`           |            11.5 KB |         < 0.5 KB |
 | -     | `WEBSOCKET`         |         0.0-3.7 KB |       0.0-1.5 KB |
 | -     | `MODBUS_RTU`        |             1.8 KB |         < 0.5 KB |
 | -     | `SSE`               |         0.0-0.6 KB |         < 0.5 KB |
