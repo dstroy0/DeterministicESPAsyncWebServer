@@ -40,6 +40,7 @@ from each example's `pio ci` size report and aggregated into
 | `ETAG`                                                                                                    | L7-Application/ETag                  | 809.6 KB (63.3%) | 81.1 KB (25.4%)  |
 | `ETHERNET`                                                                                                | Peripherals/Ethernet                 | 773.4 KB (60.4%) | 79.9 KB (25.0%)  |
 | `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | Peripherals/EthernetW5500            | 773.5 KB (60.4%) | 79.9 KB (25.0%)  |
+| `EXC_DECODER+FTP+FTP_SESSION`                                                                             | L7-Application/CoreDump              | 821.6 KB (64.2%) | 81.5 KB (25.5%)  |
 | `GPIB`                                                                                                    | L7-Application/Gpib                  | 708.2 KB (55.3%) | 42.6 KB (13.3%)  |
 | `GPIO_MAP`                                                                                                | L7-Application/GpioMap               | 739.5 KB (57.8%) | 79.9 KB (25.0%)  |
 | `GRAPHQL`                                                                                                 | L7-Application/GraphQL               | 739.9 KB (57.8%) | 84.2 KB (26.3%)  |

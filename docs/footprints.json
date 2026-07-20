@@ -223,6 +223,13 @@
     "flash_bytes": 792041,
     "ram_bytes": 81848
   },
+  "EXC_DECODER+FTP+FTP_SESSION": {
+    "example": "L7-Application/CoreDump",
+    "flags": "-DDWS_ENABLE_EXC_DECODER=1 -DDWS_ENABLE_FTP=1 -DDWS_ENABLE_FTP_SESSION=1",
+    "board": "esp32dev",
+    "flash_bytes": 841337,
+    "ram_bytes": 83428
+  },
   "GPIB": {
     "example": "L7-Application/Gpib",
     "flags": "-DDWS_ENABLE_GPIB=1",
