@@ -53,7 +53,8 @@
 /** @brief The documented numbered Q queries (pass to @ref dws_haas_mdc_build_q). Unscoped so a value
  *  converts to the `uint16_t` command number without a cast; `?Q600` takes an argument, so it has its
  *  own builder (@ref dws_haas_mdc_build_var) rather than a member here. */
-enum HaasQ : uint16_t
+enum HaasQ : uint16_t // NOSONAR(cpp:S3642): unscoped is the documented contract - the builder accepts any Haas
+                      // command number, and this header has no second enum whose values could be confused
 {
     HAAS_Q_SERIAL = 100,         ///< machine serial number
     HAAS_Q_SOFTWARE = 101,       ///< control software version

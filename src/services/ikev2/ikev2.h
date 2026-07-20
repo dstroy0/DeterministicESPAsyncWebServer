@@ -63,7 +63,7 @@
 #define DWS_IKE_FLAG_RESPONSE 0x20  ///< set in a response (clear in a request)
 
 /** @brief Exchange types (RFC 7296 3.1). */
-enum IkeExchange : uint8_t
+enum class IkeExchange : uint8_t
 {
     IKE_SA_INIT = 34,
     IKE_AUTH = 35,
@@ -72,7 +72,7 @@ enum IkeExchange : uint8_t
 };
 
 /** @brief Payload types / Next Payload values (RFC 7296 3.2); 0 terminates a chain. */
-enum IkePayloadType : uint8_t
+enum class IkePayloadType : uint8_t
 {
     IKE_PL_NONE = 0,
     IKE_PL_SA = 33,      ///< Security Association (proposals / transforms)
@@ -94,7 +94,7 @@ enum IkePayloadType : uint8_t
 };
 
 /** @brief Transform types (RFC 7296 3.3.2). */
-enum IkeTransformType : uint8_t
+enum class IkeTransformType : uint8_t
 {
     IKE_TRANSFORM_ENCR = 1,  ///< Encryption Algorithm
     IKE_TRANSFORM_PRF = 2,   ///< Pseudo-random Function
@@ -117,16 +117,18 @@ enum IkeTransformType : uint8_t
 #define IKE_ATTR_KEY_LENGTH 14
 
 /** @brief Protocol IDs (RFC 7296 3.3.1 / 3.10 / 3.11). */
-enum IkeProtocol : uint8_t
+enum class IkeProtocol : uint8_t
 {
+    IKE_PROTO_NONE = 0, ///< notify/delete not concerning an existing SA (RFC 7296 3.10)
     IKE_PROTO_IKE = 1,
     IKE_PROTO_AH = 2,
     IKE_PROTO_ESP = 3,
 };
 
 /** @brief Identification payload ID types (RFC 7296 3.5). */
-enum IkeIdType : uint8_t
+enum class IkeIdType : uint8_t
 {
+    IKE_ID_RESERVED = 0, ///< IANA-reserved; the value an out-param holds before a parse succeeds
     IKE_ID_IPV4_ADDR = 1,
     IKE_ID_FQDN = 2,
     IKE_ID_RFC822_ADDR = 3,
@@ -135,8 +137,9 @@ enum IkeIdType : uint8_t
 };
 
 /** @brief Authentication methods (RFC 7296 3.8 / IANA). */
-enum IkeAuthMethod : uint8_t
+enum class IkeAuthMethod : uint8_t
 {
+    IKE_AUTH_RESERVED = 0,    ///< IANA-reserved; the value an out-param holds before a parse succeeds
     IKE_AUTH_RSA_SIG = 1,     ///< RSA Digital Signature
     IKE_AUTH_PSK = 2,         ///< Shared Key Message Integrity Code (pre-shared key)
     IKE_AUTH_DSS_SIG = 3,     ///< DSS Digital Signature
@@ -144,7 +147,7 @@ enum IkeAuthMethod : uint8_t
 };
 
 /** @brief Traffic selector types (RFC 7296 3.13.1). */
-enum IkeTsType : uint8_t
+enum class IkeTsType : uint8_t
 {
     IKE_TS_IPV4_ADDR_RANGE = 7,
     IKE_TS_IPV6_ADDR_RANGE = 8,
@@ -155,10 +158,10 @@ struct IkeHeader
 {
     uint8_t init_spi[DWS_IKE_SPI_LEN];
     uint8_t resp_spi[DWS_IKE_SPI_LEN];
-    uint8_t next_payload; ///< type of the first payload in the message
-    uint8_t version;      ///< 0x20 for IKEv2
-    uint8_t exchange;     ///< @ref IkeExchange
-    uint8_t flags;        ///< OR of DWS_IKE_FLAG_*
+    IkePayloadType next_payload; ///< type of the first payload in the message
+    uint8_t version;             ///< 0x20 for IKEv2
+    IkeExchange exchange;        ///< @ref IkeExchange
+    uint8_t flags;               ///< OR of DWS_IKE_FLAG_*
     uint32_t message_id;
     uint32_t length; ///< whole-message length (built value; on parse, the value read off the wire)
 };
@@ -167,9 +170,9 @@ struct IkeHeader
  *  (the bytes after the 4-byte generic header), pointing INTO the caller's buffer. */
 struct IkePayload
 {
-    uint8_t type;         ///< this payload's type (@ref IkePayloadType)
-    uint8_t next_payload; ///< type of the next payload (0 = last)
-    bool critical;        ///< the Critical bit
+    IkePayloadType type;         ///< this payload's type
+    IkePayloadType next_payload; ///< type of the next payload (IKE_PL_NONE = last)
+    bool critical;               ///< the Critical bit
     const uint8_t *body;
     size_t body_len;
 };
@@ -177,24 +180,24 @@ struct IkePayload
 /** @brief Forward-walks the payload chain of a message. */
 struct IkePayloadIter
 {
-    const uint8_t *area; ///< payload area (message + DWS_IKE_HDR_LEN)
-    size_t len;          ///< bytes remaining in the area
-    size_t off;          ///< current offset into @ref area
-    uint8_t next_type;   ///< type of the payload at @ref off (0 = done)
+    const uint8_t *area;      ///< payload area (message + DWS_IKE_HDR_LEN)
+    size_t len;               ///< bytes remaining in the area
+    size_t off;               ///< current offset into @ref area
+    IkePayloadType next_type; ///< type of the payload at @ref off (IKE_PL_NONE = done)
 };
 
 /** @brief One transform to encode inside a proposal (@ref dws_ike_sa_build). */
 struct IkeTransform
 {
-    uint8_t type;       ///< @ref IkeTransformType
-    uint16_t id;        ///< transform id (algorithm)
-    int32_t key_length; ///< key-length attribute in bits, or < 0 for none
+    IkeTransformType type; ///< which transform slot this fills
+    uint16_t id;           ///< transform id (algorithm)
+    int32_t key_length;    ///< key-length attribute in bits, or < 0 for none
 };
 
 /** @brief A parsed transform (from @ref dws_ike_transform_next). */
 struct IkeTransformRef
 {
-    uint8_t type;
+    IkeTransformType type;
     uint16_t id;
     int32_t key_length; ///< decoded key-length attribute, or < 0 if absent
     bool last;          ///< true if this is the last transform in the proposal
@@ -204,7 +207,7 @@ struct IkeTransformRef
 struct IkeProposalRef
 {
     uint8_t proposal_num;
-    uint8_t protocol_id; ///< @ref IkeProtocol
+    IkeProtocol protocol_id; ///< which SA this proposal is for
     uint8_t spi_size;
     uint8_t num_transforms;
     const uint8_t *spi; ///< SPI bytes (spi_size long), or nullptr
@@ -224,7 +227,7 @@ struct IkeTransformIter
 /** @brief One traffic selector (RFC 7296 3.13.1). */
 struct IkeTrafficSelector
 {
-    uint8_t ts_type;     ///< @ref IkeTsType
+    IkeTsType ts_type;   ///< selector address family
     uint8_t ip_protocol; ///< 0 = any
     uint16_t start_port;
     uint16_t end_port;
@@ -261,7 +264,7 @@ bool dws_ike_set_length(uint8_t *buf, size_t buf_cap, uint32_t total_len);
  * @brief Start walking the payload chain: @p first_type is the header's Next Payload and @p area /
  *        @p area_len is the message body after the header (message + DWS_IKE_HDR_LEN).
  */
-void dws_ike_payload_iter_init(IkePayloadIter *it, uint8_t first_type, const uint8_t *area, size_t area_len);
+void dws_ike_payload_iter_init(IkePayloadIter *it, IkePayloadType first_type, const uint8_t *area, size_t area_len);
 
 /**
  * @brief Read the next payload's generic header + body slice into @p out and advance.
@@ -275,45 +278,49 @@ bool dws_ike_payload_next(IkePayloadIter *it, IkePayload *out);
  *        length) followed by @p body. Most callers use the typed builders below instead.
  * @return total bytes written (4 + body_len), or 0 on overflow.
  */
-size_t dws_ike_payload_build(uint8_t *buf, size_t cap, uint8_t next_payload, bool critical, const uint8_t *body,
+size_t dws_ike_payload_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, bool critical, const uint8_t *body,
                              size_t body_len);
 
 // ── typed payload builders (each writes a full payload incl. the generic header) ──────────────
 
 /** @brief Build an SA payload carrying ONE proposal with @p num_transforms transforms. */
-size_t dws_ike_sa_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t proposal_num, uint8_t protocol_id,
-                        const uint8_t *spi, uint8_t spi_size, const IkeTransform *transforms, uint8_t num_transforms);
+size_t dws_ike_sa_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, uint8_t proposal_num,
+                        IkeProtocol protocol_id, const uint8_t *spi, uint8_t spi_size, const IkeTransform *transforms,
+                        uint8_t num_transforms);
 
 /** @brief Build a KE payload: DH group + key-exchange data. */
-size_t dws_ike_ke_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint16_t dh_group, const uint8_t *data,
+size_t dws_ike_ke_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, uint16_t dh_group, const uint8_t *data,
                         size_t data_len);
 
 /** @brief Build a Nonce payload (Ni / Nr): the raw nonce bytes. */
-size_t dws_ike_nonce_build(uint8_t *buf, size_t cap, uint8_t next_payload, const uint8_t *nonce, size_t nonce_len);
+size_t dws_ike_nonce_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const uint8_t *nonce,
+                           size_t nonce_len);
 
 /** @brief Build an Identification payload (IDi or IDr - the type is set by the previous Next Payload). */
-size_t dws_ike_id_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t id_type, const uint8_t *data,
+size_t dws_ike_id_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeIdType id_type, const uint8_t *data,
                         size_t data_len);
 
 /** @brief Build an AUTH payload: auth method + authentication data. */
-size_t dws_ike_auth_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t auth_method, const uint8_t *data,
-                          size_t data_len);
+size_t dws_ike_auth_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeAuthMethod auth_method,
+                          const uint8_t *data, size_t data_len);
 
 /** @brief Build a CERT or CERTREQ payload (same layout): cert encoding + data. The payload type is set
  *  by the previous Next Payload; this only writes the body. */
-size_t dws_ike_cert_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t cert_encoding, const uint8_t *data,
-                          size_t data_len);
+size_t dws_ike_cert_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, uint8_t cert_encoding,
+                          const uint8_t *data, size_t data_len);
 
 /** @brief Build a Notify payload: protocol + optional SPI + 16-bit type + notification data. */
-size_t dws_ike_notify_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t protocol_id, const uint8_t *spi,
-                            uint8_t spi_size, uint16_t notify_type, const uint8_t *data, size_t data_len);
+size_t dws_ike_notify_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeProtocol protocol_id,
+                            const uint8_t *spi, uint8_t spi_size, uint16_t notify_type, const uint8_t *data,
+                            size_t data_len);
 
 /** @brief Build a Delete payload: protocol + a list of @p num_spis SPIs each @p spi_size bytes. */
-size_t dws_ike_delete_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t protocol_id, uint8_t spi_size,
-                            const uint8_t *spis, uint16_t num_spis);
+size_t dws_ike_delete_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeProtocol protocol_id,
+                            uint8_t spi_size, const uint8_t *spis, uint16_t num_spis);
 
 /** @brief Build a Traffic Selector payload (TSi or TSr) from @p num selectors. */
-size_t dws_ike_ts_build(uint8_t *buf, size_t cap, uint8_t next_payload, const IkeTrafficSelector *sels, uint8_t num);
+size_t dws_ike_ts_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const IkeTrafficSelector *sels,
+                        uint8_t num);
 
 /**
  * @brief Frame an SK (encrypted) payload envelope: the generic header then @p iv, @p ciphertext, and
@@ -321,7 +328,7 @@ size_t dws_ike_ts_build(uint8_t *buf, size_t cap, uint8_t next_payload, const Ik
  *        tier) - this only lays out the bytes.
  * @return total bytes written, or 0 on overflow.
  */
-size_t dws_ike_sk_build(uint8_t *buf, size_t cap, uint8_t next_payload, const uint8_t *iv, size_t iv_len,
+size_t dws_ike_sk_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const uint8_t *iv, size_t iv_len,
                         const uint8_t *ciphertext, size_t ct_len, const uint8_t *icv, size_t icv_len);
 
 // ── typed payload parsers (each takes a payload BODY from dws_ike_payload_next) ────────────────
@@ -330,18 +337,18 @@ size_t dws_ike_sk_build(uint8_t *buf, size_t cap, uint8_t next_payload, const ui
 bool dws_ike_ke_parse(const uint8_t *body, size_t body_len, uint16_t *dh_group, const uint8_t **data, size_t *data_len);
 
 /** @brief Decode an Identification body into id type + data. */
-bool dws_ike_id_parse(const uint8_t *body, size_t body_len, uint8_t *id_type, const uint8_t **data, size_t *data_len);
+bool dws_ike_id_parse(const uint8_t *body, size_t body_len, IkeIdType *id_type, const uint8_t **data, size_t *data_len);
 
 /** @brief Decode an AUTH body into method + data. */
-bool dws_ike_auth_parse(const uint8_t *body, size_t body_len, uint8_t *auth_method, const uint8_t **data,
+bool dws_ike_auth_parse(const uint8_t *body, size_t body_len, IkeAuthMethod *auth_method, const uint8_t **data,
                         size_t *data_len);
 
 /** @brief Decode a Notify body into protocol, type, optional SPI, and notification data. */
-bool dws_ike_notify_parse(const uint8_t *body, size_t body_len, uint8_t *protocol_id, uint16_t *notify_type,
+bool dws_ike_notify_parse(const uint8_t *body, size_t body_len, IkeProtocol *protocol_id, uint16_t *notify_type,
                           const uint8_t **spi, uint8_t *spi_size, const uint8_t **data, size_t *data_len);
 
 /** @brief Decode a Delete body into protocol, SPI size, count, and the SPI list. */
-bool dws_ike_delete_parse(const uint8_t *body, size_t body_len, uint8_t *protocol_id, uint8_t *spi_size,
+bool dws_ike_delete_parse(const uint8_t *body, size_t body_len, IkeProtocol *protocol_id, uint8_t *spi_size,
                           uint16_t *num_spis, const uint8_t **spis);
 
 /**

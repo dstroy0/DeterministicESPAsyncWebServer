@@ -89,7 +89,8 @@
 #define DWS_LSV2_LOGIN_PLCDEBUG "PLCDEBUG" ///< PLC debug
 
 /** @brief Run-info selectors for @ref dws_lsv2_build_run_info (the 2-byte `R_RI` argument). */
-enum Lsv2RunInfo : uint16_t
+enum Lsv2RunInfo : uint16_t // NOSONAR(cpp:S3642): unscoped so a selector converts to the 2-byte R_RI
+                            // argument without a cast; no other enum in this header shares its value space
 {
     LSV2_RI_EXEC_STATE = 23,   ///< program execution state (running / stopped / ...)
     LSV2_RI_SELECTED_PGM = 24, ///< currently selected program

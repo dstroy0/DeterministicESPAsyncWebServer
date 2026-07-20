@@ -35,11 +35,11 @@ static inline uint32_t get32(const uint8_t *p)
 }
 
 // Write a generic payload header (next-payload, no critical bit, 2-byte total length); false on overflow.
-static bool put_pl_hdr(uint8_t *buf, size_t cap, uint8_t next_payload, size_t total_len)
+static bool put_pl_hdr(uint8_t *buf, size_t cap, IkePayloadType next_payload, size_t total_len)
 {
     if (total_len > 0xFFFF || cap < total_len)
         return false;
-    buf[0] = next_payload;
+    buf[0] = (uint8_t)next_payload;
     buf[1] = 0x00;
     put16(buf + 2, (uint16_t)total_len);
     return true;
@@ -53,9 +53,9 @@ size_t dws_ike_hdr_build(uint8_t *buf, size_t cap, const IkeHeader *h)
         return 0;
     memcpy(buf, h->init_spi, DWS_IKE_SPI_LEN);
     memcpy(buf + 8, h->resp_spi, DWS_IKE_SPI_LEN);
-    buf[16] = h->next_payload;
+    buf[16] = (uint8_t)h->next_payload;
     buf[17] = h->version;
-    buf[18] = h->exchange;
+    buf[18] = (uint8_t)h->exchange;
     buf[19] = h->flags;
     put32(buf + 20, h->message_id);
     put32(buf + 24, h->length);
@@ -71,9 +71,9 @@ bool dws_ike_hdr_parse(const uint8_t *buf, size_t len, IkeHeader *out)
         return false;
     memcpy(out->init_spi, buf, DWS_IKE_SPI_LEN);
     memcpy(out->resp_spi, buf + 8, DWS_IKE_SPI_LEN);
-    out->next_payload = buf[16];
+    out->next_payload = (IkePayloadType)buf[16];
     out->version = buf[17];
-    out->exchange = buf[18];
+    out->exchange = (IkeExchange)buf[18];
     out->flags = buf[19];
     out->message_id = get32(buf + 20);
     out->length = get32(buf + 24);
@@ -90,7 +90,7 @@ bool dws_ike_set_length(uint8_t *buf, size_t buf_cap, uint32_t total_len)
 
 // ── generic payload chain ─────────────────────────────────────────────────────────────────────
 
-void dws_ike_payload_iter_init(IkePayloadIter *it, uint8_t first_type, const uint8_t *area, size_t area_len)
+void dws_ike_payload_iter_init(IkePayloadIter *it, IkePayloadType first_type, const uint8_t *area, size_t area_len)
 {
     if (!it)
         return;
@@ -104,12 +104,12 @@ bool dws_ike_payload_next(IkePayloadIter *it, IkePayload *out)
 {
     if (!out)
         return false;
-    out->type = IKE_PL_NONE;
-    out->next_payload = IKE_PL_NONE;
+    out->type = IkePayloadType::IKE_PL_NONE;
+    out->next_payload = IkePayloadType::IKE_PL_NONE;
     out->critical = false;
     out->body = nullptr;
     out->body_len = 0;
-    if (!it || !it->area || it->next_type == IKE_PL_NONE)
+    if (!it || !it->area || it->next_type == IkePayloadType::IKE_PL_NONE)
         return false;
     if (it->off + DWS_IKE_PAYLOAD_HDR_LEN > it->len)
         return false;
@@ -120,16 +120,16 @@ bool dws_ike_payload_next(IkePayloadIter *it, IkePayload *out)
     if (plen < DWS_IKE_PAYLOAD_HDR_LEN || it->off + plen > it->len)
         return false;
     out->type = it->next_type;
-    out->next_payload = next;
+    out->next_payload = (IkePayloadType)next;
     out->critical = critical;
     out->body = p + DWS_IKE_PAYLOAD_HDR_LEN;
     out->body_len = (size_t)plen - DWS_IKE_PAYLOAD_HDR_LEN;
-    it->next_type = next;
+    it->next_type = (IkePayloadType)next;
     it->off += plen;
     return true;
 }
 
-size_t dws_ike_payload_build(uint8_t *buf, size_t cap, uint8_t next_payload, bool critical, const uint8_t *body,
+size_t dws_ike_payload_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, bool critical, const uint8_t *body,
                              size_t body_len)
 {
     if (!buf || (body_len && !body))
@@ -137,7 +137,7 @@ size_t dws_ike_payload_build(uint8_t *buf, size_t cap, uint8_t next_payload, boo
     size_t total = DWS_IKE_PAYLOAD_HDR_LEN + body_len;
     if (total > 0xFFFF || cap < total)
         return 0;
-    buf[0] = next_payload;
+    buf[0] = (uint8_t)next_payload;
     buf[1] = critical ? DWS_IKE_CRITICAL : 0x00;
     put16(buf + 2, (uint16_t)total);
     if (body_len)
@@ -147,8 +147,9 @@ size_t dws_ike_payload_build(uint8_t *buf, size_t cap, uint8_t next_payload, boo
 
 // ── typed payload builders ────────────────────────────────────────────────────────────────────
 
-size_t dws_ike_sa_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t proposal_num, uint8_t protocol_id,
-                        const uint8_t *spi, uint8_t spi_size, const IkeTransform *transforms, uint8_t num_transforms)
+size_t dws_ike_sa_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, uint8_t proposal_num,
+                        IkeProtocol protocol_id, const uint8_t *spi, uint8_t spi_size, const IkeTransform *transforms,
+                        uint8_t num_transforms)
 {
     if (!buf || !transforms || num_transforms == 0)
         return 0;
@@ -170,7 +171,7 @@ size_t dws_ike_sa_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t 
         buf[off + 0] = (i + 1 == num_transforms) ? 0 : 3; // 0 = last, 3 = more
         buf[off + 1] = 0;
         put16(buf + off + 2, (uint16_t)tlen);
-        buf[off + 4] = transforms[i].type;
+        buf[off + 4] = (uint8_t)transforms[i].type;
         buf[off + 5] = 0;
         put16(buf + off + 6, transforms[i].id);
         if (has_key)
@@ -186,7 +187,7 @@ size_t dws_ike_sa_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t 
     if (prop_len > 0xFFFF || sa_total > 0xFFFF)
         return 0;
 
-    buf[0] = next_payload;
+    buf[0] = (uint8_t)next_payload;
     buf[1] = 0;
     put16(buf + 2, (uint16_t)sa_total);
     uint8_t *pr = buf + DWS_IKE_PAYLOAD_HDR_LEN;
@@ -194,7 +195,7 @@ size_t dws_ike_sa_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t 
     pr[1] = 0;
     put16(pr + 2, (uint16_t)prop_len);
     pr[4] = proposal_num;
-    pr[5] = protocol_id;
+    pr[5] = (uint8_t)protocol_id;
     pr[6] = spi_size;
     pr[7] = num_transforms;
     if (spi_size)
@@ -202,7 +203,7 @@ size_t dws_ike_sa_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t 
     return sa_total;
 }
 
-size_t dws_ike_ke_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint16_t dh_group, const uint8_t *data,
+size_t dws_ike_ke_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, uint16_t dh_group, const uint8_t *data,
                         size_t data_len)
 {
     if (!buf || (data_len && !data))
@@ -218,7 +219,8 @@ size_t dws_ike_ke_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint16_t
     return total;
 }
 
-size_t dws_ike_nonce_build(uint8_t *buf, size_t cap, uint8_t next_payload, const uint8_t *nonce, size_t nonce_len)
+size_t dws_ike_nonce_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const uint8_t *nonce,
+                           size_t nonce_len)
 {
     if (!buf || (nonce_len && !nonce))
         return 0;
@@ -230,7 +232,7 @@ size_t dws_ike_nonce_build(uint8_t *buf, size_t cap, uint8_t next_payload, const
     return total;
 }
 
-size_t dws_ike_id_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t id_type, const uint8_t *data,
+size_t dws_ike_id_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeIdType id_type, const uint8_t *data,
                         size_t data_len)
 {
     if (!buf || (data_len && !data))
@@ -238,7 +240,7 @@ size_t dws_ike_id_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t 
     size_t total = DWS_IKE_PAYLOAD_HDR_LEN + 4 + data_len;
     if (!put_pl_hdr(buf, cap, next_payload, total))
         return 0;
-    buf[4] = id_type;
+    buf[4] = (uint8_t)id_type;
     buf[5] = 0;
     buf[6] = 0;
     buf[7] = 0;
@@ -247,15 +249,15 @@ size_t dws_ike_id_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t 
     return total;
 }
 
-size_t dws_ike_auth_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t auth_method, const uint8_t *data,
-                          size_t data_len)
+size_t dws_ike_auth_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeAuthMethod auth_method,
+                          const uint8_t *data, size_t data_len)
 {
     if (!buf || (data_len && !data))
         return 0;
     size_t total = DWS_IKE_PAYLOAD_HDR_LEN + 4 + data_len;
     if (!put_pl_hdr(buf, cap, next_payload, total))
         return 0;
-    buf[4] = auth_method;
+    buf[4] = (uint8_t)auth_method;
     buf[5] = 0;
     buf[6] = 0;
     buf[7] = 0;
@@ -264,8 +266,8 @@ size_t dws_ike_auth_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_
     return total;
 }
 
-size_t dws_ike_cert_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t cert_encoding, const uint8_t *data,
-                          size_t data_len)
+size_t dws_ike_cert_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, uint8_t cert_encoding,
+                          const uint8_t *data, size_t data_len)
 {
     if (!buf || (data_len && !data))
         return 0;
@@ -278,15 +280,16 @@ size_t dws_ike_cert_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_
     return total;
 }
 
-size_t dws_ike_notify_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t protocol_id, const uint8_t *spi,
-                            uint8_t spi_size, uint16_t notify_type, const uint8_t *data, size_t data_len)
+size_t dws_ike_notify_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeProtocol protocol_id,
+                            const uint8_t *spi, uint8_t spi_size, uint16_t notify_type, const uint8_t *data,
+                            size_t data_len)
 {
     if (!buf || (spi_size && !spi) || (data_len && !data))
         return 0;
     size_t total = DWS_IKE_PAYLOAD_HDR_LEN + 4 + spi_size + data_len;
     if (!put_pl_hdr(buf, cap, next_payload, total))
         return 0;
-    buf[4] = protocol_id;
+    buf[4] = (uint8_t)protocol_id;
     buf[5] = spi_size;
     put16(buf + 6, notify_type);
     size_t off = 8;
@@ -300,8 +303,8 @@ size_t dws_ike_notify_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint
     return total;
 }
 
-size_t dws_ike_delete_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint8_t protocol_id, uint8_t spi_size,
-                            const uint8_t *spis, uint16_t num_spis)
+size_t dws_ike_delete_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeProtocol protocol_id,
+                            uint8_t spi_size, const uint8_t *spis, uint16_t num_spis)
 {
     if (!buf)
         return 0;
@@ -311,7 +314,7 @@ size_t dws_ike_delete_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint
     size_t total = DWS_IKE_PAYLOAD_HDR_LEN + 4 + spis_len;
     if (!put_pl_hdr(buf, cap, next_payload, total))
         return 0;
-    buf[4] = protocol_id;
+    buf[4] = (uint8_t)protocol_id;
     buf[5] = spi_size;
     put16(buf + 6, num_spis);
     if (spis_len)
@@ -319,7 +322,8 @@ size_t dws_ike_delete_build(uint8_t *buf, size_t cap, uint8_t next_payload, uint
     return total;
 }
 
-size_t dws_ike_ts_build(uint8_t *buf, size_t cap, uint8_t next_payload, const IkeTrafficSelector *sels, uint8_t num)
+size_t dws_ike_ts_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const IkeTrafficSelector *sels,
+                        uint8_t num)
 {
     if (!buf || !sels || num == 0)
         return 0;
@@ -334,7 +338,7 @@ size_t dws_ike_ts_build(uint8_t *buf, size_t cap, uint8_t next_payload, const Ik
         size_t sel_len = 8 + 2 * s->addr_len;
         if (off + sel_len > cap)
             return 0;
-        buf[off + 0] = s->ts_type;
+        buf[off + 0] = (uint8_t)s->ts_type;
         buf[off + 1] = s->ip_protocol;
         put16(buf + off + 2, (uint16_t)sel_len);
         put16(buf + off + 4, s->start_port);
@@ -345,7 +349,7 @@ size_t dws_ike_ts_build(uint8_t *buf, size_t cap, uint8_t next_payload, const Ik
     }
     if (off > 0xFFFF)
         return 0;
-    buf[0] = next_payload;
+    buf[0] = (uint8_t)next_payload;
     buf[1] = 0;
     put16(buf + 2, (uint16_t)off);
     buf[4] = num;
@@ -355,7 +359,7 @@ size_t dws_ike_ts_build(uint8_t *buf, size_t cap, uint8_t next_payload, const Ik
     return off;
 }
 
-size_t dws_ike_sk_build(uint8_t *buf, size_t cap, uint8_t next_payload, const uint8_t *iv, size_t iv_len,
+size_t dws_ike_sk_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const uint8_t *iv, size_t iv_len,
                         const uint8_t *ciphertext, size_t ct_len, const uint8_t *icv, size_t icv_len)
 {
     if (!buf || (iv_len && !iv) || (ct_len && !ciphertext) || (icv_len && !icv))
@@ -400,10 +404,10 @@ bool dws_ike_ke_parse(const uint8_t *body, size_t body_len, uint16_t *dh_group, 
     return true;
 }
 
-bool dws_ike_id_parse(const uint8_t *body, size_t body_len, uint8_t *id_type, const uint8_t **data, size_t *data_len)
+bool dws_ike_id_parse(const uint8_t *body, size_t body_len, IkeIdType *id_type, const uint8_t **data, size_t *data_len)
 {
     if (id_type)
-        *id_type = 0;
+        *id_type = IkeIdType::IKE_ID_RESERVED;
     if (data)
         *data = nullptr;
     if (data_len)
@@ -411,7 +415,7 @@ bool dws_ike_id_parse(const uint8_t *body, size_t body_len, uint8_t *id_type, co
     if (!body || body_len < 4)
         return false;
     if (id_type)
-        *id_type = body[0];
+        *id_type = (IkeIdType)body[0];
     if (data)
         *data = body + 4;
     if (data_len)
@@ -419,11 +423,11 @@ bool dws_ike_id_parse(const uint8_t *body, size_t body_len, uint8_t *id_type, co
     return true;
 }
 
-bool dws_ike_auth_parse(const uint8_t *body, size_t body_len, uint8_t *auth_method, const uint8_t **data,
+bool dws_ike_auth_parse(const uint8_t *body, size_t body_len, IkeAuthMethod *auth_method, const uint8_t **data,
                         size_t *data_len)
 {
     if (auth_method)
-        *auth_method = 0;
+        *auth_method = IkeAuthMethod::IKE_AUTH_RESERVED;
     if (data)
         *data = nullptr;
     if (data_len)
@@ -431,7 +435,7 @@ bool dws_ike_auth_parse(const uint8_t *body, size_t body_len, uint8_t *auth_meth
     if (!body || body_len < 4)
         return false;
     if (auth_method)
-        *auth_method = body[0];
+        *auth_method = (IkeAuthMethod)body[0];
     if (data)
         *data = body + 4;
     if (data_len)
@@ -439,11 +443,11 @@ bool dws_ike_auth_parse(const uint8_t *body, size_t body_len, uint8_t *auth_meth
     return true;
 }
 
-bool dws_ike_notify_parse(const uint8_t *body, size_t body_len, uint8_t *protocol_id, uint16_t *notify_type,
+bool dws_ike_notify_parse(const uint8_t *body, size_t body_len, IkeProtocol *protocol_id, uint16_t *notify_type,
                           const uint8_t **spi, uint8_t *spi_size, const uint8_t **data, size_t *data_len)
 {
     if (protocol_id)
-        *protocol_id = 0;
+        *protocol_id = IkeProtocol::IKE_PROTO_NONE;
     if (notify_type)
         *notify_type = 0;
     if (spi)
@@ -460,7 +464,7 @@ bool dws_ike_notify_parse(const uint8_t *body, size_t body_len, uint8_t *protoco
     if (body_len < (size_t)4 + ss)
         return false;
     if (protocol_id)
-        *protocol_id = body[0];
+        *protocol_id = (IkeProtocol)body[0];
     if (spi_size)
         *spi_size = ss;
     if (notify_type)
@@ -474,11 +478,11 @@ bool dws_ike_notify_parse(const uint8_t *body, size_t body_len, uint8_t *protoco
     return true;
 }
 
-bool dws_ike_delete_parse(const uint8_t *body, size_t body_len, uint8_t *protocol_id, uint8_t *spi_size,
+bool dws_ike_delete_parse(const uint8_t *body, size_t body_len, IkeProtocol *protocol_id, uint8_t *spi_size,
                           uint16_t *num_spis, const uint8_t **spis)
 {
     if (protocol_id)
-        *protocol_id = 0;
+        *protocol_id = IkeProtocol::IKE_PROTO_NONE;
     if (spi_size)
         *spi_size = 0;
     if (num_spis)
@@ -492,7 +496,7 @@ bool dws_ike_delete_parse(const uint8_t *body, size_t body_len, uint8_t *protoco
     if (body_len < (size_t)4 + (size_t)ss * num)
         return false;
     if (protocol_id)
-        *protocol_id = body[0];
+        *protocol_id = (IkeProtocol)body[0];
     if (spi_size)
         *spi_size = ss;
     if (num_spis)
@@ -541,7 +545,7 @@ bool dws_ike_sa_first_proposal(const uint8_t *body, size_t body_len, IkeProposal
         return false;
     out->last = (body[0] == 0); // 0 = last, 2 = more proposals follow
     out->proposal_num = body[4];
-    out->protocol_id = body[5];
+    out->protocol_id = (IkeProtocol)body[5];
     out->spi_size = ss;
     out->num_transforms = body[7];
     out->spi = ss ? body + 8 : nullptr;
@@ -563,7 +567,7 @@ bool dws_ike_transform_next(IkeTransformIter *it, IkeTransformRef *out)
 {
     if (!out)
         return false;
-    out->type = 0;
+    out->type = IkeTransformType::IKE_TRANSFORM_ENCR;
     out->id = 0;
     out->key_length = -1;
     out->last = true;
@@ -574,7 +578,7 @@ bool dws_ike_transform_next(IkeTransformIter *it, IkeTransformRef *out)
     if (tlen < 8 || it->off + tlen > it->len)
         return false;
     out->last = (t[0] == 0); // 0 = last, 3 = more
-    out->type = t[4];
+    out->type = (IkeTransformType)t[4];
     out->id = get16(t + 6);
 
     // Walk the transform attributes (RFC 7296 3.3.5): a 2-byte AF|type; if AF (0x8000) set it is TV
@@ -630,7 +634,7 @@ bool dws_ike_ts_get(const uint8_t *body, size_t body_len, uint8_t index, IkeTraf
         if (i == index)
         {
             size_t addr_len = (size_t)(sel_len - 8) / 2;
-            out->ts_type = body[off];
+            out->ts_type = (IkeTsType)body[off];
             out->ip_protocol = body[off + 1];
             out->start_port = get16(body + off + 4);
             out->end_port = get16(body + off + 6);

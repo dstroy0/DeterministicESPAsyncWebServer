@@ -48,14 +48,14 @@ static const uint8_t GV_FULL[] = {
     0x00, 0x00, 0x10, 0x00, 0x0e, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0x00, 0x00, 0x00, 0x14,
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 
-static void fill_hdr(IkeHeader *h, uint8_t next, uint32_t len)
+static void fill_hdr(IkeHeader *h, IkePayloadType next, uint32_t len)
 {
     memset(h, 0, sizeof(*h));
     for (int i = 0; i < 8; i++)
         h->init_spi[i] = (uint8_t)((i + 1) * 0x11); // 0x11..0x88
     h->next_payload = next;
     h->version = DWS_IKE_VERSION;
-    h->exchange = IKE_SA_INIT;
+    h->exchange = IkeExchange::IKE_SA_INIT;
     h->flags = DWS_IKE_FLAG_INITIATOR;
     h->message_id = 0;
     h->length = len;
@@ -67,7 +67,7 @@ void test_hdr_build()
 {
     uint8_t buf[64];
     IkeHeader h;
-    fill_hdr(&h, IKE_PL_NONE, 28);
+    fill_hdr(&h, IkePayloadType::IKE_PL_NONE, 28);
     size_t n = dws_ike_hdr_build(buf, sizeof(buf), &h);
     TEST_ASSERT_EQUAL_size_t(28, n);
     TEST_ASSERT_EQUAL_MEMORY(GV_HDR, buf, 28);
@@ -81,9 +81,9 @@ void test_hdr_parse()
     TEST_ASSERT_TRUE(dws_ike_hdr_parse(GV_HDR, sizeof(GV_HDR), &h));
     TEST_ASSERT_EQUAL_UINT8(0x11, h.init_spi[0]);
     TEST_ASSERT_EQUAL_UINT8(0x88, h.init_spi[7]);
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONE, h.next_payload);
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_NONE, h.next_payload);
     TEST_ASSERT_EQUAL_UINT8(DWS_IKE_VERSION, h.version);
-    TEST_ASSERT_EQUAL_UINT8(IKE_SA_INIT, h.exchange);
+    TEST_ASSERT_EQUAL_UINT8(IkeExchange::IKE_SA_INIT, h.exchange);
     TEST_ASSERT_EQUAL_UINT8(DWS_IKE_FLAG_INITIATOR, h.flags);
     TEST_ASSERT_EQUAL_UINT32(0, h.message_id);
     TEST_ASSERT_EQUAL_UINT32(28, h.length);
@@ -95,7 +95,7 @@ void test_hdr_set_length()
 {
     uint8_t buf[64];
     IkeHeader h;
-    fill_hdr(&h, IKE_PL_SA, 0); // placeholder length
+    fill_hdr(&h, IkePayloadType::IKE_PL_SA, 0); // placeholder length
     dws_ike_hdr_build(buf, sizeof(buf), &h);
     TEST_ASSERT_TRUE(dws_ike_set_length(buf, sizeof(buf), 92));
     IkeHeader r;
@@ -110,7 +110,7 @@ void test_ke()
     uint8_t buf[64];
     uint8_t data[8];
     memset(data, 0xaa, sizeof(data));
-    size_t n = dws_ike_ke_build(buf, sizeof(buf), IKE_PL_NONCE, IKE_DH_MODP2048, data, sizeof(data));
+    size_t n = dws_ike_ke_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONCE, IKE_DH_MODP2048, data, sizeof(data));
     TEST_ASSERT_EQUAL_size_t(sizeof(GV_KE), n);
     TEST_ASSERT_EQUAL_MEMORY(GV_KE, buf, sizeof(GV_KE));
     // parse the body (after the 4-byte generic header)
@@ -129,7 +129,7 @@ void test_nonce()
     uint8_t nonce[16];
     for (int i = 0; i < 16; i++)
         nonce[i] = (uint8_t)i;
-    size_t n = dws_ike_nonce_build(buf, sizeof(buf), IKE_PL_NONE, nonce, sizeof(nonce));
+    size_t n = dws_ike_nonce_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, nonce, sizeof(nonce));
     TEST_ASSERT_EQUAL_size_t(sizeof(GV_NONCE), n);
     TEST_ASSERT_EQUAL_MEMORY(GV_NONCE, buf, sizeof(GV_NONCE));
 }
@@ -138,16 +138,18 @@ void test_notify()
 {
     uint8_t buf[64];
     const uint8_t data[] = {0xde, 0xad, 0xbe, 0xef};
-    size_t n = dws_ike_notify_build(buf, sizeof(buf), IKE_PL_NONE, 0, nullptr, 0, 16388, data, sizeof(data));
+    size_t n = dws_ike_notify_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, IkeProtocol::IKE_PROTO_NONE, nullptr,
+                                    0, 16388, data, sizeof(data));
     TEST_ASSERT_EQUAL_size_t(sizeof(GV_NOTIFY), n);
     TEST_ASSERT_EQUAL_MEMORY(GV_NOTIFY, buf, sizeof(GV_NOTIFY));
     // parse
-    uint8_t proto = 0xff, ss = 0xff;
+    IkeProtocol proto = IkeProtocol::IKE_PROTO_ESP;
+    uint8_t ss = 0xff;
     uint16_t type = 0;
     const uint8_t *spi = (const uint8_t *)1, *d = nullptr;
     size_t dl = 0;
     TEST_ASSERT_TRUE(dws_ike_notify_parse(GV_NOTIFY + 4, sizeof(GV_NOTIFY) - 4, &proto, &type, &spi, &ss, &d, &dl));
-    TEST_ASSERT_EQUAL_UINT8(0, proto);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_NONE, (uint8_t)proto);
     TEST_ASSERT_EQUAL_UINT8(0, ss);
     TEST_ASSERT_EQUAL_UINT16(16388, type);
     TEST_ASSERT_NULL(spi);
@@ -158,14 +160,16 @@ void test_notify()
 void test_delete()
 {
     uint8_t buf[32];
-    size_t n = dws_ike_delete_build(buf, sizeof(buf), IKE_PL_NONE, IKE_PROTO_IKE, 0, nullptr, 0);
+    size_t n =
+        dws_ike_delete_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, IkeProtocol::IKE_PROTO_IKE, 0, nullptr, 0);
     TEST_ASSERT_EQUAL_size_t(sizeof(GV_DELETE), n);
     TEST_ASSERT_EQUAL_MEMORY(GV_DELETE, buf, sizeof(GV_DELETE));
-    uint8_t proto = 0, ss = 0xff;
+    IkeProtocol proto = IkeProtocol::IKE_PROTO_NONE;
+    uint8_t ss = 0xff;
     uint16_t num = 0xff;
     const uint8_t *spis = (const uint8_t *)1;
     TEST_ASSERT_TRUE(dws_ike_delete_parse(GV_DELETE + 4, sizeof(GV_DELETE) - 4, &proto, &ss, &num, &spis));
-    TEST_ASSERT_EQUAL_UINT8(IKE_PROTO_IKE, proto);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_IKE, (uint8_t)proto);
     TEST_ASSERT_EQUAL_UINT8(0, ss);
     TEST_ASSERT_EQUAL_UINT16(0, num);
     TEST_ASSERT_NULL(spis);
@@ -176,8 +180,10 @@ void test_delete()
 void test_sa_build_no_keylen()
 {
     uint8_t buf[64];
-    IkeTransform tr[2] = {{IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, -1}, {IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1}};
-    size_t n = dws_ike_sa_build(buf, sizeof(buf), IKE_PL_KE, 1, IKE_PROTO_IKE, nullptr, 0, tr, 2);
+    IkeTransform tr[2] = {{IkeTransformType::IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, -1},
+                          {IkeTransformType::IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1}};
+    size_t n =
+        dws_ike_sa_build(buf, sizeof(buf), IkePayloadType::IKE_PL_KE, 1, IkeProtocol::IKE_PROTO_IKE, nullptr, 0, tr, 2);
     TEST_ASSERT_EQUAL_size_t(sizeof(GV_SA), n);
     TEST_ASSERT_EQUAL_MEMORY(GV_SA, buf, sizeof(GV_SA));
 }
@@ -185,8 +191,10 @@ void test_sa_build_no_keylen()
 void test_sa_build_keylen()
 {
     uint8_t buf[64];
-    IkeTransform tr[2] = {{IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, 256}, {IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1}};
-    size_t n = dws_ike_sa_build(buf, sizeof(buf), IKE_PL_KE, 1, IKE_PROTO_IKE, nullptr, 0, tr, 2);
+    IkeTransform tr[2] = {{IkeTransformType::IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, 256},
+                          {IkeTransformType::IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1}};
+    size_t n =
+        dws_ike_sa_build(buf, sizeof(buf), IkePayloadType::IKE_PL_KE, 1, IkeProtocol::IKE_PROTO_IKE, nullptr, 0, tr, 2);
     TEST_ASSERT_EQUAL_size_t(sizeof(GV_SA_KEYLEN), n);
     TEST_ASSERT_EQUAL_MEMORY(GV_SA_KEYLEN, buf, sizeof(GV_SA_KEYLEN));
 }
@@ -197,7 +205,7 @@ void test_sa_parse()
     IkeProposalRef prop;
     TEST_ASSERT_TRUE(dws_ike_sa_first_proposal(GV_SA_KEYLEN + 4, sizeof(GV_SA_KEYLEN) - 4, &prop));
     TEST_ASSERT_EQUAL_UINT8(1, prop.proposal_num);
-    TEST_ASSERT_EQUAL_UINT8(IKE_PROTO_IKE, prop.protocol_id);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_IKE, (uint8_t)prop.protocol_id);
     TEST_ASSERT_EQUAL_UINT8(0, prop.spi_size);
     TEST_ASSERT_EQUAL_UINT8(2, prop.num_transforms);
     TEST_ASSERT_TRUE(prop.last);
@@ -206,12 +214,12 @@ void test_sa_parse()
     IkeTransformRef t;
     dws_ike_transform_iter_init(&it, &prop);
     TEST_ASSERT_TRUE(dws_ike_transform_next(&it, &t));
-    TEST_ASSERT_EQUAL_UINT8(IKE_TRANSFORM_ENCR, t.type);
+    TEST_ASSERT_EQUAL_UINT8(IkeTransformType::IKE_TRANSFORM_ENCR, t.type);
     TEST_ASSERT_EQUAL_UINT16(IKE_ENCR_AES_CBC, t.id);
     TEST_ASSERT_EQUAL_INT32(256, t.key_length);
     TEST_ASSERT_FALSE(t.last);
     TEST_ASSERT_TRUE(dws_ike_transform_next(&it, &t));
-    TEST_ASSERT_EQUAL_UINT8(IKE_TRANSFORM_PRF, t.type);
+    TEST_ASSERT_EQUAL_UINT8(IkeTransformType::IKE_TRANSFORM_PRF, t.type);
     TEST_ASSERT_EQUAL_UINT16(IKE_PRF_HMAC_SHA2_256, t.id);
     TEST_ASSERT_EQUAL_INT32(-1, t.key_length); // absent
     TEST_ASSERT_TRUE(t.last);
@@ -224,23 +232,25 @@ void test_id_auth()
 {
     uint8_t buf[64];
     const char *fqdn = "vpn.example";
-    size_t n = dws_ike_id_build(buf, sizeof(buf), IKE_PL_AUTH, IKE_ID_FQDN, (const uint8_t *)fqdn, 11);
+    size_t n = dws_ike_id_build(buf, sizeof(buf), IkePayloadType::IKE_PL_AUTH, IkeIdType::IKE_ID_FQDN,
+                                (const uint8_t *)fqdn, 11);
     TEST_ASSERT_EQUAL_size_t(4 + 4 + 11, n);
     // generic header: next=AUTH(39), len; body: id_type + 3 reserved + data
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_AUTH, buf[0]);
-    uint8_t id_type = 0;
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_AUTH, buf[0]);
+    IkeIdType id_type = IkeIdType::IKE_ID_FQDN;
     const uint8_t *d = nullptr;
     size_t dl = 0;
     TEST_ASSERT_TRUE(dws_ike_id_parse(buf + 4, n - 4, &id_type, &d, &dl));
-    TEST_ASSERT_EQUAL_UINT8(IKE_ID_FQDN, id_type);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeIdType::IKE_ID_FQDN, (uint8_t)id_type);
     TEST_ASSERT_EQUAL_size_t(11, dl);
     TEST_ASSERT_EQUAL_MEMORY(fqdn, d, 11);
 
     const uint8_t sig[] = {0x01, 0x02, 0x03, 0x04};
-    n = dws_ike_auth_build(buf, sizeof(buf), IKE_PL_NONE, IKE_AUTH_PSK, sig, sizeof(sig));
-    uint8_t method = 0;
+    n = dws_ike_auth_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, IkeAuthMethod::IKE_AUTH_PSK, sig,
+                           sizeof(sig));
+    IkeAuthMethod method = IkeAuthMethod::IKE_AUTH_PSK;
     TEST_ASSERT_TRUE(dws_ike_auth_parse(buf + 4, n - 4, &method, &d, &dl));
-    TEST_ASSERT_EQUAL_UINT8(IKE_AUTH_PSK, method);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeAuthMethod::IKE_AUTH_PSK, (uint8_t)method);
     TEST_ASSERT_EQUAL_size_t(4, dl);
     TEST_ASSERT_EQUAL_MEMORY(sig, d, 4);
 }
@@ -252,14 +262,14 @@ void test_ts()
     uint8_t buf[64];
     const uint8_t start[] = {10, 0, 0, 0};
     const uint8_t end[] = {10, 0, 0, 255};
-    IkeTrafficSelector sel = {IKE_TS_IPV4_ADDR_RANGE, 0, 0, 65535, start, end, 4};
-    size_t n = dws_ike_ts_build(buf, sizeof(buf), IKE_PL_NONE, &sel, 1);
+    IkeTrafficSelector sel = {IkeTsType::IKE_TS_IPV4_ADDR_RANGE, 0, 0, 65535, start, end, 4};
+    size_t n = dws_ike_ts_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, &sel, 1);
     // generic(4) + num/res(4) + selector(8 + 2*4) = 24
     TEST_ASSERT_EQUAL_size_t(24, n);
     TEST_ASSERT_EQUAL_UINT8(1, dws_ike_ts_count(buf + 4, n - 4));
     IkeTrafficSelector got;
     TEST_ASSERT_TRUE(dws_ike_ts_get(buf + 4, n - 4, 0, &got));
-    TEST_ASSERT_EQUAL_UINT8(IKE_TS_IPV4_ADDR_RANGE, got.ts_type);
+    TEST_ASSERT_EQUAL_UINT8(IkeTsType::IKE_TS_IPV4_ADDR_RANGE, got.ts_type);
     TEST_ASSERT_EQUAL_UINT16(0, got.start_port);
     TEST_ASSERT_EQUAL_UINT16(65535, got.end_port);
     TEST_ASSERT_EQUAL_size_t(4, got.addr_len);
@@ -277,9 +287,10 @@ void test_sk_frame()
     memset(iv, 0x11, sizeof(iv));
     memset(ct, 0x22, sizeof(ct));
     memset(icv, 0x33, sizeof(icv));
-    size_t n = dws_ike_sk_build(buf, sizeof(buf), IKE_PL_IDI, iv, sizeof(iv), ct, sizeof(ct), icv, sizeof(icv));
+    size_t n = dws_ike_sk_build(buf, sizeof(buf), IkePayloadType::IKE_PL_IDI, iv, sizeof(iv), ct, sizeof(ct), icv,
+                                sizeof(icv));
     TEST_ASSERT_EQUAL_size_t(4 + 16 + 8 + 16, n);
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_IDI, buf[0]);
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_IDI, buf[0]);
     const uint8_t *piv = nullptr, *pct = nullptr, *picv = nullptr;
     size_t ctl = 0;
     TEST_ASSERT_TRUE(dws_ike_sk_parse(buf + 4, n - 4, 16, 16, &piv, &pct, &ctl, &picv));
@@ -297,17 +308,20 @@ void test_full_build()
 {
     uint8_t buf[128];
     IkeHeader h;
-    fill_hdr(&h, IKE_PL_SA, 0);
+    fill_hdr(&h, IkePayloadType::IKE_PL_SA, 0);
     size_t off = dws_ike_hdr_build(buf, sizeof(buf), &h);
-    IkeTransform tr[2] = {{IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, -1}, {IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1}};
-    off += dws_ike_sa_build(buf + off, sizeof(buf) - off, IKE_PL_KE, 1, IKE_PROTO_IKE, nullptr, 0, tr, 2);
+    IkeTransform tr[2] = {{IkeTransformType::IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, -1},
+                          {IkeTransformType::IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1}};
+    off += dws_ike_sa_build(buf + off, sizeof(buf) - off, IkePayloadType::IKE_PL_KE, 1, IkeProtocol::IKE_PROTO_IKE,
+                            nullptr, 0, tr, 2);
     uint8_t ke[8];
     memset(ke, 0xaa, sizeof(ke));
-    off += dws_ike_ke_build(buf + off, sizeof(buf) - off, IKE_PL_NONCE, IKE_DH_MODP2048, ke, sizeof(ke));
+    off +=
+        dws_ike_ke_build(buf + off, sizeof(buf) - off, IkePayloadType::IKE_PL_NONCE, IKE_DH_MODP2048, ke, sizeof(ke));
     uint8_t nonce[16];
     for (int i = 0; i < 16; i++)
         nonce[i] = (uint8_t)i;
-    off += dws_ike_nonce_build(buf + off, sizeof(buf) - off, IKE_PL_NONE, nonce, sizeof(nonce));
+    off += dws_ike_nonce_build(buf + off, sizeof(buf) - off, IkePayloadType::IKE_PL_NONE, nonce, sizeof(nonce));
     TEST_ASSERT_TRUE(dws_ike_set_length(buf, sizeof(buf), (uint32_t)off));
     TEST_ASSERT_EQUAL_size_t(sizeof(GV_FULL), off);
     TEST_ASSERT_EQUAL_MEMORY(GV_FULL, buf, sizeof(GV_FULL));
@@ -317,7 +331,7 @@ void test_full_chain_walk()
 {
     IkeHeader h;
     TEST_ASSERT_TRUE(dws_ike_hdr_parse(GV_FULL, sizeof(GV_FULL), &h));
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_SA, h.next_payload);
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_SA, h.next_payload);
     TEST_ASSERT_EQUAL_UINT32(sizeof(GV_FULL), h.length);
 
     IkePayloadIter it;
@@ -325,15 +339,15 @@ void test_full_chain_walk()
     IkePayload pl;
 
     TEST_ASSERT_TRUE(dws_ike_payload_next(&it, &pl));
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_SA, pl.type);
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_KE, pl.next_payload);
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_SA, pl.type);
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_KE, pl.next_payload);
     IkeProposalRef prop;
     TEST_ASSERT_TRUE(dws_ike_sa_first_proposal(pl.body, pl.body_len, &prop));
     TEST_ASSERT_EQUAL_UINT8(2, prop.num_transforms);
 
     TEST_ASSERT_TRUE(dws_ike_payload_next(&it, &pl));
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_KE, pl.type);
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONCE, pl.next_payload);
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_KE, pl.type);
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_NONCE, pl.next_payload);
     uint16_t group = 0;
     const uint8_t *d = nullptr;
     size_t dl = 0;
@@ -342,8 +356,8 @@ void test_full_chain_walk()
     TEST_ASSERT_EQUAL_size_t(8, dl);
 
     TEST_ASSERT_TRUE(dws_ike_payload_next(&it, &pl));
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONCE, pl.type);
-    TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONE, pl.next_payload);
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_NONCE, pl.type);
+    TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_NONE, pl.next_payload);
     TEST_ASSERT_EQUAL_size_t(16, pl.body_len);
 
     TEST_ASSERT_FALSE(dws_ike_payload_next(&it, &pl)); // end of chain
@@ -355,14 +369,14 @@ void test_parse_malformed()
     IkePayload pl;
     // a payload claiming length 3 (< 4) is rejected
     const uint8_t bad[] = {0x00, 0x00, 0x00, 0x03, 0xff};
-    dws_ike_payload_iter_init(&it, IKE_PL_NOTIFY, bad, sizeof(bad));
+    dws_ike_payload_iter_init(&it, IkePayloadType::IKE_PL_NOTIFY, bad, sizeof(bad));
     TEST_ASSERT_FALSE(dws_ike_payload_next(&it, &pl));
     // a payload claiming to run past the buffer is rejected
     const uint8_t over[] = {0x00, 0x00, 0x00, 0x40, 0x01};
-    dws_ike_payload_iter_init(&it, IKE_PL_NOTIFY, over, sizeof(over));
+    dws_ike_payload_iter_init(&it, IkePayloadType::IKE_PL_NOTIFY, over, sizeof(over));
     TEST_ASSERT_FALSE(dws_ike_payload_next(&it, &pl));
     // notify body shorter than the fixed 4-byte prefix
-    uint8_t proto = 0;
+    IkeProtocol proto = IkeProtocol::IKE_PROTO_NONE;
     uint16_t type = 0;
     const uint8_t *spi = nullptr, *d = nullptr;
     uint8_t ss = 0;

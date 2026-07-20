@@ -45,9 +45,9 @@ static size_t build_sa_init(uint8_t *buf, size_t cap)
     memset(&h, 0, sizeof(h));
     for (int i = 0; i < 8; i++)
         h.init_spi[i] = (uint8_t)(0xA0 + i); // a fixed demo SPI (a real one is random)
-    h.next_payload = IKE_PL_SA;
+    h.next_payload = IkePayloadType::IKE_PL_SA;
     h.version = DWS_IKE_VERSION;
-    h.exchange = IKE_SA_INIT;
+    h.exchange = IkeExchange::IKE_SA_INIT;
     h.flags = DWS_IKE_FLAG_INITIATOR;
     h.message_id = 0;
     h.length = 0; // patched below
@@ -55,20 +55,22 @@ static size_t build_sa_init(uint8_t *buf, size_t cap)
     size_t off = dws_ike_hdr_build(buf, cap, &h);
 
     IkeTransform tr[4] = {
-        {IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, 256},
-        {IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1},
-        {IKE_TRANSFORM_INTEG, IKE_INTEG_HMAC_SHA2_256_128, -1},
-        {IKE_TRANSFORM_DH, IKE_DH_MODP2048, -1},
+        {IkeTransformType::IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, 256},
+        {IkeTransformType::IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1},
+        {IkeTransformType::IKE_TRANSFORM_INTEG, IKE_INTEG_HMAC_SHA2_256_128, -1},
+        {IkeTransformType::IKE_TRANSFORM_DH, IKE_DH_MODP2048, -1},
     };
-    off += dws_ike_sa_build(buf + off, cap - off, IKE_PL_KE, 1, IKE_PROTO_IKE, nullptr, 0, tr, 4);
+    off += dws_ike_sa_build(buf + off, cap - off, IkePayloadType::IKE_PL_KE, 1, IkeProtocol::IKE_PROTO_IKE, nullptr, 0,
+                            tr, 4);
 
     // placeholder DH public value + nonce (a real client fills these from the crypto tier)
     uint8_t ke_data[32], nonce[16];
     memset(ke_data, 0xAB, sizeof(ke_data));
     for (size_t i = 0; i < sizeof(nonce); i++)
         nonce[i] = (uint8_t)(0x5A ^ i);
-    off += dws_ike_ke_build(buf + off, cap - off, IKE_PL_NONCE, IKE_DH_MODP2048, ke_data, sizeof(ke_data));
-    off += dws_ike_nonce_build(buf + off, cap - off, IKE_PL_NONE, nonce, sizeof(nonce));
+    off +=
+        dws_ike_ke_build(buf + off, cap - off, IkePayloadType::IKE_PL_NONCE, IKE_DH_MODP2048, ke_data, sizeof(ke_data));
+    off += dws_ike_nonce_build(buf + off, cap - off, IkePayloadType::IKE_PL_NONE, nonce, sizeof(nonce));
 
     dws_ike_set_length(buf, cap, (uint32_t)off);
     return off;
@@ -103,14 +105,14 @@ static void parse_and_print(const uint8_t *buf, size_t len, const char *what)
     while (dws_ike_payload_next(&it, &pl))
     {
         Serial.printf("[ike]   payload type=%u body=%u", (unsigned)pl.type, (unsigned)pl.body_len);
-        if (pl.type == IKE_PL_SA)
+        if (pl.type == IkePayloadType::IKE_PL_SA)
         {
             IkeProposalRef prop;
             if (dws_ike_sa_first_proposal(pl.body, pl.body_len, &prop))
                 Serial.printf("  (SA proposal %u, %u transforms)", (unsigned)prop.proposal_num,
                               (unsigned)prop.num_transforms);
         }
-        else if (pl.type == IKE_PL_KE)
+        else if (pl.type == IkePayloadType::IKE_PL_KE)
         {
             uint16_t group = 0;
             const uint8_t *d = nullptr;
@@ -118,9 +120,10 @@ static void parse_and_print(const uint8_t *buf, size_t len, const char *what)
             if (dws_ike_ke_parse(pl.body, pl.body_len, &group, &d, &dl))
                 Serial.printf("  (KE group %u, %u bytes)", (unsigned)group, (unsigned)dl);
         }
-        else if (pl.type == IKE_PL_NOTIFY)
+        else if (pl.type == IkePayloadType::IKE_PL_NOTIFY)
         {
-            uint8_t proto = 0, ss = 0;
+            IkeProtocol proto = IkeProtocol::IKE_PROTO_NONE;
+            uint8_t ss = 0;
             uint16_t type = 0;
             const uint8_t *spi = nullptr, *d = nullptr;
             size_t dl = 0;
