@@ -1282,7 +1282,7 @@ Opt-in fire-and-forget UDP telemetry cast. Default off. When set, services/udp_t
 
 `DWS_ENABLE_UPLOAD`
 
-Streaming file upload: POST a body straight to a file on the filesystem. Default off. When set, src/services/upload_service.h registers a POST route that streams the request body directly into an Arduino FS file (LittleFS / SPIFFS / SD) - the upload never has to fit in RAM. Reuses the same parser streaming-body hook as OTA. For reliable uploads set RX_BUF_SIZE above the largest inbound TCP segment (TCP_MSS, ~1460): the transport refuses-and-redelivers a segment that will not fit the receive ring (lossless backpressure), but a ring smaller than one segment would stall. The 1024 default suits ordinary requests, not uploads.
+Streaming file upload: POST a body straight to a file on the filesystem. Default off. When set, src/services/upload_service.h registers a POST route that streams the request body directly into an Arduino FS file (LittleFS / SPIFFS / SD) - the upload never has to fit in RAM. Reuses the same parser streaming-body hook as OTA. Enabling upload (or OTA / WebDAV) raises RX_BUF_SIZE to the streaming floor of 8192 automatically (in board_profiles/derived_sizing.h, regardless of a board profile's smaller pin), comfortably above a full TCP receive window - the transport refuses-and-redelivers a segment that will not fit the receive ring (lossless backpressure), so a ring below one window would otherwise stall. Override RX_BUF_SIZE higher for very large windows; the 1024 base suits ordinary requests, not uploads.
 
 ## UTMC
 

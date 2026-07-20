@@ -8,6 +8,27 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## A board profile's hardcoded `RX_BUF_SIZE` silently defeated the streaming/SSH/TLS ring floor
+
+- **Status:** FIXED (2026-07-20). Found while auditing the per-variant board-profile defaults.
+- **Symptom:** a build on any chip whose profile pins `RX_BUF_SIZE` (S3/P4/S31 = 2048, C3/C5/C6/H4 = 1536,
+  the rest = 1024) would, with `DWS_ENABLE_UPLOAD`/`OTA`/`WEBDAV` (streaming) enabled, keep that small ring
+  instead of being raised to the 8192 streaming floor - so a large streamed upload deadlocks (the ring cannot
+  hold a full TCP receive window, and ack-on-consume never reopens it). SSH/TLS were masked only because 2048
+  happened to meet their smaller floor; a 1536-pinned chip would also reset an SSH handshake.
+- **Root cause:** the feature-driven ring upsize lived inline in `ServerConfig.h` and was gated on
+  `defined(DWS_RX_BUF_SIZE_DEFAULTED)` - a marker set **only** in the base `#ifndef RX_BUF_SIZE` branch. A board
+  profile is included first and sets `RX_BUF_SIZE` itself, so that branch is skipped, the marker is never
+  defined, and all three upsize conditions evaluate false. The floor applied to the classic baseline (which
+  never pins the ring) but was silently a no-op for every richer chip profile.
+- **Fix:** move the resolution out of `ServerConfig.h` into `board_profiles/derived_sizing.h` (the sizing layer's
+  job), included last once every feature flag is known, and drop the `DEFAULTED` gate: the floor is now enforced
+  against whatever set the value - profile, `-D`, or base default - as a monotone raise (`RX_BUF_SIZE < floor`
+  -> lift; already >= floor -> untouched, so a deliberately roomy ring is preserved). Verified by preprocessor
+  resolution across profile x feature combinations (e.g. S3-pinned 2048 + streaming now resolves to 8192).
+
+---
+
 ## Reverse-SSH tunnel: scratch foreign-task crash + channel-slot starvation
 
 - **Status:** FIXED (2026-07-20). Found by the **HW bring-up of the reverse-SSH client** on an ESP32-S3 tunnelling

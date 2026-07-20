@@ -74,10 +74,10 @@
 #define DWS_TCP_NODELAY 1
 #endif
 
-/** @brief Ring-buffer capacity in bytes per connection slot. */
+/** @brief Ring-buffer capacity in bytes per connection slot (feature floors enforced last, in
+ *  board_profiles/derived_sizing.h - a value below what an enabled feature needs is raised there). */
 #ifndef RX_BUF_SIZE
 #define RX_BUF_SIZE 1024
-#define DWS_RX_BUF_SIZE_DEFAULTED 1 // we chose it; upsized for streaming below (see STREAM_BODY)
 #endif
 
 /**
@@ -4640,38 +4640,9 @@
 #define DWS_ENABLE_STREAM_BODY 0
 #endif
 
-// Streamed uploads need the RX ring to hold a full TCP receive window or the peer
-// overruns it and the transfer deadlocks (ack-on-consume reopens the window only as
-// the ring drains). If RX_BUF_SIZE was left at its default, upsize it to a value
-// that comfortably exceeds the usual TCP_WND (~5.7 KB) when streaming is enabled.
-// An explicit RX_BUF_SIZE (build flag) is respected unchanged - set it >= TCP_WND.
-#if DWS_ENABLE_STREAM_BODY && defined(DWS_RX_BUF_SIZE_DEFAULTED) && RX_BUF_SIZE < 8192
-#undef RX_BUF_SIZE
-#define RX_BUF_SIZE 8192
-#endif
-
-// A modern SSH client's first flight (identification banner + KEXINIT) is ~1.5 KB:
-// post-quantum/curve kex names, cert host-key algs, EtM MACs, ext-info-c. The RX
-// ring must hold it or the handshake resets at key exchange, so when SSH is enabled
-// and RX_BUF_SIZE was left at its default, upsize it to fit a full KEXINIT. An
-// explicit RX_BUF_SIZE (build flag) is respected unchanged - keep it >= 2 KB.
-#if DWS_ENABLE_SSH && defined(DWS_RX_BUF_SIZE_DEFAULTED) && RX_BUF_SIZE < 2048
-#undef RX_BUF_SIZE
-#define RX_BUF_SIZE 2048
-#endif
-
-// A modern TLS ClientHello (TLS 1.3 key shares + cipher/sig-alg lists + the RFC 7685 padding real
-// clients send) is ~1.5 KB and arrives as one TCP segment - larger than the 1024 default ring. The
-// recv callback refuses a whole segment that will not fit the ring (ERR_MEM, lossless backpressure),
-// so a ClientHello bigger than the ring is refused forever and the handshake stalls to an idle-timeout
-// RST: every 1.3-leading client (curl, browsers, Python) then fails to connect while a 1.2-only client
-// squeaks in. The ring must hold a full segment, so when TLS is enabled and RX_BUF_SIZE was left at its
-// default, upsize it to fit a full ClientHello. An explicit RX_BUF_SIZE (build flag) is respected
-// unchanged - keep it >= 2 KB.
-#if DWS_ENABLE_TLS && defined(DWS_RX_BUF_SIZE_DEFAULTED) && RX_BUF_SIZE < 2048
-#undef RX_BUF_SIZE
-#define RX_BUF_SIZE 2048
-#endif
+// The RX-ring feature floors (streaming needs a full TCP window, SSH/TLS a full first flight) are
+// resolved by board_profiles/derived_sizing.h, included at the end of this file once every feature
+// flag is known - that is the sizing layer's job, not this file's.
 
 /** @brief First-boot WiFi provisioning: softAP + captive-portal credentials form. */
 #ifndef DWS_ENABLE_PROVISIONING
@@ -6710,5 +6681,9 @@ static_assert((unsigned)ConnProto::PROTO_MESH < DWS_PROTO_MAX, "DWS_PROTO_MAX mu
 #define DWS_VFS_NAME_MAX 48 ///< Max path length (RAM backend).
 #endif
 #endif // DWS_ENABLE_VFS
+
+// Final sizing pass: raise buffers to the floors the enabled features require (every DWS_ENABLE_*
+// flag is resolved by this point). Kept in the board-profile layer, not inline above.
+#include "board_profiles/derived_sizing.h"
 
 #endif
