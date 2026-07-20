@@ -86,6 +86,7 @@
 "native_hart",
 "native_hislip",
 "native_hostlink",
+"native_hotswap",
 "native_hpack",
 "native_http_client",
 "native_http_delivery",
@@ -148,6 +149,7 @@
 "native_pca9685",
 "native_pentest",
 "native_pn532",
+"native_power_mgmt",
 "native_powerlink",
 "native_pqc",
 "native_preempt_queue",
@@ -329,6 +331,7 @@
 "native_hart",
 "native_hislip",
 "native_hostlink",
+"native_hotswap",
 "native_hpack",
 "native_http_client",
 "native_http_delivery",
@@ -391,6 +394,7 @@
 "native_pca9685",
 "native_pentest",
 "native_pn532",
+"native_power_mgmt",
 "native_powerlink",
 "native_pqc",
 "native_preempt_queue",
@@ -572,6 +576,7 @@
 "native_hart",
 "native_hislip",
 "native_hostlink",
+"native_hotswap",
 "native_hpack",
 "native_http_client",
 "native_http_delivery",
@@ -634,6 +639,7 @@
 "native_pca9685",
 "native_pentest",
 "native_pn532",
+"native_power_mgmt",
 "native_powerlink",
 "native_pqc",
 "native_preempt_queue",
@@ -2500,6 +2506,7 @@
 "native_edge_mesh",
 "native_failsafe",
 "native_h3_server",
+"native_hotswap",
 "native_http_client",
 "native_keepalive",
 "native_mpr121",
@@ -2902,6 +2909,12 @@
 "src/services/hostlink/hostlink.h": [
 "native_hostlink"
 ],
+"src/services/hotswap/hotswap.cpp": [
+"native_hotswap"
+],
+"src/services/hotswap/hotswap.h": [
+"native_hotswap"
+],
 "src/services/http_client/http_client.cpp": [
 "native_edge_cache",
 "native_edge_cache_sd",
@@ -3259,6 +3272,12 @@
 ],
 "src/services/pn532/pn532.h": [
 "native_pn532"
+],
+"src/services/power_mgmt/power_mgmt.cpp": [
+"native_power_mgmt"
+],
+"src/services/power_mgmt/power_mgmt.h": [
+"native_power_mgmt"
 ],
 "src/services/powerlink/powerlink.cpp": [
 "native_powerlink"
@@ -4056,6 +4075,7 @@
 "native_edge_mesh",
 "native_failsafe",
 "native_h3_server",
+"native_hotswap",
 "native_http_client",
 "native_keepalive",
 "native_mpr121",

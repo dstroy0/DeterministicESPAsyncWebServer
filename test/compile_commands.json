@@ -816,6 +816,12 @@
     "output": ".pio/build/native_hostlink/src/services/hostlink/hostlink.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_hotswap/src/services/hotswap/hotswap.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_HOTSWAP=1 -Itest/mocks -Itest/support -Isrc src/services/hotswap/hotswap.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/hotswap/hotswap.cpp",
+    "output": ".pio/build/native_hotswap/src/services/hotswap/hotswap.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_http_delivery/src/services/http_delivery/http_delivery.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_HTTP_DELIVERY=1 -Itest/mocks -Itest/support -Isrc src/services/http_delivery/http_delivery.cpp",
     "directory": "@ROOT@",
     "file": "src/services/http_delivery/http_delivery.cpp",
@@ -1210,6 +1216,12 @@
     "directory": "@ROOT@",
     "file": "src/services/pn532/pn532.cpp",
     "output": ".pio/build/native_pn532/src/services/pn532/pn532.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_power_mgmt/src/services/power_mgmt/power_mgmt.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_POWER_MGMT=1 -Itest/mocks -Itest/support -Isrc src/services/power_mgmt/power_mgmt.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/power_mgmt/power_mgmt.cpp",
+    "output": ".pio/build/native_power_mgmt/src/services/power_mgmt/power_mgmt.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_powerlink/src/services/powerlink/powerlink.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_POWERLINK=1 -Itest/mocks -Itest/support -Isrc src/services/powerlink/powerlink.cpp",
