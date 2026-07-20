@@ -4,8 +4,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- correct SSH reboot detector + document Path-2 tcp_output DoS as OPEN ([`da68376`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da68376424c146140cda7f33663aa1c288826dbe))
+
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`b9f52d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9f52d058b323554c70ef8e36aace0b15305a17a))
+- update CHANGELOG.md [skip ci] ([`df03db0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df03db029a45aa522585f98261e76270ce70ffa6))
 - dws_ rename sweep + SSH keyboard-interactive + SSH churn-DoS RECVED guard ([`7320023`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7320023258b094352c0b6c172759fea7b5e258b2))
 - update CHANGELOG.md [skip ci] ([`a4797aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4797aaa6318345234f94a864848b15ae872871b))
 - update CHANGELOG.md [skip ci] ([`914dc3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/914dc3b94ef0079eaa88e4cfdc4d4439a38c0a25))
@@ -24,6 +30,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`f975b44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f975b44009890a9dabc05937103cfa22a01c35a5))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fc58454`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc58454845b098dbf4e7917e54dc60befc2f8ce6))
 - add keyboard-interactive to the FEATURES.md grid + regenerate ([`4451d2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4451d2e26932a5d57eaae9c98932fb6dbda50ae5))
 - update ESP32 build footprints [skip ci] ([`c44d5fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c44d5fe6263efecf143b5d47db97077ef29a7d2e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e09e8d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e09e8d4e0d94261927cff19357125bedbda7acdd))
