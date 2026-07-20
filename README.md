@@ -686,6 +686,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L6    | `CBOR`              |             2.3 KB |          15.3 KB |
 | L6    | `JWT`               |             2.1 KB |          16.3 KB |
 | L6    | `AUTH_LOCKOUT`      |             1.1 KB |          15.8 KB |
+| L7    | `POWER_MGMT`        |           125.4 KB |          19.0 KB |
 | L7    | `FILE_SERVING`      |        0.0-87.8 KB |      0.0-16.1 KB |
 | L7    | `HTTP_DELIVERY`     |            87.8 KB |          16.1 KB |
 | L7    | `EXC_DECODER`       |            86.4 KB |          16.8 KB |

@@ -544,7 +544,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3388 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3396 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -29022,14 +29022,14 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smtp (22 tests)</b></summary>
+<summary><b>test_smtp (30 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_happy_path_no_auth</b> &mdash; <i>Commands, in order.</i></summary>
 
     * **Objective**: Commands, in order.
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
       * <code>Assert true (m.sent.find("EHLO esp32\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("MAIL FROM:&lt;device@example.net&gt;\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("RCPT TO:&lt;ops@example.net&gt;\\r\\n") != std::string::npos)</code>
@@ -29047,7 +29047,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Auth login
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
       * <code>Assert true (m.sent.find("AUTH LOGIN\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("dXNlcg==\\r\\n") != std::string::npos); // base64("user")</code>
       * <code>Assert true (m.sent.find("cGFzcw==\\r\\n") != std::string::npos); // base64("pass")</code>
@@ -29058,7 +29058,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Auth rejected
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_ERR_AUTH, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_AUTH, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29066,7 +29066,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Greeting not ready
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29074,7 +29074,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Rcpt rejected
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29082,7 +29082,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Data refused
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29090,7 +29090,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Dot stuffing
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
       * <code>Assert true (m.sent.find("..hidden\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("...two dots\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("last\\r\\n.\\r\\n") != std::string::npos)</code>
@@ -29101,7 +29101,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Multiline reply and lf body
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
       * <code>Assert true (m.sent.find("a\\r\\nb\\r\\n") != std::string::npos)</code>
   </details>
 
@@ -29110,7 +29110,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Partial reads dribble
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29118,7 +29118,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Missing required arg
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29126,7 +29126,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Io error when server hangs
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29142,7 +29142,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Command send fails
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29150,7 +29150,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Body send fails
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29210,7 +29210,7 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
 
     * **Objective**: Cr in body dropped
     * **Assertions**:
-      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
       * <code>Assert true (m.sent.find("x\\r\\ny\\r\\n") != std::string::npos)</code>
   </details>
 
@@ -29229,6 +29229,85 @@ A thorough directory of all **3388 test cases** across **272 suites**. Expand a 
     * **Objective**: Host smtp send stub
     * **Assertions**:
       * <code>Assert equal int (SmtpResult::SMTP_ERR_CONNECT, smtp_send(&c, &msg))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starttls_upgrades_and_reissues_ehlo</b> &mdash; <i>RFC 3207 sec 4.2: EHLO must be reissued after the upgrade, so it appears twice.</i></summary>
+
+    * **Objective**: RFC 3207 sec 4.2: EHLO must be reissued after the upgrade, so it appears twice.
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m))</code>
+      * <code>Assert equal int (1, m.upgrades)</code>
+      * <code>Assert true (m.sent.find("STARTTLS\\r\\n") != std::string::npos)</code>
+      * <code>Assert true (first != std::string::npos)</code>
+      * <code>Assert true (m.sent.find("EHLO", first + 1) != std::string::npos)</code>
+      * <code>Assert true (m.sent.find("STARTTLS\\r\\n") &lt; m.sent.find("MAIL FROM"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starttls_not_advertised_fails_before_auth</b> &mdash; <i>The security property: a server (or an attacker stripping the capability) that does not offer</i></summary>
+
+    * **Objective**: The security property: a server (or an attacker stripping the capability) that does not offer
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_NO_STARTTLS,</code>
+      * <code>Assert equal int (0, m.upgrades)</code>
+      * <code>Assert true (m.sent.find("AUTH") == std::string::npos)</code>
+      * <code>Assert true (m.sent.find("aHVudGVyMg==") == std::string::npos); // base64("hunter2")</code>
+      * <code>Assert true (m.sent.find("MAIL FROM") == std::string::npos)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starttls_partial_keyword_is_not_a_match</b> &mdash; <i>"STARTTLSX" is a different keyword; treating it as STARTTLS would be a silent downgrade.</i></summary>
+
+    * **Objective**: "STARTTLSX" is a different keyword; treating it as STARTTLS would be a silent downgrade.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_NO_STARTTLS,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starttls_capability_match_is_case_insensitive</b> &mdash; <i>Starttls capability match is case insensitive</i></summary>
+
+    * **Objective**: Starttls capability match is case insensitive
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m))</code>
+      * <code>Assert equal int (1, m.upgrades)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starttls_server_refuses_the_upgrade</b> &mdash; <i>Starttls server refuses the upgrade</i></summary>
+
+    * **Objective**: Starttls server refuses the upgrade
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_TLS, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m))</code>
+      * <code>Assert equal int (0, m.upgrades)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starttls_handshake_failure_aborts</b> &mdash; <i>Starttls handshake failure aborts</i></summary>
+
+    * **Objective**: Starttls handshake failure aborts
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_TLS, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m))</code>
+      * <code>Assert equal int (1, m.upgrades)</code>
+      * <code>Assert true (m.sent.find("MAIL FROM") == std::string::npos)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starttls_without_an_upgrade_callback_is_an_arg_error</b> &mdash; <i>Starttls without an upgrade callback is an arg error</i></summary>
+
+    * **Objective**: Starttls without an upgrade callback is an arg error
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_plain_ignores_an_advertised_starttls</b> &mdash; <i>Configured plaintext: the advertisement is informational, the engine must not upgrade.</i></summary>
+
+    * **Objective**: Configured plaintext: the advertisement is informational, the engine must not upgrade.
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m))</code>
+      * <code>Assert equal int (0, m.upgrades)</code>
+      * <code>Assert true (m.sent.find("STARTTLS\\r\\n") == std::string::npos)</code>
   </details>
 
 </details>

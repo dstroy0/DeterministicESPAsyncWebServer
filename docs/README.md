@@ -1072,8 +1072,6 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
-│   │   ├── __pycache__/
-│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1142,8 +1140,8 @@ Feature Tables workflow from `docs/footprints.json`.
 | `COAP+COAP_OBSERVE` | `L7-Application/CoapObserve` | 729,669 | 46,172 |
 | `ESPNOW` | `L7-Application/EspNow` | 731,525 | 43,580 |
 | `DNC` | `L7-Application/EthernetDnc` | 733,861 | 61,124 |
-| `SMTP` | `L7-Application/SmtpAlert` | 734,617 | 61,132 |
 | `HTTP_CLIENT` | `L7-Application/HttpClient` | 734,625 | 63,180 |
+| `SMTP` | `L7-Application/SmtpAlert` | 735,065 | 61,132 |
 | `MQTT` | `L7-Application/MqttClient` | 736,465 | 65,340 |
 | `SMB` | `L7-Application/SmbFileClient` | 742,761 | 65,220 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,669 | 46,708 |
