@@ -59,6 +59,20 @@ awk '{print $2}' /etc/ssh/ssh_host_ed25519_key.pub | base64 -d | sha256sum
    the matching `ssh-ed25519 ...` line to the relay's `~/.ssh/authorized_keys`.
 4. `curl` the relay's forwarded port - you reach the device.
 
+## Build
+
+```sh
+pio ci --board=esp32dev --project-option="framework=arduino" \
+  --project-option="build_flags=-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_SSH_CLIENT=1 -DDWS_SSH_CLIENT_MAX_CHANNELS=2 -DDWS_CLIENT_RX_BUF=2048 -DMAX_CONNS=4" \
+  --lib="." examples/L5-Session/SSHReverseTunnel/SSHReverseTunnel.ino
+```
+
+The dialed-down channel count and client RX buffer keep this within the classic
+ESP32's ~122 KB internal DRAM (the reverse client holds a relay connection plus
+one bridge per channel); a PSRAM/large-SRAM board uses the roomier per-variant
+defaults from its board profile, and add `-DDWS_ENABLE_PQC_KEX=1` for the ML-KEM
+hybrid (run the tunnel task with a >= 20 KB stack, as above).
+
 ## What it negotiates
 
 The client offers the full modern suite and interoperates with any current SSH
