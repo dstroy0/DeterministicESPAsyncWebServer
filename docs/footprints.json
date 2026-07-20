@@ -643,6 +643,13 @@
     "flash_bytes": 728421,
     "ram_bytes": 44988
   },
+  "SPA_ROUTER": {
+    "example": "L7-Application/SpaFallback",
+    "flags": "-DDWS_ENABLE_SPA_ROUTER=1",
+    "board": "esp32dev",
+    "flash_bytes": 754605,
+    "ram_bytes": 81788
+  },
   "SSH": {
     "example": "L5-Session/SSHHostKey",
     "flags": "-DDWS_ENABLE_SSH=1",
