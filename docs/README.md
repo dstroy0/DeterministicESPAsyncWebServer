@@ -1241,7 +1241,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WEBDAV` | `L7-Application/WebDav` | 821,069 | 105,352 |
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/WebDav` | 822,237 | 90,860 |
 | `ETAG` | `L7-Application/ETag` | 829,073 | 83,092 |
-| `SSH` | `L5-Session/SSHHostKey` | 829,481 | 109,176 |
+| `SSH` | `L5-Session/SSHHostKey` | 829,565 | 109,176 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 832,497 | 107,256 |
@@ -1255,7 +1255,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/TlsResumption` | 858,001 | 105,824 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/mTLS` | 858,105 | 106,000 |
 | `POWER_MGMT` | `L7-Application/PowerGovernor` | 881,293 | 85,648 |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 881,781 | 118,528 |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 881,837 | 118,528 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
