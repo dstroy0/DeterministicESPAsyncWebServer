@@ -167,7 +167,6 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint",
 "native_radio_power",
@@ -205,6 +204,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_ssh_sftp",
 "native_ssh_zlib",
@@ -412,7 +412,6 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint",
 "native_radio_power",
@@ -450,6 +449,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_ssh_sftp",
 "native_ssh_zlib",
@@ -657,7 +657,6 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint",
 "native_radio_power",
@@ -695,6 +694,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_ssh_sftp",
 "native_ssh_zlib",
@@ -902,7 +902,6 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint",
 "native_radio_power",
@@ -940,6 +939,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_ssh_sftp",
 "native_ssh_zlib",
@@ -1016,8 +1016,8 @@
 "native_auth_lockout",
 "native_cloudevents",
 "native_compliance",
-"native_dws_ip",
 "native_diag",
+"native_dws_ip",
 "native_forwarded_trust",
 "native_h3_server",
 "native_happy_eyeballs",
@@ -1042,8 +1042,8 @@
 "native_auth_lockout",
 "native_cloudevents",
 "native_compliance",
-"native_dws_ip",
 "native_diag",
+"native_dws_ip",
 "native_forwarded_trust",
 "native_h3_server",
 "native_happy_eyeballs",
@@ -1248,8 +1248,7 @@
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
-"native_quic_tls",
-"native_quic_tls_pqc"
+"native_quic_tls"
 ],
 "src/network_drivers/presentation/http3/quic_aead.h": [
 "native_coaps",
@@ -1263,8 +1262,7 @@
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
-"native_quic_tls",
-"native_quic_tls_pqc"
+"native_quic_tls"
 ],
 "src/network_drivers/presentation/http3/quic_conn.cpp": [
 "native_h3_conn",
@@ -1287,8 +1285,7 @@
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
-"native_quic_tls",
-"native_quic_tls_pqc"
+"native_quic_tls"
 ],
 "src/network_drivers/presentation/http3/quic_crypto.h": [
 "native_h3_conn",
@@ -1297,8 +1294,7 @@
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
-"native_quic_tls",
-"native_quic_tls_pqc"
+"native_quic_tls"
 ],
 "src/network_drivers/presentation/http3/quic_frame.cpp": [
 "native_h3_conn",
@@ -1329,7 +1325,6 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/quic_hkdf.h": [
@@ -1345,7 +1340,6 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/quic_packet.cpp": [
@@ -1356,8 +1350,7 @@
 "native_quic_crypto",
 "native_quic_packet",
 "native_quic_server",
-"native_quic_tls",
-"native_quic_tls_pqc"
+"native_quic_tls"
 ],
 "src/network_drivers/presentation/http3/quic_packet.h": [
 "native_h3_conn",
@@ -1368,7 +1361,6 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_quic_tp"
 ],
 "src/network_drivers/presentation/http3/quic_server.cpp": [
@@ -1385,8 +1377,7 @@
 "native_h3_server",
 "native_quic_conn",
 "native_quic_server",
-"native_quic_tls",
-"native_quic_tls_pqc"
+"native_quic_tls"
 ],
 "src/network_drivers/presentation/http3/quic_tls.h": [
 "native_h3_conn",
@@ -1394,8 +1385,7 @@
 "native_h3_server",
 "native_quic_conn",
 "native_quic_server",
-"native_quic_tls",
-"native_quic_tls_pqc"
+"native_quic_tls"
 ],
 "src/network_drivers/presentation/http3/quic_tp.cpp": [
 "native_h3_conn",
@@ -1404,7 +1394,6 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_quic_tp"
 ],
 "src/network_drivers/presentation/http3/quic_tp.h": [
@@ -1414,7 +1403,6 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_quic_tp"
 ],
 "src/network_drivers/presentation/http3/quic_varint.cpp": [
@@ -1426,7 +1414,6 @@
 "native_quic_frame",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint"
 ],
@@ -1439,7 +1426,6 @@
 "native_quic_frame",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint"
 ],
@@ -1454,7 +1440,6 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/tls13_kdf.h": [
@@ -1468,7 +1453,6 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/tls13_msg.cpp": [
@@ -1482,7 +1466,6 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/http3/tls13_msg.h": [
@@ -1496,7 +1479,6 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/http_parser/http_parser.cpp": [
@@ -1612,29 +1594,27 @@
 ],
 "src/network_drivers/presentation/pqc/mlkem.cpp": [
 "native_pqc",
-"native_quic_tls_pqc",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/pqc/mlkem.h": [
 "native_pqc",
-"native_quic_tls_pqc",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/pqc/sha3.cpp": [
 "native_pqc",
-"native_quic_tls_pqc",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/pqc/sha3.h": [
 "native_pqc",
-"native_quic_tls_pqc",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/pqc/sntrup761.cpp": [
-"native_pqc"
+"native_pqc",
+"native_ssh_pqc"
 ],
 "src/network_drivers/presentation/pqc/sntrup761.h": [
-"native_pqc"
+"native_pqc",
+"native_ssh_pqc"
 ],
 "src/network_drivers/presentation/presentation.cpp": [
 "native",
@@ -1728,6 +1708,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/auth/ssh_auth.h": [
@@ -1735,6 +1716,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/connection/ssh_channel.cpp": [
@@ -1742,6 +1724,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/connection/ssh_channel.h": [
@@ -1749,6 +1732,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/connection/ssh_conn.cpp": [
@@ -1765,6 +1749,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/connection/ssh_server.h": [
@@ -1772,6 +1757,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp": [
@@ -1779,6 +1765,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h": [
@@ -1787,6 +1774,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp": [
@@ -1795,6 +1783,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_aesgcm.h": [
@@ -1804,6 +1793,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_bignum.cpp": [
@@ -1812,6 +1802,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_bignum.h": [
@@ -1820,6 +1811,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp": [
@@ -1829,6 +1821,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_chacha20.h": [
@@ -1838,6 +1831,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp": [
@@ -1846,6 +1840,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_chachapoly.h": [
@@ -1855,6 +1850,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp": [
@@ -1875,6 +1871,7 @@
 "native_ssh_conn",
 "native_ssh_ed25519",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_msg"
 ],
@@ -1896,6 +1893,7 @@
 "native_ssh_conn",
 "native_ssh_ed25519",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_msg"
 ],
@@ -1905,6 +1903,7 @@
 "native_ssh_conn",
 "native_ssh_ecdsa",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_ecdsa.h": [
@@ -1913,6 +1912,7 @@
 "native_ssh_conn",
 "native_ssh_ecdsa",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp": [
@@ -1933,6 +1933,7 @@
 "native_ssh_conn",
 "native_ssh_ed25519",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_msg"
 ],
@@ -1954,6 +1955,7 @@
 "native_ssh_conn",
 "native_ssh_ed25519",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_msg"
 ],
@@ -1975,6 +1977,7 @@
 "native_ssh_conn",
 "native_ssh_ed25519",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_msg"
 ],
@@ -2002,6 +2005,7 @@
 "native_ssh_conn",
 "native_ssh_ecdsa",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_kdf"
 ],
@@ -2029,6 +2033,7 @@
 "native_ssh_conn",
 "native_ssh_ecdsa",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_kdf"
 ],
@@ -2038,6 +2043,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h": [
@@ -2046,6 +2052,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_kexhash.h": [
@@ -2053,6 +2060,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp": [
@@ -2062,6 +2070,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_poly1305.h": [
@@ -2071,6 +2080,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_rsa.cpp": [
@@ -2079,6 +2089,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_rsa.h": [
@@ -2087,6 +2098,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_sha256.cpp": [
@@ -2122,6 +2134,7 @@
 "native_ssh_conn",
 "native_ssh_ecdsa",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_kdf",
 "native_upload",
@@ -2160,6 +2173,7 @@
 "native_ssh_conn",
 "native_ssh_ecdsa",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_kdf",
 "native_upload",
@@ -2185,6 +2199,7 @@
 "native_ssh_conn",
 "native_ssh_ed25519",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_msg"
 ],
@@ -2208,6 +2223,7 @@
 "native_ssh_conn",
 "native_ssh_ed25519",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_msg"
 ],
@@ -2222,6 +2238,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/transport/ssh_dh.h": [
@@ -2229,6 +2246,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/transport/ssh_keymat.cpp": [
@@ -2236,6 +2254,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/transport/ssh_keymat.h": [
@@ -2244,6 +2263,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/transport/ssh_packet.cpp": [
@@ -2251,6 +2271,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/transport/ssh_packet.h": [
@@ -2258,6 +2279,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/transport/ssh_transport.cpp": [
@@ -2265,6 +2287,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/transport/ssh_transport.h": [
@@ -2272,6 +2295,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/transport/ssh_zlib.cpp": [
@@ -2361,6 +2385,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_upload",
 "native_webdav_handler",
@@ -2380,6 +2405,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_upload",
 "native_webdav_handler",
@@ -2425,6 +2451,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_upload",
 "native_webdav_handler",
@@ -2445,6 +2472,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_upload",
 "native_webdav_handler",
@@ -2780,6 +2808,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_telnet",
 "native_upload",
@@ -4060,12 +4089,12 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_ssh",
 "native_ssh_aesgcm",
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/shared_primitives/aes_sbox.h": [
@@ -4081,13 +4110,13 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_snmp_v3",
 "native_ssh",
 "native_ssh_aesgcm",
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/shared_primitives/bitio.h": [
@@ -4117,6 +4146,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/shared_primitives/endian.h": [
@@ -4168,6 +4198,7 @@
 "native_ssh_ecdsa",
 "native_ssh_ed25519",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_kdf",
 "native_tls13_msg",
@@ -4198,12 +4229,12 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
-"native_quic_tls_pqc",
 "native_ssh",
 "native_ssh_aesgcm",
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc"
 ],
 "src/shared_primitives/hex.h": [
@@ -4353,6 +4384,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_kbdint",
 "native_ssh_pqc",
 "native_telnet",
 "native_upload",
