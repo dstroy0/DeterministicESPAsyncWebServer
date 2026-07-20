@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.18.0] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.18.0 - 2026-07-20</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`b702957`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b702957d5a0ff97348213e509aa755ef2e588db6))
+
+### Changes
+
+- Bump version: 7.17.1 → 7.18.0 ([`0b43e8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b43e8d2df267f57f934d2079eeccd74846ab7c3))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`93923ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93923adb094371056645e27c30b78728065aa091))
+
+### Refactor
+
+- scope the protocol enums and let the types flow ([`412f131`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/412f131babe40a993eea5e2c516704898529197a))
+
+</details>
+
 ## [7.17.1] - 2026-07-20
 
 <details>
