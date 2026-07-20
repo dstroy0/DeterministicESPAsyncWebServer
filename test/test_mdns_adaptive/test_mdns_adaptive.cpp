@@ -72,6 +72,114 @@ void test_refresh_interval_and_beacon()
     dws_mdns_beacon_init(nullptr, 0, 0, 0);                 // null guard
 }
 
+// --- contention window sampler --------------------------------------------
+
+void test_contention_no_sample_before_the_window(void)
+{
+    MdnsContentionWindow w;
+    dws_mdns_contention_init(&w, 1000, 0, 100000);
+    uint16_t c = 0xAB;
+    // Window is 1000 ms; 999 ms in, nothing is reported and the out-param is untouched.
+    TEST_ASSERT_FALSE(dws_mdns_contention_sample(&w, 50, 100999, &c));
+    TEST_ASSERT_EQUAL_UINT16(0xAB, c);
+}
+
+void test_contention_reports_the_window_delta(void)
+{
+    MdnsContentionWindow w;
+    dws_mdns_contention_init(&w, 1000, 0, 100000);
+    uint16_t c = 0;
+    TEST_ASSERT_TRUE(dws_mdns_contention_sample(&w, 42, 101000, &c));
+    TEST_ASSERT_EQUAL_UINT16(42, c); // 42 frames counted over the window
+}
+
+void test_contention_delta_is_per_window_not_cumulative(void)
+{
+    MdnsContentionWindow w;
+    dws_mdns_contention_init(&w, 1000, 0, 100000);
+    uint16_t c = 0;
+    TEST_ASSERT_TRUE(dws_mdns_contention_sample(&w, 100, 101000, &c));
+    TEST_ASSERT_EQUAL_UINT16(100, c);
+    // The running total keeps climbing; the next window reports only its own share.
+    TEST_ASSERT_TRUE(dws_mdns_contention_sample(&w, 130, 102000, &c));
+    TEST_ASSERT_EQUAL_UINT16(30, c);
+}
+
+void test_contention_saturates_at_uint16(void)
+{
+    MdnsContentionWindow w;
+    dws_mdns_contention_init(&w, 1000, 0, 100000);
+    uint16_t c = 0;
+    TEST_ASSERT_TRUE(dws_mdns_contention_sample(&w, 70000, 101000, &c)); // > 0xFFFF
+    TEST_ASSERT_EQUAL_UINT16(0xFFFF, c);
+}
+
+void test_contention_frame_counter_wrap(void)
+{
+    // The promiscuous counter is uint32 and will eventually wrap. A window straddling the wrap must
+    // still yield the true count via modular subtraction.
+    MdnsContentionWindow w;
+    dws_mdns_contention_init(&w, 1000, 0xFFFFFFF0u, 100000);
+    uint16_t c = 0;
+    TEST_ASSERT_TRUE(dws_mdns_contention_sample(&w, 0x0000000Fu, 101000, &c)); // wrapped by 0x1F
+    TEST_ASSERT_EQUAL_UINT16(0x1F, c);
+}
+
+void test_contention_clock_wrap(void)
+{
+    // The millis clock wraps too; the window-elapsed test is modular, so a window straddling the
+    // rollover still closes on time.
+    MdnsContentionWindow w;
+    dws_mdns_contention_init(&w, 1000, 0, 0xFFFFFC00u);
+    uint16_t c = 0;
+    TEST_ASSERT_FALSE(dws_mdns_contention_sample(&w, 5, 0xFFFFFE00u, &c)); // 512 ms in
+    TEST_ASSERT_TRUE(dws_mdns_contention_sample(&w, 9, 0x00000000u, &c));  // 1024 ms in, past the wrap
+    TEST_ASSERT_EQUAL_UINT16(9, c);
+}
+
+void test_contention_zero_window_defaults(void)
+{
+    MdnsContentionWindow w;
+    dws_mdns_contention_init(&w, 0, 0, 100000); // 0 -> a 1000 ms default
+    TEST_ASSERT_EQUAL_UINT32(1000, w.window_ms);
+}
+
+void test_contention_null_is_safe(void)
+{
+    uint16_t c = 0;
+    dws_mdns_contention_init(nullptr, 1000, 0, 0);
+    MdnsContentionWindow w;
+    dws_mdns_contention_init(&w, 1000, 0, 0);
+    TEST_ASSERT_FALSE(dws_mdns_contention_sample(nullptr, 0, 2000, &c));
+    TEST_ASSERT_FALSE(dws_mdns_contention_sample(&w, 0, 2000, nullptr));
+}
+
+// The whole loop, in the pure domain: a busy window backs the interval off, a quiet one recovers it.
+void test_contention_drives_the_beacon(void)
+{
+    MdnsBeacon b;
+    dws_mdns_beacon_init(&b, 1000, 8000, 50); // base 1s, ceiling 8s, back off at >=50 frames/window
+    MdnsContentionWindow w;
+    dws_mdns_contention_init(&w, 1000, 0, 0);
+
+    uint16_t c = 0;
+    // Busy window: 200 frames -> back off.
+    TEST_ASSERT_TRUE(dws_mdns_contention_sample(&w, 200, 1000, &c));
+    dws_mdns_beacon_adapt(&b, c);
+    TEST_ASSERT_EQUAL_UINT32(2000, b.cur_ms);
+
+    // Still busy -> back off again.
+    TEST_ASSERT_TRUE(dws_mdns_contention_sample(&w, 400, 2000, &c));
+    dws_mdns_beacon_adapt(&b, c);
+    TEST_ASSERT_EQUAL_UINT32(4000, b.cur_ms);
+
+    // Silent window (no new frames) -> recover.
+    TEST_ASSERT_TRUE(dws_mdns_contention_sample(&w, 400, 3000, &c));
+    TEST_ASSERT_EQUAL_UINT16(0, c);
+    dws_mdns_beacon_adapt(&b, c);
+    TEST_ASSERT_EQUAL_UINT32(2000, b.cur_ms);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -80,5 +188,14 @@ int main(void)
     RUN_TEST(test_due);
     RUN_TEST(test_presleep);
     RUN_TEST(test_refresh_interval_and_beacon);
+    RUN_TEST(test_contention_no_sample_before_the_window);
+    RUN_TEST(test_contention_reports_the_window_delta);
+    RUN_TEST(test_contention_delta_is_per_window_not_cumulative);
+    RUN_TEST(test_contention_saturates_at_uint16);
+    RUN_TEST(test_contention_frame_counter_wrap);
+    RUN_TEST(test_contention_clock_wrap);
+    RUN_TEST(test_contention_zero_window_defaults);
+    RUN_TEST(test_contention_null_is_safe);
+    RUN_TEST(test_contention_drives_the_beacon);
     return UNITY_END();
 }

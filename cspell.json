@@ -1420,7 +1420,8 @@
     "ESMTP",
     "Nlcm",
     "dvcm",
-    "nojs"
+    "nojs",
+    "lums"
   ],
   "ignorePaths": [
     "node_modules/**",

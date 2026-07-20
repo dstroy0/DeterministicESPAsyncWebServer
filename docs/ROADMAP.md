@@ -445,30 +445,27 @@ preempting queue, so sensing shares the real-time ingest path.
       a -31 dBm channel over the -66 dBm one. Example WifiSniffer.
 - [x] DNS resolver + answer verification _(shipped)_ - `DWS_ENABLE_DNS_RESOLVER`: `services/dns_resolver` resolves a hostname to IPv4 (lwIP dns_gethostbyname marshalled to tcpip_thread, dotted-quad fast path) and verifies the answer - rejecting 0.0.0.0 / broadcast / loopback / multicast as spoof / DNS-rebinding indicators; classifier + verifier host-tested, HW-verified against live DNS (example DnsResolver). Remaining (M): captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
 - [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `dws_mdns_txt` / `dws_mdns_add_service`.
-- [~] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M) _(scheduler shipped)_ -
-  `DWS_ENABLE_MDNS_ADAPTIVE` (`services/mdns_adaptive`): `dws_mdns_beacon_adapt` backs the announce
-  interval off toward a ceiling under RF contention and recovers it toward the nominal cadence when the
-  air is quiet, `dws_mdns_refresh_interval` gives the TTL/2 continuous-refresher cadence,
-  `dws_mdns_beacon_due` says when an announce is due, and `dws_mdns_beacon_presleep_due` is the
-  auto-sleep beacon (announce before a sleep window that would let the record lapse). Wrap-safe time math,
-  pure, host-tested (`native_mdns_adaptive`). _Remaining:_ wiring the schedule to the mDNS transmit + a
-  live contention counter from the WiFi driver (M).
-  **Attempted 2026-07-19 and reverted - read this before retrying.** The transmit half is solved:
-  `mdns_service_txt_item_set()` re-applied at its current value re-announces on every PCB with no goodbye
-  and no re-probe (confirmed in the component source), unlike `mdns_service_instance_name_set()` which
-  sends a bye first and would evict the record it is meant to refresh. The blocker is the counter.
-  Counting announcements by joining 224.0.0.251:5353 with a second listener **cannot coexist with the
-  ESP-IDF mdns responder**: bound after the responder the join fails outright; bound before it the join
-  succeeds but the responder goes announce-only - its service PTR still appears in `avahi-browse` while
-  every SRV/TXT/A query times out, so the device silently stops resolving. Proven on an ESP32-S3 against
-  avahi on a LAN peer, with a control build (join disabled) resolving correctly on the same hardware;
-  binding IPv4-only rather than dual-stack does not help. lwIP hands a datagram to the first matching pcb
-  and the `SO_REUSE_RXTOALL` fan-out does not rescue a raw pcb sharing a port with a socket-layer one,
-  even though both set `SO_REUSEADDR`. A contention signal therefore has to come from somewhere other
-  than a second bind on 5353 - candidate: the shipped promiscuous sniffer (`DWS_ENABLE_WIFI_SNIFFER` +
-  `DWS_ENABLE_PROMISC`), which already counts frames per channel, at the cost of running the radio
-  promiscuous. The multicast receive primitive built for this (`dws_udp_listen_multicast`) was kept: it
-  is correct and useful for any group nothing else already owns.
+- [x] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M) _(shipped, HW-verified)_ -
+      `DWS_ENABLE_MDNS_ADAPTIVE` (`services/mdns_adaptive`): `dws_mdns_beacon_adapt` backs the announce
+      interval off toward a ceiling under RF contention and recovers it toward the nominal cadence when the
+      air is quiet, `dws_mdns_refresh_interval` gives the TTL/2 continuous-refresher cadence,
+      `dws_mdns_beacon_due` says when an announce is due, and `dws_mdns_beacon_presleep_due` is the
+      auto-sleep beacon (announce before a sleep window that would let the record lapse). Wrap-safe time math,
+      pure, host-tested (`native_mdns_adaptive`). **Shipped: the device binding** (`dws_mdns_adaptive_begin/_tick/_end`, needs `DWS_ENABLE_MDNS` + `DWS_ENABLE_PROMISC`). The live
+      contention counter is **promiscuous capture pinned to the station's own channel** - a radio-layer
+      callback that never touches the responder's sockets, so unlike a second bind on UDP 5353 it does not
+      turn the responder announce-only. (The 5353 approach was tried and reverted: bound after the ESP-IDF
+      responder the join fails, bound before it the responder browses but every SRV/TXT/A query times out,
+      because lwIP hands a datagram to the first matching PCB and `SO_REUSE_RXTOALL` does not rescue a raw
+      PCB sharing a port with a socket-layer one. The `dws_udp_listen_multicast` primitive built for it was
+      kept - it is correct for any group nothing else owns.) `dws_mdns_contention_sample` turns the capture's
+      running frame total into a per-window value (host-tested incl. counter/clock wrap + saturation); the
+      transmit is `mdns_service_txt_item_set()` re-applied at its current value (re-announces on every PCB
+      with no goodbye, a refresh not an evict). The backoff ceiling is capped at ~7/8 of the TTL so the
+      record can never lapse - a bug the HW run caught, since a ceiling past the TTL made the device
+      undiscoverable. Host-tested (`native_mdns_adaptive`, 14 cases). HW-verified on an **S3** against
+      avahi: A+SRV+TXT kept resolving while capture ran (the exact case the 5353 approach broke), real
+      ambient frames drove the backoff, and it capped below the TTL. Example MdnsAdaptive.
 - [x] Raw-UDP telemetry cast _(shipped)_ - `DWS_ENABLE_UDP_TELEMETRY`: `services/udp_telemetry` builds InfluxDB line-protocol records (`measurement field=val,...`, host-tested) and casts them to a collector over UDP via `dws_udp_sendto`, zero-heap fire-and-forget (example UdpTelemetry).
 - [x] **Static-IP fallback + TCP window auto-scaling by free RAM (M)** _(shipped)_ -
       `DWS_ENABLE_NETADAPT`: `services/netadapt` `dws_netadapt_window()` sizes the TCP receive window
