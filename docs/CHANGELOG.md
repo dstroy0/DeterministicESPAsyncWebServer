@@ -2,6 +2,24 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- give DWS_ENABLE_SMTP_TLS its own FEATURES.md section ([`676c691`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/676c6912fa9d626f011051c07f5922c50e6e72a4))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`8949408`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/894940847d5abaab3a2706525bceb481094f02db))
+
+### Changes
+
+- Bump version: 7.20.0 → 7.20.1 ([`09fa82b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09fa82ba8720a87008f139e4b0d247ab92811eab))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`a6f95e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6f95e26d7f6ec4e7930a14781bfa6e4ec2976f6))
+
 ## [7.20.0] - 2026-07-20
 
 <details>
