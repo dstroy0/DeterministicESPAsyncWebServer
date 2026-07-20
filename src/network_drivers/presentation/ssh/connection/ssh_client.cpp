@@ -311,6 +311,8 @@ struct SshClientCtx
 
     CliChannel chan[DWS_SSH_CLIENT_MAX_CHANNELS]; ///< the active forwarded channels.
     uint32_t next_chan_id;                        ///< id to assign the next channel.
+
+    uint8_t wire[SSH_WIRE_CAP]; ///< staging buffer for one outgoing (framed/encrypted) packet.
 };
 
 static SshClientCtx s_cli;
@@ -333,9 +335,6 @@ static CliChannel *chan_alloc(void)
     return nullptr;
 }
 
-// Wire buffer for one outgoing packet.
-static uint8_t s_wire[SSH_WIRE_CAP];
-
 #if defined(ARDUINO)
 
 // ---------------------------------------------------------------------------
@@ -346,9 +345,9 @@ static uint8_t s_wire[SSH_WIRE_CAP];
 static bool cli_send(const uint8_t *payload, size_t len)
 {
     size_t wlen = 0;
-    if (ssh_pkt_send(SSH_CLI_SLOT, payload, len, s_wire, &wlen, sizeof(s_wire)) != 0)
+    if (ssh_pkt_send(SSH_CLI_SLOT, payload, len, s_cli.wire, &wlen, sizeof(s_cli.wire)) != 0)
         return false;
-    return dws_client_send(s_cli.cid, s_wire, wlen);
+    return dws_client_send(s_cli.cid, s_cli.wire, wlen);
 }
 
 static void cli_fail(const char *why)
