@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.16.0] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.16.0 - 2026-07-20</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`1ad3f4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ad3f4bdc6e37967165ced8a155037f5f024415c))
+- update CHANGELOG.md [skip ci] ([`bf41f94`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf41f944050b5691ba52268e108552bbb5f4ea61))
+
+### Changes
+
+- Bump version: 7.15.0 → 7.16.0 ([`7c06078`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c06078b75b034ca593d582bedc58be2de4f2359))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`6909e3e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6909e3e114b2fefcb8381e8ee8e01a322a1d3914))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4fb0a4d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fb0a4d0b6e15ab8cf9153fe24d965bba663a4f4))
+
+### Features
+
+- close core dump to SD/FTP + zero-overhead logging ([`f4c370b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4c370b776c22f1a59c30e2683b517897311c71b))
+
+</details>
+
 ## [7.15.0] - 2026-07-19
 
 <details>
