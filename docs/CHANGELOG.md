@@ -4,13 +4,21 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- SSHReverseTunnel build flags so the CI ESP32 Build fits classic ([`aadb07c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aadb07cfdbc0070cda4dcfc0f7f89bc6ce560047))
+
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`105c8b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/105c8b90a94f177e020342f84ff5c593df2d4e39))
+- update CHANGELOG.md [skip ci] ([`3c6293d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c6293de9af876c89d32b9d2b1497d58c2b02e7d))
 - update test report + coverage [skip ci] ([`6661675`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6661675070c3104e24f6ba505e732c0e7d6577f7))
 - update CHANGELOG.md [skip ci] ([`c8e4882`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8e48824037b92c9fa7ef798a2426388080bd94e))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`41a6d24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/41a6d2468f8af5e6d18fb3309abbbbe829ee7b39))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c50a465`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c50a465b93016b468e58c22c24389bfeafebe603))
 - update ESP32 build footprints [skip ci] ([`ff4870d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff4870d8a9a011833621f5f76c8bb83baba49c24))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f134eb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f134eb75cb54e80fa44ee37376916a98bff5858e))
 
