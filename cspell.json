@@ -1428,7 +1428,11 @@
     "NTRU",
     "SNTRUP",
     "kexhash",
-    "recip"
+    "recip",
+    "espcoredump",
+    "fasttmr",
+    "frameless",
+    "slowtmr"
   ],
   "ignorePaths": [
     "node_modules/**",
