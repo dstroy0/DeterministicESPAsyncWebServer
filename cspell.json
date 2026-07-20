@@ -1419,7 +1419,8 @@
     "unrepresentable",
     "ESMTP",
     "Nlcm",
-    "dvcm"
+    "dvcm",
+    "nojs"
   ],
   "ignorePaths": [
     "node_modules/**",

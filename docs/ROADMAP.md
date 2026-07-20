@@ -340,12 +340,22 @@ preempting queue, so sensing shares the real-time ingest path.
 - [x] MessagePack encoder + decoder _(shipped)_ - `DWS_ENABLE_MSGPACK`: a zero-heap streaming writer over a caller buffer - shortest-form ints (fixint / 8 / 16 / 32 / 64) / str / bin / arrays / maps / bool / nil / float32; overflow tracked, fails closed - plus a cursor decoder (`dws_msgpack_peek` / `dws_msgpack_read_*`, no-copy strings, fail-closed on malformed/truncated input, ext reported as INVALID) host-tested against spec vectors + round-trip and fuzzed in the pentest harness (example MsgPack, both directions). Remaining (M-L): Protobuf / FlatBuffers zero-copy.
 - [x] GraphQL bounded subset _(shipped)_ - `DWS_ENABLE_GRAPHQL`: `services/graphql` parses a query into a fixed AST pool (no heap) and emits `{"data":{...}}` shaped by the selection; schema-free (sub-selection = object, leaf = one resolver call, args collected along the path), with nesting + arguments (example GraphQL). Feature-dependent schema generation remains open (M).
 - [x] Browser diag tools _(shipped, GPIO mapper)_ - `DWS_ENABLE_GPIO_MAP`: a compile-time pin table (number / label / direction / live level) served at GET `/gpio` as JSON, with a POST control (`pin`, `level`) that drives a mapped output; the serializer + control parser are host-tested, and the example ships a zero-dependency browser panel (example GpioMap). Remaining (M): ping / tracert panel, web logic analyzer.
-- [~] **SPA micro-routing** + conditional UI streaming (M) _(routing decision shipped)_ -
-  `DWS_ENABLE_SPA_ROUTER`: `services/spa_router` `dws_spa_route()` decides, from a request path,
-  whether to serve a real asset file, serve the SPA shell (`index.html`) for an extensionless
-  client-side route, or pass through to the app under an API prefix - so a single-page UI's client
-  routing works over static file serving. Pure decision core, host-tested (`native_spa_router`).
-  _Remaining:_ conditional UI streaming + a local SCADA/HMI fallback (M).
+- [x] **SPA micro-routing** + conditional UI streaming (M) _(shipped, HW-verified)_ -
+      `DWS_ENABLE_SPA_ROUTER`: `services/spa_router` `dws_spa_route()` decides, from a request path,
+      whether to serve a real asset file, serve the SPA shell (`index.html`) for an extensionless
+      client-side route, or pass through to the app under an API prefix - so a single-page UI's client
+      routing works over static file serving. Pure decision core, host-tested (`native_spa_router`).
+      **The local SCADA/HMI fallback** is `dws_spa_route_ex()` + a `DWSSpaCtx`: when the shell asset
+      is missing, the client will not run scripts, or the device is degraded, a client route resolves
+      to `DWS_SPA_SERVE_FALLBACK` - a no-JavaScript control page. The API prefix keeps passing through
+      in that mode (the fallback's own controls post to it) and asset requests are never rewritten.
+      **Conditional UI streaming** is `DWSUiFragment` + `dws_ui_stream_next()`: a fragment table with
+      per-panel predicates, emitted into a buffer of any size (it resumes mid-fragment, so the page
+      never has to fit RAM), with predicates evaluated as the stream reaches each fragment. Pure,
+      host-tested (`native_spa_router`, 16 cases incl. identical output across chunk sizes 1..40).
+      HW-verified on an **S3**: shell when healthy; fallback for `?nojs=1`, a missing shell, and a
+      degraded device; and actuating via the still-live API in fallback mode flipped two panel
+      predicates in opposite directions on the next render. Example SpaFallback.
 - [x] WS MTU-aligned chunking / fragmentation control (M) _(shipped)_ - `DWS_WS_FRAG_SIZE` (0 = off,
       default) / the runtime `ws_set_frag_size()`: an outbound data message longer than the set payload
       size is split into that-sized WebSocket frames (RFC 6455 sec 5.4: opcode+RSV1 on the first,
