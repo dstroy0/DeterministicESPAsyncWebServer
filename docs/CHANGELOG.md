@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.17.0] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.17.0 - 2026-07-20</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`0ffb320`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ffb320383dca4fefdf3b51b85746d2efc9dbafc))
+- update CHANGELOG.md [skip ci] ([`a334a50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a334a507ff19318773f51a5e6f0a465151e468a9))
+
+### Changes
+
+- Bump version: 7.16.0 → 7.17.0 ([`1fe0992`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1fe09929c3db8c84128c272ff20c758b5a538b2f))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`a56eace`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a56eace328cc219829b687c7f4dbcce2b8951347))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c31d80f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c31d80fb976cc179d022db3bc11d65ba92f92348))
+
+### Features
+
+- hot-swap safeties for removable media ([`09434ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09434ee9199c6f4ae705bb090e33235c25e7f28c))
+
+</details>
+
 ## [7.16.0] - 2026-07-20
 
 <details>
