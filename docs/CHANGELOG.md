@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`8d41409`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d414095d4aa329c7182b672aeca303df79baadd))
 - bump actions/setup-python from 5 to 7 ([`426e70c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/426e70ca5abefc9970a25c3ddbf9ef55d2322c96))
 - update test report + coverage [skip ci] ([`32eee2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32eee2c2a06312b3755539702c87a03c0dd88c57))
 - update CHANGELOG.md [skip ci] ([`ee7c25a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee7c25ad931770381a51f9b8f40476d14241a74e))
@@ -16,11 +17,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fb2fedf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb2fedf47198d2d7bd97ae64ba3d6c4601824dad))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`629d6b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/629d6b5629534b9ffc4e8a3090d893649900c10f))
 
 ### Features
 
 - sntrup761 KEM (Streamlined NTRU Prime) - full KeyGen/Encaps/Decaps ([`bb90a4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb90a4e10862d9925b6de9959397f26dfa3406d1))
+
+### Refactor
+
+- hash-agnostic exchange hash + KDF (SHA-256/SHA-512 by KEX method) ([`56dc63f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56dc63ff06ac90c81409eab0b261f9f1be283380))
 
 ## [7.23.1] - 2026-07-20
 
