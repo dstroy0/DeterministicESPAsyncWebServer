@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.23.0] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.23.0 - 2026-07-20</b></summary>
 
 ### Bug Fixes
 
@@ -12,6 +15,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`e2e44a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2e44a3d1523ccb7771f7a4e3fe3583e0966f455))
 - update test report + coverage [skip ci] ([`3342242`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3342242a07a1093e25c4484def9b60212c8e2b68))
 - update CHANGELOG.md [skip ci] ([`a162b24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a162b2489718296673d1849ac7322cb9faaba113))
 - update CHANGELOG.md [skip ci] ([`80b3a8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80b3a8ad7254126dc6b8d58134458c87b06d742a))
@@ -23,10 +27,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 7.22.0 → 7.23.0 ([`d6ab55e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6ab55e66fbb19d878c1692873d310df9a97f5ae))
 - bound the last raw strlen sites + self-init the reverse-SSH channel ([`b340f03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b340f03705b54b0ddd9d4ffbeb562a2ddac07131))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`8879944`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8879944832b983b83b08892ed46e4b119c4bc7cb))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`49146e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49146e500cabcba827d5d248eac6d370c44d5d5a))
 - update ESP32 build footprints [skip ci] ([`c0d86b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0d86b83d75c640b726cc7e0d16e6027622aca0c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a07ec5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a07ec5a086c1cd6aadf30aa96db4821469d7ff2b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`63aabdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/63aabdce5280728f1ff6125231f594a994a171c0))
@@ -44,6 +51,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Refactor
 
 - move feature-driven RX_BUF_SIZE floors out of ServerConfig.h ([`13bb6b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13bb6b2e9961d57ed58697476abb9aa21846dd62))
+
+</details>
 
 ## [7.22.0] - 2026-07-20
 
