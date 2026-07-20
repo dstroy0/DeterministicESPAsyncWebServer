@@ -4743,6 +4743,21 @@
 #define DWS_ENABLE_SMTP 0
 #endif
 
+/**
+ * @brief Secure SMTP: run the mail client over client-side TLS (needs DWS_ENABLE_TLS).
+ *
+ * Covers both SmtpSecurity::SMTP_TLS (implicit, port 465) and SmtpSecurity::SMTP_STARTTLS (the
+ * in-band upgrade on the submission port, 587). Separate from DWS_ENABLE_SMTP because the plain
+ * codec needs neither the TLS stack nor the client-session singleton.
+ */
+#ifndef DWS_ENABLE_SMTP_TLS
+#define DWS_ENABLE_SMTP_TLS 0
+#endif
+
+#if DWS_ENABLE_SMTP_TLS && !DWS_ENABLE_SMTP
+#error "DeterministicESPAsyncWebServer: DWS_ENABLE_SMTP_TLS requires DWS_ENABLE_SMTP"
+#endif
+
 /** @brief Max length of one SMTP command / address line (bytes, incl. CRLF). */
 #ifndef DWS_SMTP_LINE_MAX
 #define DWS_SMTP_LINE_MAX 256
@@ -4877,7 +4892,8 @@
  * client mbedTLS code in dws_tls - the CA/pin trust config, the BIO typedefs,
  * and the session API - gated by this.
  */
-#if DWS_ENABLE_HTTP_CLIENT_TLS || DWS_ENABLE_MQTT_TLS || DWS_ENABLE_WS_CLIENT_TLS || DWS_ENABLE_EDGE_ORIGIN_TLS
+#if DWS_ENABLE_HTTP_CLIENT_TLS || DWS_ENABLE_MQTT_TLS || DWS_ENABLE_WS_CLIENT_TLS || DWS_ENABLE_EDGE_ORIGIN_TLS ||     \
+    DWS_ENABLE_SMTP_TLS
 #define DWS_ENABLE_CLIENT_TLS 1
 #else
 #define DWS_ENABLE_CLIENT_TLS 0

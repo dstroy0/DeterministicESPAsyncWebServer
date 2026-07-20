@@ -22,7 +22,18 @@ struct Mock
     bool dribble = false; // return replies one byte at a time (exercise the accumulate loop)
     size_t dribble_pos = 0;
     std::string fail_send_prefix; // a write beginning with this returns short (I/O failure)
+    int upgrades = 0;             // how many times the engine asked to go TLS
+    bool upgrade_ok = true;       // make the simulated handshake fail
 };
+
+// Stand-in for the real TLS upgrade: records the call so a test can assert it happened at the
+// right point in the dialogue, and can simulate a failed handshake.
+bool mock_starttls(void *c)
+{
+    Mock *m = (Mock *)c;
+    m->upgrades++;
+    return m->upgrade_ok;
+}
 
 int mock_send(void *c, const uint8_t *d, size_t n)
 {
@@ -79,7 +90,7 @@ SmtpConfig base_cfg()
     SmtpConfig c;
     c.host = "mail.example.net";
     c.port = 25;
-    c.tls = false;
+    c.security = SmtpSecurity::SMTP_PLAIN;
     c.user = nullptr;
     c.pass = nullptr;
     c.from = "device@example.net";
@@ -109,7 +120,7 @@ void test_happy_path_no_auth()
     m.replies = happy_replies();
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
     // Commands, in order.
     TEST_ASSERT_TRUE(m.sent.find("EHLO esp32\r\n") != std::string::npos);
     TEST_ASSERT_TRUE(m.sent.find("MAIL FROM:<device@example.net>\r\n") != std::string::npos);
@@ -134,7 +145,7 @@ void test_auth_login()
     c.user = "user";
     c.pass = "pass";
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
     TEST_ASSERT_TRUE(m.sent.find("AUTH LOGIN\r\n") != std::string::npos);
     TEST_ASSERT_TRUE(m.sent.find("dXNlcg==\r\n") != std::string::npos); // base64("user")
     TEST_ASSERT_TRUE(m.sent.find("cGFzcw==\r\n") != std::string::npos); // base64("pass")
@@ -148,7 +159,7 @@ void test_auth_rejected()
     c.user = "user";
     c.pass = "wrong";
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_AUTH, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_AUTH, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
 }
 
 void test_greeting_not_ready()
@@ -157,7 +168,7 @@ void test_greeting_not_ready()
     m.replies = {"554 no service\r\n"};
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
 }
 
 void test_rcpt_rejected()
@@ -166,7 +177,7 @@ void test_rcpt_rejected()
     m.replies = {"220 ESMTP\r\n", "250 OK\r\n", "250 Ok\r\n", "550 5.1.1 no such user\r\n"};
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
 }
 
 void test_data_refused()
@@ -175,7 +186,7 @@ void test_data_refused()
     m.replies = {"220 ESMTP\r\n", "250 OK\r\n", "250 Ok\r\n", "250 Ok\r\n", "451 try later\r\n"};
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
 }
 
 void test_dot_stuffing()
@@ -185,7 +196,7 @@ void test_dot_stuffing()
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
     msg.body = "line1\n.hidden\n..two dots\nlast"; // lines starting with '.' must be stuffed
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
     TEST_ASSERT_TRUE(m.sent.find("..hidden\r\n") != std::string::npos);    // '.' -> '..'
     TEST_ASSERT_TRUE(m.sent.find("...two dots\r\n") != std::string::npos); // '..' -> '...'
     TEST_ASSERT_TRUE(m.sent.find("last\r\n.\r\n") != std::string::npos);   // real terminator intact
@@ -198,7 +209,7 @@ void test_multiline_reply_and_lf_body()
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
     msg.body = "a\nb"; // bare LF must be normalized to CRLF
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
     TEST_ASSERT_TRUE(m.sent.find("a\r\nb\r\n") != std::string::npos);
 }
 
@@ -209,7 +220,7 @@ void test_partial_reads_dribble()
     m.dribble = true; // deliver every reply one byte at a time
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
 }
 
 void test_missing_required_arg()
@@ -219,7 +230,7 @@ void test_missing_required_arg()
     SmtpConfig c = base_cfg();
     c.from = ""; // empty sender
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
 }
 
 void test_io_error_when_server_hangs()
@@ -227,7 +238,7 @@ void test_io_error_when_server_hangs()
     Mock m; // no replies scripted -> recv returns -1 on the greeting read
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
 }
 
 // Run a dialogue with the given scripted replies and return smtp_run's result.
@@ -235,7 +246,7 @@ static SmtpResult dialogue(std::vector<std::string> replies, SmtpConfig c, SmtpM
 {
     Mock m;
     m.replies = std::move(replies);
-    return smtp_run(&c, &msg, mock_send, mock_recv, &m);
+    return smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m);
 }
 
 // An overlong reply that never completes (all continuation lines) overflows the reply
@@ -256,7 +267,7 @@ void test_command_send_fails()
     m.fail_send_prefix = "EHLO";
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
 }
 
 // The DATA payload send failing (short write) is an I/O error.
@@ -267,7 +278,7 @@ void test_body_send_fails()
     m.fail_send_prefix = "From:"; // only the DATA payload begins "From: <...>"
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
 }
 
 // An AUTH secret too long to base64-encode into the line buffer overflows.
@@ -364,7 +375,7 @@ void test_cr_in_body_dropped()
     SmtpConfig c = base_cfg();
     SmtpMessage msg = base_msg();
     msg.body = "x\r\ny"; // the bare CR is stripped, the LF becomes CRLF
-    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
     TEST_ASSERT_TRUE(m.sent.find("x\r\ny\r\n") != std::string::npos);
 }
 
@@ -400,6 +411,144 @@ void test_host_smtp_send_stub()
     TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_CONNECT, smtp_send(&c, &msg));
 }
 
+// --- STARTTLS (RFC 3207) --------------------------------------------------
+
+// A server that offers STARTTLS: greeting, EHLO capabilities, 220 to STARTTLS, then the second
+// EHLO after the upgrade, then the ordinary send.
+static Mock starttls_mock()
+{
+    Mock m;
+    m.replies = {"220 mail.example.net ESMTP\r\n",
+                 "250-mail.example.net\r\n250-STARTTLS\r\n250 OK\r\n", // first EHLO, in the clear
+                 "220 2.0.0 Ready to start TLS\r\n",                   // STARTTLS accepted
+                 "250-mail.example.net\r\n250 OK\r\n",                 // second EHLO, encrypted
+                 "250 2.1.0 Ok\r\n",
+                 "250 2.1.5 Ok\r\n",
+                 "354 End data with <CR><LF>.<CR><LF>\r\n",
+                 "250 2.0.0 Ok: queued\r\n",
+                 "221 2.0.0 Bye\r\n"};
+    return m;
+}
+
+void test_starttls_upgrades_and_reissues_ehlo()
+{
+    Mock m = starttls_mock();
+    SmtpConfig c = base_cfg();
+    c.port = 587;
+    c.security = SmtpSecurity::SMTP_STARTTLS;
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m));
+    TEST_ASSERT_EQUAL_INT(1, m.upgrades);
+    TEST_ASSERT_TRUE(m.sent.find("STARTTLS\r\n") != std::string::npos);
+    // RFC 3207 sec 4.2: EHLO must be reissued after the upgrade, so it appears twice.
+    size_t first = m.sent.find("EHLO");
+    TEST_ASSERT_TRUE(first != std::string::npos);
+    TEST_ASSERT_TRUE(m.sent.find("EHLO", first + 1) != std::string::npos);
+    // and the upgrade must precede the message data
+    TEST_ASSERT_TRUE(m.sent.find("STARTTLS\r\n") < m.sent.find("MAIL FROM"));
+}
+
+void test_starttls_not_advertised_fails_before_auth()
+{
+    // The security property: a server (or an attacker stripping the capability) that does not offer
+    // STARTTLS must not get the credentials in the clear.
+    Mock m;
+    m.replies = {"220 mail.example.net ESMTP\r\n",
+                 "250-mail.example.net\r\n250 OK\r\n", // no STARTTLS advertised
+                 "221 2.0.0 Bye\r\n"};
+    SmtpConfig c = base_cfg();
+    c.port = 587;
+    c.security = SmtpSecurity::SMTP_STARTTLS;
+    c.user = "device";
+    c.pass = "hunter2";
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_NO_STARTTLS,
+                          smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m));
+    TEST_ASSERT_EQUAL_INT(0, m.upgrades);
+    TEST_ASSERT_TRUE(m.sent.find("AUTH") == std::string::npos);         // no credentials offered
+    TEST_ASSERT_TRUE(m.sent.find("aHVudGVyMg==") == std::string::npos); // base64("hunter2")
+    TEST_ASSERT_TRUE(m.sent.find("MAIL FROM") == std::string::npos);    // and no message body
+}
+
+void test_starttls_partial_keyword_is_not_a_match()
+{
+    // "STARTTLSX" is a different keyword; treating it as STARTTLS would be a silent downgrade.
+    Mock m;
+    m.replies = {"220 mail.example.net ESMTP\r\n", "250-mail.example.net\r\n250-STARTTLSX\r\n250 OK\r\n",
+                 "221 2.0.0 Bye\r\n"};
+    SmtpConfig c = base_cfg();
+    c.port = 587;
+    c.security = SmtpSecurity::SMTP_STARTTLS;
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_NO_STARTTLS,
+                          smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m));
+}
+
+void test_starttls_capability_match_is_case_insensitive()
+{
+    Mock m = starttls_mock();
+    m.replies[1] = "250-mail.example.net\r\n250-StartTls\r\n250 OK\r\n";
+    SmtpConfig c = base_cfg();
+    c.port = 587;
+    c.security = SmtpSecurity::SMTP_STARTTLS;
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m));
+    TEST_ASSERT_EQUAL_INT(1, m.upgrades);
+}
+
+void test_starttls_server_refuses_the_upgrade()
+{
+    Mock m = starttls_mock();
+    m.replies[2] = "454 4.7.0 TLS not available right now\r\n";
+    SmtpConfig c = base_cfg();
+    c.port = 587;
+    c.security = SmtpSecurity::SMTP_STARTTLS;
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_TLS, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m));
+    TEST_ASSERT_EQUAL_INT(0, m.upgrades); // never attempted, because the server said no
+}
+
+void test_starttls_handshake_failure_aborts()
+{
+    Mock m = starttls_mock();
+    m.upgrade_ok = false;
+    SmtpConfig c = base_cfg();
+    c.port = 587;
+    c.security = SmtpSecurity::SMTP_STARTTLS;
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_TLS, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m));
+    TEST_ASSERT_EQUAL_INT(1, m.upgrades);
+    TEST_ASSERT_TRUE(m.sent.find("MAIL FROM") == std::string::npos); // nothing sent after a failed upgrade
+}
+
+void test_starttls_without_an_upgrade_callback_is_an_arg_error()
+{
+    Mock m = starttls_mock();
+    SmtpConfig c = base_cfg();
+    c.port = 587;
+    c.security = SmtpSecurity::SMTP_STARTTLS;
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
+}
+
+void test_plain_ignores_an_advertised_starttls()
+{
+    // Configured plaintext: the advertisement is informational, the engine must not upgrade.
+    Mock m = starttls_mock();
+    m.replies = {"220 mail.example.net ESMTP\r\n",
+                 "250-mail.example.net\r\n250-STARTTLS\r\n250 OK\r\n",
+                 "250 2.1.0 Ok\r\n",
+                 "250 2.1.5 Ok\r\n",
+                 "354 End data with <CR><LF>.<CR><LF>\r\n",
+                 "250 2.0.0 Ok: queued\r\n",
+                 "221 2.0.0 Bye\r\n"};
+    SmtpConfig c = base_cfg(); // SMTP_PLAIN
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m));
+    TEST_ASSERT_EQUAL_INT(0, m.upgrades);
+    TEST_ASSERT_TRUE(m.sent.find("STARTTLS\r\n") == std::string::npos);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -425,5 +574,13 @@ int main()
     RUN_TEST(test_cr_in_body_dropped);
     RUN_TEST(test_build_message_boundary_overflows);
     RUN_TEST(test_host_smtp_send_stub);
+    RUN_TEST(test_starttls_upgrades_and_reissues_ehlo);
+    RUN_TEST(test_starttls_not_advertised_fails_before_auth);
+    RUN_TEST(test_starttls_partial_keyword_is_not_a_match);
+    RUN_TEST(test_starttls_capability_match_is_case_insensitive);
+    RUN_TEST(test_starttls_server_refuses_the_upgrade);
+    RUN_TEST(test_starttls_handshake_failure_aborts);
+    RUN_TEST(test_starttls_without_an_upgrade_callback_is_an_arg_error);
+    RUN_TEST(test_plain_ignores_an_advertised_starttls);
     return UNITY_END();
 }

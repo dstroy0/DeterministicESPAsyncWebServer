@@ -1412,7 +1412,14 @@
     "ZERORET",
     "hexdumps",
     "picv",
-    "BTDM"
+    "BTDM",
+    "tlnp",
+    "helo",
+    "STARTTLSX",
+    "unrepresentable",
+    "ESMTP",
+    "Nlcm",
+    "dvcm"
   ],
   "ignorePaths": [
     "node_modules/**",

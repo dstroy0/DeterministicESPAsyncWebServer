@@ -40,7 +40,11 @@ void send_alert(const char *subject, const char *body)
     memset(&cfg, 0, sizeof(cfg));
     cfg.host = MAIL_SERVER;
     cfg.port = MAIL_PORT;
-    cfg.tls = false;    // plaintext to a LAN relay; for Gmail-style use 465 + set tls = true
+    // SMTP_PLAIN (25) for a LAN relay that trusts your network; SMTP_STARTTLS (587) upgrades an
+    // ordinary connection in band and is what mail providers expect for submission; SMTP_TLS (465)
+    // is encrypted from the first byte. With STARTTLS the client refuses to continue if the server
+    // does not advertise it, so a stripped capability cannot downgrade you into sending in the clear.
+    cfg.security = SmtpSecurity::SMTP_PLAIN;
     cfg.user = nullptr; // no login needed for a LAN relay that trusts your network
     cfg.pass = nullptr;
     cfg.from = MAIL_FROM;
