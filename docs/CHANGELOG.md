@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`6d3c256`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d3c25630fa6f84ab6d22d3a6d439d78747db676))
+- update CHANGELOG.md [skip ci] ([`bec9479`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bec947915ae617932e4b0e485bc1ea1fa056331c))
 - update CHANGELOG.md [skip ci] ([`8d41409`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d414095d4aa329c7182b672aeca303df79baadd))
 - bump actions/setup-python from 5 to 7 ([`426e70c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/426e70ca5abefc9970a25c3ddbf9ef55d2322c96))
 - update test report + coverage [skip ci] ([`32eee2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32eee2c2a06312b3755539702c87a03c0dd88c57))
@@ -13,10 +15,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- @ ([`b245d7a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b245d7ad46d4820ee2e87b5954b15a48ef18bacf))
 - Merge Dependabot #17: build(deps): bump actions/setup-python from 5 to 7 ([`9fc1ad7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fc1ad7dc8b5b834ee8f8257cbffd62fff463f51))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`8af4e40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8af4e4048170e5566cee0ef39e7cdec84e094687))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`42999d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42999d2a7ac34102907e1f76aa19d56e2b12ddae))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fb2fedf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb2fedf47198d2d7bd97ae64ba3d6c4601824dad))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`629d6b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/629d6b5629534b9ffc4e8a3090d893649900c10f))
 
