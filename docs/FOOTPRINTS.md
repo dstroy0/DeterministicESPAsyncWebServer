@@ -120,7 +120,7 @@ from each example's `pio ci` size report and aggregated into
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE`                                                                       | L4-Transport/TlsResumption           | 837.9 KB (65.5%) | 103.3 KB (32.3%) |
 | `TOTP`                                                                                                    | L7-Application/Totp                  | 736.3 KB (57.5%) | 79.9 KB (25.0%)  |
 | `UDP_TELEMETRY`                                                                                           | L7-Application/UdpTelemetry          | 711.1 KB (55.6%) | 44.0 KB (13.7%)  |
-| `UPLOAD`                                                                                                  | L7-Application/FileUpload            | 776.6 KB (60.7%) | 89.0 KB (27.8%)  |
+| `UPLOAD`                                                                                                  | L7-Application/FileUpload            | 776.6 KB (60.7%) | 99.6 KB (31.1%)  |
 | `VFS`                                                                                                     | L7-Application/Vfs                   | 777.8 KB (60.8%) | 84.3 KB (26.3%)  |
 | `VXI11`                                                                                                   | L7-Application/Vxi11                 | 709.2 KB (55.4%) | 43.2 KB (13.5%)  |
 | `WEBDAV`                                                                                                  | L7-Application/WebDav                | 801.8 KB (62.6%) | 102.9 KB (32.2%) |

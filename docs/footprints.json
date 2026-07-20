@@ -785,10 +785,10 @@
   },
   "UPLOAD": {
     "example": "L7-Application/FileUpload",
-    "flags": "-DDWS_ENABLE_UPLOAD=1 -DRX_BUF_SIZE=2048",
+    "flags": "-DDWS_ENABLE_UPLOAD=1 -DMAX_CONNS=4",
     "board": "esp32dev",
     "flash_bytes": 795209,
-    "ram_bytes": 91140
+    "ram_bytes": 101964
   },
   "VFS": {
     "example": "L7-Application/Vfs",
