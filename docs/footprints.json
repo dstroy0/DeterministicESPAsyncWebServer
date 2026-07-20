@@ -279,6 +279,13 @@
     "flash_bytes": 763453,
     "ram_bytes": 101548
   },
+  "HTTP_DELIVERY+FILE_SERVING+RANGE": {
+    "example": "L7-Application/HttpDelivery",
+    "flags": "-DDWS_ENABLE_HTTP_DELIVERY=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_RANGE=1",
+    "board": "esp32dev",
+    "flash_bytes": 842725,
+    "ram_bytes": 82704
+  },
   "IFACE_BRIDGE": {
     "example": "L7-Application/InterfaceBridge",
     "flags": "-DDWS_ENABLE_IFACE_BRIDGE=1",

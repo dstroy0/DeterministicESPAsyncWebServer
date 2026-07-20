@@ -48,6 +48,7 @@ from each example's `pio ci` size report and aggregated into
 | `HISLIP`                                                                                                  | L7-Application/HiSlip                | 708.0 KB (55.3%) | 43.0 KB (13.4%)  |
 | `HTTP_CLIENT`                                                                                             | L7-Application/HttpClient            | 717.4 KB (56.0%) | 61.7 KB (19.3%)  |
 | `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/Webhook               | 745.6 KB (58.2%) | 99.2 KB (31.0%)  |
+| `HTTP_DELIVERY+FILE_SERVING+RANGE`                                                                        | L7-Application/HttpDelivery          | 823.0 KB (64.3%) | 80.8 KB (25.2%)  |
 | `IFACE_BRIDGE`                                                                                            | L7-Application/InterfaceBridge       | 762.5 KB (59.6%) | 80.7 KB (25.2%)  |
 | `IKEV2`                                                                                                   | L5-Session/IKEv2                     | 708.9 KB (55.4%) | 42.9 KB (13.4%)  |
 | `INA219`                                                                                                  | Drivers/Ina219                       | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
