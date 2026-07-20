@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 143 runnable examples under `examples/`, grouped by
+The library ships 144 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -165,6 +165,7 @@ Routing, protocols, services, and clients:
 [InterfaceFilter](../examples/L7-Application/InterfaceFilter/README.md) ·
 [LogBuffer](../examples/L7-Application/LogBuffer/README.md) ·
 [mDNS](../examples/L7-Application/mDNS/README.md) ·
+[MdnsAdaptive](../examples/L7-Application/MdnsAdaptive/README.md) ·
 [MediaStreaming](../examples/L7-Application/MediaStreaming/README.md) ·
 [MeshCache](../examples/L7-Application/MeshCache/README.md) ·
 [Middleware](../examples/L7-Application/Middleware/README.md) ·

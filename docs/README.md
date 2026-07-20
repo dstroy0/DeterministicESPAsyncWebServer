@@ -1177,6 +1177,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `CSRF` | `L7-Application/Csrf` | 754,477 | 81,844 |
 | `MODBUS` | `L7-Application/ModbusTcp` | 754,493 | 82,076 |
 | `core/Templating` | `L7-Application/Templating` | 754,505 | 81,836 |
+| `SPA_ROUTER` | `L7-Application/SpaFallback` | 754,605 | 81,788 |
 | `STATS` | `L7-Application/Stats` | 754,737 | 81,892 |
 | `CONTROL` | `L7-Application/PidTuning` | 754,873 | 89,868 |
 | `MODBUS+MODBUS_MASTER` | `L7-Application/ModbusScan` | 754,957 | 82,068 |

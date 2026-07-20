@@ -544,7 +544,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3410 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3419 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -17073,7 +17073,7 @@ A thorough directory of all **3410 test cases** across **272 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mdns_adaptive (5 tests)</b></summary>
+<summary><b>test_mdns_adaptive (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_refresh_interval</b> &mdash; <i>Refresh interval</i></summary>
@@ -17127,6 +17127,94 @@ A thorough directory of all **3410 test cases** across **272 suites**. Expand a 
     * **Objective**: Refresh interval and beacon
     * **Assertions**:
       * <code>Assert false (dws_mdns_beacon_due(&b, 1000, 1000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_contention_no_sample_before_the_window</b> &mdash; <i>Window is 1000 ms; 999 ms in, nothing is reported and the out-param is untouched.</i></summary>
+
+    * **Objective**: Window is 1000 ms; 999 ms in, nothing is reported and the out-param is untouched.
+    * **Assertions**:
+      * <code>Assert false (dws_mdns_contention_sample(&w, 50, 100999, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0xAB, c);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_contention_reports_the_window_delta</b> &mdash; <i>Contention reports the window delta</i></summary>
+
+    * **Objective**: Contention reports the window delta
+    * **Assertions**:
+      * <code>Assert true (dws_mdns_contention_sample(&w, 42, 101000, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(42, c); // 42 frames counted over the window</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_contention_delta_is_per_window_not_cumulative</b> &mdash; <i>The running total keeps climbing; the next window reports only its own share.</i></summary>
+
+    * **Objective**: The running total keeps climbing; the next window reports only its own share.
+    * **Assertions**:
+      * <code>Assert true (dws_mdns_contention_sample(&w, 100, 101000, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(100, c);</code>
+      * <code>Assert true (dws_mdns_contention_sample(&w, 130, 102000, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(30, c);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_contention_saturates_at_uint16</b> &mdash; <i>Contention saturates at uint16</i></summary>
+
+    * **Objective**: Contention saturates at uint16
+    * **Assertions**:
+      * <code>Assert true (dws_mdns_contention_sample(&w, 70000, 101000, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0xFFFF, c);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_contention_frame_counter_wrap</b> &mdash; <i>The promiscuous counter is uint32 and will eventually wrap. A window straddling the wrap must</i></summary>
+
+    * **Objective**: The promiscuous counter is uint32 and will eventually wrap. A window straddling the wrap must
+    * **Assertions**:
+      * <code>Assert true (dws_mdns_contention_sample(&w, 0x0000000Fu, 101000, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x1F, c);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_contention_clock_wrap</b> &mdash; <i>The millis clock wraps too; the window-elapsed test is modular, so a window straddling the</i></summary>
+
+    * **Objective**: The millis clock wraps too; the window-elapsed test is modular, so a window straddling the
+    * **Assertions**:
+      * <code>Assert false (dws_mdns_contention_sample(&w, 5, 0xFFFFFE00u, &c))</code>
+      * <code>Assert true (dws_mdns_contention_sample(&w, 9, 0x00000000u, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(9, c);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_contention_zero_window_defaults</b> &mdash; <i>Contention zero window defaults</i></summary>
+
+    * **Objective**: Contention zero window defaults
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000, w.window_ms);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_contention_null_is_safe</b> &mdash; <i>Contention null is safe</i></summary>
+
+    * **Objective**: Contention null is safe
+    * **Assertions**:
+      * <code>Assert false (dws_mdns_contention_sample(nullptr, 0, 2000, &c))</code>
+      * <code>Assert false (dws_mdns_contention_sample(&w, 0, 2000, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_contention_drives_the_beacon</b> &mdash; <i>Busy window: 200 frames -> back off.</i></summary>
+
+    * **Objective**: Busy window: 200 frames -> back off.
+    * **Assertions**:
+      * <code>Assert true (dws_mdns_contention_sample(&w, 200, 1000, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000, b.cur_ms);</code>
+      * <code>Assert true (dws_mdns_contention_sample(&w, 400, 2000, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4000, b.cur_ms);</code>
+      * <code>Assert true (dws_mdns_contention_sample(&w, 400, 3000, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, c);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000, b.cur_ms);</code>
   </details>
 
 </details>
