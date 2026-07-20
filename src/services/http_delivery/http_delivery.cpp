@@ -10,74 +10,7 @@
 
 #if DWS_ENABLE_HTTP_DELIVERY
 
-#include <string.h>
-
 #include "shared_primitives/strbuf.h"
-
-namespace
-{
-// Parse a run of decimal digits at *p (advancing it); write *out. Returns false on no digit or
-// > 10 digits (uint32 overflow guard).
-bool read_u32(const char **p, uint32_t *out)
-{
-    const char *s = *p;
-    if (*s < '0' || *s > '9')
-        return false; // GCOVR_EXCL_LINE both call sites pre-check *p is a digit before calling, so this never fires
-    uint64_t v = 0;
-    int n = 0;
-    while (*s >= '0' && *s <= '9')
-    {
-        v = v * 10 + (uint32_t)(*s - '0');
-        s++;
-        n++;
-        if (n > 10 || v > 0xFFFFFFFFu)
-            return false;
-    }
-    *p = s;
-    *out = (uint32_t)v;
-    return true;
-}
-
-// Parse "bytes=<s>-<e>" (either bound optional) from a Range header. Fills the out-params and returns
-// true, or returns false for a malformed / multi-range / non-bytes header. *have_start / *have_end flag
-// which bounds were present; resolving them against the resource size is the caller's job.
-bool parse_range_spec(const char *range_header, bool *have_start, bool *have_end, uint32_t *s, uint32_t *e)
-{
-    const char *p = range_header;
-    while (*p == ' ' || *p == '\t')
-        p++;
-    if (strncmp(p, "bytes=", 6) != 0)
-        return false;
-    p += 6;
-    if (strchr(p, ',')) // multi-range: unsupported
-        return false;
-
-    *have_start = false;
-    *have_end = false;
-    *s = 0;
-    *e = 0;
-    if (*p >= '0' && *p <= '9')
-    {
-        if (!read_u32(&p, s))
-            return false;
-        *have_start = true;
-    }
-    if (*p != '-')
-        return false;
-    p++;
-    if (*p >= '0' && *p <= '9')
-    {
-        if (!read_u32(&p, e))
-            return false;
-        *have_end = true;
-    }
-    while (*p == ' ' || *p == '\t')
-        p++;
-    if (*p != '\0' && *p != '\r' && *p != '\n')
-        return false;
-    return true;
-}
-} // namespace
 
 DeliveryVerdict dws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t swr_s)
 {

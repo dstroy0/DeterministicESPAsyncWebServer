@@ -594,13 +594,27 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
 - [x] Partition-map status monitor endpoint _(shipped)_ - `DWS_ENABLE_PARTITION_MONITOR`: `dws_partition_monitor_begin()` serves the flash partition table (label, kind, type/subtype, offset, size, running app slot) as JSON via `esp_partition` / `esp_ota_ops`; kind classifier + serializer host-tested (example PartitionMonitor).
 - [x] Config export / restore _(shipped, schema-driven)_ - `DWS_ENABLE_CONFIG_IO`: `services/config_io` serializes a declared schema of fields to a portable `key=value` text blob and parses one back into the NVS config store - backup / migrate / bulk-provision, deterministic and zero-heap (host-tested round-trip; example ConfigExport). Remaining (M): full enumeration-based export (needs NVS key iteration), ZTP multi-stage provisioning.
 - [x] Unified VFS wrapper _(shipped)_ - `DWS_ENABLE_VFS`: `services/vfs` gives one file API (open/read/write/close, exists/size/remove/rename, whole-file helpers) over a pluggable backend - a zero-heap RAM pool (deterministic, host-tested) or a real `fs::FS` (LittleFS / SD / SPIFFS) on ESP32 - so features target storage without knowing the medium (example Vfs).
-- [~] **Wear leveling** + log offload (server/SD) (M) _(wear-leveling shipped)_ - `DWS_ENABLE_WEARLEVEL`:
-  `services/wearlevel` `dws_wearlevel_pick()` returns the least-worn slot (from per-slot write
-  counts the app persists) so repeated flash/NVS writes spread evenly and the region ages together
-  instead of burning out one block, plus a `dws_wearlevel_spread()` imbalance metric. Pure core,
-  host-tested (`native_wearlevel`; a 4000-write pick+mark loop levels every slot exactly). Log
-  offload rides the existing `services/logbuf` pluggable sink (SD / syslog / HTTP). _Remaining:_
-  hot-swap storage safeties (M).
+- [x] **Wear leveling** + log offload (server/SD) (M) _(shipped, HW-verified)_ - `DWS_ENABLE_WEARLEVEL`:
+      `services/wearlevel` `dws_wearlevel_pick()` returns the least-worn slot (from per-slot write
+      counts the app persists) so repeated flash/NVS writes spread evenly and the region ages together
+      instead of burning out one block, plus a `dws_wearlevel_spread()` imbalance metric. Pure core,
+      host-tested (`native_wearlevel`; a 4000-write pick+mark loop levels every slot exactly). Log
+      offload rides the existing `services/logbuf` pluggable sink (SD / syslog / HTTP).
+      **Hot-swap storage safeties** are `DWS_ENABLE_HOTSWAP` (`services/hotswap`): a card is a connector,
+      and when it leaves the failure is quiet - the driver still reports a mounted volume and every write
+      fails into nothing. One state machine per volume (ABSENT / READY / FAULTED) makes that loud and
+      recoverable: `dws_hotswap_ready()` is the fail-closed gate before any filesystem call,
+      `DWS_HOTSWAP_FAIL_THRESHOLD` consecutive I/O errors declare the medium gone and unmount it at once
+      (one error does not, and any success resets the run), and a probe every `DWS_HOTSWAP_PROBE_MS`
+      remounts a card that returns. Pure core with an explicit `now`, host-tested (`native_hotswap`, 20
+      cases incl. counter saturation and rollover-safe probe pacing). HW-verified on a **P4** with a real
+      SD card: it faulted on the third consecutive failure (not the first), refused the next write with
+      `storage not ready` rather than attempting it, and remounted itself (`mounts` 1 -> 2). Example
+      HotSwapStorage. _Follow-up (opt-in, deliberately not folded in):_ the gate is currently the
+      application's to call. The library's own SD writers - the edge-cache L2 tier, upload_service,
+      file_serving, ssh_sftp/scp - could consume it directly so a card pull is survived without any
+      app code, but that changes the behavior of shipped, HW-verified features, so it belongs to a
+      separate decision rather than riding along here.
 - [x] OTA rollback protection + soft-brick safeguard _(shipped)_ - `DWS_ENABLE_OTA_ROLLBACK`: `services/ota_rollback` commits a freshly-updated image once a self-test passes, or rolls back to the previous image if the self-test fails or the confirm window elapses, so a bad update self-heals; decision logic pure + host-tested, commit/rollback via esp_ota_ops, HW-verified (example OtaRollback). Remaining: modular partition swapping (M).
 - [~] PSRAM web buffers / zero-copy net buffers (`heap_caps_calloc(MALLOC_CAP_SPIRAM)` at begin) + asset
   offloading + COMPONENT_EMBED_TXTFILES (M); SPI DMA ping-pong buffers (M) _(placement policy shipped)_ -

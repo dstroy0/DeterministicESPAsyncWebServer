@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **252 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **253 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -167,6 +167,7 @@ The native test matrix has **252 environments**, one per feature, generated from
 | `native_hart` | `WS_ENABLE_HART=1` | `test_hart` | HART / HART-IP codec (services/hart): the HART command frame (longitudinal XOR checksum, short + long addressing) build/parse and the 8-octet HART-IP message header. |
 | `native_hislip` | `WS_ENABLE_HISLIP=1` | `test_hislip` | HiSLIP (High-Speed LAN Instrument Protocol, IVI-6.1) message codec (services/hislip): the fixed 16-byte header build/parse (HS prologue + type + control + 32-bit param + 64-bit payload length, big-end... |
 | `native_hostlink` | `WS_ENABLE_HOSTLINK=1` | `test_hostlink` | Omron Host Link (C-mode) frame codec (services/hostlink): the FCS (XOR), the ASCII command builder (@UU + header + text + FCS + *CR), and the FCS-validating parser + end-code reader. |
+| `native_hotswap` | `WS_ENABLE_HOTSWAP=1` | `test_hotswap` | Removable-storage hot-swap safeties (services/hotswap): the ABSENT/READY/FAULTED state machine - a run of consecutive I/O errors faults a volume while a single one does not, any success resets the run... |
 | `native_hpack` | `WS_ENABLE_HTTP2=1` | `test_hpack` | HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the Huffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion (C.3.1), dynamic-table i... |
 | `native_http_client` | `WS_ENABLE_HTTP_CLIENT=1` | `test_http_client` | Outbound HTTP client: URL parser + request builder + response parser. |
 | `native_http_delivery` | `WS_ENABLE_HTTP_DELIVERY=1` | `test_http_delivery` | HTTP delivery optimizations (services/http_delivery): the RFC 5861 stale-while-revalidate freshness decision + its Cache-Control builder, and the versioned service-worker precache manifest (including ... |
@@ -542,7 +543,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3349 test cases** across **270 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3369 test cases** across **271 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -12096,6 +12097,219 @@ A thorough directory of all **3349 test cases** across **270 suites**. Expand a 
       * <code>Assert true (dws_hostlink_end_code(&g, &code))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xCD, code);</code>
       * <code>Assert false (dws_hostlink_end_code(&g, &code))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_hotswap (20 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starts_absent_not_ready</b> &mdash; <i>Starting READY would let a caller write before anything was ever mounted.</i></summary>
+
+    * **Objective**: Starting READY would let a caller write before anything was ever mounted.
+    * **Assertions**:
+      * <code>Assert equal int ((int)StorageState::ABSENT, (int)c.state)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c.mounts);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c.faults);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_first_probe_is_due_immediately</b> &mdash; <i>Back-dated last_probe: a card already present at boot must mount now, not one interval later.</i></summary>
+
+    * **Objective**: Back-dated last_probe: a card already present at boot must mount now, not one interval later.
+    * **Assertions**:
+      * <code>Assert true (dws_hotswap_core_due(&c, 100000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_first_probe_is_due_when_init_time_is_near_zero</b> &mdash; <i>Real case: begin() runs a few ms after boot, so `now - probe_interval` underflows past zero.</i></summary>
+
+    * **Objective**: Real case: begin() runs a few ms after boot, so `now - probe_interval` underflows past zero.
+    * **Assertions**:
+      * <code>Assert true (dws_hotswap_core_due(&c, 5))</code>
+      * <code>Assert true (dws_hotswap_core_due(&c, 6))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_threshold_is_clamped_to_one</b> &mdash; <i>With an unclamped 0 the volume would fault before any failure was reported.</i></summary>
+
+    * **Objective**: With an unclamped 0 the volume would fault before any failure was reported.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, c.fail_threshold);</code>
+      * <code>Assert true (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)c.state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_one_failure_does_not_fault_a_healthy_volume</b> &mdash; <i>One failure does not fault a healthy volume</i></summary>
+
+    * **Objective**: One failure does not fault a healthy volume
+    * **Assertions**:
+      * <code>Assert false (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)c.state)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, c.fail_run);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_threshold_run_faults_and_counts</b> &mdash; <i>Threshold run faults and counts</i></summary>
+
+    * **Objective**: Threshold run faults and counts
+    * **Assertions**:
+      * <code>Assert false (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert false (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert true (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)c.state)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, c.faults);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_a_success_resets_the_failure_run</b> &mdash; <i>So intermittent noise never accumulates into a false removal.</i></summary>
+
+    * **Objective**: So intermittent noise never accumulates into a false removal.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, c.fail_run);</code>
+      * <code>Assert false (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert false (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)c.state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_further_failures_while_faulted_are_ignored</b> &mdash; <i>A caller honoring ready() stops here; a stray report must not re-fire the transition.</i></summary>
+
+    * **Objective**: A caller honoring ready() stops here; a stray report must not re-fire the transition.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, c.faults);</code>
+      * <code>Assert false (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert false (dws_hotswap_core_io(&c, true))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, c.faults);</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)c.state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_io_while_absent_is_ignored</b> &mdash; <i>Io while absent is ignored</i></summary>
+
+    * **Objective**: Io while absent is ignored
+    * **Assertions**:
+      * <code>Assert false (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert equal int ((int)StorageState::ABSENT, (int)c.state)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c.faults);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_fail_run_saturates_instead_of_wrapping</b> &mdash; <i>A wrapping counter would drop back under the threshold and un-fault the volume.</i></summary>
+
+    * **Objective**: A wrapping counter would drop back under the threshold and un-fault the volume.
+    * **Assertions**:
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)c.state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_no_probe_while_ready</b> &mdash; <i>No probe while ready</i></summary>
+
+    * **Objective**: No probe while ready
+    * **Assertions**:
+      * <code>Assert false (dws_hotswap_core_due(&c, 100000 + 999999))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_probe_is_rate_limited_while_absent</b> &mdash; <i>Probe is rate limited while absent</i></summary>
+
+    * **Objective**: Probe is rate limited while absent
+    * **Assertions**:
+      * <code>Assert false (dws_hotswap_core_due(&c, 100000 + 1999))</code>
+      * <code>Assert true (dws_hotswap_core_due(&c, 100000 + 2000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_probe_pacing_is_wrapsafe_across_rollover</b> &mdash; <i>Last probe just before the 32-bit millis rollover; "now" just after it.</i></summary>
+
+    * **Objective**: Last probe just before the 32-bit millis rollover; "now" just after it.
+    * **Assertions**:
+      * <code>Assert false (dws_hotswap_core_due(&c, 0xFFFFF000u + 1999))</code>
+      * <code>Assert true (dws_hotswap_core_due(&c, 0xFFFFF000u + 2000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_present_but_unmountable_stays_absent</b> &mdash; <i>A card that will not mount is not storage, however present the detect pin says it is.</i></summary>
+
+    * **Objective**: A card that will not mount is not storage, however present the detect pin says it is.
+    * **Assertions**:
+      * <code>Assert false (dws_hotswap_core_probe(&c, true, false, 100000))</code>
+      * <code>Assert equal int ((int)StorageState::ABSENT, (int)c.state)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c.mounts);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mount_counts_only_on_transition</b> &mdash; <i>A redundant probe of an already-mounted volume is not another insertion.</i></summary>
+
+    * **Objective**: A redundant probe of an already-mounted volume is not another insertion.
+    * **Assertions**:
+      * <code>Assert true (dws_hotswap_core_probe(&c, true, true, 100000))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, c.mounts);</code>
+      * <code>Assert false (dws_hotswap_core_probe(&c, true, true, 101000))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, c.mounts);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_full_removal_and_reinsertion_cycle</b> &mdash; <i>Card pulled: writes start failing.</i></summary>
+
+    * **Objective**: Card pulled: writes start failing.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, c.mounts);</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)c.state)</code>
+      * <code>Assert true (dws_hotswap_core_due(&c, 102000))</code>
+      * <code>Assert equal int ((int)StorageState::ABSENT, (int)c.state)</code>
+      * <code>Assert true (dws_hotswap_core_due(&c, 104000))</code>
+      * <code>Assert true (dws_hotswap_core_probe(&c, true, true, 104000))</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)c.state)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, c.mounts);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, c.faults);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, c.fail_run); // a fresh mount starts with a clean run</code>
+      * <code>Assert false (dws_hotswap_core_io(&c, false))</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)c.state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_faulted_volume_can_go_straight_back_to_ready</b> &mdash; <i>A card reseated quickly enough that the probe finds it mounted without an ABSENT step.</i></summary>
+
+    * **Objective**: A card reseated quickly enough that the probe finds it mounted without an ABSENT step.
+    * **Assertions**:
+      * <code>Assert true (dws_hotswap_core_probe(&c, true, true, 102000))</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)c.state)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, c.mounts);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_core_is_not_a_crash</b> &mdash; <i>Null core is not a crash</i></summary>
+
+    * **Objective**: Null core is not a crash
+    * **Assertions**:
+      * <code>Assert false (dws_hotswap_core_io(nullptr, false))</code>
+      * <code>Assert false (dws_hotswap_core_due(nullptr, 0))</code>
+      * <code>Assert false (dws_hotswap_core_probe(nullptr, true, true, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_state_names</b> &mdash; <i>State names</i></summary>
+
+    * **Objective**: State names
+    * **Assertions**:
+      * <code>Assert equal string ("absent", dws_hotswap_state_name(StorageState::ABSENT))</code>
+      * <code>Assert equal string ("ready", dws_hotswap_state_name(StorageState::READY))</code>
+      * <code>Assert equal string ("faulted", dws_hotswap_state_name(StorageState::FAULTED))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_json_and_overflow_is_fail_closed</b> &mdash; <i>Json and overflow is fail closed</i></summary>
+
+    * **Objective**: Json and overflow is fail closed
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert equal string ("{\\"storage\\":\\"absent\\",\\"mounts\\":0,\\"faults\\":0}", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_hotswap_json(tiny, sizeof(tiny)));</code>
+      * <code>Assert equal string ("", tiny)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_hotswap_json(nullptr, 16));</code>
   </details>
 
 </details>

@@ -448,16 +448,21 @@ bool dws_udp_listen(uint16_t port, DWSUdpHandler handler, void *ctx)
     return true;
 }
 
-bool dws_udp_listen_multicast(const char *group_ip, uint16_t port, DWSUdpHandler handler, void *ctx)
+// Validate a dotted-quad IPv4 multicast group (224.0.0.0/4) and report its length.
+//
+// Mirrors the device-side validation so a host test catches a bad group before hardware does.
+// Returning the length is what lets the caller copy it with a bound it just proved, instead of
+// trusting a scan that happened several branches earlier.
+static bool parse_mcast_group(const char *ip, size_t *len_out)
 {
-    // Mirror the device-side validation so a host test catches a bad group before hardware does.
-    if (!group_ip)
+    if (!ip)
         return false;
     uint32_t octet = 0;
+    uint32_t first = 0;
     int count = 0;
     bool have_digit = false;
-    uint32_t first = 0;
-    for (const char *p = group_ip;; p++)
+    const char *p = ip;
+    for (;; p++)
     {
         if (*p >= '0' && *p <= '9')
         {
@@ -485,14 +490,26 @@ bool dws_udp_listen_multicast(const char *group_ip, uint16_t port, DWSUdpHandler
     }
     if (count != 4 || first < 224 || first > 239) // 224.0.0.0/4
         return false;
+    *len_out = (size_t)(p - ip);
+    return true;
+}
+
+bool dws_udp_listen_multicast(const char *group_ip, uint16_t port, DWSUdpHandler handler, void *ctx)
+{
+    size_t glen = 0;
+    if (!parse_mcast_group(group_ip, &glen))
+        return false;
+    // A valid dotted quad is at most 15 chars so this always fits, but check before claiming a
+    // listener slot: a truncated group would be silently wrong, and failing here leaks nothing.
+    if (glen >= sizeof(s_udp.lst[0].group))
+        return false;
 
     if (!dws_udp_listen(port, handler, ctx))
         return false;
     for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
         if (s_udp.lst[i].used && s_udp.lst[i].port == port)
         {
-            strncpy(s_udp.lst[i].group, group_ip, sizeof(s_udp.lst[i].group) - 1);
-            s_udp.lst[i].group[sizeof(s_udp.lst[i].group) - 1] = '\0';
+            memcpy(s_udp.lst[i].group, group_ip, glen + 1); // + NUL; length bounded above
             s_udp.lst[i].mcast = true;
             return true;
         }

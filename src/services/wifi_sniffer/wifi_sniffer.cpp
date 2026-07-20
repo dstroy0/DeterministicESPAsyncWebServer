@@ -119,7 +119,7 @@ bool dws_wifi_scan_due(const WifiScan *s, uint32_t now_ms)
     if (!s)
         return false;
     // Unsigned subtraction is correct across a millis() rollover.
-    return (uint32_t)(now_ms - s->last_hop_ms) >= s->dwell_ms;
+    return (now_ms - s->last_hop_ms) >= s->dwell_ms;
 }
 
 uint8_t dws_wifi_scan_next(WifiScan *s, uint32_t now_ms)

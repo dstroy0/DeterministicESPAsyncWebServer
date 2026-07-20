@@ -2083,6 +2083,12 @@
       "src": ["+<services/logbuf/logbuf.cpp>"],
       "tests": ["test_logbuf"]
     },
+    "native_hotswap": {
+      "desc": "Removable-storage hot-swap safeties (services/hotswap): the ABSENT/READY/FAULTED state\nmachine - a run of consecutive I/O errors faults a volume while a single one does not, any success\nresets the run, the fail counter saturates instead of wrapping, probe attempts are rate-limited (and\nwrap-safe across a millis() rollover), present-but-unmountable stays absent, and a full\nremoval/reinsertion cycle returns to a clean mount. Pure host tests with a synthetic clock.",
+      "flags": ["-DDWS_ENABLE_HOTSWAP=1"],
+      "src": ["+<services/hotswap/hotswap.cpp>"],
+      "tests": ["test_hotswap"]
+    },
     "native_log": {
       "desc": "Abstract logging macros (shared_primitives/log.h) whose disabled levels are discarded by\nthe preprocessor: built at DWS_LOG_LEVEL_INFO so DEBUG is below the floor. Asserts that a discarded\ncall reaches neither the sink nor the ring and never even evaluates its arguments, that INFO/WARN/ERROR\nemit with the right level, that the DWS_LOG_LEVEL_* values agree with DWSLogLevel's, and the formatting\nedges (truncation, null format, empty message).",
       "flags": ["-DDWS_ENABLE_LOGBUF=1", "-DDWS_LOG_LEVEL=DWS_LOG_LEVEL_INFO"],

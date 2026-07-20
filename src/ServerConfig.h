@@ -2974,6 +2974,41 @@
 #endif
 
 /**
+ * @brief Opt-in removable-storage hot-swap safeties (DWS_ENABLE_HOTSWAP).
+ *
+ * An SD card is a connector, and it can be pulled mid-write. The failure is quiet: the driver still
+ * reports a mounted volume, writes fail into a void, and code carries on believing it has storage.
+ * When set, services/hotswap runs a small state machine per volume (ABSENT / READY / FAULTED): a run
+ * of consecutive I/O errors declares the medium gone and unmounts it immediately, `dws_hotswap_ready()`
+ * becomes the fail-closed gate callers check before any filesystem call, and a periodic probe
+ * remounts when a card comes back. The core is pure and takes an explicit `now`, so the whole state
+ * machine is host-tested; mounting is three app callbacks, since how a volume mounts is the
+ * application's business. Default off.
+ */
+#ifndef DWS_ENABLE_HOTSWAP
+#define DWS_ENABLE_HOTSWAP 0
+#endif
+
+/**
+ * @brief Consecutive I/O failures that declare a removable volume gone.
+ *
+ * Not 1: a single failed write is not proof a card left (a transient bus error, a full volume), and
+ * tearing down a working mount over one error would be its own bug. Any success resets the run.
+ */
+#ifndef DWS_HOTSWAP_FAIL_THRESHOLD
+#define DWS_HOTSWAP_FAIL_THRESHOLD 3
+#endif
+
+/** @brief Minimum gap between remount attempts while a volume is absent or faulted (ms). */
+#ifndef DWS_HOTSWAP_PROBE_MS
+#define DWS_HOTSWAP_PROBE_MS 2000
+#endif
+
+#if DWS_ENABLE_HOTSWAP && (DWS_HOTSWAP_FAIL_THRESHOLD < 1 || DWS_HOTSWAP_FAIL_THRESHOLD > 255)
+#error "DeterministicESPAsyncWebServer: DWS_HOTSWAP_FAIL_THRESHOLD must be in [1, 255]"
+#endif
+
+/**
  * @brief Opt-in network adaptation decisions (DWS_ENABLE_NETADAPT).
  *
  * When set, services/netadapt provides two pure decisions: dws_netadapt_window() sizes the TCP

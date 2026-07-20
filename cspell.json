@@ -1405,7 +1405,8 @@
     "mtval",
     "DIWE",
     "RISCV",
-    "revalidations"
+    "revalidations",
+    "hotswap"
   ],
   "ignorePaths": [
     "node_modules/**",
