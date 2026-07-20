@@ -9,7 +9,9 @@ Run from the repo root. The tool:
      of values <= that max still fit, so it is safe even for flag enums). Comment-stripped parse.
   2. Rewrites the definition to `enum class <Name> : <width>` (members stay prefixed).
   3. Scopes every member USE across src/ + test/ + examples/ (bare MEMBER -> Name::MEMBER), then
-     un-scopes the declarations inside the enum body.
+     un-scopes the declarations inside the enum body. Comments and string/char literals are stepped
+     over: specs name their constants in prose ("the IKE_SA_INIT -> IKE_AUTH state machine"), and
+     rewriting those into C++ would be both wrong and unreadable.
   4. Upgrades C-style `(Name)(expr)` casts to `static_cast<Name>(expr)`.
   5. Reports byte-OR / arithmetic sites (`| Name::` etc.) that need a manual `(uint8_t)` cast - `enum
      class` blocks the implicit int conversion, so the compiler will flag these; fix + recompile the env.
@@ -19,6 +21,38 @@ pass --width explicitly for those (verify against the wire field). Anonymous enu
 """
 
 import sys, re, io, glob
+
+# Comments and string/char literals, matched so a rewrite can step over them. Protocol specs name
+# their constants in prose ("the IKE_SA_INIT -> IKE_AUTH state machine"), and a blind identifier
+# substitution turns that documentation into C++ (`IkeExchange::IKE_SA_INIT`), which is wrong and
+# unreadable. Leftmost-match ordering also makes a `//` inside a string literal stay part of the
+# string rather than starting a comment.
+SKIP_RE = re.compile(
+    r"""
+      //[^\n]*             # line comment
+    | /\*.*?\*/            # block comment
+    | "(?:\\.|[^"\\])*"    # string literal
+    | '(?:\\.|[^'\\])*'    # char literal
+    """,
+    re.S | re.X,
+)
+
+
+def sub_code_only(subs, text):
+    """Apply (compiled_pattern, replacement) pairs only outside comments and literals."""
+
+    def apply(chunk):
+        for pat, repl in subs:
+            chunk = pat.sub(repl, chunk)
+        return chunk
+
+    out, pos = [], 0
+    for m in SKIP_RE.finditer(text):
+        out.append(apply(text[pos : m.start()]))
+        out.append(m.group(0))  # preserved verbatim
+        pos = m.end()
+    out.append(apply(text[pos:]))
+    return "".join(out)
 
 
 def enum_body(text, name):
@@ -154,15 +188,17 @@ def main():
         assert d2 != d, f"def line not found for {name}"
         io.open(deffile, "w", encoding="utf-8", newline="\n").write(d2)
 
-    # 2) scope member USES (idempotent via the : lookbehind)
+    # 2) scope member USES (idempotent via the : lookbehind), in code only - never in the comments
+    # and literals that legitimately spell the bare protocol constant.
+    subs = [
+        (re.compile(r"(?<![\w:])" + re.escape(mbr) + r"\b"), f"{name}::{mbr}") for mbr in members
+    ]
+    subs.append((re.compile(r"\(\s*" + re.escape(name) + r"\s*\)\s*\("), f"static_cast<{name}>("))
     for f in files():
         s = io.open(f, encoding="utf-8", errors="replace").read()
-        o = s
-        for mbr in members:
-            s = re.sub(r"(?<![\w:])" + re.escape(mbr) + r"\b", f"{name}::{mbr}", s)
-        s = re.sub(r"\(\s*" + re.escape(name) + r"\s*\)\s*\(", f"static_cast<{name}>(", s)
-        if s != o:
-            io.open(f, "w", encoding="utf-8", newline="\n").write(s)
+        o = sub_code_only(subs, s)
+        if o != s:
+            io.open(f, "w", encoding="utf-8", newline="\n").write(o)
 
     # 3) un-scope the declarations inside the enum body
     d = io.open(deffile, encoding="utf-8").read()
