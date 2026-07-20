@@ -63,6 +63,7 @@ from each example's `pio ci` size report and aggregated into
 | `LORA+GATEWAY`                                                                                            | Drivers/LoRaGateway                  | 269.9 KB (21.1%) | 21.2 KB (6.6%)   |
 | `LSV2`                                                                                                    | L7-Application/HeidenhainLsv2        | 708.3 KB (55.3%) | 43.0 KB (13.4%)  |
 | `MDNS`                                                                                                    | L7-Application/mDNS                  | 760.1 KB (59.4%) | 81.7 KB (25.5%)  |
+| `MDNS+PROMISC+WIFI_SNIFFER+MDNS_ADAPTIVE`                                                                 | L7-Application/MdnsAdaptive          | 762.1 KB (59.5%) | 81.8 KB (25.6%)  |
 | `MODBUS`                                                                                                  | L7-Application/ModbusTcp             | 736.8 KB (57.6%) | 80.2 KB (25.0%)  |
 | `MODBUS+MODBUS_MASTER`                                                                                    | L7-Application/ModbusScan            | 737.3 KB (57.6%) | 80.1 KB (25.0%)  |
 | `MPR121`                                                                                                  | Drivers/Mpr121                       | 281.0 KB (21.9%) | 21.3 KB (6.7%)   |

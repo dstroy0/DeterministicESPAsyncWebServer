@@ -384,6 +384,13 @@
     "flash_bytes": 778345,
     "ram_bytes": 83688
   },
+  "MDNS+PROMISC+WIFI_SNIFFER+MDNS_ADAPTIVE": {
+    "example": "L7-Application/MdnsAdaptive",
+    "flags": "-DDWS_ENABLE_MDNS=1 -DDWS_ENABLE_PROMISC=1 -DDWS_ENABLE_WIFI_SNIFFER=1 -DDWS_ENABLE_MDNS_ADAPTIVE=1",
+    "board": "esp32dev",
+    "flash_bytes": 780401,
+    "ram_bytes": 83776
+  },
   "MODBUS": {
     "example": "L7-Application/ModbusTcp",
     "flags": "-DDWS_ENABLE_MODBUS=1",
