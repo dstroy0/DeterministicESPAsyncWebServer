@@ -22,7 +22,7 @@ jobs:
           # pushes over SSH past the protected-main ruleset (same as the changelog).
           ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.x"
 
