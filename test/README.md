@@ -544,7 +544,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3423 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3424 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -33239,7 +33239,7 @@ A thorough directory of all **3423 test cases** across **272 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (47 tests)</b></summary>
+<summary><b>test_ssh_transport (48 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -33789,6 +33789,19 @@ A thorough directory of all **3423 test cases** across **272 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal memory (expected, got, SSH_SHA256_DIGEST_LEN)</code>
       * <code>Assert not equal (0, memcmp(got, as_mpint, SSH_SHA256_DIGEST_LEN))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_hostkey_list_carries_all_four_when_all_keys_loaded</b> &mdash; <i>RSA is already available via setup_rsa_fixture() in setUp().</i></summary>
+
+    * **Objective**: RSA is already available via setup_rsa_fixture() in setUp().
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_build(0, buf, &n, sizeof(buf)))</code>
+      * <code>Assert true (hk_len &lt; sizeof(hk))</code>
+      * <code>Assert not null (strstr(hk, "ssh-ed25519"))</code>
+      * <code>Assert not null (strstr(hk, "ecdsa-sha2-nistp256"))</code>
+      * <code>Assert not null (strstr(hk, "rsa-sha2-512"))</code>
+      * <code>Assert not null (strstr(hk, "rsa-sha2-256"))</code>
   </details>
 
 </details>
