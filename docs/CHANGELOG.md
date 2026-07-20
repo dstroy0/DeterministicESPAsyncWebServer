@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.20.0] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.20.0 - 2026-07-20</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`b5bafe3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b5bafe32c9557a652778f346d3628312fe6271b6))
+- update CHANGELOG.md [skip ci] ([`b62aa42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b62aa4233fbcf534b19dbfc8805d063902602178))
+
+### Changes
+
+- Bump version: 7.19.0 → 7.20.0 ([`bbae3c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bbae3c05f1113bfa5a72ca5607404d2d4becec07))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`ab33b77`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab33b77e2050d8f1fdeea16a9a80c47af40ab26d))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e4f49c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4f49c374fce1e51d6866ac5d0e9a01cf42bc021))
+
+### Features
+
+- STARTTLS on the submission port, and the TLS path finally builds ([`b47727a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b47727afbf5a330f14716fb03823f150a5a9cf0e))
+
+</details>
+
 ## [7.19.0] - 2026-07-20
 
 <details>
