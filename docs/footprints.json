@@ -675,8 +675,8 @@
     "example": "L5-Session/SSHReverseTunnel",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_SSH_CLIENT=1 -DDWS_SSH_CLIENT_MAX_CHANNELS=2 -DDWS_CLIENT_RX_BUF=2048 -DMAX_CONNS=4",
     "board": "esp32dev",
-    "flash_bytes": 845481,
-    "ram_bytes": 110928
+    "flash_bytes": 845601,
+    "ram_bytes": 110960
   },
   "STATS": {
     "example": "L7-Application/Stats",
