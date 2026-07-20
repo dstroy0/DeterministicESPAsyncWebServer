@@ -97,7 +97,7 @@ from each example's `pio ci` size report and aggregated into
 | `SHT3X`                                                                                                   | Drivers/Sht3x                        | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                                                                                  | Drivers/SigfoxUplink                 | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
 | `SMB`                                                                                                     | L7-Application/SmbFileClient         | 725.4 KB (56.7%) | 63.7 KB (19.9%)  |
-| `SMTP`                                                                                                    | L7-Application/SmtpAlert             | 717.4 KB (56.0%) | 59.7 KB (18.7%)  |
+| `SMTP`                                                                                                    | L7-Application/SmtpAlert             | 717.8 KB (56.1%) | 59.7 KB (18.7%)  |
 | `SNMP`                                                                                                    | L7-Application/SNMP                  | 744.2 KB (58.1%) | 92.0 KB (28.8%)  |
 | `SNMP+SNMP_TRAP`                                                                                          | L7-Application/SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
 | `SSH`                                                                                                     | L5-Session/SSHHostKey                | 810.0 KB (63.3%) | 106.6 KB (33.3%) |

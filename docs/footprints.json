@@ -626,7 +626,7 @@
     "example": "L7-Application/SmtpAlert",
     "flags": "-DDWS_ENABLE_SMTP=1",
     "board": "esp32dev",
-    "flash_bytes": 734617,
+    "flash_bytes": 735065,
     "ram_bytes": 61132
   },
   "SNMP": {
