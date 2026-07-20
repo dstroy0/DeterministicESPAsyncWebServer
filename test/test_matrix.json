@@ -2083,6 +2083,12 @@
       "src": ["+<services/logbuf/logbuf.cpp>"],
       "tests": ["test_logbuf"]
     },
+    "native_log": {
+      "desc": "Abstract logging macros (shared_primitives/log.h) whose disabled levels are discarded by\nthe preprocessor: built at DWS_LOG_LEVEL_INFO so DEBUG is below the floor. Asserts that a discarded\ncall reaches neither the sink nor the ring and never even evaluates its arguments, that INFO/WARN/ERROR\nemit with the right level, that the DWS_LOG_LEVEL_* values agree with DWSLogLevel's, and the formatting\nedges (truncation, null format, empty message).",
+      "flags": ["-DDWS_ENABLE_LOGBUF=1", "-DDWS_LOG_LEVEL=DWS_LOG_LEVEL_INFO"],
+      "src": ["+<services/logbuf/logbuf.cpp>", "+<shared_primitives/log.cpp>"],
+      "tests": ["test_log"]
+    },
     "native_config_io": {
       "desc": "Schema-driven config export/restore (services/config_io) over the config store;\nround-trip host-tested against the in-memory backend.",
       "flags": ["-DDWS_ENABLE_CONFIG_STORE=1", "-DDWS_ENABLE_CONFIG_IO=1"],

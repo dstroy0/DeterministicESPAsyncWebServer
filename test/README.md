@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **251 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **252 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -187,6 +187,7 @@ The native test matrix has **251 environments**, one per feature, generated from
 | `native_ld2410` | `WS_ENABLE_LD2410=1` | `test_ld2410` | LD2410 mmWave radar codec (services/ld2410): decoding a basic and an engineering-mode report frame, rejecting malformed frames, the byte-by-byte stream reassembler (resync past noise, split feeds, abs... |
 | `native_ldc1614` | `WS_ENABLE_LDC1614=1` | `test_ldc1614` | LDC1614 inductance-to-digital field sensor (services/ldc1614): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
 | `native_link_manager` | `WS_ENABLE_LINK_MANAGER=1` | `test_link_manager` | Multi-interface egress selection (services/link_manager): a table of interfaces (kind + priority + up/down) with deterministic best-link-up selection, graceful escalation to a higher-priority interfac... |
+| `native_log` | `WS_ENABLE_LOGBUF=1`, `WS_LOG_LEVEL=DWS_LOG_LEVEL_INFO` | `test_log` | Abstract logging macros (shared_primitives/log.h) whose disabled levels are discarded by the preprocessor: built at DWS_LOG_LEVEL_INFO so DEBUG is below the floor. |
 | `native_logbuf` | `WS_ENABLE_LOGBUF=1` | `test_logbuf` | Rotating log ring + severity trap (services/logbuf): pure, fully host-tested. |
 | `native_lonworks` | `WS_ENABLE_LONWORKS=1` | `test_lonworks` | LonWorks / LON-IP network-variable codec (services/lonworks): the LonTalk NV PDU ([msg-code][14-bit selector][value]) build + parse and the SNVT_temp / SNVT_switch scalar encodings. |
 | `native_lora` | `WS_ENABLE_LORA=1` | `test_lora` | LoRa codec + SX127x driver (services/lora), v5 radio plugin: the RadioHead 4-byte header parse/build, and the SX127x register protocol (init / send / tx-done / set-rx / recv) exercised against a mock ... |
@@ -541,7 +542,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3339 test cases** across **269 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3349 test cases** across **270 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -15898,6 +15899,112 @@ A thorough directory of all **3339 test cases** across **269 suites**. Expand a 
       * <code>Assert equal int (-1, from)</code>
       * <code>Assert equal int (-1, to)</code>
       * <code>Assert false (dws_link_set(&g_m, 9, true, nullptr, nullptr))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_log (10 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_debug_is_below_the_floor_and_emits_nothing</b> &mdash; <i>Debug is below the floor and emits nothing</i></summary>
+
+    * **Objective**: Debug is below the floor and emits nothing
+    * **Assertions**:
+      * <code>Assert equal int (0, s_sink_calls)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_log_count());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_discarded_call_does_not_evaluate_its_arguments</b> &mdash; <i>The whole point of a preprocessor filter rather than a runtime `if`: a discarded log must not</i></summary>
+
+    * **Objective**: The whole point of a preprocessor filter rather than a runtime `if`: a discarded log must not
+    * **Assertions**:
+      * <code>Assert equal int (0, s_eval_count)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_info_and_above_emit</b> &mdash; <i>Info and above emit</i></summary>
+
+    * **Objective**: Info and above emit
+    * **Assertions**:
+      * <code>Assert equal int (1, s_sink_calls)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_LOG_LEVEL_INFO, s_last_level);</code>
+      * <code>Assert equal string ("hello 7", s_last_line)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_LOG_LEVEL_WARN, s_last_level);</code>
+      * <code>Assert equal string ("warn here", s_last_line)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_LOG_LEVEL_ERROR, s_last_level);</code>
+      * <code>Assert equal string ("err 3", s_last_line)</code>
+      * <code>Assert equal int (3, s_sink_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_enabled_call_does_evaluate_its_arguments</b> &mdash; <i>Enabled call does evaluate its arguments</i></summary>
+
+    * **Objective**: Enabled call does evaluate its arguments
+    * **Assertions**:
+      * <code>Assert equal int (1, s_eval_count)</code>
+      * <code>Assert equal string ("value 42", s_last_line)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_emitted_line_also_reaches_the_logbuf_ring</b> &mdash; <i>Emitted line also reaches the logbuf ring</i></summary>
+
+    * **Objective**: Emitted line also reaches the logbuf ring
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, dws_log_count());</code>
+      * <code>Assert equal string ("W to the ring", dws_log_at(0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_levels_match_the_logbuf_letters</b> &mdash; <i>The DWS_LOG_LEVEL_* preprocessor values and DWSLogLevel's constexprs are two spellings of one</i></summary>
+
+    * **Objective**: The DWS_LOG_LEVEL_* preprocessor values and DWSLogLevel's constexprs are two spellings of one
+    * **Assertions**:
+      * <code>Assert equal string ("I i", dws_log_at(0))</code>
+      * <code>Assert equal string ("W w", dws_log_at(1))</code>
+      * <code>Assert equal string ("E e", dws_log_at(2))</code>
+      * <code>Assert equal int (DWS_LOG_LEVEL_INFO, (int)DWSLogLevel::DWS_LOG_INFO)</code>
+      * <code>Assert equal int (DWS_LOG_LEVEL_WARN, (int)DWSLogLevel::DWS_LOG_WARN)</code>
+      * <code>Assert equal int (DWS_LOG_LEVEL_ERROR, (int)DWSLogLevel::DWS_LOG_ERROR)</code>
+      * <code>Assert equal int (DWS_LOG_LEVEL_DEBUG, (int)DWSLogLevel::DWS_LOG_DEBUG)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_no_sink_is_not_a_crash</b> &mdash; <i>No sink is not a crash</i></summary>
+
+    * **Objective**: No sink is not a crash
+    * **Assertions**:
+      * <code>Assert equal int (0, s_sink_calls)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, dws_log_count());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_long_line_is_truncated_not_overflowed</b> &mdash; <i>Long line is truncated not overflowed</i></summary>
+
+    * **Objective**: Long line is truncated not overflowed
+    * **Assertions**:
+      * <code>Assert equal int (1, s_sink_calls)</code>
+      * <code>Assert true (strlen(s_last_line) &lt; DWS_LOG_LINE_LEN)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_format_is_ignored</b> &mdash; <i>Null format is ignored</i></summary>
+
+    * **Objective**: Null format is ignored
+    * **Assertions**:
+      * <code>Assert equal int (0, s_sink_calls)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_log_count());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_message_is_still_a_line</b> &mdash; <i>Empty message is still a line</i></summary>
+
+    * **Objective**: Empty message is still a line
+    * **Assertions**:
+      * <code>Assert equal int (1, s_sink_calls)</code>
+      * <code>Assert equal string ("", s_last_line)</code>
+      * <code>Assert equal string ("I ", dws_log_at(0))</code>
   </details>
 
 </details>

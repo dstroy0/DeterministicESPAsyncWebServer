@@ -1391,7 +1391,21 @@
     "usbserjtag",
     "REUSEADDR",
     "RXTOALL",
-    "precaches"
+    "precaches",
+    "coredump",
+    "corefile",
+    "exccause",
+    "LOGD",
+    "LOGI",
+    "LOGW",
+    "LOGE",
+    "dogfooded",
+    "ftpdlib",
+    "ftproot",
+    "mtval",
+    "DIWE",
+    "RISCV",
+    "revalidations"
   ],
   "ignorePaths": [
     "node_modules/**",

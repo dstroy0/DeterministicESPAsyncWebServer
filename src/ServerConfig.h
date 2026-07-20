@@ -3422,6 +3422,53 @@
 #endif
 
 /**
+ * @brief Opt-in FTP client session driver (DWS_ENABLE_FTP_SESSION, requires DWS_ENABLE_FTP).
+ *
+ * services/ftp is deliberately pure - it owns no sockets. This is the other half: services/ftp_session
+ * drives a real control connection through login -> TYPE I -> passive mode -> STOR -> QUIT over the
+ * outbound client transport, opens the data connection the server names, and streams a payload pulled
+ * from a caller-supplied source (so the bytes can come from a file, a log, or the core-dump partition
+ * without the driver knowing). Separate from the codec gate because it drags in the TCP client and the
+ * DNS resolver, which a build that only wanted the pure codec should not pay for. Default off.
+ */
+#ifndef DWS_ENABLE_FTP_SESSION
+#define DWS_ENABLE_FTP_SESSION 0
+#endif
+
+/**
+ * @brief Control-reply accumulator for the FTP session driver (DWS_ENABLE_FTP_SESSION).
+ *
+ * services/ftp_session buffers a whole control reply here before parsing it. Multiline greetings
+ * and FEAT listings are the large cases; a reply that will not fit is treated as malformed rather
+ * than waited on forever.
+ */
+#ifndef DWS_FTP_REPLY_BUF
+#define DWS_FTP_REPLY_BUF 512
+#endif
+
+/** @brief Bytes staged per data-channel write when the session driver streams a payload. */
+#ifndef DWS_FTP_CHUNK
+#define DWS_FTP_CHUNK 512
+#endif
+
+/** @brief Per-step timeout for the FTP session driver: connect, and each control reply. */
+#ifndef DWS_FTP_TIMEOUT_MS
+#define DWS_FTP_TIMEOUT_MS 8000
+#endif
+
+#if DWS_ENABLE_FTP_SESSION && !DWS_ENABLE_FTP
+#error "DeterministicESPAsyncWebServer: DWS_ENABLE_FTP_SESSION requires DWS_ENABLE_FTP (it drives that codec)"
+#endif
+
+#if DWS_ENABLE_FTP_SESSION && (DWS_FTP_REPLY_BUF < 128)
+#error "DeterministicESPAsyncWebServer: DWS_FTP_REPLY_BUF must be >= 128 (a multiline greeting needs room)"
+#endif
+
+#if DWS_ENABLE_FTP_SESSION && (DWS_FTP_CHUNK < 64)
+#error "DeterministicESPAsyncWebServer: DWS_FTP_CHUNK must be >= 64"
+#endif
+
+/**
  * @brief Opt-in HTTP Cache-Control directive helpers (DWS_ENABLE_HTTP_CACHE).
  *
  * services/httpcache is the origin-side of edge caching (RFC 9111 + RFC 8246 + RFC 5861): a
@@ -3834,6 +3881,20 @@
 #endif
 
 /**
+ * @brief Chunk the core-dump image is streamed out of flash in (DWS_EXC_COREDUMP_CHUNK).
+ *
+ * dws_exc_coredump_save() copies the partition to a file this many bytes at a time from a stack
+ * buffer, so a dump of any size costs no heap and never has to fit RAM.
+ */
+#ifndef DWS_EXC_COREDUMP_CHUNK
+#define DWS_EXC_COREDUMP_CHUNK 512
+#endif
+
+#if DWS_ENABLE_EXC_DECODER && (DWS_EXC_COREDUMP_CHUNK < 64)
+#error "DeterministicESPAsyncWebServer: DWS_EXC_COREDUMP_CHUNK must be >= 64"
+#endif
+
+/**
  * @brief Opt-in HTTP delivery optimizations (DWS_ENABLE_HTTP_DELIVERY).
  *
  * Three pure cores for cheaper HTTP serving, each a real web standard: RFC 5861 stale-while-revalidate
@@ -4107,6 +4168,37 @@
 /** @brief Maximum length of one stored log line (bytes, including null). */
 #ifndef DWS_LOG_LINE_LEN
 #define DWS_LOG_LINE_LEN 96
+#endif
+
+/**
+ * @brief Compile-time severity floor for the DWS_LOG* macros (shared_primitives/log.h).
+ *
+ * The values are ordered low -> high and match DWSLogLevel's, so a level is usable both in the
+ * preprocessor (which cannot see a constexpr) and as the runtime argument. NONE sits above ERROR
+ * so that the default discards everything.
+ */
+#define DWS_LOG_LEVEL_DEBUG 0
+#define DWS_LOG_LEVEL_INFO 1
+#define DWS_LOG_LEVEL_WARN 2
+#define DWS_LOG_LEVEL_ERROR 3
+#define DWS_LOG_LEVEL_NONE 4
+
+/**
+ * @brief Lowest severity the DWS_LOG* macros emit code for.
+ *
+ * A call below this floor is discarded by the preprocessor: no call, no formatting, and no format
+ * string left in flash, because the discarded form only names its arguments inside `sizeof` - an
+ * unevaluated context that still type-checks them. So instrumentation can be left in the source
+ * permanently and costs exactly nothing in a build that does not want it, which is the point.
+ *
+ * Defaults to NONE: opt in per build (e.g. -DDWS_LOG_LEVEL=DWS_LOG_LEVEL_WARN).
+ */
+#ifndef DWS_LOG_LEVEL
+#define DWS_LOG_LEVEL DWS_LOG_LEVEL_NONE
+#endif
+
+#if (DWS_LOG_LEVEL < DWS_LOG_LEVEL_DEBUG) || (DWS_LOG_LEVEL > DWS_LOG_LEVEL_NONE)
+#error "DeterministicESPAsyncWebServer: DWS_LOG_LEVEL must be one of the DWS_LOG_LEVEL_* constants"
 #endif
 
 /**
@@ -4698,7 +4790,7 @@
 // whose shipped example binds the seam to dws_client (smb / dnc). Miss one and its dws_client_open
 // resolves to the !NEED stub that returns -1, so the feature silently never connects on device.
 #if DWS_ENABLE_HTTP_CLIENT || DWS_ENABLE_MQTT || DWS_ENABLE_WS_CLIENT || DWS_ENABLE_RELAY || DWS_ENABLE_SMTP ||        \
-    DWS_SSH_PORT_FORWARD || DWS_ENABLE_SMB || DWS_ENABLE_DNC
+    DWS_SSH_PORT_FORWARD || DWS_ENABLE_SMB || DWS_ENABLE_DNC || DWS_ENABLE_FTP_SESSION
 #undef DWS_ENABLE_DNS_RESOLVER
 #define DWS_ENABLE_DNS_RESOLVER 1
 #define DWS_NEED_DET_CLIENT 1
@@ -6195,6 +6287,13 @@ static_assert((unsigned)ConnProto::PROTO_MESH < DWS_PROTO_MAX, "DWS_PROTO_MAX mu
 #ifndef DWS_CLIENT_CONNS
 #define DWS_CLIENT_CONNS 2
 #endif
+
+// The FTP session driver holds a control connection and a data connection at the same time; with a
+// smaller pool the data open would fail after login and every transfer would abort mid-session.
+#if DWS_ENABLE_FTP_SESSION && (DWS_CLIENT_CONNS < 2)
+#error "DeterministicESPAsyncWebServer: DWS_ENABLE_FTP_SESSION needs DWS_CLIENT_CONNS >= 2 (control + data)"
+#endif
+
 /**
  * @brief Per-connection wire receive ring size (bytes).
  *

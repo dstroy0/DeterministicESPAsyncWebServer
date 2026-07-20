@@ -615,13 +615,28 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
 
 - [x] Immutable audit logs _(shipped)_ - tamper-evident SHA-256 hash chain in a fixed RAM ring (moving anchor keeps the retained window verifiable), with a pluggable sink for store-and-forward to SD / syslog / an HTTP log service. (FDA 21 CFR Part 11 attestation/e-sign workflow still open.)
 - [x] Rotating log buffer + severity traps _(shipped)_ - `DWS_ENABLE_LOGBUF`: `services/logbuf` keeps the last `DWS_LOG_LINES` lines in a fixed RAM ring (oldest pruned, no heap), dumps them oldest-first for a `/logs` endpoint, and fires a trap callback on lines at/above a severity threshold (forward critical lines as an SNMP trap / webhook); pure + host-tested (example LogBuffer).
-- [~] Core dump to SD/FTP + live exception-decoder panel (M) _(decoder shipped)_ -
-  `DWS_ENABLE_EXC_DECODER` (`services/exc_decoder`): `dws_exc_parse` extracts a captured Guru
-  Meditation panic dump (cause, register PC + EXCVADDR, and the `Backtrace: pc:sp ...` frames, tolerating
-  missing fields + a trailing `|<-CORRUPTED`) into a structured ExcInfo, and `dws_exc_json` serializes
-  it for a live `/exception` panel; the browser / build server resolves the PCs to file:line against the
-  firmware ELF (addr2line lives off-device). Pure, host-tested (`native_exc_decoder`). _Remaining:_ the
-  core-dump-partition read + SD/FTP offload transport, and zero-overhead abstract logging (M).
+- [x] Core dump to SD/FTP + live exception-decoder panel (M) _(shipped, HW-verified)_ -
+      `DWS_ENABLE_EXC_DECODER` (`services/exc_decoder`): `dws_exc_parse` extracts a captured Guru
+      Meditation panic dump (cause, register PC + EXCVADDR, and the `Backtrace: pc:sp ...` frames, tolerating
+      missing fields + a trailing `|<-CORRUPTED`) into a structured ExcInfo, and `dws_exc_json` serializes
+      it for a live `/exception` panel; the browser / build server resolves the PCs to file:line against the
+      firmware ELF (addr2line lives off-device). **Core-dump-partition recovery** closes the reboot gap:
+      `dws_exc_coredump_present` / `_summary` (architecture-honest - a real backtrace on Xtensa, trap
+      cause/value and no invented frames on RISC-V) / `_save(fs, path)` / `_erase`, with
+      `dws_exc_coredump_read(offset, buf, len)` as the transport-agnostic seam. **SD/FTP offload** rides that
+      seam: `DWS_ENABLE_FTP_SESSION` (`services/ftp_session`) drives a real control + data connection pair
+      through the RFC 959 STOR sequence and pulls the payload through a caller-supplied source, so the dump
+      streams straight out of flash. **Zero-overhead abstract logging** is `DWS_LOG_LEVEL` +
+      `DWS_LOGD/I/W/E` (`shared_primitives/log.h`): levels below the floor are discarded by the preprocessor
+      into an unevaluated `sizeof`, so they emit no code and no flash string while still being format-checked
+    - measured byte-identical to a function with no logging at all. Host-tested (`native_exc_decoder`,
+      `native_log`, `native_ftp`). HW-verified on a **P4** (RISC-V, SD offload, erase proven by the `{}`
+      between crashes) and an **S3** (Xtensa 10-frame backtrace symbolizing to the true crash path; 21540-byte
+      dump uploaded to a live FTP server and then parsed by Espressif's own `esp-coredump -t raw`, which
+      reported `StoreProhibitedCause` / `excvaddr 0x0` / `pc <crash_handler+33>` / task `dws_worker`).
+      Example CoreDump. The HW run caught a real bug: the new session driver was missing from
+      `DWS_NEED_DET_CLIENT`, so `dws_client_open` resolved to the stub that returns -1 and the offload
+      silently never connected.
 - [x] Runtime heap/stack guardrails _(shipped)_ - `DWS_ENABLE_GUARDRAILS`: `services/guardrails` samples free heap, the heap low-water mark, the largest free block (fragmentation), and a task's remaining stack, and fires a breach callback when any crosses its `DWS_GUARDRAIL_*` floor - a proactive fail-safe hook on top of the passive /metrics numbers; evaluator + JSON host-tested, served at `/health` (example Guardrails).
 - [x] Fail-safe safe-state + deadlock-detection WDT + watchdog-protected coroutine lifelines (M)
       _(shipped)_ - `DWS_ENABLE_FAILSAFE`: `services/failsafe`, a software watchdog. Register a

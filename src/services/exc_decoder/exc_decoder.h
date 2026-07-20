@@ -66,5 +66,85 @@ bool dws_exc_parse(const char *text, ExcInfo *out);
  */
 size_t dws_exc_json(const ExcInfo *info, char *out, size_t cap);
 
+#if defined(ARDUINO)
+// --- Core-dump partition (ESP32) ---------------------------------------------------------
+//
+// A panic that reboots the device takes its console output with it. ESP-IDF also writes a core
+// dump to a flash partition, which survives the reboot - so the next boot can report what crashed
+// and hand the raw image off somewhere durable before it is overwritten by the next crash.
+//
+// Requires a `coredump` partition in the partition table (the default Arduino tables have one).
+
+namespace fs
+{
+class FS;
+}
+
+/** @brief Where the stored core dump lives, and how big it is. */
+struct ExcCoreDump
+{
+    uint32_t addr; ///< absolute flash address of the image
+    size_t size;   ///< image size in bytes
+};
+
+/**
+ * @brief Is a core dump stored, and is its checksum intact?
+ * @param out optional; filled with the image address/size when one is present.
+ * @return true if a valid dump is waiting to be read.
+ */
+bool dws_exc_coredump_present(ExcCoreDump *out);
+
+/**
+ * @brief Fill an ExcInfo from the stored dump's summary, so the existing `/exception` panel can
+ *        render a crash recovered after reboot rather than only a live console capture.
+ *
+ * Architecture differs, and the result says so honestly:
+ *  - **Xtensa** (ESP32 / S2 / S3): a real backtrace is recorded on-device, so `frames` is populated
+ *    (pc only; sp is not part of the summary) along with the exception cause and faulting address.
+ *  - **RISC-V** (C3 / C6 / H2 / P4): the summary carries a stack dump, not a backtrace - resolving
+ *    it needs DWARF off-device. `frame_count` is therefore 0 and only the faulting PC and the
+ *    machine trap cause / value are filled. Offload the image (dws_exc_coredump_save) and resolve it
+ *    with `esp-coredump` or GDB against the firmware ELF.
+ *
+ * @return true if a summary was read.
+ */
+bool dws_exc_coredump_summary(ExcInfo *out);
+
+/**
+ * @brief Read @p len raw bytes of the stored image starting at @p offset within it.
+ *
+ * The transport-agnostic seam: the image is pulled in whatever chunks the consumer wants, so a
+ * dump can go to a filesystem, up an FTP control/data pair, into an HTTP POST body, or anywhere
+ * else without this owner knowing about any of them. @p offset is relative to the start of the
+ * image (byte 0 = the size word), not to the flash partition.
+ *
+ * @return true if the whole range was read; false if no valid dump is stored or the range runs
+ *         past its end (a short read is never reported as success).
+ */
+bool dws_exc_coredump_read(size_t offset, void *buf, size_t len);
+
+/**
+ * @brief Copy the raw core-dump image out of flash into a file (SD, LittleFS, ...).
+ *
+ * Streams in DWS_EXC_COREDUMP_CHUNK-sized pieces, so it costs no heap and a large dump does not
+ * need to fit RAM.
+ *
+ * The written file is the **raw core-dump image** in ESP-IDF's flash format, not a bare ELF: a
+ * 24-byte header (the first word is the total image size) followed by an `ET_CORE` ELF at offset 24
+ * and a trailing checksum. Feed it to the host tool as raw - `esp-coredump info_corefile -c
+ * <file> -t raw <firmware.elf>` - or skip the first 24 bytes to get a plain ELF. It is stored
+ * verbatim so nothing is lost in translation.
+ *
+ * @return true if the whole image was written.
+ */
+bool dws_exc_coredump_save(fs::FS &file_sys, const char *path);
+
+/**
+ * @brief Erase the stored dump so the next boot does not re-offload the same crash.
+ *        Call only after a successful save.
+ */
+bool dws_exc_coredump_erase(void);
+#endif // ARDUINO
+
 #endif // DWS_ENABLE_EXC_DECODER
 #endif // DETERMINISTICESPASYNCWEBSERVER_EXC_DECODER_H
