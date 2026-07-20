@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 142 runnable examples under `examples/`, grouped by
+The library ships 143 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -197,6 +197,7 @@ Routing, protocols, services, and clients:
 [SNMP](../examples/L7-Application/SNMP/README.md) ·
 [SnmpTrap](../examples/L7-Application/SnmpTrap/README.md) ·
 [SNTP](../examples/L7-Application/SNTP/README.md) ·
+[SpaFallback](../examples/L7-Application/SpaFallback/README.md) ·
 [Stats](../examples/L7-Application/Stats/README.md) ·
 [StatsdMetrics](../examples/L7-Application/StatsdMetrics/README.md) ·
 [Syslog](../examples/L7-Application/Syslog/README.md) ·

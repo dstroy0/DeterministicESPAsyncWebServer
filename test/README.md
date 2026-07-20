@@ -544,7 +544,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3396 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3410 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -30375,7 +30375,7 @@ A thorough directory of all **3396 test cases** across **272 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_spa_router (2 tests)</b></summary>
+<summary><b>test_spa_router (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_has_extension</b> &mdash; <i>A dotfile directory in the path but an extensionless final segment is still a route.</i></summary>
@@ -30406,6 +30406,130 @@ A thorough directory of all **3396 test cases** across **272 suites**. Expand a 
       * <code>Assert equal int (DWSSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route("/api/state", "/api/"))</code>
       * <code>Assert equal int (DWSSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route("/api/devices/42", "/api/"))</code>
       * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/api/state", nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_ex_healthy_matches_the_plain_router</b> &mdash; <i>Route ex healthy matches the plain router</i></summary>
+
+    * **Objective**: Route ex healthy matches the plain router
+    * **Assertions**:
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route_ex("/dashboard", &c))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_FILE, dws_spa_route_ex("/app.js", &c))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route_ex("/api/state", &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_missing_shell_falls_back</b> &mdash; <i>Missing shell falls back</i></summary>
+
+    * **Objective**: Missing shell falls back
+    * **Assertions**:
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_FALLBACK, dws_spa_route_ex("/dashboard", &c))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_FALLBACK, dws_spa_route_ex("/", &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_non_scripting_client_falls_back</b> &mdash; <i>Non scripting client falls back</i></summary>
+
+    * **Objective**: Non scripting client falls back
+    * **Assertions**:
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_FALLBACK, dws_spa_route_ex("/devices/42", &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_degraded_device_falls_back</b> &mdash; <i>Degraded device falls back</i></summary>
+
+    * **Objective**: Degraded device falls back
+    * **Assertions**:
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_FALLBACK, dws_spa_route_ex("/dashboard", &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_api_still_passes_through_in_fallback</b> &mdash; <i>The property that makes the fallback worth having: its own controls POST to these endpoints,</i></summary>
+
+    * **Objective**: The property that makes the fallback worth having: its own controls POST to these endpoints,
+    * **Assertions**:
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route_ex("/api/stop", &c))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route_ex("/api/state", &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_assets_are_unaffected_by_degradation</b> &mdash; <i>An asset request stays an asset request; a real 404 is the caller's to report. Rewriting it to</i></summary>
+
+    * **Objective**: An asset request stays an asset request; a real 404 is the caller's to report. Rewriting it to
+    * **Assertions**:
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_FILE, dws_spa_route_ex("/style.css", &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_ex_null_ctx_degrades_to_the_plain_router</b> &mdash; <i>Route ex null ctx degrades to the plain router</i></summary>
+
+    * **Objective**: Route ex null ctx degrades to the plain router
+    * **Assertions**:
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route_ex("/dashboard", nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_includes_only_passing_fragments</b> &mdash; <i>Stream includes only passing fragments</i></summary>
+
+    * **Objective**: Stream includes only passing fragments
+    * **Assertions**:
+      * <code>Assert equal string ("&lt;h1&gt;HMI&lt;/h1&gt;&lt;button&gt;stop&lt;/button&gt;", drain(&s, 64).c_str())</code>
+      * <code>Assert true (dws_ui_stream_done(&s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_reflects_the_predicate_state</b> &mdash; <i>Stream reflects the predicate state</i></summary>
+
+    * **Objective**: Stream reflects the predicate state
+    * **Assertions**:
+      * <code>Assert equal string ("&lt;h1&gt;HMI&lt;/h1&gt;&lt;p&gt;ALARM&lt;/p&gt;&lt;button&gt;stop&lt;/button&gt;", drain(&s, 64).c_str())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_is_chunk_size_independent</b> &mdash; <i>The point of the cursor: a buffer smaller than a single fragment must still produce the exact</i></summary>
+
+    * **Objective**: The point of the cursor: a buffer smaller than a single fragment must still produce the exact
+    * **Assertions**:
+      * <code>Assert equal string ("&lt;h1&gt;HMI&lt;/h1&gt;&lt;p&gt;ALARM&lt;/p&gt;&lt;button&gt;stop&lt;/button&gt;", drain(&s, chunk).c_str())</code>
+      * <code>Assert true (dws_ui_stream_done(&s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_all_excluded_emits_nothing</b> &mdash; <i>Stream all excluded emits nothing</i></summary>
+
+    * **Objective**: Stream all excluded emits nothing
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_ui_stream_next(&s, buf, sizeof(buf)));</code>
+      * <code>Assert true (dws_ui_stream_done(&s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_empty_set_is_done_immediately</b> &mdash; <i>Stream empty set is done immediately</i></summary>
+
+    * **Objective**: Stream empty set is done immediately
+    * **Assertions**:
+      * <code>Assert true (dws_ui_stream_done(&s))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_ui_stream_next(&s, buf, sizeof(buf)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_skips_a_null_body</b> &mdash; <i>Stream skips a null body</i></summary>
+
+    * **Objective**: Stream skips a null body
+    * **Assertions**:
+      * <code>Assert equal string ("&lt;p&gt;b&lt;/p&gt;", drain(&s, 64).c_str())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_bad_args_do_not_crash</b> &mdash; <i>Stream bad args do not crash</i></summary>
+
+    * **Objective**: Stream bad args do not crash
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_ui_stream_next(nullptr, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_ui_stream_next(&s, nullptr, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_ui_stream_next(&s, buf, 0));</code>
+      * <code>Assert true (dws_ui_stream_done(nullptr))</code>
+      * <code>Assert true (dws_ui_stream_done(&n))</code>
   </details>
 
 </details>
