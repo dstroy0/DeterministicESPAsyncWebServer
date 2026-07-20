@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- dws_ rename sweep + SSH keyboard-interactive + SSH churn-DoS RECVED guard ([`7320023`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7320023258b094352c0b6c172759fea7b5e258b2))
+- update CHANGELOG.md [skip ci] ([`a4797aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4797aaa6318345234f94a864848b15ae872871b))
 - update CHANGELOG.md [skip ci] ([`914dc3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/914dc3b94ef0079eaa88e4cfdc4d4439a38c0a25))
 - update CHANGELOG.md [skip ci] ([`1c00eab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c00eab19f375d1997c09c636ef613de91e1561a))
 - update test report + coverage [skip ci] ([`6d3c256`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d3c25630fa6f84ab6d22d3a6d439d78747db676))
@@ -22,6 +24,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- add keyboard-interactive to the FEATURES.md grid + regenerate ([`4451d2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4451d2e26932a5d57eaae9c98932fb6dbda50ae5))
+- update ESP32 build footprints [skip ci] ([`c44d5fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c44d5fe6263efecf143b5d47db97077ef29a7d2e))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e09e8d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e09e8d4e0d94261927cff19357125bedbda7acdd))
 - note sntrup761x25519-sha512 server HW-verified on ESP32-P4 vs OpenSSH 10 ([`60ebad6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/60ebad6554999090a5438158a256577736d5b2be))
 - update ESP32 build footprints [skip ci] ([`5aae8e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5aae8e54d42b2350a0bfedcd2b28d44d8f4ecc6e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1702f40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1702f40e539b824a4f1a38b184ea7429945d4496))
@@ -3466,7 +3471,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Bug Fixes
 
 - overflow-safe bounds in command emitters (SonarCloud) ([`4d177b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d177b4594ba2eb81d36acea13bc652b932df302))
-- cast scoped HttpClientError to int at dws_webhook_post return ([`5ae0a5b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ae0a5bb287ec256eb1953c0d0a382ed5d79f7e7))
+- cast scoped HttpClientError to int at detws_webhook_post return ([`5ae0a5b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ae0a5bb287ec256eb1953c0d0a382ed5d79f7e7))
 
 ### CI / Build
 
@@ -5137,7 +5142,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - hoist the AES S-box into a shared primitive (dedup) ([`be31581`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be31581db93542c9cd6bbd62ee401706cf735f60))
 - pull remaining tunable defaults into ServerConfig.h under their flag guards ([`f6bfc3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6bfc3ac6b462ca5eb5fed4fa757f71f5242ba6f))
 - dedup repeated literals; move OPC UA + provisioning string DEFAULTS to ServerConfig.h under their flag guards ([`199a58b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/199a58ba6b99df8cf6d47ef9f9d58108b8c07016))
-- drop det_ prefix, transport->tcp/udp, DeterministicESPAsyncWebServer->dwserver, DWSConfig->ServerConfig ([`3f8fcbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f8fcbd068f84040fe7dd0343c2f0a52270f0c37))
+- drop det_ prefix, transport->tcp/udp, DeterministicESPAsyncWebServer->dwserver, DetWebServerConfig->ServerConfig ([`3f8fcbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f8fcbd068f84040fe7dd0343c2f0a52270f0c37))
 - own the group14 Montgomery constants in one Group14Ctx (owner sweep) ([`df4e000`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df4e000caac9ac92da47f82e08638bf78fc69683))
 - own the capture sink in one PromiscCtx (owner sweep) ([`8a73043`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a730433b29078dcd3224b219948f3398759cf65))
 - own send/instance/webdav state in SendCtx/InstanceCtx/DavBufCtx/DavPutCtx (owner sweep) ([`7ab3a2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ab3a2f5c74ab4fc4ed934ffc71190b9f509e957))
@@ -5307,7 +5312,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - cover non-object/bad-member find, int string/non-digit rejects, invalid \u (branch 76->80%) ([`47c781b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47c781b91b6ee6f88e71110535ff2b7641c6a60b))
 - cover send-family guards + 405/WS-400/WS-426 paths (dwserver batch) ([`941535d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/941535d0cfdfb1577b962abc866e586db98b8c72))
 - cover route-registration variant table-full guards (dwserver 867-934) ([`e24dbf2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e24dbf218418189d4875206582928dd735070fee))
-- cover DWS::restart + stop teardown (dwserver 801-825) ([`bbb4a96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bbb4a96a5785c5df98ab18238a8f0d9118ba475d))
+- cover DetWebServer::restart + stop teardown (dwserver 801-825) ([`bbb4a96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bbb4a96a5785c5df98ab18238a8f0d9118ba475d))
 - cover overflow / null / parser-edge branches (branch 59->81%) ([`1448399`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/144839951239ef5bad29ac5d626ce261b15062c2))
 - cover the host TWAI stubs fail-closed (77->100%) ([`c37827d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c37827d5607b671154358106520fcbe593277376))
 - cover form-field null guards + host load/clear stubs (72->95%) ([`04118db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04118dbdc6b72e05178c22fb29c4faa28cdd5923))
@@ -7141,7 +7146,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
-- serve HTTP/3 through the shared DWS route pipeline ([`d83c1ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d83c1abbd8f51e3879c7ece638b0d1301de80118))
+- serve HTTP/3 through the shared DetWebServer route pipeline ([`d83c1ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d83c1abbd8f51e3879c7ece638b0d1301de80118))
 
 </details>
 
@@ -8536,7 +8541,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
-- centralize all tuning knobs in DWSConfig.h ([`3852708`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38527081ab839aeeb2a72c4c6dc26cffa343fa43))
+- centralize all tuning knobs in DetWebServerConfig.h ([`3852708`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38527081ab839aeeb2a72c4c6dc26cffa343fa43))
 
 </details>
 
