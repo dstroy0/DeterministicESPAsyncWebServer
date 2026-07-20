@@ -2083,6 +2083,12 @@
       "src": ["+<services/logbuf/logbuf.cpp>"],
       "tests": ["test_logbuf"]
     },
+    "native_power_mgmt": {
+      "desc": "SoC power governor (services/power_mgmt): the pure clock decision from load, die\ntemperature and reset reason - load-based scaling, the thermal hysteresis that stops a part parked at\nthe limit from oscillating (asserted by feeding the plan's own output back for 20 ticks and counting\none transition), post-brownout recovery holding the floor even when busy and cool, the precedence\nbetween the three, and INT16_MIN meaning no sensor rather than ice-cold.",
+      "flags": ["-DDWS_ENABLE_POWER_MGMT=1"],
+      "src": ["+<services/power_mgmt/power_mgmt.cpp>"],
+      "tests": ["test_power_mgmt"]
+    },
     "native_hotswap": {
       "desc": "Removable-storage hot-swap safeties (services/hotswap): the ABSENT/READY/FAULTED state\nmachine - a run of consecutive I/O errors faults a volume while a single one does not, any success\nresets the run, the fail counter saturates instead of wrapping, probe attempts are rate-limited (and\nwrap-safe across a millis() rollover), present-but-unmountable stays absent, and a full\nremoval/reinsertion cycle returns to a clean mount. Pure host tests with a synthetic clock.",
       "flags": ["-DDWS_ENABLE_HOTSWAP=1"],

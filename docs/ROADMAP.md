@@ -474,13 +474,25 @@ preempting queue, so sensing shares the real-time ingest path.
 ## Power & radio management
 
 - [x] Radio power _(shipped)_ - `DWS_ENABLE_RADIO_POWER`: `services/radio_power` applies a WiFi modem-sleep mode (`DWS_RADIO_WIFI_PS` none/min/max) + an optional max-TX cap (`DWS_RADIO_MAX_TX_DBM`) in one call (esp_wifi_set_ps / set_max_tx_power), trading throughput for lower average power; mode names host-tested, apply/readback HW-verified (example RadioPower). Remaining: BT-coexistence preference (only relevant on a BT-enabled build).
-- [~] Dynamic network sleep modes / **sleep-cycle scheduler (M)** _(scheduler shipped)_ -
-  `DWS_ENABLE_SLEEP_SCHED`: `services/sleep_sched` `dws_sleep_next()` decides, from the idle time,
-  how long a low-power device should sleep (0 = awake), ramping the window from a floor up to a
-  ceiling (doubling every `ramp_ms`) the longer the idle streak runs. Pure wrap-safe decision core,
-  fully host-tested (`native_sleep_sched`); the app applies the window via light / modem / deep sleep.
-  Complements `services/radio_power`. _Remaining (need real hardware to verify):_ dynamic power
-  scaling, thermal throttling, brownout recovery, peripheral power gating (M).
+- [x] Dynamic network sleep modes / **sleep-cycle scheduler (M)** _(shipped, HW-verified)_ -
+      `DWS_ENABLE_SLEEP_SCHED`: `services/sleep_sched` `dws_sleep_next()` decides, from the idle time,
+      how long a low-power device should sleep (0 = awake), ramping the window from a floor up to a
+      ceiling (doubling every `ramp_ms`) the longer the idle streak runs. Pure wrap-safe decision core,
+      fully host-tested (`native_sleep_sched`); the app applies the window via light / modem / deep sleep.
+      Complements `services/radio_power`. **The SoC side** is `DWS_ENABLE_POWER_MGMT`
+      (`services/power_mgmt`): `dws_power_plan()` sets the CPU clock each tick with brownout beating
+      thermal beating load - idle work drops to the floor, a hot die throttles (the caller feeds the
+      previous throttle flag back, which supplies the hysteresis), a board that just browned out holds
+      the floor for a settle window instead of re-collapsing its rail, and `dws_power_gate_bt()` hands
+      back the Bluetooth power domain on a build with no BLE. Pure core, host-tested
+      (`native_power_mgmt`, 19 cases). HW-verified on an **S3** with its real die sensor: BT domain
+      released, an idle server clocked itself 240 -> 80 MHz, load took it back to 240 with the die
+      rising 36 -> 38 C, and on a reachable threshold band the throttle engaged and released at exactly
+      the configured points. The HW run produced a tuning rule now documented at the flag: the
+      hysteresis band must exceed the temperature swing the clock change itself causes (~2 C for
+      240 -> 80 MHz within one tick), or the throttle self-sustains however correct the comparison is.
+      Example PowerGovernor. _Follow-up:_ forcing a real brownout needs a bench supply that can sag the
+      rail on demand; the detection is live, the policy it feeds is host-tested.
 
 ## Security & auth
 

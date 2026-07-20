@@ -1411,7 +1411,8 @@
     "spisize",
     "ZERORET",
     "hexdumps",
-    "picv"
+    "picv",
+    "BTDM"
   ],
   "ignorePaths": [
     "node_modules/**",

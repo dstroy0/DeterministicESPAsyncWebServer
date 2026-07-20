@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **253 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **254 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -230,6 +230,7 @@ The native test matrix has **253 environments**, one per feature, generated from
 | `native_pca9685` | `WS_ENABLE_PCA9685=1` | `test_pca9685` | PCA9685 PWM/servo codec (services/pca9685): the PRESCALE computation from a PWM frequency (with clamping), the per-channel register address, the servo pulse-width -> 12-bit count conversion (with clam... |
 | `native_pentest` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_MASTER=1`, `WS_ENABLE_TOTP=1`, `WS_ENABLE_MULTIPART=1`, `WS_ENABLE_CBOR=1`, `WS_ENABLE_MSGPACK=1`, `WS_ENABLE_COAP=1`, `WS_ENABLE_COAP_BLOCK=1`, `WS_COAP_BLOCK_SZX_MAX=2`, `WS_COAP_BLOCK1_MAX=128`, `WS_ENABLE_SNMP=1`, `WS_ENABLE_SQLITE=1`, `WS_ENABLE_REDIS=1`, `WS_ENABLE_OPCUA=1`, `WS_ENABLE_GRAPHQL=1`, `WS_ENABLE_DNS_SERVER=1`, `WS_ENABLE_DNP3=1`, `WS_ENABLE_STOMP=1`, `WS_ENABLE_SMB=1`, `WS_ENABLE_DNC=1`, `WS_ENABLE_FTP=1`, `WS_ENABLE_FINS=1`, `WS_ENABLE_MELSEC=1`, `WS_ENABLE_CIP=1`, `WS_ENABLE_ENIP=1`, `WS_ENABLE_DF1=1`, `WS_ENABLE_BACNET=1`, `WS_ENABLE_COTP=1`, `WS_ENABLE_C37118=1`, `WS_ENABLE_JWT=1`, `WS_ENABLE_DIRECTNET=1`, `WS_ENABLE_CCLINK=1`, `WS_ENABLE_AMQP=1`, `WS_ENABLE_MMS=1`, `WS_ENABLE_DDS=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
 | `native_pn532` | `WS_ENABLE_PN532=1`, `WS_PN532_MAX_DATA=8` | `test_pn532` | PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame build/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS + DCS checksums), a round... |
+| `native_power_mgmt` | `WS_ENABLE_POWER_MGMT=1` | `test_power_mgmt` | SoC power governor (services/power_mgmt): the pure clock decision from load, die temperature and reset reason - load-based scaling, the thermal hysteresis that stops a part parked at the limit from os... |
 | `native_powerlink` | `WS_ENABLE_POWERLINK=1` | `test_powerlink` | Ethernet POWERLINK basic frame codec (services/powerlink): the EPL cyclic frames ([messageType][dest][source][payload]) - SoC/PReq/PRes/SoA - build + parse, over raw L2 (0x88AB). |
 | `native_pqc` | `WS_ENABLE_PQC_KEX=1` | `test_pqc_sha3`, `test_pqc_mlkem` | Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the Keccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the mlkem768x25519-sha256 (SSH)... |
 | `native_preempt_queue` | `WS_ENABLE_PREEMPT_QUEUE=1`, `WS_PQ_DEPTH=4`, `WS_PQ_ITEM_SIZE=4` | `test_preempt_queue` | Preempting work queue (services/preempt_queue), v5 real-time ingest: the host fixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water, and drain/handler dispatch. |
@@ -543,7 +544,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3369 test cases** across **271 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3388 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -22724,6 +22725,185 @@ A thorough directory of all **3369 test cases** across **271 suites**. Expand a 
       * <code>Assert equal int (0, dws_pn532_parse_frame(nullptr, 10, &tfi, &pdata, &pdata_len))</code>
       * <code>Assert false (dws_pn532_is_ack(tiny, sizeof(tiny)))</code>
       * <code>Assert false (dws_pn532_is_ack(nullptr, 6))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_power_mgmt (19 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_idle_runs_at_the_floor</b> &mdash; <i>Idle runs at the floor</i></summary>
+
+    * **Objective**: Idle runs at the floor
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(80, p.cpu_mhz);</code>
+      * <code>Assert false (p.throttled)</code>
+      * <code>Assert false (p.recovering)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_busy_runs_at_the_ceiling</b> &mdash; <i>Busy runs at the ceiling</i></summary>
+
+    * **Objective**: Busy runs at the ceiling
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(240, p.cpu_mhz);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_busy_threshold_is_inclusive</b> &mdash; <i>Busy threshold is inclusive</i></summary>
+
+    * **Objective**: Busy threshold is inclusive
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(80, plan(39, 40, false, 60000, false).cpu_mhz);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(240, plan(40, 40, false, 60000, false).cpu_mhz);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_load_above_100_is_clamped_not_wrapped</b> &mdash; <i>Load above 100 is clamped not wrapped</i></summary>
+
+    * **Objective**: Load above 100 is clamped not wrapped
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(240, plan(255, 40, false, 60000, false).cpu_mhz);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hot_die_throttles_even_when_busy</b> &mdash; <i>Hot die throttles even when busy</i></summary>
+
+    * **Objective**: Hot die throttles even when busy
+    * **Assertions**:
+      * <code>Assert true (p.throttled)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(80, p.cpu_mhz);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_throttle_threshold_is_inclusive</b> &mdash; <i>Throttle threshold is inclusive</i></summary>
+
+    * **Objective**: Throttle threshold is inclusive
+    * **Assertions**:
+      * <code>Assert false (plan(100, 79, false, 60000, false).throttled)</code>
+      * <code>Assert true (plan(100, 80, false, 60000, false).throttled)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_throttle_holds_between_the_two_thresholds</b> &mdash; <i>75 C is below the throttle point but above the restore point: once throttled it must stay</i></summary>
+
+    * **Objective**: 75 C is below the throttle point but above the restore point: once throttled it must stay
+    * **Assertions**:
+      * <code>Assert true (plan(100, 75, false, 60000, true).throttled)</code>
+      * <code>Assert false (plan(100, 75, false, 60000, false).throttled)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_throttle_releases_at_the_cool_threshold</b> &mdash; <i>Throttle releases at the cool threshold</i></summary>
+
+    * **Objective**: Throttle releases at the cool threshold
+    * **Assertions**:
+      * <code>Assert true (plan(100, 71, false, 60000, true).throttled)</code>
+      * <code>Assert false (plan(100, 70, false, 60000, true).throttled)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_no_oscillation_when_parked_at_the_limit</b> &mdash; <i>Feed the plan's own output back in, exactly as a caller does, while the die sits at the</i></summary>
+
+    * **Objective**: Feed the plan's own output back in, exactly as a caller does, while the die sits at the
+    * **Assertions**:
+      * <code>Assert equal int (1, changes)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_brownout_boot_holds_the_floor_even_when_busy_and_cool</b> &mdash; <i>Brownout boot holds the floor even when busy and cool</i></summary>
+
+    * **Objective**: Brownout boot holds the floor even when busy and cool
+    * **Assertions**:
+      * <code>Assert true (p.recovering)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(80, p.cpu_mhz);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recovery_window_ends</b> &mdash; <i>Recovery window ends</i></summary>
+
+    * **Objective**: Recovery window ends
+    * **Assertions**:
+      * <code>Assert true (plan(100, 25, true, 9999, false).recovering)</code>
+      * <code>Assert false (p.recovering)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(240, p.cpu_mhz); // and full speed is allowed again</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_normal_boot_never_recovers</b> &mdash; <i>Normal boot never recovers</i></summary>
+
+    * **Objective**: Normal boot never recovers
+    * **Assertions**:
+      * <code>Assert false (plan(100, 25, false, 0, false).recovering)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(240, plan(100, 25, false, 0, false).cpu_mhz);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_brownout_and_hot_both_reported</b> &mdash; <i>Precedence puts both at the floor, but the flags must still say why - a caller logging this</i></summary>
+
+    * **Objective**: Precedence puts both at the floor, but the flags must still say why - a caller logging this
+    * **Assertions**:
+      * <code>Assert true (p.recovering)</code>
+      * <code>Assert true (p.throttled)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(80, p.cpu_mhz);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_missing_sensor_does_not_read_as_ice_cold</b> &mdash; <i>INT16_MIN means "this part has no sensor". Treating it as a temperature would both refuse to</i></summary>
+
+    * **Objective**: INT16_MIN means "this part has no sensor". Treating it as a temperature would both refuse to
+    * **Assertions**:
+      * <code>Assert false (p.throttled)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(240, p.cpu_mhz);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_cfg_is_not_a_crash</b> &mdash; <i>Null cfg is not a crash</i></summary>
+
+    * **Objective**: Null cfg is not a crash
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, p.cpu_mhz);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_defaults_are_self_consistent</b> &mdash; <i>Defaults are self consistent</i></summary>
+
+    * **Objective**: Defaults are self consistent
+    * **Assertions**:
+      * <code>Assert true (d.temp_cool_c &lt; d.temp_hot_c)</code>
+      * <code>Assert true (d.mhz_min &lt;= d.mhz_max)</code>
+      * <code>Assert true (d.busy_pct &lt;= 100)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_json</b> &mdash; <i>Json</i></summary>
+
+    * **Objective**: Json
+    * **Assertions**:
+      * <code>Assert true (dws_power_json(&p, 41, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert equal string ("{\\"cpu_mhz\\":80,\\"throttled\\":false,\\"recovering\\":false,\\"temp_c\\":41}", buf)</code>
+      * <code>Assert true (dws_power_json(&h, 85, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert equal string ("{\\"cpu_mhz\\":80,\\"throttled\\":true,\\"recovering\\":false,\\"temp_c\\":85}", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_json_reports_a_missing_sensor_as_null</b> &mdash; <i>Json reports a missing sensor as null</i></summary>
+
+    * **Objective**: Json reports a missing sensor as null
+    * **Assertions**:
+      * <code>Assert true (dws_power_json(&p, INT16_MIN, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert equal string ("{\\"cpu_mhz\\":80,\\"throttled\\":false,\\"recovering\\":false,\\"temp_c\\":null}", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_json_overflow_is_fail_closed</b> &mdash; <i>Json overflow is fail closed</i></summary>
+
+    * **Objective**: Json overflow is fail closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_power_json(&p, 41, tiny, sizeof(tiny)));</code>
+      * <code>Assert equal string ("", tiny)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_power_json(nullptr, 41, tiny, sizeof(tiny)));</code>
   </details>
 
 </details>

@@ -2974,6 +2974,75 @@
 #endif
 
 /**
+ * @brief Opt-in SoC power governor (DWS_ENABLE_POWER_MGMT).
+ *
+ * services/radio_power owns the radio and services/sleep_sched decides how long to sleep; neither
+ * owns the SoC. When set, services/power_mgmt decides the CPU clock from load, die temperature and
+ * the reset reason: idle work runs at the floor instead of spinning a 240 MHz core, a hot die clocks
+ * down (with a lower restore threshold, so a part sitting at the limit does not oscillate), and a
+ * board that just browned out comes back up at the floor for a settle window rather than slamming
+ * into the load that collapsed its supply. It can also release the Bluetooth power domain on a build
+ * that never uses BT. Pure decision core, host-tested; the binding only reads sensors and applies.
+ * Default off.
+ */
+#ifndef DWS_ENABLE_POWER_MGMT
+#define DWS_ENABLE_POWER_MGMT 0
+#endif
+
+/** @brief CPU clock (MHz) when there is work to do. */
+#ifndef DWS_POWER_MHZ_MAX
+#define DWS_POWER_MHZ_MAX 240
+#endif
+
+/** @brief CPU clock (MHz) when idle, thermally throttled, or recovering from a brownout. */
+#ifndef DWS_POWER_MHZ_MIN
+#define DWS_POWER_MHZ_MIN 80
+#endif
+
+/** @brief Load percentage at/above which the ceiling clock is used. */
+#ifndef DWS_POWER_BUSY_PCT
+#define DWS_POWER_BUSY_PCT 40
+#endif
+
+/** @brief Die temperature (C) at/above which the clock is throttled. */
+#ifndef DWS_POWER_TEMP_HOT_C
+#define DWS_POWER_TEMP_HOT_C 80
+#endif
+
+/**
+ * @brief Die temperature (C) at/below which the throttle is released.
+ *
+ * Deliberately below DWS_POWER_TEMP_HOT_C: with a single threshold a part sitting exactly at the
+ * limit would flap between ceiling and floor every tick, which is worse than either state.
+ *
+ * The gap has to be wider than the temperature swing the clock change *itself* causes, or the
+ * governor oscillates no matter how correct the hysteresis is. Measured on an ESP32-S3: dropping
+ * 240 -> 80 MHz cools the die about 2 C within one 500 ms tick, and going back up reheats it by the
+ * same amount. A band narrower than that swing is self-sustaining - the throttle's own effect
+ * carries the die back across the release threshold. The 10 C default clears it with room to spare.
+ */
+#ifndef DWS_POWER_TEMP_COOL_C
+#define DWS_POWER_TEMP_COOL_C 70
+#endif
+
+/** @brief How long (ms) to hold the floor clock after a brownout reset before ramping back up. */
+#ifndef DWS_POWER_RECOVER_MS
+#define DWS_POWER_RECOVER_MS 10000
+#endif
+
+#if DWS_ENABLE_POWER_MGMT && (DWS_POWER_TEMP_COOL_C >= DWS_POWER_TEMP_HOT_C)
+#error "DeterministicESPAsyncWebServer: DWS_POWER_TEMP_COOL_C must be below DWS_POWER_TEMP_HOT_C (hysteresis)"
+#endif
+
+#if DWS_ENABLE_POWER_MGMT && (DWS_POWER_MHZ_MIN > DWS_POWER_MHZ_MAX)
+#error "DeterministicESPAsyncWebServer: DWS_POWER_MHZ_MIN must not exceed DWS_POWER_MHZ_MAX"
+#endif
+
+#if DWS_ENABLE_POWER_MGMT && (DWS_POWER_BUSY_PCT > 100)
+#error "DeterministicESPAsyncWebServer: DWS_POWER_BUSY_PCT must be 0..100"
+#endif
+
+/**
  * @brief Opt-in removable-storage hot-swap safeties (DWS_ENABLE_HOTSWAP).
  *
  * An SD card is a connector, and it can be pulled mid-write. The failure is quiet: the driver still
