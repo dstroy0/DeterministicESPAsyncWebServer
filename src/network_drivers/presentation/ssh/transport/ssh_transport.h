@@ -35,6 +35,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_TRANSPORT_H
 
 #include "ServerConfig.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_kexhash.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include <stddef.h>
@@ -91,7 +92,8 @@ enum class SshKexAlg : uint8_t
     SSH_KEX_DH_GROUP14 = 0,      ///< diffie-hellman-group14-sha256 (HW-accelerated MPI on ESP32)
     SSH_KEX_CURVE25519 = 1,      ///< curve25519-sha256 (RFC 8731, X25519)
     SSH_KEX_MLKEM768_X25519 = 2, ///< mlkem768x25519-sha256 (PQ/T hybrid, draft-ietf-sshm-mlkem-hybrid-kex)
-    SSH_KEX_ECDH_NISTP256 = 3    ///< ecdh-sha2-nistp256 (NIST P-256 ECDH, RFC 5656 §4)
+    SSH_KEX_ECDH_NISTP256 = 3,   ///< ecdh-sha2-nistp256 (NIST P-256 ECDH, RFC 5656 §4)
+    SSH_KEX_SNTRUP761_X25519 = 4 ///< sntrup761x25519-sha512@openssh.com (PQ/T hybrid, SHA-512 exchange hash)
 };
 
 /** @brief Negotiated host-key / signature algorithm. */
@@ -125,8 +127,9 @@ struct SshSession
     uint8_t i_s[SSH_KEXINIT_S_MAX]; ///< Server KEXINIT payload (for H).
     uint16_t i_s_len;               ///< Length of i_s.
 
-    uint8_t session_id[SSH_SHA256_DIGEST_LEN]; ///< H from the first KEX (RFC 4253 §7.2).
-    bool have_session_id;                      ///< True once the first KEX completes.
+    uint8_t session_id[SSH_KEXHASH_MAX_LEN]; ///< H from the first KEX (RFC 4253 §7.2); 32 or 64 bytes.
+    uint8_t session_id_len;                  ///< session_id length (the first KEX's exchange-hash length).
+    bool have_session_id;                    ///< True once the first KEX completes.
 
     bool ext_info_c;       ///< Client advertised ext-info-c (RFC 8308): send EXT_INFO.
     bool authed;           ///< True after successful user authentication.

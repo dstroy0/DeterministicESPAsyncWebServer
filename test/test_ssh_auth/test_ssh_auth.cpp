@@ -270,6 +270,7 @@ static void set_session_id_0_to_31()
 {
     for (int j = 0; j < 32; j++)
         ssh_sess[0].session_id[j] = (uint8_t)j;
+    ssh_sess[0].session_id_len = 32; // a completed SHA-256 KEX
     ssh_sess[0].have_session_id = true;
 }
 

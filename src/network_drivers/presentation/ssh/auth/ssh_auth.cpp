@@ -366,13 +366,15 @@ static int dws_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t 
     if (!req->has_signature)
         return build_pk_ok(req, out, out_len, cap); // probe: ask for a signature
 
-    // Verify the signature over string(session_id) || signed_prefix.
-    uint8_t signed_data[SSH_PKT_BUF_SIZE + 4 + SSH_SHA256_DIGEST_LEN];
+    // Verify the signature over string(session_id) || signed_prefix. The session_id is the first KEX's
+    // exchange hash: 32 bytes (SHA-256 methods) or 64 (sntrup761x25519-sha512).
+    const size_t sid_len = ssh_sess[i].session_id_len;
+    uint8_t signed_data[SSH_PKT_BUF_SIZE + 4 + SSH_KEXHASH_MAX_LEN];
     size_t sd = 0;
-    put_u32(signed_data + sd, SSH_SHA256_DIGEST_LEN);
+    put_u32(signed_data + sd, (uint32_t)sid_len);
     sd += 4;
-    memcpy(signed_data + sd, ssh_sess[i].session_id, SSH_SHA256_DIGEST_LEN);
-    sd += SSH_SHA256_DIGEST_LEN;
+    memcpy(signed_data + sd, ssh_sess[i].session_id, sid_len);
+    sd += sid_len;
     if (req->signed_prefix_len > SSH_PKT_BUF_SIZE)
         return dws_ssh_auth_build_failure(out, out_len, cap, false);
     memcpy(signed_data + sd, req->signed_prefix, req->signed_prefix_len);

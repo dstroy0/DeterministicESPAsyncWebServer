@@ -607,26 +607,27 @@ int ssh_extinfo_build(uint8_t *out, size_t *len, size_t cap)
 }
 
 // ---------------------------------------------------------------------------
-// Exchange hash H (RFC 4253 §8) - streamed into SHA-256, no large buffer.
+// Exchange hash H (RFC 4253 §8) - streamed into the negotiated KEX hash (SHA-256 or SHA-512 via
+// SshKexHash), no large buffer.
 // ---------------------------------------------------------------------------
 
 // Hash a 4-byte big-endian length prefix.
-static void hash_u32(SshSha256Ctx *ctx, uint32_t v)
+static void hash_u32(SshKexHash *h, uint32_t v)
 {
     uint8_t b[4] = {(uint8_t)(v >> 24), (uint8_t)(v >> 16), (uint8_t)(v >> 8), (uint8_t)v};
-    ssh_sha256_update(ctx, b, 4);
+    ssh_kexhash_update(h, b, 4);
 }
 
 // Hash an SSH string: uint32 length + raw bytes.
-static void hash_string(SshSha256Ctx *ctx, const uint8_t *data, size_t len)
+static void hash_string(SshKexHash *h, const uint8_t *data, size_t len)
 {
-    hash_u32(ctx, (uint32_t)len);
-    ssh_sha256_update(ctx, data, len);
+    hash_u32(h, (uint32_t)len);
+    ssh_kexhash_update(h, data, len);
 }
 
 // Hash an SSH mpint from a fixed-width big-endian integer: strip leading zero
 // bytes, prepend a 0x00 if the top bit is set (to keep it positive).
-static void hash_mpint(SshSha256Ctx *ctx, const uint8_t *be, size_t len)
+static void hash_mpint(SshKexHash *h, const uint8_t *be, size_t len)
 {
     size_t off = 0;
     while (off < len && be[off] == 0)
@@ -634,18 +635,24 @@ static void hash_mpint(SshSha256Ctx *ctx, const uint8_t *be, size_t len)
     if (off == len)
     {
         // Value is zero → mpint is an empty string.
-        hash_u32(ctx, 0);
+        hash_u32(h, 0);
         return;
     }
     bool pad = (be[off] & 0x80u) != 0;
     uint32_t mlen = (uint32_t)(len - off) + (pad ? 1u : 0u);
-    hash_u32(ctx, mlen);
+    hash_u32(h, mlen);
     if (pad)
     {
         uint8_t zero = 0;
-        ssh_sha256_update(ctx, &zero, 1);
+        ssh_kexhash_update(h, &zero, 1);
     }
-    ssh_sha256_update(ctx, be + off, len - off);
+    ssh_kexhash_update(h, be + off, len - off);
+}
+
+// The exchange-hash algorithm for a KEX method: SHA-512 for sntrup761x25519-sha512, else SHA-256.
+static inline bool kex_is_sha512(SshKexAlg a)
+{
+    return a == SshKexAlg::SSH_KEX_SNTRUP761_X25519;
 }
 
 // Method-neutral exchange hash. The client/server public values are hashed as SSH
@@ -654,9 +661,12 @@ static void hash_mpint(SshSha256Ctx *ctx, const uint8_t *be, size_t len)
 // string for the hybrid (its K is a fixed-length HASH output, RFC 4251 §5 / draft-ietf-sshm). cpub/
 // spub are big-endian, right-aligned in their buffers, so hash_mpint / hash_string produce the
 // canonical minimal encoding.
+// @p out holds SSH_KEXHASH_MAX_LEN; the exchange-hash length (32 or 64) is written to @p out_len and
+// selected by @p is512 (the negotiated KEX's hash). Returns 0, or -1 on a bad slot.
 static int compute_exchange_hash(uint8_t i, bool pub_is_string, const uint8_t *cpub, size_t cpub_len,
                                  const uint8_t *spub, size_t spub_len, const uint8_t *k_be, size_t k_len,
-                                 const uint8_t *ks, size_t ks_len, uint8_t out[SSH_SHA256_DIGEST_LEN], bool k_is_string)
+                                 const uint8_t *ks, size_t ks_len, uint8_t out[SSH_KEXHASH_MAX_LEN], size_t *out_len,
+                                 bool k_is_string, bool is512)
 {
     if (i >= MAX_SSH_CONNS)
         return -1;
@@ -664,35 +674,36 @@ static int compute_exchange_hash(uint8_t i, bool pub_is_string, const uint8_t *c
 
     static const char *const v_s = SSH_SERVER_VERSION;
 
-    SshSha256Ctx ctx;
-    ssh_sha256_init(&ctx);
-    hash_string(&ctx, (const uint8_t *)s->v_c, s->v_c_len);                  // V_C
-    hash_string(&ctx, (const uint8_t *)v_s, sizeof(SSH_SERVER_VERSION) - 1); // V_S
-    hash_string(&ctx, s->i_c, s->i_c_len);                                   // I_C
-    hash_string(&ctx, s->i_s, s->i_s_len);                                   // I_S
-    hash_string(&ctx, ks, ks_len);                                           // K_S
+    SshKexHash h;
+    ssh_kexhash_init(&h, is512);
+    hash_string(&h, (const uint8_t *)s->v_c, s->v_c_len);                  // V_C
+    hash_string(&h, (const uint8_t *)v_s, sizeof(SSH_SERVER_VERSION) - 1); // V_S
+    hash_string(&h, s->i_c, s->i_c_len);                                   // I_C
+    hash_string(&h, s->i_s, s->i_s_len);                                   // I_S
+    hash_string(&h, ks, ks_len);                                           // K_S
     if (pub_is_string)
     {
-        hash_string(&ctx, cpub, cpub_len); // Q_C
-        hash_string(&ctx, spub, spub_len); // Q_S
+        hash_string(&h, cpub, cpub_len); // Q_C
+        hash_string(&h, spub, spub_len); // Q_S
     }
     else
     {
-        hash_mpint(&ctx, cpub, cpub_len); // e
-        hash_mpint(&ctx, spub, spub_len); // f
+        hash_mpint(&h, cpub, cpub_len); // e
+        hash_mpint(&h, spub, spub_len); // f
     }
     if (k_is_string)
-        hash_string(&ctx, k_be, k_len); // hybrid: K is a fixed-length HASH output (RFC 4251 string)
+        hash_string(&h, k_be, k_len); // hybrid: K is a fixed-length HASH output (RFC 4251 string)
     else
-        hash_mpint(&ctx, k_be, k_len); // classical: K is an mpint
-    ssh_sha256_final(&ctx, out);
+        hash_mpint(&h, k_be, k_len); // classical: K is an mpint
+    *out_len = ssh_kexhash_final(&h, out);
     return 0;
 }
 
 int ssh_kex_exchange_hash(uint8_t i, const uint8_t *e_be, const uint8_t *f_be, const uint8_t *k_be, const uint8_t *ks,
                           size_t ks_len, uint8_t out[SSH_SHA256_DIGEST_LEN])
 {
-    return compute_exchange_hash(i, false, e_be, 256, f_be, 256, k_be, 256, ks, ks_len, out, false);
+    size_t out_len = 0; // dh-group14-sha256 is always SHA-256
+    return compute_exchange_hash(i, false, e_be, 256, f_be, 256, k_be, 256, ks, ks_len, out, &out_len, false, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -802,14 +813,14 @@ static int encode_hostkey(uint8_t i, uint8_t *ks, size_t *ks_len, size_t cap)
 
 // Sign the exchange hash H with the negotiated host key. Writes the raw signature (no
 // SSH framing) plus its algorithm name; the caller wraps it as the signature blob.
-static int sign_hash(uint8_t i, const uint8_t H[SSH_SHA256_DIGEST_LEN], uint8_t *sig, size_t *sig_len, size_t sig_cap,
+static int sign_hash(uint8_t i, const uint8_t *H, size_t h_len, uint8_t *sig, size_t *sig_len, size_t sig_cap,
                      const char **sig_name)
 {
     if (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_ED25519)
     {
         if (sig_cap < 64) // GCOVR_EXCL_LINE  the caller's sig buffer is SSH_RSA_SIG_BYTES (256) >= 64
             return -1;    // GCOVR_EXCL_LINE
-        ssh_ed25519_sign(sig, H, SSH_SHA256_DIGEST_LEN, s_sshtr.ed_seed);
+        ssh_ed25519_sign(sig, H, h_len, s_sshtr.ed_seed);
         *sig_len = 64;
         *sig_name = HOSTKEY_ED; // "ssh-ed25519"
         return 0;
@@ -817,7 +828,7 @@ static int sign_hash(uint8_t i, const uint8_t H[SSH_SHA256_DIGEST_LEN], uint8_t 
     if (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256)
     {
         uint8_t raw[SSH_ECDSA_P256_SIG_LEN]; // r || s (32 + 32)
-        if (!ssh_ecdsa_p256_sign(raw, H, SSH_SHA256_DIGEST_LEN, s_sshtr.ecdsa_priv))
+        if (!ssh_ecdsa_p256_sign(raw, H, h_len, s_sshtr.ecdsa_priv))
             return -1; // GCOVR_EXCL_LINE  key is available (negotiated) and sign is infallible for a valid d
         // ECDSA signature blob is mpint(r) || mpint(s) (RFC 5656 §3.1.2).
         Writer w = {sig, sig_cap, 0, true};
@@ -834,7 +845,7 @@ static int sign_hash(uint8_t i, const uint8_t H[SSH_SHA256_DIGEST_LEN], uint8_t 
     const bool sha512 = (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512);
     const SshRsaHash rh = sha512 ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
     if (sig_cap < SSH_RSA_SIG_BYTES ||
-        ssh_rsa_sign(H, SSH_SHA256_DIGEST_LEN, rh, sig) != 0) // GCOVR_EXCL_LINE  sig buffer is 256B and the negotiated
+        ssh_rsa_sign(H, h_len, rh, sig) != 0) // GCOVR_EXCL_LINE  sig buffer is 256B and the negotiated
         return -1; // GCOVR_EXCL_LINE  RSA key is loaded (available), so neither the size nor the sign can fail
     *sig_len = SSH_RSA_SIG_BYTES;
     *sig_name = sha512 ? HOSTKEY_RSA_SHA512 : HOSTKEY_RSA_SHA256;
@@ -1059,13 +1070,16 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         return -1;                    // GCOVR_EXCL_LINE
     }
 
-    // 3. Exchange hash H; capture the session id on the first KEX.
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
+    // 3. Exchange hash H (SHA-256 or SHA-512 per the KEX method); capture the session id on first KEX.
+    const bool is512 = kex_is_sha512(s->kex_alg);
+    uint8_t H[SSH_KEXHASH_MAX_LEN];
+    size_t h_len = 0;
     compute_exchange_hash(i, pub_is_string, cpub_p, cpub_len, spub_p, spub_len, k_hash, k_hash_len, ks, ks_len, H,
-                          k_is_string);
+                          &h_len, k_is_string, is512);
     if (!s->have_session_id)
     {
-        memcpy(s->session_id, H, SSH_SHA256_DIGEST_LEN);
+        memcpy(s->session_id, H, h_len);
+        s->session_id_len = (uint8_t)h_len;
         s->have_session_id = true;
     }
 
@@ -1073,10 +1087,10 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     uint8_t sig[SSH_RSA_SIG_BYTES]; // 256 bytes: fits an RSA-2048 sig and a 64-byte ed25519 sig
     size_t sig_len = 0;
     const char *sig_name = nullptr;
-    if (sign_hash(i, H, sig, &sig_len, sizeof(sig), &sig_name) != 0) // GCOVR_EXCL_LINE  sign_hash cannot fail here:
-    {                                                                // GCOVR_EXCL_LINE  256B sig buffer + a loaded key
-        ssh_wipe(k_be, sizeof(k_be));                                // GCOVR_EXCL_LINE
-        return -1;                                                   // GCOVR_EXCL_LINE
+    if (sign_hash(i, H, h_len, sig, &sig_len, sizeof(sig), &sig_name) != 0) // GCOVR_EXCL_LINE  cannot fail here:
+    {                                                                       // GCOVR_EXCL_LINE  256B sig + loaded key
+        ssh_wipe(k_be, sizeof(k_be));                                       // GCOVR_EXCL_LINE
+        return -1;                                                          // GCOVR_EXCL_LINE
     }
 
     // 5. Assemble the reply, then derive the six session keys (id fixed at first KEX's H).
@@ -1085,7 +1099,8 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         ssh_wipe(k_be, sizeof(k_be));
         return -1;
     }
-    ssh_dh_derive_keys_sid(i, k_be, H, s->session_id, s->cipher_alg, s->mac_alg, k_is_string);
+    ssh_dh_derive_keys_sid(i, k_be, H, s->session_id, s->cipher_alg, s->mac_alg, k_is_string, h_len, s->session_id_len,
+                           is512);
     ssh_wipe(k_be, sizeof(k_be));
 
     s->phase = SshPhase::SSH_PHASE_NEWKEYS;

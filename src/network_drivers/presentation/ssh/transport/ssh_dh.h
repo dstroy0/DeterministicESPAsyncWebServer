@@ -121,9 +121,10 @@ void ssh_dh_derive_keys(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_
  * @param session_id  Session id (H of the first KEX), 32 bytes.
  * @param k_is_string Encode K as a plain SSH string (hybrid KEX) instead of an mpint (classical).
  */
-void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
-                            const uint8_t session_id[SSH_SHA256_DIGEST_LEN], uint8_t cipher_alg, uint8_t mac_alg,
-                            bool k_is_string = false);
+void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H, const uint8_t *session_id,
+                            uint8_t cipher_alg, uint8_t mac_alg, bool k_is_string = false,
+                            size_t h_len = SSH_SHA256_DIGEST_LEN, size_t sid_len = SSH_SHA256_DIGEST_LEN,
+                            bool is512 = false);
 
 /** @brief Max bytes ssh_kdf_derive() can produce (4 SHA-256 blocks). */
 #define SSH_KDF_MAX (4 * SSH_SHA256_DIGEST_LEN)
@@ -138,8 +139,8 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[
  * <= 32 B (one block); the chain exists for spec-completeness / future ciphers needing
  * longer key material. @p out_len is clamped to SSH_KDF_MAX.
  */
-void ssh_kdf_derive(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
-                    const uint8_t session_id[SSH_SHA256_DIGEST_LEN], char label, uint8_t *out, size_t out_len,
-                    bool k_is_string = false);
+void ssh_kdf_derive(const uint8_t K_be[256], const uint8_t *H, const uint8_t *session_id, char label, uint8_t *out,
+                    size_t out_len, bool k_is_string = false, size_t h_len = SSH_SHA256_DIGEST_LEN,
+                    size_t sid_len = SSH_SHA256_DIGEST_LEN, bool is512 = false);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_DH_H
