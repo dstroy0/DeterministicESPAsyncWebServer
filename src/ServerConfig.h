@@ -161,10 +161,13 @@
 #define DWS_SSH_ANY                                                                                                    \
     ((defined(DWS_ENABLE_SSH) && DWS_ENABLE_SSH) || (defined(DWS_ENABLE_SSH_CLIENT) && DWS_ENABLE_SSH_CLIENT) ||       \
      (defined(DWS_ENABLE_HTTP3) && DWS_ENABLE_HTTP3))
-#if DWS_ENABLE_PQC_KEX && DWS_SSH_ANY
-// sntrup761x25519-sha512 (on by default with the PQC hybrid) is the heavy case: the reverse-SSH
-// CLIENT runs KeyGen+Decaps whose FO re-encrypt peaks ~32 KB, the SERVER runs Encaps only (~22 KB).
-// ML-KEM alone stays at 16 KB, so a build that explicitly drops sntrup761 keeps the lighter floor.
+// sntrup761x25519-sha512 (on by default with the PQC hybrid, but a standalone -D can enable it without
+// ML-KEM) is the heavy case: the reverse-SSH CLIENT runs KeyGen+Decaps whose FO re-encrypt peaks ~32 KB,
+// the SERVER runs Encaps only (~22 KB). ML-KEM alone stays at 16 KB, so a build that explicitly drops
+// sntrup761 keeps the lighter floor. This default block only sees -D flags (the config defaults below
+// have not run yet), so sntrup761's default-tracks-PQC is assumed here and the guard at the bottom is
+// the backstop when it is toggled in the config block instead of via -D.
+#if (DWS_ENABLE_PQC_KEX || (defined(DWS_ENABLE_SSH_SNTRUP761) && DWS_ENABLE_SSH_SNTRUP761)) && DWS_SSH_ANY
 #if defined(DWS_ENABLE_SSH_SNTRUP761) && !DWS_ENABLE_SSH_SNTRUP761
 #define DWS_WORKER_TASK_STACK 16384
 #elif defined(DWS_ENABLE_SSH_CLIENT) && DWS_ENABLE_SSH_CLIENT

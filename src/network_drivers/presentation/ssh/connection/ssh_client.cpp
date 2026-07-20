@@ -18,6 +18,7 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_x25519 (curve25519-sha256)
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"      // ecdh-sha2-nistp256 + ecdsa host-key verify
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"    // ssh-ed25519 host key + client auth
+#include "network_drivers/presentation/ssh/crypto/ssh_kexhash.h"    // SshKexHash (SHA-256/SHA-512 by method)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"        // rsa-sha2-256/512 host-key verify
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"     // ssh_dh_derive_keys_sid, ssh_rng_fill
@@ -28,7 +29,12 @@
 
 #if DWS_ENABLE_PQC_KEX
 #include "network_drivers/presentation/pqc/mlkem.h" // mlkem768x25519-sha256 hybrid (client: KeyGen + Decaps)
-#include "network_drivers/session/scratch.h"        // scratch_alloc for the 1216-byte hybrid C_INIT
+#endif
+#if DWS_ENABLE_SSH_SNTRUP761
+#include "network_drivers/presentation/pqc/sntrup761.h" // sntrup761x25519-sha512 hybrid (client: KeyGen + Decaps)
+#endif
+#if DWS_ENABLE_PQC_KEX || DWS_ENABLE_SSH_SNTRUP761
+#include "network_drivers/session/scratch.h" // scratch_alloc for the large hybrid C_INIT
 #endif
 
 #if defined(ARDUINO)
@@ -58,7 +64,13 @@ static const char *const KEX_NAMES[] = {
 #if DWS_ENABLE_PQC_KEX
     "mlkem768x25519-sha256",
 #endif
-    "curve25519-sha256", "curve25519-sha256@libssh.org", "ecdh-sha2-nistp256", "diffie-hellman-group14-sha256"};
+#if DWS_ENABLE_SSH_SNTRUP761
+    "sntrup761x25519-sha512@openssh.com",
+#endif
+    "curve25519-sha256",
+    "curve25519-sha256@libssh.org",
+    "ecdh-sha2-nistp256",
+    "diffie-hellman-group14-sha256"};
 static const char *const HOSTKEY_NAMES[] = {"ssh-ed25519", "ecdsa-sha2-nistp256", "rsa-sha2-512", "rsa-sha2-256"};
 static const char *const CIPHER_NAMES[] = {"chacha20-poly1305@openssh.com", "aes256-gcm@openssh.com", "aes256-ctr"};
 static const char *const MAC_NAMES[] = {"hmac-sha2-256-etm@openssh.com", "hmac-sha2-256",
@@ -71,7 +83,10 @@ enum class CliKex : uint8_t
     ECDH_P256,
     DH_GROUP14,
 #if DWS_ENABLE_PQC_KEX
-    MLKEM768_X25519 ///< mlkem768x25519-sha256 PQ/T hybrid (DWS_ENABLE_PQC_KEX).
+    MLKEM768_X25519, ///< mlkem768x25519-sha256 PQ/T hybrid (DWS_ENABLE_PQC_KEX).
+#endif
+#if DWS_ENABLE_SSH_SNTRUP761
+    SNTRUP761_X25519, ///< sntrup761x25519-sha512@openssh.com PQ/T hybrid (DWS_ENABLE_SSH_SNTRUP761).
 #endif
 };
 // Index-aligned with KEX_NAMES above (two curve25519 spellings map to the same method).
@@ -79,7 +94,21 @@ static const CliKex KEX_OF[] = {
 #if DWS_ENABLE_PQC_KEX
     CliKex::MLKEM768_X25519,
 #endif
-    CliKex::CURVE25519, CliKex::CURVE25519, CliKex::ECDH_P256, CliKex::DH_GROUP14};
+#if DWS_ENABLE_SSH_SNTRUP761
+    CliKex::SNTRUP761_X25519,
+#endif
+    CliKex::CURVE25519,       CliKex::CURVE25519, CliKex::ECDH_P256, CliKex::DH_GROUP14};
+// The exchange hash + RFC 4253 sec 7.2 KDF run over SHA-512 for the -sha512 methods
+// (sntrup761x25519-sha512), SHA-256 for every other method (RFC 4253 sec 8).
+static inline bool cli_kex_is_sha512(CliKex k)
+{
+#if DWS_ENABLE_SSH_SNTRUP761
+    return k == CliKex::SNTRUP761_X25519;
+#else
+    (void)k;
+    return false;
+#endif
+}
 /** @brief Negotiated host-key / signature algorithm. */
 enum class CliHostkey : uint8_t
 {
@@ -208,15 +237,15 @@ bool namelist_has(const uint8_t *list, uint32_t len, const char *want)
     return false;
 }
 
-// Hash an SSH string (u32 length + bytes) into a running SHA-256 (for the exchange hash).
-void hash_string(SshSha256Ctx *c, const uint8_t *d, size_t n)
+// Hash an SSH string (u32 length + bytes) into the running exchange hash (SHA-256 or SHA-512).
+void hash_string(SshKexHash *c, const uint8_t *d, size_t n)
 {
     uint8_t l[4] = {(uint8_t)(n >> 24), (uint8_t)(n >> 16), (uint8_t)(n >> 8), (uint8_t)n};
-    ssh_sha256_update(c, l, 4);
-    ssh_sha256_update(c, d, n);
+    ssh_kexhash_update(c, l, 4);
+    ssh_kexhash_update(c, d, n);
 }
 // Hash an SSH mpint (two's-complement, minimal, leading 0x00 when the high bit is set).
-void hash_mpint(SshSha256Ctx *c, const uint8_t *be, size_t n)
+void hash_mpint(SshKexHash *c, const uint8_t *be, size_t n)
 {
     size_t i = 0;
     while (i < n && be[i] == 0)
@@ -225,14 +254,14 @@ void hash_mpint(SshSha256Ctx *c, const uint8_t *be, size_t n)
     bool pad = (mlen > 0 && (be[i] & 0x80) != 0);
     uint8_t l4[4] = {0, 0, 0, (uint8_t)(mlen + (pad ? 1 : 0))};
     l4[2] = (uint8_t)((mlen + (pad ? 1 : 0)) >> 8);
-    ssh_sha256_update(c, l4, 4);
+    ssh_kexhash_update(c, l4, 4);
     if (pad)
     {
         uint8_t z = 0;
-        ssh_sha256_update(c, &z, 1);
+        ssh_kexhash_update(c, &z, 1);
     }
     if (mlen)
-        ssh_sha256_update(c, be + i, mlen);
+        ssh_kexhash_update(c, be + i, mlen);
 }
 } // namespace
 
@@ -289,11 +318,19 @@ struct SshClientCtx
     uint8_t kex_priv[32]; ///< our KEX private: X25519 scalar / P-256 d / DH exponent (wiped after K).
     uint8_t qc[256];      ///< our KEX public Q_C: 32 (curve/hybrid X25519) / 65 (ecdh) / 256 (DH e, big-endian).
     size_t qc_len;
+#if DWS_ENABLE_PQC_KEX || DWS_ENABLE_SSH_SNTRUP761
+    // Hybrid decapsulation key: persists from C_INIT (KeyGen) to S_REPLY (Decaps) across round-trips,
+    // so it cannot live in the per-dispatch scratch arena. Only one hybrid is negotiated per session, so
+    // ML-KEM's dk and sntrup761's sk share storage. Each embeds its public key (ek at [1152..], pk at
+    // DWS_SNTRUP761_SK_PK_OFFSET), so the C_INIT / exchange-hash reconstruct it from here, not stored twice.
+    union {
 #if DWS_ENABLE_PQC_KEX
-    // Hybrid ML-KEM decapsulation key: persists from C_INIT (KeyGen) to S_REPLY (Decaps) across
-    // round-trips, so it cannot live in the per-dispatch scratch arena. Embeds ek at [1152..2335], so
-    // the C_INIT / exchange-hash reconstruct ek from here rather than storing it twice.
-    uint8_t mlkem_dk[MLKEM768_DK_BYTES];
+        uint8_t mlkem_dk[MLKEM768_DK_BYTES];
+#endif
+#if DWS_ENABLE_SSH_SNTRUP761
+        uint8_t sntrup_sk[DWS_SNTRUP761_SK_BYTES];
+#endif
+    } hyb;
 #endif
 
     char v_s[256]; ///< server identification string (no CR LF).
@@ -306,7 +343,8 @@ struct SshClientCtx
     uint8_t i_s[SSH_KEXINIT_MAX]; ///< server KEXINIT payload (for H); OpenSSH's is ~1.1 KB.
     uint16_t i_s_len;
 
-    uint8_t session_id[32];
+    uint8_t session_id[SSH_KEXHASH_MAX_LEN]; ///< 32 (SHA-256 methods) or 64 (sntrup761 SHA-512).
+    uint8_t session_id_len;
     bool have_sid;
 
     CliChannel chan[DWS_SSH_CLIENT_MAX_CHANNELS]; ///< the active forwarded channels.
@@ -481,10 +519,27 @@ static bool build_kex_public(void)
         uint8_t d[32], z[32], ek[MLKEM768_EK_BYTES];
         ssh_rng_fill(d, sizeof(d));
         ssh_rng_fill(z, sizeof(z));
-        dws_mlkem768_keygen(d, z, ek, s_cli.mlkem_dk);
+        dws_mlkem768_keygen(d, z, ek, s_cli.hyb.mlkem_dk);
         ssh_wipe(d, sizeof(d));
         ssh_wipe(z, sizeof(z));
         ssh_wipe(ek, sizeof(ek)); // ek persists inside mlkem_dk
+        ssh_rng_fill(s_cli.kex_priv, 32);
+        ssh_x25519_base(s_cli.qc, s_cli.kex_priv);
+        s_cli.qc_len = 32;
+        return true;
+    }
+#endif
+#if DWS_ENABLE_SSH_SNTRUP761
+    case CliKex::SNTRUP761_X25519: {
+        // sntrup761 keypair (sk kept for Decaps; pk is embedded in sk) + an X25519 ephemeral. C_INIT
+        // (pk || Q_C) is assembled at send time from sk; Q_C lives in qc[0..31]. pk is only needed
+        // transiently here (sk embeds a copy), so it borrows the scratch arena.
+        size_t mark = scratch_mark();
+        uint8_t *pk = (uint8_t *)scratch_alloc(DWS_SNTRUP761_PK_BYTES, 1);
+        if (!pk)
+            return false;
+        dws_sntrup761_keypair(pk, s_cli.hyb.sntrup_sk);
+        scratch_release(mark); // pk persists inside sntrup_sk at DWS_SNTRUP761_SK_PK_OFFSET
         ssh_rng_fill(s_cli.kex_priv, 32);
         ssh_x25519_base(s_cli.qc, s_cli.kex_priv);
         s_cli.qc_len = 32;
@@ -546,7 +601,7 @@ static bool handle_server_kexinit(const uint8_t *p, size_t len)
     {
         // KEX_HYBRID_INIT (msg 30): string(C_INIT) where C_INIT = ek || Q_C (1216 B). Too large for
         // the stack packet buffer, so build it in the client's scratch arena.
-        const uint8_t *ek = s_cli.mlkem_dk + 1152; // ek follows the 1152-byte dk_pke in dk
+        const uint8_t *ek = s_cli.hyb.mlkem_dk + 1152; // ek follows the 1152-byte dk_pke in dk
         const size_t clen = MLKEM768_EK_BYTES + 32;
         const size_t plen = 1 + 4 + clen;
         size_t mark = scratch_mark();
@@ -557,6 +612,29 @@ static bool handle_server_kexinit(const uint8_t *p, size_t len)
         w_u8(&w, SSH_MSG_KEXDH_INIT);
         w_u32(&w, (uint32_t)clen);
         w_bytes(&w, ek, MLKEM768_EK_BYTES);
+        w_bytes(&w, s_cli.qc, 32);
+        bool ok = w.ok && cli_send(out, w.off);
+        scratch_release(mark);
+        return ok;
+    }
+#endif
+#if DWS_ENABLE_SSH_SNTRUP761
+    if (s_cli.kex == CliKex::SNTRUP761_X25519)
+    {
+        // KEX_HYBRID_INIT (msg 30): string(C_INIT) where C_INIT = sntrup761_pk || Q_C (1190 B). pk is
+        // reconstructed from sk (it is embedded there); too large for the stack packet buffer, so the
+        // packet is built in the client's scratch arena.
+        const uint8_t *pk = s_cli.hyb.sntrup_sk + DWS_SNTRUP761_SK_PK_OFFSET;
+        const size_t clen = DWS_SNTRUP761_PK_BYTES + 32;
+        const size_t plen = 1 + 4 + clen;
+        size_t mark = scratch_mark();
+        uint8_t *out = (uint8_t *)scratch_alloc(plen, 1);
+        if (!out)
+            return false;
+        Wr w = {out, plen, 0, true};
+        w_u8(&w, SSH_MSG_KEXDH_INIT);
+        w_u32(&w, (uint32_t)clen);
+        w_bytes(&w, pk, DWS_SNTRUP761_PK_BYTES);
         w_bytes(&w, s_cli.qc, 32);
         bool ok = w.ok && cli_send(out, w.off);
         scratch_release(mark);
@@ -636,7 +714,7 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         if (srv_pub_len != MLKEM768_CT_BYTES + 32)
             return false;
         uint8_t k_pq[32], k_cl[32];
-        dws_mlkem768_decaps(s_cli.mlkem_dk, srv_pub, k_pq);
+        dws_mlkem768_decaps(s_cli.hyb.mlkem_dk, srv_pub, k_pq);
         ssh_x25519(k_cl, s_cli.kex_priv, srv_pub + MLKEM768_CT_BYTES);
         SshSha256Ctx c;
         ssh_sha256_init(&c);
@@ -648,34 +726,75 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         return true;
     }
 #endif
+#if DWS_ENABLE_SSH_SNTRUP761
+    case CliKex::SNTRUP761_X25519: {
+        // S_REPLY = ciphertext(1039) || Q_S(32). Decaps recovers K_PQ; X25519 gives K_CL. The combined
+        // secret K = SHA512(K_PQ || K_CL) is a fixed 64-byte string (right-aligned in k_be).
+        if (srv_pub_len != DWS_SNTRUP761_CT_BYTES + 32)
+            return false;
+        uint8_t k_pq[DWS_SNTRUP761_SS_BYTES], k_cl[32];
+        dws_sntrup761_dec(s_cli.hyb.sntrup_sk, srv_pub, k_pq);
+        ssh_x25519(k_cl, s_cli.kex_priv, srv_pub + DWS_SNTRUP761_CT_BYTES);
+        SshSha512Ctx c;
+        ssh_sha512_init(&c);
+        ssh_sha512_update(&c, k_pq, sizeof(k_pq));
+        ssh_sha512_update(&c, k_cl, 32);
+        ssh_sha512_final(&c, k_be + (256 - 64));
+        ssh_wipe(k_pq, sizeof(k_pq));
+        ssh_wipe(k_cl, sizeof(k_cl));
+        return true;
+    }
+#endif
     }
     return false;
 }
 
-// Compute the exchange hash H over the negotiated method's field encodings (RFC 4253 §8 / RFC 8731).
-static void compute_h(const uint8_t *ks, uint32_t ks_len, const uint8_t *srv_pub, uint32_t srv_pub_len,
-                      const uint8_t *k_be, uint8_t H[32])
+// Compute the exchange hash H over the negotiated method's field encodings (RFC 4253 §8 / RFC 8731),
+// under the method's hash (SHA-256, or SHA-512 for sntrup761x25519-sha512). Returns the digest length.
+static size_t compute_h(const uint8_t *ks, uint32_t ks_len, const uint8_t *srv_pub, uint32_t srv_pub_len,
+                        const uint8_t *k_be, uint8_t H[SSH_KEXHASH_MAX_LEN])
 {
-    SshSha256Ctx c;
-    ssh_sha256_init(&c);
+    const bool is512 = cli_kex_is_sha512(s_cli.kex);
+    SshKexHash c;
+    ssh_kexhash_init(&c, is512);
     hash_string(&c, (const uint8_t *)CLIENT_BANNER, strnlen(CLIENT_BANNER, sizeof(CLIENT_BANNER))); // V_C
     hash_string(&c, (const uint8_t *)s_cli.v_s, s_cli.v_s_len);                                     // V_S
     hash_string(&c, s_cli.i_c, s_cli.i_c_len);                                                      // I_C
     hash_string(&c, s_cli.i_s, s_cli.i_s_len);                                                      // I_S
     hash_string(&c, ks, ks_len);                                                                    // K_S
+#if DWS_ENABLE_PQC_KEX || DWS_ENABLE_SSH_SNTRUP761
+    bool hybrid = false;
+    const uint8_t *cpk = nullptr; // the hybrid public embedded in the C_INIT string (ek / sntrup761 pk)
+    size_t cpk_len = 0, k_slen = 0;
 #if DWS_ENABLE_PQC_KEX
     if (s_cli.kex == CliKex::MLKEM768_X25519)
     {
-        // C_INIT = ek || Q_C hashed as one SSH string; S_REPLY (ct || Q_S) is srv_pub; K is a fixed
-        // 32-byte string, not an mpint (draft-ietf-sshm-mlkem-hybrid-kex / RFC 9370).
-        const uint8_t *ek = s_cli.mlkem_dk + 1152;
-        uint32_t clen = MLKEM768_EK_BYTES + 32;
+        hybrid = true;
+        cpk = s_cli.hyb.mlkem_dk + 1152; // ek follows the 1152-byte dk_pke
+        cpk_len = MLKEM768_EK_BYTES;
+        k_slen = 32; // K = SHA256(K_PQ || K_CL), 32-byte string
+    }
+#endif
+#if DWS_ENABLE_SSH_SNTRUP761
+    if (s_cli.kex == CliKex::SNTRUP761_X25519)
+    {
+        hybrid = true;
+        cpk = s_cli.hyb.sntrup_sk + DWS_SNTRUP761_SK_PK_OFFSET;
+        cpk_len = DWS_SNTRUP761_PK_BYTES;
+        k_slen = 64; // K = SHA512(K_PQ || K_CL), 64-byte string
+    }
+#endif
+    if (hybrid)
+    {
+        // C_INIT = cpk || Q_C hashed as one SSH string; S_REPLY (ct || Q_S) is srv_pub; K is a fixed
+        // 32/64-byte string, not an mpint (draft-ietf-sshm-mlkem-hybrid-kex / RFC 9370).
+        uint32_t clen = (uint32_t)(cpk_len + 32);
         uint8_t lb[4] = {(uint8_t)(clen >> 24), (uint8_t)(clen >> 16), (uint8_t)(clen >> 8), (uint8_t)clen};
-        ssh_sha256_update(&c, lb, 4);
-        ssh_sha256_update(&c, ek, MLKEM768_EK_BYTES);
-        ssh_sha256_update(&c, s_cli.qc, 32);
-        hash_string(&c, srv_pub, srv_pub_len);  // S_REPLY
-        hash_string(&c, k_be + (256 - 32), 32); // K (32-byte string)
+        ssh_kexhash_update(&c, lb, 4);
+        ssh_kexhash_update(&c, cpk, cpk_len);
+        ssh_kexhash_update(&c, s_cli.qc, 32);
+        hash_string(&c, srv_pub, srv_pub_len);          // S_REPLY
+        hash_string(&c, k_be + (256 - k_slen), k_slen); // K (32/64-byte string)
     }
     else
 #endif
@@ -691,12 +810,12 @@ static void compute_h(const uint8_t *ks, uint32_t ks_len, const uint8_t *srv_pub
         hash_string(&c, srv_pub, srv_pub_len);   // Q_S
         hash_mpint(&c, k_be, 256);               // K
     }
-    ssh_sha256_final(&c, H);
+    return ssh_kexhash_final(&c, H);
 }
 
-// Verify the relay's signature over H with the host key from K_S, per the negotiated host-key type.
-static bool verify_host_sig(const uint8_t *ks, uint32_t ks_len, const uint8_t *sig, uint32_t sig_len,
-                            const uint8_t H[32])
+// Verify the relay's signature over H (h_len bytes) with the host key from K_S, per the host-key type.
+static bool verify_host_sig(const uint8_t *ks, uint32_t ks_len, const uint8_t *sig, uint32_t sig_len, const uint8_t *H,
+                            size_t h_len)
 {
     Rd rk = {ks, ks_len, 0, true};
     uint32_t tn;
@@ -714,7 +833,7 @@ static bool verify_host_sig(const uint8_t *ks, uint32_t ks_len, const uint8_t *s
         const uint8_t *pub = r_string(&rk, &pn);
         uint32_t rl;
         const uint8_t *raw = r_string(&rs, &rl);
-        return rk.ok && rs.ok && pn == 32 && rl == 64 && ssh_ed25519_verify(pub, H, 32, raw);
+        return rk.ok && rs.ok && pn == 32 && rl == 64 && ssh_ed25519_verify(pub, H, h_len, raw);
     }
     case CliHostkey::ECDSA_P256: {
         uint32_t cn;
@@ -733,7 +852,7 @@ static bool verify_host_sig(const uint8_t *ks, uint32_t ks_len, const uint8_t *s
         uint8_t raw[64];
         if (!rb.ok || !mpint_to_fixed(rr, rlen, raw, 32) || !mpint_to_fixed(ss, slen, raw + 32, 32))
             return false;
-        return ssh_ecdsa_p256_verify(q, H, 32, raw);
+        return ssh_ecdsa_p256_verify(q, H, h_len, raw);
     }
     case CliHostkey::RSA_SHA256:
     case CliHostkey::RSA_SHA512: {
@@ -749,7 +868,7 @@ static bool verify_host_sig(const uint8_t *ks, uint32_t ks_len, const uint8_t *s
         if (!rk.ok || !rs.ok || !mpint_to_fixed(e, elen, e4, 4) || !mpint_to_fixed(n, nlen, n256, 256))
             return false;
         SshRsaHash h = (s_cli.hostkey == CliHostkey::RSA_SHA512) ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
-        return ssh_rsa_verify(n256, e4, H, 32, raw, rawlen, h) == 0;
+        return ssh_rsa_verify(n256, e4, H, h_len, raw, rawlen, h) == 0;
     }
     }
     return false;
@@ -785,10 +904,10 @@ static bool handle_kexdh_reply(const uint8_t *p, size_t len)
     if (!compute_k(srv_pub, sp_len, k_be))
         return false;
 
-    uint8_t H[32];
-    compute_h(ks, ks_len, srv_pub, sp_len, k_be, H);
+    uint8_t H[SSH_KEXHASH_MAX_LEN];
+    const size_t h_len = compute_h(ks, ks_len, srv_pub, sp_len, k_be, H); // 32 or 64 by method
 
-    if (!verify_host_sig(ks, ks_len, sig, sig_len, H))
+    if (!verify_host_sig(ks, ks_len, sig, sig_len, H, h_len))
     {
         ssh_wipe(k_be, sizeof(k_be));
         cli_fail("relay signature verification failed");
@@ -797,22 +916,29 @@ static bool handle_kexdh_reply(const uint8_t *p, size_t len)
 
     if (!s_cli.have_sid)
     {
-        memcpy(s_cli.session_id, H, 32);
+        memcpy(s_cli.session_id, H, h_len);
+        s_cli.session_id_len = (uint8_t)h_len;
         s_cli.have_sid = true;
     }
 
     // ssh_dh_derive_keys_sid populates c2s/s2c per the RFC 4253 §7.2 letters for the negotiated
-    // cipher/MAC; the packet layer's is_client flag selects the send/receive direction. The hybrid
-    // encodes K as a fixed 32-byte string (k_is_string), the classical methods as an mpint.
+    // cipher/MAC; the packet layer's is_client flag selects the send/receive direction. The hybrids
+    // encode K as a fixed 32/64-byte string (k_is_string); the classical methods as an mpint. The
+    // -sha512 method derives over SHA-512 (is512), so H and the session_id are 64 bytes.
+    const bool is512 = cli_kex_is_sha512(s_cli.kex);
     bool k_is_string = false;
 #if DWS_ENABLE_PQC_KEX
-    k_is_string = (s_cli.kex == CliKex::MLKEM768_X25519);
+    k_is_string = k_is_string || (s_cli.kex == CliKex::MLKEM768_X25519);
 #endif
-    ssh_dh_derive_keys_sid(SSH_CLI_SLOT, k_be, H, s_cli.session_id, s_cli.cipher, s_cli.mac, k_is_string);
+#if DWS_ENABLE_SSH_SNTRUP761
+    k_is_string = k_is_string || (s_cli.kex == CliKex::SNTRUP761_X25519);
+#endif
+    ssh_dh_derive_keys_sid(SSH_CLI_SLOT, k_be, H, s_cli.session_id, s_cli.cipher, s_cli.mac, k_is_string, h_len,
+                           s_cli.session_id_len, is512);
     ssh_wipe(k_be, sizeof(k_be));
     ssh_wipe(s_cli.kex_priv, sizeof(s_cli.kex_priv));
-#if DWS_ENABLE_PQC_KEX
-    ssh_wipe(s_cli.mlkem_dk, sizeof(s_cli.mlkem_dk));
+#if DWS_ENABLE_PQC_KEX || DWS_ENABLE_SSH_SNTRUP761
+    ssh_wipe((uint8_t *)&s_cli.hyb, sizeof(s_cli.hyb));
 #endif
 
     uint8_t nk = SSH_MSG_NEWKEYS;
@@ -850,10 +976,11 @@ static bool send_userauth_publickey(void)
         return false;
 
     // Data to sign (RFC 4252 §7): string(session_id) || the userauth request up to (and including)
-    // the public-key blob, with the "signature present" flag set.
-    uint8_t signed_data[256];
+    // the public-key blob, with the "signature present" flag set. session_id is 32 or 64 bytes (the
+    // -sha512 KEX), so the buffer carries SSH_KEXHASH_MAX_LEN of headroom over the 32-byte base.
+    uint8_t signed_data[256 + SSH_KEXHASH_MAX_LEN];
     Wr sd = {signed_data, sizeof(signed_data), 0, true};
-    w_string(&sd, s_cli.session_id, 32);
+    w_string(&sd, s_cli.session_id, s_cli.session_id_len);
     w_u8(&sd, SSH_MSG_USERAUTH_REQUEST);
     w_cstr(&sd, user);
     w_cstr(&sd, "ssh-connection");

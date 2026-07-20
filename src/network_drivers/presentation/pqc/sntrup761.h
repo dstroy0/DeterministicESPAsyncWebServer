@@ -33,6 +33,9 @@
 #define DWS_SNTRUP761_SK_BYTES 1763 ///< secret key (f, 1/g, pk, rho, cache)
 #define DWS_SNTRUP761_CT_BYTES 1039 ///< ciphertext (Rounded-encoded c || 32-byte Confirm)
 #define DWS_SNTRUP761_SS_BYTES 32   ///< shared secret (session key)
+#define DWS_SNTRUP761_SK_PK_OFFSET                                                                                     \
+    382 ///< the public key is embedded in sk at this offset (2*Small_bytes); the KEM initiator reconstructs
+        ///< its C_INIT and the exchange hash from sk rather than storing pk twice
 
 /**
  * @brief sntrup761 key generation (initiator). Produces a public/secret keypair; the caller sends
