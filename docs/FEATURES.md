@@ -1164,6 +1164,12 @@ Server-Sent Events push support.
 
 SSH server support (RFC 4253/4252/4254). Channels are multiplexed per connection (`DWS_SSH_MAX_CHANNELS`, default 1), each routed by its recipient id with its own flow-control window. Beyond `session` channels, `direct-tcpip` (the `ssh -L` local-forward request) is parsed and routed through a normalized forwarding seam: the codec extracts the target host:port and routes channel data but does no TCP I/O itself. With `DWS_SSH_PORT_FORWARD` set, the `ssh_forward` owner plugs into that seam and does the I/O - it opens the outbound TCP through the client transport (dws_client) and bridges bytes both ways, with an optional target policy callback, a per-poll target-to-client pump bounded by the channel window, and EOF/CLOSE propagation. Forwarding is opt-in twice over (compiled out by default, and inert until the app calls `dws_ssh_forward_begin()`) because any authenticated client could otherwise reach arbitrary hosts; with it off every `direct-tcpip` open is refused (no open relay).
 
+## SSH Keyboard-Interactive
+
+`DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE`
+
+Keyboard-interactive user authentication (RFC 4256) alongside password/publickey. When set (and SSH is on) the server advertises `keyboard-interactive` in the `USERAUTH_FAILURE` method list; on selection it sends one `SSH_MSG_USERAUTH_INFO_REQUEST` with a single non-echoed `Password:` prompt and verifies the client's `SSH_MSG_USERAUTH_INFO_RESPONSE` through the same `dws_ssh_auth_set_password_cb` callback - so it is the challenge-response face of password auth (the common OpenSSH `-o PreferredAuthentications=keyboard-interactive` / PAM-password case), not a second credential store. Per-slot exchange state lives in the auth owner: an `INFO_RESPONSE` with no armed exchange (or a replayed one) is refused, and the response is wiped from the stack after every attempt. Because it is password-backed it requires `DWS_SSH_ALLOW_PASSWORD`. Default off. HW-verified on an ESP32-P4 vs OpenSSH 10: authenticated via keyboard-interactive with a byte-exact channel echo.
+
 ## SSH Compression
 
 `DWS_ENABLE_SSH_ZLIB`
