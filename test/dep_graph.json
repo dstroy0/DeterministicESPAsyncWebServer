@@ -1630,6 +1630,12 @@
 "native_quic_tls_pqc",
 "native_ssh_pqc"
 ],
+"src/network_drivers/presentation/pqc/sntrup761.cpp": [
+"native_pqc"
+],
+"src/network_drivers/presentation/pqc/sntrup761.h": [
+"native_pqc"
+],
 "src/network_drivers/presentation/presentation.cpp": [
 "native",
 "native_accept_gate",
@@ -2042,6 +2048,13 @@
 "native_ssh_hardened",
 "native_ssh_pqc"
 ],
+"src/network_drivers/presentation/ssh/crypto/ssh_kexhash.h": [
+"native_ssh",
+"native_ssh_comp",
+"native_ssh_conn",
+"native_ssh_hardened",
+"native_ssh_pqc"
+],
 "src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp": [
 "native_crypto_kat",
 "native_ssh",
@@ -2162,6 +2175,7 @@
 "native_h3_e2e",
 "native_h3_server",
 "native_oidc",
+"native_pqc",
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
@@ -2184,6 +2198,7 @@
 "native_h3_e2e",
 "native_h3_server",
 "native_oidc",
+"native_pqc",
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
@@ -4138,6 +4153,7 @@
 "native_melsec",
 "native_oidc",
 "native_pentest",
+"native_pqc",
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
