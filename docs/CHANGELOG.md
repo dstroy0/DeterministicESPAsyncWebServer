@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.22.0] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.22.0 - 2026-07-20</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`c939a1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c939a1cce70cd2d5ae3eb040bcd1691c6340b12f))
+- update CHANGELOG.md [skip ci] ([`cf80c88`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf80c88e2ca8fd95148d9c6b51faa2e1fdc519d1))
+
+### Changes
+
+- Bump version: 7.21.0 → 7.22.0 ([`08f2787`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08f27879c7c8ec5377e9693d13fbeb308452b43f))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`a69518d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a69518d52a0cbf6af6672b91bdac6b2773aa6800))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fcdaf8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcdaf8e705593c4b0dc0c8dad613fa7531a0c031))
+
+### Features
+
+- adaptive announcing driven by a promiscuous contention counter ([`e735de7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e735de73f092693521e74c971ef20229206a9dc8))
+
+</details>
+
 ## [7.21.0] - 2026-07-20
 
 <details>
