@@ -47,6 +47,7 @@ from each example's `pio ci` size report and aggregated into
 | `GUARDRAILS`                                                                                              | L7-Application/Guardrails            | 735.5 KB (57.5%) | 79.9 KB (25.0%)  |
 | `HAAS_MDC`                                                                                                | L7-Application/HaasMdc               | 708.3 KB (55.3%) | 42.4 KB (13.3%)  |
 | `HISLIP`                                                                                                  | L7-Application/HiSlip                | 708.0 KB (55.3%) | 43.0 KB (13.4%)  |
+| `HOTSWAP`                                                                                                 | L7-Application/HotSwapStorage        | 818.8 KB (64.0%) | 80.8 KB (25.2%)  |
 | `HTTP_CLIENT`                                                                                             | L7-Application/HttpClient            | 717.4 KB (56.0%) | 61.7 KB (19.3%)  |
 | `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/Webhook               | 745.6 KB (58.2%) | 99.2 KB (31.0%)  |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE`                                                                        | L7-Application/HttpDelivery          | 823.0 KB (64.3%) | 80.8 KB (25.2%)  |

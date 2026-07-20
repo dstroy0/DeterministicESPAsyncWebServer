@@ -272,6 +272,13 @@
     "flash_bytes": 725029,
     "ram_bytes": 44068
   },
+  "HOTSWAP": {
+    "example": "L7-Application/HotSwapStorage",
+    "flags": "-DDWS_ENABLE_HOTSWAP=1",
+    "board": "esp32dev",
+    "flash_bytes": 838441,
+    "ram_bytes": 82728
+  },
   "HTTP_CLIENT": {
     "example": "L7-Application/HttpClient",
     "flags": "-DDWS_ENABLE_HTTP_CLIENT=1",
