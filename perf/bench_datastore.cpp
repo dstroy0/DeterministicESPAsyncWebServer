@@ -138,17 +138,17 @@ int main()
         static WalStore wal;
         static DWSDbm db;
         wal_store_format(&wal, &dev);
-        detws_dbm_open(&db, &wal);
+        dws_dbm_open(&db, &wal);
         char keys[100][8];
         uint8_t val[64];
         memset(val, 0x5A, sizeof(val));
         for (int k = 0; k < 100; k++)
             snprintf(keys[k], sizeof(keys[k]), "k%05d", k);
         for (int k = 0; k < 100; k++)
-            detws_dbm_put(&db, keys[k], (uint16_t)strlen(keys[k]), val, sizeof(val));
+            dws_dbm_put(&db, keys[k], (uint16_t)strlen(keys[k]), val, sizeof(val));
         int idx = 0;
         double nput = bench_ns(500000, [&] {
-            detws_dbm_put(&db, keys[idx], (uint16_t)strlen(keys[idx]), val, sizeof(val));
+            dws_dbm_put(&db, keys[idx], (uint16_t)strlen(keys[idx]), val, sizeof(val));
             idx = (idx + 1) % 100;
         });
         row("dbm", "put (16B key/64B val)", nput, 0);
@@ -156,7 +156,7 @@ int main()
         volatile long sink = 0;
         idx = 0;
         double nget = bench_ns(2000000, [&] {
-            sink += detws_dbm_get(&db, keys[idx], (uint16_t)strlen(keys[idx]), out, sizeof(out));
+            sink += dws_dbm_get(&db, keys[idx], (uint16_t)strlen(keys[idx]), out, sizeof(out));
             idx = (idx + 1) % 100;
         });
         row("dbm", "get", nget, 0);
@@ -173,18 +173,18 @@ int main()
         static DWSDbm db;
         static DWSDocStore ds;
         wal_store_format(&wal, &dev);
-        detws_dbm_open(&db, &wal);
-        detws_docstore_open(&ds, &db);
+        dws_dbm_open(&db, &wal);
+        dws_docstore_open(&ds, &db);
         for (int k = 0; k < 100; k++)
         {
             char id[8], doc[80];
             snprintf(id, sizeof(id), "u%05d", k);
             snprintf(doc, sizeof(doc), "{\"city\":\"%s\",\"age\":%d,\"n\":%d}", (k % 2) ? "paris" : "lyon", 20 + k % 40,
                      k);
-            detws_docstore_put(&ds, id, (uint16_t)strlen(id), (const uint8_t *)doc, (uint32_t)strlen(doc));
+            dws_docstore_put(&ds, id, (uint16_t)strlen(id), (const uint8_t *)doc, (uint32_t)strlen(doc));
         }
         volatile uint32_t sink = 0;
-        double nf = bench_ns(20000, [&] { sink += detws_docstore_find_str(&ds, "city", "paris", nullptr, nullptr); });
+        double nf = bench_ns(20000, [&] { sink += dws_docstore_find_str(&ds, "city", "paris", nullptr, nullptr); });
         row("docstore", "find_str (scan 100)", nf, 0);
         printf("| %-10s | %-26s | %10.1f | %8s |\n", "docstore", "  -> per doc scanned", nf / 100.0, "-");
         (void)sink;

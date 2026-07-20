@@ -22,7 +22,7 @@ if (dws_mdns_begin(HOSTNAME, 80)) {
 
 `dws_mdns_txt()` attaches Bonjour TXT key/value pairs to the primary service,
 and `dws_mdns_add_service()` advertises additional services (here HTTPS on 443).
-After flashing you can reach the board at `http://detws-demo.local/` and see it in
+After flashing you can reach the board at `http://dws-demo.local/` and see it in
 any DNS-SD browser (`dns-sd -B _http._tcp`, Avahi, Bonjour).
 
 ## Build and run
@@ -34,8 +34,8 @@ pio ci --board=esp32dev --project-option="framework=arduino" \
 ```
 
 ```sh
-ping detws-demo.local
-curl http://detws-demo.local/
+ping dws-demo.local
+curl http://dws-demo.local/
 dns-sd -B _http._tcp           # macOS / DNS-SD: discover the advertised service
 ```
 
@@ -57,7 +57,7 @@ explanatory comments:
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
-static const char *HOSTNAME = "detws-demo"; // -> detws-demo.local
+static const char *HOSTNAME = "dws-demo"; // -> dws-demo.local
 
 DWS server;
 

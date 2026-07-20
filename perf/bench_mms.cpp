@@ -40,41 +40,41 @@ int main()
     // A typical IEC 61850 Data Object reference (indication status value) - the item a client reads most.
     const char *item = "LD0/GGIO1$ST$Ind1$stVal";
     uint8_t req[128];
-    size_t req_len = detws_mms_read_request(0x0102, item, req, sizeof(req));
+    size_t req_len = dws_mms_read_request(0x0102, item, req, sizeof(req));
 
     // A pre-encoded BER AccessResult data value (boolean-ish: 85 01 01) for the response builder.
     const uint8_t data[] = {0x85, 0x01, 0x01};
     uint8_t resp[128];
-    size_t resp_len = detws_mms_read_response(0x0102, data, sizeof(data), resp, sizeof(resp));
+    size_t resp_len = dws_mms_read_response(0x0102, data, sizeof(data), resp, sizeof(resp));
 
     printf("| Feature | Operation                  |     ns/op |    MB/s |\n");
     printf("|---------|----------------------------|-----------|---------|\n");
 
-    // detws_mms_read_request: BER-encode the confirmed-request Read PDU for one named variable (transmit op).
+    // dws_mms_read_request: BER-encode the confirmed-request Read PDU for one named variable (transmit op).
     {
         uint8_t buf[128];
         volatile size_t sink = 0;
-        double ns = bench_ns(5000000, [&] { sink += detws_mms_read_request(0x0102, item, buf, sizeof(buf)); });
+        double ns = bench_ns(5000000, [&] { sink += dws_mms_read_request(0x0102, item, buf, sizeof(buf)); });
         row("mms", "read_request (build)", ns, (double)req_len);
         (void)sink;
     }
 
-    // detws_mms_read_response: BER-encode the confirmed-response carrying one AccessResult data value.
+    // dws_mms_read_response: BER-encode the confirmed-response carrying one AccessResult data value.
     {
         uint8_t buf[128];
         volatile size_t sink = 0;
         double ns =
-            bench_ns(5000000, [&] { sink += detws_mms_read_response(0x0102, data, sizeof(data), buf, sizeof(buf)); });
+            bench_ns(5000000, [&] { sink += dws_mms_read_response(0x0102, data, sizeof(data), buf, sizeof(buf)); });
         row("mms", "read_response (build)", ns, (double)resp_len);
         (void)sink;
     }
 
-    // detws_mms_parse: validate the confirmed-PDU BER header + decode the invokeID + slice the service body.
+    // dws_mms_parse: validate the confirmed-PDU BER header + decode the invokeID + slice the service body.
     {
         volatile size_t sink = 0;
         double ns = bench_ns(10000000, [&] {
             MmsPdu p;
-            if (detws_mms_parse(req, req_len, &p))
+            if (dws_mms_parse(req, req_len, &p))
                 sink += p.invoke_id + p.service_len;
         });
         row("mms", "parse (confirmed PDU)", ns, (double)req_len);

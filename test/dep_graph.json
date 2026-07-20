@@ -1016,7 +1016,7 @@
 "native_auth_lockout",
 "native_cloudevents",
 "native_compliance",
-"native_det_ip",
+"native_dws_ip",
 "native_diag",
 "native_forwarded_trust",
 "native_h3_server",
@@ -1042,7 +1042,7 @@
 "native_auth_lockout",
 "native_cloudevents",
 "native_compliance",
-"native_det_ip",
+"native_dws_ip",
 "native_diag",
 "native_forwarded_trust",
 "native_h3_server",
@@ -2315,10 +2315,10 @@
 "native_ws_deflate"
 ],
 "src/network_drivers/session/arena.cpp": [
-"native_det_arena"
+"native_dws_arena"
 ],
 "src/network_drivers/session/arena.h": [
-"native_det_arena"
+"native_dws_arena"
 ],
 "src/network_drivers/session/proto_builtins.cpp": [
 "native",

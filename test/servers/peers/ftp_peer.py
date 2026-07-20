@@ -9,7 +9,7 @@ It then confirms - as the authoritative third party, by reading the server's hom
 device's upload actually landed byte-for-byte. That closes the loop: the device's command builder + reply
 parser + PASV decoder interoperate with the genuine FTP wire protocol.
 
-  1. start pyftpdlib on 0.0.0.0 (user detws / detws123, writable home)
+  1. start pyftpdlib on 0.0.0.0 (user dws / dws123, writable home)
   2. trigger GET /ftp/probe on the device -> {greet, user, pass, type, pasv, stor, size}
   3. the uploaded file exists in the server home and its bytes match what the device sent
 
@@ -32,7 +32,7 @@ NAME = "ftp"
 HELP = "drive the device as an FTP client against a real pyftpdlib server (device-as-client)"
 
 # Must match the rig's h_ftp_probe upload (pentesting/rig_firmware/src/main.cpp: FTP_UPLOAD).
-_EXPECT = b"detws-ftp-rig-upload\n"
+_EXPECT = b"dws-ftp-rig-upload\n"
 _UPLOAD_NAME = "dws_rig.txt"
 
 
@@ -41,8 +41,8 @@ def add_args(p) -> None:
     p.add_argument("--port", type=int, default=80, help="device HTTP port (default 80)")
     p.add_argument("--ftp-host", help="address the device dials for FTP (default: this machine's route IP)")
     p.add_argument("--ftp-port", type=int, default=2121, help="FTP control port to serve (default 2121)")
-    p.add_argument("--user", default="detws", help="FTP username (default detws)")
-    p.add_argument("--passwd", default="detws123", help="FTP password (default detws123)")
+    p.add_argument("--user", default="dws", help="FTP username (default dws)")
+    p.add_argument("--passwd", default="dws123", help="FTP password (default dws123)")
     p.add_argument("--timeout", type=float, default=10.0, help="timeout seconds")
 
 
@@ -79,7 +79,7 @@ def run(args) -> bool:
             pr.check("reach the device", False, str(exc))
             return pr.summary()
 
-    homedir = tempfile.mkdtemp(prefix="detws-ftp-")
+    homedir = tempfile.mkdtemp(prefix="dws-ftp-")
     try:
         server, _thread = _start_server(homedir, args.ftp_port, args.user, args.passwd)
     except OSError as exc:  # noqa: BLE001 - e.g. port already bound

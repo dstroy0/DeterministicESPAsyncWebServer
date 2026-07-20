@@ -73,7 +73,7 @@ def run(args) -> bool:
 
     try:
         pr.info(f"collector on {statsd_host}:{args.statsd_port}")
-        want_name, want_value, want_type = "detws.rig.gauge", "4242", "g"
+        want_name, want_value, want_type = "dws.rig.gauge", "4242", "g"
 
         # 2. trigger the device to emit one gauge metric to the collector.
         try:

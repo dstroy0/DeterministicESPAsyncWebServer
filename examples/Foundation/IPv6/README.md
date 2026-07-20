@@ -29,7 +29,7 @@ while (!dws_ipv6_ready()) delay(250); // waits for a global (routable) v6 addres
   zero run compressed, v4-mapped shown dotted).
 - **`dws_ip_classify()`** - loopback / link-local / private-ULA / multicast / global.
 
-It is pure and host-tested (`pio test -e native_det_ip`), so the address handling is verified
+It is pure and host-tested (`pio test -e native_dws_ip`), so the address handling is verified
 off-device; the netif bring-up is ESP32-only.
 
 ## Try it

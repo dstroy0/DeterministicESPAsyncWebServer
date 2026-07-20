@@ -45,7 +45,7 @@ int main()
                       "eyJzdWIiOiJyaWciLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE5MDAwMDAwMDB9."
                       "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     const size_t tlen = strlen(tok);
-    const uint8_t secret[] = "detws-rig-jwt-secret-2026";
+    const uint8_t secret[] = "dws-rig-jwt-secret-2026";
 
     printf("| Feature      | Operation                |     ns/op |    MB/s |\n");
     printf("|--------------|--------------------------|-----------|---------|\n");

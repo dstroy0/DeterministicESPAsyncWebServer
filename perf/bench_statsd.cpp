@@ -38,8 +38,8 @@ static void row(const char *feature, const char *op, double ns_per_op, double by
 int main()
 {
     char out[256];
-    size_t len = statsd_format(out, sizeof(out), "api.requests", "1", StatsdType::STATSD_COUNTER, 0.1f,
-                               "env:prod,host:detws-rig");
+    size_t len =
+        statsd_format(out, sizeof(out), "api.requests", "1", StatsdType::STATSD_COUNTER, 0.1f, "env:prod,host:dws-rig");
 
     printf("| Feature      | Operation                |     ns/op |    MB/s |\n");
     printf("|--------------|--------------------------|-----------|---------|\n");
@@ -49,7 +49,7 @@ int main()
         volatile size_t sink = 0;
         double ns = bench_ns(3000000, [&] {
             sink += statsd_format(out, sizeof(out), "api.requests", "1", StatsdType::STATSD_COUNTER, 0.1f,
-                                  "env:prod,host:detws-rig");
+                                  "env:prod,host:dws-rig");
         });
         row("statsd", "statsd_format (counter)", ns, (double)len);
         (void)sink;

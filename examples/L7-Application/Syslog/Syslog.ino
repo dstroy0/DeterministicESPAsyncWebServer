@@ -62,7 +62,7 @@ void setup()
     Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
                   (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
 
-    dws_syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SyslogFacility::SYSLOG_FAC_LOCAL0);
+    dws_syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-dws", "dws", SyslogFacility::SYSLOG_FAC_LOCAL0);
     dws_syslog_log(SyslogSeverity::SYSLOG_NOTICE, "device booted");
 
     server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "ok"); });

@@ -1,5 +1,5 @@
 # Doxygen-input documentation uses @ref cross-references whose targets contain
-# underscores (e.g. `@ref DetWebServer::send_template`). Prettier parses those
+# underscores (e.g. `@ref DWS::send_template`). Prettier parses those
 # underscores as Markdown emphasis and rewrites them to `*`, which silently
 # breaks the Doxygen links. These files are therefore excluded from Prettier;
 # GitHub-facing Markdown (README.md, docs/CHANGELOG.md, …) is still formatted.

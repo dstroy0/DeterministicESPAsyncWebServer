@@ -14,7 +14,7 @@
 #define WIFI_PASS "YOUR_PASSWORD"
 #endif
 
-DetWebServer server;
+DWS server;
 static uint8_t big4k[4096];
 static uint32_t g_sent64;
 

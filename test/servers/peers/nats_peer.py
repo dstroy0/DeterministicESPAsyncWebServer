@@ -27,7 +27,7 @@ from ._common import Probe
 NAME = "nats"
 HELP = "drive the device as a NATS client against a real nats-server (device-as-client)"
 
-_PAYLOAD = b"hello-from-detws-rig"  # must match the rig's h_nats_probe PUB payload
+_PAYLOAD = b"hello-from-dws-rig"  # must match the rig's h_nats_probe PUB payload
 
 
 def add_args(p) -> None:
@@ -35,7 +35,7 @@ def add_args(p) -> None:
     p.add_argument("--port", type=int, default=80, help="device HTTP port (default 80)")
     p.add_argument("--nats-host", help="nats-server address the device dials (default: this machine's IP)")
     p.add_argument("--nats-port", type=int, default=4222, help="nats-server port (default 4222)")
-    p.add_argument("--subject", default="detws.rig", help="subject to bridge (default detws.rig)")
+    p.add_argument("--subject", default="dws.rig", help="subject to bridge (default dws.rig)")
     p.add_argument("--timeout", type=float, default=8.0, help="timeout seconds")
 
 
@@ -81,7 +81,7 @@ def run(args) -> bool:
         ns.settimeout(args.timeout)
         info = ns.recv(4096)
         pr.check("nats-server reachable (INFO)", info.startswith(b"INFO "), info[:24].decode("latin1", "replace"))
-        ns.sendall(b'CONNECT {"verbose":false,"name":"detws-interop-peer"}\r\n')
+        ns.sendall(b'CONNECT {"verbose":false,"name":"dws-interop-peer"}\r\n')
         ns.sendall(f"SUB {args.subject} 99\r\n".encode())
         ns.sendall(b"PING\r\n")
         _recv_until(ns, b"PONG\r\n", time.time() + args.timeout)  # flush the SUB, confirm the session is live

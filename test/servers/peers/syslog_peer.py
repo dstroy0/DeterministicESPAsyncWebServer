@@ -86,7 +86,7 @@ def run(args) -> bool:
 
     try:
         pr.info(f"collector on {syslog_host}:{args.syslog_port}")
-        want_msg = "detws-syslog-interop-check"
+        want_msg = "dws-syslog-interop-check"
 
         # 2. trigger the device to ship one RFC 5424 line to the collector.
         try:
@@ -114,7 +114,7 @@ def run(args) -> bool:
             pri, version, hostname, appname, msg = parsed
             pr.check("PRI = LOCAL0*8 + INFO", pri == _LOCAL0 * 8 + _INFO, f"pri={pri}")
             pr.check("VERSION = 1", version == b"1", version.decode("latin1", "replace"))
-            pr.check("HOSTNAME matches", hostname == b"detws-rig", hostname.decode("latin1", "replace"))
+            pr.check("HOSTNAME matches", hostname == b"dws-rig", hostname.decode("latin1", "replace"))
             pr.check("APP-NAME matches", appname == b"rig-app", appname.decode("latin1", "replace"))
             pr.check("MSG delivered", want_msg.encode() in msg, msg[:40].decode("latin1", "replace"))
     finally:

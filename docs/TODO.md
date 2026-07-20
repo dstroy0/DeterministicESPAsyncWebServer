@@ -551,7 +551,7 @@ Open follow-ups discovered during the above:
       enables IPv6 on the netif (`init_ipv6_physical` / `net_global_ipv6` / `dws_ipv6_ready`); the
       listeners already bind `IPADDR_TYPE_ANY`, so the server accepts v6 once an address is up. The
       `DWSIp` address core (`network_drivers/network/ip.h`) parses / formats / classifies both
-      families (`native_det_ip`; RFC 4291 + 5952). Example IPv6; both cores compiled. **Phase 2
+      families (`native_dws_ip`; RFC 4291 + 5952). Example IPv6; both cores compiled. **Phase 2
       (done):** the transport carries the peer as a protocol-agnostic family-tagged `DWSIp`
       (`dws_conn_remote_addr()` / `dws_lwip_to_detip()`), and every IP-keyed abuse-prevention feature
       stores and matches the FULL address - the per-IP throttle + auth lockout by

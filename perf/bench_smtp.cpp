@@ -74,7 +74,7 @@ int main()
     };
     SmtpConfig cfg = {"mail.example.com", 25, false, nullptr, nullptr, "rig@example.com", "esp32"};
     const char *body = "temperature 84C over threshold\nheap low\n";
-    SmtpMessage msg = {"ops@example.com", "detws rig alert", body};
+    SmtpMessage msg = {"ops@example.com", "dws rig alert", body};
 
     printf("| Feature      | Operation                |     ns/op |    MB/s |\n");
     printf("|--------------|--------------------------|-----------|---------|\n");

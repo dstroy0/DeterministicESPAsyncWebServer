@@ -5292,6 +5292,20 @@
 #endif
 
 /**
+ * @brief SSH keyboard-interactive authentication (RFC 4256), default off.
+ *
+ * Adds the "keyboard-interactive" method alongside password/publickey. On selection the server sends
+ * one SSH_MSG_USERAUTH_INFO_REQUEST with a single non-echoed "Password: " prompt and verifies the
+ * client's SSH_MSG_USERAUTH_INFO_RESPONSE through the same ::dws_ssh_auth_set_password_cb callback -
+ * so it is the challenge-response face of password auth (the common OpenSSH `-o
+ * PreferredAuthentications=keyboard-interactive` / PAM-password case), not a second credential store.
+ * Requires DWS_ENABLE_SSH and, because it is password-backed, DWS_SSH_ALLOW_PASSWORD.
+ */
+#ifndef DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE
+#define DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE 0
+#endif
+
+/**
  * @brief Maximum failed SSH authentication attempts per connection.
  *
  * RFC 4252 §4 permits the server to disconnect after a small bounded number of
@@ -6332,6 +6346,14 @@ enum class DWSIface : uint8_t
 
 #if DWS_ENABLE_SSH_ZLIB && !DWS_ENABLE_SSH
 #error "DeterministicESPAsyncWebServer: DWS_ENABLE_SSH_ZLIB requires DWS_ENABLE_SSH"
+#endif
+
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE && !DWS_ENABLE_SSH
+#error "DeterministicESPAsyncWebServer: DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE requires DWS_ENABLE_SSH"
+#endif
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE && !DWS_SSH_ALLOW_PASSWORD
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE is password-backed - it verifies the response through the password callback, so DWS_SSH_ALLOW_PASSWORD must stay 1 (or drop keyboard-interactive for publickey-only)"
 #endif
 
 #if DWS_ENABLE_SSH_SFTP && !DWS_ENABLE_SSH

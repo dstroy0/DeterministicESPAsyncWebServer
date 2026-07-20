@@ -29,7 +29,7 @@ from ._common import Probe
 NAME = "stomp"
 HELP = "drive the device as a STOMP client against a spec STOMP 1.2 broker (device-as-client)"
 
-_PAYLOAD = b"hello-from-detws-rig"  # must match the rig's h_stomp_probe SEND body
+_PAYLOAD = b"hello-from-dws-rig"  # must match the rig's h_stomp_probe SEND body
 
 
 def add_args(p) -> None:
@@ -152,7 +152,7 @@ def run(args) -> bool:
     try:
         pr.info(f"STOMP broker on {broker_host}:{args.broker_port}")
         try:
-            q = f"/stomp/probe?host={broker_host}&port={args.broker_port}&dest=/topic/detws"
+            q = f"/stomp/probe?host={broker_host}&port={args.broker_port}&dest=/topic/dws"
             c = http.client.HTTPConnection(args.host, args.port, timeout=args.timeout)
             c.request("GET", q)
             rep = json.loads(c.getresponse().read())
@@ -171,7 +171,7 @@ def run(args) -> bool:
         landed = next(((d, b) for (d, b) in broker.sent if b == _PAYLOAD), None)
         pr.check("broker received the device's SEND", landed is not None, f"{len(broker.sent)} SEND frame(s)")
         if landed:
-            pr.check("SEND destination is /topic/detws", landed[0] == "/topic/detws", landed[0])
+            pr.check("SEND destination is /topic/dws", landed[0] == "/topic/dws", landed[0])
     finally:
         broker.stop()
 

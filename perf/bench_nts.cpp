@@ -53,10 +53,10 @@ int main()
     uint8_t cookie[32];
     for (int i = 0; i < 32; i++)
         cookie[i] = (uint8_t)(i * 7 + 3);
-    rl += detws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, next_proto, 2, resp + rl, sizeof(resp) - rl);
-    rl += detws_nts_ke_record(true, Nts::NTS_KE_AEAD_ALGORITHM, aead, 2, resp + rl, sizeof(resp) - rl);
-    rl += detws_nts_ke_record(false, Nts::NTS_KE_COOKIE, cookie, sizeof(cookie), resp + rl, sizeof(resp) - rl);
-    rl += detws_nts_ke_record(true, Nts::NTS_KE_END_OF_MESSAGE, nullptr, 0, resp + rl, sizeof(resp) - rl);
+    rl += dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, next_proto, 2, resp + rl, sizeof(resp) - rl);
+    rl += dws_nts_ke_record(true, Nts::NTS_KE_AEAD_ALGORITHM, aead, 2, resp + rl, sizeof(resp) - rl);
+    rl += dws_nts_ke_record(false, Nts::NTS_KE_COOKIE, cookie, sizeof(cookie), resp + rl, sizeof(resp) - rl);
+    rl += dws_nts_ke_record(true, Nts::NTS_KE_END_OF_MESSAGE, nullptr, 0, resp + rl, sizeof(resp) - rl);
 
     uint8_t nonce[16];
     for (int i = 0; i < 16; i++)
@@ -67,9 +67,9 @@ int main()
 
     // Build the NTS-KE request (client hello: next-protocol + AEAD offer). Once per key establishment.
     {
-        size_t req_len = detws_nts_ke_request(out, sizeof(out));
+        size_t req_len = dws_nts_ke_request(out, sizeof(out));
         volatile size_t sink = 0;
-        double ns = bench_ns(2000000, [&] { sink += detws_nts_ke_request(out, sizeof(out)); });
+        double ns = bench_ns(2000000, [&] { sink += dws_nts_ke_request(out, sizeof(out)); });
         row("nts", "ke_request (build)", ns, (double)req_len);
         (void)sink;
     }
@@ -79,7 +79,7 @@ int main()
         volatile size_t sink = 0;
         double ns = bench_ns(2000000, [&] {
             size_t n = 0;
-            if (detws_nts_ke_parse(resp, rl, ke_count_cb, &n))
+            if (dws_nts_ke_parse(resp, rl, ke_count_cb, &n))
                 sink += n;
         });
         row("nts", "ke_parse (server response)", ns, (double)rl);
@@ -88,18 +88,18 @@ int main()
 
     // Build a Unique-Identifier EF (RFC 8915 5.3) - on every NTS-protected NTP request the client sends.
     {
-        size_t ef_len = detws_nts_ef_unique_id(nonce, sizeof(nonce), out, sizeof(out));
+        size_t ef_len = dws_nts_ef_unique_id(nonce, sizeof(nonce), out, sizeof(out));
         volatile size_t sink = 0;
-        double ns = bench_ns(5000000, [&] { sink += detws_nts_ef_unique_id(nonce, sizeof(nonce), out, sizeof(out)); });
+        double ns = bench_ns(5000000, [&] { sink += dws_nts_ef_unique_id(nonce, sizeof(nonce), out, sizeof(out)); });
         row("nts", "ef_unique_id (build)", ns, (double)ef_len);
         (void)sink;
     }
 
     // Build a Cookie EF - carried on every NTS-protected NTP request (one cookie spent per exchange).
     {
-        size_t ck_len = detws_nts_ef_cookie(cookie, sizeof(cookie), out, sizeof(out));
+        size_t ck_len = dws_nts_ef_cookie(cookie, sizeof(cookie), out, sizeof(out));
         volatile size_t sink = 0;
-        double ns = bench_ns(5000000, [&] { sink += detws_nts_ef_cookie(cookie, sizeof(cookie), out, sizeof(out)); });
+        double ns = bench_ns(5000000, [&] { sink += dws_nts_ef_cookie(cookie, sizeof(cookie), out, sizeof(out)); });
         row("nts", "ef_cookie (build)", ns, (double)ck_len);
         (void)sink;
     }

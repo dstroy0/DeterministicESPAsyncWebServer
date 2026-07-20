@@ -1,8 +1,8 @@
 API Reference
 =============
 
-Rendered from the Doxygen XML by Breathe. The primary public surface is the ``DetWebServer`` class; every
-opt-in feature is a ``DWS_ENABLE_*`` build flag (default off) in ``DetWebServerConfig.h``, and the
+Rendered from the Doxygen XML by Breathe. The primary public surface is the ``DWS`` class; every
+opt-in feature is a ``DWS_ENABLE_*`` build flag (default off) in ``DWSConfig.h``, and the
 :doc:`configurator <index>` assembles a ``build_flags`` block from them.
 
 .. note::
@@ -12,7 +12,7 @@ opt-in feature is a ``DWS_ENABLE_*`` build flag (default off) in ``DetWebServerC
    Doxygen HTML output; the full ``doxygenindex`` is not inlined here because the Sphinx C++ domain does
    not parse every macro-heavy declaration in the tree.
 
-The ``DetWebServer`` class
+The ``DWS`` class
 --------------------------
 
 .. doxygenfile:: DeterministicESPAsyncWebServer.h

@@ -17,7 +17,7 @@ agent:
 ```cpp
 dws_snmp_agent_init("public");              // read-only community
 dws_snmp_agent_set_rw_community("private"); // authorizes Set
-dws_snmp_agent_set_system("...desc...", "admin@example.com", "esp32-detws", "lab bench");
+dws_snmp_agent_set_system("...desc...", "admin@example.com", "esp32-dws", "lab bench");
 dws_snmp_agent_add_dynamic(OID_FREE_HEAP, 9, SNMP_GAUGE32, get_free_heap); // computed each Get
 dws_snmp_agent_add_integer(OID_LED, 9, 0, set_led);                        // writable
 dws_snmp_agent_begin_udp(161);
@@ -126,7 +126,7 @@ void setup()
     // Build the MIB: standard system group + private objects.
     dws_snmp_agent_init("public");              // read-only community
     dws_snmp_agent_set_rw_community("private"); // read-write community (authorizes Set)
-    dws_snmp_agent_set_system("DeterministicESPAsyncWebServer SNMP agent", "admin@example.com", "esp32-detws", "lab bench");
+    dws_snmp_agent_set_system("DeterministicESPAsyncWebServer SNMP agent", "admin@example.com", "esp32-dws", "lab bench");
     dws_snmp_agent_add_dynamic(OID_FREE_HEAP, 9, SNMP_GAUGE32, get_free_heap);
     dws_snmp_agent_add_integer(OID_LED, 9, 0, set_led); // writable
 
@@ -135,8 +135,8 @@ void setup()
     // engine ID, derive it from the chip MAC; persist/increment engineBoots in NVS.
     dws_snmp_v3_init(nullptr, 0);
     dws_snmp_v3_set_boots(1);
-    dws_snmp_v3_set_user("detws", "authpass12", "privpass12");
-    Serial.println("SNMPv3 user 'detws' enabled (authPriv: SHA-256 / AES-128)");
+    dws_snmp_v3_set_user("dws", "authpass12", "privpass12");
+    Serial.println("SNMPv3 user 'dws' enabled (authPriv: SHA-256 / AES-128)");
 #endif
 
     // Bind the agent to UDP/161 (raw lwIP, callback-driven).

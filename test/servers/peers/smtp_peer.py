@@ -30,7 +30,7 @@ NAME = "smtp"
 HELP = "drive the device as an SMTP client against a real aiosmtpd server (device-as-client)"
 
 # The rig's h_smtp_probe body (pentesting/rig_firmware/src/main.cpp) - checked server-side.
-_BODY_MARK = b"automated alert from the detws-s3 rig"
+_BODY_MARK = b"automated alert from the dws-s3 rig"
 
 
 def add_args(p) -> None:
@@ -78,9 +78,9 @@ def run(args) -> bool:
 
     try:
         pr.info(f"aiosmtpd serving {smtp_host}:{args.smtp_port}")
-        frm = "rig@detws.local"
-        to = "ops@detws.local"
-        subject = f"detws-interop-{int(time.time())}"
+        frm = "rig@dws.local"
+        to = "ops@dws.local"
+        subject = f"dws-interop-{int(time.time())}"
 
         # 2. trigger the device to send an alert email through that server.
         try:

@@ -8,6 +8,32 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## `tcp_recved` on a freed pcb - remotely-triggerable reboot under SSH connection churn (DoS)
+
+- **Status:** FIXED (2026-07-20). Found by **stress-testing the live SSH server on an ESP32-P4** (COM9) with
+  the pentest tool's new SSH DoS attacks (`ssh_conn_saturation` / `ssh_slowloris` / `ssh_handshake_flood`)
+  plus concurrent sntrup761 handshakes killed mid-flight and rapid connect/RST churn.
+- **Symptom:** under connection churn the device rebooted (`rst:0xc (SW_CPU_RESET)`) with any of three
+  panics - `assert failed: tcp_output ... (tcp_output: invalid pcb)`, `assert failed: tcp_update_rcv_ann_wnd
+... (new_rcv_ann_wnd <= 0xffff)`, or `Guru Meditation Error: Load access fault`. A remote peer could reboot
+  the server at will by opening SSH connections and resetting them mid-handshake - a denial of service.
+- **Root cause:** every socket op the worker marshals to `tcpip_thread` re-checks that the slot still owns
+  the captured pcb before touching lwIP (`k->pcb == conn_pool[slot].pcb`, since a remote RST frees the pcb via
+  the error callback between capture and execution) - **except `DWS_OP_RECVED`**, which called
+  `tcp_recved(k->pcb, k->len)` unguarded (`tcp.cpp`). The RX-ack path (`dws_conn_ack_consumed`) checks the pcb
+  worker-side, but the marshaled `tcp_recved` runs later; if the connection was torn down in between,
+  `tcp_recved` walks a freed pcb - `tcp_update_rcv_ann_wnd` (window assert) and, when reopening the window,
+  a window-update `tcp_output` (`invalid pcb`) - which is why one hole produced all three signatures. A serial
+  `esp_rom_printf` trace confirmed every _guarded_ `tcp_output` ran on an ESTABLISHED pcb (`state==4`), so the
+  crash was not at any guarded send site - it was the unguarded receive-ack.
+- **Fix:** guard `DWS_OP_RECVED` with the same O(1) liveness check as `DWS_OP_SEND`/`DWS_OP_OUTPUT` - skip
+  `tcp_recved` (return `ERR_CLSD`) when `k->pcb != conn_pool[slot].pcb`. Verified on HW: the identical
+  churn + mid-flight-kill storm that rebooted the P4 3x now runs with **0 reboots, 0 asserts, heap flat**
+  (~282 KB). The pentest tool gained the three SSH DoS attacks that surface this class, and its liveness
+  oracle is being extended to flag a crash-and-recover reboot (it previously read a ~1 s reboot as "alive").
+
+---
+
 ## SSH server host-key name-list truncated - `rsa-sha2-256` dropped when all three host keys are loaded
 
 - **Status:** FIXED (2026-07-20). Found by a **real-OpenSSH interop matrix on an ESP32-P4** (the shipped
@@ -588,7 +614,7 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
 
 - **Status:** FIXED (rig-firmware config, found on hardware 2026-07-11 while adding the syslog `/syslog/probe`
   route - it 404'd even though the new firmware was live, since its `/bench` field was present).
-- **Root cause:** `DetWebServer` has a fixed flat route table of `MAX_ROUTES` (default **16**); `server.on()`
+- **Root cause:** `DWS` has a fixed flat route table of `MAX_ROUTES` (default **16**); `server.on()`
   / `on_ws()` / `on_sse()` / `dav()` each consume one slot and **return false (silently) when the table is
   full** - the app does not check the return. The rig had grown to **20 registrations** (dav + 17 handlers +
   ws + sse), so the four registered after slot 16 (`/syslog/probe`, `/secure`, `/ws`, `/events`) never took
@@ -663,7 +689,7 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
 ## SSE teardown slot leak wedges the whole HTTP server (sse_free never called)
 
 - **Status:** FIXED (found on hardware 2026-07-11 by the pentest rig's new `sse_exhaustion` attack).
-- **Found:** `pentesting/detws_pentest.py --only sse_exhaustion` against the S3 rig (`pentesting/rig_firmware`,
+- **Found:** `pentesting/dws_pentest.py --only sse_exhaustion` against the S3 rig (`pentesting/rig_firmware`,
   pinned `espressif32@6.13.0`, MAX_CONNS=4, MAX_SSE_CONNS=2). A **single clean run** on a freshly-booted,
   healthy board (heap 252636) drove the server permanently unresponsive: `/health` -> `56` then `28`
   (timeout), no recovery past `CONN_TIMEOUT_MS` (5 s), and **no crash/reboot** (serial clean) - a hard wedge.
@@ -697,7 +723,7 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
 ## Basic-auth password compared with strcmp: NUL-truncating + not constant-time
 
 - **Status:** FIXED (found on hardware 2026-07-11 by the pentest rig's `auth_bypass` attack).
-- **Found:** `pentesting/detws_pentest.py --only auth_bypass` against the S3 rig. Sending
+- **Found:** `pentesting/dws_pentest.py --only auth_bypass` against the S3 rig. Sending
   `Authorization: Basic base64("admin:admin\x00GARBAGE")` returned **200** on the protected route.
 - **Symptom:** a submitted password of the form `correct-password` + `\0` + junk authenticated, because
   `check_basic_auth` compared the password with `strcmp(pass, r->auth_pass)` and `strcmp` stops at the
@@ -721,7 +747,7 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
 
 - **Status:** FIXED (library) - the remediation is implemented at
   `src/network_drivers/transport/tcp.cpp` `lowlevel_recv_cb`: the idle-timer refresh
-  (`slot->last_activity_ms = detws_millis()`) now sits **after** the backpressure check, and the
+  (`slot->last_activity_ms = dws_millis()`) now sits **after** the backpressure check, and the
   refused-segment branch explicitly does not refresh (it returns `ERR_MEM` without touching the
   timer), so a no-progress connection idle-times-out and is reaped. HW re-attack with the pentest
   rig (`http_conn_saturation` + oversized lines, then confirm the pool recovers past CONN_TIMEOUT_MS)
@@ -734,7 +760,7 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
   crash removed that accidental recovery, exposing that the 4-slot pool's slots do not free under abnormal
   (RST-race / half-open saturation) teardown. Fixing one bug uncovered the one it was hiding.
 - **Root cause (JTAG-confirmed):** the idle-timeout timestamp is refreshed on _raw recv activity_ instead of
-  _accepted-data progress_. `lowlevel_recv_cb` set `slot->last_activity_ms = detws_millis()` **before** the
+  _accepted-data progress_. `lowlevel_recv_cb` set `slot->last_activity_ms = dws_millis()` **before** the
   backpressure check. An oversized request line (or any body larger than `RX_BUF_SIZE`) fills the RX ring; the
   segment is refused (`ERR_MEM`, kept as lwIP `refused_data`) and **redelivered every retransmit**. Each
   redelivery refreshed `last_activity_ms`, so `check_timeouts` always saw the slot as recently active and never
@@ -760,7 +786,7 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
   calling `tcp_write`/`tcp_output` on freed memory. HW re-attack with the pentest rig
   (`http_oversized_request_line` + `http_conn_saturation`, confirm no panic + no heap drift) is the
   remaining validation.
-- **Found:** `pentesting/detws_pentest.py --host <rig> --diag` (attacks `http_oversized_request_line` +
+- **Found:** `pentesting/dws_pentest.py --host <rig> --diag` (attacks `http_oversized_request_line` +
   `http_conn_saturation`) against the ESP32-S3 rig firmware (`pentesting/rig_firmware`, pinned
   `espressif32@6.13.0`, MAX_CONNS=4). Reproduced standalone with ~15 oversized-request-line connections.
 - **Symptom:** the device **panics and reboots**. Serial:
@@ -812,7 +838,7 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
 - **Symptom:** a connection to the published front port was accepted then RST with nothing relayed;
   `relay_on_accept`'s bind lookup found no bind, so it closed the connection. The origin never saw the
   request. No handler output at all, which made it look like the event was dropped.
-- **Root cause:** `DetWebServer::listen()` returned `DETWS_OK` - which is **1**, not 0 - but the relay
+- **Root cause:** `DWS::listen()` returned `DETWS_OK` - which is **1**, not 0 - but the relay
   example (and `relay_listener.h`'s own docs) treat the return as the listener id passed to
   `det_relay_publish()`. `begin()` assigns the actual listener index (0 for the only listener), so the
   bind was stored under id 1 while the accepted slot carried id 0; `bind_by_listener()` missed.
@@ -916,7 +942,7 @@ DETWS_ENABLE_DNC` to the `DETWS_NEED_DET_CLIENT` derivation (which also force-en
 ## Signed-integer-overflow UB in three untrusted-input number parsers
 
 - **Status:** FIXED (native_pentest now passes clean under ASan + UBSan with
-  `-fno-sanitize-recover=all`: 33/33; the directly-affected suites - native_det_primitives,
+  `-fno-sanitize-recover=all`: 33/33; the directly-affected suites - native_dws_primitives,
   native_redis, native_snmp, native_http_client - all still green).
 - **Found:** 2026-07-09, by the extended pentest fuzzer. Adding OPC UA Binary fuzz targets and
   running the built binary directly under `-fno-sanitize-recover=all` (so UBSan aborts instead of
@@ -983,8 +1009,8 @@ DETWS_ENABLE_DNC` to the `DETWS_NEED_DET_CLIENT` derivation (which also force-en
     - `TlsServerCtx` bundled a 1-byte `ready` flag with the ~600-byte mbedTLS server config/cert/key/
       ticket. `det_tls_ready()` (called on the client path) reads `ready`, anchoring the whole server
       config into a client that never runs `det_tls_configure()`.
-    - `DeferCtx` bundled the per-worker FreeRTOS queue **handles** (hot; `detws_defer()` pushes to them)
-      with the multi-hundred-byte static queue **storage** (only `detws_workers_start()` touches it), so
+    - `DeferCtx` bundled the per-worker FreeRTOS queue **handles** (hot; `dws_defer()` pushes to them)
+      with the multi-hundred-byte static queue **storage** (only `dws_workers_start()` touches it), so
       the storage stayed linked in a build that never starts workers.
 - **Fix:** split each into a hot symbol + a cold symbol - `TlsServerReadyCtx s_srv_ready` apart from
   `TlsServerCtx s_srv`; `DeferStorageCtx s_defer_store` apart from `DeferCtx s_defer`. The cold halves
@@ -1195,7 +1221,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
 - **Found:** 2026-07-03, first on-hardware connect to the new curve25519-sha256 +
   ssh-ed25519 suite: the client reached `expecting SSH2_MSG_KEX_ECDH_REPLY` then
   `Connection reset by peer`, and the serial log showed
-  `Guru Meditation Error: ... Stack canary watchpoint triggered (detws_worker)`.
+  `Guru Meditation Error: ... Stack canary watchpoint triggered (dws_worker)`.
 - **Root cause:** the software field arithmetic for curve25519 (`ssh_x25519`) and ed25519
   (`ssh_ed25519_sign`), in radix-2^16 with many `ssh_gf` temporaries per frame, nests deeper
   than the finite-field DH/RSA path - plus the field inversion calls the mbedTLS bignum
@@ -1245,7 +1271,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
 ## Abuse-prevention state keyed on a 32-bit hash of the IPv6 source address (security)
 
 - **Status:** FIXED (transport now carries the full family-tagged address; all IP-keyed
-  features match the whole IPv4/IPv6 address; `native_det_ip` / `native_accept_gate` /
+  features match the whole IPv4/IPv6 address; `native_dws_ip` / `native_accept_gate` /
   `native_auth_lockout` / `native` green with added v6 coverage).
 - **Found:** 2026-07-03, reviewing the IPv6 phase-2 work. Shipped in v4.87.0 (auth lockout)
   and v4.88.0 (per-IP throttle) - both superseded by this fix.
@@ -1330,7 +1356,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
   smoke hides the bug; stress on hardware surfaces it."
 - **Root cause:** the DMA-complete callback posted the `det_dma_event` whose `data` is a
   **pointer into the 2-deep ping-pong RX buffer** into the 16-deep preempting work queue.
-  `detws_pq_post_from_isr()` calls `portYIELD_FROM_ISR()`, but the simulator drives the
+  `dws_pq_post_from_isr()` calls `portYIELD_FROM_ISR()`, but the simulator drives the
   callback from a **task** context (not a real ISR), where the yield is not an immediate
   context switch - so under load `loop()` ran several more completions before the
   high-priority task drained the queue, the two ping-pong buffers wrapped, and the older
@@ -1565,10 +1591,10 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
 - **Found:** 2026-06-29, bringing up the real-protocol interop harness (test/servers).
 - **A server-only Arduino build (no HTTP client / MQTT / WS client) did not compile
   (build break).** `client.cpp` guarded its body with only `#if defined(ARDUINO)` yet
-  calls `detws_dns_resolve()`, whose declaration lives behind `DETWS_ENABLE_DNS_RESOLVER`.
+  calls `dws_dns_resolve()`, whose declaration lives behind `DETWS_ENABLE_DNS_RESOLVER`.
   That flag is force-enabled only by a client transport (`HTTP_CLIENT || MQTT || WS_CLIENT`,
   ServerConfig.h), so a build that enabled, e.g., WebSocket + SNMP + CoAP + Modbus but
-  no client left the symbol undeclared: `error: 'detws_dns_resolve' was not declared in this
+  no client left the symbol undeclared: `error: 'dws_dns_resolve' was not declared in this
 scope`. Host builds were unaffected (the body is already `#if defined(ARDUINO)`), so the
   native suites never caught it. Fix: add `DETWS_NEED_DET_CLIENT` (set alongside the
   DNS-resolver force-enable) and gate the translation unit on
@@ -1726,9 +1752,9 @@ scope`. Host builds were unaffected (the body is already `#if defined(ARDUINO)`)
   message-id with `millis()` and pulled `<Arduino.h>` for it. The flag was enabled by no
   test env, so the code had never been compiled on host - it failed to build there
   (`'millis' was not declared`), and even on ESP32 it violated the pluggable-clock rule
-  that `detws_millis()` is the single monotonic source (same class as the dns_resolver
+  that `dws_millis()` is the single monotonic source (same class as the dns_resolver
   bug above). Latent because the whole Observe path was never compiled in CI.
-- **Fix:** use `detws_millis()` (include `services/clock.h`), drop the Arduino.h
+- **Fix:** use `dws_millis()` (include `services/clock.h`), drop the Arduino.h
   include; added a `native_coap_observe` env so the Observe-gated code is compiled + the
   CoAP suite runs under the flag in CI (no longer bit-rots).
 
@@ -1773,9 +1799,9 @@ scope`. Host builds were unaffected (the body is already `#if defined(ARDUINO)`)
 - **Status:** FIXED (v4.9.1; found by the duplicate-code audit)
 - **Found:** 2026-06-28, agent services duplicate-code audit.
 - **Symptom:** `services/dns_resolver` polled its resolve deadline with `millis()` instead
-  of `detws_millis()`, so it ignored a custom clock (`detws_set_clock`) - violating the
-  pluggable-clock rule that `detws_millis()` is the single monotonic source.
-- **Fix:** use `detws_millis()`. (The bigger dedup, det_client reusing this one resolver,
+  of `dws_millis()`, so it ignored a custom clock (`dws_set_clock`) - violating the
+  pluggable-clock rule that `dws_millis()` is the single monotonic source.
+- **Fix:** use `dws_millis()`. (The bigger dedup, det_client reusing this one resolver,
   shipped later as the shared-primitive DNS-owner change.)
 
 ## Client ring used `volatile` indices (weak cross-core ordering)

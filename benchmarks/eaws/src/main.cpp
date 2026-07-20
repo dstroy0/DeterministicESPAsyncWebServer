@@ -1,4 +1,4 @@
-// ESPAsyncWebServer (ESP32Async fork) benchmark server. Matched 1:1 with ../../detws so the ONLY
+// ESPAsyncWebServer (ESP32Async fork) benchmark server. Matched 1:1 with ../../dws so the ONLY
 // difference is the library. Same board/core/-Os, WiFi sleep OFF. Endpoints: / /json /4k /64k.
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>

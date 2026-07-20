@@ -8,7 +8,7 @@ run a genuine TLS handshake against it and asserts the server side works end to 
 
   1. the TLS handshake completes (ClientHello -> ... -> Finished) against the device's cert
   2. a modern protocol is negotiated (TLS 1.2 or 1.3) with a real cipher suite
-  3. the leaf certificate is the device's (CN=esp32-detws)
+  3. the leaf certificate is the device's (CN=esp32-dws)
   4. an HTTP GET over the encrypted record returns 200 (the request rode inside TLS, not plaintext)
 
 The device cert is self-signed (a throwaway ECDSA P-256), so verification is disabled - the check is that
@@ -67,7 +67,7 @@ def run(args) -> bool:
         der = tls.getpeercert(binary_form=True)
         pr.check("device presented a certificate", bool(der), f"{len(der) if der else 0}B DER")
         if der:
-            pr.check("cert is the device's (CN esp32-detws)", b"esp32-detws" in der, "CN in DER")
+            pr.check("cert is the device's (CN esp32-dws)", b"esp32-dws" in der, "CN in DER")
 
         # 4. an HTTP request over the encrypted record returns 200.
         req = f"GET {args.path} HTTP/1.1\r\nHost: {args.host}\r\nConnection: close\r\n\r\n".encode()
@@ -90,7 +90,7 @@ def run(args) -> bool:
         pr.check("HTTP GET over TLS returns 200", status == 200, f"status={status} {resp[:32]!r}")
         pr.check(
             "response came back over the encrypted channel",
-            b"detws" in resp,
+            b"dws" in resp,
             resp.split(b"\r\n\r\n", 1)[-1][:32].decode("latin1", "replace"),
         )
     finally:

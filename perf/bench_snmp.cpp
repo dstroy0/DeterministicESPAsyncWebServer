@@ -64,7 +64,7 @@ static size_t build_req(uint8_t *buf, size_t cap, uint8_t pdu, long reqid, long 
 int main()
 {
     snmp_agent_init("public");
-    snmp_agent_set_system("DeterministicESPAsyncWebServer SNMP agent bench", "admin@example.com", "esp32-detws",
+    snmp_agent_set_system("DeterministicESPAsyncWebServer SNMP agent bench", "admin@example.com", "esp32-dws",
                           "lab bench", 72);
 
     static const uint32_t OID_SYSDESCR[] = {1, 3, 6, 1, 2, 1, 1, 1, 0}; // sysDescr.0 (OCTET STRING)

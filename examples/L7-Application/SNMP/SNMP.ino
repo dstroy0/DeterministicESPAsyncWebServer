@@ -36,7 +36,7 @@
 // SNMPv3 (USM) is an additional gated layer. Enable it for the whole build with
 //     build_flags = -DDWS_ENABLE_SNMP=1 -DDWS_ENABLE_SNMP_V3=1
 // then query with authPriv (HMAC-SHA-256 auth + AES-128 privacy), e.g.:
-//   snmpget -v3 -u detws -l authPriv -a SHA-256 -A authpass12 -x AES -X privpass12 <ip> sysDescr.0
+//   snmpget -v3 -u dws -l authPriv -a SHA-256 -A authpass12 -x AES -X privpass12 <ip> sysDescr.0
 #if DWS_ENABLE_SNMP_V3
 #include "services/snmp/snmp_v3.h"
 #endif
@@ -90,7 +90,7 @@ void setup()
     // Build the MIB: standard system group + private objects.
     dws_snmp_agent_init("public");              // read-only community
     dws_snmp_agent_set_rw_community("private"); // read-write community (authorizes Set)
-    dws_snmp_agent_set_system("DeterministicESPAsyncWebServer SNMP agent", "admin@example.com", "esp32-detws",
+    dws_snmp_agent_set_system("DeterministicESPAsyncWebServer SNMP agent", "admin@example.com", "esp32-dws",
                               "lab bench");
     dws_snmp_agent_add_dynamic(OID_FREE_HEAP, 9, (uint8_t)SnmpTag::SNMP_GAUGE32, get_free_heap);
     dws_snmp_agent_add_integer(OID_LED, 9, 0, set_led); // writable
@@ -100,8 +100,8 @@ void setup()
     // engine ID, derive it from the chip MAC; persist/increment engineBoots in NVS.
     dws_snmp_v3_init(nullptr, 0);
     dws_snmp_v3_set_boots(1);
-    dws_snmp_v3_set_user("detws", "authpass12", "privpass12");
-    Serial.println("SNMPv3 user 'detws' enabled (authPriv: SHA-256 / AES-128)");
+    dws_snmp_v3_set_user("dws", "authpass12", "privpass12");
+    Serial.println("SNMPv3 user 'dws' enabled (authPriv: SHA-256 / AES-128)");
 #endif
 
     // Bind the agent to UDP/161 (raw lwIP, callback-driven).

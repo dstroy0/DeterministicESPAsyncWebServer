@@ -24,6 +24,16 @@ struct SshAuthCtx
 {
     SshPasswordCb pw_cb = nullptr;
     SshPubkeyCb pk_cb = nullptr;
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE
+    // Per-slot keyboard-interactive exchange state: armed by a "keyboard-interactive" USERAUTH_REQUEST
+    // (we send one INFO_REQUEST), consumed by the matching INFO_RESPONSE. The user is remembered across
+    // the round-trip since the INFO_RESPONSE does not carry it.
+    struct
+    {
+        bool pending;
+        char user[SSH_AUTH_USER_MAX];
+    } ki[MAX_SSH_CONNS];
+#endif
 };
 static SshAuthCtx s_auth;
 
@@ -275,6 +285,14 @@ int dws_ssh_auth_parse_request(const uint8_t *payload, size_t len, SshAuthReq *r
         }
         req->is_pubkey = true;
     }
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE
+    else if (strcmp(req->method, "keyboard-interactive") == 0)
+    {
+        // RFC 4256 §3.1: string(language tag, deprecated) || string(submethods). Both are ignored -
+        // this server always drives a single "Password:" prompt.
+        req->is_kbdint = true;
+    }
+#endif
     return 0;
 }
 
@@ -286,7 +304,11 @@ int dws_ssh_auth_build_failure(uint8_t *out, size_t *out_len, size_t cap, bool p
 {
     // SSH_MSG_USERAUTH_FAILURE || name-list(authentications) || boolean(partial)
 #if DWS_SSH_ALLOW_PASSWORD
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE
+    static const char methods[] = "publickey,password,keyboard-interactive";
+#else
     static const char methods[] = "publickey,password";
+#endif
 #else
     static const char methods[] = "publickey"; // password auth disabled for hardening
 #endif
@@ -330,6 +352,36 @@ static int build_pk_ok(const SshAuthReq *req, uint8_t *out, size_t *out_len, siz
     *out_len = o;
     return 0;
 }
+
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE
+// SSH_MSG_USERAUTH_INFO_REQUEST (RFC 4256 §3.2): empty name/instruction/language, one non-echoed
+// "Password: " prompt. This is the challenge-response face of password auth (a single prompt).
+static int build_info_request(uint8_t *out, size_t *out_len, size_t cap)
+{
+    static const char prompt[] = "Password: ";
+    const uint32_t pl = (uint32_t)(sizeof(prompt) - 1);
+    const size_t need = 1 + 4 + 4 + 4 + 4 + 4 + pl + 1; // msg,name,instr,lang,num-prompts,prompt,echo
+    if (cap < need)
+        return -1;
+    size_t o = 0;
+    out[o++] = SSH_MSG_USERAUTH_INFO_REQUEST;
+    put_u32(out + o, 0); // name = ""
+    o += 4;
+    put_u32(out + o, 0); // instruction = ""
+    o += 4;
+    put_u32(out + o, 0); // language tag = "" (deprecated)
+    o += 4;
+    put_u32(out + o, 1); // num-prompts = 1
+    o += 4;
+    put_u32(out + o, pl);
+    o += 4;
+    memcpy(out + o, prompt, pl);
+    o += pl;
+    out[o++] = 0; // echo = FALSE (the response is a password)
+    *out_len = o;
+    return 0;
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // Orchestration
@@ -421,6 +473,20 @@ int dws_ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, u
     if (req.is_pubkey)
         return dws_ssh_auth_handle_pubkey(i, &req, out, out_len, cap);
 
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE
+    // ---- keyboard-interactive method (RFC 4256): arm the exchange and send one "Password:" prompt.
+    if (req.is_kbdint)
+    {
+        if (!s_auth.pw_cb) // no verifier installed -> cannot challenge
+            return dws_ssh_auth_build_failure(out, out_len, cap, false);
+        s_auth.ki[i].pending = true;
+        size_t ul = strnlen(req.user, sizeof(s_auth.ki[i].user) - 1);
+        memcpy(s_auth.ki[i].user, req.user, ul);
+        s_auth.ki[i].user[ul] = '\0';
+        return build_info_request(out, out_len, cap);
+    }
+#endif
+
     // ---- password method (RFC 4252 §8) ----
     // Password auth can be compiled out for publickey-only hardening.
 #if DWS_SSH_ALLOW_PASSWORD
@@ -442,3 +508,47 @@ int dws_ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, u
     }
     return dws_ssh_auth_build_failure(out, out_len, cap, false);
 }
+
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE
+int dws_ssh_auth_handle_info_response(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                      size_t cap)
+{
+    if (i >= MAX_SSH_CONNS)
+        return -1;
+    if (!s_auth.ki[i].pending) // no keyboard-interactive exchange armed for this slot
+        return -1;
+    s_auth.ki[i].pending = false; // consume the exchange regardless of outcome
+
+    // SSH_MSG_USERAUTH_INFO_RESPONSE (RFC 4256 §3.4): byte(61) || uint32 num-responses || string[num].
+    // We sent one prompt, so exactly one response is expected.
+    if (len < 1 || payload[0] != SSH_MSG_USERAUTH_INFO_RESPONSE)
+        return -1;
+    size_t off = 1;
+    if (off + 4 > len)
+        return -1;
+    uint32_t nr = ((uint32_t)payload[off] << 24) | ((uint32_t)payload[off + 1] << 16) |
+                  ((uint32_t)payload[off + 2] << 8) | (uint32_t)payload[off + 3];
+    off += 4;
+
+    char resp[SSH_AUTH_PASS_MAX];
+    bool ok = false;
+    if (nr == 1 && read_string(payload, len, &off, resp, sizeof(resp)))
+        ok = s_auth.pw_cb && s_auth.pw_cb(s_auth.ki[i].user, resp);
+
+    // Wipe the response and the remembered user from memory regardless of outcome.
+    volatile char *rp = resp;
+    for (size_t k = 0; k < sizeof(resp); k++)
+        rp[k] = 0;
+    volatile char *up = s_auth.ki[i].user;
+    for (size_t k = 0; k < sizeof(s_auth.ki[i].user); k++)
+        up[k] = 0;
+
+    if (ok)
+    {
+        ssh_sess[i].authed = true;
+        ssh_sess[i].phase = SshPhase::SSH_PHASE_OPEN;
+        return dws_ssh_auth_build_success(out, out_len, cap);
+    }
+    return dws_ssh_auth_build_failure(out, out_len, cap, false);
+}
+#endif

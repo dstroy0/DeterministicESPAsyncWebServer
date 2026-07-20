@@ -33,7 +33,7 @@ from ._common import Probe
 NAME = "amqp"
 HELP = "drive the device as an AMQP 0-9-1 client against a spec broker (device-as-client)"
 
-_BODY = b"hello-from-detws-rig"  # must match the rig's h_amqp_probe Basic.Publish body
+_BODY = b"hello-from-dws-rig"  # must match the rig's h_amqp_probe Basic.Publish body
 _FRAME_END = 0xCE
 _PROTO_HEADER = b"AMQP\x00\x00\x09\x01"
 
@@ -229,9 +229,9 @@ def add_args(p) -> None:
     p.add_argument("--port", type=int, default=80, help="device HTTP port (default 80)")
     p.add_argument("--broker-host", help="broker address the device dials (default: this machine's route IP)")
     p.add_argument("--broker-port", type=int, default=5672, help="AMQP broker port to serve (default 5672)")
-    p.add_argument("--user", default="detws", help="SASL PLAIN username the device authenticates as")
+    p.add_argument("--user", default="dws", help="SASL PLAIN username the device authenticates as")
     p.add_argument("--password", default="s3cret", help="SASL PLAIN password")
-    p.add_argument("--routing-key", default="detws.q", help="expected Basic.Publish routing key")
+    p.add_argument("--routing-key", default="dws.q", help="expected Basic.Publish routing key")
     p.add_argument("--timeout", type=float, default=10.0, help="timeout seconds")
 
 

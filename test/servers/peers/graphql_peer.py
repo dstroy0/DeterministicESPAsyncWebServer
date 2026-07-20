@@ -105,7 +105,7 @@ def run(args) -> bool:
     ok, why = _keys_match(want, data or {})
     pr.check("response shape mirrors the requested fields", ok, why or json.dumps(data))
     dev = (data or {}).get("device", {})
-    pr.check("device.name resolved", dev.get("name") == "esp32-detws", f"name={dev.get('name')}")
+    pr.check("device.name resolved", dev.get("name") == "esp32-dws", f"name={dev.get('name')}")
     pr.check("device.uptime is int", isinstance(dev.get("uptime"), int), f"uptime={dev.get('uptime')}")
     pr.check(
         "device.heap int > 0", isinstance(dev.get("heap"), int) and dev.get("heap", 0) > 0, f"heap={dev.get('heap')}"
@@ -118,7 +118,7 @@ def run(args) -> bool:
     _, raw2 = execute(q2)
     pr.check(
         "subset query returns only the requested field",
-        data_of(raw2) == {"device": {"name": "esp32-detws"}},
+        data_of(raw2) == {"device": {"name": "esp32-dws"}},
         raw2[:100],
     )
 

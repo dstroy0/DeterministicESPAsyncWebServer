@@ -36,7 +36,7 @@ static void row(const char *feature, const char *op, double ns_per_op, double by
 
 int main()
 {
-    const char *argv[] = {"SET", "detws:sensor:temp", "21.4"};
+    const char *argv[] = {"SET", "dws:sensor:temp", "21.4"};
     char cmd[128];
     size_t clen = resp_encode_command(cmd, sizeof(cmd), argv, nullptr, 3);
 

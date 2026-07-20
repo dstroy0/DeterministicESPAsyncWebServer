@@ -105,8 +105,8 @@ void setup()
 
     // --- Management: SNMP v1/v2c agent on UDP:161 ---
     dws_snmp_agent_init("public");
-    dws_snmp_agent_set_system("DeterministicESPAsyncWebServer industrial gateway", "admin@example.com",
-                              "esp32-detws-gw", "plant floor");
+    dws_snmp_agent_set_system("DeterministicESPAsyncWebServer industrial gateway", "admin@example.com", "esp32-dws-gw",
+                              "plant floor");
     dws_snmp_agent_add_dynamic(OID_FREE_HEAP, 9, (uint8_t)SnmpTag::SNMP_GAUGE32, get_free_heap);
     dws_snmp_agent_begin_udp(161);
 

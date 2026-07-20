@@ -5,12 +5,12 @@
 # Classes / types (KEYWORD1)
 ##############################
 
-DetWebServer	KEYWORD1
+DWS	KEYWORD1
 HttpReq	KEYWORD1
 Header	KEYWORD1
 QueryParam	KEYWORD1
 Route	KEYWORD1
-WebServerConfig	KEYWORD1
+ServerConfig	KEYWORD1
 HttpVersion	KEYWORD1
 
 ##############################
@@ -37,15 +37,15 @@ http_get_header	KEYWORD2
 http_get_query	KEYWORD2
 init_wifi_physical	KEYWORD2
 wifi_ready	KEYWORD2
-detws_mdns_begin	KEYWORD2
-detws_ntp_begin	KEYWORD2
-detws_ntp_synced	KEYWORD2
-detws_ntp_epoch	KEYWORD2
-detws_ntp_http_date	KEYWORD2
-detws_ota_begin	KEYWORD2
-detws_provisioning_load	KEYWORD2
-detws_provisioning_begin	KEYWORD2
-detws_provisioning_clear	KEYWORD2
+dws_mdns_begin	KEYWORD2
+dws_ntp_begin	KEYWORD2
+dws_ntp_synced	KEYWORD2
+dws_ntp_epoch	KEYWORD2
+dws_ntp_http_date	KEYWORD2
+dws_ota_begin	KEYWORD2
+dws_provisioning_load	KEYWORD2
+dws_provisioning_begin	KEYWORD2
+dws_provisioning_clear	KEYWORD2
 
 ##############################
 # Enumerators (LITERAL1)

@@ -138,13 +138,13 @@ void test_delete_and_contains(void)
 void test_persist_across_reboot_with_checkpoint(void)
 {
     fresh();
-    put_s("name", "detws");
+    put_s("name", "dws");
     put_s("role", "server");
-    put_s("name", "detws2"); // overwrite before checkpoint
+    put_s("name", "dws2"); // overwrite before checkpoint
     TEST_ASSERT_TRUE(dws_dbm_sync(&g_db));
 
     TEST_ASSERT_TRUE(reboot());
-    TEST_ASSERT_TRUE(get_eq("name", "detws2")); // latest value wins
+    TEST_ASSERT_TRUE(get_eq("name", "dws2")); // latest value wins
     TEST_ASSERT_TRUE(get_eq("role", "server"));
     TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db));
 }

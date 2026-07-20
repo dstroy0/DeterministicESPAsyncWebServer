@@ -10,7 +10,7 @@ reply parser interoperate with the genuine Redis wire protocol.
 
   1. reach the redis-server (raw PING -> +PONG)
   2. trigger GET /redis/probe on the device -> {connected, ping, set, get}
-  3. GET detws:rig on the server == "hello" (the device's SET is visible to a real client)
+  3. GET dws:rig on the server == "hello" (the device's SET is visible to a real client)
 
 Start a server first, e.g.:  redis-server --bind 0.0.0.0 --protected-mode no
 """
@@ -64,7 +64,7 @@ def run(args) -> bool:
         rs.settimeout(args.timeout)
         pong = _resp_cmd(rs, "PING")
         pr.check("redis-server reachable (PING)", pong.startswith(b"+PONG"), pong[:16].decode("latin1", "replace"))
-        _resp_cmd(rs, "DEL", "detws:rig")  # clean slate so the SET check is meaningful
+        _resp_cmd(rs, "DEL", "dws:rig")  # clean slate so the SET check is meaningful
     except OSError as exc:  # noqa: BLE001
         pr.check("redis-server reachable", False, f"{exc} - start: redis-server --bind 0.0.0.0 --protected-mode no")
         return pr.summary()
@@ -88,7 +88,7 @@ def run(args) -> bool:
 
     # 3. the authoritative check: the device's SET is visible to a real client on the real server.
     try:
-        got = _resp_cmd(rs, "GET", "detws:rig")
+        got = _resp_cmd(rs, "GET", "dws:rig")
         pr.check("device's SET landed on the server", b"hello" in got, got[:24].decode("latin1", "replace"))
     except OSError as exc:  # noqa: BLE001
         pr.check("server-side GET", False, str(exc))

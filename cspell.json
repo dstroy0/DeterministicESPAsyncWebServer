@@ -193,7 +193,7 @@
     "DETIFACE",
     "detip",
     "detpcap",
-    "DetWebServer",
+    "DWS",
     "DETWS",
     "DETWS_ACCEPT_THROTTLE_MAX",
     "DETWS_ACCEPT_THROTTLE_WINDOW_MS",

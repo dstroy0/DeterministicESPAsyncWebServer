@@ -19,7 +19,7 @@ lib_deps = https://github.com/dstroy0/DeterministicESPAsyncWebServer.git
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 
-DetWebServer server;
+DWS server;
 
 void handle_status(uint8_t slot_id, HttpReq *req)
 {
@@ -138,7 +138,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 <tr>
   <td align="center"><a href="FEATURES.md#dns-resolver" title="Opt-in DNS resolver with answer verification. Default off. services/dns_resolver resolves a hostname to an IPv4 address (lwIP dns_gethostbyname, marshalled to tcpip_thread like the http_client) and can reject suspicious answers - 0.0.0.0, broadcast, loopback, multicast - which are spoofing / DNS-rebinding indicators for a remote host. The address classifier / verifier is pure and host-tested; the resolve is ESP32-only (blocking, so call it off the request hot path).">Dns Resolver</a></td>
   <td align="center"><a href="FEATURES.md#happy-eyeballs" title="Opt-in dual-stack Happy Eyeballs destination selection. The client-side IPv6/IPv4 fallback decision on top of the shipped DWSIp: dws_he_pref scores a destination (RFC 6724 scope + family), dws_he_order sorts a candidate list and interleaves the address families (RFC 8305) so successive connection attempts alternate v6/v4, and dws_he_attempt_due gates the next attempt by the Connection Attempt Delay. Fast IPv6 when it works, quick fallback to IPv4 when it does not. Needs DWS_ENABLE_IPV6 to matter. No heap/stdlib. Default off.">Happy Eyeballs</a></td>
-  <td align="center"><a href="FEATURES.md#ipv6" title="Dual-stack IPv6. Default off. The TCP and UDP listeners already bind `IPADDR_TYPE_ANY`, so the server answers over IPv6 the moment the interface has a v6 address; `DWS_ENABLE_IPV6` turns IPv6 on for the Wi-Fi netif (`init_ipv6_physical()` -&gt; SLAAC: a `fe80::` link-local address plus a global one if a router advertises a prefix), and `net_global_ipv6()` reads the acquired global address from lwIP. The DWSIp address core (`network_drivers/network/ip.h`) is one family-tagged type for both v4 and v6, with RFC 4291 text parsing (`::` zero-compression, embedded-v4 `::ffff:a.b.c.d`), RFC 5952 canonical formatting, and scope classification (loopback / link-local / private-ULA / multicast / global). The address core is pure and host-tested (`native_det_ip`); the netif bring-up is ESP32-only. Example IPv6. Requires an lwIP built with `LWIP_IPV6=1` (the stock Arduino-ESP32 core ships it). HW-verified (2026-07-19) on an ESP32-S3: SLAAC formed a link-local + ULA + a router-advertised global address, and the dual-stack `:80` listener answered real HTTP `GET`s over IPv6 from an on-link host.">IPv6</a></td>
+  <td align="center"><a href="FEATURES.md#ipv6" title="Dual-stack IPv6. Default off. The TCP and UDP listeners already bind `IPADDR_TYPE_ANY`, so the server answers over IPv6 the moment the interface has a v6 address; `DWS_ENABLE_IPV6` turns IPv6 on for the Wi-Fi netif (`init_ipv6_physical()` -&gt; SLAAC: a `fe80::` link-local address plus a global one if a router advertises a prefix), and `net_global_ipv6()` reads the acquired global address from lwIP. The DWSIp address core (`network_drivers/network/ip.h`) is one family-tagged type for both v4 and v6, with RFC 4291 text parsing (`::` zero-compression, embedded-v4 `::ffff:a.b.c.d`), RFC 5952 canonical formatting, and scope classification (loopback / link-local / private-ULA / multicast / global). The address core is pure and host-tested (`native_dws_ip`); the netif bring-up is ESP32-only. Example IPv6. Requires an lwIP built with `LWIP_IPV6=1` (the stock Arduino-ESP32 core ships it). HW-verified (2026-07-19) on an ESP32-S3: SLAAC formed a link-local + ULA + a router-advertised global address, and the dual-stack `:80` listener answered real HTTP `GET`s over IPv6 from an on-link host.">IPv6</a></td>
   <td align="center"><a href="FEATURES.md#link-manager" title="Opt-in multi-interface egress selection / failover policy. The policy that drives which interface carries traffic once a device has more than one (a wired Ethernet PHY alongside WiFi STA / softAP): services/link_manager keeps a small table of interfaces (kind + priority + up/down) and deterministically selects the best link that is up, escalating to a higher-priority interface when it comes up and failing over when it drops, reporting only real transitions so the app reconfigures the netif once. The PHY bring-up (esp_eth) stays the app's. No heap/stdlib. Default off.">Link Manager</a></td>
   <td align="center"><a href="FEATURES.md#network-adaptation" title="Opt-in network adaptation decisions. When set, services/netadapt provides two pure decisions: dws_netadapt_window() sizes the TCP receive window from the free heap (bigger when RAM is plentiful, shrinking when tight), and dws_netadapt_dhcp_fallback() decides when to give up on DHCP and use a static IP. The app applies the results (lwIP window / netif config). Default off.">Network Adaptation</a></td>
 </tr>
@@ -1081,6 +1081,8 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
+│   │   ├── __pycache__/
+│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1252,7 +1254,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `HOTSWAP` | `L7-Application/HotSwapStorage` | 838,441 | 82,728 |
 | `EXC_DECODER+FTP+FTP_SESSION` | `L7-Application/CoreDump` | 841,337 | 83,428 |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE` | `L7-Application/HttpDelivery` | 842,725 | 82,704 |
-| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 845,481 | 110,928 |
+| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 845,601 | 110,960 |
 | `TLS` | `L6-Presentation/SecureWebSocket` | 855,873 | 122,020 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/mTLS` | 856,829 | 122,356 |
@@ -1273,19 +1275,19 @@ Every byte of memory the library uses is accounted for at compile time:
 <details>
 <summary><b>View Zero Heap Allocation Storage Details</b></summary>
 
-| Storage                                                                        | Location                                         |
-| ------------------------------------------------------------------------------ | ------------------------------------------------ |
-| `conn_pool[MAX_CONNS]` - TCP connections + ring buffers                        | BSS                                              |
-| `http_pool[MAX_CONNS]` - HTTP request structs                                  | BSS                                              |
-| `ws_pool[MAX_WS_CONNS]` - WebSocket connection state                           | BSS                                              |
-| `sse_pool[MAX_SSE_CONNS]` - SSE connection state                               | BSS                                              |
-| `_queue_storage[EVT_QUEUE_DEPTH * sizeof(TcpEvt)]` - event queue backing store | BSS                                              |
-| `_queue_struct` - FreeRTOS `StaticQueue_t`                                     | BSS                                              |
-| Route table `_routes[MAX_ROUTES]`                                              | BSS (inside [`DetWebServer`](@ref DetWebServer)) |
+| Storage                                                                        | Location                       |
+| ------------------------------------------------------------------------------ | ------------------------------ |
+| `conn_pool[MAX_CONNS]` - TCP connections + ring buffers                        | BSS                            |
+| `http_pool[MAX_CONNS]` - HTTP request structs                                  | BSS                            |
+| `ws_pool[MAX_WS_CONNS]` - WebSocket connection state                           | BSS                            |
+| `sse_pool[MAX_SSE_CONNS]` - SSE connection state                               | BSS                            |
+| `_queue_storage[EVT_QUEUE_DEPTH * sizeof(TcpEvt)]` - event queue backing store | BSS                            |
+| `_queue_struct` - FreeRTOS `StaticQueue_t`                                     | BSS                            |
+| Route table `_routes[MAX_ROUTES]`                                              | BSS (inside [`DWS`](@ref DWS)) |
 
 </details>
 
-[`begin()`](@ref DetWebServer::begin) calls `xQueueCreateStatic()` - no `pvPortMalloc`, no fragmentation risk. The library makes no heap allocations.
+[`begin()`](@ref DWS::begin) calls `xQueueCreateStatic()` - no `pvPortMalloc`, no fragmentation risk. The library makes no heap allocations.
 
 The only post-`begin()` allocation that can occur is inside `fs::File` construction in `serve_file()`, which is an Arduino FS implementation detail outside the library's control.
 
@@ -1518,6 +1520,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DWS_ENABLE_SSE` | `1` | Server-Sent Events push support. |
 | `DWS_ENABLE_SSH` | `0` | SSH server support (RFC 4253/4252/4254). |
 | `DWS_ENABLE_SSH_CLIENT` | `0` | Outbound SSH client + reverse tunnel (RFC 4254 §7.1 tcpip-forward, the `ssh -R` seam). |
+| `DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE` | `0` | SSH keyboard-interactive authentication (RFC 4256), default off. |
 | `DWS_ENABLE_SSH_SCP` | `0` | SCP server over SSH (the legacy RCP protocol via `exec "scp -t/-f"`). |
 | `DWS_ENABLE_SSH_SFTP` | `0` | SFTP server subsystem over SSH (SSH_FXP_* v3, draft-ietf-secsh-filexfer-02). |
 | `DWS_ENABLE_SSH_SNTRUP761` | `DWS_ENABLE_PQC_KEX` | Streamlined NTRU Prime sntrup761x25519-sha512@openssh.com SSH KEX (default: tracks ::DWS_ENABLE_PQC_KEX). |
@@ -1867,16 +1870,16 @@ Pass `nullptr` (or omit) to use the compile-time default [`CONN_TIMEOUT_MS`](@re
 <details>
 <summary><b>Expand API Reference</b></summary>
 
-**DetWebServer - Lifecycle**
+**DWS - Lifecycle**
 
-| Method                                  | Description                                                                     |
-| --------------------------------------- | ------------------------------------------------------------------------------- |
-| `begin(port, cfg = nullptr)`            | Bind and listen. Returns `DETWS_OK` (1) on success, a negative error code on failure. |
-| [`stop()`](@ref DetWebServer::stop)     | Abort all connections, close listener, reset all pools.                         |
-| `restart(cfg = nullptr)`                | `stop()` + `begin()` on the same port. Returns `-1` if called before `begin()`. |
-| [`handle()`](@ref DetWebServer::handle) | Call every `loop()`. Runs timeout sweep, event drain, and dispatch.             |
+| Method                         | Description                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `begin(port, cfg = nullptr)`   | Bind and listen. Returns `DETWS_OK` (1) on success, a negative error code on failure. |
+| [`stop()`](@ref DWS::stop)     | Abort all connections, close listener, reset all pools.                               |
+| `restart(cfg = nullptr)`       | `stop()` + `begin()` on the same port. Returns `-1` if called before `begin()`.       |
+| [`handle()`](@ref DWS::handle) | Call every `loop()`. Runs timeout sweep, event drain, and dispatch.                   |
 
-**DetWebServer - HTTP Routes**
+**DWS - HTTP Routes**
 
 | Method                                         | Description                                                     |
 | ---------------------------------------------- | --------------------------------------------------------------- |
@@ -1888,7 +1891,7 @@ Pass `nullptr` (or omit) to use the compile-time default [`CONN_TIMEOUT_MS`](@re
 | `send_empty(slot_id, code)`                    | Send a headers-only response and close the connection.          |
 | `serve_file(slot_id, fs, path, type)`          | Stream a file from an Arduino FS (`DETWS_ENABLE_FILE_SERVING`). |
 
-**DetWebServer - WebSocket (DETWS_ENABLE_WEBSOCKET)**
+**DWS - WebSocket (DETWS_ENABLE_WEBSOCKET)**
 
 | Method                                          | Description                                 |
 | ----------------------------------------------- | ------------------------------------------- |
@@ -1899,7 +1902,7 @@ Pass `nullptr` (or omit) to use the compile-time default [`CONN_TIMEOUT_MS`](@re
 
 In `on_message`, read the received payload from `ws_pool[ws_id].buf` (length in `ws_pool[ws_id].payload_len`).
 
-**DetWebServer - SSE (DETWS_ENABLE_SSE)**
+**DWS - SSE (DETWS_ENABLE_SSE)**
 
 | Method                                                     | Description                             |
 | ---------------------------------------------------------- | --------------------------------------- |
@@ -1907,7 +1910,7 @@ In `on_message`, read the received payload from `ws_pool[ws_id].buf` (length in 
 | `sse_send(sse_id, data, event = nullptr, id = nullptr)`    | Push an event to one client.            |
 | `sse_broadcast(path, data, event = nullptr, id = nullptr)` | Push an event to all clients on a path. |
 
-**DetWebServer - Diagnostic (DETWS_ENABLE_DIAG)**
+**DWS - Diagnostic (DETWS_ENABLE_DIAG)**
 
 | Method          | Description                                                                                          |
 | --------------- | ---------------------------------------------------------------------------------------------------- |
@@ -1995,7 +1998,7 @@ drifts; run any of them locally from the repo root.
 | ------------------------ | ------------------------------------------------------------------------------------ |
 | `gen_feature_tables.py`  | the README / docs feature tables from `FEATURES.md`                                  |
 | `gen_readme_sections.py` | this file's feature-flag, configuration-override, source-tree, and footprint regions |
-| `gen_configurator.py`    | the interactive `configurator.html` from `ServerConfig.h`                      |
+| `gen_configurator.py`    | the interactive `configurator.html` from `ServerConfig.h`                            |
 | `gen_flag_deps.py`       | the build-flag dependency diagram                                                    |
 | `gen_api_flow.py`        | the core API-flow diagram                                                            |
 | `gen_examples.py`        | the example index in `EXAMPLES.md`                                                   |
@@ -2005,12 +2008,12 @@ The suite's own generator lives with the tests: [`test/gen_test_readme.py`](../t
 
 **Web-asset build** (`src/web/wizard/`)
 
-| Script              | Purpose                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| `build_assets.py`   | compile the editable web sources (`src/web/input/*`) into embedded C++ application assets   |
-| `gen_themes.py`     | build the theme CSS library + gallery from the palette sources                             |
-| `gen_theme_blobs.py`| pack the runtime-selectable theme CSS into C++ blobs                                        |
-| `gen_favicons.py`   | build the favicon library + gallery                                                        |
+| Script               | Purpose                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `build_assets.py`    | compile the editable web sources (`src/web/input/*`) into embedded C++ application assets |
+| `gen_themes.py`      | build the theme CSS library + gallery from the palette sources                            |
+| `gen_theme_blobs.py` | pack the runtime-selectable theme CSS into C++ blobs                                      |
+| `gen_favicons.py`    | build the favicon library + gallery                                                       |
 
 ```bash
 python docs/utilities/gen_readme_sections.py   # refresh this file's generated sections
@@ -2042,20 +2045,20 @@ Other documentation files in this repository:
 <details>
 <summary><b>View Documentation Reference Directory</b></summary>
 
-| Document                                       | Contents                                                          |
-| ---------------------------------------------- | ----------------------------------------------------------------- |
-| [RFC.md](RFC.md)                               | HTTP/1.1, WebSocket, and error-response RFC conformance tables    |
-| [SSH.md](SSH.md)                               | SSH-2.0 server: features, RFC/FIPS compliance, auth, memory       |
-| [SECURITY.md](SECURITY.md)                     | Security posture (good/ok/bad) and per-feature security treatment |
-| [CODEQL.md](CODEQL.md)                         | CodeQL static-analysis setup, coverage, and findings disposition  |
-| [HARDWARE_HOOKUP.md](HARDWARE_HOOKUP.md)       | Wiring and settings for codecs that talk to external hardware     |
-| [test/README.md](../test/README.md)            | Test suites, environment matrix, per-test directory, how to run   |
-| [TEST_REPORT.md](../test/TEST_REPORT.md)       | Latest test results (auto-generated)                              |
-| [TODO.md](TODO.md)                             | Outstanding fixes and maintenance                                 |
-| [ROADMAP.md](ROADMAP.md)                       | Forward-looking feature backlog (sized S/M/L)                     |
-| [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)   | Deliberate constraints and caveats                                |
-| [TUNING.md](TUNING.md)                         | Performance tuning: worker count, core/affinity, poll knobs       |
-| [CHANGELOG.md](CHANGELOG.md)                   | Release history                                                   |
+| Document                                     | Contents                                                          |
+| -------------------------------------------- | ----------------------------------------------------------------- |
+| [RFC.md](RFC.md)                             | HTTP/1.1, WebSocket, and error-response RFC conformance tables    |
+| [SSH.md](SSH.md)                             | SSH-2.0 server: features, RFC/FIPS compliance, auth, memory       |
+| [SECURITY.md](SECURITY.md)                   | Security posture (good/ok/bad) and per-feature security treatment |
+| [CODEQL.md](CODEQL.md)                       | CodeQL static-analysis setup, coverage, and findings disposition  |
+| [HARDWARE_HOOKUP.md](HARDWARE_HOOKUP.md)     | Wiring and settings for codecs that talk to external hardware     |
+| [test/README.md](../test/README.md)          | Test suites, environment matrix, per-test directory, how to run   |
+| [TEST_REPORT.md](../test/TEST_REPORT.md)     | Latest test results (auto-generated)                              |
+| [TODO.md](TODO.md)                           | Outstanding fixes and maintenance                                 |
+| [ROADMAP.md](ROADMAP.md)                     | Forward-looking feature backlog (sized S/M/L)                     |
+| [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) | Deliberate constraints and caveats                                |
+| [TUNING.md](TUNING.md)                       | Performance tuning: worker count, core/affinity, poll knobs       |
+| [CHANGELOG.md](CHANGELOG.md)                 | Release history                                                   |
 
 </details>
 

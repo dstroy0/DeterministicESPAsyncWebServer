@@ -46,7 +46,7 @@ int main()
     const size_t pasvlen = sizeof(pasv) - 1;
 
     char cmd[128];
-    size_t clen = ftp_build_command(cmd, sizeof(cmd), "STOR", "detws_rig.txt");
+    size_t clen = ftp_build_command(cmd, sizeof(cmd), "STOR", "dws_rig.txt");
 
     printf("| Feature      | Operation                |     ns/op |    MB/s |\n");
     printf("|--------------|--------------------------|-----------|---------|\n");
@@ -54,7 +54,7 @@ int main()
     // build a STOR command line.
     {
         volatile size_t sink = 0;
-        double ns = bench_ns(2000000, [&] { sink += ftp_build_command(cmd, sizeof(cmd), "STOR", "detws_rig.txt"); });
+        double ns = bench_ns(2000000, [&] { sink += ftp_build_command(cmd, sizeof(cmd), "STOR", "dws_rig.txt"); });
         row("ftp", "build STOR command", ns, (double)clen);
         (void)sink;
     }

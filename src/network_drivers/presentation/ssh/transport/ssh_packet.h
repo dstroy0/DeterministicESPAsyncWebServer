@@ -107,9 +107,13 @@
 #define SSH_MSG_USERAUTH_FAILURE 51
 #define SSH_MSG_USERAUTH_SUCCESS 52
 #define SSH_MSG_USERAUTH_PK_OK 60
-#define SSH_MSG_GLOBAL_REQUEST 80  // RFC 4254 §4 (e.g. tcpip-forward for ssh -R)
-#define SSH_MSG_REQUEST_SUCCESS 81 // RFC 4254 §4 reply to a want_reply global request
-#define SSH_MSG_REQUEST_FAILURE 82 // RFC 4254 §4 reply: request refused / unrecognized
+// 60 is method-specific: it is PK_OK for publickey and INFO_REQUEST for keyboard-interactive
+// (RFC 4256 §3.2). The current auth phase/state disambiguates which handler owns an inbound 60.
+#define SSH_MSG_USERAUTH_INFO_REQUEST 60  // RFC 4256 §3.2 (keyboard-interactive, server->client)
+#define SSH_MSG_USERAUTH_INFO_RESPONSE 61 // RFC 4256 §3.4 (keyboard-interactive, client->server)
+#define SSH_MSG_GLOBAL_REQUEST 80         // RFC 4254 §4 (e.g. tcpip-forward for ssh -R)
+#define SSH_MSG_REQUEST_SUCCESS 81        // RFC 4254 §4 reply to a want_reply global request
+#define SSH_MSG_REQUEST_FAILURE 82        // RFC 4254 §4 reply: request refused / unrecognized
 #define SSH_MSG_CHANNEL_OPEN 90
 #define SSH_MSG_CHANNEL_OPEN_CONFIRM 91
 #define SSH_MSG_CHANNEL_OPEN_FAILURE 92

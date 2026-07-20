@@ -15,7 +15,7 @@
  *     build_flags = -DDWS_ENABLE_MDNS=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
- * Flash, then browse to http://detws-demo.local/.
+ * Flash, then browse to http://dws-demo.local/.
  */
 
 #define DWS_ENABLE_MDNS 1
@@ -26,7 +26,7 @@
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
-static const char *HOSTNAME = "detws-demo";
+static const char *HOSTNAME = "dws-demo";
 
 DWS server;
 

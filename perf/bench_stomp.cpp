@@ -36,16 +36,16 @@ static void row(const char *feature, const char *op, double ns_per_op, double by
 
 int main()
 {
-    const char *body = "hello-from-detws-rig";
+    const char *body = "hello-from-dws-rig";
     const size_t blen = strlen(body);
     char frame[384];
     const char *bk[] = {"destination", "content-length"};
-    const char *bv[] = {"/topic/detws", "20"};
+    const char *bv[] = {"/topic/dws", "20"};
     size_t flen = stomp_build_frame(frame, sizeof(frame), "SEND", bk, bv, 2, body, blen);
 
     // A representative inbound MESSAGE frame (what a subscriber receives). Ends at the NUL.
-    const char msg[] = "MESSAGE\ndestination:/topic/detws\nmessage-id:007\nsubscription:0\n"
-                       "content-length:20\n\nhello-from-detws-rig";
+    const char msg[] = "MESSAGE\ndestination:/topic/dws\nmessage-id:007\nsubscription:0\n"
+                       "content-length:20\n\nhello-from-dws-rig";
     const size_t mlen = sizeof(msg); // include the terminating NUL that ends the STOMP body
 
     printf("| Feature      | Operation                |     ns/op |    MB/s |\n");

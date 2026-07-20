@@ -40,7 +40,7 @@ int main()
     char out[256];
     const char *msg = "sensor=21.4C rh=48% link=up heap=131072";
     size_t len = syslog_format(out, sizeof(out), SyslogFacility::SYSLOG_FAC_LOCAL0, SyslogSeverity::SYSLOG_INFO,
-                               "detws-rig", "rig-app", msg);
+                               "dws-rig", "rig-app", msg);
 
     printf("| Feature      | Operation                |     ns/op |    MB/s |\n");
     printf("|--------------|--------------------------|-----------|---------|\n");
@@ -50,7 +50,7 @@ int main()
         volatile size_t sink = 0;
         double ns = bench_ns(2000000, [&] {
             sink += syslog_format(out, sizeof(out), SyslogFacility::SYSLOG_FAC_LOCAL0, SyslogSeverity::SYSLOG_INFO,
-                                  "detws-rig", "rig-app", msg);
+                                  "dws-rig", "rig-app", msg);
         });
         row("syslog", "syslog_format (RFC 5424)", ns, (double)len);
         (void)sink;

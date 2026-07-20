@@ -35,7 +35,7 @@ from ._common import Probe
 NAME = "xmpp"
 HELP = "drive the device as an XMPP client against a spec RFC 6120 c2s server (device-as-client)"
 
-_BODY = "hello-from-detws-rig"  # must match the rig's h_xmpp_probe <message> body
+_BODY = "hello-from-dws-rig"  # must match the rig's h_xmpp_probe <message> body
 
 
 def _element(buf: bytes, name: bytes):
@@ -102,7 +102,7 @@ class _C2S(threading.Thread):
     def _stream_header(self):
         return (
             "<?xml version='1.0'?>"
-            f"<stream:stream from='{self.domain}' id='detws-c2s' version='1.0' xml:lang='en' "
+            f"<stream:stream from='{self.domain}' id='dws-c2s' version='1.0' xml:lang='en' "
             "xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'>"
         ).encode()
 
@@ -222,7 +222,7 @@ def add_args(p) -> None:
     p.add_argument("--port", type=int, default=80, help="device HTTP port (default 80)")
     p.add_argument("--server-host", help="c2s address the device dials (default: this machine's route IP)")
     p.add_argument("--server-port", type=int, default=5222, help="XMPP c2s port to serve (default 5222)")
-    p.add_argument("--domain", default="detws.local", help="XMPP domain (stream to / JID host)")
+    p.add_argument("--domain", default="dws.local", help="XMPP domain (stream to / JID host)")
     p.add_argument("--user", default="rig", help="SASL PLAIN username the device authenticates as")
     p.add_argument("--password", default="s3cret", help="SASL PLAIN password")
     p.add_argument("--timeout", type=float, default=10.0, help="timeout seconds")

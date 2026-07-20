@@ -17,7 +17,7 @@ dws_mqtt_set_message_cb(on_message);
 
 MqttConnectOpts opts;
 memset(&opts, 0, sizeof(opts));
-opts.client_id = "detws-esp32-demo";
+opts.client_id = "dws-esp32-demo";
 opts.keepalive_s = 30;
 opts.clean_session = true;
 if (dws_mqtt_connect(BROKER, PORT, false, &opts)) // 3rd arg: use TLS?
@@ -50,7 +50,7 @@ pio ci --board=esp32dev --project-option="framework=arduino" \
 
 ```sh
 # watch the same topic from a host while the device runs:
-mosquitto_sub -h broker.hivemq.com -t detws/demo
+mosquitto_sub -h broker.hivemq.com -t dws/demo
 ```
 
 ## Annotated source
@@ -74,7 +74,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 static const char *BROKER = "broker.hivemq.com"; // public test broker
 static const uint16_t PORT = 1883;
-static const char *TOPIC = "detws/demo";
+static const char *TOPIC = "dws/demo";
 
 // Delivered for every message on a subscribed topic.
 void on_message(const char *topic, const uint8_t *payload, size_t len)
@@ -101,7 +101,7 @@ void setup()
 
     MqttConnectOpts opts;
     memset(&opts, 0, sizeof(opts));
-    opts.client_id = "detws-esp32-demo";
+    opts.client_id = "dws-esp32-demo";
     opts.keepalive_s = 30;
     opts.clean_session = true;
 

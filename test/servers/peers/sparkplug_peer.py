@@ -160,7 +160,7 @@ def run(args) -> bool:
         # Trigger the device: it dials broker_host:mqtt_port and publishes the NBIRTH.
         try:
             c = http.client.HTTPConnection(args.host, args.port, timeout=args.timeout)
-            c.request("GET", f"/sparkplug/probe?host={broker_host}&port={args.mqtt_port}&group=detws&node=rig")
+            c.request("GET", f"/sparkplug/probe?host={broker_host}&port={args.mqtt_port}&group=dws&node=rig")
             rep = c.getresponse().read().decode(errors="replace")
             c.close()
         except Exception as exc:  # noqa: BLE001
@@ -187,7 +187,7 @@ def run(args) -> bool:
                 pass
 
     topic, payload = received[0]
-    pr.check("topic == spBv1.0/detws/NBIRTH/rig", topic == "spBv1.0/detws/NBIRTH/rig", topic)
+    pr.check("topic == spBv1.0/dws/NBIRTH/rig", topic == "spBv1.0/dws/NBIRTH/rig", topic)
     pl = _decode_payload(payload)
     by_name = {m.get("name"): m for m in pl["metrics"]}
     pr.check(
@@ -204,8 +204,8 @@ def run(args) -> bool:
     pr.check("Uptime: uint32 (datatype 7)", up.get("datatype") == 7 and isinstance(up.get("value"), int), f"{up}")
     fw = by_name.get("Node Control/Firmware", {})
     pr.check(
-        "Firmware: string 'detws-rig' (datatype 12)",
-        fw.get("datatype") == 12 and fw.get("value") == "detws-rig",
+        "Firmware: string 'dws-rig' (datatype 12)",
+        fw.get("datatype") == 12 and fw.get("value") == "dws-rig",
         f"{fw}",
     )
 

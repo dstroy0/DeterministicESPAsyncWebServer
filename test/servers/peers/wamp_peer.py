@@ -36,7 +36,7 @@ from ._common import Probe
 NAME = "wamp"
 HELP = "drive the device as a WAMP client against a spec router over WebSocket (device-as-client)"
 
-_ARG = "hello-from-detws-rig"  # must match the rig's h_wamp_probe PUBLISH argument
+_ARG = "hello-from-dws-rig"  # must match the rig's h_wamp_probe PUBLISH argument
 _WS_MAGIC = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 # WAMP message type codes.
@@ -237,7 +237,7 @@ def add_args(p) -> None:
     p.add_argument("--port", type=int, default=80, help="device HTTP port (default 80)")
     p.add_argument("--router-host", help="router address the device dials (default: this machine's route IP)")
     p.add_argument("--router-port", type=int, default=8080, help="WAMP router WS port to serve (default 8080)")
-    p.add_argument("--topic", default="com.detws.topic", help="expected SUBSCRIBE/PUBLISH topic")
+    p.add_argument("--topic", default="com.dws.topic", help="expected SUBSCRIBE/PUBLISH topic")
     p.add_argument("--timeout", type=float, default=10.0, help="timeout seconds")
 
 

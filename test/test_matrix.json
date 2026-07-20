@@ -124,23 +124,23 @@
       ],
       "tests": ["test_edge_mesh"]
     },
-    "native_det_primitives": {
+    "native_dws_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
       "flags": [],
       "src": ["-<*>"],
-      "tests": ["test_det_primitives"]
+      "tests": ["test_dws_primitives"]
     },
-    "native_det_ip": {
+    "native_dws_ip": {
       "desc": "IP address core (network_drivers/network/dws_ip): RFC 4291 IPv4/IPv6 text parsing,\nRFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification\n(loopback / link-local / private-ULA / multicast / global). Pure host tests.",
       "flags": [],
       "src": ["+<network_drivers/network/ip.cpp>"],
-      "tests": ["test_det_ip"]
+      "tests": ["test_dws_ip"]
     },
-    "native_det_arena": {
+    "native_dws_arena": {
       "desc": "Unified double-ended server arena (network_drivers/session/dws_arena): first-fit\npersistent end (bottom, individual free + coalesce + boundary shrink) + bump scratch end\n(top, mark/release/reset) sharing a floating middle; fail-closed at the boundary. Host tests.",
       "flags": [],
       "src": ["+<network_drivers/session/arena.cpp>"],
-      "tests": ["test_det_arena"]
+      "tests": ["test_dws_arena"]
     },
     "native_ssh_ed25519": {
       "desc": "Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth):\nSHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). Vectors are the published RFC\ntest vectors + tool-generated digests, grounding the impl against the standards. Pure host tests.",
@@ -363,6 +363,39 @@
         "test_ssh_channel",
         "test_ssh_server"
       ]
+    },
+    "native_ssh_kbdint": {
+      "desc": "SSH keyboard-interactive auth (RFC 4256) built with DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE=1: the server sends one non-echoed Password prompt (INFO_REQUEST) and verifies the INFO_RESPONSE via the password callback. Also re-runs test_ssh_auth to confirm the password/publickey methods are unaffected with keyboard-interactive advertised.",
+      "flags": [
+        "-DDWS_ENABLE_SSH=1",
+        "-DDWS_ENABLE_SSH_KEYBOARD_INTERACTIVE=1"
+      ],
+      "src": [
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_rsa.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_packet.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_transport.cpp>",
+        "+<network_drivers/presentation/ssh/auth/ssh_auth.cpp>",
+        "+<network_drivers/presentation/ssh/connection/ssh_channel.cpp>",
+        "+<network_drivers/presentation/ssh/connection/ssh_server.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>"
+      ],
+      "tests": ["test_ssh_kbdint", "test_ssh_auth"]
     },
     "native_ssh_pqc": {
       "desc": "mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the\nfull SSH transport built with DWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. Verifies the\nhybrid is negotiated, then runs a real server-side key exchange and checks it as a conforming client\nwould - ML-KEM Decaps (an independent reference) + X25519, K = SHA256(K_PQ || K_CL), the string-K\nexchange hash and KDF, and the ed25519 signature over H.",

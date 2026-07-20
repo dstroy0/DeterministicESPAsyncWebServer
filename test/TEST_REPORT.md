@@ -23,9 +23,9 @@
 | `test_edge_fetch`        | `native_edge_cache`      |     7 |   ✅   |  00:00:00.419 |
 | `test_edge_cache_sd`     | `native_edge_cache_sd`   |    15 |   ✅   |  00:00:00.830 |
 | `test_edge_mesh`         | `native_edge_mesh`       |    14 |   ✅   |  00:00:00.722 |
-| `test_det_primitives`    | `native_det_primitives`  |     5 |   ✅   |  00:00:00.556 |
-| `test_det_ip`            | `native_det_ip`          |    11 |   ✅   |  00:00:00.542 |
-| `test_det_arena`         | `native_det_arena`       |    19 |   ✅   |  00:00:00.527 |
+| `test_dws_primitives`    | `native_dws_primitives`  |     5 |   ✅   |  00:00:00.556 |
+| `test_dws_ip`            | `native_dws_ip`          |    11 |   ✅   |  00:00:00.542 |
+| `test_dws_arena`         | `native_dws_arena`       |    19 |   ✅   |  00:00:00.527 |
 | `test_ssh_ed25519`       | `native_ssh_ed25519`     |    19 |   ✅   |  00:00:03.765 |
 | `test_crypto_kat`        | `native_crypto_kat`      |     9 |   ✅   |  00:00:01.925 |
 | `test_promisc`           | `native_promisc`         |     9 |   ✅   |  00:00:00.538 |
@@ -672,7 +672,7 @@ _Host tests for services/edge_cache/edge_mesh: the CDN edge cache's mesh (siblin
 
 ---
 
-## test_det_primitives - native_det_primitives - ✅ 5 passed
+## test_dws_primitives - native_dws_primitives - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -691,7 +691,7 @@ _Unit tests for the shared no-stdlib primitives: the base-10 number parsers_
 
 ---
 
-## test_det_ip - native_det_ip - ✅ 11 passed
+## test_dws_ip - native_dws_ip - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -716,7 +716,7 @@ _Unit tests for the DWSIp address core (network_drivers/network/dws_ip): RFC 429
 
 ---
 
-## test_det_arena - native_det_arena - ✅ 19 passed
+## test_dws_arena - native_dws_arena - ✅ 19 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>

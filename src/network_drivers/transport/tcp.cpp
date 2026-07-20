@@ -316,7 +316,15 @@ static err_t dws_tcp_do(struct tcpip_api_call_data *c)
         closing_check(k->slot, k->pcb); // safe pcb access: we are in tcpip_thread
         break;
     case DWSTcpOp::DWS_OP_RECVED:
-        tcp_recved(k->pcb, k->len); // reopen the receive window by the consumed bytes
+        // Same O(1) liveness guard as SEND/OUTPUT: the worker captured the pcb when it acked consumed
+        // RX bytes, but the connection can be torn down (a remote RST frees the pcb via the error
+        // callback) before this op runs. tcp_recved on a freed pcb walks into tcp_update_rcv_ann_wnd
+        // (assert new_rcv_ann_wnd <= 0xffff) and a window-update tcp_output ("invalid pcb") - i.e. a
+        // remotely-triggerable panic under connection churn. Skip if the slot no longer owns this pcb.
+        if (k->pcb == conn_pool[k->slot].pcb)
+            tcp_recved(k->pcb, k->len); // reopen the receive window by the consumed bytes
+        else
+            k->result = ERR_CLSD;
         break;
     }
     return ERR_OK;

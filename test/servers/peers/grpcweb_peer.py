@@ -124,7 +124,7 @@ def run(args) -> bool:
         return status, ct, list(_iter_frames(raw))
 
     try:
-        status, ct, frames = say_hello("detws")
+        status, ct, frames = say_hello("dws")
     except Exception as exc:  # noqa: BLE001
         pr.check("device POST /grpc completed", False, str(exc))
         return pr.summary()
@@ -139,7 +139,7 @@ def run(args) -> bool:
         return pr.summary()
 
     reply = _read_string_field(frames[0][1], 1)
-    pr.check("HelloReply.message == 'hello, detws'", reply == "hello, detws", f"reply={reply!r}")
+    pr.check("HelloReply.message == 'hello, dws'", reply == "hello, dws", f"reply={reply!r}")
 
     status_ok = False
     if len(frames) >= 2:

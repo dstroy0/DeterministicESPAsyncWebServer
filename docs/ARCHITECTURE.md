@@ -283,7 +283,7 @@ middle, so whichever side needs room takes it, and both ends fail closed rather 
 cross. `DWSArenaSet` chains a DRAM base + a PSRAM extension: allocs prefer internal
 RAM and spill into external RAM, frees route to the owning region by address. No heap,
 no stdlib; all state in `DWSArena` (no globals), so it is unit-tested on the host
-(`native_det_arena`).
+(`native_dws_arena`).
 
 This is the go-forward "unified server arena" for a subsystem that needs long-lived,
 individually-freed allocations (its persistent end) alongside per-dispatch transients

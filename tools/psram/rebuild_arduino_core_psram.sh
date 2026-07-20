@@ -46,7 +46,7 @@ JOBS=""
 # Work dir needs ~6 GB free and must NOT be a small RAM-backed tmpfs (e.g. /tmp on a
 # Raspberry Pi is tmpfs and overflows mid-clone with "No space left on device"). Default to a
 # home-dir path on real storage; override with DWS_PSRAM_WORK.
-WORK="${DWS_PSRAM_WORK:-$HOME/.cache/detws-arduino-psram}"
+WORK="${DWS_PSRAM_WORK:-$HOME/.cache/dws-arduino-psram}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -78,7 +78,7 @@ fi
 cd esp32-arduino-lib-builder
 # build.sh runs `git symbolic-ref HEAD`; a tag checkout leaves a detached HEAD ("fatal: ref
 # HEAD is not a symbolic ref") which breaks it. Pin to a local branch so HEAD is symbolic.
-git switch -c detws-psram-build 2>/dev/null || git checkout -B detws-psram-build 2>/dev/null || true
+git switch -c dws-psram-build 2>/dev/null || git checkout -B dws-psram-build 2>/dev/null || true
 
 # (We do not try to EXCLUDE_COMPONENTS the ML libs - idf.py's EXCLUDE_COMPONENTS is ignored for
 # managed components, so they build regardless. Low parallelism above is what makes them

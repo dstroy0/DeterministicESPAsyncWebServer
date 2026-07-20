@@ -45,47 +45,46 @@ int main()
     // A DCP Identify response naming the station "et200sp" (a NameOfStation block).
     const char *name = "et200sp";
     uint8_t blocks[64];
-    size_t blen = detws_pn_dcp_block(Pn::PN_DCP_OPT_DEVICE, Pn::PN_DCP_SUB_DEV_NAME_OF_STATION, (const uint8_t *)name,
-                                     strlen(name), blocks, sizeof(blocks));
+    size_t blen = dws_pn_dcp_block(Pn::PN_DCP_OPT_DEVICE, Pn::PN_DCP_SUB_DEV_NAME_OF_STATION, (const uint8_t *)name,
+                                   strlen(name), blocks, sizeof(blocks));
     uint8_t hdr[16];
-    size_t hlen = detws_pn_dcp_header(Pn::PN_FRAMEID_DCP_IDENT_RES, Pn::PN_DCP_SERVICE_IDENTIFY,
-                                      Pn::PN_DCP_TYPE_RESPONSE_SUCCESS, 0x12345678u, (uint16_t)blen, hdr, sizeof(hdr));
+    size_t hlen = dws_pn_dcp_header(Pn::PN_FRAMEID_DCP_IDENT_RES, Pn::PN_DCP_SERVICE_IDENTIFY,
+                                    Pn::PN_DCP_TYPE_RESPONSE_SUCCESS, 0x12345678u, (uint16_t)blen, hdr, sizeof(hdr));
 
     printf("| Feature  | Operation                  |     ns/op |    MB/s |\n");
     printf("|----------|----------------------------|-----------|---------|\n");
 
-    // detws_pn_dcp_header: build the 10-octet DCP header (frameID / service / xid / dataLength) - transmit op.
+    // dws_pn_dcp_header: build the 10-octet DCP header (frameID / service / xid / dataLength) - transmit op.
     {
         uint8_t buf[16];
         volatile size_t sink = 0;
         double ns = bench_ns(5000000, [&] {
-            sink +=
-                detws_pn_dcp_header(Pn::PN_FRAMEID_DCP_IDENT_RES, Pn::PN_DCP_SERVICE_IDENTIFY,
-                                    Pn::PN_DCP_TYPE_RESPONSE_SUCCESS, 0x12345678u, (uint16_t)blen, buf, sizeof(buf));
+            sink += dws_pn_dcp_header(Pn::PN_FRAMEID_DCP_IDENT_RES, Pn::PN_DCP_SERVICE_IDENTIFY,
+                                      Pn::PN_DCP_TYPE_RESPONSE_SUCCESS, 0x12345678u, (uint16_t)blen, buf, sizeof(buf));
         });
         row("profinet", "dcp_header (build)", ns, (double)hlen);
         (void)sink;
     }
 
-    // detws_pn_dcp_parse_header: validate + decode the 10-octet header (receive op).
+    // dws_pn_dcp_parse_header: validate + decode the 10-octet header (receive op).
     {
         volatile size_t sink = 0;
         double ns = bench_ns(10000000, [&] {
             PnDcpHeader out;
-            if (detws_pn_dcp_parse_header(hdr, hlen, &out))
+            if (dws_pn_dcp_parse_header(hdr, hlen, &out))
                 sink += out.data_length + out.xid;
         });
         row("profinet", "dcp_parse_header", ns, (double)hlen);
         (void)sink;
     }
 
-    // detws_pn_dcp_walk: walk the option/suboption/blockLength TLVs after the header (the fuzz-target parser;
+    // dws_pn_dcp_walk: walk the option/suboption/blockLength TLVs after the header (the fuzz-target parser;
     // a block-length lie must not over-read past the block buffer).
     {
         volatile size_t sink = 0;
         double ns = bench_ns(10000000, [&] {
             size_t acc = 0;
-            if (detws_pn_dcp_walk(blocks, blen, walk_cb, &acc))
+            if (dws_pn_dcp_walk(blocks, blen, walk_cb, &acc))
                 sink += acc;
         });
         row("profinet", "dcp_walk (blocks)", ns, (double)blen);

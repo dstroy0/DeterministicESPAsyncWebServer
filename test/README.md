@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **254 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **255 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -113,9 +113,6 @@ The native test matrix has **254 environments**, one per feature, generated from
 | `native_dbm` | `WS_ENABLE_WAL=1`, `WS_ENABLE_DBM=1` | `test_dbm` | Log-structured hash key-value store on the WAL (services/dbm): put/get/delete with an in-RAM open-addressed index and value data appended to the write-ahead log, plus index rebuild by replaying the lo... |
 | `native_dds` | `WS_ENABLE_DDS=1` | `test_dds` | DDS / RTPS framing codec (services/dds): the 20-octet RTPS header (magic/version/vendor/ guidPrefix) and the submessage TLV (id/flags/octetsToNextHeader, endianness flag), build + parse. |
 | `native_deflate` | `WS_ENABLE_WS_DEFLATE=1` | `test_deflate` | RFC 1951 DEFLATE core (the WebSocket permessage-deflate compressor). |
-| `native_det_arena` | default | `test_det_arena` | Unified double-ended server arena (network_drivers/session/dws_arena): first-fit persistent end (bottom, individual free + coalesce + boundary shrink) + bump scratch end (top, mark/release/reset) shar... |
-| `native_det_ip` | default | `test_det_ip` | IP address core (network_drivers/network/dws_ip): RFC 4291 IPv4/IPv6 text parsing, RFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification (loopback / link-local / pri... |
-| `native_det_primitives` | default | `test_det_primitives` | Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof number parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h). |
 | `native_device_id` | `WS_ENABLE_DEVICE_ID=1` | `test_device_id` | MAC-derived device UUID (services/device_id): RFC 4122 v5 from a MAC via SHA-1. |
 | `native_devicenet` | `WS_ENABLE_DEVICENET=1` | `test_devicenet` | DeviceNet link-adaptation codec (services/devicenet): the 4-group 11-bit CAN id, explicit-message header octet, single-frame explicit messages, and the fragmentation reassembler (CIP over CAN; the CIP... |
 | `native_df1` | `WS_ENABLE_DF1=1` | `test_df1` | Allen-Bradley DF1 full-duplex frame codec (services/df1): BCC + CRC-16/ARC, the frame builder with DLE byte-stuffing, and the validating, un-stuffing parser. |
@@ -133,6 +130,9 @@ The native test matrix has **254 environments**, one per feature, generated from
 | `native_dtls_conn` | `WS_ENABLE_DTLS=1` | `test_dtls_conn` | DTLS 1.3 server handshake state machine (network_drivers/presentation/dtls/dtls_conn, RFC 9147 sec 5-6): the one-round-trip full handshake (TLS_AES_128_GCM_SHA256 / X25519 / Ed25519) over the DTLS rec... |
 | `native_dtls_hs` | `WS_ENABLE_DTLS=1` | `test_dtls_handshake` | DTLS 1.3 handshake framing + reliability (network_drivers/presentation/dtls/dtls_handshake, RFC 9147 sec 5 + 7): the 12-byte DTLS handshake header, overlap-tolerant message reassembly, the ACK message... |
 | `native_dtls_tls13` | `WS_ENABLE_DTLS=1` | `test_dtls_tls13` | TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 sec 4.1.4 / 4.4.1), compiled for the DTLS path (DWS_ENABLE_DTLS, not HTTP/3): the HelloRetryRequest builder, the cookie extension pa... |
+| `native_dws_arena` | default | `test_dws_arena` | Unified double-ended server arena (network_drivers/session/dws_arena): first-fit persistent end (bottom, individual free + coalesce + boundary shrink) + bump scratch end (top, mark/release/reset) shar... |
+| `native_dws_ip` | default | `test_dws_ip` | IP address core (network_drivers/network/dws_ip): RFC 4291 IPv4/IPv6 text parsing, RFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification (loopback / link-local / pri... |
+| `native_dws_primitives` | default | `test_dws_primitives` | Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof number parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h). |
 | `native_edge_cache` | `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1`, `WS_ENABLE_RANGE=1` | `test_edge_cache`, `test_edge_fetch` | CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response header-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime + Expires-Date +... |
 | `native_edge_cache_sd` | `WS_ENABLE_WAL=1`, `WS_ENABLE_DBM=1`, `WS_DBM_VAL_MAX=1024`, `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1` | `test_edge_cache_sd` | CDN edge-cache L2 SD-persistence tier (services/edge_cache/edge_cache_sd): the entry <-> dbm-value serialization roundtrip (all response metadata, Vary variants, binary and max-size bodies), the spill... |
 | `native_edge_mesh` | `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1`, `WS_ENABLE_EDGE_MESH=1` | `test_edge_mesh` | CDN edge-cache mesh sibling-cache codec (services/edge_cache/edge_mesh): the request/response wire frames (build + tri-state accumulating parse over partial reads, magic/version/opcode validation), th... |
@@ -290,6 +290,7 @@ The native test matrix has **254 environments**, one per feature, generated from
 | `native_ssh_ecdsa` | default | `test_ssh_ecdsa` | ECDSA P-256 for ecdsa-sha2-nistp256 (RFC 5656) host-tested on the software path: pubkey, deterministic sign, and verify pinned byte-exact to the RFC 6979 A.2.5 (P-256/SHA-256) vectors, plus tamper rej... |
 | `native_ssh_ed25519` | default | `test_ssh_ed25519` | Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth): SHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). |
 | `native_ssh_hardened` | `WS_SSH_ALLOW_PASSWORD=0` | `test_ssh_hardening` | SSH built with password auth disabled (publickey-only hardening) |
+| `native_ssh_kbdint` | `WS_ENABLE_SSH=1`, `WS_ENABLE_SSH_KEYBOARD_INTERACTIVE=1` | `test_ssh_kbdint`, `test_ssh_auth` | SSH keyboard-interactive auth (RFC 4256) built with DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE=1: the server sends one non-echoed Password prompt (INFO_REQUEST) and verifies the INFO_RESPONSE via the passwor... |
 | `native_ssh_pqc` | `WS_SSH_MAX_CHANNELS=3`, `WS_ENABLE_PQC_KEX=1` | `test_ssh_pqc` | mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the full SSH transport built with DWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. |
 | `native_ssh_sftp` | `WS_ENABLE_SSH=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_SSH_SFTP=1` | `test_ssh_sftp` | SFTP protocol v3 wire codec (services/sftp): the SSH_FXP_* request reader + response builders (VERSION / STATUS / HANDLE / DATA / ATTRS / NAME), the ATTRS blob encode/decode round-trip (size / perms /... |
 | `native_ssh_zlib` | `WS_ENABLE_SSH=1`, `WS_ENABLE_SSH_ZLIB=1`, `WS_ENABLE_WS_DEFLATE=1` | `test_ssh_zlib` | SSH server-to-client streaming compressor (zlib@openssh.com / zlib): a context-takeover DEFLATE stream (persistent sliding window across packets, sync-flush per packet, zlib wrapper). |
@@ -544,7 +545,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3427 test cases** across **273 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3434 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -5430,7 +5431,7 @@ A thorough directory of all **3427 test cases** across **273 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (dws_dbm_sync(&g_db))</code>
       * <code>Assert true (reboot())</code>
-      * <code>Assert true (get_eq("name", "detws2"))</code>
+      * <code>Assert true (get_eq("name", "dws2"))</code>
       * <code>Assert true (get_eq("role", "server"))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db));</code>
   </details>
@@ -5732,462 +5733,6 @@ A thorough directory of all **3427 test cases** across **273 suites**. Expand a 
     * **Objective**: Scratch too small fails closed
     * **Assertions**:
       * <code>Assert equal int (DeflateResult::DEFLATE_ERR_SCRATCH, rc)</code>
-  </details>
-
-</details>
-
-<details>
-<summary><b>test_det_arena (19 tests)</b></summary>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_persist_basic_alloc</b> &mdash; <i>Persist basic alloc</i></summary>
-
-    * **Objective**: Persist basic alloc
-    * **Assertions**:
-      * <code>Assert not null (p)</code>
-      * <code>Assert true (aligned8(p))</code>
-      * <code>Assert true (in_region(&a, p, 100))</code>
-      * <code>Assert not null (q)</code>
-      * <code>Assert true (p != q)</code>
-      * <code>Assert true ((uintptr_t)q &gt;= (uintptr_t)p + 100)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_persist_zeroed</b> &mdash; <i>Persist zeroed</i></summary>
-
-    * **Objective**: Persist zeroed
-    * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, p[i]); // zeroed despite 0xAA poison</code>
-      * <code>Assert equal ptr (p, q)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, q[i]); // re-zeroed</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_persist_first_fit_reuse</b> &mdash; <i>Persist first fit reuse</i></summary>
-
-    * **Objective**: Persist first fit reuse
-    * **Assertions**:
-      * <code>Assert equal ptr (B, D)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_persist_coalesce</b> &mdash; <i>Persist coalesce</i></summary>
-
-    * **Objective**: Persist coalesce
-    * **Assertions**:
-      * <code>Assert not null (big)</code>
-      * <code>Assert equal ptr (B, big)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_persist_free_shrinks_boundary</b> &mdash; <i>Persist free shrinks boundary</i></summary>
-
-    * **Objective**: Persist free shrinks boundary
-    * **Assertions**:
-      * <code>Assert not null (p)</code>
-      * <code>Assert true (dws_arena_free_bytes(&a) &lt; free0)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(free0, dws_arena_free_bytes(&a));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_persist_used(&a));</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_scratch_bump_and_reset</b> &mdash; <i>Scratch bump and reset</i></summary>
-
-    * **Objective**: Scratch bump and reset
-    * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_scratch_used(&a));</code>
-      * <code>Assert not null (p)</code>
-      * <code>Assert true (aligned8(p))</code>
-      * <code>Assert true (dws_arena_scratch_used(&a) &gt;= 100)</code>
-      * <code>Assert true (p != q)</code>
-      * <code>Assert true ((uintptr_t)q &lt; (uintptr_t)p)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_scratch_used(&a));</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_scratch_mark_release</b> &mdash; <i>Scratch mark release</i></summary>
-
-    * **Objective**: Scratch mark release
-    * **Assertions**:
-      * <code>Assert true (dws_arena_scratch_used(&a) &gt; used1)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(used1, dws_arena_scratch_used(&a));</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_persist_and_scratch_no_overlap</b> &mdash; <i>persistent is below scratch, no overlap</i></summary>
-
-    * **Objective**: persistent is below scratch, no overlap
-    * **Assertions**:
-      * <code>Assert not null (p)</code>
-      * <code>Assert not null (s)</code>
-      * <code>Assert true (p + 500 &lt;= s)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0x11, p[499]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0x22, s[0]);</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_boundary_collision_fail_closed</b> &mdash; <i>Take most of the arena from the bottom, then from the top, until they nearly meet.</i></summary>
-
-    * **Objective**: Take most of the arena from the bottom, then from the top, until they nearly meet.
-    * **Assertions**:
-      * <code>Assert not null (p)</code>
-      * <code>Assert not null (s)</code>
-      * <code>Assert null (dws_arena_persist_alloc(&a, 1000))</code>
-      * <code>Assert null (dws_arena_scratch_alloc(&a, 1000))</code>
-      * <code>Assert true ((uint8_t *)p + 1800 &lt;= (uint8_t *)s)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_scratch_reset_frees_middle_for_persist</b> &mdash; <i>Scratch reset frees middle for persist</i></summary>
-
-    * **Objective**: Scratch reset frees middle for persist
-    * **Assertions**:
-      * <code>Assert null (dws_arena_persist_alloc(&a, 2000))</code>
-      * <code>Assert not null (dws_arena_persist_alloc(&a, 2000))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_alignment_various_sizes</b> &mdash; <i>Alignment various sizes</i></summary>
-
-    * **Objective**: Alignment various sizes
-    * **Assertions**:
-      * <code>Assert true (aligned8(p))</code>
-      * <code>Assert true (aligned8(s))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_scratch_alignment_16</b> &mdash; <i>The real scratch callers (SSH, WS deflate) ask for 16-byte alignment.</i></summary>
-
-    * **Objective**: The real scratch callers (SSH, WS deflate) ask for 16-byte alignment.
-    * **Assertions**:
-      * <code>Assert not null (p)</code>
-      * <code>Assert true (((uintptr_t)p & 15u) == 0)</code>
-      * <code>Assert true (aligned8(q))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_zero_size_and_null_free</b> &mdash; <i>Zero size and null free</i></summary>
-
-    * **Objective**: Zero size and null free
-    * **Assertions**:
-      * <code>Assert not null (p)</code>
-      * <code>Assert not null (s)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_set_add_limits</b> &mdash; <i>Set add limits</i></summary>
-
-    * **Objective**: Set add limits
-    * **Assertions**:
-      * <code>Assert true (dws_arena_set_add(&s, g_r0, sizeof(g_r0)))</code>
-      * <code>Assert true (dws_arena_set_add(&s, g_r1, sizeof(g_r1)))</code>
-      * <code>Assert false (dws_arena_set_add(&s, extra, sizeof(extra))); // full (max 2)</code>
-      * <code>Assert false (dws_arena_set_add(&t, tiny, sizeof(tiny)))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_set_persist_overflow_and_prefer</b> &mdash; <i>Set persist overflow and prefer</i></summary>
-
-    * **Objective**: Set persist overflow and prefer
-    * **Assertions**:
-      * <code>Assert not null (big)</code>
-      * <code>Assert true (in_buf(big, g_r1, sizeof(g_r1)))</code>
-      * <code>Assert not null (small)</code>
-      * <code>Assert true (in_buf(small, g_r0, sizeof(g_r0)))</code>
-      * <code>Assert true (dws_arena_set_persist_used(&s) &gt;= 732); // &gt;= requested (alignment rounds up)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_set_persist_free_routes_by_address</b> &mdash; <i>Set persist free routes by address</i></summary>
-
-    * **Objective**: Set persist free routes by address
-    * **Assertions**:
-      * <code>Assert true (in_buf(inR1, g_r1, sizeof(g_r1)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_persist_used(&s));</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_set_scratch_overflow_and_unwind</b> &mdash; <i>Set scratch overflow and unwind</i></summary>
-
-    * **Objective**: Set scratch overflow and unwind
-    * **Assertions**:
-      * <code>Assert true (in_buf(a0, g_r0, sizeof(g_r0)))</code>
-      * <code>Assert true (in_buf(a1, g_r1, sizeof(g_r1)))</code>
-      * <code>Assert true (dws_arena_set_scratch_used(&s) &gt;= 1300)</code>
-      * <code>Assert true (dws_arena_set_scratch_used(&s) &gt;= 400)</code>
-      * <code>Assert true (dws_arena_set_scratch_used(&s) &lt; 900)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_scratch_used(&s));</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_persist_split_and_max_align</b> &mdash; <i>A small alloc into a large non-terminal hole splits the hole (leaves a free remainder).</i></summary>
-
-    * **Objective**: A small alloc into a large non-terminal hole splits the hole (leaves a free remainder).
-    * **Assertions**:
-      * <code>Assert equal ptr (B, D)</code>
-      * <code>Assert not null (E)</code>
-      * <code>Assert true ((uintptr_t)E &gt; (uintptr_t)D && (uintptr_t)E &lt; (uintptr_t)C)</code>
-      * <code>Assert not null (p)</code>
-      * <code>Assert true (((uintptr_t)p & 15u) == 0)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_set_exhaustion_and_free_bytes</b> &mdash; <i>A request larger than any single region fails closed across the whole set.</i></summary>
-
-    * **Objective**: A request larger than any single region fails closed across the whole set.
-    * **Assertions**:
-      * <code>Assert null (dws_arena_set_persist_alloc(&s, 100000))</code>
-      * <code>Assert null (dws_arena_set_scratch_alloc(&s, 100000))</code>
-      * <code>Assert true (before &gt; 0)</code>
-      * <code>Assert not null (p)</code>
-      * <code>Assert true (dws_arena_set_free_bytes(&s) &lt; before)</code>
-  </details>
-
-</details>
-
-<details>
-<summary><b>test_det_ip (11 tests)</b></summary>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_v4_round_trip</b> &mdash; <i>V4 round trip</i></summary>
-
-    * **Objective**: V4 round trip
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_from_v6_bytes</b> &mdash; <i>2001:db8::1 as raw network-order bytes -> DWSIp -> canonical text.</i></summary>
-
-    * **Objective**: 2001:db8::1 as raw network-order bytes -> DWSIp -> canonical text.
-    * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DWSIpFamily::DWS_IP_V6, ip.family);</code>
-      * <code>Assert equal string ("2001:db8::1", s)</code>
-      * <code>Assert true (dws_ip_parse("2001:db8::1", &parsed))</code>
-      * <code>Assert true (dws_ip_equal(&ip, &parsed))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_is_unspecified</b> &mdash; <i>Is unspecified</i></summary>
-
-    * **Objective**: Is unspecified
-    * **Assertions**:
-      * <code>Assert true (dws_ip_is_unspecified(&none))</code>
-      * <code>Assert true (dws_ip_is_unspecified(nullptr))</code>
-      * <code>Assert true (dws_ip_parse("0.0.0.0", &z4))</code>
-      * <code>Assert true (dws_ip_parse("::", &z6))</code>
-      * <code>Assert true (dws_ip_parse("192.168.1.1", &host))</code>
-      * <code>Assert true (dws_ip_is_unspecified(&z4))</code>
-      * <code>Assert true (dws_ip_is_unspecified(&z6))</code>
-      * <code>Assert false (dws_ip_is_unspecified(&host))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_prefix_match</b> &mdash; <i>IPv4 CIDR containment (the allowlist primitive - full address, no hashing).</i></summary>
-
-    * **Objective**: IPv4 CIDR containment (the allowlist primitive - full address, no hashing).
-    * **Assertions**:
-      * <code>Assert true (dws_ip_parse("192.168.1.0", &net24))</code>
-      * <code>Assert true (dws_ip_parse("192.168.1.200", &in24))</code>
-      * <code>Assert true (dws_ip_parse("192.168.2.1", &out24))</code>
-      * <code>Assert true (dws_ip_prefix_match(&in24, &net24, 24))</code>
-      * <code>Assert false (dws_ip_prefix_match(&out24, &net24, 24))</code>
-      * <code>Assert true (dws_ip_parse("10.1.2.3", &net8))</code>
-      * <code>Assert true (dws_ip_parse("10.255.255.255", &in8))</code>
-      * <code>Assert true (dws_ip_parse("11.0.0.1", &out8))</code>
-      * <code>Assert true (dws_ip_prefix_match(&in8, &net8, 8))</code>
-      * <code>Assert false (dws_ip_prefix_match(&out8, &net8, 8))</code>
-      * <code>Assert true (dws_ip_parse("203.0.113.7", &any))</code>
-      * <code>Assert true (dws_ip_prefix_match(&any, &any, 32))</code>
-      * <code>Assert false (dws_ip_prefix_match(&out24, &any, 32))</code>
-      * <code>Assert true (dws_ip_prefix_match(&any, &net8, 0))</code>
-      * <code>Assert true (dws_ip_parse("2001:db8::", &v6net))</code>
-      * <code>Assert true (dws_ip_parse("2001:db8:0:0:1234::abcd", &v6in))</code>
-      * <code>Assert true (dws_ip_parse("2001:db9::1", &v6out))</code>
-      * <code>Assert true (dws_ip_prefix_match(&v6in, &v6net, 32))</code>
-      * <code>Assert false (dws_ip_prefix_match(&v6out, &v6net, 32))</code>
-      * <code>Assert false (dws_ip_prefix_match(&v6in, &net24, 24))</code>
-      * <code>Assert false (dws_ip_prefix_match(&in24, &v6net, 24))</code>
-      * <code>Assert false (dws_ip_prefix_match(&in24, &net24, 33))</code>
-      * <code>Assert false (dws_ip_prefix_match(&v6in, &v6net, 129))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_v6_canonical_5952</b> &mdash; <i>RFC 5952: lower-case, no leading zeros, longest zero run -> "::".</i></summary>
-
-    * **Objective**: RFC 5952: lower-case, no leading zeros, longest zero run -> "::".
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_v4_mapped</b> &mdash; <i>V4 mapped</i></summary>
-
-    * **Objective**: V4 mapped
-    * **Assertions**:
-      * <code>Assert true (dws_ip_parse("::ffff:10.0.0.1", &ip))</code>
-      * <code>Assert true (dws_ip_is_v4_mapped(&ip))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0x0A000001u, dws_ip_to_v4_be(&ip));</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_classify_v4</b> &mdash; <i>Classify v4</i></summary>
-
-    * **Objective**: Classify v4
-    * **Assertions**:
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LINK_LOCAL, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_MULTICAST, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_classify_v6</b> &mdash; <i>v4-mapped classifies as its v4 scope.</i></summary>
-
-    * **Objective**: v4-mapped classifies as its v4 scope.
-    * **Assertions**:
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LINK_LOCAL, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_MULTICAST, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip))</code>
-      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_reject_malformed</b> &mdash; <i>Reject malformed</i></summary>
-
-    * **Objective**: Reject malformed
-    * **Assertions**:
-      * <code>Assert false (dws_ip_parse("", &ip))</code>
-      * <code>Assert false (dws_ip_parse("256.0.0.1", &ip))</code>
-      * <code>Assert false (dws_ip_parse("1.2.3", &ip))</code>
-      * <code>Assert false (dws_ip_parse("1.2.3.4.5", &ip))</code>
-      * <code>Assert false (dws_ip_parse("1::2::3", &ip))</code>
-      * <code>Assert false (dws_ip_parse("1:2:3:4:5:6:7:8:9", &ip))</code>
-      * <code>Assert false (dws_ip_parse("1:2:3:4:5:6:7", &ip))</code>
-      * <code>Assert false (dws_ip_parse("12345::1", &ip))</code>
-      * <code>Assert false (dws_ip_parse("2001:db8:::1", &ip))</code>
-      * <code>Assert false (dws_ip_parse("2001:db8::1:", &ip))</code>
-      * <code>Assert false (dws_ip_parse("2001:xyz::1", &ip))</code>
-      * <code>Assert false (dws_ip_parse("::ffff:1.2.3.4:5", &ip))</code>
-      * <code>Assert false (dws_ip_parse("hello", &ip))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_equal_and_from_v4</b> &mdash; <i>Different families never compare equal.</i></summary>
-
-    * **Objective**: Different families never compare equal.
-    * **Assertions**:
-      * <code>Assert true (dws_ip_parse("192.168.1.1", &b))</code>
-      * <code>Assert true (dws_ip_equal(&a, &b))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A80101u, dws_ip_to_v4_be(&a));</code>
-      * <code>Assert true (dws_ip_parse("192.168.1.2", &c))</code>
-      * <code>Assert false (dws_ip_equal(&a, &c))</code>
-      * <code>Assert true (dws_ip_parse("::c0a8:101", &v6))</code>
-      * <code>Assert false (dws_ip_equal(&a, &v6))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_ip_classify_equal_cidr_and_parse_edges</b> &mdash; <i>classify: null and a DWSIpFamily::DWS_IP_NONE address are UNSPECIFIED.</i></summary>
-
-    * **Objective**: classify: null and a DWSIpFamily::DWS_IP_NONE address are UNSPECIFIED.
-    * **Assertions**:
-      * <code>Assert equal int (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(nullptr))</code>
-      * <code>Assert equal int (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(&none))</code>
-      * <code>Assert true (dws_ip_equal(&none, &none2))</code>
-      * <code>Assert true (dws_ip_prefix_match(&in, &net, 20))</code>
-      * <code>Assert false (dws_ip_prefix_match(&out, &net, 20))</code>
-      * <code>Assert false (dws_ip_parse(":1", &p))</code>
-      * <code>Assert false (dws_ip_parse(toolong, &p))</code>
-      * <code>Assert false (dws_ip_parse("1.2.3", &p))</code>
-      * <code>Assert false (dws_ip_parse("1.2.3.4.5", &p))</code>
-      * <code>Assert false (dws_ip_parse("256.0.0.1", &p))</code>
-      * <code>Assert false (dws_ip_parse("gg::1", &p))</code>
-      * <code>Assert false (dws_ip_parse("1:2:3:4:5:6:7:8:9", &p))</code>
-      * <code>Assert false (dws_ip_parse(nullptr, &p))</code>
-      * <code>Assert false (dws_ip_parse("1.2.3.4", nullptr))</code>
-      * <code>Assert false (dws_ip_parse("1234.5.6.7", &p))</code>
-      * <code>Assert false (dws_ip_parse("1.2.3.z", &p))</code>
-      * <code>Assert equal uint (0, dws_ip_format(nullptr, buf, sizeof(buf)))</code>
-      * <code>Assert equal uint (0, dws_ip_format(&none, buf, sizeof(buf)))</code>
-      * <code>Assert equal uint (0, dws_ip_format(&v4, buf, 4))</code>
-      * <code>Assert true (dws_ip_parse("2001:db8::1", &v6))</code>
-      * <code>Assert equal uint (0, dws_ip_format(&v6, buf, 4))</code>
-      * <code>Assert true (dws_ip_parse("::ffff:1.2.3.4", &mapped))</code>
-      * <code>Assert equal uint (0, dws_ip_format(&mapped, buf, 5))</code>
-      * <code>Assert equal uint (0, dws_ip_to_v4_be(nullptr))</code>
-      * <code>Assert equal uint (0, dws_ip_to_v4_be(&v6))</code>
-  </details>
-
-</details>
-
-<details>
-<summary><b>test_det_primitives (5 tests)</b></summary>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_strtol</b> &mdash; <i>Strtol</i></summary>
-
-    * **Objective**: Strtol
-    * **Assertions**:
-      * <code>Assert equal int (-42, dws_strtol(s, &end))</code>
-      * <code>Assert equal ptr (s + 5, end)</code>
-      * <code>Assert equal int (7, dws_strtol("+7", nullptr))</code>
-      * <code>Assert equal int (0, dws_strtol(bad, &e2))</code>
-      * <code>Assert equal ptr (bad, e2)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_strtoul</b> &mdash; <i>Strtoul</i></summary>
-
-    * **Objective**: Strtoul
-    * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(123, dws_strtoul(s, &end)); // ws + '+' + digits</code>
-      * <code>Assert equal ptr (s + 6, end)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_strtoul(bad, &e2));</code>
-      * <code>Assert equal ptr (bad, e2)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_strtof</b> &mdash; <i>Strtof</i></summary>
-
-    * **Objective**: Strtof
-    * **Assertions**:
-      * <code>Assert float within (0.0001f, 3.14f, dws_strtof("  3.14", &end))</code>
-      * <code>Assert float within (0.0001f, -2.5f, dws_strtof("-2.5", nullptr))</code>
-      * <code>Assert float within (1.0f, 1500.0f, dws_strtof("1.5e3", &end))</code>
-      * <code>Assert float within (0.0001f, 0.0125f, dws_strtof("1.25E-2", &end))</code>
-      * <code>Assert float within (0.0001f, 0.0f, dws_strtof(bad, &e2))</code>
-      * <code>Assert equal ptr (bad, e2)</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_utf8_valid</b> &mdash; <i>Utf8 valid</i></summary>
-
-    * **Objective**: Utf8 valid
-    * **Assertions**:
-      * <code>Assert true (dws_utf8_valid((const uint8_t *)"hello", 5))</code>
-      * <code>Assert true (dws_utf8_valid(two, 2))</code>
-      * <code>Assert true (dws_utf8_valid(three, 3))</code>
-      * <code>Assert true (dws_utf8_valid(four, 4))</code>
-      * <code>Assert true (dws_utf8_valid(nullptr, 0))</code>
-  </details>
-
-  <details style="margin-left: 20px;">
-    <summary><b>test_utf8_invalid</b> &mdash; <i>Utf8 invalid</i></summary>
-
-    * **Objective**: Utf8 invalid
-    * **Assertions**:
-      * <code>Assert false (dws_utf8_valid(lead_cont, 1))</code>
-      * <code>Assert false (dws_utf8_valid(lead_f8, 4))</code>
-      * <code>Assert false (dws_utf8_valid(truncated, 2))</code>
-      * <code>Assert false (dws_utf8_valid(bad_cont, 2))</code>
-      * <code>Assert false (dws_utf8_valid(overlong, 2))</code>
-      * <code>Assert false (dws_utf8_valid(surrogate, 3))</code>
-      * <code>Assert false (dws_utf8_valid(too_big, 4))</code>
   </details>
 
 </details>
@@ -7856,6 +7401,462 @@ A thorough directory of all **3427 test cases** across **273 suites**. Expand a 
       * <code>Assert true (dws_dshot_bit_ns(300, false) &gt; 0)</code>
       * <code>Assert true (dws_dshot_bit_ns(1200, true) &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_dshot_bit_ns(999, true));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_dws_arena (19 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_basic_alloc</b> &mdash; <i>Persist basic alloc</i></summary>
+
+    * **Objective**: Persist basic alloc
+    * **Assertions**:
+      * <code>Assert not null (p)</code>
+      * <code>Assert true (aligned8(p))</code>
+      * <code>Assert true (in_region(&a, p, 100))</code>
+      * <code>Assert not null (q)</code>
+      * <code>Assert true (p != q)</code>
+      * <code>Assert true ((uintptr_t)q &gt;= (uintptr_t)p + 100)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_zeroed</b> &mdash; <i>Persist zeroed</i></summary>
+
+    * **Objective**: Persist zeroed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, p[i]); // zeroed despite 0xAA poison</code>
+      * <code>Assert equal ptr (p, q)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, q[i]); // re-zeroed</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_first_fit_reuse</b> &mdash; <i>Persist first fit reuse</i></summary>
+
+    * **Objective**: Persist first fit reuse
+    * **Assertions**:
+      * <code>Assert equal ptr (B, D)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_coalesce</b> &mdash; <i>Persist coalesce</i></summary>
+
+    * **Objective**: Persist coalesce
+    * **Assertions**:
+      * <code>Assert not null (big)</code>
+      * <code>Assert equal ptr (B, big)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_free_shrinks_boundary</b> &mdash; <i>Persist free shrinks boundary</i></summary>
+
+    * **Objective**: Persist free shrinks boundary
+    * **Assertions**:
+      * <code>Assert not null (p)</code>
+      * <code>Assert true (dws_arena_free_bytes(&a) &lt; free0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(free0, dws_arena_free_bytes(&a));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_persist_used(&a));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scratch_bump_and_reset</b> &mdash; <i>Scratch bump and reset</i></summary>
+
+    * **Objective**: Scratch bump and reset
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_scratch_used(&a));</code>
+      * <code>Assert not null (p)</code>
+      * <code>Assert true (aligned8(p))</code>
+      * <code>Assert true (dws_arena_scratch_used(&a) &gt;= 100)</code>
+      * <code>Assert true (p != q)</code>
+      * <code>Assert true ((uintptr_t)q &lt; (uintptr_t)p)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_scratch_used(&a));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scratch_mark_release</b> &mdash; <i>Scratch mark release</i></summary>
+
+    * **Objective**: Scratch mark release
+    * **Assertions**:
+      * <code>Assert true (dws_arena_scratch_used(&a) &gt; used1)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(used1, dws_arena_scratch_used(&a));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_and_scratch_no_overlap</b> &mdash; <i>persistent is below scratch, no overlap</i></summary>
+
+    * **Objective**: persistent is below scratch, no overlap
+    * **Assertions**:
+      * <code>Assert not null (p)</code>
+      * <code>Assert not null (s)</code>
+      * <code>Assert true (p + 500 &lt;= s)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x11, p[499]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x22, s[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_boundary_collision_fail_closed</b> &mdash; <i>Take most of the arena from the bottom, then from the top, until they nearly meet.</i></summary>
+
+    * **Objective**: Take most of the arena from the bottom, then from the top, until they nearly meet.
+    * **Assertions**:
+      * <code>Assert not null (p)</code>
+      * <code>Assert not null (s)</code>
+      * <code>Assert null (dws_arena_persist_alloc(&a, 1000))</code>
+      * <code>Assert null (dws_arena_scratch_alloc(&a, 1000))</code>
+      * <code>Assert true ((uint8_t *)p + 1800 &lt;= (uint8_t *)s)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scratch_reset_frees_middle_for_persist</b> &mdash; <i>Scratch reset frees middle for persist</i></summary>
+
+    * **Objective**: Scratch reset frees middle for persist
+    * **Assertions**:
+      * <code>Assert null (dws_arena_persist_alloc(&a, 2000))</code>
+      * <code>Assert not null (dws_arena_persist_alloc(&a, 2000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_alignment_various_sizes</b> &mdash; <i>Alignment various sizes</i></summary>
+
+    * **Objective**: Alignment various sizes
+    * **Assertions**:
+      * <code>Assert true (aligned8(p))</code>
+      * <code>Assert true (aligned8(s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scratch_alignment_16</b> &mdash; <i>The real scratch callers (SSH, WS deflate) ask for 16-byte alignment.</i></summary>
+
+    * **Objective**: The real scratch callers (SSH, WS deflate) ask for 16-byte alignment.
+    * **Assertions**:
+      * <code>Assert not null (p)</code>
+      * <code>Assert true (((uintptr_t)p & 15u) == 0)</code>
+      * <code>Assert true (aligned8(q))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_size_and_null_free</b> &mdash; <i>Zero size and null free</i></summary>
+
+    * **Objective**: Zero size and null free
+    * **Assertions**:
+      * <code>Assert not null (p)</code>
+      * <code>Assert not null (s)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_add_limits</b> &mdash; <i>Set add limits</i></summary>
+
+    * **Objective**: Set add limits
+    * **Assertions**:
+      * <code>Assert true (dws_arena_set_add(&s, g_r0, sizeof(g_r0)))</code>
+      * <code>Assert true (dws_arena_set_add(&s, g_r1, sizeof(g_r1)))</code>
+      * <code>Assert false (dws_arena_set_add(&s, extra, sizeof(extra))); // full (max 2)</code>
+      * <code>Assert false (dws_arena_set_add(&t, tiny, sizeof(tiny)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_persist_overflow_and_prefer</b> &mdash; <i>Set persist overflow and prefer</i></summary>
+
+    * **Objective**: Set persist overflow and prefer
+    * **Assertions**:
+      * <code>Assert not null (big)</code>
+      * <code>Assert true (in_buf(big, g_r1, sizeof(g_r1)))</code>
+      * <code>Assert not null (small)</code>
+      * <code>Assert true (in_buf(small, g_r0, sizeof(g_r0)))</code>
+      * <code>Assert true (dws_arena_set_persist_used(&s) &gt;= 732); // &gt;= requested (alignment rounds up)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_persist_free_routes_by_address</b> &mdash; <i>Set persist free routes by address</i></summary>
+
+    * **Objective**: Set persist free routes by address
+    * **Assertions**:
+      * <code>Assert true (in_buf(inR1, g_r1, sizeof(g_r1)))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_persist_used(&s));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_scratch_overflow_and_unwind</b> &mdash; <i>Set scratch overflow and unwind</i></summary>
+
+    * **Objective**: Set scratch overflow and unwind
+    * **Assertions**:
+      * <code>Assert true (in_buf(a0, g_r0, sizeof(g_r0)))</code>
+      * <code>Assert true (in_buf(a1, g_r1, sizeof(g_r1)))</code>
+      * <code>Assert true (dws_arena_set_scratch_used(&s) &gt;= 1300)</code>
+      * <code>Assert true (dws_arena_set_scratch_used(&s) &gt;= 400)</code>
+      * <code>Assert true (dws_arena_set_scratch_used(&s) &lt; 900)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_scratch_used(&s));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_split_and_max_align</b> &mdash; <i>A small alloc into a large non-terminal hole splits the hole (leaves a free remainder).</i></summary>
+
+    * **Objective**: A small alloc into a large non-terminal hole splits the hole (leaves a free remainder).
+    * **Assertions**:
+      * <code>Assert equal ptr (B, D)</code>
+      * <code>Assert not null (E)</code>
+      * <code>Assert true ((uintptr_t)E &gt; (uintptr_t)D && (uintptr_t)E &lt; (uintptr_t)C)</code>
+      * <code>Assert not null (p)</code>
+      * <code>Assert true (((uintptr_t)p & 15u) == 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_exhaustion_and_free_bytes</b> &mdash; <i>A request larger than any single region fails closed across the whole set.</i></summary>
+
+    * **Objective**: A request larger than any single region fails closed across the whole set.
+    * **Assertions**:
+      * <code>Assert null (dws_arena_set_persist_alloc(&s, 100000))</code>
+      * <code>Assert null (dws_arena_set_scratch_alloc(&s, 100000))</code>
+      * <code>Assert true (before &gt; 0)</code>
+      * <code>Assert not null (p)</code>
+      * <code>Assert true (dws_arena_set_free_bytes(&s) &lt; before)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_dws_ip (11 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v4_round_trip</b> &mdash; <i>V4 round trip</i></summary>
+
+    * **Objective**: V4 round trip
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_from_v6_bytes</b> &mdash; <i>2001:db8::1 as raw network-order bytes -> DWSIp -> canonical text.</i></summary>
+
+    * **Objective**: 2001:db8::1 as raw network-order bytes -> DWSIp -> canonical text.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSIpFamily::DWS_IP_V6, ip.family);</code>
+      * <code>Assert equal string ("2001:db8::1", s)</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::1", &parsed))</code>
+      * <code>Assert true (dws_ip_equal(&ip, &parsed))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_is_unspecified</b> &mdash; <i>Is unspecified</i></summary>
+
+    * **Objective**: Is unspecified
+    * **Assertions**:
+      * <code>Assert true (dws_ip_is_unspecified(&none))</code>
+      * <code>Assert true (dws_ip_is_unspecified(nullptr))</code>
+      * <code>Assert true (dws_ip_parse("0.0.0.0", &z4))</code>
+      * <code>Assert true (dws_ip_parse("::", &z6))</code>
+      * <code>Assert true (dws_ip_parse("192.168.1.1", &host))</code>
+      * <code>Assert true (dws_ip_is_unspecified(&z4))</code>
+      * <code>Assert true (dws_ip_is_unspecified(&z6))</code>
+      * <code>Assert false (dws_ip_is_unspecified(&host))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_prefix_match</b> &mdash; <i>IPv4 CIDR containment (the allowlist primitive - full address, no hashing).</i></summary>
+
+    * **Objective**: IPv4 CIDR containment (the allowlist primitive - full address, no hashing).
+    * **Assertions**:
+      * <code>Assert true (dws_ip_parse("192.168.1.0", &net24))</code>
+      * <code>Assert true (dws_ip_parse("192.168.1.200", &in24))</code>
+      * <code>Assert true (dws_ip_parse("192.168.2.1", &out24))</code>
+      * <code>Assert true (dws_ip_prefix_match(&in24, &net24, 24))</code>
+      * <code>Assert false (dws_ip_prefix_match(&out24, &net24, 24))</code>
+      * <code>Assert true (dws_ip_parse("10.1.2.3", &net8))</code>
+      * <code>Assert true (dws_ip_parse("10.255.255.255", &in8))</code>
+      * <code>Assert true (dws_ip_parse("11.0.0.1", &out8))</code>
+      * <code>Assert true (dws_ip_prefix_match(&in8, &net8, 8))</code>
+      * <code>Assert false (dws_ip_prefix_match(&out8, &net8, 8))</code>
+      * <code>Assert true (dws_ip_parse("203.0.113.7", &any))</code>
+      * <code>Assert true (dws_ip_prefix_match(&any, &any, 32))</code>
+      * <code>Assert false (dws_ip_prefix_match(&out24, &any, 32))</code>
+      * <code>Assert true (dws_ip_prefix_match(&any, &net8, 0))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::", &v6net))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8:0:0:1234::abcd", &v6in))</code>
+      * <code>Assert true (dws_ip_parse("2001:db9::1", &v6out))</code>
+      * <code>Assert true (dws_ip_prefix_match(&v6in, &v6net, 32))</code>
+      * <code>Assert false (dws_ip_prefix_match(&v6out, &v6net, 32))</code>
+      * <code>Assert false (dws_ip_prefix_match(&v6in, &net24, 24))</code>
+      * <code>Assert false (dws_ip_prefix_match(&in24, &v6net, 24))</code>
+      * <code>Assert false (dws_ip_prefix_match(&in24, &net24, 33))</code>
+      * <code>Assert false (dws_ip_prefix_match(&v6in, &v6net, 129))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v6_canonical_5952</b> &mdash; <i>RFC 5952: lower-case, no leading zeros, longest zero run -> "::".</i></summary>
+
+    * **Objective**: RFC 5952: lower-case, no leading zeros, longest zero run -> "::".
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v4_mapped</b> &mdash; <i>V4 mapped</i></summary>
+
+    * **Objective**: V4 mapped
+    * **Assertions**:
+      * <code>Assert true (dws_ip_parse("::ffff:10.0.0.1", &ip))</code>
+      * <code>Assert true (dws_ip_is_v4_mapped(&ip))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x0A000001u, dws_ip_to_v4_be(&ip));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_classify_v4</b> &mdash; <i>Classify v4</i></summary>
+
+    * **Objective**: Classify v4
+    * **Assertions**:
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LINK_LOCAL, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_MULTICAST, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_classify_v6</b> &mdash; <i>v4-mapped classifies as its v4 scope.</i></summary>
+
+    * **Objective**: v4-mapped classifies as its v4 scope.
+    * **Assertions**:
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LINK_LOCAL, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_MULTICAST, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reject_malformed</b> &mdash; <i>Reject malformed</i></summary>
+
+    * **Objective**: Reject malformed
+    * **Assertions**:
+      * <code>Assert false (dws_ip_parse("", &ip))</code>
+      * <code>Assert false (dws_ip_parse("256.0.0.1", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3.4.5", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1::2::3", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1:2:3:4:5:6:7:8:9", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1:2:3:4:5:6:7", &ip))</code>
+      * <code>Assert false (dws_ip_parse("12345::1", &ip))</code>
+      * <code>Assert false (dws_ip_parse("2001:db8:::1", &ip))</code>
+      * <code>Assert false (dws_ip_parse("2001:db8::1:", &ip))</code>
+      * <code>Assert false (dws_ip_parse("2001:xyz::1", &ip))</code>
+      * <code>Assert false (dws_ip_parse("::ffff:1.2.3.4:5", &ip))</code>
+      * <code>Assert false (dws_ip_parse("hello", &ip))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_equal_and_from_v4</b> &mdash; <i>Different families never compare equal.</i></summary>
+
+    * **Objective**: Different families never compare equal.
+    * **Assertions**:
+      * <code>Assert true (dws_ip_parse("192.168.1.1", &b))</code>
+      * <code>Assert true (dws_ip_equal(&a, &b))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A80101u, dws_ip_to_v4_be(&a));</code>
+      * <code>Assert true (dws_ip_parse("192.168.1.2", &c))</code>
+      * <code>Assert false (dws_ip_equal(&a, &c))</code>
+      * <code>Assert true (dws_ip_parse("::c0a8:101", &v6))</code>
+      * <code>Assert false (dws_ip_equal(&a, &v6))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ip_classify_equal_cidr_and_parse_edges</b> &mdash; <i>classify: null and a DWSIpFamily::DWS_IP_NONE address are UNSPECIFIED.</i></summary>
+
+    * **Objective**: classify: null and a DWSIpFamily::DWS_IP_NONE address are UNSPECIFIED.
+    * **Assertions**:
+      * <code>Assert equal int (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(nullptr))</code>
+      * <code>Assert equal int (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(&none))</code>
+      * <code>Assert true (dws_ip_equal(&none, &none2))</code>
+      * <code>Assert true (dws_ip_prefix_match(&in, &net, 20))</code>
+      * <code>Assert false (dws_ip_prefix_match(&out, &net, 20))</code>
+      * <code>Assert false (dws_ip_parse(":1", &p))</code>
+      * <code>Assert false (dws_ip_parse(toolong, &p))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3", &p))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3.4.5", &p))</code>
+      * <code>Assert false (dws_ip_parse("256.0.0.1", &p))</code>
+      * <code>Assert false (dws_ip_parse("gg::1", &p))</code>
+      * <code>Assert false (dws_ip_parse("1:2:3:4:5:6:7:8:9", &p))</code>
+      * <code>Assert false (dws_ip_parse(nullptr, &p))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3.4", nullptr))</code>
+      * <code>Assert false (dws_ip_parse("1234.5.6.7", &p))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3.z", &p))</code>
+      * <code>Assert equal uint (0, dws_ip_format(nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, dws_ip_format(&none, buf, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, dws_ip_format(&v4, buf, 4))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::1", &v6))</code>
+      * <code>Assert equal uint (0, dws_ip_format(&v6, buf, 4))</code>
+      * <code>Assert true (dws_ip_parse("::ffff:1.2.3.4", &mapped))</code>
+      * <code>Assert equal uint (0, dws_ip_format(&mapped, buf, 5))</code>
+      * <code>Assert equal uint (0, dws_ip_to_v4_be(nullptr))</code>
+      * <code>Assert equal uint (0, dws_ip_to_v4_be(&v6))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_dws_primitives (5 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_strtol</b> &mdash; <i>Strtol</i></summary>
+
+    * **Objective**: Strtol
+    * **Assertions**:
+      * <code>Assert equal int (-42, dws_strtol(s, &end))</code>
+      * <code>Assert equal ptr (s + 5, end)</code>
+      * <code>Assert equal int (7, dws_strtol("+7", nullptr))</code>
+      * <code>Assert equal int (0, dws_strtol(bad, &e2))</code>
+      * <code>Assert equal ptr (bad, e2)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_strtoul</b> &mdash; <i>Strtoul</i></summary>
+
+    * **Objective**: Strtoul
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(123, dws_strtoul(s, &end)); // ws + '+' + digits</code>
+      * <code>Assert equal ptr (s + 6, end)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_strtoul(bad, &e2));</code>
+      * <code>Assert equal ptr (bad, e2)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_strtof</b> &mdash; <i>Strtof</i></summary>
+
+    * **Objective**: Strtof
+    * **Assertions**:
+      * <code>Assert float within (0.0001f, 3.14f, dws_strtof("  3.14", &end))</code>
+      * <code>Assert float within (0.0001f, -2.5f, dws_strtof("-2.5", nullptr))</code>
+      * <code>Assert float within (1.0f, 1500.0f, dws_strtof("1.5e3", &end))</code>
+      * <code>Assert float within (0.0001f, 0.0125f, dws_strtof("1.25E-2", &end))</code>
+      * <code>Assert float within (0.0001f, 0.0f, dws_strtof(bad, &e2))</code>
+      * <code>Assert equal ptr (bad, e2)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_utf8_valid</b> &mdash; <i>Utf8 valid</i></summary>
+
+    * **Objective**: Utf8 valid
+    * **Assertions**:
+      * <code>Assert true (dws_utf8_valid((const uint8_t *)"hello", 5))</code>
+      * <code>Assert true (dws_utf8_valid(two, 2))</code>
+      * <code>Assert true (dws_utf8_valid(three, 3))</code>
+      * <code>Assert true (dws_utf8_valid(four, 4))</code>
+      * <code>Assert true (dws_utf8_valid(nullptr, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_utf8_invalid</b> &mdash; <i>Utf8 invalid</i></summary>
+
+    * **Objective**: Utf8 invalid
+    * **Assertions**:
+      * <code>Assert false (dws_utf8_valid(lead_cont, 1))</code>
+      * <code>Assert false (dws_utf8_valid(lead_f8, 4))</code>
+      * <code>Assert false (dws_utf8_valid(truncated, 2))</code>
+      * <code>Assert false (dws_utf8_valid(bad_cont, 2))</code>
+      * <code>Assert false (dws_utf8_valid(overlong, 2))</code>
+      * <code>Assert false (dws_utf8_valid(surrogate, 3))</code>
+      * <code>Assert false (dws_utf8_valid(too_big, 4))</code>
   </details>
 
 </details>
@@ -32901,6 +32902,83 @@ A thorough directory of all **3427 test cases** across **273 suites**. Expand a 
       * <code>Assert equal int (0, dws_ssh_auth_build_failure(out, &olen, sizeof(out), false))</code>
       * <code>Assert true (has_pk)</code>
       * <code>Assert false (has_pw)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ssh_kbdint (7 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_request_prompts</b> &mdash; <i>name(4)=0 \|\| instruction(4)=0 \|\| lang(4)=0 \|\| num-prompts(4)=1 \|\| string("Password: ") \|\| echo=0</i></summary>
+
+    * **Objective**: name(4)=0 \|\| instruction(4)=0 \|\| lang(4)=0 \|\| num-prompts(4)=1 \|\| string("Password: ") \|\| echo=0
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_INFO_REQUEST, out[0]); // 60</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, ((uint32_t)out[o] &lt;&lt; 24) | ((uint32_t)out[o + 1] &lt;&lt; 16) |</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, np); // one prompt</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(10, pl); // strlen("Password: ")</code>
+      * <code>Assert equal memory ("Password: ", out + o, 10)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, out[o]); // echo = FALSE</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_correct_password_succeeds</b> &mdash; <i>Kbdint correct password succeeds</i></summary>
+
+    * **Objective**: Kbdint correct password succeeds
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_INFO_REQUEST, out[0]);</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_info_response(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_SUCCESS, out[0]); // 52</code>
+      * <code>Assert true (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_wrong_password_fails</b> &mdash; <i>Kbdint wrong password fails</i></summary>
+
+    * **Objective**: Kbdint wrong password fails
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_info_response(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_FAILURE, out[0]); // 51</code>
+      * <code>Assert false (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_response_without_request_fails</b> &mdash; <i>Kbdint response without request fails</i></summary>
+
+    * **Objective**: Kbdint response without request fails
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_info_response(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert false (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_zero_responses_fails</b> &mdash; <i>Kbdint zero responses fails</i></summary>
+
+    * **Objective**: Kbdint zero responses fails
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_info_response(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_FAILURE, out[0]);</code>
+      * <code>Assert false (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_response_replay_fails</b> &mdash; <i>Kbdint response replay fails</i></summary>
+
+    * **Objective**: Kbdint response replay fails
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_info_response(0, pkt, n, out, &olen, sizeof(out)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_methods_list_advertises_kbdint</b> &mdash; <i>Methods list advertises kbdint</i></summary>
+
+    * **Objective**: Methods list advertises kbdint
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_build_failure(out, &olen, sizeof(out), false))</code>
+      * <code>Assert not null (strstr(list, "keyboard-interactive"))</code>
   </details>
 
 </details>

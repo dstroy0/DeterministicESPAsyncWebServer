@@ -57,30 +57,30 @@ int main()
     g.all_data_len = sizeof(all_data);
 
     uint8_t pdu[256];
-    size_t pdu_len = detws_goose_pdu(&g, pdu, sizeof(pdu));
+    size_t pdu_len = dws_goose_pdu(&g, pdu, sizeof(pdu));
 
     const uint8_t dst[6] = {0x01, 0x0c, 0xcd, 0x01, 0x00, 0x01}; // IEC 61850 GOOSE multicast
     const uint8_t src[6] = {0x02, 0x00, 0x00, 0x00, 0x00, 0x01};
     uint8_t frame[300];
-    size_t frame_len = detws_goose_frame(dst, src, 0x0001, &g, frame, sizeof(frame));
+    size_t frame_len = dws_goose_frame(dst, src, 0x0001, &g, frame, sizeof(frame));
 
     printf("| Feature | Operation                |     ns/op |    MB/s |\n");
     printf("|---------|--------------------------|-----------|---------|\n");
 
-    // detws_goose_pdu: BER-encode the IECGoosePdu (11 control fields + the allData blob) - the publish core.
+    // dws_goose_pdu: BER-encode the IECGoosePdu (11 control fields + the allData blob) - the publish core.
     {
         uint8_t buf[256];
         volatile size_t sink = 0;
-        double ns = bench_ns(5000000, [&] { sink += detws_goose_pdu(&g, buf, sizeof(buf)); });
+        double ns = bench_ns(5000000, [&] { sink += dws_goose_pdu(&g, buf, sizeof(buf)); });
         row("goose", "goose_pdu (build)", ns, (double)pdu_len);
         (void)sink;
     }
 
-    // detws_goose_frame: wrap the PDU in the Ethernet header + 8-octet GOOSE header (the full L2 datagram).
+    // dws_goose_frame: wrap the PDU in the Ethernet header + 8-octet GOOSE header (the full L2 datagram).
     {
         uint8_t buf[300];
         volatile size_t sink = 0;
-        double ns = bench_ns(5000000, [&] { sink += detws_goose_frame(dst, src, 0x0001, &g, buf, sizeof(buf)); });
+        double ns = bench_ns(5000000, [&] { sink += dws_goose_frame(dst, src, 0x0001, &g, buf, sizeof(buf)); });
         row("goose", "goose_frame (build)", ns, (double)frame_len);
         (void)sink;
     }

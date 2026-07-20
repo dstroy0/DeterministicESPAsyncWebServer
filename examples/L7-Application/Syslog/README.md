@@ -12,7 +12,7 @@ access-log hook.
 **Initialize the sink, then log by severity.**
 
 ```cpp
-dws_syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SYSLOG_FAC_LOCAL0);
+dws_syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-dws", "dws", SYSLOG_FAC_LOCAL0);
 dws_syslog_log(SYSLOG_NOTICE, "device booted");
 ```
 
@@ -98,7 +98,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    dws_syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SYSLOG_FAC_LOCAL0);
+    dws_syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-dws", "dws", SYSLOG_FAC_LOCAL0);
     dws_syslog_log(SYSLOG_NOTICE, "device booted");
 
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "ok"); });

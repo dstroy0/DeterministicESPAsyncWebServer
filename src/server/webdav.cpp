@@ -549,7 +549,7 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         tok ^= (unsigned long)esp_random();
 #endif
         char token[48];
-        snprintf(token, sizeof(token), "opaquelocktoken:%08lx-detws", tok);
+        snprintf(token, sizeof(token), "opaquelocktoken:%08lx-dws", tok);
         snprintf(s_dav.buf, sizeof(s_dav.buf),
                  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
                  "<D:prop xmlns:D=\"DAV:\"><D:lockdiscovery><D:activelock>"

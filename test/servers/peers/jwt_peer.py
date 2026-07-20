@@ -25,7 +25,7 @@ NAME = "jwt"
 HELP = "validate the device's JWT HS256 bearer-auth verifier with a real PyJWT client (device-as-server)"
 
 # Must match the rig's JWT_RIG_SECRET (pentesting/rig_firmware/src/main.cpp).
-_SECRET = "detws-rig-jwt-secret-2026"
+_SECRET = "dws-rig-jwt-secret-2026"
 
 
 def add_args(p) -> None:

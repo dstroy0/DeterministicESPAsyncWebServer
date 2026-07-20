@@ -31,9 +31,10 @@ struct SshAuthReq
 {
     char user[SSH_AUTH_USER_MAX];     ///< User name, null-terminated.
     char service[32];                 ///< Requested service ("ssh-connection").
-    char method[16];                  ///< Method name ("none", "password", "publickey").
+    char method[24];                  ///< Method name ("none", "password", "publickey", "keyboard-interactive").
     char password[SSH_AUTH_PASS_MAX]; ///< Password (method == "password").
     bool is_password;                 ///< True if a password method-request was parsed.
+    bool is_kbdint;                   ///< True if a keyboard-interactive method-request was parsed (RFC 4256).
 
     // publickey method (RFC 4252 §7)
     bool is_pubkey;               ///< True if a publickey method-request was parsed.
@@ -97,5 +98,20 @@ int dws_ssh_auth_build_success(uint8_t *out, size_t *out_len, size_t cap);
  */
 int dws_ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                 size_t cap);
+
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE
+/**
+ * @brief Handle an SSH_MSG_USERAUTH_INFO_RESPONSE (RFC 4256 §3.4) for slot @p i.
+ *
+ * The response to the single "Password:" prompt this server sends is verified through the installed
+ * password callback (keyboard-interactive is the challenge-response face of password auth here). Writes
+ * USERAUTH_SUCCESS or USERAUTH_FAILURE to @p out. Only valid while a keyboard-interactive exchange is
+ * pending for the slot (a prior USERAUTH_REQUEST selected it); otherwise fails.
+ *
+ * @return 0 if a response was produced (check the message type), -1 on parse error / no exchange pending.
+ */
+int dws_ssh_auth_handle_info_response(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                      size_t cap);
+#endif
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_AUTH_H

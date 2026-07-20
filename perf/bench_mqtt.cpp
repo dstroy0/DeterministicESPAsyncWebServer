@@ -38,7 +38,7 @@ static void row(const char *feature, const char *op, double ns_per_op, double by
 int main()
 {
     MqttConnectOpts opts{};
-    opts.client_id = "detws-s3-rig";
+    opts.client_id = "dws-s3-rig";
     opts.keepalive_s = 60;
     opts.clean_session = true;
 

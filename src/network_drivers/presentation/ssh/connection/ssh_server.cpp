@@ -156,6 +156,32 @@ int dws_ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload,
         }
         return 0;
 
+#if DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE
+    case SSH_MSG_USERAUTH_INFO_RESPONSE:
+        // RFC 4256 §3.4: the client's answer to our keyboard-interactive prompt. Only valid mid-auth,
+        // and only when an exchange was armed (the handler enforces the latter). Same SUCCESS/FAILURE
+        // accounting as a USERAUTH_REQUEST: SUCCESS starts s2c compression and advances the phase; a
+        // FAILURE counts toward the brute-force limit.
+        if (s->phase != SshPhase::SSH_PHASE_AUTH)
+            return -1;
+        if (dws_ssh_auth_handle_info_response(i, payload, len, buf, &n, sizeof(buf)) != 0)
+            return -1;
+        emit(i, buf, n);
+#if DWS_ENABLE_SSH_ZLIB
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_SUCCESS)
+            ssh_comp_on_auth_success(i);
+#endif
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE)
+        {
+            if (++s->auth_failures >= SSH_MAX_AUTH_ATTEMPTS)
+            {
+                emit_auth_failure_disconnect(i, buf);
+                return -1;
+            }
+        }
+        return 0;
+#endif
+
     case SSH_MSG_GLOBAL_REQUEST:
         // RFC 4254 §4: connection-wide request (e.g. tcpip-forward for ssh -R). Only
         // meaningful post-auth; reply REQUEST_SUCCESS/FAILURE when want_reply is set.

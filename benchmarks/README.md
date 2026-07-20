@@ -51,11 +51,11 @@ export BENCH_WIFI_SSID='your-ssid'
 export BENCH_WIFI_PASS='your-pass'
 
 # Build + flash each server (one board at a time - see RF hygiene below).
-cd detws && pio run -t upload && cd ..     # this library
+cd dws && pio run -t upload && cd ..     # this library
 cd eaws  && pio run -t upload && cd ..     # ESPAsyncWebServer (pio pulls it from the registry)
 
 # The board prints its IP over serial (IP=...). Measure it:
-./measure.sh 192.168.1.29 detws
+./measure.sh 192.168.1.29 dws
 ./measure.sh 192.168.1.29 eaws
 ```
 

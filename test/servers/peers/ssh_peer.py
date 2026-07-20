@@ -39,7 +39,7 @@ from ._common import Probe
 _KEX = "curve25519-sha256"
 _HOSTKEY = "ssh-ed25519"
 _CIPHER = "chacha20-poly1305@openssh.com"
-_MARKER = "detws-interop-echo-42"
+_MARKER = "dws-interop-echo-42"
 
 
 def add_args(p) -> None:
