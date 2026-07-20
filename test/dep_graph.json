@@ -106,6 +106,7 @@
 "native_ld2410",
 "native_ldc1614",
 "native_link_manager",
+"native_log",
 "native_logbuf",
 "native_lonworks",
 "native_lora",
@@ -348,6 +349,7 @@
 "native_ld2410",
 "native_ldc1614",
 "native_link_manager",
+"native_log",
 "native_logbuf",
 "native_lonworks",
 "native_lora",
@@ -590,6 +592,7 @@
 "native_ld2410",
 "native_ldc1614",
 "native_link_manager",
+"native_log",
 "native_logbuf",
 "native_lonworks",
 "native_lora",
@@ -3018,9 +3021,11 @@
 "native_link_manager"
 ],
 "src/services/logbuf/logbuf.cpp": [
+"native_log",
 "native_logbuf"
 ],
 "src/services/logbuf/logbuf.h": [
+"native_log",
 "native_logbuf"
 ],
 "src/services/lonworks/lonworks.cpp": [
@@ -3941,6 +3946,12 @@
 "native_diag",
 "native_h3_server",
 "native_time_source"
+],
+"src/shared_primitives/log.cpp": [
+"native_log"
+],
+"src/shared_primitives/log.h": [
+"native_log"
 ],
 "src/shared_primitives/mime.h": [
 "native_app",
