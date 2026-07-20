@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1c00eab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c00eab19f375d1997c09c636ef613de91e1561a))
 - update test report + coverage [skip ci] ([`6d3c256`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d3c25630fa6f84ab6d22d3a6d439d78747db676))
 - update CHANGELOG.md [skip ci] ([`bec9479`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bec947915ae617932e4b0e485bc1ea1fa056331c))
 - update CHANGELOG.md [skip ci] ([`8d41409`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d414095d4aa329c7182b672aeca303df79baadd))
@@ -20,6 +21,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1702f40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1702f40e539b824a4f1a38b184ea7429945d4496))
 - update ESP32 build footprints [skip ci] ([`8af4e40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8af4e4048170e5566cee0ef39e7cdec84e094687))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`42999d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42999d2a7ac34102907e1f76aa19d56e2b12ddae))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fb2fedf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb2fedf47198d2d7bd97ae64ba3d6c4601824dad))
@@ -27,6 +29,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- sntrup761x25519-sha512 KEX for the reverse-SSH client ([`216c013`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/216c0137f194d7136f41d9e2d4e04787d00abda1))
 - sntrup761 KEM (Streamlined NTRU Prime) - full KeyGen/Encaps/Decaps ([`bb90a4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb90a4e10862d9925b6de9959397f26dfa3406d1))
 
 ### Refactor
