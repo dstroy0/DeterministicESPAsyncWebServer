@@ -1,87 +1,87 @@
 [
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/network/ip.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/network/ip.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/network/ip.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/network/ip.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/network/ip.cpp",
-    "output": ".pio/build/native/src/network_drivers/network/ip.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/network/ip.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/base64/base64.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/base64/base64.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/presentation/base64/base64.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/base64/base64.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/base64/base64.cpp",
-    "output": ".pio/build/native/src/network_drivers/presentation/base64/base64.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/presentation/base64/base64.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/http_parser/http_parser.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http_parser/http_parser.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/presentation/http_parser/http_parser.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http_parser/http_parser.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/http_parser/http_parser.cpp",
-    "output": ".pio/build/native/src/network_drivers/presentation/http_parser/http_parser.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/presentation/http_parser/http_parser.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/multipart/multipart.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/multipart/multipart.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/presentation/multipart/multipart.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/multipart/multipart.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/multipart/multipart.cpp",
-    "output": ".pio/build/native/src/network_drivers/presentation/multipart/multipart.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/presentation/multipart/multipart.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/presentation.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/presentation.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/presentation/presentation.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/presentation.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/presentation.cpp",
-    "output": ".pio/build/native/src/network_drivers/presentation/presentation.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/presentation/presentation.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/sha1/sha1.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/sha1/sha1.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/presentation/sha1/sha1.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/sha1/sha1.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/sha1/sha1.cpp",
-    "output": ".pio/build/native/src/network_drivers/presentation/sha1/sha1.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/presentation/sha1/sha1.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/sse/sse.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/sse/sse.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/presentation/sse/sse.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/sse/sse.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/sse/sse.cpp",
-    "output": ".pio/build/native/src/network_drivers/presentation/sse/sse.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/presentation/sse/sse.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/websocket/websocket.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/websocket/websocket.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/presentation/websocket/websocket.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/websocket/websocket.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/websocket/websocket.cpp",
-    "output": ".pio/build/native/src/network_drivers/presentation/websocket/websocket.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/presentation/websocket/websocket.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/session/proto_builtins.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/proto_builtins.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/session/proto_builtins.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/proto_builtins.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/session/proto_builtins.cpp",
-    "output": ".pio/build/native/src/network_drivers/session/proto_builtins.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/session/proto_builtins.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/session/scratch.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/scratch.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/session/scratch.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/scratch.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/session/scratch.cpp",
-    "output": ".pio/build/native/src/network_drivers/session/scratch.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/session/scratch.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/session/session.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/session.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/session/session.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/session.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/session/session.cpp",
-    "output": ".pio/build/native/src/network_drivers/session/session.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/session/session.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/session/worker.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/worker.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/session/worker.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/worker.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/session/worker.cpp",
-    "output": ".pio/build/native/src/network_drivers/session/worker.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/session/worker.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/transport/listener.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/listener.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/transport/listener.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/listener.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/transport/listener.cpp",
-    "output": ".pio/build/native/src/network_drivers/transport/listener.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/transport/listener.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/transport/tcp.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/tcp.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_conn/src/network_drivers/transport/tcp.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/tcp.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/transport/tcp.cpp",
-    "output": ".pio/build/native/src/network_drivers/transport/tcp.o"
+    "output": ".pio/build/native_ssh_conn/src/network_drivers/transport/tcp.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_ads/src/services/ads/ads.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_ADS=1 -Itest/mocks -Itest/support -Isrc src/services/ads/ads.cpp",
@@ -120,10 +120,10 @@
     "output": ".pio/build/native_app/src/network_drivers/presentation/json/json.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_app/src/network_drivers/presentation/ssh/crypto/ssh_sha256.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDWS_ENFORCE_HOST_HEADER=0 -DDWS_ENABLE_STATS=1 -DDWS_ENABLE_METRICS=1 -DDWS_ENABLE_ETAG=1 -DDWS_ENABLE_WEB_TERMINAL=1 -DDWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha256.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_sha256.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha256.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_sha256.cpp",
-    "output": ".pio/build/native_app/src/network_drivers/presentation/ssh/crypto/ssh_sha256.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_sha256.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_app/src/server/auth.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDWS_ENFORCE_HOST_HEADER=0 -DDWS_ENABLE_STATS=1 -DDWS_ENABLE_METRICS=1 -DDWS_ENABLE_ETAG=1 -DDWS_ENABLE_WEB_TERMINAL=1 -DDWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/server/auth.cpp",
@@ -324,28 +324,28 @@
     "output": ".pio/build/native_coaps/src/network_drivers/presentation/http3/tls13_msg.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
-    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
-    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp",
-    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
-    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/services/coap/coaps.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/services/coap/coaps.cpp",
@@ -384,22 +384,22 @@
     "output": ".pio/build/native_cotp/src/services/cotp/cotp.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_csrf/src/services/csrf/csrf.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_CSRF=1 -Itest/mocks -Itest/support -Isrc src/services/csrf/csrf.cpp",
@@ -444,10 +444,10 @@
     "output": ".pio/build/native_deflate/src/network_drivers/presentation/deflate/deflate.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_deflate/src/network_drivers/presentation/inflate/inflate.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_WS_DEFLATE=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/inflate/inflate.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_comp/src/network_drivers/presentation/inflate/inflate.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_SSH_ZLIB=1 -DDWS_ENABLE_WS_DEFLATE=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/inflate/inflate.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/inflate/inflate.cpp",
-    "output": ".pio/build/native_deflate/src/network_drivers/presentation/inflate/inflate.o"
+    "output": ".pio/build/native_ssh_comp/src/network_drivers/presentation/inflate/inflate.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_det_arena/src/network_drivers/session/arena.o -c -std=c++14 -DPLATFORMIO=60119 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/arena.cpp",
@@ -1092,16 +1092,16 @@
     "output": ".pio/build/native_ocit/src/services/ocit/ocit.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_oidc/src/network_drivers/presentation/ssh/crypto/ssh_bignum.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_OIDC=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_bignum.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_bignum.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_bignum.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_bignum.cpp",
-    "output": ".pio/build/native_oidc/src/network_drivers/presentation/ssh/crypto/ssh_bignum.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_bignum.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_oidc/src/network_drivers/presentation/ssh/crypto/ssh_rsa.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_OIDC=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_rsa.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_rsa.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_rsa.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_rsa.cpp",
-    "output": ".pio/build/native_oidc/src/network_drivers/presentation/ssh/crypto/ssh_rsa.o"
+    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_rsa.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_oidc/src/services/oidc/oidc.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_OIDC=1 -Itest/mocks -Itest/support -Isrc src/services/oidc/oidc.cpp",
@@ -1230,16 +1230,16 @@
     "output": ".pio/build/native_powerlink/src/services/powerlink/powerlink.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_pqc/src/network_drivers/presentation/pqc/mlkem.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_PQC_KEX=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/pqc/mlkem.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_pqc/src/network_drivers/presentation/pqc/mlkem.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_PQC_KEX=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/pqc/mlkem.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/pqc/mlkem.cpp",
-    "output": ".pio/build/native_pqc/src/network_drivers/presentation/pqc/mlkem.o"
+    "output": ".pio/build/native_ssh_pqc/src/network_drivers/presentation/pqc/mlkem.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_pqc/src/network_drivers/presentation/pqc/sha3.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_PQC_KEX=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/pqc/sha3.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_pqc/src/network_drivers/presentation/pqc/sha3.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_SSH_MAX_CHANNELS=3 -DDWS_ENABLE_PQC_KEX=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/pqc/sha3.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/pqc/sha3.cpp",
-    "output": ".pio/build/native_pqc/src/network_drivers/presentation/pqc/sha3.o"
+    "output": ".pio/build/native_ssh_pqc/src/network_drivers/presentation/pqc/sha3.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_preempt_queue/src/services/preempt_queue/preempt_queue.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_PREEMPT_QUEUE=1 -DDWS_PQ_DEPTH=4 -DDWS_PQ_ITEM_SIZE=4 -Itest/mocks -Itest/support -Isrc src/services/preempt_queue/preempt_queue.cpp",

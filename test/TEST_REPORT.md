@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-20 10:26:26
+**Generated:** 2026-07-20 10:41:42
 **Command:** `pio test` over 252 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3721 passed - 979s
+**Result:** ✅ 3722 passed - 335s
 
 ---
 
@@ -49,14 +49,14 @@
 | `test_accept_gate`       | `native_accept_gate`     |    13 |   ✅   |  00:00:01.431 |
 | `test_http_ota`          | `native_ota`             |     3 |   ✅   |  00:00:00.843 |
 | `test_provisioning`      | `native_prov`            |     7 |   ✅   |  00:00:00.827 |
-| `test_ssh_channel`       | `native_ssh`             |    40 |   ✅   |  00:00:01.529 |
-| `test_ssh_auth`          | `native_ssh`             |    21 |   ✅   |  00:00:03.767 |
-| `test_ssh_crypto`        | `native_ssh`             |    58 |   ✅   |  00:00:06.529 |
-| `test_ssh_transport`     | `native_ssh`             |    47 |   ✅   |  00:00:03.157 |
-| `test_ssh_server`        | `native_ssh`             |    27 |   ✅   |  00:00:01.166 |
-| `test_ssh_pqc`           | `native_ssh_pqc`         |     4 |   ✅   |  00:00:01.607 |
-| `test_ssh_hardening`     | `native_ssh_hardened`    |     2 |   ✅   |  00:00:01.492 |
-| `test_ssh_conn`          | `native_ssh_conn`        |    16 |   ✅   |  00:00:02.494 |
+| `test_ssh_channel`       | `native_ssh`             |    40 |   ✅   |  00:00:12.235 |
+| `test_ssh_auth`          | `native_ssh`             |    21 |   ✅   |  00:00:03.747 |
+| `test_ssh_crypto`        | `native_ssh`             |    58 |   ✅   |  00:00:06.510 |
+| `test_ssh_transport`     | `native_ssh`             |    48 |   ✅   |  00:00:03.512 |
+| `test_ssh_server`        | `native_ssh`             |    27 |   ✅   |  00:00:01.126 |
+| `test_ssh_pqc`           | `native_ssh_pqc`         |     4 |   ✅   |  00:00:01.581 |
+| `test_ssh_hardening`     | `native_ssh_hardened`    |     2 |   ✅   |  00:00:01.436 |
+| `test_ssh_conn`          | `native_ssh_conn`        |    16 |   ✅   |  00:00:02.404 |
 | `test_ssh_sftp`          | `native_ssh_sftp`        |    14 |   ✅   |  00:00:00.835 |
 | `test_scp`               | `native_scp`             |     6 |   ✅   |  00:00:00.830 |
 | `test_middleware`        | `native_app`             |     9 |   ✅   |  00:00:01.996 |
@@ -194,7 +194,7 @@
 | `test_inflate`           | `native_inflate`         |    14 |   ✅   |  00:00:00.833 |
 | `test_deflate`           | `native_deflate`         |    10 |   ✅   |  00:00:00.891 |
 | `test_ssh_zlib`          | `native_ssh_zlib`        |     9 |   ✅   |  00:00:00.880 |
-| `test_ssh_comp`          | `native_ssh_comp`        |     8 |   ✅   |  00:00:01.543 |
+| `test_ssh_comp`          | `native_ssh_comp`        |     8 |   ✅   |  00:00:01.498 |
 | `test_websocket`         | `native_ws_deflate`      |    74 |   ✅   |  00:00:01.430 |
 | `test_time_source`       | `native_time_source`     |    10 |   ✅   |  00:00:00.802 |
 | `test_config_store`      | `native_config_store`    |    15 |   ✅   |  00:00:00.797 |
@@ -1733,62 +1733,63 @@ _SSH crypto layer test suite._
 
 ---
 
-## test_ssh_transport - native_ssh - ✅ 47 passed
+## test_ssh_transport - native_ssh - ✅ 48 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _SSH transport handshake tests (RFC 4253): identification-string exchange and_
 
-|   # | Test                                                       | Status | Description                                                                               |
-| --: | :--------------------------------------------------------- | :----: | :---------------------------------------------------------------------------------------- |
-|   1 | `test_transport_index_guards`                              |   ✅   | Transport index guards                                                                    |
-|   2 | `test_banner_and_build_caps`                               |   ✅   | Banner and build caps                                                                     |
-|   3 | `test_kexinit_parse_field_and_trunc`                       |   ✅   | Kexinit parse field and trunc                                                             |
-|   4 | `test_kexdh_parse_and_handle_errors`                       |   ✅   | Kexdh parse and handle errors                                                             |
-|   5 | `test_server_banner_format`                                |   ✅   | Server banner format                                                                      |
-|   6 | `test_recv_banner_complete`                                |   ✅   | Recv banner complete                                                                      |
-|   7 | `test_recv_banner_bare_lf`                                 |   ✅   | Recv banner bare lf                                                                       |
-|   8 | `test_recv_banner_split_across_reads`                      |   ✅   | Recv banner split across reads                                                            |
-|   9 | `test_recv_banner_skips_preamble_lines`                    |   ✅   | RFC 4253 §4.2 allows lines before the SSH identification string.                          |
-|  10 | `test_kexinit_build_starts_with_msg_and_stores_is`         |   ✅   | Kexinit build starts with msg and stores is                                               |
-|  11 | `test_kexinit_parse_accepts_supported`                     |   ✅   | Kexinit parse accepts supported                                                           |
-|  12 | `test_kexinit_parse_accepts_when_ours_listed_among_others` |   ✅   | Kexinit parse accepts when ours listed among others                                       |
-|  13 | `test_kexinit_parse_rejects_missing_kex`                   |   ✅   | Only a KEX method we do not implement (nistp521) -> no mutual KEX -> reject. (nistp256 IS |
-|  14 | `test_kexinit_parse_rejects_hostkey_we_lack`               |   ✅   | Kexinit parse rejects hostkey we lack                                                     |
-|  15 | `test_kexinit_parse_steers_to_curve_ed25519`               |   ✅   | Kexinit parse steers to curve ed25519                                                     |
-|  16 | `test_kexinit_parse_rejects_missing_cipher`                |   ✅   | Only ciphers we do not implement -> no mutual cipher -> reject.                           |
-|  17 | `test_kexinit_parse_selects_chacha20poly1305`              |   ✅   | Kexinit parse selects chacha20poly1305                                                    |
-|  18 | `test_kexinit_parse_selects_aes256gcm`                     |   ✅   | Kexinit parse selects aes256gcm                                                           |
-|  19 | `test_kexinit_parse_selects_rsa_sha512`                    |   ✅   | Both offered -> rsa-sha2-512 wins (server preference).                                    |
-|  20 | `test_kexinit_parse_selects_ecdsa`                         |   ✅   | Kexinit parse selects ecdsa                                                               |
-|  21 | `test_kexinit_parse_selects_ecdh_nistp256`                 |   ✅   | Kexinit parse selects ecdh nistp256                                                       |
-|  22 | `test_kexinit_parse_selects_etm_mac`                       |   ✅   | Kexinit parse selects etm mac                                                             |
-|  23 | `test_kexinit_parse_rejects_truncated`                     |   ✅   | Kexinit parse rejects truncated                                                           |
-|  24 | `test_exchange_hash_matches_independent_assembly`          |   ✅   | Populate the session fields the hash reads.                                               |
-|  25 | `test_exchange_hash_changes_with_input`                    |   ✅   | Exchange hash changes with input                                                          |
-|  26 | `test_kexdh_parse_init_extracts_e_with_padding`            |   ✅   | Kexdh parse init extracts e with padding                                                  |
-|  27 | `test_kexdh_parse_init_extracts_small_e`                   |   ✅   | Kexdh parse init extracts small e                                                         |
-|  28 | `test_kexdh_parse_init_rejects_wrong_type`                 |   ✅   | Kexdh parse init rejects wrong type                                                       |
-|  29 | `test_kexdh_parse_init_rejects_oversized_e`                |   ✅   | mpint with 300 magnitude bytes → exceeds 2048 bits.                                       |
-|  30 | `test_kexdh_build_reply_structure`                         |   ✅   | Kexdh build reply structure                                                               |
-|  31 | `test_kexdh_handle_produces_reply_and_installs_keys`       |   ✅   | Kexdh handle produces reply and installs keys                                             |
-|  32 | `test_kexdh_handle_rejects_invalid_e`                      |   ✅   | Kexdh handle rejects invalid e                                                            |
-|  33 | `test_kexdh_handle_curve25519_ed25519_end_to_end`          |   ✅   | Fixed baseline host keys for deterministic regression, plus one fresh throwaway           |
-|  34 | `test_kexdh_handle_curve25519_rejects_low_order`           |   ✅   | Kexdh handle curve25519 rejects low order                                                 |
-|  35 | `test_kexdh_handle_ecdh_nistp256_end_to_end`               |   ✅   | Kexdh handle ecdh nistp256 end to end                                                     |
-|  36 | `test_kexdh_handle_ecdh_nistp256_rejects_bad_point`        |   ✅   | Kexdh handle ecdh nistp256 rejects bad point                                              |
-|  37 | `test_kexdh_handle_rsa_sha512_signature`                   |   ✅   | Kexdh handle rsa sha512 signature                                                         |
-|  38 | `test_kexdh_handle_ecdsa_end_to_end`                       |   ✅   | Kexdh handle ecdsa end to end                                                             |
-|  39 | `test_derive_keys_session_id_affects_output`               |   ✅   | Derive keys session id affects output                                                     |
-|  40 | `test_rekey_needed_threshold`                              |   ✅   | Rekey needed threshold                                                                    |
-|  41 | `test_rekey_due_volume_and_time`                           |   ✅   | Neither budget spent.                                                                     |
-|  42 | `test_begin_rekey_preserves_session_and_auth`              |   ✅   | Begin rekey preserves session and auth                                                    |
-|  43 | `test_kdf_edge_paths_and_slot_guards`                      |   ✅   | Kdf edge paths and slot guards                                                            |
-|  44 | `test_kexinit_parse_truncation_points`                     |   ✅   | Kexinit parse truncation points                                                           |
-|  45 | `test_ssh_transport_more_guards`                           |   ✅   | Ssh transport more guards                                                                 |
-|  46 | `test_dh_derive_keys_gcm_installs`                         |   ✅   | Dh derive keys gcm installs                                                               |
-|  47 | `test_kdf_string_k_hybrid`                                 |   ✅   | Kdf string k hybrid                                                                       |
+|   # | Test                                                              | Status | Description                                                                               |
+| --: | :---------------------------------------------------------------- | :----: | :---------------------------------------------------------------------------------------- |
+|   1 | `test_transport_index_guards`                                     |   ✅   | Transport index guards                                                                    |
+|   2 | `test_banner_and_build_caps`                                      |   ✅   | Banner and build caps                                                                     |
+|   3 | `test_kexinit_parse_field_and_trunc`                              |   ✅   | Kexinit parse field and trunc                                                             |
+|   4 | `test_kexdh_parse_and_handle_errors`                              |   ✅   | Kexdh parse and handle errors                                                             |
+|   5 | `test_server_banner_format`                                       |   ✅   | Server banner format                                                                      |
+|   6 | `test_recv_banner_complete`                                       |   ✅   | Recv banner complete                                                                      |
+|   7 | `test_recv_banner_bare_lf`                                        |   ✅   | Recv banner bare lf                                                                       |
+|   8 | `test_recv_banner_split_across_reads`                             |   ✅   | Recv banner split across reads                                                            |
+|   9 | `test_recv_banner_skips_preamble_lines`                           |   ✅   | RFC 4253 §4.2 allows lines before the SSH identification string.                          |
+|  10 | `test_kexinit_build_starts_with_msg_and_stores_is`                |   ✅   | Kexinit build starts with msg and stores is                                               |
+|  11 | `test_kexinit_parse_accepts_supported`                            |   ✅   | Kexinit parse accepts supported                                                           |
+|  12 | `test_kexinit_parse_accepts_when_ours_listed_among_others`        |   ✅   | Kexinit parse accepts when ours listed among others                                       |
+|  13 | `test_kexinit_parse_rejects_missing_kex`                          |   ✅   | Only a KEX method we do not implement (nistp521) -> no mutual KEX -> reject. (nistp256 IS |
+|  14 | `test_kexinit_parse_rejects_hostkey_we_lack`                      |   ✅   | Kexinit parse rejects hostkey we lack                                                     |
+|  15 | `test_kexinit_parse_steers_to_curve_ed25519`                      |   ✅   | Kexinit parse steers to curve ed25519                                                     |
+|  16 | `test_kexinit_parse_rejects_missing_cipher`                       |   ✅   | Only ciphers we do not implement -> no mutual cipher -> reject.                           |
+|  17 | `test_kexinit_parse_selects_chacha20poly1305`                     |   ✅   | Kexinit parse selects chacha20poly1305                                                    |
+|  18 | `test_kexinit_parse_selects_aes256gcm`                            |   ✅   | Kexinit parse selects aes256gcm                                                           |
+|  19 | `test_kexinit_parse_selects_rsa_sha512`                           |   ✅   | Both offered -> rsa-sha2-512 wins (server preference).                                    |
+|  20 | `test_kexinit_parse_selects_ecdsa`                                |   ✅   | Kexinit parse selects ecdsa                                                               |
+|  21 | `test_kexinit_parse_selects_ecdh_nistp256`                        |   ✅   | Kexinit parse selects ecdh nistp256                                                       |
+|  22 | `test_kexinit_parse_selects_etm_mac`                              |   ✅   | Kexinit parse selects etm mac                                                             |
+|  23 | `test_kexinit_parse_rejects_truncated`                            |   ✅   | Kexinit parse rejects truncated                                                           |
+|  24 | `test_exchange_hash_matches_independent_assembly`                 |   ✅   | Populate the session fields the hash reads.                                               |
+|  25 | `test_exchange_hash_changes_with_input`                           |   ✅   | Exchange hash changes with input                                                          |
+|  26 | `test_kexdh_parse_init_extracts_e_with_padding`                   |   ✅   | Kexdh parse init extracts e with padding                                                  |
+|  27 | `test_kexdh_parse_init_extracts_small_e`                          |   ✅   | Kexdh parse init extracts small e                                                         |
+|  28 | `test_kexdh_parse_init_rejects_wrong_type`                        |   ✅   | Kexdh parse init rejects wrong type                                                       |
+|  29 | `test_kexdh_parse_init_rejects_oversized_e`                       |   ✅   | mpint with 300 magnitude bytes → exceeds 2048 bits.                                       |
+|  30 | `test_kexdh_build_reply_structure`                                |   ✅   | Kexdh build reply structure                                                               |
+|  31 | `test_kexdh_handle_produces_reply_and_installs_keys`              |   ✅   | Kexdh handle produces reply and installs keys                                             |
+|  32 | `test_kexdh_handle_rejects_invalid_e`                             |   ✅   | Kexdh handle rejects invalid e                                                            |
+|  33 | `test_kexdh_handle_curve25519_ed25519_end_to_end`                 |   ✅   | Fixed baseline host keys for deterministic regression, plus one fresh throwaway           |
+|  34 | `test_kexdh_handle_curve25519_rejects_low_order`                  |   ✅   | Kexdh handle curve25519 rejects low order                                                 |
+|  35 | `test_kexdh_handle_ecdh_nistp256_end_to_end`                      |   ✅   | Kexdh handle ecdh nistp256 end to end                                                     |
+|  36 | `test_kexdh_handle_ecdh_nistp256_rejects_bad_point`               |   ✅   | Kexdh handle ecdh nistp256 rejects bad point                                              |
+|  37 | `test_kexdh_handle_rsa_sha512_signature`                          |   ✅   | Kexdh handle rsa sha512 signature                                                         |
+|  38 | `test_kexdh_handle_ecdsa_end_to_end`                              |   ✅   | Kexdh handle ecdsa end to end                                                             |
+|  39 | `test_derive_keys_session_id_affects_output`                      |   ✅   | Derive keys session id affects output                                                     |
+|  40 | `test_rekey_needed_threshold`                                     |   ✅   | Rekey needed threshold                                                                    |
+|  41 | `test_rekey_due_volume_and_time`                                  |   ✅   | Neither budget spent.                                                                     |
+|  42 | `test_begin_rekey_preserves_session_and_auth`                     |   ✅   | Begin rekey preserves session and auth                                                    |
+|  43 | `test_kdf_edge_paths_and_slot_guards`                             |   ✅   | Kdf edge paths and slot guards                                                            |
+|  44 | `test_kexinit_parse_truncation_points`                            |   ✅   | Kexinit parse truncation points                                                           |
+|  45 | `test_ssh_transport_more_guards`                                  |   ✅   | Ssh transport more guards                                                                 |
+|  46 | `test_dh_derive_keys_gcm_installs`                                |   ✅   | Dh derive keys gcm installs                                                               |
+|  47 | `test_kdf_string_k_hybrid`                                        |   ✅   | Kdf string k hybrid                                                                       |
+|  48 | `test_kexinit_hostkey_list_carries_all_four_when_all_keys_loaded` |   ✅   | Kexinit hostkey list carries all four when all keys loaded                                |
 
 </details>
 
