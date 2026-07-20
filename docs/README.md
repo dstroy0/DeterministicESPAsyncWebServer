@@ -1081,8 +1081,6 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
-│   │   ├── __pycache__/
-│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1173,7 +1171,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/Middleware` | `L7-Application/Middleware` | 753,297 | 81,796 |
 | `ADS` | `L7-Application/AdsClient` | 753,317 | 44,204 |
 | `core/ChunkedResponse` | `L7-Application/ChunkedResponse` | 753,421 | 81,804 |
-| `DIAG` | `L7-Application/Diagnostics` | 753,437 | 81,788 |
 | `core/ServerSentEvents` | `L6-Presentation/ServerSentEvents` | 753,465 | 81,796 |
 | `core/NetEgress` | `L7-Application/NetEgress` | 753,501 | 81,788 |
 | `core/FormParams` | `L6-Presentation/FormParams` | 753,521 | 81,788 |
@@ -1194,6 +1191,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `MODBUS+MODBUS_MASTER` | `L7-Application/ModbusScan` | 754,957 | 82,068 |
 | `JWT` | `L6-Presentation/JWTAuth` | 754,961 | 82,940 |
 | `core/Basic` | `Foundation/Basic` | 754,981 | 81,804 |
+| `DIAG` | `Foundation/Configuration` | 755,021 | 77,548 |
 | `TELNET` | `L5-Session/Telnet` | 755,153 | 82,332 |
 | `AUDIT_LOG` | `L7-Application/AuditLog` | 755,213 | 84,780 |
 | `CBOR` | `L6-Presentation/Cbor` | 755,245 | 81,868 |
