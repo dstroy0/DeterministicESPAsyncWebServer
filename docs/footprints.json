@@ -531,6 +531,13 @@
     "flash_bytes": 288129,
     "ram_bytes": 21920
   },
+  "POWER_MGMT": {
+    "example": "L7-Application/PowerGovernor",
+    "flags": "-DDWS_ENABLE_POWER_MGMT=1",
+    "board": "esp32dev",
+    "flash_bytes": 881293,
+    "ram_bytes": 85648
+  },
   "PREEMPT_QUEUE": {
     "example": "Foundation/PreemptQueue",
     "flags": "-DDWS_ENABLE_PREEMPT_QUEUE=1",

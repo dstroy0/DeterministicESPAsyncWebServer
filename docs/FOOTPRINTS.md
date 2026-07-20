@@ -84,6 +84,7 @@ from each example's `pio ci` size report and aggregated into
 | `PCA9685`                                                                                                 | Drivers/Pca9685                      | 277.9 KB (21.7%) | 21.3 KB (6.7%)   |
 | `PER_IP_THROTTLE`                                                                                         | L4-Transport/PerIpThrottle           | 735.5 KB (57.5%) | 80.3 KB (25.1%)  |
 | `PN532+GATEWAY`                                                                                           | Drivers/NfcGateway                   | 281.4 KB (22.0%) | 21.4 KB (6.7%)   |
+| `POWER_MGMT`                                                                                              | L7-Application/PowerGovernor         | 860.6 KB (67.2%) | 83.6 KB (26.1%)  |
 | `PREEMPT_QUEUE`                                                                                           | Foundation/PreemptQueue              | 267.6 KB (20.9%) | 23.4 KB (7.3%)   |
 | `PROMISC+FORWARD+ETHERNET`                                                                                | Peripherals/WifiCapture              | 748.1 KB (58.4%) | 46.5 KB (14.5%)  |
 | `PROVISIONING`                                                                                            | L7-Application/Provisioning          | 743.3 KB (58.1%) | 81.5 KB (25.5%)  |
