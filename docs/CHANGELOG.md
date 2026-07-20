@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.21.0] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.21.0 - 2026-07-20</b></summary>
 
 ### Bug Fixes
 
@@ -10,15 +13,25 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`ff46cc4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff46cc45b61f5eb98a8c8e1cfb9b051a57ded83f))
+- update CHANGELOG.md [skip ci] ([`2070203`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/207020317a67afa76af8cdfe9857eb31ec7fb969))
 - update CHANGELOG.md [skip ci] ([`8949408`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/894940847d5abaab3a2706525bceb481094f02db))
 
 ### Changes
 
+- Bump version: 7.20.1 → 7.21.0 ([`1e875ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e875ec583f3eeef2285a359b8face27b74dfcf1))
 - Bump version: 7.20.0 → 7.20.1 ([`09fa82b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09fa82ba8720a87008f139e4b0d247ab92811eab))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`060ccfe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/060ccfeb78de37029b0ae39708dfbc9e89a6bd7b))
 - update ESP32 build footprints [skip ci] ([`a6f95e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6f95e26d7f6ec4e7930a14781bfa6e4ec2976f6))
+
+### Features
+
+- fallback HMI + conditional UI streaming ([`0220bb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0220bb9a03eaa05d08e206fcf71c16bd9e896cb6))
+
+</details>
 
 ## [7.20.0] - 2026-07-20
 
