@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- bump actions/setup-python from 5 to 7 ([`426e70c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/426e70ca5abefc9970a25c3ddbf9ef55d2322c96))
+- update test report + coverage [skip ci] ([`32eee2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32eee2c2a06312b3755539702c87a03c0dd88c57))
+- update CHANGELOG.md [skip ci] ([`ee7c25a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee7c25ad931770381a51f9b8f40476d14241a74e))
+
+### Changes
+
+- Merge Dependabot #17: build(deps): bump actions/setup-python from 5 to 7 ([`9fc1ad7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fc1ad7dc8b5b834ee8f8257cbffd62fff463f51))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`629d6b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/629d6b5629534b9ffc4e8a3090d893649900c10f))
+
+### Features
+
+- sntrup761 KEM (Streamlined NTRU Prime) - full KeyGen/Encaps/Decaps ([`bb90a4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb90a4e10862d9925b6de9959397f26dfa3406d1))
+
 ## [7.23.1] - 2026-07-20
 
 <details>
