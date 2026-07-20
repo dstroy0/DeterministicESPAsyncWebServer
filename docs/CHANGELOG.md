@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.19.0] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.19.0 - 2026-07-20</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`501e9a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/501e9a7d40f882351bcbf53fab31b8cbb219ab6e))
+
+### Changes
+
+- Bump version: 7.18.0 → 7.19.0 ([`0ca0fec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ca0fecdbd04b93dc1eb165df7a367ae6cac7181))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`afd7301`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/afd7301316ae22a235f5d3ba52cbfa9dde3ed673))
+
+### Features
+
+- SoC power governor - scaling, thermal, brownout, gating ([`777b994`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/777b994ad6bdd4f7fea4427b9e9e7de0e0b9c84d))
+
+</details>
+
 ## [7.18.0] - 2026-07-20
 
 <details>
