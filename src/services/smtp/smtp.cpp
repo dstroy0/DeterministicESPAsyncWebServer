@@ -76,7 +76,7 @@ bool ieq(const char *a, const char *b, size_t n)
 // not read as one advertising STARTTLS, since that decides whether credentials go out in clear.
 bool reply_has_cap(const char *buf, size_t len, const char *want)
 {
-    size_t wlen = strlen(want);
+    size_t wlen = strnlen(want, len + 1); // a whole capability keyword cannot exceed the reply
     size_t start = 0;
     for (size_t i = 0; i + 1 < len; i++)
     {

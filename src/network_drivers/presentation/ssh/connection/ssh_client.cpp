@@ -143,7 +143,7 @@ void w_string(Wr *w, const void *d, size_t n)
 }
 void w_cstr(Wr *w, const char *s)
 {
-    w_string(w, s, strlen(s));
+    w_string(w, s, strnlen(s, w->cap)); // a field can never exceed the writer's own capacity
 }
 
 // Reader over a payload with bounds checking.
@@ -194,7 +194,7 @@ const uint8_t *r_string(Rd *r, uint32_t *n)
 // Does a comma-separated SSH name-list contain @p want as a whole entry?
 bool namelist_has(const uint8_t *list, uint32_t len, const char *want)
 {
-    size_t wl = strlen(want);
+    size_t wl = strnlen(want, (size_t)len + 1); // a whole-entry match cannot exceed the list
     uint32_t start = 0;
     for (uint32_t i = 0; i <= len; i++)
     {
@@ -376,7 +376,7 @@ static void w_namelist(Wr *w, const char *const *names, size_t n)
     size_t o = 0;
     for (size_t i = 0; i < n; i++)
     {
-        size_t l = strlen(names[i]);
+        size_t l = strnlen(names[i], sizeof(tmp));
         if (i && o + 1 <= sizeof(tmp))
             tmp[o++] = ',';
         if (o + l <= sizeof(tmp))
@@ -658,11 +658,11 @@ static void compute_h(const uint8_t *ks, uint32_t ks_len, const uint8_t *srv_pub
 {
     SshSha256Ctx c;
     ssh_sha256_init(&c);
-    hash_string(&c, (const uint8_t *)CLIENT_BANNER, strlen(CLIENT_BANNER)); // V_C
-    hash_string(&c, (const uint8_t *)s_cli.v_s, s_cli.v_s_len);             // V_S
-    hash_string(&c, s_cli.i_c, s_cli.i_c_len);                              // I_C
-    hash_string(&c, s_cli.i_s, s_cli.i_s_len);                              // I_S
-    hash_string(&c, ks, ks_len);                                            // K_S
+    hash_string(&c, (const uint8_t *)CLIENT_BANNER, strnlen(CLIENT_BANNER, sizeof(CLIENT_BANNER))); // V_C
+    hash_string(&c, (const uint8_t *)s_cli.v_s, s_cli.v_s_len);                                     // V_S
+    hash_string(&c, s_cli.i_c, s_cli.i_c_len);                                                      // I_C
+    hash_string(&c, s_cli.i_s, s_cli.i_s_len);                                                      // I_S
+    hash_string(&c, ks, ks_len);                                                                    // K_S
 #if DWS_ENABLE_PQC_KEX
     if (s_cli.kex == CliKex::MLKEM768_X25519)
     {
@@ -976,6 +976,7 @@ static void handle_channel_open(const uint8_t *p, size_t len)
     ch->recv_win = SSH_CLI_WINDOW;
     ch->local_cid = lc;
     ch->eof_sent = false;
+    ch->relay_eof = false; // fully self-init this slot; do not lean on channel_close having zeroed it
 
     uint8_t out[64];
     Wr w = {out, sizeof(out), 0, true};
