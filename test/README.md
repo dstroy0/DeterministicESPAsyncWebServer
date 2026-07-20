@@ -14370,9 +14370,9 @@ A thorough directory of all **3369 test cases** across **271 suites**. Expand a 
       * <code>Assert true (dws_ike_hdr_parse(GV_HDR, sizeof(GV_HDR), &h))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x11, h.init_spi[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x88, h.init_spi[7]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONE, h.next_payload);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_NONE, h.next_payload);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(DWS_IKE_VERSION, h.version);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_SA_INIT, h.exchange);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkeExchange::IKE_SA_INIT, h.exchange);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(DWS_IKE_FLAG_INITIATOR, h.flags);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, h.message_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(28, h.length);</code>
@@ -14419,7 +14419,7 @@ A thorough directory of all **3369 test cases** across **271 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(GV_NOTIFY), n);</code>
       * <code>Assert equal memory (GV_NOTIFY, buf, sizeof(GV_NOTIFY))</code>
       * <code>Assert true (dws_ike_notify_parse(GV_NOTIFY + 4, sizeof(GV_NOTIFY) - 4, &proto, &type, &spi, &ss, &d, &dl))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, proto);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_NONE, (uint8_t)proto);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, ss);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(16388, type);</code>
       * <code>Assert null (spi)</code>
@@ -14435,7 +14435,7 @@ A thorough directory of all **3369 test cases** across **271 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(GV_DELETE), n);</code>
       * <code>Assert equal memory (GV_DELETE, buf, sizeof(GV_DELETE))</code>
       * <code>Assert true (dws_ike_delete_parse(GV_DELETE + 4, sizeof(GV_DELETE) - 4, &proto, &ss, &num, &spis))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PROTO_IKE, proto);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_IKE, (uint8_t)proto);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, ss);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, num);</code>
       * <code>Assert null (spis)</code>
@@ -14466,17 +14466,17 @@ A thorough directory of all **3369 test cases** across **271 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (dws_ike_sa_first_proposal(GV_SA_KEYLEN + 4, sizeof(GV_SA_KEYLEN) - 4, &prop))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, prop.proposal_num);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PROTO_IKE, prop.protocol_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_IKE, (uint8_t)prop.protocol_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, prop.spi_size);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(2, prop.num_transforms);</code>
       * <code>Assert true (prop.last)</code>
       * <code>Assert true (dws_ike_transform_next(&it, &t))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_TRANSFORM_ENCR, t.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkeTransformType::IKE_TRANSFORM_ENCR, t.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(IKE_ENCR_AES_CBC, t.id);</code>
       * <code>TEST_ASSERT_EQUAL_INT32(256, t.key_length);</code>
       * <code>Assert false (t.last)</code>
       * <code>Assert true (dws_ike_transform_next(&it, &t))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_TRANSFORM_PRF, t.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkeTransformType::IKE_TRANSFORM_PRF, t.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(IKE_PRF_HMAC_SHA2_256, t.id);</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, t.key_length); // absent</code>
       * <code>Assert true (t.last)</code>
@@ -14489,13 +14489,13 @@ A thorough directory of all **3369 test cases** across **271 suites**. Expand a 
     * **Objective**: generic header: next=AUTH(39), len; body: id_type + 3 reserved + data
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(4 + 4 + 11, n);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_AUTH, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_AUTH, buf[0]);</code>
       * <code>Assert true (dws_ike_id_parse(buf + 4, n - 4, &id_type, &d, &dl))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_ID_FQDN, id_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeIdType::IKE_ID_FQDN, (uint8_t)id_type);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(11, dl);</code>
       * <code>Assert equal memory (fqdn, d, 11)</code>
       * <code>Assert true (dws_ike_auth_parse(buf + 4, n - 4, &method, &d, &dl))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_AUTH_PSK, method);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeAuthMethod::IKE_AUTH_PSK, (uint8_t)method);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, dl);</code>
       * <code>Assert equal memory (sig, d, 4)</code>
   </details>
@@ -14508,7 +14508,7 @@ A thorough directory of all **3369 test cases** across **271 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(24, n);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_ike_ts_count(buf + 4, n - 4));</code>
       * <code>Assert true (dws_ike_ts_get(buf + 4, n - 4, 0, &got))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_TS_IPV4_ADDR_RANGE, got.ts_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkeTsType::IKE_TS_IPV4_ADDR_RANGE, got.ts_type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, got.start_port);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(65535, got.end_port);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, got.addr_len);</code>
@@ -14523,7 +14523,7 @@ A thorough directory of all **3369 test cases** across **271 suites**. Expand a 
     * **Objective**: too short for iv+icv -> false
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(4 + 16 + 8 + 16, n);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_IDI, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_IDI, buf[0]);</code>
       * <code>Assert true (dws_ike_sk_parse(buf + 4, n - 4, 16, 16, &piv, &pct, &ctl, &picv))</code>
       * <code>Assert equal memory (iv, piv, 16)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(8, ctl);</code>
@@ -14548,22 +14548,22 @@ A thorough directory of all **3369 test cases** across **271 suites**. Expand a 
     * **Objective**: Full chain walk
     * **Assertions**:
       * <code>Assert true (dws_ike_hdr_parse(GV_FULL, sizeof(GV_FULL), &h))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_SA, h.next_payload);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_SA, h.next_payload);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(GV_FULL), h.length);</code>
       * <code>Assert true (dws_ike_payload_next(&it, &pl))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_SA, pl.type);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_KE, pl.next_payload);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_SA, pl.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_KE, pl.next_payload);</code>
       * <code>Assert true (dws_ike_sa_first_proposal(pl.body, pl.body_len, &prop))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(2, prop.num_transforms);</code>
       * <code>Assert true (dws_ike_payload_next(&it, &pl))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_KE, pl.type);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONCE, pl.next_payload);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_KE, pl.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_NONCE, pl.next_payload);</code>
       * <code>Assert true (dws_ike_ke_parse(pl.body, pl.body_len, &group, &d, &dl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(IKE_DH_MODP2048, group);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(8, dl);</code>
       * <code>Assert true (dws_ike_payload_next(&it, &pl))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONCE, pl.type);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(IKE_PL_NONE, pl.next_payload);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_NONCE, pl.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IkePayloadType::IKE_PL_NONE, pl.next_payload);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(16, pl.body_len);</code>
       * <code>Assert false (dws_ike_payload_next(&it, &pl))</code>
   </details>
