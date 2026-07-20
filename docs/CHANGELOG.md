@@ -11,14 +11,20 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`80b3a8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80b3a8ad7254126dc6b8d58134458c87b06d742a))
 - update CHANGELOG.md [skip ci] ([`4467432`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4467432f24d689aa69479d2e4b4f19f971c2fdcc))
 - update test report + coverage [skip ci] ([`105c8b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/105c8b90a94f177e020342f84ff5c593df2d4e39))
 - update CHANGELOG.md [skip ci] ([`3c6293d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c6293de9af876c89d32b9d2b1497d58c2b02e7d))
 - update test report + coverage [skip ci] ([`6661675`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6661675070c3104e24f6ba505e732c0e7d6577f7))
 - update CHANGELOG.md [skip ci] ([`c8e4882`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8e48824037b92c9fa7ef798a2426388080bd94e))
 
+### Changes
+
+- bound the last raw strlen sites + self-init the reverse-SSH channel ([`b340f03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b340f03705b54b0ddd9d4ffbeb562a2ddac07131))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`63aabdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/63aabdce5280728f1ff6125231f594a994a171c0))
 - update ESP32 build footprints [skip ci] ([`9b24d53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b24d53c8c8dc177000d99314fc7033f696995db))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dec05c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dec05c1a1cfaf629505bb5b32e499aca75525728))
 - update ESP32 build footprints [skip ci] ([`41a6d24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/41a6d2468f8af5e6d18fb3309abbbbe829ee7b39))
@@ -29,6 +35,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - reverse-SSH client + ML-KEM initiator + per-variant tuning defaults ([`be8be64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be8be64bdb4405a21c6d5ec5a326b5cdf4f808a3))
+
+### Refactor
+
+- move feature-driven RX_BUF_SIZE floors out of ServerConfig.h ([`13bb6b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13bb6b2e9961d57ed58697476abb9aa21846dd62))
 
 ## [7.22.0] - 2026-07-20
 
