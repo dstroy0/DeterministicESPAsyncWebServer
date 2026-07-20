@@ -162,7 +162,16 @@
     ((defined(DWS_ENABLE_SSH) && DWS_ENABLE_SSH) || (defined(DWS_ENABLE_SSH_CLIENT) && DWS_ENABLE_SSH_CLIENT) ||       \
      (defined(DWS_ENABLE_HTTP3) && DWS_ENABLE_HTTP3))
 #if DWS_ENABLE_PQC_KEX && DWS_SSH_ANY
+// sntrup761x25519-sha512 (on by default with the PQC hybrid) is the heavy case: the reverse-SSH
+// CLIENT runs KeyGen+Decaps whose FO re-encrypt peaks ~32 KB, the SERVER runs Encaps only (~22 KB).
+// ML-KEM alone stays at 16 KB, so a build that explicitly drops sntrup761 keeps the lighter floor.
+#if defined(DWS_ENABLE_SSH_SNTRUP761) && !DWS_ENABLE_SSH_SNTRUP761
 #define DWS_WORKER_TASK_STACK 16384
+#elif defined(DWS_ENABLE_SSH_CLIENT) && DWS_ENABLE_SSH_CLIENT
+#define DWS_WORKER_TASK_STACK 40960
+#else
+#define DWS_WORKER_TASK_STACK 32768
+#endif
 #elif DWS_SSH_ANY
 #define DWS_WORKER_TASK_STACK 12288
 #else
@@ -1293,6 +1302,22 @@
  */
 #ifndef DWS_ENABLE_PQC_KEX
 #define DWS_ENABLE_PQC_KEX 0
+#endif
+
+/**
+ * @brief Streamlined NTRU Prime sntrup761x25519-sha512@openssh.com SSH KEX (default: tracks
+ *        ::DWS_ENABLE_PQC_KEX).
+ *
+ * A second PQ/T hybrid alongside ML-KEM: sntrup761 (a lattice KEM with a conservative security
+ * margin, OpenSSH's long-standing default) crossed with X25519, SHA-512 exchange hash. On by
+ * default wherever the PQC hybrid is enabled so a PQC-capable peer gets both methods offered.
+ * It is heavier than ML-KEM on the worker stack - the server runs Encaps (~22 KB peak) and the
+ * reverse-SSH client runs KeyGen+Decaps (the FO re-encrypt peaks ~32 KB) - so a footprint-bound
+ * PQC build (e.g. a classic-ESP32 that only wants ML-KEM) can set this to 0 to drop sntrup761 and
+ * keep the lighter ::DWS_WORKER_STACK_PQC_MIN floor. Requires ::DWS_ENABLE_PQC_KEX.
+ */
+#ifndef DWS_ENABLE_SSH_SNTRUP761
+#define DWS_ENABLE_SSH_SNTRUP761 DWS_ENABLE_PQC_KEX
 #endif
 
 /**
@@ -6092,10 +6117,27 @@ enum class DWSIface : uint8_t
 #ifndef DWS_WORKER_STACK_PQC_MIN
 #define DWS_WORKER_STACK_PQC_MIN 16384
 #endif
-#if DWS_ENABLE_PQC_KEX && (DWS_ENABLE_SSH || DWS_ENABLE_SSH_CLIENT || DWS_ENABLE_HTTP3) &&                             \
+#if DWS_ENABLE_PQC_KEX && !DWS_ENABLE_SSH_SNTRUP761 &&                                                                 \
+    (DWS_ENABLE_SSH || DWS_ENABLE_SSH_CLIENT || DWS_ENABLE_HTTP3) &&                                                   \
     (DWS_WORKER_TASK_STACK < DWS_WORKER_STACK_PQC_MIN)
 #error                                                                                                                 \
     "DeterministicESPAsyncWebServer: DWS_WORKER_TASK_STACK is below DWS_WORKER_STACK_PQC_MIN; the ML-KEM-768 hybrid KEX (DWS_ENABLE_PQC_KEX) needs ~7 KB more worker stack - raise DWS_WORKER_TASK_STACK (>= 16384) or marshal the handshake onto a dedicated larger-stack task"
+#endif
+
+// sntrup761x25519-sha512 (DWS_ENABLE_SSH_SNTRUP761, on by default with the hybrid) is heavier than
+// ML-KEM: the server runs Encaps (~22 KB), the reverse-SSH client runs KeyGen+Decaps whose FO
+// re-encrypt peaks ~32 KB. Enforce the matching floor so it is caught at build time.
+#ifndef DWS_WORKER_STACK_SNTRUP_MIN
+#if defined(DWS_ENABLE_SSH_CLIENT) && DWS_ENABLE_SSH_CLIENT
+#define DWS_WORKER_STACK_SNTRUP_MIN 40960
+#else
+#define DWS_WORKER_STACK_SNTRUP_MIN 32768
+#endif
+#endif
+#if DWS_ENABLE_SSH_SNTRUP761 && (DWS_ENABLE_SSH || DWS_ENABLE_SSH_CLIENT || DWS_ENABLE_HTTP3) &&                       \
+    (DWS_WORKER_TASK_STACK < DWS_WORKER_STACK_SNTRUP_MIN)
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DWS_WORKER_TASK_STACK is below DWS_WORKER_STACK_SNTRUP_MIN; sntrup761x25519-sha512 needs ~32 KB worker stack for the server Encaps and ~40 KB for the reverse-SSH client KeyGen+Decaps - raise DWS_WORKER_TASK_STACK (>= 32768 server / 40960 client), set DWS_ENABLE_SSH_SNTRUP761 0 to keep ML-KEM only, or marshal the handshake onto a dedicated larger-stack task"
 #endif
 
 #if DWS_ENABLE_TLS

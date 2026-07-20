@@ -19,6 +19,9 @@
 #if DWS_ENABLE_PQC_KEX
 #include "network_drivers/presentation/pqc/mlkem.h" // dws_mlkem768_encaps (PQ/T hybrid KEX responder)
 #endif
+#if DWS_ENABLE_SSH_SNTRUP761
+#include "network_drivers/presentation/pqc/sntrup761.h" // dws_sntrup761_enc (sntrup761x25519 responder)
+#endif
 #if DWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h" // s2c compression negotiation
 #endif
@@ -41,6 +44,9 @@ static const char *const KEX_C25519_LIBSSH = "curve25519-sha256@libssh.org"; // 
 static const char *const KEX_ECDH_NISTP256 = "ecdh-sha2-nistp256";           // NIST P-256 ECDH (RFC 5656 §4)
 #if DWS_ENABLE_PQC_KEX
 static const char *const KEX_MLKEM768 = "mlkem768x25519-sha256"; // PQ/T hybrid (ML-KEM-768 + X25519)
+#endif
+#if DWS_ENABLE_SSH_SNTRUP761
+static const char *const KEX_SNTRUP761 = "sntrup761x25519-sha512@openssh.com"; // PQ/T hybrid (NTRU Prime + X25519)
 #endif
 static const char *const HOSTKEY_RSA_SHA256 = "rsa-sha2-256";
 static const char *const HOSTKEY_RSA_SHA512 = "rsa-sha2-512";
@@ -128,20 +134,21 @@ static void build_kex_list(char *out, size_t cap)
     const char *c2 = KEX_C25519_LIBSSH;
     const char *dh = KEX_DH;
     const char *ec = KEX_ECDH_NISTP256; // NIST P-256 ECDH (RFC 5656)
+    size_t n = 0;
+    // Post-quantum hybrids advertised first: a PQC-capable peer (OpenSSH 9.9+, which also lists them
+    // first) negotiates one over classical X25519, closing the harvest-now-decrypt-later gap. Each
+    // is gated independently so a footprint-bound build can offer ML-KEM only (kexlist[192] holds
+    // the full both-hybrid list with margin, so the appends never truncate).
 #if DWS_ENABLE_PQC_KEX
-    // Post-quantum hybrid advertised first: a PQC-capable peer (OpenSSH 9.9+, which also lists it
-    // first) negotiates it over classical X25519, closing the harvest-now-decrypt-later gap.
-    const char *pq = KEX_MLKEM768;
-    if (s_sshtr.prefer_rsa)
-        snprintf(out, cap, "%s,%s,%s,%s,%s,ext-info-s", pq, dh, ec, c1, c2);
-    else
-        snprintf(out, cap, "%s,%s,%s,%s,%s,ext-info-s", pq, c1, c2, ec, dh);
-#else
-    if (s_sshtr.prefer_rsa)
-        snprintf(out, cap, "%s,%s,%s,%s,ext-info-s", dh, ec, c1, c2);
-    else
-        snprintf(out, cap, "%s,%s,%s,%s,ext-info-s", c1, c2, ec, dh);
+    n += (size_t)snprintf(out + n, cap - n, "%s,", KEX_MLKEM768);
 #endif
+#if DWS_ENABLE_SSH_SNTRUP761
+    n += (size_t)snprintf(out + n, cap - n, "%s,", KEX_SNTRUP761);
+#endif
+    if (s_sshtr.prefer_rsa)
+        snprintf(out + n, cap - n, "%s,%s,%s,%s,ext-info-s", dh, ec, c1, c2);
+    else
+        snprintf(out + n, cap - n, "%s,%s,%s,%s,ext-info-s", c1, c2, ec, dh);
 }
 static void build_hostkey_list(char *out, size_t cap)
 {
@@ -444,10 +451,13 @@ static bool read_namelist(const uint8_t *p, size_t len, size_t *off, const uint8
 // (PQC hybrid first when enabled; RSA group first when prefer_rsa). false = no mutual method.
 static bool negotiate_kex(const uint8_t *list, uint32_t nlen, SshKexAlg *out)
 {
-    AlgCand<SshKexAlg> kc[5];
+    AlgCand<SshKexAlg> kc[6];
     int nk = 0;
 #if DWS_ENABLE_PQC_KEX
     kc[nk++] = {KEX_MLKEM768, SshKexAlg::SSH_KEX_MLKEM768_X25519, true}; // hybrid first (PQC-preferred)
+#endif
+#if DWS_ENABLE_SSH_SNTRUP761
+    kc[nk++] = {KEX_SNTRUP761, SshKexAlg::SSH_KEX_SNTRUP761_X25519, true}; // OpenSSH's other PQC default
 #endif
     if (s_sshtr.prefer_rsa)
     {
@@ -882,7 +892,8 @@ int ssh_kex_generate(uint8_t i)
     SshKexAlg a = ssh_sess[i].kex_alg;
     bool curve = (a == SshKexAlg::SSH_KEX_CURVE25519);
 #if DWS_ENABLE_PQC_KEX
-    curve = curve || (a == SshKexAlg::SSH_KEX_MLKEM768_X25519); // the hybrid's classical half is X25519
+    // both PQ/T hybrids run X25519 as the classical half.
+    curve = curve || (a == SshKexAlg::SSH_KEX_MLKEM768_X25519) || (a == SshKexAlg::SSH_KEX_SNTRUP761_X25519);
 #endif
     if (curve)
     {
@@ -955,7 +966,51 @@ static int hybrid_mlkem_x25519(uint8_t i, const uint8_t *payload, size_t len, ui
     ssh_wipe(k_cl, sizeof(k_cl));
     return 0;
 }
-#endif
+#endif // DWS_ENABLE_PQC_KEX (ML-KEM hybrid)
+
+#if DWS_ENABLE_SSH_SNTRUP761
+// sntrup761x25519-sha512@openssh.com: from C_INIT (byte 30 || string, string = sntrup761_pk(1158) ||
+// Q_C(32)), sntrup761-Encaps to the peer's key and X25519 against Q_C, then combine K = SHA512(K_PQ ||
+// K_CL) (64 bytes). Writes S_REPLY = ciphertext(1039) || Q_S(32) and the 64-byte shared secret. Returns
+// 0, or -1 on a malformed C_INIT or a low-order X25519 point.
+static int hybrid_sntrup761_x25519(uint8_t i, const uint8_t *payload, size_t len,
+                                   uint8_t s_reply[DWS_SNTRUP761_CT_BYTES + 32], uint8_t k_out[64])
+{
+    if (len < 1 + 4 || payload[0] != SSH_MSG_KEXDH_INIT)
+        return -1;
+    uint32_t n = ((uint32_t)payload[1] << 24) | ((uint32_t)payload[2] << 16) | ((uint32_t)payload[3] << 8) |
+                 (uint32_t)payload[4];
+    if (n != DWS_SNTRUP761_PK_BYTES + 32 || (size_t)5 + n > len)
+        return -1;
+    const uint8_t *pk = payload + 5;                          // C_PK2: sntrup761 public key
+    const uint8_t *qc = payload + 5 + DWS_SNTRUP761_PK_BYTES; // C_PK1: client X25519 public
+
+    uint8_t k_pq[DWS_SNTRUP761_SS_BYTES];
+    dws_sntrup761_enc(pk, s_reply, k_pq); // ciphertext -> s_reply[0..1038], shared -> k_pq
+
+    uint8_t k_cl[32];
+    ssh_x25519(k_cl, ssh_sess[i].ecdh_sk, qc);
+    uint8_t zacc = 0;
+    for (int b = 0; b < 32; b++)
+        zacc |= k_cl[b];
+    if (zacc == 0) // low-order X25519 point (RFC 7748 §6.1)
+    {
+        ssh_wipe(k_pq, sizeof(k_pq));
+        ssh_wipe(k_cl, sizeof(k_cl));
+        return -1;
+    }
+    memcpy(s_reply + DWS_SNTRUP761_CT_BYTES, ssh_sess[i].ecdh_pk, 32); // S_PK1: server X25519 public
+
+    SshSha512Ctx hc;
+    ssh_sha512_init(&hc);
+    ssh_sha512_update(&hc, k_pq, sizeof(k_pq)); // K = SHA512(K_PQ || K_CL) (RFC 9370 concat combiner)
+    ssh_sha512_update(&hc, k_cl, sizeof(k_cl));
+    ssh_sha512_final(&hc, k_out);
+    ssh_wipe(k_pq, sizeof(k_pq));
+    ssh_wipe(k_cl, sizeof(k_cl));
+    return 0;
+}
+#endif // DWS_ENABLE_SSH_SNTRUP761
 
 int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *reply_out, size_t *reply_len, size_t cap)
 {
@@ -1022,7 +1077,23 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         pub_is_string = true;
         k_is_string = true;
     }
-#endif
+#endif // DWS_ENABLE_PQC_KEX (ML-KEM dispatch)
+#if DWS_ENABLE_SSH_SNTRUP761
+    else if (s->kex_alg == SshKexAlg::SSH_KEX_SNTRUP761_X25519)
+    {
+        // sntrup761x25519-sha512: K = SHA512(K_PQ || K_CL) (64 bytes); C_INIT / S_REPLY and K are strings.
+        if (hybrid_sntrup761_x25519(i, payload, len, s_reply, k_be + (256 - 64)) != 0)
+            return -1;
+        cpub_p = payload + 5; // C_INIT (sntrup761_pk || Q_C), hashed verbatim as a string
+        cpub_len = DWS_SNTRUP761_PK_BYTES + 32;
+        spub_p = s_reply; // S_REPLY (ciphertext || Q_S)
+        spub_len = DWS_SNTRUP761_CT_BYTES + 32;
+        k_hash = k_be + (256 - 64); // K is exactly 64 bytes (SHA-512), string-encoded
+        k_hash_len = 64;
+        pub_is_string = true;
+        k_is_string = true;
+    }
+#endif // DWS_ENABLE_SSH_SNTRUP761
     else if (s->kex_alg == SshKexAlg::SSH_KEX_ECDH_NISTP256)
     {
         // ecdh-sha2-nistp256 (RFC 5656 §4): K = X(d_S * Q_C). Q_C/Q_S are 65-byte point strings; K an mpint.

@@ -391,6 +391,7 @@
         "+<network_drivers/presentation/ssh/connection/ssh_server.cpp>",
         "+<network_drivers/presentation/pqc/sha3.cpp>",
         "+<network_drivers/presentation/pqc/mlkem.cpp>",
+        "+<network_drivers/presentation/pqc/sntrup761.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>"
       ],

@@ -1424,7 +1424,11 @@
     "lums",
     "Fujisaki",
     "Okamoto",
-    "hklist"
+    "hklist",
+    "NTRU",
+    "SNTRUP",
+    "kexhash",
+    "recip"
   ],
   "ignorePaths": [
     "node_modules/**",

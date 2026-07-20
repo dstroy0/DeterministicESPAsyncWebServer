@@ -17,7 +17,7 @@
 
 #include "network_drivers/presentation/pqc/sntrup761.h"
 
-#if DWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_SSH_SNTRUP761
 
 #include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
 #include <string.h>
@@ -700,4 +700,4 @@ void dws_sntrup761_dec(const uint8_t sk[DWS_SNTRUP761_SK_BYTES], const uint8_t c
     HashSession(ss, 1 + mask, r_enc, ct);
 }
 
-#endif // DWS_ENABLE_PQC_KEX
+#endif // DWS_ENABLE_SSH_SNTRUP761

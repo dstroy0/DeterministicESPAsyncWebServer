@@ -1081,6 +1081,8 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
+│   │   ├── __pycache__/
+│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1520,6 +1522,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DWS_ENABLE_SSH_CLIENT` | `0` | Outbound SSH client + reverse tunnel (RFC 4254 §7.1 tcpip-forward, the `ssh -R` seam). |
 | `DWS_ENABLE_SSH_SCP` | `0` | SCP server over SSH (the legacy RCP protocol via `exec "scp -t/-f"`). |
 | `DWS_ENABLE_SSH_SFTP` | `0` | SFTP server subsystem over SSH (SSH_FXP_* v3, draft-ietf-secsh-filexfer-02). |
+| `DWS_ENABLE_SSH_SNTRUP761` | `DWS_ENABLE_PQC_KEX` | Streamlined NTRU Prime sntrup761x25519-sha512@openssh.com SSH KEX (default: tracks ::DWS_ENABLE_PQC_KEX). |
 | `DWS_ENABLE_SSH_ZLIB` | `0` | SSH server-to-client compression (`zlib@openssh.com` / `zlib`, RFC 4253 sec 6.2). |
 | `DWS_ENABLE_STATS` | `0` | Runtime stats endpoint (uptime, request/error counts, pool usage, heap). |
 | `DWS_ENABLE_STATSD` | `0` | Opt-in StatsD metrics client. |

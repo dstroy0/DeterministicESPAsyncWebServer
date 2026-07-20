@@ -24,7 +24,7 @@
 
 #include "ServerConfig.h"
 
-#if DWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_SSH_SNTRUP761
 
 #include <stddef.h>
 #include <stdint.h>
@@ -58,6 +58,6 @@ void dws_sntrup761_enc(const uint8_t pk[DWS_SNTRUP761_PK_BYTES], uint8_t ct[DWS_
 void dws_sntrup761_dec(const uint8_t sk[DWS_SNTRUP761_SK_BYTES], const uint8_t ct[DWS_SNTRUP761_CT_BYTES],
                        uint8_t ss[DWS_SNTRUP761_SS_BYTES]);
 
-#endif // DWS_ENABLE_PQC_KEX
+#endif // DWS_ENABLE_SSH_SNTRUP761
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_PQC_SNTRUP761_H
