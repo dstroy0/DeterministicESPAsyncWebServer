@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.23.1] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.23.1 - 2026-07-20</b></summary>
 
 ### Bug Fixes
 
@@ -10,19 +13,28 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`f288b37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f288b370355d445782108c9c979b99d8008b698c))
+- update CHANGELOG.md [skip ci] ([`2e2c790`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e2c790409c708a006ff30e0d2c14a9859340123))
 - update test report + coverage [skip ci] ([`fe812f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe812f522a0d8e5d595ca00800d50c13443e64d6))
 - update CHANGELOG.md [skip ci] ([`456a10e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/456a10ee20542eef0c89d9287afbbfba86f69226))
 - update test report + coverage [skip ci] ([`8d2d992`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d2d99235e9805752923d29c94f930d27c6229bf))
 - update CHANGELOG.md [skip ci] ([`09efc07`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09efc078683c986d4f8f4fcf7cf8fab42fae21e3))
 
+### Changes
+
+- Bump version: 7.23.0 → 7.23.1 ([`dcea1ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dcea1adb30f42eb17c048de7c7da4d7b3c492255))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`17ff9f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17ff9f37920f27f784839774444fd1b6951b02d3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fb3811a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb3811a47a736b60d5704f061e51915bb64b533a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`afcb88e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/afcb88e2454d314613a8e34cb84b34ab90093264))
 
 ### Testing
 
 - add a full algorithm matrix to the OpenSSH interop peer ([`2867908`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28679082f9d493b5d6ec84ce9bca551a317d5010))
+
+</details>
 
 ## [7.23.0] - 2026-07-20
 
