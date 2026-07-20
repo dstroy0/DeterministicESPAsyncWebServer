@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 141 runnable examples under `examples/`, grouped by
+The library ships 142 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -184,6 +184,7 @@ Routing, protocols, services, and clients:
 [PathParams](../examples/L7-Application/PathParams/README.md) ·
 [PidTuning](../examples/L7-Application/PidTuning/README.md) ·
 [PortForward](../examples/L7-Application/PortForward/README.md) ·
+[PowerGovernor](../examples/L7-Application/PowerGovernor/README.md) ·
 [PrometheusMetrics](../examples/L7-Application/PrometheusMetrics/README.md) ·
 [Provisioning](../examples/L7-Application/Provisioning/README.md) ·
 [RadioPower](../examples/L7-Application/RadioPower/README.md) ·
