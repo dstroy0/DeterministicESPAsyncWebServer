@@ -232,7 +232,7 @@ The native test matrix has **254 environments**, one per feature, generated from
 | `native_pn532` | `WS_ENABLE_PN532=1`, `WS_PN532_MAX_DATA=8` | `test_pn532` | PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame build/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS + DCS checksums), a round... |
 | `native_power_mgmt` | `WS_ENABLE_POWER_MGMT=1` | `test_power_mgmt` | SoC power governor (services/power_mgmt): the pure clock decision from load, die temperature and reset reason - load-based scaling, the thermal hysteresis that stops a part parked at the limit from os... |
 | `native_powerlink` | `WS_ENABLE_POWERLINK=1` | `test_powerlink` | Ethernet POWERLINK basic frame codec (services/powerlink): the EPL cyclic frames ([messageType][dest][source][payload]) - SoC/PReq/PRes/SoA - build + parse, over raw L2 (0x88AB). |
-| `native_pqc` | `WS_ENABLE_PQC_KEX=1` | `test_pqc_sha3`, `test_pqc_mlkem` | Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the Keccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the mlkem768x25519-sha256 (SSH)... |
+| `native_pqc` | `WS_ENABLE_PQC_KEX=1` | `test_pqc_sha3`, `test_pqc_mlkem`, `test_pqc_sntrup761` | Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the Keccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the mlkem768x25519-sha256 (SSH)... |
 | `native_preempt_queue` | `WS_ENABLE_PREEMPT_QUEUE=1`, `WS_PQ_DEPTH=4`, `WS_PQ_ITEM_SIZE=4` | `test_preempt_queue` | Preempting work queue (services/preempt_queue), v5 real-time ingest: the host fixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water, and drain/handler dispatch. |
 | `native_profibus` | `WS_ENABLE_PROFIBUS=1` | `test_profibus` | PROFIBUS-DP FDL telegram codec (services/profibus): the SD1 (no-data) + SD2 (variable data, LE/LEr + arithmetic-sum FCS) telegrams build + validate. |
 | `native_profinet` | `WS_ENABLE_PROFINET=1` | `test_profinet` | PROFINET DCP frame codec (services/profinet): the 10-octet DCP header + option/suboption blocks (even-padding) build + parse/walk, for Identify/Set over raw L2 (ethertype 0x8892). |
@@ -544,7 +544,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3424 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3427 test cases** across **273 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23152,6 +23152,35 @@ A thorough directory of all **3424 test cases** across **272 suites**. Expand a 
     * **Objective**: Shake stream continuity
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(oneshot, split, sizeof(oneshot));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_pqc_sntrup761 (3 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sntrup761_decaps_kat</b> &mdash; <i>Sntrup761 decaps kat</i></summary>
+
+    * **Objective**: Sntrup761 decaps kat
+    * **Assertions**:
+      * <code>Assert equal memory (KAT_SS, ss, DWS_SNTRUP761_SS_BYTES)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sntrup761_roundtrip</b> &mdash; <i>Sntrup761 roundtrip</i></summary>
+
+    * **Objective**: Sntrup761 roundtrip
+    * **Assertions**:
+      * <code>Assert equal memory (ss1, ss2, DWS_SNTRUP761_SS_BYTES)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sntrup761_implicit_reject</b> &mdash; <i>Sntrup761 implicit reject</i></summary>
+
+    * **Objective**: Sntrup761 implicit reject
+    * **Assertions**:
+      * <code>Assert true (memcmp(good, bad, DWS_SNTRUP761_SS_BYTES) != 0)</code>
   </details>
 
 </details>

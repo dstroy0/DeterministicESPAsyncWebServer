@@ -960,13 +960,15 @@
       "tests": ["test_focas"]
     },
     "native_pqc": {
-      "desc": "Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the\nKeccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the\nmlkem768x25519-sha256 (SSH) and X25519MLKEM768 (TLS 1.3) hybrid key exchanges. SHA-3/SHAKE digests\npinned from NIST FIPS 202 vectors; ML-KEM Encaps byte-checked against a kyber-py reference vector\n(tools/gen_mlkem_kat.py). Pure host tests.",
+      "desc": "Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the\nKeccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the\nmlkem768x25519-sha256 (SSH) and X25519MLKEM768 (TLS 1.3) hybrid key exchanges - plus the full\nStreamlined NTRU Prime sntrup761 KEM (keypair/enc/dec) for sntrup761x25519-sha512@openssh.com.\nSHA-3/SHAKE digests pinned from NIST FIPS 202 vectors; ML-KEM Encaps byte-checked against a kyber-py\nvector; sntrup761 decapsulation checked against an OpenSSH-reference KAT plus a keypair/enc/dec\nround-trip. Pure host tests.",
       "flags": ["-DDWS_ENABLE_PQC_KEX=1"],
       "src": [
         "+<network_drivers/presentation/pqc/sha3.cpp>",
-        "+<network_drivers/presentation/pqc/mlkem.cpp>"
+        "+<network_drivers/presentation/pqc/mlkem.cpp>",
+        "+<network_drivers/presentation/pqc/sntrup761.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>"
       ],
-      "tests": ["test_pqc_sha3", "test_pqc_mlkem"]
+      "tests": ["test_pqc_sha3", "test_pqc_mlkem", "test_pqc_sntrup761"]
     },
     "native_iface_bridge": {
       "desc": "Interface bridge pure core (services/iface_bridge): the user-defined address:port -> bus\nrule table (register / find / dedup / capacity, keyed by port+proto with the full DWSIp bind address\npreserved) and the write-then-read transaction frame codec (big-endian write_len/read_len header,\npartial-frame handling, build/parse round-trip). Bus I/O + listener are ESP32-only. Pure host tests.",
