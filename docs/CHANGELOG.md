@@ -10,12 +10,19 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`fe812f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe812f522a0d8e5d595ca00800d50c13443e64d6))
+- update CHANGELOG.md [skip ci] ([`456a10e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/456a10ee20542eef0c89d9287afbbfba86f69226))
 - update test report + coverage [skip ci] ([`8d2d992`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d2d99235e9805752923d29c94f930d27c6229bf))
 - update CHANGELOG.md [skip ci] ([`09efc07`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09efc078683c986d4f8f4fcf7cf8fab42fae21e3))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fb3811a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb3811a47a736b60d5704f061e51915bb64b533a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`afcb88e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/afcb88e2454d314613a8e34cb84b34ab90093264))
+
+### Testing
+
+- add a full algorithm matrix to the OpenSSH interop peer ([`2867908`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28679082f9d493b5d6ec84ce9bca551a317d5010))
 
 ## [7.23.0] - 2026-07-20
 
