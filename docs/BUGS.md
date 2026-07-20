@@ -8,6 +8,29 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH server host-key name-list truncated - `rsa-sha2-256` dropped when all three host keys are loaded
+
+- **Status:** FIXED (2026-07-20). Found by a **real-OpenSSH interop matrix on an ESP32-P4** (the shipped
+  SSH server, all four host-key algorithms forced one at a time via `ssh -o HostKeyAlgorithms=`).
+- **Symptom:** with ed25519 **and** ecdsa-p256 **and** RSA host keys all provisioned, a client that forced
+  `rsa-sha2-256` got `Unable to negotiate ... no matching host key type`. The server's advertised
+  `server_host_key_algorithms` list came across truncated: `ssh-ed25519,ecdsa-sha2-nistp256,rsa-sha2-512,rs`
+    - the last entry `rsa-sha2-256` cut to `rs`. `rsa-sha2-512` (one earlier) still worked, which is what made
+      it look key-specific rather than a buffer overrun.
+- **Root cause:** `ssh_kexinit_build()` assembled the host-key name-list into a **48-byte** stack buffer
+  (`ssh_transport.cpp` `char hklist[48]`). The full four-algorithm list
+  `ssh-ed25519,ecdsa-sha2-nistp256,rsa-sha2-512,rsa-sha2-256` is **57 chars + NUL = 58 bytes**, so the
+  bounded `snprintf` in `build_hostkey_list()` stopped after `...rsa-sha2-512,rs`. It only bites when all
+  three key types are held at once - the SSH example loads just RSA and the pentest rig just ed25519, so the
+  list was always short enough before; a device provisioned with all three (a realistic deployment) hit it.
+- **Fix:** size the buffer to hold the full list - `hklist[64]`. Regression test
+  `test_kexinit_hostkey_list_carries_all_four_when_all_keys_loaded` (native_ssh_transport) provisions all
+  three host keys and asserts every algorithm, incl. `rsa-sha2-256`, survives in the built KEXINIT; it fails
+  on the old 48-byte buffer and passes on 64. Confirmed on HW: the P4 interop matrix went 15/16 -> **16/16**
+  after the fix (every KEX incl. the mlkem768x25519 hybrid, every cipher/MAC, all four host-key algorithms).
+
+---
+
 ## A board profile's hardcoded `RX_BUF_SIZE` silently defeated the streaming ring floor (large uploads reset)
 
 - **Status:** FIXED (2026-07-20). Found while auditing the per-variant board-profile defaults; the failure

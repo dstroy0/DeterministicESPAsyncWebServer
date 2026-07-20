@@ -392,7 +392,9 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap)
     w_bytes(w, cookie, sizeof(cookie));
 
     char kexlist[192];
-    char hklist[48];
+    // All four host-key algs = "ssh-ed25519,ecdsa-sha2-nistp256,rsa-sha2-512,rsa-sha2-256" is 57
+    // chars + NUL; a smaller buffer silently drops rsa-sha2-256 when all three key types are loaded.
+    char hklist[64];
     build_kex_list(kexlist, sizeof(kexlist));
     build_hostkey_list(hklist, sizeof(hklist));
     w_namelist(w, kexlist);         // kex_algorithms (preference-ordered, + ext-info-s)

@@ -157,6 +157,41 @@ void test_kexinit_build_starts_with_msg_and_stores_is()
     TEST_ASSERT_EQUAL_MEMORY(buf, ssh_sess[0].i_s, n);
 }
 
+// Regression (found via ESP32-P4 OpenSSH interop): with all three host-key types loaded, the server
+// KEXINIT's host-key name-list must carry all four algorithms. A too-small build buffer once truncated
+// the last entry (rsa-sha2-256 -> "rs"), so a client that forced rsa-sha2-256 got "no matching host
+// key type". The full list "ssh-ed25519,ecdsa-sha2-nistp256,rsa-sha2-512,rsa-sha2-256" is 57 bytes.
+void test_kexinit_hostkey_list_carries_all_four_when_all_keys_loaded()
+{
+    static const uint8_t EC_SCALAR[32] = {0x42, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+                                          0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
+                                          0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f};
+    dws_ssh_hostkey_ed25519_set(BASELINE_ED25519_SEEDS[0]);
+    dws_ssh_hostkey_ecdsa_set(EC_SCALAR);
+    ssh_kex_set_prefer_rsa(false); // modern-first order (RSA entries last, so truncation hits them)
+    // RSA is already available via setup_rsa_fixture() in setUp().
+
+    uint8_t buf[SSH_KEXINIT_MAX];
+    size_t n = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_build(0, buf, &n, sizeof(buf)));
+
+    // The host-key name-list is the 2nd name-list, after msg(1) + cookie(16) + the kex name-list.
+    size_t o = 1 + 16;
+    uint32_t kex_len = ((uint32_t)buf[o] << 24) | (buf[o + 1] << 16) | (buf[o + 2] << 8) | buf[o + 3];
+    o += 4 + kex_len;
+    uint32_t hk_len = ((uint32_t)buf[o] << 24) | (buf[o + 1] << 16) | (buf[o + 2] << 8) | buf[o + 3];
+    o += 4;
+    char hk[128];
+    TEST_ASSERT_TRUE(hk_len < sizeof(hk));
+    memcpy(hk, buf + o, hk_len);
+    hk[hk_len] = '\0';
+    TEST_ASSERT_NOT_NULL(strstr(hk, "ssh-ed25519"));
+    TEST_ASSERT_NOT_NULL(strstr(hk, "ecdsa-sha2-nistp256"));
+    TEST_ASSERT_NOT_NULL(strstr(hk, "rsa-sha2-512"));
+    TEST_ASSERT_NOT_NULL(strstr(hk, "rsa-sha2-256")); // the entry the undersized buffer used to drop
+    ssh_kex_set_prefer_rsa(true);                     // restore the setUp default for later tests
+}
+
 void test_kexinit_parse_accepts_supported()
 {
     ssh_sess[0].phase = SshPhase::SSH_PHASE_KEXINIT;
@@ -1500,5 +1535,9 @@ int main()
     RUN_TEST(test_ssh_transport_more_guards);
     RUN_TEST(test_dh_derive_keys_gcm_installs);
     RUN_TEST(test_kdf_string_k_hybrid);
+    // Runs LAST on purpose: it provisions all three host-key types and the availability lives in the
+    // (non-per-session) transport ctx that setUp does not clear, so leaving it set must not perturb the
+    // order-sensitive earlier tests (e.g. rejects_hostkey_we_lack assumes only the RSA fixture is held).
+    RUN_TEST(test_kexinit_hostkey_list_carries_all_four_when_all_keys_loaded);
     return UNITY_END();
 }
