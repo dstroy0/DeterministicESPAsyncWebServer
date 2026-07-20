@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`914dc3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/914dc3b94ef0079eaa88e4cfdc4d4439a38c0a25))
 - update CHANGELOG.md [skip ci] ([`1c00eab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c00eab19f375d1997c09c636ef613de91e1561a))
 - update test report + coverage [skip ci] ([`6d3c256`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d3c25630fa6f84ab6d22d3a6d439d78747db676))
 - update CHANGELOG.md [skip ci] ([`bec9479`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bec947915ae617932e4b0e485bc1ea1fa056331c))
@@ -21,6 +22,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- note sntrup761x25519-sha512 server HW-verified on ESP32-P4 vs OpenSSH 10 ([`60ebad6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/60ebad6554999090a5438158a256577736d5b2be))
+- update ESP32 build footprints [skip ci] ([`5aae8e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5aae8e54d42b2350a0bfedcd2b28d44d8f4ecc6e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1702f40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1702f40e539b824a4f1a38b184ea7429945d4496))
 - update ESP32 build footprints [skip ci] ([`8af4e40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8af4e4048170e5566cee0ef39e7cdec84e094687))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`42999d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42999d2a7ac34102907e1f76aa19d56e2b12ddae))
