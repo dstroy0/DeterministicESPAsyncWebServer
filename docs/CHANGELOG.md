@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.17.1] - 2026-07-20
+
+<details>
+<summary><b>Show Changelog for version 7.17.1 - 2026-07-20</b></summary>
+
+### Bug Fixes
+
+- enum_to_class must not rewrite comments or string literals ([`d4a3660`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4a3660970a4981e1ebcc8597e4741b18dde66f7))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a7a60c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7a60c189c473e7e599ac60eced6c18eed216ec9))
+
+### Changes
+
+- Bump version: 7.17.0 → 7.17.1 ([`0e270f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e270f510b0f9244578a69924f55ad664817cc24))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5e8d3a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e8d3a75a191ac8d99d605b133ed4a239cf74ebb))
+
+</details>
+
 ## [7.17.0] - 2026-07-20
 
 <details>
