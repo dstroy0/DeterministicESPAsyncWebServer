@@ -403,8 +403,14 @@ preempting queue, so sensing shares the real-time ingest path.
   `dws_he_pref` scores a destination (RFC 6724 scope + family), `dws_he_order` sorts a candidate list
   and interleaves the address families (RFC 8305) so successive attempts alternate v6/v4, and
   `dws_he_attempt_due` gates the next attempt by the Connection Attempt Delay - fast IPv6, quick IPv4
-  fallback. Pure, host-tested (`native_happy_eyeballs`). _Remaining:_ VPN tunneling + the reverse-SSH
-  tunnel to a relay (L; the `ssh -R` tcpip-forward seam already landed).
+  fallback. Pure, host-tested (`native_happy_eyeballs`). The reverse-SSH tunnel to a relay SHIPPED
+  (`DWS_ENABLE_SSH_CLIENT`, `network_drivers/presentation/ssh/connection/ssh_client`): a full outbound
+  SSH client - negotiates the whole modern suite (curve25519 / ecdh-p256 / dh-group14 / mlkem768x25519
+  hybrid, ed25519 / ECDSA / RSA host keys pinned by SHA-256, chacha20-poly1305 / aes256-gcm / aes256-ctr)
+  through a role-aware packet layer, authenticates by ed25519 publickey, holds a `tcpip-forward`, and
+  bridges forwarded-tcpip channels (a pool, `DWS_SSH_CLIENT_MAX_CHANNELS`) back to a local service.
+  HW-verified against OpenSSH 10.0 on an ESP32-S3 (handshake + auth + forward + the `:80` bridge,
+  concurrent and rapid-sequential, byte-exact responses). _Remaining:_ VPN tunneling (the IKEv2 item below).
 - [~] **IPsec / IKEv2** (XL, the concrete VPN for the item above - **secure machine bridge over untrusted
   networks**) _(tier 1 codec shipped)_ - IKEv2 (RFC 7296) over UDP 500 / 4500 (NAT-T) plus the ESP datapath
   (RFC 4303). Splits into three tractability tiers, built in order:

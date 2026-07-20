@@ -14,20 +14,18 @@
 #ifndef DWS_2MBPSRAM_H
 #define DWS_2MBPSRAM_H
 
-#ifndef DWS_EDGE_CACHE_SLOTS
-#define DWS_EDGE_CACHE_SLOTS 8
+// PSRAM fitted: move the big TLS/HTTP-2/zlib pools off internal DRAM and raise concurrency.
+#ifndef DWS_TLS_ARENA_IN_PSRAM
+#define DWS_TLS_ARENA_IN_PSRAM 1
 #endif
-#ifndef DWS_EDGE_BODY_MAX
-#define DWS_EDGE_BODY_MAX 4096
+#ifndef DWS_H2_POOL_IN_PSRAM
+#define DWS_H2_POOL_IN_PSRAM 1
 #endif
-#ifndef DWS_EDGE_FETCH_SLOTS
-#define DWS_EDGE_FETCH_SLOTS 3
+#ifndef DWS_SSH_ZLIB_IN_PSRAM
+#define DWS_SSH_ZLIB_IN_PSRAM 1
 #endif
-#ifndef DWS_MESH_MAX_PEERS
-#define DWS_MESH_MAX_PEERS 6
-#endif
-#ifndef DWS_MESH_MAX_CONNS
-#define DWS_MESH_MAX_CONNS 2
+#ifndef MAX_TLS_CONNS
+#define MAX_TLS_CONNS 3
 #endif
 
 #endif // DWS_2MBPSRAM_H

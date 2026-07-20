@@ -8,6 +8,30 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Reverse-SSH tunnel: scratch foreign-task crash + channel-slot starvation
+
+- **Status:** FIXED (2026-07-20). Found by the **HW bring-up of the reverse-SSH client** on an ESP32-S3 tunnelling
+  to a real OpenSSH 10.0 relay and serving the device's own `:80` back through it - the whole-firmware,
+  two-task path host tests cannot reach.
+- **Symptom (1):** the SSH handshake, ed25519 auth and `tcpip-forward` all succeeded ("tunnel up"), but the first
+  `curl` through the forwarded port panicked the device with `assert_single_owner scratch.cpp:78 "scratch arena
+borrowed from a foreign task"`. **Symptom (2):** after that was fixed, the first request returned HTTP 200 but
+  every subsequent one hung / returned 000 until the channel eventually freed.
+- **Root cause (1):** SSH packet decrypt borrows the shared per-worker scratch arena, which is single-accessor-
+  per-task. The DWS server's worker owns slot 0; the tunnel `poll()` runs in a different task, so opening the
+  forwarded-tcpip channel decrypted a packet from a foreign task and tripped the tripwire. **Root cause (2):** the
+  client held a single channel slot and only freed it on the relay's `CHANNEL_CLOSE`, which OpenSSH sends late -
+  it waits for the device's EOF, which never came because the bridged keep-alive `:80` connection never closes.
+  So the slot stayed busy and later `forwarded-tcpip` opens were refused ("administratively prohibited").
+- **Fix:** (1) give the reverse-SSH client its own scratch slot - `DWS_SCRATCH_SLOTS = DWS_WORKER_COUNT + 1` when
+  `DWS_ENABLE_SSH_CLIENT`, claimed in `begin()` via `dws_worker_set_self()` so every later decrypt in that task
+  uses the client's own arena. (2) replace the single channel with a pool (`DWS_SSH_CLIENT_MAX_CHANNELS`, with
+  `DWS_CLIENT_CONNS` auto-provisioned to `1 + N`), and tear a channel down promptly on the relay's **EOF** (the
+  forwarded peer is done sending; for a request/response bridge the reply is already delivered) instead of waiting
+  for its CLOSE. Re-flashed: single, 6 rapid-sequential and 4 concurrent requests all return HTTP 200 with the
+  device's body byte-for-byte, sustained across repeated bursts; `native_ssh` + `native_ssh_conn` + `native_pqc`
+  (220 cases) stay green.
+
 ## SSH transport dropped a TCP read that carried several pipelined packets (SFTP write)
 
 - **Status:** FIXED (2026-07-17). Found by the **HW bring-up of the SFTP server** on an ESP32-S3 + SD card,

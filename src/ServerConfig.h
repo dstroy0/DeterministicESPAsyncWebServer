@@ -123,6 +123,17 @@
 #define DWS_WORKER_COUNT 1
 #endif
 
+// Total scratch arenas. Each independent task that touches the shared scratch arena needs its own
+// (the single-accessor-per-arena invariant is what makes it lock-free). The server's workers own
+// slots 0..DWS_WORKER_COUNT-1; the reverse-SSH client runs in its own task and owns one more, so it
+// can decrypt packets without borrowing a worker's arena (a foreign-task use trips the tripwire).
+#if DWS_ENABLE_SSH_CLIENT
+#define DWS_SCRATCH_SLOTS (DWS_WORKER_COUNT + 1)
+#define DWS_SSH_CLIENT_SCRATCH_SLOT (DWS_WORKER_COUNT) ///< the arena the client task owns.
+#else
+#define DWS_SCRATCH_SLOTS (DWS_WORKER_COUNT)
+#endif
+
 /**
  * @brief Stack (bytes) for each server worker task (ESP32).
  *
@@ -141,14 +152,23 @@
  * compile time.
  */
 #ifndef DWS_WORKER_TASK_STACK
-// SSH (curve25519 + ssh-ed25519) and HTTP/3 (the QUIC TLS-1.3 handshake reuses the same
-// ssh_ed25519 signer for CertificateVerify) both peak at ~10.5 KB on the worker task, so both need
-// the higher floor; everything else fits in 8 KB.
-#if (defined(DWS_ENABLE_SSH) && DWS_ENABLE_SSH) || (defined(DWS_ENABLE_HTTP3) && DWS_ENABLE_HTTP3)
+// SSH (curve25519 + ssh-ed25519, server OR the reverse-SSH client) and HTTP/3 (the QUIC TLS-1.3
+// handshake reuses the same ssh_ed25519 signer for CertificateVerify) all peak at ~10.5 KB on the
+// worker task; the PQ/T hybrid (DWS_ENABLE_PQC_KEX) runs ML-KEM-768 on top, ~7 KB more. The default
+// tracks the matching floor so a hybrid build is provisioned, not starved; the guard at the bottom of
+// this file is the backstop when the stack is set by hand. (A flag set only in the config block below,
+// not via -D, is still undefined here and reads as 0 - the guard then catches any shortfall.)
+#define DWS_SSH_ANY                                                                                                    \
+    ((defined(DWS_ENABLE_SSH) && DWS_ENABLE_SSH) || (defined(DWS_ENABLE_SSH_CLIENT) && DWS_ENABLE_SSH_CLIENT) ||       \
+     (defined(DWS_ENABLE_HTTP3) && DWS_ENABLE_HTTP3))
+#if DWS_ENABLE_PQC_KEX && DWS_SSH_ANY
+#define DWS_WORKER_TASK_STACK 16384
+#elif DWS_SSH_ANY
 #define DWS_WORKER_TASK_STACK 12288
 #else
 #define DWS_WORKER_TASK_STACK 8192
 #endif
+#undef DWS_SSH_ANY
 #endif
 
 /**
@@ -1249,6 +1269,18 @@
 #endif
 
 /**
+ * @brief Outbound SSH client + reverse tunnel (RFC 4254 §7.1 tcpip-forward, the `ssh -R` seam).
+ *
+ * The device dials OUT to a relay as the SSH *client* and asks it to forward a port back, so a device
+ * behind NAT stays reachable. Reuses the transport crypto (curve25519 / ecdh-p256 / dh-group14 KEX;
+ * ssh-ed25519 / rsa / ecdsa host-key verify; chacha / aes-gcm / aes-ctr) and the role-aware packet
+ * layer. Needs the outbound TCP client transport. Default off.
+ */
+#ifndef DWS_ENABLE_SSH_CLIENT
+#define DWS_ENABLE_SSH_CLIENT 0
+#endif
+
+/**
  * @brief Post-quantum hybrid key exchange: ML-KEM-768 + X25519 (FIPS 203 / RFC 9370 combiner).
  *
  * Adds the mlkem768x25519-sha256 SSH KEX method (draft-ietf-sshm-mlkem-hybrid-kex) and the
@@ -2337,7 +2369,12 @@
  * sizes (CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN, needs an ESP-IDF build).
  */
 #ifndef DWS_TLS_ARENA_SIZE
-#define DWS_TLS_ARENA_SIZE 49152
+// The arena is SHARED across all TLS connections, so it must cover the peak for MAX_TLS_CONNS: ~48 KB
+// for the first handshake (ECDSA P-256, 16 KB IN + 16 KB OUT records + temporaries) plus ~32 KB of
+// record buffers per additional concurrent connection. Auto-derive so a profile that raises
+// MAX_TLS_CONNS (a PSRAM board, via DWS_TLS_ARENA_IN_PSRAM) grows the arena to match instead of
+// silently starving the second handshake. MAX_TLS_CONNS == 1 keeps the historical 49152.
+#define DWS_TLS_ARENA_SIZE (49152 + (MAX_TLS_CONNS - 1) * 32768)
 #endif
 
 /**
@@ -4910,7 +4947,7 @@
 // whose shipped example binds the seam to dws_client (smb / dnc). Miss one and its dws_client_open
 // resolves to the !NEED stub that returns -1, so the feature silently never connects on device.
 #if DWS_ENABLE_HTTP_CLIENT || DWS_ENABLE_MQTT || DWS_ENABLE_WS_CLIENT || DWS_ENABLE_RELAY || DWS_ENABLE_SMTP ||        \
-    DWS_SSH_PORT_FORWARD || DWS_ENABLE_SMB || DWS_ENABLE_DNC || DWS_ENABLE_FTP_SESSION
+    DWS_SSH_PORT_FORWARD || DWS_ENABLE_SMB || DWS_ENABLE_DNC || DWS_ENABLE_FTP_SESSION || DWS_ENABLE_SSH_CLIENT
 #undef DWS_ENABLE_DNS_RESOLVER
 #define DWS_ENABLE_DNS_RESOLVER 1
 #define DWS_NEED_DET_CLIENT 1
@@ -6072,9 +6109,10 @@ enum class DWSIface : uint8_t
 // arithmetic peaks at ~10.5 KB of worker stack (deeper than the RSA path). Enforce the
 // higher floor so a lowered stack is caught at build time instead of tripping the task
 // stack canary on the first modern-crypto handshake.
-#if (DWS_ENABLE_SSH || DWS_ENABLE_HTTP3) && (DWS_WORKER_TASK_STACK < DWS_WORKER_STACK_CURVE_MIN)
+#if (DWS_ENABLE_SSH || DWS_ENABLE_SSH_CLIENT || DWS_ENABLE_HTTP3) &&                                                   \
+    (DWS_WORKER_TASK_STACK < DWS_WORKER_STACK_CURVE_MIN)
 #error                                                                                                                 \
-    "DeterministicESPAsyncWebServer: DWS_WORKER_TASK_STACK is below DWS_WORKER_STACK_CURVE_MIN; SSH and HTTP/3 (QUIC TLS-1.3) curve25519/ed25519 need ~10.5 KB of worker stack - raise DWS_WORKER_TASK_STACK (>= 12288) or marshal the handshake onto a dedicated larger-stack task"
+    "DeterministicESPAsyncWebServer: DWS_WORKER_TASK_STACK is below DWS_WORKER_STACK_CURVE_MIN; SSH (server or reverse-SSH client) and HTTP/3 (QUIC TLS-1.3) curve25519/ed25519 need ~10.5 KB of worker stack - raise DWS_WORKER_TASK_STACK (>= 12288) or marshal the handshake onto a dedicated larger-stack task"
 #endif
 
 // The PQ/T hybrid KEX (DWS_ENABLE_PQC_KEX) runs ML-KEM-768 Encaps in the handshake path, whose NTT
@@ -6083,7 +6121,8 @@ enum class DWSIface : uint8_t
 #ifndef DWS_WORKER_STACK_PQC_MIN
 #define DWS_WORKER_STACK_PQC_MIN 16384
 #endif
-#if DWS_ENABLE_PQC_KEX && (DWS_ENABLE_SSH || DWS_ENABLE_HTTP3) && (DWS_WORKER_TASK_STACK < DWS_WORKER_STACK_PQC_MIN)
+#if DWS_ENABLE_PQC_KEX && (DWS_ENABLE_SSH || DWS_ENABLE_SSH_CLIENT || DWS_ENABLE_HTTP3) &&                             \
+    (DWS_WORKER_TASK_STACK < DWS_WORKER_STACK_PQC_MIN)
 #error                                                                                                                 \
     "DeterministicESPAsyncWebServer: DWS_WORKER_TASK_STACK is below DWS_WORKER_STACK_PQC_MIN; the ML-KEM-768 hybrid KEX (DWS_ENABLE_PQC_KEX) needs ~7 KB more worker stack - raise DWS_WORKER_TASK_STACK (>= 16384) or marshal the handshake onto a dedicated larger-stack task"
 #endif
@@ -6403,15 +6442,38 @@ enum class DWSIface : uint8_t
 #endif
 // proto_register / proto_get index this table by ConnProto id, so it must be wide enough for every id.
 static_assert((unsigned)ConnProto::PROTO_MESH < DWS_PROTO_MAX, "DWS_PROTO_MAX must exceed the largest ConnProto id");
+/** @brief Reverse-SSH tunnel: max concurrent forwarded-tcpip channels bridged at once. A relay that
+ * forwards to a web UI opens one channel per inbound TCP connection, so this bounds concurrency. */
+#if DWS_ENABLE_SSH_CLIENT
+#ifndef DWS_SSH_CLIENT_MAX_CHANNELS
+#define DWS_SSH_CLIENT_MAX_CHANNELS 4
+#endif
+#if DWS_SSH_CLIENT_MAX_CHANNELS < 1
+#error "DeterministicESPAsyncWebServer: DWS_SSH_CLIENT_MAX_CHANNELS must be >= 1"
+#endif
+#endif
+
 /** @brief Number of simultaneous outbound client connections (BSS pool size). */
 #ifndef DWS_CLIENT_CONNS
+#if DWS_ENABLE_SSH_CLIENT
+// The reverse-SSH tunnel holds the relay connection plus one local bridge per forwarded channel, so
+// the pool must cover 1 + DWS_SSH_CLIENT_MAX_CHANNELS or channels past the pool fail to bridge.
+#define DWS_CLIENT_CONNS (1 + DWS_SSH_CLIENT_MAX_CHANNELS)
+#else
 #define DWS_CLIENT_CONNS 2
+#endif
 #endif
 
 // The FTP session driver holds a control connection and a data connection at the same time; with a
 // smaller pool the data open would fail after login and every transfer would abort mid-session.
 #if DWS_ENABLE_FTP_SESSION && (DWS_CLIENT_CONNS < 2)
 #error "DeterministicESPAsyncWebServer: DWS_ENABLE_FTP_SESSION needs DWS_CLIENT_CONNS >= 2 (control + data)"
+#endif
+
+// The reverse-SSH tunnel needs the relay connection plus one local bridge per forwarded channel.
+#if DWS_ENABLE_SSH_CLIENT && (DWS_CLIENT_CONNS < 1 + DWS_SSH_CLIENT_MAX_CHANNELS)
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DWS_ENABLE_SSH_CLIENT needs DWS_CLIENT_CONNS >= 1 + DWS_SSH_CLIENT_MAX_CHANNELS (relay + one local bridge per channel)"
 #endif
 
 /**

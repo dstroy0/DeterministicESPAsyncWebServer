@@ -14,20 +14,30 @@
 #ifndef DWS_8MBPSRAM_H
 #define DWS_8MBPSRAM_H
 
+// PSRAM fitted: move the big TLS/HTTP-2/zlib pools off internal DRAM and raise concurrency.
+#ifndef DWS_TLS_ARENA_IN_PSRAM
+#define DWS_TLS_ARENA_IN_PSRAM 1
+#endif
+#ifndef DWS_H2_POOL_IN_PSRAM
+#define DWS_H2_POOL_IN_PSRAM 1
+#endif
+#ifndef DWS_SSH_ZLIB_IN_PSRAM
+#define DWS_SSH_ZLIB_IN_PSRAM 1
+#endif
+#ifndef MAX_TLS_CONNS
+#define MAX_TLS_CONNS 6
+#endif
+#ifndef DWS_H2_MAX_STREAMS
+#define DWS_H2_MAX_STREAMS 16
+#endif
+#ifndef DWS_H3_MAX_STREAMS
+#define DWS_H3_MAX_STREAMS 16
+#endif
 #ifndef DWS_EDGE_CACHE_SLOTS
 #define DWS_EDGE_CACHE_SLOTS 16
 #endif
 #ifndef DWS_EDGE_BODY_MAX
 #define DWS_EDGE_BODY_MAX 8192
-#endif
-#ifndef DWS_EDGE_FETCH_SLOTS
-#define DWS_EDGE_FETCH_SLOTS 4
-#endif
-#ifndef DWS_MESH_MAX_PEERS
-#define DWS_MESH_MAX_PEERS 8
-#endif
-#ifndef DWS_MESH_MAX_CONNS
-#define DWS_MESH_MAX_CONNS 2
 #endif
 
 #endif // DWS_8MBPSRAM_H

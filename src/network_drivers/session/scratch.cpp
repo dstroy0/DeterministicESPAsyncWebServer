@@ -28,8 +28,8 @@ namespace
 // only this, so this symbol is always live.
 struct ScratchCtx
 {
-    size_t off[DWS_WORKER_COUNT];        // bump offset per worker
-    size_t high_water[DWS_WORKER_COUNT]; // peak off per worker
+    size_t off[DWS_SCRATCH_SLOTS];        // bump offset per scratch slot
+    size_t high_water[DWS_SCRATCH_SLOTS]; // peak off per scratch slot
 };
 ScratchCtx s_scratch;
 
@@ -46,7 +46,7 @@ struct ScratchArenaCtx
     // scratch_alloc aligns the bump OFFSET, so the arena base must itself be aligned to
     // the strictest alignment a caller can request. As a struct member it would only
     // inherit 8-byte alignment; force 32 (a standalone array got this from the linker).
-    alignas(32) uint8_t arena[DWS_WORKER_COUNT][DWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)
+    alignas(32) uint8_t arena[DWS_SCRATCH_SLOTS][DWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)
 };
 ScratchArenaCtx s_scratch_arena;
 
@@ -58,7 +58,7 @@ constexpr size_t SCRATCH_DEFAULT_ALIGN = sizeof(void *) > 8 ? sizeof(void *) : 8
 inline int cur_worker()
 {
     int w = dws_worker_self();
-    return (w >= 0 && w < DWS_WORKER_COUNT) ? w : 0;
+    return (w >= 0 && w < DWS_SCRATCH_SLOTS) ? w : 0;
 }
 
 // Debug tripwire: each arena must only ever be touched from one task (its
@@ -70,7 +70,7 @@ inline int cur_worker()
 inline void assert_single_owner(int w)
 {
 #if defined(ARDUINO) && !defined(NDEBUG)
-    static TaskHandle_t s_owner[DWS_WORKER_COUNT] = {nullptr};
+    static TaskHandle_t s_owner[DWS_SCRATCH_SLOTS] = {nullptr};
     TaskHandle_t cur = xTaskGetCurrentTaskHandle();
     if (s_owner[w] == nullptr)
         s_owner[w] = cur;
@@ -138,7 +138,7 @@ size_t scratch_high_water(void)
 {
     // Peak any single arena reached - the value to size DWS_SCRATCH_ARENA_SIZE by.
     size_t peak = 0;
-    for (int w = 0; w < DWS_WORKER_COUNT; w++)
+    for (int w = 0; w < DWS_SCRATCH_SLOTS; w++)
         if (s_scratch.high_water[w] > peak)
             peak = s_scratch.high_water[w];
     return peak;

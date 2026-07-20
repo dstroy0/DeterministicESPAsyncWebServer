@@ -1421,7 +1421,9 @@
     "Nlcm",
     "dvcm",
     "nojs",
-    "lums"
+    "lums",
+    "Fujisaki",
+    "Okamoto"
   ],
   "ignorePaths": [
     "node_modules/**",

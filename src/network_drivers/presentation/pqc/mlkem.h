@@ -3,21 +3,29 @@
 
 /**
  * @file mlkem.h
- * @brief ML-KEM-768 encapsulation (FIPS 203), responder side only.
+ * @brief ML-KEM-768 (FIPS 203): Encaps (responder) + KeyGen and Decaps (initiator).
  *
  * The post-quantum half of the mlkem768x25519-sha256 (SSH) and X25519MLKEM768 (TLS 1.3) hybrid key
- * exchanges. This server is always the KEM *responder*: the peer sends its ML-KEM encapsulation key,
- * we run Encaps to produce a ciphertext + shared secret. Only Encaps is implemented - no KeyGen or
- * Decaps - so none of the constant-time Fujisaki-Okamoto re-encryption/compare surface is present.
+ * exchanges. Both KEM roles are present:
+ *   - responder (server terminating an inbound handshake): Encaps takes the peer's encapsulation key
+ *     and produces (ciphertext, shared secret);
+ *   - initiator (the device dialling out as an SSH/TLS *client*): KeyGen produces (ek, dk), the peer
+ *     Encaps against ek, and Decaps recovers the shared secret from the returned ciphertext.
  *
- * Encaps is the FIPS 203 "internal" (derandomized) form: the 32-octet message @p m is supplied by the
- * caller (drawn from the platform RNG in production, fixed in known-answer tests). Deterministic given
- * (@p ek, @p m), which is exactly what the ACVP encapsulation test vectors pin.
+ * Decaps carries the full constant-time Fujisaki-Okamoto transform (re-encrypt m' under the embedded
+ * ek and select the real key vs the implicit-reject key J(z || ct) under a constant-time ciphertext
+ * compare), so a malformed or tampered ciphertext yields a pseudorandom secret rather than leaking a
+ * decryption failure - FIPS 203 §6.3.
+ *
+ * KeyGen, Encaps and Decaps are the FIPS 203 "internal" (derandomized) forms: the caller supplies the
+ * randomness (KeyGen's (d, z), Encaps's message @p m), drawn from the platform RNG in production and
+ * fixed in known-answer tests. Deterministic given their inputs, which is exactly what the ACVP
+ * keyGen / encapDecap vectors pin.
  *
  * Arithmetic is a software NTT over q=3329 with Montgomery reduction (the twiddle factors are fixed
  * constants premultiplied into Montgomery form, so each butterfly is two int16 multiplies and a
  * shift - no division, and the hardware MPI, which targets RSA/DH-sized operands, would only add
- * marshaling overhead). Zero heap; peak stack ~7 KB.
+ * marshaling overhead). Zero heap; peak stack ~9 KB (Decaps, which re-encrypts).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -34,9 +42,26 @@
 #include <stdint.h>
 
 #define MLKEM768_EK_BYTES 1184 ///< encapsulation key (public key): 384*k + 32
+#define MLKEM768_DK_BYTES 2400 ///< decapsulation key (private): 768*k + 96
 #define MLKEM768_CT_BYTES 1088 ///< ciphertext: 32*(du*k + dv) = 32*(30+4)
 #define MLKEM768_SS_BYTES 32   ///< shared secret
 #define MLKEM768_MSG_BYTES 32  ///< the random message m fed to Encaps
+#define MLKEM768_D_BYTES 32    ///< KeyGen seed d (K-PKE key material)
+#define MLKEM768_Z_BYTES 32    ///< KeyGen seed z (implicit-reject value)
+
+/**
+ * @brief ML-KEM-768 KeyGen (FIPS 203, derandomized): (ek, dk) from the two 32-octet seeds.
+ *
+ * The initiator's step: publish @p ek (the peer Encaps against it) and keep @p dk for Decaps. @p dk
+ * embeds @p ek, H(ek) and @p z, so Decaps needs no other state. Deterministic given (@p d, @p z).
+ *
+ * @param[in]  d   32-octet key-material seed.
+ * @param[in]  z   32-octet implicit-reject seed.
+ * @param[out] ek  encapsulation key (MLKEM768_EK_BYTES).
+ * @param[out] dk  decapsulation key (MLKEM768_DK_BYTES).
+ */
+void dws_mlkem768_keygen(const uint8_t d[MLKEM768_D_BYTES], const uint8_t z[MLKEM768_Z_BYTES],
+                         uint8_t ek[MLKEM768_EK_BYTES], uint8_t dk[MLKEM768_DK_BYTES]);
 
 /**
  * @brief ML-KEM-768 Encaps (FIPS 203, derandomized): (ct, ss) from an encapsulation key and message.
@@ -52,6 +77,21 @@
  */
 bool dws_mlkem768_encaps(const uint8_t ek[MLKEM768_EK_BYTES], const uint8_t m[MLKEM768_MSG_BYTES],
                          uint8_t ct[MLKEM768_CT_BYTES], uint8_t ss[MLKEM768_SS_BYTES]);
+
+/**
+ * @brief ML-KEM-768 Decaps (FIPS 203, §6.3): recover the shared secret from a ciphertext.
+ *
+ * Runs the full constant-time Fujisaki-Okamoto transform: decrypt @p ct to m', re-derive (K', r') and
+ * re-encrypt under the ek embedded in @p dk, then in constant time return K' if the recomputed
+ * ciphertext matches @p ct or the implicit-reject key J(z || ct) if it does not. Never fails - a bad
+ * ciphertext yields a pseudorandom secret, not an error - so there is no boolean return.
+ *
+ * @param[in]  dk  decapsulation key (MLKEM768_DK_BYTES) from dws_mlkem768_keygen().
+ * @param[in]  ct  ciphertext (MLKEM768_CT_BYTES) from the peer's Encaps.
+ * @param[out] ss  32-octet shared secret.
+ */
+void dws_mlkem768_decaps(const uint8_t dk[MLKEM768_DK_BYTES], const uint8_t ct[MLKEM768_CT_BYTES],
+                         uint8_t ss[MLKEM768_SS_BYTES]);
 
 #endif // DWS_ENABLE_PQC_KEX
 

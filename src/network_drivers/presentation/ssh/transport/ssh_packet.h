@@ -153,6 +153,12 @@ struct SshPacketState
     bool enc_out; ///< True once we have sent our NEWKEYS (outbound cipher/MAC active).
     bool enc_in;  ///< True once we have received the peer's NEWKEYS (inbound cipher/MAC active).
 
+    // SSH keys are named by direction (client->server "c2s", server->client "s2c"), fixed by RFC 4253
+    // §7.2 regardless of role. A server sends s2c / receives c2s; a client is the mirror. This flag
+    // selects the direction at each cipher/MAC site so one packet implementation serves both roles.
+    // Default false = server (so existing server code is unchanged); ssh_pkt_set_client() flips it.
+    bool is_client;
+
     // Receive reassembly: we may receive partial packets across TCP segments.
     uint8_t rx_buf[SSH_PKT_BUF_SIZE]; ///< Raw receive buffer (from transport).
     size_t rx_len;                    ///< Bytes currently in rx_buf.
@@ -192,6 +198,14 @@ extern SshPacketState ssh_pkt[MAX_SSH_CONNS];
  * @param i  SSH slot index.
  */
 void ssh_pkt_init(uint8_t i);
+
+/**
+ * @brief Mark slot @p i as the SSH client role (call once, right after ssh_pkt_init).
+ *
+ * Flips the send/receive key direction: the client encrypts with the c2s key set and decrypts with
+ * the s2c one, the mirror of the server. Without this a slot defaults to the server role.
+ */
+void ssh_pkt_set_client(uint8_t i);
 
 /**
  * @brief Build and send one SSH binary packet.

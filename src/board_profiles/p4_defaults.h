@@ -38,7 +38,60 @@
 #define DWS_HW_DS 1
 #endif
 
-// --- Sizing (largest no-PSRAM bump: 768 KB SRAM + fast dual core) ---
+// --- Sizing (largest no-PSRAM bump: 768 KB L2MEM + fast dual core) ---
+// Internal-SRAM-budget values; a PSRAM-size profile (included first) scales the RAM-backed buffers
+// further and moves the big TLS / HTTP-2 pools to the (up to 32 MB) high-bandwidth PSRAM.
+
+// Connection pools + per-connection buffers.
+#ifndef MAX_CONNS
+#define MAX_CONNS 16
+#endif
+#ifndef RX_BUF_SIZE
+#define RX_BUF_SIZE 2048
+#endif
+#ifndef DWS_SCRATCH_ARENA_SIZE
+#define DWS_SCRATCH_ARENA_SIZE 16384
+#endif
+#ifndef DWS_CLIENT_RX_BUF
+#define DWS_CLIENT_RX_BUF 8192
+#endif
+
+// HTTP surface.
+#ifndef MAX_ROUTES
+#define MAX_ROUTES 48
+#endif
+#ifndef MAX_HEADERS
+#define MAX_HEADERS 24
+#endif
+#ifndef BODY_BUF_SIZE
+#define BODY_BUF_SIZE 2048
+#endif
+
+// WebSocket / SSE fan-out.
+#ifndef MAX_WS_CONNS
+#define MAX_WS_CONNS 8
+#endif
+#ifndef MAX_SSE_CONNS
+#define MAX_SSE_CONNS 8
+#endif
+
+// TLS: one handshake on the internal-DRAM arena; a PSRAM profile raises this with the arena in PSRAM.
+#ifndef MAX_TLS_CONNS
+#define MAX_TLS_CONNS 1
+#endif
+
+// SSH server + reverse-SSH client.
+#ifndef MAX_SSH_CONNS
+#define MAX_SSH_CONNS 3
+#endif
+#ifndef DWS_SSH_MAX_CHANNELS
+#define DWS_SSH_MAX_CHANNELS 6
+#endif
+#ifndef DWS_SSH_CLIENT_MAX_CHANNELS
+#define DWS_SSH_CLIENT_MAX_CHANNELS 8
+#endif
+
+// Edge cache + mesh (RAM-backed L1).
 #ifndef DWS_EDGE_CACHE_SLOTS
 #define DWS_EDGE_CACHE_SLOTS 12
 #endif

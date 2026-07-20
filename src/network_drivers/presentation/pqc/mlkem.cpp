@@ -326,4 +326,206 @@ bool dws_mlkem768_encaps(const uint8_t ek[MLKEM768_EK_BYTES], const uint8_t m[ML
     return true;
 }
 
+// ── Initiator side: KeyGen + Decaps (the FO transform) ──────────────────────────────────────────
+// These reuse the same NTT / sampling / K-PKE.Encrypt core as Encaps; only the inverse codecs
+// (ByteEncode_12, Decompress+ByteDecode for du/dv, Compress_1) and the two FIPS 203 top-level
+// algorithms are new.
+
+// ByteEncode_12: 256 coefficients -> 384 octets (inverse of poly_frombytes). Coefficients are frozen
+// to [0, q) first (a negative representative maps to +q).
+static void poly_tobytes(uint8_t r[MK_POLYBYTES], const int16_t a[MK_N])
+{
+    for (unsigned i = 0; i < MK_N / 2; i++)
+    {
+        uint16_t t0 = (uint16_t)(a[2 * i] + ((a[2 * i] >> 15) & MK_Q));
+        uint16_t t1 = (uint16_t)(a[2 * i + 1] + ((a[2 * i + 1] >> 15) & MK_Q));
+        r[3 * i + 0] = (uint8_t)(t0);
+        r[3 * i + 1] = (uint8_t)((t0 >> 8) | (t1 << 4));
+        r[3 * i + 2] = (uint8_t)(t1 >> 4);
+    }
+}
+
+// ByteDecode_10 + Decompress_10: 320 octets -> 256 coefficients (inverse of poly_compress10).
+static void poly_decompress10(int16_t r[MK_N], const uint8_t a[320])
+{
+    unsigned k = 0;
+    for (unsigned i = 0; i < MK_N / 4; i++)
+    {
+        uint16_t t[4];
+        t[0] = (uint16_t)((a[k + 0] | ((uint16_t)a[k + 1] << 8)) & 0x3FF);
+        t[1] = (uint16_t)(((a[k + 1] >> 2) | ((uint16_t)a[k + 2] << 6)) & 0x3FF);
+        t[2] = (uint16_t)(((a[k + 2] >> 4) | ((uint16_t)a[k + 3] << 4)) & 0x3FF);
+        t[3] = (uint16_t)(((a[k + 3] >> 6) | ((uint16_t)a[k + 4] << 2)) & 0x3FF);
+        k += 5;
+        for (unsigned j = 0; j < 4; j++)
+            r[4 * i + j] = (int16_t)(((uint32_t)t[j] * MK_Q + 512) >> 10);
+    }
+}
+
+// ByteDecode_4 + Decompress_4: 128 octets -> 256 coefficients (inverse of poly_compress4).
+static void poly_decompress4(int16_t r[MK_N], const uint8_t a[128])
+{
+    for (unsigned i = 0; i < MK_N / 2; i++)
+    {
+        uint8_t byte = a[i];
+        r[2 * i + 0] = (int16_t)(((uint32_t)(byte & 0x0F) * MK_Q + 8) >> 4);
+        r[2 * i + 1] = (int16_t)(((uint32_t)(byte >> 4) * MK_Q + 8) >> 4);
+    }
+}
+
+// Compress_1 + ByteEncode_1: 256 coefficients -> 32 octets (inverse of poly_frommsg). Each bit is
+// round(2*coeff/q) mod 2 - whether the coefficient sits closer to q/2 than to 0.
+static void poly_tomsg(uint8_t msg[32], const int16_t a[MK_N])
+{
+    for (unsigned i = 0; i < 32; i++)
+    {
+        msg[i] = 0;
+        for (unsigned j = 0; j < 8; j++)
+        {
+            int16_t t = a[8 * i + j];
+            t = (int16_t)(t + ((t >> 15) & MK_Q)); // to [0, q)
+            uint16_t bit = (uint16_t)(((((uint32_t)t << 1) + MK_Q / 2) / MK_Q) & 1);
+            msg[i] |= (uint8_t)(bit << j);
+        }
+    }
+}
+
+// Convert a polynomial into Montgomery form (multiply each coefficient by R = 2^16 mod q via one
+// Montgomery reduction of coeff * (2^32 mod q)). polyvec_basemul_acc leaves an extra R^-1 factor; on
+// the Encaps/Decrypt paths a following invntt absorbs it, but KeyGen encodes t in the NTT domain
+// directly, so it must undo that factor here.
+static void poly_tomont(int16_t r[MK_N])
+{
+    const int16_t f = 1353; // 2^32 mod q
+    for (unsigned i = 0; i < MK_N; i++)
+        r[i] = mont_reduce((int32_t)r[i] * f);
+}
+
+// Constant-time inequality mask over n octets: 0x00 if a == b, 0xFF if they differ. No data-dependent
+// branch or early exit - the FO transform must not leak whether the re-encryption matched.
+static uint8_t ct_diff_mask(const uint8_t *a, const uint8_t *b, size_t n)
+{
+    uint32_t acc = 0;
+    for (size_t i = 0; i < n; i++)
+        acc |= (uint32_t)((uint8_t)(a[i] ^ b[i]));
+    uint8_t equal = (uint8_t)(((acc - 1) >> 31) & 1); // 1 iff acc == 0 (all octets equal)
+    return (uint8_t)(equal - 1);                      // 0x00 if equal, 0xFF if any differ
+}
+
+// K-PKE.KeyGen(d) -> ek_PKE (ByteEncode_12(t) || rho) and dk_PKE (ByteEncode_12(s)), both in the NTT
+// domain. t[i] = sum_j A[i][j] o s[j]. K-PKE.Encrypt multiplies by the SAME matrix transposed - its
+// u[i] = sum_j XOF(rho, i, j) o y[j] - so for the KEM to invert, KeyGen's A[i][j] = XOF(rho, j, i).
+static void k_pke_keygen(uint8_t ek[MLKEM768_EK_BYTES], uint8_t dk_pke[MK_K * MK_POLYBYTES], const uint8_t d[32])
+{
+    // (rho, sigma) = G(d || k). The trailing k byte is the FIPS 203 domain separation on module rank.
+    uint8_t g_in[33];
+    memcpy(g_in, d, 32);
+    g_in[32] = MK_K;
+    uint8_t g_out[64];
+    sha3_512(g_out, g_in, sizeof(g_in));
+    const uint8_t *rho = g_out;
+    const uint8_t *sigma = g_out + 32;
+
+    int16_t s[MK_K][MK_N];
+    int16_t e[MK_K][MK_N];
+    uint8_t nonce = 0;
+    for (unsigned i = 0; i < MK_K; i++)
+        poly_getnoise(s[i], sigma, nonce++); // s, nonce 0..k-1
+    for (unsigned i = 0; i < MK_K; i++)
+        poly_getnoise(e[i], sigma, nonce++); // e, nonce k..2k-1
+    for (unsigned i = 0; i < MK_K; i++)
+    {
+        ntt(s[i]);
+        ntt(e[i]);
+        for (unsigned x = 0; x < MK_N; x++) // ntt() leaves coeffs unreduced; canonicalize both
+        {
+            s[i][x] = barrett_reduce(s[i][x]);
+            e[i][x] = barrett_reduce(e[i][x]);
+        }
+    }
+
+    for (unsigned i = 0; i < MK_K; i++)
+    {
+        int16_t a_row[MK_K][MK_N];
+        for (unsigned j = 0; j < MK_K; j++)
+            gen_matrix_entry(a_row[j], rho, (uint8_t)j, (uint8_t)i); // A[i][j] = XOF(rho, j, i)
+        int16_t t_row[MK_N];
+        polyvec_basemul_acc(t_row, a_row, s);
+        poly_tomont(t_row); // undo the R^-1 from basemul (no invntt here to absorb it)
+        for (unsigned x = 0; x < MK_N; x++)
+            t_row[x] = barrett_reduce((int16_t)(t_row[x] + e[i][x]));
+        poly_tobytes(ek + i * MK_POLYBYTES, t_row);
+    }
+    memcpy(ek + MK_K * MK_POLYBYTES, rho, 32);
+
+    for (unsigned i = 0; i < MK_K; i++)
+        poly_tobytes(dk_pke + i * MK_POLYBYTES, s[i]);
+}
+
+// K-PKE.Decrypt(dk_PKE, ct) -> m: w = v - NTT^-1(s^T o NTT(u)), then Compress_1.
+static void k_pke_decrypt(uint8_t m[32], const uint8_t dk_pke[MK_K * MK_POLYBYTES], const uint8_t ct[MLKEM768_CT_BYTES])
+{
+    int16_t u[MK_K][MK_N];
+    for (unsigned i = 0; i < MK_K; i++)
+    {
+        poly_decompress10(u[i], ct + i * 320);
+        ntt(u[i]);
+    }
+    int16_t shat[MK_K][MK_N];
+    for (unsigned i = 0; i < MK_K; i++)
+        poly_frombytes(shat[i], dk_pke + i * MK_POLYBYTES);
+
+    int16_t w[MK_N];
+    polyvec_basemul_acc(w, shat, u); // s^T o u  (dot product in the NTT domain)
+    invntt(w);
+
+    int16_t v[MK_N];
+    poly_decompress4(v, ct + MK_K * 320);
+    for (unsigned x = 0; x < MK_N; x++)
+        w[x] = barrett_reduce((int16_t)(v[x] - w[x]));
+    poly_tomsg(m, w);
+}
+
+void dws_mlkem768_keygen(const uint8_t d[MLKEM768_D_BYTES], const uint8_t z[MLKEM768_Z_BYTES],
+                         uint8_t ek[MLKEM768_EK_BYTES], uint8_t dk[MLKEM768_DK_BYTES])
+{
+    // dk = dk_PKE || ek || H(ek) || z  (FIPS 203 Algorithm 16).
+    k_pke_keygen(ek, dk, d);
+    memcpy(dk + MK_K * MK_POLYBYTES, ek, MLKEM768_EK_BYTES);
+    sha3_256(dk + MK_K * MK_POLYBYTES + MLKEM768_EK_BYTES, ek, MLKEM768_EK_BYTES);
+    memcpy(dk + MK_K * MK_POLYBYTES + MLKEM768_EK_BYTES + 32, z, 32);
+}
+
+void dws_mlkem768_decaps(const uint8_t dk[MLKEM768_DK_BYTES], const uint8_t ct[MLKEM768_CT_BYTES],
+                         uint8_t ss[MLKEM768_SS_BYTES])
+{
+    const uint8_t *dk_pke = dk;
+    const uint8_t *ek_pke = dk + MK_K * MK_POLYBYTES;
+    const uint8_t *h = ek_pke + MLKEM768_EK_BYTES; // H(ek), 32 octets
+    const uint8_t *z = h + 32;                     // implicit-reject seed, 32 octets
+
+    // m' = K-PKE.Decrypt(dk_PKE, ct); (K', r') = G(m' || H(ek)).
+    uint8_t mprime[32];
+    k_pke_decrypt(mprime, dk_pke, ct);
+    uint8_t g_in[64];
+    memcpy(g_in, mprime, 32);
+    memcpy(g_in + 32, h, 32);
+    uint8_t g_out[64];
+    sha3_512(g_out, g_in, sizeof(g_in));
+
+    // Implicit-reject key K_bar = J(z || ct) = SHAKE256(z || ct, 32).
+    uint8_t jbuf[32 + MLKEM768_CT_BYTES];
+    memcpy(jbuf, z, 32);
+    memcpy(jbuf + 32, ct, MLKEM768_CT_BYTES);
+    uint8_t kbar[32];
+    shake256(kbar, sizeof(kbar), jbuf, sizeof(jbuf));
+
+    // Re-encrypt under the embedded ek with the derived coins r'; select in constant time.
+    uint8_t ctprime[MLKEM768_CT_BYTES];
+    k_pke_encrypt(ctprime, ek_pke, mprime, g_out + 32);
+    uint8_t diff = ct_diff_mask(ct, ctprime, MLKEM768_CT_BYTES);
+    for (unsigned i = 0; i < 32; i++)
+        ss[i] = (uint8_t)((g_out[i] & (uint8_t)~diff) | (kbar[i] & diff)); // K' if match, K_bar if not
+}
+
 #endif // DWS_ENABLE_PQC_KEX
