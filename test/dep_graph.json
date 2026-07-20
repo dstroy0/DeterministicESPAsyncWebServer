@@ -218,6 +218,7 @@
 "native_tls_policy",
 "native_totp",
 "native_udp_telemetry",
+"native_udp_transport",
 "native_umati",
 "native_upload",
 "native_utmc",
@@ -459,6 +460,7 @@
 "native_tls_policy",
 "native_totp",
 "native_udp_telemetry",
+"native_udp_transport",
 "native_umati",
 "native_upload",
 "native_utmc",
@@ -700,6 +702,7 @@
 "native_tls_policy",
 "native_totp",
 "native_udp_telemetry",
+"native_udp_transport",
 "native_umati",
 "native_upload",
 "native_utmc",
@@ -2269,7 +2272,8 @@
 "native_snmp",
 "native_snmp_v3",
 "native_statsd",
-"native_syslog"
+"native_syslog",
+"native_udp_transport"
 ],
 "src/network_drivers/transport/udp.h": [
 "native_coap",
@@ -2280,7 +2284,8 @@
 "native_snmp",
 "native_snmp_v3",
 "native_statsd",
-"native_syslog"
+"native_syslog",
+"native_udp_transport"
 ],
 "src/server/auth.cpp": [
 "native_app",
