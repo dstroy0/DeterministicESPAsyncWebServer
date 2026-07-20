@@ -23,17 +23,19 @@ server.on("/file", HTTP_GET, [](uint8_t id, HttpReq *) {   // read it back
 
 - The upload sink shares the parser's streaming hook with OTA - **enable one or
   the other, not both.**
-- `RX_BUF_SIZE` must exceed the largest inbound TCP segment (`TCP_MSS`, ~1460) so
-  a full segment fits the receive ring. The default 1024 is fine for ordinary
-  requests but too small here, so build with e.g. `-DRX_BUF_SIZE=2048`. (The
-  transport refuses-and-redelivers an oversize segment rather than losing data,
-  but a ring smaller than one segment would stall.)
+- Enabling upload raises `RX_BUF_SIZE` to the streaming floor of **8192** (a full
+  TCP receive window) automatically - a smaller ring keeps a large upload in
+  backpressure long enough to trip the idle-timeout reap and the connection resets
+  mid-transfer (HW-measured: a 2048 ring resets a 64 KB upload; 8192 round-trips
+  256 KB byte-exact). Because that ring is real DRAM per connection, this build
+  dials `MAX_CONNS` down to **4** so `8192 * MAX_CONNS` fits the classic ESP32's
+  ~122 KB internal DRAM; a PSRAM/large-SRAM board can raise it.
 
 ## Build and run
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDWS_ENABLE_UPLOAD=1 -DRX_BUF_SIZE=2048" \
+  --project-option="build_flags=-DDWS_ENABLE_UPLOAD=1 -DMAX_CONNS=4" \
   --lib="." examples/L7-Application/FileUpload/FileUpload.ino
 ```
 

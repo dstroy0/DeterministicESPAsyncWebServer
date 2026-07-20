@@ -8,24 +8,30 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
-## A board profile's hardcoded `RX_BUF_SIZE` silently defeated the streaming/SSH/TLS ring floor
+## A board profile's hardcoded `RX_BUF_SIZE` silently defeated the streaming ring floor (large uploads reset)
 
-- **Status:** FIXED (2026-07-20). Found while auditing the per-variant board-profile defaults.
-- **Symptom:** a build on any chip whose profile pins `RX_BUF_SIZE` (S3/P4/S31 = 2048, C3/C5/C6/H4 = 1536,
-  the rest = 1024) would, with `DWS_ENABLE_UPLOAD`/`OTA`/`WEBDAV` (streaming) enabled, keep that small ring
-  instead of being raised to the 8192 streaming floor - so a large streamed upload deadlocks (the ring cannot
-  hold a full TCP receive window, and ack-on-consume never reopens it). SSH/TLS were masked only because 2048
-  happened to meet their smaller floor; a 1536-pinned chip would also reset an SSH handshake.
-- **Root cause:** the feature-driven ring upsize lived inline in `ServerConfig.h` and was gated on
+- **Status:** FIXED (2026-07-20). Found while auditing the per-variant board-profile defaults; the failure
+  mode and the fix were both confirmed on an ESP32-S3 rig (COM7), which corrected an initial mis-diagnosis.
+- **Symptom:** on any chip whose profile pins `RX_BUF_SIZE` below the streaming floor (S3/P4/S31 = 2048,
+  C3/C5/C6/H4 = 1536, the rest = 1024), enabling `DWS_ENABLE_UPLOAD`/`OTA`/`WEBDAV` (streaming) left that small
+  ring in place instead of raising it to 8192. **HW-measured on an S3 pinned at 2048:** a 4 KB upload succeeds
+  byte-exact, but a 64 KB streamed upload is **reset ~5.6 s in** (`curl` exit 56, 0 bytes stored). With the ring
+  at 8192, the same 64 KB (0.7 s) and a 256 KB (1.6 s, ~160 KB/s) upload round-trip **byte-exact**.
+- **Root cause (two parts):** (1) the feature-driven ring upsize lived inline in `ServerConfig.h` gated on
   `defined(DWS_RX_BUF_SIZE_DEFAULTED)` - a marker set **only** in the base `#ifndef RX_BUF_SIZE` branch. A board
-  profile is included first and sets `RX_BUF_SIZE` itself, so that branch is skipped, the marker is never
-  defined, and all three upsize conditions evaluate false. The floor applied to the classic baseline (which
-  never pins the ring) but was silently a no-op for every richer chip profile.
+  profile is included first and sets `RX_BUF_SIZE` itself, so that branch (and the marker) is skipped and the
+  upsize is a silent no-op for every profile that pins the ring. (2) The failure is _not_ a deadlock (the initial
+  guess): with ack-on-consume the peer's advertised window tracks ring free space, so a sub-window ring forces a
+  sustained upload to dribble a ring-full at a time and spend long spells in backpressure. The idle timer is
+  refreshed only when a segment is **accepted**, never during backpressure (deliberate - a truly stuck connection
+  must still be reaped, [[tcp.cpp]] `:850`), so a prolonged sub-window backpressure spell trips the 5 s idle
+  timeout and the connection is reset mid-upload.
 - **Fix:** move the resolution out of `ServerConfig.h` into `board_profiles/derived_sizing.h` (the sizing layer's
-  job), included last once every feature flag is known, and drop the `DEFAULTED` gate: the floor is now enforced
-  against whatever set the value - profile, `-D`, or base default - as a monotone raise (`RX_BUF_SIZE < floor`
-  -> lift; already >= floor -> untouched, so a deliberately roomy ring is preserved). Verified by preprocessor
-  resolution across profile x feature combinations (e.g. S3-pinned 2048 + streaming now resolves to 8192).
+  job), included last once every feature flag is known, and drop the `DEFAULTED` gate so the floor is enforced
+  against whatever set the value - profile, `-D`, or base default - as a monotone raise (below floor -> lift;
+  at/above -> untouched, so a deliberately roomy ring is preserved). Because the streaming floor is a full TCP
+  window (8192), it is real DRAM per connection: the classic-ESP32 streaming examples (FileUpload / OTA /
+  OtaRollback / WebDav) dial `MAX_CONNS` down so `8192 * MAX_CONNS` fits the ~122 KB `dram0_0_seg`.
 
 ---
 
