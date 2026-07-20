@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`6661675`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6661675070c3104e24f6ba505e732c0e7d6577f7))
+- update CHANGELOG.md [skip ci] ([`c8e4882`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8e48824037b92c9fa7ef798a2426388080bd94e))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`ff4870d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff4870d8a9a011833621f5f76c8bb83baba49c24))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f134eb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f134eb75cb54e80fa44ee37376916a98bff5858e))
+
+### Features
+
+- reverse-SSH client + ML-KEM initiator + per-variant tuning defaults ([`be8be64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be8be64bdb4405a21c6d5ec5a326b5cdf4f808a3))
+
 ## [7.22.0] - 2026-07-20
 
 <details>
