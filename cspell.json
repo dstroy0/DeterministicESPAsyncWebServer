@@ -1432,7 +1432,8 @@
     "espcoredump",
     "fasttmr",
     "frameless",
-    "slowtmr"
+    "slowtmr",
+    "ECONNREFUSED"
   ],
   "ignorePaths": [
     "node_modules/**",

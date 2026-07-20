@@ -29,37 +29,38 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 - **Fix:** guard `DWS_OP_RECVED` with the same O(1) liveness check as `DWS_OP_SEND`/`DWS_OP_OUTPUT` - skip
   `tcp_recved` (return `ERR_CLSD`) when `k->pcb != conn_pool[slot].pcb`. Verified on HW: this **eliminates the
   `tcp_update_rcv_ann_wnd` assert** and the reboot on the targeted mid-flight-kill + connect/RST churn repro
-  (0 reboots, heap flat ~282 KB). **A separate `tcp_output: invalid pcb` reboot remains** under the broader
-  DoS suite (`ssh_slowloris` / `ssh_handshake_flood`) - tracked as its own OPEN entry below; the RECVED guard
-  is correct and necessary but is not the whole story.
+  (0 reboots, heap flat ~282 KB). A **second, distinct** `tcp_output: invalid pcb` reboot remained under the
+  broader DoS suite (`ssh_slowloris` / `ssh_handshake_flood`) - a **NULL-pcb** hole in the same guards, now
+  also fixed; see the entry below.
 
 ---
 
-## `tcp_output: invalid pcb` reboot under SSH slow-loris / handshake churn (DoS) - OPEN
+## `tcp_output(NULL)` - a NULL pcb passes the liveness guard (SSH slow-loris / churn DoS)
 
-- **Status:** OPEN (found 2026-07-20; a distinct second path from the RECVED bug above). A remote peer can
-  reboot the SSH server (`assert failed: tcp_output ... invalid pcb` -> `rst:0xc (SW_CPU_RESET)`), so this is
-  a real denial of service, not yet fixed.
-- **Reliable repro:** `dws_pentest.py --only ssh_slowloris` (also `ssh_handshake_flood`) against a live SSH
-  rig. `ssh_slowloris` is the cheap one - just 8 half-open partial-banner connections (`"SSH-2.0-sl"` then a
-  dribble of `.` bytes) opened, held, and refreshed for ~19 s. HW-observed on an ESP32-P4 (COM9): ~26-36
-  `tcp_output: invalid pcb` reboots per full high-intensity run; heap stays flat (not a leak), so it is a
-  use-after-free / list-corruption, not exhaustion.
-- **What is ruled out:** it is **not** the guarded send path - a serial `esp_rom_printf` trace showed every
-  `DWS_OP_SEND`/`DWS_OP_OUTPUT` `tcp_output` ran on an ESTABLISHED pcb (`state==4`). It is **not** the RECVED
-  path (fixed above; that assert is gone). It is **not** `DWS_OP_CLOSE`'s FIN `tcp_output`: adding the same
-  slot-ownership guard to CLOSE (skip `tcp_close` when a RST already nulled the slot) changed the reboot count
-  by nothing, so that hypothesis was disproven and the speculative teardown-reorder was reverted rather than
-  shipped unverified.
-- **Leading hypothesis:** an lwIP-**internal** `tcp_output` (a delayed-ACK / window-update / retransmit from
-  `tcp_fasttmr`/`tcp_slowtmr`) walks a pcb whose state was corrupted by a teardown-on-freed-pcb elsewhere -
-  most likely `tcp_abort()` on the idle-sweep / reject path racing a concurrent RST or the peer's dribble
-  data, corrupting an lwIP pcb list. `tcp_abort` itself does not call `tcp_output`, which fits a _later_
-  timer-driven fault rather than an at-the-call-site one.
-- **Blocked on:** a real backtrace to pin the exact caller. The frameless RISC-V panic dump did not decode to
-  the caller, and JTAG is currently unavailable (the S3's built-in USB-Serial-JTAG is repurposed for an SDIO
-  SD card). Next: an ESP-IDF UART/flash coredump build (decoded with `espcoredump.py`) or JTAG on a freed
-  board, then a precise guard on the identified teardown path - not a guess on the hot path.
+- **Status:** FIXED (2026-07-20). A second, distinct remotely-triggerable reboot from the RECVED bug above;
+  `assert failed: tcp_output ... invalid pcb` -> `rst:0xc (SW_CPU_RESET)`, ~26-36 reboots per high-intensity
+  DoS run on an ESP32-P4.
+- **Reliable repro (also the regression test):** `dws_pentest.py --only ssh_slowloris` - 8 half-open
+  partial-banner connections (`"SSH-2.0-sl"` + a dribble of `.` bytes), refreshed ~19 s; also
+  `ssh_handshake_flood`. Heap stays flat, so a use-after-free, not exhaustion.
+- **Root cause (pinned by the flash coredump, NOT by guessing):** every worker-marshalled socket op guards
+  `k->pcb == conn_pool[slot].pcb` (a stale pcb after a torn-down connection won't match the slot's live pcb).
+  But the guard compared **pointers without a NULL test**. `dws_conn_flush()` marshals `DWS_OP_OUTPUT` with
+  `conn_pool[slot].pcb`, which is **NULL** for a slot that was torn down between the caller and the op - so a
+  captured-NULL vs a live-NULL (`NULL == NULL`) **passed** the guard and called `tcp_output(NULL)` -> lwIP's
+  "invalid pcb" panic. The `esp_coredump` backtrace showed exactly this: frame `dws_tcp_do` `tcp.cpp:297`
+  (`DWS_OP_OUTPUT`) with `k->op=DWS_OP_OUTPUT, k->slot=0, k->pcb=0x0, conn_pool[0].pcb=0x0, state=CONN_FREE`.
+  An earlier `esp_rom_printf` trace had wrongly ruled this path out (it only ever printed the _non-NULL_
+  survivors), which is why the coredump was decisive.
+- **Fix:** add the null test to the `DWS_OP_SEND` / `DWS_OP_OUTPUT` / `DWS_OP_RECVED` guards -
+  `k->pcb && k->pcb == conn_pool[slot].pcb` (SEND: `!k->pcb || k->pcb != ...`). A captured-NULL now skips
+  (`ERR_CLSD`) instead of calling `tcp_output`/`tcp_write`/`tcp_recved(NULL)`. **HW-verified on the P4:** the
+  full DoS suite that rebooted it 26-36x now runs **3 PASS / 0 findings, 0 reboots, 0 asserts, heap flat**;
+  `ssh_handshake_flood` also dropped from ~237 s (crash-stalled) to ~19 s. The pentest reboot detector was
+  fixed in the same pass (an ESP32 reboot times out rather than `ECONNREFUSED`), so a crash-and-recover is no
+  longer mis-read as "alive".
+- **Note:** a speculative `DWS_OP_CLOSE` teardown-reorder tried earlier changed the reboot count by nothing
+  and was reverted rather than shipped - the real bug was the missing NULL test, not the CLOSE path.
 
 ---
 

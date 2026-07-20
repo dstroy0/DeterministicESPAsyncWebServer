@@ -273,8 +273,10 @@ static err_t dws_tcp_do(struct tcpip_api_call_data *c)
         break;
     case DWSTcpOp::DWS_OP_SEND:
         // Hot path: SEND carries the real slot, so a stale pcb is just k->pcb != the slot's live pcb.
-        // O(1), no scan - the send/flush pair runs on every HTTP response.
-        if (k->pcb != conn_pool[k->slot].pcb)
+        // O(1), no scan - the send/flush pair runs on every HTTP response. The `k->pcb` null test is
+        // essential: a torn-down slot has pcb == null, and comparing a captured-null against a live-null
+        // (null == null) would otherwise pass the guard and tcp_write(null).
+        if (!k->pcb || k->pcb != conn_pool[k->slot].pcb)
         {
             k->result = ERR_CLSD; // connection torn down between capture and now; skip, do not assert
             break;
@@ -291,9 +293,13 @@ static err_t dws_tcp_do(struct tcpip_api_call_data *c)
             tcp_output(k->pcb); // coalesced write+flush: one marshal for a terminal single-shot response
         break;
     case DWSTcpOp::DWS_OP_OUTPUT:
-        // Hot path (O(1)): flush only if the slot still owns this pcb; else it was torn down - skip
-        // rather than tcp_output on freed memory (lwIP's "invalid pcb" assert -> panic).
-        if (k->pcb == conn_pool[k->slot].pcb)
+        // Hot path (O(1)): flush only if the slot still owns a LIVE pcb; else it was torn down - skip
+        // rather than tcp_output on freed memory (lwIP's "invalid pcb" assert -> panic). The `k->pcb`
+        // null test is essential and was the missing piece here: dws_conn_flush() marshals this op with
+        // conn_pool[slot].pcb, which is null for a torn-down slot, so a captured-null vs a live-null
+        // (null == null) passed the guard and called tcp_output(null) -> panic. Coredump-confirmed:
+        // slot 0, k->pcb == 0, conn_pool[0].pcb == 0, state CONN_FREE.
+        if (k->pcb && k->pcb == conn_pool[k->slot].pcb)
             tcp_output(k->pcb);
         else
             k->result = ERR_CLSD;
@@ -320,8 +326,9 @@ static err_t dws_tcp_do(struct tcpip_api_call_data *c)
         // RX bytes, but the connection can be torn down (a remote RST frees the pcb via the error
         // callback) before this op runs. tcp_recved on a freed pcb walks into tcp_update_rcv_ann_wnd
         // (assert new_rcv_ann_wnd <= 0xffff) and a window-update tcp_output ("invalid pcb") - i.e. a
-        // remotely-triggerable panic under connection churn. Skip if the slot no longer owns this pcb.
-        if (k->pcb == conn_pool[k->slot].pcb)
+        // remotely-triggerable panic under connection churn. Skip if the slot no longer owns a live pcb
+        // (the null test guards the captured-null vs live-null case, as in SEND/OUTPUT).
+        if (k->pcb && k->pcb == conn_pool[k->slot].pcb)
             tcp_recved(k->pcb, k->len); // reopen the receive window by the consumed bytes
         else
             k->result = ERR_CLSD;
