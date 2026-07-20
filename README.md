@@ -699,7 +699,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `WEBDAV`            |       26.2-66.6 KB |     38.2-38.7 KB |
 | L7    | `VFS`               |            42.6 KB |          19.6 KB |
 | L7    | `RANGE`             |        0.6-41.6 KB |      0.0-15.3 KB |
-| L7    | `UPLOAD`            |            41.4 KB |          24.4 KB |
+| L7    | `UPLOAD`            |            41.4 KB |          34.9 KB |
 | L7    | `IFACE_BRIDGE`      |            27.3 KB |          16.0 KB |
 | L7    | `NTP`               |            25.4 KB |          17.7 KB |
 | L7    | `MDNS`              |            24.9 KB |          17.1 KB |
