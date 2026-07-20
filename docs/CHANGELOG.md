@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- size the KEXINIT host-key name-list buffer for all four algorithms ([`36d11b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36d11b9b29d6d0ae65cad5612cf7b60994cd076f))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`8d2d992`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d2d99235e9805752923d29c94f930d27c6229bf))
+- update CHANGELOG.md [skip ci] ([`09efc07`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09efc078683c986d4f8f4fcf7cf8fab42fae21e3))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`afcb88e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/afcb88e2454d314613a8e34cb84b34ab90093264))
+
 ## [7.23.0] - 2026-07-20
 
 <details>
