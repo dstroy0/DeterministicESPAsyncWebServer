@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 139 runnable examples under `examples/`, grouped by
+The library ships 140 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -137,6 +137,7 @@ Routing, protocols, services, and clients:
 [CoapObserve](../examples/L7-Application/CoapObserve/README.md) ·
 [CoapSecure](../examples/L7-Application/CoapSecure/README.md) ·
 [ConfigExport](../examples/L7-Application/ConfigExport/README.md) ·
+[CoreDump](../examples/L7-Application/CoreDump/README.md) ·
 [CORS](../examples/L7-Application/CORS/README.md) ·
 [Csrf](../examples/L7-Application/Csrf/README.md) ·
 [Dashboard](../examples/L7-Application/Dashboard/README.md) ·
