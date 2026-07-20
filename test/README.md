@@ -544,7 +544,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3419 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3423 test cases** across **272 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23047,7 +23047,7 @@ A thorough directory of all **3419 test cases** across **272 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_pqc_mlkem (3 tests)</b></summary>
+<summary><b>test_pqc_mlkem (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_mlkem768_encaps_kat</b> &mdash; <i>Mlkem768 encaps kat</i></summary>
@@ -23075,6 +23075,43 @@ A thorough directory of all **3419 test cases** across **272 suites**. Expand a 
     * **Objective**: Force the first 12-bit coefficient to 0xFFF (4095 >= q=3329).
     * **Assertions**:
       * <code>Assert false (dws_mlkem768_encaps(bad, kat_m, ct, ss))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_keygen_kat</b> &mdash; <i>rho is the trailing 32 octets of ek (ByteEncode12(t) \|\| rho); matching it isolates the G(d\|\|k)</i></summary>
+
+    * **Objective**: rho is the trailing 32 octets of ek (ByteEncode12(t) \|\| rho); matching it isolates the G(d\|\|k)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_ek + 1152, ek + 1152, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_dk, dk, 1152);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_ek, ek, MLKEM768_EK_BYTES);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_dk, dk, MLKEM768_DK_BYTES);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_decaps_kat</b> &mdash; <i>Mlkem768 decaps kat</i></summary>
+
+    * **Objective**: Mlkem768 decaps kat
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_ss, ss, MLKEM768_SS_BYTES);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_roundtrip</b> &mdash; <i>Mlkem768 roundtrip</i></summary>
+
+    * **Objective**: Mlkem768 roundtrip
+    * **Assertions**:
+      * <code>Assert true (dws_mlkem768_encaps(ek, m, ct, ss_enc))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(ss_enc, ss_dec, MLKEM768_SS_BYTES);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_decaps_implicit_reject</b> &mdash; <i>Mlkem768 decaps implicit reject</i></summary>
+
+    * **Objective**: Mlkem768 decaps implicit reject
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(ss1, ss2, MLKEM768_SS_BYTES);        // deterministic</code>
+      * <code>Assert not equal (0, memcmp(ss1, kat_ss, MLKEM768_SS_BYTES))</code>
   </details>
 
 </details>
