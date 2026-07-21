@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.26.0] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.26.0 - 2026-07-21</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`f204e54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f204e54a6181495cbb9cc1fe2611abb6dc24a22a))
+- update CHANGELOG.md [skip ci] ([`ff28ad7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff28ad788fe454c6e4cd77ed678c632b988b01fa))
+
+### Changes
+
+- Bump version: 7.25.0 → 7.26.0 ([`06db449`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06db44906472049978716339bb690fa632142df1))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d1f8741`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1f8741f7ecc5fe61f42e4cf23b0c349a53ed4ed))
+
+### Performance
+
+- route AES-256-GCM through the ESP32-P4 hardware GCM peripheral ([`19406cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19406cd27ef0f5625a8b2d51a718a3fc826919c9))
+
+</details>
+
 ## [7.25.0] - 2026-07-21
 
 <details>
