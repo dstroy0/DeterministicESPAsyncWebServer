@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.24.0] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.24.0 - 2026-07-21</b></summary>
 
 ### Bug Fixes
 
@@ -11,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`3157262`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3157262264f4cad40a5b450571384d8d79343581))
+- update CHANGELOG.md [skip ci] ([`d1652bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1652bbe1d407402d93818d65d949145f58361e1))
 - update CHANGELOG.md [skip ci] ([`240278a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/240278adfa899ce75c786deec1e8a867dd56f4e3))
 - update test report + coverage [skip ci] ([`b9f52d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9f52d058b323554c70ef8e36aace0b15305a17a))
 - update CHANGELOG.md [skip ci] ([`df03db0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df03db029a45aa522585f98261e76270ce70ffa6))
@@ -27,11 +32,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 7.23.1 → 7.24.0 ([`daef4c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/daef4c57534b2508636e6e770eb900880528deaf))
 - @ ([`b245d7a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b245d7ad46d4820ee2e87b5954b15a48ef18bacf))
 - Merge Dependabot #17: build(deps): bump actions/setup-python from 5 to 7 ([`9fc1ad7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fc1ad7dc8b5b834ee8f8257cbffd62fff463f51))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`6a1d66c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a1d66c4146cabd47659a14a8f3a2da8ec64880d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a39c96a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a39c96abe32abe15489c1d258c5c201075083c91))
 - update ESP32 build footprints [skip ci] ([`f975b44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f975b44009890a9dabc05937103cfa22a01c35a5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fc58454`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc58454845b098dbf4e7917e54dc60befc2f8ce6))
@@ -48,12 +55,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- RFC 7250 Raw Public Keys for the DTLS 1.3 server (DWS_ENABLE_TLS_RPK) ([`5e473da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e473da0b5f8d506feb35ddea7227de5d42e1a2a))
 - sntrup761x25519-sha512 KEX for the reverse-SSH client ([`216c013`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/216c0137f194d7136f41d9e2d4e04787d00abda1))
 - sntrup761 KEM (Streamlined NTRU Prime) - full KeyGen/Encaps/Decaps ([`bb90a4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb90a4e10862d9925b6de9959397f26dfa3406d1))
 
 ### Refactor
 
 - hash-agnostic exchange hash + KDF (SHA-256/SHA-512 by KEX method) ([`56dc63f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56dc63ff06ac90c81409eab0b261f9f1be283380))
+
+</details>
 
 ## [7.23.1] - 2026-07-20
 
