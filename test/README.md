@@ -545,7 +545,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3434 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3435 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -33346,7 +33346,7 @@ A thorough directory of all **3434 test cases** across **274 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (48 tests)</b></summary>
+<summary><b>test_ssh_transport (49 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -33523,14 +33523,23 @@ A thorough directory of all **3434 test cases** across **274 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_kexinit_parse_selects_aes256gcm</b> &mdash; <i>Preference: gcm beats ctr when both are offered (chacha absent).</i></summary>
+    <summary><b>test_kexinit_parse_selects_aes256gcm</b> &mdash; <i>Client preference (RFC 4253 §7.1): the client's first offered cipher we support wins - gcm before ctr.</i></summary>
 
-    * **Objective**: Preference: gcm beats ctr when both are offered (chacha absent).
+    * **Objective**: Client preference (RFC 4253 §7.1): the client's first offered cipher we support wins - gcm before ctr.
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
       * <code>Assert equal (SSH_CIPHER_AES256GCM, ssh_sess[0].cipher_alg)</code>
       * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
       * <code>Assert equal (SSH_CIPHER_AES256GCM, ssh_sess[0].cipher_alg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_honors_client_cipher_preference</b> &mdash; <i>Kexinit parse honors client cipher preference</i></summary>
+
+    * **Objective**: Kexinit parse honors client cipher preference
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SSH_CIPHER_AES256CTR, ssh_sess[0].cipher_alg)</code>
   </details>
 
   <details style="margin-left: 20px;">
