@@ -2,21 +2,36 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.24.1] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.24.1 - 2026-07-21</b></summary>
+
+### Bug Fixes
+
+- negotiate algorithms by client preference (RFC 4253 §7.1) ([`5e4e023`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e4e023220979ae830808c49e36ebcb9c6d5b82c))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ec2a104`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec2a104c61fb0dd24385d8650e4b2e46e1060eca))
 - update test report + coverage [skip ci] ([`eee60ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eee60ee62cee0d894de43e5a306f9c2a4369e393))
 - update CHANGELOG.md [skip ci] ([`52baa65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52baa658909468ec5b6b481cfb24ca85ab42c4bf))
 
+### Changes
+
+- Bump version: 7.24.0 → 7.24.1 ([`8f504e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f504e24b9f5f3d1dd0d17f4e833b0cd7e6a495f))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6508bbb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6508bbbf31b53a256ee99194ccff728ea4927487))
 - update ESP32 build footprints [skip ci] ([`e6e8d84`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e6e8d84e6c8cf8807d1114a16dda90329e2def3b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`87dece1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87dece13a624e3fcfe694cceb6ab9f93a3797410))
 
 ### Testing
 
 - CycloneSSL DTLS 1.3 peer - a second reference stack (incl. RFC 7250 RPK) ([`4b6c358`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b6c358266da60bc4aaaed0517477bed3f2aca3c))
+
+</details>
 
 ## [7.24.0] - 2026-07-21
 
