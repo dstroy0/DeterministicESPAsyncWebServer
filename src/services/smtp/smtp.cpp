@@ -60,7 +60,8 @@ bool ieq(const char *a, const char *b, size_t n)
 {
     for (size_t i = 0; i < n; i++)
     {
-        char ca = a[i], cb = b[i];
+        char ca = a[i];
+        char cb = b[i];
         if (ca >= 'A' && ca <= 'Z')
             ca = (char)(ca - 'A' + 'a');
         if (cb >= 'A' && cb <= 'Z')
