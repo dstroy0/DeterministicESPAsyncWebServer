@@ -6,13 +6,35 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- install prettier + align the markdown formatter to one version (3.9.6) ([`16d3e78`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16d3e7845ecb35e6daed204474f569bcb54da5da))
+
+## [7.28.1] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.28.1 - 2026-07-21</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`3e77ad3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e77ad34cc21ac0b5cdf1eec57a57d5a596b09cc))
+- update CHANGELOG.md [skip ci] ([`9b4fe82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b4fe8215cdb595a56a9110fd565b9d9074e2add))
 - update CHANGELOG.md [skip ci] ([`483b1c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/483b1c19ab030ab0fd33f8924f8c30a41298e48c))
+
+### Changes
+
+- Bump version: 7.28.0 → 7.28.1 ([`29a3483`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/29a348360138d1089fc67e9bca9a6f0a0efc412d))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`527d6b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/527d6b82666958bf065aba85718ecda785639e9b))
 - HW-verify per-listener + UDP marking on-wire; document tested SYN-ACK behavior ([`a385d09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a385d09dfbc53e85ec405949e07bd5c78427e65c))
 - update ESP32 build footprints [skip ci] ([`a5a2552`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5a255215d21263339367d17fa70cbe7bfa76dd1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d270cec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d270cec3fef7f64866a66d98a39034c43c5c9c2d))
+
+### Performance
+
+- branchless memcpy record framer - 3.68x faster than snprintf on the S3 ([`cec6152`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cec615232cd56e601ff0e63216ed4adf6164343b))
+
+</details>
 
 ## [7.28.0] - 2026-07-21
 
