@@ -51,6 +51,17 @@ void dws_syslog_init(const char *server_ip, uint16_t port, const char *hostname,
     s_syslog.ready = (s_syslog.server_ip[0] != '\0');
 }
 
+// Append `len` bytes at *pos if the line still leaves room for a trailing NUL (content fits in cap-1).
+// Returns false the moment it would not fit, so an oversized line reports 0 (never a truncated datagram).
+static inline bool sl_append(char *out, size_t cap, size_t *pos, const char *src, size_t len)
+{
+    if (*pos + len > cap - 1)
+        return false;
+    memcpy(out + *pos, src, len);
+    *pos += len;
+    return true;
+}
+
 size_t dws_syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSeverity severity, const char *hostname,
                          const char *appname, const char *msg)
 {
@@ -65,12 +76,30 @@ size_t dws_syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogS
         pri = 191;
     const char *h = (hostname && hostname[0]) ? hostname : "-";
     const char *a = (appname && appname[0]) ? appname : "-";
-    // <PRI>VERSION SP TIMESTAMP SP HOSTNAME SP APP-NAME SP PROCID SP MSGID SP SD SP MSG
-    // TIMESTAMP/PROCID/MSGID/STRUCTURED-DATA are NILVALUE ("-").
-    int n = snprintf(out, cap, "<%d>1 - %s %s - - - %s", pri, h, a, msg ? msg : "");
-    if (n < 0 || (size_t)n >= cap)
+    const char *m = msg ? msg : "";
+    // <PRI>VERSION SP TIMESTAMP SP HOSTNAME SP APP-NAME SP PROCID SP MSGID SP SD SP MSG, with
+    // TIMESTAMP/PROCID/MSGID/STRUCTURED-DATA as NILVALUE ("-"). A branchless memcpy framer (fixed spans +
+    // strnlen/memcpy of each field + a small decimal PRI writer) instead of snprintf("%d ... %s %s ... %s"),
+    // which avoids the expensive Xtensa vsnprintf path on this per-log-line hot op. Byte-identical output.
+    char prib[3]; // PRI is 0..191 -> 1..3 decimal digits
+    size_t pl = 0;
+    if (pri >= 100)
+        prib[pl++] = (char)('0' + pri / 100);
+    if (pri >= 10)
+        prib[pl++] = (char)('0' + (pri / 10) % 10);
+    prib[pl++] = (char)('0' + pri % 10);
+
+    // Bounded lengths: a field can never exceed the output buffer (an over-long field makes the append
+    // below fail and the whole line report 0), and strnlen never reads past `cap` even if a field is not
+    // NUL-terminated within it.
+    size_t pos = 0;
+    if (!sl_append(out, cap, &pos, "<", 1) || !sl_append(out, cap, &pos, prib, pl) ||
+        !sl_append(out, cap, &pos, ">1 - ", 5) || !sl_append(out, cap, &pos, h, strnlen(h, cap)) ||
+        !sl_append(out, cap, &pos, " ", 1) || !sl_append(out, cap, &pos, a, strnlen(a, cap)) ||
+        !sl_append(out, cap, &pos, " - - - ", 7) || !sl_append(out, cap, &pos, m, strnlen(m, cap)))
         return 0;
-    return (size_t)n;
+    out[pos] = '\0'; // pos <= cap-1 by construction
+    return pos;
 }
 
 bool dws_syslog_log(SyslogSeverity severity, const char *msg)

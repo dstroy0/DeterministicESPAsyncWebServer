@@ -81,19 +81,21 @@ int dws_sse_format(char *buf, size_t n, const char *data, const char *event, con
         return 0;
 
     // WHATWG event-stream field order: event, then id, then data (blank line terminates the record). A
-    // branchless memcpy framer - fixed prefixes + strlen/memcpy of each value + the terminators - instead of
+    // branchless memcpy framer - fixed prefixes + strnlen/memcpy of each value + the terminators - instead of
     // three snprintf("%s") calls; ~an order of magnitude cheaper on the Xtensa vsnprintf path, which matters
     // for a high-rate broadcast fan-out (many subscribers). Byte-identical output (test_sse_format).
+    // Bounded lengths (strnlen, cap n): a field can never exceed the output buffer (an over-long value makes
+    // the append fail and the record report 0), and strnlen never reads past `n` if a value is unterminated.
     size_t pos = 0;
     if (event)
-        if (!sse_append(buf, n, &pos, "event: ", 7) || !sse_append(buf, n, &pos, event, strlen(event)) ||
+        if (!sse_append(buf, n, &pos, "event: ", 7) || !sse_append(buf, n, &pos, event, strnlen(event, n)) ||
             !sse_append(buf, n, &pos, "\n", 1))
             return 0;
     if (id)
-        if (!sse_append(buf, n, &pos, "id: ", 4) || !sse_append(buf, n, &pos, id, strlen(id)) ||
+        if (!sse_append(buf, n, &pos, "id: ", 4) || !sse_append(buf, n, &pos, id, strnlen(id, n)) ||
             !sse_append(buf, n, &pos, "\n", 1))
             return 0;
-    if (!sse_append(buf, n, &pos, "data: ", 6) || !sse_append(buf, n, &pos, data, strlen(data)) ||
+    if (!sse_append(buf, n, &pos, "data: ", 6) || !sse_append(buf, n, &pos, data, strnlen(data, n)) ||
         !sse_append(buf, n, &pos, "\n\n", 2))
         return 0;
 

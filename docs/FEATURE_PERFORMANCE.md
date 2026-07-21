@@ -653,9 +653,11 @@ op.
 | ------------------------------ | ---------: | --------: | --------------: | -------------: |
 | `dws_syslog_format` (RFC 5424) |      159.1 |     452.5 |            3686 |          15358 |
 
-- At **~15 us** on the device the format is dominated by `snprintf` composing the header + four field
-  substitutions (newlib `snprintf` is not cheap on Xtensa - it is ~10x the leaner hand-rolled codecs). Still
-  trivial for a log line, and the datagram is fire-and-forget over UDP. The line is bounded to
+- The `~15 us` device figure above is the pre-optimization `snprintf` cost. The formatter is now the same
+  **branchless memcpy framer** as the SSE record framer (fixed spans + `strnlen`/`memcpy` of each field + a
+  small decimal PRI writer, no `snprintf`), which measured **3.68x** faster on the S3 for the SSE case;
+  output is byte-identical (`test_syslog`). Still trivial for a log line, and the datagram is fire-and-forget
+  over UDP. The line is bounded to
   `DWS_SYSLOG_MSG_MAX` (256 B): an oversized message makes `dws_syslog_format` return 0 and `dws_syslog_log`
   refuse (no overflow, no giant datagram - validated by the `dws_syslog_injection` attack, which held the bound
   at an 80 B datagram for a 2 KB input). HW-verified device-as-syslog-client against a UDP collector (7/7
