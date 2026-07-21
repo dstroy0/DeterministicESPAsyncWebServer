@@ -12,6 +12,7 @@
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h" // ssh_ed25519_pubkey for the RFC 7250 RawPublicKey
 #include "services/clock.h" // dws_millis() stamps / checks the HelloRetryRequest cookie freshness
 #include <string.h>
 
@@ -289,14 +290,31 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     dws_dtls_record_keys_derive(&c->ep2_cli, DtlsCipher::AES_128_GCM_SHA256, 2, c->ks.client_hs_traffic);
     c->ep2_ready = true;
 
+    // Raw Public Key negotiation (RFC 7250): if the client offered server_certificate_type = RawPublicKey,
+    // answer with that type in EncryptedExtensions and send our Ed25519 SubjectPublicKeyInfo as the
+    // Certificate instead of the X.509 chain. Additive - a client that does not ask still gets X.509.
+    bool rpk = false;
+#if DWS_ENABLE_TLS_RPK
+    rpk = ch.offers_rpk_server_cert;
+#endif
+
     // EncryptedExtensions.
-    n = dws_tls13_build_encrypted_extensions_empty(c->msgbuf, sizeof(c->msgbuf));
+    n = dws_tls13_build_encrypted_extensions_empty(c->msgbuf, sizeof(c->msgbuf), rpk);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
     if (!flight_add(c, 2, c->msgbuf, n))
         return fail(c, ALERT_INTERNAL_ERROR);
 
-    // Certificate.
-    n = dws_tls13_build_certificate(c->msgbuf, sizeof(c->msgbuf), c->cfg.cert_der, c->cfg.cert_len);
+    // Certificate (X.509 chain, or the RFC 7250 RawPublicKey when negotiated).
+#if DWS_ENABLE_TLS_RPK
+    if (rpk)
+    {
+        uint8_t ed_pub[SSH_ED25519_PUBKEY_LEN];
+        ssh_ed25519_pubkey(ed_pub, c->cfg.ed25519_seed);
+        n = dws_tls13_build_certificate_rpk(c->msgbuf, sizeof(c->msgbuf), ed_pub);
+    }
+    else
+#endif
+        n = dws_tls13_build_certificate(c->msgbuf, sizeof(c->msgbuf), c->cfg.cert_der, c->cfg.cert_len);
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);

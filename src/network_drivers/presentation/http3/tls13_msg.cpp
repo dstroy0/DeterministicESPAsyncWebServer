@@ -23,6 +23,8 @@ struct TlsExt
     static constexpr uint16_t TLS_EXT_SUPPORTED_GROUPS = 0x000a;
     static constexpr uint16_t TLS_EXT_SIGNATURE_ALGORITHMS = 0x000d;
     static constexpr uint16_t TLS_EXT_ALPN = 0x0010;
+    static constexpr uint16_t TLS_EXT_CLIENT_CERTIFICATE_TYPE = 0x0013; ///< RFC 7250 (IANA 19)
+    static constexpr uint16_t TLS_EXT_SERVER_CERTIFICATE_TYPE = 0x0014; ///< RFC 7250 (IANA 20)
     static constexpr uint16_t TLS_EXT_SUPPORTED_VERSIONS = 0x002b;
     static constexpr uint16_t TLS_EXT_COOKIE = 0x002c;
     static constexpr uint16_t TLS_EXT_KEY_SHARE = 0x0033;
@@ -274,6 +276,21 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
     case TlsExt::TLS_EXT_ALPN:
         parse_alpn(body, blen, out);
         break;
+#if DWS_ENABLE_TLS_RPK
+    case TlsExt::TLS_EXT_SERVER_CERTIFICATE_TYPE: {
+        // server_certificate_type (RFC 7250 sec 4.2): a 1-byte list length then 1-byte CertificateType
+        // values. RawPublicKey(2) in the list means the client accepts a bare SubjectPublicKeyInfo from us.
+        if (blen < 1)
+            return;
+        size_t ll = body[0];
+        if (1 + ll > blen)
+            return;
+        for (size_t i = 0; i < ll; i++)
+            if (body[1 + i] == TLS_CERT_TYPE_RAW_PUBLIC_KEY)
+                out->offers_rpk_server_cert = true;
+        break;
+    }
+#endif
     case TLS_EXT_QUIC_TRANSPORT_PARAMS:
         out->dws_quic_tp = body;
         out->dws_quic_tp_len = blen;
@@ -469,12 +486,31 @@ size_t dws_tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8
     return w.ok ? w.pos : 0;
 }
 
-size_t dws_tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap)
+#if DWS_ENABLE_TLS_RPK
+// server_certificate_type response (RFC 7250 sec 4.2): a single CertificateType value, RawPublicKey.
+static void w_server_cert_type_rpk(Writer *w)
+{
+    w_u16(w, TlsExt::TLS_EXT_SERVER_CERTIFICATE_TYPE);
+    w_u16(w, 1); // extension_data length
+    w_u8(w, TLS_CERT_TYPE_RAW_PUBLIC_KEY);
+}
+#endif
+
+size_t dws_tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap, bool rpk_server_cert)
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS);
     size_t hs_len = w_mark(&w, 3);
-    w_u16(&w, 0); // extensions: empty (the DTLS profile carries no ALPN / transport params)
+    // The DTLS profile carries no ALPN / transport params; the only possible extension is the
+    // negotiated server_certificate_type (RFC 7250) when RawPublicKey was selected.
+    size_t ext_len = w_mark(&w, 2);
+#if DWS_ENABLE_TLS_RPK
+    if (rpk_server_cert)
+        w_server_cert_type_rpk(&w);
+#else
+    (void)rpk_server_cert;
+#endif
+    w_patch16(&w, ext_len);
     w_patch24(&w, hs_len);
     return w.ok ? w.pos : 0;
 }
@@ -489,7 +525,7 @@ size_t dws_tls13_build_message_hash(uint8_t *out, size_t cap, const uint8_t ch1_
 }
 
 size_t dws_tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t *dws_quic_tp,
-                                            size_t dws_quic_tp_len)
+                                            size_t dws_quic_tp_len, bool rpk_server_cert)
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS);
@@ -506,6 +542,13 @@ size_t dws_tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint
     w_u16(&w, TLS_EXT_QUIC_TRANSPORT_PARAMS);
     w_u16(&w, (uint16_t)dws_quic_tp_len);
     w_bytes(&w, dws_quic_tp, dws_quic_tp_len);
+#if DWS_ENABLE_TLS_RPK
+    // negotiated server_certificate_type = RawPublicKey (RFC 7250), when selected.
+    if (rpk_server_cert)
+        w_server_cert_type_rpk(&w);
+#else
+    (void)rpk_server_cert;
+#endif
     w_patch16(&w, ext_len);
 
     w_patch24(&w, hs_len);
@@ -528,6 +571,30 @@ size_t dws_tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert
     w_patch24(&w, hs_len);
     return w.ok ? w.pos : 0;
 }
+
+#if DWS_ENABLE_TLS_RPK
+size_t dws_tls13_ed25519_spki(uint8_t *out, size_t cap, const uint8_t pub[32])
+{
+    // DER SubjectPublicKeyInfo for id-Ed25519 (RFC 8410 sec 4): a fixed 12-byte prefix - SEQUENCE
+    // { SEQUENCE { OID 1.3.101.112 } , BIT STRING (33, 0 unused) } - then the 32-byte public key.
+    static const uint8_t PREFIX[12] = {0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00};
+    if (cap < DWS_TLS13_ED25519_SPKI_LEN)
+        return 0;
+    memcpy(out, PREFIX, sizeof(PREFIX));
+    memcpy(out + sizeof(PREFIX), pub, 32);
+    return DWS_TLS13_ED25519_SPKI_LEN;
+}
+
+size_t dws_tls13_build_certificate_rpk(uint8_t *out, size_t cap, const uint8_t ed25519_pub[32])
+{
+    uint8_t spki[DWS_TLS13_ED25519_SPKI_LEN];
+    // GCOVR_EXCL_START  spki[] is exactly DWS_TLS13_ED25519_SPKI_LEN, so the SPKI encode never overflows.
+    if (!dws_tls13_ed25519_spki(spki, sizeof(spki), ed25519_pub))
+        return 0;
+    // GCOVR_EXCL_STOP
+    return dws_tls13_build_certificate(out, cap, spki, sizeof(spki));
+}
+#endif
 
 size_t dws_tls13_cert_verify_content(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], bool is_server)
 {

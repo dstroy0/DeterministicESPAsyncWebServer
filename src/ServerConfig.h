@@ -5207,6 +5207,23 @@
 #define DWS_ENABLE_DTLS 0
 #endif
 
+/**
+ * @brief TLS Raw Public Keys (RFC 7250) - present a bare public key instead of an X.509 certificate.
+ *
+ * When a client offers the @c server_certificate_type extension (IANA 20) with RawPublicKey(2), the
+ * server answers with that certificate type in EncryptedExtensions and sends a Certificate message
+ * whose entry is a DER @c SubjectPublicKeyInfo (the 44-byte Ed25519 SPKI) rather than an X.509 chain -
+ * the same Ed25519 key still signs CertificateVerify, so there is no security downgrade, only a
+ * smaller handshake with no cert parsing. A cert-less credential is the natural fit for provisioned,
+ * key-pinned ESP32 fleets and the RFC 7252 sec 9 CoAP-over-DTLS RawPublicKey profile. This is
+ * server-side only (the server presents an RPK); the handshake never requests a client certificate.
+ * Additive: a client that does not offer the extension still gets the X.509 certificate. Wired into
+ * the DTLS 1.3 handshake; the shared TLS 1.3 codec also carries it for a future HTTP/3 use. Default off.
+ */
+#ifndef DWS_ENABLE_TLS_RPK
+#define DWS_ENABLE_TLS_RPK 0
+#endif
+
 // Internal request-dispatch slots appended to the connection pool for non-TCP transports.
 // HTTP/3 runs over QUIC/UDP and has no accept-time TCP slot, but it reuses the same request
 // pipeline (match_and_execute + send), which is indexed by a connection-pool slot. One reserved
@@ -6315,6 +6332,10 @@ enum class DWSIface : uint8_t
 
 #if DWS_ENABLE_COAP_OBSERVE && !DWS_ENABLE_COAP
 #error "DeterministicESPAsyncWebServer: DWS_ENABLE_COAP_OBSERVE requires DWS_ENABLE_COAP"
+#endif
+
+#if DWS_ENABLE_TLS_RPK && !(DWS_ENABLE_DTLS || DWS_ENABLE_HTTP3)
+#error "DeterministicESPAsyncWebServer: DWS_ENABLE_TLS_RPK requires DWS_ENABLE_DTLS or DWS_ENABLE_HTTP3"
 #endif
 
 #if DWS_ENABLE_COAP_BLOCK

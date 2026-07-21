@@ -1017,6 +1017,7 @@
     "sphinxdocs",
     "SPIFFS",
     "SPIRAM",
+    "SPKI",
     "SPNEGO",
     "spoofable",
     "sprintf",

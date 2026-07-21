@@ -586,9 +586,16 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
       caught + fixed a latent SSH transport bug (a TCP read carrying several pipelined packets - a large SFTP
       write - overflowed the single-packet receive buffer; now drained incrementally). _Follow-ups:_ the SCP
       SOURCE (download) direction, recursive SCP, and a graceful `SSH_MSG_DISCONNECT` on teardown.
-- [ ] **TLS Raw Public Keys (RFC 7250)** (M) - Cyclone supports RPK; a cert-less TLS credential (bare
-      SubjectPublicKeyInfo, no X.509 chain) is a natural fit for constrained, provisioned ESP32 fleets where a
-      pinned key beats a full PKI - smaller handshakes, no cert parsing. Expose/enable it on the TLS path.
+- [x] **TLS Raw Public Keys (RFC 7250)** (M) _(server-side, DTLS 1.3; wolfSSL-verified)_ - Cyclone supports
+      RPK; a cert-less TLS credential (bare SubjectPublicKeyInfo, no X.509 chain) is a natural fit for
+      constrained, provisioned ESP32 fleets where a pinned key beats a full PKI - smaller handshakes, no cert
+      parsing. **Shipped (`DWS_ENABLE_TLS_RPK`):** the hand-rolled TLS 1.3 codec (`dws_tls13_msg`) parses the
+      `server_certificate_type` extension (RFC 7250, IANA 20), the DTLS 1.3 server negotiates RawPublicKey and
+      presents its Ed25519 `SubjectPublicKeyInfo` (44-byte DER, RFC 8410) in place of the X.509 chain - the same
+      key still signs CertificateVerify, so no downgrade. Additive + server-side (no client-cert request). Pure
+      codec + end-to-end host tests (`native_dtls_tls13`, `native_dtls_conn`), and interop-verified against the
+      wolfSSL DTLS 1.3 client in RawPublicKey-only mode (`--rpk`). _Follow-up:_ wire it into the HTTP/3 path (the
+      shared codec already carries it) once an H3 RPK peer is available.
 - [x] **DTLS 1.3** (L) _(full server stack + CoAP-over-DTLS front-end shipped)_ - Cyclone does DTLS 1.0/1.2/1.3;
       we have QUIC (HTTP/3) but no DTLS service. DTLS 1.3 secures CoAP-over-UDP and other datagram telemetry
       without a TCP+TLS session - the missing secure UDP transport for the IoT-device families. Layers on the

@@ -19,15 +19,17 @@ mkdir -p "$WORK"
 # --- 1. wolfSSL with DTLS 1.3 (release tarballs ship a pre-built configure, but only the source
 #        tarball is a GitHub asset here, so build from the git tag; needs autoconf/automake/libtool) ---
 CLIENT="$WORK/wolfssl/examples/client/client"
-# Rebuild if the client is missing or was built without DTLS connection-id support (RFC 9146, --enable-dtlscid).
-if [[ ! -x "$CLIENT" ]] || ! grep -q 'WOLFSSL_DTLS_CID' "$WORK/wolfssl/wolfssl/options.h" 2>/dev/null; then
-  echo ">> building wolfSSL $WOLF_VER (DTLS 1.3 + connection ID)"
+# Rebuild if the client is missing or was built without DTLS connection-id (RFC 9146, --enable-dtlscid)
+# or Raw Public Keys (RFC 7250, --enable-rpk) support.
+if [[ ! -x "$CLIENT" ]] || ! grep -q 'WOLFSSL_DTLS_CID' "$WORK/wolfssl/wolfssl/options.h" 2>/dev/null \
+   || ! grep -q 'HAVE_RPK' "$WORK/wolfssl/wolfssl/options.h" 2>/dev/null; then
+  echo ">> building wolfSSL $WOLF_VER (DTLS 1.3 + connection ID + Raw Public Keys)"
   command -v autoconf >/dev/null || { echo "install autoconf automake libtool first"; exit 2; }
   rm -rf "$WORK/wolfssl"
   git clone --depth 1 -b "$WOLF_VER" https://github.com/wolfSSL/wolfssl.git "$WORK/wolfssl"
   ( cd "$WORK/wolfssl" && ./autogen.sh && \
     ./configure --enable-dtls --enable-dtls13 --enable-ed25519 --enable-curve25519 \
-                --enable-aesgcm --enable-dtlscid --disable-shared && make -j"$(nproc)" )
+                --enable-aesgcm --enable-dtlscid --enable-rpk --disable-shared && make -j"$(nproc)" )
 fi
 
 # --- 2. throwaway Ed25519 leaf certificate + its raw 32-byte seed ---
@@ -44,7 +46,7 @@ echo ">> compiling harness"
 D="$ROOT/src/network_drivers/presentation"
 # -I test/mocks supplies the host Arduino.h shim (millis()) that services/clock.h pulls in - the same
 # shim the pio host tests use; the harness is likewise a host build.
-g++ -O2 -std=gnu++17 -DDWS_ENABLE_DTLS=1 -I"$ROOT/src" -I"$ROOT/test/mocks" "$HERE/dtls_interop_server.cpp" \
+g++ -O2 -std=gnu++17 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_TLS_RPK=1 -I"$ROOT/src" -I"$ROOT/test/mocks" "$HERE/dtls_interop_server.cpp" \
   "$D/dtls/dtls_conn.cpp" "$D/dtls/dtls_record.cpp" "$D/dtls/dtls_handshake.cpp" \
   "$D/http3/tls13_msg.cpp" "$D/http3/tls13_kdf.cpp" "$D/http3/quic_hkdf.cpp" "$D/http3/quic_aead.cpp" \
   "$D/ssh/crypto/ssh_sha256.cpp" "$D/ssh/crypto/ssh_hmac_sha256.cpp" "$D/ssh/crypto/ssh_sha512.cpp" \
@@ -89,4 +91,8 @@ run_once "direct X25519 (-t)" "-t" 0
 # Connection ID (RFC 9146 / RFC 9147 sec 9): the client offers a CID, so the server places it in the
 # records it sends and chooses its own CID for the client's records; the full exchange runs with CIDs.
 run_once "connection ID (--cid)" "-t --cid feedc0de" 0 1
+# Raw Public Keys (RFC 7250): wolfSSL --rpk offers server_certificate_type = RawPublicKey ONLY, so the
+# server MUST present its Ed25519 SubjectPublicKeyInfo (not the X.509 chain) or the client rejects it -
+# a completed handshake + app-data echo is proof the server sent a conformant RawPublicKey.
+run_once "Raw Public Keys (--rpk)" "-t --rpk" 0
 echo ">> ALL PASS"

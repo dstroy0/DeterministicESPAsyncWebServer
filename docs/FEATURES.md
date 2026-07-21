@@ -1270,6 +1270,12 @@ TLS (HTTPS/WSS) via mbedTLS with a static memory pool (ESP32-only). When set, th
 
 Opt-in TLS version negotiation + pinned cipher-suite policy. A policy layer on top of the mbedTLS-backed transport TLS (which already runs the 1.2 / 1.3 record + handshake): services/tls_policy pins the version to an audited [min,max] and makes the negotiated version observable (dws_tls_negotiate_version / dws_tls_version_name), and pins the cipher suites to an audited allowlist selected by server preference (dws_tls_select_cipher), with an AEAD-only classifier (dws_tls_is_aead) for a hardened profile. Pure, host-tested; the app feeds the results to the mbedTLS config. Default off.
 
+## TLS Raw Public Keys
+
+`DWS_ENABLE_TLS_RPK`
+
+Raw Public Keys (RFC 7250) for the hand-rolled TLS 1.3 stack (requires DTLS or HTTP/3). Default off. A cert-less TLS credential: when a client offers the `server_certificate_type` extension (IANA 20) with `RawPublicKey`(2), the server answers with that certificate type in EncryptedExtensions and sends a Certificate message whose entry is a bare DER `SubjectPublicKeyInfo` (the 44-byte Ed25519 SPKI, RFC 8410) instead of an X.509 chain. The same Ed25519 key still signs CertificateVerify, so there is no security downgrade - only a smaller handshake with no certificate to parse, the natural fit for provisioned, key-pinned ESP32 fleets and the RFC 7252 §9 CoAP-over-DTLS RawPublicKey profile. Purely additive and server-side: a client that does not offer the extension still receives the X.509 certificate, and the handshake never requests a client certificate. Wired into the DTLS 1.3 handshake (`dws_dtls_conn`); the shared TLS 1.3 codec (`dws_tls13_msg`) also carries it for a future HTTP/3 use. The SPKI encoder, the RawPublicKey Certificate, the `server_certificate_type` EncryptedExtensions, and the ClientHello parse are pure and host-tested (`native_dtls_tls13`), and an end-to-end DTLS 1.3 handshake completes with the server presenting the raw key and the client verifying CertificateVerify against it (`native_dtls_conn`). Verified **against a real reference implementation**: the wolfSSL DTLS 1.3 client in RawPublicKey-only mode (`--rpk`, so it rejects an X.509 answer) completes a full handshake and an application-data round trip with the server (test/servers/dws_dtls_wolfssl) - proof the presented `SubjectPublicKeyInfo` is wire-conformant. Pure, zero-heap. See src/network_drivers/presentation/http3/dws_tls13_msg.h.
+
 ## TLS Resumption
 
 `DWS_ENABLE_TLS_RESUMPTION`

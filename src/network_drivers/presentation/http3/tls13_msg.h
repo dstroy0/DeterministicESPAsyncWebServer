@@ -52,7 +52,9 @@ struct TlsHs
 #define TLS_GROUP_X25519 0x001d              ///< the classical key-exchange group we support
 #define TLS_GROUP_X25519MLKEM768 0x11ec      ///< PQ/T hybrid group (ML-KEM-768 + X25519), when DWS_ENABLE_PQC_KEX
 #define TLS_SIG_ED25519 0x0807               ///< the one signature scheme we produce
-#define TLS_VERSION_1_3 0x0304               ///< supported_versions selected value (TLS 1.3)
+#define TLS_CERT_TYPE_X509 0                 ///< RFC 7250 CertificateType: X.509 (IANA "TLS Certificate Types" 0)
+#define TLS_CERT_TYPE_RAW_PUBLIC_KEY 2 ///< RFC 7250 CertificateType: RawPublicKey (IANA 2), when DWS_ENABLE_TLS_RPK
+#define TLS_VERSION_1_3 0x0304         ///< supported_versions selected value (TLS 1.3)
 static constexpr uint16_t TLS_VERSION_DTLS_1_3 = 0xFEFC;    ///< supported_versions selected value (DTLS 1.3, RFC 9147)
 static constexpr uint16_t TLS_LEGACY_VERSION_DTLS = 0xFEFD; ///< legacy_version on the wire for DTLS (DTLS 1.2)
 #define TLS_EXT_QUIC_TRANSPORT_PARAMS 0x0039                ///< dws_quic_transport_parameters (RFC 9001 sec 8.2)
@@ -69,9 +71,12 @@ struct Tls13ClientHello
     bool has_hybrid_share;          ///< key_share carried an X25519MLKEM768 entry
     const uint8_t *client_mlkem_ek; ///< the client's ML-KEM-768 encapsulation key (1184 B, aliases input)
 #endif
-    bool offers_tls13;          ///< supported_versions contains 0x0304
-    bool offers_x25519;         ///< supported_groups contains x25519
-    bool offers_ed25519;        ///< signature_algorithms contains ed25519
+    bool offers_tls13;   ///< supported_versions contains 0x0304
+    bool offers_x25519;  ///< supported_groups contains x25519
+    bool offers_ed25519; ///< signature_algorithms contains ed25519
+#if DWS_ENABLE_TLS_RPK
+    bool offers_rpk_server_cert; ///< server_certificate_type (RFC 7250) offered RawPublicKey(2)
+#endif
     bool offers_h3_alpn;        ///< ALPN contains "h3"
     const uint8_t *dws_quic_tp; ///< raw dws_quic_transport_parameters extension body (or NULL)
     size_t dws_quic_tp_len;
@@ -117,16 +122,38 @@ size_t dws_tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t rand
 
 /**
  * @brief Build EncryptedExtensions (RFC 8446 sec 4.3.1) carrying ALPN "h3" and the server's
- * dws_quic_transport_parameters (@p dws_quic_tp, from dws_quic_tp_encode). @return bytes written, or 0.
+ * dws_quic_transport_parameters (@p dws_quic_tp, from dws_quic_tp_encode).
+ *
+ * @param rpk_server_cert  when true (DWS_ENABLE_TLS_RPK), also emit the negotiated
+ *                         server_certificate_type = RawPublicKey extension (RFC 7250 sec 4.2).
+ * @return bytes written, or 0.
  */
 size_t dws_tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t *dws_quic_tp,
-                                            size_t dws_quic_tp_len);
+                                            size_t dws_quic_tp_len, bool rpk_server_cert = false);
 
 /**
  * @brief Build a Certificate message (RFC 8446 sec 4.4.2) with an empty request context and one
  * CertificateEntry wrapping @p cert_der (DER X.509) with no entry extensions. @return bytes written.
  */
 size_t dws_tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert_der, size_t cert_len);
+
+#if DWS_ENABLE_TLS_RPK
+#define DWS_TLS13_ED25519_SPKI_LEN 44 ///< DER SubjectPublicKeyInfo for an Ed25519 key (RFC 8410 sec 4)
+
+/**
+ * @brief Write the 44-byte DER @c SubjectPublicKeyInfo for the Ed25519 key @p pub (RFC 8410 sec 4):
+ * the fixed AlgorithmIdentifier (id-Ed25519, OID 1.3.101.112) wrapping the 32-byte key in a BIT STRING.
+ * This is the RFC 7250 RawPublicKey credential. @return DWS_TLS13_ED25519_SPKI_LEN, or 0 on overflow.
+ */
+size_t dws_tls13_ed25519_spki(uint8_t *out, size_t cap, const uint8_t pub[32]);
+
+/**
+ * @brief Build a Certificate message (RFC 8446 sec 4.4.2) carrying an RFC 7250 RawPublicKey: one
+ * CertificateEntry whose cert_data is the Ed25519 @c SubjectPublicKeyInfo of @p ed25519_pub (no X.509).
+ * The peer must have negotiated server_certificate_type = RawPublicKey. @return bytes written, or 0.
+ */
+size_t dws_tls13_build_certificate_rpk(uint8_t *out, size_t cap, const uint8_t ed25519_pub[32]);
+#endif
 
 /**
  * @brief Build a CertificateVerify (RFC 8446 sec 4.4.3) with an Ed25519 signature.
@@ -181,10 +208,12 @@ size_t dws_tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8
                                            bool dtls = false);
 
 /**
- * @brief Build an EncryptedExtensions (RFC 8446 §4.3.1) with an empty extension list - the DTLS
- * profile carries no ALPN or transport parameters. @return bytes written, or 0 on overflow.
+ * @brief Build an EncryptedExtensions (RFC 8446 §4.3.1) for the DTLS profile, which carries no ALPN or
+ * transport parameters. With @p rpk_server_cert (DWS_ENABLE_TLS_RPK) it carries the negotiated
+ * server_certificate_type = RawPublicKey extension (RFC 7250 sec 4.2); otherwise the list is empty.
+ * @return bytes written, or 0 on overflow.
  */
-size_t dws_tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap);
+size_t dws_tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap, bool rpk_server_cert = false);
 
 /**
  * @brief Write the synthetic @c message_hash handshake message that replaces ClientHello1 in the

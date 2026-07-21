@@ -83,7 +83,7 @@ static void bmem(Buf *b, const uint8_t *m, size_t k)
 // is echoed in a cookie extension (RFC 8446 §4.2.2), as a client does on its post-HRR retry.
 static size_t build_client_hello_ex(uint8_t *out, const uint8_t client_pub[32], bool with_keyshare,
                                     const uint8_t *cookie, size_t cookie_len, const uint8_t *cid = nullptr,
-                                    size_t cid_len = 0)
+                                    size_t cid_len = 0, bool offer_rpk = false)
 {
     Buf b = {out, 0};
     b8(&b, 0x01); // client_hello
@@ -143,6 +143,16 @@ static size_t build_client_hello_ex(uint8_t *out, const uint8_t client_pub[32], 
         b16(&b, (uint16_t)(1 + cid_len));
         b8(&b, (uint8_t)cid_len);
         bmem(&b, cid, cid_len);
+    }
+    if (offer_rpk)
+    {
+        // server_certificate_type (RFC 7250, IANA 20): the client accepts an X.509 or RawPublicKey server
+        // credential. CertificateType certificate_types<1..2^8-1> = [X509(0), RawPublicKey(2)].
+        b16(&b, 0x0014);
+        b16(&b, 0x0003);
+        b8(&b, 0x02); // list length 2
+        b8(&b, 0x00); // X509(0)
+        b8(&b, 0x02); // RawPublicKey(2)
     }
     uint16_t ext_len = (uint16_t)(b.n - ext_len_at - 2);
     out[ext_len_at] = (uint8_t)(ext_len >> 8);
@@ -282,9 +292,32 @@ static size_t sh_conn_id(const uint8_t *sh, size_t len, uint8_t *cid_out)
 // client Finished (handshake message_seq @p cfin_msg_seq), and assert both sides install identical
 // application-traffic keys. @p tr is taken by value so the caller's copy is untouched. Shared by the
 // one-round-trip and HelloRetryRequest paths (they differ only in the transcript prefix and message_seq).
+// server_certificate_type(0x0014) = RawPublicKey(2) present in an EncryptedExtensions message?
+static bool ee_has_rpk(const uint8_t *msg, size_t mlen)
+{
+    if (mlen < 6)
+        return false;
+    size_t o = 4; // hs header
+    size_t ext_end = o + 2 + ((msg[o] << 8) | msg[o + 1]);
+    o += 2;
+    while (o + 4 <= ext_end && ext_end <= mlen)
+    {
+        uint16_t et = (uint16_t)((msg[o] << 8) | msg[o + 1]);
+        uint16_t el = (uint16_t)((msg[o + 2] << 8) | msg[o + 3]);
+        o += 4;
+        if (et == 0x0014 && el == 1 && msg[o] == 0x02)
+            return true;
+        o += el;
+    }
+    return false;
+}
+
+// The fixed 12-byte DER prefix of an Ed25519 SubjectPublicKeyInfo (RFC 8410 §4).
+static const uint8_t SPKI_PREFIX[12] = {0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00};
+
 static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint16_t cfin_msg_seq,
                                            const uint8_t *flight, size_t fl, const uint8_t *client_cid = nullptr,
-                                           size_t client_cid_len = 0)
+                                           size_t client_cid_len = 0, bool expect_rpk = false)
 {
     size_t off = 0;
     // record 0: ServerHello (DTLSPlaintext, epoch 0)
@@ -365,11 +398,26 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
             seen_fin = 1;
         }
 
+        if (msg[0] == 8) // EncryptedExtensions: the RPK profile negotiates server_certificate_type here
+            TEST_ASSERT_EQUAL(expect_rpk, ee_has_rpk(msg, mlen));
+
         ssh_sha256_update(&tr, msg, mlen);
 
-        if (msg[0] == 11) // Certificate: the cert_data is the raw Ed25519 pubkey (this test's profile)
+        if (msg[0] == 11) // Certificate: raw Ed25519 pubkey, or (RFC 7250) an Ed25519 SubjectPublicKeyInfo
         {
-            memcpy(cert_pub, msg + 4 + 1 + 3 + 3, 32);
+            const uint8_t *cert_data = msg + 4 + 1 + 3 + 3; // hdr + ctx_len(1) + list_len(3) + entry_len(3)
+            uint32_t entry_len = (uint32_t)((msg[4 + 1 + 3] << 16) | (msg[4 + 1 + 3 + 1] << 8) | msg[4 + 1 + 3 + 2]);
+            if (expect_rpk)
+            {
+                TEST_ASSERT_EQUAL_UINT32(44, entry_len); // 12-byte SPKI prefix + 32-byte key
+                TEST_ASSERT_EQUAL_MEMORY(SPKI_PREFIX, cert_data, sizeof(SPKI_PREFIX));
+                memcpy(cert_pub, cert_data + 12, 32);
+            }
+            else
+            {
+                TEST_ASSERT_EQUAL_UINT32(32, entry_len);
+                memcpy(cert_pub, cert_data, 32);
+            }
             have_cert = true;
         }
     }
@@ -481,6 +529,45 @@ static void test_full_handshake(void)
     TEST_ASSERT_TRUE(fl > 0); // server produced its flight
 
     complete_handshake_from_flight(&conn, tr, /*cfin_msg_seq=*/1, flight, (size_t)fl);
+}
+
+// RFC 7250 Raw Public Keys: the ClientHello offers server_certificate_type = RawPublicKey, so the server
+// answers with that type in EncryptedExtensions and sends its Ed25519 SubjectPublicKeyInfo (44-byte SPKI)
+// as the Certificate instead of an X.509 chain. The client verifies CertificateVerify against the key
+// carried in that SPKI, and the whole handshake completes with identical application-traffic keys - so the
+// signature really is over the presented raw key.
+static void test_full_handshake_rpk(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
+
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello_ex(ch, client_pub, /*with_keyshare=*/true, nullptr, 0, nullptr, 0,
+                                          /*offer_rpk=*/true);
+
+    SshSha256Ctx tr;
+    ssh_sha256_init(&tr);
+    ssh_sha256_update(&tr, ch, ch_len);
+
+    uint8_t ch_frag[300];
+    size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                          sizeof(ch_frag));
+    uint8_t ch_rec[320];
+    size_t ch_rl = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+
+    uint8_t flight[2048];
+    int fl = dws_dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
+    TEST_ASSERT_TRUE(fl > 0);
+
+    complete_handshake_from_flight(&conn, tr, /*cfin_msg_seq=*/1, flight, (size_t)fl, nullptr, 0,
+                                   /*expect_rpk=*/true);
 }
 
 // Connection id negotiation (RFC 9146 / RFC 9147 §9): the ClientHello offers a connection_id, so the
@@ -810,6 +897,7 @@ int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake);
+    RUN_TEST(test_full_handshake_rpk);
     RUN_TEST(test_cid_handshake);
     RUN_TEST(test_hrr_group_renegotiation);
     RUN_TEST(test_hrr_retry_without_cookie_rejected);

@@ -8,6 +8,7 @@
 // RFC 8446 §4.1.3 magic random.
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
@@ -143,6 +144,129 @@ static void test_client_hello_cookie_parse(void)
     TEST_ASSERT_EQUAL_MEMORY(cookie, hello.cookie, sizeof(cookie));
 }
 
+// ---------------------------------------------------------------------------
+// RFC 7250 Raw Public Keys (DWS_ENABLE_TLS_RPK)
+// ---------------------------------------------------------------------------
+
+// The fixed 12-byte DER prefix of an Ed25519 SubjectPublicKeyInfo (RFC 8410 §4): SEQUENCE {
+// SEQUENCE { OID 1.3.101.112 }, BIT STRING(33, 0 unused) }. Confirmed against `openssl ... -pubout`.
+static const uint8_t SPKI_PREFIX[12] = {0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00};
+
+static void test_ed25519_spki(void)
+{
+    uint8_t pub[32];
+    for (int i = 0; i < 32; i++)
+        pub[i] = (uint8_t)(0xA0 + i);
+    uint8_t spki[DWS_TLS13_ED25519_SPKI_LEN];
+    size_t n = dws_tls13_ed25519_spki(spki, sizeof(spki), pub);
+    TEST_ASSERT_EQUAL_size_t(44, n);
+    TEST_ASSERT_EQUAL_MEMORY(SPKI_PREFIX, spki, sizeof(SPKI_PREFIX)); // fixed AlgorithmIdentifier + BIT STRING head
+    TEST_ASSERT_EQUAL_MEMORY(pub, spki + 12, 32);                     // then the raw 32-byte key
+    // Too small a buffer fails cleanly.
+    uint8_t small[43];
+    TEST_ASSERT_EQUAL_size_t(0, dws_tls13_ed25519_spki(small, sizeof(small), pub));
+}
+
+static void test_build_certificate_rpk(void)
+{
+    // Derive a real public key from a seed, so the test spans seed -> pubkey -> SPKI -> Certificate.
+    uint8_t seed[32];
+    for (int i = 0; i < 32; i++)
+        seed[i] = (uint8_t)(i * 7 + 1);
+    uint8_t pub[32];
+    ssh_ed25519_pubkey(pub, seed);
+
+    uint8_t out[80];
+    size_t n = dws_tls13_build_certificate_rpk(out, sizeof(out), pub);
+    // Certificate: type(11) len24 | ctx_len(0) | list_len24 | entry_len24(44) | SPKI(44) | entry_ext(0000)
+    TEST_ASSERT_EQUAL_size_t(4 + 1 + 3 + 3 + 44 + 2, n);
+    TEST_ASSERT_EQUAL_UINT8(0x0b, out[0]); // TLS_HS_CERTIFICATE
+    TEST_ASSERT_EQUAL_UINT8(0x00, out[4]); // empty certificate_request_context
+    TEST_ASSERT_EQUAL_UINT8(44, out[10]);  // CertificateEntry cert_data length low byte (44)
+    TEST_ASSERT_EQUAL_MEMORY(SPKI_PREFIX, out + 11, sizeof(SPKI_PREFIX)); // the SPKI DER prefix
+    TEST_ASSERT_EQUAL_MEMORY(pub, out + 11 + 12, 32);                     // carrying the derived public key
+    TEST_ASSERT_EQUAL_UINT8(0x00, out[11 + 44]);                          // entry extensions length = 0
+    TEST_ASSERT_EQUAL_UINT8(0x00, out[11 + 44 + 1]);
+}
+
+static void test_ee_rpk_extension(void)
+{
+    // The empty (DTLS-profile) EncryptedExtensions with RPK selected carries server_certificate_type.
+    uint8_t out[32];
+    size_t n = dws_tls13_build_encrypted_extensions_empty(out, sizeof(out), /*rpk_server_cert=*/true);
+    const uint8_t want[11] = {0x08, 0x00, 0x00, 0x07,        // EncryptedExtensions, length 7
+                              0x00, 0x05,                    // extensions length 5
+                              0x00, 0x14, 0x00, 0x01, 0x02}; // server_certificate_type(20) -> RawPublicKey(2)
+    TEST_ASSERT_EQUAL_size_t(sizeof(want), n);
+    TEST_ASSERT_EQUAL_MEMORY(want, out, sizeof(want));
+    // Default (no RPK) stays byte-identical to the historical empty EE.
+    n = dws_tls13_build_encrypted_extensions_empty(out, sizeof(out));
+    const uint8_t empty[6] = {0x08, 0x00, 0x00, 0x02, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_size_t(sizeof(empty), n);
+    TEST_ASSERT_EQUAL_MEMORY(empty, out, sizeof(empty));
+}
+
+// Assemble a minimal ClientHello carrying exactly one extension (type @p etype, body @p ebody).
+static size_t build_ch_one_ext(uint8_t *ch, uint16_t etype, const uint8_t *ebody, uint16_t ebody_len)
+{
+    size_t p = 0;
+    ch[p++] = 0x01; // client_hello
+    size_t body_len_at = p;
+    p += 3;
+    ch[p++] = 0x03;
+    ch[p++] = 0x03; // legacy_version
+    for (int i = 0; i < 32; i++)
+        ch[p++] = (uint8_t)i; // random
+    ch[p++] = 0x00;           // session_id length 0
+    ch[p++] = 0x00;
+    ch[p++] = 0x02;
+    ch[p++] = 0x13;
+    ch[p++] = 0x01; // cipher_suites: TLS_AES_128_GCM_SHA256
+    ch[p++] = 0x01;
+    ch[p++] = 0x00;                                 // compression_methods: [null]
+    uint16_t ext_total = (uint16_t)(4 + ebody_len); // type(2) + len(2) + body
+    ch[p++] = (uint8_t)(ext_total >> 8);
+    ch[p++] = (uint8_t)ext_total;
+    ch[p++] = (uint8_t)(etype >> 8);
+    ch[p++] = (uint8_t)etype;
+    ch[p++] = (uint8_t)(ebody_len >> 8);
+    ch[p++] = (uint8_t)ebody_len;
+    for (unsigned i = 0; i < ebody_len; i++)
+        ch[p++] = ebody[i];
+    uint32_t body_len = (uint32_t)(p - body_len_at - 3);
+    ch[body_len_at] = (uint8_t)(body_len >> 16);
+    ch[body_len_at + 1] = (uint8_t)(body_len >> 8);
+    ch[body_len_at + 2] = (uint8_t)body_len;
+    return p;
+}
+
+static void test_parse_server_cert_type_rpk(void)
+{
+    // server_certificate_type list [X509(0), RawPublicKey(2)]: the client accepts a RawPublicKey from us.
+    const uint8_t ebody[3] = {0x02, 0x00, 0x02}; // list length 2, then {0, 2}
+    uint8_t ch[128];
+    size_t n = build_ch_one_ext(ch, 0x0014, ebody, sizeof(ebody));
+    Tls13ClientHello hello;
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(ch, n, &hello));
+    TEST_ASSERT_TRUE(hello.offers_rpk_server_cert);
+}
+
+static void test_parse_server_cert_type_x509_only(void)
+{
+    // A list with only X509(0): no RPK offer.
+    const uint8_t ebody[2] = {0x01, 0x00}; // list length 1, then {0}
+    uint8_t ch[128];
+    size_t n = build_ch_one_ext(ch, 0x0014, ebody, sizeof(ebody));
+    Tls13ClientHello hello;
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(ch, n, &hello));
+    TEST_ASSERT_FALSE(hello.offers_rpk_server_cert);
+    // A ClientHello with no server_certificate_type at all also leaves the flag clear.
+    const uint8_t cookie[1] = {0x00};
+    n = build_ch_one_ext(ch, 0x002c, cookie, sizeof(cookie));
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(ch, n, &hello));
+    TEST_ASSERT_FALSE(hello.offers_rpk_server_cert);
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -152,5 +276,10 @@ int main(int, char **)
     RUN_TEST(test_message_hash);
     RUN_TEST(test_empty_encrypted_extensions);
     RUN_TEST(test_client_hello_cookie_parse);
+    RUN_TEST(test_ed25519_spki);
+    RUN_TEST(test_build_certificate_rpk);
+    RUN_TEST(test_ee_rpk_extension);
+    RUN_TEST(test_parse_server_cert_type_rpk);
+    RUN_TEST(test_parse_server_cert_type_x509_only);
     return UNITY_END();
 }
