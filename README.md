@@ -587,6 +587,7 @@ Steady state, the `chacha20-poly1305@openssh.com` record layer runs at **~1.5 MB
 </tr>
 <tr>
   <td align="center"><a href="docs/FEATURES.md#ssh-reverse-tunnel" title="Outbound SSH client + reverse tunnel - the mirror of the SSH server: the device dials OUT to a relay with a public address, authenticates, and requests a remote forward (`tcpip-forward`, RFC 4254 sec 7.1, the `ssh -R` seam), so a connection to the relay's forwarded port is tunnelled back to a local service on the device. This is how a device behind NAT / a firewall stays reachable over one authenticated SSH port (e.g. serve its web UI to the world via a cloud relay). Default off. The client negotiates the FULL modern suite and interoperates with any current SSH server (RFC 4253 sec 7.1 order): KEX `mlkem768x25519-sha256` (PQ/T hybrid, when `DWS_ENABLE_PQC_KEX`) and `sntrup761x25519-sha512@openssh.com` (PQ/T hybrid, when `DWS_ENABLE_SSH_SNTRUP761`; as the KEM initiator it runs sntrup761 KeyGen+Decaps and derives over SHA-512), `curve25519-sha256`, `ecdh-sha2-nistp256`, `diffie-hellman-group14-sha256`; host keys `ssh-ed25519` / `ecdsa-sha2-nistp256` / `rsa-sha2-512` / `rsa-sha2-256`, each verified against a caller-supplied pin (the SHA-256 of the relay's host-key blob - type-agnostic, no trust-on-first-use); ciphers `chacha20-poly1305@openssh.com` / `aes256-gcm@openssh.com` / `aes256-ctr` (+ hmac-sha2-256/512, ETM and E&amp;M); the device authenticates with its own ssh-ed25519 key (publickey). Reuses the server's transport crypto through a role-aware packet layer (an `is_client` flag flips the send/receive key direction; the RFC 4253 sec 7.2 KDF letters are role-independent) - this file is the client state machine only, not a second crypto stack. Forwarded connections are bridged through a channel POOL (`DWS_SSH_CLIENT_MAX_CHANNELS`, per-variant default) so concurrent / rapid requests each get a channel; each opens one local bridge connection, so the outbound pool auto-provisions `DWS_CLIENT_CONNS &gt;= 1 + DWS_SSH_CLIENT_MAX_CHANNELS`. The tunnel runs in the caller's task and owns a dedicated scratch arena (`DWS_SCRATCH_SLOTS = workers + 1`); drive `dws_ssh_tunnel_begin()/poll()/end()` from one task with enough stack for the negotiated KEX (curve25519/ed25519 ~10.5 KB; the ML-KEM hybrid ~16 KB; the sntrup761 hybrid ~32 KB - a dedicated 40 KB task with sntrup761 enabled, else 20 KB, not `loop()`'s 8 KB). HW-verified against OpenSSH 10.0 on an ESP32-S3: curve25519 KEX + ed25519 pin/auth + `tcpip-forward` + the forwarded-tcpip bridge to the device's `:80`, concurrent and rapid-sequential requests returning the device's response byte-for-byte.">SSH Reverse Tunnel</a></td>
+  <td align="center"><a href="docs/FEATURES.md#tls-raw-public-keys" title="Raw Public Keys (RFC 7250) for the hand-rolled TLS 1.3 stack (requires DTLS or HTTP/3). Default off. A cert-less TLS credential: when a client offers the `server_certificate_type` extension (IANA 20) with `RawPublicKey`(2), the server answers with that certificate type in EncryptedExtensions and sends a Certificate message whose entry is a bare DER `SubjectPublicKeyInfo` (the 44-byte Ed25519 SPKI, RFC 8410) instead of an X.509 chain. The same Ed25519 key still signs CertificateVerify, so there is no security downgrade - only a smaller handshake with no certificate to parse, the natural fit for provisioned, key-pinned ESP32 fleets and the RFC 7252 §9 CoAP-over-DTLS RawPublicKey profile. Purely additive and server-side: a client that does not offer the extension still receives the X.509 certificate, and the handshake never requests a client certificate. Wired into the DTLS 1.3 handshake (`dws_dtls_conn`); the shared TLS 1.3 codec (`dws_tls13_msg`) also carries it for a future HTTP/3 use. The SPKI encoder, the RawPublicKey Certificate, the `server_certificate_type` EncryptedExtensions, and the ClientHello parse are pure and host-tested (`native_dtls_tls13`), and an end-to-end DTLS 1.3 handshake completes with the server presenting the raw key and the client verifying CertificateVerify against it (`native_dtls_conn`). Verified **against a real reference implementation**: the wolfSSL DTLS 1.3 client in RawPublicKey-only mode (`--rpk`, so it rejects an X.509 answer) completes a full handshake and an application-data round trip with the server (test/servers/dws_dtls_wolfssl) - proof the presented `SubjectPublicKeyInfo` is wire-conformant. Pure, zero-heap. See src/network_drivers/presentation/http3/dws_tls13_msg.h.">TLS Raw Public Keys</a></td>
   <td align="center"><a href="docs/FEATURES.md#vxi-11" title="VXI-11 (TCP/IP Instrument Protocol) codec over ONC RPC / XDR. Default off. services/vxi11 is a zero-heap codec for the legacy LXI instrument transport that predates HiSLIP ([DWS_ENABLE_HISLIP](#hislip)) - VXI-11 rides on ONC RPC (Sun RPC, RFC 5531) with XDR (RFC 4506) over TCP, carrying SCPI ([DWS_ENABLE_SCPI](#scpi)). It provides the reusable ONC-RPC framing - `dws_rpc_record_mark` / `dws_rpc_parse_record_mark` (the TCP record-marking header) and `dws_rpc_parse_reply` (the accepted-reply header with AUTH_NONE) over big-endian, 4-byte-aligned, length-prefixed XDR (no sub-word types on the wire) - plus the DEVICE_CORE procedures: `dws_vxi11_build_create_link` / `_device_write` / `_device_read` / `_device_readstb` / `_destroy_link` (program `0x0607AF` v1) with their response parsers, and the portmapper `dws_vxi11_build_getport` call that maps the program to its dynamic TCP port (the instrument channel is not on a fixed port). Device_Flags (waitlock / end / termchrset), the read `reason` bits (REQCNT / CHR / END), and the Device_ErrorCode set are covered; `dws_vxi11_error_str` names an error. The XDR struct layouts, procedure numbers, and RPC headers are verified against the VXI-11 spec + RFC 5531 / 4506 / 1833 (cross-checked with python-vxi11 and the Wireshark dissector), with a byte-exact create_link vector. Pure codec, host-tested; the TCP connection is the application's. See src/services/vxi11/vxi11.h.">VXI-11</a></td>
 </tr>
 </tbody>
@@ -685,7 +686,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L5    | `TELNET`            |             2.3 KB |          15.8 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.1-7.9 KB |      8.0-23.2 KB |
-| L6    | `WEB_TERMINAL`      |         0.0-4.6 KB |      0.0-15.3 KB |
+| L6    | `WEB_TERMINAL`      |         0.0-4.7 KB |      0.0-15.3 KB |
 | L6    | `MSGPACK`           |             3.7 KB |          15.3 KB |
 | L6    | `CBOR`              |             2.4 KB |          15.3 KB |
 | L6    | `JWT`               |             2.1 KB |          16.3 KB |
@@ -693,7 +694,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `POWER_MGMT`        |           125.5 KB |          19.0 KB |
 | L7    | `FILE_SERVING`      |        0.0-87.8 KB |      0.0-16.1 KB |
 | L7    | `HTTP_DELIVERY`     |            87.8 KB |          16.1 KB |
-| L7    | `EXC_DECODER`       |            86.4 KB |          16.8 KB |
+| L7    | `EXC_DECODER`       |            86.5 KB |          16.8 KB |
 | L7    | `HOTSWAP`           |            83.6 KB |          16.1 KB |
 | L7    | `WS_CLIENT`         |            76.6 KB |          53.1 KB |
 | L7    | `ETAG`              |        0.0-74.5 KB |      0.0-16.5 KB |
@@ -701,12 +702,12 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `VFS`               |            42.6 KB |          19.6 KB |
 | L7    | `RANGE`             |        0.6-41.6 KB |      0.0-15.3 KB |
 | L7    | `UPLOAD`            |            41.4 KB |          34.9 KB |
-| L7    | `IFACE_BRIDGE`      |            27.3 KB |          16.0 KB |
+| L7    | `IFACE_BRIDGE`      |            27.4 KB |          16.0 KB |
 | L7    | `NTP`               |            25.4 KB |          17.7 KB |
 | L7    | `MDNS`              |            24.9 KB |          17.1 KB |
 | L7    | `TIME_SOURCE`       |            21.0 KB |          16.8 KB |
-| L7    | `EDGE_CACHE`        |            20.6 KB |          51.8 KB |
-| L7    | `DASHBOARD`         |            20.3 KB |          15.6 KB |
+| L7    | `EDGE_CACHE`        |            20.7 KB |          51.8 KB |
+| L7    | `DASHBOARD`         |            20.4 KB |          15.6 KB |
 | L7    | `NTRIP_CASTER`      |            17.5 KB |          18.1 KB |
 | L7    | `OIDC`              |            13.6 KB |          32.9 KB |
 | L7    | `OAUTH2`            |            12.7 KB |          37.5 KB |
@@ -730,11 +731,11 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `MODBUS_MASTER`     |             2.1 KB |          15.5 KB |
 | L7    | `CONTROL`           |             2.0 KB |          23.1 KB |
 | L7    | `STATS`             |             1.9 KB |          15.3 KB |
-| L7    | `SPA_ROUTER`        |             1.7 KB |          15.2 KB |
+| L7    | `SPA_ROUTER`        |             1.8 KB |          15.2 KB |
 | L7    | `MODBUS`            |             1.6 KB |          15.5 KB |
 | L7    | `CSRF`              |             1.6 KB |          15.3 KB |
 | L7    | `LOGBUF`            |             1.3 KB |          18.3 KB |
-| L7    | `TOTP`              |             1.1 KB |          15.3 KB |
+| L7    | `TOTP`              |             1.2 KB |          15.3 KB |
 | L7    | `OTA_ROLLBACK`      |             1.0 KB |          15.2 KB |
 | L7    | `PARTITION_MONITOR` |             0.7 KB |          15.2 KB |
 | L7    | `DIAG`              |             0.6 KB |          15.2 KB |
