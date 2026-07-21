@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`eee60ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eee60ee62cee0d894de43e5a306f9c2a4369e393))
+- update CHANGELOG.md [skip ci] ([`52baa65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52baa658909468ec5b6b481cfb24ca85ab42c4bf))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`e6e8d84`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e6e8d84e6c8cf8807d1114a16dda90329e2def3b))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`87dece1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87dece13a624e3fcfe694cceb6ab9f93a3797410))
+
+### Testing
+
+- CycloneSSL DTLS 1.3 peer - a second reference stack (incl. RFC 7250 RPK) ([`4b6c358`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b6c358266da60bc4aaaed0517477bed3f2aca3c))
+
 ## [7.24.0] - 2026-07-21
 
 <details>
