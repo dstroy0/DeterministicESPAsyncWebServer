@@ -3,7 +3,7 @@
     "example": "L4-Transport/AcceptThrottle",
     "flags": "-DDWS_ENABLE_ACCEPT_THROTTLE=1",
     "board": "esp32dev",
-    "flash_bytes": 753157,
+    "flash_bytes": 753149,
     "ram_bytes": 81828
   },
   "ADS": {
@@ -129,7 +129,7 @@
     "example": "L4-Transport/DiffServ",
     "flags": "-DDWS_ENABLE_DIFFSERV=1",
     "board": "esp32dev",
-    "flash_bytes": 753625,
+    "flash_bytes": 753617,
     "ram_bytes": 81820
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
@@ -752,14 +752,14 @@
     "example": "L4-Transport/mTLS",
     "flags": "-DDWS_ENABLE_TLS=1 -DDWS_ENABLE_MTLS=1 -DMAX_CONNS=4 -DDWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 859145,
+    "flash_bytes": 859141,
     "ram_bytes": 106016
   },
   "TLS+TLS_ARENA_SIZE": {
     "example": "L6-Presentation/SecureWebSocket",
     "flags": "-DDWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 858297,
+    "flash_bytes": 858293,
     "ram_bytes": 105680
   },
   "TLS+TLS_RESUMPTION": {
@@ -773,7 +773,7 @@
     "example": "L4-Transport/TlsResumption",
     "flags": "-DDWS_ENABLE_TLS=1 -DDWS_ENABLE_TLS_RESUMPTION=1 -DMAX_CONNS=4 -DDWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 859065,
+    "flash_bytes": 859061,
     "ram_bytes": 105840
   },
   "TOTP": {
@@ -864,7 +864,7 @@
     "example": "L6-Presentation/WebSocketCompression",
     "flags": "-DDWS_ENABLE_WS_DEFLATE=1",
     "board": "esp32dev",
-    "flash_bytes": 758177,
+    "flash_bytes": 758173,
     "ram_bytes": 90028
   },
   "ZIGBEE+GATEWAY": {
@@ -913,7 +913,7 @@
     "example": "L7-Application/ChunkedResponse",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 753985,
+    "flash_bytes": 753981,
     "ram_bytes": 81836
   },
   "core/DigestAuth": {
@@ -955,7 +955,7 @@
     "example": "L7-Application/InterfaceFilter",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 755013,
+    "flash_bytes": 755009,
     "ram_bytes": 81820
   },
   "core/Json": {
@@ -1039,7 +1039,7 @@
     "example": "L7-Application/Templating",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 755073,
+    "flash_bytes": 755069,
     "ram_bytes": 81868
   },
   "core/WebSocket": {
