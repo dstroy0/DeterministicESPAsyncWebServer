@@ -26,6 +26,7 @@ from each example's `pio ci` size report and aggregated into
 | `DASHBOARD`                                                                                               | L7-Application/Dashboard             | 755.6 KB (59.0%) | 80.2 KB (25.1%)  |
 | `DEVICE_ID`                                                                                               | L7-Application/DeviceUuid            | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DIAG`                                                                                                    | L7-Application/Diagnostics           | 735.8 KB (57.5%) | 79.9 KB (25.0%)  |
+| `DIFFSERV`                                                                                                | L4-Transport/DiffServ                | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`                                                                          | Peripherals/DmaIngest                | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE`                                                                  | Foundation/InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE`                                                                  | Drivers/RadioGateway                 | 264.2 KB (20.6%) | 28.0 KB (8.8%)   |

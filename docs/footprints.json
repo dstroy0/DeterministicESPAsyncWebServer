@@ -125,6 +125,13 @@
     "flash_bytes": 753473,
     "ram_bytes": 81788
   },
+  "DIFFSERV": {
+    "example": "L4-Transport/DiffServ",
+    "flags": "-DDWS_ENABLE_DIFFSERV=1",
+    "board": "esp32dev",
+    "flash_bytes": 753065,
+    "ram_bytes": 81788
+  },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
     "example": "Peripherals/DmaIngest",
     "flags": "-DDWS_ENABLE_DMA=1 -DDWS_ENABLE_PREEMPT_QUEUE=1 -DDWS_DMA_SIMULATE=1",
