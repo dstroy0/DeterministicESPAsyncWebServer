@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`5e625e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e625e95a188699ad17f4b067f53749a0337a9cd))
+- update CHANGELOG.md [skip ci] ([`3b8f428`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b8f4284268ae3e2ec83c4c381ce8a02bea9180e))
+
+### Documentation
+
+- close forwarded-tcpip (ssh -R) - HW-verified device-as-server remote forward on an ESP32-P4 ([`bf9314f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf9314f6134ab5a9edc6f7bbb2048ede233b242b))
+
 ## [7.26.0] - 2026-07-21
 
 <details>
