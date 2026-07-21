@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`877bbce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/877bbce9d39e751fadccba0670517e58d4e58a0b))
+- update CHANGELOG.md [skip ci] ([`8005790`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8005790324c05550f05376fc23bcb72b0947bb81))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`7661f6a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7661f6a57b0ed5d308ca91893a742793d4eaafe3))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d5b81b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5b81b8dcfb51c2e0454eba3375c540cda5185aa))
+
+### Testing
+
+- fuzz the HPACK (HTTP/2, RFC 7541) header-block decoder ([`bde6f24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bde6f2404add123cac86c94a089740aa668c6ca9))
+
 ## [7.28.4] - 2026-07-21
 
 <details>
