@@ -102,7 +102,13 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
   (onboard IP101 PHY): the shipped `init_eth_physical()` serves real HTTP over pure wired Ethernet. See the `[x]` entry below.
 - **CoAP scope** - `/.well-known/core` discovery shipped; separate/deferred responses + CON dedup are
   deliberately out of scope.
-- **SSH channels** - `direct-tcpip` (`ssh -L`) shipped; `forwarded-tcpip` (`ssh -R`) + X11 pending.
+- **SSH channels** - `direct-tcpip` (`ssh -L`) **and** `forwarded-tcpip` (`ssh -R`) both shipped +
+  **HW-verified**. Local forward host-tested (`test_ssh_channel`) + HW-verified; the remote forward is the
+  `ssh_forward` owner + `dws_ssh_conn_open_forwarded` glue driven by the `tcpip-forward` global request, and
+  the **device-as-server `ssh -R`** is now HW-verified on an ESP32-P4 (2026-07-21): a real OpenSSH
+  `ssh -R 8080:localhost:9091` made the device listen on `:8080`, and a connection to it tunneled a
+  **byte-exact reverse round trip** back to the client's target. X11 forwarding is a deliberate non-goal
+  (no X11 clients run on an embedded server).
 
 ### WON'T / BLOCKED (needs hardware, proprietary docs, or a closed decision)
 
