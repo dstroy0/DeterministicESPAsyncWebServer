@@ -23,9 +23,9 @@ from each example's `pio ci` size report and aggregated into
 | `CONFIG_STORE+CONFIG_IO`                                                                                  | L7-Application/ConfigExport          | 740.1 KB (57.8%) | 79.9 KB (25.0%)  |
 | `CONTROL`                                                                                                 | L7-Application/PidTuning             | 737.3 KB (57.6%) | 87.8 KB (27.4%)  |
 | `CSRF`                                                                                                    | L7-Application/Csrf                  | 736.9 KB (57.6%) | 79.9 KB (25.0%)  |
-| `DASHBOARD`                                                                                               | L7-Application/Dashboard             | 755.7 KB (59.0%) | 80.2 KB (25.1%)  |
+| `DASHBOARD`                                                                                               | L7-Application/Dashboard             | 755.8 KB (59.0%) | 80.2 KB (25.1%)  |
 | `DEVICE_ID`                                                                                               | L7-Application/DeviceUuid            | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
-| `DIAG`                                                                                                    | L7-Application/Diagnostics           | 735.9 KB (57.5%) | 79.9 KB (25.0%)  |
+| `DIAG`                                                                                                    | Foundation/Configuration             | 737.4 KB (57.6%) | 75.7 KB (23.7%)  |
 | `DIFFSERV`                                                                                                | L4-Transport/DiffServ                | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`                                                                          | Peripherals/DmaIngest                | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE`                                                                  | Foundation/InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
@@ -116,7 +116,7 @@ from each example's `pio ci` size report and aggregated into
 | `TLS`                                                                                                     | L6-Presentation/SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                                                                                | L4-Transport/mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
 | `TLS+MTLS+TLS_ARENA_SIZE`                                                                                 | L4-Transport/mTLS                    | 838.5 KB (65.5%) | 103.5 KB (32.3%) |
-| `TLS+TLS_ARENA_SIZE`                                                                                      | L6-Presentation/SecureWebSocket      | 837.5 KB (65.4%) | 103.2 KB (32.2%) |
+| `TLS+TLS_ARENA_SIZE`                                                                                      | L6-Presentation/SecureWebSocket      | 837.7 KB (65.4%) | 103.2 KB (32.2%) |
 | `TLS+TLS_RESUMPTION`                                                                                      | L4-Transport/TlsResumption           | 836.6 KB (65.4%) | 119.3 KB (37.3%) |
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE`                                                                       | L4-Transport/TlsResumption           | 838.4 KB (65.5%) | 103.3 KB (32.3%) |
 | `TOTP`                                                                                                    | L7-Application/Totp                  | 736.4 KB (57.5%) | 79.9 KB (25.0%)  |
@@ -154,7 +154,7 @@ from each example's `pio ci` size report and aggregated into
 | `core/RegexRoutes`                                                                                        | L7-Application/RegexRoutes           | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/ResponseHeaders`                                                                                    | L7-Application/ResponseHeaders       | 735.6 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/SSHCryptoSelfTest`                                                                                  | L5-Session/SSHCryptoSelfTest         | 263.2 KB (20.6%) | 21.0 KB (6.6%)   |
-| `core/ServerSentEvents`                                                                                   | L6-Presentation/ServerSentEvents     | 735.9 KB (57.5%) | 79.9 KB (25.0%)  |
+| `core/ServerSentEvents`                                                                                   | L6-Presentation/ServerSentEvents     | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/Sysadmin`                                                                                           | Foundation/Sysadmin                  | 748.9 KB (58.5%) | 79.9 KB (25.0%)  |
 | `core/Templating`                                                                                         | L7-Application/Templating            | 736.9 KB (57.6%) | 79.9 KB (25.0%)  |
 | `core/WebSocket`                                                                                          | L6-Presentation/WebSocket            | 735.6 KB (57.5%) | 79.9 KB (25.0%)  |

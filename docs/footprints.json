@@ -108,7 +108,7 @@
     "example": "L7-Application/Dashboard",
     "flags": "-DDWS_ENABLE_DASHBOARD=1",
     "board": "esp32dev",
-    "flash_bytes": 773801,
+    "flash_bytes": 773961,
     "ram_bytes": 82156
   },
   "DEVICE_ID": {
@@ -119,11 +119,11 @@
     "ram_bytes": 81820
   },
   "DIAG": {
-    "example": "L7-Application/Diagnostics",
+    "example": "Foundation/Configuration",
     "flags": "-DDWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 753521,
-    "ram_bytes": 81780
+    "flash_bytes": 755073,
+    "ram_bytes": 77540
   },
   "DIFFSERV": {
     "example": "L4-Transport/DiffServ",
@@ -759,7 +759,7 @@
     "example": "L6-Presentation/SecureWebSocket",
     "flags": "-DDWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 857625,
+    "flash_bytes": 857777,
     "ram_bytes": 105664
   },
   "TLS+TLS_RESUMPTION": {
@@ -1025,7 +1025,7 @@
     "example": "L6-Presentation/ServerSentEvents",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 753525,
+    "flash_bytes": 753713,
     "ram_bytes": 81788
   },
   "core/Sysadmin": {
