@@ -158,7 +158,7 @@ jobs:
 
       - name: Format TEST_REPORT.md with Prettier
         if: ${{ steps.sel.outputs.mode != 'none' }}
-        run: npx prettier@3.9.1 --write test/TEST_REPORT.md
+        run: npx prettier@3.9.6 --write test/TEST_REPORT.md
 
       # Scan the freshly-merged coverage.xml BEFORE the commit step: the commit does a rebase, and a
       # concurrent-run conflict on the regenerated coverage.xml would otherwise leave git conflict

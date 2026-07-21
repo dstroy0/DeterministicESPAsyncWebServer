@@ -1,5 +1,7 @@
 .pio
 .vscode/
+# npm dev tooling (prettier/cspell); package.json + package-lock.json are committed, node_modules is not
+node_modules/
 # Root CMake build dir (the ESP-IDF component's CMakeLists lives at root; `cmake .` / idf.py creates build/)
 /build/
 docs/html

@@ -99,7 +99,7 @@ jobs:
         run: python test/gen_test_readme.py
 
       - name: Format with Prettier
-        run: npx prettier@3.9.1 --write README.md docs/README.md docs/EXAMPLES.md docs/THEMES.md docs/FAVICONS.md
+        run: npx prettier@3.9.6 --write README.md docs/README.md docs/EXAMPLES.md docs/THEMES.md docs/FAVICONS.md
 
       - name: Configure SSH commit signing
         env:

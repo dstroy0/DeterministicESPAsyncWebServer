@@ -171,7 +171,7 @@ jobs:
           python tools/ci/example_footprints.py merge frags docs/footprints.json
           python tools/ci/example_footprints.py table docs/footprints.json docs/FOOTPRINTS.md
       - name: Format with Prettier
-        run: npx prettier@3.9.1 --write docs/footprints.json docs/FOOTPRINTS.md
+        run: npx prettier@3.9.6 --write docs/footprints.json docs/FOOTPRINTS.md
       - name: Configure SSH commit signing
         env:
           CI_SIGNING_KEY: ${{ secrets.CI_SIGNING_KEY }}
