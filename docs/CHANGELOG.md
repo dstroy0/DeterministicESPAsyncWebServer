@@ -2,21 +2,36 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.28.5] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.28.5 - 2026-07-21</b></summary>
+
+### Bug Fixes
+
+- clear SonarCloud BLOCKER/bug findings (bounds, preprocessor UB, unsigned negate) ([`77b283a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77b283a0689231d0e7e423bae70da48edb28b25f))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`0ada1ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ada1ef53c7ba398f43cd9eae1ea7249b34565e3))
 - update test report + coverage [skip ci] ([`877bbce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/877bbce9d39e751fadccba0670517e58d4e58a0b))
 - update CHANGELOG.md [skip ci] ([`8005790`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8005790324c05550f05376fc23bcb72b0947bb81))
 
+### Changes
+
+- Bump version: 7.28.4 → 7.28.5 ([`d075267`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d07526765c25814f552d5c8c13b475c43f9446de))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ab627fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab627fd4a3a549ebe296a07d6e96e2b37524c7e2))
 - update ESP32 build footprints [skip ci] ([`7661f6a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7661f6a57b0ed5d308ca91893a742793d4eaafe3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d5b81b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5b81b8dcfb51c2e0454eba3375c540cda5185aa))
 
 ### Testing
 
 - fuzz the HPACK (HTTP/2, RFC 7541) header-block decoder ([`bde6f24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bde6f2404add123cac86c94a089740aa668c6ca9))
+
+</details>
 
 ## [7.28.4] - 2026-07-21
 
