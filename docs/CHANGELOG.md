@@ -2,17 +2,32 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.30.0] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.30.0 - 2026-07-21</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`c79c00c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c79c00c5c296cd572c1c5266a3358856e0fd0bd9))
 - update CHANGELOG.md [skip ci] ([`df686a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df686a74e8b54f18d250e766b0f553bae17338e7))
+
+### Changes
+
+- Bump version: 7.29.0 → 7.30.0 ([`e4878c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4878c67a514755a9bb3bb8594c5f8212dc983cb))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`64818f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64818f821691bdc0a209032dcaf20269efaa787a))
 - record ESP32-P4 hardware verification ([`27be179`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/27be1793753d2f07c860ad0332a123c10e504ad8))
 - update ESP32 build footprints [skip ci] ([`8e0c191`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e0c191629827349ff8b52d8f419fe90f0795bc6))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`467c097`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/467c097b93a47349c5d9b18d6e9944db6f81b90a))
+
+### Features
+
+- Siemens SIMATIC serial - 3964R link + RK512 telegrams ([`0ff63b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ff63b9e58ee98b8640d9554e69b15d1572ac19a))
+
+</details>
 
 ## [7.29.0] - 2026-07-21
 
