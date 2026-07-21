@@ -36,11 +36,11 @@ fi
 # --- self-test: throwaway localhost OpenSSH sshd ---
 PORT="${SSH_INTEROP_PORT:-2222}"
 USER_NAME="$(id -un)"
-SUDO() { echo "${WSL_SUDO_PASS:-dstroy0}" | sudo -S "$@"; }
-command -v sshd >/dev/null 2>&1 || SUDO apt-get install -y openssh-server >/dev/null 2>&1
+sudo_run() { echo "${WSL_SUDO_PASS:-dstroy0}" | sudo -S "$@"; return; }
+command -v sshd >/dev/null 2>&1 || sudo_run apt-get install -y openssh-server >/dev/null 2>&1
 
-[ -f "$WORK/hostkey" ]   || ssh-keygen -t ed25519 -f "$WORK/hostkey"   -N '' -q -C throwaway-host
-[ -f "$WORK/clientkey" ] || ssh-keygen -t ed25519 -f "$WORK/clientkey" -N '' -q -C throwaway-client
+[[ -f "$WORK/hostkey" ]]   || ssh-keygen -t ed25519 -f "$WORK/hostkey"   -N '' -q -C throwaway-host
+[[ -f "$WORK/clientkey" ]] || ssh-keygen -t ed25519 -f "$WORK/clientkey" -N '' -q -C throwaway-client
 cp "$WORK/clientkey.pub" "$WORK/authorized_keys"
 chmod 600 "$WORK/hostkey" "$WORK/clientkey" "$WORK/authorized_keys"
 
@@ -49,10 +49,10 @@ printf '%s\n' \
   "StrictModes no" "PubkeyAuthentication yes" "PasswordAuthentication yes" "UsePAM yes" \
   "AuthorizedKeysFile $WORK/authorized_keys" "AllowUsers $USER_NAME" > "$WORK/sshd_config"
 
-SUDO mkdir -p /run/sshd
-SUDO pkill -f "sshd -f $WORK/sshd_config" 2>/dev/null || true
+sudo_run mkdir -p /run/sshd
+sudo_run pkill -f "sshd -f $WORK/sshd_config" 2>/dev/null || true
 sleep 0.5
-SUDO "$(command -v sshd)" -f "$WORK/sshd_config" -E "$WORK/sshd.stderr"
+sudo_run "$(command -v sshd)" -f "$WORK/sshd_config" -E "$WORK/sshd.stderr"
 sleep 1
 
 rc=0
@@ -62,11 +62,12 @@ run_variant() { # <label> <cyclone-client-args...>
   timeout 30 "$CLIENT" 127.0.0.1 "$PORT" "$USER_NAME" "$@" >"$WORK/client.log" 2>&1
   local crc=$?
   grep -q 'interop OK' "$WORK/client.log" && [[ $crc -eq 0 ]] && echo ">> PASS [$label]" || { echo ">> FAIL [$label] rc=$crc"; sed -n '1,40p' "$WORK/client.log"; rc=1; }
+  return
 }
 # Public-key auth in exec mode (OpenSSH runs the echo command). Password auth against a localhost
 # sshd needs the host login password, so it is covered by the rig mode (and is HW-verified on the P4).
 run_variant "public key" --key "$WORK/clientkey" "$WORK/clientkey.pub"
 
-SUDO pkill -f "sshd -f $WORK/sshd_config" 2>/dev/null || true
+sudo_run pkill -f "sshd -f $WORK/sshd_config" 2>/dev/null || true
 [[ $rc -eq 0 ]] && echo ">> ALL PASS" || echo ">> SOME FAILED"
 exit $rc

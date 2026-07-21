@@ -70,6 +70,26 @@ size_t dws_3964r_build_block(uint8_t *buf, size_t cap, const uint8_t *data, size
     return o;
 }
 
+// Append one destuffed payload byte; false when the caller's buffer is full.
+static bool put_byte(uint8_t *out, size_t out_cap, size_t *oo, uint8_t b)
+{
+    if (*oo >= out_cap)
+        return false;
+    out[(*oo)++] = b;
+    return true;
+}
+
+// DLE ETX consumed at @p i: the trailing BCC must be present and match the XOR over the
+// stuffed data + DLE ETX.
+static bool bcc_ok(const uint8_t *buf, size_t i, size_t len, bool with_bcc)
+{
+    if (!with_bcc)
+        return true;
+    if (i >= len)
+        return false; // missing BCC
+    return dws_3964r_bcc(buf, i) == buf[i];
+}
+
 bool dws_3964r_parse_block(const uint8_t *buf, size_t len, bool with_bcc, uint8_t *out, size_t out_cap, size_t *out_len)
 {
     if (!buf || !out || !out_len)
@@ -79,41 +99,30 @@ bool dws_3964r_parse_block(const uint8_t *buf, size_t len, bool with_bcc, uint8_
     while (i < len)
     {
         uint8_t b = buf[i];
-        if (b == SIMATIC_DLE)
+        if (b != SIMATIC_DLE)
         {
-            if (i + 1 >= len)
-                return false; // dangling DLE (truncated)
-            uint8_t n = buf[i + 1];
-            if (n == SIMATIC_DLE) // doubled -> one literal DLE
-            {
-                if (oo >= out_cap)
-                    return false;
-                out[oo++] = SIMATIC_DLE;
-                i += 2;
-            }
-            else if (n == SIMATIC_ETX) // terminator
-            {
-                i += 2;
-                if (with_bcc)
-                {
-                    if (i >= len)
-                        return false; // missing BCC
-                    if (dws_3964r_bcc(buf, i) != buf[i])
-                        return false; // BCC mismatch (XOR over stuffed data + DLE ETX)
-                }
-                *out_len = oo;
-                return true;
-            }
-            else
-                return false; // DLE + illegal control byte
-        }
-        else
-        {
-            if (oo >= out_cap)
+            if (!put_byte(out, out_cap, &oo, b))
                 return false;
-            out[oo++] = b;
             i++;
+            continue;
         }
+        if (i + 1 >= len)
+            return false; // dangling DLE (truncated)
+        uint8_t n = buf[i + 1];
+        if (n == SIMATIC_DLE) // doubled -> one literal DLE
+        {
+            if (!put_byte(out, out_cap, &oo, SIMATIC_DLE))
+                return false;
+            i += 2;
+            continue;
+        }
+        if (n != SIMATIC_ETX)
+            return false; // DLE + illegal control byte
+        i += 2;           // terminator
+        if (!bcc_ok(buf, i, len, with_bcc))
+            return false;
+        *out_len = oo;
+        return true;
     }
     return false; // no DLE ETX terminator
 }

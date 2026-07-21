@@ -140,7 +140,7 @@ int dws_failsafe_json_at(uint32_t now, char *out, size_t cap)
     bool first = true;
     for (int i = 0; i < DWS_FAILSAFE_MAX_LIFELINES; i++)
     {
-        DWSLifeline &l = s_fs.lines[i];
+        const DWSLifeline &l = s_fs.lines[i];
         if (!l.armed)
             continue;
         if (!first)

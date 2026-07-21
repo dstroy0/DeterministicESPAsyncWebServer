@@ -1207,7 +1207,7 @@ void DWS::http_poll_slot(uint8_t i)
     // already returned above.
     if (conn_pool[i].state == ConnState::CONN_ACTIVE && conn_pool[i].req_start_ms != 0 &&
         http_pool[i].parse_state < ParseState::PARSE_BODY &&
-        (uint32_t)(dws_millis() - conn_pool[i].req_start_ms) >= DWS_REQUEST_TIMEOUT_MS)
+        (dws_millis() - conn_pool[i].req_start_ms) >= DWS_REQUEST_TIMEOUT_MS)
     {
         conn_pool[i].req_start_ms = 0;
         send(i, 408, DWS_MIME_TEXT_PLAIN, "Request Timeout"); // terminal error response -> connection closes

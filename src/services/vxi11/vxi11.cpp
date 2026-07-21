@@ -186,7 +186,7 @@ static bool reply_results(const uint8_t *rpc, size_t len, XdrR *r)
 size_t dws_vxi11_build_getport(uint8_t *buf, size_t cap, uint32_t xid, uint32_t prog, uint32_t vers, uint32_t proto)
 {
     XdrW w = begin_call(buf, cap, xid, DWS_RPC_PMAP_PROG, DWS_RPC_PMAP_VERS, DWS_RPC_PMAP_GETPORT);
-    xw_u32(&w, prog); // mapping { prog, vers, prot, port=0 }
+    xw_u32(&w, prog); // mapping fields in order: prog, vers, prot, then port zero
     xw_u32(&w, vers);
     xw_u32(&w, proto);
     xw_u32(&w, 0);
@@ -286,7 +286,7 @@ size_t dws_vxi11_build_device_readstb(uint8_t *buf, size_t cap, uint32_t xid, in
                                       uint32_t lock_timeout, uint32_t io_timeout)
 {
     XdrW w = begin_call(buf, cap, xid, DWS_VXI11_CORE_PROG, DWS_VXI11_CORE_VERS, (uint32_t)Vxi11Proc::DEVICE_READSTB);
-    xw_u32(&w, (uint32_t)lid); // Device_GenericParms { lid, flags, lock_timeout, io_timeout }
+    xw_u32(&w, (uint32_t)lid); // Device_GenericParms fields in order: lid, flags, lock_timeout, io_timeout
     xw_u32(&w, flags);
     xw_u32(&w, lock_timeout);
     xw_u32(&w, io_timeout);

@@ -208,6 +208,115 @@ int build_message(char *out, size_t cap, const SmtpConfig *cfg, const SmtpMessag
     out[n++] = '\n';
     return (int)n;
 }
+
+// Send @p line and require reply code @p want; @p bad is what to report for any other code.
+// A negative code is an I/O ::SmtpResult and passes straight through.
+SmtpResult cmd_expect(SmtpSendFn send, SmtpRecvFn recv, void *ctx, const char *line, int want, SmtpResult bad)
+{
+    int code = command(send, recv, ctx, line);
+    if (code < 0)
+        return (SmtpResult)code;
+    return (code == want) ? SmtpResult::SMTP_OK : bad;
+}
+
+// Greeting + EHLO. @p line keeps the EHLO command, which the STARTTLS path reissues verbatim.
+SmtpResult greet_ehlo(const SmtpConfig *cfg, SmtpSendFn send, SmtpRecvFn recv, void *ctx, char *line, size_t cap,
+                      bool *has_starttls)
+{
+    int code = 0;
+    if (read_reply(recv, ctx, &code) != SmtpResult::SMTP_OK)
+        return SmtpResult::SMTP_ERR_IO;
+    if (code != 220)
+        return SmtpResult::SMTP_ERR_PROTOCOL;
+
+    // The capability list is only trustworthy once the channel is secure, which is why the
+    // STARTTLS path reissues this command after the upgrade.
+    int n = snprintf(line, cap, "EHLO %s\r\n", (cfg->helo && cfg->helo[0]) ? cfg->helo : "esp32");
+    if (n < 0 || (size_t)n >= cap)
+        return SmtpResult::SMTP_ERR_OVERFLOW;
+    if (!send_str(send, ctx, line))
+        return SmtpResult::SMTP_ERR_IO;
+    if (read_reply_cap(recv, ctx, &code, "STARTTLS", has_starttls) != SmtpResult::SMTP_OK)
+        return SmtpResult::SMTP_ERR_IO;
+    return (code == 250) ? SmtpResult::SMTP_OK : SmtpResult::SMTP_ERR_PROTOCOL;
+}
+
+// STARTTLS (RFC 3207): upgrade in band, then start the session over.
+SmtpResult upgrade_starttls(SmtpSendFn send, SmtpRecvFn recv, SmtpStartTlsFn starttls, void *ctx, const char *ehlo,
+                            bool has_starttls)
+{
+    // Fail closed on a stripped advertisement. An attacker who can delete the capability line
+    // would otherwise get the whole exchange - AUTH credentials included - in the clear.
+    if (!has_starttls)
+        return SmtpResult::SMTP_ERR_NO_STARTTLS;
+    if (!starttls)
+        return SmtpResult::SMTP_ERR_ARG; // asked to upgrade with no way to do it
+    SmtpResult r = cmd_expect(send, recv, ctx, "STARTTLS\r\n", 220, SmtpResult::SMTP_ERR_TLS);
+    if (r != SmtpResult::SMTP_OK)
+        return r;
+    if (!starttls(ctx))
+        return SmtpResult::SMTP_ERR_TLS;
+    // RFC 3207 sec 4.2: discard everything learned in the clear and reissue EHLO - the real
+    // capability list (AUTH mechanisms especially) is the one the server sends encrypted.
+    return cmd_expect(send, recv, ctx, ehlo, 250, SmtpResult::SMTP_ERR_PROTOCOL);
+}
+
+// AUTH LOGIN: the username then the password, each base64 on its own line.
+SmtpResult auth_login(const SmtpConfig *cfg, SmtpSendFn send, SmtpRecvFn recv, void *ctx)
+{
+    SmtpResult r = cmd_expect(send, recv, ctx, "AUTH LOGIN\r\n", 334, SmtpResult::SMTP_ERR_AUTH);
+    if (r != SmtpResult::SMTP_OK)
+        return r;
+    int code = auth_send_b64(send, recv, ctx, cfg->user);
+    if (code < 0)
+        return (SmtpResult)code;
+    if (code != 334)
+        return SmtpResult::SMTP_ERR_AUTH;
+    code = auth_send_b64(send, recv, ctx, cfg->pass ? cfg->pass : "");
+    if (code < 0)
+        return (SmtpResult)code;
+    return (code == 235) ? SmtpResult::SMTP_OK : SmtpResult::SMTP_ERR_AUTH;
+}
+
+// MAIL FROM + RCPT TO, both built into @p line.
+SmtpResult send_envelope(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn send, SmtpRecvFn recv, void *ctx,
+                         char *line, size_t cap)
+{
+    int n = snprintf(line, cap, "MAIL FROM:<%s>\r\n", cfg->from);
+    if (n < 0 || (size_t)n >= cap)
+        return SmtpResult::SMTP_ERR_OVERFLOW;
+    SmtpResult r = cmd_expect(send, recv, ctx, line, 250, SmtpResult::SMTP_ERR_PROTOCOL);
+    if (r != SmtpResult::SMTP_OK)
+        return r;
+
+    n = snprintf(line, cap, "RCPT TO:<%s>\r\n", msg->to);
+    if (n < 0 || (size_t)n >= cap)
+        return SmtpResult::SMTP_ERR_OVERFLOW;
+    int code = command(send, recv, ctx, line);
+    if (code < 0)
+        return (SmtpResult)code;
+    if (code != 250 && code != 251) // 251 = user not local; will forward
+        return SmtpResult::SMTP_ERR_PROTOCOL;
+    return SmtpResult::SMTP_OK;
+}
+
+// DATA, the assembled message, then the acceptance reply.
+SmtpResult send_data(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn send, SmtpRecvFn recv, void *ctx)
+{
+    SmtpResult r = cmd_expect(send, recv, ctx, "DATA\r\n", 354, SmtpResult::SMTP_ERR_PROTOCOL);
+    if (r != SmtpResult::SMTP_OK)
+        return r;
+    char body[DWS_SMTP_MSG_MAX];
+    int mlen = build_message(body, sizeof(body), cfg, msg);
+    if (mlen < 0)
+        return (SmtpResult)mlen;
+    if (send(ctx, (const uint8_t *)body, (size_t)mlen) != mlen)
+        return SmtpResult::SMTP_ERR_IO;
+    int code = 0;
+    if (read_reply(recv, ctx, &code) != SmtpResult::SMTP_OK)
+        return SmtpResult::SMTP_ERR_IO;
+    return (code == 250) ? SmtpResult::SMTP_OK : SmtpResult::SMTP_ERR_PROTOCOL;
+}
 } // namespace
 
 SmtpResult smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn send, SmtpRecvFn recv,
@@ -216,111 +325,33 @@ SmtpResult smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn se
     if (!cfg || !msg || !send || !recv || !cfg->host || !cfg->from || !cfg->from[0] || !msg->to || !msg->to[0])
         return SmtpResult::SMTP_ERR_ARG;
 
-    char line[DWS_SMTP_LINE_MAX];
-    int code;
-
-    // Greeting.
-    if (read_reply(recv, ctx, &code) != SmtpResult::SMTP_OK)
-        return SmtpResult::SMTP_ERR_IO;
-    if (code != 220)
-        return SmtpResult::SMTP_ERR_PROTOCOL;
-
-    // EHLO. The capability list is only trustworthy once the channel is secure, which is why the
-    // STARTTLS path below reissues this command after the upgrade.
-    int n = snprintf(line, sizeof(line), "EHLO %s\r\n", (cfg->helo && cfg->helo[0]) ? cfg->helo : "esp32");
-    if (n < 0 || (size_t)n >= sizeof(line))
-        return SmtpResult::SMTP_ERR_OVERFLOW;
+    char line[DWS_SMTP_LINE_MAX]; // holds the EHLO command, then each envelope command
     bool has_starttls = false;
-    if (!send_str(send, ctx, line))
-        return SmtpResult::SMTP_ERR_IO;
-    if (read_reply_cap(recv, ctx, &code, "STARTTLS", &has_starttls) != SmtpResult::SMTP_OK)
-        return SmtpResult::SMTP_ERR_IO;
-    if (code != 250)
-        return SmtpResult::SMTP_ERR_PROTOCOL;
+    SmtpResult r = greet_ehlo(cfg, send, recv, ctx, line, sizeof(line), &has_starttls);
+    if (r != SmtpResult::SMTP_OK)
+        return r;
 
-    // STARTTLS (RFC 3207): upgrade in band, then start the session over.
     if (cfg->security == SmtpSecurity::SMTP_STARTTLS)
     {
-        // Fail closed on a stripped advertisement. An attacker who can delete the capability line
-        // would otherwise get the whole exchange - AUTH credentials included - in the clear.
-        if (!has_starttls)
-            return SmtpResult::SMTP_ERR_NO_STARTTLS;
-        if (!starttls)
-            return SmtpResult::SMTP_ERR_ARG; // asked to upgrade with no way to do it
-        code = command(send, recv, ctx, "STARTTLS\r\n");
-        if (code < 0)
-            return (SmtpResult)code;
-        if (code != 220)
-            return SmtpResult::SMTP_ERR_TLS;
-        if (!starttls(ctx))
-            return SmtpResult::SMTP_ERR_TLS;
-        // RFC 3207 sec 4.2: discard everything learned in the clear and reissue EHLO - the real
-        // capability list (AUTH mechanisms especially) is the one the server sends encrypted.
-        code = command(send, recv, ctx, line);
-        if (code < 0)
-            return (SmtpResult)code;
-        if (code != 250)
-            return SmtpResult::SMTP_ERR_PROTOCOL;
+        r = upgrade_starttls(send, recv, starttls, ctx, line, has_starttls);
+        if (r != SmtpResult::SMTP_OK)
+            return r;
     }
 
-    // AUTH LOGIN (only when a username is configured).
-    if (cfg->user && cfg->user[0])
+    if (cfg->user && cfg->user[0]) // AUTH LOGIN only when a username is configured
     {
-        code = command(send, recv, ctx, "AUTH LOGIN\r\n");
-        if (code < 0)
-            return (SmtpResult)code;
-        if (code != 334)
-            return SmtpResult::SMTP_ERR_AUTH;
-        code = auth_send_b64(send, recv, ctx, cfg->user);
-        if (code < 0)
-            return (SmtpResult)code;
-        if (code != 334)
-            return SmtpResult::SMTP_ERR_AUTH;
-        code = auth_send_b64(send, recv, ctx, cfg->pass ? cfg->pass : "");
-        if (code < 0)
-            return (SmtpResult)code;
-        if (code != 235)
-            return SmtpResult::SMTP_ERR_AUTH;
+        r = auth_login(cfg, send, recv, ctx);
+        if (r != SmtpResult::SMTP_OK)
+            return r;
     }
 
-    // MAIL FROM.
-    n = snprintf(line, sizeof(line), "MAIL FROM:<%s>\r\n", cfg->from);
-    if (n < 0 || (size_t)n >= sizeof(line))
-        return SmtpResult::SMTP_ERR_OVERFLOW;
-    code = command(send, recv, ctx, line);
-    if (code < 0)
-        return (SmtpResult)code;
-    if (code != 250)
-        return SmtpResult::SMTP_ERR_PROTOCOL;
+    r = send_envelope(cfg, msg, send, recv, ctx, line, sizeof(line));
+    if (r != SmtpResult::SMTP_OK)
+        return r;
 
-    // RCPT TO.
-    n = snprintf(line, sizeof(line), "RCPT TO:<%s>\r\n", msg->to);
-    if (n < 0 || (size_t)n >= sizeof(line))
-        return SmtpResult::SMTP_ERR_OVERFLOW;
-    code = command(send, recv, ctx, line);
-    if (code < 0)
-        return (SmtpResult)code;
-    if (code != 250 && code != 251) // 251 = user not local; will forward
-        return SmtpResult::SMTP_ERR_PROTOCOL;
-
-    // DATA.
-    code = command(send, recv, ctx, "DATA\r\n");
-    if (code < 0)
-        return (SmtpResult)code;
-    if (code != 354)
-        return SmtpResult::SMTP_ERR_PROTOCOL;
-
-    // The message itself, then wait for acceptance.
-    char body[DWS_SMTP_MSG_MAX];
-    int mlen = build_message(body, sizeof(body), cfg, msg);
-    if (mlen < 0)
-        return (SmtpResult)mlen;
-    if (send(ctx, (const uint8_t *)body, (size_t)mlen) != mlen)
-        return SmtpResult::SMTP_ERR_IO;
-    if (read_reply(recv, ctx, &code) != SmtpResult::SMTP_OK)
-        return SmtpResult::SMTP_ERR_IO;
-    if (code != 250)
-        return SmtpResult::SMTP_ERR_PROTOCOL;
+    r = send_data(cfg, msg, send, recv, ctx);
+    if (r != SmtpResult::SMTP_OK)
+        return r;
 
     // QUIT is best-effort - the message is already accepted.
     (void)command(send, recv, ctx, "QUIT\r\n");

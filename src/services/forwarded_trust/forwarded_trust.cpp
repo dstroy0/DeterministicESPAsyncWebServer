@@ -34,8 +34,11 @@ bool dws_forwarded_trust_add(const DWSIp *network, uint8_t prefix_len)
 {
     if (!network)
         return false;
-    int bits =
-        (network->family == DWSIpFamily::DWS_IP_V4) ? 32 : (network->family == DWSIpFamily::DWS_IP_V6 ? 128 : -1);
+    int bits = -1; // stays negative for a family we do not recognize
+    if (network->family == DWSIpFamily::DWS_IP_V4)
+        bits = 32;
+    else if (network->family == DWSIpFamily::DWS_IP_V6)
+        bits = 128;
     if (bits < 0 || prefix_len > (uint8_t)bits)
         return false; // reject a malformed family or an over-long prefix
     if (s_trust.count >= DWS_TRUSTED_PROXY_MAX)

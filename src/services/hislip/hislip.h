@@ -54,11 +54,11 @@
  *  (unsigned 32-bit, wraps). A server response echoes the request's MessageID. */
 #define DWS_HISLIP_MESSAGE_ID_INIT 0xFFFFFF00u
 
-// ControlCode bits (InitializeResponse):
+// ControlCode bits carried by an InitializeResponse:
 #define DWS_HISLIP_INITRESP_OVERLAP 0x01       ///< bit 0: prefer overlapped (vs synchronized) mode
 #define DWS_HISLIP_INITRESP_ENC_MANDATORY 0x02 ///< bit 1: encryption mandatory (2.0)
 #define DWS_HISLIP_INITRESP_ENC_INITIAL 0x04   ///< bit 2: initial encryption required (2.0)
-// ControlCode bit (Data / DataEND):
+// ControlCode bit carried by a Data or DataEND message:
 #define DWS_HISLIP_DATA_RMT_DELIVERED 0x01 ///< bit 0: message delivered following a Response Message Terminator
 
 /** @brief HiSLIP MessageType codes (IVI-6.1). Codes 0-24 are HiSLIP 1.x; 25-38 were added in 2.0. */

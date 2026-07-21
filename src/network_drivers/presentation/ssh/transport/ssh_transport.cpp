@@ -293,6 +293,18 @@ template <typename E> struct AlgCand
     bool avail;
 };
 
+// Index of the first available candidate whose name is exactly [tok, tok+tlen), or -1.
+template <typename E> static int cand_match(const uint8_t *tok, uint32_t tlen, const AlgCand<E> *cands, int n)
+{
+    for (int c = 0; c < n; c++)
+    {
+        size_t cl = strnlen(cands[c].name, (size_t)tlen + 1);
+        if (cands[c].avail && cl == tlen && memcmp(tok, cands[c].name, tlen) == 0)
+            return c;
+    }
+    return -1;
+}
+
 // RFC 4253 §7.1: the chosen algorithm is the first name on the CLIENT's name-list that the server also
 // supports - CLIENT preference, not ours. Two peers whose preference orders differ must still converge, so
 // the rule is fixed to the client's order. Iterate the client's comma-separated list in order; for each
@@ -306,15 +318,11 @@ static bool negotiate_alg(const uint8_t *client_list, uint32_t nlen, const AlgCa
     {
         if (i == nlen || client_list[i] == ',')
         {
-            uint32_t tlen = i - start;
-            for (int c = 0; c < n; c++)
+            int c = cand_match(client_list + start, i - start, cands, n);
+            if (c >= 0)
             {
-                size_t cl = strnlen(cands[c].name, (size_t)tlen + 1);
-                if (cands[c].avail && cl == tlen && memcmp(client_list + start, cands[c].name, tlen) == 0)
-                {
-                    *out = cands[c].tag;
-                    return true;
-                }
+                *out = cands[c].tag;
+                return true;
             }
             start = i + 1;
         }

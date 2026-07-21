@@ -87,14 +87,12 @@ int dws_sse_format(char *buf, size_t n, const char *data, const char *event, con
     // Bounded lengths (strnlen, cap n): a field can never exceed the output buffer (an over-long value makes
     // the append fail and the record report 0), and strnlen never reads past `n` if a value is unterminated.
     size_t pos = 0;
-    if (event)
-        if (!sse_append(buf, n, &pos, "event: ", 7) || !sse_append(buf, n, &pos, event, strnlen(event, n)) ||
-            !sse_append(buf, n, &pos, "\n", 1))
-            return 0;
-    if (id)
-        if (!sse_append(buf, n, &pos, "id: ", 4) || !sse_append(buf, n, &pos, id, strnlen(id, n)) ||
-            !sse_append(buf, n, &pos, "\n", 1))
-            return 0;
+    if (event && (!sse_append(buf, n, &pos, "event: ", 7) || !sse_append(buf, n, &pos, event, strnlen(event, n)) ||
+                  !sse_append(buf, n, &pos, "\n", 1)))
+        return 0;
+    if (id && (!sse_append(buf, n, &pos, "id: ", 4) || !sse_append(buf, n, &pos, id, strnlen(id, n)) ||
+               !sse_append(buf, n, &pos, "\n", 1)))
+        return 0;
     if (!sse_append(buf, n, &pos, "data: ", 6) || !sse_append(buf, n, &pos, data, strnlen(data, n)) ||
         !sse_append(buf, n, &pos, "\n\n", 2))
         return 0;

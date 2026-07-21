@@ -51,14 +51,14 @@ uint64_t key_hash(const char *key, uint16_t len)
 }
 
 // Find a live slot for (hash,key). Linear probe, stopping at the first empty. -1 if absent.
-int find_live(DWSDbm *db, uint64_t hash, const char *key, uint16_t key_len)
+int find_live(const DWSDbm *db, uint64_t hash, const char *key, uint16_t key_len)
 {
     const size_t n = DWS_DBM_SLOTS;
     size_t start = (size_t)(hash % n);
     for (size_t i = 0; i < n; i++)
     {
         size_t j = (start + i) % n;
-        DWSDbmSlot *s = &db->slots[j];
+        const DWSDbmSlot *s = &db->slots[j];
         if (s->state == 0)
             return -1; // empty -> the probe chain ends, key not present
         if (s->state == 1 && s->hash == hash && s->key_len == key_len && memcmp(s->key, key, key_len) == 0)
@@ -69,7 +69,7 @@ int find_live(DWSDbm *db, uint64_t hash, const char *key, uint16_t key_len)
 
 // Find the slot to write (hash,key): an existing live match, or the first reusable slot (tombstone/empty).
 // Sets *is_new when the returned slot is not already this key. -1 if the table has no room for a new key.
-int reserve(DWSDbm *db, uint64_t hash, const char *key, uint16_t key_len, bool *is_new)
+int reserve(const DWSDbm *db, uint64_t hash, const char *key, uint16_t key_len, bool *is_new)
 {
     const size_t n = DWS_DBM_SLOTS;
     size_t start = (size_t)(hash % n);
@@ -77,7 +77,7 @@ int reserve(DWSDbm *db, uint64_t hash, const char *key, uint16_t key_len, bool *
     for (size_t i = 0; i < n; i++)
     {
         size_t j = (start + i) % n;
-        DWSDbmSlot *s = &db->slots[j];
+        const DWSDbmSlot *s = &db->slots[j];
         if (s->state == 1)
         {
             if (s->hash == hash && s->key_len == key_len && memcmp(s->key, key, key_len) == 0)
@@ -204,7 +204,7 @@ long dws_dbm_get(DWSDbm *db, const char *key, uint16_t key_len, uint8_t *buf, si
     int slot = find_live(db, h, key, key_len);
     if (slot < 0)
         return -1;
-    DWSDbmSlot *s = &db->slots[slot];
+    const DWSDbmSlot *s = &db->slots[slot];
     if (s->val_len > cap)
         return -1;
     if (s->val_len && !dws_wal_store_pread(db->wal, s->val_off, buf, s->val_len))
@@ -235,7 +235,7 @@ bool dws_dbm_contains(DWSDbm *db, const char *key, uint16_t key_len)
     return find_live(db, key_hash(key, key_len), key, key_len) >= 0;
 }
 
-uint32_t dws_dbm_count(DWSDbm *db)
+uint32_t dws_dbm_count(const DWSDbm *db)
 {
     return db->count;
 }
@@ -245,12 +245,12 @@ bool dws_dbm_sync(DWSDbm *db)
     return dws_wal_store_checkpoint(db->wal);
 }
 
-uint32_t dws_dbm_iterate(DWSDbm *db, DWSDbmIterCb cb, void *ctx)
+uint32_t dws_dbm_iterate(const DWSDbm *db, DWSDbmIterCb cb, void *ctx)
 {
     uint32_t visited = 0;
     for (uint32_t i = 0; i < DWS_DBM_SLOTS; i++)
     {
-        DWSDbmSlot *s = &db->slots[i];
+        const DWSDbmSlot *s = &db->slots[i];
         if (s->state != 1)
             continue;
         visited++;
@@ -260,7 +260,7 @@ uint32_t dws_dbm_iterate(DWSDbm *db, DWSDbmIterCb cb, void *ctx)
     return visited;
 }
 
-uint64_t dws_dbm_live_bytes(DWSDbm *db)
+uint64_t dws_dbm_live_bytes(const DWSDbm *db)
 {
     uint64_t bytes = 0;
     for (uint32_t i = 0; i < DWS_DBM_SLOTS; i++)

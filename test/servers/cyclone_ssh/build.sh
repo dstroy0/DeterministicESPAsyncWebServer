@@ -46,8 +46,8 @@ mapfile -t SRCS < <(
   echo "$HERE/socket.c"
 )
 echo ">> compiling ${#SRCS[@]} Cyclone/shim source files"
-compile_one() { gcc $CFLAGS $INCS -c "$1" -o "$OBJ/$(echo "$1" | sed 's#/#_#g').o" \
-    || { echo "COMPILE FAILED: $1" >&2; exit 1; }; }
+compile_one() { local src="$1"; gcc $CFLAGS $INCS -c "$src" -o "$OBJ/$(echo "$src" | sed 's#/#_#g').o" \
+    || { echo "COMPILE FAILED: $src" >&2; exit 1; }; }
 export -f compile_one
 printf '%s\n' "${SRCS[@]}" | xargs -P"$(nproc)" -I{} bash -c 'compile_one "$@"' _ {}
 

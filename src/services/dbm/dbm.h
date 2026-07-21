@@ -83,7 +83,7 @@ bool dws_dbm_del(DWSDbm *db, const char *key, uint16_t key_len);
 bool dws_dbm_contains(DWSDbm *db, const char *key, uint16_t key_len);
 
 /** @brief @return the number of live keys. */
-uint32_t dws_dbm_count(DWSDbm *db);
+uint32_t dws_dbm_count(const DWSDbm *db);
 
 /** @brief Make all writes since the last sync durable (checkpoints the WAL). @return false on I/O failure. */
 bool dws_dbm_sync(DWSDbm *db);
@@ -93,7 +93,7 @@ bool dws_dbm_sync(DWSDbm *db);
 using DWSDbmIterCb = bool (*)(const char *key, uint16_t key_len, void *ctx);
 
 /** @brief Visit every live key (unordered). @return the number of keys visited. */
-uint32_t dws_dbm_iterate(DWSDbm *db, DWSDbmIterCb cb, void *ctx);
+uint32_t dws_dbm_iterate(const DWSDbm *db, DWSDbmIterCb cb, void *ctx);
 
 /**
  * @brief Bytes the live keys would occupy after a compaction (the summed framed size of one WAL record per
@@ -101,7 +101,7 @@ uint32_t dws_dbm_iterate(DWSDbm *db, DWSDbmIterCb cb, void *ctx);
  * difference is reclaimable dead space from overwritten and deleted keys. Pair the two to decide when the
  * dead fraction is worth a ::dws_dbm_compact.
  */
-uint64_t dws_dbm_live_bytes(DWSDbm *db);
+uint64_t dws_dbm_live_bytes(const DWSDbm *db);
 
 /**
  * @brief Compact the store: copy only the live keys (the latest value each, no tombstones) into a freshly

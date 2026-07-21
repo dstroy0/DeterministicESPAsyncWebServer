@@ -126,6 +126,54 @@ size_t dws_scpi_fmt_real(char *buf, size_t cap, double v)
 
 // ── response parsers ───────────────────────────────────────────────────────────────────────────
 
+// Fold the digit run at s[*i] into *acc, advancing *i past it. Returns how many digits were consumed.
+static int scan_digits(const char *s, size_t len, size_t *i, double *acc)
+{
+    int n = 0;
+    for (; *i < len && is_digit(s[*i]); (*i)++)
+    {
+        *acc = *acc * 10.0 + (s[*i] - '0');
+        n++;
+    }
+    return n;
+}
+
+// Optional E[+-]ddd suffix. Absent is not an error (*exp stays 0); false only for an E with no digits.
+static bool scan_exponent(const char *s, size_t len, size_t *i, int *exp)
+{
+    *exp = 0;
+    if (*i >= len || (s[*i] != 'e' && s[*i] != 'E'))
+        return true;
+    (*i)++;
+    bool neg = false;
+    if (*i < len && (s[*i] == '+' || s[*i] == '-'))
+    {
+        neg = (s[*i] == '-');
+        (*i)++;
+    }
+    int digits = 0;
+    for (; *i < len && is_digit(s[*i]); (*i)++)
+    {
+        *exp = *exp * 10 + (s[*i] - '0');
+        digits++;
+    }
+    if (digits == 0)
+        return false;
+    if (neg)
+        *exp = -*exp;
+    return true;
+}
+
+// Repeated multiply/divide rather than pow(): no libm dependency, and the digit counts here are small.
+static double apply_scale(double v, int scale)
+{
+    for (int k = 0; k < scale; k++)
+        v *= 10.0;
+    for (int k = 0; k < -scale; k++)
+        v /= 10.0;
+    return v;
+}
+
 bool dws_scpi_parse_number(const char *s, size_t len, double *out)
 {
     if (!s || !out || len == 0)
@@ -138,57 +186,23 @@ bool dws_scpi_parse_number(const char *s, size_t len, double *out)
         i++;
     }
     double mant = 0.0;
-    int frac = 0;     // number of fractional digits accumulated
-    bool any = false; // saw at least one mantissa digit
-    for (; i < len && is_digit(s[i]); i++)
-    {
-        mant = mant * 10.0 + (s[i] - '0');
-        any = true;
-    }
+    int digits = scan_digits(s, len, &i, &mant);
+    int frac = 0; // number of fractional digits accumulated
     if (i < len && s[i] == '.')
     {
         i++;
-        for (; i < len && is_digit(s[i]); i++)
-        {
-            mant = mant * 10.0 + (s[i] - '0');
-            frac++;
-            any = true;
-        }
+        frac = scan_digits(s, len, &i, &mant);
+        digits += frac;
     }
-    if (!any)
+    if (digits == 0) // no mantissa digit on either side of the point
         return false;
     int exp = 0;
-    if (i < len && (s[i] == 'e' || s[i] == 'E'))
-    {
-        i++;
-        bool eneg = false;
-        if (i < len && (s[i] == '+' || s[i] == '-'))
-        {
-            eneg = (s[i] == '-');
-            i++;
-        }
-        bool edig = false;
-        for (; i < len && is_digit(s[i]); i++)
-        {
-            exp = exp * 10 + (s[i] - '0');
-            edig = true;
-        }
-        if (!edig)
-            return false;
-        if (eneg)
-            exp = -exp;
-    }
+    if (!scan_exponent(s, len, &i, &exp))
+        return false;
     if (i != len) // trailing junk -> not a clean numeric field
         return false;
 
-    int scale = exp - frac; // apply the decimal point and the exponent together
-    double val = mant;
-    if (scale > 0)
-        for (int k = 0; k < scale; k++)
-            val *= 10.0;
-    else if (scale < 0)
-        for (int k = 0; k < -scale; k++)
-            val /= 10.0;
+    double val = apply_scale(mant, exp - frac); // decimal point and exponent applied together
     *out = neg ? -val : val;
     return true;
 }
@@ -228,19 +242,22 @@ size_t dws_scpi_parse_string(const char *s, size_t len, char *out, size_t cap)
     if ((q != '"' && q != '\'') || s[len - 1] != q)
         return 0;
     size_t o = 0;
-    for (size_t i = 1; i + 1 < len; i++)
+    size_t i = 1;
+    while (i + 1 < len)
     {
+        size_t adv = 1;
         if (s[i] == q)
         {
             // a doubled quote inside is one literal quote; anything else is a malformed close
             if (i + 2 < len && s[i + 1] == q)
-                i++; // consume the pair, emit one below
+                adv = 2; // step over the pair, emitting the single quote below
             else
                 return 0;
         }
         if (o + 1 >= cap) // leave room for the NUL
             return 0;
         out[o++] = s[i];
+        i += adv;
     }
     out[o] = '\0';
     return o;

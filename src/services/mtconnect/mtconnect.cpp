@@ -425,8 +425,8 @@ uint64_t dws_mtc_sample_buffer_add(DWSMtcSampleBuffer *b, DWSMtcCategory cat, co
     return b->next_seq++;
 }
 
-size_t dws_mtc_sample_query(DWSMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id, const char *device_name,
-                            uint64_t from, uint32_t count)
+size_t dws_mtc_sample_query(const DWSMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id,
+                            const char *device_name, uint64_t from, uint32_t count)
 {
     uint64_t first = b->first_seq;
     uint64_t next = b->next_seq;                  // one past the newest retained observation

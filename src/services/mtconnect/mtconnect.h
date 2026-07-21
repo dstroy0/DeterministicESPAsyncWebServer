@@ -198,8 +198,8 @@ uint64_t dws_mtc_sample_buffer_add(DWSMtcSampleBuffer *b, DWSMtcCategory cat, co
  * nextSequence the client uses to resume (the sequence past the last one returned, or the buffer's
  * nextSequence when @p from is already at/after the newest). @return document length, or 0 on overflow.
  */
-size_t dws_mtc_sample_query(DWSMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id, const char *device_name,
-                            uint64_t from, uint32_t count);
+size_t dws_mtc_sample_query(const DWSMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id,
+                            const char *device_name, uint64_t from, uint32_t count);
 
 #endif // DWS_ENABLE_MTCONNECT
 #endif // DETERMINISTICESPASYNCWEBSERVER_MTCONNECT_H

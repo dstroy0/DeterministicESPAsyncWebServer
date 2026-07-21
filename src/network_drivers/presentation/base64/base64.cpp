@@ -22,6 +22,7 @@
 
 #include "ServerConfig.h" // DWS_BASE64_SWAR (scalar vs SWAR constant-time decode; default SWAR)
 #include <stddef.h>
+#include <string.h> // strnlen
 
 static const char B64_TABLE[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -69,8 +70,6 @@ void dws_base64_encode(const uint8_t *src, size_t src_len, char *dst)
 // secret byte value. Verified byte-exact vs RFC 4648 vectors + the reference decoder over a random corpus;
 // timing-invariance measured on the ESP32-S3 (CCOUNT does not vary with the input bytes).
 // ---------------------------------------------------------------------------
-
-#include <string.h> // strnlen
 
 // x, lo, hi are byte values (< 256), so a byte-domain subtraction's bit 31 is the borrow flag. Each helper
 // returns an all-ones (0xFFFFFFFF) or all-zero mask with no branch and no memory access.

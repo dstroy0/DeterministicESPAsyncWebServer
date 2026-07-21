@@ -57,8 +57,8 @@ if [[ ! -x "$WORK/cyclone_dtls_client" ]]; then
     echo "$CY/Common/date_time.c"
   )
   export OBJ CFLAGS INCS
-  compile_one() { gcc $CFLAGS $INCS -c "$1" -o "$OBJ/$(echo "$1" | sed 's#/#_#g').o" \
-      || { echo "COMPILE FAILED: $1" >&2; exit 1; }; }
+  compile_one() { local src="$1"; gcc $CFLAGS $INCS -c "$src" -o "$OBJ/$(echo "$src" | sed 's#/#_#g').o" \
+      || { echo "COMPILE FAILED: $src" >&2; exit 1; }; }
   export -f compile_one
   printf '%s\n' "${SRCS[@]}" | xargs -P"$(nproc)" -I{} bash -c 'compile_one "$@"' _ {}
   gcc $CFLAGS $INCS -c "$HERE/cyclone_dtls_client.c" -o "$OBJ/client.o"
