@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`253a31f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/253a31f2b01cdb61c147a029068978a59c5c882f))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`06c28da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06c28dacfc7d6ed4b54bbbff00add255bbed5fbe))
+
+### Testing
+
+- CycloneSSH SSH-2 peer - a second SSH stack (the one that caught the negotiation bug) ([`bc38c12`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc38c12c6cd6568ebc96b6d7d68dd28bb22557e3))
+
 ## [7.24.1] - 2026-07-21
 
 <details>
