@@ -1332,6 +1332,12 @@
     "output": ".pio/build/native_relay/src/services/relay/relay.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_robotics/src/services/robotics/robotics.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_ROBOTICS=1 -Itest/mocks -Itest/support -Isrc src/services/robotics/robotics.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/robotics/robotics.cpp",
+    "output": ".pio/build/native_robotics/src/services/robotics/robotics.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_rtc/src/services/rtc/rtc.o -c -std=c++14 -DPLATFORMIO=60119 -DDWS_ENABLE_RTC=1 -Itest/mocks -Itest/support -Isrc src/services/rtc/rtc.cpp",
     "directory": "@ROOT@",
     "file": "src/services/rtc/rtc.cpp",

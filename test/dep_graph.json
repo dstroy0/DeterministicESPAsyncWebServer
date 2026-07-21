@@ -179,6 +179,7 @@
 "native_rawl2",
 "native_redis",
 "native_relay",
+"native_robotics",
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
@@ -429,6 +430,7 @@
 "native_rawl2",
 "native_redis",
 "native_relay",
+"native_robotics",
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
@@ -679,6 +681,7 @@
 "native_rawl2",
 "native_redis",
 "native_relay",
+"native_robotics",
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
@@ -929,6 +932,7 @@
 "native_rawl2",
 "native_redis",
 "native_relay",
+"native_robotics",
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
@@ -3597,12 +3601,14 @@
 "native_opcua",
 "native_opcua_client",
 "native_pentest",
+"native_robotics",
 "native_umati"
 ],
 "src/services/opcua/opcua.h": [
 "native_opcua",
 "native_opcua_client",
 "native_pentest",
+"native_robotics",
 "native_umati"
 ],
 "src/services/opcua_client/opcua_client.cpp": [
@@ -3740,6 +3746,12 @@
 ],
 "src/services/relay/relay.h": [
 "native_relay"
+],
+"src/services/robotics/robotics.cpp": [
+"native_robotics"
+],
+"src/services/robotics/robotics.h": [
+"native_robotics"
 ],
 "src/services/rtc/rtc.cpp": [
 "native_rtc"
