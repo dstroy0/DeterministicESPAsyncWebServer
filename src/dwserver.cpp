@@ -656,7 +656,7 @@ void DWS::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *
     c->dws_h3_stream = stream_id;
     c->dws_resp_sink = dws_h3_resp_sink;
     c->iface = DWSIface::DETIFACE_STA;
-    c->state = ConnState::CONN_ACTIVE;
+    dws_conn_set_state(slot, ConnState::CONN_ACTIVE); // reserved slot: no bitmask bit (slot >= MAX_CONNS)
     c->pcb = nullptr;
 
     match_and_execute(slot); // -> handler -> send() -> dws_resp_sink -> dws_quic_server_respond()
@@ -664,7 +664,7 @@ void DWS::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *
     // Release the dispatch slot for the next request (a no-response handler simply leaves the stream open).
     c->h3 = 0;
     c->dws_resp_sink = nullptr;
-    c->state = ConnState::CONN_FREE;
+    dws_conn_set_state(slot, ConnState::CONN_FREE); // reserved slot: no bitmask bit (slot >= MAX_CONNS)
     http_reset(slot);
 }
 #endif // DWS_ENABLE_HTTP3

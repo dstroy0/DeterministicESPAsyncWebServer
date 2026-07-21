@@ -1436,7 +1436,8 @@
     "slowtmr",
     "ECONNREFUSED",
     "bytematch",
-    "DIFFSERV"
+    "DIFFSERV",
+    "freeslot"
   ],
   "ignorePaths": [
     "node_modules/**",

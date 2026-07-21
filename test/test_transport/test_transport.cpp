@@ -622,6 +622,30 @@ void test_ip_allowlist_table_full()
     TEST_ASSERT_FALSE(listener_ip_allow_add(&overflow, 32));
 }
 
+// The live-slot bitmask + ctz allocator (dws_conn_set_state / dws_conn_alloc_free): claim, free, pool-full,
+// lowest-first, and that CONN_CLOSING keeps a slot reserved. setUp() ran pool_init() -> all slots free.
+void test_freeslot_bitmask_alloc()
+{
+    TEST_ASSERT_EQUAL_INT32(0, dws_conn_alloc_free()); // first free is slot 0
+
+    dws_conn_set_state(0, ConnState::CONN_ACTIVE); // claim 0
+    TEST_ASSERT_EQUAL_INT32(1, dws_conn_alloc_free());
+
+    for (uint8_t i = 1; i < MAX_CONNS; i++) // claim the rest -> full
+        dws_conn_set_state(i, ConnState::CONN_ACTIVE);
+    TEST_ASSERT_EQUAL_INT32(-1, dws_conn_alloc_free());
+
+    dws_conn_set_state(3, ConnState::CONN_FREE); // free 3 -> allocator hands out 3
+    TEST_ASSERT_EQUAL_INT32(3, dws_conn_alloc_free());
+
+    dws_conn_set_state(1, ConnState::CONN_FREE); // free 1 too -> lowest free is now 1
+    TEST_ASSERT_EQUAL_INT32(1, dws_conn_alloc_free());
+
+    dws_conn_set_state(1, ConnState::CONN_ACTIVE);     // 1 active again
+    dws_conn_set_state(1, ConnState::CONN_CLOSING);    // CLOSING is not free
+    TEST_ASSERT_EQUAL_INT32(3, dws_conn_alloc_free()); // 3 free, 1 reserved (CLOSING)
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -634,6 +658,7 @@ int main()
     RUN_TEST(test_all_pcbs_null_after_init);
     RUN_TEST(test_all_ring_buffers_empty_after_init);
     RUN_TEST(test_slot_ids_match_indices);
+    RUN_TEST(test_freeslot_bitmask_alloc);
     RUN_TEST(test_ring_empty_when_head_equals_tail);
     RUN_TEST(test_ring_wrap_at_boundary);
     RUN_TEST(test_ring_full_sentinel_one_slot_reserved);

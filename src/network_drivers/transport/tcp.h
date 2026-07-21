@@ -124,6 +124,15 @@ extern uint32_t dws_ap_ip;
  *  (HTTP/3); the TCP accept path only ever uses [0, MAX_CONNS). */
 extern TcpConn conn_pool[CONN_POOL_SLOTS];
 
+/** @brief The single conn_pool[slot].state write path. Writes the state (release) and keeps the free-slot
+ *  bitmask consistent so allocation is one ctz. ALL state transitions must go through this - a raw
+ *  `conn_pool[i].state = ...` would desync the mask. */
+void dws_conn_set_state(uint8_t slot, ConnState st);
+
+/** @brief First CONN_FREE slot via a ctz on the bitmask (replaces the MAX_CONNS scan); -1 if the pool is
+ *  full. tcpip_thread (accept). */
+int32_t dws_conn_alloc_free();
+
 // ---------------------------------------------------------------------------
 // Event queue
 // ---------------------------------------------------------------------------

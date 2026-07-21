@@ -380,17 +380,11 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     }
 #endif
 
-    int free_slot = -1;
-    for (int i = 0; i < MAX_CONNS; i++)
-    {
-        if (conn_pool[i].state == ConnState::CONN_FREE)
-        {
-            free_slot = i;
-            break;
-        }
-    }
-
-    if (free_slot == -1)
+    // First free slot as one ctz on the live-slot bitmask (was a MAX_CONNS scan). Runs in tcpip_thread, and
+    // accepts are serialized here, so the slot found is claimed by the dws_conn_set_state() below before any
+    // other accept runs.
+    int32_t free_slot = dws_conn_alloc_free();
+    if (free_slot < 0)
     {
         tcp_abort(newpcb);
         return ERR_ABRT;
@@ -408,7 +402,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 #else
     slot->owner = 0;
 #endif
-    slot->state = ConnState::CONN_ACTIVE;
+    dws_conn_set_state((uint8_t)free_slot, ConnState::CONN_ACTIVE); // reserves the slot in the bitmask
     slot->pcb = newpcb;
     slot->last_activity_ms = dws_millis();
     slot->rx_head = 0;
