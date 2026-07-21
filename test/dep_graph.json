@@ -147,6 +147,7 @@
 "native_openadr",
 "native_ota",
 "native_ota_rollback",
+"native_packml",
 "native_partition",
 "native_pca9685",
 "native_pentest",
@@ -191,6 +192,7 @@
 "native_sercos",
 "native_sht3x",
 "native_sigfox",
+"native_simatic",
 "native_sleep_sched",
 "native_smb",
 "native_smtp",
@@ -395,6 +397,7 @@
 "native_openadr",
 "native_ota",
 "native_ota_rollback",
+"native_packml",
 "native_partition",
 "native_pca9685",
 "native_pentest",
@@ -439,6 +442,7 @@
 "native_sercos",
 "native_sht3x",
 "native_sigfox",
+"native_simatic",
 "native_sleep_sched",
 "native_smb",
 "native_smtp",
@@ -643,6 +647,7 @@
 "native_openadr",
 "native_ota",
 "native_ota_rollback",
+"native_packml",
 "native_partition",
 "native_pca9685",
 "native_pentest",
@@ -687,6 +692,7 @@
 "native_sercos",
 "native_sht3x",
 "native_sigfox",
+"native_simatic",
 "native_sleep_sched",
 "native_smb",
 "native_smtp",
@@ -891,6 +897,7 @@
 "native_openadr",
 "native_ota",
 "native_ota_rollback",
+"native_packml",
 "native_partition",
 "native_pca9685",
 "native_pentest",
@@ -935,6 +942,7 @@
 "native_sercos",
 "native_sht3x",
 "native_sigfox",
+"native_simatic",
 "native_sleep_sched",
 "native_smb",
 "native_smtp",
@@ -1246,6 +1254,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_pentest",
 "native_qpack",
 "native_quic_server"
 ],
@@ -1253,6 +1262,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_pentest",
 "native_qpack",
 "native_quic_server"
 ],
@@ -2868,6 +2878,7 @@
 "native_mpr121",
 "native_mqtt",
 "native_observability",
+"native_packml",
 "native_prov",
 "native_range",
 "native_sht3x",
@@ -3612,6 +3623,12 @@
 "src/services/ota_rollback/ota_rollback.h": [
 "native_ota_rollback"
 ],
+"src/services/packml/packml.cpp": [
+"native_packml"
+],
+"src/services/packml/packml.h": [
+"native_packml"
+],
 "src/services/partition_monitor/partition_monitor.cpp": [
 "native_partition"
 ],
@@ -3795,6 +3812,12 @@
 ],
 "src/services/sigfox/sigfox.h": [
 "native_sigfox"
+],
+"src/services/simatic/simatic.cpp": [
+"native_simatic"
+],
+"src/services/simatic/simatic.h": [
+"native_simatic"
 ],
 "src/services/sleep_sched/sleep_sched.cpp": [
 "native_sleep_sched"
@@ -4447,6 +4470,7 @@
 "native_mqtt",
 "native_observability",
 "native_ota",
+"native_packml",
 "native_pentest",
 "native_prov",
 "native_range",
