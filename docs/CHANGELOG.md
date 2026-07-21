@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.31.0] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.31.0 - 2026-07-21</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`3afacc1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3afacc1e16855fbcee929ca7ebcb0dacd7685360))
+- update CHANGELOG.md [skip ci] ([`f75ec43`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f75ec43ec9c32d454eb2db54033b272592db111c))
+
+### Changes
+
+- Bump version: 7.30.0 → 7.31.0 ([`916af72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/916af72a582ce44bb427b22739b351f6ed331394))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`e3c0a44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3c0a44222ea31a5dabc9756456cba7a72001f58))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ec165ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec165ce3a2ed86608a3c2cd88005364ee7132744))
+
+### Features
+
+- OPC UA for Robotics (OPC 40010-1) MotionDeviceSystem model ([`42ca904`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42ca9045e28f91a37359e592bd0aa029e0bd5536))
+
+</details>
+
 ## [7.30.0] - 2026-07-21
 
 <details>
