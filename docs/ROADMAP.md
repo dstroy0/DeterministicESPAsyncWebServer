@@ -1746,9 +1746,12 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       and `dws_conn_set_dscp(slot, dscp)` (per-connection - any 0-63, for real per-flow QoS or arbitrary tagging
       in network testing), plus `dws_udp_set_dscp()` for datagrams. The DSCP is written to the pcb TOS on
       tcpip_thread as the connection is accepted / connected, so nothing is added to the send hot path (marking
-      applies from the first data segment - lwIP emits the SYN-ACK before the accept callback runs). Host-tested
-      (`native_diffserv`) and HW-verified on an ESP32-P4: curl saw the response carry tos 0xb8 (EF) by default
-      and 0xc0 (CS6) after a per-connection re-tag, read off the wire with tcpdump. Example DiffServ.
+      applies from the first data segment - the SYN-ACK stays best-effort: it is emitted before any app callback
+      and ESP32 lwIP does not inherit the listen-pcb TOS, HW-tested by stamping the listen pcb and confirming the
+      SYN-ACK is still tos 0x0). Host-tested (`native_diffserv`) and HW-verified on an ESP32-P4 off the wire with
+      tcpdump: server default EF on `:80` (tos 0xb8), per-listener AF41 on `:8080` (tos 0x88), per-connection
+      re-tag to CS6 (tos 0xc0), and UDP datagrams sent marked CS6 (same `pcb->tos` path as the verified TCP).
+      Example DiffServ.
 - [ ] **Wireless coexistence management (IEC 62657-2)** (M) - adhere to IEC 62657-2 so the device behaves in
       a crowded industrial 2.4 / 5 GHz band shared by WLAN, WirelessHART, ISA100, Bluetooth, and Zigbee:
       coexistence-aware channel selection plus a spectrum-use / interference report a central coexistence

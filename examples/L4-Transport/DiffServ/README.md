@@ -47,10 +47,12 @@ curl http://<board-ip>/       # response packets: tos 0xb8  (EF,  DSCP 46)
 curl http://<board-ip>/tag    # response packets: tos 0xc0  (CS6, DSCP 48)
 ```
 
-The marking applies from the connection's first data segment (lwIP emits the
-SYN-ACK before the accept callback runs, so the handshake stays best-effort).
-This was HW-verified on an ESP32-P4 exactly this way: `/` responses carried
-tos `0xb8` and the re-tagged `/tag` responses carried tos `0xc0`.
+The marking applies from the connection's first data segment: the SYN-ACK stays
+best-effort because lwIP emits it before any app callback and ESP32 lwIP does not
+inherit the listen-pcb TOS (HW-tested). This was verified on an ESP32-P4 off the
+wire: the server default marked `:80` responses tos `0xb8` (EF), a per-listener
+override marked `:8080` responses tos `0x88` (AF41), and a per-connection re-tag
+marked `/tag` responses tos `0xc0` (CS6).
 
 ## Annotated source
 

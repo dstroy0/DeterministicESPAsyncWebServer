@@ -640,8 +640,11 @@ bool dws_listen_set_dscp(uint16_t port, uint8_t dscp)
         Listener *lst = &listener_pool[i];
         if (lst->active && lst->port == port)
         {
-            // Preserve the UNSET sentinel; mask any real code point to 6 bits. Applied to connections
-            // accepted after this call (existing connections keep the DSCP they were stamped with).
+            // Preserve the UNSET sentinel; mask any real code point to 6 bits. Applied (via the accept
+            // callback's newpcb->tos) to connections accepted after this call - existing connections keep the
+            // DSCP they were stamped with. The handshake (SYN-ACK) stays best-effort: it is emitted by lwIP
+            // before any app callback and ESP32 lwIP does not inherit the listen-pcb TOS (HW-tested), so
+            // marking begins at the connection's first data segment.
             lst->dscp = (dscp == DWS_DSCP_UNSET) ? DWS_DSCP_UNSET : (uint8_t)(dscp & 0x3F);
             return true;
         }
