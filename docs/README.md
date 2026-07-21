@@ -1167,6 +1167,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/MediaStreaming` | `L7-Application/MediaStreaming` | 752,929 | 81,788 |
 | `core/RegexRoutes` | `L7-Application/RegexRoutes` | 752,981 | 81,788 |
 | `KEEPALIVE` | `L4-Transport/KeepAlive` | 753,021 | 81,788 |
+| `DIFFSERV` | `L4-Transport/DiffServ` | 753,065 | 81,788 |
 | `DEVICE_ID` | `L7-Application/DeviceUuid` | 753,077 | 81,828 |
 | `core/PathParams` | `L7-Application/PathParams` | 753,105 | 81,788 |
 | `PER_IP_THROTTLE` | `L4-Transport/PerIpThrottle` | 753,173 | 82,236 |

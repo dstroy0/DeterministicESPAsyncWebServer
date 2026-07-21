@@ -620,34 +620,36 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 <details><summary><b>Auto-derived flags</b> - enabling the left flag turns the right one on for you; do not set it yourself.</summary>
 
-| Enabling this... | ...auto-enables |
-| --- | --- |
-| `DWS_ENABLE_EDGE_ORIGIN_TLS` | `DWS_ENABLE_CLIENT_TLS` |
-| `DWS_ENABLE_HTTP_CLIENT` | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_HTTP_CLIENT_TLS` | `DWS_ENABLE_CLIENT_TLS` |
-| `DWS_ENABLE_MODBUS_RTU` | `DWS_ENABLE_MODBUS` |
-| `DWS_ENABLE_MQTT` | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_MQTT_TLS` | `DWS_ENABLE_CLIENT_TLS` |
-| `DWS_ENABLE_NMEA2000` | `DWS_ENABLE_J1939` |
-| `DWS_ENABLE_NTRIP_CASTER` | `DWS_ENABLE_NMEA0183` |
-| `DWS_ENABLE_OTA` | `DWS_ENABLE_STREAM_BODY` |
-| `DWS_ENABLE_RELAY` | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_SENML` | `DWS_ENABLE_CBOR` |
-| `DWS_ENABLE_SMTP` | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_SPARKPLUG` | `DWS_ENABLE_PROTOBUF` |
-| `DWS_ENABLE_UPLOAD` | `DWS_ENABLE_STREAM_BODY` |
-| `DWS_ENABLE_WEBDAV` | `DWS_ENABLE_STREAM_BODY` |
-| `DWS_ENABLE_WS_CLIENT` | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_WS_CLIENT_TLS` | `DWS_ENABLE_CLIENT_TLS` |
+| Enabling this...             | ...auto-enables           |
+| ---------------------------- | ------------------------- |
+| `DWS_ENABLE_EDGE_ORIGIN_TLS` | `DWS_ENABLE_CLIENT_TLS`   |
+| `DWS_ENABLE_HTTP_CLIENT`     | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_HTTP_CLIENT_TLS` | `DWS_ENABLE_CLIENT_TLS`   |
+| `DWS_ENABLE_MODBUS_RTU`      | `DWS_ENABLE_MODBUS`       |
+| `DWS_ENABLE_MQTT`            | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_MQTT_TLS`        | `DWS_ENABLE_CLIENT_TLS`   |
+| `DWS_ENABLE_NMEA2000`        | `DWS_ENABLE_J1939`        |
+| `DWS_ENABLE_NTRIP_CASTER`    | `DWS_ENABLE_NMEA0183`     |
+| `DWS_ENABLE_OTA`             | `DWS_ENABLE_STREAM_BODY`  |
+| `DWS_ENABLE_RELAY`           | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_SENML`           | `DWS_ENABLE_CBOR`         |
+| `DWS_ENABLE_SMTP`            | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_SPARKPLUG`       | `DWS_ENABLE_PROTOBUF`     |
+| `DWS_ENABLE_UPLOAD`          | `DWS_ENABLE_STREAM_BODY`  |
+| `DWS_ENABLE_WEBDAV`          | `DWS_ENABLE_STREAM_BODY`  |
+| `DWS_ENABLE_WS_CLIENT`       | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_WS_CLIENT_TLS`   | `DWS_ENABLE_CLIENT_TLS`   |
+
 </details>
 
 <details><summary><b>PSRAM-class features</b> - the pool cannot fit internal DRAM; enable `*_IN_PSRAM` or acknowledge with an `*_ACK_DRAM` opt-out.</summary>
 
-| Feature | Gate |
-| --- | --- |
-| `DWS_ENABLE_HTTP2` | PSRAM pool |
-| `DWS_ENABLE_SSH_ZLIB` | PSRAM pool |
-| `DWS_ENABLE_TLS` | MAX_TLS_CONNS gt 1 |
+| Feature               | Gate               |
+| --------------------- | ------------------ |
+| `DWS_ENABLE_HTTP2`    | PSRAM pool         |
+| `DWS_ENABLE_SSH_ZLIB` | PSRAM pool         |
+| `DWS_ENABLE_TLS`      | MAX_TLS_CONNS gt 1 |
+
 </details>
 
 _38 hard dependencies, 3 PSRAM gates, 17 derived flags._
@@ -679,6 +681,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Core  | `IPV6`              |             2.6 KB |          15.2 KB |
 | L4    | `IP_ALLOWLIST`      |             1.4 KB |          15.2 KB |
 | L4    | `PER_IP_THROTTLE`   |           < 0.5 KB |          15.7 KB |
+| L4    | `DIFFSERV`          |           < 0.5 KB |          15.2 KB |
 | L4    | `KEEPALIVE`         |           < 0.5 KB |          15.2 KB |
 | L4    | `ACCEPT_THROTTLE`   |           < 0.5 KB |          15.2 KB |
 | L5    | `SSH`               |       66.6-75.9 KB |     21.8-42.0 KB |
