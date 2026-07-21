@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.28.0] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.28.0 - 2026-07-21</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`b1ddfa2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1ddfa2e7f51353bc953fd21e4781269b56f3b69))
+- update CHANGELOG.md [skip ci] ([`4551cd1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4551cd10a5fc62fda578b8f2572d7f7ed3318873))
+
+### Changes
+
+- Bump version: 7.27.0 → 7.28.0 ([`90fe40d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90fe40d3eb100ccdaf528fba956de2d6371fad1b))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`681f8a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/681f8a90093f5141719b19849a2ccccde5389d53))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3e9461c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e9461c2a073132249ab7bdbbd92e72a81005cc0))
+
+### Performance
+
+- constant-time SWAR decode - 1.9x over scalar, 5.36x over mbedTLS ([`8c68b4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c68b4b44e7b892c5d8a92bf1bf193eb5b00d151))
+
+</details>
+
 ## [7.27.0] - 2026-07-21
 
 <details>
