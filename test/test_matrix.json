@@ -263,7 +263,8 @@
         "test_session",
         "test_http_parser",
         "test_websocket",
-        "test_sse"
+        "test_sse",
+        "test_base64"
       ]
     },
     "native_observability": {
@@ -275,6 +276,12 @@
         "+<network_drivers/transport/listener.cpp>"
       ],
       "tests": ["test_observability"]
+    },
+    "native_base64_scalar": {
+      "desc": "base64 scalar constant-time decode fallback (DWS_BASE64_SWAR=0): classify one character at a\ntime instead of the default SWAR four-per-word path. Runs the same RFC 4648 vectors, both alphabets,\nmalformed-input rejection, capacity guard, and round-trip fuzz as the SWAR path (covered by the same\ntest_base64 in env:native, where SWAR is the default) - proving the two decoders are byte-identical.",
+      "flags": ["-DDWS_BASE64_SWAR=0"],
+      "src": ["+<network_drivers/presentation/base64/base64.cpp>"],
+      "tests": ["test_base64"]
     },
     "native_diffserv": {
       "desc": "DiffServ QoS marking (DWS_ENABLE_DIFFSERV): the DSCP->TOS encode (DSCP << 2, ECN 0),\nthe server-wide and UDP DSCP defaults (set/get, 6-bit mask), the per-connection setter\n(dws_conn_set_dscp writes pcb->tos on the host path), and the per-listener override\n(dws_listen_set_dscp incl. the UNSET sentinel + mask + unknown-port miss). Compiles the\nflag-guarded transport paths no other env builds. Pure L4 core - host-tested.",

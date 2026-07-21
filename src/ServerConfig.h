@@ -91,6 +91,24 @@
 #define DWS_ENABLE_DIFFSERV 0
 #endif
 
+/**
+ * @brief Use the SWAR base64 decoder (classify 4 characters per 32-bit word). Default on.
+ *
+ * base64 decode is the one base64 path that touches a secret (the Basic-auth credential, RFC 7617, and the
+ * JWT / JWS segments, RFC 7515), so it must be **constant-time** - the character -> value mapping evaluated
+ * with branchless arithmetic masks, no data-dependent branch or table. Two constant-time implementations are
+ * available: a scalar one that classifies a character at a time, and this SWAR one that packs 4 characters
+ * into a word and classifies all four lanes in parallel with guard-bit range masks (every base64 character
+ * is < 0x80, so borrows never cross lanes). Both are byte-identical (`test_base64` runs against each) and
+ * both are constant-time; measured on the ESP32-S3, SWAR is ~1.9x faster than the scalar path and 5.36x
+ * faster than mbedTLS (882 vs 1639 vs 4728 cyc on a credential), at 0.00-cycle input-dependent variance.
+ * SWAR is the default; set to 0 for the smaller, simpler scalar decoder if code size matters more than the
+ * ~1.9x once-per-request decode win. Portable (any 32-bit target); encode is unaffected (always software).
+ */
+#ifndef DWS_BASE64_SWAR
+#define DWS_BASE64_SWAR 1
+#endif
+
 /** @brief Ring-buffer capacity in bytes per connection slot (feature floors enforced last, in
  *  board_profiles/derived_sizing.h - a value below what an enabled feature needs is raised there). */
 #ifndef RX_BUF_SIZE

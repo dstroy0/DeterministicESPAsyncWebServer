@@ -620,36 +620,34 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 <details><summary><b>Auto-derived flags</b> - enabling the left flag turns the right one on for you; do not set it yourself.</summary>
 
-| Enabling this...             | ...auto-enables           |
-| ---------------------------- | ------------------------- |
-| `DWS_ENABLE_EDGE_ORIGIN_TLS` | `DWS_ENABLE_CLIENT_TLS`   |
-| `DWS_ENABLE_HTTP_CLIENT`     | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_HTTP_CLIENT_TLS` | `DWS_ENABLE_CLIENT_TLS`   |
-| `DWS_ENABLE_MODBUS_RTU`      | `DWS_ENABLE_MODBUS`       |
-| `DWS_ENABLE_MQTT`            | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_MQTT_TLS`        | `DWS_ENABLE_CLIENT_TLS`   |
-| `DWS_ENABLE_NMEA2000`        | `DWS_ENABLE_J1939`        |
-| `DWS_ENABLE_NTRIP_CASTER`    | `DWS_ENABLE_NMEA0183`     |
-| `DWS_ENABLE_OTA`             | `DWS_ENABLE_STREAM_BODY`  |
-| `DWS_ENABLE_RELAY`           | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_SENML`           | `DWS_ENABLE_CBOR`         |
-| `DWS_ENABLE_SMTP`            | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_SPARKPLUG`       | `DWS_ENABLE_PROTOBUF`     |
-| `DWS_ENABLE_UPLOAD`          | `DWS_ENABLE_STREAM_BODY`  |
-| `DWS_ENABLE_WEBDAV`          | `DWS_ENABLE_STREAM_BODY`  |
-| `DWS_ENABLE_WS_CLIENT`       | `DWS_ENABLE_DNS_RESOLVER` |
-| `DWS_ENABLE_WS_CLIENT_TLS`   | `DWS_ENABLE_CLIENT_TLS`   |
-
+| Enabling this... | ...auto-enables |
+| --- | --- |
+| `DWS_ENABLE_EDGE_ORIGIN_TLS` | `DWS_ENABLE_CLIENT_TLS` |
+| `DWS_ENABLE_HTTP_CLIENT` | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_HTTP_CLIENT_TLS` | `DWS_ENABLE_CLIENT_TLS` |
+| `DWS_ENABLE_MODBUS_RTU` | `DWS_ENABLE_MODBUS` |
+| `DWS_ENABLE_MQTT` | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_MQTT_TLS` | `DWS_ENABLE_CLIENT_TLS` |
+| `DWS_ENABLE_NMEA2000` | `DWS_ENABLE_J1939` |
+| `DWS_ENABLE_NTRIP_CASTER` | `DWS_ENABLE_NMEA0183` |
+| `DWS_ENABLE_OTA` | `DWS_ENABLE_STREAM_BODY` |
+| `DWS_ENABLE_RELAY` | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_SENML` | `DWS_ENABLE_CBOR` |
+| `DWS_ENABLE_SMTP` | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_SPARKPLUG` | `DWS_ENABLE_PROTOBUF` |
+| `DWS_ENABLE_UPLOAD` | `DWS_ENABLE_STREAM_BODY` |
+| `DWS_ENABLE_WEBDAV` | `DWS_ENABLE_STREAM_BODY` |
+| `DWS_ENABLE_WS_CLIENT` | `DWS_ENABLE_DNS_RESOLVER` |
+| `DWS_ENABLE_WS_CLIENT_TLS` | `DWS_ENABLE_CLIENT_TLS` |
 </details>
 
 <details><summary><b>PSRAM-class features</b> - the pool cannot fit internal DRAM; enable `*_IN_PSRAM` or acknowledge with an `*_ACK_DRAM` opt-out.</summary>
 
-| Feature               | Gate               |
-| --------------------- | ------------------ |
-| `DWS_ENABLE_HTTP2`    | PSRAM pool         |
-| `DWS_ENABLE_SSH_ZLIB` | PSRAM pool         |
-| `DWS_ENABLE_TLS`      | MAX_TLS_CONNS gt 1 |
-
+| Feature | Gate |
+| --- | --- |
+| `DWS_ENABLE_HTTP2` | PSRAM pool |
+| `DWS_ENABLE_SSH_ZLIB` | PSRAM pool |
+| `DWS_ENABLE_TLS` | MAX_TLS_CONNS gt 1 |
 </details>
 
 _38 hard dependencies, 3 PSRAM gates, 17 derived flags._

@@ -1604,6 +1604,7 @@ guards at compile time.
 | `DWS_AUTH_LOCKOUT_MAX_MS` | `300000` | Maximum lockout duration in ms (the exponential backoff cap). |
 | `DWS_AUTH_LOCKOUT_SLOTS` | `16` | Number of source IPs the auth lockout tracks (BSS bucket table). |
 | `DWS_AUTH_LOCKOUT_THRESHOLD` | `5` | Consecutive failed auths from one IP before it is locked out. |
+| `DWS_BASE64_SWAR` | `1` | Use the SWAR base64 decoder (classify 4 characters per 32-bit word). |
 | `DWS_BRIDGE_MAX_RULES` | `8` | Max concurrent address:port -> bus rules (services/iface_bridge). |
 | `DWS_BRIDGE_STREAM_CHUNK` | `256` | STREAM (UART) pipe chunk size (bytes) for services/iface_bridge - one socket<->UART hop. |
 | `DWS_BRIDGE_TXN_MAX` | `256` | Max write / read payload (bytes) per TRANSACTION frame (services/iface_bridge). |

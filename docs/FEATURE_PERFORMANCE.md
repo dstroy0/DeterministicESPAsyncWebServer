@@ -152,24 +152,32 @@ Host = Raspberry Pi 5 (Cortex-A76, `-O2`), a relative baseline; ESP32-S3 = the r
 | Feature   | Operation              | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
 | --------- | ---------------------- | ---------: | --------: | -------------: | ------------: |
 | base64    | encode 1 KiB (sw)      |        944 |      1085 |          47.36 |          21.6 |
-| base64    | decode 1 KiB (mbedTLS) |       3274 |       313 |        1814.82 |          0.56 |
+| base64    | decode 768 B (CT SWAR) |       3388 |       227 |         215.39 |          3.57 |
 | mtconnect | streams doc (20 obs)   |       3291 |       749 |        278.279 |          8.86 |
 
 Notes:
 
-- **base64 was profiled, and it drove a design decision (the numbers above are the shipped hybrid).** The
-  first on-device run showed the ESP32 base64 - which delegated to **mbedTLS** for both encode and decode -
-  at only ~1.4 MB/s encode and ~0.56 MB/s decode (731 / 1815 us per KiB). mbedTLS is slow here because its
-  base64 is **constant-time** (`mbedtls_ct_base64_enc_char` evaluates every alphabet range with branchless
-  masks instead of a data-dependent table lookup, so timing / cache access does not leak the bytes). The
-  in-house software codec is a plain table lookup - ~20x faster - but not constant-time. Rather than pick
-  one globally, the code now splits by what the data is: **encode** only ever handles the _public_
-  WebSocket-accept digest, so it uses the fast software codec on every target (~47 us, ~15x faster);
-  **decode** is the only path that touches a _secret_ (Basic-auth credentials, RFC 7617), so on the ESP32 it
-  keeps mbedTLS's constant-time decoder (it runs once per authenticated request, not in a byte loop).
-  JWT / OIDC use `base64url`, which has always been the software codec. Verified on the ESP32-S3: RFC 4648
-  vectors both directions, a Basic-auth credential round-trip, a 256-byte round-trip, and fail-closed on
-  malformed input all pass.
+- **base64 was profiled, and it drove a design decision (the numbers above are the shipped codec).** The
+  first on-device run showed the ESP32 base64 decode - which delegated to **mbedTLS** - at only ~0.56 MB/s
+  (~1815 us per KiB). mbedTLS is slow because its base64 is **constant-time** (branchless per-character masks
+  instead of a data-dependent table, so timing / cache access does not leak the secret). Decode is the one
+  base64 path that touches a secret - the Basic-auth credential (RFC 7617) and, via `base64url`, the JWT / JWS
+  segments (RFC 7515) - so constant-time is required, but mbedTLS's speed is not. The decoder is now a
+  **portable branchless constant-time codec** on every target (no mbedTLS delegation, no separate native
+  path), with two selectable implementations, both constant-time (every alphabet range is an arithmetic mask,
+  no branch and no data-indexed table): a **scalar** one that classifies a character at a time, and the
+  default **SWAR** one (`DWS_BASE64_SWAR`, on by default) that packs 4 characters into a 32-bit word and
+  classifies all four lanes in parallel with guard-bit range masks. Measured on the ESP32-S3, decoding a
+  credential: SWAR **882 cyc**, scalar **1639 cyc**, mbedTLS **4728 cyc** - SWAR is **1.9x faster than the
+  scalar path and 5.36x faster than mbedTLS**, and ~8.4x on 1 KiB (215 vs 1815 us). This dropped the mbedTLS
+  base64 dependency and, as a bonus, made the `base64url` (JWT) path constant-time too - it had been a plain
+  branchy software decoder. **Encode** stays the fast software table codec (it only ever encodes the _public_
+  WebSocket-accept digest, ~47 us). A byte-indexed lookup table would be faster still but is NOT constant-time
+  (data-dependent cache line). Verified on the ESP32-S3: **timing-invariance** - both paths decode five
+  same-length inputs spanning the whole alphabet (all-`A` value 0, all-`/` value 63, mixed) in an identical
+  cycle count (SWAR 1291, scalar 2428, 0.00-cycle spread), so timing does not vary with the secret bytes; plus
+  RFC 4648 vectors both directions and a 10,000-input differential against Python's `base64` (0 mismatches,
+  both alphabets), with `test_base64` run against **both** implementations to prove they are byte-identical.
 - MTConnect builds a ~2.5 KB XML document (header + 20 observations) end to end in ~278 us on the device
   (~8.9 MB/s of document assembly) - the zero-heap writer holds up well on hardware.
 
@@ -184,19 +192,19 @@ device costs of hot pure primitives on the auth and ETag/Digest paths - no netwo
 | ------------------------------------------ | --------------: | -------------: |
 | `dws_hex_encode` (16 B -> 32 hex)          |             462 |           1925 |
 | `dws_hex_decode` (32 hex -> 16 B)          |             689 |           2870 |
-| `dws_base64_decode` ("admin:admin", 16 ch) |            5040 |          21000 |
+| `dws_base64_decode` ("admin:admin", 16 ch) |             882 |           3675 |
 | `mime_type` (extension -> content-type)    |             470 |           1958 |
 
 - The hex codecs are the in-house table-lookup path: ~1.9 us to hex-encode a 16-byte value (an ETag or a
   Digest-nonce MAC), ~2.9 us to decode. Cheap enough that the conditional-GET / Digest machinery is never
   the bottleneck.
-- `dws_base64_decode` of an 11-byte Basic-auth credential costs ~21 us - about 11x the hex decode - because on
-  the ESP32 the decoder is mbedTLS's **constant-time** base64 (branchless per-character masks so timing does
-  not leak the credential; see the base64 note in section 2). At once per authenticated request that is
-  invisible, and constant-time is the right trade for a secret. This is the same measurement path that would
-  catch a regression if that ever changed to a fast-but-leaky table lookup. A constant-time speedup is
-  possible via SWAR (decode 4-8 chars per word with parallel branchless masks) - see the ROADMAP perf item;
-  a plain byte-indexed LUT would be faster but is NOT constant-time (data-dependent cache access).
+- `dws_base64_decode` of an 11-byte Basic-auth credential costs ~3.7 us with the default **SWAR** codec -
+  down from ~21 us (mbedTLS), a **5.36x** speedup (882 vs 4728 cyc); the scalar constant-time fallback
+  (`DWS_BASE64_SWAR=0`) is ~6.8 us (1639 cyc, 2.88x). SWAR classifies 4 characters per 32-bit word with
+  guard-bit range masks and stays constant-time - HW-verified on the ESP32-S3: same-length inputs with wildly
+  different bytes decode in an identical 1291 cyc (0.00-cycle spread), so timing does not leak the credential.
+  This is the same measurement path that would catch a regression if the decode ever changed to a
+  fast-but-leaky table lookup.
 - `mime_type` (path extension -> content-type, run on every file-serving response) is ~1.96 us - cheap; the
   content-type lookup is never the request-path bottleneck.
 

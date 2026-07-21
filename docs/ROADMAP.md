@@ -1617,16 +1617,18 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       branchless OR of compares (the compiler already does this at -O2; make it explicit + measured).
       Benchmark before/after via the JTAG CCOUNT harness on the S3 rig so the win is real, not assumed.
 
-- [ ] **SWAR / bit-sliced constant-time base64 decode** (M) - the ESP32 base64 _decode_ is mbedTLS's
-      constant-time codec (branchless per-character range masks) so it does not leak the credential via
-      timing; the CCOUNT bench measured ~5040 cyc / 21 us to decode a Basic-auth credential (~11x the hex
-      decode). A plain byte-indexed lookup table would be faster but is NOT constant-time (the touched cache
-      line is data-dependent -> a timing side-channel). The constant-time way to go faster is SWAR: pack 4
-      chars into a `uint32` (8 into a `uint64`) and apply the range comparisons to all lanes in parallel with
-      word-wide branchless masks, running the classification once per word instead of once per char (~4-8x
-      fewer ops), still data-independent. Decode is once-per-request (not a hot byte loop) so the win is
-      modest - do it only with (a) RFC 4648 test vectors both directions, and (b) a **timing-invariance
-      check** on the S3 rig (CCOUNT must not vary with the input bytes), measured through `/bench`.
+- [x] **SWAR / bit-sliced constant-time base64 decode** (M) - DONE (`DWS_BASE64_SWAR`, default on). The mbedTLS
+      decode delegation was replaced with a portable **branchless constant-time** codec
+      (`src/network_drivers/presentation/base64/base64.cpp`) offering **two selectable implementations**, both
+      constant-time (every alphabet range is an arithmetic mask, no branch and no data-indexed table): a scalar
+      one-char-at-a-time path, and the default **SWAR** path that packs 4 characters into a word and classifies
+      all four lanes in parallel with guard-bit range masks (every base64 char is < 0x80, so borrows never cross
+      lanes). Measured on the ESP32-S3, decoding a credential: **SWAR 882 cyc, scalar 1639 cyc, mbedTLS 4728 cyc**
+      - SWAR is **1.9x faster than the scalar path and 5.36x faster than mbedTLS** (~8.4x on 1 KiB), and both are
+      **timing-invariant** (0.00-cycle spread across alphabet-spanning inputs). This also closed a timing gap on
+      the `base64url` (JWT) path - previously a plain branchy software decoder - and dropped the mbedTLS base64
+      dependency. Verified with RFC 4648 vectors both directions + a 10,000-input differential vs Python `base64`,
+      run against **both** implementations (`test_base64` in env:native = SWAR default and env:native_base64_scalar).
 - [ ] **Hand-rolled SSE record framer** (S) - `dws_sse_format()` builds each `event:`/`id:`/`data:` record with
       three `snprintf("%s")` calls; the CCOUNT bench measured ~3393 cyc / 14 us for a fully-addressed record
       on the S3, dominated by the Xtensa `vsnprintf` path (~7x the `mime_type` lookup). A branchless
