@@ -550,7 +550,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3476 test cases** across **276 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3641 test cases** across **276 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -7970,7 +7970,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_edge_cache_sd (15 tests)</b></summary>
+<summary><b>test_edge_cache_sd (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_serialize_roundtrip_all_fields</b> &mdash; <i>Serialize roundtrip all fields</i></summary>
@@ -8144,6 +8144,96 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
       * <code>Assert false (has_path("/cdn/mine"))</code>
       * <code>Assert equal int (16, dws_dbm_get(&g_db, (const char *)foreign_key, 32, out, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(foreign_val, out, 16); // foreign value intact</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serialize_null_guards_and_every_overflow_point</b> &mdash; <i>Every cap short of the exact size fails at whichever field runs out - never a partial record.</i></summary>
+
+    * **Objective**: Every cap short of the exact size fails at whichever field runs out - never a partial record.
+    * **Assertions**:
+      * <code>Assert equal uint (0, edge_sd_serialize(nullptr, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert equal uint (0, edge_sd_serialize(&in, nullptr, sizeof(g_scratch)))</code>
+      * <code>Assert equal uint (0, edge_sd_serialize(&in, g_scratch, 2))</code>
+      * <code>Assert true (n &gt; 3)</code>
+      * <code>Assert equal uint (0, edge_sd_serialize(&in, g_scratch, cap))</code>
+      * <code>Assert equal uint (n, edge_sd_serialize(&in, g_scratch, n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_deserialize_null_guards_and_every_truncation</b> &mdash; <i>Every truncation short of the whole record fails closed at whichever length prefix runs out.</i></summary>
+
+    * **Objective**: Every truncation short of the whole record fails closed at whichever length prefix runs out.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert false (edge_sd_deserialize(nullptr, n, &out))</code>
+      * <code>Assert false (edge_sd_deserialize(g_scratch, n, nullptr))</code>
+      * <code>Assert false (edge_sd_deserialize(g_scratch, l, &out))</code>
+      * <code>Assert true (edge_sd_deserialize(g_scratch, n, &out))</code>
+      * <code>Assert equal string (canon, out.key)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_deserialize_rejects_field_longer_than_its_slot</b> &mdash; <i>A record claiming a key exactly as long as the entry's key field leaves no room for the NUL:</i></summary>
+
+    * **Objective**: A record claiming a key exactly as long as the entry's key field leaves no room for the NUL:
+    * **Assertions**:
+      * <code>Assert false (edge_sd_deserialize(buf, sizeof(buf), &out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_deserialize_rejects_oversize_body_length</b> &mdash; <i>The body length prefix is the last two bytes ahead of the 1-byte body.</i></summary>
+
+    * **Objective**: The body length prefix is the last two bytes ahead of the 1-byte body.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 3)</code>
+      * <code>Assert false (edge_sd_deserialize(g_scratch, n, &out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dbm_api_null_guards</b> &mdash; <i>Dbm api null guards</i></summary>
+
+    * **Objective**: Dbm api null guards
+    * **Assertions**:
+      * <code>Assert false (edge_sd_put(nullptr, &in, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert false (edge_sd_put(&g_db, nullptr, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert false (edge_sd_put(&g_db, &in, nullptr, sizeof(g_scratch)))</code>
+      * <code>Assert false (edge_sd_put(&g_db, &in, g_scratch, 8))</code>
+      * <code>Assert false (edge_sd_get(nullptr, in.digest, &out, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert false (edge_sd_get(&g_db, nullptr, &out, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert false (edge_sd_get(&g_db, in.digest, nullptr, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert false (edge_sd_get(&g_db, in.digest, &out, nullptr, sizeof(g_scratch)))</code>
+      * <code>Assert false (edge_sd_del(nullptr, in.digest))</code>
+      * <code>Assert false (edge_sd_del(&g_db, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_prefix(nullptr, "/cdn/", g_scratch, sizeof(g_scratch)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_prefix(&g_db, nullptr, g_scratch, sizeof(g_scratch)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_prefix(&g_db, "/cdn/", nullptr, sizeof(g_scratch)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_all(nullptr));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_purge_skips_foreign_and_unreadable_records</b> &mdash; <i>A key that is not a 32-byte digest at all.</i></summary>
+
+    * **Objective**: A key that is not a 32-byte digest at all.
+    * **Assertions**:
+      * <code>Assert true (dws_dbm_put(&g_db, "short-key", 9, (const uint8_t *)"x", 1))</code>
+      * <code>Assert true (dws_dbm_put(&g_db, (const char *)empty_key, 32, nullptr, 0))</code>
+      * <code>Assert true (dws_dbm_put(&g_db, (const char *)stub_key, 32, stub, sizeof(stub)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, edge_sd_purge_all(&g_db)); // only the real edge entry is dropped</code>
+      * <code>Assert equal int (1, dws_dbm_get(&g_db, "short-key", 9, v, sizeof(v)))</code>
+      * <code>Assert equal int (0, dws_dbm_get(&g_db, (const char *)empty_key, 32, v, sizeof(v)))</code>
+      * <code>Assert equal int (2, dws_dbm_get(&g_db, (const char *)stub_key, 32, v, sizeof(v)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_purge_prefix_skips_key_without_a_path</b> &mdash; <i>An L2 value whose cache key is not "METHOD\nhost\npath" has no path portion, so a prefix purge</i></summary>
+
+    * **Objective**: An L2 value whose cache key is not "METHOD\nhost\npath" has no path portion, so a prefix purge
+    * **Assertions**:
+      * <code>Assert true (edge_sd_put(&g_db, &odd, g_scratch, sizeof(g_scratch)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_prefix(&g_db, "malformed", g_scratch, sizeof(g_scratch)));</code>
+      * <code>Assert true (edge_sd_get(&g_db, odd.digest, &out, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert true (has_path("/cdn/keepme"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, edge_sd_purge_all(&g_db));</code>
   </details>
 
 </details>
@@ -8676,7 +8766,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_file_serving (12 tests)</b></summary>
+<summary><b>test_file_serving (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_missing_file_returns_404</b> &mdash; <i>Missing file returns 404</i></summary>
@@ -8766,6 +8856,85 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
     * **Assertions**:
       * <code>Assert not null message (strstr(tcp_captured(), "200 OK"), "expected 200 OK")</code>
       * <code>Assert not null message (strstr(tcp_captured(), cases[i].ctype), "expected content-type in response")</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_root_join_variants</b> &mdash; <i>Serve static root join variants</i></summary>
+
+    * **Objective**: Serve static root join variants
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "AAA"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "BBB"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "CCC"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_empty_prefix_mount</b> &mdash; <i>Serve static empty prefix mount</i></summary>
+
+    * **Objective**: Serve static empty prefix mount
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "anything"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_directory_and_overlong_path</b> &mdash; <i>Serve static directory and overlong path</i></summary>
+
+    * **Objective**: Serve static directory and overlong path
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "&lt;i&gt;docs&lt;/i&gt;"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "404"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_gzip_negotiation_misses</b> &mdash; <i>Serve static gzip negotiation misses</i></summary>
+
+    * **Objective**: Serve static gzip negotiation misses
+    * **Assertions**:
+      * <code>Assert null (strstr(tcp_captured(), "Content-Encoding: gzip"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "console.log(2)"))</code>
+      * <code>Assert null (strstr(tcp_captured(), "Content-Encoding: gzip"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "plain body"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_head_and_cors_headers</b> &mdash; <i>Serve static head and cors headers</i></summary>
+
+    * **Objective**: Serve static head and cors headers
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Content-Length: 17"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Access-Control-Allow-Origin: *"))</code>
+      * <code>Assert null (strstr(tcp_captured(), "&lt;html&gt;body&lt;/html&gt;"))</code>
+      * <code>Assert true (n &gt; 4)</code>
+      * <code>Assert equal string ("\\r\\n\\r\\n", tcp_captured() + n - 4)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Access-Control-Allow-Origin: *"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "&lt;html&gt;body&lt;/html&gt;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_inm_non_matching_forms</b> &mdash; <i>Pin the tag these cases are compared against: "<size hex>-<mtime hex>".</i></summary>
+
+    * **Objective**: Pin the tag these cases are compared against: "<size hex>-<mtime hex>".
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "ETag: \\"f-3e8\\""))</code>
+      * <code>Assert not null message (strstr(tcp_captured(), "HTTP/1.1 200 OK"), misses[i])</code>
+      * <code>Assert not null (strstr(tcp_captured(), "304 Not Modified"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_file_send_pump_connection_lost_midtransfer</b> &mdash; <i>File send pump connection lost midtransfer</i></summary>
+
+    * **Objective**: File send pump connection lost midtransfer
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert true (s_send.file[0].active)</code>
+      * <code>Assert false (s_send.file[0].active)</code>
+      * <code>Assert null (strstr(tcp_captured(), "ZZZZ"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11639,7 +11808,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_haas_mdc (10 tests)</b></summary>
+<summary><b>test_haas_mdc (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_q</b> &mdash; <i>overflow fails closed</i></summary>
@@ -11774,6 +11943,139 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(7, tl); // interior space (a DPRNT '*') preserved</code>
       * <code>Assert equal memory ("COUNT 5", t, 7)</code>
       * <code>Assert false (dws_haas_mdc_dprnt_line(framed, strlen(framed), &t, &tl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_guards</b> &mdash; <i>Build guards</i></summary>
+
+    * **Objective**: Build guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_q(nullptr, sizeof(buf), HAAS_Q_SERIAL));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_q(buf, 0, HAAS_Q_SERIAL));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_var(nullptr, sizeof(buf), 100));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_var(buf, 0, 100));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_guards</b> &mdash; <i>Parse guards</i></summary>
+
+    * **Objective**: Parse guards
+    * **Assertions**:
+      * <code>Assert false (dws_haas_mdc_parse(nullptr, 4, &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse(frame, strlen(frame), nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_field_trimming_edges</b> &mdash; <i>trailing spaces before the comma are trimmed off the field</i></summary>
+
+    * **Objective**: trailing spaces before the comma are trimmed off the field
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(trail, strlen(trail), &r))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, r.field_len[0]);</code>
+      * <code>Assert equal memory ("MODE", r.field[0], 4)</code>
+      * <code>Assert true (dws_haas_mdc_parse(blank, strlen(blank), &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, r.n_fields);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, r.field_len[1]); // "   "</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, r.field_len[2]); // ""</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_max_fields_cap</b> &mdash; <i>more comma-separated fields than the struct holds: the extras are dropped, not written</i></summary>
+
+    * **Objective**: more comma-separated fields than the struct holds: the extras are dropped, not written
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(many, strlen(many), &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_HAAS_MDC_MAX_FIELDS, r.n_fields);</code>
+      * <code>Assert equal memory ("8", r.field[DWS_HAAS_MDC_MAX_FIELDS - 1], 1)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accessor_guards</b> &mdash; <i>a response the parser rejected is left with no fields; every accessor must stay closed</i></summary>
+
+    * **Objective**: a response the parser rejected is left with no fields; every accessor must stay closed
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(frame, strlen(frame), &r))</code>
+      * <code>Assert false (dws_haas_mdc_field(nullptr, 0, &p, &l))</code>
+      * <code>Assert true (dws_haas_mdc_field(&r, 0, nullptr, nullptr))</code>
+      * <code>Assert false (dws_haas_mdc_is_error(nullptr))</code>
+      * <code>Assert false (dws_haas_mdc_parse("no frame here", 13, &empty))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, empty.n_fields);</code>
+      * <code>Assert false (dws_haas_mdc_is_error(&empty))</code>
+      * <code>Assert false (dws_haas_mdc_value(&empty, &p, &l))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_field_is_prefix_mismatch</b> &mdash; <i>the field runs past the literal: "STATUSX" is not "STATUS"</i></summary>
+
+    * **Objective**: the field runs past the literal: "STATUSX" is not "STATUS"
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(longer, strlen(longer), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse_status(&r, &s))</code>
+      * <code>Assert true (dws_haas_mdc_parse(shorter, strlen(shorter), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse_status(&r, &s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_status_guards_and_branches</b> &mdash; <i>STATUS with no second field: still busy, but there is no status token to report</i></summary>
+
+    * **Objective**: STATUS with no second field: still busy, but there is no status token to report
+    * **Assertions**:
+      * <code>Assert true (dws_haas_mdc_parse(busy, strlen(busy), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse_status(nullptr, &s))</code>
+      * <code>Assert false (dws_haas_mdc_parse_status(&r, nullptr))</code>
+      * <code>Assert true (dws_haas_mdc_parse(bare, strlen(bare), &r))</code>
+      * <code>Assert true (dws_haas_mdc_parse_status(&r, &s))</code>
+      * <code>Assert true (s.busy)</code>
+      * <code>Assert null (s.status)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, s.status_len);</code>
+      * <code>Assert true (dws_haas_mdc_parse(shortprog, strlen(shortprog), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse_status(&r, &s))</code>
+      * <code>Assert true (dws_haas_mdc_parse(noparts, strlen(noparts), &r))</code>
+      * <code>Assert true (dws_haas_mdc_parse_status(&r, &s))</code>
+      * <code>Assert equal memory ("IDLE", s.status, 4)</code>
+      * <code>Assert false (s.parts_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, s.parts);</code>
+      * <code>Assert true (dws_haas_mdc_parse(badparts, strlen(badparts), &r))</code>
+      * <code>Assert true (dws_haas_mdc_parse_status(&r, &s))</code>
+      * <code>Assert false (s.parts_valid)</code>
+      * <code>Assert true (dws_haas_mdc_parse(emptyparts, strlen(emptyparts), &r))</code>
+      * <code>Assert true (dws_haas_mdc_parse_status(&r, &s))</code>
+      * <code>Assert false (s.parts_valid)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_macro_guards_and_rejects</b> &mdash; <i>fewer than three fields</i></summary>
+
+    * **Objective**: fewer than three fields
+    * **Assertions**:
+      * <code>Assert false (dws_haas_mdc_parse_macro(nullptr, &var, &val, &vl))</code>
+      * <code>Assert true (dws_haas_mdc_parse(shortm, strlen(shortm), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse_macro(&r, &var, &val, &vl))</code>
+      * <code>Assert true (dws_haas_mdc_parse(notmacro, strlen(notmacro), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse_macro(&r, &var, &val, &vl))</code>
+      * <code>Assert true (dws_haas_mdc_parse(neg, strlen(neg), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse_macro(&r, &var, &val, &vl))</code>
+      * <code>Assert true (dws_haas_mdc_parse(alpha, strlen(alpha), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse_macro(&r, &var, &val, &vl))</code>
+      * <code>Assert true (dws_haas_mdc_parse(blank, strlen(blank), &r))</code>
+      * <code>Assert false (dws_haas_mdc_parse_macro(&r, &var, &val, &vl))</code>
+      * <code>Assert true (dws_haas_mdc_parse(good, strlen(good), &r))</code>
+      * <code>Assert true (dws_haas_mdc_parse_macro(&r, nullptr, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dprnt_guards_and_strip_edges</b> &mdash; <i>a leading prompt byte and a leading CR LF are all stripped</i></summary>
+
+    * **Objective**: a leading prompt byte and a leading CR LF are all stripped
+    * **Assertions**:
+      * <code>Assert false (dws_haas_mdc_dprnt_line(nullptr, 4, &t, &tl))</code>
+      * <code>Assert false (dws_haas_mdc_dprnt_line("X", 0, &t, &tl))</code>
+      * <code>Assert true (dws_haas_mdc_dprnt_line(lead, strlen(lead), &t, &tl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(5, tl);</code>
+      * <code>Assert equal memory ("HELLO", t, 5)</code>
+      * <code>Assert false (dws_haas_mdc_dprnt_line("\\r\\n", 2, &t, &tl))</code>
+      * <code>Assert false (dws_haas_mdc_dprnt_line("\\x14", 1, &t, &tl))</code>
+      * <code>Assert true (dws_haas_mdc_dprnt_line("OK\\r\\n", 4, nullptr, nullptr))</code>
   </details>
 
 </details>
@@ -14398,7 +14700,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (16 tests)</b></summary>
+<summary><b>test_ikev2 (37 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -14624,6 +14926,390 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
       * <code>Assert false (dws_ike_payload_next(&it, &pl))</code>
       * <code>Assert false (dws_ike_payload_next(&it, &pl))</code>
       * <code>Assert false (dws_ike_notify_parse(short_notify, sizeof(short_notify), &proto, &type, &spi, &ss, &d, &dl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hdr_guards</b> &mdash; <i>a null buffer still clears the out struct before it fails</i></summary>
+
+    * **Objective**: a null buffer still clears the out struct before it fails
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_hdr_build(nullptr, sizeof(buf), &h));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_hdr_build(buf, sizeof(buf), nullptr));</code>
+      * <code>Assert false (dws_ike_hdr_parse(GV_HDR, sizeof(GV_HDR), nullptr))</code>
+      * <code>Assert false (dws_ike_hdr_parse(nullptr, 64, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, r.length);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, r.init_spi[0]);</code>
+      * <code>Assert false (dws_ike_set_length(nullptr, 64, 92))</code>
+      * <code>Assert false (dws_ike_set_length(buf, DWS_IKE_HDR_LEN - 1, 92))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_payload_iter_guards</b> &mdash; <i>a null iterator: the out payload is cleared first</i></summary>
+
+    * **Objective**: a null iterator: the out payload is cleared first
+    * **Assertions**:
+      * <code>Assert false (dws_ike_payload_next(&it, nullptr))</code>
+      * <code>Assert false (dws_ike_payload_next(nullptr, &pl))</code>
+      * <code>Assert null (pl.body)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, pl.body_len);</code>
+      * <code>Assert false (pl.critical)</code>
+      * <code>Assert false (dws_ike_payload_next(&it, &pl))</code>
+      * <code>Assert false (dws_ike_payload_next(&it, &pl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_payload_build_raw</b> &mdash; <i>critical bit set</i></summary>
+
+    * **Objective**: critical bit set
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_KE, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, buf[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x08, buf[3]);</code>
+      * <code>Assert equal memory (body, buf + 4, sizeof(body))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_IKE_CRITICAL, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x04, buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_payload_build(buf, 7, IkePayloadType::IKE_PL_NONE, false, body, sizeof(body)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_oversize_payload_lengths</b> &mdash; <i>a payload whose total does not fit the 16-bit length field is refused</i></summary>
+
+    * **Objective**: a payload whose total does not fit the 16-bit length field is refused
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0xFFFF, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xff, out[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xff, out[3]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_typed_builder_guards</b> &mdash; <i>null destination</i></summary>
+
+    * **Objective**: null destination
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_id_build(nullptr, sizeof(buf), IkePayloadType::IKE_PL_NONE,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_auth_build(nullptr, sizeof(buf), IkePayloadType::IKE_PL_NONE,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_delete_build(nullptr, sizeof(buf), IkePayloadType::IKE_PL_NONE,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_nonce_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, nullptr, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_cert_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, 4, nullptr, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_notify_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_delete_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_nonce_build(buf, 7, IkePayloadType::IKE_PL_NONE, data, sizeof(data)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_cert_build(buf, 8, IkePayloadType::IKE_PL_NONE, 4, data, sizeof(data)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_notify_build(buf, 11, IkePayloadType::IKE_PL_NONE, IkeProtocol::IKE_PROTO_IKE,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builder_empty_bodies</b> &mdash; <i>every variable-length builder frames an empty body</i></summary>
+
+    * **Objective**: every variable-length builder frames an empty body
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, buf[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x1f, buf[5]); // group 31</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dws_ike_nonce_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x04, buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeIdType::IKE_ID_IPV4_ADDR, buf[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, dws_ike_auth_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE,</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeAuthMethod::IKE_AUTH_DIGITAL_SIG, buf[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(5, dws_ike_cert_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, 4, nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x05, buf[3]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cert_build</b> &mdash; <i>Cert build</i></summary>
+
+    * **Objective**: Cert build
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(9, n); // generic(4) + encoding(1) + data(4)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_AUTH, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, buf[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x09, buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, buf[4]); // X.509 certificate - signature</code>
+      * <code>Assert equal memory (der, buf + 5, sizeof(der))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_notify_build_with_spi</b> &mdash; <i>Notify build with spi</i></summary>
+
+    * **Objective**: Notify build with spi
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(12, n); // generic(4) + proto/spisize/type(4) + spi(4)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_ESP, buf[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, buf[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x40, buf[6]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x02, buf[7]);</code>
+      * <code>Assert equal memory (spi, buf + 8, 4)</code>
+      * <code>Assert true (dws_ike_notify_parse(buf + 4, n - 4, &proto, &type, &pspi, &ss, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_ESP, (uint8_t)proto);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(16386, type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, ss);</code>
+      * <code>Assert equal memory (spi, pspi, 4)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dl);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_delete_build_with_spis</b> &mdash; <i>Delete build with spis</i></summary>
+
+    * **Objective**: Delete build with spis
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(16, n); // generic(4) + proto/spisize/count(4) + 2 * 4</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_ESP, buf[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, buf[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, buf[6]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x02, buf[7]);</code>
+      * <code>Assert equal memory (spis, buf + 8, 8)</code>
+      * <code>Assert true (dws_ike_delete_parse(buf + 4, n - 4, &proto, &ss, &num, &list))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, ss);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, num);</code>
+      * <code>Assert equal memory (spis, list, 8)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sk_build_variants</b> &mdash; <i>every component is optional: an empty envelope is just the generic header</i></summary>
+
+    * **Objective**: every component is optional: an empty envelope is just the generic header
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x04, buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_sk_build(buf, 15, IkePayloadType::IKE_PL_IDI, blob, 4, blob, 4, blob, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sa_build_guards_and_spi</b> &mdash; <i>an SPI size with no SPI</i></summary>
+
+    * **Objective**: an SPI size with no SPI
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_sa_build(nullptr, sizeof(buf), IkePayloadType::IKE_PL_NONE, 1,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_sa_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, 1,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_sa_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, 1,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_sa_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, 1,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + 8 + 4 + 12, n); // generic + proposal hdr + spi + one keyed transform</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, buf[10]);         // spi size in the proposal header</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, buf[11]);         // one transform</code>
+      * <code>Assert equal memory (spi, buf + 12, 4)</code>
+      * <code>Assert true (dws_ike_sa_first_proposal(buf + 4, n - 4, &prop))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_ESP, (uint8_t)prop.protocol_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, prop.spi_size);</code>
+      * <code>Assert not null (prop.spi)</code>
+      * <code>Assert equal memory (spi, prop.spi, 4)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(12, prop.transforms_len);</code>
+      * <code>Assert true (dws_ike_transform_next(&it, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(IKE_ENCR_AES_GCM_16, t.id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(128, t.key_length);</code>
+      * <code>Assert true (t.last)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ts_build_guards</b> &mdash; <i>capacity below the generic + count headers, then below the first selector</i></summary>
+
+    * **Objective**: capacity below the generic + count headers, then below the first selector
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_ts_build(nullptr, sizeof(buf), IkePayloadType::IKE_PL_NONE, &sel, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_ts_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, nullptr, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_ts_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, &sel, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_ts_build(buf, 7, IkePayloadType::IKE_PL_NONE, &sel, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_ts_build(buf, 23, IkePayloadType::IKE_PL_NONE, &sel, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_ts_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, &bad, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_ts_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, &bad, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_ts_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, &bad, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + 4 + 8 + 32, n);</code>
+      * <code>Assert true (dws_ike_ts_get(buf + 4, n - 4, 0, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeTsType::IKE_TS_IPV6_ADDR_RANGE, (uint8_t)got.ts_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, got.ip_protocol);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(500, got.start_port);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(16, got.addr_len);</code>
+      * <code>Assert equal memory (s6, got.start_addr, 16)</code>
+      * <code>Assert equal memory (e6, got.end_addr, 16)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_optional_outparams</b> &mdash; <i>every out-param is optional, and a short body clears the ones that were supplied</i></summary>
+
+    * **Objective**: every out-param is optional, and a short body clears the ones that were supplied
+    * **Assertions**:
+      * <code>Assert true (dws_ike_ke_parse(ke_body, sizeof(ke_body), nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_ike_ke_parse(nullptr, sizeof(ke_body), nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_ike_ke_parse(ke_body, 3, &group, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, group);</code>
+      * <code>Assert null (d)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dl);</code>
+      * <code>Assert true (dws_ike_id_parse(id_body, sizeof(id_body), nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_ike_id_parse(nullptr, sizeof(id_body), nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_ike_id_parse(id_body, 3, &id_type, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeIdType::IKE_ID_RESERVED, (uint8_t)id_type);</code>
+      * <code>Assert null (d)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dl);</code>
+      * <code>Assert true (dws_ike_auth_parse(auth_body, sizeof(auth_body), nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_ike_auth_parse(nullptr, sizeof(auth_body), nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_ike_auth_parse(auth_body, 3, &method, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeAuthMethod::IKE_AUTH_RESERVED, (uint8_t)method);</code>
+      * <code>Assert null (d)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dl);</code>
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>Assert true (dws_ike_delete_parse(delete_body, sizeof(delete_body), nullptr, nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_ike_delete_parse(nullptr, sizeof(delete_body), nullptr, nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_ike_delete_parse(delete_body, 3, &proto, &ss, &num, &spis))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_NONE, (uint8_t)proto);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ss);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, num);</code>
+      * <code>Assert null (spis)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_notify_parse_spi</b> &mdash; <i>proto ESP, 4-byte SPI, type 16389, 2 bytes of notification data</i></summary>
+
+    * **Objective**: proto ESP, 4-byte SPI, type 16389, 2 bytes of notification data
+    * **Assertions**:
+      * <code>Assert true (dws_ike_notify_parse(body, sizeof(body), &proto, &type, &spi, &ss, &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_ESP, (uint8_t)proto);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, ss);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(16389, type);</code>
+      * <code>Assert equal ptr (body + 4, spi)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dl);</code>
+      * <code>Assert equal memory (body + 8, d, 2)</code>
+      * <code>Assert false (dws_ike_notify_parse(trunc, sizeof(trunc), &proto, &type, &spi, &ss, &d, &dl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_delete_parse_spis</b> &mdash; <i>2 SPIs of 4 bytes</i></summary>
+
+    * **Objective**: 2 SPIs of 4 bytes
+    * **Assertions**:
+      * <code>Assert true (dws_ike_delete_parse(body, sizeof(body), &proto, &ss, &num, &spis))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, ss);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, num);</code>
+      * <code>Assert equal ptr (body + 4, spis)</code>
+      * <code>Assert true (dws_ike_delete_parse(empty, sizeof(empty), &proto, &ss, &num, &spis))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, ss);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, num);</code>
+      * <code>Assert null (spis)</code>
+      * <code>Assert false (dws_ike_delete_parse(trunc, sizeof(trunc), &proto, &ss, &num, &spis))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sk_parse_variants</b> &mdash; <i>an implicit-IV / no-ICV cipher leaves the whole body as ciphertext</i></summary>
+
+    * **Objective**: an implicit-IV / no-ICV cipher leaves the whole body as ciphertext
+    * **Assertions**:
+      * <code>Assert true (dws_ike_sk_parse(body, sizeof(body), 0, 0, &iv, &ct, &ctl, &icv))</code>
+      * <code>Assert null (iv)</code>
+      * <code>Assert equal ptr (body, ct)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, ctl);</code>
+      * <code>Assert null (icv)</code>
+      * <code>Assert true (dws_ike_sk_parse(body, sizeof(body), 0, 0, nullptr, nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_ike_sk_parse(nullptr, 16, 0, 0, &iv, &ct, &ctl, &icv))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sa_proposal_malformed</b> &mdash; <i>a proposal length below the fixed 8-byte proposal header</i></summary>
+
+    * **Objective**: a proposal length below the fixed 8-byte proposal header
+    * **Assertions**:
+      * <code>Assert false (dws_ike_sa_first_proposal(GV_SA + 4, sizeof(GV_SA) - 4, nullptr))</code>
+      * <code>Assert false (dws_ike_sa_first_proposal(nullptr, 24, &prop))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, prop.num_transforms); // out is zeroed before the body is inspected</code>
+      * <code>Assert null (prop.transforms)</code>
+      * <code>Assert false (dws_ike_sa_first_proposal(GV_SA + 4, 7, &prop))</code>
+      * <code>Assert false (dws_ike_sa_first_proposal(short_plen, sizeof(short_plen), &prop))</code>
+      * <code>Assert false (dws_ike_sa_first_proposal(over_plen, sizeof(over_plen), &prop))</code>
+      * <code>Assert false (dws_ike_sa_first_proposal(spi_over, sizeof(spi_over), &prop))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_transform_iter_guards</b> &mdash; <i>a null proposal leaves an empty iterator</i></summary>
+
+    * **Objective**: a null proposal leaves an empty iterator
+    * **Assertions**:
+      * <code>Assert null (it.area)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, it.len);</code>
+      * <code>Assert false (dws_ike_transform_next(&it, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, t.key_length); // out is reset before the iterator is inspected</code>
+      * <code>Assert true (t.last)</code>
+      * <code>Assert false (dws_ike_transform_next(nullptr, &t))</code>
+      * <code>Assert true (dws_ike_sa_first_proposal(GV_SA + 4, sizeof(GV_SA) - 4, &prop))</code>
+      * <code>Assert false (dws_ike_transform_next(&it, nullptr))</code>
+      * <code>Assert false (dws_ike_transform_next(&it, &t))</code>
+      * <code>Assert false (dws_ike_transform_next(&it, &t))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_transform_attributes</b> &mdash; <i>transform 1 carries a TLV attribute (AF bit clear: a 2-byte length then the value), transform 2</i></summary>
+
+    * **Objective**: transform 1 carries a TLV attribute (AF bit clear: a 2-byte length then the value), transform 2
+    * **Assertions**:
+      * <code>Assert true (dws_ike_transform_next(&it, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeTransformType::IKE_TRANSFORM_ENCR, (uint8_t)t.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(IKE_ENCR_AES_CBC, t.id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, t.key_length);</code>
+      * <code>Assert false (t.last)</code>
+      * <code>Assert true (dws_ike_transform_next(&it, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeTransformType::IKE_TRANSFORM_INTEG, (uint8_t)t.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(IKE_INTEG_HMAC_SHA2_256_128, t.id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, t.key_length); // TV attribute 13 is not Key Length</code>
+      * <code>Assert true (t.last)</code>
+      * <code>Assert false (dws_ike_transform_next(&it, &t))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ts_parse_malformed</b> &mdash; <i>a selector header past the end of the body</i></summary>
+
+    * **Objective**: a selector header past the end of the body
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_ike_ts_count(nullptr, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_ike_ts_count(tiny, sizeof(tiny)));</code>
+      * <code>Assert false (dws_ike_ts_get(tiny, sizeof(tiny), 0, nullptr))</code>
+      * <code>Assert false (dws_ike_ts_get(nullptr, 8, 0, &got))</code>
+      * <code>Assert null (got.start_addr)</code>
+      * <code>Assert false (dws_ike_ts_get(tiny, sizeof(tiny), 0, &got))</code>
+      * <code>Assert false (dws_ike_ts_get(cut, sizeof(cut), 0, &got))</code>
+      * <code>Assert false (dws_ike_ts_get(short_sel, sizeof(short_sel), 0, &got))</code>
+      * <code>Assert false (dws_ike_ts_get(over_sel, sizeof(over_sel), 0, &got))</code>
+      * <code>Assert false (dws_ike_ts_get(odd_sel, sizeof(odd_sel), 0, &got))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ts_get_second_selector</b> &mdash; <i>index 1 walks past selector 0</i></summary>
+
+    * **Objective**: index 1 walks past selector 0
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + 4 + 2 * 16, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, dws_ike_ts_count(buf + 4, n - 4));</code>
+      * <code>Assert true (dws_ike_ts_get(buf + 4, n - 4, 1, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(17, got.ip_protocol);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, got.start_port);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(65535, got.end_port);</code>
+      * <code>Assert equal memory (s2, got.start_addr, 4)</code>
+      * <code>Assert equal memory (e2, got.end_addr, 4)</code>
+      * <code>Assert false (dws_ike_ts_get(buf + 4, n - 4, 2, &got))</code>
   </details>
 
 </details>
@@ -18827,7 +19513,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mtconnect (12 tests)</b></summary>
+<summary><b>test_mtconnect (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_streams_document</b> &mdash; <i>Properly closed.</i></summary>
@@ -18983,6 +19669,102 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (contains(buf, "firstSequence=\\"1\\" lastSequence=\\"0\\" nextSequence=\\"1\\""))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_sample_query(&b, tiny, sizeof(tiny), 1, "device-name", 5, 10));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_streams_null_strings</b> &mdash; <i>Streams null strings</i></summary>
+
+    * **Objective**: Streams null strings
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
+      * <code>Assert true (contains(buf, "&lt;DeviceStream name=\\"\\"&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt;Samples&gt;&lt; dataItemId=\\"\\" sequence=\\"7\\" timestamp=\\"\\"&gt;&lt;/&gt;&lt;/Samples&gt;"))</code>
+      * <code>TEST_ASSERT_TRUE(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builders_reject_null_buffer_and_zero_cap</b> &mdash; <i>Builders reject null buffer and zero cap</i></summary>
+
+    * **Objective**: Builders reject null buffer and zero cap
+    * **Assertions**:
+      * <code>Assert false (s.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_streams_end(&s));</code>
+      * <code>Assert false (s.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_streams_end(&s));</code>
+      * <code>Assert false (s.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_devices_end(&s));</code>
+      * <code>Assert false (s.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_devices_end(&s));</code>
+      * <code>Assert false (s.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_assets_end(&s));</code>
+      * <code>Assert false (s.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_assets_end(&s));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_error(1, "E", "m", nullptr, sizeof(b)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_error(1, "E", "m", b, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_null_strings_and_capacity_sweep</b> &mdash; <i>One byte beyond the document is needed for the NUL, so only cap > complete succeeds.</i></summary>
+
+    * **Objective**: One byte beyond the document is needed for the NUL, so only cap > complete succeeds.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (contains(buf, "&lt;Errors&gt;&lt;Error errorCode=\\"\\"&gt;&lt;/Error&gt;&lt;/Errors&gt;"))</code>
+      * <code>Assert true (complete &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(cap &gt; complete ? complete : 0, got);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x7E, (uint8_t)small[i]); // nothing written past the declared capacity</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_devices_null_ids_and_empty_optionals</b> &mdash; <i>Self-closing straight after type: the empty name/units were dropped, not emitted.</i></summary>
+
+    * **Objective**: Self-closing straight after type: the empty name/units were dropped, not emitted.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (contains(buf, "&lt;Devices&gt;&lt;Device id=\\"\\" name=\\"\\" uuid=\\"\\"&gt;&lt;DataItems&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt;DataItem category=\\"SAMPLE\\" id=\\"\\" type=\\"\\"/&gt;"))</code>
+      * <code>Assert false (contains(buf, "units="))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_assets_empty_optionals_and_null_strings</b> &mdash; <i>Assets empty optionals and null strings</i></summary>
+
+    * **Objective**: Assets empty optionals and null strings
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
+      * <code>Assert true (contains(buf, "assetBufferSize=\\"0\\" assetCount=\\"0\\""))</code>
+      * <code>Assert true (contains(buf, "&lt;Assets&gt;&lt;CuttingTool assetId=\\"\\"&gt;&lt;CuttingToolLifeCycle&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt;ToolLife type=\\"\\" countDirection=\\"\\"&gt;&lt;/ToolLife&gt;"))</code>
+      * <code>Assert false (contains(buf, "serialNumber"))</code>
+      * <code>Assert false (contains(buf, "limit"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sample_buffer_null_and_truncated_fields</b> &mdash; <i>Sample buffer null and truncated fields</i></summary>
+
+    * **Objective**: Sample buffer null and truncated fields
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, b.next_seq);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(</code>
+      * <code>Assert true (strlen(long_type) &gt; DWS_MTC_STR_MAX)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
+      * <code>Assert true (contains(buf, "&lt;DeviceStream name=\\"\\"&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt; dataItemId=\\"\\" sequence=\\"1\\" timestamp=\\"\\"&gt;&lt;/&gt;"))</code>
+      * <code>Assert true (contains(buf, truncated))</code>
+      * <code>Assert false (contains(buf, long_type))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sample_query_rejects_null_buffer_and_zero_cap</b> &mdash; <i>Sample query rejects null buffer and zero cap</i></summary>
+
+    * **Objective**: Sample query rejects null buffer and zero cap
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_sample_query(&b, nullptr, 512, 1, "d", 1, 10));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_sample_query(&b, buf, 0, 1, "d", 1, 10));</code>
   </details>
 
 </details>
@@ -23312,7 +24094,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_pqc_mlkem (7 tests)</b></summary>
+<summary><b>test_pqc_mlkem (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_mlkem768_encaps_kat</b> &mdash; <i>Mlkem768 encaps kat</i></summary>
@@ -23377,6 +24159,33 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(ss1, ss2, MLKEM768_SS_BYTES);        // deterministic</code>
       * <code>Assert not equal (0, memcmp(ss1, kat_ss, MLKEM768_SS_BYTES))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_ek_modulus_check_boundary</b> &mdash; <i>Coefficient 0 of the first polynomial is ByteDecode_12(ek[0], ek[1] low nibble); the high</i></summary>
+
+    * **Objective**: Coefficient 0 of the first polynomial is ByteDecode_12(ek[0], ek[1] low nibble); the high
+    * **Assertions**:
+      * <code>Assert not equal (0, memcmp(ek, kat_ek, sizeof(ek)))</code>
+      * <code>Assert true (dws_mlkem768_encaps(ek, kat_m, ct, ss))</code>
+      * <code>Assert not equal (0, memcmp(ss, kat_ss, sizeof(ss)))</code>
+      * <code>Assert false (dws_mlkem768_encaps(ek, kat_m, ct, ss))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_rejects_ek_last_coefficient</b> &mdash; <i>Polynomial 2 starts at 768; its coefficient 255 is the high 8 bits of its final octet.</i></summary>
+
+    * **Objective**: Polynomial 2 starts at 768; its coefficient 255 is the high 8 bits of its final octet.
+    * **Assertions**:
+      * <code>Assert false (dws_mlkem768_encaps(ek, kat_m, ct, ss))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_implicit_reject_equals_j_of_z_and_ct</b> &mdash; <i>Mlkem768 implicit reject equals j of z and ct</i></summary>
+
+    * **Objective**: Mlkem768 implicit reject equals j of z and ct
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, ss, MLKEM768_SS_BYTES);</code>
   </details>
 
 </details>
@@ -26510,7 +27319,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_redis_resp (14 tests)</b></summary>
+<summary><b>test_redis_resp (21 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_encode_command</b> &mdash; <i>Encode command</i></summary>
@@ -26707,6 +27516,101 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
       * <code>Assert true (dws_resp_parse((const uint8_t *)"&gt;3\\r\\n", 4, &r, &c))</code>
       * <code>Assert equal (RespType::RESP_PUSH, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_INT64(3, r.count);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_zero_length_arg</b> &mdash; <i>Encode zero length arg</i></summary>
+
+    * **Objective**: Encode zero length arg
+    * **Assertions**:
+      * <code>Assert equal string ("*3\\r\\n$3\\r\\nSET\\r\\n$1\\r\\nk\\r\\n$0\\r\\n\\r\\n", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_overflow_stages</b> &mdash; <i>Encode overflow stages</i></summary>
+
+    * **Objective**: Encode overflow stages
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_resp_encode_command(buf, 3, argv, lens, 2));  // "*2\\r\\n" alone overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_resp_encode_command(buf, 10, argv, lens, 2)); // "$3\\r\\n" fits, "GET\\r\\n" does not</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_resp3_double_forms</b> &mdash; <i>An exponent past the accumulator clamp saturates the double instead of overflowing the int.</i></summary>
+
+    * **Objective**: An exponent past the accumulator clamp saturates the double instead of overflowing the int.
+    * **Assertions**:
+      * <code>Assert true (dws_resp_parse((const uint8_t *)good[i].wire, strlen(good[i].wire), &r, &c))</code>
+      * <code>Assert equal (RespType::RESP_DOUBLE, r.type)</code>
+      * <code>Assert true (fabs(r.dval - good[i].want) &lt; 1e-9)</code>
+      * <code>Assert true (dws_resp_parse((const uint8_t *)malformed[i], strlen(malformed[i]), &r, &c))</code>
+      * <code>Assert equal (RespType::RESP_DOUBLE, r.type)</code>
+      * <code>Assert true (fabs(r.dval) &lt; 1e-12)</code>
+      * <code>Assert true (dws_resp_parse((const uint8_t *)",1e10000000\\r\\n", 13, &r, &c))</code>
+      * <code>Assert true (isinf(r.dval) && r.dval &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_double_special_case_insensitive</b> &mdash; <i>Parse double special case insensitive</i></summary>
+
+    * **Objective**: Parse double special case insensitive
+    * **Assertions**:
+      * <code>Assert true (dws_resp_parse((const uint8_t *)",INF\\r\\n", 6, &r, &c))</code>
+      * <code>Assert true (isinf(r.dval) && r.dval &gt; 0)</code>
+      * <code>Assert true (dws_resp_parse((const uint8_t *)",+inf\\r\\n", 7, &r, &c))</code>
+      * <code>Assert true (isinf(r.dval) && r.dval &gt; 0)</code>
+      * <code>Assert true (dws_resp_parse((const uint8_t *)",-INF\\r\\n", 7, &r, &c))</code>
+      * <code>Assert true (isinf(r.dval) && r.dval &lt; 0)</code>
+      * <code>Assert true (dws_resp_parse((const uint8_t *)",NaN\\r\\n", 6, &r, &c))</code>
+      * <code>Assert true (isnan(r.dval))</code>
+      * <code>Assert true (dws_resp_parse((const uint8_t *)",inf0\\r\\n", 7, &r, &c))</code>
+      * <code>Assert true (fabs(r.dval) &lt; 1e-12)</code>
+      * <code>Assert true (dws_resp_parse((const uint8_t *)",in\\r\\n", 5, &r, &c))</code>
+      * <code>Assert true (fabs(r.dval) &lt; 1e-12)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_bulk_body_rejects</b> &mdash; <i>A zero-length bulk string is valid and consumes its own trailing CRLF.</i></summary>
+
+    * **Objective**: A zero-length bulk string is valid and consumes its own trailing CRLF.
+    * **Assertions**:
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"$xx\\r\\nhi\\r\\n", 9, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"!-1\\r\\n", 5, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"=-3\\r\\nabc\\r\\n", 10, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"$0\\r\\n", 4, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"$5\\r\\nhello\\rX", 11, &r, &c))</code>
+      * <code>Assert true (dws_resp_parse((const uint8_t *)"$0\\r\\n\\r\\n", 6, &r, &c))</code>
+      * <code>Assert equal (RespType::RESP_BULK, r.type)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, r.str_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(6, c);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_aggregate_and_scalar_rejects</b> &mdash; <i>Parse aggregate and scalar rejects</i></summary>
+
+    * **Objective**: Parse aggregate and scalar rejects
+    * **Assertions**:
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"*xy\\r\\n", 5, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"~-1\\r\\n", 5, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"&gt;-2\\r\\n", 5, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"%-1\\r\\n", 5, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"%ab\\r\\n", 5, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)"#tt\\r\\n", 5, &r, &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_line_scan_and_integer_octets</b> &mdash; <i>Parse line scan and integer octets</i></summary>
+
+    * **Objective**: Parse line scan and integer octets
+    * **Assertions**:
+      * <code>Assert true (dws_resp_parse((const uint8_t *)"+A\\rB\\r\\n", 6, &r, &c))</code>
+      * <code>Assert equal (RespType::RESP_SIMPLE, r.type)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, r.str_len);</code>
+      * <code>Assert equal memory ("A\\rB", r.str, 3)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(6, c);</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)": 1\\r\\n", 5, &r, &c))</code>
+      * <code>Assert false (dws_resp_parse((const uint8_t *)":1a2\\r\\n", 6, &r, &c))</code>
   </details>
 
 </details>
@@ -27383,7 +28287,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_scpi (24 tests)</b></summary>
+<summary><b>test_scpi (38 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_common_commands</b> &mdash; <i>Common commands</i></summary>
@@ -27681,6 +28585,161 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
       * <code>Assert false (match("SYST:ERR:NEXT?", "SYSTem:ERRor?"))</code>
       * <code>Assert false (match("SYST?", "SYSTem:ERRor?"))</code>
       * <code>Assert false (match("SYSTE:ERR?", "SYSTem:ERRor?"));     // partial (not short nor long form)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_common_commands_full_enum</b> &mdash; <i>a value outside the enumeration falls past every case -> the empty string</i></summary>
+
+    * **Objective**: a value outside the enumeration falls past every case -> the empty string
+    * **Assertions**:
+      * <code>Assert equal string ("*ESE", dws_scpi_common(ScpiCommon::SCPI_ESE))</code>
+      * <code>Assert equal string ("*ESE?", dws_scpi_common(ScpiCommon::SCPI_ESE_Q))</code>
+      * <code>Assert equal string ("*OPC", dws_scpi_common(ScpiCommon::SCPI_OPC))</code>
+      * <code>Assert equal string ("*SRE", dws_scpi_common(ScpiCommon::SCPI_SRE))</code>
+      * <code>Assert equal string ("*SRE?", dws_scpi_common(ScpiCommon::SCPI_SRE_Q))</code>
+      * <code>Assert equal string ("*TST?", dws_scpi_common(ScpiCommon::SCPI_TST_Q))</code>
+      * <code>Assert equal string ("", dws_scpi_common(static_cast&lt;ScpiCommon&gt;(200)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_guard_edges</b> &mdash; <i>a non-zero argc with no args vector at all</i></summary>
+
+    * **Objective**: a non-zero argc with no args vector at all
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(buf, sizeof(buf), "VOLT", nullptr, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(buf, sizeof(buf), "", nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(exact, sizeof(exact), "ABCDE", nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(6, dws_scpi_build(room, sizeof(room), "ABCDE", nullptr, 0));</code>
+      * <code>Assert equal string ("ABCDE\\n", room)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_fmt_real_guards</b> &mdash; <i>Fmt real guards</i></summary>
+
+    * **Objective**: Fmt real guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_fmt_real(nullptr, sizeof(buf), 1.0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_fmt_real(buf, 0, 1.0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_number_guards_and_exponent_forms</b> &mdash; <i>an explicit '+' exponent sign</i></summary>
+
+    * **Objective**: an explicit '+' exponent sign
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_parse_number(nullptr, 2, &v))</code>
+      * <code>Assert false (dws_scpi_parse_number("42", 2, nullptr))</code>
+      * <code>Assert true (dws_scpi_parse_number("1.5E+3", 6, &v))</code>
+      * <code>Assert double within (1e-6, 1500.0, v)</code>
+      * <code>Assert false (dws_scpi_parse_number("1E5X", 4, &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_bool_guards</b> &mdash; <i>Parse bool guards</i></summary>
+
+    * **Objective**: Parse bool guards
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_parse_bool(nullptr, 1, &b))</code>
+      * <code>Assert false (dws_scpi_parse_bool("1", 1, nullptr))</code>
+      * <code>Assert false (dws_scpi_parse_bool("X", 1, &b))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_string_guards</b> &mdash; <i>Parse string guards</i></summary>
+
+    * **Objective**: Parse string guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string(nullptr, 4, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\\"a\\"", 3, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\\"a\\"", 3, out, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\\"", 1, out, sizeof(out))); // shorter than a quote pair</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_string_malformed_interior_quote</b> &mdash; <i>an unpaired interior quote is a malformed close</i></summary>
+
+    * **Objective**: an unpaired interior quote is a malformed close
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\\"a\\"b\\"", 5, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\\"a\\"\\"", 4, out, sizeof(out)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_block_guards</b> &mdash; <i>Parse block guards</i></summary>
+
+    * **Objective**: Parse block guards
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_parse_block(nullptr, 7, &data, &dlen, &consumed))</code>
+      * <code>Assert false (dws_scpi_parse_block(blk, 7, nullptr, &dlen, &consumed))</code>
+      * <code>Assert false (dws_scpi_parse_block(blk, 7, &data, nullptr, &consumed))</code>
+      * <code>Assert false (dws_scpi_parse_block(blk, 7, &data, &dlen, nullptr))</code>
+      * <code>Assert false (dws_scpi_parse_block(blk, 1, &data, &dlen, &consumed))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_block_length_field_rejects</b> &mdash; <i>an indefinite marker with nothing after it</i></summary>
+
+    * **Objective**: an indefinite marker with nothing after it
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_parse_block(bare, 2, &data, &dlen, &consumed))</code>
+      * <code>Assert false (dws_scpi_parse_block(low, 7, &data, &dlen, &consumed))</code>
+      * <code>Assert false (dws_scpi_parse_block(narrow, 3, &data, &dlen, &consumed))</code>
+      * <code>Assert false (dws_scpi_parse_block(nondigit, 3, &data, &dlen, &consumed))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_status_null_guards</b> &mdash; <i>every status entry point tolerates a missing status block</i></summary>
+
+    * **Objective**: every status entry point tolerates a missing status block
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_scpi_stb(nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, s.count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, s.esr);</code>
+      * <code>Assert false (dws_scpi_pop_error(&s, nullptr))</code>
+      * <code>Assert false (dws_scpi_pop_error(nullptr, &e))</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(0, e.number);</code>
+      * <code>Assert equal string ("No error", e.msg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_status_esr_class_bits_full_range</b> &mdash; <i>a positive number is device-specific -> DDE</i></summary>
+
+    * **Objective**: a positive number is device-specific -> DDE
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(SCPI_ESR_DDE, s.esr);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(bits[i], s.esr);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, s.esr);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, s.count);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_match_null_and_empty</b> &mdash; <i>Match null and empty</i></summary>
+
+    * **Objective**: Match null and empty
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_match(nullptr, 4, "SYSTem"))</code>
+      * <code>Assert false (dws_scpi_match("SYST", 4, nullptr))</code>
+      * <code>Assert false (dws_scpi_match("", 0, "SYSTem"))</code>
+      * <code>Assert false (dws_scpi_match(":", 1, "SYSTem"))</code>
+      * <code>Assert false (dws_scpi_match("SYST", 4, ""))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_match_bad_numeric_suffix</b> &mdash; <i>a non-digit in the input's numeric suffix</i></summary>
+
+    * **Objective**: a non-digit in the input's numeric suffix
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_match("SYST1X", 6, "SYSTem1"))</code>
+      * <code>Assert false (dws_scpi_match("SYST1", 5, "SYSTem1X"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_match_non_alpha_header_bytes</b> &mdash; <i>bytes between 'Z' and 'a', and above 'z', are not alpha - they land in the suffix field</i></summary>
+
+    * **Objective**: bytes between 'Z' and 'a', and above 'z', are not alpha - they land in the suffix field
+    * **Assertions**:
+      * <code>Assert false (dws_scpi_match("SYST_", 5, "SYSTem"))</code>
+      * <code>Assert false (dws_scpi_match("SYST~", 5, "SYSTem"))</code>
   </details>
 
 </details>
@@ -28781,7 +29840,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (19 tests)</b></summary>
+<summary><b>test_smb2 (36 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -29080,10 +30139,188 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
       * <code>Assert false (dws_smb2_parse_write_response(m, 70, &r))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_transport_rejects_null_and_oversize</b> &mdash; <i>Transport rejects null and oversize</i></summary>
+
+    * **Objective**: Transport rejects null and oversize
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_transport_frame(nullptr, sizeof(out), msg, sizeof(msg)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_transport_frame(out, sizeof(out), nullptr, sizeof(msg)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_transport_frame(out, sizeof(out), msg, 0x01000000)); // past 24 bits</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_transport_len(nullptr, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_transport_len(pre, 3)); // shorter than the prefix</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, dws_smb2_transport_len(pre, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_header_rejects</b> &mdash; <i>Build header rejects</i></summary>
+
+    * **Objective**: Build header rejects
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_header(nullptr, 64, Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_header(buf, 63, Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_header_null_args</b> &mdash; <i>Parse header null args</i></summary>
+
+    * **Objective**: Parse header null args
+    * **Assertions**:
+      * <code>Assert false (dws_smb2_parse_header(nullptr, 64, &h))</code>
+      * <code>Assert false (dws_smb2_parse_header(buf, 64, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_negotiate_null_args</b> &mdash; <i>Build negotiate null args</i></summary>
+
+    * **Objective**: Build negotiate null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate(nullptr, sizeof(buf), gid, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate(buf, sizeof(buf), nullptr, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_negotiate_response_null_and_low_offset</b> &mdash; <i>Parse negotiate response null and low offset</i></summary>
+
+    * **Objective**: Parse negotiate response null and low offset
+    * **Assertions**:
+      * <code>Assert false (dws_smb2_parse_negotiate_response(nullptr, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_negotiate_response(m, n, nullptr))</code>
+      * <code>Assert false (dws_smb2_parse_negotiate_response(bad, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_negotiate_response(bad, n, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_session_setup_null_args</b> &mdash; <i>Build session setup null args</i></summary>
+
+    * **Objective**: Build session setup null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_session_setup(nullptr, sizeof(buf), 1, 0, 0, tok, sizeof(tok)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_session_setup(buf, sizeof(buf), 1, 0, 0, nullptr, sizeof(tok)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_session_setup(buf, sizeof(buf), 1, 0, 0, tok, 0x10000)); // &gt; 0xFFFF</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_session_setup_null_and_low_offset</b> &mdash; <i>Parse session setup null and low offset</i></summary>
+
+    * **Objective**: Parse session setup null and low offset
+    * **Assertions**:
+      * <code>Assert false (dws_smb2_parse_session_setup_response(nullptr, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_session_setup_response(m, n, nullptr))</code>
+      * <code>Assert false (dws_smb2_parse_session_setup_response(bad, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_session_setup_response(bad, n, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_tree_connect_null_args</b> &mdash; <i>Build tree connect null args</i></summary>
+
+    * **Objective**: Build tree connect null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_tree_connect(nullptr, sizeof(buf), 2, 0, path, sizeof(path)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_tree_connect(buf, sizeof(buf), 2, 0, nullptr, sizeof(path)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_tree_connect(buf, sizeof(buf), 2, 0, path, 0x10000)); // &gt; 0xFFFF</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_tree_connect_null_and_command</b> &mdash; <i>Parse tree connect null and command</i></summary>
+
+    * **Objective**: Parse tree connect null and command
+    * **Assertions**:
+      * <code>Assert false (dws_smb2_parse_tree_connect_response(nullptr, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_tree_connect_response(m, n, nullptr))</code>
+      * <code>Assert false (dws_smb2_parse_tree_connect_response(bad, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_tree_connect_response(bad, n, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_create_null_args</b> &mdash; <i>Build create null args</i></summary>
+
+    * **Objective**: Build create null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_create(nullptr, sizeof(buf), 3, 0, 0, 0, 0, 0, 0, name, sizeof(name)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_create(buf, sizeof(buf), 3, 0, 0, 0, 0, 0, 0, nullptr, sizeof(name)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_create(buf, sizeof(buf), 3, 0, 0, 0, 0, 0, 0, name, 0x10000));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_create_null_and_command</b> &mdash; <i>Parse create null and command</i></summary>
+
+    * **Objective**: Parse create null and command
+    * **Assertions**:
+      * <code>Assert false (dws_smb2_parse_create_response(nullptr, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_create_response(m, n, nullptr))</code>
+      * <code>Assert false (dws_smb2_parse_create_response(bad, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_create_response(bad, n, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_close_null_args</b> &mdash; <i>Build close null args</i></summary>
+
+    * **Objective**: Build close null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_close(nullptr, sizeof(buf), 4, 0, 0, fid));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_close(buf, sizeof(buf), 4, 0, 0, nullptr));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_close_null_command_and_truncated</b> &mdash; <i>Parse close null command and truncated</i></summary>
+
+    * **Objective**: Parse close null command and truncated
+    * **Assertions**:
+      * <code>Assert false (dws_smb2_parse_close_response(nullptr, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_close_response(m, n, nullptr))</code>
+      * <code>Assert false (dws_smb2_parse_close_response(bad, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_close_response(bad, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_close_response(m, 64 + 59, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_read_null_args</b> &mdash; <i>Build read null args</i></summary>
+
+    * **Objective**: Build read null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_read(nullptr, sizeof(buf), 5, 0, 0, fid, 16, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_read(buf, sizeof(buf), 5, 0, 0, nullptr, 16, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_read_null_command_and_low_offset</b> &mdash; <i>Parse read null command and low offset</i></summary>
+
+    * **Objective**: Parse read null command and low offset
+    * **Assertions**:
+      * <code>Assert false (dws_smb2_parse_read_response(nullptr, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_read_response(m, n, nullptr))</code>
+      * <code>Assert false (dws_smb2_parse_read_response(bad, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_read_response(bad, n, &r))</code>
+      * <code>Assert false (dws_smb2_parse_read_response(bad, n, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write_null_args</b> &mdash; <i>Build write null args</i></summary>
+
+    * **Objective**: Build write null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_write(nullptr, sizeof(buf), 6, 0, 0, fid, data, sizeof(data), 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_write(buf, sizeof(buf), 6, 0, 0, nullptr, data, sizeof(data), 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_write(buf, sizeof(buf), 6, 0, 0, fid, nullptr, sizeof(data), 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_write(buf, sizeof(buf), 6, 0, 0, fid, data, over32, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_write_null_and_command</b> &mdash; <i>Parse write null and command</i></summary>
+
+    * **Objective**: Parse write null and command
+    * **Assertions**:
+      * <code>Assert false (dws_smb2_parse_write_response(nullptr, 64 + 16, &r))</code>
+      * <code>Assert false (dws_smb2_parse_write_response(m, 64 + 16, nullptr))</code>
+      * <code>Assert false (dws_smb2_parse_write_response(bad, 64 + 16, &r))</code>
+      * <code>Assert false (dws_smb2_parse_write_response(bad, 64 + 16, &r))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_smb_client (58 tests)</b></summary>
+<summary><b>test_smb_client (67 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_open_close_success</b> &mdash; <i>NEGOTIATE + 2x SESSION_SETUP + TREE_CONNECT + CREATE = 5 requests</i></summary>
@@ -29579,6 +30816,93 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
     * **Objective**: Close bad body
     * **Assertions**:
       * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_close(&h, canned_send, canned_recv, &cn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_open_arg_remaining_nulls</b> &mdash; <i>Open arg remaining nulls</i></summary>
+
+    * **Objective**: Open arg remaining nulls
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_open(nullptr, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_open(&cfg, nullptr, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, nullptr, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, nullptr, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (0, m.req_count)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_open_null_domain</b> &mdash; <i>Open null domain</i></summary>
+
+    * **Objective**: Open null domain
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(m.session_id, h.session_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(m.tree_id, h.tree_id);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tree_bad_header</b> &mdash; <i>Tree bad header</i></summary>
+
+    * **Objective**: Tree bad header
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_create_bad_header</b> &mdash; <i>Create bad header</i></summary>
+
+    * **Objective**: Create bad header
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_write_null_seam</b> &mdash; <i>Read write null seam</i></summary>
+
+    * **Objective**: Read write null seam
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_read(&h, 0, buf, sizeof(buf), &n, nullptr, canned_recv, &cn))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_read(&h, 0, buf, sizeof(buf), &n, canned_send, nullptr, &cn))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_write(&h, 0, buf, sizeof(buf), &n, nullptr, canned_recv, &cn))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_write(&h, 0, buf, sizeof(buf), &n, canned_send, nullptr, &cn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_recv_overflow</b> &mdash; <i>Read recv overflow</i></summary>
+
+    * **Objective**: Read recv overflow
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_OVERFLOW,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_eof_status</b> &mdash; <i>Read eof status</i></summary>
+
+    * **Objective**: Read eof status
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, canned_send, canned_recv, &cn))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, got);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(6, h.next_message_id); // the request still consumed a MessageId</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_no_extend</b> &mdash; <i>Write no extend</i></summary>
+
+    * **Objective**: Write no extend
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(16, wrote);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(4096, h.file_size); // unchanged: 0 + 16 &lt;= 4096</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_bad_transport_prefix</b> &mdash; <i>Close bad transport prefix</i></summary>
+
+    * **Objective**: Close bad transport prefix
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_IO, smb_close(&h, canned_send, canned_recv, &cn))</code>
   </details>
 
 </details>
@@ -31379,7 +32703,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sqlite (23 tests)</b></summary>
+<summary><b>test_sqlite (43 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_db_header_real_file</b> &mdash; <i>Db header real file</i></summary>
@@ -31722,6 +33046,250 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(0,</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", &r2, 1, img, 512));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_varint_decode_truncated_nine_byte</b> &mdash; <i>Eight continuation bytes with no ninth byte: the 9-byte form is incomplete.</i></summary>
+
+    * **Objective**: Eight continuation bytes with no ninth byte: the 9-byte form is incomplete.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sqlite_varint_decode(eight, sizeof(eight), &v));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(9, dws_sqlite_varint_decode(nine, sizeof(nine), &v));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0x7F, v);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_db_header_page_size_rejects</b> &mdash; <i>Db header page size rejects</i></summary>
+
+    * **Objective**: Db header page size rejects
+    * **Assertions**:
+      * <code>Assert false (dws_sqlite_parse_db_header(hdr, sizeof(hdr), &h))</code>
+      * <code>Assert false (dws_sqlite_parse_db_header(hdr, sizeof(hdr), &h))</code>
+      * <code>Assert true (dws_sqlite_parse_db_header(hdr, sizeof(hdr), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(65536, h.page_size);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_btree_header_index_pages_and_truncation</b> &mdash; <i>An interior INDEX page is a valid b-tree page and carries the 12-byte header.</i></summary>
+
+    * **Objective**: An interior INDEX page is a valid b-tree page and carries the 12-byte header.
+    * **Assertions**:
+      * <code>Assert true (dws_sqlite_parse_btree_header(page, sizeof(page), 0, &b))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, b.header_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(7, b.right_most_page);</code>
+      * <code>Assert true (dws_sqlite_parse_btree_header(page, sizeof(page), 0, &b))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(8, b.header_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, b.right_most_page);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(65536, b.cell_content_start);</code>
+      * <code>Assert false (dws_sqlite_parse_btree_header(page, 10, 0, &b))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cell_pointer_rejects</b> &mdash; <i>Cell pointer rejects</i></summary>
+
+    * **Objective**: Cell pointer rejects
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_cell_pointer(page, sizeof(page), &b, 0, 2)); // index past the cell count</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_cell_pointer(page, sizeof(page), &b, 0, 99));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_leaf_cell_parse_rejects</b> &mdash; <i>The cell offset is outside the page.</i></summary>
+
+    * **Objective**: The cell offset is outside the page.
+    * **Assertions**:
+      * <code>Assert false (dws_sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 512, &cell))</code>
+      * <code>Assert false (dws_sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 511, &cell))</code>
+      * <code>Assert false (dws_sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 510, &cell))</code>
+      * <code>Assert false (dws_sqlite_parse_table_leaf_cell(page, 200, 512, 0, 100, &cell))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_record_begin_rejects</b> &mdash; <i>Record begin rejects</i></summary>
+
+    * **Objective**: Record begin rejects
+    * **Assertions**:
+      * <code>Assert false (dws_sqlite_record_begin(&c, rec, 0))</code>
+      * <code>Assert false (dws_sqlite_record_begin(&c, big, sizeof(big)))</code>
+      * <code>Assert false (dws_sqlite_record_begin(&c, rec, sizeof(rec)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_record_next_rejects</b> &mdash; <i>A truncated serial-type varint inside the record header.</i></summary>
+
+    * **Objective**: A truncated serial-type varint inside the record header.
+    * **Assertions**:
+      * <code>Assert true (dws_sqlite_record_begin(&c, trunc, sizeof(trunc)))</code>
+      * <code>Assert false (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
+      * <code>Assert true (dws_sqlite_record_begin(&c, past, sizeof(past)))</code>
+      * <code>Assert false (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_column_decoder_rejects</b> &mdash; <i>A float column with fewer than 8 value bytes reads as 0.0 rather than over-reading.</i></summary>
+
+    * **Objective**: A float column with fewer than 8 value bytes reads as 0.0 rather than over-reading.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT64(0, dws_sqlite_column_int(0, bytes, 8)); // NULL is not an integer type</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(0, dws_sqlite_column_int(7, bytes, 8)); // float is not an integer type</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(0, dws_sqlite_column_int(4, bytes, 2)); // fewer value bytes than the type needs</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0, bits);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_payload_chain_edges</b> &mdash; <i>Page 2 is the single overflow page: a next pointer plus 60 content bytes.</i></summary>
+
+    * **Objective**: Page 2 is the single overflow page: a next pointer plus 60 content bytes.
+    * **Assertions**:
+      * <code>Assert true (dws_sqlite_read_payload(ovf_synth_read, &s, 64, 0, leaf, &cell, out, sizeof(out), work))</code>
+      * <code>Assert equal memory (leaf, out, 10)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)i, out[10 + i]);</code>
+      * <code>Assert false (dws_sqlite_read_payload(ovf_synth_read, &s, 64, 0, leaf, &cell, out, sizeof(out), work))</code>
+      * <code>Assert false (dws_sqlite_read_payload(ovf_synth_read, &s, 64, 0, leaf, &cell, out, sizeof(out), work))</code>
+      * <code>Assert false (dws_sqlite_read_payload(ovf_synth_read, &s, 64, 0, leaf, &cell, out, sizeof(out), work))</code>
+      * <code>Assert false (dws_sqlite_read_payload(ovf_synth_read, &s, 4, 0, leaf, &cell, out, sizeof(out), work))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cursor_descend_rejects</b> &mdash; <i>The root page cannot be read at all.</i></summary>
+
+    * **Objective**: The root page cannot be read at all.
+    * **Assertions**:
+      * <code>Assert false (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 99, leaf, work))</code>
+      * <code>Assert false (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>Assert false (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>Assert false (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>Assert false (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>Assert false (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cursor_depth_cap</b> &mdash; <i>An endless interior chain stops at SQLITE_BTREE_MAX_DEPTH instead of overrunning the stack.</i></summary>
+
+    * **Objective**: An endless interior chain stops at SQLITE_BTREE_MAX_DEPTH instead of overrunning the stack.
+    * **Assertions**:
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>Assert equal int (SQLITE_BTREE_MAX_DEPTH, c.depth)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cursor_next_skips_bad_cells</b> &mdash; <i>Cursor next skips bad cells</i></summary>
+
+    * **Objective**: Cursor next skips bad cells
+    * **Assertions**:
+      * <code>Assert true (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>Assert true (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(7, rowid);</code>
+      * <code>Assert false (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cursor_parent_frame_rejects</b> &mdash; <i>Re-reading the parent interior page fails once the first leaf is exhausted.</i></summary>
+
+    * **Objective**: Re-reading the parent interior page fails once the first leaf is exhausted.
+    * **Assertions**:
+      * <code>Assert true (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>Assert true (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+      * <code>Assert false (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+      * <code>Assert true (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>Assert true (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+      * <code>Assert false (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+      * <code>Assert true (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>Assert true (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+      * <code>Assert false (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+      * <code>Assert true (dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>Assert true (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+      * <code>Assert false (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_table_cursor_page1_schema_scan</b> &mdash; <i>Scanning the schema table roots the cursor at page 1, whose b-tree header sits after the</i></summary>
+
+    * **Objective**: Scanning the schema table roots the cursor at page 1, whose b-tree header sits after the
+    * **Assertions**:
+      * <code>Assert true (dws_sqlite_table_cursor_begin(&c, mem_read, &db, 512, 0, 1, leaf, work))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(100, c.leaf_off);</code>
+      * <code>Assert true (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, rowid);</code>
+      * <code>Assert true (dws_sqlite_record_next(&row, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, vl);</code>
+      * <code>Assert equal memory ("table", v, 5)</code>
+      * <code>Assert false (dws_sqlite_table_cursor_next(&c, &rowid, &row))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_overflow_cursor_without_buffer</b> &mdash; <i>With no overflow buffer the cursor still yields every row, just the in-page prefix of the</i></summary>
+
+    * **Objective**: With no overflow buffer the cursor still yields every row, just the in-page prefix of the
+    * **Assertions**:
+      * <code>Assert true (dws_sqlite_table_cursor_begin(&c, ovf_read, nullptr, OVF_PAGE_SIZE, 0, OVF_ROOTPAGE, leaf, work))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(n, rowid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_overflow_cursor_short_buffer_skips_row</b> &mdash; <i>An overflow buffer too small for a row makes the reassembly fail, and that row is skipped</i></summary>
+
+    * **Objective**: An overflow buffer too small for a row makes the reassembly fail, and that row is skipped
+    * **Assertions**:
+      * <code>Assert true (dws_sqlite_table_cursor_begin(&c, ovf_read, nullptr, OVF_PAGE_SIZE, 0, OVF_ROOTPAGE, leaf, work))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, rowid); // only the non-overflowing first row survives</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_record_empty_text_and_out_cap</b> &mdash; <i>Zero-length TEXT and BLOB columns contribute a serial type but no value bytes.</i></summary>
+
+    * **Objective**: Zero-length TEXT and BLOB columns contribute a serial type but no value bytes.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, rl); // header-size varint + two serial-type varints</code>
+      * <code>Assert true (dws_sqlite_record_begin(&c, rec, rl))</code>
+      * <code>Assert true (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(13, st); // TEXT of length 0</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, vl);</code>
+      * <code>Assert true (dws_sqlite_record_next(&c, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(12, st); // BLOB of length 0</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, vl);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_encode_record(cols, 2, rec, 2));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_record_multibyte_header_size</b> &mdash; <i>127 columns push the record header past 127 bytes, so the header-size varint itself grows to</i></summary>
+
+    * **Objective**: 127 columns push the record header past 127 bytes, so the header-size varint itself grows to
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(129, rl); // 2-byte header size + 127 serial types, no value bytes</code>
+      * <code>Assert true (dws_sqlite_record_begin(&c, rec, rl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, st);</code>
+      * <code>Assert equal int (127, n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_table_db_input_rejects</b> &mdash; <i>A CREATE text so long that the schema row does not fit page 1 fails closed too.</i></summary>
+
+    * **Objective**: A CREATE text so long that the schema row does not fit page 1 fails closed too.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(256, "t", "CREATE TABLE t(a)", &row, 1, img, sizeof(img)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(131072, "t", "CREATE TABLE t(a)", &row, 1, img, sizeof(img)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(1000, "t", "CREATE TABLE t(a)", &row, 1, img, sizeof(img)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0,</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", nullptr, &row, 1, img, sizeof(img)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", sql, &row, 1, img, sizeof(img)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_table_db_64k_empty_table</b> &mdash; <i>The largest legal page size: the on-disk page-size field stores 1, and an empty page-2 leaf</i></summary>
+
+    * **Objective**: The largest legal page size: the on-disk page-size field stores 1, and an empty page-2 leaf
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(131072, len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, img[16]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, img[17]); // page-size field = 1</code>
+      * <code>Assert true (dws_sqlite_parse_db_header(img, len, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(65536, h.page_size);</code>
+      * <code>Assert true (dws_sqlite_parse_btree_header(img + 65536, 65536, 0, &b))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, b.cell_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(65536, b.cell_content_start); // written as 0, read back as 65536</code>
   </details>
 
 </details>
@@ -33492,7 +35060,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_server (27 tests)</b></summary>
+<summary><b>test_ssh_server (32 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ssh_dispatch_bad_slot</b> &mdash; <i>Ssh dispatch bad slot</i></summary>
@@ -33794,10 +35362,89 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
       * <code>Assert false (ssh_chan[0][0].open)</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_global_request_silent_without_want_reply</b> &mdash; <i>Ssh global request silent without want reply</i></summary>
+
+    * **Objective**: Ssh global request silent without want reply
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, p[0], p, n))</code>
+      * <code>Assert equal int (0, emt_n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_channel_request_silent_without_want_reply</b> &mdash; <i>Ssh channel request silent without want reply</i></summary>
+
+    * **Objective**: Ssh channel request silent without want reply
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, p[0], p, n))</code>
+      * <code>Assert equal int (0, emt_n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_channel_close_unhandled_emits_nothing</b> &mdash; <i>No channel has been opened in this test, so recipient 0 does not resolve.</i></summary>
+
+    * **Objective**: No channel has been opened in this test, so recipient 0 does not resolve.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, sizeof(pkt)))</code>
+      * <code>Assert equal int (0, emt_n)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, sizeof(pkt)))</code>
+      * <code>Assert equal int (0, emt_n)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, shortpkt, sizeof(shortpkt)))</code>
+      * <code>Assert equal int (0, emt_n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_kexinit_midsession_rekey</b> &mdash; <i>The client's NEWKEYS after a re-key resumes the channel phase, not the service phase.</i></summary>
+
+    * **Objective**: The client's NEWKEYS after a re-key resumes the channel phase, not the service phase.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (1, emt_n)</code>
+      * <code>Assert equal (SSH_MSG_KEXINIT, emt_type[0])</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, s-&gt;phase)</code>
+      * <code>Assert true (s-&gt;authed)</code>
+      * <code>Assert true (s-&gt;have_session_id)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)(0x10 + j), s-&gt;session_id[j]); // fixed at the first KEX</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, nk, &nk, 1))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, s-&gt;phase)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_dispatch_without_emit_cb</b> &mdash; <i>Ssh dispatch without emit cb</i></summary>
+
+    * **Objective**: Ssh dispatch without emit cb
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert true (ssh_pkt[0].enc_out)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, nk, &nk, 1))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_SERVICE, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert true (s-&gt;authed)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, cl, sizeof(cl)))</code>
+      * <code>Assert false (ssh_chan[0][0].open)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, unk[0], unk, 1))</code>
+      * <code>Assert equal int (0, recorded)</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_ssh_transport (49 tests)</b></summary>
+<summary><b>test_ssh_transport (56 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hostkey_ecdsa_set_rejects_invalid_scalar</b> &mdash; <i>Hostkey ecdsa set rejects invalid scalar</i></summary>
+
+    * **Objective**: Hostkey ecdsa set rejects invalid scalar
+    * **Assertions**:
+      * <code>Assert equal (before, dws_ssh_hostkey_ecdsa_available())</code>
+      * <code>Assert equal (before, dws_ssh_hostkey_ecdsa_available())</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -34316,9 +35963,9 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_kexinit_parse_truncation_points</b> &mdash; <i>Kexinit parse truncation points</i></summary>
+    <summary><b>test_kexinit_parse_truncation_points</b> &mdash; <i>One cut per name-list read, in field order: kex / host-key / cipher-c2s / cipher-s2c /</i></summary>
 
-    * **Objective**: Kexinit parse truncation points
+    * **Objective**: One cut per name-list read, in field order: kex / host-key / cipher-c2s / cipher-s2c /
     * **Assertions**:
       * <code>Assert equal int (-1, ssh_kexinit_parse(0, buf, n))</code>
   </details>
@@ -34356,6 +36003,71 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal memory (expected, got, SSH_SHA256_DIGEST_LEN)</code>
       * <code>Assert not equal (0, memcmp(got, as_mpint, SSH_SHA256_DIGEST_LEN))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_rejects_direction_mismatch</b> &mdash; <i>Same cipher both ways (aes256-ctr, so a separate MAC IS negotiated) but a different MAC per</i></summary>
+
+    * **Objective**: Same cipher both ways (aes256-ctr, so a separate MAC IS negotiated) but a different MAC per
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal int (-1, ssh_kexinit_parse(0, buf, n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_aead_ignores_mac_lists</b> &mdash; <i>Kexinit parse aead ignores mac lists</i></summary>
+
+    * **Objective**: Kexinit parse aead ignores mac lists
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SSH_CIPHER_CHACHA20POLY1305, ssh_sess[0].cipher_alg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_same_length_names_do_not_match</b> &mdash; <i>The same-length impostor is skipped and negotiation lands on the real name behind it.</i></summary>
+
+    * **Objective**: The same-length impostor is skipped and negotiation lands on the real name behind it.
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SSH_CIPHER_AES256CTR, ssh_sess[0].cipher_alg)</code>
+      * <code>Assert equal int (-1, ssh_kexinit_parse(0, buf, n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_extinfo_build_modern_first_order</b> &mdash; <i>byte(EXT_INFO) \|\| uint32(1) \|\| string("server-sig-algs") \|\| string(value)</i></summary>
+
+    * **Objective**: byte(EXT_INFO) \|\| uint32(1) \|\| string("server-sig-algs") \|\| string(value)
+    * **Assertions**:
+      * <code>Assert equal int (0, rc)</code>
+      * <code>Assert equal (SSH_MSG_EXT_INFO, out[0])</code>
+      * <code>Assert true (rd_string(out, n, &off, &name, &name_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(15u, name_len);</code>
+      * <code>Assert equal memory ("server-sig-algs", name, 15)</code>
+      * <code>Assert true (rd_string(out, n, &off, &value, &value_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)strlen(want), value_len);</code>
+      * <code>Assert equal memory (want, value, strlen(want))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexdh_handle_curve25519_rejects_malformed_init</b> &mdash; <i>Kexdh handle curve25519 rejects malformed init</i></summary>
+
+    * **Objective**: Kexdh handle curve25519 rejects malformed init
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, wrong_type, sizeof(wrong_type), reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, truncated, sizeof(truncated), reply, &rlen, sizeof(reply)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexdh_handle_ecdh_p256_rejects_malformed_init</b> &mdash; <i>Kexdh handle ecdh p256 rejects malformed init</i></summary>
+
+    * **Objective**: Kexdh handle ecdh p256 rejects malformed init
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, too_short, sizeof(too_short), reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, wrong_type, sizeof(wrong_type), reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, wrong_len, sizeof(wrong_len), reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, truncated, sizeof(truncated), reply, &rlen, sizeof(reply)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35190,7 +36902,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_thread (26 tests)</b></summary>
+<summary><b>test_thread (37 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fcs_x25_check_value</b> &mdash; <i>CRC-16/X-25 (poly 0x8408, init 0xFFFF, reflected, xorout 0xFFFF) of "123456789" = 0x906E.</i></summary>
@@ -35545,6 +37257,202 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
       * <code>Assert true (dws_spinel_get_uint(&r, &status))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(SpinelStatus::SPINEL_STATUS_RESET_POWER_ON, status);</code>
       * <code>Assert equal string ("RESET", dws_spinel_status_name(status))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_null_out_params</b> &mdash; <i>unpack_uint with no value out-parameter still reports the bytes consumed.</i></summary>
+
+    * **Objective**: unpack_uint with no value out-parameter still reports the bytes consumed.
+    * **Assertions**:
+      * <code>Assert equal int (1, dws_spinel_unpack_uint(one, 1, nullptr))</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, n);</code>
+      * <code>Assert equal int (-1, dws_spinel_command_parse(buf, 0, nullptr, nullptr, nullptr, nullptr, nullptr))</code>
+      * <code>Assert greater than int (0, dws_spinel_command_parse(buf, n, nullptr, nullptr, nullptr, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_reader_init_variants</b> &mdash; <i>Spinel reader init variants</i></summary>
+
+    * **Objective**: Spinel reader init variants
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, r.len);</code>
+      * <code>Assert true (dws_spinel_reader_ok(&r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, r.len);</code>
+      * <code>Assert true (dws_spinel_reader_ok(&r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, r.len);</code>
+      * <code>Assert false (dws_spinel_reader_ok(&r))</code>
+      * <code>Assert false (dws_spinel_reader_ok(nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_getters_null_reader</b> &mdash; <i>Spinel getters null reader</i></summary>
+
+    * **Objective**: Spinel getters null reader
+    * **Assertions**:
+      * <code>Assert false (dws_spinel_get_bool(nullptr, &b))</code>
+      * <code>Assert false (dws_spinel_get_u8(nullptr, &u8))</code>
+      * <code>Assert false (dws_spinel_get_i8(nullptr, &i8))</code>
+      * <code>Assert false (dws_spinel_get_u16(nullptr, &u16))</code>
+      * <code>Assert false (dws_spinel_get_i16(nullptr, &i16))</code>
+      * <code>Assert false (dws_spinel_get_u32(nullptr, &u32))</code>
+      * <code>Assert false (dws_spinel_get_i32(nullptr, &i32))</code>
+      * <code>Assert false (dws_spinel_get_uint(nullptr, &u32))</code>
+      * <code>Assert false (dws_spinel_get_eui64(nullptr, &p))</code>
+      * <code>Assert false (dws_spinel_get_ipv6(nullptr, &p))</code>
+      * <code>Assert false (dws_spinel_get_utf8(nullptr, &s, &l))</code>
+      * <code>Assert false (dws_spinel_get_data(nullptr, &p, &l))</code>
+      * <code>Assert false (dws_spinel_get_data_wlen(nullptr, &p, &l))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_getters_short_value</b> &mdash; <i>An empty value: every typed read runs off the end at its first byte.</i></summary>
+
+    * **Objective**: An empty value: every typed read runs off the end at its first byte.
+    * **Assertions**:
+      * <code>Assert false (dws_spinel_get_bool(&r, &b))</code>
+      * <code>Assert false (dws_spinel_get_i8(&r, &i8))</code>
+      * <code>Assert false (dws_spinel_get_u16(&r, &u16))</code>
+      * <code>Assert false (dws_spinel_get_i16(&r, &i16))</code>
+      * <code>Assert false (dws_spinel_get_i32(&r, &i32))</code>
+      * <code>Assert false (dws_spinel_get_eui64(&r, &p))</code>
+      * <code>Assert false (dws_spinel_get_ipv6(&r, &p))</code>
+      * <code>Assert false (dws_spinel_get_data_wlen(&r, &p, &l))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_get_uint_edges</b> &mdash; <i>A packed uint whose continuation bit is set but which has no terminator.</i></summary>
+
+    * **Objective**: A packed uint whose continuation bit is set but which has no terminator.
+    * **Assertions**:
+      * <code>Assert false (dws_spinel_get_uint(&r, &uv))</code>
+      * <code>Assert false (dws_spinel_reader_ok(&r))</code>
+      * <code>Assert false (dws_spinel_get_uint(&r, &uv))</code>
+      * <code>Assert true (dws_spinel_get_uint(&r, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, r.off);</code>
+      * <code>Assert false (dws_spinel_get_utf8(&r, &s, &l))</code>
+      * <code>Assert false (dws_spinel_get_data(&r, &d, &l))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_getters_null_out_params</b> &mdash; <i>Build one value holding every fixed-width field, then read it back discarding each result.</i></summary>
+
+    * **Objective**: Build one value holding every fixed-width field, then read it back discarding each result.
+    * **Assertions**:
+      * <code>Assert true (dws_spinel_put_bool(&w, true))</code>
+      * <code>Assert true (dws_spinel_put_u8(&w, 0x11))</code>
+      * <code>Assert true (dws_spinel_put_i8(&w, -2))</code>
+      * <code>Assert true (dws_spinel_put_u16(&w, 0x2233))</code>
+      * <code>Assert true (dws_spinel_put_i16(&w, -3))</code>
+      * <code>Assert true (dws_spinel_put_u32(&w, 0x44556677))</code>
+      * <code>Assert true (dws_spinel_put_i32(&w, -4))</code>
+      * <code>Assert true (dws_spinel_put_uint(&w, 4000))</code>
+      * <code>Assert true (dws_spinel_put_eui64(&w, eui))</code>
+      * <code>Assert true (dws_spinel_put_ipv6(&w, v6))</code>
+      * <code>Assert true (dws_spinel_put_utf8(&w, "z"))</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, n);</code>
+      * <code>Assert true (dws_spinel_get_bool(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_u8(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_i8(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_u16(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_i16(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_u32(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_i32(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_uint(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_eui64(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_ipv6(&r, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_utf8(&r, nullptr, nullptr))</code>
+      * <code>Assert true (dws_spinel_reader_ok(&r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(n, r.off); // every field was still consumed</code>
+      * <code>Assert true (dws_spinel_get_data_wlen(&r, nullptr, nullptr))</code>
+      * <code>Assert true (dws_spinel_get_data(&r, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_writer_init_and_null_writer</b> &mdash; <i>Every put through a null writer fails without dereferencing it.</i></summary>
+
+    * **Objective**: Every put through a null writer fails without dereferencing it.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, zw.cap);</code>
+      * <code>Assert false (zw.err)</code>
+      * <code>Assert false (dws_spinel_put_bool(nullptr, true))</code>
+      * <code>Assert false (dws_spinel_put_u8(nullptr, 1))</code>
+      * <code>Assert false (dws_spinel_put_i8(nullptr, 1))</code>
+      * <code>Assert false (dws_spinel_put_u16(nullptr, 1))</code>
+      * <code>Assert false (dws_spinel_put_i16(nullptr, 1))</code>
+      * <code>Assert false (dws_spinel_put_u32(nullptr, 1))</code>
+      * <code>Assert false (dws_spinel_put_i32(nullptr, 1))</code>
+      * <code>Assert false (dws_spinel_put_uint(nullptr, 1))</code>
+      * <code>Assert false (dws_spinel_put_eui64(nullptr, eui))</code>
+      * <code>Assert false (dws_spinel_put_ipv6(nullptr, v6))</code>
+      * <code>Assert false (dws_spinel_put_utf8(nullptr, "a"))</code>
+      * <code>Assert false (dws_spinel_put_data(nullptr, eui, 8))</code>
+      * <code>Assert false (dws_spinel_put_data_wlen(nullptr, eui, 8))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_put_null_args</b> &mdash; <i>A null data pointer with a zero length is a legal empty 'D' field.</i></summary>
+
+    * **Objective**: A null data pointer with a zero length is a legal empty 'D' field.
+    * **Assertions**:
+      * <code>Assert true (dws_spinel_put_data(&w, nullptr, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(&w));</code>
+      * <code>Assert false (dws_spinel_put_data(&w, nullptr, 4))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(&w));</code>
+      * <code>Assert false (dws_spinel_put_ipv6(&w, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(&w));</code>
+      * <code>Assert false (dws_spinel_put_eui64(nullptr, nullptr))</code>
+      * <code>Assert false (dws_spinel_put_ipv6(nullptr, nullptr))</code>
+      * <code>Assert false (dws_spinel_put_utf8(nullptr, nullptr))</code>
+      * <code>Assert false (dws_spinel_put_data(nullptr, nullptr, 4))</code>
+      * <code>Assert true (dws_spinel_put_utf8(&w, ""))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, dws_spinel_writer_len(&w));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_put_no_room_each_type</b> &mdash; <i>A zero-capacity writer: every field type fails at the room reservation.</i></summary>
+
+    * **Objective**: A zero-capacity writer: every field type fails at the room reservation.
+    * **Assertions**:
+      * <code>Assert false (dws_spinel_put_bool(&w, true))</code>
+      * <code>Assert false (dws_spinel_put_u16(&w, 1))</code>
+      * <code>Assert false (dws_spinel_put_uint(&w, 1))</code>
+      * <code>Assert false (dws_spinel_put_eui64(&w, eui))</code>
+      * <code>Assert false (dws_spinel_put_ipv6(&w, v6))</code>
+      * <code>Assert false (dws_spinel_put_utf8(&w, "hi"))</code>
+      * <code>Assert false (dws_spinel_put_data(&w, eui, 8))</code>
+      * <code>Assert false (dws_spinel_put_data_wlen(&w, eui, 8))</code>
+      * <code>Assert false (dws_spinel_put_data_wlen(&w, eui, 8))</code>
+      * <code>Assert false (dws_spinel_put_u8(&w, 1))</code>
+      * <code>Assert false (dws_spinel_put_uint(&w, 1))</code>
+      * <code>Assert false (dws_spinel_put_data(&w, eui, 8))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_frame_edges</b> &mdash; <i>encode: a null output buffer, and a null payload with a positive length.</i></summary>
+
+    * **Objective**: encode: a null output buffer, and a null payload with a positive length.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_frame_encode(p4, 4, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_frame_encode(nullptr, 4, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(ThreadHdlc::HDLC_FLAG, out[2]);</code>
+      * <code>Assert equal int ((int)n, dws_spinel_frame_decode(out, n, pay, sizeof(pay), &pl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, pl);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_frame_encode(one, 1, out, 2));</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, fn);</code>
+      * <code>Assert equal int ((int)fn, dws_spinel_frame_decode(out, fn, pay, sizeof(pay), nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_status_name_below_reset_range</b> &mdash; <i>Unregistered codes on either side of the 0x70..0x77 reset-cause window.</i></summary>
+
+    * **Objective**: Unregistered codes on either side of the 0x70..0x77 reset-cause window.
+    * **Assertions**:
+      * <code>Assert equal string ("UNKNOWN", dws_spinel_status_name(100))</code>
+      * <code>Assert equal string ("RESET", dws_spinel_status_name(119))</code>
+      * <code>Assert equal string ("UNKNOWN", dws_spinel_status_name(120))</code>
   </details>
 
 </details>
@@ -36878,7 +38786,7 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_vxi11 (10 tests)</b></summary>
+<summary><b>test_vxi11 (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_record_mark</b> &mdash; <i>a non-final fragment</i></summary>
@@ -36999,6 +38907,135 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_create_link(small, sizeof(small), 1, 0, false, 0, "inst0"));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_create_link(nullptr, 128, 1, 0, false, 0, "inst0"));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_record_mark_guards</b> &mdash; <i>both outputs are optional</i></summary>
+
+    * **Objective**: both outputs are optional
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rpc_record_mark(nullptr, sizeof(buf), 16));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rpc_record_mark(buf, 3, 16)); // no room for the 4-byte mark</code>
+      * <code>Assert false (dws_rpc_parse_record_mark(nullptr, 4, nullptr, nullptr))</code>
+      * <code>Assert false (dws_rpc_parse_record_mark(rm, 3, nullptr, nullptr))</code>
+      * <code>Assert true (dws_rpc_parse_record_mark(rm, 4, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_full_length_rejects</b> &mdash; <i>a COMPLETE header (so the XDR reader stays healthy) whose message type is CALL, not REPLY</i></summary>
+
+    * **Objective**: a COMPLETE header (so the XDR reader stays healthy) whose message type is CALL, not REPLY
+    * **Assertions**:
+      * <code>Assert false (dws_rpc_parse_reply(b, o, &xid, &astat, &off))</code>
+      * <code>Assert false (dws_rpc_parse_reply(b, o, &xid, &astat, &off))</code>
+      * <code>Assert false (dws_rpc_parse_reply(nullptr, 24, &xid, &astat, &off))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_optional_outputs</b> &mdash; <i>the xid is captured, the rest skipped</i></summary>
+
+    * **Objective**: the xid is captured, the rest skipped
+    * **Assertions**:
+      * <code>Assert true (dws_rpc_parse_reply(b, o, &xid, nullptr, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0xABCD, xid);</code>
+      * <code>Assert true (dws_rpc_parse_reply(b, o, nullptr, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_getport_reject_paths</b> &mdash; <i>accepted but the procedure did not run -> the results are not read</i></summary>
+
+    * **Objective**: accepted but the procedure did not run -> the results are not read
+    * **Assertions**:
+      * <code>Assert false (dws_vxi11_parse_getport_resp(b, o, &port))</code>
+      * <code>Assert false (dws_vxi11_parse_getport_resp(b, o, &port))</code>
+      * <code>Assert true (dws_vxi11_parse_getport_resp(b, o, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_create_link_lock_and_empty_device</b> &mdash; <i>lockDevice sits at record-mark(4) + header(40) + clientId(4) = offset 48</i></summary>
+
+    * **Objective**: lockDevice sits at record-mark(4) + header(40) + clientId(4) = offset 48
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(68, n);</code>
+      * <code>Assert equal memory (lock_true, buf + 48, 4)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(60, n);</code>
+      * <code>Assert equal memory (empty_opaque, buf + 56, 4)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_opaque_overflows_after_a_good_header</b> &mdash; <i>60 bytes hold the whole call header + the three fixed words, but not the device opaque</i></summary>
+
+    * **Objective**: 60 bytes hold the whole call header + the three fixed words, but not the device opaque
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_create_link(mid, sizeof(mid), 1, 0, false, 0, "inst0"));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_create_link_resp_reject_paths</b> &mdash; <i>accepted + successful, but the results stop after two words</i></summary>
+
+    * **Objective**: accepted + successful, but the results stop after two words
+    * **Assertions**:
+      * <code>Assert false (dws_vxi11_parse_create_link_resp(b, o, nullptr))</code>
+      * <code>Assert false (dws_vxi11_parse_create_link_resp(b, o, &resp))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_device_write_empty_payload</b> &mdash; <i>a zero-length write is legal - the guard only rejects a null pointer WITH a length</i></summary>
+
+    * **Objective**: a zero-length write is legal - the guard only rejects a null pointer WITH a length
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64, dws_vxi11_build_device_write(buf, sizeof(buf), 2, 1, 0, 0, 0, nullptr, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_resp_reject_paths</b> &mdash; <i>the size word is missing</i></summary>
+
+    * **Objective**: the size word is missing
+    * **Assertions**:
+      * <code>Assert false (dws_vxi11_parse_write_resp(b, o, nullptr))</code>
+      * <code>Assert false (dws_vxi11_parse_write_resp(b, o, &wr))</code>
+      * <code>Assert false (dws_vxi11_parse_write_resp(b, o, &wr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_resp_reject_paths</b> &mdash; <i>an opaque length that runs past the end of the message must not read out of bounds</i></summary>
+
+    * **Objective**: an opaque length that runs past the end of the message must not read out of bounds
+    * **Assertions**:
+      * <code>Assert false (dws_vxi11_parse_read_resp(b, o, nullptr))</code>
+      * <code>Assert false (dws_vxi11_parse_read_resp(b, o, &rr))</code>
+      * <code>Assert false (dws_vxi11_parse_read_resp(b, o, &rr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_readstb_and_error_resp_reject_paths</b> &mdash; <i>the stb word is missing</i></summary>
+
+    * **Objective**: the stb word is missing
+    * **Assertions**:
+      * <code>Assert false (dws_vxi11_parse_readstb_resp(b, o, &sr))</code>
+      * <code>Assert false (dws_vxi11_parse_readstb_resp(b, o, nullptr))</code>
+      * <code>Assert false (dws_vxi11_parse_readstb_resp(b, o, &sr))</code>
+      * <code>Assert false (dws_vxi11_parse_error_resp(b, o, &err))</code>
+      * <code>Assert false (dws_vxi11_parse_error_resp(b, o, &err))</code>
+      * <code>Assert true (dws_vxi11_parse_error_resp(b, o, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_str_full_table</b> &mdash; <i>Error str full table</i></summary>
+
+    * **Objective**: Error str full table
+    * **Assertions**:
+      * <code>Assert equal string ("syntax error", dws_vxi11_error_str(DWS_VXI11_ERR_SYNTAX))</code>
+      * <code>Assert equal string ("device not accessible", dws_vxi11_error_str(DWS_VXI11_ERR_NOT_ACCESSIBLE))</code>
+      * <code>Assert equal string ("parameter error", dws_vxi11_error_str(DWS_VXI11_ERR_PARAMETER))</code>
+      * <code>Assert equal string ("channel not established", dws_vxi11_error_str(6))</code>
+      * <code>Assert equal string ("operation not supported", dws_vxi11_error_str(8))</code>
+      * <code>Assert equal string ("out of resources", dws_vxi11_error_str(9))</code>
+      * <code>Assert equal string ("no lock held by this link", dws_vxi11_error_str(DWS_VXI11_ERR_NO_LOCK))</code>
+      * <code>Assert equal string ("I/O error", dws_vxi11_error_str(DWS_VXI11_ERR_IO_ERROR))</code>
+      * <code>Assert equal string ("invalid address", dws_vxi11_error_str(21))</code>
+      * <code>Assert equal string ("abort", dws_vxi11_error_str(DWS_VXI11_ERR_ABORT))</code>
+      * <code>Assert equal string ("channel already established", dws_vxi11_error_str(29))</code>
   </details>
 
 </details>
@@ -38117,7 +40154,109 @@ A thorough directory of all **3476 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav_handler (29 tests)</b></summary>
+<summary><b>test_webdav_handler (38 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_join_root_variants</b> &mdash; <i>(a) root ending in '/': "/tsroot/" + "/f.txt" must not become "/tsroot//f.txt".</i></summary>
+
+    * **Objective**: (a) root ending in '/': "/tsroot/" + "/f.txt" must not become "/tsroot//f.txt".
+    * **Assertions**:
+      * <code>Assert true (dws_resp_status(200))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "hi"))</code>
+      * <code>Assert true (dws_resp_status(200))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "yo"))</code>
+      * <code>Assert true (dws_resp_status(404))</code>
+      * <code>Assert true (dws_resp_status(200))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "nn"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_dav_empty_prefix_mount</b> &mdash; <i>Webdav dav empty prefix mount</i></summary>
+
+    * **Objective**: Webdav dav empty prefix mount
+    * **Assertions**:
+      * <code>Assert true (dws_resp_status(200))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "ee"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_method_dispatch_edges</b> &mdash; <i>Webdav method dispatch edges</i></summary>
+
+    * **Objective**: Webdav method dispatch edges
+    * **Assertions**:
+      * <code>Assert true (dws_resp_status(200))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Content-Length: 5"))</code>
+      * <code>Assert null (strstr(tcp_captured(), "alpha"))</code>
+      * <code>Assert true (dws_resp_status(405))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Allow:"))</code>
+      * <code>Assert true (dws_resp_status(204))</code>
+      * <code>Assert true (dws_resp_status(409))</code>
+      * <code>Assert false (tree_has("/dav/mv"))</code>
+      * <code>Assert true (dws_resp_status(409))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_copy_header_edges</b> &mdash; <i>A Destination that is neither an abs-path nor an absolute URI is malformed -> 400.</i></summary>
+
+    * **Objective**: A Destination that is neither an abs-path nor an absolute URI is malformed -> 400.
+    * **Assertions**:
+      * <code>Assert true (dws_resp_status(400))</code>
+      * <code>Assert true (dws_resp_status(412))</code>
+      * <code>Assert true (dws_resp_status(204))</code>
+      * <code>Assert true (tree_content_eq("/dav/dst2/a.txt", "alpha"))</code>
+      * <code>Assert true (dws_resp_status(201))</code>
+      * <code>Assert true (tree_content_eq("/dav/deep1/sub/c.txt", "charlie"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_copy_dest_joins_to_root</b> &mdash; <i>Webdav copy dest joins to root</i></summary>
+
+    * **Objective**: Webdav copy dest joins to root
+    * **Assertions**:
+      * <code>Assert true (dws_resp_status(201))</code>
+      * <code>Assert true (tree_has("/"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_propfind_file_and_trailing_slash</b> &mdash; <i>Webdav propfind file and trailing slash</i></summary>
+
+    * **Objective**: Webdav propfind file and trailing slash
+    * **Assertions**:
+      * <code>Assert true (dws_resp_status(207))</code>
+      * <code>Assert not null (strstr(r, "getcontentlength"))</code>
+      * <code>Assert not null (strstr(r, "getcontenttype"))</code>
+      * <code>Assert null (strstr(r, "&lt;D:collection/&gt;"))</code>
+      * <code>Assert true (dws_resp_status(207))</code>
+      * <code>Assert not null (strstr(r, "&lt;D:href&gt;/dav/col/&lt;/D:href&gt;"))</code>
+      * <code>Assert not null (strstr(r, "/dav/col/m.txt"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_route_scan_skips_non_dav_routes</b> &mdash; <i>A bodied PUT to the non-DAV path: the begin hook walks the same table, skips the</i></summary>
+
+    * **Objective**: A bodied PUT to the non-DAV path: the begin hook walks the same table, skips the
+    * **Assertions**:
+      * <code>Assert true (dws_resp_status(200))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "plain"))</code>
+      * <code>Assert true (dws_resp_status(405))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_stream_put_abort_without_open</b> &mdash; <i>Webdav stream put abort without open</i></summary>
+
+    * **Objective**: Webdav stream put abort without open
+    * **Assertions**:
+      * <code>Assert false (tree_has("/dav/never.txt"))</code>
+      * <code>Assert false (tree_has("/dav/never.txt"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_status_on_dead_connection</b> &mdash; <i>Webdav status on dead connection</i></summary>
+
+    * **Objective**: Webdav status on dead connection
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len()); // nothing written to a dead slot</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_webdav_get_put_dest_edges</b> &mdash; <i>Webdav get put dest edges</i></summary>

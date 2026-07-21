@@ -1240,6 +1240,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/Sysadmin` | `Foundation/Sysadmin` | 767,345 | 81,836 |
 | `OIDC` | `L7-Application/OidcAuth` | 767,349 | 99,876 |
 | `OPCUA+UMATI` | `L7-Application/Umati` | 768,393 | 92,252 |
+| `OPCUA+ROBOTICS` | `L7-Application/Robotics` | 768,765 | 92,468 |
 | `NTRIP_CASTER` | `L7-Application/NtripCaster` | 771,377 | 84,744 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Peripherals/CanCapture` | 771,997 | 45,568 |
 | `DASHBOARD` | `L7-Application/Dashboard` | 774,445 | 82,196 |
