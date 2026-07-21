@@ -495,6 +495,15 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
   code path, so it is left as a documented option. For an SSH bulk transfer, `chacha20-poly1305` (1.6 MB/s
   software) is still faster than aes256-gcm and is negotiated first; AES-256-CTR (22.5 MB/s) is faster still
   where an AEAD is not required.
+- **ESP32-P4: hardware GCM makes AES-256-GCM 3-40x faster (measured on silicon).** Unlike the S3, the
+  ESP32-P4's AES peripheral has a hardware GCM mode (`SOC_AES_SUPPORT_GCM`), so `ssh_aesgcm` routes the whole
+  AEAD through `mbedtls_gcm` → the HW GCM peripheral (gate `SSH_AESGCM_HW_GCM`; the S3, which has no HW GCM,
+  keeps the software-GHASH path above). This matters even more than on the S3 because the P4's HW AES carries
+  heavy per-single-block DMA/setup overhead, so driving the block cipher one 16-byte block at a time (the
+  manual CTR + software-GHASH path) is catastrophic there - **172,043 / 591,051 / 2,267,163 cyc** to seal
+  64 B / 256 B / 1 KiB (~2,200 cyc/byte). The one-call HW GCM is flat at **51,536 / 53,009 / 55,638 cyc**
+  (and 91,317 at 8 KiB) - **3.3x / 11.1x / 40.7x faster**, byte-identical (`bytematch=1` on the P4 + the
+  native NIST/McGrew KAT). Correctness rides the same vectors as the software path; only the hot loop changes.
 - **Ed25519 sign is ~4.4x faster with a fixed-base comb.** An `ssh-ed25519` host-key signature dropped from
   **84.6 ms to 19.4 ms** by replacing the variable-base ladder for the base point B with a constant-time
   signed 4-bit fixed-base comb (ref10 layout): a table of `256^i * B` multiples in flash

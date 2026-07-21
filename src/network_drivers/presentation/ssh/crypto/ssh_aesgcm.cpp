@@ -14,6 +14,60 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
 #include <string.h>
 
+#if SSH_AESGCM_HW_GCM
+// ===========================================================================
+// Hardware GCM path (mbedtls_gcm -> the ESP32 AES peripheral's GCM mode, e.g. ESP32-P4). One HW call
+// does AES-CTR + GHASH for the whole packet - far faster than the per-block software path (measured
+// 3x-33x on the P4 for 64 B-1 KiB) and byte-identical output (same NIST AEAD_AES_256_GCM).
+// ===========================================================================
+
+// Advance the RFC 5647 invocation counter: the low 8 bytes of the 12-byte nonce, big-endian.
+static inline void iv_increment(uint8_t iv[SSH_AESGCM_IV_LEN])
+{
+    for (int j = SSH_AESGCM_IV_LEN - 1; j >= 4; j--)
+        if (++iv[j])
+            break;
+}
+
+void ssh_aesgcm_init(SshAesGcmCtx *ctx, const uint8_t key[SSH_AESGCM_KEY_LEN], const uint8_t iv[SSH_AESGCM_IV_LEN])
+{
+    mbedtls_gcm_init(&ctx->gcm);
+    mbedtls_gcm_setkey(&ctx->gcm, MBEDTLS_CIPHER_ID_AES, key, 256);
+    memcpy(ctx->iv, iv, SSH_AESGCM_IV_LEN);
+    ctx->ready = true;
+}
+
+void ssh_aesgcm_seal(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len,
+                     uint8_t *out)
+{
+    mbedtls_gcm_crypt_and_tag(&ctx->gcm, MBEDTLS_GCM_ENCRYPT, pt_len, ctx->iv, SSH_AESGCM_IV_LEN, aad, aad_len, pt, out,
+                              SSH_AESGCM_TAG_LEN, out + pt_len);
+    iv_increment(ctx->iv);
+}
+
+bool ssh_aesgcm_open(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
+                     const uint8_t tag[SSH_AESGCM_TAG_LEN], uint8_t *out)
+{
+    // mbedtls_gcm_auth_decrypt verifies the tag in constant time and only then keeps the plaintext; on a
+    // tag mismatch it returns non-zero (out is left undefined, and the caller drops the packet). The
+    // invocation counter is advanced only on success, matching the software path.
+    if (mbedtls_gcm_auth_decrypt(&ctx->gcm, ct_len, ctx->iv, SSH_AESGCM_IV_LEN, aad, aad_len, tag, SSH_AESGCM_TAG_LEN,
+                                 ct, out) != 0)
+        return false;
+    iv_increment(ctx->iv);
+    return true;
+}
+
+void ssh_aesgcm_wipe(SshAesGcmCtx *ctx)
+{
+    mbedtls_gcm_free(&ctx->gcm);
+    volatile uint8_t *p = (volatile uint8_t *)ctx;
+    for (size_t i = 0; i < sizeof(SshAesGcmCtx); i++)
+        p[i] = 0;
+}
+
+#else // !SSH_AESGCM_HW_GCM
+
 // ===========================================================================
 // AES-256 single-block primitive
 // ===========================================================================
@@ -213,3 +267,5 @@ void ssh_aesgcm_wipe(SshAesGcmCtx *ctx)
     for (size_t i = 0; i < sizeof(SshAesGcmCtx); i++)
         p[i] = 0;
 }
+
+#endif // SSH_AESGCM_HW_GCM

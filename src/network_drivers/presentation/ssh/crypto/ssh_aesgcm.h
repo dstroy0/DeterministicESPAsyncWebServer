@@ -44,8 +44,32 @@ static constexpr size_t SSH_AESGCM_IV_LEN = 12;
 static constexpr size_t SSH_AESGCM_TAG_LEN = 16;
 
 #ifdef ARDUINO
+#include "soc/soc_caps.h"
+#endif
+
+// Chips whose AES peripheral has a hardware GCM mode (e.g. ESP32-P4, SOC_AES_SUPPORT_GCM) do the whole
+// AEAD - AES-CTR *and* GHASH - in one hardware call. That is dramatically faster than driving the block
+// cipher one 16-byte block at a time and folding GHASH in software: on the P4 the per-block HW-AES call
+// overhead makes the manual path 3x-33x slower (measured, 64 B-1 KiB), so route through mbedtls_gcm there.
+// The ESP32-S3's AES peripheral has no GCM mode, so it keeps the manual HW-AES + software-GHASH path.
+#if defined(ARDUINO) && defined(SOC_AES_SUPPORT_GCM) && SOC_AES_SUPPORT_GCM
+#define SSH_AESGCM_HW_GCM 1
+#else
+#define SSH_AESGCM_HW_GCM 0
+#endif
+
+#if SSH_AESGCM_HW_GCM
+#include <mbedtls/gcm.h>
+/** @brief AES-256-GCM context for one SSH direction (hardware GCM peripheral). */
+struct SshAesGcmCtx
+{
+    mbedtls_gcm_context gcm;       ///< mbedtls GCM (routed to the ESP32 hardware GCM), AES-256 key schedule.
+    uint8_t iv[SSH_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
+    bool ready;                    ///< true once a key/IV is installed.
+};
+#elif defined(ARDUINO)
 #include <mbedtls/aes.h>
-/** @brief AES-256-GCM context for one SSH direction (HW AES on ESP32). */
+/** @brief AES-256-GCM context for one SSH direction (HW AES block + software GHASH). */
 struct SshAesGcmCtx
 {
     mbedtls_aes_context mbed;      ///< mbedtls context (HW-accelerated on ESP32), encrypt key schedule.
