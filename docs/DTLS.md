@@ -178,29 +178,35 @@ self-referential KATs could not - the `legacy_cookie` field, the DTLS version co
 [BUGS.md](BUGS.md)). With `DWS_ENABLE_TLS_RPK`, a fourth run drives the wolfSSL client in
 **RawPublicKey-only** mode (`--rpk`): it offers `server_certificate_type = RawPublicKey` and nothing
 else, so it rejects an X.509 answer - a completed handshake proves the server's RFC 7250
-`SubjectPublicKeyInfo` is wire-conformant. DTLS 1.3 derives every secret and record key with the `dtls13` prefix rather
+`SubjectPublicKeyInfo` is wire-conformant. The handshake is also checked against a **second, unrelated
+reference stack** - the [Oryx **CycloneSSL**](https://github.com/Oryx-Embedded/CycloneSSL) DTLS 1.3
+client ([`test/servers/cyclone_dtls`](../test/servers/cyclone_dtls/README.md)) completes the same
+handshake + application-data round trip, both with a plain X.509 certificate and with a RawPublicKey
+(its RFC 7250 verify callback fires only when the server actually sends a bare `SubjectPublicKeyInfo`).
+Two independent from-scratch implementations - wolfSSL and CycloneSSL - agreeing on the wire is far
+stronger than either alone. DTLS 1.3 derives every secret and record key with the `dtls13` prefix rather
 than TLS 1.3's `tls13 `; this library models that as a `Tls13Kdf` variant bound once into the key
 schedule, so the record layer and the handshake cannot disagree on it.
 
 ## Standards
 
-| Area                           | Standard                  | Status                                                                                                                            |
-| ------------------------------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| DTLSPlaintext / DTLSCiphertext | RFC 9147 §4               | Implemented - unified header build/parse, DTLSPlaintext build/parse                                                               |
-| Record AEAD (AEAD_AES_128_GCM) | RFC 9147 §4.2, SP 800-38D | Implemented - TLS 1.3 nonce (§4.2.2), header-as-AAD; reuses `dws_quic_aead`                                                       |
-| Sequence-number encryption     | RFC 9147 §4.2.3           | Implemented - `AES-ECB(sn_key, ct[0..15])` mask; `sn` key via HKDF-Expand-Label                                                   |
-| Sequence-number reconstruction | RFC 9147 §4.2.2           | Implemented - closest-to-expected (RFC 9000 App. A.3)                                                                             |
-| Anti-replay window             | RFC 9147 §4.5.1           | Implemented - 64-record sliding window                                                                                            |
-| Record-key derivation          | RFC 8446 §7.3, RFC 5869   | Implemented - `key` / `iv` / `sn` = HKDF-Expand-Label(traffic secret)                                                             |
-| Key-schedule label prefix      | RFC 9147 §5.9             | Implemented - `dtls13` (not `tls13 `), a `Tls13Kdf` variant bound to the schedule                                                 |
-| Handshake header + reassembly  | RFC 9147 §5.2, §5.4       | Implemented - 12-byte header build/parse, overlap-tolerant reassembly                                                             |
-| ACK message                    | RFC 9147 §7               | Implemented - content type 26; the client Finished is acknowledged (§5.8.3)                                                       |
-| HelloRetryRequest cookie       | RFC 9147 §5.1             | Implemented - stateless HMAC-SHA256 cookie binding the client address, minted + verified by the state machine                     |
-| Server handshake state machine | RFC 9147 §5-6             | Implemented - full 1-RTT handshake, epoch 0→2→3; **wolfSSL DTLS 1.3 interop**                                                     |
-| HelloRetryRequest exchange     | RFC 9147 §5.1             | Implemented - group renegotiation to X25519; cookie round-trip + message_hash transcript; **wolfSSL interop**                     |
-| ACK / timeout retransmission   | RFC 9147 §5.8             | Implemented - PTO timer (exponential backoff, capped, retransmit ceiling), ACK cancellation, retransmitted-Finished re-ACK        |
-| Connection ID                  | RFC 9147 §9               | **Roadmap** - negotiated via extension; CID records are rejected for now                                                          |
-| Raw Public Keys                | RFC 7250, RFC 8410        | Implemented (`DWS_ENABLE_TLS_RPK`) - `server_certificate_type` negotiation, Ed25519 SPKI Certificate; **wolfSSL `--rpk` interop** |
+| Area                           | Standard                  | Status                                                                                                                                         |
+| ------------------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| DTLSPlaintext / DTLSCiphertext | RFC 9147 §4               | Implemented - unified header build/parse, DTLSPlaintext build/parse                                                                            |
+| Record AEAD (AEAD_AES_128_GCM) | RFC 9147 §4.2, SP 800-38D | Implemented - TLS 1.3 nonce (§4.2.2), header-as-AAD; reuses `dws_quic_aead`                                                                    |
+| Sequence-number encryption     | RFC 9147 §4.2.3           | Implemented - `AES-ECB(sn_key, ct[0..15])` mask; `sn` key via HKDF-Expand-Label                                                                |
+| Sequence-number reconstruction | RFC 9147 §4.2.2           | Implemented - closest-to-expected (RFC 9000 App. A.3)                                                                                          |
+| Anti-replay window             | RFC 9147 §4.5.1           | Implemented - 64-record sliding window                                                                                                         |
+| Record-key derivation          | RFC 8446 §7.3, RFC 5869   | Implemented - `key` / `iv` / `sn` = HKDF-Expand-Label(traffic secret)                                                                          |
+| Key-schedule label prefix      | RFC 9147 §5.9             | Implemented - `dtls13` (not `tls13 `), a `Tls13Kdf` variant bound to the schedule                                                              |
+| Handshake header + reassembly  | RFC 9147 §5.2, §5.4       | Implemented - 12-byte header build/parse, overlap-tolerant reassembly                                                                          |
+| ACK message                    | RFC 9147 §7               | Implemented - content type 26; the client Finished is acknowledged (§5.8.3)                                                                    |
+| HelloRetryRequest cookie       | RFC 9147 §5.1             | Implemented - stateless HMAC-SHA256 cookie binding the client address, minted + verified by the state machine                                  |
+| Server handshake state machine | RFC 9147 §5-6             | Implemented - full 1-RTT handshake, epoch 0→2→3; **wolfSSL + CycloneSSL DTLS 1.3 interop**                                                     |
+| HelloRetryRequest exchange     | RFC 9147 §5.1             | Implemented - group renegotiation to X25519; cookie round-trip + message_hash transcript; **wolfSSL interop**                                  |
+| ACK / timeout retransmission   | RFC 9147 §5.8             | Implemented - PTO timer (exponential backoff, capped, retransmit ceiling), ACK cancellation, retransmitted-Finished re-ACK                     |
+| Connection ID                  | RFC 9147 §9               | **Roadmap** - negotiated via extension; CID records are rejected for now                                                                       |
+| Raw Public Keys                | RFC 7250, RFC 8410        | Implemented (`DWS_ENABLE_TLS_RPK`) - `server_certificate_type` negotiation, Ed25519 SPKI Certificate; **wolfSSL + CycloneSSL `--rpk` interop** |
 
 The handshake DTLS carries is the TLS 1.3 already documented for HTTP/3
 (`TLS_AES_128_GCM_SHA256` + X25519 + Ed25519); see [SSH.md](SSH.md) for the shared crypto
