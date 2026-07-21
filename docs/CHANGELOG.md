@@ -2,19 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.25.0] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.25.0 - 2026-07-21</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`6e7239b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e7239be5bd08fa3940969935915fbfe09fa4993))
 - update CHANGELOG.md [skip ci] ([`253a31f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/253a31f2b01cdb61c147a029068978a59c5c882f))
+
+### Changes
+
+- Bump version: 7.24.1 → 7.25.0 ([`a9c7eda`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9c7eda21e1476bc9cfdc8c0c93d7fec38b75af4))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`6928e93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6928e93f95c84131e039d2304d6d42e98a152882))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`06c28da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06c28dacfc7d6ed4b54bbbff00add255bbed5fbe))
+
+### Features
+
+- QUIC X25519MLKEM768 HelloRetryRequest (RFC 8446 §4.1.4) ([`e9968ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e9968ee406df01b6b1b73af7c1cebc46707603ba))
 
 ### Testing
 
 - CycloneSSH SSH-2 peer - a second SSH stack (the one that caught the negotiation bug) ([`bc38c12`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc38c12c6cd6568ebc96b6d7d68dd28bb22557e3))
+
+</details>
 
 ## [7.24.1] - 2026-07-21
 
