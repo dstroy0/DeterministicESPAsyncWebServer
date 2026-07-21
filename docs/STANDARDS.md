@@ -93,7 +93,7 @@ newer entry here.
 
 - [RFC 4251](https://www.rfc-editor.org/rfc/rfc4251) - SSH architecture - **impl**.
 - [RFC 4252](https://www.rfc-editor.org/rfc/rfc4252) - SSH authentication - **impl**.
-- [RFC 4253](https://www.rfc-editor.org/rfc/rfc4253) - SSH transport layer - **impl**.
+- [RFC 4253](https://www.rfc-editor.org/rfc/rfc4253) - SSH transport layer - **impl** (algorithm negotiation follows §7.1 **client preference**; **interoperates with two independent SSH stacks - OpenSSH and Oryx CycloneSSH** - both completing a full KEX + auth + channel exchange with our server, `test/servers/peers/ssh_peer.py` + `test/servers/cyclone_ssh`. The CycloneSSH peer caught a server-preference negotiation bug OpenSSH's matching defaults hid; see [BUGS.md](BUGS.md)).
 - [RFC 4254](https://www.rfc-editor.org/rfc/rfc4254) - SSH connection protocol - **impl**.
 - [RFC 4250](https://www.rfc-editor.org/rfc/rfc4250) - SSH assigned numbers - **impl**.
 - [RFC 4344](https://www.rfc-editor.org/rfc/rfc4344) - SSH transport encryption modes (CTR) - **impl**.
