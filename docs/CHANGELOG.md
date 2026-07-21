@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- suppress S5028 project-wide - #define named constants are deliberate ([`48004ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48004ead21d5c2ddae815efe0223b1c5eebecc00))
+- update test report + coverage [skip ci] ([`8e7d453`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e7d4531c6cb3a92d725a9a2c48c54fba0f9c323))
+- update CHANGELOG.md [skip ci] ([`b48dc6e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b48dc6ee1e6b442af9dcc0e820cf58e7913c10c0))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`6fcf179`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6fcf17921793f97572cd7e2accd2176afaff2f06))
+
 ## [7.28.5] - 2026-07-21
 
 <details>
