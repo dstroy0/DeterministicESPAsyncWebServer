@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.28.4] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.28.4 - 2026-07-21</b></summary>
+
+### Bug Fixes
+
+- slow-loris slot-exhaustion DoS - header-read deadline ([`e719134`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e719134f6793917846cbdca9934e6725103ef80b))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`abb51f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abb51f1ddcc430cdf921b97f20f1f8b743e3a3c0))
+- update CHANGELOG.md [skip ci] ([`89a96fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89a96fdde7ec99e95905b42a694773d3e019c901))
+
+### Changes
+
+- Bump version: 7.28.3 → 7.28.4 ([`1b26d87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b26d87164284e5641c484ead8dd9f51a9268017))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`4b658c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b658c3dfa746433305267a3a71fcb8ba4bde3ca))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f0aad93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0aad93864ca3867b7b12c55f2d22dd9b0685ce3))
+
+</details>
+
 ## [7.28.3] - 2026-07-21
 
 <details>
