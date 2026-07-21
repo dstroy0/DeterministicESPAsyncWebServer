@@ -2,16 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.28.3] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.28.3 - 2026-07-21</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`f993a41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f993a41787347778a7f3b3d22dadd7771106f355))
 - update CHANGELOG.md [skip ci] ([`a7903b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7903b6ee5b72b9f1bd4594410ab266a69e980b8))
+
+### Changes
+
+- Bump version: 7.28.2 → 7.28.3 ([`8ee1527`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8ee1527f3786e113840cd958a6760a21a870a5e8))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9677171`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9677171081b25d4795c5645e5de3f49e14b3f259))
 - HW-measured 3.19x device / 4.05x host for the memcpy framer; fix stale bench_syslog ([`d7db05b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7db05b02e3ac6ff9f724f079594dee7518e9340))
 - update ESP32 build footprints [skip ci] ([`a8bcef7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8bcef7462bba8f88f0d98af1dfccac9524e27d4))
+
+### Performance
+
+- live-slot bitmask for the accept free-slot lookup - 2.87x (owner pattern) ([`d6ac32d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6ac32d21128a4cf8fbf4485463822f0cd0cb4dd))
+
+</details>
 
 ## [7.28.2] - 2026-07-21
 
