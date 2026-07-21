@@ -607,9 +607,222 @@ void test_webdav_dav_wildcard_and_route_full()
     TEST_ASSERT_TRUE(dws_resp_status(404)); // never registered
 }
 
+// dav_join()'s separator handling across the three root shapes: a root that already ends in
+// '/' (the doubled separator is collapsed by skipping the sub-path's leading '/'), an empty
+// root, and a null fs_root (treated as empty). All three must resolve to the same on-disk
+// path the tree was populated at.
+void test_webdav_join_root_variants()
+{
+    // (a) root ending in '/': "/tsroot/" + "/f.txt" must not become "/tsroot//f.txt".
+    server.dav("/ts", davfs, "/tsroot/");
+    tree_put("/tsroot/f.txt", "hi");
+    feed_and_handle(0, "GET /ts/f.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(200));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "hi"));
+
+    // (b) empty root: the request sub-path is the whole fs path.
+    rearm();
+    server.dav("/er", davfs, "");
+    tree_put("/f2.txt", "yo");
+    feed_and_handle(0, "GET /er/f2.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(200));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "yo"));
+
+    // (c) the bare mount prefix under an empty root joins to "/" - a one-character path,
+    // so the trailing-slash strip must leave it alone (stripping would yield ""). No such
+    // node exists, so the GET is a clean 404 rather than a malformed lookup.
+    rearm();
+    feed_and_handle(0, "GET /er HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(404));
+
+    // (d) a null fs_root behaves exactly like an empty one.
+    rearm();
+    server.dav("/nr", davfs, nullptr);
+    tree_put("/n.txt", "nn");
+    feed_and_handle(0, "GET /nr/n.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(200));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "nn"));
+}
+
+// dav() with an empty url_prefix stores the pattern as the bare wildcard "*", which matches
+// every path; the mount prefix length is then zero, so the whole request path is the sub-path.
+void test_webdav_dav_empty_prefix_mount()
+{
+    server.dav("", davfs, "/ep");
+    tree_put("/ep/x.txt", "ee");
+    feed_and_handle(0, "GET /x.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(200));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "ee"));
+}
+
+// Method-dispatch edges the other tests do not reach: HEAD of an existing file (headers only,
+// via the file-serving path), a method token WebDAV does not classify (405 + Allow), a buffered
+// empty PUT over an EXISTING file (204, not 201), MKCOL when the FS cannot create the
+// collection (409), and MOVE of a source that does not exist (rename fails -> 409).
+void test_webdav_method_dispatch_edges()
+{
+    populate_src();
+    feed_and_handle(0, "HEAD /dav/src/a.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(200));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Content-Length: 5"));
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "alpha")); // HEAD: headers only
+
+    rearm();
+    feed_and_handle(0, "BREW /dav/src/a.txt HTTP/1.1\r\nHost: x\r\n\r\n"); // not a WebDAV method
+    TEST_ASSERT_TRUE(dws_resp_status(405));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Allow:"));
+
+    rearm();
+    tree_put("/dav/e.txt", "old");
+    feed_and_handle(0, "PUT /dav/e.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(204)); // existed -> 204, not 201
+
+    rearm();
+    feed_and_handle(0, "MOVE /dav/gone HTTP/1.1\r\nHost: x\r\nDestination: /dav/mv\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(409)); // rename of a missing source fails
+    TEST_ASSERT_FALSE(tree_has("/dav/mv"));
+
+    rearm();
+    char p[24];
+    for (int i = 0; i < 100; i++) // exhaust the node table so mkdir() cannot allocate
+    {
+        snprintf(p, sizeof p, "/dav/q%03d", i);
+        if (!fs::_tree_add(p, false))
+            break;
+    }
+    feed_and_handle(0, "MKCOL /dav/newcol HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(409)); // does not exist, but mkdir failed
+}
+
+// COPY/MOVE header edges: a Destination that is not a usable path at all (400), the
+// lowercase and explicit-true Overwrite forms, a COPY Depth other than 0 (not shallow),
+// and a destination that joins to the one-character path "/" (no trailing-slash strip).
+void test_webdav_copy_header_edges()
+{
+    populate_src();
+    // A Destination that is neither an abs-path nor an absolute URI is malformed -> 400.
+    feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: notapath\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(400));
+
+    // Overwrite: f (lowercase) is the same refusal as F.
+    rearm();
+    tree_mkdir("/dav/dst2");
+    feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/dst2\r\nOverwrite: f\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(412));
+
+    // Overwrite: T is the explicit form of the default -> replace -> 204.
+    rearm();
+    feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/dst2\r\nOverwrite: T\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(204));
+    TEST_ASSERT_TRUE(tree_content_eq("/dav/dst2/a.txt", "alpha"));
+
+    // A Depth header that is not "0" is not shallow: the whole tree is copied.
+    rearm();
+    feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/deep1\r\nDepth: 1\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(201));
+    TEST_ASSERT_TRUE(tree_content_eq("/dav/deep1/sub/c.txt", "charlie"));
+}
+
+// A destination whose joined fs path is exactly "/" (empty root, Destination == the mount
+// prefix): the trailing-slash strip must not touch a one-character path.
+void test_webdav_copy_dest_joins_to_root()
+{
+    server.dav("/z", davfs, "");
+    tree_put("/src.txt", "s");
+    feed_and_handle(0, "COPY /z/src.txt HTTP/1.1\r\nHost: x\r\nDestination: /z\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(201));
+    TEST_ASSERT_TRUE(tree_has("/"));
+}
+
+// PROPFIND property selection: a plain file reports getcontentlength + getcontenttype and
+// is never enumerated as a collection; a collection requested WITH a trailing slash already
+// has a collection href, so no second '/' is appended.
+void test_webdav_propfind_file_and_trailing_slash()
+{
+    tree_put("/dav/doc.txt", "hello");
+    feed_and_handle(0, "PROPFIND /dav/doc.txt HTTP/1.1\r\nHost: x\r\nDepth: 1\r\n\r\n");
+    const char *r = tcp_captured();
+    TEST_ASSERT_TRUE(dws_resp_status(207));
+    TEST_ASSERT_NOT_NULL(strstr(r, "getcontentlength"));
+    TEST_ASSERT_NOT_NULL(strstr(r, "getcontenttype")); // a file carries a content type
+    TEST_ASSERT_NULL(strstr(r, "<D:collection/>"));    // not a collection
+
+    rearm();
+    tree_mkdir("/dav/col");
+    tree_put("/dav/col/m.txt", "m");
+    feed_and_handle(0, "PROPFIND /dav/col/ HTTP/1.1\r\nHost: x\r\nDepth: 1\r\n\r\n");
+    r = tcp_captured();
+    TEST_ASSERT_TRUE(dws_resp_status(207));
+    TEST_ASSERT_NOT_NULL(strstr(r, "<D:href>/dav/col/</D:href>")); // no doubled separator
+    TEST_ASSERT_NOT_NULL(strstr(r, "/dav/col/m.txt"));
+}
+
+// The DAV route scan skips table entries that are not DAV mounts: a plain on() route
+// registered alongside a mount is stepped over both by the request dispatcher and by the
+// streaming-PUT begin hook, and still serves its own path normally.
+static void h_plain(uint8_t slot_id, HttpReq *req)
+{
+    (void)req;
+    server.send(slot_id, 200, "text/plain", "plain");
+}
+
+void test_webdav_route_scan_skips_non_dav_routes()
+{
+    server.on("/plain", HttpMethod::HTTP_GET, h_plain);
+    feed_and_handle(0, "GET /plain HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(200));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "plain"));
+
+    // A bodied PUT to the non-DAV path: the begin hook walks the same table, skips the
+    // non-DAV entry, finds no mount, and declines the sink (the route answers 405).
+    rearm();
+    const char *body = "abc";
+    feed_put(0, "/plain", (const uint8_t *)body, strlen(body));
+    TEST_ASSERT_TRUE(dws_resp_status(405)); // GET-only route, method not allowed
+}
+
+// The abort hook must be a no-op for a slot whose PUT never opened a file: with the node
+// table exhausted the sink records the error but holds no handle, so a torn-down transfer
+// has nothing to close.
+void test_webdav_stream_put_abort_without_open()
+{
+    char p[24];
+    for (int i = 0; i < 100; i++) // exhaust the node table -> open("w") fails
+    {
+        snprintf(p, sizeof p, "/dav/f%03d", i);
+        if (!fs::_tree_add(p, false))
+            break;
+    }
+    push_str(0, "PUT /dav/never.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 10\r\n\r\nabcd");
+    http_parse(0);
+    TEST_ASSERT_FALSE(tree_has("/dav/never.txt")); // the open failed: no node was created
+    http_reset(0);                                 // body_streaming && !COMPLETE -> abort hook
+    TEST_ASSERT_FALSE(tree_has("/dav/never.txt"));
+}
+
+// The peer disappears between the request being parsed and the response being written:
+// dav_send_status must recognize the dead slot, reset it, and write nothing.
+void test_webdav_status_on_dead_connection()
+{
+    push_str(0, "UNLOCK /dav/x HTTP/1.1\r\nHost: x\r\n\r\n");
+    http_parse(0);
+    conn_pool[0].pcb = nullptr; // connection torn down before the handler runs
+    server.handle();
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len()); // nothing written to a dead slot
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_webdav_join_root_variants);
+    RUN_TEST(test_webdav_dav_empty_prefix_mount);
+    RUN_TEST(test_webdav_method_dispatch_edges);
+    RUN_TEST(test_webdav_copy_header_edges);
+    RUN_TEST(test_webdav_copy_dest_joins_to_root);
+    RUN_TEST(test_webdav_propfind_file_and_trailing_slash);
+    RUN_TEST(test_webdav_route_scan_skips_non_dav_routes);
+    RUN_TEST(test_webdav_stream_put_abort_without_open);
+    RUN_TEST(test_webdav_status_on_dead_connection);
     RUN_TEST(test_webdav_get_put_dest_edges);
     RUN_TEST(test_webdav_copy_dest_path_too_long_414);
     RUN_TEST(test_webdav_recursive_open_failure);

@@ -258,6 +258,216 @@ void test_build_overflow()
     TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_create_link(nullptr, 128, 1, 0, false, 0, "inst0"));
 }
 
+// ── guard / reject coverage ─────────────────────────────────────────────────────────────────────
+
+void test_record_mark_guards()
+{
+    uint8_t buf[4];
+    TEST_ASSERT_EQUAL_size_t(0, dws_rpc_record_mark(nullptr, sizeof(buf), 16));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rpc_record_mark(buf, 3, 16)); // no room for the 4-byte mark
+
+    const uint8_t rm[] = {0x80, 0x00, 0x00, 0x10};
+    TEST_ASSERT_FALSE(dws_rpc_parse_record_mark(nullptr, 4, nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_rpc_parse_record_mark(rm, 3, nullptr, nullptr)); // short frame
+    // both outputs are optional
+    TEST_ASSERT_TRUE(dws_rpc_parse_record_mark(rm, 4, nullptr, nullptr));
+}
+
+void test_reply_full_length_rejects()
+{
+    uint8_t b[64];
+    uint32_t xid = 0, astat = 0;
+    size_t off = 0;
+
+    // a COMPLETE header (so the XDR reader stays healthy) whose message type is CALL, not REPLY
+    size_t o = 0;
+    o = put32(b, o, 9);
+    o = put32(b, o, 0); // CALL
+    o = put32(b, o, 0); // MSG_ACCEPTED
+    o = put32(b, o, 0); // verf.flavor
+    o = put32(b, o, 0); // verf.length
+    o = put32(b, o, 0); // accept_stat
+    TEST_ASSERT_FALSE(dws_rpc_parse_reply(b, o, &xid, &astat, &off));
+
+    // a complete header that is MSG_DENIED
+    o = 0;
+    o = put32(b, o, 9);
+    o = put32(b, o, 1); // REPLY
+    o = put32(b, o, 1); // MSG_DENIED
+    o = put32(b, o, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, 0);
+    TEST_ASSERT_FALSE(dws_rpc_parse_reply(b, o, &xid, &astat, &off));
+
+    TEST_ASSERT_FALSE(dws_rpc_parse_reply(nullptr, 24, &xid, &astat, &off));
+}
+
+void test_reply_optional_outputs()
+{
+    uint8_t b[64];
+    size_t o = reply_header(b, 0xABCD, 0);
+    o = put32(b, o, 0);
+    uint32_t xid = 0;
+    // the xid is captured, the rest skipped
+    TEST_ASSERT_TRUE(dws_rpc_parse_reply(b, o, &xid, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_UINT32(0xABCD, xid);
+    // every output is optional
+    TEST_ASSERT_TRUE(dws_rpc_parse_reply(b, o, nullptr, nullptr, nullptr));
+}
+
+void test_getport_reject_paths()
+{
+    uint8_t b[64];
+    uint32_t port = 0xFFFF;
+    // accepted but the procedure did not run -> the results are not read
+    size_t o = reply_header(b, 7, 2 /*PROG_MISMATCH*/);
+    o = put32(b, o, 1280);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_getport_resp(b, o, &port));
+    // successful, but the port word is missing
+    o = reply_header(b, 7, 0);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_getport_resp(b, o, &port));
+    // the port output is optional
+    o = reply_header(b, 7, 0);
+    o = put32(b, o, 1280);
+    TEST_ASSERT_TRUE(dws_vxi11_parse_getport_resp(b, o, nullptr));
+}
+
+void test_create_link_lock_and_empty_device()
+{
+    uint8_t buf[128];
+    // lockDevice sits at record-mark(4) + header(40) + clientId(4) = offset 48
+    size_t n = dws_vxi11_build_create_link(buf, sizeof(buf), 1, 0, true, 5000, "inst0");
+    TEST_ASSERT_EQUAL_size_t(68, n);
+    const uint8_t lock_true[] = {0x00, 0x00, 0x00, 0x01};
+    TEST_ASSERT_EQUAL_MEMORY(lock_true, buf + 48, 4);
+
+    // a null device name writes a zero-length opaque: just the length word, no data, no pad
+    n = dws_vxi11_build_create_link(buf, sizeof(buf), 1, 0, false, 0, nullptr);
+    TEST_ASSERT_EQUAL_size_t(60, n);
+    const uint8_t empty_opaque[] = {0x00, 0x00, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_MEMORY(empty_opaque, buf + 56, 4);
+}
+
+void test_opaque_overflows_after_a_good_header()
+{
+    // 60 bytes hold the whole call header + the three fixed words, but not the device opaque
+    uint8_t mid[60];
+    TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_create_link(mid, sizeof(mid), 1, 0, false, 0, "inst0"));
+}
+
+void test_create_link_resp_reject_paths()
+{
+    uint8_t b[64];
+    size_t o = reply_header(b, 1, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, 1);
+    o = put32(b, o, 2);
+    o = put32(b, o, 3);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_create_link_resp(b, o, nullptr)); // nowhere to decode into
+
+    // accepted + successful, but the results stop after two words
+    Vxi11CreateLinkResp resp;
+    o = reply_header(b, 1, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, 1);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_create_link_resp(b, o, &resp));
+}
+
+void test_device_write_empty_payload()
+{
+    uint8_t buf[128];
+    // a zero-length write is legal - the guard only rejects a null pointer WITH a length
+    TEST_ASSERT_EQUAL_size_t(64, dws_vxi11_build_device_write(buf, sizeof(buf), 2, 1, 0, 0, 0, nullptr, 0));
+}
+
+void test_write_resp_reject_paths()
+{
+    uint8_t b[64];
+    Vxi11WriteResp wr;
+    size_t o = reply_header(b, 2, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, 6);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_write_resp(b, o, nullptr));
+
+    o = reply_header(b, 2, 1 /*PROG_UNAVAIL*/);
+    o = put32(b, o, 0);
+    o = put32(b, o, 6);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_write_resp(b, o, &wr));
+
+    // the size word is missing
+    o = reply_header(b, 2, 0);
+    o = put32(b, o, 0);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_write_resp(b, o, &wr));
+}
+
+void test_read_resp_reject_paths()
+{
+    uint8_t b[64];
+    Vxi11ReadResp rr;
+    size_t o = reply_header(b, 3, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, DWS_VXI11_REASON_END);
+    o = put32(b, o, 0); // an empty opaque
+    TEST_ASSERT_FALSE(dws_vxi11_parse_read_resp(b, o, nullptr));
+
+    o = reply_header(b, 3, 1 /*PROG_UNAVAIL*/);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_read_resp(b, o, &rr));
+
+    // an opaque length that runs past the end of the message must not read out of bounds
+    o = reply_header(b, 3, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, 64); // claims 64 data bytes with none present
+    TEST_ASSERT_FALSE(dws_vxi11_parse_read_resp(b, o, &rr));
+}
+
+void test_readstb_and_error_resp_reject_paths()
+{
+    uint8_t b[64];
+    Vxi11ReadStbResp sr;
+    size_t o = reply_header(b, 4, 1 /*PROG_UNAVAIL*/);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_readstb_resp(b, o, &sr));
+
+    o = reply_header(b, 4, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, 0x40);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_readstb_resp(b, o, nullptr));
+
+    // the stb word is missing
+    o = reply_header(b, 4, 0);
+    o = put32(b, o, 0);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_readstb_resp(b, o, &sr));
+
+    int32_t err = -1;
+    o = reply_header(b, 5, 1 /*PROG_UNAVAIL*/);
+    o = put32(b, o, 0);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_error_resp(b, o, &err));
+
+    // the Device_Error word itself is missing
+    o = reply_header(b, 5, 0);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_error_resp(b, o, &err));
+
+    // the error output is optional
+    o = reply_header(b, 5, 0);
+    o = put32(b, o, DWS_VXI11_ERR_INVALID_LINK);
+    TEST_ASSERT_TRUE(dws_vxi11_parse_error_resp(b, o, nullptr));
+}
+
+void test_error_str_full_table()
+{
+    TEST_ASSERT_EQUAL_STRING("syntax error", dws_vxi11_error_str(DWS_VXI11_ERR_SYNTAX));
+    TEST_ASSERT_EQUAL_STRING("device not accessible", dws_vxi11_error_str(DWS_VXI11_ERR_NOT_ACCESSIBLE));
+    TEST_ASSERT_EQUAL_STRING("parameter error", dws_vxi11_error_str(DWS_VXI11_ERR_PARAMETER));
+    TEST_ASSERT_EQUAL_STRING("channel not established", dws_vxi11_error_str(6));
+    TEST_ASSERT_EQUAL_STRING("operation not supported", dws_vxi11_error_str(8));
+    TEST_ASSERT_EQUAL_STRING("out of resources", dws_vxi11_error_str(9));
+    TEST_ASSERT_EQUAL_STRING("no lock held by this link", dws_vxi11_error_str(DWS_VXI11_ERR_NO_LOCK));
+    TEST_ASSERT_EQUAL_STRING("I/O error", dws_vxi11_error_str(DWS_VXI11_ERR_IO_ERROR));
+    TEST_ASSERT_EQUAL_STRING("invalid address", dws_vxi11_error_str(21));
+    TEST_ASSERT_EQUAL_STRING("abort", dws_vxi11_error_str(DWS_VXI11_ERR_ABORT));
+    TEST_ASSERT_EQUAL_STRING("channel already established", dws_vxi11_error_str(29));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -271,5 +481,17 @@ int main()
     RUN_TEST(test_reply_rejects);
     RUN_TEST(test_error_str);
     RUN_TEST(test_build_overflow);
+    RUN_TEST(test_record_mark_guards);
+    RUN_TEST(test_reply_full_length_rejects);
+    RUN_TEST(test_reply_optional_outputs);
+    RUN_TEST(test_getport_reject_paths);
+    RUN_TEST(test_create_link_lock_and_empty_device);
+    RUN_TEST(test_opaque_overflows_after_a_good_header);
+    RUN_TEST(test_create_link_resp_reject_paths);
+    RUN_TEST(test_device_write_empty_payload);
+    RUN_TEST(test_write_resp_reject_paths);
+    RUN_TEST(test_read_resp_reject_paths);
+    RUN_TEST(test_readstb_and_error_resp_reject_paths);
+    RUN_TEST(test_error_str_full_table);
     return UNITY_END();
 }

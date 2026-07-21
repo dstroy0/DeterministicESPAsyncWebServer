@@ -13,11 +13,13 @@
 
 #include "FS.h"
 #include "dwserver.h"
+#include "server/dwserver_internal.h" // s_send: the cross-loop file-send continuation state
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
 static DWS server;
+static fs::FS g_fs; // mock FS handle for the serve_static mounts (state lives in the registry)
 static bool handler_called = false;
 
 static void push_str(uint8_t slot, const char *s)
@@ -269,6 +271,201 @@ void test_multiple_content_types()
 }
 
 // ====================================================================
+// SERVE_STATIC PATH JOINING / NEGOTIATION EDGES
+// ====================================================================
+
+// Re-arm slot 0 for another request within one test (a file response closes the slot).
+static void rearm(uint8_t slot)
+{
+    conn_pool[slot] = {};
+    conn_pool[slot].id = slot;
+    conn_pool[slot].state = ConnState::CONN_ACTIVE;
+    conn_pool[slot].proto = ConnProto::PROTO_HTTP;
+    conn_pool[slot].pcb = &_mock_pcb;
+    http_reset(slot);
+    tcp_capture_reset();
+}
+
+// The mount root's three shapes must all join to the same on-disk path: a root that
+// already ends in '/' (the sub-path's leading '/' is skipped so the separator is not
+// doubled), a root without one (no separator inserted when the sub-path supplies it),
+// and a null root (treated as empty).
+void test_serve_static_root_join_variants()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/a.txt", "AAA");
+    fs::mock_fs_add("/b.txt", "BBB");
+    fs::mock_fs_add("/www/c.txt", "CCC");
+
+    server.serve_static("/ts", g_fs, "/www/"); // root ends in '/'
+    feed_and_handle(0, "GET /ts/a.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "AAA"));
+
+    rearm(0);
+    server.serve_static("/nr", g_fs, nullptr); // null root
+    feed_and_handle(0, "GET /nr/b.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "BBB"));
+
+    rearm(0);
+    server.serve_static("/ns", g_fs, "/www"); // root without '/', sub-path supplies it
+    feed_and_handle(0, "GET /ns/c.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "CCC"));
+
+    fs::mock_fs_reset();
+}
+
+// An empty url_prefix mounts the bare wildcard "*": the prefix length is zero, so the whole
+// request path is the sub-path.
+void test_serve_static_empty_prefix_mount()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/any.txt", "anything");
+    server.serve_static("", g_fs, "/www");
+    feed_and_handle(0, "GET /any.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "anything"));
+    fs::mock_fs_reset();
+}
+
+// A sub-path ending in '/' is a directory request (index.html), and a mount whose root plus
+// the request sub-path would overflow the 256-byte path buffer is refused with a 404 rather
+// than served from a truncated path.
+void test_serve_static_directory_and_overlong_path()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/docs/index.html", "<i>docs</i>");
+    server.serve_static("/", g_fs, "/www");
+    feed_and_handle(0, "GET /docs/ HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "<i>docs</i>"));
+
+    rearm(0);
+    static char longroot[255];
+    memset(longroot, 'r', sizeof(longroot) - 1);
+    longroot[0] = '/';
+    longroot[sizeof(longroot) - 1] = '\0'; // 254-char root: root + "/x" == 256, the join fails
+    server.serve_static("/lp", g_fs, longroot);
+    feed_and_handle(0, "GET /lp/x HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "404"));
+    fs::mock_fs_reset();
+}
+
+// Pre-compressed negotiation: an Accept-Encoding that does not list gzip, and one that does
+// but for a resource with no .gz variant, both serve the identity file.
+void test_serve_static_gzip_negotiation_misses()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/app.js", "console.log(2)");
+    fs::mock_fs_add("/www/app.js.gz", "GZ");
+    fs::mock_fs_add("/www/plain.txt", "plain body");
+    server.serve_static("/", g_fs, "/www");
+
+    feed_and_handle(0, "GET /app.js HTTP/1.1\r\nHost: x\r\nAccept-Encoding: deflate, br\r\n\r\n");
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "Content-Encoding: gzip"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "console.log(2)"));
+
+    rearm(0);
+    feed_and_handle(0, "GET /plain.txt HTTP/1.1\r\nHost: x\r\nAccept-Encoding: gzip\r\n\r\n");
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "Content-Encoding: gzip")); // no .gz variant exists
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "plain body"));
+    fs::mock_fs_reset();
+}
+
+// A HEAD of a static file carries the full GET headers (including the configured CORS block)
+// with no body; the matching GET carries the same headers plus the body.
+void test_serve_static_head_and_cors_headers()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/page.html", "<html>body</html>"); // 17 bytes
+    server.set_cors("*");
+    server.serve_static("/", g_fs, "/www");
+
+    feed_and_handle(0, "HEAD /page.html HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Content-Length: 17"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Access-Control-Allow-Origin: *"));
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "<html>body</html>")); // headers only
+    size_t n = tcp_captured_len();
+    TEST_ASSERT_TRUE(n > 4);
+    TEST_ASSERT_EQUAL_STRING("\r\n\r\n", tcp_captured() + n - 4); // response ends at the headers
+
+    rearm(0);
+    feed_and_handle(0, "GET /page.html HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Access-Control-Allow-Origin: *"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "<html>body</html>"));
+
+    server.set_cors(""); // restore the default for later tests
+    fs::mock_fs_reset();
+}
+
+// RFC 9110 13.1.2 If-None-Match forms that must NOT match our tag: a list ending in a
+// separator, tab-separated entries, a 'W' that does not begin a weak validator, a bare
+// (unquoted) token, an unterminated quoted-string, and a same-length-but-different tag.
+// Each must serve the full 200; only the real tag (weak or strong) yields 304.
+void test_serve_static_inm_non_matching_forms()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/p.html", "123456789012345", (time_t)1000); // 15 bytes, mtime 1000
+    server.serve_static("/", g_fs, "/www");
+
+    // Pin the tag these cases are compared against: "<size hex>-<mtime hex>".
+    feed_and_handle(0, "GET /p.html HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "ETag: \"f-3e8\""));
+
+    static const char *misses[] = {
+        "\"nope\",",      // list ends on the separator: the scan runs off the end
+        "\"a\",\t\"b\"",  // tab between entries
+        "Wxyz",           // 'W' not followed by '/': not a weak validator
+        "bare-token",     // unquoted entity-tag
+        "\"unterminated", // no closing quote
+        "\"f-3e9\"",      // same length as our tag, one byte different
+    };
+    for (size_t i = 0; i < sizeof(misses) / sizeof(misses[0]); i++)
+    {
+        rearm(0);
+        char req[200];
+        snprintf(req, sizeof(req), "GET /p.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: %s\r\n\r\n", misses[i]);
+        feed_and_handle(0, req);
+        TEST_ASSERT_NOT_NULL_MESSAGE(strstr(tcp_captured(), "HTTP/1.1 200 OK"), misses[i]);
+    }
+
+    // The weak form of the real tag still matches -> 304.
+    rearm(0);
+    feed_and_handle(0, "GET /p.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: W/\"f-3e8\"\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "304 Not Modified"));
+    fs::mock_fs_reset();
+}
+
+// A body larger than the send window parks in the cross-loop pump. If the peer disappears
+// before the window reopens, the next pump must drop the source and the continuation instead
+// of writing into a dead connection.
+void test_file_send_pump_connection_lost_midtransfer()
+{
+    fs::mock_fs_reset();
+    static const size_t N = 9000;
+    static uint8_t big[N];
+    memset(big, 'Z', N);
+    fs::mock_fs_add("/www/big.bin", big, N);
+    server.serve_static("/", g_fs, "/www");
+
+    mock_sndbuf() = 0; // no window: the headers queue, then the body transfer parks
+    feed_and_handle(0, "GET /big.bin HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_TRUE(s_send.file[0].active); // parked, waiting for the window to reopen
+
+    conn_pool[0].pcb = nullptr; // peer went away mid-transfer
+    server.handle();
+    TEST_ASSERT_FALSE(s_send.file[0].active);         // continuation dropped
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "ZZZZ")); // no body bytes were ever written
+
+    mock_sndbuf() = MOCK_SNDBUF_DEFAULT; // restore the window for the remaining tests
+    fs::mock_fs_reset();
+}
+
+// ====================================================================
 // STRESS TESTS
 // ====================================================================
 
@@ -349,6 +546,13 @@ int main()
     RUN_TEST(test_large_file_body_fully_sent);
     RUN_TEST(test_serve_file_does_not_affect_other_routes);
     RUN_TEST(test_multiple_content_types);
+    RUN_TEST(test_serve_static_root_join_variants);
+    RUN_TEST(test_serve_static_empty_prefix_mount);
+    RUN_TEST(test_serve_static_directory_and_overlong_path);
+    RUN_TEST(test_serve_static_gzip_negotiation_misses);
+    RUN_TEST(test_serve_static_head_and_cors_headers);
+    RUN_TEST(test_serve_static_inm_non_matching_forms);
+    RUN_TEST(test_file_send_pump_connection_lost_midtransfer);
     RUN_TEST(stress_serve_file_50_requests);
     RUN_TEST(stress_alternate_missing_and_found);
 

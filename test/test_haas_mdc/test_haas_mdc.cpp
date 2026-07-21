@@ -191,6 +191,191 @@ void test_dprnt()
     TEST_ASSERT_FALSE(dws_haas_mdc_dprnt_line(framed, strlen(framed), &t, &tl));
 }
 
+// ── guard / edge coverage ────────────────────────────────────────────────────────────────────
+
+void test_build_guards()
+{
+    char buf[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_q(nullptr, sizeof(buf), HAAS_Q_SERIAL));
+    TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_q(buf, 0, HAAS_Q_SERIAL));
+    TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_var(nullptr, sizeof(buf), 100));
+    TEST_ASSERT_EQUAL_size_t(0, dws_haas_mdc_build_var(buf, 0, 100));
+}
+
+void test_parse_guards()
+{
+    const char *frame = STX "MODE, MDI" ETB "\r\n>";
+    HaasMdcResp r;
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse(nullptr, 4, &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse(frame, strlen(frame), nullptr));
+}
+
+void test_field_trimming_edges()
+{
+    HaasMdcResp r;
+    // trailing spaces before the comma are trimmed off the field
+    const char *trail = STX "MODE   , MDI" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(trail, strlen(trail), &r));
+    TEST_ASSERT_EQUAL_size_t(4, r.field_len[0]);
+    TEST_ASSERT_EQUAL_MEMORY("MODE", r.field[0], 4);
+
+    // an all-space field collapses to empty, and so does a zero-length one
+    const char *blank = STX "MODE,   ," ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(blank, strlen(blank), &r));
+    TEST_ASSERT_EQUAL_UINT8(3, r.n_fields);
+    TEST_ASSERT_EQUAL_size_t(0, r.field_len[1]); // "   "
+    TEST_ASSERT_EQUAL_size_t(0, r.field_len[2]); // ""
+}
+
+void test_max_fields_cap()
+{
+    // more comma-separated fields than the struct holds: the extras are dropped, not written
+    const char *many = STX "1,2,3,4,5,6,7,8,9,10" ETB "\r\n>";
+    HaasMdcResp r;
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(many, strlen(many), &r));
+    TEST_ASSERT_EQUAL_UINT8(DWS_HAAS_MDC_MAX_FIELDS, r.n_fields);
+    TEST_ASSERT_EQUAL_MEMORY("8", r.field[DWS_HAAS_MDC_MAX_FIELDS - 1], 1);
+}
+
+void test_accessor_guards()
+{
+    const char *frame = STX "MODE, MDI" ETB "\r\n>";
+    HaasMdcResp r;
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(frame, strlen(frame), &r));
+    const char *p = nullptr;
+    size_t l = 0;
+    TEST_ASSERT_FALSE(dws_haas_mdc_field(nullptr, 0, &p, &l));
+    TEST_ASSERT_TRUE(dws_haas_mdc_field(&r, 0, nullptr, nullptr)); // both outputs optional
+    TEST_ASSERT_FALSE(dws_haas_mdc_is_error(nullptr));
+
+    // a response the parser rejected is left with no fields; every accessor must stay closed
+    HaasMdcResp empty;
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse("no frame here", 13, &empty));
+    TEST_ASSERT_EQUAL_UINT8(0, empty.n_fields);
+    TEST_ASSERT_FALSE(dws_haas_mdc_is_error(&empty)); // field index past the end
+    TEST_ASSERT_FALSE(dws_haas_mdc_value(&empty, &p, &l));
+}
+
+void test_field_is_prefix_mismatch()
+{
+    HaasMdcResp r;
+    HaasMdcStatus s;
+    // the field runs past the literal: "STATUSX" is not "STATUS"
+    const char *longer = STX "STATUSX, BUSY" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(longer, strlen(longer), &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_status(&r, &s));
+
+    // the field stops short of the literal: "STAT" is not "STATUS" either
+    const char *shorter = STX "STAT, BUSY" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(shorter, strlen(shorter), &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_status(&r, &s));
+}
+
+void test_parse_status_guards_and_branches()
+{
+    HaasMdcResp r;
+    HaasMdcStatus s;
+    const char *busy = STX "STATUS, BUSY" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(busy, strlen(busy), &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_status(nullptr, &s));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_status(&r, nullptr));
+
+    // STATUS with no second field: still busy, but there is no status token to report
+    const char *bare = STX "STATUS" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(bare, strlen(bare), &r));
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse_status(&r, &s));
+    TEST_ASSERT_TRUE(s.busy);
+    TEST_ASSERT_NULL(s.status);
+    TEST_ASSERT_EQUAL_size_t(0, s.status_len);
+
+    // PROGRAM with fewer than three fields is not a recognizable Q500 form
+    const char *shortprog = STX "PROGRAM, O00010" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(shortprog, strlen(shortprog), &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_status(&r, &s));
+
+    // exactly three fields: no PARTS pair, so the counter stays invalid
+    const char *noparts = STX "PROGRAM, O00010, IDLE" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(noparts, strlen(noparts), &r));
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse_status(&r, &s));
+    TEST_ASSERT_EQUAL_MEMORY("IDLE", s.status, 4);
+    TEST_ASSERT_FALSE(s.parts_valid);
+    TEST_ASSERT_EQUAL_UINT32(0, s.parts);
+
+    // a non-numeric parts field leaves the counter invalid
+    const char *badparts = STX "PROGRAM, O00010, IDLE, PARTS, 4X" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(badparts, strlen(badparts), &r));
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse_status(&r, &s));
+    TEST_ASSERT_FALSE(s.parts_valid);
+
+    // an empty parts field is rejected by the length guard
+    const char *emptyparts = STX "PROGRAM, O00010, IDLE, PARTS," ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(emptyparts, strlen(emptyparts), &r));
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse_status(&r, &s));
+    TEST_ASSERT_FALSE(s.parts_valid);
+}
+
+void test_parse_macro_guards_and_rejects()
+{
+    HaasMdcResp r;
+    uint32_t var = 0;
+    const char *val = nullptr;
+    size_t vl = 0;
+
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_macro(nullptr, &var, &val, &vl));
+
+    // fewer than three fields
+    const char *shortm = STX "MACRO, 100" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(shortm, strlen(shortm), &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_macro(&r, &var, &val, &vl));
+
+    // three fields, but not a MACRO response
+    const char *notmacro = STX "PROGRAM, O00010, IDLE" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(notmacro, strlen(notmacro), &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_macro(&r, &var, &val, &vl));
+
+    // a signed variable number is not an unsigned decimal ('-' sorts below '0')
+    const char *neg = STX "MACRO, -1, 0.000000" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(neg, strlen(neg), &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_macro(&r, &var, &val, &vl));
+
+    // a trailing non-digit in the variable number ('A' sorts above '9')
+    const char *alpha = STX "MACRO, 10A, 0.000000" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(alpha, strlen(alpha), &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_macro(&r, &var, &val, &vl));
+
+    // an empty variable field
+    const char *blank = STX "MACRO, , 0.000000" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(blank, strlen(blank), &r));
+    TEST_ASSERT_FALSE(dws_haas_mdc_parse_macro(&r, &var, &val, &vl));
+
+    // every output is optional
+    const char *good = STX "MACRO, 100, 0.000000" ETB "\r\n>";
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse(good, strlen(good), &r));
+    TEST_ASSERT_TRUE(dws_haas_mdc_parse_macro(&r, nullptr, nullptr, nullptr));
+}
+
+void test_dprnt_guards_and_strip_edges()
+{
+    const char *t = nullptr;
+    size_t tl = 0;
+    TEST_ASSERT_FALSE(dws_haas_mdc_dprnt_line(nullptr, 4, &t, &tl));
+    TEST_ASSERT_FALSE(dws_haas_mdc_dprnt_line("X", 0, &t, &tl));
+
+    // a leading prompt byte and a leading CR LF are all stripped
+    const char *lead = ">\r\nHELLO\r\n";
+    TEST_ASSERT_TRUE(dws_haas_mdc_dprnt_line(lead, strlen(lead), &t, &tl));
+    TEST_ASSERT_EQUAL_size_t(5, tl);
+    TEST_ASSERT_EQUAL_MEMORY("HELLO", t, 5);
+
+    // nothing but line terminators strips down to empty
+    TEST_ASSERT_FALSE(dws_haas_mdc_dprnt_line("\r\n", 2, &t, &tl));
+    // a bare PCLOS (DC4) strips off the tail, leaving nothing
+    TEST_ASSERT_FALSE(dws_haas_mdc_dprnt_line("\x14", 1, &t, &tl));
+
+    // both outputs are optional
+    TEST_ASSERT_TRUE(dws_haas_mdc_dprnt_line("OK\r\n", 4, nullptr, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -204,5 +389,14 @@ int main()
     RUN_TEST(test_leading_prompt);
     RUN_TEST(test_field_access);
     RUN_TEST(test_dprnt);
+    RUN_TEST(test_build_guards);
+    RUN_TEST(test_parse_guards);
+    RUN_TEST(test_field_trimming_edges);
+    RUN_TEST(test_max_fields_cap);
+    RUN_TEST(test_accessor_guards);
+    RUN_TEST(test_field_is_prefix_mismatch);
+    RUN_TEST(test_parse_status_guards_and_branches);
+    RUN_TEST(test_parse_macro_guards_and_rejects);
+    RUN_TEST(test_dprnt_guards_and_strip_edges);
     return UNITY_END();
 }

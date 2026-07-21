@@ -393,6 +393,262 @@ static void test_requester_malformed()
     TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, run_mesh(&mf, &t, 1000));
 }
 
+// --- magic / version validation across short prefixes --------------------------------------------
+static void test_parse_short_and_bad_prefixes()
+{
+    size_t eoff = 0;
+    size_t elen = 0;
+    // A prefix shorter than the magic cannot be judged yet - it accumulates.
+    uint8_t ok[6] = {'E', 'M', EDGE_MESH_VERSION, 0, 0, 0};
+    TEST_ASSERT_EQUAL(EdgeMeshParse::INCOMPLETE, edge_mesh_parse_response(ok, 0, &eoff, &elen));
+    TEST_ASSERT_EQUAL(EdgeMeshParse::INCOMPLETE, edge_mesh_parse_response(ok, 1, &eoff, &elen));
+    TEST_ASSERT_EQUAL(EdgeMeshParse::INCOMPLETE, edge_mesh_parse_response(ok, 2, &eoff, &elen));
+    TEST_ASSERT_EQUAL(EdgeMeshParse::INCOMPLETE, edge_mesh_parse_response(ok, 3, &eoff, &elen));
+    // The second magic byte is only checkable once two bytes have arrived.
+    uint8_t m1[4] = {'E', 'X', EDGE_MESH_VERSION, 0};
+    TEST_ASSERT_EQUAL(EdgeMeshParse::INCOMPLETE, edge_mesh_parse_response(m1, 1, &eoff, &elen));
+    TEST_ASSERT_EQUAL(EdgeMeshParse::MALFORMED, edge_mesh_parse_response(m1, 2, &eoff, &elen));
+    // Likewise the version byte at three.
+    uint8_t v1[4] = {'E', 'M', (uint8_t)(EDGE_MESH_VERSION + 1), 0};
+    TEST_ASSERT_EQUAL(EdgeMeshParse::INCOMPLETE, edge_mesh_parse_response(v1, 2, &eoff, &elen));
+    TEST_ASSERT_EQUAL(EdgeMeshParse::MALFORMED, edge_mesh_parse_response(v1, 3, &eoff, &elen));
+}
+
+// --- request frame guards ------------------------------------------------------------------------
+static void test_build_request_guards()
+{
+    uint8_t digest[32];
+    memset(digest, 5, sizeof(digest));
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/g");
+    uint8_t out[EDGE_MESH_REQ_MAX];
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_request(nullptr, canon, "", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_request(digest, nullptr, "", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_request(digest, canon, "", nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_request(digest, canon, "", out, 8)); // will not fit
+    // A null header snapshot is treated as an empty one.
+    size_t n = edge_mesh_build_request(digest, canon, nullptr, out, sizeof(out));
+    TEST_ASSERT_EQUAL_UINT(2 + 1 + 1 + 32 + 2 + strlen(canon) + 2, n);
+}
+
+static void test_parse_request_incomplete_at_every_field()
+{
+    uint8_t digest[32];
+    memset(digest, 0x5A, sizeof(digest));
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/cdn/fields");
+    uint8_t req[EDGE_MESH_REQ_MAX];
+    size_t n = edge_mesh_build_request(digest, canon,
+                                       "A\x1e"
+                                       "b\x1f",
+                                       req, sizeof(req));
+    TEST_ASSERT_TRUE(n > 0);
+
+    uint8_t d2[32];
+    char c2[DWS_EDGE_KEY_MAX];
+    char v2[DWS_MESH_HDRS_MAX];
+    // Every truncation of a valid frame accumulates: never MALFORMED, never a partial fill.
+    for (size_t l = 4; l < n; l++)
+        TEST_ASSERT_EQUAL(EdgeMeshParse::INCOMPLETE,
+                          edge_mesh_parse_request(req, l, d2, c2, sizeof(c2), v2, sizeof(v2)));
+    TEST_ASSERT_EQUAL(EdgeMeshParse::HIT, edge_mesh_parse_request(req, n, d2, c2, sizeof(c2), v2, sizeof(v2)));
+}
+
+static void test_parse_request_hdrs_too_long_for_destination()
+{
+    uint8_t digest[32];
+    memset(digest, 1, sizeof(digest));
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/h");
+    char hdrs[64];
+    memset(hdrs, 'h', sizeof(hdrs) - 1);
+    hdrs[sizeof(hdrs) - 1] = '\0';
+    uint8_t req[EDGE_MESH_REQ_MAX];
+    size_t n = edge_mesh_build_request(digest, canon, hdrs, req, sizeof(req));
+    TEST_ASSERT_TRUE(n > 0);
+
+    uint8_t d2[32];
+    char c2[DWS_EDGE_KEY_MAX];
+    char v2[16]; // too small for the 63-byte snapshot -> malformed, not truncated
+    TEST_ASSERT_EQUAL(EdgeMeshParse::MALFORMED, edge_mesh_parse_request(req, n, d2, c2, sizeof(c2), v2, sizeof(v2)));
+}
+
+static void test_parse_request_null_outputs()
+{
+    uint8_t digest[32];
+    memset(digest, 9, sizeof(digest));
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/n");
+    uint8_t req[EDGE_MESH_REQ_MAX];
+    size_t n = edge_mesh_build_request(digest, canon, "x", req, sizeof(req));
+    // A peer that only needs to know the frame is whole can pass null outputs.
+    TEST_ASSERT_EQUAL(EdgeMeshParse::HIT,
+                      edge_mesh_parse_request(req, n, nullptr, nullptr, DWS_EDGE_KEY_MAX, nullptr, DWS_MESH_HDRS_MAX));
+}
+
+// --- entry frame guards --------------------------------------------------------------------------
+static void test_serialize_entry_guards_and_clamps()
+{
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/s");
+    EdgeEntry e;
+    fill_entry(&e, canon, "\"s\"", (const uint8_t *)"body", 4);
+    uint8_t out[EDGE_MESH_ENTRY_MAX];
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_serialize_entry(nullptr, 0, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_serialize_entry(&e, 0, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_serialize_entry(&e, 0, out, EDGE_MESH_TRAILER - 1)); // no trailer room
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_serialize_entry(&e, 0, out, EDGE_MESH_TRAILER + 4)); // no content room
+
+    EdgeEntry got;
+    // A negative age is clamped to zero on the wire (an unsigned field).
+    size_t n = edge_mesh_serialize_entry(&e, -5, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 0);
+    memset(&got, 0, sizeof(got));
+    TEST_ASSERT_TRUE(edge_mesh_deserialize_entry(out, n, &got, 1234));
+    TEST_ASSERT_EQUAL_INT(0, got.initial_age);
+
+    // So are a negative lifetime and a negative stored Age header.
+    e.lifetime_s = -1;
+    e.age_hdr = -2;
+    n = edge_mesh_serialize_entry(&e, 0, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 0);
+    memset(&got, 0, sizeof(got));
+    TEST_ASSERT_TRUE(edge_mesh_deserialize_entry(out, n, &got, 1234));
+    TEST_ASSERT_EQUAL_INT(0, got.lifetime_s);
+    TEST_ASSERT_EQUAL_INT(0, got.age_hdr);
+}
+
+static void test_deserialize_entry_guards()
+{
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/d");
+    EdgeEntry e;
+    fill_entry(&e, canon, "\"d\"", (const uint8_t *)"xy", 2);
+    uint8_t frame[EDGE_MESH_ENTRY_MAX];
+    size_t n = edge_mesh_serialize_entry(&e, 1, frame, sizeof(frame));
+    TEST_ASSERT_TRUE(n > 0);
+
+    EdgeEntry got;
+    memset(&got, 0, sizeof(got));
+    TEST_ASSERT_FALSE(edge_mesh_deserialize_entry(nullptr, n, &got, 0));
+    TEST_ASSERT_FALSE(edge_mesh_deserialize_entry(frame, n, nullptr, 0));
+    TEST_ASSERT_FALSE(edge_mesh_deserialize_entry(frame, EDGE_MESH_TRAILER - 1, &got, 0));
+    // A good trailer in front of a corrupt content body fails the whole frame.
+    uint8_t save = frame[EDGE_MESH_TRAILER];
+    frame[EDGE_MESH_TRAILER] = 0x7F; // not the entry-serialization version
+    TEST_ASSERT_FALSE(edge_mesh_deserialize_entry(frame, n, &got, 0));
+    frame[EDGE_MESH_TRAILER] = save;
+    TEST_ASSERT_TRUE(edge_mesh_deserialize_entry(frame, n, &got, 0));
+}
+
+// --- response frame guards -----------------------------------------------------------------------
+static void test_build_response_guards()
+{
+    uint8_t out[64];
+    uint8_t entry[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_response(false, nullptr, 0, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_response(false, nullptr, 0, out, 3));          // no header room
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_response(true, nullptr, 8, out, sizeof(out))); // hit without an entry
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_response(true, entry, 0, out, sizeof(out)));   // hit with an empty one
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_response(true, entry, 0x10000, out, sizeof(out))); // past the u16 length
+    TEST_ASSERT_EQUAL_UINT(0, edge_mesh_build_response(true, entry, 100, out, sizeof(out)));     // will not fit cap
+    TEST_ASSERT_EQUAL_UINT(4 + 2 + 8, edge_mesh_build_response(true, entry, 8, out, sizeof(out)));
+}
+
+static void test_parse_response_null_outputs()
+{
+    uint8_t frame[EDGE_MESH_ENTRY_MAX];
+    size_t fn = 0;
+    build_hit_frame(frame, sizeof(frame), &fn, 0);
+    TEST_ASSERT_TRUE(fn > 0);
+    uint8_t resp[EDGE_MESH_RESP_MAX];
+    size_t rn = edge_mesh_build_response(true, frame, fn, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+    TEST_ASSERT_EQUAL(EdgeMeshParse::HIT, edge_mesh_parse_response(resp, rn, nullptr, nullptr));
+}
+
+// --- requester engine guards ---------------------------------------------------------------------
+static void test_requester_begin_argument_guards()
+{
+    MockPeer m = {(const uint8_t *)"", 0, 0, 0, false, 7, true};
+    EdgeFetchTransport t = peer_transport(&m);
+    const uint8_t req[1] = {'x'};
+    EdgeMeshFetch mf;
+    edge_mesh_fetch_begin(&mf, nullptr, "peer", 1, req, 1, g_rbuf, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, mf.st);
+    edge_mesh_fetch_begin(&mf, &t, nullptr, 1, req, 1, g_rbuf, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, mf.st);
+    edge_mesh_fetch_begin(&mf, &t, "peer", 1, nullptr, 1, g_rbuf, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, mf.st);
+    edge_mesh_fetch_begin(&mf, &t, "peer", 1, req, 0, g_rbuf, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, mf.st);
+    edge_mesh_fetch_begin(&mf, &t, "peer", 1, req, 1, nullptr, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, mf.st);
+    // An accumulation buffer that cannot hold a worst-case response is refused up front.
+    edge_mesh_fetch_begin(&mf, &t, "peer", 1, req, 1, g_rbuf, EDGE_MESH_RESP_MAX - 1, 1000);
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, mf.st);
+    TEST_ASSERT_EQUAL_INT(-1, mf.cid); // no connection was ever opened
+}
+
+static void test_requester_pump_guards()
+{
+    MockPeer m = {(const uint8_t *)"", 0, 0, 0, false, 7, true};
+    EdgeFetchTransport t = peer_transport(&m);
+    const uint8_t req[1] = {'x'};
+    EdgeMeshFetch mf;
+    edge_mesh_fetch_begin(&mf, &t, "peer", 1, req, 1, g_rbuf, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::PENDING, mf.st);
+    // No transport while pending: fail rather than dereference it.
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, edge_mesh_fetch_pump(&mf, nullptr, 1000));
+    // Already settled: pumping again just reports the status, it does not read again.
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, edge_mesh_fetch_pump(&mf, &t, 1000));
+    TEST_ASSERT_EQUAL_UINT(0, m.cursor);
+
+    // Pending with no connection handle.
+    edge_mesh_fetch_begin(&mf, &t, "peer", 1, req, 1, g_rbuf, sizeof(g_rbuf), 1000);
+    mf.cid = -1;
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, edge_mesh_fetch_pump(&mf, &t, 1000));
+}
+
+static uint8_t g_flood[EDGE_MESH_RESP_MAX];
+
+static void test_requester_buffer_full_without_a_frame()
+{
+    // A HIT header announcing a 64 KiB entry: the accumulation buffer fills long before the frame can
+    // complete, which must fail the query instead of spinning on a never-satisfiable read.
+    memset(g_flood, 0xAA, sizeof(g_flood));
+    g_flood[0] = EDGE_MESH_MAGIC0;
+    g_flood[1] = EDGE_MESH_MAGIC1;
+    g_flood[2] = EDGE_MESH_VERSION;
+    g_flood[3] = 1;
+    g_flood[4] = 0xFF;
+    g_flood[5] = 0xFF; // entry_len = 65535
+    MockPeer m = {g_flood, sizeof(g_flood), 0, 0, false, 7, true};
+    EdgeFetchTransport t = peer_transport(&m);
+    EdgeMeshFetch mf;
+    edge_mesh_fetch_begin(&mf, &t, "peer", 7645, (const uint8_t *)"x", 1, g_rbuf, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, edge_mesh_fetch_pump(&mf, &t, 1000));
+    TEST_ASSERT_EQUAL_UINT(sizeof(g_rbuf), mf.got);
+}
+
+static void test_requester_end_without_a_connection()
+{
+    MockPeer m = {(const uint8_t *)"", 0, 0, 0, false, -1, true}; // open fails
+    EdgeFetchTransport t = peer_transport(&m);
+    EdgeMeshFetch mf;
+    edge_mesh_fetch_begin(&mf, &t, "peer", 7645, (const uint8_t *)"x", 1, g_rbuf, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL_INT(-1, mf.cid); // nothing to release
+    edge_mesh_fetch_end(&mf, &t);
+    TEST_ASSERT_EQUAL_INT(-1, mf.cid);
+
+    // A live handle with no transport is still cleared (idempotent release).
+    m.open_ret = 7;
+    edge_mesh_fetch_begin(&mf, &t, "peer", 7645, (const uint8_t *)"x", 1, g_rbuf, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL_INT(7, mf.cid);
+    edge_mesh_fetch_end(&mf, nullptr);
+    TEST_ASSERT_EQUAL_INT(-1, mf.cid);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -410,5 +666,18 @@ int main()
     RUN_TEST(test_requester_timeout);
     RUN_TEST(test_requester_peer_closed_early);
     RUN_TEST(test_requester_malformed);
+    RUN_TEST(test_parse_short_and_bad_prefixes);
+    RUN_TEST(test_build_request_guards);
+    RUN_TEST(test_parse_request_incomplete_at_every_field);
+    RUN_TEST(test_parse_request_hdrs_too_long_for_destination);
+    RUN_TEST(test_parse_request_null_outputs);
+    RUN_TEST(test_serialize_entry_guards_and_clamps);
+    RUN_TEST(test_deserialize_entry_guards);
+    RUN_TEST(test_build_response_guards);
+    RUN_TEST(test_parse_response_null_outputs);
+    RUN_TEST(test_requester_begin_argument_guards);
+    RUN_TEST(test_requester_pump_guards);
+    RUN_TEST(test_requester_buffer_full_without_a_frame);
+    RUN_TEST(test_requester_end_without_a_connection);
     return UNITY_END();
 }

@@ -724,6 +724,588 @@ void test_build_table_db_fails_closed(void)
     TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", &r2, 1, img, 512));
 }
 
+// ---- Malformed-input rejects: varints, headers, cells, records ----
+
+void test_varint_decode_truncated_nine_byte(void)
+{
+    // Eight continuation bytes with no ninth byte: the 9-byte form is incomplete.
+    const uint8_t eight[8] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+    uint64_t v = 0;
+    TEST_ASSERT_EQUAL_size_t(0, dws_sqlite_varint_decode(eight, sizeof(eight), &v));
+    // With the ninth byte present the same prefix decodes (the 9th byte contributes all 8 bits).
+    const uint8_t nine[9] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x7F};
+    TEST_ASSERT_EQUAL_size_t(9, dws_sqlite_varint_decode(nine, sizeof(nine), &v));
+    TEST_ASSERT_EQUAL_UINT64(0x7F, v);
+}
+
+void test_db_header_page_size_rejects(void)
+{
+    uint8_t hdr[100];
+    memcpy(hdr, PAGE1, sizeof(hdr));
+    SqliteDbHeader h;
+
+    hdr[16] = 0x01; // 256 - below the 512 minimum
+    hdr[17] = 0x00;
+    TEST_ASSERT_FALSE(dws_sqlite_parse_db_header(hdr, sizeof(hdr), &h));
+
+    hdr[16] = 0x02; // 513 - in range but not a power of two
+    hdr[17] = 0x01;
+    TEST_ASSERT_FALSE(dws_sqlite_parse_db_header(hdr, sizeof(hdr), &h));
+
+    hdr[16] = 0x00; // the on-disk value 1 means 65536
+    hdr[17] = 0x01;
+    TEST_ASSERT_TRUE(dws_sqlite_parse_db_header(hdr, sizeof(hdr), &h));
+    TEST_ASSERT_EQUAL_UINT32(65536, h.page_size);
+}
+
+void test_btree_header_index_pages_and_truncation(void)
+{
+    uint8_t page[16];
+    SqliteBtreeHeader b;
+
+    // An interior INDEX page is a valid b-tree page and carries the 12-byte header.
+    memset(page, 0, sizeof(page));
+    page[0] = SqliteBtree::SQLITE_BTREE_INTERIOR_INDEX;
+    page[11] = 0x07; // right-most child page 7
+    TEST_ASSERT_TRUE(dws_sqlite_parse_btree_header(page, sizeof(page), 0, &b));
+    TEST_ASSERT_EQUAL_UINT8(12, b.header_size);
+    TEST_ASSERT_EQUAL_UINT32(7, b.right_most_page);
+
+    // A leaf INDEX page carries the 8-byte header and no right-most pointer.
+    memset(page, 0, sizeof(page));
+    page[0] = SqliteBtree::SQLITE_BTREE_LEAF_INDEX;
+    TEST_ASSERT_TRUE(dws_sqlite_parse_btree_header(page, sizeof(page), 0, &b));
+    TEST_ASSERT_EQUAL_UINT8(8, b.header_size);
+    TEST_ASSERT_EQUAL_UINT32(0, b.right_most_page);
+    // The on-disk cell-content-start 0 means 65536.
+    TEST_ASSERT_EQUAL_UINT32(65536, b.cell_content_start);
+
+    // An interior page whose 12-byte header does not fit, though the 8-byte check passes.
+    page[0] = SqliteBtree::SQLITE_BTREE_INTERIOR_TABLE;
+    TEST_ASSERT_FALSE(dws_sqlite_parse_btree_header(page, 10, 0, &b));
+}
+
+void test_cell_pointer_rejects(void)
+{
+    uint8_t page[32];
+    memset(page, 0, sizeof(page));
+    SqliteBtreeHeader b;
+    b.type = SqliteBtree::SQLITE_BTREE_LEAF_TABLE;
+    b.first_freeblock = 0;
+    b.cell_count = 2;
+    b.cell_content_start = 32;
+    b.frag_free_bytes = 0;
+    b.right_most_page = 0;
+    b.header_size = 8;
+
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_cell_pointer(page, sizeof(page), &b, 0, 2)); // index past the cell count
+
+    b.cell_count = 100; // the pointer array itself runs past the buffer
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_cell_pointer(page, sizeof(page), &b, 0, 99));
+}
+
+void test_leaf_cell_parse_rejects(void)
+{
+    static uint8_t page[512];
+    SqliteTableLeafCell cell;
+
+    memset(page, 0, sizeof(page));
+    // The cell offset is outside the page.
+    TEST_ASSERT_FALSE(dws_sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 512, &cell));
+
+    // A truncated payload-length varint at the very last byte of the page.
+    page[511] = 0x81;
+    TEST_ASSERT_FALSE(dws_sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 511, &cell));
+
+    // A complete payload-length varint followed by a truncated rowid varint.
+    page[510] = 0x01;
+    TEST_ASSERT_FALSE(dws_sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 510, &cell));
+
+    // A local payload within the overflow threshold that still runs past the supplied page length.
+    memset(page, 0, sizeof(page));
+    page[100] = 0x82; // payload length 300
+    page[101] = 0x2c;
+    page[102] = 0x01; // rowid 1
+    TEST_ASSERT_FALSE(dws_sqlite_parse_table_leaf_cell(page, 200, 512, 0, 100, &cell));
+}
+
+void test_record_begin_rejects(void)
+{
+    SqliteRecordCursor c;
+    const uint8_t rec[3] = {0x80, 0x01, 0x00};              // header-size varint 1, encoded in 2 bytes
+    TEST_ASSERT_FALSE(dws_sqlite_record_begin(&c, rec, 0)); // no header varint at all
+    const uint8_t big[1] = {0x50};                          // header size 80 in a 1-byte record
+    TEST_ASSERT_FALSE(dws_sqlite_record_begin(&c, big, sizeof(big)));
+    TEST_ASSERT_FALSE(dws_sqlite_record_begin(&c, rec, sizeof(rec))); // header shorter than its own varint
+}
+
+void test_record_next_rejects(void)
+{
+    SqliteRecordCursor c;
+    uint64_t st = 0;
+    const uint8_t *v = nullptr;
+    uint32_t vl = 0;
+
+    // A truncated serial-type varint inside the record header.
+    const uint8_t trunc[2] = {0x02, 0x81};
+    TEST_ASSERT_TRUE(dws_sqlite_record_begin(&c, trunc, sizeof(trunc)));
+    TEST_ASSERT_FALSE(dws_sqlite_record_next(&c, &st, &v, &vl));
+
+    // A serial type whose value bytes run past the end of the record.
+    const uint8_t past[2] = {0x02, 0x0f}; // header size 2, TEXT of 1 byte, no value bytes present
+    TEST_ASSERT_TRUE(dws_sqlite_record_begin(&c, past, sizeof(past)));
+    TEST_ASSERT_FALSE(dws_sqlite_record_next(&c, &st, &v, &vl));
+}
+
+void test_column_decoder_rejects(void)
+{
+    const uint8_t bytes[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    TEST_ASSERT_EQUAL_INT64(0, dws_sqlite_column_int(0, bytes, 8)); // NULL is not an integer type
+    TEST_ASSERT_EQUAL_INT64(0, dws_sqlite_column_int(7, bytes, 8)); // float is not an integer type
+    TEST_ASSERT_EQUAL_INT64(0, dws_sqlite_column_int(4, bytes, 2)); // fewer value bytes than the type needs
+
+    // A float column with fewer than 8 value bytes reads as 0.0 rather than over-reading.
+    double d = dws_sqlite_column_float(bytes, 4);
+    uint64_t bits = 0;
+    memcpy(&bits, &d, 8);
+    TEST_ASSERT_EQUAL_HEX64(0, bits);
+}
+
+// ---- Overflow-chain edges, driven by a synthetic 64-byte-page image ----
+
+struct OvfSynth
+{
+    uint8_t pages[2][64];
+    uint32_t count;
+};
+
+static bool ovf_synth_read(void *ctx, uint32_t pgno, uint8_t *page, uint32_t page_size)
+{
+    OvfSynth *s = (OvfSynth *)ctx;
+    if (pgno < 1 || pgno > s->count || page_size != 64)
+        return false;
+    memcpy(page, s->pages[pgno - 1], 64);
+    return true;
+}
+
+void test_read_payload_chain_edges(void)
+{
+    OvfSynth s;
+    memset(&s, 0, sizeof(s));
+    s.count = 2;
+    // Page 2 is the single overflow page: a next pointer plus 60 content bytes.
+    s.pages[1][3] = 2; // next -> page 2 again (a non-zero pointer past the last needed byte)
+    for (int i = 0; i < 60; i++)
+        s.pages[1][4 + i] = (uint8_t)i;
+
+    uint8_t leaf[64];
+    memset(leaf, 0xAA, sizeof(leaf));
+    // The 4-byte first-overflow page number sits at local_off + local_len = 10.
+    leaf[10] = 0;
+    leaf[11] = 0;
+    leaf[12] = 0;
+    leaf[13] = 2;
+
+    static uint8_t out[256], work[64];
+    SqliteTableLeafCell cell;
+    cell.rowid = 1;
+    cell.payload_len = 70;
+    cell.local_off = 0;
+    cell.local_len = 10;
+    cell.has_overflow = true;
+
+    // The payload completes exactly at the end of the first overflow page even though that page's
+    // next pointer is non-zero: the byte count, not the pointer, ends the walk.
+    TEST_ASSERT_TRUE(dws_sqlite_read_payload(ovf_synth_read, &s, 64, 0, leaf, &cell, out, sizeof(out), work));
+    TEST_ASSERT_EQUAL_MEMORY(leaf, out, 10);
+    for (int i = 0; i < 60; i++)
+        TEST_ASSERT_EQUAL_UINT8((uint8_t)i, out[10 + i]);
+
+    // A chain that ends before the payload is complete fails closed.
+    s.pages[1][3] = 0; // next = 0 after one page
+    cell.payload_len = 200;
+    TEST_ASSERT_FALSE(dws_sqlite_read_payload(ovf_synth_read, &s, 64, 0, leaf, &cell, out, sizeof(out), work));
+
+    // The local prefix runs past the end of the page.
+    cell.payload_len = 100;
+    cell.local_off = 60;
+    cell.local_len = 8;
+    TEST_ASSERT_FALSE(dws_sqlite_read_payload(ovf_synth_read, &s, 64, 0, leaf, &cell, out, sizeof(out), work));
+
+    // The local prefix ends exactly at the page end, so the 4-byte overflow pointer does not fit.
+    cell.local_off = 60;
+    cell.local_len = 4;
+    TEST_ASSERT_FALSE(dws_sqlite_read_payload(ovf_synth_read, &s, 64, 0, leaf, &cell, out, sizeof(out), work));
+
+    // A degenerate page size leaves no content room on an overflow page (usable - 4 == 0).
+    cell.payload_len = 8;
+    cell.local_off = 0;
+    cell.local_len = 0;
+    TEST_ASSERT_FALSE(dws_sqlite_read_payload(ovf_synth_read, &s, 4, 0, leaf, &cell, out, sizeof(out), work));
+}
+
+// ---- Synthetic b-tree pages: the cursor's corrupt-page and traversal edges ----
+
+#define SYNTH_PAGE_SIZE 512
+
+struct SynthDb
+{
+    uint8_t pages[6][SYNTH_PAGE_SIZE];
+    uint32_t count;
+    int reads;
+    int fail_after;    // once `reads` passes this every read fails (-1 = never)
+    int corrupt_after; // once `reads` passes this the page comes back with a bad type byte (-1 = never)
+};
+
+static bool synth_read(void *ctx, uint32_t pgno, uint8_t *page, uint32_t page_size)
+{
+    SynthDb *s = (SynthDb *)ctx;
+    s->reads++;
+    if (pgno < 1 || pgno > s->count || page_size != SYNTH_PAGE_SIZE)
+        return false;
+    if (s->fail_after >= 0 && s->reads > s->fail_after)
+        return false;
+    memcpy(page, s->pages[pgno - 1], SYNTH_PAGE_SIZE);
+    if (s->corrupt_after >= 0 && s->reads > s->corrupt_after)
+        page[0] = 0x63; // not a b-tree page type
+    return true;
+}
+
+static void synth_init(SynthDb *s, uint32_t count)
+{
+    memset(s, 0, sizeof(*s));
+    s->count = count;
+    s->fail_after = -1;
+    s->corrupt_after = -1;
+}
+
+// A leaf-table page holding one row (a single NULL column) whose cell sits at `cell_at`.
+static void synth_leaf(uint8_t *page, uint16_t cell_at, uint8_t rowid)
+{
+    memset(page, 0, SYNTH_PAGE_SIZE);
+    page[0] = SqliteBtree::SQLITE_BTREE_LEAF_TABLE;
+    page[4] = 1; // cell count
+    page[8] = (uint8_t)(cell_at >> 8);
+    page[9] = (uint8_t)cell_at;
+    page[cell_at + 0] = 0x02;  // payload length 2
+    page[cell_at + 1] = rowid; // rowid varint (< 128)
+    page[cell_at + 2] = 0x02;  // record header size 2
+    page[cell_at + 3] = 0x00;  // one NULL column
+}
+
+// An interior-table page whose i-th cell carries left-child page children[i].
+static void synth_interior(uint8_t *page, uint16_t ncells, const uint32_t *children, uint32_t right_most)
+{
+    memset(page, 0, SYNTH_PAGE_SIZE);
+    page[0] = SqliteBtree::SQLITE_BTREE_INTERIOR_TABLE;
+    page[3] = (uint8_t)(ncells >> 8);
+    page[4] = (uint8_t)ncells;
+    page[8] = (uint8_t)(right_most >> 24);
+    page[9] = (uint8_t)(right_most >> 16);
+    page[10] = (uint8_t)(right_most >> 8);
+    page[11] = (uint8_t)right_most;
+    for (uint16_t i = 0; i < ncells; i++)
+    {
+        uint16_t at = (uint16_t)(200 + i * 8); // cell bodies, clear of the pointer array
+        page[12 + i * 2] = (uint8_t)(at >> 8);
+        page[13 + i * 2] = (uint8_t)at;
+        page[at + 0] = (uint8_t)(children[i] >> 24);
+        page[at + 1] = (uint8_t)(children[i] >> 16);
+        page[at + 2] = (uint8_t)(children[i] >> 8);
+        page[at + 3] = (uint8_t)children[i];
+        page[at + 4] = 0x01; // the cell's key varint (unused by a table scan)
+    }
+}
+
+// A page source that always hands back an interior-table page pointing at the next page number, so
+// the descent never reaches a leaf and must stop at the depth cap.
+static bool endless_interior_read(void *ctx, uint32_t pgno, uint8_t *page, uint32_t page_size)
+{
+    (void)ctx;
+    (void)page_size;
+    const uint32_t child = pgno + 1;
+    synth_interior(page, 1, &child, pgno + 2);
+    return true;
+}
+
+void test_cursor_descend_rejects(void)
+{
+    static uint8_t leaf[SYNTH_PAGE_SIZE], work[SYNTH_PAGE_SIZE];
+    SqliteTableCursor c;
+    SynthDb s;
+    const uint32_t kids[1] = {3};
+
+    // The root page cannot be read at all.
+    synth_init(&s, 2);
+    synth_leaf(s.pages[1], 400, 1);
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 99, leaf, work));
+
+    // The root page is not a b-tree page at all.
+    synth_init(&s, 2);
+    s.pages[1][0] = 0x63;
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+
+    // A valid b-tree page, but an index b-tree - not a table scan.
+    synth_init(&s, 2);
+    s.pages[1][0] = SqliteBtree::SQLITE_BTREE_LEAF_INDEX;
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+
+    // An interior page with no cells and a zero right-most pointer has no child to descend to.
+    synth_init(&s, 2);
+    synth_interior(s.pages[1], 0, nullptr, 0);
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+
+    // An interior page whose first cell pointer is 0 (a corrupt pointer array).
+    synth_init(&s, 2);
+    synth_interior(s.pages[1], 1, kids, 4);
+    s.pages[1][12] = 0;
+    s.pages[1][13] = 0;
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+
+    // A cell pointer so close to the page end that the cell's child page number is truncated.
+    synth_init(&s, 2);
+    synth_interior(s.pages[1], 1, kids, 4);
+    s.pages[1][12] = (uint8_t)((SYNTH_PAGE_SIZE - 2) >> 8);
+    s.pages[1][13] = (uint8_t)(SYNTH_PAGE_SIZE - 2);
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+}
+
+void test_cursor_depth_cap(void)
+{
+    // An endless interior chain stops at SQLITE_BTREE_MAX_DEPTH instead of overrunning the stack.
+    static uint8_t leaf[SYNTH_PAGE_SIZE], work[SYNTH_PAGE_SIZE];
+    SqliteTableCursor c;
+    TEST_ASSERT_FALSE(
+        dws_sqlite_table_cursor_begin(&c, endless_interior_read, nullptr, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+    TEST_ASSERT_EQUAL_INT(SQLITE_BTREE_MAX_DEPTH, c.depth);
+}
+
+void test_cursor_next_skips_bad_cells(void)
+{
+    static uint8_t leaf[SYNTH_PAGE_SIZE], work[SYNTH_PAGE_SIZE];
+    SynthDb s;
+    synth_init(&s, 2);
+    synth_leaf(s.pages[1], 400, 7);
+    s.pages[1][4] = 3; // three cell pointers
+    s.pages[1][8] = 0; // cell 0: a null pointer, skipped
+    s.pages[1][9] = 0;
+    s.pages[1][10] = 0x02; // cell 1: 600, outside the page, rejected
+    s.pages[1][11] = 0x58;
+    s.pages[1][12] = 0x01; // cell 2: 400, the real row
+    s.pages[1][13] = 0x90;
+
+    SqliteTableCursor c;
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+    uint64_t rowid = 0;
+    SqliteRecordCursor row;
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+    TEST_ASSERT_EQUAL_UINT64(7, rowid);
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+}
+
+void test_cursor_parent_frame_rejects(void)
+{
+    static uint8_t leaf[SYNTH_PAGE_SIZE], work[SYNTH_PAGE_SIZE];
+    SqliteTableCursor c;
+    SynthDb s;
+    uint64_t rowid = 0;
+    SqliteRecordCursor row;
+    const uint32_t kids[2] = {3, 4};
+
+    // Re-reading the parent interior page fails once the first leaf is exhausted.
+    synth_init(&s, 4);
+    synth_interior(s.pages[1], 1, kids, 4);
+    synth_leaf(s.pages[2], 400, 1);
+    synth_leaf(s.pages[3], 400, 2);
+    s.fail_after = 2; // the root read and the first leaf read succeed, the parent re-read does not
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+
+    // The parent page comes back corrupt on the re-read.
+    synth_init(&s, 4);
+    synth_interior(s.pages[1], 1, kids, 4);
+    synth_leaf(s.pages[2], 400, 1);
+    synth_leaf(s.pages[3], 400, 2);
+    s.corrupt_after = 2;
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+
+    // The parent's next child pointer is 0.
+    const uint32_t zero_kid[2] = {3, 0};
+    synth_init(&s, 4);
+    synth_interior(s.pages[1], 2, zero_kid, 4);
+    synth_leaf(s.pages[2], 400, 1);
+    synth_leaf(s.pages[3], 400, 2);
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+
+    // The parent's next child page cannot be descended into (the reader rejects it).
+    const uint32_t missing_kid[2] = {3, 99};
+    synth_init(&s, 4);
+    synth_interior(s.pages[1], 2, missing_kid, 4);
+    synth_leaf(s.pages[2], 400, 1);
+    synth_leaf(s.pages[3], 400, 2);
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, synth_read, &s, SYNTH_PAGE_SIZE, 0, 2, leaf, work));
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+}
+
+void test_table_cursor_page1_schema_scan(void)
+{
+    // Scanning the schema table roots the cursor at page 1, whose b-tree header sits after the
+    // 100-byte database header.
+    MemDb db = {PAGE1, sizeof(PAGE1)};
+    static uint8_t leaf[512], work[512];
+    SqliteTableCursor c;
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, mem_read, &db, 512, 0, 1, leaf, work));
+    TEST_ASSERT_EQUAL_UINT32(100, c.leaf_off);
+
+    uint64_t rowid = 0;
+    SqliteRecordCursor row;
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_next(&c, &rowid, &row));
+    TEST_ASSERT_EQUAL_UINT64(1, rowid);
+    uint64_t st = 0;
+    const uint8_t *v = nullptr;
+    uint32_t vl = 0;
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&row, &st, &v, &vl));
+    TEST_ASSERT_EQUAL_UINT32(5, vl);
+    TEST_ASSERT_EQUAL_MEMORY("table", v, 5);
+    TEST_ASSERT_FALSE(dws_sqlite_table_cursor_next(&c, &rowid, &row)); // exactly one schema row
+}
+
+void test_overflow_cursor_without_buffer(void)
+{
+    // With no overflow buffer the cursor still yields every row, just the in-page prefix of the
+    // overflowing ones.
+    static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE];
+    SqliteTableCursor c;
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, ovf_read, nullptr, OVF_PAGE_SIZE, 0, OVF_ROOTPAGE, leaf, work));
+    uint64_t rowid = 0;
+    SqliteRecordCursor row;
+    uint32_t n = 0;
+    while (dws_sqlite_table_cursor_next(&c, &rowid, &row))
+    {
+        n++;
+        TEST_ASSERT_EQUAL_UINT64(n, rowid);
+    }
+    TEST_ASSERT_EQUAL_UINT32(3, n);
+}
+
+void test_overflow_cursor_short_buffer_skips_row(void)
+{
+    // An overflow buffer too small for a row makes the reassembly fail, and that row is skipped
+    // rather than half-returned.
+    static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE], tiny[64];
+    SqliteTableCursor c;
+    TEST_ASSERT_TRUE(dws_sqlite_table_cursor_begin(&c, ovf_read, nullptr, OVF_PAGE_SIZE, 0, OVF_ROOTPAGE, leaf, work));
+    dws_sqlite_table_cursor_set_overflow_buf(&c, tiny, sizeof(tiny));
+    uint64_t rowid = 0;
+    SqliteRecordCursor row;
+    uint32_t n = 0;
+    while (dws_sqlite_table_cursor_next(&c, &rowid, &row))
+    {
+        n++;
+        TEST_ASSERT_EQUAL_UINT64(1, rowid); // only the non-overflowing first row survives
+    }
+    TEST_ASSERT_EQUAL_UINT32(1, n);
+}
+
+// ---- Writer edges ----
+
+void test_encode_record_empty_text_and_out_cap(void)
+{
+    // Zero-length TEXT and BLOB columns contribute a serial type but no value bytes.
+    SqliteValue cols[2];
+    cols[0] = {SqliteColType::SQLITE_COL_TEXT, 0, 0, (const uint8_t *)"", 0};
+    cols[1] = {SqliteColType::SQLITE_COL_BLOB, 0, 0, (const uint8_t *)"", 0};
+    uint8_t rec[16];
+    uint32_t rl = dws_sqlite_encode_record(cols, 2, rec, sizeof(rec));
+    TEST_ASSERT_EQUAL_UINT32(3, rl); // header-size varint + two serial-type varints
+
+    SqliteRecordCursor c;
+    TEST_ASSERT_TRUE(dws_sqlite_record_begin(&c, rec, rl));
+    uint64_t st = 0;
+    const uint8_t *v = nullptr;
+    uint32_t vl = 0;
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&c, &st, &v, &vl));
+    TEST_ASSERT_EQUAL_UINT64(13, st); // TEXT of length 0
+    TEST_ASSERT_EQUAL_UINT32(0, vl);
+    TEST_ASSERT_TRUE(dws_sqlite_record_next(&c, &st, &v, &vl));
+    TEST_ASSERT_EQUAL_UINT64(12, st); // BLOB of length 0
+    TEST_ASSERT_EQUAL_UINT32(0, vl);
+
+    // Too small an output buffer fails closed.
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_encode_record(cols, 2, rec, 2));
+}
+
+void test_encode_record_multibyte_header_size(void)
+{
+    // 127 columns push the record header past 127 bytes, so the header-size varint itself grows to
+    // two bytes - the fixed point the encoder has to resolve.
+    static SqliteValue cols[127];
+    for (int i = 0; i < 127; i++)
+        cols[i] = {SqliteColType::SQLITE_COL_NULL, 0, 0, nullptr, 0};
+    static uint8_t rec[256];
+    uint32_t rl = dws_sqlite_encode_record(cols, 127, rec, sizeof(rec));
+    TEST_ASSERT_EQUAL_UINT32(129, rl); // 2-byte header size + 127 serial types, no value bytes
+
+    SqliteRecordCursor c;
+    TEST_ASSERT_TRUE(dws_sqlite_record_begin(&c, rec, rl));
+    uint64_t st = 0;
+    const uint8_t *v = nullptr;
+    uint32_t vl = 0;
+    int n = 0;
+    while (dws_sqlite_record_next(&c, &st, &v, &vl))
+    {
+        TEST_ASSERT_EQUAL_UINT64(0, st);
+        n++;
+    }
+    TEST_ASSERT_EQUAL_INT(127, n);
+}
+
+void test_build_table_db_input_rejects(void)
+{
+    static uint8_t img[2048];
+    SqliteValue col = {SqliteColType::SQLITE_COL_INT, 1, 0, nullptr, 0};
+    SqliteRow row = {1, &col, 1};
+
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(256, "t", "CREATE TABLE t(a)", &row, 1, img, sizeof(img)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(131072, "t", "CREATE TABLE t(a)", &row, 1, img, sizeof(img)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(1000, "t", "CREATE TABLE t(a)", &row, 1, img, sizeof(img)));
+    TEST_ASSERT_EQUAL_UINT32(0,
+                             dws_sqlite_build_table_db(512, nullptr, "CREATE TABLE t(a)", &row, 1, img, sizeof(img)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", nullptr, &row, 1, img, sizeof(img)));
+
+    // A CREATE text so long that the schema row does not fit page 1 fails closed too.
+    static char sql[421];
+    memset(sql, 'x', sizeof(sql) - 1);
+    sql[sizeof(sql) - 1] = 0;
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sqlite_build_table_db(512, "t", sql, &row, 1, img, sizeof(img)));
+}
+
+void test_build_table_db_64k_empty_table(void)
+{
+    // The largest legal page size: the on-disk page-size field stores 1, and an empty page-2 leaf
+    // puts the cell content start at 65536, which is stored as 0.
+    static uint8_t img[131072];
+    uint32_t len = dws_sqlite_build_table_db(65536, "t", "CREATE TABLE t(a)", nullptr, 0, img, sizeof(img));
+    TEST_ASSERT_EQUAL_UINT32(131072, len);
+    TEST_ASSERT_EQUAL_HEX8(0x00, img[16]);
+    TEST_ASSERT_EQUAL_HEX8(0x01, img[17]); // page-size field = 1
+
+    SqliteDbHeader h;
+    TEST_ASSERT_TRUE(dws_sqlite_parse_db_header(img, len, &h));
+    TEST_ASSERT_EQUAL_UINT32(65536, h.page_size);
+
+    SqliteBtreeHeader b;
+    TEST_ASSERT_TRUE(dws_sqlite_parse_btree_header(img + 65536, 65536, 0, &b));
+    TEST_ASSERT_EQUAL_UINT16(0, b.cell_count);
+    TEST_ASSERT_EQUAL_UINT32(65536, b.cell_content_start); // written as 0, read back as 65536
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -750,5 +1332,25 @@ int main(void)
     RUN_TEST(test_encode_record_blob);
     RUN_TEST(test_build_table_db_page_overflow_fails_closed);
     RUN_TEST(test_build_table_db_fails_closed);
+    RUN_TEST(test_varint_decode_truncated_nine_byte);
+    RUN_TEST(test_db_header_page_size_rejects);
+    RUN_TEST(test_btree_header_index_pages_and_truncation);
+    RUN_TEST(test_cell_pointer_rejects);
+    RUN_TEST(test_leaf_cell_parse_rejects);
+    RUN_TEST(test_record_begin_rejects);
+    RUN_TEST(test_record_next_rejects);
+    RUN_TEST(test_column_decoder_rejects);
+    RUN_TEST(test_read_payload_chain_edges);
+    RUN_TEST(test_cursor_descend_rejects);
+    RUN_TEST(test_cursor_depth_cap);
+    RUN_TEST(test_cursor_next_skips_bad_cells);
+    RUN_TEST(test_cursor_parent_frame_rejects);
+    RUN_TEST(test_table_cursor_page1_schema_scan);
+    RUN_TEST(test_overflow_cursor_without_buffer);
+    RUN_TEST(test_overflow_cursor_short_buffer_skips_row);
+    RUN_TEST(test_encode_record_empty_text_and_out_cap);
+    RUN_TEST(test_encode_record_multibyte_header_size);
+    RUN_TEST(test_build_table_db_input_rejects);
+    RUN_TEST(test_build_table_db_64k_empty_table);
     return UNITY_END();
 }

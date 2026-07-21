@@ -1198,6 +1198,153 @@ void test_close_bad_body()
     TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL, smb_close(&h, canned_send, canned_recv, &cn));
 }
 
+// ---- the remaining negative sides of smb_open / smb_read / smb_write / smb_close guards ----
+
+// Every other pointer smb_open's argument guard rejects (the existing coverage only nulls user/path).
+void test_open_arg_remaining_nulls()
+{
+    Mock m = make_mock();
+    SmbConfig cfg = make_cfg();
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_open(nullptr, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_open(&cfg, nullptr, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, nullptr, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, nullptr, &m));
+    cfg = make_cfg();
+    cfg.pass = nullptr;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    cfg = make_cfg();
+    cfg.share = nullptr;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(0, m.req_count); // nothing ever went on the wire
+}
+
+// A null domain falls back to the empty NTLM domain; the handshake still completes.
+void test_open_null_domain()
+{
+    Mock m = make_mock();
+    SmbConfig cfg = make_cfg();
+    cfg.domain = nullptr;
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_HEX64(m.session_id, h.session_id);
+    TEST_ASSERT_EQUAL_HEX32(m.tree_id, h.tree_id);
+}
+
+// The TREE_CONNECT reply header is unparseable -> protocol error (the parse side of the guard;
+// test_bad_share covers only the status side).
+void test_tree_bad_header()
+{
+    Mock m = make_mock();
+    m.fault_at_req = 4;
+    m.fault_kind = FAULT_BAD_HEADER;
+    SmbConfig cfg = make_cfg();
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+}
+
+// The CREATE reply header is unparseable -> protocol error (the parse side of the guard;
+// test_create_not_found covers only the status side).
+void test_create_bad_header()
+{
+    Mock m = make_mock();
+    m.fault_at_req = 5;
+    m.fault_kind = FAULT_BAD_HEADER;
+    SmbConfig cfg = make_cfg();
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+}
+
+// smb_read / smb_write reject a null send or recv seam.
+void test_read_write_null_seam()
+{
+    Canned cn;
+    memset(&cn, 0, sizeof(cn));
+    SmbHandle h = make_handle();
+    uint8_t buf[16];
+    memset(buf, 0, sizeof(buf));
+    size_t n = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_read(&h, 0, buf, sizeof(buf), &n, nullptr, canned_recv, &cn));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_read(&h, 0, buf, sizeof(buf), &n, canned_send, nullptr, &cn));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_write(&h, 0, buf, sizeof(buf), &n, nullptr, canned_recv, &cn));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_write(&h, 0, buf, sizeof(buf), &n, canned_send, nullptr, &cn));
+}
+
+// A READ reply whose transport prefix exceeds the work buffer -> overflow mapped by smb_round_trip
+// (smb_write / smb_close reach recv_msg directly, so this is the round-trip helper's own mapping).
+void test_read_recv_overflow()
+{
+    Canned cn;
+    memset(&cn, 0, sizeof(cn));
+    cn.resp[0] = 0x00;
+    cn.resp[1] = 0x00;
+    cn.resp[2] = 0x20;
+    cn.resp[3] = 0x00; // length 0x2000 = 8192 > DWS_SMB_BUF (1024)
+    cn.dws_resp_len = 4;
+    SmbHandle h = make_handle();
+    uint8_t buf[16];
+    size_t got = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_OVERFLOW,
+                          smb_read(&h, 0, buf, sizeof(buf), &got, canned_send, canned_recv, &cn));
+}
+
+// A READ answered with STATUS_END_OF_FILE ends the loop with whatever was read so far.
+void test_read_eof_status()
+{
+    Canned cn;
+    memset(&cn, 0, sizeof(cn));
+    uint8_t msg[128] = {0};
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_READ, Smb2Status::SMB2_STATUS_END_OF_FILE);
+    w16(b + 0, 17);
+    b[2] = 80;
+    w32(b + 4, 0);
+    canned_frame(&cn, msg, 80);
+    SmbHandle h = make_handle();
+    uint8_t buf[16];
+    size_t got = 999;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, canned_send, canned_recv, &cn));
+    TEST_ASSERT_EQUAL_UINT32(0, got);
+    TEST_ASSERT_EQUAL_UINT64(6, h.next_message_id); // the request still consumed a MessageId
+}
+
+// A write that stays inside the cached file size leaves file_size alone (the false side of the grow guard).
+void test_write_no_extend()
+{
+    Canned cn;
+    memset(&cn, 0, sizeof(cn));
+    uint8_t msg[128] = {0};
+    uint8_t *b = dws_resp_hdr(msg, Smb2Command::SMB2_WRITE, Smb2Status::SMB2_STATUS_SUCCESS);
+    w16(b + 0, 17);
+    w32(b + 4, 16); // Count = the 16 bytes offered
+    canned_frame(&cn, msg, 80);
+    SmbHandle h = make_handle(); // file_size 4096
+    uint8_t data[16];
+    memset(data, 0x5A, sizeof(data));
+    size_t wrote = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK,
+                          smb_write(&h, 0, data, sizeof(data), &wrote, canned_send, canned_recv, &cn));
+    TEST_ASSERT_EQUAL_UINT32(16, wrote);
+    TEST_ASSERT_EQUAL_HEX64(4096, h.file_size); // unchanged: 0 + 16 <= 4096
+}
+
+// A reply whose Direct-TCP prefix does not start with 0x00 is not a valid frame -> IO error.
+void test_close_bad_transport_prefix()
+{
+    Canned cn;
+    memset(&cn, 0, sizeof(cn));
+    cn.resp[0] = 0x01; // must be zero for Direct TCP
+    cn.resp[1] = 0x00;
+    cn.resp[2] = 0x00;
+    cn.resp[3] = 0x50;
+    cn.dws_resp_len = 4;
+    SmbHandle h = make_handle();
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO, smb_close(&h, canned_send, canned_recv, &cn));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1259,5 +1406,14 @@ int main()
     RUN_TEST(test_close_bad_header);
     RUN_TEST(test_close_status_error);
     RUN_TEST(test_close_bad_body);
+    RUN_TEST(test_open_arg_remaining_nulls);
+    RUN_TEST(test_open_null_domain);
+    RUN_TEST(test_tree_bad_header);
+    RUN_TEST(test_create_bad_header);
+    RUN_TEST(test_read_write_null_seam);
+    RUN_TEST(test_read_recv_overflow);
+    RUN_TEST(test_read_eof_status);
+    RUN_TEST(test_write_no_extend);
+    RUN_TEST(test_close_bad_transport_prefix);
     return UNITY_END();
 }

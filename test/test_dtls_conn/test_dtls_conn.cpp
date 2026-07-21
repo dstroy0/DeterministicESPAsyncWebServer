@@ -81,9 +81,13 @@ static void bmem(Buf *b, const uint8_t *m, size_t k)
 // @p with_keyshare is true it carries an X25519 key_share for @p client_pub; otherwise it advertises
 // X25519 in supported_groups but sends no share (the HelloRetryRequest trigger). A non-NULL @p cookie
 // is echoed in a cookie extension (RFC 8446 §4.2.2), as a client does on its post-HRR retry.
+// @p group / @p sigalg override the single advertised supported_group / signature_algorithm, so a
+// ClientHello that offers neither of the server's one profile can be built (the key_share entry, when
+// present, always stays X25519 - the server checks the offered algorithms before the share).
 static size_t build_client_hello_ex(uint8_t *out, const uint8_t client_pub[32], bool with_keyshare,
                                     const uint8_t *cookie, size_t cookie_len, const uint8_t *cid = nullptr,
-                                    size_t cid_len = 0, bool offer_rpk = false)
+                                    size_t cid_len = 0, bool offer_rpk = false, uint16_t group = TLS_GROUP_X25519,
+                                    uint16_t sigalg = TLS_SIG_ED25519)
 {
     Buf b = {out, 0};
     b8(&b, 0x01); // client_hello
@@ -107,16 +111,16 @@ static size_t build_client_hello_ex(uint8_t *out, const uint8_t client_pub[32], 
     b16(&b, 0x0003);
     b8(&b, 0x02);
     b16(&b, 0xFEFC);
-    // supported_groups: x25519
+    // supported_groups: x25519 unless overridden
     b16(&b, 0x000a);
     b16(&b, 0x0004);
     b16(&b, 0x0002);
-    b16(&b, 0x001d);
-    // signature_algorithms: ed25519
+    b16(&b, group);
+    // signature_algorithms: ed25519 unless overridden
     b16(&b, 0x000d);
     b16(&b, 0x0004);
     b16(&b, 0x0002);
-    b16(&b, 0x0807);
+    b16(&b, sigalg);
     if (with_keyshare)
     {
         // key_share: x25519 entry
@@ -893,6 +897,874 @@ static void test_pto_ack_cancels_retransmit(void)
     TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_timeout_ms(&conn)); // the ACK stopped the retransmission timer
 }
 
+// ---------------------------------------------------------------------------
+// Error and edge paths: record-layer rejects, handshake state-machine faults, the retransmission
+// timer's non-running states, and the epoch-3 application record paths.
+// ---------------------------------------------------------------------------
+
+// Wrap one TLS handshake message as a single DTLS fragment inside an epoch-0 plaintext record.
+static size_t plain_hs_record(uint8_t *out, size_t out_cap, const uint8_t *tls_msg, size_t tls_len, uint16_t msg_seq,
+                              uint64_t rec_seq)
+{
+    uint8_t frag[512];
+    size_t fl = dws_dtls_hs_frag_build(tls_msg[0], msg_seq, (uint32_t)(tls_len - 4), 0, tls_msg + 4,
+                                       (uint32_t)(tls_len - 4), frag, sizeof(frag));
+    if (!fl)
+        return 0;
+    return dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, rec_seq, frag, fl, out, out_cap);
+}
+
+// Everything the minimal test client holds after the server flight: the epoch-2 and epoch-3 record
+// keys plus a VALID client Finished fragment left unsent, so a test can deliver it (or something else)
+// under its own conditions.
+struct ClientSession
+{
+    Tls13KeySchedule cks;
+    DtlsRecordKeys cli_hs_write;  ///< client -> server, epoch 2
+    DtlsRecordKeys srv_hs_read;   ///< server -> client, epoch 2
+    DtlsRecordKeys cli_app_write; ///< client -> server, epoch 3
+    DtlsRecordKeys cli_app_read;  ///< server -> client, epoch 3
+    uint8_t cfin_frag[80];
+    size_t cfin_frag_len;
+};
+
+// Drive a fresh connection through ClientHello -> server flight (state WAIT_FINISHED) and run the
+// client half of the key schedule over the real transcript. No assertions: the caller decides what to
+// do next. Returns false if any step of the client side failed.
+static bool run_to_finished(DtlsConn *conn, DtlsServerConfig *cfg, ClientSession *st)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    dws_dtls_conn_init(conn, cfg, nullptr, 0);
+
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    SshSha256Ctx tr;
+    ssh_sha256_init(&tr);
+    ssh_sha256_update(&tr, ch, ch_len);
+
+    uint8_t rec[320];
+    size_t rl = plain_hs_record(rec, sizeof(rec), ch, ch_len, 0, 0);
+    if (!rl)
+        return false;
+    uint8_t flight[2048];
+    int fl = dws_dtls_conn_process(conn, rec, rl, flight, sizeof(flight));
+    if (fl <= 0)
+        return false;
+
+    DtlsPlaintext pt;
+    size_t off = dws_dtls_plaintext_parse(flight, (size_t)fl, &pt);
+    if (!off)
+        return false;
+    uint8_t sh[512];
+    size_t sh_len = frag_to_tls(pt.fragment, pt.frag_len, sh);
+    if (!sh_len)
+        return false;
+    ssh_sha256_update(&tr, sh, sh_len);
+    uint8_t server_pub[32];
+    if (!sh_keyshare(sh, sh_len, server_pub))
+        return false;
+
+    uint8_t ecdhe[32];
+    ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
+    uint8_t h[32];
+    SshSha256Ctx tmp = tr;
+    ssh_sha256_final(&tmp, h);
+    dws_tls13_ks_early(&DTLS13_KDF, &st->cks);
+    dws_tls13_ks_handshake(&st->cks, ecdhe, h, 32);
+    dws_dtls_record_keys_derive(&st->srv_hs_read, DtlsCipher::AES_128_GCM_SHA256, 2, st->cks.server_hs_traffic);
+    dws_dtls_record_keys_derive(&st->cli_hs_write, DtlsCipher::AES_128_GCM_SHA256, 2, st->cks.client_hs_traffic);
+
+    uint64_t exp_seq = 0;
+    while (off < (size_t)fl)
+    {
+        size_t crl = ct_record_len(flight + off, (size_t)fl - off);
+        if (!crl)
+            return false;
+        uint8_t inner[512];
+        DtlsCiphertext info;
+        if (!dws_dtls_ciphertext_unprotect(&st->srv_hs_read, exp_seq, flight + off, crl, inner, sizeof(inner), &info))
+            return false;
+        exp_seq = info.seq + 1;
+        off += crl;
+        uint8_t msg[512];
+        size_t mlen = frag_to_tls(inner, info.pt_len, msg);
+        if (!mlen)
+            return false;
+        ssh_sha256_update(&tr, msg, mlen);
+    }
+
+    uint8_t h_sfin[32];
+    SshSha256Ctx s = tr;
+    ssh_sha256_final(&s, h_sfin);
+    dws_tls13_ks_master(&st->cks, h_sfin);
+    dws_dtls_record_keys_derive(&st->cli_app_write, DtlsCipher::AES_128_GCM_SHA256, 3, st->cks.client_ap_traffic);
+    dws_dtls_record_keys_derive(&st->cli_app_read, DtlsCipher::AES_128_GCM_SHA256, 3, st->cks.server_ap_traffic);
+
+    uint8_t verify[32];
+    dws_tls13_finished_mac(&DTLS13_KDF, st->cks.client_hs_traffic, h_sfin, verify);
+    uint8_t cfin[64];
+    size_t cfin_len = dws_tls13_build_finished(cfin, sizeof(cfin), verify);
+    if (cfin_len < 4)
+        return false;
+    st->cfin_frag_len = dws_dtls_hs_frag_build(cfin[0], 1, (uint32_t)(cfin_len - 4), 0, cfin + 4,
+                                               (uint32_t)(cfin_len - 4), st->cfin_frag, sizeof(st->cfin_frag));
+    return st->cfin_frag_len > 0;
+}
+
+// Protect the client's buffered Finished as an epoch-2 record at @p seq and feed it to the server.
+static int feed_client_finished(DtlsConn *conn, const ClientSession *st, uint64_t seq, uint8_t *out, size_t out_cap)
+{
+    uint8_t rec[128];
+    size_t rl = dws_dtls_ciphertext_protect(&st->cli_hs_write, seq, DTLS_CT_HANDSHAKE, st->cfin_frag, st->cfin_frag_len,
+                                            rec, sizeof(rec));
+    if (!rl)
+        return -2;
+    return dws_dtls_conn_process(conn, rec, rl, out, out_cap);
+}
+
+// Wrap an arbitrary TLS handshake message as an epoch-2 client record and feed it to the server.
+// Returns -2 when the test itself could not build the record (never a server verdict).
+static int feed_epoch2_msg(DtlsConn *conn, const ClientSession *st, uint64_t seq, uint16_t msg_seq,
+                           const uint8_t *tls_msg, size_t tls_len, uint8_t *out, size_t out_cap)
+{
+    uint8_t frag[128];
+    size_t fl = dws_dtls_hs_frag_build(tls_msg[0], msg_seq, (uint32_t)(tls_len - 4), 0, tls_msg + 4,
+                                       (uint32_t)(tls_len - 4), frag, sizeof(frag));
+    if (!fl)
+        return -2;
+    uint8_t rec[192];
+    size_t rl = dws_dtls_ciphertext_protect(&st->cli_hs_write, seq, DTLS_CT_HANDSHAKE, frag, fl, rec, sizeof(rec));
+    if (!rl)
+        return -2;
+    return dws_dtls_conn_process(conn, rec, rl, out, out_cap);
+}
+
+// Protect an ACK body as an epoch-2 client record and feed it to the server.
+static int feed_epoch2_ack(DtlsConn *conn, const ClientSession *st, uint64_t seq, const uint8_t *body, size_t blen,
+                           uint8_t *out, size_t out_cap)
+{
+    uint8_t rec[192];
+    size_t rl = dws_dtls_ciphertext_protect(&st->cli_hs_write, seq, DTLS_CT_ACK, body, blen, rec, sizeof(rec));
+    if (!rl)
+        return -2;
+    return dws_dtls_conn_process(conn, rec, rl, out, out_cap);
+}
+
+// A malformed DTLSCiphertext unified header stops the datagram walk without failing the connection:
+// the explicit length field is truncated, or it claims more bytes than the datagram holds.
+static void test_ciphertext_truncated_header_stops_walk(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    uint8_t out[64];
+
+    // 0x2C = 001, C=0, S=1 (16-bit sequence number), L=1 (length present): only 3 bytes, so the
+    // 2-byte length field itself does not fit.
+    DtlsConn a;
+    dws_dtls_conn_init(&a, &cfg, nullptr, 0);
+    const uint8_t short_len[3] = {0x2C, 0x00, 0x01};
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_process(&a, short_len, sizeof(short_len), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&a)); // stopped, not failed
+
+    // The explicit length (255) runs past the end of the datagram.
+    DtlsConn b;
+    dws_dtls_conn_init(&b, &cfg, nullptr, 0);
+    const uint8_t long_len[5] = {0x2C, 0x00, 0x01, 0x00, 0xFF};
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_process(&b, long_len, sizeof(long_len), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&b));
+}
+
+// A ciphertext record arriving before any epoch-2 keys exist (no ClientHello yet) is fatal:
+// unexpected_message. Covers both header shapes the walker measures - explicit length, and a record
+// that runs to the end of the datagram with an 8-bit sequence number.
+static void test_ciphertext_before_keys_is_fatal(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    uint8_t out[64];
+
+    DtlsConn a;
+    dws_dtls_conn_init(&a, &cfg, nullptr, 0);
+    const uint8_t with_len[7] = {0x2C, 0x00, 0x01, 0x00, 0x02, 0xAA, 0xBB};
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&a, with_len, sizeof(with_len), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(10, dws_dtls_conn_alert(&a)); // unexpected_message
+
+    // 0x20 = 001, C=0, S=0 (8-bit sequence number), L=0: the record runs to the end of the datagram.
+    DtlsConn b;
+    dws_dtls_conn_init(&b, &cfg, nullptr, 0);
+    const uint8_t no_len[4] = {0x20, 0x01, 0xAA, 0xBB};
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&b, no_len, sizeof(no_len), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(10, dws_dtls_conn_alert(&b));
+}
+
+// A well-formed epoch-0 record that is not a handshake record is walked past and ignored: the state
+// machine never sees it, and the ClientHello that follows is still accepted.
+static void test_plaintext_non_handshake_record_ignored(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
+
+    const uint8_t alert_body[2] = {0x01, 0x00}; // warning, close_notify
+    uint8_t rec[32];
+    size_t rl = dws_dtls_plaintext_build(DTLS_CT_ALERT, 0, 0, alert_body, sizeof(alert_body), rec, sizeof(rec));
+    TEST_ASSERT_TRUE(rl > 0);
+    uint8_t out[2048];
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&conn));
+
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    uint8_t ch_rec[320];
+    size_t ch_rl = plain_hs_record(ch_rec, sizeof(ch_rec), ch, ch_len, 0, 1);
+    TEST_ASSERT_TRUE(ch_rl > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_process(&conn, ch_rec, ch_rl, out, sizeof(out)) > 0);
+}
+
+// A handshake record whose payload is shorter than the 12-byte DTLS handshake header: the fragment
+// walk stops and nothing is dispatched (a truncated datagram is not an attack worth an alert).
+static void test_truncated_handshake_fragment_ignored(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
+
+    const uint8_t stub[5] = {0x01, 0x00, 0x00, 0x20, 0x00}; // first 5 bytes of a handshake header
+    uint8_t rec[32];
+    size_t rl = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, stub, sizeof(stub), rec, sizeof(rec));
+    TEST_ASSERT_TRUE(rl > 0);
+    uint8_t out[64];
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&conn));
+}
+
+// A fragment for a message_seq the reassembler is not collecting is ignored rather than rejected
+// (RFC 9147 §5.4), and the expected ClientHello is still accepted afterwards.
+static void test_fragment_for_other_msg_seq_ignored(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
+
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    uint8_t rec[320];
+    size_t rl = plain_hs_record(rec, sizeof(rec), ch, ch_len, /*msg_seq=*/7, /*rec_seq=*/0);
+    TEST_ASSERT_TRUE(rl > 0);
+    uint8_t out[2048];
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&conn));
+
+    size_t rl0 = plain_hs_record(rec, sizeof(rec), ch, ch_len, /*msg_seq=*/0, /*rec_seq=*/1);
+    TEST_ASSERT_TRUE(rl0 > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_process(&conn, rec, rl0, out, sizeof(out)) > 0);
+}
+
+// A fragment declaring a message body larger than the reassembly buffer is refused by the
+// reassembler, and the connection fails with decode_error.
+static void test_oversize_handshake_message_rejected(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
+
+    const uint8_t body[8] = {0};
+    uint8_t frag[32];
+    size_t fl = dws_dtls_hs_frag_build(TlsHs::TLS_HS_CLIENT_HELLO, 0, (uint32_t)(DTLS_CONN_REASM_CAP + 1), 0, body,
+                                       sizeof(body), frag, sizeof(frag));
+    TEST_ASSERT_TRUE(fl > 0);
+    uint8_t rec[64];
+    size_t rl = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, frag, fl, rec, sizeof(rec));
+    TEST_ASSERT_TRUE(rl > 0);
+    uint8_t out[64];
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(50, dws_dtls_conn_alert(&conn)); // decode_error
+}
+
+// A Finished arriving in START matches no handler: unexpected_message.
+static void test_unexpected_message_in_start_rejected(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
+
+    uint8_t fin[36];
+    fin[0] = TlsHs::TLS_HS_FINISHED;
+    fin[1] = 0;
+    fin[2] = 0;
+    fin[3] = 32;
+    memset(fin + 4, 0xAA, 32);
+    uint8_t rec[64];
+    size_t rl = plain_hs_record(rec, sizeof(rec), fin, sizeof(fin), 0, 0);
+    TEST_ASSERT_TRUE(rl > 0);
+    uint8_t out[64];
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(10, dws_dtls_conn_alert(&conn)); // unexpected_message
+}
+
+// A ClientHello that does not offer the server's one profile (Ed25519 signatures and the X25519
+// group) is refused with handshake_failure, whichever half is missing.
+static void test_client_hello_missing_algorithms_rejected(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    uint8_t rec[320];
+    uint8_t out[2048];
+
+    // signature_algorithms carries only rsa_pss_rsae_sha256 (0x0804): no ed25519.
+    DtlsConn a;
+    dws_dtls_conn_init(&a, &cfg, nullptr, 0);
+    uint8_t ch_a[256];
+    size_t la = build_client_hello_ex(ch_a, client_pub, true, nullptr, 0, nullptr, 0, false, TLS_GROUP_X25519, 0x0804);
+    size_t ra = plain_hs_record(rec, sizeof(rec), ch_a, la, 0, 0);
+    TEST_ASSERT_TRUE(ra > 0);
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&a, rec, ra, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(40, dws_dtls_conn_alert(&a)); // handshake_failure
+
+    // supported_groups carries only secp256r1 (0x0017): no x25519, even though a share is present.
+    DtlsConn b;
+    dws_dtls_conn_init(&b, &cfg, nullptr, 0);
+    uint8_t ch_b[256];
+    size_t lb = build_client_hello_ex(ch_b, client_pub, true, nullptr, 0, nullptr, 0, false, 0x0017, TLS_SIG_ED25519);
+    size_t rb = plain_hs_record(rec, sizeof(rec), ch_b, lb, 0, 0);
+    TEST_ASSERT_TRUE(rb > 0);
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&b, rec, rb, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(40, dws_dtls_conn_alert(&b));
+}
+
+// A certificate too large for the outbound message buffer cannot be built into a Certificate message,
+// so the handshake is abandoned with internal_error rather than sending a truncated flight.
+static void test_oversize_certificate_is_internal_error(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    static uint8_t big_cert[DTLS_CONN_MSG_CAP + 200];
+    memset(big_cert, 0xAB, sizeof(big_cert));
+
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    cfg.cert_der = big_cert;
+    cfg.cert_len = sizeof(big_cert);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
+
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    uint8_t rec[320];
+    size_t rl = plain_hs_record(rec, sizeof(rec), ch, ch_len, 0, 0);
+    TEST_ASSERT_TRUE(rl > 0);
+    uint8_t out[4096];
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(80, dws_dtls_conn_alert(&conn)); // internal_error
+}
+
+// The response buffer cannot hold even the first record of the flight: the transmit fails and the
+// handshake is abandoned with internal_error, for both the full flight and a HelloRetryRequest.
+static void test_flight_out_cap_too_small_is_internal_error(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    uint8_t rec[320];
+    uint8_t tiny[64];
+
+    DtlsConn a;
+    dws_dtls_conn_init(&a, &cfg, nullptr, 0);
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    size_t rl = plain_hs_record(rec, sizeof(rec), ch, ch_len, 0, 0);
+    TEST_ASSERT_TRUE(rl > 0);
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&a, rec, rl, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_UINT8(80, dws_dtls_conn_alert(&a)); // internal_error
+
+    // Same for the HelloRetryRequest flight (a ClientHello with no key_share).
+    DtlsConn b;
+    dws_dtls_conn_init(&b, &cfg, TEST_PEER_ADDR, sizeof(TEST_PEER_ADDR));
+    uint8_t ch1[256];
+    size_t ch1_len = build_client_hello_ex(ch1, client_pub, /*with_keyshare=*/false, nullptr, 0);
+    size_t r1 = plain_hs_record(rec, sizeof(rec), ch1, ch1_len, 0, 0);
+    TEST_ASSERT_TRUE(r1 > 0);
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&b, rec, r1, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_UINT8(80, dws_dtls_conn_alert(&b));
+}
+
+// A retransmission that cannot be written into the caller's buffer reports failure rather than
+// emitting a partial flight.
+static void test_retransmit_out_cap_too_small(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    SshSha256Ctx tr;
+    uint8_t flight[2048];
+    TEST_ASSERT_TRUE(drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight)) > 0);
+
+    g_ms += DTLS_PTO_INITIAL_MS;
+    uint8_t tiny[32];
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_on_timeout(&conn, tiny, sizeof(tiny)));
+}
+
+// The retransmission timer reports no deadline and refuses to fire once the handshake has finished,
+// and likewise once it has failed with a flight still outstanding.
+static void test_timer_idle_when_done_or_failed(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    uint8_t out[256];
+
+    DtlsConn done;
+    ClientSession st;
+    TEST_ASSERT_TRUE(run_to_finished(&done, &cfg, &st));
+    TEST_ASSERT_TRUE(feed_client_finished(&done, &st, 0, out, sizeof(out)) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(&done));
+    g_ms += DTLS_PTO_MAX_MS;
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_timeout_ms(&done));
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_on_timeout(&done, out, sizeof(out)));
+
+    // A connection that failed while its flight was still outstanding: awaiting_reply is still set,
+    // so only the FAILED state stops the timer.
+    DtlsConn failed;
+    SshSha256Ctx tr;
+    uint8_t flight[2048];
+    TEST_ASSERT_TRUE(drive_server_flight(&failed, &cfg, &tr, flight, sizeof(flight)) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_timeout_ms(&failed) >= 0); // armed
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    uint8_t rec[320];
+    size_t rl = plain_hs_record(rec, sizeof(rec), ch, ch_len, /*msg_seq=*/1, /*rec_seq=*/1);
+    TEST_ASSERT_TRUE(rl > 0);
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&failed, rec, rl, out, sizeof(out))); // CH in WAIT_FINISHED
+    TEST_ASSERT_EQUAL_UINT8(10, dws_dtls_conn_alert(&failed));                            // unexpected_message
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_timeout_ms(&failed));
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_on_timeout(&failed, out, sizeof(out)));
+}
+
+// The client Finished error paths: a body of the wrong length is a decode_error, a wrong verify_data
+// is a decrypt_error, and any other handshake message in epoch 2 is unexpected_message.
+static void test_client_finished_error_paths(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    uint8_t out[256];
+
+    // (a) Finished with a 31-byte body: not 4 + SHA-256 digest length.
+    DtlsConn a;
+    ClientSession sa;
+    TEST_ASSERT_TRUE(run_to_finished(&a, &cfg, &sa));
+    uint8_t shortfin[35];
+    shortfin[0] = TlsHs::TLS_HS_FINISHED;
+    shortfin[1] = 0;
+    shortfin[2] = 0;
+    shortfin[3] = 31;
+    memset(shortfin + 4, 0x5A, 31);
+    TEST_ASSERT_EQUAL_INT(-1, feed_epoch2_msg(&a, &sa, 0, 1, shortfin, sizeof(shortfin), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(50, dws_dtls_conn_alert(&a)); // decode_error
+
+    // (b) Finished of the right shape but the wrong verify_data.
+    DtlsConn b;
+    ClientSession sb;
+    TEST_ASSERT_TRUE(run_to_finished(&b, &cfg, &sb));
+    uint8_t badfin[36];
+    badfin[0] = TlsHs::TLS_HS_FINISHED;
+    badfin[1] = 0;
+    badfin[2] = 0;
+    badfin[3] = 32;
+    memset(badfin + 4, 0xAA, 32);
+    TEST_ASSERT_EQUAL_INT(-1, feed_epoch2_msg(&b, &sb, 0, 1, badfin, sizeof(badfin), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(51, dws_dtls_conn_alert(&b)); // decrypt_error
+
+    // (c) a ClientHello inside an epoch-2 record while waiting for the Finished.
+    DtlsConn c;
+    ClientSession sc;
+    TEST_ASSERT_TRUE(run_to_finished(&c, &cfg, &sc));
+    uint8_t stray[14];
+    stray[0] = TlsHs::TLS_HS_CLIENT_HELLO;
+    stray[1] = 0;
+    stray[2] = 0;
+    stray[3] = 10;
+    memset(stray + 4, 0x11, 10);
+    TEST_ASSERT_EQUAL_INT(-1, feed_epoch2_msg(&c, &sc, 0, 1, stray, sizeof(stray), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(10, dws_dtls_conn_alert(&c)); // unexpected_message
+}
+
+// An ACK that cannot be parsed, and one that covers only part of the outstanding flight, both leave
+// the retransmission timer running (RFC 9147 §5.8.3: only a complete acknowledgement disarms it).
+static void test_ack_malformed_and_partial_keep_timer(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    ClientSession st;
+    TEST_ASSERT_TRUE(run_to_finished(&conn, &cfg, &st));
+    TEST_ASSERT_EQUAL_INT((int)DTLS_PTO_INITIAL_MS, dws_dtls_conn_timeout_ms(&conn));
+    uint8_t out[64];
+
+    // The ACK's list length claims one record number that is not there.
+    const uint8_t malformed[2] = {0x00, 0x10};
+    TEST_ASSERT_EQUAL_INT(0, feed_epoch2_ack(&conn, &st, 0, malformed, sizeof(malformed), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&conn));
+    TEST_ASSERT_EQUAL_INT((int)DTLS_PTO_INITIAL_MS, dws_dtls_conn_timeout_ms(&conn)); // still armed
+
+    // A partial ACK: only the epoch-0 ServerHello record, not the four epoch-2 messages.
+    DtlsRecordNumber one = {0, 0};
+    uint8_t body[2 + 16];
+    size_t bl = dws_dtls_ack_build(&one, 1, body, sizeof(body));
+    TEST_ASSERT_TRUE(bl > 0);
+    TEST_ASSERT_EQUAL_INT(0, feed_epoch2_ack(&conn, &st, 1, body, bl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT((int)DTLS_PTO_INITIAL_MS, dws_dtls_conn_timeout_ms(&conn)); // still armed
+}
+
+// After a complete ACK disarms the timer, a replay of that record is dropped by the anti-replay
+// window and a later ACK is ignored (nothing is outstanding) - and the handshake still completes.
+static void test_ack_replay_and_late_ack_ignored(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    ClientSession st;
+    TEST_ASSERT_TRUE(run_to_finished(&conn, &cfg, &st));
+    uint8_t out[256];
+
+    // ACK the whole flight: ServerHello (epoch 0, seq 0) + the four epoch-2 messages (seq 0..3).
+    DtlsRecordNumber rns[5] = {{0, 0}, {2, 0}, {2, 1}, {2, 2}, {2, 3}};
+    uint8_t body[2 + 5 * 16];
+    size_t bl = dws_dtls_ack_build(rns, 5, body, sizeof(body));
+    TEST_ASSERT_TRUE(bl > 0);
+    uint8_t rec[192];
+    size_t rl = dws_dtls_ciphertext_protect(&st.cli_hs_write, 0, DTLS_CT_ACK, body, bl, rec, sizeof(rec));
+    TEST_ASSERT_TRUE(rl > 0);
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_timeout_ms(&conn)); // disarmed
+
+    // The very same record again: dropped as a replay, never re-parsed.
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&conn));
+
+    // A fresh ACK now that nothing is outstanding: parsed away without touching the timer.
+    TEST_ASSERT_EQUAL_INT(0, feed_epoch2_ack(&conn, &st, 1, body, bl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&conn));
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_timeout_ms(&conn));
+
+    // None of that disturbed the handshake: the client Finished still completes it.
+    TEST_ASSERT_TRUE(feed_client_finished(&conn, &st, 2, out, sizeof(out)) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(&conn));
+}
+
+// The client Finished arrives but the caller's buffer cannot hold the completion ACK: the handshake
+// still completes and the ACK is emitted on the next call that has room (RFC 9147 §5.8.3).
+static void test_completion_ack_deferred_when_out_full(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    ClientSession st;
+    TEST_ASSERT_TRUE(run_to_finished(&conn, &cfg, &st));
+
+    uint8_t tiny[16];
+    TEST_ASSERT_EQUAL_INT(0, feed_client_finished(&conn, &st, 0, tiny, sizeof(tiny)));
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(&conn));
+
+    // An empty datagram drives nothing but the pending acknowledgement.
+    uint8_t out[128];
+    int n = dws_dtls_conn_process(&conn, tiny, 0, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 0);
+    uint8_t pt[64];
+    DtlsCiphertext info;
+    TEST_ASSERT_TRUE(dws_dtls_ciphertext_unprotect(&st.cli_app_read, 0, out, (size_t)n, pt, sizeof(pt), &info));
+    TEST_ASSERT_EQUAL_UINT8(DTLS_CT_ACK, info.content_type);
+}
+
+// The epoch-3 application record paths: nothing is available before the handshake completes, and once
+// it has, a record that fails to open, one that is not application data, and a replay are all refused
+// while genuine application data round-trips both ways.
+static void test_app_records_before_and_after_established(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    const uint8_t payload[5] = {'h', 'e', 'l', 'l', 'o'};
+    uint8_t plain[64];
+    size_t plen = 0;
+
+    DtlsConn fresh;
+    dws_dtls_conn_init(&fresh, &cfg, nullptr, 0);
+    uint8_t dummy[32];
+    memset(dummy, 0x2F, sizeof(dummy));
+    TEST_ASSERT_FALSE(dws_dtls_conn_open_app(&fresh, dummy, sizeof(dummy), plain, sizeof(plain), &plen));
+    size_t sealed = dws_dtls_conn_seal_app(&fresh, payload, sizeof(payload), plain, sizeof(plain));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)sealed);
+    TEST_ASSERT_NULL(dws_dtls_conn_app_write_keys(&fresh));
+    TEST_ASSERT_NULL(dws_dtls_conn_app_read_keys(&fresh));
+    uint8_t cid_out[DTLS_CID_MAX];
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_dtls_conn_local_cid(&fresh, cid_out));
+
+    DtlsConn conn;
+    ClientSession st;
+    TEST_ASSERT_TRUE(run_to_finished(&conn, &cfg, &st));
+    uint8_t out[256];
+    TEST_ASSERT_TRUE(feed_client_finished(&conn, &st, 0, out, sizeof(out)) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(&conn));
+    TEST_ASSERT_NOT_NULL(dws_dtls_conn_app_write_keys(&conn));
+
+    // A well-shaped epoch-3 header (0x2F: 001, S=1, L=1, epoch bits 3) over bytes that are not a
+    // valid AEAD sealing: the tag check fails.
+    uint8_t junk[48];
+    memset(junk, 0xA5, sizeof(junk));
+    junk[0] = 0x2F;
+    junk[3] = 0x00;
+    junk[4] = 0x2B; // declared body length 43 = 27 inner bytes + the 16-byte tag
+    TEST_ASSERT_FALSE(dws_dtls_conn_open_app(&conn, junk, sizeof(junk), plain, sizeof(plain), &plen));
+
+    // A record that opens cleanly but whose inner content type is not application_data.
+    uint8_t ackrec[64];
+    size_t al = dws_dtls_ciphertext_protect(&st.cli_app_write, 0, DTLS_CT_ACK, payload, sizeof(payload), ackrec,
+                                            sizeof(ackrec));
+    TEST_ASSERT_TRUE(al > 0);
+    TEST_ASSERT_FALSE(dws_dtls_conn_open_app(&conn, ackrec, al, plain, sizeof(plain), &plen));
+
+    // Genuine application data opens once, and its replay is refused.
+    uint8_t apprec[64];
+    size_t pl = dws_dtls_ciphertext_protect(&st.cli_app_write, 1, DTLS_CT_APPLICATION_DATA, payload, sizeof(payload),
+                                            apprec, sizeof(apprec));
+    TEST_ASSERT_TRUE(pl > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_open_app(&conn, apprec, pl, plain, sizeof(plain), &plen));
+    TEST_ASSERT_EQUAL_UINT32(sizeof(payload), (uint32_t)plen);
+    TEST_ASSERT_EQUAL_MEMORY(payload, plain, sizeof(payload));
+    TEST_ASSERT_FALSE(dws_dtls_conn_open_app(&conn, apprec, pl, plain, sizeof(plain), &plen));
+
+    // The server seals application data the client can open. Its sequence number follows the
+    // completion ACK's (both come from the shared epoch-3 send counter).
+    uint8_t srec[64];
+    size_t sl = dws_dtls_conn_seal_app(&conn, payload, sizeof(payload), srec, sizeof(srec));
+    TEST_ASSERT_TRUE(sl > 0);
+    DtlsCiphertext info;
+    TEST_ASSERT_TRUE(dws_dtls_ciphertext_unprotect(&st.cli_app_read, 1, srec, sl, plain, sizeof(plain), &info));
+    TEST_ASSERT_EQUAL_UINT8(DTLS_CT_APPLICATION_DATA, info.content_type);
+    TEST_ASSERT_EQUAL_UINT32(sizeof(payload), (uint32_t)info.pt_len);
+    TEST_ASSERT_EQUAL_MEMORY(payload, plain, sizeof(payload));
+}
+
+// Connection-id negotiation edge cases (RFC 9146 §3): an id longer than the server can hold is not
+// accepted at all, while a zero-length id is legal - the server still picks its own id (from the
+// ServerHello random) but places none in the records it sends.
+static void test_conn_id_edge_cases(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    uint8_t rec[320];
+    uint8_t flight[2048];
+    uint8_t cid_out[DTLS_CID_MAX];
+
+    // An over-long connection id: the extension is ignored, so no CID is negotiated.
+    uint8_t big_cid[DTLS_CID_MAX + 1];
+    memset(big_cid, 0xD1, sizeof(big_cid));
+    DtlsConn a;
+    dws_dtls_conn_init(&a, &cfg, nullptr, 0);
+    uint8_t ch_a[256];
+    size_t la = build_client_hello_ex(ch_a, client_pub, true, nullptr, 0, big_cid, sizeof(big_cid));
+    size_t ra = plain_hs_record(rec, sizeof(rec), ch_a, la, 0, 0);
+    TEST_ASSERT_TRUE(ra > 0);
+    int fa = dws_dtls_conn_process(&a, rec, ra, flight, sizeof(flight));
+    TEST_ASSERT_TRUE(fa > 0);
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_dtls_conn_local_cid(&a, cid_out));
+    DtlsPlaintext pt;
+    size_t shl = dws_dtls_plaintext_parse(flight, (size_t)fa, &pt);
+    TEST_ASSERT_TRUE(shl > 0);
+    TEST_ASSERT_TRUE((flight[shl] & 0x10) == 0); // no C bit on the encrypted flight
+
+    // A zero-length connection id: negotiated, so the server chooses its own 4-byte id.
+    const uint8_t empty_cid[1] = {0};
+    DtlsConn b;
+    dws_dtls_conn_init(&b, &cfg, nullptr, 0);
+    uint8_t ch_b[256];
+    size_t lb = build_client_hello_ex(ch_b, client_pub, true, nullptr, 0, empty_cid, 0);
+    size_t rb = plain_hs_record(rec, sizeof(rec), ch_b, lb, 0, 0);
+    TEST_ASSERT_TRUE(rb > 0);
+    int fb = dws_dtls_conn_process(&b, rec, rb, flight, sizeof(flight));
+    TEST_ASSERT_TRUE(fb > 0);
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)DTLS_CONN_LOCAL_CID_LEN, (uint32_t)dws_dtls_conn_local_cid(&b, cid_out));
+    TEST_ASSERT_EQUAL_MEMORY(SERVER_RANDOM, cid_out, DTLS_CONN_LOCAL_CID_LEN); // taken from the ServerHello random
+    size_t shl_b = dws_dtls_plaintext_parse(flight, (size_t)fb, &pt);
+    TEST_ASSERT_TRUE(shl_b > 0);
+    TEST_ASSERT_TRUE((flight[shl_b] & 0x10) == 0); // the client's CID is empty, so no C bit
+}
+
+// Run the HelloRetryRequest round trip against a connection bound to @p addr / @p addr_len and report
+// whether the server accepted the retry (it answered with the full server flight).
+static bool hrr_roundtrip_accepted(const uint8_t *addr, size_t addr_len)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, addr, addr_len);
+
+    uint8_t ch1[256];
+    size_t ch1_len = build_client_hello_ex(ch1, client_pub, /*with_keyshare=*/false, nullptr, 0);
+    uint8_t rec[420];
+    size_t r1 = plain_hs_record(rec, sizeof(rec), ch1, ch1_len, 0, 0);
+    if (!r1)
+        return false;
+    uint8_t hrr_flight[512];
+    int hf = dws_dtls_conn_process(&conn, rec, r1, hrr_flight, sizeof(hrr_flight));
+    if (hf <= 0)
+        return false;
+
+    DtlsPlaintext pt;
+    if (!dws_dtls_plaintext_parse(hrr_flight, (size_t)hf, &pt))
+        return false;
+    uint8_t hrr[512];
+    size_t hrr_len = frag_to_tls(pt.fragment, pt.frag_len, hrr);
+    uint8_t cookie[DTLS_COOKIE_MAX];
+    size_t cookie_len = 0;
+    if (!hrr_len || !hrr_cookie(hrr, hrr_len, cookie, &cookie_len))
+        return false;
+
+    uint8_t ch2[320];
+    size_t ch2_len = build_client_hello_ex(ch2, client_pub, /*with_keyshare=*/true, cookie, cookie_len);
+    size_t r2 = plain_hs_record(rec, sizeof(rec), ch2, ch2_len, 1, 1);
+    if (!r2)
+        return false;
+    uint8_t flight[2048];
+    return dws_dtls_conn_process(&conn, rec, r2, flight, sizeof(flight)) > 0;
+}
+
+// The bound peer address is optional and is clamped: a non-NULL address of length 0 binds nothing,
+// and an over-long address keeps only its first DTLS_PEER_ADDR_MAX bytes. Either way the cookie the
+// server mints verifies against what it kept, so the retry is accepted.
+static void test_peer_addr_zero_length_and_clamped(void)
+{
+    TEST_ASSERT_TRUE(hrr_roundtrip_accepted(TEST_PEER_ADDR, 0));
+    uint8_t big_addr[DTLS_PEER_ADDR_MAX + 14];
+    for (size_t i = 0; i < sizeof(big_addr); i++)
+        big_addr[i] = (uint8_t)(0x40 + i);
+    TEST_ASSERT_TRUE(hrr_roundtrip_accepted(big_addr, sizeof(big_addr)));
+}
+
+// A retry that still carries no key_share is fatal: the server sends at most one HelloRetryRequest,
+// so a client cannot loop it (RFC 9147 §5.1).
+static void test_hrr_retry_without_keyshare_rejected(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, TEST_PEER_ADDR, sizeof(TEST_PEER_ADDR));
+
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello_ex(ch, client_pub, /*with_keyshare=*/false, nullptr, 0);
+    uint8_t rec[320];
+    size_t r1 = plain_hs_record(rec, sizeof(rec), ch, ch_len, 0, 0);
+    TEST_ASSERT_TRUE(r1 > 0);
+    uint8_t out[1024];
+    TEST_ASSERT_TRUE(dws_dtls_conn_process(&conn, rec, r1, out, sizeof(out)) > 0); // the HelloRetryRequest
+
+    size_t r2 = plain_hs_record(rec, sizeof(rec), ch, ch_len, 1, 1); // the retry, still without a share
+    TEST_ASSERT_TRUE(r2 > 0);
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, rec, r2, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(40, dws_dtls_conn_alert(&conn)); // handshake_failure
+}
+
+// A retry whose cookie is present but does not authenticate (one flipped byte inside its MAC) is
+// refused exactly like a missing cookie: the client's address is still unproven (RFC 9147 §5.1).
+static void test_hrr_retry_with_corrupt_cookie_rejected(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, TEST_PEER_ADDR, sizeof(TEST_PEER_ADDR));
+
+    uint8_t ch1[256];
+    size_t ch1_len = build_client_hello_ex(ch1, client_pub, /*with_keyshare=*/false, nullptr, 0);
+    uint8_t rec[420];
+    size_t r1 = plain_hs_record(rec, sizeof(rec), ch1, ch1_len, 0, 0);
+    TEST_ASSERT_TRUE(r1 > 0);
+    uint8_t hrr_flight[512];
+    int hf = dws_dtls_conn_process(&conn, rec, r1, hrr_flight, sizeof(hrr_flight));
+    TEST_ASSERT_TRUE(hf > 0);
+
+    DtlsPlaintext pt;
+    TEST_ASSERT_TRUE(dws_dtls_plaintext_parse(hrr_flight, (size_t)hf, &pt) > 0);
+    uint8_t hrr[512];
+    size_t hrr_len = frag_to_tls(pt.fragment, pt.frag_len, hrr);
+    TEST_ASSERT_TRUE(hrr_len > 0);
+    uint8_t cookie[DTLS_COOKIE_MAX];
+    size_t cookie_len = 0;
+    TEST_ASSERT_TRUE(hrr_cookie(hrr, hrr_len, cookie, &cookie_len));
+    TEST_ASSERT_TRUE(cookie_len > 0);
+    cookie[cookie_len - 1] ^= 0xFF; // last byte of the HMAC
+
+    uint8_t ch2[320];
+    size_t ch2_len = build_client_hello_ex(ch2, client_pub, /*with_keyshare=*/true, cookie, cookie_len);
+    size_t r2 = plain_hs_record(rec, sizeof(rec), ch2, ch2_len, 1, 1);
+    TEST_ASSERT_TRUE(r2 > 0);
+    uint8_t out[2048];
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, rec, r2, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(40, dws_dtls_conn_alert(&conn)); // handshake_failure
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -905,5 +1777,26 @@ int main(int, char **)
     RUN_TEST(test_pto_backoff_and_giveup);
     RUN_TEST(test_pto_ack_cancels_retransmit);
     RUN_TEST(test_reject_no_tls13);
+    RUN_TEST(test_ciphertext_truncated_header_stops_walk);
+    RUN_TEST(test_ciphertext_before_keys_is_fatal);
+    RUN_TEST(test_plaintext_non_handshake_record_ignored);
+    RUN_TEST(test_truncated_handshake_fragment_ignored);
+    RUN_TEST(test_fragment_for_other_msg_seq_ignored);
+    RUN_TEST(test_oversize_handshake_message_rejected);
+    RUN_TEST(test_unexpected_message_in_start_rejected);
+    RUN_TEST(test_client_hello_missing_algorithms_rejected);
+    RUN_TEST(test_oversize_certificate_is_internal_error);
+    RUN_TEST(test_flight_out_cap_too_small_is_internal_error);
+    RUN_TEST(test_retransmit_out_cap_too_small);
+    RUN_TEST(test_timer_idle_when_done_or_failed);
+    RUN_TEST(test_client_finished_error_paths);
+    RUN_TEST(test_ack_malformed_and_partial_keep_timer);
+    RUN_TEST(test_ack_replay_and_late_ack_ignored);
+    RUN_TEST(test_completion_ack_deferred_when_out_full);
+    RUN_TEST(test_app_records_before_and_after_established);
+    RUN_TEST(test_conn_id_edge_cases);
+    RUN_TEST(test_peer_addr_zero_length_and_clamped);
+    RUN_TEST(test_hrr_retry_without_keyshare_rejected);
+    RUN_TEST(test_hrr_retry_with_corrupt_cookie_rejected);
     return UNITY_END();
 }

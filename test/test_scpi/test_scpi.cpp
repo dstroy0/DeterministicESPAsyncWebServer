@@ -359,6 +359,184 @@ void test_match_negatives()
     TEST_ASSERT_FALSE(match("SYSTE:ERR?", "SYSTem:ERRor?"));     // partial (not short nor long form)
 }
 
+// ── guard / edge coverage ────────────────────────────────────────────────────────────────────
+
+void test_common_commands_full_enum()
+{
+    TEST_ASSERT_EQUAL_STRING("*ESE", dws_scpi_common(ScpiCommon::SCPI_ESE));
+    TEST_ASSERT_EQUAL_STRING("*ESE?", dws_scpi_common(ScpiCommon::SCPI_ESE_Q));
+    TEST_ASSERT_EQUAL_STRING("*OPC", dws_scpi_common(ScpiCommon::SCPI_OPC));
+    TEST_ASSERT_EQUAL_STRING("*SRE", dws_scpi_common(ScpiCommon::SCPI_SRE));
+    TEST_ASSERT_EQUAL_STRING("*SRE?", dws_scpi_common(ScpiCommon::SCPI_SRE_Q));
+    TEST_ASSERT_EQUAL_STRING("*TST?", dws_scpi_common(ScpiCommon::SCPI_TST_Q));
+    // a value outside the enumeration falls past every case -> the empty string
+    TEST_ASSERT_EQUAL_STRING("", dws_scpi_common(static_cast<ScpiCommon>(200)));
+}
+
+void test_build_guard_edges()
+{
+    char buf[32];
+    // a non-zero argc with no args vector at all
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(buf, sizeof(buf), "VOLT", nullptr, 1));
+    // an empty header is not a command
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(buf, sizeof(buf), "", nullptr, 0));
+    // the header fits but leaves no room for the terminating '\n' + NUL
+    char exact[6];
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_build(exact, sizeof(exact), "ABCDE", nullptr, 0));
+    // one more byte of capacity is enough
+    char room[7];
+    TEST_ASSERT_EQUAL_size_t(6, dws_scpi_build(room, sizeof(room), "ABCDE", nullptr, 0));
+    TEST_ASSERT_EQUAL_STRING("ABCDE\n", room);
+}
+
+void test_fmt_real_guards()
+{
+    char buf[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_fmt_real(nullptr, sizeof(buf), 1.0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_fmt_real(buf, 0, 1.0));
+}
+
+void test_parse_number_guards_and_exponent_forms()
+{
+    double v = 0;
+    TEST_ASSERT_FALSE(dws_scpi_parse_number(nullptr, 2, &v));
+    TEST_ASSERT_FALSE(dws_scpi_parse_number("42", 2, nullptr));
+    // an explicit '+' exponent sign
+    TEST_ASSERT_TRUE(dws_scpi_parse_number("1.5E+3", 6, &v));
+    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 1500.0, v);
+    // junk after the exponent digits is trailing junk, not a unit-less number
+    TEST_ASSERT_FALSE(dws_scpi_parse_number("1E5X", 4, &v));
+}
+
+void test_parse_bool_guards()
+{
+    bool b = false;
+    TEST_ASSERT_FALSE(dws_scpi_parse_bool(nullptr, 1, &b));
+    TEST_ASSERT_FALSE(dws_scpi_parse_bool("1", 1, nullptr));
+    TEST_ASSERT_FALSE(dws_scpi_parse_bool("X", 1, &b)); // one character, neither '1' nor '0'
+}
+
+void test_parse_string_guards()
+{
+    char out[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string(nullptr, 4, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\"a\"", 3, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\"a\"", 3, out, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\"", 1, out, sizeof(out))); // shorter than a quote pair
+}
+
+void test_parse_string_malformed_interior_quote()
+{
+    char out[32];
+    // an unpaired interior quote is a malformed close
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\"a\"b\"", 5, out, sizeof(out)));
+    // a quote in the last scannable position has no room for its pair
+    TEST_ASSERT_EQUAL_size_t(0, dws_scpi_parse_string("\"a\"\"", 4, out, sizeof(out)));
+}
+
+void test_parse_block_guards()
+{
+    const uint8_t blk[] = "#14DATA";
+    const uint8_t *data = nullptr;
+    size_t dlen = 0, consumed = 0;
+    TEST_ASSERT_FALSE(dws_scpi_parse_block(nullptr, 7, &data, &dlen, &consumed));
+    TEST_ASSERT_FALSE(dws_scpi_parse_block(blk, 7, nullptr, &dlen, &consumed));
+    TEST_ASSERT_FALSE(dws_scpi_parse_block(blk, 7, &data, nullptr, &consumed));
+    TEST_ASSERT_FALSE(dws_scpi_parse_block(blk, 7, &data, &dlen, nullptr));
+    TEST_ASSERT_FALSE(dws_scpi_parse_block(blk, 1, &data, &dlen, &consumed)); // shorter than "#n"
+}
+
+void test_parse_block_length_field_rejects()
+{
+    const uint8_t *data = nullptr;
+    size_t dlen = 0, consumed = 0;
+    // an indefinite marker with nothing after it
+    const uint8_t bare[] = "#0";
+    TEST_ASSERT_FALSE(dws_scpi_parse_block(bare, 2, &data, &dlen, &consumed));
+    // a width byte below '1'
+    const uint8_t low[] = "#!4DATA";
+    TEST_ASSERT_FALSE(dws_scpi_parse_block(low, 7, &data, &dlen, &consumed));
+    // the declared width runs off the end of the buffer
+    const uint8_t narrow[] = "#25";
+    TEST_ASSERT_FALSE(dws_scpi_parse_block(narrow, 3, &data, &dlen, &consumed));
+    // a non-digit inside the length field
+    const uint8_t nondigit[] = "#1X";
+    TEST_ASSERT_FALSE(dws_scpi_parse_block(nondigit, 3, &data, &dlen, &consumed));
+}
+
+void test_status_null_guards()
+{
+    // every status entry point tolerates a missing status block
+    dws_scpi_status_init(nullptr);
+    dws_scpi_event(nullptr, SCPI_ESR_OPC);
+    dws_scpi_cls(nullptr);
+    TEST_ASSERT_EQUAL_UINT8(0, dws_scpi_stb(nullptr));
+
+    ScpiStatus s;
+    dws_scpi_status_init(&s);
+    dws_scpi_push_error(nullptr, -100, "x");
+    dws_scpi_push_error(&s, 0, "zero is not an error"); // 0 never queues and latches nothing
+    TEST_ASSERT_EQUAL_UINT8(0, s.count);
+    TEST_ASSERT_EQUAL_UINT8(0, s.esr);
+
+    ScpiError e;
+    TEST_ASSERT_FALSE(dws_scpi_pop_error(&s, nullptr)); // nowhere to write the entry
+    e.number = -1;
+    e.msg = nullptr;
+    TEST_ASSERT_FALSE(dws_scpi_pop_error(nullptr, &e)); // no queue -> the no-error entry
+    TEST_ASSERT_EQUAL_INT16(0, e.number);
+    TEST_ASSERT_EQUAL_STRING("No error", e.msg);
+}
+
+void test_status_esr_class_bits_full_range()
+{
+    ScpiStatus s;
+    // a positive number is device-specific -> DDE
+    dws_scpi_status_init(&s);
+    dws_scpi_push_error(&s, 42, "vendor fault");
+    TEST_ASSERT_EQUAL_UINT8(SCPI_ESR_DDE, s.esr);
+
+    // the -5xx .. -8xx class boundaries (each range's first number falls into the NEXT test)
+    const int16_t numbers[] = {-500, -600, -700, -800};
+    const uint8_t bits[] = {SCPI_ESR_PON, SCPI_ESR_URQ, SCPI_ESR_RQC, SCPI_ESR_OPC};
+    for (size_t i = 0; i < sizeof(numbers) / sizeof(numbers[0]); i++)
+    {
+        dws_scpi_status_init(&s);
+        dws_scpi_push_error(&s, numbers[i], "x");
+        TEST_ASSERT_EQUAL_UINT8(bits[i], s.esr);
+    }
+
+    // -900 and below latch no class bit, yet the entry still queues
+    dws_scpi_status_init(&s);
+    dws_scpi_push_error(&s, -900, "x");
+    TEST_ASSERT_EQUAL_UINT8(0, s.esr);
+    TEST_ASSERT_EQUAL_UINT8(1, s.count);
+}
+
+void test_match_null_and_empty()
+{
+    TEST_ASSERT_FALSE(dws_scpi_match(nullptr, 4, "SYSTem"));
+    TEST_ASSERT_FALSE(dws_scpi_match("SYST", 4, nullptr));
+    TEST_ASSERT_FALSE(dws_scpi_match("", 0, "SYSTem"));  // no input node at all
+    TEST_ASSERT_FALSE(dws_scpi_match(":", 1, "SYSTem")); // nothing after the root anchor
+    TEST_ASSERT_FALSE(dws_scpi_match("SYST", 4, ""));    // no pattern node at all
+}
+
+void test_match_bad_numeric_suffix()
+{
+    // a non-digit in the input's numeric suffix
+    TEST_ASSERT_FALSE(dws_scpi_match("SYST1X", 6, "SYSTem1"));
+    // a non-digit in the pattern's numeric suffix
+    TEST_ASSERT_FALSE(dws_scpi_match("SYST1", 5, "SYSTem1X"));
+}
+
+void test_match_non_alpha_header_bytes()
+{
+    // bytes between 'Z' and 'a', and above 'z', are not alpha - they land in the suffix field
+    TEST_ASSERT_FALSE(dws_scpi_match("SYST_", 5, "SYSTem"));
+    TEST_ASSERT_FALSE(dws_scpi_match("SYST~", 5, "SYSTem"));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -386,5 +564,19 @@ int main()
     RUN_TEST(test_match_numeric_suffix);
     RUN_TEST(test_match_common_and_root);
     RUN_TEST(test_match_negatives);
+    RUN_TEST(test_common_commands_full_enum);
+    RUN_TEST(test_build_guard_edges);
+    RUN_TEST(test_fmt_real_guards);
+    RUN_TEST(test_parse_number_guards_and_exponent_forms);
+    RUN_TEST(test_parse_bool_guards);
+    RUN_TEST(test_parse_string_guards);
+    RUN_TEST(test_parse_string_malformed_interior_quote);
+    RUN_TEST(test_parse_block_guards);
+    RUN_TEST(test_parse_block_length_field_rejects);
+    RUN_TEST(test_status_null_guards);
+    RUN_TEST(test_status_esr_class_bits_full_range);
+    RUN_TEST(test_match_null_and_empty);
+    RUN_TEST(test_match_bad_numeric_suffix);
+    RUN_TEST(test_match_non_alpha_header_bytes);
     return UNITY_END();
 }

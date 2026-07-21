@@ -740,6 +740,184 @@ void test_ssh_window_adjust_and_eof()
     TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, e[0], e, sizeof(e)));
 }
 
+// Open one "session" channel through the dispatcher so the channel-scoped tests below have a live
+// channel 0. Leaves the session authenticated and in the OPEN phase.
+static void open_session_channel(uint32_t peer_id)
+{
+    ssh_sess[0].authed = true;
+    ssh_sess[0].phase = SshPhase::SSH_PHASE_OPEN;
+    uint8_t p[64];
+    size_t n = 0;
+    p[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(p + n, "session");
+    wr_u32(p + n, peer_id);
+    wr_u32(p + n + 4, 4096);
+    wr_u32(p + n + 8, 32768);
+    n += 12;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, p[0], p, n));
+    TEST_ASSERT_TRUE(ssh_chan[0][0].open);
+}
+
+// emit() drops the frame when no packet-emit callback is registered (the transport owner has not
+// wired one up yet, or is tearing the connection down). Every dispatch path must still run to
+// completion and return the same status - the callback is an output sink, not a control path.
+void test_ssh_dispatch_without_emit_cb()
+{
+    emt_reset();
+    dws_ssh_server_set_emit_cb(nullptr);
+
+    SshSession *s = &ssh_sess[0];
+    strcpy(s->v_c, "SSH-2.0-NoEmit");
+    s->v_c_len = (uint16_t)strlen(s->v_c);
+    s->phase = SshPhase::SSH_PHASE_KEXINIT;
+
+    uint8_t pkt[2048];
+    size_t n = build_client_kexinit(pkt); // KEXINIT reply dropped
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_DH_INIT, s->phase);
+
+    uint8_t e_be[256];
+    memset(e_be, 0, sizeof(e_be));
+    e_be[255] = 0x02;
+    n = 0;
+    pkt[n++] = SSH_MSG_KEXDH_INIT;
+    n += put_mpint(pkt + n, e_be, 256); // KEXDH_REPLY + NEWKEYS dropped
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_TRUE(ssh_pkt[0].enc_out); // the keys were still installed
+
+    uint8_t nk = SSH_MSG_NEWKEYS; // EXT_INFO dropped
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, nk, &nk, 1));
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_SERVICE, s->phase);
+
+    n = 0;
+    pkt[n++] = SSH_MSG_SERVICE_REQUEST;
+    n += put_string(pkt + n, "ssh-userauth"); // SERVICE_ACCEPT dropped
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_AUTH, s->phase);
+
+    n = build_password_auth(pkt, "alice", "s3cret"); // USERAUTH_SUCCESS dropped
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_TRUE(s->authed);
+
+    open_session_channel(41); // CHANNEL_OPEN_CONFIRMATION dropped
+
+    n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(pkt + n, 0);
+    n += 4;
+    n += put_string(pkt + n, "shell");
+    pkt[n++] = 1; // want_reply: CHANNEL_SUCCESS dropped
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
+
+    uint8_t cl[5];
+    cl[0] = SSH_MSG_CHANNEL_CLOSE;
+    wr_u32(cl + 1, 0); // CHANNEL_EOF + CHANNEL_CLOSE dropped
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, cl, sizeof(cl)));
+    TEST_ASSERT_FALSE(ssh_chan[0][0].open); // the close still took effect
+
+    uint8_t unk[1] = {201}; // UNIMPLEMENTED dropped
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, unk[0], unk, 1));
+
+    const int recorded = emt_n;
+    dws_ssh_server_set_emit_cb(rec_emit); // restore for the remaining tests
+    TEST_ASSERT_EQUAL_INT(0, recorded);   // nothing reached the recorder while it was unhooked
+}
+
+// RFC 4254 §4: a global request with want_reply = FALSE is answered with silence. The handler
+// leaves the reply empty and the dispatcher must not emit a zero-length packet.
+void test_ssh_global_request_silent_without_want_reply()
+{
+    ssh_sess[0].authed = true;
+    uint8_t p[64];
+    size_t n = 0;
+    p[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(p + n, "no-such-request@example.com"); // unrecognized request name
+    p[n++] = 0;                                            // want_reply = FALSE
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, p[0], p, n));
+    TEST_ASSERT_EQUAL_INT(0, emt_n);
+}
+
+// RFC 4254 §5.4: same rule for a channel request - executed, but not answered.
+void test_ssh_channel_request_silent_without_want_reply()
+{
+    open_session_channel(51);
+
+    uint8_t p[64];
+    size_t n = 0;
+    p[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(p + n, 0); // recipient = local channel 0
+    n += 4;
+    n += put_string(p + n, "shell");
+    p[n++] = 0; // want_reply = FALSE
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, p[0], p, n));
+    TEST_ASSERT_EQUAL_INT(0, emt_n);
+}
+
+// A CHANNEL_CLOSE that the channel layer cannot act on (unknown recipient, or a payload too short
+// to carry one) emits nothing and is NOT fatal: a stray close must not drop the connection.
+void test_ssh_channel_close_unhandled_emits_nothing()
+{
+    // No channel has been opened in this test, so recipient 0 does not resolve.
+    uint8_t pkt[5];
+    pkt[0] = SSH_MSG_CHANNEL_CLOSE;
+    wr_u32(pkt + 1, 0);
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, sizeof(pkt)));
+    TEST_ASSERT_EQUAL_INT(0, emt_n);
+
+    // Recipient id past the channel table.
+    wr_u32(pkt + 1, DWS_SSH_MAX_CHANNELS + 7u);
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, sizeof(pkt)));
+    TEST_ASSERT_EQUAL_INT(0, emt_n);
+
+    // Truncated: no room for the recipient field at all.
+    uint8_t shortpkt[3] = {SSH_MSG_CHANNEL_CLOSE, 0, 0};
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, shortpkt, sizeof(shortpkt)));
+    TEST_ASSERT_EQUAL_INT(0, emt_n);
+}
+
+// An in-session KEXINIT is a re-key request (RFC 4253 §9), not a protocol error: the dispatcher
+// re-negotiates, replies with a fresh server KEXINIT and rewinds the phase to DH_INIT while the
+// session id and authentication survive.
+void test_ssh_kexinit_midsession_rekey()
+{
+    SshSession *s = &ssh_sess[0];
+    s->authed = true;
+    s->have_session_id = true;
+    s->session_id_len = 32;
+    for (int j = 0; j < 32; j++)
+        s->session_id[j] = (uint8_t)(0x10 + j);
+    s->phase = SshPhase::SSH_PHASE_OPEN;
+
+    uint8_t pkt[2048];
+    size_t n = build_client_kexinit(pkt);
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(1, emt_n);
+    TEST_ASSERT_EQUAL(SSH_MSG_KEXINIT, emt_type[0]);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_DH_INIT, s->phase);
+    TEST_ASSERT_TRUE(s->authed);
+    TEST_ASSERT_TRUE(s->have_session_id);
+    for (int j = 0; j < 32; j++)
+        TEST_ASSERT_EQUAL_UINT8((uint8_t)(0x10 + j), s->session_id[j]); // fixed at the first KEX
+
+    // The client's NEWKEYS after a re-key resumes the channel phase, not the service phase.
+    uint8_t e_be[256];
+    memset(e_be, 0, sizeof(e_be));
+    e_be[255] = 0x02;
+    n = 0;
+    pkt[n++] = SSH_MSG_KEXDH_INIT;
+    n += put_mpint(pkt + n, e_be, 256);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
+    uint8_t nk = SSH_MSG_NEWKEYS;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, nk, &nk, 1));
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_OPEN, s->phase);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -770,5 +948,10 @@ int main()
     RUN_TEST(test_auth_success_after_failures);
     RUN_TEST(test_unimplemented_reply_for_unknown_message);
     RUN_TEST(test_inbound_close_emits_eof_then_close_separately);
+    RUN_TEST(test_ssh_global_request_silent_without_want_reply);
+    RUN_TEST(test_ssh_channel_request_silent_without_want_reply);
+    RUN_TEST(test_ssh_channel_close_unhandled_emits_nothing);
+    RUN_TEST(test_ssh_kexinit_midsession_rekey);
+    RUN_TEST(test_ssh_dispatch_without_emit_cb);
     return UNITY_END();
 }

@@ -620,6 +620,247 @@ void test_parse_write_response()
     TEST_ASSERT_FALSE(dws_smb2_parse_write_response(m, 70, &r)); // truncated
 }
 
+// ---- fail-closed guards: the null / out-of-range / wrong-command sides the happy paths skip ----
+
+void test_transport_rejects_null_and_oversize()
+{
+    const uint8_t msg[] = {1, 2, 3, 4, 5};
+    uint8_t out[16];
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_transport_frame(nullptr, sizeof(out), msg, sizeof(msg)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_transport_frame(out, sizeof(out), nullptr, sizeof(msg)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_transport_frame(out, sizeof(out), msg, 0x01000000)); // past 24 bits
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_transport_len(nullptr, 4));
+    uint8_t pre[4] = {0x00, 0x00, 0x00, 0x05};
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_transport_len(pre, 3)); // shorter than the prefix
+    TEST_ASSERT_EQUAL_UINT32(5, dws_smb2_transport_len(pre, 4));
+}
+
+void test_build_header_rejects()
+{
+    uint8_t buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_header(nullptr, 64, Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_header(buf, 63, Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0));
+}
+
+void test_parse_header_null_args()
+{
+    uint8_t buf[64];
+    dws_smb2_build_header(buf, sizeof(buf), Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0);
+    Smb2Header h;
+    TEST_ASSERT_FALSE(dws_smb2_parse_header(nullptr, 64, &h));
+    TEST_ASSERT_FALSE(dws_smb2_parse_header(buf, 64, nullptr));
+}
+
+void test_build_negotiate_null_args()
+{
+    uint8_t gid[16] = {0};
+    uint8_t buf[160];
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate(nullptr, sizeof(buf), gid, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate(buf, sizeof(buf), nullptr, 0));
+}
+
+void test_parse_negotiate_response_null_and_low_offset()
+{
+    const uint8_t token[] = {1, 2, 3, 4};
+    uint8_t m[256];
+    size_t n = build_neg_resp(m, Smb2Dialect::SMB2_DIALECT_0202, token, sizeof(token));
+    Smb2NegotiateResp r;
+    TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_response(nullptr, n, &r));
+    TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_response(m, n, nullptr));
+
+    uint8_t bad[256];
+    memcpy(bad, m, n);
+    bad[0] = 0x00; // broken ProtocolId -> the header parse fails
+    TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_response(bad, n, &r));
+
+    memcpy(bad, m, n);
+    w16(bad + 64 + 56, 10); // SecurityBufferOffset inside the 64-byte header, though still within the message
+    TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_response(bad, n, &r));
+}
+
+void test_build_session_setup_null_args()
+{
+    uint8_t tok[8] = {0};
+    uint8_t buf[256];
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_session_setup(nullptr, sizeof(buf), 1, 0, 0, tok, sizeof(tok)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_session_setup(buf, sizeof(buf), 1, 0, 0, nullptr, sizeof(tok)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_session_setup(buf, sizeof(buf), 1, 0, 0, tok, 0x10000)); // > 0xFFFF
+}
+
+void test_parse_session_setup_null_and_low_offset()
+{
+    const uint8_t tok[] = {1, 2, 3, 4};
+    uint8_t m[256];
+    size_t n = build_ss_resp(m, 1, 0, 0, tok, sizeof(tok));
+    Smb2SessionSetupResp r;
+    TEST_ASSERT_FALSE(dws_smb2_parse_session_setup_response(nullptr, n, &r));
+    TEST_ASSERT_FALSE(dws_smb2_parse_session_setup_response(m, n, nullptr));
+
+    uint8_t bad[256];
+    memcpy(bad, m, n);
+    bad[0] = 0x00; // broken ProtocolId
+    TEST_ASSERT_FALSE(dws_smb2_parse_session_setup_response(bad, n, &r));
+
+    memcpy(bad, m, n);
+    w16(bad + 64 + 4, 10); // SecurityBufferOffset inside the header
+    TEST_ASSERT_FALSE(dws_smb2_parse_session_setup_response(bad, n, &r));
+}
+
+void test_build_tree_connect_null_args()
+{
+    const uint8_t path[8] = {0};
+    uint8_t buf[128];
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_tree_connect(nullptr, sizeof(buf), 2, 0, path, sizeof(path)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_tree_connect(buf, sizeof(buf), 2, 0, nullptr, sizeof(path)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_tree_connect(buf, sizeof(buf), 2, 0, path, 0x10000)); // > 0xFFFF
+}
+
+void test_parse_tree_connect_null_and_command()
+{
+    uint8_t m[128];
+    size_t n = build_tc_resp(m, 0x777, Smb2ShareType::SMB2_SHARE_TYPE_DISK, 0x001f01ff);
+    Smb2TreeConnectResp r;
+    TEST_ASSERT_FALSE(dws_smb2_parse_tree_connect_response(nullptr, n, &r));
+    TEST_ASSERT_FALSE(dws_smb2_parse_tree_connect_response(m, n, nullptr));
+
+    uint8_t bad[128];
+    memcpy(bad, m, n);
+    bad[0] = 0x00; // broken ProtocolId
+    TEST_ASSERT_FALSE(dws_smb2_parse_tree_connect_response(bad, n, &r));
+    memcpy(bad, m, n);
+    w16(bad + 12, (uint16_t)Smb2Command::SMB2_CREATE); // wrong command
+    TEST_ASSERT_FALSE(dws_smb2_parse_tree_connect_response(bad, n, &r));
+}
+
+void test_build_create_null_args()
+{
+    const uint8_t name[8] = {0};
+    uint8_t buf[256];
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_create(nullptr, sizeof(buf), 3, 0, 0, 0, 0, 0, 0, name, sizeof(name)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_create(buf, sizeof(buf), 3, 0, 0, 0, 0, 0, 0, nullptr, sizeof(name)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_create(buf, sizeof(buf), 3, 0, 0, 0, 0, 0, 0, name, 0x10000));
+}
+
+void test_parse_create_null_and_command()
+{
+    uint8_t fid[16] = {0};
+    uint8_t m[256];
+    size_t n = build_create_resp(m, fid, 0x100ULL, 1);
+    Smb2CreateResp r;
+    TEST_ASSERT_FALSE(dws_smb2_parse_create_response(nullptr, n, &r));
+    TEST_ASSERT_FALSE(dws_smb2_parse_create_response(m, n, nullptr));
+
+    uint8_t bad[256];
+    memcpy(bad, m, n);
+    bad[0] = 0x00; // broken ProtocolId
+    TEST_ASSERT_FALSE(dws_smb2_parse_create_response(bad, n, &r));
+    memcpy(bad, m, n);
+    w16(bad + 12, (uint16_t)Smb2Command::SMB2_CLOSE); // wrong command
+    TEST_ASSERT_FALSE(dws_smb2_parse_create_response(bad, n, &r));
+}
+
+// A well-formed CLOSE response message (header + the fixed 60-byte body).
+static size_t build_close_resp(uint8_t *m, uint64_t eof)
+{
+    dws_smb2_build_header(m, 128, Smb2Command::SMB2_CLOSE, 1, 4, 0x777, 0xAAAA);
+    m[16] |= 0x01; // SERVER_TO_REDIR
+    uint8_t *b = m + 64;
+    memset(b, 0, 60);
+    w16(b + 0, 60);    // StructureSize
+    w64(b + 48, eof);  // EndofFile
+    w32(b + 56, 0x80); // FileAttributes
+    return 64 + 60;
+}
+
+void test_build_close_null_args()
+{
+    uint8_t fid[16] = {0};
+    uint8_t buf[128];
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_close(nullptr, sizeof(buf), 4, 0, 0, fid));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_close(buf, sizeof(buf), 4, 0, 0, nullptr));
+}
+
+void test_parse_close_null_command_and_truncated()
+{
+    uint8_t m[128];
+    size_t n = build_close_resp(m, 0x4000ULL);
+    Smb2CloseResp r;
+    TEST_ASSERT_FALSE(dws_smb2_parse_close_response(nullptr, n, &r));
+    TEST_ASSERT_FALSE(dws_smb2_parse_close_response(m, n, nullptr));
+
+    uint8_t bad[128];
+    memcpy(bad, m, n);
+    bad[0] = 0x00; // broken ProtocolId
+    TEST_ASSERT_FALSE(dws_smb2_parse_close_response(bad, n, &r));
+    memcpy(bad, m, n);
+    w16(bad + 12, (uint16_t)Smb2Command::SMB2_READ); // wrong command
+    TEST_ASSERT_FALSE(dws_smb2_parse_close_response(bad, n, &r));
+    TEST_ASSERT_FALSE(dws_smb2_parse_close_response(m, 64 + 59, &r)); // one byte short of the 60-byte body
+}
+
+void test_build_read_null_args()
+{
+    uint8_t fid[16] = {0};
+    uint8_t buf[128];
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_read(nullptr, sizeof(buf), 5, 0, 0, fid, 16, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_read(buf, sizeof(buf), 5, 0, 0, nullptr, 16, 0));
+}
+
+void test_parse_read_null_command_and_low_offset()
+{
+    const uint8_t data[] = {9, 8, 7, 6};
+    uint8_t m[512];
+    size_t n = build_read_resp(m, data, sizeof(data));
+    Smb2ReadResp r;
+    TEST_ASSERT_FALSE(dws_smb2_parse_read_response(nullptr, n, &r));
+    TEST_ASSERT_FALSE(dws_smb2_parse_read_response(m, n, nullptr));
+
+    uint8_t bad[512];
+    memcpy(bad, m, n);
+    bad[0] = 0x00; // broken ProtocolId
+    TEST_ASSERT_FALSE(dws_smb2_parse_read_response(bad, n, &r));
+    memcpy(bad, m, n);
+    w16(bad + 12, (uint16_t)Smb2Command::SMB2_WRITE); // wrong command
+    TEST_ASSERT_FALSE(dws_smb2_parse_read_response(bad, n, &r));
+    memcpy(bad, m, n);
+    bad[64 + 2] = 40; // DataOffset inside the 64-byte header, though the data still fits the message
+    TEST_ASSERT_FALSE(dws_smb2_parse_read_response(bad, n, &r));
+}
+
+void test_build_write_null_args()
+{
+    uint8_t fid[16] = {0};
+    const uint8_t data[8] = {0};
+    uint8_t buf[256];
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_write(nullptr, sizeof(buf), 6, 0, 0, fid, data, sizeof(data), 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_write(buf, sizeof(buf), 6, 0, 0, nullptr, data, sizeof(data), 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_write(buf, sizeof(buf), 6, 0, 0, fid, nullptr, sizeof(data), 0));
+    size_t over32 = (size_t)0xFFFFFFFFULL;
+    over32 += 1; // 0x1_0000_0000 on a 64-bit size_t; wraps to 0 (the empty-data guard) on a 32-bit one
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_write(buf, sizeof(buf), 6, 0, 0, fid, data, over32, 0));
+}
+
+void test_parse_write_null_and_command()
+{
+    uint8_t m[128];
+    dws_smb2_build_header(m, 128, Smb2Command::SMB2_WRITE, 1, 6, 0x777, 0xAAAA);
+    m[16] |= 0x01;
+    memset(m + 64, 0, 16);
+    w16(m + 64, 17);       // StructureSize
+    w32(m + 64 + 4, 4096); // Count
+    Smb2WriteResp r;
+    TEST_ASSERT_FALSE(dws_smb2_parse_write_response(nullptr, 64 + 16, &r));
+    TEST_ASSERT_FALSE(dws_smb2_parse_write_response(m, 64 + 16, nullptr));
+
+    uint8_t bad[128];
+    memcpy(bad, m, 64 + 16);
+    bad[0] = 0x00; // broken ProtocolId
+    TEST_ASSERT_FALSE(dws_smb2_parse_write_response(bad, 64 + 16, &r));
+    memcpy(bad, m, 64 + 16);
+    w16(bad + 12, (uint16_t)Smb2Command::SMB2_READ); // wrong command
+    TEST_ASSERT_FALSE(dws_smb2_parse_write_response(bad, 64 + 16, &r));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -642,5 +883,22 @@ int main()
     RUN_TEST(test_parse_read_response);
     RUN_TEST(test_build_write);
     RUN_TEST(test_parse_write_response);
+    RUN_TEST(test_transport_rejects_null_and_oversize);
+    RUN_TEST(test_build_header_rejects);
+    RUN_TEST(test_parse_header_null_args);
+    RUN_TEST(test_build_negotiate_null_args);
+    RUN_TEST(test_parse_negotiate_response_null_and_low_offset);
+    RUN_TEST(test_build_session_setup_null_args);
+    RUN_TEST(test_parse_session_setup_null_and_low_offset);
+    RUN_TEST(test_build_tree_connect_null_args);
+    RUN_TEST(test_parse_tree_connect_null_and_command);
+    RUN_TEST(test_build_create_null_args);
+    RUN_TEST(test_parse_create_null_and_command);
+    RUN_TEST(test_build_close_null_args);
+    RUN_TEST(test_parse_close_null_command_and_truncated);
+    RUN_TEST(test_build_read_null_args);
+    RUN_TEST(test_parse_read_null_command_and_low_offset);
+    RUN_TEST(test_build_write_null_args);
+    RUN_TEST(test_parse_write_null_and_command);
     return UNITY_END();
 }

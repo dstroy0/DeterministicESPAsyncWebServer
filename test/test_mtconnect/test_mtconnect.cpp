@@ -279,6 +279,161 @@ void test_sample_query_future_and_empty(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_mtc_sample_query(&b, tiny, sizeof(tiny), 1, "device-name", 5, 10));
 }
 
+// Every string a streams observation takes is optional: a null becomes an empty attribute rather
+// than a dereference, and a null CONDITION value defaults the sub-element to Normal.
+void test_streams_null_strings(void)
+{
+    char buf[1024];
+    DWSMtcStreams s;
+    dws_mtc_streams_begin(&s, buf, sizeof(buf), 1, 1, nullptr);
+    dws_mtc_streams_add(&s, DWSMtcCategory::DWS_MTC_SAMPLE, nullptr, nullptr, 7, nullptr, nullptr);
+    dws_mtc_streams_add(&s, DWSMtcCategory::DWS_MTC_CONDITION, nullptr, nullptr, 8, nullptr, nullptr);
+    size_t n = dws_mtc_streams_end(&s);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
+    TEST_ASSERT_TRUE(contains(buf, "<DeviceStream name=\"\">"));
+    TEST_ASSERT_TRUE(contains(buf, "<Samples>< dataItemId=\"\" sequence=\"7\" timestamp=\"\"></></Samples>"));
+    TEST_ASSERT_TRUE(
+        contains(buf, "<Condition><Normal type=\"\" dataItemId=\"\" sequence=\"8\" timestamp=\"\"/></Condition>"));
+}
+
+// Each document builder rejects a null buffer and a zero capacity independently, and stays safe to
+// drive to completion afterwards (every writer is a no-op once ok is cleared).
+void test_builders_reject_null_buffer_and_zero_cap(void)
+{
+    char b[64];
+    DWSMtcStreams s;
+
+    dws_mtc_streams_begin(&s, nullptr, sizeof(b), 1, 1, "d");
+    TEST_ASSERT_FALSE(s.ok);
+    dws_mtc_streams_add(&s, DWSMtcCategory::DWS_MTC_EVENT, "T", "i", 1, "ts", "v");
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_streams_end(&s));
+    dws_mtc_streams_begin(&s, b, 0, 1, 1, "d");
+    TEST_ASSERT_FALSE(s.ok);
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_streams_end(&s));
+
+    dws_mtc_devices_begin(&s, nullptr, sizeof(b), 1, "d", "n", "u");
+    TEST_ASSERT_FALSE(s.ok);
+    dws_mtc_devices_add_item(&s, DWSMtcCategory::DWS_MTC_EVENT, "i", "T", "n", "mm");
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_devices_end(&s));
+    dws_mtc_devices_begin(&s, b, 0, 1, "d", "n", "u");
+    TEST_ASSERT_FALSE(s.ok);
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_devices_end(&s));
+
+    dws_mtc_assets_begin(&s, nullptr, sizeof(b), 1, 1, 1);
+    TEST_ASSERT_FALSE(s.ok);
+    dws_mtc_assets_cutting_tool_begin(&s, "a", nullptr, nullptr, nullptr, nullptr);
+    dws_mtc_assets_cutting_tool_end(&s);
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_assets_end(&s));
+    dws_mtc_assets_begin(&s, b, 0, 1, 1, 1);
+    TEST_ASSERT_FALSE(s.ok);
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_assets_end(&s));
+
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_error(1, "E", "m", nullptr, sizeof(b)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_error(1, "E", "m", b, 0));
+}
+
+// The error document takes null strings, and at EVERY capacity below the one it needs it fails
+// closed without writing past the buffer it was handed. The sweep walks the boundary through both
+// writers - the whole-string one and the per-character escape one.
+void test_error_null_strings_and_capacity_sweep(void)
+{
+    char buf[512];
+    size_t n = dws_mtc_error(7, nullptr, nullptr, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(contains(buf, "<Errors><Error errorCode=\"\"></Error></Errors>"));
+
+    char full[512];
+    const size_t complete = dws_mtc_error(7, "AB", "CD", full, sizeof(full));
+    TEST_ASSERT_TRUE(complete > 0);
+    for (size_t cap = 1; cap <= complete + 1; cap++)
+    {
+        char small[512];
+        memset(small, 0x7E, sizeof(small));
+        size_t got = dws_mtc_error(7, "AB", "CD", small, cap);
+        // One byte beyond the document is needed for the NUL, so only cap > complete succeeds.
+        TEST_ASSERT_EQUAL_size_t(cap > complete ? complete : 0, got);
+        for (size_t i = cap; i < sizeof(small); i++)
+            TEST_ASSERT_EQUAL_HEX8(0x7E, (uint8_t)small[i]); // nothing written past the declared capacity
+    }
+}
+
+// A probe DataItem: null id/type become empty attributes, and an EMPTY optional name/units is
+// omitted exactly as a null one is.
+void test_devices_null_ids_and_empty_optionals(void)
+{
+    char buf[1024];
+    DWSMtcStreams s;
+    dws_mtc_devices_begin(&s, buf, sizeof(buf), 1, nullptr, nullptr, nullptr);
+    dws_mtc_devices_add_item(&s, DWSMtcCategory::DWS_MTC_SAMPLE, nullptr, nullptr, "", "");
+    size_t n = dws_mtc_devices_end(&s);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(contains(buf, "<Devices><Device id=\"\" name=\"\" uuid=\"\"><DataItems>"));
+    // Self-closing straight after type: the empty name/units were dropped, not emitted.
+    TEST_ASSERT_TRUE(contains(buf, "<DataItem category=\"SAMPLE\" id=\"\" type=\"\"/>"));
+    TEST_ASSERT_FALSE(contains(buf, "units="));
+}
+
+// A cutting tool whose optional attributes are all empty strings, and a ToolLife with null
+// type/countDirection/value plus an empty limit.
+void test_assets_empty_optionals_and_null_strings(void)
+{
+    char buf[1024];
+    DWSMtcStreams s;
+    dws_mtc_assets_begin(&s, buf, sizeof(buf), 1, 0, 0);
+    dws_mtc_assets_cutting_tool_begin(&s, nullptr, "", "", "", "");
+    dws_mtc_assets_tool_life(&s, nullptr, nullptr, "", nullptr);
+    dws_mtc_assets_cutting_tool_end(&s);
+    size_t n = dws_mtc_assets_end(&s);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
+    TEST_ASSERT_TRUE(contains(buf, "assetBufferSize=\"0\" assetCount=\"0\""));
+    TEST_ASSERT_TRUE(contains(buf, "<Assets><CuttingTool assetId=\"\"><CuttingToolLifeCycle>"));
+    TEST_ASSERT_TRUE(contains(buf, "<ToolLife type=\"\" countDirection=\"\"></ToolLife>"));
+    TEST_ASSERT_FALSE(contains(buf, "serialNumber")); // empty optionals omitted
+    TEST_ASSERT_FALSE(contains(buf, "limit"));
+}
+
+// The sample ring stores bounded copies: a null field becomes an empty string and an over-long one
+// is truncated to its field cap rather than overrunning it. A start sequence of 0 means 1.
+void test_sample_buffer_null_and_truncated_fields(void)
+{
+    DWSMtcSampleBuffer b;
+    dws_mtc_sample_buffer_init(&b, 0);
+    TEST_ASSERT_EQUAL_UINT64(1, b.next_seq);
+    TEST_ASSERT_EQUAL_UINT64(
+        1, dws_mtc_sample_buffer_add(&b, DWSMtcCategory::DWS_MTC_EVENT, nullptr, nullptr, nullptr, nullptr));
+
+    const char *long_type = "AVeryLongDataItemTypeNameThatExceedsTheCap";
+    TEST_ASSERT_TRUE(strlen(long_type) > DWS_MTC_STR_MAX);
+    TEST_ASSERT_EQUAL_UINT64(
+        2, dws_mtc_sample_buffer_add(&b, DWSMtcCategory::DWS_MTC_SAMPLE, long_type, "x", "T2", "1.0"));
+
+    char buf[4096];
+    size_t n = dws_mtc_sample_query(&b, buf, sizeof(buf), 1, nullptr, 1, 10);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
+    TEST_ASSERT_TRUE(contains(buf, "<DeviceStream name=\"\">")); // null device name
+    TEST_ASSERT_TRUE(contains(buf, "< dataItemId=\"\" sequence=\"1\" timestamp=\"\"></>"));
+
+    char truncated[DWS_MTC_STR_MAX + 1];
+    memcpy(truncated, long_type, DWS_MTC_STR_MAX);
+    truncated[DWS_MTC_STR_MAX] = '\0';
+    TEST_ASSERT_TRUE(contains(buf, truncated));
+    TEST_ASSERT_FALSE(contains(buf, long_type));
+}
+
+// The sample query is a document builder like the rest: a null buffer or zero capacity fails closed.
+void test_sample_query_rejects_null_buffer_and_zero_cap(void)
+{
+    DWSMtcSampleBuffer b;
+    dws_mtc_sample_buffer_init(&b, 1);
+    dws_mtc_sample_buffer_add(&b, DWSMtcCategory::DWS_MTC_SAMPLE, "Position", "x", "T", "1.0");
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_sample_query(&b, nullptr, 512, 1, "d", 1, 10));
+    char buf[512];
+    TEST_ASSERT_EQUAL_size_t(0, dws_mtc_sample_query(&b, buf, 0, 1, "d", 1, 10));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -294,5 +449,12 @@ int main(void)
     RUN_TEST(test_sample_buffer_and_query);
     RUN_TEST(test_sample_buffer_eviction);
     RUN_TEST(test_sample_query_future_and_empty);
+    RUN_TEST(test_streams_null_strings);
+    RUN_TEST(test_builders_reject_null_buffer_and_zero_cap);
+    RUN_TEST(test_error_null_strings_and_capacity_sweep);
+    RUN_TEST(test_devices_null_ids_and_empty_optionals);
+    RUN_TEST(test_assets_empty_optionals_and_null_strings);
+    RUN_TEST(test_sample_buffer_null_and_truncated_fields);
+    RUN_TEST(test_sample_query_rejects_null_buffer_and_zero_cap);
     return UNITY_END();
 }

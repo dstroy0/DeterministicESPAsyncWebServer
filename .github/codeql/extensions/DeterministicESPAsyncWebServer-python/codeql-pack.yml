@@ -2,6 +2,6 @@ name: dstroy0/deterministicespasyncwebserver-python
 version: 0.0.0
 library: true
 extensionTargets:
-  codeql/python-all: '*'
+  codeql/python-all: "*"
 dataExtensions:
   - models/**/*.yml

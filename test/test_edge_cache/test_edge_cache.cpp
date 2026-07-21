@@ -463,6 +463,393 @@ void test_range_ignored_forms()
     TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("bytes=10-40x", 100, &s, &e));     // trailing garbage
 }
 
+// --- header field access: guards, overflow, odd line shapes --------------------------------------
+
+static void test_header_value_null_guards()
+{
+    char out[32];
+    TEST_ASSERT_FALSE(edge_header_value(nullptr, 0, "ETag", out, sizeof(out)));
+    TEST_ASSERT_FALSE(edge_header_value(RESP_HEAD, strlen(RESP_HEAD), nullptr, out, sizeof(out)));
+    TEST_ASSERT_FALSE(edge_header_value(RESP_HEAD, strlen(RESP_HEAD), "ETag", nullptr, sizeof(out)));
+    TEST_ASSERT_FALSE(edge_header_value(RESP_HEAD, strlen(RESP_HEAD), "ETag", out, 0));
+}
+
+static void test_header_value_overflow_fails_whole_lookup()
+{
+    // The name matches exactly but its value will not fit: fail the lookup outright rather than
+    // truncate a validator, and do not fall through to a later header.
+    char five[5]; // "ETag" is 4 so the name still matches; "\"abc123\"" (8) does not fit
+    TEST_ASSERT_FALSE(edge_header_value(RESP_HEAD, strlen(RESP_HEAD), "ETag", five, sizeof(five)));
+    TEST_ASSERT_EQUAL_STRING("", five);
+}
+
+static void test_header_value_colonless_line_skipped()
+{
+    static const char *head = "HTTP/1.1 200 OK\r\n"
+                              "NoColonHere\r\n"
+                              "ETag: \"z\"\r\n"
+                              "\r\n";
+    char out[32];
+    TEST_ASSERT_TRUE(edge_header_value(head, strlen(head), "ETag", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("\"z\"", out);
+}
+
+static void test_header_value_lf_only_and_htab_ows()
+{
+    // Bare-LF line endings (no CR to strip) and HTAB as the OWS around the value.
+    static const char *head = "HTTP/1.1 200 OK\n"
+                              "ETag:\t\"z\"\t\n"
+                              "\n";
+    char out[32];
+    TEST_ASSERT_TRUE(edge_header_value(head, strlen(head), "ETag", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("\"z\"", out);
+    // an absent name walks to the bare-LF blank line and stops there
+    TEST_ASSERT_FALSE(edge_header_value(head, strlen(head), "X-Absent", out, sizeof(out)));
+}
+
+static void test_header_value_unterminated_blocks()
+{
+    char out[32];
+    // A head with no newline at all: nothing follows the status line.
+    static const char *status_only = "HTTP/1.1 200 OK";
+    TEST_ASSERT_FALSE(edge_header_value(status_only, strlen(status_only), "ETag", out, sizeof(out)));
+    // A final header line with no trailing newline is still parsed, and ends the scan.
+    static const char *no_eol = "HTTP/1.1 200 OK\nX-Foo: bar";
+    TEST_ASSERT_TRUE(edge_header_value(no_eol, strlen(no_eol), "X-Foo", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("bar", out);
+    TEST_ASSERT_FALSE(edge_header_value(no_eol, strlen(no_eol), "ETag", out, sizeof(out)));
+}
+
+// --- HTTP-date parsing: guards, per-field failures, range checks ---------------------------------
+
+static void test_http_date_null_and_length_bounds()
+{
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date(nullptr, 10));
+    // leading OWS (SP and HTAB) is trimmed before parsing
+    const char *ows = "  \tSun, 06 Nov 1994 08:49:37 GMT";
+    TEST_ASSERT_EQUAL_INT64(784111777, edge_parse_http_date(ows, strlen(ows)));
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("   ", 3)); // all OWS -> nothing left
+    char big[80];
+    memset(big, 'x', sizeof(big));
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date(big, 70)); // past the 64-byte parse scratch
+}
+
+static void test_http_date_field_failures()
+{
+    // Each early-out of the IMF-fixdate / RFC 850 parse in turn.
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun,", 4));                           // no day-of-month
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06Nov 1994 08:49:37 GMT", 28));  // no day/month separator
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov xx94 08:49:37 GMT", 29)); // no year
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov 1994 xx:49:37 GMT", 29)); // hour not a digit
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov 1994 -8:49:37 GMT", 29)); // hour below '0'
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov 1994 08-49:37 GMT", 29)); // ':' expected after hh
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov 1994 08:xx:37 GMT", 29)); // no minute
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov 1994 08:49-37 GMT", 29)); // ':' expected after mm
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov 1994 08:49:xx GMT", 29)); // no second
+}
+
+static void test_http_date_asctime_field_failures()
+{
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun Nov xx 08:49:37 1994", 24)); // no day-of-month
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun Nov  6 xx:49:37 1994", 24)); // no time-of-day
+}
+
+static void test_http_date_field_range_checks()
+{
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 0 Nov 1994 08:49:37 GMT", 28));  // day 0
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 32 Nov 1994 08:49:37 GMT", 29)); // day 32
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov 1994 24:49:37 GMT", 29)); // hour 24
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov 1994 08:60:37 GMT", 29)); // minute 60
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Nov 1994 08:49:61 GMT", 29)); // second 61
+    // a leap second (ss == 60) is in range
+    TEST_ASSERT_EQUAL_INT64(784111800, edge_parse_http_date("Sun, 06 Nov 1994 08:49:60 GMT", 29));
+}
+
+static void test_http_date_rfc850_year_windows()
+{
+    // A 2-digit year below 70 windows into the 2000s.
+    const char *y05 = "Sunday, 06-Nov-05 08:49:37 GMT";
+    TEST_ASSERT_EQUAL_INT64(1131266977, edge_parse_http_date(y05, strlen(y05)));
+    // A 4-digit year in the obsolete format is taken as written (no windowing).
+    const char *y1994 = "Sunday, 06-Nov-1994 08:49:37 GMT";
+    TEST_ASSERT_EQUAL_INT64(784111777, edge_parse_http_date(y1994, strlen(y1994)));
+}
+
+static void test_http_date_pre_epoch_and_year_zero()
+{
+    const char *pre = "Thu, 06 Nov 1969 08:49:37 GMT";
+    TEST_ASSERT_EQUAL_INT64(-4806623, edge_parse_http_date(pre, strlen(pre))); // before 1970 -> negative
+    // Jan/Feb of year 0 drives the civil-date algorithm's negative-era path.
+    const char *y0 = "Sat, 06 Jan 0000 00:00:00 GMT";
+    TEST_ASSERT_EQUAL_INT64(-62166787200LL, edge_parse_http_date(y0, strlen(y0)));
+}
+
+// --- freshness edges -----------------------------------------------------------------------------
+
+static void test_heuristic_and_initial_age_edges()
+{
+    TEST_ASSERT_EQUAL_INT32(-1, edge_heuristic_lifetime(1000, -1)); // Last-Modified absent
+    TEST_ASSERT_EQUAL_INT32(10, edge_initial_age(10, 1000, -1));    // Date known but no wall clock
+    TEST_ASSERT_EQUAL_INT32(10, edge_initial_age(10, 1000, 900));   // response older than Date -> no apparent age
+    TEST_ASSERT_EQUAL_INT32(0, edge_initial_age(0, 1000, 1000));    // same instant -> no apparent age
+}
+
+// --- cache key: guards and every append point ----------------------------------------------------
+
+static void test_key_canon_null_guards()
+{
+    char out[64];
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon(nullptr, "h", "/a", "", false, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", nullptr, "/a", "", false, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "h", nullptr, "", false, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "h", "/a", "", false, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "h", "/a", "", false, out, 0));
+}
+
+static void test_key_canon_overflow_at_each_append()
+{
+    // "GET\nexample.com\n/a/b\nx=1" - a cap that stops at each piece in turn must yield 0, never a
+    // truncated key (two resources would collide).
+    char out[64];
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "example.com", "/a/b", "x=1", true, out, 2));  // method
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "example.com", "/a/b", "x=1", true, out, 4));  // separator
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "example.com", "/a/b", "x=1", true, out, 8));  // host
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "example.com", "/a/b", "x=1", true, out, 16)); // separator
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "example.com", "/a/b", "x=1", true, out, 18)); // path
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "example.com", "/a/b", "x=1", true, out, 21)); // separator
+    TEST_ASSERT_EQUAL_UINT(0, edge_key_canon("GET", "example.com", "/a/b", "x=1", true, out, 22)); // query
+    TEST_ASSERT_EQUAL_UINT(24, edge_key_canon("GET", "example.com", "/a/b", "x=1", true, out, 25));
+}
+
+static void test_key_canon_query_requested_but_empty()
+{
+    char out[64];
+    // include_query with nothing to include is the same key as excluding it.
+    TEST_ASSERT_EQUAL_UINT(20, edge_key_canon("GET", "example.com", "/a/b", nullptr, true, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("GET\nexample.com\n/a/b", out);
+    TEST_ASSERT_EQUAL_UINT(20, edge_key_canon("GET", "example.com", "/a/b", "", true, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("GET\nexample.com\n/a/b", out);
+}
+
+// --- Vary secondary key: guards, overflow, token edges -------------------------------------------
+
+static void test_vary_serialize_null_out_and_null_lookup()
+{
+    char out[64];
+    TEST_ASSERT_FALSE(edge_vary_serialize("Accept-Encoding", mock_lookup, nullptr, nullptr, sizeof(out)));
+    TEST_ASSERT_FALSE(edge_vary_serialize("Accept-Encoding", mock_lookup, nullptr, out, 0));
+    // With no lookup at all every name still emits its record, with an empty value.
+    TEST_ASSERT_TRUE(edge_vary_serialize("Accept-Encoding", nullptr, nullptr, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("accept-encoding\x1e\x1f", out);
+}
+
+static void test_vary_serialize_overflow_at_each_append()
+{
+    static const MockHdr gz[] = {{"accept-encoding", "gzip"}};
+    g_hdrs = gz;
+    g_hdr_count = 1;
+    char out[64];
+    TEST_ASSERT_FALSE(edge_vary_serialize("Accept-Encoding", mock_lookup, nullptr, out, 8));  // the name
+    TEST_ASSERT_FALSE(edge_vary_serialize("Accept-Encoding", mock_lookup, nullptr, out, 16)); // its separator
+    TEST_ASSERT_FALSE(edge_vary_serialize("Accept-Encoding", mock_lookup, nullptr, out, 20)); // the value
+    TEST_ASSERT_TRUE(edge_vary_serialize("Accept-Encoding", mock_lookup, nullptr, out, 22));
+}
+
+static void test_vary_serialize_long_name_and_separator_runs()
+{
+    char out[128];
+    // A field name past the internal token buffer is clamped, not overflowed.
+    static const char *longname = "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-Long";
+    TEST_ASSERT_TRUE(strlen(longname) > 47);
+    TEST_ASSERT_TRUE(edge_vary_serialize(longname, nullptr, nullptr, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(47 + 2, strlen(out)); // 47 name bytes + the two record separators
+
+    // Leading, repeated, and trailing separators (SP, HTAB, comma) are all skipped.
+    char a[128];
+    char b[128];
+    TEST_ASSERT_TRUE(edge_vary_serialize(" ,\tAccept-Encoding,\t , ", nullptr, nullptr, a, sizeof(a)));
+    TEST_ASSERT_TRUE(edge_vary_serialize("Accept-Encoding", nullptr, nullptr, b, sizeof(b)));
+    TEST_ASSERT_EQUAL_STRING(b, a);
+}
+
+// --- L1 store edges ------------------------------------------------------------------------------
+
+static void test_store_alloc_key_too_long()
+{
+    edge_store_init(&g_store);
+    char big[DWS_EDGE_KEY_MAX + 8];
+    memset(big, 'k', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    TEST_ASSERT_NULL(edge_store_alloc(&g_store, big, "")); // will not fit the key field -> non-cacheable
+    TEST_ASSERT_EQUAL_UINT32(0, g_store.stats.stores);
+}
+
+static void test_store_alloc_null_and_oversize_vary_key()
+{
+    edge_store_init(&g_store);
+    EdgeEntry *e = edge_store_alloc(&g_store, "GET\nh\n/a", nullptr); // no secondary key
+    TEST_ASSERT_NOT_NULL(e);
+    TEST_ASSERT_EQUAL_STRING("", e->vary_vals);
+    TEST_ASSERT_EQUAL_PTR(e, edge_store_lookup(&g_store, "GET\nh\n/a", nullptr, 5)); // nullptr matches ""
+
+    char big[DWS_EDGE_VARY_MAX + 16];
+    memset(big, 'v', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    EdgeEntry *t = edge_store_alloc(&g_store, "GET\nh\n/b", big);
+    TEST_ASSERT_NOT_NULL(t);
+    TEST_ASSERT_EQUAL_UINT(DWS_EDGE_VARY_MAX - 1, strlen(t->vary_vals)); // clamped, still terminated
+}
+
+static void test_store_alloc_no_free_slot_and_empty_lru()
+{
+    // Every slot marked used with an empty LRU list (the DWS_EDGE_CACHE_SLOTS == 0 shape): alloc must
+    // fail closed rather than index the EDGE_LRU_NONE sentinel.
+    edge_store_init(&g_store);
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
+        g_store.entries[i].used = true;
+    TEST_ASSERT_EQUAL_UINT16(EDGE_LRU_NONE, g_store.lru_tail);
+    TEST_ASSERT_NULL(edge_store_alloc(&g_store, "GET\nh\n/x", ""));
+}
+
+static void test_store_purge_prefix_key_without_a_path()
+{
+    // A key that is not the canonical "METHOD\nhost\npath" shape has no path portion, so a prefix
+    // purge must skip it instead of matching against the raw key.
+    edge_store_init(&g_store);
+    TEST_ASSERT_NOT_NULL(edge_store_alloc(&g_store, "malformed-key", ""));
+    TEST_ASSERT_NOT_NULL(edge_store_alloc(&g_store, "GET\nh\n/img/a", ""));
+    TEST_ASSERT_EQUAL_UINT32(0, edge_store_purge_prefix(&g_store, "malformed"));
+    TEST_ASSERT_EQUAL_UINT32(1, edge_store_purge_prefix(&g_store, "/img/"));
+    TEST_ASSERT_NOT_NULL(edge_store_lookup(&g_store, "malformed-key", "", 1)); // untouched
+}
+
+static void test_store_find_skips_unserializable_variant()
+{
+    // A stored variant whose Vary names cannot be serialized (a "*" that should never have been
+    // stored) is skipped rather than matching every request.
+    static const MockHdr gz[] = {{"accept-encoding", "gzip"}};
+    g_hdrs = gz;
+    g_hdr_count = 1;
+    edge_store_init(&g_store);
+    EdgeEntry *e = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    TEST_ASSERT_NOT_NULL(e);
+    strcpy(e->vary_names, "*");
+    TEST_ASSERT_NULL(edge_store_find(&g_store, "GET\nh\n/a", mock_lookup, nullptr, 1));
+}
+
+static void test_store_free_entry_foreign_pointer()
+{
+    edge_store_init(&g_store);
+    EdgeEntry *a = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    TEST_ASSERT_NOT_NULL(a);
+    static EdgeEntry outside; // not one of the store's slots
+    memset(&outside, 0, sizeof(outside));
+    edge_store_free_entry(&g_store, &outside); // no-op
+    TEST_ASSERT_EQUAL_PTR(a, edge_store_lookup(&g_store, "GET\nh\n/a", "", 1));
+}
+
+static void test_storeability_null_method()
+{
+    DWSCacheControl cc;
+    cache_control_init(&cc);
+    TEST_ASSERT_FALSE(edge_is_storeable(200, nullptr, &cc, nullptr, 100));
+}
+
+// --- conditional revalidation edges --------------------------------------------------------------
+
+static void test_build_conditional_guards_and_overflow_points()
+{
+    edge_store_init(&g_store);
+    EdgeEntry *e = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    TEST_ASSERT_NOT_NULL(e);
+    strcpy(e->etag, "\"v1\"");
+    char out[128];
+    TEST_ASSERT_EQUAL_UINT(0, edge_build_conditional(e, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_build_conditional(e, out, 0));
+    // "If-None-Match: \"v1\"\r\n" is 21 bytes; each append point in turn is one byte short
+    TEST_ASSERT_EQUAL_UINT(0, edge_build_conditional(e, out, 5));  // the field name
+    TEST_ASSERT_EQUAL_UINT(0, edge_build_conditional(e, out, 14)); // the ": " separator
+    TEST_ASSERT_EQUAL_UINT(0, edge_build_conditional(e, out, 16)); // the value
+    TEST_ASSERT_EQUAL_UINT(0, edge_build_conditional(e, out, 20)); // the trailing CRLF
+    TEST_ASSERT_EQUAL_UINT(21, edge_build_conditional(e, out, 22));
+
+    // Last-Modified only: the If-Modified-Since line overflows on its own.
+    EdgeEntry *lm = edge_store_alloc(&g_store, "GET\nh\n/b", "");
+    TEST_ASSERT_NOT_NULL(lm);
+    strcpy(lm->last_modified, "Sun, 06 Nov 1994 08:49:37 GMT");
+    TEST_ASSERT_EQUAL_UINT(0, edge_build_conditional(lm, out, 8));
+}
+
+static void test_apply_304_date_expires_and_age()
+{
+    edge_store_init(&g_store);
+    EdgeEntry *e = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    TEST_ASSERT_NOT_NULL(e);
+    e->status = 200;
+    strcpy(e->etag, "\"old\"");
+    // No Cache-Control: freshness comes from Expires - Date, and Age propagates.
+    static const char *r304 = "HTTP/1.1 304 Not Modified\r\n"
+                              "Date: Sun, 06 Nov 1994 08:49:37 GMT\r\n"
+                              "Expires: Sun, 06 Nov 1994 08:59:37 GMT\r\n"
+                              "Age: 30\r\n"
+                              "ETag: \"new\"\r\n"
+                              "Last-Modified: Sun, 06 Nov 1994 08:00:00 GMT\r\n"
+                              "\r\n";
+    edge_apply_304(e, r304, strlen(r304), 784111777 + 30, 5000);
+    TEST_ASSERT_EQUAL_STRING("\"new\"", e->etag);                                // validator adopted
+    TEST_ASSERT_EQUAL_STRING("Sun, 06 Nov 1994 08:00:00 GMT", e->last_modified); // and the newer one
+    TEST_ASSERT_EQUAL_INT64(784111777, e->date_epoch);
+    TEST_ASSERT_EQUAL_INT64(784111777 + 600, e->expires_epoch);
+    TEST_ASSERT_EQUAL_INT32(600, (int32_t)e->lifetime_s);
+    TEST_ASSERT_EQUAL_INT32(30, e->age_hdr);
+    TEST_ASSERT_EQUAL_INT32(30, (int32_t)e->initial_age); // max(apparent 30, Age 30)
+}
+
+static void test_apply_304_non_numeric_age_and_oversize_validators()
+{
+    edge_store_init(&g_store);
+    EdgeEntry *e = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    TEST_ASSERT_NOT_NULL(e);
+    strcpy(e->etag, "\"keep\"");
+    strcpy(e->last_modified, "Sun, 06 Nov 1994 08:49:37 GMT");
+
+    char etag_long[80];
+    memset(etag_long, 'a', sizeof(etag_long));
+    etag_long[0] = '"';
+    etag_long[70] = '"';
+    etag_long[71] = '\0'; // a 71-byte ETag: readable, but past the entry's 64-byte field
+    char r304[512];
+    snprintf(r304, sizeof(r304),
+             "HTTP/1.1 304 Not Modified\r\n"
+             "Cache-Control: max-age=50\r\n"
+             "Age: none\r\n"
+             "ETag: %s\r\n"
+             "Last-Modified: not a date but quite long so it will not fit\r\n"
+             "\r\n",
+             etag_long);
+    edge_apply_304(e, r304, strlen(r304), -1, 9000);
+    TEST_ASSERT_EQUAL_STRING("\"keep\"", e->etag);                               // too long -> not adopted
+    TEST_ASSERT_EQUAL_STRING("Sun, 06 Nov 1994 08:49:37 GMT", e->last_modified); // too long -> not adopted
+    TEST_ASSERT_EQUAL_INT32(0, e->age_hdr);                                      // "none" carries no digits
+    TEST_ASSERT_EQUAL_INT32(50, (int32_t)e->lifetime_s);
+}
+
+static void test_apply_304_reuses_stored_last_modified()
+{
+    edge_store_init(&g_store);
+    EdgeEntry *e = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    TEST_ASSERT_NOT_NULL(e);
+    strcpy(e->last_modified, "Sun, 06 Nov 1994 08:00:00 GMT");
+    // The 304 carries neither Cache-Control nor Last-Modified, so the stored validator supplies the
+    // heuristic lifetime: 10% of (Date - Last-Modified) = 10% of 2977 s.
+    static const char *r304 = "HTTP/1.1 304 Not Modified\r\n"
+                              "Date: Sun, 06 Nov 1994 08:49:37 GMT\r\n"
+                              "\r\n";
+    edge_apply_304(e, r304, strlen(r304), -1, 1000);
+    TEST_ASSERT_EQUAL_STRING("Sun, 06 Nov 1994 08:00:00 GMT", e->last_modified); // kept
+    TEST_ASSERT_EQUAL_INT32(297, (int32_t)e->lifetime_s);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -493,5 +880,34 @@ int main()
     RUN_TEST(test_range_suffix);
     RUN_TEST(test_range_unsatisfiable);
     RUN_TEST(test_range_ignored_forms);
+    RUN_TEST(test_header_value_null_guards);
+    RUN_TEST(test_header_value_overflow_fails_whole_lookup);
+    RUN_TEST(test_header_value_colonless_line_skipped);
+    RUN_TEST(test_header_value_lf_only_and_htab_ows);
+    RUN_TEST(test_header_value_unterminated_blocks);
+    RUN_TEST(test_http_date_null_and_length_bounds);
+    RUN_TEST(test_http_date_field_failures);
+    RUN_TEST(test_http_date_asctime_field_failures);
+    RUN_TEST(test_http_date_field_range_checks);
+    RUN_TEST(test_http_date_rfc850_year_windows);
+    RUN_TEST(test_http_date_pre_epoch_and_year_zero);
+    RUN_TEST(test_heuristic_and_initial_age_edges);
+    RUN_TEST(test_key_canon_null_guards);
+    RUN_TEST(test_key_canon_overflow_at_each_append);
+    RUN_TEST(test_key_canon_query_requested_but_empty);
+    RUN_TEST(test_vary_serialize_null_out_and_null_lookup);
+    RUN_TEST(test_vary_serialize_overflow_at_each_append);
+    RUN_TEST(test_vary_serialize_long_name_and_separator_runs);
+    RUN_TEST(test_store_alloc_key_too_long);
+    RUN_TEST(test_store_alloc_null_and_oversize_vary_key);
+    RUN_TEST(test_store_alloc_no_free_slot_and_empty_lru);
+    RUN_TEST(test_store_purge_prefix_key_without_a_path);
+    RUN_TEST(test_store_find_skips_unserializable_variant);
+    RUN_TEST(test_store_free_entry_foreign_pointer);
+    RUN_TEST(test_storeability_null_method);
+    RUN_TEST(test_build_conditional_guards_and_overflow_points);
+    RUN_TEST(test_apply_304_date_expires_and_age);
+    RUN_TEST(test_apply_304_non_numeric_age_and_oversize_validators);
+    RUN_TEST(test_apply_304_reuses_stored_last_modified);
     return UNITY_END();
 }

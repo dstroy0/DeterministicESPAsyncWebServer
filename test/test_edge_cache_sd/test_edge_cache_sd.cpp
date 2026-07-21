@@ -455,6 +455,172 @@ void test_shared_dbm_foreign_value_untouched(void)
     TEST_ASSERT_EQUAL_UINT8_ARRAY(foreign_val, out, 16); // foreign value intact
 }
 
+// --- serialization guards + every overflow / truncation point ------------------------------------
+void test_serialize_null_guards_and_every_overflow_point(void)
+{
+    EdgeEntry in;
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/cdn/caps");
+    fill_entry(&in, canon, "\"c\"", (const uint8_t *)"hello", 5);
+    strncpy(in.last_modified, "Wed, 01 Jan 2025 00:00:00 GMT", sizeof(in.last_modified) - 1);
+    strncpy(in.content_encoding, "gzip", sizeof(in.content_encoding) - 1);
+    strncpy(in.vary_names, "Accept-Encoding", sizeof(in.vary_names) - 1);
+    strncpy(in.vary_vals,
+            "accept-encoding\x1e"
+            "gzip\x1f",
+            sizeof(in.vary_vals) - 1);
+
+    TEST_ASSERT_EQUAL_UINT(0, edge_sd_serialize(nullptr, g_scratch, sizeof(g_scratch)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_sd_serialize(&in, nullptr, sizeof(g_scratch)));
+    TEST_ASSERT_EQUAL_UINT(0, edge_sd_serialize(&in, g_scratch, 2)); // no room for the fixed header
+
+    size_t n = edge_sd_serialize(&in, g_scratch, sizeof(g_scratch));
+    TEST_ASSERT_TRUE(n > 3);
+    // Every cap short of the exact size fails at whichever field runs out - never a partial record.
+    for (size_t cap = 3; cap < n; cap++)
+        TEST_ASSERT_EQUAL_UINT(0, edge_sd_serialize(&in, g_scratch, cap));
+    TEST_ASSERT_EQUAL_UINT(n, edge_sd_serialize(&in, g_scratch, n));
+}
+
+void test_deserialize_null_guards_and_every_truncation(void)
+{
+    EdgeEntry in;
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/cdn/trunc");
+    fill_entry(&in, canon, "\"t\"", (const uint8_t *)"body-bytes", 10);
+    strncpy(in.last_modified, "Wed, 01 Jan 2025 00:00:00 GMT", sizeof(in.last_modified) - 1);
+    strncpy(in.content_encoding, "br", sizeof(in.content_encoding) - 1);
+    strncpy(in.vary_names, "Accept-Encoding", sizeof(in.vary_names) - 1);
+    strncpy(in.vary_vals,
+            "accept-encoding\x1e"
+            "br\x1f",
+            sizeof(in.vary_vals) - 1);
+    size_t n = edge_sd_serialize(&in, g_scratch, sizeof(g_scratch));
+    TEST_ASSERT_TRUE(n > 0);
+
+    EdgeEntry out;
+    memset(&out, 0, sizeof(out));
+    TEST_ASSERT_FALSE(edge_sd_deserialize(nullptr, n, &out));
+    TEST_ASSERT_FALSE(edge_sd_deserialize(g_scratch, n, nullptr));
+    // Every truncation short of the whole record fails closed at whichever length prefix runs out.
+    for (size_t l = 0; l < n; l++)
+        TEST_ASSERT_FALSE(edge_sd_deserialize(g_scratch, l, &out));
+    TEST_ASSERT_TRUE(edge_sd_deserialize(g_scratch, n, &out));
+    TEST_ASSERT_EQUAL_STRING(canon, out.key);
+}
+
+void test_deserialize_rejects_field_longer_than_its_slot(void)
+{
+    // A record claiming a key exactly as long as the entry's key field leaves no room for the NUL:
+    // refuse it rather than truncate the cache key (which would alias two resources).
+    uint8_t buf[512];
+    memset(buf, 'k', sizeof(buf));
+    buf[0] = 1; // the entry-serialization version
+    buf[1] = 200;
+    buf[2] = 0; // status
+    buf[3] = (uint8_t)(DWS_EDGE_KEY_MAX & 0xFF);
+    buf[4] = (uint8_t)(DWS_EDGE_KEY_MAX >> 8);
+    EdgeEntry out;
+    memset(&out, 0, sizeof(out));
+    TEST_ASSERT_FALSE(edge_sd_deserialize(buf, sizeof(buf), &out));
+}
+
+void test_deserialize_rejects_oversize_body_length(void)
+{
+    EdgeEntry in;
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/cdn/blen");
+    fill_entry(&in, canon, "\"b\"", (const uint8_t *)"z", 1);
+    size_t n = edge_sd_serialize(&in, g_scratch, sizeof(g_scratch));
+    TEST_ASSERT_TRUE(n > 3);
+    // The body length prefix is the last two bytes ahead of the 1-byte body.
+    g_scratch[n - 3] = 0xFF;
+    g_scratch[n - 2] = 0xFF; // 65535 claimed, past DWS_EDGE_BODY_MAX
+    EdgeEntry out;
+    memset(&out, 0, sizeof(out));
+    TEST_ASSERT_FALSE(edge_sd_deserialize(g_scratch, n, &out));
+}
+
+// --- dbm-backed API guards -----------------------------------------------------------------------
+void test_dbm_api_null_guards(void)
+{
+    fresh();
+    EdgeEntry in;
+    EdgeEntry out;
+    memset(&out, 0, sizeof(out));
+    char canon[DWS_EDGE_KEY_MAX];
+    mkcanon(canon, sizeof(canon), "/cdn/guards");
+    fill_entry(&in, canon, "\"g\"", (const uint8_t *)"v", 1);
+
+    TEST_ASSERT_FALSE(edge_sd_put(nullptr, &in, g_scratch, sizeof(g_scratch)));
+    TEST_ASSERT_FALSE(edge_sd_put(&g_db, nullptr, g_scratch, sizeof(g_scratch)));
+    TEST_ASSERT_FALSE(edge_sd_put(&g_db, &in, nullptr, sizeof(g_scratch)));
+    TEST_ASSERT_FALSE(edge_sd_put(&g_db, &in, g_scratch, 8)); // does not serialize into the scratch
+
+    TEST_ASSERT_FALSE(edge_sd_get(nullptr, in.digest, &out, g_scratch, sizeof(g_scratch)));
+    TEST_ASSERT_FALSE(edge_sd_get(&g_db, nullptr, &out, g_scratch, sizeof(g_scratch)));
+    TEST_ASSERT_FALSE(edge_sd_get(&g_db, in.digest, nullptr, g_scratch, sizeof(g_scratch)));
+    TEST_ASSERT_FALSE(edge_sd_get(&g_db, in.digest, &out, nullptr, sizeof(g_scratch)));
+
+    TEST_ASSERT_FALSE(edge_sd_del(nullptr, in.digest));
+    TEST_ASSERT_FALSE(edge_sd_del(&g_db, nullptr));
+
+    TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_prefix(nullptr, "/cdn/", g_scratch, sizeof(g_scratch)));
+    TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_prefix(&g_db, nullptr, g_scratch, sizeof(g_scratch)));
+    TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_prefix(&g_db, "/cdn/", nullptr, sizeof(g_scratch)));
+    TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_all(nullptr));
+}
+
+// --- purge: keys and values a shared dbm may hold alongside the cache ----------------------------
+void test_purge_skips_foreign_and_unreadable_records(void)
+{
+    fresh();
+    // A key that is not a 32-byte digest at all.
+    TEST_ASSERT_TRUE(dws_dbm_put(&g_db, "short-key", 9, (const uint8_t *)"x", 1));
+    // A 32-byte key holding a zero-length value (nothing to inspect).
+    uint8_t empty_key[32];
+    memset(empty_key, 0x11, sizeof(empty_key));
+    TEST_ASSERT_TRUE(dws_dbm_put(&g_db, (const char *)empty_key, 32, nullptr, 0));
+    // A 32-byte key whose value is too short to carry even the edge header.
+    uint8_t stub_key[32];
+    memset(stub_key, 0x22, sizeof(stub_key));
+    uint8_t stub[2] = {1, 0};
+    TEST_ASSERT_TRUE(dws_dbm_put(&g_db, (const char *)stub_key, 32, stub, sizeof(stub)));
+
+    put_path("/cdn/real");
+    TEST_ASSERT_EQUAL_UINT32(1, edge_sd_purge_all(&g_db)); // only the real edge entry is dropped
+
+    uint8_t v[8];
+    TEST_ASSERT_EQUAL_INT(1, dws_dbm_get(&g_db, "short-key", 9, v, sizeof(v)));
+    TEST_ASSERT_EQUAL_INT(0, dws_dbm_get(&g_db, (const char *)empty_key, 32, v, sizeof(v)));
+    TEST_ASSERT_EQUAL_INT(2, dws_dbm_get(&g_db, (const char *)stub_key, 32, v, sizeof(v)));
+}
+
+void test_purge_prefix_skips_key_without_a_path(void)
+{
+    fresh();
+    // An L2 value whose cache key is not "METHOD\nhost\npath" has no path portion, so a prefix purge
+    // must skip it rather than match against the raw key.
+    EdgeEntry odd;
+    memset(&odd, 0, sizeof(odd));
+    strncpy(odd.key, "malformed-key", sizeof(odd.key) - 1);
+    edge_key_digest(odd.key, strlen(odd.key), odd.digest);
+    odd.status = 200;
+    strncpy(odd.etag, "\"o\"", sizeof(odd.etag) - 1);
+    memcpy(odd.body, "x", 1);
+    odd.body_len = 1;
+    TEST_ASSERT_TRUE(edge_sd_put(&g_db, &odd, g_scratch, sizeof(g_scratch)));
+    put_path("/cdn/keepme");
+
+    TEST_ASSERT_EQUAL_UINT32(0, edge_sd_purge_prefix(&g_db, "malformed", g_scratch, sizeof(g_scratch)));
+    EdgeEntry out;
+    memset(&out, 0, sizeof(out));
+    TEST_ASSERT_TRUE(edge_sd_get(&g_db, odd.digest, &out, g_scratch, sizeof(g_scratch)));
+    TEST_ASSERT_TRUE(has_path("/cdn/keepme"));
+    // It is still an edge value, so a purge-all does reach it.
+    TEST_ASSERT_EQUAL_UINT32(2, edge_sd_purge_all(&g_db));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -473,5 +639,12 @@ int main(void)
     RUN_TEST(test_purge_prefix_multipass);
     RUN_TEST(test_purge_all);
     RUN_TEST(test_shared_dbm_foreign_value_untouched);
+    RUN_TEST(test_serialize_null_guards_and_every_overflow_point);
+    RUN_TEST(test_deserialize_null_guards_and_every_truncation);
+    RUN_TEST(test_deserialize_rejects_field_longer_than_its_slot);
+    RUN_TEST(test_deserialize_rejects_oversize_body_length);
+    RUN_TEST(test_dbm_api_null_guards);
+    RUN_TEST(test_purge_skips_foreign_and_unreadable_records);
+    RUN_TEST(test_purge_prefix_skips_key_without_a_path);
     return UNITY_END();
 }

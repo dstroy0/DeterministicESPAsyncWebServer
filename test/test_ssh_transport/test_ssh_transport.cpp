@@ -1368,7 +1368,9 @@ void test_kdf_edge_paths_and_slot_guards()
 void test_kexinit_parse_truncation_points()
 {
     uint8_t buf[256];
-    int cuts[] = {0, 2, 3, 4, 5, 7}; // kex / cipher-c2s / cipher-s2c / mac-c2s / mac-s2c / comp-s2c reads
+    // One cut per name-list read, in field order: kex / host-key / cipher-c2s / cipher-s2c /
+    // mac-c2s / mac-s2c / comp-c2s / comp-s2c.
+    int cuts[] = {0, 1, 2, 3, 4, 5, 6, 7};
     for (unsigned i = 0; i < sizeof(cuts) / sizeof(cuts[0]); i++)
     {
         size_t n = build_partial_kexinit(buf, cuts[i]);
@@ -1537,9 +1539,167 @@ static void test_cyclonessh_kex_repro(void)
     TEST_ASSERT_EQUAL_INT(0, rc_handle);
 }
 
+// dws_ssh_hostkey_ecdsa_set derives the public point from the scalar and installs nothing when the
+// scalar is not a valid P-256 private key (d == 0 or d >= n): availability must be left untouched, so
+// a bad key never ends up advertised in the KEXINIT host-key name-list.
+void test_hostkey_ecdsa_set_rejects_invalid_scalar()
+{
+    const bool before = dws_ssh_hostkey_ecdsa_available();
+
+    uint8_t zero[SSH_ECDSA_P256_PRIV_LEN];
+    memset(zero, 0, sizeof(zero)); // d = 0 is not in [1, n)
+    dws_ssh_hostkey_ecdsa_set(zero);
+    TEST_ASSERT_EQUAL(before, dws_ssh_hostkey_ecdsa_available());
+
+    uint8_t over[SSH_ECDSA_P256_PRIV_LEN];
+    memset(over, 0xFF, sizeof(over)); // d >= n
+    dws_ssh_hostkey_ecdsa_set(over);
+    TEST_ASSERT_EQUAL(before, dws_ssh_hostkey_ecdsa_available());
+}
+
+// RFC 4253 §7.1 negotiates each direction independently, but this server runs one cipher and one MAC
+// for both: a client whose two directions land on different algorithms is rejected rather than keyed
+// asymmetrically. Both lists here negotiate cleanly on their own - only the mismatch fails.
+void test_kexinit_parse_rejects_direction_mismatch()
+{
+    ssh_transport_init(0);
+    uint8_t buf[512];
+    const char *K = "diffie-hellman-group14-sha256";
+    const char *H = "rsa-sha2-256";
+    const char *P = "none";
+
+    const char *cipher_split[8] = {
+        K, H, "aes256-ctr", "chacha20-poly1305@openssh.com", "hmac-sha2-256", "hmac-sha2-256", P, P};
+    size_t n = build_kexinit8(buf, cipher_split);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
+
+    // Same cipher both ways (aes256-ctr, so a separate MAC IS negotiated) but a different MAC per
+    // direction.
+    const char *mac_split[8] = {K, H, "aes256-ctr", "aes256-ctr", "hmac-sha2-256", "hmac-sha2-512", P, P};
+    n = build_kexinit8(buf, mac_split);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
+}
+
+// Both AEAD ciphers carry their own integrity tag, so with chacha20-poly1305 negotiated the MAC
+// name-lists are never negotiated: lists with nothing in common (even an empty one) must not fail
+// the key exchange.
+void test_kexinit_parse_aead_ignores_mac_lists()
+{
+    ssh_transport_init(0);
+    uint8_t buf[512];
+    const char *rows[8] = {"diffie-hellman-group14-sha256",
+                           "rsa-sha2-256",
+                           "chacha20-poly1305@openssh.com",
+                           "chacha20-poly1305@openssh.com",
+                           "umac-64@openssh.com",
+                           "",
+                           "none",
+                           "none"};
+    size_t n = build_kexinit8(buf, rows);
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SSH_CIPHER_CHACHA20POLY1305, ssh_sess[0].cipher_alg);
+}
+
+// Name-list matching (RFC 4253 §7.1) compares whole elements: a name that is exactly as long as one
+// of ours but differs in content must not match. "aes256-abc" is the length of "aes256-ctr" and
+// "zlib" the length of "none", so a length-only comparison would mis-match both.
+void test_kexinit_parse_same_length_names_do_not_match()
+{
+    ssh_transport_init(0);
+    uint8_t buf[512];
+    const char *K = "diffie-hellman-group14-sha256";
+    const char *H = "rsa-sha2-256";
+    const char *M = "hmac-sha2-256";
+
+    // The same-length impostor is skipped and negotiation lands on the real name behind it.
+    const char *rows[8] = {K, H, "aes256-abc,aes256-ctr", "aes256-abc,aes256-ctr", M, M, "zlib,none", "zlib,none"};
+    size_t n = build_kexinit8(buf, rows);
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SSH_CIPHER_AES256CTR, ssh_sess[0].cipher_alg);
+
+    // A c2s compression list holding only the impostor offers no "none": rejected.
+    const char *nocomp[8] = {K, H, "aes256-ctr", "aes256-ctr", M, M, "zlib", "none"};
+    n = build_kexinit8(buf, nocomp);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
+}
+
+// RFC 8308 server-sig-algs is ordered by the same preference that steers host-key negotiation: with
+// prefer-RSA off the modern algorithms come first.
+void test_extinfo_build_modern_first_order()
+{
+    uint8_t out[128];
+    size_t n = 0;
+    ssh_kex_set_prefer_rsa(false);
+    const int rc = ssh_extinfo_build(out, &n, sizeof(out));
+    ssh_kex_set_prefer_rsa(true); // restore the setUp default before any assertion can abort
+
+    TEST_ASSERT_EQUAL_INT(0, rc);
+    TEST_ASSERT_EQUAL(SSH_MSG_EXT_INFO, out[0]);
+    // byte(EXT_INFO) || uint32(1) || string("server-sig-algs") || string(value)
+    size_t off = 1 + 4;
+    const uint8_t *name = nullptr;
+    const uint8_t *value = nullptr;
+    uint32_t name_len = 0, value_len = 0;
+    TEST_ASSERT_TRUE(rd_string(out, n, &off, &name, &name_len));
+    TEST_ASSERT_EQUAL_UINT32(15u, name_len);
+    TEST_ASSERT_EQUAL_MEMORY("server-sig-algs", name, 15);
+    TEST_ASSERT_TRUE(rd_string(out, n, &off, &value, &value_len));
+    const char *want = "ssh-ed25519,ecdsa-sha2-nistp256,rsa-sha2-512,rsa-sha2-256";
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)strlen(want), value_len);
+    TEST_ASSERT_EQUAL_MEMORY(want, value, strlen(want));
+}
+
+// curve25519-sha256 (RFC 8731): the ECDH_INIT parser checks the message number and that the declared
+// Q_C really is present, not just that it claims 32 octets.
+void test_kexdh_handle_curve25519_rejects_malformed_init()
+{
+    ssh_transport_init(0);
+    setup_rsa_fixture();
+    ssh_sess[0].kex_alg = SshKexAlg::SSH_KEX_CURVE25519;
+    ssh_sess[0].hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+
+    uint8_t reply[512];
+    size_t rlen = 0;
+
+    uint8_t wrong_type[40] = {SSH_MSG_KEXDH_REPLY, 0, 0, 0, 32}; // msg 31, not 30
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, wrong_type, sizeof(wrong_type), reply, &rlen, sizeof(reply)));
+
+    uint8_t truncated[20] = {SSH_MSG_KEXDH_INIT, 0, 0, 0, 32}; // declares 32 octets, 15 present
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, truncated, sizeof(truncated), reply, &rlen, sizeof(reply)));
+}
+
+// ecdh-sha2-nistp256 (RFC 5656 §4): the same three guards on the 65-byte uncompressed-point form.
+void test_kexdh_handle_ecdh_p256_rejects_malformed_init()
+{
+    ssh_transport_init(0);
+    setup_rsa_fixture();
+    ssh_sess[0].kex_alg = SshKexAlg::SSH_KEX_ECDH_NISTP256;
+    ssh_sess[0].hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+
+    uint8_t reply[512];
+    size_t rlen = 0;
+
+    uint8_t too_short[4] = {SSH_MSG_KEXDH_INIT, 0, 0, 0}; // no room for the Q_C length field
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, too_short, sizeof(too_short), reply, &rlen, sizeof(reply)));
+
+    uint8_t wrong_type[80] = {SSH_MSG_KEXDH_REPLY, 0, 0, 0, 65};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, wrong_type, sizeof(wrong_type), reply, &rlen, sizeof(reply)));
+
+    uint8_t wrong_len[80] = {SSH_MSG_KEXDH_INIT, 0, 0, 0, 32}; // Q_C declared 32, must be 65
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, wrong_len, sizeof(wrong_len), reply, &rlen, sizeof(reply)));
+
+    uint8_t truncated[20] = {SSH_MSG_KEXDH_INIT, 0, 0, 0, 65}; // declares 65 octets, 15 present
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, truncated, sizeof(truncated), reply, &rlen, sizeof(reply)));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    // First: dws_ssh_hostkey_ecdsa_set must be probed before any test installs a P-256 host key, so
+    // the "an invalid scalar changes nothing" assertion is made against a clean transport ctx.
+    RUN_TEST(test_hostkey_ecdsa_set_rejects_invalid_scalar);
     RUN_TEST(test_transport_index_guards);
     RUN_TEST(test_banner_and_build_caps);
     RUN_TEST(test_kexinit_parse_field_and_trunc);
@@ -1588,6 +1748,12 @@ int main()
     RUN_TEST(test_ssh_transport_more_guards);
     RUN_TEST(test_dh_derive_keys_gcm_installs);
     RUN_TEST(test_kdf_string_k_hybrid);
+    RUN_TEST(test_kexinit_parse_rejects_direction_mismatch);
+    RUN_TEST(test_kexinit_parse_aead_ignores_mac_lists);
+    RUN_TEST(test_kexinit_parse_same_length_names_do_not_match);
+    RUN_TEST(test_extinfo_build_modern_first_order);
+    RUN_TEST(test_kexdh_handle_curve25519_rejects_malformed_init);
+    RUN_TEST(test_kexdh_handle_ecdh_p256_rejects_malformed_init);
     // Runs LAST on purpose: it provisions all three host-key types and the availability lives in the
     // (non-per-session) transport ctx that setUp does not clear, so leaving it set must not perturb the
     // order-sensitive earlier tests (e.g. rejects_hostkey_we_lack assumes only the RSA fixture is held).

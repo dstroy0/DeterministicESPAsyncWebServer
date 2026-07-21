@@ -244,6 +244,140 @@ void test_parse_resp3_map_set_push()
     TEST_ASSERT_EQUAL_INT64(3, r.count);
 }
 
+// A zero-length argument still gets a well-formed "$0\r\n\r\n" bulk (the length writer's n == 0 path).
+void test_encode_zero_length_arg()
+{
+    const char *argv[] = {"SET", "k", ""};
+    const size_t lens[] = {3, 1, 0};
+    char buf[64];
+    size_t n = dws_resp_encode_command(buf, sizeof(buf), argv, lens, 3);
+    TEST_ASSERT_EQUAL_STRING("*3\r\n$3\r\nSET\r\n$1\r\nk\r\n$0\r\n\r\n", buf);
+    TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
+}
+
+// The encoder's two distinct overflow stages: the leading array header, and an argument body that no
+// longer fits once its own "$<len>\r\n" prefix has been written.
+void test_encode_overflow_stages()
+{
+    const char *argv[] = {"GET", "key"};
+    const size_t lens[] = {3, 3};
+    char buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, dws_resp_encode_command(buf, 3, argv, lens, 2));  // "*2\r\n" alone overflows
+    TEST_ASSERT_EQUAL_size_t(0, dws_resp_encode_command(buf, 10, argv, lens, 2)); // "$3\r\n" fits, "GET\r\n" does not
+}
+
+// RESP3 double: leading sign, fraction-only and integer-only forms, and both exponent spellings.
+// A malformed double is still a well-formed reply - the raw text stays authoritative in str and dval
+// is simply left at 0.
+void test_parse_resp3_double_forms()
+{
+    RespReply r;
+    size_t c;
+    struct DblCase
+    {
+        const char *wire;
+        double want;
+    };
+    const DblCase good[] = {
+        {",-2.5\r\n", -2.5},  {",+2.5\r\n", 2.5}, {",1.5e-3\r\n", 0.0015}, {",1.5E2\r\n", 150.0},
+        {",1e+2\r\n", 100.0}, {",12\r\n", 12.0},  {",.5\r\n", 0.5},        {",1.\r\n", 1.0},
+    };
+    for (unsigned i = 0; i < sizeof(good) / sizeof(good[0]); i++)
+    {
+        TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)good[i].wire, strlen(good[i].wire), &r, &c));
+        TEST_ASSERT_EQUAL(RespType::RESP_DOUBLE, r.type);
+        TEST_ASSERT_TRUE(fabs(r.dval - good[i].want) < 1e-9);
+    }
+
+    const char *malformed[] = {
+        ",1e\r\n",    // 'e' with no exponent digits
+        ",1.5x\r\n",  // trailing garbage after the mantissa
+        ",abc\r\n",   // no digits at all
+        ",12a\r\n",   // trailing non-digit, no exponent
+        ",1e2x\r\n",  // trailing garbage after the exponent digits
+        ",1e2.5\r\n", // '.' ends the exponent digits, then trails
+        ",1.-2\r\n",  // '-' ends the fraction digits, then trails
+        ",\r\n",      // empty
+    };
+    for (unsigned i = 0; i < sizeof(malformed) / sizeof(malformed[0]); i++)
+    {
+        TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)malformed[i], strlen(malformed[i]), &r, &c));
+        TEST_ASSERT_EQUAL(RespType::RESP_DOUBLE, r.type);
+        TEST_ASSERT_TRUE(fabs(r.dval) < 1e-12);
+    }
+
+    // An exponent past the accumulator clamp saturates the double instead of overflowing the int.
+    TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)",1e10000000\r\n", 13, &r, &c));
+    TEST_ASSERT_TRUE(isinf(r.dval) && r.dval > 0);
+}
+
+// The special forms are matched case-insensitively, and a slice that merely prefixes (or extends)
+// one of them is not a match.
+void test_parse_double_special_case_insensitive()
+{
+    RespReply r;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)",INF\r\n", 6, &r, &c));
+    TEST_ASSERT_TRUE(isinf(r.dval) && r.dval > 0);
+    TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)",+inf\r\n", 7, &r, &c));
+    TEST_ASSERT_TRUE(isinf(r.dval) && r.dval > 0);
+    TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)",-INF\r\n", 7, &r, &c));
+    TEST_ASSERT_TRUE(isinf(r.dval) && r.dval < 0);
+    TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)",NaN\r\n", 6, &r, &c));
+    TEST_ASSERT_TRUE(isnan(r.dval));
+    TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)",inf0\r\n", 7, &r, &c)); // longer than "inf"
+    TEST_ASSERT_TRUE(fabs(r.dval) < 1e-12);
+    TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)",in\r\n", 5, &r, &c)); // shorter than "inf"
+    TEST_ASSERT_TRUE(fabs(r.dval) < 1e-12);
+}
+
+// Length-prefixed body rejects: an unparsable length, a negative length on the RESP3 forms (only
+// $-1 is a nil sentinel), a body that runs past the buffer, and a broken trailing terminator.
+void test_parse_bulk_body_rejects()
+{
+    RespReply r;
+    size_t c;
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"$xx\r\nhi\r\n", 9, &r, &c));   // length not a number
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"!-1\r\n", 5, &r, &c));         // bulk error has no nil form
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"=-3\r\nabc\r\n", 10, &r, &c)); // verbatim has no nil form
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"$0\r\n", 4, &r, &c));          // no room for the body CRLF
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"$5\r\nhello\rX", 11, &r, &c)); // '\r' not followed by '\n'
+
+    // A zero-length bulk string is valid and consumes its own trailing CRLF.
+    TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)"$0\r\n\r\n", 6, &r, &c));
+    TEST_ASSERT_EQUAL(RespType::RESP_BULK, r.type);
+    TEST_ASSERT_EQUAL_size_t(0, r.str_len);
+    TEST_ASSERT_EQUAL_size_t(6, c);
+}
+
+// Aggregate (* ~ >), map (%) and boolean (#) header rejects.
+void test_parse_aggregate_and_scalar_rejects()
+{
+    RespReply r;
+    size_t c;
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"*xy\r\n", 5, &r, &c)); // array count not a number
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"~-1\r\n", 5, &r, &c)); // only *-1 is the nil sentinel
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)">-2\r\n", 5, &r, &c));
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"%-1\r\n", 5, &r, &c)); // negative map pair count
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"%ab\r\n", 5, &r, &c)); // map count not a number
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)"#tt\r\n", 5, &r, &c)); // boolean is exactly one octet
+}
+
+// The line scanner must not stop on a bare '\r', and the integer scanner rejects an octet below '0'
+// as well as one above '9'.
+void test_parse_line_scan_and_integer_octets()
+{
+    RespReply r;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_resp_parse((const uint8_t *)"+A\rB\r\n", 6, &r, &c)); // a bare '\r' is payload
+    TEST_ASSERT_EQUAL(RespType::RESP_SIMPLE, r.type);
+    TEST_ASSERT_EQUAL_size_t(3, r.str_len);
+    TEST_ASSERT_EQUAL_MEMORY("A\rB", r.str, 3);
+    TEST_ASSERT_EQUAL_size_t(6, c);
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)": 1\r\n", 5, &r, &c));  // ' ' is below '0'
+    TEST_ASSERT_FALSE(dws_resp_parse((const uint8_t *)":1a2\r\n", 6, &r, &c)); // 'a' is above '9'
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -261,5 +395,12 @@ int main()
     RUN_TEST(test_parse_resp3_double);
     RUN_TEST(test_parse_resp3_bignum_bulkerr_verbatim);
     RUN_TEST(test_parse_resp3_map_set_push);
+    RUN_TEST(test_encode_zero_length_arg);
+    RUN_TEST(test_encode_overflow_stages);
+    RUN_TEST(test_parse_resp3_double_forms);
+    RUN_TEST(test_parse_double_special_case_insensitive);
+    RUN_TEST(test_parse_bulk_body_rejects);
+    RUN_TEST(test_parse_aggregate_and_scalar_rejects);
+    RUN_TEST(test_parse_line_scan_and_integer_octets);
     return UNITY_END();
 }

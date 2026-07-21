@@ -542,6 +542,315 @@ void test_spinel_last_status_decode()
     TEST_ASSERT_EQUAL_STRING("RESET", dws_spinel_status_name(status));
 }
 
+// --- Null-argument and bounds guards on every codec entry point ---------------------------
+
+void test_spinel_null_out_params()
+{
+    // unpack_uint with no value out-parameter still reports the bytes consumed.
+    const uint8_t one[1] = {0x2A};
+    TEST_ASSERT_EQUAL_INT(1, dws_spinel_unpack_uint(one, 1, nullptr));
+
+    uint8_t buf[32];
+    const uint8_t val[2] = {0xAA, 0xBB};
+    uint16_t n = dws_spinel_command_build(0x81, SpinelCmd::SPINEL_CMD_PROP_VALUE_SET, 1337, val, 2, buf, sizeof(buf));
+    TEST_ASSERT_GREATER_THAN_UINT16(0, n);
+
+    // A zero-length payload has no header byte to read.
+    TEST_ASSERT_EQUAL_INT(-1, dws_spinel_command_parse(buf, 0, nullptr, nullptr, nullptr, nullptr, nullptr));
+    // Every out-parameter is optional: the parse still succeeds and reports the value offset.
+    TEST_ASSERT_GREATER_THAN_INT(0, dws_spinel_command_parse(buf, n, nullptr, nullptr, nullptr, nullptr, nullptr));
+}
+
+void test_spinel_reader_init_variants()
+{
+    dws_spinel_reader_init(nullptr, nullptr, 0); // a null cursor is a no-op, not a crash
+
+    SpinelReader r;
+    const uint8_t v[2] = {1, 2};
+    dws_spinel_reader_init(&r, v, 0); // a real buffer with an empty value
+    TEST_ASSERT_EQUAL_UINT16(0, r.len);
+    TEST_ASSERT_TRUE(dws_spinel_reader_ok(&r));
+
+    dws_spinel_reader_init(&r, nullptr, 0); // no value at all is not an error
+    TEST_ASSERT_EQUAL_UINT16(0, r.len);
+    TEST_ASSERT_TRUE(dws_spinel_reader_ok(&r));
+
+    dws_spinel_reader_init(&r, nullptr, 5); // a null value with a positive length is malformed
+    TEST_ASSERT_EQUAL_UINT16(0, r.len);
+    TEST_ASSERT_FALSE(dws_spinel_reader_ok(&r));
+
+    TEST_ASSERT_FALSE(dws_spinel_reader_ok(nullptr)); // a null cursor is never ok
+}
+
+void test_spinel_getters_null_reader()
+{
+    bool b = false;
+    uint8_t u8 = 0;
+    int8_t i8 = 0;
+    uint16_t u16 = 0;
+    int16_t i16 = 0;
+    uint32_t u32 = 0;
+    int32_t i32 = 0;
+    const uint8_t *p = nullptr;
+    const char *s = nullptr;
+    uint16_t l = 0;
+
+    TEST_ASSERT_FALSE(dws_spinel_get_bool(nullptr, &b));
+    TEST_ASSERT_FALSE(dws_spinel_get_u8(nullptr, &u8));
+    TEST_ASSERT_FALSE(dws_spinel_get_i8(nullptr, &i8));
+    TEST_ASSERT_FALSE(dws_spinel_get_u16(nullptr, &u16));
+    TEST_ASSERT_FALSE(dws_spinel_get_i16(nullptr, &i16));
+    TEST_ASSERT_FALSE(dws_spinel_get_u32(nullptr, &u32));
+    TEST_ASSERT_FALSE(dws_spinel_get_i32(nullptr, &i32));
+    TEST_ASSERT_FALSE(dws_spinel_get_uint(nullptr, &u32));
+    TEST_ASSERT_FALSE(dws_spinel_get_eui64(nullptr, &p));
+    TEST_ASSERT_FALSE(dws_spinel_get_ipv6(nullptr, &p));
+    TEST_ASSERT_FALSE(dws_spinel_get_utf8(nullptr, &s, &l));
+    TEST_ASSERT_FALSE(dws_spinel_get_data(nullptr, &p, &l));
+    TEST_ASSERT_FALSE(dws_spinel_get_data_wlen(nullptr, &p, &l));
+}
+
+void test_spinel_getters_short_value()
+{
+    // An empty value: every typed read runs off the end at its first byte.
+    const uint8_t v[1] = {0x42};
+    SpinelReader r;
+    bool b = false;
+    int8_t i8 = 0;
+    uint16_t u16 = 0;
+    int16_t i16 = 0;
+    int32_t i32 = 0;
+    const uint8_t *p = nullptr;
+    uint16_t l = 0;
+
+    dws_spinel_reader_init(&r, v, 0);
+    TEST_ASSERT_FALSE(dws_spinel_get_bool(&r, &b));
+    dws_spinel_reader_init(&r, v, 0);
+    TEST_ASSERT_FALSE(dws_spinel_get_i8(&r, &i8));
+    dws_spinel_reader_init(&r, v, 0);
+    TEST_ASSERT_FALSE(dws_spinel_get_u16(&r, &u16));
+    dws_spinel_reader_init(&r, v, 0);
+    TEST_ASSERT_FALSE(dws_spinel_get_i16(&r, &i16));
+    dws_spinel_reader_init(&r, v, 0);
+    TEST_ASSERT_FALSE(dws_spinel_get_i32(&r, &i32));
+    dws_spinel_reader_init(&r, v, 0);
+    TEST_ASSERT_FALSE(dws_spinel_get_eui64(&r, &p));
+    dws_spinel_reader_init(&r, v, 0);
+    TEST_ASSERT_FALSE(dws_spinel_get_ipv6(&r, &p));
+    dws_spinel_reader_init(&r, v, 0);
+    TEST_ASSERT_FALSE(dws_spinel_get_data_wlen(&r, &p, &l)); // not even the length prefix fits
+}
+
+void test_spinel_get_uint_edges()
+{
+    SpinelReader r;
+    uint32_t uv = 0;
+
+    // A packed uint whose continuation bit is set but which has no terminator.
+    const uint8_t trunc[1] = {0x80};
+    dws_spinel_reader_init(&r, trunc, sizeof(trunc));
+    TEST_ASSERT_FALSE(dws_spinel_get_uint(&r, &uv));
+    TEST_ASSERT_FALSE(dws_spinel_reader_ok(&r)); // the failure latches
+
+    // An already-failed reader short-circuits before decoding.
+    dws_spinel_reader_init(&r, nullptr, 4);
+    TEST_ASSERT_FALSE(dws_spinel_get_uint(&r, &uv));
+
+    // The out-parameter is optional.
+    const uint8_t one[1] = {0x05};
+    dws_spinel_reader_init(&r, one, sizeof(one));
+    TEST_ASSERT_TRUE(dws_spinel_get_uint(&r, nullptr));
+    TEST_ASSERT_EQUAL_UINT16(1, r.off);
+
+    // 'U' and 'D' also short-circuit on a failed reader.
+    const char *s = nullptr;
+    const uint8_t *d = nullptr;
+    uint16_t l = 0;
+    dws_spinel_reader_init(&r, nullptr, 4);
+    TEST_ASSERT_FALSE(dws_spinel_get_utf8(&r, &s, &l));
+    dws_spinel_reader_init(&r, nullptr, 4);
+    TEST_ASSERT_FALSE(dws_spinel_get_data(&r, &d, &l));
+}
+
+void test_spinel_getters_null_out_params()
+{
+    // Build one value holding every fixed-width field, then read it back discarding each result.
+    uint8_t buf[64];
+    SpinelWriter w;
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    const uint8_t eui[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    const uint8_t v6[16] = {0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+    TEST_ASSERT_TRUE(dws_spinel_put_bool(&w, true));
+    TEST_ASSERT_TRUE(dws_spinel_put_u8(&w, 0x11));
+    TEST_ASSERT_TRUE(dws_spinel_put_i8(&w, -2));
+    TEST_ASSERT_TRUE(dws_spinel_put_u16(&w, 0x2233));
+    TEST_ASSERT_TRUE(dws_spinel_put_i16(&w, -3));
+    TEST_ASSERT_TRUE(dws_spinel_put_u32(&w, 0x44556677));
+    TEST_ASSERT_TRUE(dws_spinel_put_i32(&w, -4));
+    TEST_ASSERT_TRUE(dws_spinel_put_uint(&w, 4000));
+    TEST_ASSERT_TRUE(dws_spinel_put_eui64(&w, eui));
+    TEST_ASSERT_TRUE(dws_spinel_put_ipv6(&w, v6));
+    TEST_ASSERT_TRUE(dws_spinel_put_utf8(&w, "z"));
+    uint16_t n = dws_spinel_writer_len(&w);
+    TEST_ASSERT_GREATER_THAN_UINT16(0, n);
+
+    SpinelReader r;
+    dws_spinel_reader_init(&r, buf, n);
+    TEST_ASSERT_TRUE(dws_spinel_get_bool(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_u8(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_i8(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_u16(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_i16(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_u32(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_i32(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_uint(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_eui64(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_ipv6(&r, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_get_utf8(&r, nullptr, nullptr));
+    TEST_ASSERT_TRUE(dws_spinel_reader_ok(&r));
+    TEST_ASSERT_EQUAL_UINT16(n, r.off); // every field was still consumed
+
+    // 'd' then 'D' with both out-parameters dropped.
+    const uint8_t dv[4] = {0x02, 0x00, 0xAA, 0xBB};
+    dws_spinel_reader_init(&r, dv, sizeof(dv));
+    TEST_ASSERT_TRUE(dws_spinel_get_data_wlen(&r, nullptr, nullptr));
+    dws_spinel_reader_init(&r, dv, sizeof(dv));
+    TEST_ASSERT_TRUE(dws_spinel_get_data(&r, nullptr, nullptr));
+}
+
+void test_spinel_writer_init_and_null_writer()
+{
+    dws_spinel_writer_init(nullptr, nullptr, 0); // a null cursor is a no-op
+    TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(nullptr));
+
+    SpinelWriter zw;
+    dws_spinel_writer_init(&zw, nullptr, 0); // no buffer and no capacity is not an error
+    TEST_ASSERT_EQUAL_UINT16(0, zw.cap);
+    TEST_ASSERT_FALSE(zw.err);
+
+    // Every put through a null writer fails without dereferencing it.
+    const uint8_t eui[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    const uint8_t v6[16] = {0};
+    TEST_ASSERT_FALSE(dws_spinel_put_bool(nullptr, true));
+    TEST_ASSERT_FALSE(dws_spinel_put_u8(nullptr, 1));
+    TEST_ASSERT_FALSE(dws_spinel_put_i8(nullptr, 1));
+    TEST_ASSERT_FALSE(dws_spinel_put_u16(nullptr, 1));
+    TEST_ASSERT_FALSE(dws_spinel_put_i16(nullptr, 1));
+    TEST_ASSERT_FALSE(dws_spinel_put_u32(nullptr, 1));
+    TEST_ASSERT_FALSE(dws_spinel_put_i32(nullptr, 1));
+    TEST_ASSERT_FALSE(dws_spinel_put_uint(nullptr, 1));
+    TEST_ASSERT_FALSE(dws_spinel_put_eui64(nullptr, eui));
+    TEST_ASSERT_FALSE(dws_spinel_put_ipv6(nullptr, v6));
+    TEST_ASSERT_FALSE(dws_spinel_put_utf8(nullptr, "a"));
+    TEST_ASSERT_FALSE(dws_spinel_put_data(nullptr, eui, 8));
+    TEST_ASSERT_FALSE(dws_spinel_put_data_wlen(nullptr, eui, 8));
+}
+
+void test_spinel_put_null_args()
+{
+    uint8_t buf[32];
+    SpinelWriter w;
+
+    // A null data pointer with a zero length is a legal empty 'D' field.
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(dws_spinel_put_data(&w, nullptr, 0));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(&w));
+
+    // A null data pointer with a positive length latches err.
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(dws_spinel_put_data(&w, nullptr, 4));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(&w));
+
+    // So does a null IPv6 address.
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(dws_spinel_put_ipv6(&w, nullptr));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_writer_len(&w));
+
+    // The same argument guards must not dereference a null writer either.
+    TEST_ASSERT_FALSE(dws_spinel_put_eui64(nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_spinel_put_ipv6(nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_spinel_put_utf8(nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_spinel_put_data(nullptr, nullptr, 4));
+
+    // An empty UTF8 string still writes its NUL.
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(dws_spinel_put_utf8(&w, ""));
+    TEST_ASSERT_EQUAL_UINT16(1, dws_spinel_writer_len(&w));
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[0]);
+}
+
+void test_spinel_put_no_room_each_type()
+{
+    // A zero-capacity writer: every field type fails at the room reservation.
+    uint8_t buf[8];
+    const uint8_t eui[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    const uint8_t v6[16] = {0};
+    SpinelWriter w;
+
+    dws_spinel_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(dws_spinel_put_bool(&w, true));
+    dws_spinel_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(dws_spinel_put_u16(&w, 1));
+    dws_spinel_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(dws_spinel_put_uint(&w, 1));
+    dws_spinel_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(dws_spinel_put_eui64(&w, eui));
+    dws_spinel_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(dws_spinel_put_ipv6(&w, v6));
+    dws_spinel_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(dws_spinel_put_utf8(&w, "hi"));
+    dws_spinel_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(dws_spinel_put_data(&w, eui, 8));
+    dws_spinel_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(dws_spinel_put_data_wlen(&w, eui, 8)); // the length prefix itself does not fit
+
+    // A 'd' field whose length prefix fits but whose bytes do not.
+    dws_spinel_writer_init(&w, buf, 2);
+    TEST_ASSERT_FALSE(dws_spinel_put_data_wlen(&w, eui, 8));
+
+    // An already-failed writer short-circuits before packing or copying.
+    dws_spinel_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(dws_spinel_put_u8(&w, 1)); // latches err
+    TEST_ASSERT_FALSE(dws_spinel_put_uint(&w, 1));
+    TEST_ASSERT_FALSE(dws_spinel_put_data(&w, eui, 8));
+}
+
+void test_spinel_frame_edges()
+{
+    uint8_t out[64];
+    uint8_t pay[64];
+    uint16_t pl = 0;
+    const uint8_t p4[4] = {1, 2, 3, 4};
+
+    // encode: a null output buffer, and a null payload with a positive length.
+    TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_frame_encode(p4, 4, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_frame_encode(nullptr, 4, out, sizeof(out)));
+
+    // A zero-length payload is legal: FCS(lo,hi) + flag only, and it round-trips.
+    uint16_t n = dws_spinel_frame_encode(nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_UINT16(3, n);
+    TEST_ASSERT_EQUAL_HEX8(ThreadHdlc::HDLC_FLAG, out[2]);
+    TEST_ASSERT_EQUAL_INT((int)n, dws_spinel_frame_decode(out, n, pay, sizeof(pay), &pl));
+    TEST_ASSERT_EQUAL_UINT16(0, pl);
+
+    // A cap where the payload and the FCS low byte fit but the FCS high byte does not.
+    const uint8_t one[1] = {0x01};
+    TEST_ASSERT_EQUAL_UINT16(0, dws_spinel_frame_encode(one, 1, out, 2));
+
+    // decode with no pay_len out-parameter still reports the consumed length.
+    uint16_t fn = dws_spinel_frame_encode(p4, 4, out, sizeof(out));
+    TEST_ASSERT_GREATER_THAN_UINT16(0, fn);
+    TEST_ASSERT_EQUAL_INT((int)fn, dws_spinel_frame_decode(out, fn, pay, sizeof(pay), nullptr));
+}
+
+void test_spinel_status_name_below_reset_range()
+{
+    // Unregistered codes on either side of the 0x70..0x77 reset-cause window.
+    TEST_ASSERT_EQUAL_STRING("UNKNOWN", dws_spinel_status_name(100)); // below the window
+    TEST_ASSERT_EQUAL_STRING("RESET", dws_spinel_status_name(119));   // the last reset cause
+    TEST_ASSERT_EQUAL_STRING("UNKNOWN", dws_spinel_status_name(120)); // just past the window
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -571,5 +880,16 @@ int main()
     RUN_TEST(test_spinel_prop_registry);
     RUN_TEST(test_spinel_status_names);
     RUN_TEST(test_spinel_last_status_decode);
+    RUN_TEST(test_spinel_null_out_params);
+    RUN_TEST(test_spinel_reader_init_variants);
+    RUN_TEST(test_spinel_getters_null_reader);
+    RUN_TEST(test_spinel_getters_short_value);
+    RUN_TEST(test_spinel_get_uint_edges);
+    RUN_TEST(test_spinel_getters_null_out_params);
+    RUN_TEST(test_spinel_writer_init_and_null_writer);
+    RUN_TEST(test_spinel_put_null_args);
+    RUN_TEST(test_spinel_put_no_room_each_type);
+    RUN_TEST(test_spinel_frame_edges);
+    RUN_TEST(test_spinel_status_name_below_reset_range);
     return UNITY_END();
 }
