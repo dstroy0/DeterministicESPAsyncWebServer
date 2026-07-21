@@ -1001,7 +1001,7 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       17-state transition engine (dws_packml_command / _state_complete / _execute_complete + command
       validity, StateCurrent wire numbers) and the owned PackTags service (state advance, Prod counters,
       unit-mode-change rules, MachSpeed, StateCurrentTime / AccTimeSinceReset timers). Pure codec,
-      host-tested (native_packml, 16 cases), example PackML.
+      host-tested (native_packml, 16 cases) + HW-verified on an ESP32-P4 (full state graph + fault branch + illegal-command 409s driven live over HTTP), example PackML.
 - [x] **Haas Machine Data Collection** (S, serial Q commands) - the documented Haas MDC serial protocol
       (the `Q` command set: Q100 machine serial, Q500 program+status, Q600 macro-variable read) that Haas
       CNC controls answer over RS-232 / the network port. A small, fully-documented CNC read source.
