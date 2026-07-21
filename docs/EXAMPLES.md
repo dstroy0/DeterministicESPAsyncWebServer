@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 146 runnable examples under `examples/`, grouped by
+The library ships 147 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -183,6 +183,7 @@ Routing, protocols, services, and clients:
 [OpcUaClient](../examples/L7-Application/OpcUaClient/README.md) ·
 [OTA](../examples/L7-Application/OTA/README.md) ·
 [OtaRollback](../examples/L7-Application/OtaRollback/README.md) ·
+[PackML](../examples/L7-Application/PackML/README.md) ·
 [PartitionMonitor](../examples/L7-Application/PartitionMonitor/README.md) ·
 [PathParams](../examples/L7-Application/PathParams/README.md) ·
 [PidTuning](../examples/L7-Application/PidTuning/README.md) ·
