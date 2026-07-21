@@ -6168,7 +6168,10 @@ enum class DWSIface : uint8_t
 #define DWS_WORKER_STACK_SNTRUP_MIN 32768
 #endif
 #endif
-#if DWS_ENABLE_SSH_SNTRUP761 && (DWS_ENABLE_SSH || DWS_ENABLE_SSH_CLIENT || DWS_ENABLE_HTTP3) &&                       \
+// sntrup761x25519-sha512 is an SSH key exchange; only an SSH server / reverse-SSH client runs its heavy
+// KeyGen/Encaps/Decaps on the worker stack. HTTP/3's PQC is the lighter ML-KEM hybrid, so an HTTP/3-only
+// build (DWS_ENABLE_SSH_SNTRUP761 defaults on with PQC but is dormant without SSH) must not trip this.
+#if DWS_ENABLE_SSH_SNTRUP761 && (DWS_ENABLE_SSH || DWS_ENABLE_SSH_CLIENT) &&                                           \
     (DWS_WORKER_TASK_STACK < DWS_WORKER_STACK_SNTRUP_MIN)
 #error                                                                                                                 \
     "DeterministicESPAsyncWebServer: DWS_WORKER_TASK_STACK is below DWS_WORKER_STACK_SNTRUP_MIN; sntrup761x25519-sha512 needs ~32 KB worker stack for the server Encaps and ~40 KB for the reverse-SSH client KeyGen+Decaps - raise DWS_WORKER_TASK_STACK (>= 32768 server / 40960 client), set DWS_ENABLE_SSH_SNTRUP761 0 to keep ML-KEM only, or marshal the handshake onto a dedicated larger-stack task"

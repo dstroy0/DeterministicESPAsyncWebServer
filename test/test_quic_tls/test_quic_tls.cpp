@@ -618,6 +618,212 @@ static size_t build_client_hello_hybrid(uint8_t *out, const uint8_t client_pub[3
     return p;
 }
 
+// A ClientHello that offers X25519MLKEM768 in supported_groups but sends only a classical X25519
+// key_share - the HelloRetryRequest trigger (the server should ask it to retry with the hybrid share).
+static size_t build_client_hello_hybrid_classical(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp,
+                                                  size_t tp_len)
+{
+    size_t p = 0;
+    out[p++] = TlsHs::TLS_HS_CLIENT_HELLO;
+    size_t hs_len_at = p;
+    p += 3;
+    out[p++] = 0x03;
+    out[p++] = 0x03;
+    for (int i = 0; i < 32; i++)
+        out[p++] = (uint8_t)i;
+    out[p++] = 0x00; // session id length 0
+    out[p++] = 0x00; // cipher_suites
+    out[p++] = 0x02;
+    out[p++] = 0x13;
+    out[p++] = 0x01;
+    out[p++] = 0x01; // compression
+    out[p++] = 0x00;
+    size_t ext_len_at = p;
+    p += 2;
+    {
+        static const uint8_t sv[] = {0x00, 0x2b, 0x00, 0x03, 0x02, 0x03, 0x04}; // supported_versions
+        memcpy(out + p, sv, sizeof(sv));
+        p += sizeof(sv);
+    }
+    {
+        static const uint8_t sg[] = {0x00, 0x0a, 0x00, 0x06, 0x00,
+                                     0x04, 0x11, 0xec, 0x00, 0x1d}; // supported_groups {X25519MLKEM768, x25519}
+        memcpy(out + p, sg, sizeof(sg));
+        p += sizeof(sg);
+    }
+    {
+        static const uint8_t sa[] = {0x00, 0x0d, 0x00, 0x04, 0x00, 0x02, 0x08, 0x07}; // sig_algs ed25519
+        memcpy(out + p, sa, sizeof(sa));
+        p += sizeof(sa);
+    }
+    { // key_share: a single CLASSICAL x25519 entry (group 0x001d, 32-byte pub) - no hybrid share
+        static const uint8_t ks[] = {0x00, 0x33, 0x00, 0x26, 0x00, 0x24, 0x00, 0x1d, 0x00, 0x20};
+        memcpy(out + p, ks, sizeof(ks));
+        p += sizeof(ks);
+        memcpy(out + p, client_pub, 32);
+        p += 32;
+    }
+    {
+        static const uint8_t alpn[] = {0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h', '3'};
+        memcpy(out + p, alpn, sizeof(alpn));
+        p += sizeof(alpn);
+    }
+    {
+        out[p++] = 0x00; // dws_quic_transport_parameters
+        out[p++] = 0x39;
+        out[p++] = (uint8_t)(tp_len >> 8);
+        out[p++] = (uint8_t)tp_len;
+        memcpy(out + p, tp, tp_len);
+        p += tp_len;
+    }
+    uint16_t ext_len = (uint16_t)(p - ext_len_at - 2);
+    out[ext_len_at] = (uint8_t)(ext_len >> 8);
+    out[ext_len_at + 1] = (uint8_t)ext_len;
+    uint32_t hs_len = (uint32_t)(p - hs_len_at - 3);
+    out[hs_len_at] = (uint8_t)(hs_len >> 16);
+    out[hs_len_at + 1] = (uint8_t)(hs_len >> 8);
+    out[hs_len_at + 2] = (uint8_t)hs_len;
+    return p;
+}
+
+// HelloRetryRequest round trip (RFC 8446 §4.1.4 / §4.4.1): ClientHello1 offers X25519MLKEM768 but sends
+// only a classical key_share, so the server answers with an HRR selecting X25519MLKEM768 (instead of
+// downgrading to X25519); ClientHello2 carries the hybrid share and the handshake completes over the
+// message_hash || HRR || ClientHello2 || ServerHello transcript. Verified as a conforming client - the
+// server Finished MAC only checks out if the server restarted the transcript exactly right.
+void test_hybrid_hrr_roundtrip()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    for (int i = 0; i < 32; i++)
+        cfg.mlkem_m[i] = (uint8_t)(0x5a ^ i);
+    QuicTls qt;
+    dws_quic_tls_server_init(&qt, &cfg);
+
+    QuicTransportParams ctp;
+    dws_quic_tp_defaults(&ctp);
+    ctp.has_initial_scid = true;
+    ctp.initial_scid_len = 4;
+    memcpy(ctp.initial_scid, "\xaa\xbb\xcc\xdd", 4);
+    uint8_t ctp_enc[128];
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+
+    // --- ClientHello1: hybrid group offered, classical share only -> HelloRetryRequest ---
+    static uint8_t ch1[2048];
+    size_t ch1_len = build_client_hello_hybrid_classical(ch1, client_pub, ctp_enc, ctp_len);
+    size_t used = dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch1, ch1_len);
+    TEST_ASSERT_EQUAL_UINT(ch1_len, used);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_START, qt.state); // awaiting the retry, not WAIT_FINISHED
+    TEST_ASSERT_FALSE(qt.hs_keys_ready);
+    TEST_ASSERT_TRUE(qt.hrr_sent);
+
+    size_t hrr_len = 0;
+    const uint8_t *hrr = dws_quic_tls_flight(&qt, QuicEnc::QUIC_ENC_INITIAL, &hrr_len);
+    TEST_ASSERT_TRUE(hrr_len > 0);
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, hrr[0]);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(dws_tls13_hrr_random, hrr + 6, 32); // the HRR magic random
+    static uint8_t hrr_saved[256];
+    memcpy(hrr_saved, hrr, hrr_len);
+
+    // --- ClientHello2: the hybrid ClientHello -> completes ---
+    static uint8_t ch2[2048];
+    size_t ch2_len = build_client_hello_hybrid(ch2, client_pub, ctp_enc, ctp_len);
+    used = dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch2, ch2_len);
+    TEST_ASSERT_EQUAL_UINT(ch2_len, used);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
+
+    size_t si_len = 0, sh_flight_len = 0;
+    const uint8_t *si = dws_quic_tls_flight(&qt, QuicEnc::QUIC_ENC_INITIAL, &si_len); // HRR || ServerHello
+    const uint8_t *sh_flight = dws_quic_tls_flight(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, &sh_flight_len);
+    TEST_ASSERT_TRUE(si_len > hrr_len);
+    const uint8_t *sh = si + hrr_len; // the ServerHello is appended after the HRR
+    size_t sh_len = si_len - hrr_len;
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, sh[0]);
+
+    // Pull the hybrid server key_share out of the (appended) ServerHello.
+    size_t o = 44;
+    const uint8_t *server_ct = nullptr;
+    const uint8_t *server_x25519 = nullptr;
+    while (o + 4 <= sh_len)
+    {
+        uint16_t et = (uint16_t)((sh[o] << 8) | sh[o + 1]);
+        uint16_t el = (uint16_t)((sh[o + 2] << 8) | sh[o + 3]);
+        o += 4;
+        if (et == 0x0033)
+        {
+            server_ct = sh + o + 4;
+            server_x25519 = sh + o + 4 + MLKEM768_CT_BYTES;
+        }
+        o += el;
+    }
+    TEST_ASSERT_NOT_NULL(server_ct);
+
+    uint8_t ml_ss[32];
+    dws_mlkem768_decaps_ref(kat_dk, server_ct, ml_ss);
+    uint8_t x_ss[32];
+    ssh_x25519(x_ss, CLIENT_PRIV, server_x25519);
+    uint8_t ecdhe[64];
+    memcpy(ecdhe, ml_ss, 32);
+    memcpy(ecdhe + 32, x_ss, 32);
+
+    // Client transcript: message_hash(Hash(CH1)) || HRR || CH2 || ServerHello || ...
+    uint8_t ch1_hash[32];
+    {
+        SshSha256Ctx h;
+        ssh_sha256_init(&h);
+        ssh_sha256_update(&h, ch1, ch1_len);
+        ssh_sha256_final(&h, ch1_hash);
+    }
+    uint8_t mh[40];
+    size_t mhn = dws_tls13_build_message_hash(mh, sizeof(mh), ch1_hash);
+    SshSha256Ctx t;
+    uint8_t ch_sh[32], ch_sf[32];
+    ssh_sha256_init(&t);
+    ssh_sha256_update(&t, mh, mhn);
+    ssh_sha256_update(&t, hrr_saved, hrr_len);
+    ssh_sha256_update(&t, ch2, ch2_len);
+    ssh_sha256_update(&t, sh, sh_len);
+    {
+        SshSha256Ctx tmp = t;
+        ssh_sha256_final(&tmp, ch_sh); // H(..ServerHello)
+    }
+    ssh_sha256_update(&t, sh_flight, sh_flight_len);
+    ssh_sha256_final(&t, ch_sf); // H(..server Finished)
+
+    Tls13KeySchedule cks;
+    dws_tls13_ks_early(&TLS13_KDF, &cks);
+    dws_tls13_ks_handshake(&cks, ecdhe, ch_sh, 64);
+    dws_tls13_ks_master(&cks, ch_sf);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_hs_traffic, cks.server_hs_traffic, 32);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.client_hs_traffic, cks.client_hs_traffic, 32);
+
+    // Server Finished verifies over the HRR transcript through CertificateVerify.
+    uint8_t ch_cv[32];
+    {
+        SshSha256Ctx tt;
+        ssh_sha256_init(&tt);
+        ssh_sha256_update(&tt, mh, mhn);
+        ssh_sha256_update(&tt, hrr_saved, hrr_len);
+        ssh_sha256_update(&tt, ch2, ch2_len);
+        ssh_sha256_update(&tt, sh, sh_len);
+        ssh_sha256_update(&tt, sh_flight, sh_flight_len - 36);
+        ssh_sha256_final(&tt, ch_cv);
+    }
+    uint8_t sfin_expected[32];
+    dws_tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);
+
+    // The server accepts the client Finished -> DONE.
+    uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    dws_tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, ch_sf, cfin + 4);
+    used = dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
+    TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);
+}
+
 // Full X25519MLKEM768 hybrid handshake, verified as a conforming client: decapsulate the server's
 // ML-KEM ciphertext, redo X25519, form the 64-byte ML-KEM||X25519 secret, and confirm both sides derive
 // identical handshake/application secrets and that the server's Finished + our Finished both verify.
@@ -743,6 +949,7 @@ int main(int, char **)
     RUN_TEST(test_quic_tls_cert_size_boundary_emit_fails);
 #if DWS_ENABLE_PQC_KEX
     RUN_TEST(test_hybrid_handshake_roundtrip);
+    RUN_TEST(test_hybrid_hrr_roundtrip);
 #endif
     return UNITY_END();
 }

@@ -547,9 +547,12 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
       buffer for the ~1.1 KB key_share. A PQC-capable browser negotiates it; others fall back to X25519. Verified
       by a full hybrid handshake host test (independent ML-KEM Decaps client + both Finished MACs). The classical
       HTTPS path stays on mbedTLS (whose hybrid support tracks its version). _Pending:_ curl/browser HW interop.
-- [ ] **PQC hybrid follow-ons** (S) - **sntrup761x25519-sha512@openssh.com** for SSH parity with OpenSSH's
-      other default, and a **HelloRetryRequest** path so a client that lists X25519MLKEM768 but sends only a
-      classical key_share still gets the hybrid (today we serve whatever key_share it sent).
+- [x] **PQC hybrid follow-ons** (S) _(shipped)_ - **sntrup761x25519-sha512@openssh.com** for SSH parity with
+      OpenSSH's other default (server + reverse-SSH client, HW-verified on the P4 vs OpenSSH 10), and a QUIC
+      **HelloRetryRequest** path (`dws_quic_tls`): a client that lists X25519MLKEM768 but sends only a classical
+      key_share is answered with an HRR selecting the hybrid group (RFC 8446 §4.1.4, message_hash transcript
+      restart §4.4.1) instead of being downgraded to X25519. Host-tested (`native_quic_tls_pqc`
+      test_hybrid_hrr_roundtrip: the retry completes and the server Finished verifies over the HRR transcript).
 - [x] **SSH cipher / host-key breadth** _(shipped)_ - closed the easy deltas vs CycloneSSH:
     - [x] **`aes256-gcm@openssh.com`** _(shipped)_ - AES-256-GCM AEAD (RFC 5647): length-in-clear as AAD,
           per-packet invocation counter, no separate MAC. Self-contained `ssh/crypto/ssh_aesgcm` (AES block HW
@@ -617,8 +620,9 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
       negotiated in the handshake, every DTLSCiphertext carries the peer's CID, and `coaps_server` routes by
       CID so a session survives a client address change / NAT rebinding (`native_dtls*` + wolfSSL `--cid`
       interop). _Remaining:_ full HW-rig interop.
-- [ ] **SSH keyboard-interactive auth (RFC 4256)** (S) - Cyclone supports it; a minor addition to our
-      password + publickey methods (enables server-driven MFA prompts / password-change flows over SSH).
+- [x] **SSH keyboard-interactive auth (RFC 4256)** (S) _(shipped, HW-verified on the P4)_ - the
+      challenge-response face of password auth (SSH_MSG_USERAUTH_INFO_REQUEST/RESPONSE), enabling
+      server-driven MFA prompts / password-change flows over SSH (`DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE`).
 
 ## Storage & config
 

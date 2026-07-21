@@ -62,6 +62,41 @@ bool emit(QuicTls *qt, uint8_t *flight, size_t cap, size_t *plen, size_t written
     return true;
 }
 
+#if DWS_ENABLE_PQC_KEX
+// Emit a HelloRetryRequest (RFC 8446 §4.1.4) asking the client to retry with an X25519MLKEM768
+// key_share, and restart the transcript per §4.4.1: message_hash(Hash(ClientHello1)) || HRR, so the
+// eventual transcript is message_hash || HRR || ClientHello2 || ServerHello || ... QUIC does its own
+// return-routability (Retry tokens), so the HRR carries no cookie. @p msg is ClientHello1.
+bool send_hello_retry(QuicTls *qt, const uint8_t *msg, size_t msg_len, const Tls13ClientHello *ch)
+{
+    uint8_t ch1_hash[32];
+    {
+        SshSha256Ctx t;
+        ssh_sha256_init(&t);
+        ssh_sha256_update(&t, msg, msg_len);
+        ssh_sha256_final(&t, ch1_hash);
+    }
+    ssh_sha256_init(&qt->transcript);
+    uint8_t mh[40];
+    size_t mhn = dws_tls13_build_message_hash(mh, sizeof(mh), ch1_hash);
+    if (!mhn)
+    {
+        fail(qt, TlsAlert::TLS_ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  mh[40] always fits the 36-byte hash
+        return false;                                 // GCOVR_EXCL_LINE
+    }
+    ssh_sha256_update(&qt->transcript, mh, mhn); // message_hash is transcript-only, never sent
+
+    qt->flight_initial_len = 0;
+    size_t n = dws_tls13_build_hello_retry_request(qt->flight_initial, sizeof(qt->flight_initial), ch->session_id,
+                                                   ch->session_id_len, TLS_GROUP_X25519MLKEM768, nullptr, 0,
+                                                   /*dtls=*/false);
+    if (!emit(qt, qt->flight_initial, sizeof(qt->flight_initial), &qt->flight_initial_len, n))
+        return false; // GCOVR_EXCL_LINE  the HRR (~50B) always fits flight_initial (>=256B)
+    qt->hrr_sent = true;
+    return true; // stay in QTLS_START, awaiting ClientHello2 at the Initial level
+}
+#endif
+
 bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
 {
     Tls13ClientHello ch;
@@ -79,6 +114,16 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
 #if DWS_ENABLE_PQC_KEX
     // Prefer the PQ/T hybrid whenever the client sent a usable X25519MLKEM768 key_share.
     use_hybrid = ch.has_hybrid_share && ch.offers_x25519mlkem768;
+    // The client offered X25519MLKEM768 but sent only a classical key_share: ask it (once) to retry with
+    // the hybrid share rather than silently downgrading to X25519 (RFC 8446 §4.1.4).
+    if (!use_hybrid && ch.offers_x25519mlkem768 && !ch.has_hybrid_share && !qt->hrr_sent)
+        return send_hello_retry(qt, msg, msg_len, &ch);
+    // A retry that still lacks the hybrid share is fatal - one HRR only, so a client cannot loop us.
+    if (qt->hrr_sent && !use_hybrid)
+    {
+        fail(qt, TlsAlert::TLS_ALERT_HANDSHAKE_FAILURE);
+        return false;
+    }
 #endif
     if (!ch.offers_ed25519 || (!use_hybrid && (!ch.has_key_share || !ch.offers_x25519)))
     {
@@ -141,13 +186,16 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
         group = TLS_GROUP_X25519;
     }
 
-    // Transcript starts with the ClientHello.
+    // Fold the ClientHello into the transcript. On the happy path it is the first message; after a
+    // HelloRetryRequest the transcript already holds message_hash || HRR, so this is ClientHello2.
     ssh_sha256_update(&qt->transcript, msg, msg_len);
 
-    // ServerHello (Initial-level flight).
-    size_t n = dws_tls13_build_server_hello(qt->flight_initial, sizeof(qt->flight_initial), qt->cfg.random,
+    // ServerHello (Initial-level flight). The Initial CRYPTO is one contiguous byte stream, so after a
+    // HelloRetryRequest the ServerHello is appended after the HRR already in flight_initial - build at the
+    // current offset (0 on the happy path, the HRR's end on a retry) and do not reset the length.
+    size_t n = dws_tls13_build_server_hello(qt->flight_initial + qt->flight_initial_len,
+                                            sizeof(qt->flight_initial) - qt->flight_initial_len, qt->cfg.random,
                                             ch.session_id, ch.session_id_len, server_share, share_len, group);
-    qt->flight_initial_len = 0;
     if (!emit(qt, qt->flight_initial, sizeof(qt->flight_initial), &qt->flight_initial_len, n))
         return false; // GCOVR_EXCL_LINE  ServerHello always fits flight_initial (classical <=~160B; the
                       // hybrid's ~1.2 KB share fits the PQC-sized 1400B buffer)

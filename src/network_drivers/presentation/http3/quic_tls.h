@@ -17,9 +17,12 @@
  * used) and exposes the outbound flight per encryption level (dws_quic_tls_flight), so it is fully
  * host-testable by feeding it a captured ClientHello and inspecting the flight and derived keys.
  *
- * Profile: TLS_AES_128_GCM_SHA256, X25519, Ed25519 certificate, no PSK / 0-RTT / HelloRetryRequest /
- * client authentication. The ephemeral X25519 private key and the ServerHello random are supplied in
- * the config (the caller draws them from its RNG, or fixes them in a test).
+ * Profile: TLS_AES_128_GCM_SHA256, X25519 (or the X25519MLKEM768 PQ/T hybrid when DWS_ENABLE_PQC_KEX),
+ * Ed25519 certificate, no PSK / 0-RTT / client authentication. A client that offers X25519MLKEM768 but
+ * sends only a classical key_share is answered with a HelloRetryRequest (RFC 8446 sec 4.1.4) so it
+ * retries with the hybrid share instead of being downgraded to X25519. The ephemeral X25519 private key
+ * and the ServerHello random are supplied in the config (the caller draws them from its RNG, or fixes
+ * them in a test).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -78,7 +81,10 @@ struct QuicTls
     Tls13KeySchedule ks;
 
     QtlsState state;
-    uint8_t alert;      ///< TLS alert code (RFC 8446 sec 6) when state == QtlsState::QTLS_FAILED
+    uint8_t alert; ///< TLS alert code (RFC 8446 sec 6) when state == QtlsState::QTLS_FAILED
+#if DWS_ENABLE_PQC_KEX
+    bool hrr_sent; ///< a HelloRetryRequest was sent (X25519MLKEM768); the next ClientHello is the retry
+#endif
     bool hs_keys_ready; ///< Handshake-level keys derived (after ServerHello)
     bool ap_keys_ready; ///< 1-RTT keys derived (after the server Finished)
     bool complete;      ///< client Finished verified
