@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a7903b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7903b6ee5b72b9f1bd4594410ab266a69e980b8))
+
+### Documentation
+
+- HW-measured 3.19x device / 4.05x host for the memcpy framer; fix stale bench_syslog ([`d7db05b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7db05b02e3ac6ff9f724f079594dee7518e9340))
+- update ESP32 build footprints [skip ci] ([`a8bcef7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8bcef7462bba8f88f0d98af1dfccac9524e27d4))
+
 ## [7.28.2] - 2026-07-21
 
 <details>
