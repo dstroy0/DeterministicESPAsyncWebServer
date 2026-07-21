@@ -651,13 +651,13 @@ op.
 
 | Operation                      | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
 | ------------------------------ | ---------: | --------: | --------------: | -------------: |
-| `dws_syslog_format` (RFC 5424) |      159.1 |     452.5 |            3686 |          15358 |
+| `dws_syslog_format` (RFC 5424) |       39.3 |    1782.1 |             972 |           4050 |
 
-- The `~15 us` device figure above is the pre-optimization `snprintf` cost. The formatter is now the same
-  **branchless memcpy framer** as the SSE record framer (fixed spans + `strnlen`/`memcpy` of each field + a
-  small decimal PRI writer, no `snprintf`), which measured **3.68x** faster on the S3 for the SSE case;
-  output is byte-identical (`test_syslog`). Still trivial for a log line, and the datagram is fire-and-forget
-  over UDP. The line is bounded to
+- The formatter is a **branchless memcpy framer** (fixed spans + `strnlen`/`memcpy` of each field + a small
+  decimal PRI writer, no `snprintf`), the same pattern as the SSE record framer. Replacing the old single
+  `snprintf` cut it from **3101 to 972 cyc (3.19x)** on the S3 and from **159 to 39 ns (4.05x)** on the host,
+  measured same-input; output is byte-identical (`test_syslog`). Still trivial for a log line, and the
+  datagram is fire-and-forget over UDP. The line is bounded to
   `DWS_SYSLOG_MSG_MAX` (256 B): an oversized message makes `dws_syslog_format` return 0 and `dws_syslog_log`
   refuse (no overflow, no giant datagram - validated by the `dws_syslog_injection` attack, which held the bound
   at an 80 B datagram for a 2 KB input). HW-verified device-as-syslog-client against a UDP collector (7/7
