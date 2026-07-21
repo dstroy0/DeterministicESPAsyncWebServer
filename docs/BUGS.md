@@ -8,6 +8,34 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH algorithm negotiation used server preference, not client preference (RFC 4253 §7.1) - KEX reset vs CycloneSSH
+
+- **Status:** FIXED (2026-07-20). Found by **real-peer interop**: the Oryx **CycloneSSH** client (a
+  from-scratch second SSH stack) could not complete a handshake against our SSH server on an ESP32-P4 (COM9) -
+  the server reset the TCP connection right after the client's `SSH_MSG_KEX_ECDH_INIT`. OpenSSH (the 16/16
+  algorithm matrix) never hit it because its modern defaults happen to match the order we advertise.
+- **Symptom:** CycloneSSH negotiated curve25519-sha256 + ssh-ed25519 + chacha20-poly1305 (its own picks), sent
+  a 32-byte curve25519 `KEX_ECDH_INIT`, and got a TCP RST with no `KEX_ECDH_REPLY`. Captured on the wire and
+  reproduced deterministically by feeding the exact KEXINIT + init bytes through `ssh_kexinit_parse` →
+  `ssh_kex_generate` → `ssh_kexdh_handle` in a host test (`ssh_kexdh_handle` returned -1).
+- **Root cause:** `negotiate_alg` (ssh_transport.cpp) iterated the SERVER's candidate list and picked the first
+  name the client also offered - **server preference**. RFC 4253 §7.1 mandates **client preference**: "iterate
+  over the client's algorithms ... choose the first the server also supports." When the server holds an RSA
+  host key, its `prefer_rsa` ordering ranks ecdh-sha2-nistp256 + rsa-sha2-512 above curve25519 + ssh-ed25519,
+  so a client that lists curve25519/ed25519 first made the two sides **negotiate different algorithms**: the
+  server chose nistp256 and expected a 65-byte init, the client sent a 32-byte curve25519 init,
+  `parse_ecdh_init_p256` rejected it (`n != 65`), and `ssh_kexdh_handle` returned -1 → RST. OpenSSH advertises
+  its algorithms in the same PQC/curve-first order we do, so it always guessed our top pick and never diverged;
+  a differently-ordered implementation was required to expose it. The same server-preference applied to
+  cipher/MAC/compression (they happened to agree only because the top choices matched).
+- **Fix:** `negotiate_alg` now iterates the **client's** name-list in order and takes the first name any
+  available server candidate matches (RFC 4253 §7.1 client preference) - for KEX, host key, cipher, MAC, and
+  compression. Host-tested (`native_ssh` 196/196, incl. a new client-preference cipher test and a regression
+  that drives the exact captured CycloneSSH bytes) and **HW-verified on the ESP32-P4**: CycloneSSH now
+  completes the full KEX + auth + a byte-exact encrypted-channel echo, and OpenSSH is unaffected.
+
+---
+
 ## `tcp_recved` on a freed pcb - remotely-triggerable reboot under SSH connection churn (DoS)
 
 - **Status:** FIXED (2026-07-20). Found by **stress-testing the live SSH server on an ESP32-P4** (COM9) with

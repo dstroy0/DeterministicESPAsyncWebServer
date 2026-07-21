@@ -293,17 +293,32 @@ template <typename E> struct AlgCand
     bool avail;
 };
 
-// Steer-to-preferred negotiation: pick the FIRST candidate (in OUR preference order) that the client
-// also offers and that we can perform; write it to @p out and return true, or return false if none match.
+// RFC 4253 §7.1: the chosen algorithm is the first name on the CLIENT's name-list that the server also
+// supports - CLIENT preference, not ours. Two peers whose preference orders differ must still converge, so
+// the rule is fixed to the client's order. Iterate the client's comma-separated list in order; for each
+// name take the first available server candidate that matches. (Steering to our preferred algorithm is
+// done by the order WE advertise in KEXINIT, which a client that has no strong preference will follow.)
 template <typename E>
 static bool negotiate_alg(const uint8_t *client_list, uint32_t nlen, const AlgCand<E> *cands, int n, E *out)
 {
-    for (int i = 0; i < n; i++)
-        if (cands[i].avail && namelist_contains(client_list, nlen, cands[i].name))
+    uint32_t start = 0;
+    for (uint32_t i = 0; i <= nlen; i++)
+    {
+        if (i == nlen || client_list[i] == ',')
         {
-            *out = cands[i].tag;
-            return true;
+            uint32_t tlen = i - start;
+            for (int c = 0; c < n; c++)
+            {
+                size_t cl = strnlen(cands[c].name, (size_t)tlen + 1);
+                if (cands[c].avail && cl == tlen && memcmp(client_list + start, cands[c].name, tlen) == 0)
+                {
+                    *out = cands[c].tag;
+                    return true;
+                }
+            }
+            start = i + 1;
         }
+    }
     return false;
 }
 
@@ -521,7 +536,7 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     const uint8_t *list;
     uint32_t nlen;
 
-    // kex_algorithms: negotiate the KEX method in our preference order.
+    // kex_algorithms: negotiate the KEX method by the CLIENT's preference (RFC 4253 §7.1).
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
     // RFC 8308: if the client offers ext-info-c we will send SSH_MSG_EXT_INFO.

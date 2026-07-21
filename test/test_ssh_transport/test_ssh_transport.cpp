@@ -5,6 +5,7 @@
 // KEXINIT algorithm negotiation.
 
 #include "baseline_keys.h"
+#include "cyclone_kex_bytes.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
@@ -15,6 +16,7 @@
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include "throwaway_key.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
@@ -267,8 +269,8 @@ void test_kexinit_parse_selects_chacha20poly1305()
 }
 
 // aes256-gcm@openssh.com is a supported AEAD cipher: a client offering only it is accepted and the
-// GCM cipher is selected (no separate MAC required). It also outranks aes256-ctr when both are
-// offered, but sits below chacha20-poly1305.
+// GCM cipher is selected (no separate MAC required). Per RFC 4253 §7.1 the CLIENT's order decides, so a
+// client that lists gcm first gets gcm.
 void test_kexinit_parse_selects_aes256gcm()
 {
     uint8_t buf[SSH_KEXINIT_MAX];
@@ -277,11 +279,24 @@ void test_kexinit_parse_selects_aes256gcm()
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
     TEST_ASSERT_EQUAL(SSH_CIPHER_AES256GCM, ssh_sess[0].cipher_alg);
 
-    // Preference: gcm beats ctr when both are offered (chacha absent).
-    n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-256", "aes256-ctr,aes256-gcm@openssh.com",
+    // Client preference (RFC 4253 §7.1): the client's first offered cipher we support wins - gcm before ctr.
+    n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-256", "aes256-gcm@openssh.com,aes256-ctr",
                              "hmac-sha2-256", "none");
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
     TEST_ASSERT_EQUAL(SSH_CIPHER_AES256GCM, ssh_sess[0].cipher_alg);
+}
+
+// RFC 4253 §7.1: negotiation follows the CLIENT's preference order, not ours. A client that lists
+// aes256-ctr before chacha20-poly1305 gets aes256-ctr - even though our KEXINIT advertises chacha first.
+// (This is exactly the mismatch a server-preference bug caused with CycloneSSH: our top pick differed
+// from the client's, so the two sides disagreed on the algorithm.)
+void test_kexinit_parse_honors_client_cipher_preference()
+{
+    uint8_t buf[SSH_KEXINIT_MAX];
+    size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-256",
+                                    "aes256-ctr,chacha20-poly1305@openssh.com", "hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SSH_CIPHER_AES256CTR, ssh_sess[0].cipher_alg);
 }
 
 // rsa-sha2-512 and rsa-sha2-256 are both backed by the one "ssh-rsa" host key (RFC 8332). The
@@ -1485,6 +1500,43 @@ void test_kdf_string_k_hybrid()
     TEST_ASSERT_NOT_EQUAL(0, memcmp(got, as_mpint, SSH_SHA256_DIGEST_LEN));
 }
 
+// Regression for the client-preference KEX bug (RFC 4253 §7.1). The exact CycloneSSH v2.6.4 KEXINIT +
+// KEX_ECDH_INIT bytes captured on the wire (kex list: curve25519-sha256 first, then nistp256; host keys
+// ssh-ed25519 first). Before the fix the server negotiated by ITS order (nistp256 + rsa-sha2-512 when an
+// RSA key is held), so the client's 32-byte curve25519 init failed to parse as the server's 65-byte
+// nistp256 init and ssh_kexdh_handle returned -1 (the P4 reset the connection here). With client
+// preference the server picks curve25519 + ssh-ed25519 to match the client, and the full KEX completes.
+static void test_cyclonessh_kex_repro(void)
+{
+    ssh_transport_init(0);
+    dws_ssh_hostkey_ed25519_set(BASELINE_ED25519_SEEDS[0]);
+    SshSession *s = &ssh_sess[0];
+    const char *vc = "SSH-2.0-CycloneSSH_2.6.4";
+    strcpy(s->v_c, vc);
+    s->v_c_len = (uint16_t)strlen(vc);
+
+    int rc_parse = ssh_kexinit_parse(0, CYCLONE_KEXINIT, sizeof(CYCLONE_KEXINIT));
+    printf("[repro] parse rc=%d kex_alg=%d hostkey_alg=%d cipher=%d\n", rc_parse, (int)s->kex_alg, (int)s->hostkey_alg,
+           (int)s->cipher_alg);
+    TEST_ASSERT_EQUAL_INT(0, rc_parse);
+
+    uint8_t isbuf[SSH_KEXINIT_S_MAX];
+    size_t isn = 0;
+    int rc_build = ssh_kexinit_build(0, isbuf, &isn, sizeof(isbuf));
+    printf("[repro] build rc=%d isn=%zu\n", rc_build, isn);
+    TEST_ASSERT_EQUAL_INT(0, rc_build);
+
+    int rc_gen = ssh_kex_generate(0);
+    printf("[repro] gen rc=%d\n", rc_gen);
+    TEST_ASSERT_EQUAL_INT(0, rc_gen);
+
+    uint8_t reply[1024];
+    size_t rlen = 0;
+    int rc_handle = ssh_kexdh_handle(0, CYCLONE_ECDH_INIT, sizeof(CYCLONE_ECDH_INIT), reply, &rlen, sizeof(reply));
+    printf("[repro] handle rc=%d rlen=%zu\n", rc_handle, rlen);
+    TEST_ASSERT_EQUAL_INT(0, rc_handle);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1506,6 +1558,7 @@ int main()
     RUN_TEST(test_kexinit_parse_rejects_missing_cipher);
     RUN_TEST(test_kexinit_parse_selects_chacha20poly1305);
     RUN_TEST(test_kexinit_parse_selects_aes256gcm);
+    RUN_TEST(test_kexinit_parse_honors_client_cipher_preference);
     RUN_TEST(test_kexinit_parse_selects_rsa_sha512);
     RUN_TEST(test_kexinit_parse_selects_ecdsa);
     RUN_TEST(test_kexinit_parse_selects_ecdh_nistp256);
@@ -1539,5 +1592,7 @@ int main()
     // (non-per-session) transport ctx that setUp does not clear, so leaving it set must not perturb the
     // order-sensitive earlier tests (e.g. rejects_hostkey_we_lack assumes only the RSA fixture is held).
     RUN_TEST(test_kexinit_hostkey_list_carries_all_four_when_all_keys_loaded);
+    // Also LAST (leaves an ed25519 host key set): the CycloneSSH client-preference regression.
+    RUN_TEST(test_cyclonessh_kex_repro);
     return UNITY_END();
 }
