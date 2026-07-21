@@ -80,7 +80,7 @@
     "example": "L7-Application/CoapSecure",
     "flags": "-DDWS_ENABLE_COAP=1 -DDWS_ENABLE_DTLS=1",
     "board": "esp32dev",
-    "flash_bytes": 781281,
+    "flash_bytes": 781293,
     "ram_bytes": 102924
   },
   "CONFIG_STORE+CONFIG_IO": {
