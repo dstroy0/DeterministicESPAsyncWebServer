@@ -945,13 +945,20 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       (`services/cotp`): the S7CommPlus PDU framing + the integrity/session handshake (protocol
       versioning + the anti-replay integrity id) and read/write of tag values by symbolic access. Harder
       than classic S7comm (session keying); zero-heap codec first, then the session state machine.
-- [ ] **SIMATIC serial family** (M, Siemens legacy point-to-point) - the pre-Ethernet SIMATIC link +
-      messaging protocols as zero-heap codecs, pairing with the existing S7comm/COTP stack for the full
-      Siemens set: **3964(R)** (the byte-oriented point-to-point link protocol - STX/DLE/ETX framing with
-      priority arbitration and a BCC block-check byte on the "R" variant), **RK512** (the message /
-      interpreter layer carried over 3964R - FETCH/SEND telegrams addressing DB/data blocks, words and
-      bits), plus the **MPI** (Multipoint Interface bus) and **PtP IF** (point-to-point CP serial
-      interface) link layers. Serial-first (RS-232/RS-485 transport step tracked with the other serial buses).
+- [~] **SIMATIC serial family** (M, Siemens legacy point-to-point) - the pre-Ethernet SIMATIC link +
+  messaging protocols as zero-heap codecs, pairing with the existing S7comm/COTP stack for the full
+  Siemens set: **3964(R)** (the byte-oriented point-to-point link protocol - STX/DLE/ETX framing with
+  priority arbitration and a BCC block-check byte on the "R" variant), **RK512** (the message /
+  interpreter layer carried over 3964R - FETCH/SEND telegrams addressing DB/data blocks, words and
+  bits), plus the **MPI** (Multipoint Interface bus) and **PtP IF** (point-to-point CP serial
+  interface) link layers. Serial-first (RS-232/RS-485 transport step tracked with the other serial buses).
+  SHIPPED (3964R + RK512): services/simatic (DWS_ENABLE_SIMATIC) - the 3964R block framing (DLE-double +
+  XOR BCC) + the interactive link state machine (STX/DLE handshake, QVZ/ZVZ timeouts, NAK/retry,
+  priority arbitration) + the RK512 SEND/FETCH/reaction telegrams (big-endian words). Pure codec +
+  one owned link context, host-tested (native_simatic, 14 cases) + byte-cross-checked against an
+  independent python 3964R+RK512 reference peer (simatic_peer.py), compiles on-target. REMAINING: MPI
+  (token-bus network layer) + PtP IF (generic CP serial), and the live RS-232/485 UART interop against
+  a real Siemens PtP CP (tracked with the other serial-bus PHY drivers).
 - [x] **Fanuc FOCAS** (L, CNC data collection) - SHIPPED (`services/focas`, `DWS_ENABLE_FOCAS`). The
       FANUC Open CNC API's Ethernet wire protocol (TCP 8193) as a zero-heap client codec - no `fwlib32`
       (the licensed FANUC binary, part # A02B-0207-K732/K737, which cannot run on an ESP32) is used or

@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **258 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **259 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -273,6 +273,7 @@ The native test matrix has **258 environments**, one per feature, generated from
 | `native_sercos` | `WS_ENABLE_SERCOS=1` | `test_sercos` | SERCOS III motion-bus codec (services/sercos): the MDT/AT telegram (type + phase + cycle + data) build + parse and the 16-bit IDN encode/decode (S/P + set + block). |
 | `native_sht3x` | `WS_ENABLE_SHT3X=1` | `test_sht3x` | Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the datasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity conversions at the range endp... |
 | `native_sigfox` | `WS_ENABLE_SIGFOX=1` | `test_sigfox` | Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink command (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and the OK / ERROR / PENDING r... |
+| `native_simatic` | `WS_ENABLE_SIMATIC=1` | `test_simatic` | Siemens SIMATIC serial (services/simatic): 3964R block framing (DLE-double + XOR BCC) + the 3964R link state machine (STX/DLE handshake, NAK/QVZ retry, ZVZ timeout, priority arbitration) + RK512 SEND/... |
 | `native_sleep_sched` | `WS_ENABLE_SLEEP_SCHED=1` | `test_sleep_sched` | Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window decision core with a doubling ramp clamped to a ceiling. |
 | `native_smb` | `WS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm`, `test_ntlmssp`, `test_spnego`, `test_smb_client` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE, SESSION_SETUP, TREE_CONNECT/CREATE/CLOSE/READ/WRITE); the NTLM digests MD4 (RFC 1320) / MD5... |
 | `native_smtp` | `WS_ENABLE_SMTP=1` | `test_smtp` | SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH LOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply parsing. |
@@ -548,7 +549,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3461 test cases** across **275 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3476 test cases** across **276 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28537,6 +28538,169 @@ A thorough directory of all **3461 test cases** across **275 suites**. Expand a 
     * **Objective**: If a buffer holds both (e.g. an echoed "OK" token then an ERROR), ERROR is reported.
     * **Assertions**:
       * <code>Assert equal int (dws_sigfox_result::SIGFOX_ERROR, dws_sigfox_parse_response(both, (uint16_t)strlen(both)))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_simatic (15 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bcc_is_xor</b> &mdash; <i>a doubled DLE pair cancels in the XOR (0x10 ^ 0x10 = 0)</i></summary>
+
+    * **Objective**: a doubled DLE pair cancels in the XOR (0x10 ^ 0x10 = 0)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x11 ^ 0x22 ^ 0x33, dws_3964r_bcc(d, sizeof(d)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0, dws_3964r_bcc(pair, sizeof(pair)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_block_stuffs_dle_and_terminates</b> &mdash; <i>0x41, DLE, DLE (doubled), 0x42, DLE, ETX, BCC</i></summary>
+
+    * **Objective**: 0x41, DLE, DLE (doubled), 0x42, DLE, ETX, BCC
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(7, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, buf, 6);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(dws_3964r_bcc(buf, 6), buf[6]); // BCC over stuffed data + DLE ETX</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_block_round_trip_with_embedded_dle</b> &mdash; <i>Block round trip with embedded dle</i></summary>
+
+    * **Objective**: Block round trip with embedded dle
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(0, n);</code>
+      * <code>Assert true (dws_3964r_parse_block(blk, n, true, out, sizeof(out), &olen))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(data), olen);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, out, olen);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_block_round_trip_no_bcc</b> &mdash; <i>Block round trip no bcc</i></summary>
+
+    * **Objective**: Block round trip no bcc
+    * **Assertions**:
+      * <code>Assert true (dws_3964r_parse_block(blk, n, false, out, sizeof(out), &olen))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, out, olen);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_rejects_bad</b> &mdash; <i>bad BCC</i></summary>
+
+    * **Objective**: bad BCC
+    * **Assertions**:
+      * <code>Assert false (dws_3964r_parse_block(blk, n, true, out, sizeof(out), &olen))</code>
+      * <code>Assert false (dws_3964r_parse_block(noterm, sizeof(noterm), false, out, sizeof(out), &olen))</code>
+      * <code>Assert false (dws_3964r_parse_block(dangle, sizeof(dangle), false, out, sizeof(out), &olen))</code>
+      * <code>Assert false (dws_3964r_parse_block(badctl, sizeof(badctl), false, out, sizeof(out), &olen))</code>
+      * <code>Assert false (dws_3964r_parse_block(bigblk, bn, false, tiny, sizeof(tiny), &olen))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_send_happy_path</b> &mdash; <i>first tx is STX; awaiting connect</i></summary>
+
+    * **Objective**: first tx is STX; awaiting connect
+    * **Assertions**:
+      * <code>Assert true (dws_3964r_send(&c, msg, sizeof(msg), 0))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_tx.size());</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_STX, g_tx[0]);</code>
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(1, g_tx.size());            // block bytes emitted</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_ETX, g_tx[g_tx.size() - 2]); // ... DLE ETX BCC tail</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_receive_path_delivers</b> &mdash; <i>build a block the "partner" sends us</i></summary>
+
+    * **Objective**: build a block the "partner" sends us
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_tx.size());</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_DLE, g_tx[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_DLE, g_tx.back());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(payload), g_rx.size());</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, g_rx.data(), g_rx.size());</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_block_nak_retries</b> &mdash; <i>Sm block nak retries</i></summary>
+
+    * **Objective**: Sm block nak retries
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_STX, g_tx.back());</code>
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(before, g_tx.size());</code>
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_qvz_timeout_then_abort</b> &mdash; <i>never ack; tick past the deadline repeatedly -> connection retries then abort</i></summary>
+
+    * **Objective**: never ack; tick past the deadline repeatedly -> connection retries then abort
+    * **Assertions**:
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_priority_arbitration</b> &mdash; <i>Low-priority station, mid-send, sees a partner STX -> yields to receive.</i></summary>
+
+    * **Objective**: Low-priority station, mid-send, sees a partner STX -> yields to receive.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_DLE, g_tx[0]); // yielded: replied DLE (now receiving)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_tx.size()); // ignored; still awaiting its own connect DLE</code>
+      * <code>Assert false (dws_3964r_idle(&hi))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_reply_from_rx_callback</b> &mdash; <i>the block was acked (DLE) then the reply's STX was emitted -> the link is now sending the reply</i></summary>
+
+    * **Objective**: the block was acked (DLE) then the reply's STX was emitted -> the link is now sending the reply
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_STX, g_tx.back());</code>
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rk512_build_send_field_order</b> &mdash; <i>[SEND, coord=0, area=DB, dbnr=5, addr BE, count BE, words BE]</i></summary>
+
+    * **Objective**: [SEND, coord=0, area=DB, dbnr=5, addr BE, count BE, words BE]
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(8 + 4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, buf, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rk512_build_fetch_and_parse</b> &mdash; <i>Rk512 build fetch and parse</i></summary>
+
+    * **Objective**: Rk512 build fetch and parse
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
+      * <code>Assert true (dws_rk512_parse_header(buf, n, &h))</code>
+      * <code>Assert equal (Rk512Cmd::FETCH, h.cmd)</code>
+      * <code>Assert equal (Rk512Area::MB, h.area)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x0100, h.addr);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, h.count);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rk512_reaction_round_trip</b> &mdash; <i>a non-zero error status</i></summary>
+
+    * **Objective**: a non-zero error status
+    * **Assertions**:
+      * <code>Assert true (dws_rk512_parse_reaction(buf, n, &status, &data, &dlen))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, status);</code>
+      * <code>Assert null (data)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dlen);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x8001, status);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rk512_parse_rejects</b> &mdash; <i>overflow guards</i></summary>
+
+    * **Objective**: overflow guards
+    * **Assertions**:
+      * <code>Assert false (dws_rk512_parse_header(shortbuf, sizeof(shortbuf), &h))</code>
+      * <code>Assert false (dws_rk512_parse_header(badarea, sizeof(badarea), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_send(tiny, sizeof(tiny), Rk512Area::DB, 0, 0, w, 1));</code>
   </details>
 
 </details>

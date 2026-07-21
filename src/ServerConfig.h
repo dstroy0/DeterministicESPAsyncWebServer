@@ -1961,6 +1961,35 @@
 #endif
 
 /**
+ * @brief Siemens SIMATIC serial point-to-point: 3964R link + RK512 telegrams (`services/simatic`).
+ *
+ * Default off. The pre-Ethernet Siemens PtP link (CP 341/441/524/525): the 3964R byte-oriented,
+ * half-duplex link protocol (STX/DLE handshake, DLE-doubling, XOR BCC on the "R" variant, priority
+ * arbitration on an STX collision, QVZ/ZVZ timeouts + retry) plus the RK512 computer-link telegrams
+ * (SEND / FETCH addressing a DB / flag / I-O area, big-endian words). A pure framing/telegram codec +
+ * one owned link-state-machine context; the RS-232 / RS-485 UART is the application's. Host-tested
+ * against an independent python 3964R+RK512 reference peer.
+ */
+#ifndef DWS_ENABLE_SIMATIC
+#define DWS_ENABLE_SIMATIC 0
+#endif
+
+/** @brief 3964R block-body buffer size (built/received bytes: DLE-stuffed payload + DLE ETX + BCC). */
+#ifndef DWS_SIMATIC_BLOCK_MAX
+#define DWS_SIMATIC_BLOCK_MAX 256
+#endif
+
+/** @brief 3964R QVZ (Quittungsverzugszeit): handshake acknowledge-delay timeout, ms. */
+#ifndef DWS_SIMATIC_QVZ_MS
+#define DWS_SIMATIC_QVZ_MS 2000
+#endif
+
+/** @brief 3964R ZVZ (Zeichenverzugszeit): inter-character timeout while receiving a block, ms. */
+#ifndef DWS_SIMATIC_ZVZ_MS
+#define DWS_SIMATIC_ZVZ_MS 200
+#endif
+
+/**
  * @brief TPKT (RFC 1006) + COTP (X.224 class 0) frame codec (`services/cotp`).
  *
  * Default off. A zero-heap "ISO transport on TCP" framing codec - the reusable foundation
