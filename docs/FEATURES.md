@@ -874,6 +874,12 @@ OPC UA Binary client. Default off (requires OPC-UA, shares the codec). services/
 
 umati / OPC UA for Machine Tools information model (OPC 40501-1). Default off (requires OPC-UA). services/umati exposes a fixed MachineTool node hierarchy - Identification, Monitoring (MachineTool / Channel / Spindle / Axis_X..Z), Production, and Notification - through the OPC UA Browse + Read resolvers, served out of a caller-owned UmatiMachineTool struct you refresh each loop. Faithful BrowseNames per OPC 40501-1 (namespace `http://opcfoundation.org/UA/MachineTool/`); a read-only monitoring model any umati / OPC UA client browses and reads by BrowseName. No heap, no stdlib.
 
+## OPC UA Robotics (MotionDevice)
+
+`DWS_ENABLE_ROBOTICS`
+
+OPC UA for Robotics information model (OPC 40010-1). Default off (requires OPC-UA). services/robotics exposes a fixed MotionDeviceSystem node hierarchy - MotionDevices (MotionDevice / ParameterSet / parametric Axes), Controllers (Controller / Software), and SafetyStates (SafetyState / ParameterSet) - through the OPC UA Browse + Read resolvers, served out of a caller-owned RoboticsMotionDeviceSystem struct you refresh each loop. The axis count is parametric (`DWS_ROBOTICS_AXES`, default 6): each bound axis becomes an Axis_k object with ActualPosition / ActualSpeed / ActualAcceleration / MotionProfile. Faithful BrowseNames per OPC 40010-1 (namespace `http://opcfoundation.org/UA/Robotics/`); a read-only monitoring model any OPC UA client browses and reads by BrowseName. The twin of umati (machine tools). No heap, no stdlib.
+
 ## OpenADR
 
 `DWS_ENABLE_OPENADR`

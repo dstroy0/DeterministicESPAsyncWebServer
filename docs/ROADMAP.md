@@ -1014,9 +1014,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       CNC controls answer over RS-232 / the network port. A small, fully-documented CNC read source.
       SHIPPED - services/haas_mdc (DWS_ENABLE_HAAS_MDC): the `?Q` query builders + the `>`-wrapped /
       DPRNT response parser. Pure codec, host-tested (native_haas_mdc), example HaasMdc.
-- [ ] **OPC UA Robotics (OPC 40010)** - the VDMA Robotics OPC UA companion spec (the MotionDevice model:
+- [x] **OPC UA Robotics (OPC 40010)** - the VDMA Robotics OPC UA companion spec (the MotionDevice model:
       axes, controller, safety state), another umati-pattern model on the OPC UA server; pairs with the
       Siemens **Run MyRobot** item and **umati** for robot cells.
+      SHIPPED - services/robotics (DWS_ENABLE_ROBOTICS): the MotionDeviceSystem hierarchy (MotionDevices /
+      MotionDevice / ParameterSet / DWS_ROBOTICS_AXES parametric Axes, Controllers / Controller / Software,
+      SafetyStates / SafetyState) served through the OPC UA Browse + Read resolvers out of a caller-owned
+      RoboticsMotionDeviceSystem, faithful BrowseNames per OPC 40010-1. Pure resolver, host-tested
+      (native_robotics), example Robotics; the twin of umati.
 - [ ] **FANUC robot interop** (M, R-30iB / R-30iA - **next machine-tool step**) - the robot counterpart
       to the shipped FANUC **FOCAS** CNC codec. FANUC robot controllers expose several Ethernet
       interfaces; the tractable, documented ones first: **PROFINET / EtherNet-IP** I/O (already partly

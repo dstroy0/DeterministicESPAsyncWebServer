@@ -4732,6 +4732,32 @@
 #endif
 
 /**
+ * @brief OPC UA for Robotics information model (DWS_ENABLE_ROBOTICS).
+ *
+ * Default off. Requires DWS_ENABLE_OPCUA (builds on the OPC UA Binary server). services/robotics
+ * exposes the OPC UA for Robotics companion model (OPC 40010-1, namespace
+ * `http://opcfoundation.org/UA/Robotics/`): a fixed MotionDeviceSystem node hierarchy -
+ * MotionDevices (MotionDevice / ParameterSet / DWS_ROBOTICS_AXES parametric Axes), Controllers
+ * (Controller / Software), and SafetyStates (SafetyState / ParameterSet) - served through the OPC UA
+ * Browse + Read resolvers out of a caller-owned RoboticsMotionDeviceSystem struct you refresh each loop.
+ * Faithful BrowseNames per OPC 40010-1; a monitoring (read-only) model any OPC UA client browses and
+ * reads by BrowseName. No heap, no stdlib. Same pattern as DWS_ENABLE_UMATI.
+ */
+#ifndef DWS_ENABLE_ROBOTICS
+#define DWS_ENABLE_ROBOTICS 0
+#endif
+
+/** @brief NamespaceIndex the robotics MotionDeviceSystem nodes live at (default 1). */
+#ifndef DWS_ROBOTICS_NS
+#define DWS_ROBOTICS_NS 1
+#endif
+
+/** @brief Number of Axes the robotics MotionDevice exposes (default 6; must fit DWS_OPCUA_REF_MAX). */
+#ifndef DWS_ROBOTICS_AXES
+#define DWS_ROBOTICS_AXES 6
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service/upload_service.h registers a POST route
@@ -6536,6 +6562,10 @@ enum class DWSIface : uint8_t
 #error "DeterministicESPAsyncWebServer: DWS_ENABLE_UMATI requires DWS_ENABLE_OPCUA (it builds on the OPC UA server)"
 #endif
 
+#if DWS_ENABLE_ROBOTICS && !DWS_ENABLE_OPCUA
+#error "DeterministicESPAsyncWebServer: DWS_ENABLE_ROBOTICS requires DWS_ENABLE_OPCUA (it builds on the OPC UA server)"
+#endif
+
 #if DWS_ENABLE_CONFIG_IO && !DWS_ENABLE_CONFIG_STORE
 #error "DeterministicESPAsyncWebServer: DWS_ENABLE_CONFIG_IO requires DWS_ENABLE_CONFIG_STORE"
 #endif
@@ -6827,6 +6857,12 @@ static_assert((unsigned)ConnProto::PROTO_MESH < DWS_PROTO_MAX, "DWS_PROTO_MAX mu
 #endif
 #ifndef DWS_OPCUA_WRITE_MAX
 #define DWS_OPCUA_WRITE_MAX 8 ///< max NodesToWrite handled per WriteRequest.
+#endif
+
+// An Axes Browse returns one reference per axis, so the axis count must fit a single Browse response.
+#if DWS_ENABLE_ROBOTICS && (DWS_ROBOTICS_AXES > DWS_OPCUA_REF_MAX)
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DWS_ROBOTICS_AXES must be <= DWS_OPCUA_REF_MAX (an Axes Browse returns one reference per axis)"
 #endif
 // Advertised server identity (endpoint descriptions), overridable per deployment; the app may
 // also set these at runtime via dws_opcua_set_endpoint_url() / the OpcUaServerInfo it passes.
