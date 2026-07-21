@@ -496,6 +496,13 @@
     "flash_bytes": 766225,
     "ram_bytes": 94724
   },
+  "OPCUA+ROBOTICS": {
+    "example": "L7-Application/Robotics",
+    "flags": "-DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_ROBOTICS=1",
+    "board": "esp32dev",
+    "flash_bytes": 768765,
+    "ram_bytes": 92468
+  },
   "OPCUA+UMATI": {
     "example": "L7-Application/Umati",
     "flags": "-DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_UMATI=1",
