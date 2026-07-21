@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **257 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **258 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -228,6 +228,7 @@ The native test matrix has **257 environments**, one per feature, generated from
 | `native_openadr` | `WS_ENABLE_OPENADR=1` | `test_openadr` | OpenADR 3.0 JSON codec (services/openadr): the event (programID + eventName + interval payloads) and report (VEN reading) JSON documents build, with escaping + a no-stdlib 3-decimal formatter. |
 | `native_ota` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_OTA=1` | `test_http_ota` | Parser streaming-body hook (OTA) - exercises http_parser with DWS_ENABLE_OTA=1 using a mock sink (no ESP32 Update dependency). |
 | `native_ota_rollback` | `WS_ENABLE_OTA_ROLLBACK=1` | `test_ota_rollback` | OTA rollback decision (services/ota_rollback): pure decision matrix host-tested; the esp_ota commit/rollback are ESP32-only. |
+| `native_packml` | `WS_ENABLE_PACKML=1` | `test_packml` | PackML / OMAC packaging-machine state model (services/packml), ISA-TR88.00.02: the pure 17-state transition engine (command / state-complete / execute-complete + command validity) and the owned PackTa... |
 | `native_partition` | `WS_ENABLE_PARTITION_MONITOR=1` | `test_partition_monitor` | Flash partition-map monitor (services/partition_monitor core): the kind classifier + JSON serializer host-test here; the esp_partition walk is ESP32-only. |
 | `native_pca9685` | `WS_ENABLE_PCA9685=1` | `test_pca9685` | PCA9685 PWM/servo codec (services/pca9685): the PRESCALE computation from a PWM frequency (with clamping), the per-channel register address, the servo pulse-width -> 12-bit count conversion (with clam... |
 | `native_pentest` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_MASTER=1`, `WS_ENABLE_TOTP=1`, `WS_ENABLE_MULTIPART=1`, `WS_ENABLE_CBOR=1`, `WS_ENABLE_MSGPACK=1`, `WS_ENABLE_COAP=1`, `WS_ENABLE_COAP_BLOCK=1`, `WS_COAP_BLOCK_SZX_MAX=2`, `WS_COAP_BLOCK1_MAX=128`, `WS_ENABLE_SNMP=1`, `WS_ENABLE_SQLITE=1`, `WS_ENABLE_REDIS=1`, `WS_ENABLE_OPCUA=1`, `WS_ENABLE_GRAPHQL=1`, `WS_ENABLE_DNS_SERVER=1`, `WS_ENABLE_DNP3=1`, `WS_ENABLE_STOMP=1`, `WS_ENABLE_SMB=1`, `WS_ENABLE_DNC=1`, `WS_ENABLE_FTP=1`, `WS_ENABLE_FINS=1`, `WS_ENABLE_MELSEC=1`, `WS_ENABLE_CIP=1`, `WS_ENABLE_ENIP=1`, `WS_ENABLE_DF1=1`, `WS_ENABLE_BACNET=1`, `WS_ENABLE_COTP=1`, `WS_ENABLE_C37118=1`, `WS_ENABLE_JWT=1`, `WS_ENABLE_DIRECTNET=1`, `WS_ENABLE_CCLINK=1`, `WS_ENABLE_AMQP=1`, `WS_ENABLE_MMS=1`, `WS_ENABLE_DDS=1`, `WS_ENABLE_HTTP2=1`, `WS_ENABLE_HTTP3=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
@@ -547,7 +548,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3445 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3461 test cases** across **275 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -22097,6 +22098,195 @@ A thorough directory of all **3445 test cases** across **274 suites**. Expand a 
       * <code>Assert equal int (DWSOtaImg::DWS_OTA_IMG_UNDEFINED, dws_ota_img_state())</code>
       * <code>Assert equal int (DWSOtaAction::DWS_OTA_WAIT, dws_ota_rollback_tick(true))</code>
       * <code>Assert equal int (DWSOtaAction::DWS_OTA_WAIT, dws_ota_rollback_tick(false))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_packml (16 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_startup_to_execute</b> &mdash; <i>Engine startup to execute</i></summary>
+
+    * **Objective**: Engine startup to execute
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::RESETTING, s)</code>
+      * <code>Assert equal (PackMlState::IDLE, s)</code>
+      * <code>Assert equal (PackMlState::STARTING, s)</code>
+      * <code>Assert equal (PackMlState::EXECUTE, s)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_execute_to_complete_and_back</b> &mdash; <i>Complete -> Reset -> Resetting -> Idle, ready for the next run.</i></summary>
+
+    * **Objective**: Complete -> Reset -> Resetting -> Idle, ready for the next run.
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::COMPLETING, s)</code>
+      * <code>Assert equal (PackMlState::COMPLETE, s)</code>
+      * <code>Assert equal (PackMlState::RESETTING, s)</code>
+      * <code>Assert equal (PackMlState::IDLE, dws_packml_state_complete(s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_hold_unhold</b> &mdash; <i>Engine hold unhold</i></summary>
+
+    * **Objective**: Engine hold unhold
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::HOLDING, s)</code>
+      * <code>Assert equal (PackMlState::HELD, s)</code>
+      * <code>Assert equal (PackMlState::UNHOLDING, s)</code>
+      * <code>Assert equal (PackMlState::EXECUTE, dws_packml_state_complete(s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_suspend_unsuspend</b> &mdash; <i>Engine suspend unsuspend</i></summary>
+
+    * **Objective**: Engine suspend unsuspend
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::SUSPENDING, s)</code>
+      * <code>Assert equal (PackMlState::SUSPENDED, s)</code>
+      * <code>Assert equal (PackMlState::UNSUSPENDING, s)</code>
+      * <code>Assert equal (PackMlState::EXECUTE, dws_packml_state_complete(s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_stop_from_many_states</b> &mdash; <i>Stopping -> Stopped.</i></summary>
+
+    * **Objective**: Stopping -> Stopped.
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::STOPPING, dws_packml_command(from[i], PackMlCommand::STOP))</code>
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_state_complete(PackMlState::STOPPING))</code>
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_command(PackMlState::STOPPED, PackMlCommand::STOP))</code>
+      * <code>Assert equal (PackMlState::ABORTED, dws_packml_command(PackMlState::ABORTED, PackMlCommand::STOP))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_abort_and_clear</b> &mdash; <i>Abort from any non-abort state -> Aborting -> Aborted.</i></summary>
+
+    * **Objective**: Abort from any non-abort state -> Aborting -> Aborted.
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::ABORTING, dws_packml_command(PackMlState::EXECUTE, PackMlCommand::ABORT))</code>
+      * <code>Assert equal (PackMlState::ABORTING, dws_packml_command(PackMlState::STOPPED, PackMlCommand::ABORT))</code>
+      * <code>Assert equal (PackMlState::ABORTED, dws_packml_state_complete(PackMlState::ABORTING))</code>
+      * <code>Assert equal (PackMlState::ABORTED, dws_packml_command(PackMlState::ABORTED, PackMlCommand::ABORT))</code>
+      * <code>Assert equal (PackMlState::CLEARING, s)</code>
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_state_complete(s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_invalid_commands_are_noops</b> &mdash; <i>Start only from Idle; Hold only from Execute; Reset only from Stopped/Complete; etc.</i></summary>
+
+    * **Objective**: Start only from Idle; Hold only from Execute; Reset only from Stopped/Complete; etc.
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_command(PackMlState::STOPPED, PackMlCommand::START))</code>
+      * <code>Assert equal (PackMlState::IDLE, dws_packml_command(PackMlState::IDLE, PackMlCommand::HOLD))</code>
+      * <code>Assert equal (PackMlState::EXECUTE, dws_packml_command(PackMlState::EXECUTE, PackMlCommand::RESET))</code>
+      * <code>Assert equal (PackMlState::IDLE, dws_packml_command(PackMlState::IDLE, PackMlCommand::RESET))</code>
+      * <code>Assert false (dws_packml_command_valid(PackMlState::STOPPED, PackMlCommand::START))</code>
+      * <code>Assert true (dws_packml_command_valid(PackMlState::STOPPED, PackMlCommand::RESET))</code>
+      * <code>Assert true (dws_packml_command_valid(PackMlState::EXECUTE, PackMlCommand::HOLD))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_acting_classification</b> &mdash; <i>Wait states do not auto-advance.</i></summary>
+
+    * **Objective**: Wait states do not auto-advance.
+    * **Assertions**:
+      * <code>Assert true (dws_packml_is_acting(PackMlState::STARTING))</code>
+      * <code>Assert true (dws_packml_is_acting(PackMlState::ABORTING))</code>
+      * <code>Assert true (dws_packml_is_acting(PackMlState::COMPLETING))</code>
+      * <code>Assert false (dws_packml_is_acting(PackMlState::EXECUTE))</code>
+      * <code>Assert false (dws_packml_is_acting(PackMlState::STOPPED))</code>
+      * <code>Assert false (dws_packml_is_acting(PackMlState::ABORTED))</code>
+      * <code>Assert equal (PackMlState::EXECUTE, dws_packml_state_complete(PackMlState::EXECUTE))</code>
+      * <code>Assert equal (PackMlState::IDLE, dws_packml_state_complete(PackMlState::IDLE))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_state_wire_numbers</b> &mdash; <i>Status.StateCurrent carries the ISA-TR88.00.02 numbers an HMI expects.</i></summary>
+
+    * **Objective**: Status.StateCurrent carries the ISA-TR88.00.02 numbers an HMI expects.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, (uint8_t)PackMlState::STOPPED);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, (uint8_t)PackMlState::EXECUTE);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(9, (uint8_t)PackMlState::ABORTED);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(17, (uint8_t)PackMlState::COMPLETE);</code>
+      * <code>Assert equal string ("Execute", dws_packml_state_name(PackMlState::EXECUTE))</code>
+      * <code>Assert equal string ("Abort", dws_packml_command_name(PackMlCommand::ABORT))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_init_is_stopped</b> &mdash; <i>Svc init is stopped</i></summary>
+
+    * **Objective**: Svc init is stopped
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_svc_state())</code>
+      * <code>Assert equal (PackMlState::STOPPED, st.state_current)</code>
+      * <code>Assert equal (PackMlMode::PRODUCING, st.unit_mode_current)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, st.prod_processed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_full_run_with_counts</b> &mdash; <i>Svc full run with counts</i></summary>
+
+    * **Objective**: Svc full run with counts
+    * **Assertions**:
+      * <code>Assert true (dws_packml_svc_command(PackMlCommand::RESET))</code>
+      * <code>Assert equal (PackMlState::IDLE, dws_packml_svc_state())</code>
+      * <code>Assert true (dws_packml_svc_command(PackMlCommand::START))</code>
+      * <code>Assert equal (PackMlState::EXECUTE, dws_packml_svc_state())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, st.prod_processed);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, st.prod_defective);</code>
+      * <code>Assert true (dws_packml_svc_complete_run())</code>
+      * <code>Assert equal (PackMlState::COMPLETE, dws_packml_svc_state())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_count_only_in_execute</b> &mdash; <i>Not executing (Stopped) -> counts are ignored.</i></summary>
+
+    * **Objective**: Not executing (Stopped) -> counts are ignored.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, st.prod_processed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_rejects_illegal_command</b> &mdash; <i>Start is illegal in Stopped; the service reports no change.</i></summary>
+
+    * **Objective**: Start is illegal in Stopped; the service reports no change.
+    * **Assertions**:
+      * <code>Assert false (dws_packml_svc_command(PackMlCommand::START))</code>
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_svc_state())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_mode_change_rules</b> &mdash; <i>Allowed in Stopped.</i></summary>
+
+    * **Objective**: Allowed in Stopped.
+    * **Assertions**:
+      * <code>Assert true (dws_packml_svc_set_mode(PackMlMode::MAINTENANCE))</code>
+      * <code>Assert equal (PackMlState::EXECUTE, dws_packml_svc_state())</code>
+      * <code>Assert false (dws_packml_svc_set_mode(PackMlMode::MANUAL))</code>
+      * <code>Assert equal (PackMlMode::MAINTENANCE, st.unit_mode_current)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_speed_actual_tracks_execute</b> &mdash; <i>Svc speed actual tracks execute</i></summary>
+
+    * **Objective**: Svc speed actual tracks execute
+    * **Assertions**:
+      * <code>Assert equal float (0.0f, st.mach_speed_actual)</code>
+      * <code>Assert equal float (120.0f, st.mach_speed_actual)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_timers</b> &mdash; <i>Svc timers</i></summary>
+
+    * **Objective**: Svc timers
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(500, st.state_current_ms);        // 1500 - 1000 (entered Resetting at 1000)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(500, st.acc_time_since_reset_ms); // reset at 1000</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(300, st.state_current_ms);        // 1800 - 1500</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(800, st.acc_time_since_reset_ms); // 1800 - 1000</code>
   </details>
 
 </details>

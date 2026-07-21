@@ -953,6 +953,12 @@
       "src": ["+<services/haas_mdc/haas_mdc.cpp>"],
       "tests": ["test_haas_mdc"]
     },
+    "native_packml": {
+      "desc": "PackML / OMAC packaging-machine state model (services/packml), ISA-TR88.00.02: the pure\n17-state transition engine (command / state-complete / execute-complete + command validity) and the\nowned PackTags service (state advance, production counters, unit-mode rules, machine speed, and the\nstate/reset timers). Pure host tests.",
+      "flags": ["-DDWS_ENABLE_PACKML=1"],
+      "src": ["+<services/packml/packml.cpp>"],
+      "tests": ["test_packml"]
+    },
     "native_lsv2": {
       "desc": "Heidenhain LSV/2 telegram codec (services/lsv2): the framer (4-byte big-endian payload-length\nprefix + 4-char mnemonic + payload), the typed request builders (login A_LG / logout A_LO,\nnull-terminated-filename file commands, R_RI run-info with a 2-byte big-endian selector), and the\nresponse readers (T_OK, the T_ER/T_BD 2-byte error-class + error-code, data replies, stream\nre-framing). Byte-exact vectors cross-checked against pyLSV2. Pure host tests.",
       "flags": ["-DDWS_ENABLE_LSV2=1"],

@@ -994,9 +994,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       into a motion master; pairs with the dshot / ESC actuator set.
 - [ ] **PROFIdrive** (L, Siemens drive profile) - the Siemens PROFIBUS/PROFINET drive profile (parameter
       access via PNU, the standard STW1/ZSW1 control/status telegrams + setpoint/actual) over the PROFINET stack.
-- [ ] **PackML / OMAC** (M, ISA-88 / OMAC PackTags) - the packaging-machine state model: the PackML state
+- [x] **PackML / OMAC** (M, ISA-88 / OMAC PackTags) - the packaging-machine state model: the PackML state
       machine (Idle/Execute/Held/Suspended/Aborted/...) plus the Admin/Status/Command PackTags, usually
       surfaced over OPC UA - the state engine + tag model as a fixed-BSS service.
+      SHIPPED - services/packml (DWS_ENABLE_PACKML): the pure ISA-TR88.00.02 (ISBN 978-1-64331-224-8)
+      17-state transition engine (dws_packml_command / _state_complete / _execute_complete + command
+      validity, StateCurrent wire numbers) and the owned PackTags service (state advance, Prod counters,
+      unit-mode-change rules, MachSpeed, StateCurrentTime / AccTimeSinceReset timers). Pure codec,
+      host-tested (native_packml, 16 cases), example PackML.
 - [x] **Haas Machine Data Collection** (S, serial Q commands) - the documented Haas MDC serial protocol
       (the `Q` command set: Q100 machine serial, Q500 program+status, Q600 macro-variable read) that Haas
       CNC controls answer over RS-232 / the network port. A small, fully-documented CNC read source.

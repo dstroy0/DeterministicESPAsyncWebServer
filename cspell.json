@@ -1437,7 +1437,11 @@
     "ECONNREFUSED",
     "bytematch",
     "DIFFSERV",
-    "freeslot"
+    "freeslot",
+    "PACKML",
+    "Unhold",
+    "Unholding",
+    "Unsuspending"
   ],
   "ignorePaths": [
     "node_modules/**",

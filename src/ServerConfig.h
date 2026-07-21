@@ -1883,6 +1883,18 @@
 #endif
 
 /**
+ * @brief PackML / OMAC packaging-machine state model (`services/packml`).
+ *
+ * The ISA-TR88.00.02 PackML state machine (17 states + the Reset/Start/Stop/Hold/.../Abort/Clear commands)
+ * plus the Command/Status/Admin PackTags (current state + unit mode, machine speed, production counters) as
+ * a fixed-BSS state engine + owned service. Pure, host-tested; the OPC UA / tag transport is the
+ * application's.
+ */
+#ifndef DWS_ENABLE_PACKML
+#define DWS_ENABLE_PACKML 0
+#endif
+
+/**
  * @brief Heidenhain LSV/2 telegram codec (`services/lsv2`).
  *
  * Default off. A zero-heap codec for the LSV/2 protocol Heidenhain TNC controls speak for DNC + data
