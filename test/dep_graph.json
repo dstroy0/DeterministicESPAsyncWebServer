@@ -167,6 +167,7 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint",
 "native_radio_power",
@@ -412,6 +413,7 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint",
 "native_radio_power",
@@ -657,6 +659,7 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint",
 "native_radio_power",
@@ -902,6 +905,7 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint",
 "native_radio_power",
@@ -1248,7 +1252,8 @@
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
-"native_quic_tls"
+"native_quic_tls",
+"native_quic_tls_pqc"
 ],
 "src/network_drivers/presentation/http3/quic_aead.h": [
 "native_coaps",
@@ -1262,7 +1267,8 @@
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
-"native_quic_tls"
+"native_quic_tls",
+"native_quic_tls_pqc"
 ],
 "src/network_drivers/presentation/http3/quic_conn.cpp": [
 "native_h3_conn",
@@ -1285,7 +1291,8 @@
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
-"native_quic_tls"
+"native_quic_tls",
+"native_quic_tls_pqc"
 ],
 "src/network_drivers/presentation/http3/quic_crypto.h": [
 "native_h3_conn",
@@ -1294,7 +1301,8 @@
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
-"native_quic_tls"
+"native_quic_tls",
+"native_quic_tls_pqc"
 ],
 "src/network_drivers/presentation/http3/quic_frame.cpp": [
 "native_h3_conn",
@@ -1325,6 +1333,7 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/quic_hkdf.h": [
@@ -1340,6 +1349,7 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/quic_packet.cpp": [
@@ -1350,7 +1360,8 @@
 "native_quic_crypto",
 "native_quic_packet",
 "native_quic_server",
-"native_quic_tls"
+"native_quic_tls",
+"native_quic_tls_pqc"
 ],
 "src/network_drivers/presentation/http3/quic_packet.h": [
 "native_h3_conn",
@@ -1361,6 +1372,7 @@
 "native_quic_packet",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_quic_tp"
 ],
 "src/network_drivers/presentation/http3/quic_server.cpp": [
@@ -1377,7 +1389,8 @@
 "native_h3_server",
 "native_quic_conn",
 "native_quic_server",
-"native_quic_tls"
+"native_quic_tls",
+"native_quic_tls_pqc"
 ],
 "src/network_drivers/presentation/http3/quic_tls.h": [
 "native_h3_conn",
@@ -1385,7 +1398,8 @@
 "native_h3_server",
 "native_quic_conn",
 "native_quic_server",
-"native_quic_tls"
+"native_quic_tls",
+"native_quic_tls_pqc"
 ],
 "src/network_drivers/presentation/http3/quic_tp.cpp": [
 "native_h3_conn",
@@ -1394,6 +1408,7 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_quic_tp"
 ],
 "src/network_drivers/presentation/http3/quic_tp.h": [
@@ -1403,6 +1418,7 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_quic_tp"
 ],
 "src/network_drivers/presentation/http3/quic_varint.cpp": [
@@ -1414,6 +1430,7 @@
 "native_quic_frame",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint"
 ],
@@ -1426,6 +1443,7 @@
 "native_quic_frame",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_quic_tp",
 "native_quic_varint"
 ],
@@ -1440,6 +1458,7 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/tls13_kdf.h": [
@@ -1453,6 +1472,7 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/tls13_msg.cpp": [
@@ -1466,6 +1486,7 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/http3/tls13_msg.h": [
@@ -1479,6 +1500,7 @@
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/http_parser/http_parser.cpp": [
@@ -1594,18 +1616,22 @@
 ],
 "src/network_drivers/presentation/pqc/mlkem.cpp": [
 "native_pqc",
+"native_quic_tls_pqc",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/pqc/mlkem.h": [
 "native_pqc",
+"native_quic_tls_pqc",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/pqc/sha3.cpp": [
 "native_pqc",
+"native_quic_tls_pqc",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/pqc/sha3.h": [
 "native_pqc",
+"native_quic_tls_pqc",
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/pqc/sntrup761.cpp": [
@@ -4089,6 +4115,7 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_ssh",
 "native_ssh_aesgcm",
 "native_ssh_comp",
@@ -4110,6 +4137,7 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_snmp_v3",
 "native_ssh",
 "native_ssh_aesgcm",
@@ -4229,6 +4257,7 @@
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
+"native_quic_tls_pqc",
 "native_ssh",
 "native_ssh_aesgcm",
 "native_ssh_comp",
