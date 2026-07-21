@@ -545,7 +545,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3435 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3436 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -25535,7 +25535,7 @@ A thorough directory of all **3435 test cases** across **274 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_tls (14 tests)</b></summary>
+<summary><b>test_quic_tls (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_full_handshake_roundtrip</b> &mdash; <i>Client transport params.</i></summary>
@@ -25699,6 +25699,30 @@ A thorough directory of all **3435 test cases** across **274 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.client_hs_traffic, cks.client_hs_traffic, 32);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_hs_traffic, cks.server_hs_traffic, 32);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_ap_traffic, cks.server_ap_traffic, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);</code>
+      * <code>Assert equal uint (sizeof(cfin), used)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_hrr_roundtrip</b> &mdash; <i>--- ClientHello1: hybrid group offered, classical share only -> HelloRetryRequest ---</i></summary>
+
+    * **Objective**: --- ClientHello1: hybrid group offered, classical share only -> HelloRetryRequest ---
+    * **Assertions**:
+      * <code>Assert equal uint (ch1_len, used)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_START, qt.state); // awaiting the retry, not WAIT_FINISHED</code>
+      * <code>Assert false (qt.hs_keys_ready)</code>
+      * <code>Assert true (qt.hrr_sent)</code>
+      * <code>Assert true (hrr_len &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, hrr[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(dws_tls13_hrr_random, hrr + 6, 32); // the HRR magic random</code>
+      * <code>Assert equal uint (ch2_len, used)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);</code>
+      * <code>Assert true (si_len &gt; hrr_len)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, sh[0]);</code>
+      * <code>Assert not null (server_ct)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_hs_traffic, cks.server_hs_traffic, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.client_hs_traffic, cks.client_hs_traffic, 32);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);</code>
       * <code>Assert equal uint (sizeof(cfin), used)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);</code>

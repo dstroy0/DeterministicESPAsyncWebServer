@@ -1247,14 +1247,14 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WEBDAV` | `L7-Application/WebDav` | 821,069 | 105,352 |
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/WebDav` | 822,273 | 90,860 |
 | `ETAG` | `L7-Application/ETag` | 829,109 | 83,092 |
-| `SSH` | `L5-Session/SSHHostKey` | 830,185 | 109,208 |
+| `SSH` | `L5-Session/SSHHostKey` | 830,545 | 109,208 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 832,497 | 107,256 |
 | `HOTSWAP` | `L7-Application/HotSwapStorage` | 838,477 | 82,728 |
 | `EXC_DECODER+FTP+FTP_SESSION` | `L7-Application/CoreDump` | 841,377 | 83,428 |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE` | `L7-Application/HttpDelivery` | 842,761 | 82,704 |
-| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 845,637 | 110,960 |
+| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 845,937 | 110,960 |
 | `TLS` | `L6-Presentation/SecureWebSocket` | 855,873 | 122,020 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/mTLS` | 856,829 | 122,356 |
@@ -1262,7 +1262,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/TlsResumption` | 858,045 | 105,824 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/mTLS` | 858,137 | 106,000 |
 | `POWER_MGMT` | `L7-Application/PowerGovernor` | 881,329 | 85,648 |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 882,465 | 118,560 |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 882,765 | 118,560 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
