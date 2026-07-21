@@ -6,10 +6,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- reject NULL pcb in the SEND/OUTPUT/RECVED liveness guards (SSH DoS reboot) ([`c809648`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c809648573cc2b2445e4da2464918be1c42cea98))
 - correct SSH reboot detector + document Path-2 tcp_output DoS as OPEN ([`da68376`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da68376424c146140cda7f33663aa1c288826dbe))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`240278a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/240278adfa899ce75c786deec1e8a867dd56f4e3))
 - update test report + coverage [skip ci] ([`b9f52d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9f52d058b323554c70ef8e36aace0b15305a17a))
 - update CHANGELOG.md [skip ci] ([`df03db0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df03db029a45aa522585f98261e76270ce70ffa6))
 - dws_ rename sweep + SSH keyboard-interactive + SSH churn-DoS RECVED guard ([`7320023`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7320023258b094352c0b6c172759fea7b5e258b2))
@@ -30,6 +32,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a39c96a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a39c96abe32abe15489c1d258c5c201075083c91))
 - update ESP32 build footprints [skip ci] ([`f975b44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f975b44009890a9dabc05937103cfa22a01c35a5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fc58454`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc58454845b098dbf4e7917e54dc60befc2f8ce6))
 - add keyboard-interactive to the FEATURES.md grid + regenerate ([`4451d2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4451d2e26932a5d57eaae9c98932fb6dbda50ae5))
