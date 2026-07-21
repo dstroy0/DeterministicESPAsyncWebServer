@@ -2,11 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.28.2] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.28.2 - 2026-07-21</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`813a528`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/813a528aff821d94cb0336e94fbfc1031cd8f5ff))
 - install prettier + align the markdown formatter to one version (3.9.6) ([`16d3e78`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16d3e7845ecb35e6daed204474f569bcb54da5da))
+
+### Changes
+
+- Bump version: 7.28.1 → 7.28.2 ([`e3fa159`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3fa1591d7562748a12761c2ae889d326d627bb0))
+
+### Performance
+
+- branchless memcpy RFC 5424 framer; fix(sse): strlen -> strnlen ([`955d56b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/955d56ba4416d34297c71d59cc9484318cac381f))
+
+</details>
 
 ## [7.28.1] - 2026-07-21
 
