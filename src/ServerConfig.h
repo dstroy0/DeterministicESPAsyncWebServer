@@ -74,6 +74,23 @@
 #define DWS_TCP_NODELAY 1
 #endif
 
+/**
+ * @brief Enable DiffServ QoS marking (RFC 2474) on outbound traffic. Default off.
+ *
+ * When set, the transport can stamp the 6-bit DSCP into the DS field (the high 6 bits of the IPv4 TOS /
+ * IPv6 Traffic-Class byte) of every outbound TCP connection and UDP datagram, so a QoS-aware network - and
+ * the Wi-Fi driver's 802.11e WMM access-category mapping - can prioritize safety / real-time packets (e.g.
+ * the Expedited-Forwarding class, DSCP 46) over best-effort. `network_drivers/transport/diffserv.h` exposes a
+ * server-wide default (`dws_set_default_dscp`), a UDP default (`dws_udp_set_dscp`), a per-listener override
+ * (`dws_listen_set_dscp`), and a per-connection setter (`dws_conn_set_dscp`) so an individual flow can carry
+ * any DSCP - useful both for real QoS and for arbitrarily tagging traffic in network testing. The DSCP is
+ * applied on tcpip_thread (accept / connect / udp create), so no extra marshalling is added to the hot path.
+ * Default off (zero cost: the marking code and the DSCP state are compiled out).
+ */
+#ifndef DWS_ENABLE_DIFFSERV
+#define DWS_ENABLE_DIFFSERV 0
+#endif
+
 /** @brief Ring-buffer capacity in bytes per connection slot (feature floors enforced last, in
  *  board_profiles/derived_sizing.h - a value below what an enabled feature needs is raised there). */
 #ifndef RX_BUF_SIZE

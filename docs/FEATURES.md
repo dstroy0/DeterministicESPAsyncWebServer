@@ -220,6 +220,12 @@ Allen-Bradley DF1 full-duplex frame codec. Default off. services/df1 is a zero-h
 
 Expose a diagnostic JSON endpoint via server.diag(). Disabled by default - enabling it exposes compile-time configuration (buffer sizes, feature flags) which could aid an attacker. Only enable in development or behind an authenticated route. When enabled, DWS_DIAG_JSON is a compile-time string constant you can serve from any route handler:
 
+## DiffServ QoS Marking
+
+`DWS_ENABLE_DIFFSERV`
+
+DiffServ QoS marking (RFC 2474): stamp the 6-bit DSCP into the DS field (the high 6 bits of the IPv4 TOS / IPv6 Traffic-Class byte) of outbound traffic so a QoS-aware network - and the Wi-Fi driver's 802.11e WMM access-category mapping - can prioritize safety / real-time packets over best-effort. Default off (zero cost: the marking code and the DSCP state compile out). `network_drivers/transport/diffserv.h` gives three levels of control, coarse to fine: `dws_set_default_dscp()` marks every outbound TCP connection (accepted + client); `dws_listen_set_dscp(port, dscp)` overrides that for one listener's connections; and `dws_conn_set_dscp(slot, dscp)` re-tags one live connection with any DSCP - real per-flow QoS, or arbitrarily tagging traffic for network testing. `dws_udp_set_dscp()` marks outbound UDP datagrams. Convenience code points are defined (`DWS_DSCP_EF` 46 expedited forwarding, `DWS_DSCP_CS6` 48 network control, `DWS_DSCP_AF41`/`AF31`); any 0-63 value is accepted (0 = best-effort). The DSCP is written to the pcb's TOS field on tcpip_thread as the connection is accepted / connected (or per outbound UDP datagram), so nothing is added to the send hot path; marking applies from the connection's first data segment (lwIP emits the SYN-ACK before the accept callback runs). Host-tested (`native_diffserv`) and HW-verified on an ESP32-P4: a stock `curl` saw the HTTP response carry the Expedited-Forwarding class (tos 0xb8) by default and Class-Selector 6 (tos 0xc0) after a per-connection re-tag, read straight off the wire with tcpdump. Example DiffServ. See src/network_drivers/transport/diffserv.h.
+
 ## DirectNET
 
 `DWS_ENABLE_DIRECTNET`

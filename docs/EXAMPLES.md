@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 145 runnable examples under `examples/`, grouped by
+The library ships 146 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -87,6 +87,7 @@ External chip drivers over I2C / SPI / UART - sensors, ADC / PWM / current monit
 Connections, encryption, and flood defense:
 
 [AcceptThrottle](../examples/L4-Transport/AcceptThrottle/README.md) ·
+[DiffServ](../examples/L4-Transport/DiffServ/README.md) ·
 [HTTPS](../examples/L4-Transport/HTTPS/README.md) ·
 [IpAllowlist](../examples/L4-Transport/IpAllowlist/README.md) ·
 [KeepAlive](../examples/L4-Transport/KeepAlive/README.md) ·

@@ -1,0 +1,95 @@
+# DiffServ - QoS marking (RFC 2474) on outbound traffic
+
+**Layer:** L4 Transport · **Build flags:** `DWS_ENABLE_DIFFSERV`
+
+## What this example teaches
+
+DiffServ (RFC 2474) puts a 6-bit **DSCP** in the DS field of the IP header (the
+high 6 bits of the IPv4 TOS / IPv6 Traffic-Class byte). A QoS-aware switch, router,
+or Wi-Fi AP reads that class and prioritizes the packet - real-time / safety traffic
+marked **Expedited Forwarding** (EF, DSCP 46) jumps ahead of best-effort, and the
+Wi-Fi driver maps it into the top 802.11e WMM access categories.
+
+With `DWS_ENABLE_DIFFSERV` the transport writes the DSCP into the pcb's TOS field
+as each connection is accepted / connected, so nothing is added to the send hot
+path. Three levels of control, coarse to fine:
+
+```cpp
+#include "network_drivers/transport/diffserv.h"
+
+dws_set_default_dscp(DWS_DSCP_EF);       // every outbound TCP connection (accepted + client)
+dws_listen_set_dscp(80, DWS_DSCP_AF41);  // override for one listener's connections
+dws_conn_set_dscp(slot, DWS_DSCP_CS6);   // re-tag ONE live connection with any class
+dws_udp_set_dscp(DWS_DSCP_EF);           // outbound UDP datagrams
+```
+
+A DSCP of `0` means best-effort (no marking). Convenience code points are defined
+(`DWS_DSCP_EF` 46, `DWS_DSCP_CS6` 48, `DWS_DSCP_AF41` 34, `DWS_DSCP_AF31` 26); any
+`0-63` value is accepted - handy for **arbitrarily tagging traffic in network
+testing**, not just standards-defined classes.
+
+This sketch marks every connection EF by default, and re-tags the `GET /tag`
+connection to CS6 to show the per-flow override.
+
+## Build and run
+
+```sh
+pio ci --board=esp32dev --project-option="framework=arduino" \
+  --project-option="build_flags=-DDWS_ENABLE_DIFFSERV=1" \
+  --lib="." examples/L4-Transport/DiffServ/DiffServ.ino
+```
+
+Flash it, then read the DSCP straight off the wire from another machine on the LAN:
+
+```sh
+sudo tcpdump -i <iface> -v host <board-ip> and tcp port 80 &
+curl http://<board-ip>/       # response packets: tos 0xb8  (EF,  DSCP 46)
+curl http://<board-ip>/tag    # response packets: tos 0xc0  (CS6, DSCP 48)
+```
+
+The marking applies from the connection's first data segment (lwIP emits the
+SYN-ACK before the accept callback runs, so the handshake stays best-effort).
+This was HW-verified on an ESP32-P4 exactly this way: `/` responses carried
+tos `0xb8` and the re-tagged `/tag` responses carried tos `0xc0`.
+
+## Annotated source
+
+The complete sketch ([DiffServ.ino](DiffServ.ino)):
+
+```cpp
+#include "dwserver.h"
+#include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/diffserv.h"
+
+DWS server;
+
+// GET / - response inherits the server-wide default DSCP (EF) set in setup().
+void handle_root(uint8_t slot, HttpReq *req)
+{
+    server.send(slot, 200, "text/plain", "marked EF (DSCP 46)\n");
+}
+
+// GET /tag - re-tag THIS connection to CS6 before responding, overriding the default.
+void handle_tag(uint8_t slot, HttpReq *req)
+{
+    dws_conn_set_dscp(slot, DWS_DSCP_CS6);
+    server.send(slot, 200, "text/plain", "re-tagged CS6 (DSCP 48)\n");
+}
+
+void setup()
+{
+    // ... bring up Wi-Fi (init_wifi_physical / wifi_ready) ...
+
+    dws_set_default_dscp(DWS_DSCP_EF); // mark every outbound connection EF
+    dws_udp_set_dscp(DWS_DSCP_EF);     // and outbound UDP datagrams
+
+    server.on("/", HttpMethod::HTTP_GET, handle_root);
+    server.on("/tag", HttpMethod::HTTP_GET, handle_tag);
+    server.begin(80);
+}
+
+void loop()
+{
+    server.handle();
+}
+```

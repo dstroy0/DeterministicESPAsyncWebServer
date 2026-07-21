@@ -21,6 +21,9 @@ struct tcp_pcb
     // drained. Defaults to 0 so a host close finalizes immediately unless a test
     // sets it to simulate data still in flight.
     uint16_t snd_queuelen = 0;
+    // IPv4 TOS / DS field. The real lwIP pcb has this; DiffServ marking (DWS_ENABLE_DIFFSERV) writes the
+    // DSCP here so a host test can assert the applied class. Defaults to 0 (best-effort).
+    uint8_t tos = 0;
 };
 
 struct pbuf

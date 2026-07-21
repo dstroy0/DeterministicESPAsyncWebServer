@@ -61,6 +61,9 @@ struct Listener
     QueueHandle_t queue;                                      ///< Handle returned by xQueueCreateStatic().
     bool active; ///< True after listener_add(), false after listener_stop().
     bool tls;    ///< True when connections accepted here begin a TLS handshake.
+#if DWS_ENABLE_DIFFSERV
+    uint8_t dscp; ///< Per-listener DiffServ DSCP for accepted connections; DWS_DSCP_UNSET = use the default.
+#endif
 };
 
 /** @brief Static pool of listener contexts.  Defined in listener.cpp. */

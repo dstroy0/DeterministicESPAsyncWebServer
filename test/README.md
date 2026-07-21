@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **255 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **256 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -117,6 +117,7 @@ The native test matrix has **255 environments**, one per feature, generated from
 | `native_devicenet` | `WS_ENABLE_DEVICENET=1` | `test_devicenet` | DeviceNet link-adaptation codec (services/devicenet): the 4-group 11-bit CAN id, explicit-message header octet, single-frame explicit messages, and the fragmentation reassembler (CIP over CAN; the CIP... |
 | `native_df1` | `WS_ENABLE_DF1=1` | `test_df1` | Allen-Bradley DF1 full-duplex frame codec (services/df1): BCC + CRC-16/ARC, the frame builder with DLE byte-stuffing, and the validating, un-stuffing parser. |
 | `native_diag` | `WS_ENABLE_DIAG=1` | `test_diag` | Runtime build-flag reporter (server.diag() / DWS_ENABLE_DIAG). |
+| `native_diffserv` | `WS_ENABLE_DIFFSERV=1` | `test_diffserv` | DiffServ QoS marking (DWS_ENABLE_DIFFSERV): the DSCP->TOS encode (DSCP << 2, ECN 0), the server-wide and UDP DSCP defaults (set/get, 6-bit mask), the per-connection setter (dws_conn_set_dscp writes pc... |
 | `native_directnet` | `WS_ENABLE_DIRECTNET=1` | `test_directnet` | AutomationDirect DirectNET serial frame codec (services/directnet): the header (SOH + ASCII-hex slave/type/addr/blocks + ETB + LRC) and data (STX + data + ETX + LRC) frames build/parse. |
 | `native_dma` | `WS_ENABLE_DMA=1`, `WS_DMA_BUF_SIZE=8`, `WS_DMA_CHANNELS=2` | `test_dma` | DMA peripheral ingest / egress simulator (services/dma), v5 hardware ingest: an ingress feed surfaces as RX completion events, a full buffer ping-pongs and re-arms, egress DMA is captured, TX is one-i... |
 | `native_dmx` | `WS_ENABLE_DMX=1` | `test_dmx` | DMX512 + RDM lighting codec (services/dmx): the DMX512 slot packet (build/get) and the RDM (ANSI E1.20) packet build/parse with 48-bit UIDs and the 16-bit additive checksum. |

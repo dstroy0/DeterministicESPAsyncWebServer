@@ -20,6 +20,7 @@
 // DWS_NEED_DET_CLIENT in ServerConfig.h.
 #if defined(ARDUINO) && DWS_NEED_DET_CLIENT
 
+#include "diffserv.h" // DiffServ DSCP marking for outbound client connections (compiles out when off)
 #include "lwip/priv/tcpip_priv.h"
 #include "lwip/tcp.h"
 #include "services/clock.h"                     // dws_millis()
@@ -146,6 +147,15 @@ static err_t cc_do_connect(struct tcpip_api_call_data *cd)
     tcp_arg(c->pcb, c);
     tcp_recv(c->pcb, cc_recv);
     tcp_err(c->pcb, cc_err);
+#if DWS_ENABLE_DIFFSERV
+    {
+        // Mark the outbound connection with the server-wide default DSCP (the SYN onward). Runs in
+        // tcpip_thread (this is the marshalled connect op), so touching the pcb is race-free.
+        uint8_t dscp = dws_diffserv_default_dscp();
+        if (dscp)
+            c->pcb->tos = dws_dscp_to_tos(dscp);
+    }
+#endif
     k->result = tcp_connect(c->pcb, &k->addr, k->port, cc_connected);
     return ERR_OK;
 }

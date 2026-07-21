@@ -12,6 +12,7 @@
 
 #if defined(ARDUINO)
 
+#include "diffserv.h"  // DiffServ DSCP marking for outbound datagrams (compiles out when off)
 #include "lwip/igmp.h" // igmp_joingroup / _leavegroup - multicast group membership
 #include "lwip/pbuf.h"
 #include "lwip/priv/tcpip_priv.h" // tcpip_api_call - marshal raw udp_* onto tcpip_thread
@@ -113,6 +114,20 @@ struct DWSUdpCall
     bool result;
 };
 
+// Stamp a UDP pcb with the configured default DSCP (DiffServ) so its outbound datagrams carry the class.
+// No-op when marking is off or the DSCP is 0 (best-effort). Applied per outbound send so a live
+// dws_udp_set_dscp() change takes effect on the next datagram - useful for network testing.
+static inline void apply_udp_dscp(struct udp_pcb *pcb)
+{
+#if DWS_ENABLE_DIFFSERV
+    uint8_t dscp = dws_diffserv_udp_dscp();
+    if (pcb && dscp)
+        pcb->tos = dws_dscp_to_tos(dscp);
+#else
+    (void)pcb;
+#endif
+}
+
 // Runs in tcpip_thread via tcpip_api_call.
 static err_t udp_do(struct tcpip_api_call_data *c)
 {
@@ -129,6 +144,7 @@ static err_t udp_do(struct tcpip_api_call_data *c)
             if (udp_bind(pcb, IP_ANY_TYPE, k->port) == ERR_OK)
             {
                 s_udp.listeners[k->slot].pcb = pcb;
+                apply_udp_dscp(pcb); // reply datagrams from this listener carry the configured DSCP
                 udp_recv(pcb, udp_trampoline, &s_udp.listeners[k->slot]);
                 k->result = true;
             }
@@ -187,7 +203,10 @@ static err_t udp_do(struct tcpip_api_call_data *c)
         if (!s_udp.out)
             s_udp.out = udp_new();
         if (s_udp.out)
+        {
+            apply_udp_dscp(s_udp.out); // per-send: a live dws_udp_set_dscp() change takes effect immediately
             k->result = udp_pbuf_send(s_udp.out, &k->addr, k->port, k->data, k->len);
+        }
         break;
     }
     s_udp.in_tcpip_thread = prev;
@@ -325,6 +344,7 @@ bool dws_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, 
             if (!s_udp.out)
                 return false;
         }
+        apply_udp_dscp(s_udp.out);
         return udp_pbuf_send(s_udp.out, &dst, dst_port, data, len);
     }
     DWSUdpCall k;

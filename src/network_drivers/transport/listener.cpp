@@ -18,6 +18,7 @@
  */
 
 #include "listener.h"
+#include "diffserv.h" // DiffServ DSCP marking for accepted connections (compiles out when off)
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
@@ -437,6 +438,18 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     tcp_nagle_disable(newpcb);
 #endif
 
+#if DWS_ENABLE_DIFFSERV
+    // DiffServ (RFC 2474): stamp this connection's DS field so a QoS-aware network - and the Wi-Fi WMM
+    // mapping - prioritizes it. The per-listener DSCP wins over the server-wide default; 0 means best-effort
+    // (leave the lwIP default of 0). Safe here: the accept callback runs in tcpip_thread, so touching the
+    // pcb is race-free (same context as tcp_nagle_disable above).
+    {
+        uint8_t dscp = (lst->dscp != DWS_DSCP_UNSET) ? lst->dscp : dws_diffserv_default_dscp();
+        if (dscp)
+            newpcb->tos = dws_dscp_to_tos(dscp);
+    }
+#endif
+
 #if DWS_ENABLE_TLS
     // TLS listeners begin a handshake immediately; the session loop pumps it.
     slot->tls = lst->tls ? 1 : 0;
@@ -478,6 +491,9 @@ int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto, bool tls)
     lst->port = port;
     lst->proto = proto;
     lst->tls = tls;
+#if DWS_ENABLE_DIFFSERV
+    lst->dscp = DWS_DSCP_UNSET; // no per-listener override until dws_listen_set_dscp(); accept() uses the default
+#endif
 
     lst->queue = xQueueCreateStatic(EVT_QUEUE_DEPTH, sizeof(TcpEvt), lst->_queue_storage, &lst->_queue_struct);
     if (!lst->queue)
@@ -616,6 +632,24 @@ static err_t listener_lwip_marshal(uint8_t idx, uint16_t port, bool create)
 }
 #endif // ARDUINO
 
+#if DWS_ENABLE_DIFFSERV
+bool dws_listen_set_dscp(uint16_t port, uint8_t dscp)
+{
+    for (uint8_t i = 0; i < MAX_LISTENERS; i++)
+    {
+        Listener *lst = &listener_pool[i];
+        if (lst->active && lst->port == port)
+        {
+            // Preserve the UNSET sentinel; mask any real code point to 6 bits. Applied to connections
+            // accepted after this call (existing connections keep the DSCP they were stamped with).
+            lst->dscp = (dscp == DWS_DSCP_UNSET) ? DWS_DSCP_UNSET : (uint8_t)(dscp & 0x3F);
+            return true;
+        }
+    }
+    return false;
+}
+#endif // DWS_ENABLE_DIFFSERV
+
 int32_t listener_add_dynamic(uint8_t idx, uint16_t port, ConnProto proto)
 {
     if (idx >= MAX_LISTENERS)
@@ -630,6 +664,9 @@ int32_t listener_add_dynamic(uint8_t idx, uint16_t port, ConnProto proto)
     lst->port = port;
     lst->proto = proto;
     lst->tls = false; // forwarded ports are plaintext bridges
+#if DWS_ENABLE_DIFFSERV
+    lst->dscp = DWS_DSCP_UNSET; // dynamic (forwarded) listeners inherit the server-wide default DSCP
+#endif
 
     lst->queue = xQueueCreateStatic(EVT_QUEUE_DEPTH, sizeof(TcpEvt), lst->_queue_storage, &lst->_queue_struct);
     if (!lst->queue)

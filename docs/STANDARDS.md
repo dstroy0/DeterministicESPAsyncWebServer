@@ -139,6 +139,7 @@ newer entry here.
 - [RFC 5424](https://www.rfc-editor.org/rfc/rfc5424) - Syslog Protocol - **impl**.
 - [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035) - Domain Names (DNS) - **impl** (resolver + captive-portal responder).
 - [IEEE 802.11](https://standards.ieee.org/ieee/802.11/7028/) - Wireless LAN MAC/PHY - **impl** (Wi-Fi link; raw-L2 frame TX path).
+- [RFC 2474](https://www.rfc-editor.org/rfc/rfc2474) - Definition of the Differentiated Services Field (DS Field) - **impl** (`DWS_ENABLE_DIFFSERV`: the 6-bit DSCP stamped into the outbound IPv4 TOS / IPv6 Traffic-Class byte, per server-default / listener / connection / UDP datagram; HW-verified on-wire on an ESP32-P4).
 
 ## TLS
 

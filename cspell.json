@@ -1435,7 +1435,8 @@
     "frameless",
     "slowtmr",
     "ECONNREFUSED",
-    "bytematch"
+    "bytematch",
+    "DIFFSERV"
   ],
   "ignorePaths": [
     "node_modules/**",

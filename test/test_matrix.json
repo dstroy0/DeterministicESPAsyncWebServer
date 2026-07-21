@@ -276,6 +276,17 @@
       ],
       "tests": ["test_observability"]
     },
+    "native_diffserv": {
+      "desc": "DiffServ QoS marking (DWS_ENABLE_DIFFSERV): the DSCP->TOS encode (DSCP << 2, ECN 0),\nthe server-wide and UDP DSCP defaults (set/get, 6-bit mask), the per-connection setter\n(dws_conn_set_dscp writes pcb->tos on the host path), and the per-listener override\n(dws_listen_set_dscp incl. the UNSET sentinel + mask + unknown-port miss). Compiles the\nflag-guarded transport paths no other env builds. Pure L4 core - host-tested.",
+      "flags": ["-DDWS_ENABLE_DIFFSERV=1"],
+      "src": [
+        "+<network_drivers/network/ip.cpp>",
+        "+<network_drivers/transport/tcp.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/transport/diffserv.cpp>"
+      ],
+      "tests": ["test_diffserv"]
+    },
     "native_accept_gate": {
       "desc": "Accept-time connection gates with their flags ON (DWS_ENABLE_ACCEPT_THROTTLE\n/ PER_IP_THROTTLE / IP_ALLOWLIST): the global fixed-window throttle, the per-source-IP\nbucket table (independent budgets, window rollover, the millis() wrap, bounded LRU\neviction), and the CIDR source-IP allowlist. Compiles the flag-guarded accept-callback\npaths that no other env builds. Budgets overridden small so the boundaries are explicit.",
       "flags": [

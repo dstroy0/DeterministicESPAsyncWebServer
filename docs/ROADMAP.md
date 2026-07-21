@@ -1736,13 +1736,17 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       management data (superframe / link / route reports) as a pure codec over HART; the full TSMP-style TDMA
       MAC + channel-hopping schedule is radio-firmware territory (like the other 802.15.4 radios) and is
       called out as HW-gated. `DWS_ENABLE_WIRELESSHART` / `services/wirelesshart`.
-- [ ] **DiffServ QoS marking (RFC 2474)** (S) - set the 6-bit DSCP in the IP header (the RFC 2474 DS field)
-      on outbound traffic so safety / real-time packets carry the Expedited-Forwarding class (EF, DSCP 46) and
-      the Wi-Fi driver / AP maps them into the top 802.11e WMM access categories (AC_VO voice, AC_VI video)
-      instead of best-effort. A small transport-layer addition: a per-listener / per-connection DSCP setting
-      plumbed through `dws_udp` / `dws_conn` to lwIP's `ip_tos` / the `IP_TOS` socket option, with a policy
-      that tags the functional-safety and CIP / PROFIsafe flows EF by default. Host-testable by asserting the
-      TOS byte on the emitted datagram; `DWS_ENABLE_QOS_DSCP`.
+- [x] **DiffServ QoS marking (RFC 2474)** (S) - DONE (`DWS_ENABLE_DIFFSERV`). The transport stamps the 6-bit
+      DSCP into the IP DS field (the high 6 bits of the TOS byte) of outbound traffic so a QoS-aware network -
+      and the Wi-Fi WMM access-category mapping - prioritizes the Expedited-Forwarding class (EF, DSCP 46) and
+      the like over best-effort. Three levels of control in `network_drivers/transport/diffserv.h`:
+      `dws_set_default_dscp()` (server-wide, all outbound TCP), `dws_listen_set_dscp(port, dscp)` (per-listener),
+      and `dws_conn_set_dscp(slot, dscp)` (per-connection - any 0-63, for real per-flow QoS or arbitrary tagging
+      in network testing), plus `dws_udp_set_dscp()` for datagrams. The DSCP is written to the pcb TOS on
+      tcpip_thread as the connection is accepted / connected, so nothing is added to the send hot path (marking
+      applies from the first data segment - lwIP emits the SYN-ACK before the accept callback runs). Host-tested
+      (`native_diffserv`) and HW-verified on an ESP32-P4: curl saw the response carry tos 0xb8 (EF) by default
+      and 0xc0 (CS6) after a per-connection re-tag, read off the wire with tcpdump. Example DiffServ.
 - [ ] **Wireless coexistence management (IEC 62657-2)** (M) - adhere to IEC 62657-2 so the device behaves in
       a crowded industrial 2.4 / 5 GHz band shared by WLAN, WirelessHART, ISA100, Bluetooth, and Zigbee:
       coexistence-aware channel selection plus a spectrum-use / interference report a central coexistence

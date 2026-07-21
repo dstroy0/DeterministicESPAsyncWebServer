@@ -26,6 +26,7 @@
  */
 
 #include "tcp.h"
+#include "diffserv.h" // DiffServ DSCP marking (dws_dscp_to_tos, dws_conn_set_dscp); compiles out when off
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h" // xTaskGetCurrentTaskHandle() - tcpip_thread self-detection for dws_tcp_marshal
@@ -180,7 +181,10 @@ enum class DWSTcpOp : uint8_t
     DWS_OP_DETACH,
     DWS_OP_RAWSEND,     // raw tcp_write of already-encrypted bytes (TLS BIO), no TLS re-entry
     DWS_OP_CLOSE_CHECK, // in tcpip_thread: finalize a ConnState::CONN_CLOSING slot if its TX has drained
-    DWS_OP_RECVED       // in tcpip_thread: tcp_recved() to reopen the window (ack-on-consume)
+    DWS_OP_RECVED,      // in tcpip_thread: tcp_recved() to reopen the window (ack-on-consume)
+#if DWS_ENABLE_DIFFSERV
+    DWS_OP_SET_TOS // in tcpip_thread: set pcb->tos (DiffServ DSCP) on a live connection; k->len carries the byte
+#endif
 };
 
 // TCP transport context, owned by one instance (internal linkage): the tcpip_thread FreeRTOS task
@@ -333,6 +337,17 @@ static err_t dws_tcp_do(struct tcpip_api_call_data *c)
         else
             k->result = ERR_CLSD;
         break;
+#if DWS_ENABLE_DIFFSERV
+    case DWSTcpOp::DWS_OP_SET_TOS:
+        // Per-connection DSCP (RFC 2474): stamp the DS field so this flow's outbound IP packets carry the
+        // requested class. Same O(1) liveness guard as SEND - the slot can be torn down between the worker
+        // capturing the pcb and this op running. k->len carries the ready-made TOS byte (DSCP << 2).
+        if (k->pcb && k->pcb == conn_pool[k->slot].pcb)
+            k->pcb->tos = (uint8_t)k->len;
+        else
+            k->result = ERR_CLSD;
+        break;
+#endif
     }
     return ERR_OK;
 }
@@ -438,6 +453,23 @@ void dws_conn_flush(uint8_t slot)
     tcp_output(conn_pool[slot].pcb);
 #endif
 }
+
+#if DWS_ENABLE_DIFFSERV
+bool dws_conn_set_dscp(uint8_t slot, uint8_t dscp)
+{
+    if (slot >= MAX_CONNS || conn_pool[slot].pcb == nullptr)
+        return false;
+#if defined(ARDUINO)
+    // Marshalled to tcpip_thread (DWS_OP_SET_TOS) - lwIP reads pcb->tos while building each outbound
+    // segment, so setting it from a worker task must not race the stack.
+    return dws_tcp_marshal(DWSTcpOp::DWS_OP_SET_TOS, slot, conn_pool[slot].pcb, nullptr, dws_dscp_to_tos(dscp)) ==
+           ERR_OK;
+#else
+    conn_pool[slot].pcb->tos = dws_dscp_to_tos(dscp); // host: no tcpip thread, set directly
+    return true;
+#endif
+}
+#endif // DWS_ENABLE_DIFFSERV
 
 void dws_conn_ack_consumed(uint8_t slot)
 {
