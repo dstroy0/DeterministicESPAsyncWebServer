@@ -210,9 +210,15 @@
 // tracks the matching floor so a hybrid build is provisioned, not starved; the guard at the bottom of
 // this file is the backstop when the stack is set by hand. (A flag set only in the config block below,
 // not via -D, is still undefined here and reads as 0 - the guard then catches any shortfall.)
-#define DWS_SSH_ANY                                                                                                    \
-    ((defined(DWS_ENABLE_SSH) && DWS_ENABLE_SSH) || (defined(DWS_ENABLE_SSH_CLIENT) && DWS_ENABLE_SSH_CLIENT) ||       \
-     (defined(DWS_ENABLE_HTTP3) && DWS_ENABLE_HTTP3))
+// Evaluate the `defined()` tests directly in a #if and reduce to a plain 0/1 token: a function-like macro that
+// itself expands to `defined()` is undefined behavior when used in the #if below (C11 6.10.1p4 - `defined`
+// produced by macro expansion), even though GCC/Clang happen to accept it.
+#if (defined(DWS_ENABLE_SSH) && DWS_ENABLE_SSH) || (defined(DWS_ENABLE_SSH_CLIENT) && DWS_ENABLE_SSH_CLIENT) ||        \
+    (defined(DWS_ENABLE_HTTP3) && DWS_ENABLE_HTTP3)
+#define DWS_SSH_ANY 1
+#else
+#define DWS_SSH_ANY 0
+#endif
 // sntrup761x25519-sha512 (on by default with the PQC hybrid, but a standalone -D can enable it without
 // ML-KEM) is the heavy case: the reverse-SSH CLIENT runs KeyGen+Decaps whose FO re-encrypt peaks ~32 KB,
 // the SERVER runs Encaps only (~22 KB). ML-KEM alone stays at 16 KB, so a build that explicitly drops

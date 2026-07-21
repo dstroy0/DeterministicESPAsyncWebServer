@@ -219,8 +219,10 @@ void Round(Fq *out, const Fq *a)
 inline void int32_minmax(int32_t *pp, int32_t *pq)
 {
     int32_t x = *pp, y = *pq;
-    int64_t d = (int64_t)y - (int64_t)x;                    // 64-bit to avoid overflow
-    int32_t swap = (int32_t)-((uint64_t)d >> 63) & (x ^ y); // all-ones when y < x
+    int64_t d = (int64_t)y - (int64_t)x; // 64-bit to avoid overflow
+    // (d>>63) is the sign bit (0 or 1); negate it as a signed 0/1 to get a 0 / all-ones mask - the branchless
+    // constant-time select. (Negating the *unsigned* value was an equivalent idiom but is a Sonar bug flag.)
+    int32_t swap = -(int32_t)((uint64_t)d >> 63) & (x ^ y); // all-ones when y < x
     *pp = x ^ swap;
     *pq = y ^ swap;
 }

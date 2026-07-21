@@ -398,10 +398,14 @@ static_assert(MAX_CONNS <= 32, "the free-slot bitmask (s_pool.free_mask) is a ui
 void dws_conn_set_state(uint8_t slot, ConnState st)
 {
     // Reserved internal slots (>= MAX_CONNS, e.g. DWS_H3_DISPATCH_SLOT) are not part of the TCP accept pool
-    // and are never handed out by the allocator, so they carry state but no bitmask bit.
+    // and are never handed out by the allocator, so they carry state but no bitmask bit. Bound the write to
+    // the real array size (CONN_POOL_SLOTS = MAX_CONNS + the reserved internal slots): with no reserved slots
+    // compiled in (CONN_POOL_SLOTS == MAX_CONNS) this branch is unreachable at runtime, but the explicit bound
+    // keeps the setter memory-safe on its own rather than relying on the caller never over-indexing.
     if (slot >= MAX_CONNS)
     {
-        conn_pool[slot].state = st;
+        if (slot < CONN_POOL_SLOTS)
+            conn_pool[slot].state = st;
         return;
     }
     const uint32_t bit = 1u << slot;
