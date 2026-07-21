@@ -4,7 +4,7 @@
 // Host-side microbenchmark for the Server-Sent Events framing hot op (sse_format), the pure
 // presentation-layer record builder that runs on every sse_send()/sse_broadcast(). The device
 // number comes from the rig /bench endpoint; this host ns/op + MB/s is a RELATIVE baseline (a fast
-// RPi core), not the device cost. sse_format() is pure (no transport), so it links standalone.
+// RPi core), not the device cost. dws_sse_format() is pure (no transport), so it links standalone.
 // Build + run (same include roots as the native test env):
 //   g++ -O2 -std=c++17 -Isrc -Itest/mocks -Itest/support \
 //       perf/bench_sse.cpp src/network_drivers/presentation/sse/sse.cpp -o /tmp/bs && /tmp/bs
@@ -16,10 +16,10 @@
 #include <cstdio>
 #include <cstring>
 
-// sse.cpp's sse_write() (not exercised here) references the transport layer; the bench only calls
-// the pure sse_format(), so satisfy the linker with stubs rather than pulling in transport + lwIP.
+// sse.cpp's dws_sse_write() (not exercised here) references the transport layer; the bench only calls
+// the pure dws_sse_format(), so satisfy the linker with stubs rather than pulling in transport + lwIP.
 TcpConn conn_pool[CONN_POOL_SLOTS];
-bool det_conn_send(uint8_t, const void *, u16_t)
+bool dws_conn_send(uint8_t, const void *, u16_t)
 {
     return true;
 }
@@ -53,9 +53,9 @@ int main()
     // data-only: the common broadcast shape (`data: <payload>\n\n`).
     {
         volatile int sink = 0;
-        double ns =
-            bench_ns(2000000, [&] { sink += sse_format(buf, sizeof(buf), "sensor=21.4C rh=48%", nullptr, nullptr); });
-        int bytes = sse_format(buf, sizeof(buf), "sensor=21.4C rh=48%", nullptr, nullptr);
+        double ns = bench_ns(
+            2000000, [&] { sink += dws_sse_format(buf, sizeof(buf), "sensor=21.4C rh=48%", nullptr, nullptr); });
+        int bytes = dws_sse_format(buf, sizeof(buf), "sensor=21.4C rh=48%", nullptr, nullptr);
         row("sse", "format data-only", ns, (double)bytes);
         (void)sink;
     }
@@ -64,8 +64,8 @@ int main()
     {
         volatile int sink = 0;
         double ns = bench_ns(
-            2000000, [&] { sink += sse_format(buf, sizeof(buf), "sensor=21.4C rh=48%", "telemetry", "12345"); });
-        int bytes = sse_format(buf, sizeof(buf), "sensor=21.4C rh=48%", "telemetry", "12345");
+            2000000, [&] { sink += dws_sse_format(buf, sizeof(buf), "sensor=21.4C rh=48%", "telemetry", "12345"); });
+        int bytes = dws_sse_format(buf, sizeof(buf), "sensor=21.4C rh=48%", "telemetry", "12345");
         row("sse", "format event+id+data", ns, (double)bytes);
         (void)sink;
     }

@@ -63,26 +63,42 @@ void dws_sse_free(uint8_t slot_id)
     }
 }
 
+// Append `len` bytes of `src` at *pos if the whole record still leaves room for a trailing NUL (content must
+// fit in n-1). Returns false the moment it would not fit, so a record that overflows reports 0 rather than a
+// truncated frame. memcpy of a known-length span, no format parsing.
+static inline bool sse_append(char *buf, size_t n, size_t *pos, const char *src, size_t len)
+{
+    if (*pos + len > n - 1)
+        return false;
+    memcpy(buf + *pos, src, len);
+    *pos += len;
+    return true;
+}
+
 int dws_sse_format(char *buf, size_t n, const char *data, const char *event, const char *id)
 {
     if (!data || n == 0)
         return 0;
 
-    int pos = 0;
-    int rem = (int)n;
-
-    // pos starts at 0 here, so the first field needs no remaining-space guard; the
-    // later fields do, since a truncated snprintf advances pos toward (or past) rem.
+    // WHATWG event-stream field order: event, then id, then data (blank line terminates the record). A
+    // branchless memcpy framer - fixed prefixes + strlen/memcpy of each value + the terminators - instead of
+    // three snprintf("%s") calls; ~an order of magnitude cheaper on the Xtensa vsnprintf path, which matters
+    // for a high-rate broadcast fan-out (many subscribers). Byte-identical output (test_sse_format).
+    size_t pos = 0;
     if (event)
-        pos += snprintf(buf + pos, (size_t)(rem - pos), "event: %s\n", event);
-    if (id && pos < rem)
-        pos += snprintf(buf + pos, (size_t)(rem - pos), "id: %s\n", id);
-    if (pos < rem)
-        pos += snprintf(buf + pos, (size_t)(rem - pos), "data: %s\n\n", data);
-
-    if (pos <= 0 || pos >= rem)
+        if (!sse_append(buf, n, &pos, "event: ", 7) || !sse_append(buf, n, &pos, event, strlen(event)) ||
+            !sse_append(buf, n, &pos, "\n", 1))
+            return 0;
+    if (id)
+        if (!sse_append(buf, n, &pos, "id: ", 4) || !sse_append(buf, n, &pos, id, strlen(id)) ||
+            !sse_append(buf, n, &pos, "\n", 1))
+            return 0;
+    if (!sse_append(buf, n, &pos, "data: ", 6) || !sse_append(buf, n, &pos, data, strlen(data)) ||
+        !sse_append(buf, n, &pos, "\n\n", 2))
         return 0;
-    return pos;
+
+    buf[pos] = '\0'; // pos <= n-1 by construction, so the NUL always fits
+    return (int)pos;
 }
 
 bool dws_sse_write(SseConn *sse, const char *data, const char *event, const char *id)

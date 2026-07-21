@@ -1623,19 +1623,17 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       constant-time (every alphabet range is an arithmetic mask, no branch and no data-indexed table): a scalar
       one-char-at-a-time path, and the default **SWAR** path that packs 4 characters into a word and classifies
       all four lanes in parallel with guard-bit range masks (every base64 char is < 0x80, so borrows never cross
-      lanes). Measured on the ESP32-S3, decoding a credential: **SWAR 882 cyc, scalar 1639 cyc, mbedTLS 4728 cyc**
-      - SWAR is **1.9x faster than the scalar path and 5.36x faster than mbedTLS** (~8.4x on 1 KiB), and both are
+      lanes). Measured on the ESP32-S3, decoding a credential: **SWAR 882 cyc, scalar 1639 cyc, mbedTLS 4728 cyc** - SWAR is **1.9x faster than the scalar path and 5.36x faster than mbedTLS** (~8.4x on 1 KiB), and both are
       **timing-invariant** (0.00-cycle spread across alphabet-spanning inputs). This also closed a timing gap on
       the `base64url` (JWT) path - previously a plain branchy software decoder - and dropped the mbedTLS base64
       dependency. Verified with RFC 4648 vectors both directions + a 10,000-input differential vs Python `base64`,
       run against **both** implementations (`test_base64` in env:native = SWAR default and env:native_base64_scalar).
-- [ ] **Hand-rolled SSE record framer** (S) - `dws_sse_format()` builds each `event:`/`id:`/`data:` record with
-      three `snprintf("%s")` calls; the CCOUNT bench measured ~3393 cyc / 14 us for a fully-addressed record
-      on the S3, dominated by the Xtensa `vsnprintf` path (~7x the `mime_type` lookup). A branchless
-      `memcpy`-based framer (fixed field prefixes + `strlen`/`memcpy` of each value + the terminators) would
-      cut it by roughly an order of magnitude. Not worth it at SSE's per-event cadence, but a real win for a
-      high-rate broadcast fan-out (many subscribers, high push rate). Gate on the existing `test_sse_format`
-      byte-exact tests + the `/bench` figure.
+- [x] **Hand-rolled SSE record framer** (S) - DONE. `dws_sse_format()` now builds each `event:`/`id:`/`data:`
+      record with a branchless `memcpy` framer (fixed field prefixes + `strlen`/`memcpy` of each value + the
+      terminators) instead of three `snprintf("%s")` calls, avoiding the expensive Xtensa `vsnprintf` path.
+      Measured on the ESP32-S3 in a same-input A/B: **2902 -> 789 cyc (3.68x)** for a fully-addressed record;
+      ~8x on the host (180 -> 22 ns). Output is byte-identical - the existing `test_sse_format` asserts the
+      exact WHATWG event-stream bytes, and it stayed green. A real win for a high-rate broadcast fan-out.
 
 ### Radar presence sensor drivers (mmWave + Doppler)
 

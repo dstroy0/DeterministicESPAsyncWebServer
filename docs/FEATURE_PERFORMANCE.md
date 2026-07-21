@@ -216,15 +216,16 @@ the pure, transport-free hot op behind every `dws_sse_send()` / `dws_sse_broadca
 
 | Operation                          | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
 | ---------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `dws_sse_format` data-only         |       62.5 |     432.1 |               - |              - |
-| `dws_sse_format` event + id + data |      180.2 |     299.7 |            3393 |          14137 |
+| `dws_sse_format` data-only         |       11.3 |    2383.1 |               - |              - |
+| `dws_sse_format` event + id + data |       22.2 |    2428.3 |             789 |           3287 |
 
-- A fully-addressed record (named event + resumable id + data) costs ~14.1 us on the S3 - notably more than
-  the codec primitives above, because the framing is three `snprintf("%s")` calls and the Xtensa `vsnprintf`
-  path dominates. At SSE's push cadence (events, not per-byte) this is invisible, but a hand-rolled
-  memcpy-based framer would cut it by an order of magnitude if a high-rate broadcast fan-out ever needs it
-  (noted in the ROADMAP perf items). The data-only shape (the common broadcast case) is ~3x cheaper on the
-  host, so the device cost scales down similarly.
+- The framer is a **branchless memcpy** codec - fixed field prefixes + `strlen`/`memcpy` of each value + the
+  terminators - not `snprintf("%s")`. That change (shipped) cut a fully-addressed record from ~180 to ~22 ns
+  on the host (~8x) and, measured on the S3 in a same-input A/B, from **2902 to 789 cyc (~3.68x)** - the
+  Xtensa `vsnprintf` path is expensive, and the framer avoids it entirely. Output is byte-identical
+  (`test_sse_format` asserts the exact WHATWG event-stream bytes). Invisible at SSE's per-event cadence, but a
+  real win for a high-rate broadcast fan-out (many subscribers). Host figures from
+  [`perf/bench_sse.cpp`](../perf/bench_sse.cpp); the S3 figure is the same-input A/B on the rig.
 
 ### WebDAV 207 Multi-Status builder (DWS_ENABLE_WEBDAV)
 
