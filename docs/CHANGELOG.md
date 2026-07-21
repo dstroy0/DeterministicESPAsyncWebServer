@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`483b1c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/483b1c19ab030ab0fd33f8924f8c30a41298e48c))
+
+### Documentation
+
+- HW-verify per-listener + UDP marking on-wire; document tested SYN-ACK behavior ([`a385d09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a385d09dfbc53e85ec405949e07bd5c78427e65c))
+- update ESP32 build footprints [skip ci] ([`a5a2552`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5a255215d21263339367d17fa70cbe7bfa76dd1))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d270cec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d270cec3fef7f64866a66d98a39034c43c5c9c2d))
+
 ## [7.28.0] - 2026-07-21
 
 <details>
