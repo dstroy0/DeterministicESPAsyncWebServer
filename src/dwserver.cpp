@@ -1195,9 +1195,30 @@ void DWS::http_poll_slot(uint8_t i)
         http_parse(i);
 #endif
 
+#if DWS_REQUEST_TIMEOUT_MS > 0
+    // Slow-loris defense (the nginx client_header_timeout semantic): bound the request HEADER phase. A
+    // connection that sent its first byte but has not completed its request headers within
+    // DWS_REQUEST_TIMEOUT_MS is answered 408 and closed, freeing the slot. Unlike the idle timeout, req_start_ms
+    // is NOT reset by a trickle byte (it is armed once, on the first RX byte), so a drip-fed partial header
+    // cannot hold a slot open indefinitely - the connection-slot DoS the user reproduced. The deadline is
+    // scoped to the header phase (parse_state < PARSE_BODY, since every header state precedes PARSE_BODY in the
+    // enum) so it never reaps a legitimate slow body: a large streaming upload sits in PARSE_BODY for its whole
+    // duration and is governed by the streaming handler + idle timer, not this deadline. WebSocket / SSE were
+    // already returned above.
+    if (conn_pool[i].state == ConnState::CONN_ACTIVE && conn_pool[i].req_start_ms != 0 &&
+        http_pool[i].parse_state < ParseState::PARSE_BODY &&
+        (uint32_t)(dws_millis() - conn_pool[i].req_start_ms) >= DWS_REQUEST_TIMEOUT_MS)
+    {
+        conn_pool[i].req_start_ms = 0;
+        send(i, 408, DWS_MIME_TEXT_PLAIN, "Request Timeout"); // terminal error response -> connection closes
+        return;
+    }
+#endif
+
     // HTTP slot
     if (http_pool[i].parse_state == ParseState::PARSE_COMPLETE)
     {
+        conn_pool[i].req_start_ms = 0; // request complete: disarm; the next keep-alive request re-arms on its 1st byte
         match_and_execute(i);
         if (http_pool[i].parse_state == ParseState::PARSE_COMPLETE)
             http_reset(i);

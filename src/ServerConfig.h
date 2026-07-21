@@ -126,6 +126,23 @@
 #endif
 
 /**
+ * @brief Request-header read deadline in milliseconds (slow-loris defense). Default 10 s; 0 disables.
+ *
+ * The idle timeout (CONN_TIMEOUT_MS) refreshes on every accepted byte, so a slow-loris that trickles one
+ * header byte just under the idle window holds a connection slot forever and, with a few connections, denies
+ * the whole fixed pool to legitimate clients (a connection-slot DoS - verified on HW). This is an ABSOLUTE
+ * deadline from the first byte of a request to the end of its HEADERS that a trickle cannot reset: a connection
+ * whose request headers are not complete within DWS_REQUEST_TIMEOUT_MS is answered 408 and closed, freeing the
+ * slot (the nginx client_header_timeout semantic). It is scoped to the header phase, so it never reaps a
+ * legitimate slow body: a large streaming upload (PARSE_BODY) is governed by the streaming handler + idle
+ * timer, not this deadline. It also does not touch WebSocket / SSE slots (long-lived by design). Lower it to
+ * tighten the window on a trusted LAN; 0 turns the defense off.
+ */
+#ifndef DWS_REQUEST_TIMEOUT_MS
+#define DWS_REQUEST_TIMEOUT_MS 10000
+#endif
+
+/**
  * @brief Upper bound (ms) a slot may dwell in ConnState::CONN_CLOSING after a graceful close
  *        before the idle sweep force-aborts it.
  *

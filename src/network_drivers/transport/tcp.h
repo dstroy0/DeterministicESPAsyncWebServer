@@ -74,6 +74,9 @@ struct TcpConn
     DWSAtomic<ConnState> state; ///< Lifecycle state; acquire/release for inter-task visibility.
     struct tcp_pcb *pcb;        ///< lwIP PCB; null when slot is free.
     uint32_t last_activity_ms;  ///< `millis()` timestamp of last TX/RX event.
+    uint32_t req_start_ms;      ///< `millis()` at the first byte of the in-progress request (0 = none). The
+                                ///< request-header deadline (DWS_REQUEST_TIMEOUT_MS, slow-loris defense) measures
+                                ///< against this; unlike last_activity_ms a trickle byte cannot reset it.
 
     uint8_t rx_buffer[RX_BUF_SIZE]; ///< Ring buffer storage.
     DWSAtomic<size_t> rx_head;      ///< Producer write index (lwIP/tcpip context).

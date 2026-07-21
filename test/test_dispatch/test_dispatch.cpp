@@ -215,6 +215,85 @@ void test_correct_method_still_dispatches()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
 }
 
+// ---- Slow-loris / request-completion deadline (DWS_REQUEST_TIMEOUT_MS) -----
+#if DWS_REQUEST_TIMEOUT_MS > 0
+// A connection that started a request (req_start_ms armed on the first RX byte) but never completes it within
+// DWS_REQUEST_TIMEOUT_MS is answered 408 and closed, freeing the slot - the connection-slot (slow-loris)
+// defense. Here the deadline is armed directly (push_str writes the ring buffer, bypassing the RX path that
+// arms it in the field); the HW interop test drives a real trickle. A trickle cannot reset req_start_ms (the
+// RX path arms it once, only when 0), so a drip-fed partial request still trips this.
+void test_slowloris_incomplete_request_reaped_past_deadline()
+{
+    server.on("/res", HttpMethod::HTTP_GET, handle_ok);
+    conn_pool[0].req_start_ms = 1;                   // armed as the first byte would have, at t=1
+    push_str(0, "GET /res HTTP/1.1\r\nHost: x\r\n"); // headers unterminated -> parse never completes
+    http_parse(0);
+    TEST_ASSERT_NOT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
+
+    set_millis(1 + DWS_REQUEST_TIMEOUT_MS); // elapsed == deadline
+    // The slow-loris keeps its idle timer fresh (a trickle byte refreshes last_activity_ms every few seconds),
+    // so the CONN_TIMEOUT_MS idle sweep never fires - only this request-completion deadline catches it.
+    conn_pool[0].last_activity_ms = 1 + DWS_REQUEST_TIMEOUT_MS;
+    server.handle();
+
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "408 Request Timeout"));   // reaped with a 408
+    TEST_ASSERT_NOT_NULL(strstr(r, "Connection: close\r\n")); // and closed (slot freed on ACK / closing sweep)
+    TEST_ASSERT_EQUAL(0, (int)conn_pool[0].req_start_ms);     // deadline disarmed
+    TEST_ASSERT_FALSE(handler_called);                        // the route never ran
+}
+
+void test_incomplete_request_survives_before_deadline()
+{
+    server.on("/res", HttpMethod::HTTP_GET, handle_ok);
+    conn_pool[0].req_start_ms = 1;
+    push_str(0, "GET /res HTTP/1.1\r\nHost: x\r\n");
+    http_parse(0);
+
+    set_millis(DWS_REQUEST_TIMEOUT_MS);                     // armed at t=1 -> elapsed = deadline-1 < deadline
+    conn_pool[0].last_activity_ms = DWS_REQUEST_TIMEOUT_MS; // fresh idle timer (trickle), so idle sweep is out
+    server.handle();
+
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "408"));                          // not yet reaped
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state); // still active
+    TEST_ASSERT_NOT_EQUAL(0, (int)conn_pool[0].req_start_ms);                 // still armed
+}
+
+void test_completed_slow_request_not_reaped()
+{
+    // A request that arrives slowly but COMPLETES is dispatched normally and never 408'd, even when a later
+    // poll runs past the deadline: completion disarms req_start_ms, so a kept-alive idle slot is not reaped.
+    server.on("/res", HttpMethod::HTTP_GET, handle_ok);
+    conn_pool[0].req_start_ms = 1;
+    feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_TRUE(handler_called);
+    TEST_ASSERT_EQUAL(0, (int)conn_pool[0].req_start_ms); // disarmed on completion
+
+    tcp_capture_reset();
+    set_millis(1 + DWS_REQUEST_TIMEOUT_MS + 1);
+    server.handle();
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "408")); // an idle keep-alive slot is not a slow request
+}
+
+void test_streaming_body_upload_not_reaped_past_deadline()
+{
+    // The deadline is header-scoped (nginx client_header_timeout): a legitimate slow body sits in PARSE_BODY
+    // for its whole duration and must NOT be reaped, however long it takes. Model a slot mid-upload, well past
+    // the header deadline, still receiving (idle timer kept fresh by arriving body bytes).
+    server.on("/res", HttpMethod::HTTP_POST, handle_ok);
+    conn_pool[0].req_start_ms = 1;                     // armed on the first byte, not yet disarmed (still in body)
+    http_pool[0].parse_state = ParseState::PARSE_BODY; // headers done, streaming the body
+    http_pool[0].content_length = 100000;              // a large upload, not yet complete
+    http_pool[0].body_bytes_read = 10;
+    set_millis(1 + DWS_REQUEST_TIMEOUT_MS + 5000);                     // well past the header deadline
+    conn_pool[0].last_activity_ms = 1 + DWS_REQUEST_TIMEOUT_MS + 5000; // body bytes keep the idle timer fresh
+    server.handle();
+
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "408"));                          // header-scoped: body is not reaped
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state); // upload continues
+}
+#endif // DWS_REQUEST_TIMEOUT_MS > 0
+
 int main()
 {
     UNITY_BEGIN();
@@ -231,5 +310,11 @@ int main()
     RUN_TEST(test_http_parse_skips_ws_upgraded_slot);
 #endif
     RUN_TEST(test_correct_method_still_dispatches);
+#if DWS_REQUEST_TIMEOUT_MS > 0
+    RUN_TEST(test_slowloris_incomplete_request_reaped_past_deadline);
+    RUN_TEST(test_incomplete_request_survives_before_deadline);
+    RUN_TEST(test_completed_slow_request_not_reaped);
+    RUN_TEST(test_streaming_body_upload_not_reaped_past_deadline);
+#endif
     return UNITY_END();
 }

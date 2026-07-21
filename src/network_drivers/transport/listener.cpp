@@ -405,6 +405,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     dws_conn_set_state((uint8_t)free_slot, ConnState::CONN_ACTIVE); // reserves the slot in the bitmask
     slot->pcb = newpcb;
     slot->last_activity_ms = dws_millis();
+    slot->req_start_ms = 0; // no request yet; armed on the first RX byte (request-completion deadline)
     slot->rx_head = 0;
     slot->rx_tail = 0;
     slot->rx_acked = 0; // window-ack cursor starts level with an empty ring

@@ -688,6 +688,17 @@ shipped work:
       BSS bucket table keyed by source IPv4 with a per-address fixed window,
       host-tested in `test_transport`.
 
+- [x] **Slow-loris held the pool indefinitely (slot-exhaustion DoS).** _(done - HW-verified)_
+      The accept-rate throttles above cap the connection _rate_, not the _hold time_: a
+      slow-loris that dribbles a header byte under the [`CONN_TIMEOUT_MS`](@ref CONN_TIMEOUT_MS)
+      idle window kept refreshing `last_activity_ms` and held its slot forever. Added a
+      request-**header** read deadline ([`DWS_REQUEST_TIMEOUT_MS`](@ref DWS_REQUEST_TIMEOUT_MS),
+      default 10 s, the nginx `client_header_timeout` semantic): a per-slot `req_start_ms`
+      armed on the first RX byte (a trickle cannot reset it); `http_poll_slot` reaps any slot
+      still in the header phase (`parse_state < PARSE_BODY`) past the deadline with `408` +
+      `Connection: close`. Header-scoped, so a slow body upload (`PARSE_BODY`) is never reaped.
+      HW (ESP32-P4): the pool recovers, a real `408` is delivered at ~10 s. See `BUGS.md`.
+
 - [x] **[`dws_base64_decode()`](@ref dws_base64_decode) has no output-capacity guard (Basic-auth ingestion).**
       _(done)_ `dws_base64_decode()` now takes a `dst_cap` parameter
       (`base64.cpp`/`.h`, both platforms) and bounds every write; an over-capacity

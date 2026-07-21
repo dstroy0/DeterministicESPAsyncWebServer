@@ -8,6 +8,33 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Slow-loris held the connection pool indefinitely (slot-exhaustion DoS)
+
+- **Status:** FIXED (2026-07-21). Reproduced and fixed on an ESP32-P4 (Ethernet, 192.168.1.153).
+- **Symptom:** a slow-loris - open N connections, send `GET / HTTP/1.1\r\n`, then trickle one header line
+  (`X-a: b\r\n`) every ~3 s and never terminate the headers - filled the entire fixed connection pool
+  (`MAX_CONNS`) and denied it to legitimate clients **forever**. A `scratchpad/slowloris2.py` with 12 holders
+  saw every legitimate probe DENIED (`ConnectionResetError`) with no recovery.
+- **Root cause:** the only per-connection timeout was the idle sweep (`CONN_TIMEOUT_MS`, 5 s), and
+  `last_activity_ms` is refreshed on **every accepted RX byte** (tcp.cpp, the recv handler). A trickle that
+  drips a byte just under the idle window therefore keeps the idle timer alive indefinitely while never
+  completing a request - so a partial request could hold a slot for as long as the attacker kept dripping.
+  There was no deadline a trickle could not reset.
+- **Fix:** a request-**header** read deadline - the nginx `client_header_timeout` semantic. A new per-slot
+  `req_start_ms` is armed once, on the first RX byte of a request (tcp.cpp), and cannot be reset by later
+  trickle bytes. The per-tick session poll (`http_poll_slot`) reaps any slot still in the **header** phase
+  (`parse_state < PARSE_BODY`) past `DWS_REQUEST_TIMEOUT_MS` (default 10 s) with a `408 Request Timeout` +
+  `Connection: close`, freeing the slot. It is scoped to the header phase, so a legitimate slow **body** upload
+  (which sits in `PARSE_BODY` for its whole duration, governed by the streaming handler + idle timer) is never
+  reaped; WebSocket / SSE slots are skipped by the poll before the check. `req_start_ms` is disarmed on request
+  completion so a kept-alive connection re-arms per request.
+- **Verified:** host - four reap tests in `test_dispatch` (reaped past deadline, survives before it, a
+  completed slow request is not reaped, a `PARSE_BODY` upload is not reaped) plus the full transport/app/
+  accept-gate/keepalive suites. HW (ESP32-P4) - the pool now **recovers**: probes DENIED at t=2/5/8 s (pool
+  full), SERVED at t=11/14/17 s once the 10 s deadline reaps the holders; a threaded-trickle client (idle timer
+  kept fresh) receives a real `HTTP/1.1 408 Request Timeout` at t=10.1 s, confirming the request deadline
+  (not the 5 s idle sweep) is what fires; heap stable, no panic across the attack cycles.
+
 ## SSH algorithm negotiation used server preference, not client preference (RFC 4253 §7.1) - KEX reset vs CycloneSSH
 
 - **Status:** FIXED (2026-07-20). Found by **real-peer interop**: the Oryx **CycloneSSH** client (a

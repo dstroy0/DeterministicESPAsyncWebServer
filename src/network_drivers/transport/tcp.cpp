@@ -953,7 +953,10 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
         return ERR_MEM; // do NOT pbuf_free(p): lwIP keeps it and redelivers
     }
 
-    slot->last_activity_ms = dws_millis(); // accepted data = progress: refresh the idle timer
+    uint32_t rx_now = dws_millis();
+    slot->last_activity_ms = rx_now; // accepted data = progress: refresh the idle timer
+    if (slot->req_start_ms == 0)     // first byte of a new request: arm the completion deadline (slow-loris)
+        slot->req_start_ms = rx_now ? rx_now : 1;
 
     // Bulk-copy the segment into the ring via the shared producer primitive: a
     // contiguous memcpy per pbuf (two across the wrap), advancing a LOCAL head and
