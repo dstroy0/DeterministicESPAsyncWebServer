@@ -2,23 +2,37 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.29.0] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.29.0 - 2026-07-21</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a428e1d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a428e1dd1cabedc3e1e0e5870c268d1644757485))
 - update CHANGELOG.md [skip ci] ([`e1593ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1593ff18d200dae49eacdd05a782b303facb4e8))
 - suppress S5028 project-wide - #define named constants are deliberate ([`48004ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48004ead21d5c2ddae815efe0223b1c5eebecc00))
 - update test report + coverage [skip ci] ([`8e7d453`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e7d4531c6cb3a92d725a9a2c48c54fba0f9c323))
 - update CHANGELOG.md [skip ci] ([`b48dc6e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b48dc6ee1e6b442af9dcc0e820cf58e7913c10c0))
+
+### Changes
+
+- Bump version: 7.28.5 → 7.29.0 ([`461f691`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/461f6910edb01b40531b68610ffd28a61e575045))
 
 ### Documentation
 
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9de448e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9de448e670b1119ef46b90b29f7f12842fce5667))
 - update ESP32 build footprints [skip ci] ([`6fcf179`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6fcf17921793f97572cd7e2accd2176afaff2f06))
 
+### Features
+
+- PackML / OMAC machine state model (ISA-TR88.00.02) ([`5b8c90e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b8c90e8017455286c227f6f2c25ef8526a70277))
+
 ### Testing
 
 - fuzz the QPACK (HTTP/3, RFC 9204) header-block decoder ([`504628a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/504628af0adb595f401ea2d8120b4e278ae98dfb))
+
+</details>
 
 ## [7.28.5] - 2026-07-21
 
