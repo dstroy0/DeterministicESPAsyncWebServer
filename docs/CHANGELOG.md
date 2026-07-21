@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`9089587`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9089587e95eaa0e24cbcfb2144f6b12d4e376b03))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`450df3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/450df3c1dcbbce939732313e9a27aac71cafb4fa))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`678e144`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/678e144516d2bb5a8b08d8d7be5ce6e7ac5fad2f))
+
+### Refactor
+
+- one declaration per line in ieq (S1659) ([`871055b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/871055b86b7056823a4c1023fced3788ee1325ce))
+- remediate open SonarCloud findings ([`4f3af9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f3af9c7b1f2773982ae7f4df77239561b048180))
+
+### Testing
+
+- raise branch coverage across 18 native suites ([`f11ebc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f11ebc692db8ec03bb20e9dc2a94136fb275fb83))
+
 ## [7.31.0] - 2026-07-21
 
 <details>
