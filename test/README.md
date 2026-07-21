@@ -547,7 +547,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3437 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3441 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -6282,7 +6282,7 @@ A thorough directory of all **3437 test cases** across **274 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dispatch (11 tests)</b></summary>
+<summary><b>test_dispatch (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_method_mismatch_returns_405</b> &mdash; <i>Method mismatch returns 405</i></summary>
@@ -6383,6 +6383,47 @@ A thorough directory of all **3437 test cases** across **274 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (handler_called)</code>
       * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_slowloris_incomplete_request_reaped_past_deadline</b> &mdash; <i>The slow-loris keeps its idle timer fresh (a trickle byte refreshes last_activity_ms every few seconds),</i></summary>
+
+    * **Objective**: The slow-loris keeps its idle timer fresh (a trickle byte refreshes last_activity_ms every few seconds),
+    * **Assertions**:
+      * <code>Assert not equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert not null (strstr(r, "408 Request Timeout"))</code>
+      * <code>Assert not null (strstr(r, "Connection: close\\r\\n")); // and closed (slot freed on ACK / closing sweep)</code>
+      * <code>Assert equal (0, (int)conn_pool[0].req_start_ms)</code>
+      * <code>Assert false (handler_called)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_incomplete_request_survives_before_deadline</b> &mdash; <i>Incomplete request survives before deadline</i></summary>
+
+    * **Objective**: Incomplete request survives before deadline
+    * **Assertions**:
+      * <code>Assert null (strstr(tcp_captured(), "408"))</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert not equal (0, (int)conn_pool[0].req_start_ms)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_completed_slow_request_not_reaped</b> &mdash; <i>A request that arrives slowly but COMPLETES is dispatched normally and never 408'd, even when a later</i></summary>
+
+    * **Objective**: A request that arrives slowly but COMPLETES is dispatched normally and never 408'd, even when a later
+    * **Assertions**:
+      * <code>Assert true (handler_called)</code>
+      * <code>Assert equal (0, (int)conn_pool[0].req_start_ms)</code>
+      * <code>Assert null (strstr(tcp_captured(), "408"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_streaming_body_upload_not_reaped_past_deadline</b> &mdash; <i>The deadline is header-scoped (nginx client_header_timeout): a legitimate slow body sits in PARSE_BODY</i></summary>
+
+    * **Objective**: The deadline is header-scoped (nginx client_header_timeout): a legitimate slow body sits in PARSE_BODY
+    * **Assertions**:
+      * <code>Assert null (strstr(tcp_captured(), "408"))</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
 </details>

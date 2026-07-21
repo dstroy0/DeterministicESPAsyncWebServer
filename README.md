@@ -678,73 +678,73 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 
 | Layer | Feature             | Flash (best-worst) | RAM (best-worst) |
 | ----- | ------------------- | -----------------: | ---------------: |
-| Core  | `IPV6`              |             2.6 KB |          15.2 KB |
-| Core  | `DIAG`              |             2.2 KB |          11.1 KB |
-| L4    | `IP_ALLOWLIST`      |             1.4 KB |          15.2 KB |
-| L4    | `PER_IP_THROTTLE`   |           < 0.5 KB |          15.7 KB |
+| Core  | `IPV6`              |             2.8 KB |          15.2 KB |
+| L4    | `IP_ALLOWLIST`      |             1.5 KB |          15.2 KB |
+| L4    | `PER_IP_THROTTLE`   |             0.5 KB |          15.7 KB |
 | L4    | `DIFFSERV`          |           < 0.5 KB |          15.2 KB |
 | L4    | `KEEPALIVE`         |           < 0.5 KB |          15.2 KB |
 | L4    | `ACCEPT_THROTTLE`   |           < 0.5 KB |          15.2 KB |
-| L5    | `SSH`               |       66.6-76.4 KB |     21.8-42.0 KB |
-| L5    | `TELNET`            |             2.3 KB |          15.7 KB |
+| L5    | `SSH`               |       66.6-76.5 KB |     21.8-42.0 KB |
+| L5    | `TELNET`            |             2.4 KB |          15.7 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.1-7.9 KB |      8.0-23.2 KB |
-| L6    | `WEB_TERMINAL`      |         0.0-4.7 KB |      0.0-15.3 KB |
-| L6    | `MSGPACK`           |             3.8 KB |          15.3 KB |
-| L6    | `CBOR`              |             2.4 KB |          15.3 KB |
-| L6    | `JWT`               |             2.2 KB |          16.3 KB |
-| L6    | `AUTH_LOCKOUT`      |             1.1 KB |          15.8 KB |
-| L7    | `POWER_MGMT`        |           125.5 KB |          19.0 KB |
-| L7    | `FILE_SERVING`      |        0.0-88.0 KB |      0.0-16.1 KB |
-| L7    | `HTTP_DELIVERY`     |            88.0 KB |          16.1 KB |
-| L7    | `EXC_DECODER`       |            86.5 KB |          16.8 KB |
-| L7    | `HOTSWAP`           |            83.8 KB |          16.1 KB |
+| L6    | `WEB_TERMINAL`      |         0.0-4.8 KB |      0.0-15.3 KB |
+| L6    | `MSGPACK`           |             3.9 KB |          15.3 KB |
+| L6    | `CBOR`              |             2.5 KB |          15.3 KB |
+| L6    | `JWT`               |             2.4 KB |          16.3 KB |
+| L6    | `AUTH_LOCKOUT`      |             1.2 KB |          15.8 KB |
+| L7    | `POWER_MGMT`        |           125.6 KB |          19.0 KB |
+| L7    | `FILE_SERVING`      |        0.0-88.1 KB |      0.0-16.1 KB |
+| L7    | `HTTP_DELIVERY`     |            88.1 KB |          16.1 KB |
+| L7    | `EXC_DECODER`       |            86.6 KB |          16.8 KB |
+| L7    | `HOTSWAP`           |            83.9 KB |          16.1 KB |
 | L7    | `WS_CLIENT`         |            76.6 KB |          53.1 KB |
-| L7    | `ETAG`              |        0.0-74.6 KB |      0.0-16.5 KB |
+| L7    | `ETAG`              |        0.0-74.7 KB |      0.0-16.5 KB |
 | L7    | `WEBDAV`            |       26.2-66.6 KB |     38.2-38.7 KB |
-| L7    | `VFS`               |            42.7 KB |          19.6 KB |
-| L7    | `RANGE`             |        0.6-41.7 KB |      0.0-15.3 KB |
-| L7    | `UPLOAD`            |            41.5 KB |          34.9 KB |
-| L7    | `IFACE_BRIDGE`      |            27.5 KB |          16.0 KB |
-| L7    | `NTP`               |            25.4 KB |          17.7 KB |
-| L7    | `MDNS`              |            25.0 KB |          17.1 KB |
-| L7    | `TIME_SOURCE`       |            21.0 KB |          16.8 KB |
-| L7    | `EDGE_CACHE`        |            20.8 KB |          51.8 KB |
-| L7    | `DASHBOARD`         |            20.6 KB |          15.6 KB |
-| L7    | `NTRIP_CASTER`      |            17.6 KB |          18.1 KB |
-| L7    | `OIDC`              |            13.7 KB |          32.9 KB |
-| L7    | `OAUTH2`            |            12.8 KB |          37.5 KB |
-| L7    | `OPCUA_CLIENT`      |        6.8-12.6 KB |     10.0-27.8 KB |
-| L7    | `WEBHOOK`           |            10.5 KB |          34.5 KB |
-| L7    | `RELAY`             |             9.7 KB |          49.0 KB |
-| L7    | `SNMP`              |             9.1 KB |          27.4 KB |
-| L7    | `TELEMETRY`         |             8.9 KB |          15.5 KB |
-| L7    | `OPCUA`             |         6.8-8.3 KB |     10.0-25.3 KB |
-| L7    | `PROVISIONING`      |             8.2 KB |          16.8 KB |
-| L7    | `DNS_RESOLVER`      |             6.0 KB |          16.5 KB |
-| L7    | `COAP`              |             5.9 KB |          17.7 KB |
-| L7    | `OTA`               |             5.5 KB |          35.1 KB |
-| L7    | `CONFIG_IO`         |             4.9 KB |          15.3 KB |
-| L7    | `CONFIG_STORE`      |             4.9 KB |          15.3 KB |
-| L7    | `GRAPHQL`           |             4.8 KB |          19.5 KB |
-| L7    | `GPIO_MAP`          |             4.4 KB |          15.3 KB |
-| L7    | `METRICS`           |             3.9 KB |          15.4 KB |
-| L7    | `SYSLOG`            |             3.6 KB |          17.1 KB |
-| L7    | `AUDIT_LOG`         |             2.4 KB |          18.1 KB |
-| L7    | `MODBUS_MASTER`     |             2.2 KB |          15.5 KB |
-| L7    | `CONTROL`           |             2.1 KB |          23.1 KB |
-| L7    | `STATS`             |             1.9 KB |          15.3 KB |
-| L7    | `SPA_ROUTER`        |             1.8 KB |          15.2 KB |
-| L7    | `MODBUS`            |             1.7 KB |          15.5 KB |
-| L7    | `CSRF`              |             1.7 KB |          15.3 KB |
-| L7    | `LOGBUF`            |             1.4 KB |          18.3 KB |
-| L7    | `TOTP`              |             1.2 KB |          15.3 KB |
-| L7    | `OTA_ROLLBACK`      |             1.0 KB |          15.2 KB |
-| L7    | `PARTITION_MONITOR` |             0.8 KB |          15.2 KB |
+| L7    | `VFS`               |            42.8 KB |          19.6 KB |
+| L7    | `RANGE`             |        0.6-41.8 KB |      0.0-15.3 KB |
+| L7    | `UPLOAD`            |            41.6 KB |          34.9 KB |
+| L7    | `IFACE_BRIDGE`      |            27.6 KB |          16.1 KB |
+| L7    | `NTP`               |            25.5 KB |          17.7 KB |
+| L7    | `MDNS`              |            25.1 KB |          17.1 KB |
+| L7    | `TIME_SOURCE`       |            21.1 KB |          16.8 KB |
+| L7    | `EDGE_CACHE`        |            20.9 KB |          51.8 KB |
+| L7    | `DASHBOARD`         |            20.7 KB |          15.6 KB |
+| L7    | `NTRIP_CASTER`      |            17.7 KB |          18.1 KB |
+| L7    | `OIDC`              |            13.8 KB |          32.9 KB |
+| L7    | `OAUTH2`            |            12.9 KB |          37.5 KB |
+| L7    | `OPCUA_CLIENT`      |        6.8-12.7 KB |     10.0-27.8 KB |
+| L7    | `WEBHOOK`           |            10.6 KB |          34.5 KB |
+| L7    | `RELAY`             |             9.8 KB |          49.0 KB |
+| L7    | `SNMP`              |             9.2 KB |          27.4 KB |
+| L7    | `TELEMETRY`         |             9.0 KB |          15.5 KB |
+| L7    | `OPCUA`             |         6.8-8.4 KB |     10.0-25.3 KB |
+| L7    | `PROVISIONING`      |             8.3 KB |          16.8 KB |
+| L7    | `DNS_RESOLVER`      |             6.2 KB |          16.5 KB |
+| L7    | `COAP`              |             6.0 KB |          17.7 KB |
+| L7    | `OTA`               |             5.6 KB |          35.1 KB |
+| L7    | `CONFIG_IO`         |             5.0 KB |          15.3 KB |
+| L7    | `CONFIG_STORE`      |             5.0 KB |          15.3 KB |
+| L7    | `GRAPHQL`           |             4.9 KB |          19.5 KB |
+| L7    | `GPIO_MAP`          |             4.5 KB |          15.3 KB |
+| L7    | `SYSLOG`            |             4.1 KB |          17.1 KB |
+| L7    | `METRICS`           |             4.0 KB |          15.4 KB |
+| L7    | `AUDIT_LOG`         |             2.5 KB |          18.1 KB |
+| L7    | `MODBUS_MASTER`     |             2.3 KB |          15.5 KB |
+| L7    | `CONTROL`           |             2.2 KB |          23.1 KB |
+| L7    | `STATS`             |             2.0 KB |          15.3 KB |
+| L7    | `SPA_ROUTER`        |             1.9 KB |          15.2 KB |
+| L7    | `MODBUS`            |             1.8 KB |          15.5 KB |
+| L7    | `CSRF`              |             1.8 KB |          15.3 KB |
+| L7    | `LOGBUF`            |             1.5 KB |          18.3 KB |
+| L7    | `TOTP`              |             1.3 KB |          15.3 KB |
+| L7    | `OTA_ROLLBACK`      |             1.1 KB |          15.2 KB |
+| L7    | `PARTITION_MONITOR` |             0.9 KB |          15.2 KB |
+| L7    | `DIAG`              |             0.8 KB |          15.2 KB |
 | L7    | `GUARDRAILS`        |           < 0.5 KB |          15.2 KB |
 | L7    | `DEVICE_ID`         |           < 0.5 KB |          15.3 KB |
 | L7    | `RADIO_POWER`       |           < 0.5 KB |          15.2 KB |
-| ?     | `ETHERNET`          |            38.4 KB |          15.3 KB |
+| ?     | `ETHERNET`          |            38.6 KB |          15.3 KB |
 | ?     | `BUS_CAPTURE`       |            18.7 KB |         < 0.5 KB |
 | ?     | `FORWARD`           |            18.7 KB |         < 0.5 KB |
 | ?     | `RTC`               |            13.8 KB |         < 0.5 KB |
