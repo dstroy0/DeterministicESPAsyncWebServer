@@ -2,16 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.27.0] - 2026-07-21
+
+<details>
+<summary><b>Show Changelog for version 7.27.0 - 2026-07-21</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`0e7ba75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e7ba753fb45df59aaef47a72b42485e56d9c366))
 - update test report + coverage [skip ci] ([`5e625e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e625e95a188699ad17f4b067f53749a0337a9cd))
 - update CHANGELOG.md [skip ci] ([`3b8f428`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b8f4284268ae3e2ec83c4c381ce8a02bea9180e))
+
+### Changes
+
+- Bump version: 7.26.0 → 7.27.0 ([`057f0d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/057f0d51bb570d42d22efc9dfb5748c27d4aa1be))
 
 ### Documentation
 
 - close forwarded-tcpip (ssh -R) - HW-verified device-as-server remote forward on an ESP32-P4 ([`bf9314f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf9314f6134ab5a9edc6f7bbb2048ede233b242b))
+
+### Features
+
+- DiffServ QoS marking (RFC 2474) - per-server/listener/connection/UDP DSCP ([`a4ae8f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4ae8f54aa0b2ab4ac14f73786355b6cce6c4a3f))
+
+</details>
 
 ## [7.26.0] - 2026-07-21
 
