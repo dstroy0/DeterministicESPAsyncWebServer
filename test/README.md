@@ -547,7 +547,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3436 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3437 test cases** across **274 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -35528,7 +35528,7 @@ A thorough directory of all **3436 test cases** across **274 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_transport (45 tests)</b></summary>
+<summary><b>test_transport (46 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_pool_capacity_default_is_eight</b> &mdash; <i>The default connection pool is 8 (keep-alive/concurrency headroom; see ServerConfig.h).</i></summary>
@@ -35584,6 +35584,19 @@ A thorough directory of all **3436 test cases** across **274 suites**. Expand a 
     * **Objective**: Slot ids match indices
     * **Assertions**:
       * <code>Assert equal (i, conn_pool[i].id)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_freeslot_bitmask_alloc</b> &mdash; <i>Freeslot bitmask alloc</i></summary>
+
+    * **Objective**: Freeslot bitmask alloc
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(0, dws_conn_alloc_free()); // first free is slot 0</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, dws_conn_alloc_free());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_conn_alloc_free());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(3, dws_conn_alloc_free());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, dws_conn_alloc_free());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(3, dws_conn_alloc_free()); // 3 free, 1 reserved (CLOSING)</code>
   </details>
 
   <details style="margin-left: 20px;">
