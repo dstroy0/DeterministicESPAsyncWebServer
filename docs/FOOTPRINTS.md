@@ -96,7 +96,7 @@ from each example's `pio ci` size report and aggregated into
 | `RANGE`                                                                                                   | L7-Application/Range                 | 777.3 KB (60.7%) | 79.9 KB (25.0%)  |
 | `RELAY`                                                                                                   | L7-Application/PortForward           | 745.4 KB (58.2%) | 113.7 KB (35.5%) |
 | `RTC+TIME_SOURCE+NTP`                                                                                     | Drivers/Rtc                          | 749.0 KB (58.5%) | 44.3 KB (13.9%)  |
-| `SCPI`                                                                                                    | L7-Application/Scpi                  | 708.3 KB (55.3%) | 42.8 KB (13.4%)  |
+| `SCPI`                                                                                                    | L7-Application/Scpi                  | 708.4 KB (55.3%) | 42.8 KB (13.4%)  |
 | `SEN0192`                                                                                                 | Drivers/Sen0192                      | 263.5 KB (20.6%) | 21.0 KB (6.6%)   |
 | `SHT3X`                                                                                                   | Drivers/Sht3x                        | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                                                                                  | Drivers/SigfoxUplink                 | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |

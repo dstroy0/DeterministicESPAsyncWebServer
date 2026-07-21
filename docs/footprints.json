@@ -619,7 +619,7 @@
     "example": "L7-Application/Scpi",
     "flags": "-DDWS_ENABLE_SCPI=1",
     "board": "esp32dev",
-    "flash_bytes": 725325,
+    "flash_bytes": 725361,
     "ram_bytes": 43812
   },
   "SEN0192": {
@@ -647,7 +647,7 @@
     "example": "L7-Application/SimaticSerial",
     "flags": "-DDWS_ENABLE_SIMATIC=1",
     "board": "esp32dev",
-    "flash_bytes": 755517,
+    "flash_bytes": 755513,
     "ram_bytes": 83292
   },
   "SMB": {
@@ -661,7 +661,7 @@
     "example": "L7-Application/SmtpAlert",
     "flags": "-DDWS_ENABLE_SMTP=1",
     "board": "esp32dev",
-    "flash_bytes": 735213,
+    "flash_bytes": 735201,
     "ram_bytes": 61124
   },
   "SNMP": {
@@ -689,21 +689,21 @@
     "example": "L5-Session/SSHHostKey",
     "flags": "-DDWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 831557,
+    "flash_bytes": 831549,
     "ram_bytes": 109248
   },
   "SSH+FILE_SERVING+SSH_SFTP+SSH_SCP": {
     "example": "L5-Session/SSHSftp",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1",
     "board": "esp32dev",
-    "flash_bytes": 883809,
+    "flash_bytes": 883801,
     "ram_bytes": 118600
   },
   "SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF": {
     "example": "L5-Session/SSHReverseTunnel",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_SSH_CLIENT=1 -DDWS_SSH_CLIENT_MAX_CHANNELS=2 -DDWS_CLIENT_RX_BUF=2048 -DMAX_CONNS=4",
     "board": "esp32dev",
-    "flash_bytes": 846969,
+    "flash_bytes": 846961,
     "ram_bytes": 110984
   },
   "STATS": {
