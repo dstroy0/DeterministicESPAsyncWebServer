@@ -1178,6 +1178,7 @@
 "native_h3_e2e",
 "native_h3_server",
 "native_hpack",
+"native_pentest",
 "native_qpack",
 "native_quic_server"
 ],
@@ -1187,6 +1188,7 @@
 "native_h3_e2e",
 "native_h3_server",
 "native_hpack",
+"native_pentest",
 "native_qpack",
 "native_quic_server"
 ],
@@ -1206,11 +1208,13 @@
 ],
 "src/network_drivers/presentation/http2/hpack.cpp": [
 "native_h2conn",
-"native_hpack"
+"native_hpack",
+"native_pentest"
 ],
 "src/network_drivers/presentation/http2/hpack.h": [
 "native_h2conn",
-"native_hpack"
+"native_hpack",
+"native_pentest"
 ],
 "src/network_drivers/presentation/http3/h3_conn.cpp": [
 "native_h3_conn",
