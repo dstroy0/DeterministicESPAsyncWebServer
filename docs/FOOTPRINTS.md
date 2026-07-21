@@ -99,6 +99,7 @@ from each example's `pio ci` size report and aggregated into
 | `SEN0192`                                                                                                 | Drivers/Sen0192                      | 263.5 KB (20.6%) | 21.0 KB (6.6%)   |
 | `SHT3X`                                                                                                   | Drivers/Sht3x                        | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                                                                                  | Drivers/SigfoxUplink                 | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
+| `SIMATIC`                                                                                                 | L7-Application/SimaticSerial         | 737.8 KB (57.6%) | 81.3 KB (25.4%)  |
 | `SMB`                                                                                                     | L7-Application/SmbFileClient         | 725.4 KB (56.7%) | 63.7 KB (19.9%)  |
 | `SMTP`                                                                                                    | L7-Application/SmtpAlert             | 718.0 KB (56.1%) | 59.7 KB (18.7%)  |
 | `SNMP`                                                                                                    | L7-Application/SNMP                  | 744.8 KB (58.2%) | 92.1 KB (28.8%)  |

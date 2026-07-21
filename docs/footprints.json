@@ -636,6 +636,13 @@
     "flash_bytes": 267961,
     "ram_bytes": 21464
   },
+  "SIMATIC": {
+    "example": "L7-Application/SimaticSerial",
+    "flags": "-DDWS_ENABLE_SIMATIC=1",
+    "board": "esp32dev",
+    "flash_bytes": 755517,
+    "ram_bytes": 83292
+  },
   "SMB": {
     "example": "L7-Application/SmbFileClient",
     "flags": "-DDWS_ENABLE_SMB=1",
