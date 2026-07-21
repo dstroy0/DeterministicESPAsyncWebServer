@@ -517,6 +517,13 @@
     "flash_bytes": 754401,
     "ram_bytes": 81836
   },
+  "PACKML": {
+    "example": "L7-Application/PackML",
+    "flags": "-DDWS_ENABLE_PACKML=1",
+    "board": "esp32dev",
+    "flash_bytes": 755841,
+    "ram_bytes": 81868
+  },
   "PARTITION_MONITOR": {
     "example": "L7-Application/PartitionMonitor",
     "flags": "-DDWS_ENABLE_PARTITION_MONITOR=1",
