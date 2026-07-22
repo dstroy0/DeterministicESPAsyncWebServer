@@ -10,17 +10,14 @@
 
 #if DWS_ENABLE_INTERBUS
 
+#include "shared_primitives/crc.h" // DWS_CRC16_IBM_3740
+
 uint16_t dws_interbus_fcs(const uint8_t *bytes, size_t len)
 {
-    // CRC-16/CCITT-FALSE: poly 0x1021, init 0xFFFF, no reflection, xorout 0.
-    uint16_t crc = 0xFFFF;
-    for (size_t i = 0; i < len; i++)
-    {
-        crc ^= (uint16_t)bytes[i] << 8;
-        for (int b = 0; b < 8; b++)
-            crc = (crc & 0x8000) ? (uint16_t)((crc << 1) ^ 0x1021) : (uint16_t)(crc << 1);
-    }
-    return crc;
+    // CRC-16/CCITT-FALSE: poly 0x1021, init 0xFFFF, no reflection, xorout 0 - catalogued as
+    // CRC-16/IBM-3740. test_crc diffs the shared engine against the loop that used to live here
+    // over every length 0..64, so this is byte-identical to it.
+    return (uint16_t)dws_crc(&DWS_CRC16_IBM_3740, bytes, len);
 }
 
 size_t dws_interbus_build(const uint16_t *words, size_t word_count, uint8_t *out, size_t cap)
