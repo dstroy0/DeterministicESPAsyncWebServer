@@ -125,10 +125,10 @@
       "tests": ["test_edge_mesh"]
     },
     "native_dws_primitives": {
-      "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
+      "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof\nnumber parsers (numparse.h), the strict RFC 3629 UTF-8 validator (utf8.h), and the parameterized\nRocksoft/Williams CRC engine (crc.h). Every preset is asserted against its published catalogue check\nvalue (the CRC of \"123456789\"), and the engine is then diffed against the hand-rolled CRC loops the\n16 in-tree services still carry - X-25, CCITT-FALSE, ARC, MODBUS, DNP, CRC-32, ESP3 CRC-8 and the\nSensirion CRC-8 - across every length 0..64, so a preset meant to retire one of those loops is proven\nbyte-identical to the interop-tested code it replaces. Plus the streaming split, the reflect flags,\nwidth masking, and single-bit-flip detection. Header-only; pure host tests.",
       "flags": [],
       "src": ["-<*>"],
-      "tests": ["test_dws_primitives"]
+      "tests": ["test_dws_primitives", "test_crc"]
     },
     "native_dws_ip": {
       "desc": "IP address core (network_drivers/network/dws_ip): RFC 4291 IPv4/IPv6 text parsing,\nRFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification\n(loopback / link-local / private-ULA / multicast / global). Pure host tests.",

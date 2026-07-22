@@ -1450,7 +1450,15 @@
     "Mxxx",
     "desynchronizes",
     "reheal",
-    "reheals"
+    "reheals",
+    "NRSC",
+    "OPENPGP",
+    "Rocksoft",
+    "SMBUS",
+    "XMODEM",
+    "checksummed",
+    "refin",
+    "refout"
   ],
   "ignorePaths": [
     "node_modules/**",
