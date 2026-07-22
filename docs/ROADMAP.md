@@ -1675,7 +1675,7 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
 > presence-sensing cost/capability range. Both bridge northbound to the web stack like the other sensor
 > drivers; a device reads them over UART / GPIO and publishes presence.
 
-- [ ] **Waveshare HMMD 24 GHz mmWave presence sensor** (M) - human micro-motion detection (moving /
+- [x] **Waveshare HMMD 24 GHz mmWave presence sensor** (M) - human micro-motion detection (moving /
       standing / stationary body plus a target distance gate) built on the **S3KM1110** 24 GHz FMCW radar
       SoC behind a **PY32F003** MCU, exposed over a 3.3V UART (default **115200** baud) plus a GPIO presence
       pin ([waveshare.com/wiki/HMMD_mmWave_Sensor](https://www.waveshare.com/wiki/HMMD_mmWave_Sensor)). Add
@@ -1685,6 +1685,22 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       `0x0011`, register `0x0002`, parameter config `0x0008`). Bridge presence / distance northbound exactly
       like LD2410. Test = captured-frame vectors both directions (`native_hmmd`); the sensor's GPIO OUT pin
       shares the debounced presence bridge below.
+      SHIPPED - `services/hmmd` (`DWS_ENABLE_HMMD`). The framing is LD2410's exactly, so the reassembler
+      mirrors `Ld2410Stream` (including the widen-before-compare guard against a wrapping length field);
+      the report is a fixed 35-octet payload - detect(1) + distance(2) + 16 gates x 2 - which makes a
+      45-octet frame, agreeing exactly with the reference library's own `kMaxFrameLength` and so
+      cross-checking the layout. Command encoders cover open/close command mode plus the firmware
+      (0x0000), serial (0x0011), config (0x0008) and register (0x0002) reads over a public
+      `dws_hmmd_cmd_build`, and `dws_hmmd_parse_ack` decodes replies. Framing, payload layout and
+      command encoding come from the public `2Grey/s3km1110` reference (the Waveshare wiki refuses
+      automated fetches); no vendor SDK is used. Host-tested (`native_hmmd`, 11 cases). Two deliberate
+      limits: the register **selector payload** is passed through verbatim rather than modelled, because
+      the reference does not specify the register map and inventing one would be a guess; and the ACK
+      payload is handed back whole rather than split into a status word, since the reference establishes
+      only that the ACK echoes the request's command octet. The GPIO OUT pin reuses `PresenceCore` from
+      `DWS_ENABLE_RCWL0516` at the application level, so this service takes no dependency on that one.
+      Caveat: vectors are constructed from the documented layout, **not** captured off a physical module,
+      and nothing here has been HW-verified.
 - [x] **RCWL-0516 microwave Doppler presence sensor** (S) - the low-cost ~3.18 GHz Doppler motion module
       (RCWL-9196 controller + MMBR941M RF amp): no data protocol at all - a single 3.3V **OUT** pin that
       latches HIGH for ~2 s on any moving reflector and returns LOW when idle. This is the analog-Doppler end

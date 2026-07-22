@@ -1446,7 +1446,8 @@
     "Zeichenverzugszeit",
     "motiondevice",
     "SYSRDY",
-    "setpoints"
+    "setpoints",
+    "Mxxx"
   ],
   "ignorePaths": [
     "node_modules/**",
