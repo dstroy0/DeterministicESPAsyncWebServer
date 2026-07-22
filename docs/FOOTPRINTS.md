@@ -25,11 +25,11 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                                                                                    | L7-Application/Csrf                  | 737.4 KB (57.6%) | 80.0 KB (25.0%)  |
 | `DASHBOARD`                                                                                               | L7-Application/Dashboard             | 756.3 KB (59.1%) | 80.3 KB (25.1%)  |
 | `DEVICE_ID`                                                                                               | L7-Application/DeviceUuid            | 735.9 KB (57.5%) | 79.9 KB (25.0%)  |
-| `DIAG`                                                                                                    | Foundation/Configuration             | 737.9 KB (57.6%) | 75.8 KB (23.7%)  |
+| `DIAG`                                                                                                    | L7-Application/Diagnostics           | 736.3 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DIFFSERV`                                                                                                | L4-Transport/DiffServ                | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`                                                                          | Peripherals/DmaIngest                | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE`                                                                  | Foundation/InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
-| `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE`                                                                  | Drivers/RadioGateway                 | 264.2 KB (20.6%) | 28.0 KB (8.8%)   |
+| `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE`                                                                  | Drivers/RadioGateway                 | 264.3 KB (20.6%) | 28.1 KB (8.8%)   |
 | `DNC`                                                                                                     | L7-Application/EthernetDnc           | 716.7 KB (56.0%) | 59.7 KB (18.7%)  |
 | `DNS_RESOLVER`                                                                                            | L7-Application/DnsResolver           | 741.7 KB (57.9%) | 81.2 KB (25.4%)  |
 | `DNS_SERVER`                                                                                              | L7-Application/DnsServer             | 708.9 KB (55.4%) | 45.0 KB (14.1%)  |
@@ -116,7 +116,7 @@ from each example's `pio ci` size report and aggregated into
 | `SYSLOG`                                                                                                  | L7-Application/Syslog                | 739.7 KB (57.8%) | 81.8 KB (25.6%)  |
 | `TELEMETRY`                                                                                               | L7-Application/Telemetry             | 744.5 KB (58.2%) | 80.2 KB (25.1%)  |
 | `TELNET`                                                                                                  | L5-Session/Telnet                    | 738.0 KB (57.7%) | 80.4 KB (25.1%)  |
-| `THREAD+GATEWAY`                                                                                          | Drivers/ThreadGateway                | 265.4 KB (20.7%) | 22.1 KB (6.9%)   |
+| `THREAD+GATEWAY`                                                                                          | Drivers/ThreadGateway                | 265.5 KB (20.7%) | 22.1 KB (6.9%)   |
 | `TLS`                                                                                                     | L6-Presentation/SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                                                                                | L4-Transport/mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
 | `TLS+MTLS+TLS_ARENA_SIZE`                                                                                 | L4-Transport/mTLS                    | 839.0 KB (65.5%) | 103.5 KB (32.4%) |
@@ -136,7 +136,7 @@ from each example's `pio ci` size report and aggregated into
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE`                                                          | L7-Application/WebSocketClient       | 812.3 KB (63.5%) | 120.7 KB (37.7%) |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE`                                           | L7-Application/WebSocketClient       | 813.0 KB (63.5%) | 104.8 KB (32.7%) |
 | `WS_DEFLATE`                                                                                              | L6-Presentation/WebSocketCompression | 740.4 KB (57.8%) | 87.9 KB (27.5%)  |
-| `ZIGBEE+GATEWAY`                                                                                          | Drivers/ZigbeeGateway                | 262.9 KB (20.5%) | 21.6 KB (6.7%)   |
+| `ZIGBEE+GATEWAY`                                                                                          | Drivers/ZigbeeGateway                | 263.1 KB (20.6%) | 21.6 KB (6.7%)   |
 | `ZWAVE+GATEWAY`                                                                                           | Drivers/ZWaveGateway                 | 262.6 KB (20.5%) | 21.3 KB (6.7%)   |
 | `core/Advanced`                                                                                           | Foundation/Advanced                  | 744.3 KB (58.1%) | 80.0 KB (25.0%)  |
 | `core/Basic`                                                                                              | Foundation/Basic                     | 737.8 KB (57.6%) | 79.9 KB (25.0%)  |
