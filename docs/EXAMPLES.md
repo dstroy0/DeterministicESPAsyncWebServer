@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 149 runnable examples under `examples/`, grouped by
+The library ships 150 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -151,6 +151,7 @@ Routing, protocols, services, and clients:
 [EspNow](../examples/L7-Application/EspNow/README.md) ·
 [ETag](../examples/L7-Application/ETag/README.md) ·
 [EthernetDnc](../examples/L7-Application/EthernetDnc/README.md) ·
+[Euromap77](../examples/L7-Application/Euromap77/README.md) ·
 [FileServing](../examples/L7-Application/FileServing/README.md) ·
 [FileUpload](../examples/L7-Application/FileUpload/README.md) ·
 [Gpib](../examples/L7-Application/Gpib/README.md) ·

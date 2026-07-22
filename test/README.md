@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **260 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **261 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -141,6 +141,7 @@ The native test matrix has **260 environments**, one per feature, generated from
 | `native_enip` | `WS_ENABLE_ENIP=1` | `test_enip` | EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession + SendRRData builders (Common Packet Format), and the SendRRData reply extractor. |
 | `native_enocean` | `WS_ENABLE_ENOCEAN=1`, `WS_ENOCEAN_MAX_DATA=16` | `test_enocean` | EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07) against known answers, a build -> parse round trip, malformed framing (bad sync / header CRC / data CRC), incomplet... |
 | `native_espnow` | `WS_ENABLE_ESPNOW=1` | `test_espnow` | ESP-NOW peer messaging (services/espnow) - the envelope codec + peer registry are host-tested here; the esp_now radio binding is ESP32-only. |
+| `native_euromap77` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_EUROMAP77=1` | `test_euromap77` | EUROMAP 77 (OPC 40077) IMM_MES_Interface model (services/euromap77) - OPC UA for injection moulding machines. |
 | `native_exc_decoder` | `WS_ENABLE_EXC_DECODER=1` | `test_exc_decoder` | ESP32 panic / exception decoder (services/exc_decoder): parse a captured Guru Meditation dump (cause, register PC + EXCVADDR, backtrace PC:SP frames) into a structured ExcInfo and serialize it as JSON... |
 | `native_failsafe` | `WS_ENABLE_FAILSAFE=1` | `test_failsafe` | Software watchdog / deadlock detection + safe-state (services/failsafe): the wrap-safe overdue predicate, the lifeline registry, fire-once-per-episode breach callback, and JSON. |
 | `native_fdc2214` | `WS_ENABLE_FDC2214=1` | `test_fdc2214` | FDC2114/2214 capacitance-to-digital field sensor (services/fdc2214): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
@@ -550,7 +551,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3641 test cases** across **276 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3642 test cases** across **276 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -21766,7 +21767,7 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua (47 tests)</b></summary>
+<summary><b>test_opcua (48 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_read_optional_fields</b> &mdash; <i>Parse read optional fields</i></summary>
@@ -22197,6 +22198,23 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x02, dws_ua_r_u8(&r)); // mask: status only</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NODE_ID_UNKNOWN, dws_ua_r_u32(&r));</code>
       * <code>Assert false (r.err)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_variant_u64_i64_roundtrip</b> &mdash; <i>UInt64</i></summary>
+
+    * **Objective**: UInt64
+    * **Assertions**:
+      * <code>Assert true (w.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(9, buf[0]); // encoding byte = UInt64 built-in id</code>
+      * <code>Assert true (dws_ua_r_variant(&r, &out))</code>
+      * <code>Assert equal (OpcUaVariantType::OPCUA_VAR_UINT64, out.type)</code>
+      * <code>Assert true (out.u64 == 0x0123456789ABCDEFULL)</code>
+      * <code>Assert true (w2.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(8, buf[0]); // encoding byte = Int64 built-in id</code>
+      * <code>Assert true (dws_ua_r_variant(&r2, &out2))</code>
+      * <code>Assert equal (OpcUaVariantType::OPCUA_VAR_INT64, out2.type)</code>
+      * <code>Assert true (out2.i64 == -123456789012345LL)</code>
   </details>
 
   <details style="margin-left: 20px;">

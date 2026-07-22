@@ -1441,7 +1441,10 @@
     "PACKML",
     "Unhold",
     "Unholding",
-    "Unsuspending"
+    "Unsuspending",
+    "Quittungsverzugszeit",
+    "Zeichenverzugszeit",
+    "motiondevice"
   ],
   "ignorePaths": [
     "node_modules/**",

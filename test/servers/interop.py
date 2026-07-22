@@ -43,6 +43,7 @@ from peers import (
     opcua_peer,
     openadr_peer,
     robotics_peer,
+    euromap77_peer,
     redis_peer,
     sep2_peer,
     smb_peer,
@@ -99,6 +100,7 @@ _MODULES = [
     sep2_peer,
     openadr_peer,
     robotics_peer,
+    euromap77_peer,
 ]
 
 

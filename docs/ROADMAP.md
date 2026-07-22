@@ -988,10 +988,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       2-byte selector), and the response readers (`T_OK`, the `T_ER` / `T_BD` two-byte error-class + error-code,
       and the `S_*` data replies). Framing + mnemonics + payload layouts cross-checked byte-for-byte against the
       `pyLSV2` reference. A CNC-native southbound source for the common European control alongside `services/focas` + `services/haas_mdc`. Fixed BSS, no heap; the serial / TCP link is the application's.
-- [ ] **EUROMAP 77 / 83** (M, OPC UA for plastics) - the injection-moulding / rubber-machine OPC UA
+- [x] **EUROMAP 77 / 83** (M, OPC UA for plastics) - the injection-moulding / rubber-machine OPC UA
       companion specs (EUROMAP, euromap.org NodeSet), the plastics analogue of **umati**. Layers on the
       OPC UA server exactly like `services/umati` (the machine/mould/job model through the Browse + Read
       resolvers out of a caller struct) - reuses the umati pattern, low risk, high value for moulding shops.
+      SHIPPED - services/euromap77 (DWS_ENABLE_EUROMAP77): the IMM_MES_Interface hierarchy (MachineInformation,
+      MachineStatus, Jobs / ActiveJob + ActiveJobValues with the UInt64 production counters) served through the
+      OPC UA Browse + Read resolvers out of a caller-owned EmImm, faithful BrowseNames per the EUROMAP 77
+      NodeSet + enums from EUROMAP 83. Added Int64/UInt64 to the OPC UA Variant codec for the 64-bit counters.
+      Pure resolver, host-tested (native_euromap77 + the opcua Variant round-trip), example Euromap77.
 - [x] **CiA 402 drive profile** (M, IEC 61800-7-201) - SHIPPED (`services/cia402`, `DWS_ENABLE_CIA402`,
       host-tested `native_cia402`). The standardised servo/stepper drive + motion profile over the
       existing **CANopen** (`services/canopen`) / EtherCAT-CoE: the state machine (Controlword /

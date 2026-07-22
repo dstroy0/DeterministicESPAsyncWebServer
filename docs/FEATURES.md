@@ -880,6 +880,12 @@ umati / OPC UA for Machine Tools information model (OPC 40501-1). Default off (r
 
 OPC UA for Robotics information model (OPC 40010-1). Default off (requires OPC-UA). services/robotics exposes a fixed MotionDeviceSystem node hierarchy - MotionDevices (MotionDevice / ParameterSet / parametric Axes), Controllers (Controller / Software), and SafetyStates (SafetyState / ParameterSet) - through the OPC UA Browse + Read resolvers, served out of a caller-owned RoboticsMotionDeviceSystem struct you refresh each loop. The axis count is parametric (`DWS_ROBOTICS_AXES`, default 6): each bound axis becomes an Axis_k object with ActualPosition / ActualSpeed / ActualAcceleration / MotionProfile. Faithful BrowseNames per OPC 40010-1 (namespace `http://opcfoundation.org/UA/Robotics/`); a read-only monitoring model any OPC UA client browses and reads by BrowseName. The twin of umati (machine tools). No heap, no stdlib.
 
+## EUROMAP 77 (OPC UA for injection moulding)
+
+`DWS_ENABLE_EUROMAP77`
+
+EUROMAP 77 / OPC 40077 IMM_MES_Interface information model (OPC UA for injection moulding machines <-> MES, enums from EUROMAP 83 / OPC 40083). Default off (requires OPC-UA). services/euromap77 exposes a fixed IMM_MES_Interface node hierarchy - MachineInformation, MachineStatus, and Jobs (ActiveJob + ActiveJobValues with the UInt64 production counters JobCycleCounter / *PartsCounter / MachineCycleCounter) - through the OPC UA Browse + Read resolvers, served out of a caller-owned EmImm struct you refresh each loop. Faithful BrowseNames per the EUROMAP 77 NodeSet (namespace `http://www.euromap.org/euromap77/`); the counters are 64-bit (adds Int64/UInt64 to the OPC UA Variant codec). A read-only monitoring model any OPC UA / MES client browses and reads by BrowseName. The plastics-industry twin of umati / robotics. No heap, no stdlib.
+
 ## OpenADR
 
 `DWS_ENABLE_OPENADR`
