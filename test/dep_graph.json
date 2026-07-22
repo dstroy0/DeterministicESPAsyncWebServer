@@ -89,6 +89,7 @@
 "native_happy_eyeballs",
 "native_hart",
 "native_hislip",
+"native_hmmd",
 "native_hostlink",
 "native_hotswap",
 "native_hpack",
@@ -343,6 +344,7 @@
 "native_happy_eyeballs",
 "native_hart",
 "native_hislip",
+"native_hmmd",
 "native_hostlink",
 "native_hotswap",
 "native_hpack",
@@ -597,6 +599,7 @@
 "native_happy_eyeballs",
 "native_hart",
 "native_hislip",
+"native_hmmd",
 "native_hostlink",
 "native_hotswap",
 "native_hpack",
@@ -851,6 +854,7 @@
 "native_happy_eyeballs",
 "native_hart",
 "native_hislip",
+"native_hmmd",
 "native_hostlink",
 "native_hotswap",
 "native_hpack",
@@ -3298,6 +3302,12 @@
 ],
 "src/services/hislip/hislip.h": [
 "native_hislip"
+],
+"src/services/hmmd/hmmd.cpp": [
+"native_hmmd"
+],
+"src/services/hmmd/hmmd.h": [
+"native_hmmd"
 ],
 "src/services/hostlink/hostlink.cpp": [
 "native_hostlink"

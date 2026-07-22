@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-22 18:41:42
+**Generated:** 2026-07-22 19:08:25
 **Command:** `pio test` over 261 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 4128 passed - 949s
+**Result:** ✅ 4139 passed - 334s
 
 ---
 
@@ -310,6 +310,7 @@
 | `test_ssh_chachapoly`    | `native_ssh_chachapoly`  |     5 |   ✅   | 00:00:00.821 |
 | `test_ssh_aesgcm`        | `native_ssh_aesgcm`      |     3 |   ✅   | 00:00:00.765 |
 | `test_ssh_ecdsa`         | `native_ssh_ecdsa`       |    11 |   ✅   | 00:00:26.890 |
+| `test_hmmd`              | `native_hmmd`            |    11 |   ✅   | 00:00:00.842 |
 
 ---
 
@@ -8636,6 +8637,31 @@ _NIST P-256 native software-path tests (ecdsa-sha2-nistp256 signatures + ecdh-sh
 |   9 | `test_ecdh_rfc5903_shared_secret`      |   ✅   | Ecdh rfc5903 shared secret      |
 |  10 | `test_ecdh_rfc5903_pubkeys`            |   ✅   | Ecdh rfc5903 pubkeys            |
 |  11 | `test_ecdh_rejects_bad_point`          |   ✅   | Ecdh rejects bad point          |
+
+</details>
+
+---
+
+## test_hmmd - native_hmmd - ✅ 11 passed
+
+<details>
+<summary><b>Expand Suite Details</b></summary>
+
+_Host tests for the Waveshare HMMD mmWave radar codec (services/hmmd): decoding a report frame_
+
+|   # | Test                                     | Status | Description                                                                                 |
+| --: | :--------------------------------------- | :----: | :------------------------------------------------------------------------------------------ |
+|   1 | `test_frame_geometry_is_self_consistent` |   ✅   | 4 header + 2 length + 35 payload + 4 footer == 45, the reference library's kMaxFrameLength. |
+|   2 | `test_parse_report`                      |   ✅   | Parse report                                                                                |
+|   3 | `test_parse_report_not_detected`         |   ✅   | Parse report not detected                                                                   |
+|   4 | `test_reject_malformed_report`           |   ✅   | Reject malformed report                                                                     |
+|   5 | `test_stream_resync_and_split`           |   ✅   | Stream resync and split                                                                     |
+|   6 | `test_stream_absurd_length_drops`        |   ✅   | Stream absurd length drops                                                                  |
+|   7 | `test_command_encoders`                  |   ✅   | open command mode: word 0x00FF, value 0x0001 -> len 4                                       |
+|   8 | `test_command_encoder_guards`            |   ✅   | Command encoder guards                                                                      |
+|   9 | `test_ack_decoding`                      |   ✅   | ACK to read-config: word 0x0108 (reply convention), then two data octets                    |
+|  10 | `test_ack_rejects_malformed`             |   ✅   | Ack rejects malformed                                                                       |
+|  11 | `test_host_binding_stubs`                |   ✅   | Host binding stubs                                                                          |
 
 </details>
 
