@@ -60,6 +60,7 @@
 "native_enip",
 "native_enocean",
 "native_espnow",
+"native_euromap77",
 "native_exc_decoder",
 "native_failsafe",
 "native_fdc2214",
@@ -311,6 +312,7 @@
 "native_enip",
 "native_enocean",
 "native_espnow",
+"native_euromap77",
 "native_exc_decoder",
 "native_failsafe",
 "native_fdc2214",
@@ -562,6 +564,7 @@
 "native_enip",
 "native_enocean",
 "native_espnow",
+"native_euromap77",
 "native_exc_decoder",
 "native_failsafe",
 "native_fdc2214",
@@ -813,6 +816,7 @@
 "native_enip",
 "native_enocean",
 "native_espnow",
+"native_euromap77",
 "native_exc_decoder",
 "native_failsafe",
 "native_fdc2214",
@@ -3131,6 +3135,12 @@
 "src/services/espnow/espnow.h": [
 "native_espnow"
 ],
+"src/services/euromap77/euromap77.cpp": [
+"native_euromap77"
+],
+"src/services/euromap77/euromap77.h": [
+"native_euromap77"
+],
 "src/services/exc_decoder/exc_decoder.cpp": [
 "native_exc_decoder"
 ],
@@ -3598,6 +3608,7 @@
 "native_oidc"
 ],
 "src/services/opcua/opcua.cpp": [
+"native_euromap77",
 "native_opcua",
 "native_opcua_client",
 "native_pentest",
@@ -3605,6 +3616,7 @@
 "native_umati"
 ],
 "src/services/opcua/opcua.h": [
+"native_euromap77",
 "native_opcua",
 "native_opcua_client",
 "native_pentest",
@@ -4441,6 +4453,17 @@
 "native_sep2",
 "native_utmc",
 "native_wisun"
+],
+"src/shared_primitives/time_compat.h": [
+"native_app",
+"native_diag",
+"native_h3_server",
+"native_keepalive",
+"native_range",
+"native_ssh_sftp",
+"native_time_source",
+"native_upload",
+"native_webdav_handler"
 ],
 "src/shared_primitives/utf8.h": [
 "native",
