@@ -1083,6 +1083,7 @@ src/
 │   ├── pcap.h
 │   ├── ring.h
 │   ├── strbuf.h
+│   ├── time_compat.h
 │   └── utf8.h
 ├── web/
 │   ├── favicons/  (288 generated files)
@@ -1229,19 +1230,20 @@ Feature Tables workflow from `docs/footprints.json`.
 | `COAP` | `L7-Application/CoAP` | 759,353 | 84,388 |
 | `DNS_RESOLVER` | `L7-Application/DnsResolver` | 759,509 | 83,108 |
 | `PROVISIONING` | `L7-Application/Provisioning` | 761,701 | 83,456 |
-| `OPCUA` | `L7-Application/OpcUa` | 761,837 | 92,108 |
+| `OPCUA` | `L7-Application/OpcUa` | 761,889 | 92,108 |
 | `core/Advanced` | `Foundation/Advanced` | 762,161 | 81,932 |
 | `TELEMETRY` | `L7-Application/Telemetry` | 762,417 | 82,144 |
 | `SNMP` | `L7-Application/SNMP` | 762,657 | 94,276 |
 | `RELAY` | `L7-Application/PortForward` | 763,277 | 116,436 |
 | `HTTP_CLIENT+WEBHOOK` | `L7-Application/Webhook` | 764,057 | 101,580 |
 | `PROMISC+FORWARD+ETHERNET` | `Peripherals/WifiCapture` | 766,049 | 47,584 |
-| `OPCUA+OPCUA_CLIENT` | `L7-Application/OpcUaClient` | 766,225 | 94,724 |
+| `OPCUA+OPCUA_CLIENT` | `L7-Application/OpcUaClient` | 766,305 | 94,724 |
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/OAuth2` | 766,405 | 104,644 |
 | `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,001 | 45,388 |
 | `core/Sysadmin` | `Foundation/Sysadmin` | 767,345 | 81,836 |
 | `OIDC` | `L7-Application/OidcAuth` | 767,349 | 99,876 |
 | `OPCUA+UMATI` | `L7-Application/Umati` | 768,393 | 92,252 |
+| `OPCUA+EUROMAP77` | `L7-Application/Euromap77` | 768,701 | 92,276 |
 | `OPCUA+ROBOTICS` | `L7-Application/Robotics` | 768,765 | 92,468 |
 | `NTRIP_CASTER` | `L7-Application/NtripCaster` | 771,377 | 84,744 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Peripherals/CanCapture` | 771,997 | 45,568 |
