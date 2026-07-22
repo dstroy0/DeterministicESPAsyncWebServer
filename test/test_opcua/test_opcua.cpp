@@ -495,6 +495,41 @@ void test_datavalue_bad_status()
     TEST_ASSERT_FALSE(r.err);
 }
 
+// UInt64 / Int64 Variant round-trip (encoding bytes 9 / 8, 8-byte LE value) - the 64-bit counters the
+// EUROMAP 77 model needs.
+void test_variant_u64_i64_roundtrip()
+{
+    uint8_t buf[32];
+    // UInt64
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    OpcUaVariant v;
+    memset(&v, 0, sizeof(v));
+    v.type = OpcUaVariantType::OPCUA_VAR_UINT64;
+    v.u64 = 0x0123456789ABCDEFULL;
+    dws_ua_w_variant(&w, &v);
+    TEST_ASSERT_TRUE(w.ok);
+    TEST_ASSERT_EQUAL_HEX8(9, buf[0]); // encoding byte = UInt64 built-in id
+    UaReader r = {buf, w.n, 0, false};
+    OpcUaVariant out;
+    TEST_ASSERT_TRUE(dws_ua_r_variant(&r, &out));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_UINT64, out.type);
+    TEST_ASSERT_TRUE(out.u64 == 0x0123456789ABCDEFULL);
+
+    // Int64 (negative -> two's-complement 8 bytes)
+    UaWriter w2 = {buf, sizeof(buf), 0, true};
+    memset(&v, 0, sizeof(v));
+    v.type = OpcUaVariantType::OPCUA_VAR_INT64;
+    v.i64 = -123456789012345LL;
+    dws_ua_w_variant(&w2, &v);
+    TEST_ASSERT_TRUE(w2.ok);
+    TEST_ASSERT_EQUAL_HEX8(8, buf[0]); // encoding byte = Int64 built-in id
+    UaReader r2 = {buf, w2.n, 0, false};
+    OpcUaVariant out2;
+    TEST_ASSERT_TRUE(dws_ua_r_variant(&r2, &out2));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_INT64, out2.type);
+    TEST_ASSERT_TRUE(out2.i64 == -123456789012345LL);
+}
+
 // Build a ReadRequest MSG reading ns=1 numeric ids (AttributeId = Value).
 static size_t build_read(uint8_t *out, size_t cap, uint32_t token, uint32_t seq, uint32_t req_id, uint32_t handle,
                          const uint32_t *ids, uint32_t n)
@@ -1647,6 +1682,7 @@ int main()
     RUN_TEST(test_build_activate_session_response);
     RUN_TEST(test_datavalue_good_int32);
     RUN_TEST(test_datavalue_bad_status);
+    RUN_TEST(test_variant_u64_i64_roundtrip);
     RUN_TEST(test_parse_read);
     RUN_TEST(test_build_read_response);
     RUN_TEST(test_parse_browse);
