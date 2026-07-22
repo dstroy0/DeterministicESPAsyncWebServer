@@ -1023,6 +1023,12 @@
       "src": ["+<services/focas/focas.cpp>"],
       "tests": ["test_focas"]
     },
+    "native_fanuc_j519": {
+      "desc": "FANUC Stream Motion / option J519 UDP codec (services/fanuc_j519): the robot\ncounterpart to FOCAS. The 8-octet little-endian header, all six packets (Start/Motion/Stop/Request\nPC->robot, Robot Status/Ack robot->PC), the 9-axis IEEE-754 binary32 pose/joint/current blocks, and\nthe 20-entry threshold tables - byte-checked at every field offset against the public Wireshark\ndissector, plus symmetric build->parse round trips. Includes the length guards that separate the two\npackets sharing a type code per direction (Start 8 vs Status 132, Request 16 vs Ack 184). No heap,\nno stdlib. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_FANUC_J519=1"],
+      "src": ["+<services/fanuc_j519/fanuc_j519.cpp>"],
+      "tests": ["test_fanuc_j519"]
+    },
     "native_pqc": {
       "desc": "Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the\nKeccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the\nmlkem768x25519-sha256 (SSH) and X25519MLKEM768 (TLS 1.3) hybrid key exchanges - plus the full\nStreamlined NTRU Prime sntrup761 KEM (keypair/enc/dec) for sntrup761x25519-sha512@openssh.com.\nSHA-3/SHAKE digests pinned from NIST FIPS 202 vectors; ML-KEM Encaps byte-checked against a kyber-py\nvector; sntrup761 decapsulation checked against an OpenSSH-reference KAT plus a keypair/enc/dec\nround-trip. Pure host tests.",
       "flags": ["-DDWS_ENABLE_PQC_KEX=1"],
@@ -1470,6 +1476,12 @@
       "flags": ["-DDWS_ENABLE_LD2410=1"],
       "src": ["+<services/ld2410/ld2410.cpp>"],
       "tests": ["test_ld2410"]
+    },
+    "native_rcwl0516": {
+      "desc": "RCWL-0516 Doppler presence sensor + the shared one-GPIO presence facade\n(services/rcwl0516): the debounce that swallows comparator chatter, the hold that bridges the\nmodule's ~2s retrigger gaps into one continuous presence span, the consume-once edge event,\nwrap-safety across a millis() rollover, and the degenerate zero-debounce / zero-hold configs.\nPure core driven by a synthetic clock - no GPIO, no real time. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_RCWL0516=1"],
+      "src": ["+<services/rcwl0516/rcwl0516.cpp>"],
+      "tests": ["test_rcwl0516"]
     },
     "native_sen0192": {
       "desc": "SEN0192 microwave motion sensor presence state machine (services/sen0192): presence\nasserts on an active sample and holds for the configured window after the last active sample, clears\nafter it, counts clear->present edges, and honors OUT polarity. Pure - the GPIO read is ESP32-only.",

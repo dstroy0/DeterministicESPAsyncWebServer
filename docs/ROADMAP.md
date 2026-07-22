@@ -1035,7 +1035,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       web + socket messaging** (SNPX / the RPC the robot's PC interface uses). Start with a zero-heap codec
       byte-checked against a public reference, then HW-verify against a real controller. Note: "Run MyRobot"
       (above) is the Siemens SINUMERIK route to running a robot from a CNC - a distinct path we also want.
-      (Robot cell interop is currently **unimplemented** - this is the tracked entry point.)
+      PARTIAL - the **Stream Motion** leg has shipped: `services/fanuc_j519` (`DWS_ENABLE_FANUC_J519`), a
+      zero-heap symmetric codec for the J519 UDP protocol (all six packets, the 9-axis binary32 pose /
+      joint / motor-current blocks, the 20-entry threshold tables), byte-checked at every field offset
+      against the public Wireshark dissector `fanuc-stream-motion/packet-fanuc-stream-motion-j519` and
+      host-tested (`native_fanuc_j519`, 13 cases). Still open on this entry: the **PROFINET /
+      EtherNet-IP** assembly-object mapping over the shipped `services/enip`, the **KAREL / SNPX**
+      socket messaging, and **HW verification of the J519 codec against a real controller** (the codec
+      has never been run against physical hardware - only against the documented wire format).
 - [ ] **Secure machine agent: G-code deployment over a single secure port** (L) - the device as a
       secure local agent that deploys CNC part programs (G-code) to a machine tool over ONE authenticated,
       encrypted port: NC-program transfer/staging multiplexed on the existing TLS endpoint (or a secured
@@ -1678,7 +1685,7 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       `0x0011`, register `0x0002`, parameter config `0x0008`). Bridge presence / distance northbound exactly
       like LD2410. Test = captured-frame vectors both directions (`native_hmmd`); the sensor's GPIO OUT pin
       shares the debounced presence bridge below.
-- [ ] **RCWL-0516 microwave Doppler presence sensor** (S) - the low-cost ~3.18 GHz Doppler motion module
+- [x] **RCWL-0516 microwave Doppler presence sensor** (S) - the low-cost ~3.18 GHz Doppler motion module
       (RCWL-9196 controller + MMBR941M RF amp): no data protocol at all - a single 3.3V **OUT** pin that
       latches HIGH for ~2 s on any moving reflector and returns LOW when idle. This is the analog-Doppler end
       of the presence path already noted in the EM / radar section. Add `DWS_ENABLE_RCWL0516` /
@@ -1686,7 +1693,18 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       host-testable by injecting pin levels against a fake clock via `dws_millis`), surfaced to the web
       stack as a boolean presence event - the same one-GPIO presence facade the HMMD OUT pin and other
       bare-output detectors (PIR, HB100) can reuse.
-- [ ] **HLK-LD2410B (Bluetooth variant of the shipped LD2410)** (S) - the LD2410**B** is HiLink's
+      SHIPPED - `services/rcwl0516` (`DWS_ENABLE_RCWL0516`). `PresenceCore` is the facade, written
+      sensor-agnostic from the start so the HMMD entry above can reuse it: debounce
+      (`DWS_RCWL0516_DEBOUNCE_MS`, default 50) rejects comparator chatter, and a hold
+      (`DWS_RCWL0516_HOLD_MS`, default 2000, matching the module's retrigger window) bridges the gaps
+      between retriggers into one continuous occupied span. `dws_presence_take_event` consumes a
+      changed-flag once per transition, so callers publish an event per edge rather than a level per
+      poll. Pure, explicit `now` (the `services/hotswap` pattern), starts fail-safe absent, and every
+      elapsed test is an unsigned difference so it is wrap-safe across a `millis()` rollover.
+      Host-tested (`native_rcwl0516`, 10 cases - incl. chatter rejection, retrigger-gap bridging, the
+      rollover, and the degenerate zero-debounce / zero-hold configs). Not HW-verified against a
+      physical module; the timing constants come from the module's documented ~2 s retrigger window.
+- [x] **HLK-LD2410B (Bluetooth variant of the shipped LD2410)** (S) - the LD2410**B** is HiLink's
       BLE-equipped build of the same 24 GHz FMCW presence radar, speaking the **same `FD FC FB FA` framed
       UART protocol** the shipped `services/ld2410` codec already builds and parses
       ([datasheet](https://en.ai-thinker.com/Uploads/file/20231016/20231016032622_13559.pdf)). So this is a
@@ -1696,6 +1714,20 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       LD2410B-only config commands (Bluetooth enable / permission, MAC query) to the `FD FC FB FA` command
       encoders. The BLE control channel itself is out of scope for the wired driver - the UART report / config
       path is the shared surface.
+      SHIPPED - `services/ld2410` now covers the B as a supported part. Added the LD2410B-only config
+      commands over the wired UART: Bluetooth on/off (`dws_ld2410_cmd_bluetooth`, word 0x00A4), MAC query
+      (`dws_ld2410_cmd_get_mac`, 0x00A5), and set Bluetooth password (`dws_ld2410_cmd_set_bt_password`,
+      0x00A9). Also added the command-ACK decoder the driver never had - `dws_ld2410_parse_ack` /
+      `dws_ld2410_ack_ok` / `dws_ld2410_ack_mac` - since a query is useless without it (ACKs echo the
+      request word with 0x0100 set, then a 2-octet status). "Obtain Bluetooth access" (0x00A8) is
+      deliberately NOT implemented: the protocol document states it answers only over Bluetooth and not the
+      serial port, so it belongs to the out-of-scope BLE channel. Host-tested in `native_ld2410` (+3 cases,
+      11 total) with frames taken byte-for-byte from the worked examples in LD2410B Serial communication
+      protocol V1.07. Caveat: those vectors are from the protocol document, **not** a capture off physical
+      LD2410B hardware, and none of this has been HW-verified against a real B module - the report path is
+      unchanged and shared with the already-verified LD2410, but the B-only commands are untested on metal.
+      (Note: the doc's prose for get-MAC says "1 byte fixed type + 3 bytes MAC", which contradicts its own
+      worked example and length field - both of which say 6 MAC octets. The example is what we implement.)
 
 ### Functional-safety & industrial-standards profiles (IEC 61784-3, ODVA)
 
