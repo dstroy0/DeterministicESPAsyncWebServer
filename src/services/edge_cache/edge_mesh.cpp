@@ -71,8 +71,12 @@ size_t edge_mesh_build_request(const uint8_t digest[32], const char *canon, cons
     const char *hdrs = req_hdrs ? req_hdrs : "";
     size_t kl = strnlen(canon, DWS_EDGE_KEY_MAX);
     size_t hl = strnlen(hdrs, DWS_MESH_HDRS_MAX);
-    if (kl > 0xFFFFu || hl > 0xFFFFu)
-        return 0;
+    // Both lengths are strnlen-capped to DWS_EDGE_KEY_MAX (128) and DWS_MESH_HDRS_MAX, neither of
+    // which is within three orders of magnitude of the 16-bit wire limit, so neither arm can be
+    // taken in any build this library is sized for. The guard is what keeps the u16 length prefixes
+    // below honest if either cap is ever raised.
+    if (kl > 0xFFFFu || hl > 0xFFFFu) // GCOVR_EXCL_LINE - caps are far below 0xFFFF, see above
+        return 0;                     // GCOVR_EXCL_LINE - unreachable body of the guard above
     size_t need = 2 + 1 + 1 + 32 + 2 + kl + 2 + hl;
     if (need > cap)
         return 0;

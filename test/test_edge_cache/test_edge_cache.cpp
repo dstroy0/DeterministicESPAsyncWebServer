@@ -850,6 +850,98 @@ static void test_apply_304_reuses_stored_last_modified()
     TEST_ASSERT_EQUAL_INT32(297, (int32_t)e->lifetime_s);
 }
 
+// The month table is matched three letters at a time; a token that shares its first two letters
+// with a real month but not the third must not match it.
+static void test_http_date_month_prefix_near_miss()
+{
+    // "Jum" shares "ju" with both June and July; the third letter rules both out.
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Jum 1994 08:49:37 GMT", 29));
+    // "Mah" shares "ma" with March and May.
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun, 06 Mah 1994 08:49:37 GMT", 29));
+    // asctime form takes the same path.
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun Jum  6 08:49:37 1994", 24));
+}
+
+// The asctime scanner skips the day-name by running to the first space; a string with no space at
+// all must run out rather than read past the end.
+static void test_http_date_asctime_no_space_at_all()
+{
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("Sun", 3));
+    TEST_ASSERT_EQUAL_INT64(-1, edge_parse_http_date("X", 1));
+}
+
+// A header value that is nothing but optional whitespace: the leading-OWS skip runs to the end of
+// the line and the trailing-OWS trim then has nothing left to walk back over.
+static void test_header_value_all_whitespace()
+{
+    char out[32];
+    // The first line is the status line and is skipped, so the field under test is the second.
+    const char *blk = "HTTP/1.1 200 OK\r\nAge:    \r\nVary: accept\r\n\r\n";
+    TEST_ASSERT_TRUE(edge_header_value(blk, strlen(blk), "Age", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("", out); // present but empty
+    const char *tabs = "HTTP/1.1 200 OK\r\nAge: \t \t\r\n\r\n";
+    TEST_ASSERT_TRUE(edge_header_value(tabs, strlen(tabs), "Age", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("", out);
+}
+
+// Vary field names end at a comma, a space or a tab; an empty element (a stray separator) emits
+// nothing and the walk simply moves on.
+static void test_vary_serialize_space_tab_and_empty_elements()
+{
+    char out[128];
+    TEST_ASSERT_TRUE(edge_vary_serialize("accept encoding", mock_lookup, nullptr, out, sizeof(out)));
+    TEST_ASSERT_TRUE(edge_vary_serialize("accept\tencoding", mock_lookup, nullptr, out, sizeof(out)));
+    // A leading comma is an empty element: skipped, and the rest still serialises.
+    char a[128];
+    char b[128];
+    TEST_ASSERT_TRUE(edge_vary_serialize(",accept", mock_lookup, nullptr, a, sizeof(a)));
+    TEST_ASSERT_TRUE(edge_vary_serialize("accept", mock_lookup, nullptr, b, sizeof(b)));
+    TEST_ASSERT_EQUAL_STRING(b, a);
+    // Nothing but separators serialises to an empty key rather than failing.
+    TEST_ASSERT_TRUE(edge_vary_serialize(", ,\t,", mock_lookup, nullptr, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("", out);
+}
+
+static int g_evicted;
+static char g_evicted_key[DWS_EDGE_KEY_MAX];
+static void count_evict(void *ctx, const EdgeEntry *e)
+{
+    (void)ctx;
+    g_evicted++;
+    memcpy(g_evicted_key, e->key, sizeof(g_evicted_key));
+}
+
+// The L2 write-back hook is offered the LRU victim, but only when that victim actually holds
+// something: a transient passthrough slot (empty key) is recycled silently.
+static void test_store_evict_hook_skips_empty_victim()
+{
+    edge_store_init(&g_store);
+    g_store.on_evict = count_evict;
+    g_store.evict_ctx = nullptr;
+    g_evicted = 0;
+    g_evicted_key[0] = '\0';
+
+    // Fill every slot, then force one more allocation so the LRU tail is recycled.
+    char key[64];
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
+    {
+        snprintf(key, sizeof(key), "GET\nh\n/e%u", (unsigned)i);
+        TEST_ASSERT_NOT_NULL(edge_store_alloc(&g_store, key, ""));
+    }
+    TEST_ASSERT_NOT_NULL(edge_store_alloc(&g_store, "GET\nh\n/overflow", ""));
+    TEST_ASSERT_EQUAL_INT(1, g_evicted); // the populated victim was handed over
+    TEST_ASSERT_EQUAL_STRING("GET\nh\n/e0", g_evicted_key);
+
+    // Now blank the next victim's key (a passthrough slot) - it must be recycled without a callback.
+    uint16_t victim = g_store.lru_tail;
+    g_store.entries[victim].key[0] = '\0';
+    g_evicted = 0;
+    TEST_ASSERT_NOT_NULL(edge_store_alloc(&g_store, "GET\nh\n/overflow2", ""));
+    TEST_ASSERT_EQUAL_INT(0, g_evicted);
+
+    g_store.on_evict = nullptr; // leave the shared store as the other tests expect it
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -909,5 +1001,10 @@ int main()
     RUN_TEST(test_apply_304_date_expires_and_age);
     RUN_TEST(test_apply_304_non_numeric_age_and_oversize_validators);
     RUN_TEST(test_apply_304_reuses_stored_last_modified);
+    RUN_TEST(test_http_date_month_prefix_near_miss);
+    RUN_TEST(test_http_date_asctime_no_space_at_all);
+    RUN_TEST(test_header_value_all_whitespace);
+    RUN_TEST(test_vary_serialize_space_tab_and_empty_elements);
+    RUN_TEST(test_store_evict_hook_skips_empty_victim);
     return UNITY_END();
 }

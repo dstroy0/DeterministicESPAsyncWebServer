@@ -95,7 +95,11 @@ bool has_chunked(const char *s)
 {
     char low[40];
     size_t i = 0;
-    for (; s[i] && i + 1 < sizeof(low); i++)
+    // The `i + 1 < sizeof(low)` bound has no false arm to reach: has_chunked has internal linkage
+    // and its one caller passes `char te[40]`, which edge_header_value NUL-terminates inside its
+    // own capacity - so s is at most 39 characters and s[i] always short-circuits first. The bound
+    // stays as the guard that keeps that true if the caller's buffer ever grows.
+    for (; s[i] && i + 1 < sizeof(low); i++) // GCOVR_EXCL_LINE - bound unreachable, see above
         low[i] = (s[i] >= 'A' && s[i] <= 'Z') ? (char)(s[i] + 32) : s[i];
     low[i] = '\0';
     return strstr(low, "chunked") != nullptr;
