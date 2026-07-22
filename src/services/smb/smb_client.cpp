@@ -18,11 +18,32 @@
 #include <Arduino.h> // esp_fill_random() (real on device, mocked on native)
 #include <string.h>
 
+// Every request this engine builds has to fit the shared tx buffer, and the request builders report
+// that by returning 0. Pin the relationship instead of leaving each `if (!mlen)` to hope for it:
+// DWS_SMB_BUF is a plain #ifndef with no floor, so without this a small override would silently turn
+// every exchange into SMB_ERR_OVERFLOW at run time rather than failing the build.
+//
+// CREATE is the binding case - it frames a 64-byte SMB2 header + a 56-byte body around a path that
+// utf16le() may fill to sizeof(s_smb.utf16) == DWS_SMB_BUF/2, and the builders are handed
+// sizeof(tx) - 4 (the 4-byte NetBIOS length prefix is written separately):
+static_assert(64 + 56 + DWS_SMB_BUF / 2 <= DWS_SMB_BUF - 4,
+              "DWS_SMB_BUF is too small to frame a CREATE around a full-length path "
+              "(64B header + 56B body + DWS_SMB_BUF/2 path must fit DWS_SMB_BUF-4)");
+// WRITE is the other payload-bearing case; its chunk_max already backs off by 128 bytes.
+static_assert(64 + 48 + (DWS_SMB_BUF - 128) <= DWS_SMB_BUF - 4,
+              "DWS_SMB_BUF is too small to frame a WRITE around a full chunk");
+// SESSION_SETUP round 2 wraps the NTLMSSP AUTHENTICATE blob, capped at sizeof(s_smb.sp2).
+static_assert(64 + 24 + DWS_SMB_BUF / 2 <= DWS_SMB_BUF - 4,
+              "DWS_SMB_BUF is too small to frame a SESSION_SETUP around a full security blob");
+
 // ASCII/Latin-1 -> UTF-16LE (SMB paths are ASCII); returns byte length (2 * chars), 0 on null/overflow.
 static size_t utf16le(const char *s, uint8_t *out, size_t cap)
 {
-    if (!s)
-        return 0;
+    // Dead guard: utf16le is static with exactly two call sites (the share in smb_tree_connect and
+    // the path in smb_create), both reached only through smb_open(), which rejects a null
+    // cfg->share / cfg->path up front.
+    if (!s)       // GCOVR_EXCL_LINE - both callers are guarded by smb_open, see above
+        return 0; // GCOVR_EXCL_LINE - unreachable body of the guard above
     size_t n = 0;
     for (; s[n]; n++)
     {
@@ -133,8 +154,8 @@ static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx)
     esp_fill_random(guid, 16);
     size_t mlen = dws_smb2_build_negotiate(s_smb.tx + 4, sizeof(s_smb.tx) - 4, guid,
                                            Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED);
-    if (!mlen)
-        return SmbResult::SMB_ERR_OVERFLOW;
+    if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
+        return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     SmbResult rt = SmbResult::SMB_ERR_IO;
     int rl = smb_round_trip(send, recv, ctx, mlen, &rt);
     if (rl < 0)
@@ -157,8 +178,8 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, Smb
     size_t sp1_n = dws_spnego_wrap_negotiate(ntneg, ntneg_n, sp1, sizeof(sp1));
     size_t mlen = dws_smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 1, 0,
                                                Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, sp1, sp1_n);
-    if (!mlen)
-        return SmbResult::SMB_ERR_OVERFLOW;
+    if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
+        return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     SmbResult rt = SmbResult::SMB_ERR_IO;
     int rl = smb_round_trip(send, recv, ctx, mlen, &rt);
     if (rl < 0)
@@ -205,8 +226,8 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, Smb
     // 4. SESSION_SETUP round 2 (echo the server SessionId)
     mlen = dws_smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 2, *session_id,
                                         Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, s_smb.sp2, sp2_n);
-    if (!mlen)
-        return SmbResult::SMB_ERR_OVERFLOW;
+    if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
+        return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     rl = smb_round_trip(send, recv, ctx, mlen, &rt);
     if (rl < 0)
         return rt;
@@ -226,8 +247,8 @@ static SmbResult smb_tree_connect(const SmbConfig *cfg, uint64_t session_id, Smb
     if (!utf16_n)
         return SmbResult::SMB_ERR_OVERFLOW;
     size_t mlen = dws_smb2_build_tree_connect(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 3, session_id, s_smb.utf16, utf16_n);
-    if (!mlen)
-        return SmbResult::SMB_ERR_OVERFLOW;
+    if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
+        return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     SmbResult rt = SmbResult::SMB_ERR_IO;
     int rl = smb_round_trip(send, recv, ctx, mlen, &rt);
     if (rl < 0)
@@ -253,8 +274,8 @@ static SmbResult smb_create(const SmbConfig *cfg, SmbHandle *h, uint64_t session
         dws_smb2_build_create(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 4, session_id, tree_id, cfg->desired_access,
                               Smb2ShareAccess::SMB2_FILE_SHARE_READ | Smb2ShareAccess::SMB2_FILE_SHARE_WRITE,
                               cfg->disposition, Smb2CreateOptions::SMB2_FILE_NON_DIRECTORY_FILE, s_smb.utf16, utf16_n);
-    if (!mlen)
-        return SmbResult::SMB_ERR_OVERFLOW;
+    if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
+        return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     SmbResult rt = SmbResult::SMB_ERR_IO;
     int rl = smb_round_trip(send, recv, ctx, mlen, &rt);
     if (rl < 0)
@@ -305,8 +326,8 @@ SmbResult smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx)
     uint8_t rx[128];
     size_t mlen =
         dws_smb2_build_close(tx + 4, sizeof(tx) - 4, h->next_message_id, h->session_id, h->tree_id, h->file_id);
-    if (!mlen)
-        return SmbResult::SMB_ERR_OVERFLOW;
+    if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
+        return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     if (!send_msg(send, ctx, tx, mlen))
         return SmbResult::SMB_ERR_IO;
     int rl = recv_msg(recv, ctx, rx, sizeof(rx));
@@ -337,8 +358,8 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
             want = chunk_max;
         size_t mlen = dws_smb2_build_read(s_smb.tx + 4, sizeof(s_smb.tx) - 4, h->next_message_id, h->session_id,
                                           h->tree_id, h->file_id, (uint32_t)want, offset + total);
-        if (!mlen)
-            return SmbResult::SMB_ERR_OVERFLOW;
+        if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
+            return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
         SmbResult rt = SmbResult::SMB_ERR_IO;
         int rl = smb_round_trip(send, recv, ctx, mlen, &rt);
         if (rl < 0)
@@ -380,8 +401,8 @@ SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t l
             want = chunk_max;
         size_t mlen = dws_smb2_build_write(s_smb.tx + 4, sizeof(s_smb.tx) - 4, h->next_message_id, h->session_id,
                                            h->tree_id, h->file_id, data + total, want, offset + total);
-        if (!mlen)
-            return SmbResult::SMB_ERR_OVERFLOW;
+        if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
+            return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
         if (!send_msg(send, ctx, s_smb.tx, mlen))
             return SmbResult::SMB_ERR_IO;
         int rl = recv_msg(recv, ctx, s_smb.rx, sizeof(s_smb.rx));
