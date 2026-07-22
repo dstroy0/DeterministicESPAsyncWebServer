@@ -977,6 +977,73 @@ void test_ts_get_second_selector()
     TEST_ASSERT_FALSE(dws_ike_ts_get(buf + 4, n - 4, 2, &got));
 }
 
+// ── framing ceilings: the widest payload each builder can emit ─────────────────────────────────
+
+void test_sa_build_widest_proposal()
+{
+    // The widest SA this builder can emit - a 255-byte SPI and 255 keyed (12-byte) transforms,
+    // every count being a uint8_t - still frames to 3327 bytes, far below the 16-bit length
+    // ceiling the builder guards against. Pins that the guard cannot fire for any legal input.
+    std::vector<IkeTransform> tr(255);
+    for (size_t i = 0; i < tr.size(); i++)
+        tr[i] = {IkeTransformType::IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, 256};
+    std::vector<uint8_t> spi(255, 0x5a);
+    std::vector<uint8_t> buf(0x11000, 0);
+
+    size_t n = dws_ike_sa_build(buf.data(), buf.size(), IkePayloadType::IKE_PL_NONE, 1, IkeProtocol::IKE_PROTO_ESP,
+                                spi.data(), 255, tr.data(), 255);
+    const size_t prop_len = 8 + 255 + 255 * 12; // proposal hdr + spi + keyed transforms
+    TEST_ASSERT_EQUAL_size_t(DWS_IKE_PAYLOAD_HDR_LEN + prop_len, n);
+    TEST_ASSERT_TRUE(n <= 0xFFFF); // the ceiling the builder checks is unreachable
+    TEST_ASSERT_EQUAL_UINT16((uint16_t)n, (uint16_t)((buf[2] << 8) | buf[3]));
+    TEST_ASSERT_EQUAL_UINT16((uint16_t)prop_len, (uint16_t)((buf[6] << 8) | buf[7]));
+    TEST_ASSERT_EQUAL_UINT8(255, buf[10]); // spi size
+    TEST_ASSERT_EQUAL_UINT8(255, buf[11]); // transform count
+
+    // the whole tree still walks back out
+    IkeProposalRef prop;
+    TEST_ASSERT_TRUE(dws_ike_sa_first_proposal(buf.data() + 4, n - 4, &prop));
+    TEST_ASSERT_EQUAL_UINT8(255, prop.spi_size);
+    TEST_ASSERT_EQUAL_UINT8(255, prop.num_transforms);
+    TEST_ASSERT_EQUAL_MEMORY(spi.data(), prop.spi, 255);
+    IkeTransformIter it;
+    IkeTransformRef t;
+    dws_ike_transform_iter_init(&it, &prop);
+    int seen = 0;
+    while (dws_ike_transform_next(&it, &t))
+    {
+        TEST_ASSERT_EQUAL_INT32(256, t.key_length);
+        seen++;
+    }
+    TEST_ASSERT_EQUAL_INT(255, seen);
+    TEST_ASSERT_TRUE(t.last); // the 255th transform closes the proposal
+}
+
+void test_ts_build_widest_selector_list()
+{
+    // The widest TS payload - 255 IPv6 selectors, the largest selector at 40 bytes - frames to
+    // 10208 bytes, so the builder's 16-bit length ceiling cannot fire for any legal input.
+    const uint8_t s6[16] = {0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01};
+    const uint8_t e6[16] = {0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff};
+    std::vector<IkeTrafficSelector> sels(255);
+    for (size_t i = 0; i < sels.size(); i++)
+        sels[i] = {IkeTsType::IKE_TS_IPV6_ADDR_RANGE, 6, 500, 500, s6, e6, 16};
+    std::vector<uint8_t> buf(0x11000, 0);
+
+    size_t n = dws_ike_ts_build(buf.data(), buf.size(), IkePayloadType::IKE_PL_NONE, sels.data(), 255);
+    TEST_ASSERT_EQUAL_size_t(4 + 4 + 255 * 40, n);
+    TEST_ASSERT_TRUE(n <= 0xFFFF); // the ceiling the builder checks is unreachable
+    TEST_ASSERT_EQUAL_UINT16((uint16_t)n, (uint16_t)((buf[2] << 8) | buf[3]));
+    TEST_ASSERT_EQUAL_UINT8(255, dws_ike_ts_count(buf.data() + 4, n - 4));
+    // the last selector is still addressable, so every one of the 255 was framed
+    IkeTrafficSelector got;
+    TEST_ASSERT_TRUE(dws_ike_ts_get(buf.data() + 4, n - 4, 254, &got));
+    TEST_ASSERT_EQUAL_size_t(16, got.addr_len);
+    TEST_ASSERT_EQUAL_MEMORY(s6, got.start_addr, 16);
+    TEST_ASSERT_EQUAL_MEMORY(e6, got.end_addr, 16);
+    TEST_ASSERT_EQUAL_UINT16(500, got.start_port);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1017,5 +1084,7 @@ int main()
     RUN_TEST(test_transform_attributes);
     RUN_TEST(test_ts_parse_malformed);
     RUN_TEST(test_ts_get_second_selector);
+    RUN_TEST(test_sa_build_widest_proposal);
+    RUN_TEST(test_ts_build_widest_selector_list);
     return UNITY_END();
 }

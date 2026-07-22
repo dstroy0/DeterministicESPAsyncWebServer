@@ -283,6 +283,49 @@ void test_pid_log_record_bytes()
     TEST_ASSERT_EQUAL_size_t(0, pid_log_record(buf, PID_LOG_RECORD_LEN - 1, 0.0f, 0.0f, 0.0f, false));
 }
 
+// control_slew clamps a falling step too, not just a rising one, and pid_update_fixed rejects a
+// null Pid before it dereferences one (the short-circuit arm the dt<=0 guard never reaches).
+void test_slew_down_and_fixed_null()
+{
+    TEST_ASSERT_TRUE(near_f(control_slew(-10.0f, 0.0f, 2.0f), -2.0f)); // falling, clamped to -step
+    TEST_ASSERT_TRUE(near_f(control_slew(-1.0f, 0.0f, 2.0f), -1.0f));  // within step -> reach target
+    TEST_ASSERT_TRUE(near_f(pid_update_fixed(nullptr, 1.0f, 0.0f), 0.0f));
+}
+
+// Anti-windup freezes the accumulator only when the error would drive the output DEEPER into the
+// rail. Saturated with the error already reversed, integration must resume - that is the
+// (saturated, error-of-the-opposite-sign) arm of each worsen_* test, which unwinds the integral.
+void test_antiwindup_integrates_while_saturated_reversing()
+{
+    // Anti-windup itself stops the integral growing once the output rails, so build the integral
+    // with the limits wide open and THEN narrow them - that reaches "saturated high" holding an
+    // integral big enough to stay saturated even as the error reverses.
+    Pid p;
+    pid_init(&p, 1.0f, 1.0f, 0.0f);
+    pid_set_output_limits(&p, -100.0f, 100.0f);
+    for (int i = 0; i < 50; ++i)
+        (void)pid_update(&p, 1.0f, 0.0f, 0.1f); // integ -> ~5, never saturated
+    pid_set_output_limits(&p, -1.0f, 1.0f);
+    float integ_hi = p.integ;
+    TEST_ASSERT_TRUE(integ_hi > 1.0f);
+    float out = pid_update(&p, 0.0f, 0.5f, 0.1f); // error = -0.5, unclamped ~4.45 still > out_max
+    TEST_ASSERT_TRUE(near_f(out, 1.0f));
+    TEST_ASSERT_TRUE(p.integ < integ_hi); // unwound, not frozen
+
+    // Low rail, positive error: the mirror image.
+    Pid q;
+    pid_init(&q, 1.0f, 1.0f, 0.0f);
+    pid_set_output_limits(&q, -100.0f, 100.0f);
+    for (int i = 0; i < 50; ++i)
+        (void)pid_update(&q, 0.0f, 1.0f, 0.1f); // integ -> ~-5
+    pid_set_output_limits(&q, -1.0f, 1.0f);
+    float integ_lo = q.integ;
+    TEST_ASSERT_TRUE(integ_lo < -1.0f);
+    out = pid_update(&q, 0.5f, 0.0f, 0.1f); // error = +0.5, unclamped ~-4.45 still < out_min
+    TEST_ASSERT_TRUE(near_f(out, -1.0f));
+    TEST_ASSERT_TRUE(q.integ > integ_lo); // unwound, not frozen
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -303,5 +346,7 @@ int main()
     RUN_TEST(test_pid_update_n_null_guards);
     RUN_TEST(test_pid_log_header_bytes);
     RUN_TEST(test_pid_log_record_bytes);
+    RUN_TEST(test_slew_down_and_fixed_null);
+    RUN_TEST(test_antiwindup_integrates_while_saturated_reversing);
     return UNITY_END();
 }

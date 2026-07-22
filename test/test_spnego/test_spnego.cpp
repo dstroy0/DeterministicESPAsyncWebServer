@@ -220,6 +220,31 @@ void test_parse_resptoken_not_octet()
     TEST_ASSERT_FALSE(dws_spnego_parse_response(blob, sizeof(blob), &rt, &rl));
 }
 
+// The [1] NegTokenResp parses but its content is too short to hold the inner SEQUENCE TLV header:
+// the second der_read fails (the call side of the guard at spnego.cpp:148, which
+// test_parse_inner_not_seq only reaches through its tag side).
+void test_parse_seq_header_truncated()
+{
+    const uint8_t blob[3] = {0xa1, 0x01, 0x30}; // [1] with a 1-byte content: a bare tag, no length
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    TEST_ASSERT_FALSE(dws_spnego_parse_response(blob, sizeof(blob), &rt, &rl));
+    TEST_ASSERT_NULL(rt);
+}
+
+// A [2] responseToken whose content is too short to hold the inner OCTET STRING TLV header: the
+// innermost der_read fails (the call side of the guard at spnego.cpp:163, which
+// test_parse_resptoken_not_octet only reaches through its tag side).
+void test_parse_resptoken_header_truncated()
+{
+    // [1]{ SEQ{ [2] with a 1-byte content: a bare 0x04 tag and no length byte } }
+    const uint8_t blob[7] = {0xa1, 0x05, 0x30, 0x03, 0xa2, 0x01, 0x04};
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    TEST_ASSERT_FALSE(dws_spnego_parse_response(blob, sizeof(blob), &rt, &rl));
+    TEST_ASSERT_NULL(rt);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -237,5 +262,7 @@ int main()
     RUN_TEST(test_parse_inner_not_seq);
     RUN_TEST(test_parse_field_malformed);
     RUN_TEST(test_parse_resptoken_not_octet);
+    RUN_TEST(test_parse_seq_header_truncated);
+    RUN_TEST(test_parse_resptoken_header_truncated);
     return UNITY_END();
 }

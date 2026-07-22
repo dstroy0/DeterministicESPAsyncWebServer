@@ -32,6 +32,19 @@ enum
     N_NOTIFICATION = 5400,
     N_NOTIF_MESSAGE = 5401,
     N_NOTIF_SEVERITY = 5402,
+
+    N_ID_MODEL = 5102,
+    N_ID_SERIAL = 5103,
+    N_ID_SWREV = 5105,
+    N_ID_PRODURI = 5106,
+    N_MON_POWERON = 5212,
+    N_CH_RAPIDOVR = 5223,
+    N_SP_OVERRIDE = 5232,
+    N_MON_AXIS_Y = 5250,
+    N_AX_Y_POS = 5251,
+    N_MON_AXIS_Z = 5260,
+    N_AX_Z_POS = 5261,
+    N_PROD_ACTIVEPROG = 5301,
 };
 
 static UmatiMachineTool g_mt;
@@ -234,9 +247,112 @@ static void test_read_before_bind_is_a_clean_miss(void)
     TEST_ASSERT_EQUAL_INT32(-1, dws_umati_browse(0, 85, refs, 4));
 }
 
+// Every remaining Identification / Monitoring / Production leaf resolves to the bound model field
+// with the right Variant type - the arms of the Read switch the focused tests above do not visit.
+static void test_read_every_remaining_leaf(void)
+{
+    OpcUaVariant v;
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_ID_MODEL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("AX-500", v.str);
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_ID_SERIAL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("SN-00042", v.str);
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_ID_SWREV, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("2.7.1", v.str);
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_ID_PRODURI, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("urn:acme:AX-500:SN-00042", v.str);
+
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_MON_POWERON, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_DOUBLE, v.type);
+    TEST_ASSERT_TRUE(v.f64 == 12345.0);
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_CH_RAPIDOVR, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(v.f64 == 100.0);
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_SP_OVERRIDE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(v.f64 == 90.0);
+
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_AX_Y_POS, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(v.f64 == -3.25);
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_AX_Z_POS, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(v.f64 == 42.0);
+
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_PROD_ACTIVEPROG, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_STRING, v.type);
+    TEST_ASSERT_EQUAL_STRING("PART_A.NC", v.str);
+}
+
+// The container nodes the hierarchy tests above do not browse still list their declared children.
+static void test_browse_every_remaining_container(void)
+{
+    OpcUaReference refs[8];
+
+    int32_t n = browse(DWS_UMATI_NS, N_MON_MACHINE, refs, 8);
+    TEST_ASSERT_EQUAL_INT32(2, n); // OperationMode, PowerOnDuration
+    TEST_ASSERT_NOT_NULL(find_ref(refs, n, "OperationMode"));
+    TEST_ASSERT_NOT_NULL(find_ref(refs, n, "PowerOnDuration"));
+
+    n = browse(DWS_UMATI_NS, N_MON_AXIS_Y, refs, 8);
+    TEST_ASSERT_EQUAL_INT32(1, n);
+    TEST_ASSERT_EQUAL_UINT32(N_AX_Y_POS, refs[0].target_id);
+    n = browse(DWS_UMATI_NS, N_MON_AXIS_Z, refs, 8);
+    TEST_ASSERT_EQUAL_INT32(1, n);
+    TEST_ASSERT_EQUAL_UINT32(N_AX_Z_POS, refs[0].target_id);
+
+    n = browse(DWS_UMATI_NS, N_PRODUCTION, refs, 8);
+    TEST_ASSERT_EQUAL_INT32(2, n); // ActiveProgram, ProducedPartCount
+    TEST_ASSERT_NOT_NULL(find_ref(refs, n, "ActiveProgram"));
+    TEST_ASSERT_NOT_NULL(find_ref(refs, n, "ProducedPartCount"));
+
+    n = browse(DWS_UMATI_NS, N_NOTIFICATION, refs, 8);
+    TEST_ASSERT_EQUAL_INT32(2, n); // ActiveMessage, Severity
+    TEST_ASSERT_NOT_NULL(find_ref(refs, n, "ActiveMessage"));
+    TEST_ASSERT_NOT_NULL(find_ref(refs, n, "Severity"));
+}
+
+// A Browse buffer smaller than the node's child count is filled to the brim and then left alone -
+// add_ref must drop the overflow instead of writing past out[max-1].
+static void test_browse_clamps_to_max(void)
+{
+    OpcUaReference refs[8];
+    memset(refs, 0, sizeof(refs));
+    int32_t n = browse(DWS_UMATI_NS, N_MACHINETOOL, refs, 2); // MachineTool has 4 children
+    TEST_ASSERT_EQUAL_INT32(2, n);
+    TEST_ASSERT_EQUAL_STRING("Identification", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_STRING("Monitoring", refs[1].browse_name);
+    TEST_ASSERT_NULL(refs[2].browse_name); // the third child was dropped, not written
+
+    n = browse(DWS_UMATI_NS, N_IDENTIFICATION, refs, 1); // 6 children, room for 1
+    TEST_ASSERT_EQUAL_INT32(1, n);
+    TEST_ASSERT_EQUAL_STRING("Manufacturer", refs[0].browse_name);
+}
+
+// An unnamed model still publishes the MachineTool under the Objects folder, using the fallback name.
+static void test_browse_objects_folder_without_model_name(void)
+{
+    g_mt.name = nullptr;
+    OpcUaReference refs[4];
+    int32_t n = browse(0, 85, refs, 4);
+    TEST_ASSERT_EQUAL_INT32(1, n);
+    TEST_ASSERT_EQUAL_STRING("MachineTool", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_STRING("MachineTool", refs[0].display_name);
+    TEST_ASSERT_EQUAL_UINT32(N_MACHINETOOL, refs[0].target_id);
+}
+
+// Namespace 0 holds standard nodes; only the Objects folder (i=85) is ours, anything else in ns0 misses.
+static void test_browse_ns0_other_than_objects_folder_misses(void)
+{
+    OpcUaReference refs[4];
+    TEST_ASSERT_EQUAL_INT32(-1, browse(0, 84, refs, 4));   // Root folder
+    TEST_ASSERT_EQUAL_INT32(-1, browse(0, 86, refs, 4));   // Types folder
+    TEST_ASSERT_EQUAL_INT32(-1, browse(0, 5000, refs, 4)); // our MachineTool id, but in ns0
+}
+
 int main(void)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_read_every_remaining_leaf);
+    RUN_TEST(test_browse_every_remaining_container);
+    RUN_TEST(test_browse_clamps_to_max);
+    RUN_TEST(test_browse_objects_folder_without_model_name);
+    RUN_TEST(test_browse_ns0_other_than_objects_folder_misses);
     RUN_TEST(test_browse_objects_folder_has_machinetool);
     RUN_TEST(test_browse_machinetool_components);
     RUN_TEST(test_browse_identification_variables);
