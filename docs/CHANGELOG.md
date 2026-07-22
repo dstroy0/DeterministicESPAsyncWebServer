@@ -7,20 +7,29 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Bug Fixes
 
 - clamp delta-seconds with int64_t, not long (LLP64 overflow) ([`a33cefd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a33cefdee3f3c719ee19bc3b21f0911c7770794f))
+- stop test/coverage.xml going stale ([`f95a667`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f95a6678d5ba05395352f1846e658610cac23654))
+- make the whole native matrix buildable off Linux ([`49fe992`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49fe99241dd74b5aad238ae4476db4d094854423))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ee77749`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee77749615bded63aff58627c5c89f8a57d44c3e))
+- update CHANGELOG.md [skip ci] ([`5866f01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5866f01c3537c1a2b03c87a752d4fb1114b376e5))
 - gate the job on test results instead of discarding them ([`91adf56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91adf565af92ceaf141ac655069ad123d29a4728))
+- compile the native envs with -fno-exceptions ([`d23441d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d23441d4aa11ba980b63cba303d28bf28fff66a6))
 - update test report + coverage [skip ci] ([`f78332f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f78332fcb13fe293f9d8df78bf641d3841183829))
 - update CHANGELOG.md [skip ci] ([`a0e9451`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0e9451f35c7db2440d5cf0921ecc8d0fa9c5199))
 - update CHANGELOG.md [skip ci] ([`9089587`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9089587e95eaa0e24cbcfb2144f6b12d4e376b03))
 
 ### Changes
 
+- Merge remote-tracking branch 'origin/main' ([`111aa05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/111aa056758f4a195bacd7dae64b96644438343d))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`0b67d9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b67d9ebbab199e0ef2b9fde1d5d06a73ad34613))
+- local branch-coverage tooling ([`c8b0414`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8b0414c36cf01597261761d059c763d638190de))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`fbbbad8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fbbbad862975b472e1ac34d135f869a6bf7ccc20))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6bdfef0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bdfef0ffd77a294e7b7611ab8e008785c928237))
 - update ESP32 build footprints [skip ci] ([`737ec03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/737ec031002c44f415ffc4ac6ec8e2a3df5258c3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f88ad00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f88ad004765dfacdca25736de390bef163403e49))
 - update ESP32 build footprints [skip ci] ([`450df3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/450df3c1dcbbce939732313e9a27aac71cafb4fa))
@@ -37,6 +46,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- raise branch coverage toward 100% (control, wamp, ikev2, smb, opcua) ([`f6c4b47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6c4b47ec5f870c0a16d83c2bf5e8c2faa4634ce))
 - raise branch coverage across 18 native suites ([`f11ebc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f11ebc692db8ec03bb20e9dc2a94136fb275fb83))
 
 ## [7.31.0] - 2026-07-21
