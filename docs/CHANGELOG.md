@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d1d3cae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1d3cae0bc2f39e403998466fcb708f262dbf1a4))
 - update CHANGELOG.md [skip ci] ([`c635c37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c635c37f92f03f5239b05cc937fa71654a381de6))
 - update CHANGELOG.md [skip ci] ([`626b69f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/626b69f8cd456c135e3176c42a29f913b668247c))
 - update test report + coverage [skip ci] ([`f72be48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f72be484f874a98a4bed38fcf14cf65d5a401cd4))
@@ -48,6 +49,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- RCWL-0516 presence sensor + shared one-GPIO presence facade ([`882c38a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/882c38ac782135418ab54875807083b309916e31))
+- support the HLK-LD2410B, and decode command ACKs ([`3ae0466`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ae0466be441afc6dede863038e433c45259f605))
+- FANUC Stream Motion (J519) UDP codec ([`bfbdcfd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfbdcfdd6b70a7ed71123410aa2d1821feef4000))
 - feat(dpa/cpa) side channel analysis engine ([`7f5cf51`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f5cf51ac67b2368b5b93fa8ce39c76797889f3c))
 - EUROMAP 77 (OPC 40077) IMM_MES_Interface model ([`50c00a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50c00a58b77f1adbcceee7c14b881c8a00f78784))
 
