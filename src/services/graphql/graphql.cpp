@@ -125,15 +125,24 @@ bool is_name(char c)
     return is_name_start(c) || (c >= '0' && c <= '9');
 }
 
-bool parse_name(Lex &L, char *out)
+// @p cap is the size of @p out. It is bounded by the CALLER's buffer, not only by
+// DWS_GQL_NAME_MAX: parse_value() passes a small scratch array that only ever has to hold
+// "true"/"false"/"null", and bounding solely by the global maximum let a longer bareword in an
+// argument position - e.g. `{ f(a: LONGENUMVALUE) }`, straight from untrusted query text - write
+// past the end of it. Names still cannot exceed DWS_GQL_NAME_MAX; whichever limit is tighter wins.
+bool parse_name(Lex &L, char *out, size_t cap)
 {
     skipws(L);
     if (L.p >= L.e || !is_name_start(*L.p))
         return false;
-    int i = 0;
+    const size_t limit = cap < (size_t)DWS_GQL_NAME_MAX ? cap : (size_t)DWS_GQL_NAME_MAX;
+    size_t i = 0;
     while (L.p < L.e && is_name(*L.p))
     {
-        if (i >= DWS_GQL_NAME_MAX - 1)
+        // `i + 1 >= limit`, not `i >= limit - 1`: equivalent for every limit >= 1, but it also
+        // stays correct if a caller ever passes cap == 0, where `limit - 1` would wrap to SIZE_MAX
+        // and defeat the bound entirely. No separate cap==0 guard needed (and none to leave dead).
+        if (i + 1 >= limit)
         {
             s_gql.err = DWSGqlResult::DWS_GQL_ERR_LIMIT;
             return false;
@@ -292,7 +301,7 @@ bool parse_value(Lex &L, DWSGqlValue *v)
     }
     // keyword: true / false / null
     char kw[8];
-    if (parse_name(L, kw))
+    if (parse_name(L, kw, sizeof(kw)))
     {
         if (strcmp(kw, "true") == 0)
         {
@@ -323,7 +332,7 @@ int parse_field(Lex &L, int depth)
     int idx = new_node();
     if (idx < 0)
         return -1;
-    if (!parse_name(L, s_gql.nodes[idx].name))
+    if (!parse_name(L, s_gql.nodes[idx].name, sizeof(s_gql.nodes[idx].name)))
     {
         gql_flag_parse_err();
         return -1;
@@ -342,7 +351,7 @@ int parse_field(Lex &L, int depth)
                 return -1;
             }
             Arg *a = &s_gql.args[s_gql.nargs];
-            if (!parse_name(L, a->name))
+            if (!parse_name(L, a->name, sizeof(a->name)))
             {
                 gql_flag_parse_err();
                 return -1;
@@ -411,7 +420,7 @@ bool parse_document(Lex &L)
     if (c != '{')
     {
         char kw[DWS_GQL_NAME_MAX];
-        if (!parse_name(L, kw) || strcmp(kw, "query") != 0)
+        if (!parse_name(L, kw, sizeof(kw)) || strcmp(kw, "query") != 0)
         {
             s_gql.err = DWSGqlResult::DWS_GQL_ERR_PARSE; // only anonymous or `query` operations
             return false;
@@ -419,7 +428,7 @@ bool parse_document(Lex &L)
         if (peek(L) != '{') // optional operation name
         {
             char opname[DWS_GQL_NAME_MAX];
-            if (!parse_name(L, opname))
+            if (!parse_name(L, opname, sizeof(opname)))
             {
                 gql_flag_parse_err();
                 return false;
@@ -541,7 +550,10 @@ void emit_field(Writer &w, int idx, int path_len)
     // push this field's args into scope
     int pushed = 0;
     for (int a = 0; a < node->n_args; a++)
-        if (s_gql.scope_n < DWS_GQL_MAX_ARGS)
+        // scope_n cannot reach the cap: scope[] and args[] are both DWS_GQL_MAX_ARGS long,
+        // parse_field refuses to record arg number DWS_GQL_MAX_ARGS, and the nodes on one
+        // root-to-leaf path own disjoint slices of that pool - so the guard never bites.
+        if (s_gql.scope_n < DWS_GQL_MAX_ARGS) // GCOVR_EXCL_LINE
         {
             s_gql.scope[s_gql.scope_n++] = node->first_arg + a;
             pushed++;
@@ -650,7 +662,9 @@ DWSGqlResult dws_graphql_execute(const char *query, size_t len, dws_gql_resolver
         w_str(w, "}]}");
         if (!w.ovf && w.n < cap)
             out[w.n] = '\0';
-        return s_gql.err != DWSGqlResult::DWS_GQL_OK ? s_gql.err : DWSGqlResult::DWS_GQL_ERR_PARSE;
+        // every path that makes parse_document() return false has already set s_gql.err, so the
+        // DWS_GQL_OK side of this test is unreachable
+        return s_gql.err != DWSGqlResult::DWS_GQL_OK ? s_gql.err : DWSGqlResult::DWS_GQL_ERR_PARSE; // GCOVR_EXCL_LINE
     }
 
     Writer w = {out, cap, 0, false};

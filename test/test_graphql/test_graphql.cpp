@@ -88,6 +88,12 @@ static bool resolver(const char *path, const DWSGqlArgs *args, DWSGqlValue *out)
         out->type = DWSGqlType::DWS_GQL_NULL;
         return true;
     }
+    if (!strcmp(path, "nullstr")) // reports a string value with a null pointer (w_scalar's ?: guard)
+    {
+        out->type = DWSGqlType::DWS_GQL_STR;
+        out->s = nullptr;
+        return true;
+    }
     return false; // -> null
 }
 
@@ -392,9 +398,173 @@ void test_arg_accessors_edges()
     TEST_ASSERT_EQUAL_STRING("{\"data\":{\"flag\":false}}", run("{ flag }"));
 }
 
+// Tab and carriage return are lexer whitespace, and a '#' comment may run to the end of the input
+// with no closing newline: all three forms parse as the plain-spaced query does.
+void test_lexer_whitespace_and_eof_comment()
+{
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"name\":\"esp32\",\"uptime\":12345}}", run("{\tname\r\n\tuptime\r}"));
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"name\":\"esp32\"}}", run("{ name } # comment with no newline"));
+}
+
+// An underscore is a legal GraphQL name character, so `_priv` is a field (unresolved here, hence
+// null) rather than a parse error.
+void test_underscore_field_name()
+{
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"_priv\":null}}", run("{ _priv }"));
+}
+
+// `query` with no operation name is the same document as the anonymous form. A bare `query` with
+// nothing after it, and a document opening on neither '{' nor a name character, are parse errors.
+void test_query_keyword_without_operation_name()
+{
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"name\":\"esp32\"}}", run("query { name }"));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("query"));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("@ { name }"));
+}
+
+// A backslash as the last byte of the input has nothing to escape: it is taken literally, and the
+// string then reaches end-of-input unterminated, which is a parse error rather than a read past
+// the end of the buffer.
+void test_trailing_backslash_in_string_arg()
+{
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: \"ab\\"));
+}
+
+// Every stage of the number scanner can end on end-of-input - the integer digits, the fraction
+// digits, the exponent marker itself, and the exponent digits. Each truncation is a parse error
+// (the argument list never closes) rather than a read past the end of the query.
+void test_number_truncated_at_end_of_input()
+{
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:12"));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1.5"));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e"));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e5"));
+}
+
+// Uppercase `E`, an explicit `+` exponent sign and a negative fraction are all accepted number
+// forms; a digit run also stops at the first byte *above* '9', not only below '0'.
+void test_number_exponent_and_sign_forms()
+{
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"sensor\":{\"value\":70}}}",
+                             run("{ sensor(id: 7, a: 1E2, b: 1e+2, c: -1.5) { value } }"));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e2}"));
+}
+
+// The exponent accumulator is clamped, so a literal with an absurd exponent cannot run it away;
+// the document still parses and the sibling integer argument is unaffected.
+void test_number_huge_exponent_is_clamped()
+{
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"sensor\":{\"value\":70}}}", run("{ sensor(id: 7, big: 1e4000) { value } }"));
+}
+
+// A value token that is neither a string, a number nor one of the three keywords is a parse error:
+// both a byte below '0' and a bareword enum, which this subset does not support.
+void test_unsupported_value_tokens_fail()
+{
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: !) }"));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUM) }"));
+}
+
+// A resolver that reports a string value with a null pointer serialises as an empty JSON string
+// rather than dereferencing it.
+void test_resolver_null_string_pointer()
+{
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"nullstr\":\"\"}}", run("{ nullstr }"));
+}
+
+// With no resolver installed at all every leaf is null; the document still parses and executes.
+void test_no_resolver_yields_all_null()
+{
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK,
+                          dws_graphql_execute("{ name uptime }", 15, nullptr, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"name\":null,\"uptime\":null}}", out);
+}
+
+// An in-scope argument whose *name* does not match is walked past by every accessor: the int,
+// string and bool lookups each report "absent" rather than matching on type alone.
+void test_arg_name_mismatch_is_skipped()
+{
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"sensor\":{\"value\":-1}}}", run("{ sensor(other: 7) { value } }"));
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"greet\":\"hi ?\"}}", run("{ greet(other: \"x\") }"));
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"flag\":false}}", run("{ flag(other: true) }"));
+}
+
+// A zero-capacity output buffer fails closed before a single byte is written.
+void test_zero_capacity_output_fails()
+{
+    char buf[4] = {'x', 'x', 'x', 'x'};
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, buf, 0));
+    TEST_ASSERT_EQUAL_CHAR('x', buf[0]); // untouched
+}
+
+// The error document obeys the same capacity discipline as the data document: a buffer too small
+// to hold it emits nothing at all, and one that holds it exactly leaves no room for a terminator.
+void test_error_document_capacity_edges()
+{
+    static const char kErr[] = "{\"errors\":[{\"message\":\"syntax error\"}]}"; // 39 bytes
+    char buf[64];
+
+    memset(buf, 0, sizeof(buf));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{", 1, resolver, buf, 8));
+    TEST_ASSERT_EQUAL_CHAR('\0', buf[0]); // overflowed on the first write -> nothing emitted
+
+    memset(buf, 0, sizeof(buf));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,
+                          dws_graphql_execute("{", 1, resolver, buf, sizeof(kErr) - 1));
+    TEST_ASSERT_EQUAL_STRING(kErr, buf); // exactly fills the buffer; the NUL is not written
+}
+
+// A data document that fills the buffer exactly is still an overflow: there is no room for the NUL
+// terminator, so the caller is told rather than handed an unterminated string.
+void test_data_document_exact_fit_is_overflow()
+{
+    char buf[32];
+    memset(buf, 0, sizeof(buf));
+    // `{"data":{"a":null}}` is exactly 19 bytes, so 19 fails and 20 succeeds.
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_OVERFLOW, dws_graphql_execute("{a}", 3, resolver, buf, 19));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK, dws_graphql_execute("{a}", 3, resolver, buf, 20));
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"a\":null}}", buf);
+}
+
+// A bareword (enum-style) argument value longer than parse_value's small keyword scratch. This is a
+// REGRESSION TEST for a stack buffer overflow: parse_name() was bounded only by DWS_GQL_NAME_MAX
+// (32) while parse_value() handed it a char[8] that only ever needs "true"/"false"/"null", so a
+// longer bareword - straight from untrusted query text - wrote up to 24 bytes past the end of a
+// stack array. parse_name() now takes the destination capacity and rejects instead.
+static void test_long_bareword_argument_does_not_overflow_keyword_scratch()
+{
+    // Rejected as a parse error - a bareword that is not true/false/null is not a value in this
+    // subset, whatever its length - but the point is that it is rejected WITHOUT writing past kw[].
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: LONGENUMVALUE) }"));
+    // Well past DWS_GQL_NAME_MAX (32) as well, not just past the scratch.
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,
+                          run_rc("{ f(a: AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDD) }"));
+    // Exactly at the old 8-byte scratch boundary.
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUMVALU) }"));
+    // The keywords the scratch actually exists for still parse.
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: true) }"));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: false) }"));
+    TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: null) }"));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_long_bareword_argument_does_not_overflow_keyword_scratch);
+    RUN_TEST(test_lexer_whitespace_and_eof_comment);
+    RUN_TEST(test_underscore_field_name);
+    RUN_TEST(test_query_keyword_without_operation_name);
+    RUN_TEST(test_trailing_backslash_in_string_arg);
+    RUN_TEST(test_number_truncated_at_end_of_input);
+    RUN_TEST(test_number_exponent_and_sign_forms);
+    RUN_TEST(test_number_huge_exponent_is_clamped);
+    RUN_TEST(test_unsupported_value_tokens_fail);
+    RUN_TEST(test_resolver_null_string_pointer);
+    RUN_TEST(test_no_resolver_yields_all_null);
+    RUN_TEST(test_arg_name_mismatch_is_skipped);
+    RUN_TEST(test_zero_capacity_output_fails);
+    RUN_TEST(test_error_document_capacity_edges);
+    RUN_TEST(test_data_document_exact_fit_is_overflow);
     RUN_TEST(test_malformed_tokens_fail);
     RUN_TEST(test_query_keyword_forms_fail);
     RUN_TEST(test_pool_limits);
