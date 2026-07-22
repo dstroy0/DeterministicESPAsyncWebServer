@@ -41,3 +41,11 @@ docs/reference/*.pdf
 
 # Espressif/Waveshare Flash Download Tool (local flashing GUI, ~26 MB binary) - not committed.
 tools/flash_download_tool/
+
+# local coverage scratch (tools/ci/covrun.py, covbase.py)
+.pio_*/
+.cov_*/
+.cov_*.xml
+.covbase*.log
+coverage_reports/
+*.gcov
