@@ -22,6 +22,8 @@
 #include <stdint.h>
 #include <time.h>
 
+#include "shared_primitives/time_compat.h"
+
 /**
  * @brief Write @p epoch as an RFC 7231 IMF-fixdate into @p out (always GMT).
  * @return bytes written (excluding the NUL), or 0 with an empty @p out when @p epoch is 0,
@@ -37,7 +39,7 @@ inline size_t dws_http_date(time_t epoch, char *out, size_t out_cap)
         return 0;
     }
     struct tm tmv; // reentrant: gmtime_r, never the shared static buffer (worker-safe)
-    if (!gmtime_r(&epoch, &tmv))
+    if (!dws_gmtime_r(&epoch, &tmv))
     {
         out[0] = '\0';
         return 0;

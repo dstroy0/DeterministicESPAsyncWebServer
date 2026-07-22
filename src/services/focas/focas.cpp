@@ -12,6 +12,33 @@
 
 #include <string.h>
 
+// C++14 out-of-line definitions for the FocasCommand selector table. The in-class initializers in
+// focas.h declare them; a `static constexpr` member of CLASS type still needs a definition here
+// once it is odr-used (passing one to dws_focas_build() binds it to a const reference, which
+// counts). Without these the link fails with "undefined reference to FocasCommand::read_macro" -
+// it only stayed hidden where the optimizer happened to fold every use. C++17 would make these
+// implicitly inline and let the whole block go away; the library targets C++14.
+constexpr FocasCmd FocasCommand::read_cnc_param;
+constexpr FocasCmd FocasCommand::read_macro;
+constexpr FocasCmd FocasCommand::set_macro;
+constexpr FocasCmd FocasCommand::sys_info;
+constexpr FocasCmd FocasCommand::read_alarm;
+constexpr FocasCmd FocasCommand::read_prg_num;
+constexpr FocasCmd FocasCommand::read_seq_num;
+constexpr FocasCmd FocasCommand::read_alarm_info;
+constexpr FocasCmd FocasCommand::read_feedrate;
+constexpr FocasCmd FocasCommand::read_spindle;
+constexpr FocasCmd FocasCommand::read_position;
+constexpr FocasCmd FocasCommand::read_diag;
+constexpr FocasCmd FocasCommand::read_spindle2;
+constexpr FocasCmd FocasCommand::read_datetime;
+constexpr FocasCmd FocasCommand::read_servo_load;
+constexpr FocasCmd FocasCommand::read_axis_names;
+constexpr FocasCmd FocasCommand::read_spindle_names;
+constexpr FocasCmd FocasCommand::read_cnc_param3;
+constexpr FocasCmd FocasCommand::read_macro_dbl;
+constexpr FocasCmd FocasCommand::read_pmc;
+
 // FOCAS is big-endian throughout.
 static size_t put16be(uint8_t *p, uint16_t v)
 {
