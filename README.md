@@ -6,18 +6,17 @@
 
 ![Version](https://img.shields.io/badge/version-v7.31.0-blue)
 
-A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1 and HTTP/2 (with HTTP/3 over QUIC, host-tested), WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
+A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1/2/and 3 over QUIC, HTTPS/TLS/DTLS, SSH (full OpenSSH interop), Telnet, SNMP, and post quantum crypto. This is designed for many use cases.
 
 # Active development
 
 > [!WARNING]
-> **Expect breaking changes.** This library ships fast: on a busy day that can mean dozens of new features and several public-API breaks.
-> **We fix things the right way and put security and correctness first, even when that breaks backwards compatibility**
+> **Expect breaking changes**
+> **We fix things the right way and put security and correctness first**
+> **We do not write backwards-compatibility shims**
+> **We only support the latest library, toolchains, and platforms**
+> **Releases are version-tagged**
 >
-> - include paths, method signatures, defaults, and wire behavior can change between releases.
->   **We do not write backwards-compatibility shims**
-> - We **only** support the current library, toolchains, and platforms; removing cruft is the price of a clean, auditable, deterministic core.
->   **Releases are version-tagged**
 > - Pin an exact version if you need stability until we lock the core.
 >   **The code is the source of truth**
 > - Read [CHANGELOG.md](docs/CHANGELOG.md) before every upgrade.
@@ -27,11 +26,11 @@ A multi-protocol network server for ESP32 with a fully deterministic memory foot
 > [!WARNING]
 > **THIS LIBRARY HAS NOT BEEN AUDITED BY A 3RD PARTY**
 >
-> - I am finished implementing HTTP/3. I need to close some more crypto gaps and then the core will be locked for 30 days.
->   We will only apply patches to the core during this time, no behavior changes, only taping together broken stuff.
->   We need the core stability to ease contribution & collaboration. There has been zero time for outside ideas to flow in.
+> I am nearly finished with an audit of test/ and then I need to audit src/ one more time before I lock the core for 30 days.
+> Crypto feature parity was achieved, but the branch and line coverage is lacking. Working toward 100%.
+> We need the core stability to ease contribution & collaboration. There has been zero time for outside ideas to flow in.
 >
->     **YOU ARE THE 3RD PARTY**
+> **YOU ARE THE 3RD PARTY**
 >
 > - Your contributions are valuable. Please report your findings, If your bug is untracked and genuine you will be credited prominently
 >   in the src/ in docs/BUGS.md and any other system it touches, could be architecture, api, whichever subsystem
@@ -56,9 +55,13 @@ Every workflow that runs on `main`, grouped by what it checks:
 
 **[Read the Full Documentation Here 📖](https://dstroy0.github.io/DeterministicESPAsyncWebServer/)**
 
-**[Interactive build configurator ⚙️](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html)** lets you tick the features you need, tune their knobs, and copy out a ready-made `platformio.ini` `build_flags` block (or the `#define`s). Dependencies resolve automatically and only non-default values are emitted. It is generated from `src/ServerConfig.h`, so it always matches the library.
+**[Interactive build configurator ⚙️](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html)** lets you pick the features you need, tune their knobs, and copy out a ready-made `platformio.ini` `build_flags` block (or the `#define`s). Dependencies resolve automatically and only non-default values are emitted. It is generated from `src/ServerConfig.h`, so it always matches the library.
 
 The technical reference documentation has been moved to a dedicated landing page to provide a better reading experience. You can also view the local markdown copy at [docs/README.md](docs/README.md). See the [feature reference](docs/FEATURES.md) for every option and the [secure-boot & flash-encryption hardening guide](docs/SECURE_BOOT.md) for production deployment. Wiring a codec to a PLC, inverter, power-grid sensor, or another board? The [hardware hookup & settings guide](docs/HARDWARE_HOOKUP.md) covers the transceivers, ports, and settings.
+
+There are **per-variant** (classic, C6, P4, etc.) default values (psram, flash) to allow operation out of the box. Your application may require tuning. Moving the TLS arena and connection pool to psram allows for a stupid amount of concurrent connections for this device class.
+
+There are a lot of hot path low hanging fruit perf opts that will speed this up further, framers and masking, working on that between raising line/branch coverage.
 
 ## Using in the Arduino IDE
 
@@ -66,15 +69,14 @@ Install the **esp32 by Espressif** boards package (3.x), then install this libra
 
 Optional features are compile-time flags. In the Arduino IDE there is no `build_flags` field, and a `#define` in your `.ino` does **not** reach the library's separately-compiled `.cpp` files, so to enable a feature you place a file named **`build_opt.h`** in the same folder as your sketch (the one file the IDE feeds to every translation unit). The easy way:
 
-1. Open the [interactive configurator](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html) and tick the features you want (dependencies resolve for you).
+1. Open the [interactive configurator](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html) and pick the features you want (dependencies resolve for you).
 2. Switch to the **Arduino build_opt.h** tab and click **Download**.
 3. Drop the downloaded `build_opt.h` next to your `.ino` and compile.
 
 PlatformIO users ignore all of this and just use `build_flags` in `platformio.ini` (the configurator's default tab emits that block).
+ESP-IDF supported as arduino-as-ESP-IDF component.
 
 ## Overview
-
-A zero-heap, asynchronous multi-protocol server library for ESP32. Network events fire asynchronously from the lwIP stack (driven by the WiFi ISRs) into fixed event queues that dedicated worker task(s) drain on their own core, leaving your `loop()` free; every connection, request, and protocol buffer is statically allocated in BSS, so the memory footprint is fixed at link time and no heap is touched after `begin()`. It serves HTTP/1.1 and HTTP/2 (with WebSocket and Server-Sent Events), with HTTP/3 over QUIC (host-tested), and, optionally, HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
 <!-- BEGIN GENERATED API FLOW (docs/utilities/gen_api_flow.py) -->
 
@@ -662,16 +664,6 @@ _40 hard dependencies, 3 PSRAM gates, 17 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 
-Optional integrations (these build on their own; the named feature is inert or
-reduced until you also enable the other flag):
-
-- **WEBHOOK** uses **HTTP_CLIENT** to send; without it `dws_webhook_post()` returns `-1`.
-- **OAUTH2** compiles its token-endpoint POST helpers only when **HTTP_CLIENT** is on.
-- **DASHBOARD** adds live control widgets when **WEBSOCKET** is on; the SSE value stream works without it.
-
-The same guards live in [src/ServerConfig.h](src/ServerConfig.h) and the
-[Configuration example](examples/Foundation/Configuration).
-
 ## Build Footprint
 
 The jump from a bare sketch to a running server is almost entirely the WiFi/lwIP stack, not this library: an empty RTOS/Arduino sketch is ~228 KB flash / ~21 KB RAM, while the **default server** (HTTP + WebSocket + SSE + multipart + file serving + Basic auth) is ~734 KB flash / ~65 KB RAM. From there each feature adds only what the table below shows. TLS's larger RAM is the fixed mbedTLS arena (`DETWS_TLS_ARENA_SIZE`, 48 KB default); an outbound client links no code until a sketch actually calls it.
@@ -768,7 +760,7 @@ Per-feature examples are under [`examples/`](examples/).
 ## Compatibility
 
 - **Chips**: ESP32 (all variants)
-- **Frameworks**: Arduino Core (2.x and 3.x), PlatformIO
+- **Frameworks**: Arduino Core (2.x and 3.x), PlatformIO, ESP-IDF (arduino-as-ESP-IDF component)
 
 ## Licensing & Commercial Use
 
