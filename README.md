@@ -11,11 +11,12 @@ A multi-protocol network server for ESP32 with a fully deterministic memory foot
 # Active development
 
 > [!WARNING]
-> **Expect breaking changes**
-> **We fix things the right way and put security and correctness first**
-> **We do not write backwards-compatibility shims**
-> **We only support the latest library, toolchains, and platforms**
-> **Releases are version-tagged**
+>
+> 1. **Expect breaking changes**
+> 2. **We fix things the right way and put security and correctness first**
+> 3. **We do not write backwards-compatibility shims**
+> 4. **We only support the latest library, toolchains, and platforms**
+> 5. **Releases are version-tagged**
 >
 > - Pin an exact version if you need stability until we lock the core.
 >   **The code is the source of truth**
