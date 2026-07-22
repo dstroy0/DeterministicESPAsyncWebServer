@@ -13,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`db34f89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db34f890fdd9977aa3c8df4e6ffb9ac5d9d95c68))
+- update CHANGELOG.md [skip ci] ([`688e0aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/688e0aa42305c5a7e317b4736816b8eaf4ddb536))
 - update CHANGELOG.md [skip ci] ([`d1d3cae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1d3cae0bc2f39e403998466fcb708f262dbf1a4))
 - update CHANGELOG.md [skip ci] ([`c635c37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c635c37f92f03f5239b05cc937fa71654a381de6))
 - update CHANGELOG.md [skip ci] ([`626b69f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/626b69f8cd456c135e3176c42a29f913b668247c))
@@ -37,6 +39,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`f915447`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f915447013a90263bf584d26a1faac7fa005d0ff))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`37d5456`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37d5456e62fcb58814a2b6b86854eeee1718d6bc))
 - update ESP32 build footprints [skip ci] ([`f596319`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f596319783ab987e62ae4c378630c4c8de6c7da0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d9cac14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9cac14e5ed2a37fee50aff1ad0c72113933e20c))
@@ -49,6 +52,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- Waveshare HMMD 24GHz mmWave micro-motion radar codec ([`36ad3c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36ad3c553218c3f106d76565c4803a532ff56dca))
 - RCWL-0516 presence sensor + shared one-GPIO presence facade ([`882c38a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/882c38ac782135418ab54875807083b309916e31))
 - support the HLK-LD2410B, and decode command ACKs ([`3ae0466`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ae0466be441afc6dede863038e433c45259f605))
 - FANUC Stream Motion (J519) UDP codec ([`bfbdcfd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfbdcfdd6b70a7ed71123410aa2d1821feef4000))
