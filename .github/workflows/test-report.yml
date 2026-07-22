@@ -141,20 +141,29 @@ jobs:
           fi
 
       # FULL: regenerate test/TEST_REPORT.md + test/coverage.xml from the whole matrix.
+      # The exit code is captured rather than discarded: the report + coverage commit below must still
+      # run on a red matrix, but the job has to fail afterwards. See "Gate on test results".
       - name: Run the whole suite (report + coverage)
+        id: run_full
         if: ${{ steps.sel.outputs.mode == 'full' }}
-        run: bash test/run_tests.sh --coverage || true
+        run: |
+          rc=0
+          bash test/run_tests.sh --coverage || rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
 
       # AFFECTED: run only the touched envs, then overlay onto the committed report + coverage baseline.
       - name: Run the affected suite and merge
+        id: run_affected
         if: ${{ steps.sel.outputs.mode == 'affected' }}
         run: |
+          rc=0
           bash test/run_tests.sh --coverage \
             --report-out partial_report.md \
             --cov-baseline test/coverage.xml --cov-changed changed_src.txt \
-            ${{ steps.sel.outputs.envs }} || true
+            ${{ steps.sel.outputs.envs }} || rc=$?
           python3 test/merge_report.py test/TEST_REPORT.md partial_report.md test/TEST_REPORT.md
           rm -f partial_report.md changed_all.txt changed_src.txt
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
 
       - name: Format TEST_REPORT.md with Prettier
         if: ${{ steps.sel.outputs.mode != 'none' }}
@@ -232,3 +241,25 @@ jobs:
           else
             echo "Report + coverage unchanged."
           fi
+
+      # Fail the job when the matrix was red. Deliberately the LAST step: the commit above must still
+      # publish the report + coverage for a failing run, which is what the old `|| true` bought - at the
+      # cost of the job never failing at all. Capture-then-raise keeps the artifact AND restores the gate.
+      #
+      # The report grep is a second, independent check: it catches a failure that the runner's exit code
+      # misses - notably merge_report.py overlaying an empty partial, which silently rewrites the
+      # committed report verbatim and exits 0.
+      - name: Gate on test results
+        if: ${{ always() && steps.sel.outputs.mode != 'none' }}
+        run: |
+          rc="${{ steps.run_full.outputs.rc || steps.run_affected.outputs.rc || '0' }}"
+          if [ "$rc" != "0" ]; then
+            echo "::error::test suite exited $rc - see TEST_REPORT.md"
+            exit 1
+          fi
+          if grep -q '❌' test/TEST_REPORT.md; then
+            echo "::error::TEST_REPORT.md reports failures"
+            grep -n '❌' test/TEST_REPORT.md | head -20
+            exit 1
+          fi
+          echo "All suites green."
