@@ -486,14 +486,21 @@
     "example": "L7-Application/OpcUa",
     "flags": "-DDWS_ENABLE_OPCUA=1",
     "board": "esp32dev",
-    "flash_bytes": 761837,
+    "flash_bytes": 761889,
     "ram_bytes": 92108
+  },
+  "OPCUA+EUROMAP77": {
+    "example": "L7-Application/Euromap77",
+    "flags": "-DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_EUROMAP77=1",
+    "board": "esp32dev",
+    "flash_bytes": 768701,
+    "ram_bytes": 92276
   },
   "OPCUA+OPCUA_CLIENT": {
     "example": "L7-Application/OpcUaClient",
     "flags": "-DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_OPCUA_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 766225,
+    "flash_bytes": 766305,
     "ram_bytes": 94724
   },
   "OPCUA+ROBOTICS": {
