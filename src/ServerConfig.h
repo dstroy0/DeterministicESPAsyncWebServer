@@ -2063,6 +2063,27 @@
 #endif
 
 /**
+ * @brief FANUC Stream Motion (option J519) UDP codec (`services/fanuc_j519`).
+ *
+ * Default off. The robot counterpart to `DWS_ENABLE_FOCAS` (which speaks to FANUC CNCs): Stream
+ * Motion is the real-time external motion interface on R-30iB / R-30iA robot controllers, where an
+ * external controller streams joint or Cartesian setpoints over UDP 60015 at the controller's
+ * interpolation rate (typically 125 / 250 Hz) and the robot answers each command with its measured
+ * Cartesian pose, joint pose, and per-axis motor current. Zero-heap and symmetric: `dws_j519_build_*`
+ * emit the Start / Motion / Stop / Request packets and `dws_j519_parse_*` decode the Robot Status /
+ * Ack replies, plus the mirrored pair so the device can stand in as a robot simulator for bench work.
+ * Every field is LITTLE-endian (unlike FOCAS) and floats are IEEE-754 binary32. The packet type word
+ * is reused across directions (0 = Start or Robot Status, 3 = Request or Ack), so the direction is in
+ * the function name and each parser requires its packet's exact length. Field offsets, sizes, type
+ * codes, I/O-type and threshold enumerations, and the status bits were taken from the public Wireshark
+ * dissector fanuc-stream-motion/packet-fanuc-stream-motion-j519 - no FANUC source or header is used.
+ * Pure codec, host-tested; the caller owns the UDP socket and the real-time cadence.
+ */
+#ifndef DWS_ENABLE_FANUC_J519
+#define DWS_ENABLE_FANUC_J519 0
+#endif
+
+/**
  * @brief BACnet/IP BVLC + NPDU codec (`services/bacnet`).
  *
  * Default off. A zero-heap framing codec for the ASHRAE 135 building-automation network

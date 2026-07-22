@@ -1444,7 +1444,9 @@
     "Unsuspending",
     "Quittungsverzugszeit",
     "Zeichenverzugszeit",
-    "motiondevice"
+    "motiondevice",
+    "SYSRDY",
+    "setpoints"
   ],
   "ignorePaths": [
     "node_modules/**",
