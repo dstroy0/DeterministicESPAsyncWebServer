@@ -20,7 +20,7 @@
 #include <string.h> // memcpy
 
 #ifdef ARDUINO
-#include "services/clock.h" // dws_millis()
+#include "services/clock.h" // dws_millis(), dws_micros()
 #endif
 
 namespace
@@ -31,6 +31,14 @@ uint32_t dma_now()
     return dws_millis();
 #else
     return 0; // host builds have no clock dependency; t_ms is informational
+#endif
+}
+uint32_t dma_now_us()
+{
+#ifdef ARDUINO
+    return dws_micros();
+#else
+    return 0; // host builds have no clock dependency; t_us is informational
 #endif
 }
 } // namespace
@@ -117,6 +125,7 @@ void emit(dma_channel &c, uint8_t id, dws_dma_dir dir, const uint8_t *data, uint
     dws_dma_event ev;
     ev.data = data;
     ev.t_ms = dma_now();
+    ev.t_us = dma_now_us();
     ev.len = len;
     ev.seq = c.seq++;
     ev.channel = id;

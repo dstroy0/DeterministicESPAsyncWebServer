@@ -799,6 +799,21 @@
       "src": ["+<services/dma/dma.cpp>"],
       "tests": ["test_dma"]
     },
+    "native_trace_capture": {
+      "desc": "Pre/post-trigger sample-window assembler (services/trace_capture), v5 high-rate\nacquisition: a continuously-running pre-trigger ring, trigger() freezing it as the window's\npre-trigger half, feed() filling the post-trigger half and firing the sink on completion,\none capture in flight fail-closed (dropped triggers counted), samples fed before begin() /\nafter end() counted dropped, and multiple sequential windows with a correct trace_id\nsequence. Pure host tests (dws_cycles() falls back to a coarse host stand-in; only ordering,\nnot magnitude, is asserted for assembly_cycles).",
+      "flags": [
+        "-DDWS_ENABLE_TRACE_CAPTURE=1",
+        "-DDWS_TC_MAX_WINDOW_SAMPLES=32"
+      ],
+      "src": ["+<services/trace_capture/trace_capture.cpp>"],
+      "tests": ["test_trace_capture"]
+    },
+    "native_ad9238": {
+      "desc": "AD9238 SPI configuration-port codec (services/ad9238): the 16-bit instruction word\n(R/W + byte-count + 13-bit address) for single-byte register writes/reads, the device-update\ntransfer transaction, and the input-validation fail-closed paths (null buffer, undersized\ncap, zero/oversize byte count, out-of-range address). Pure host tests - the SPI clocking and\nthe per-register bit-field meanings are the datasheet's / the application's, not this codec's.",
+      "flags": ["-DDWS_ENABLE_AD9238=1"],
+      "src": ["+<services/ad9238/ad9238.cpp>"],
+      "tests": ["test_ad9238"]
+    },
     "native_forward": {
       "desc": "Interface forwarding plane (services/forward), v5 bridge / router: default-deny,\nan ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the\nsource, the per-rule rate cap (host test clock), send-failure counting, the interface /\nrule table limits, the ingress ACL (byte-pattern permit/deny, first-match, default\naction), policy routing (byte-pattern -> egress, precedence + fail-closed), and the opt-in\ninspection hook. Pure host tests; the DMA-driven wiring is HW-verified.",
       "flags": [

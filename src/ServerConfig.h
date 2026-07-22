@@ -415,6 +415,49 @@
 #endif
 
 // ---------------------------------------------------------------------------
+// Trace capture: pre/post-trigger window assembler (DWS_ENABLE_TRACE_CAPTURE)
+// ---------------------------------------------------------------------------
+//
+// Sits downstream of DWS_ENABLE_DMA (or any other sample source) on a high-rate
+// acquisition front end: dws_tc_feed() is called with every batch of arriving samples
+// and a continuously-running pre-trigger ring always holds the most recent samples;
+// dws_tc_trigger() freezes that ring as the pre-trigger half of a window and the next
+// arriving samples fill the post-trigger half, so the emitted window straddles the
+// trigger instant like a benchtop oscilloscope's pretrigger/posttrigger split. One
+// capture in flight at a time, fail-closed. Storage is static (zero heap) - the sum of
+// the configured pretrigger + posttrigger sample counts must fit DWS_TC_MAX_WINDOW_SAMPLES.
+// See services/trace_capture/trace_capture.h.
+
+/** @brief Enable the pre/post-trigger window assembler (default off). */
+#ifndef DWS_ENABLE_TRACE_CAPTURE
+#define DWS_ENABLE_TRACE_CAPTURE 0
+#endif
+
+/** @brief Max samples a window may hold (pretrigger_samples + posttrigger_samples), static-allocated. */
+#ifndef DWS_TC_MAX_WINDOW_SAMPLES
+#define DWS_TC_MAX_WINDOW_SAMPLES 4096
+#endif
+
+#if DWS_ENABLE_TRACE_CAPTURE && DWS_TC_MAX_WINDOW_SAMPLES < 1
+#error "DeterministicESPAsyncWebServer: DWS_TC_MAX_WINDOW_SAMPLES must be >= 1"
+#endif
+
+// ---------------------------------------------------------------------------
+// AD9238 SPI configuration-port codec (DWS_ENABLE_AD9238)
+// ---------------------------------------------------------------------------
+//
+// A pure codec for the AD9238 dual ADC's low-speed SPI CONFIGURATION port (power-down,
+// output format, output test patterns, offset trim) - NOT its parallel sample-data bus,
+// which is out of an MCU's reach at this part's sample rates. See services/ad9238/ad9238.h
+// for the hardware-verification caveat: the per-register bit fields are transcribed from
+// the datasheet, not yet confirmed against physical silicon.
+
+/** @brief Enable the AD9238 SPI configuration-port codec (default off). */
+#ifndef DWS_ENABLE_AD9238
+#define DWS_ENABLE_AD9238 0
+#endif
+
+// ---------------------------------------------------------------------------
 // Interface forwarding plane (DWS_ENABLE_FORWARD) - v5 hardware ingest
 // ---------------------------------------------------------------------------
 //
