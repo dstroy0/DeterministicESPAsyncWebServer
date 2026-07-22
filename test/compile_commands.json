@@ -84,6 +84,12 @@
     "output": ".pio/build/native/src/network_drivers/transport/tcp.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_ad9238/src/services/ad9238/ad9238.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_AD9238=1 -Itest/mocks -Itest/support -Isrc src/services/ad9238/ad9238.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/ad9238/ad9238.cpp",
+    "output": ".pio/build/native_ad9238/src/services/ad9238/ad9238.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_ads/src/services/ads/ads.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_ADS=1 -Itest/mocks -Itest/support -Isrc src/services/ads/ads.cpp",
     "directory": "@ROOT@",
     "file": "src/services/ads/ads.cpp",
@@ -1380,6 +1386,12 @@
     "output": ".pio/build/native_s7comm/src/services/s7comm/s7comm.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_safety_scl/src/services/safety_scl/safety_scl.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_SAFETY_SCL=1 -Itest/mocks -Itest/support -Isrc src/services/safety_scl/safety_scl.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/safety_scl/safety_scl.cpp",
+    "output": ".pio/build/native_safety_scl/src/services/safety_scl/safety_scl.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_scp/src/services/scp/scp.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SCP=1 -Itest/mocks -Itest/support -Isrc src/services/scp/scp.cpp",
     "directory": "@ROOT@",
     "file": "src/services/scp/scp.cpp",
@@ -1642,6 +1654,12 @@
     "directory": "@ROOT@",
     "file": "src/services/tls_policy/tls_policy.cpp",
     "output": ".pio/build/native_tls_policy/src/services/tls_policy/tls_policy.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_trace_capture/src/services/trace_capture/trace_capture.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_TRACE_CAPTURE=1 -DDWS_TC_MAX_WINDOW_SAMPLES=32 -Itest/mocks -Itest/support -Isrc src/services/trace_capture/trace_capture.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/trace_capture/trace_capture.cpp",
+    "output": ".pio/build/native_trace_capture/src/services/trace_capture/trace_capture.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_udp_telemetry/src/services/udp_telemetry/udp_telemetry.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_UDP_TELEMETRY=1 -Itest/mocks -Itest/support -Isrc src/services/udp_telemetry/udp_telemetry.cpp",
