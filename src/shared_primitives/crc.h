@@ -5,10 +5,13 @@
  * @file crc.h
  * @brief Parameterized CRC engine - one source of truth for every cyclic redundancy check.
  *
- * A dozen-plus codecs in this tree (C37.118, DF1, DNP3, DShot, EnOcean, RTCM3, hardware health,
- * Modbus Plus, NEMA TS2, SDI-12, SHT3x, the WAL, ...) each hand-rolled their own CRC loop under a
- * different local name, differing only in a polynomial and a couple of flags - the same duplication
- * `endian.h` was written to end for byte packing. This is that one implementation.
+ * Sixteen codecs in this tree each hand-rolled their own CRC loop under a different local name,
+ * differing only in a polynomial and a couple of flags - the same duplication `endian.h` was written
+ * to end for byte packing. This is that one implementation, and thirteen of them now call it
+ * (C37.118, DF1, DNP3, EnOcean, INTERBUS, Modbus, Modbus Plus, NEMA TS2, raw L2, SDI-12, SHT3x,
+ * Thread, Zigbee). The three that do not are excluded on purpose, not overlooked: the WAL is
+ * table-driven for bulk log throughput, RTCM3's CRC-24Q seed has no preset here yet, and DShot's
+ * "CRC" is a 4-bit XOR fold rather than a CRC at all. See the ROADMAP migration entry.
  *
  * It is the standard Rocksoft / Williams model, so any published CRC is expressible as six numbers
  * and needs no new code:

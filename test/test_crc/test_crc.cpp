@@ -135,9 +135,13 @@ void test_width_is_respected(void)
 // Sixteen services in this tree each hand-rolled a CRC loop before this engine existed. Those loops
 // ARE the reference implementations, and they are interop-proven against real peers - so the engine
 // replacing them has to agree with them byte for byte, not merely reproduce a catalogue check value.
-// Each loop below is transcribed verbatim from the service named above it (the primitives env
+// Each loop below is transcribed verbatim from the service that owned it (the primitives env
 // compiles no service sources, so they cannot simply be linked). Any preset that disagrees fails
-// here rather than corrupting a frame after a migration.
+// here rather than corrupting a frame.
+//
+// Thirteen of those services now call the engine instead, so these transcriptions are what still
+// pins the behaviour they used to have: do NOT "simplify" them to call dws_crc, or this test starts
+// comparing the engine against itself and proves nothing.
 
 // services/thread (spinel FCS), services/mbplus, services/nema_ts2
 static uint16_t ref_x25(const uint8_t *d, size_t n)

@@ -853,20 +853,32 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       CRC of `"123456789"`), and the engine is **diffed against the in-tree hand-rolled loops** across
       every length 0..64, so a preset meant to retire one of them is proven byte-identical to the
       interop-tested code it replaces rather than merely plausible.
-- [ ] **Migrate the hand-rolled CRCs onto the shared engine** (M) - the consolidation the CRC engine
-      was written to enable. **16 services** still carry their own CRC loop: `c37118`, `df1`, `dnp3`,
-      `dshot`, `enocean`, `gnss/rtcm3`, `interbus`, `mbplus`, `modbus`, `nema_ts2`, `rawl2`, `sdi12`,
-      `sht3x`, `thread`, `wal`, `zigbee` - the same duplication `endian.h` was created to end. Thirteen
-      of them map onto a shipped preset and are already proven byte-identical to it by `test_crc`, so
-      those migrations are mechanical and regression-guarded. Three need a decision first, and none
-      should be forced: - `wal` is **table-driven** (256-entry CRC-32 lookup) because it checksums bulk log records, not
+- [x] **Migrate the hand-rolled CRCs onto the shared engine** (M) - _13 of 16 done; the remaining
+      three are deliberate exclusions, see below._ The consolidation the CRC engine was written to
+      enable. Sixteen services each carried their own CRC loop - the same duplication `endian.h` was
+      created to end. Thirteen mapped onto a shipped preset and are now migrated, one commit each so
+      a regression bisects to a single codec: `c37118`, `df1`, `dnp3`, `enocean`, `interbus`,
+      `mbplus`, `modbus`, `nema_ts2`, `rawl2`, `sdi12`, `sht3x`, `thread`, `zigbee`. Net -42 lines,
+      and every service's own suite stayed green (150 cases). The substitutions are proven rather
+      than assumed: `test_crc` diffs the shared engine against each of those exact loops over every
+      length 0..64, so "byte-identical" is asserted in CI, not argued in a commit message.
+      Two of them also stopped needing a scratch buffer - `zigbee` (control byte + payload) and `df1`
+      (data + a trailing ETX) CRC two non-adjacent regions, which is what the engine's
+      begin/update/final split exists for. Note their running value is the engine's internal
+      register, held unreflected until `final()` for a reflected CRC, so it is not interchangeable
+      with the old right-shift intermediate - those call sites were converted whole rather than one
+      call at a time.
+      The remaining three are **not** pending work; each is excluded for a reason:
+    - `wal` is **table-driven** (256-entry CRC-32 lookup) because it checksums bulk log records, not
       frames - the one place the flash-vs-throughput trade goes the other way. Migrate only if
-      measurement says the bitwise cost is acceptable; otherwise leave it and note why. - `gnss/rtcm3` uses **CRC-24Q** (poly `0x864CFB`, init `0`) - same polynomial as CRC-24/OPENPGP
-      but a different seed, so no shipped preset covers it. Adding one needs its check value
-      confirmed against a published source first, per [[implement-protocols-faithfully]]. - `dshot` is **not a CRC at all** - a 4-bit XOR fold of the three nibbles - so it has nothing to
-      migrate onto and should be left alone. (An earlier revision of this roadmap also listed
-      `hw_health` as hand-rolling a CRC; it does not - it only consumes a `crc_ok` verdict.)
-      Migrate per service with its own interop suite green, one commit each, not as one sweep.
+      measurement says the bitwise cost is acceptable; otherwise it stays as it is.
+    - `gnss/rtcm3` uses **CRC-24Q** (poly `0x864CFB`, init `0`) - same polynomial as CRC-24/OPENPGP but
+      a different seed, so no shipped preset covers it. Adding one needs its check value confirmed
+      against a published source first rather than computed with this engine and asserted against
+      itself, which would prove nothing.
+    - `dshot` is **not a CRC at all** - a 4-bit XOR fold of the three nibbles - so it has nothing to
+      migrate onto. (An earlier revision of this roadmap also listed `hw_health` as hand-rolling a CRC;
+      it does not - it only consumes a `crc_ok` verdict.)
 
 ## Low-level networking (raw Layer 2)
 
