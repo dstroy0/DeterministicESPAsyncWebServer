@@ -360,7 +360,7 @@
     "example": "Drivers/Ld2410",
     "flags": "-DDWS_ENABLE_LD2410=1",
     "board": "esp32dev",
-    "flash_bytes": 270681,
+    "flash_bytes": 270685,
     "ram_bytes": 21576
   },
   "LOGBUF": {
