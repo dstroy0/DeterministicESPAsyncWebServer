@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`f72be48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f72be484f874a98a4bed38fcf14cf65d5a401cd4))
+- update CHANGELOG.md [skip ci] ([`58359fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58359fcb73f0e6ecc7879afa2e3398e608bf07be))
 - update CHANGELOG.md [skip ci] ([`ee77749`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee77749615bded63aff58627c5c89f8a57d44c3e))
 - update CHANGELOG.md [skip ci] ([`5866f01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5866f01c3537c1a2b03c87a752d4fb1114b376e5))
 - gate the job on test results instead of discarding them ([`91adf56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91adf565af92ceaf141ac655069ad123d29a4728))
@@ -28,6 +30,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`f596319`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f596319783ab987e62ae4c378630c4c8de6c7da0))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d9cac14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9cac14e5ed2a37fee50aff1ad0c72113933e20c))
 - update ESP32 build footprints [skip ci] ([`fbbbad8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fbbbad862975b472e1ac34d135f869a6bf7ccc20))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6bdfef0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bdfef0ffd77a294e7b7611ab8e008785c928237))
 - update ESP32 build footprints [skip ci] ([`737ec03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/737ec031002c44f415ffc4ac6ec8e2a3df5258c3))
@@ -37,6 +41,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- feat(dpa/cpa) side channel analysis engine ([`7f5cf51`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f5cf51ac67b2368b5b93fa8ce39c76797889f3c))
 - EUROMAP 77 (OPC 40077) IMM_MES_Interface model ([`50c00a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50c00a58b77f1adbcceee7c14b881c8a00f78784))
 
 ### Refactor
