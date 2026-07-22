@@ -18,6 +18,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`eb21e0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb21e0e154f15c7bc18e3d018c20f4e72d084bad))
+- update CHANGELOG.md [skip ci] ([`befeb91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/befeb91bd5c16117ce56719f460f134a10b0f422))
 - update test report + coverage [skip ci] ([`844f082`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/844f082bf192512d047b03e7b4ffdea6dafa5610))
 - update CHANGELOG.md [skip ci] ([`6dc6b0f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6dc6b0f7bee13a9e0b3d0b57c62fe9b16f5af0c8))
 - update test report + coverage [skip ci] ([`db34f89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db34f890fdd9977aa3c8df4e6ffb9ac5d9d95c68))
@@ -48,6 +50,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`06a3a20`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06a3a20d6a9aa4fff4d24f88c99693caa4999b8c))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f38676d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f38676d9f80a90aeb1c5686d53f873b319b7b533))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ca853a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca853a3e3fa481221216d938f3aa033af77d01ac))
 - update ESP32 build footprints [skip ci] ([`f915447`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f915447013a90263bf584d26a1faac7fa005d0ff))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`37d5456`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37d5456e62fcb58814a2b6b86854eeee1718d6bc))
@@ -62,6 +66,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- parameterized CRC engine ([`73f28fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73f28fc6895b69c0d4903877601de24d0a7f772c))
+- IEC 61784-3 black-channel Safety Communication Layer primitives ([`7964617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7964617a07205f7fcbf0fee6a3949cccf0ab754b))
 - Waveshare HMMD 24GHz mmWave micro-motion radar codec ([`36ad3c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36ad3c553218c3f106d76565c4803a532ff56dca))
 - RCWL-0516 presence sensor + shared one-GPIO presence facade ([`882c38a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/882c38ac782135418ab54875807083b309916e31))
 - support the HLK-LD2410B, and decode command ACKs ([`3ae0466`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ae0466be441afc6dede863038e433c45259f605))
