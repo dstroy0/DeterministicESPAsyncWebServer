@@ -618,6 +618,12 @@
     "output": ".pio/build/native_failsafe/src/services/failsafe/failsafe.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_fanuc_j519/src/services/fanuc_j519/fanuc_j519.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_FANUC_J519=1 -Itest/mocks -Itest/support -Isrc src/services/fanuc_j519/fanuc_j519.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/fanuc_j519/fanuc_j519.cpp",
+    "output": ".pio/build/native_fanuc_j519/src/services/fanuc_j519/fanuc_j519.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_fdc2214/src/services/fdc2214/fdc2214.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_FDC2214=1 -Itest/mocks -Itest/support -Isrc src/services/fdc2214/fdc2214.cpp",
     "directory": "@ROOT@",
     "file": "src/services/fdc2214/fdc2214.cpp",
@@ -1330,6 +1336,12 @@
     "directory": "@ROOT@",
     "file": "src/services/rawl2/rawl2.cpp",
     "output": ".pio/build/native_rawl2/src/services/rawl2/rawl2.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_rcwl0516/src/services/rcwl0516/rcwl0516.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_RCWL0516=1 -Itest/mocks -Itest/support -Isrc src/services/rcwl0516/rcwl0516.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/rcwl0516/rcwl0516.cpp",
+    "output": ".pio/build/native_rcwl0516/src/services/rcwl0516/rcwl0516.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_relay/src/services/relay/relay.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_RELAY=1 -Itest/mocks -Itest/support -Isrc src/services/relay/relay.cpp",
