@@ -7,6 +7,7 @@
  */
 
 #include "services/nema_ts2/nema_ts2.h"
+#include "shared_primitives/crc.h" // DWS_CRC16_X25
 
 #if DWS_ENABLE_NEMA_TS2
 
@@ -14,15 +15,9 @@
 
 uint16_t dws_nema_ts2_crc(const uint8_t *bytes, size_t len)
 {
-    // CRC-16/X-25: reflected poly 0x8408 (reverse of 0x1021), init 0xFFFF, xorout 0xFFFF.
-    uint16_t crc = 0xFFFF;
-    for (size_t i = 0; i < len; i++)
-    {
-        crc ^= bytes[i];
-        for (int b = 0; b < 8; b++)
-            crc = (crc & 1) ? (uint16_t)((crc >> 1) ^ 0x8408) : (uint16_t)(crc >> 1);
-    }
-    return (uint16_t)~crc;
+    // CRC-16/X-25: reflected poly 0x8408 (reverse of 0x1021), init 0xFFFF, xorout 0xFFFF. test_crc
+    // diffs the shared engine against the loop that used to live here over every length 0..64.
+    return (uint16_t)dws_crc(&DWS_CRC16_X25, bytes, len);
 }
 
 size_t dws_nema_ts2_build(uint8_t address, uint8_t control, uint8_t frame_type, const uint8_t *data, size_t data_len,
