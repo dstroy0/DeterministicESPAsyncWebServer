@@ -1693,7 +1693,7 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       host-testable by injecting pin levels against a fake clock via `dws_millis`), surfaced to the web
       stack as a boolean presence event - the same one-GPIO presence facade the HMMD OUT pin and other
       bare-output detectors (PIR, HB100) can reuse.
-- [ ] **HLK-LD2410B (Bluetooth variant of the shipped LD2410)** (S) - the LD2410**B** is HiLink's
+- [x] **HLK-LD2410B (Bluetooth variant of the shipped LD2410)** (S) - the LD2410**B** is HiLink's
       BLE-equipped build of the same 24 GHz FMCW presence radar, speaking the **same `FD FC FB FA` framed
       UART protocol** the shipped `services/ld2410` codec already builds and parses
       ([datasheet](https://en.ai-thinker.com/Uploads/file/20231016/20231016032622_13559.pdf)). So this is a
@@ -1703,6 +1703,20 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       LD2410B-only config commands (Bluetooth enable / permission, MAC query) to the `FD FC FB FA` command
       encoders. The BLE control channel itself is out of scope for the wired driver - the UART report / config
       path is the shared surface.
+      SHIPPED - `services/ld2410` now covers the B as a supported part. Added the LD2410B-only config
+      commands over the wired UART: Bluetooth on/off (`dws_ld2410_cmd_bluetooth`, word 0x00A4), MAC query
+      (`dws_ld2410_cmd_get_mac`, 0x00A5), and set Bluetooth password (`dws_ld2410_cmd_set_bt_password`,
+      0x00A9). Also added the command-ACK decoder the driver never had - `dws_ld2410_parse_ack` /
+      `dws_ld2410_ack_ok` / `dws_ld2410_ack_mac` - since a query is useless without it (ACKs echo the
+      request word with 0x0100 set, then a 2-octet status). "Obtain Bluetooth access" (0x00A8) is
+      deliberately NOT implemented: the protocol document states it answers only over Bluetooth and not the
+      serial port, so it belongs to the out-of-scope BLE channel. Host-tested in `native_ld2410` (+3 cases,
+      11 total) with frames taken byte-for-byte from the worked examples in LD2410B Serial communication
+      protocol V1.07. Caveat: those vectors are from the protocol document, **not** a capture off physical
+      LD2410B hardware, and none of this has been HW-verified against a real B module - the report path is
+      unchanged and shared with the already-verified LD2410, but the B-only commands are untested on metal.
+      (Note: the doc's prose for get-MAC says "1 byte fixed type + 3 bytes MAC", which contradicts its own
+      worked example and length field - both of which say 6 MAC octets. The example is what we implement.)
 
 ### Functional-safety & industrial-standards profiles (IEC 61784-3, ODVA)
 

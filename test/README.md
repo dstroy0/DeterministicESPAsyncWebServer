@@ -552,7 +552,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3684 test cases** across **277 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3687 test cases** across **277 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16866,7 +16866,7 @@ A thorough directory of all **3684 test cases** across **277 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ld2410 (8 tests)</b></summary>
+<summary><b>test_ld2410 (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_basic</b> &mdash; <i>Parse basic</i></summary>
@@ -16982,6 +16982,63 @@ A thorough directory of all **3684 test cases** across **277 suites**. Expand a 
       * <code>Assert false (dws_ld2410_restart())</code>
       * <code>Assert false (dws_ld2410_parse_report(nullptr, 20, &rep))</code>
       * <code>Assert false (dws_ld2410_parse_report(too_short, sizeof(too_short), &rep))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ld2410b_command_encoders</b> &mdash; <i>"FD FC FB FA \| 04 00 \| A4 00 \| 01 00 \| 04 03 02 01" (Bluetooth on)</i></summary>
+
+    * **Objective**: "FD FC FB FA \| 04 00 \| A4 00 \| 01 00 \| 04 03 02 01" (Bluetooth on)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(14, (uint32_t)dws_ld2410_cmd_bluetooth(buf, sizeof(buf), true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(want_bt_on, buf, 14);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(14, (uint32_t)dws_ld2410_cmd_bluetooth(buf, sizeof(buf), false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, buf[8]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, buf[9]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(14, (uint32_t)dws_ld2410_cmd_get_mac(buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(want_mac_q, buf, 14);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(18, (uint32_t)dws_ld2410_cmd_set_bt_password(buf, sizeof(buf), "HiLink"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(want_pw, buf, 18);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_bluetooth(buf, 13, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_get_mac(buf, 13));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_get_mac(nullptr, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_set_bt_password(buf, 17, "HiLink"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_set_bt_password(buf, sizeof(buf), nullptr));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ld2410b_ack_decoding</b> &mdash; <i>get-MAC ACK: "FD FC FB FA \| 0A 00 \| A5 01 \| 00 00 \| 8F 27 2E B8 0F 65 \| 04 03 02 01"</i></summary>
+
+    * **Objective**: get-MAC ACK: "FD FC FB FA \| 0A 00 \| A5 01 \| 00 00 \| 8F 27 2E B8 0F 65 \| 04 03 02 01"
+    * **Assertions**:
+      * <code>Assert true (dws_ld2410_parse_ack(mac_ack, sizeof(mac_ack), &ack))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x01A5, ack.command); // request word | 0x0100</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, ack.status);</code>
+      * <code>Assert true (dws_ld2410_ack_ok(&ack))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(6, (uint32_t)ack.payload_len);</code>
+      * <code>Assert true (dws_ld2410_ack_mac(&ack, mac))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(want_mac, mac, 6);</code>
+      * <code>Assert true (dws_ld2410_parse_ack(bt_ack, sizeof(bt_ack), &ack))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x01A4, ack.command);</code>
+      * <code>Assert true (dws_ld2410_ack_ok(&ack))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)ack.payload_len);</code>
+      * <code>Assert null (ack.payload)</code>
+      * <code>Assert false (dws_ld2410_ack_mac(&ack, mac))</code>
+      * <code>Assert true (dws_ld2410_parse_ack(fail_ack, sizeof(fail_ack), &ack))</code>
+      * <code>Assert false (dws_ld2410_ack_ok(&ack))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ld2410b_ack_rejects_malformed</b> &mdash; <i>declared intra-frame length that disagrees with the buffer, both ways</i></summary>
+
+    * **Objective**: declared intra-frame length that disagrees with the buffer, both ways
+    * **Assertions**:
+      * <code>Assert false (dws_ld2410_parse_ack(nullptr, 14, &ack))</code>
+      * <code>Assert false (dws_ld2410_parse_ack(good, 14, nullptr))</code>
+      * <code>Assert false (dws_ld2410_parse_ack(good, 13, &ack))</code>
+      * <code>Assert false (dws_ld2410_parse_ack(bad, 14, &ack))</code>
+      * <code>Assert false (dws_ld2410_parse_ack(bad, 14, &ack))</code>
+      * <code>Assert false (dws_ld2410_parse_ack(bad, 14, &ack))</code>
+      * <code>Assert false (dws_ld2410_parse_ack(bad, 14, &ack))</code>
   </details>
 
 </details>

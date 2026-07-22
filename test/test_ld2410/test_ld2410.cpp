@@ -213,6 +213,112 @@ void test_host_stubs_and_parse_guards()
     TEST_ASSERT_FALSE(dws_ld2410_parse_report(too_short, sizeof(too_short), &rep));
 }
 
+// --- LD2410B ---------------------------------------------------------------
+// The B is the BLE build of the same radar on the same `FD FC FB FA` protocol; these are the two
+// commands that exist only on it. The expected frames are the worked examples from the LD2410B
+// serial communication protocol document, byte for byte.
+
+void test_ld2410b_command_encoders(void)
+{
+    uint8_t buf[32];
+
+    // "FD FC FB FA | 04 00 | A4 00 | 01 00 | 04 03 02 01"  (Bluetooth on)
+    static const uint8_t want_bt_on[14] = {0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4,
+                                           0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01};
+    TEST_ASSERT_EQUAL_UINT32(14, (uint32_t)dws_ld2410_cmd_bluetooth(buf, sizeof(buf), true));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(want_bt_on, buf, 14);
+
+    // Bluetooth off differs only in the value word (0x0000)
+    TEST_ASSERT_EQUAL_UINT32(14, (uint32_t)dws_ld2410_cmd_bluetooth(buf, sizeof(buf), false));
+    TEST_ASSERT_EQUAL_UINT8(0x00, buf[8]);
+    TEST_ASSERT_EQUAL_UINT8(0x00, buf[9]);
+
+    // "FD FC FB FA | 04 00 | A5 00 | 01 00 | 04 03 02 01"  (query MAC)
+    static const uint8_t want_mac_q[14] = {0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA5,
+                                           0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01};
+    TEST_ASSERT_EQUAL_UINT32(14, (uint32_t)dws_ld2410_cmd_get_mac(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(want_mac_q, buf, 14);
+
+    // "FD FC FB FA | 08 00 | A9 00 | 48 69 4C 69 6E 6B | 04 03 02 01"  (set BT password "HiLink",
+    // the factory default the spec uses as its worked example - ASCII in natural order)
+    static const uint8_t want_pw[18] = {0xFD, 0xFC, 0xFB, 0xFA, 0x08, 0x00, 0xA9, 0x00, 0x48,
+                                        0x69, 0x4C, 0x69, 0x6E, 0x6B, 0x04, 0x03, 0x02, 0x01};
+    TEST_ASSERT_EQUAL_UINT32(18, (uint32_t)dws_ld2410_cmd_set_bt_password(buf, sizeof(buf), "HiLink"));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(want_pw, buf, 18);
+
+    // capacity guards
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_bluetooth(buf, 13, true));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_get_mac(buf, 13));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_get_mac(nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_set_bt_password(buf, 17, "HiLink"));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_ld2410_cmd_set_bt_password(buf, sizeof(buf), nullptr));
+}
+
+void test_ld2410b_ack_decoding(void)
+{
+    Ld2410Ack ack;
+
+    // get-MAC ACK: "FD FC FB FA | 0A 00 | A5 01 | 00 00 | 8F 27 2E B8 0F 65 | 04 03 02 01"
+    static const uint8_t mac_ack[20] = {0xFD, 0xFC, 0xFB, 0xFA, 0x0A, 0x00, 0xA5, 0x01, 0x00, 0x00,
+                                        0x8F, 0x27, 0x2E, 0xB8, 0x0F, 0x65, 0x04, 0x03, 0x02, 0x01};
+    TEST_ASSERT_TRUE(dws_ld2410_parse_ack(mac_ack, sizeof(mac_ack), &ack));
+    TEST_ASSERT_EQUAL_UINT16(0x01A5, ack.command); // request word | 0x0100
+    TEST_ASSERT_EQUAL_UINT16(0, ack.status);
+    TEST_ASSERT_TRUE(dws_ld2410_ack_ok(&ack));
+    TEST_ASSERT_EQUAL_UINT32(6, (uint32_t)ack.payload_len);
+
+    static const uint8_t want_mac[6] = {0x8F, 0x27, 0x2E, 0xB8, 0x0F, 0x65};
+    uint8_t mac[6];
+    TEST_ASSERT_TRUE(dws_ld2410_ack_mac(&ack, mac));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(want_mac, mac, 6);
+
+    // Bluetooth-on ACK: no data beyond the status word
+    static const uint8_t bt_ack[14] = {0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4,
+                                       0x01, 0x00, 0x00, 0x04, 0x03, 0x02, 0x01};
+    TEST_ASSERT_TRUE(dws_ld2410_parse_ack(bt_ack, sizeof(bt_ack), &ack));
+    TEST_ASSERT_EQUAL_UINT16(0x01A4, ack.command);
+    TEST_ASSERT_TRUE(dws_ld2410_ack_ok(&ack));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)ack.payload_len);
+    TEST_ASSERT_NULL(ack.payload);
+    // a non-MAC ACK must not yield a MAC
+    TEST_ASSERT_FALSE(dws_ld2410_ack_mac(&ack, mac));
+
+    // a failure status is decoded but reported as not-ok, and yields no MAC
+    uint8_t fail_ack[14];
+    memcpy(fail_ack, bt_ack, sizeof(fail_ack));
+    fail_ack[8] = 0x01; // status = 1 (failure)
+    TEST_ASSERT_TRUE(dws_ld2410_parse_ack(fail_ack, sizeof(fail_ack), &ack));
+    TEST_ASSERT_FALSE(dws_ld2410_ack_ok(&ack));
+}
+
+void test_ld2410b_ack_rejects_malformed(void)
+{
+    Ld2410Ack ack;
+    static const uint8_t good[14] = {0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4,
+                                     0x01, 0x00, 0x00, 0x04, 0x03, 0x02, 0x01};
+    uint8_t bad[20];
+
+    TEST_ASSERT_FALSE(dws_ld2410_parse_ack(nullptr, 14, &ack));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_ack(good, 14, nullptr));
+    TEST_ASSERT_FALSE(dws_ld2410_parse_ack(good, 13, &ack)); // under the minimum
+
+    memcpy(bad, good, 14);
+    bad[0] = 0xF4; // report-frame header, not a command header
+    TEST_ASSERT_FALSE(dws_ld2410_parse_ack(bad, 14, &ack));
+
+    memcpy(bad, good, 14);
+    bad[13] = 0xFF; // corrupt footer
+    TEST_ASSERT_FALSE(dws_ld2410_parse_ack(bad, 14, &ack));
+
+    // declared intra-frame length that disagrees with the buffer, both ways
+    memcpy(bad, good, 14);
+    bad[4] = 0x06;
+    TEST_ASSERT_FALSE(dws_ld2410_parse_ack(bad, 14, &ack));
+    memcpy(bad, good, 14);
+    bad[4] = 0x03; // shorter than word+status
+    TEST_ASSERT_FALSE(dws_ld2410_parse_ack(bad, 14, &ack));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -224,5 +330,8 @@ int main()
     RUN_TEST(test_helpers);
     RUN_TEST(test_command_encoders);
     RUN_TEST(test_host_stubs_and_parse_guards);
+    RUN_TEST(test_ld2410b_command_encoders);
+    RUN_TEST(test_ld2410b_ack_decoding);
+    RUN_TEST(test_ld2410b_ack_rejects_malformed);
     return UNITY_END();
 }
