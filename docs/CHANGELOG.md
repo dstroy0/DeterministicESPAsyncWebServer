@@ -18,6 +18,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`7173ae5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7173ae50d0080fd9be38ed24eeb5338e01dd1852))
 - update test report + coverage [skip ci] ([`eb21e0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb21e0e154f15c7bc18e3d018c20f4e72d084bad))
 - update CHANGELOG.md [skip ci] ([`befeb91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/befeb91bd5c16117ce56719f460f134a10b0f422))
 - update test report + coverage [skip ci] ([`844f082`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/844f082bf192512d047b03e7b4ffdea6dafa5610))
@@ -50,6 +51,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`05be5e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05be5e1925ef09ee363a567d1e9abe2f02e95d86))
 - update ESP32 build footprints [skip ci] ([`06a3a20`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06a3a20d6a9aa4fff4d24f88c99693caa4999b8c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f38676d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f38676d9f80a90aeb1c5686d53f873b319b7b533))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ca853a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca853a3e3fa481221216d938f3aa033af77d01ac))
@@ -66,6 +68,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- rebuild the DAQ/SCA suite into a full teaching + research platform ([`2fc7d36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fc7d36270e457a04d32024cefd17bf5b353b601))
 - parameterized CRC engine ([`73f28fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73f28fc6895b69c0d4903877601de24d0a7f772c))
 - IEC 61784-3 black-channel Safety Communication Layer primitives ([`7964617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7964617a07205f7fcbf0fee6a3949cccf0ab754b))
 - Waveshare HMMD 24GHz mmWave micro-motion radar codec ([`36ad3c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36ad3c553218c3f106d76565c4803a532ff56dca))
