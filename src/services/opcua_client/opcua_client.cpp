@@ -243,7 +243,9 @@ size_t dws_opcua_client_close_channel(uint8_t *out, size_t cap)
 // ---------------------------------------------------------------------------
 static void cr_skip(UaReader *r, size_t n)
 {
-    if (r->err || r->off + n > r->len)
+    // r->err is never already set on entry: both call sites only skip when a just-read length is > 0,
+    // and a latched reader decodes every length as 0 - so that operand is excluded below.
+    if (r->err || r->off + n > r->len) // GCOVR_EXCL_LINE
     {
         r->err = true;
         return;
@@ -272,7 +274,7 @@ static bool cr_response_header(UaReader *r, uint32_t *service_result)
     (void)dws_ua_r_u64(r); // Timestamp
     (void)dws_ua_r_u32(r); // RequestHandle
     uint32_t svc = dws_ua_r_u32(r);
-    if (service_result)
+    if (service_result) // GCOVR_EXCL_LINE  file-static; every call site passes the address of its own svc
         *service_result = svc;
     (void)dws_ua_r_u8(r);    // ServiceDiagnostics (DiagnosticInfo, empty)
     cr_skip_string_array(r); // StringTable

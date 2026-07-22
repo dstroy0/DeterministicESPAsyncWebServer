@@ -27,6 +27,33 @@
 // services/webdav/webdav.{h,cpp} and is host-tested; this part needs a real FS.
 // ---------------------------------------------------------------------------
 
+// The parser's streaming-body sink is a SINGLE global hook (http_parser_set_stream_hooks): the
+// last registrar wins, so an OTA or upload service registering after dav() would silently take
+// the sink away and a bodied PUT to a DAV route would buffer (bounded by BODY_BUF_SIZE) instead
+// of streaming. ServerConfig.h documents "do not combine" but nothing enforced it; the buffered-PUT
+// fallback below depends on it, so enforce it here rather than leaving it to the reader.
+#if DWS_ENABLE_OTA || DWS_ENABLE_UPLOAD
+#error "DWS_ENABLE_WEBDAV cannot be combined with DWS_ENABLE_OTA or DWS_ENABLE_UPLOAD: the parser's \
+streaming-body sink is a single global hook, so whichever registers last silently disables the others."
+#endif
+
+// A Depth-1 PROPFIND stops on whichever comes first: the 207 buffer filling, or DWS_WEBDAV_MAX_ENTRIES
+// children. Both are plain #ifndef knobs and nothing related them, so pin the relationship the listing
+// loop's bound relies on - the buffer must fill first.
+//
+// The fixed text of one <D:response> (dws_webdav_ms_entry) is 204 bytes: 27 href prologue + 66
+// prop/resourcetype opening + 18 resourcetype close + 93 propstat/response close. Add the href itself
+// (>= 1 byte) and the shortest possible element is 205; a collection adds <D:collection/>, a file adds
+// getcontentlength/getcontenttype, and both add getlastmodified, so every real shape is larger. 192 is
+// therefore a safe floor: BUF_SIZE / 192 over-estimates how many entries the buffer can ever hold, and
+// it still has to come out under MAX_ENTRIES. (It over-estimates further because ms_begin's prologue and
+// ms_end's epilogue also come out of the same buffer.)
+static const size_t DWS_WEBDAV_MIN_ENTRY_BYTES = 192;
+static_assert(DWS_WEBDAV_BUF_SIZE / DWS_WEBDAV_MIN_ENTRY_BYTES < DWS_WEBDAV_MAX_ENTRIES,
+              "DWS_WEBDAV_BUF_SIZE is large enough to hold DWS_WEBDAV_MAX_ENTRIES entries: raise "
+              "DWS_WEBDAV_MAX_ENTRIES or lower DWS_WEBDAV_BUF_SIZE so the buffer bound stays the "
+              "binding one (see the PROPFIND listing loop).");
+
 // WebDAV response scratch, owned by one instance (internal linkage): the 207 Multi-Status build
 // buffer (BSS). One named owner, unreachable from any other translation unit.
 struct DavBufCtx
@@ -49,7 +76,10 @@ static bool dav_join(const char *root, const char *sub, char *out, size_t cap)
     bool sub_slash = (sub[0] == '/');
     const char *sep = (root_slash || sub_slash) ? "" : "/";
     int wn = snprintf(out, cap, "%s%s%s", root, sep, sub);
-    return wn > 0 && wn < (int)cap;
+    // wn <= 0 cannot fire: snprintf only returns negative on an encoding error, which "%s%s%s"
+    // cannot raise, and sep is "/" whenever root and sub are both empty, so the shortest join is
+    // one byte. The truncation half (wn >= cap) is exercised.
+    return wn > 0 && wn < (int)cap; // GCOVR_EXCL_BR_LINE  wn <= 0 unreachable (see above)
 }
 
 // The basename of an FS entry name (cores differ: name() may be a full path or a
@@ -57,7 +87,9 @@ static bool dav_join(const char *root, const char *sub, char *out, size_t cap)
 static const char *dav_basename(const char *name)
 {
     const char *slash = strrchr(name, '/');
-    return slash ? slash + 1 : name;
+    // The bare-name half is an ESP32-core shape: the host FS mock's File::name() always returns the
+    // node's full path, so strrchr never comes back null here.
+    return slash ? slash + 1 : name; // GCOVR_EXCL_BR_LINE  bare-name half is core-specific (see above)
 }
 
 // Recursively delete a file or directory tree (bounded depth). Re-opens the
@@ -82,11 +114,18 @@ static bool dav_rm_recursive(fs::FS &fsys, const char *path, int depth)
         char cp[256];
         int wn = snprintf(cp, sizeof(cp), "%s/%s", path, dav_basename(c.name()));
         c.close();
+        // GCOVR_EXCL_START  neither half can fire on a host build. snprintf cannot return negative
+        // for "%s/%s", and the child path cannot overflow cp[256]: `path` had to open, so it is a
+        // path the FS mock actually stores (its node paths are capped at 160 bytes), and the child's
+        // basename is what is left of that same 160-byte cap after `path` - so cp stays under 160.
+        // On a real core (LittleFS: 255-byte names under a 240-byte mount root) it is reachable,
+        // which is why the guard is here.
         if (wn <= 0 || wn >= (int)sizeof(cp))
         {
             d.close();
             return false;
         }
+        // GCOVR_EXCL_STOP
         if (!dav_rm_recursive(fsys, cp, depth + 1))
         {
             d.close();
@@ -94,8 +133,13 @@ static bool dav_rm_recursive(fs::FS &fsys, const char *path, int depth)
         }
         d.close();
         d = fsys.open(path, "r"); // reset the directory cursor after the deletion
+        // GCOVR_EXCL_START  TOCTOU re-open guard: `path` opened moments ago, so only a concurrent
+        // delete / FS fault fails it here. The host mock's open-failure hook is a single stored path
+        // that applies to every open, so it cannot fail this re-open while letting the first open
+        // above succeed - there is no way to drive this arm from a host test.
         if (!d)
             return false;
+        // GCOVR_EXCL_STOP
     }
     d.close();
     return fsys.rmdir(path);
@@ -138,8 +182,13 @@ static bool dav_copy_recursive(fs::FS &fsys, const char *src, const char *dst, i
     for (int idx = 0;; idx++)
     {
         fs::File d = fsys.open(src, "r");
+        // GCOVR_EXCL_START  TOCTOU re-open guard, same shape as dav_rm_recursive's: `src` opened at
+        // the top of this call, so only a concurrent delete / FS fault fails it here, and the host
+        // mock's open-failure hook is one stored path applied to every open - it cannot fail this
+        // re-open while letting the first one succeed.
         if (!d)
             return false;
+        // GCOVR_EXCL_STOP
         fs::File c;
         for (int i = 0; i <= idx; i++)
         {
@@ -161,8 +210,14 @@ static bool dav_copy_recursive(fs::FS &fsys, const char *src, const char *dst, i
         char dp[256];
         int wn1 = snprintf(sp, sizeof(sp), "%s/%s", src, base);
         int wn2 = snprintf(dp, sizeof(dp), "%s/%s", dst, base);
+        // GCOVR_EXCL_START  none of the four halves can fire on a host build. snprintf cannot return
+        // negative for "%s/%s"; and neither child path can reach 256 bytes, because `src` had to open
+        // (so it is within the FS mock's 160-byte node-path cap, and `base` is what remains of that
+        // cap) while `dst` is the mount root plus a Destination header value, which the parser caps
+        // at MAX_VAL_LEN. Reachable on a real core, where names and roots are far longer.
         if (wn1 <= 0 || wn1 >= (int)sizeof(sp) || wn2 <= 0 || wn2 >= (int)sizeof(dp))
             return false;
+        // GCOVR_EXCL_STOP
         if (!dav_copy_recursive(fsys, sp, dp, depth + 1))
             return false;
     }
@@ -177,9 +232,16 @@ static bool dav_copy_recursive(fs::FS &fsys, const char *src, const char *dst, i
 static int dav_resolve_path(const Route *r, const char *reqpath, char *out, size_t cap)
 {
     size_t plen = strnlen(r->path, MAX_PATH_LEN);
-    if (plen > 0 && r->path[plen - 1] == '*')
+    // plen == 0 is unreachable: dav() always stores at least "*" - it appends the wildcard when the
+    // prefix lacks one, so even dav("") yields a one-character pattern.
+    if (plen > 0 && r->path[plen - 1] == '*') // GCOVR_EXCL_BR_LINE  plen == 0 unreachable (see above)
         plen--;
+    // GCOVR_EXCL_BR_START  the "" arm is unreachable: both callers reached here through
+    // path_matches() against this same route, which already required reqpath to carry the mount
+    // prefix, so the length test always holds. Kept so a future caller that resolves without
+    // matching first still cannot index past the end of reqpath.
     const char *sub = (strnlen(reqpath, MAX_PATH_LEN) >= plen) ? reqpath + plen : "";
+    // GCOVR_EXCL_BR_STOP
     if (strstr(sub, ".."))
         return 403;
     const char *root = r->static_root ? r->static_root : "";
@@ -214,6 +276,9 @@ struct DavPutCtx
 };
 static DavPutCtx s_davput;
 
+// GCOVR_EXCL_BR_START  the null-stream_srv arm of all three trampolines is unreachable: the only
+// thing that installs them as the parser's stream hooks is dav(), which sets s_davput.stream_srv
+// first and never clears it - so a trampoline cannot run before the instance pointer exists.
 bool DWS::dav_put_begin_tramp(HttpReq *req)
 {
     return s_davput.stream_srv && s_davput.stream_srv->dav_stream_put_begin(req);
@@ -223,16 +288,22 @@ void DWS::dav_put_data_tramp(HttpReq *req, const uint8_t *data, size_t len)
     if (s_davput.stream_srv)
         s_davput.stream_srv->dav_stream_put_data(req, data, len);
 }
+// GCOVR_EXCL_BR_STOP
 void DWS::dav_put_abort_tramp(HttpReq *req)
 {
     // The PUT was torn down before the handler ran: close the half-written file so
     // the handle is not leaked (a leak eventually exhausts LittleFS's open slots).
     uint8_t slot = (uint8_t)(req - http_pool);
+    // GCOVR_EXCL_BR_START  the slot >= MAX_CONNS half is unreachable: http_pool is CONN_POOL_SLOTS
+    // long, but the streaming-body hooks are driven only by the HTTP/1.x byte parser, which never
+    // parses for the internal dispatch slots at and above MAX_CONNS. s_davput.put[] is MAX_CONNS
+    // long, so the bound still has to be tested here.
     if (slot < MAX_CONNS && s_davput.put[slot].active)
     {
         s_davput.put[slot].file.close();
         s_davput.put[slot].active = false;
     }
+    // GCOVR_EXCL_BR_STOP
 }
 
 bool DWS::dav_stream_put_begin(HttpReq *req)
@@ -243,12 +314,18 @@ bool DWS::dav_stream_put_begin(HttpReq *req)
     for (uint8_t i = 0; i < _route_count; i++)
     {
         Route *r = &_routes[i];
-        if (!r->is_active || r->type != RouteType::ROUTE_DAV)
+        // The !is_active half cannot fire: every entry below _route_count was filled by
+        // fill_route_base, which sets is_active, and nothing ever clears it again.
+        if (!r->is_active || r->type != RouteType::ROUTE_DAV) // GCOVR_EXCL_BR_LINE  see above
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
+        // GCOVR_EXCL_START  dav() has no interface-filtered overload, so a ROUTE_DAV entry's
+        // iface_filter is always DETIFACE_ANY and this gate never rejects. Kept so a DAV mount picks
+        // up the per-route interface gate for free if that overload is ever added.
         if (r->iface_filter != DWSIface::DETIFACE_ANY && r->iface_filter != dws_conn_iface(slot))
             continue;
+        // GCOVR_EXCL_STOP
         // GCOVR_EXCL_START  a RouteType::ROUTE_DAV route always carries static_fs (set in dav()); this null-guard
         // cannot fire
         if (!r->static_fs)
@@ -275,7 +352,10 @@ bool DWS::dav_stream_put_begin(HttpReq *req)
 void DWS::dav_stream_put_data(HttpReq *req, const uint8_t *data, size_t len)
 {
     uint8_t slot = (uint8_t)(req - http_pool);
-    // GCOVR_EXCL_START  req is always one of the http_pool slots, so slot < MAX_CONNS; the bound cannot fire
+    // GCOVR_EXCL_START  http_pool is CONN_POOL_SLOTS (MAX_CONNS + DWS_INTERNAL_SLOTS) long, so an index >=
+    // MAX_CONNS is a real address - but it belongs to an internal dispatch slot (e.g. HTTP/3), and the
+    // streaming-body hooks this runs from are driven only by the HTTP/1.x byte parser, which never parses
+    // for those slots. s_davput.put[] is MAX_CONNS long, so the bound still has to be here.
     if (slot >= MAX_CONNS)
         return;
     // GCOVR_EXCL_STOP
@@ -325,8 +405,11 @@ void DWS::dav_send_status(uint8_t slot_id, int code, const char *extra_headers)
     bool keep;
     const char *cl = dws_resp_conn_hdr(slot_id, &keep);
     char header[RESP_HDR_BUF_SIZE];
+    // GCOVR_EXCL_BR_START  the null arm of the extra_headers ternary is unreachable: every call site
+    // in this file passes either "" or a string literal. Kept so the parameter stays optional.
     int hlen = snprintf(header, sizeof(header), "HTTP/1.1 %d %s\r\n%sContent-Length: 0\r\n%s\r\n", code,
                         status_text(code), extra_headers ? extra_headers : "", cl);
+    // GCOVR_EXCL_BR_STOP
     dws_conn_send(slot_id, header, (u16_t)hlen);
     dws_resp_end(slot_id, code, 0, keep);
 }
@@ -336,12 +419,18 @@ bool DWS::try_serve_dav(uint8_t slot_id, HttpReq *req)
     for (uint8_t i = 0; i < _route_count; i++)
     {
         Route *r = &_routes[i];
-        if (!r->is_active || r->type != RouteType::ROUTE_DAV)
+        // The !is_active half cannot fire: every entry below _route_count was filled by
+        // fill_route_base, which sets is_active, and nothing ever clears it again.
+        if (!r->is_active || r->type != RouteType::ROUTE_DAV) // GCOVR_EXCL_BR_LINE  see above
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
+        // GCOVR_EXCL_START  dav() has no interface-filtered overload, so a ROUTE_DAV entry's
+        // iface_filter is always DETIFACE_ANY and this gate never rejects. Kept so a DAV mount picks
+        // up the per-route interface gate for free if that overload is ever added.
         if (r->iface_filter != DWSIface::DETIFACE_ANY && r->iface_filter != dws_conn_iface(slot_id))
             continue;
+        // GCOVR_EXCL_STOP
         serve_dav_request(slot_id, req, r);
         return true;
     }
@@ -368,9 +457,10 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         return;
     }
 
-    // Mount-prefix length and FS root, used by COPY/MOVE to resolve the Destination.
+    // Mount-prefix length and FS root, used by COPY/MOVE to resolve the Destination. As in
+    // dav_resolve_path, plen == 0 is unreachable: dav() always stores at least "*".
     size_t plen = strnlen(r->path, MAX_PATH_LEN);
-    if (plen > 0 && r->path[plen - 1] == '*')
+    if (plen > 0 && r->path[plen - 1] == '*') // GCOVR_EXCL_BR_LINE  plen == 0 unreachable (see above)
         plen--;
     const char *root = r->static_root ? r->static_root : "";
 
@@ -437,11 +527,15 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
             dav_send_status(slot_id, 409, ""); // parent missing / not writable
             return;
         }
-        // Only an empty CL:0 PUT reaches this buffered path (a bodied PUT to a DAV route streams, or
-        // bails before this switch since stream_begin's decline reasons also fail the top-level
-        // resolve), so body_len is always 0 here and the write never runs.
+        // GCOVR_EXCL_START  only an empty CL:0 PUT reaches this buffered path, so body_len is always
+        // 0 and the write never runs: a bodied PUT to a DAV route always streams (dav() registers the
+        // sink, and the #error at the top of this file is what makes that hold - no other service can
+        // have taken the single global hook), and stream_begin's only decline reasons for a matched
+        // DAV route are the ones that also fail the top-level resolve above. Kept as a fail-safe so a
+        // caller that somehow does arrive buffered writes its body instead of silently dropping it.
         if (req->body_len)
-            f.write(req->body, req->body_len); // GCOVR_EXCL_LINE unreachable: body_len always 0 (see above)
+            f.write(req->body, req->body_len);
+        // GCOVR_EXCL_STOP
         f.close();
         dav_send_status(slot_id, existed ? 204 : 201, "");
         return;
@@ -601,6 +695,10 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         char self_href[MAX_PATH_LEN + 2];
         snprintf(self_href, sizeof(self_href), "%s", req->path);
         size_t sl = strnlen(self_href, sizeof(self_href));
+        // GCOVR_EXCL_BR_START  two halves here cannot fire, both for the same reason: req->path is
+        // HttpReq::path[MAX_PATH_LEN] and the parser always leaves at least "/" in it, so sl is
+        // between 1 and MAX_PATH_LEN-1. That makes `sl == 0` impossible, and makes the room test
+        // below always true (self_href is MAX_PATH_LEN+2). Both are kept as bounds on an index.
         if (isdir && (sl == 0 || self_href[sl - 1] != '/'))
         {
             if (sl + 1 < sizeof(self_href))
@@ -609,6 +707,7 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
                 self_href[sl] = '\0';
             }
         }
+        // GCOVR_EXCL_BR_STOP
 
         size_t cap = sizeof(s_dav.buf), len = 0;
         len = dws_webdav_ms_begin(s_dav.buf, cap, len);
@@ -624,11 +723,16 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
                 fs::File c = f.openNextFile();
                 if (!c)
                     break;
+                // GCOVR_EXCL_START  the buffer-full break below always preempts this cap: the
+                // static_assert at the top of this file pins DWS_WEBDAV_BUF_SIZE small enough that
+                // s_dav.buf cannot hold DWS_WEBDAV_MAX_ENTRIES entries. Kept so the count is bounded
+                // whatever those two knobs are set to.
                 if (count >= DWS_WEBDAV_MAX_ENTRIES)
                 {
-                    c.close(); // GCOVR_EXCL_LINE  a 2048B DWS_WEBDAV_BUF_SIZE fills at ~8 entries, well before
-                    break;     // GCOVR_EXCL_LINE  MAX_ENTRIES(32), so the buffer-full break preempts this cap
+                    c.close();
+                    break;
                 }
+                // GCOVR_EXCL_STOP
                 const char *base = dav_basename(c.name());
                 bool cdir = c.isDirectory();
                 uint32_t csize = (uint32_t)c.size();
@@ -662,11 +766,17 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         }
         size_t n =
             dws_webdav_proppatch_ms(s_dav.buf, sizeof(s_dav.buf), req->path, (const char *)req->body, req->body_len);
+        // GCOVR_EXCL_START  the builder cannot run out of room at this env's DWS_WEBDAV_BUF_SIZE: its
+        // output is the ~120-byte prologue, the escaped href (capped at 256 by the builder's own esc
+        // buffer), at most DWS_WEBDAV_MAX_PROPS echoed tags whose bytes all come out of req->body
+        // (capped at BODY_BUF_SIZE), and the ~110-byte epilogue - about 1.2 KB against a 2 KB buffer.
+        // It IS reachable at the 256-byte floor ServerConfig.h enforces, so the guard stays.
         if (!n)
         {
             dav_send_status(slot_id, 507, ""); // Insufficient Storage: response did not fit the buffer
             return;
         }
+        // GCOVR_EXCL_STOP
         send(slot_id, 207, "application/xml; charset=utf-8", s_dav.buf);
         return;
     }

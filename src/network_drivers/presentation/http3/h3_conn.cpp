@@ -14,6 +14,15 @@
 #include "network_drivers/presentation/http3/quic_varint.h"
 #include <string.h>
 
+// dws_h3_conn_respond builds its response HEADERS frame from a fixed 256-byte QPACK block into a
+// DWS_H3_STREAM_BUF output buffer, which is why that builder's failure guard carries a coverage
+// exclusion. DWS_H3_STREAM_BUF is an overridable macro (h3_conn.h), so pin the relationship here
+// rather than let a shrunken buffer silently make the excluded path reachable: 256 bytes of QPACK
+// plus the frame's type + length varints (at most 8 each).
+static_assert(DWS_H3_STREAM_BUF >= 256 + 16,
+              "DWS_H3_STREAM_BUF must hold a whole response HEADERS frame: the 256-byte QPACK field section "
+              "dws_h3_conn_respond builds plus the H3 frame type and length varints");
+
 namespace
 {
 H3Stream *dws_h3_stream_get(H3Conn *h3, uint64_t id, bool create)
@@ -85,11 +94,14 @@ void dispatch_request(H3Conn *h3, H3Stream *st)
         else if (fr.type == H3FrameType::H3_DATA)
         {
             // Copy only while there is room left in body. room is 0 once body is full (no underflow),
-            // and take is clamped to it, so body_len + take <= sizeof(body).
-            size_t room = (body_len < sizeof(body)) ? sizeof(body) - body_len : 0;
+            // and take is clamped to it, so body_len + take <= sizeof(body). Both arms of both guards
+            // are defensive: body and st->buf are the same DWS_H3_STREAM_BUF size, and every DATA
+            // payload counted into body_len sits behind a frame header inside st->buf, so the running
+            // total is always strictly below sizeof(body) and take never exceeds room.
+            size_t room = (body_len < sizeof(body)) ? sizeof(body) - body_len : 0; // GCOVR_EXCL_LINE
             size_t take = (size_t)fr.length;
-            if (take > room)
-                take = room;
+            if (take > room) // GCOVR_EXCL_LINE
+                take = room; // GCOVR_EXCL_LINE
             if (take)
                 memcpy(body + body_len, fp, take);
             body_len += take;
@@ -268,8 +280,8 @@ bool dws_h3_conn_respond(H3Conn *h3, uint64_t stream_id, int status, const char 
     // HEADERS frame + DATA frame, sent on the request stream with FIN.
     uint8_t out[DWS_H3_STREAM_BUF];
     size_t op = dws_h3_build_headers(out, sizeof(out), block, bp);
-    if (!op)
-        return false;
+    if (!op)          // GCOVR_EXCL_LINE  block is a fixed 256 bytes and out is DWS_H3_STREAM_BUF, whose floor the
+        return false; // GCOVR_EXCL_LINE  static_assert at the top of this file pins: the HEADERS frame always fits
     if (body_len)
     {
         size_t dn = dws_h3_build_data(out + op, sizeof(out) - op, body, body_len);

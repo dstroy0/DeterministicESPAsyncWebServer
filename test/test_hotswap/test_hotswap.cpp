@@ -3,8 +3,10 @@
 //
 // Unit tests for the removable-storage state machine (services/hotswap): the fault threshold and
 // what resets it, probe pacing (including across a millis() rollover), present-but-unmountable,
-// the removal/reinsertion cycle, and that the whole thing is fail-closed.
+// the removal/reinsertion cycle, and that the whole thing is fail-closed. Plus the owned binding -
+// how poll()/io() drive the app's mount / unmount / card-detect callbacks and the state-change event.
 
+#include "services/clock.h"
 #include "services/hotswap/hotswap.h"
 #include <stdio.h>
 #include <string.h>
@@ -12,9 +14,67 @@
 
 static HotswapCore c;
 
+// Host clock seam so dws_hotswap_begin()/poll() are deterministic.
+static uint32_t g_ms = 0;
+static uint32_t test_clock()
+{
+    return g_ms;
+}
+
+// --- fake device binding ---------------------------------------------------
+
+static int g_mount_calls = 0;
+static int g_unmount_calls = 0;
+static int g_present_calls = 0;
+static int g_event_calls = 0;
+static bool g_mount_ok = true;
+static bool g_present_ok = true;
+static StorageState g_event_from = StorageState::ABSENT;
+static StorageState g_event_to = StorageState::ABSENT;
+static void *g_seen_ctx = nullptr;
+static int g_ctx_token = 0;
+
+static bool fake_mount(void *ctx)
+{
+    g_mount_calls++;
+    g_seen_ctx = ctx;
+    return g_mount_ok;
+}
+static void fake_unmount(void *ctx)
+{
+    g_unmount_calls++;
+    g_seen_ctx = ctx;
+}
+static bool fake_present(void *ctx)
+{
+    g_present_calls++;
+    g_seen_ctx = ctx;
+    return g_present_ok;
+}
+static void fake_event(StorageState from, StorageState to, void *ctx)
+{
+    g_event_calls++;
+    g_event_from = from;
+    g_event_to = to;
+    g_seen_ctx = ctx;
+}
+
+static void reset_counts()
+{
+    g_mount_calls = 0;
+    g_unmount_calls = 0;
+    g_present_calls = 0;
+    g_event_calls = 0;
+    g_seen_ctx = nullptr;
+}
+
 void setUp()
 {
     dws_hotswap_core_init(&c, 3, 2000, 100000);
+    dws_set_clock(test_clock, 1000);
+    g_mount_ok = true;
+    g_present_ok = true;
+    reset_counts();
 }
 void tearDown()
 {
@@ -122,6 +182,19 @@ void test_fail_run_saturates_instead_of_wrapping()
     for (int i = 0; i < 400; i++)
         dws_hotswap_core_io(&c, false);
     // A wrapping counter would drop back under the threshold and un-fault the volume.
+    TEST_ASSERT_EQUAL_INT((int)StorageState::FAULTED, (int)c.state);
+}
+
+void test_fail_run_at_the_uint8_ceiling_does_not_wrap()
+{
+    // The saturation guard itself, with the counter already parked at the ceiling: the
+    // next failure must leave it at 0xFF rather than roll it to 0 (which would drop the
+    // run back under the threshold and silently un-fault a card that is gone).
+    dws_hotswap_core_init(&c, 255, 2000, 0);
+    mount_it(0);
+    c.fail_run = 0xFF;
+    TEST_ASSERT_TRUE(dws_hotswap_core_io(&c, false));
+    TEST_ASSERT_EQUAL_UINT8(0xFF, c.fail_run);
     TEST_ASSERT_EQUAL_INT((int)StorageState::FAULTED, (int)c.state);
 }
 
@@ -234,6 +307,231 @@ void test_json_and_overflow_is_fail_closed()
     TEST_ASSERT_EQUAL_UINT32(0, dws_hotswap_json(tiny, sizeof(tiny)));
     TEST_ASSERT_EQUAL_STRING("", tiny); // never a truncated half-object
     TEST_ASSERT_EQUAL_UINT32(0, dws_hotswap_json(nullptr, 16));
+    // A real buffer with no room at all: rejected before snprintf is handed a zero cap.
+    TEST_ASSERT_EQUAL_UINT32(0, dws_hotswap_json(buf, 0));
+}
+
+// --- the owned binding ----------------------------------------------------
+//
+// These drive the single owned instance (s_hs), so they run after the pure-core tests;
+// the first one deliberately runs before any dws_hotswap_begin().
+
+void test_binding_poll_before_begin_does_nothing()
+{
+    // No callbacks installed yet: poll must not probe or claim storage. (Must be the
+    // first binding test - begun latches true for the rest of the run.)
+    dws_hotswap_poll_at(500000);
+    TEST_ASSERT_EQUAL_INT(0, g_mount_calls);
+    TEST_ASSERT_EQUAL_INT(0, g_present_calls);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::ABSENT, (int)dws_hotswap_state());
+    TEST_ASSERT_FALSE(dws_hotswap_ready());
+}
+
+// Bring the owned binding up to a healthy mount at @p now, then zero the call counters.
+static void bind_and_mount(uint32_t now)
+{
+    g_present_ok = true;
+    g_mount_ok = true;
+    g_ms = now;
+    dws_hotswap_begin(fake_mount, fake_unmount, fake_present, &g_ctx_token);
+    dws_hotswap_set_event_cb(fake_event);
+    dws_hotswap_poll_at(now);
+    reset_counts();
+}
+
+void test_binding_mounts_on_the_first_poll_and_notifies()
+{
+    // begin() back-dates the probe clock, so a card already in the slot mounts on the
+    // first poll instead of one interval later - and the app hears about it.
+    g_present_ok = true;
+    g_mount_ok = true;
+    g_ms = 10000;
+    dws_hotswap_begin(fake_mount, fake_unmount, fake_present, &g_ctx_token);
+    dws_hotswap_set_event_cb(fake_event);
+    TEST_ASSERT_FALSE(dws_hotswap_ready()); // begin() resets to ABSENT
+    reset_counts();
+
+    dws_hotswap_poll_at(10000);
+    TEST_ASSERT_TRUE(dws_hotswap_ready());
+    TEST_ASSERT_EQUAL_INT((int)StorageState::READY, (int)dws_hotswap_state());
+    TEST_ASSERT_EQUAL_INT(1, g_present_calls);
+    TEST_ASSERT_EQUAL_INT(1, g_mount_calls);
+    TEST_ASSERT_EQUAL_INT(0, g_unmount_calls);
+    TEST_ASSERT_EQUAL_PTR(&g_ctx_token, g_seen_ctx); // the app's ctx is handed back
+    TEST_ASSERT_EQUAL_INT(1, g_event_calls);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::ABSENT, (int)g_event_from);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::READY, (int)g_event_to);
+}
+
+void test_binding_ready_volume_is_never_reprobed()
+{
+    // Nothing to remount while READY, so the per-loop poll must cost no callbacks at all.
+    bind_and_mount(20000);
+    dws_hotswap_poll_at(20000 + 999999);
+    TEST_ASSERT_EQUAL_INT(0, g_present_calls);
+    TEST_ASSERT_EQUAL_INT(0, g_mount_calls);
+    TEST_ASSERT_EQUAL_INT(0, g_event_calls);
+    TEST_ASSERT_TRUE(dws_hotswap_ready());
+}
+
+void test_binding_io_fault_unmounts_immediately_and_notifies()
+{
+    // The point of the whole owner: on the failure that faults the volume the mount is
+    // dropped there and then, not at the next poll, so nothing can write through it.
+    bind_and_mount(30000);
+    dws_hotswap_io(false);
+    dws_hotswap_io(false);
+    TEST_ASSERT_TRUE(dws_hotswap_ready()); // below the threshold: still usable
+    TEST_ASSERT_EQUAL_INT(0, g_unmount_calls);
+
+    dws_hotswap_io(false); // 3rd in a row == DWS_HOTSWAP_FAIL_THRESHOLD
+    TEST_ASSERT_FALSE(dws_hotswap_ready());
+    TEST_ASSERT_EQUAL_INT((int)StorageState::FAULTED, (int)dws_hotswap_state());
+    TEST_ASSERT_EQUAL_INT(1, g_unmount_calls);
+    TEST_ASSERT_EQUAL_INT(1, g_event_calls);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::READY, (int)g_event_from);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::FAULTED, (int)g_event_to);
+
+    // Outcomes reported after the fault are ignored: no second unmount, no second event.
+    dws_hotswap_io(false);
+    dws_hotswap_io(true);
+    TEST_ASSERT_EQUAL_INT(1, g_unmount_calls);
+    TEST_ASSERT_EQUAL_INT(1, g_event_calls);
+}
+
+void test_binding_drops_a_faulted_mount_before_retrying()
+{
+    // The remount attempt unmounts first, so it starts clean instead of reusing handles
+    // to a card that left.
+    bind_and_mount(50000);
+    for (int i = 0; i < 3; i++)
+        dws_hotswap_io(false);
+    TEST_ASSERT_EQUAL_INT(1, g_unmount_calls); // the fault itself
+    TEST_ASSERT_EQUAL_INT((int)StorageState::FAULTED, (int)dws_hotswap_state());
+
+    dws_hotswap_poll_at(52000); // one probe interval later
+    TEST_ASSERT_EQUAL_INT(2, g_unmount_calls);
+    TEST_ASSERT_EQUAL_INT(1, g_mount_calls);
+    TEST_ASSERT_TRUE(dws_hotswap_ready());
+    TEST_ASSERT_EQUAL_INT((int)StorageState::FAULTED, (int)g_event_from);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::READY, (int)g_event_to);
+}
+
+void test_binding_faults_and_retries_without_an_unmount_callback()
+{
+    // unmount is optional. Without one the fault must still be recorded and notified,
+    // and the retry must still run.
+    g_present_ok = true;
+    g_mount_ok = true;
+    g_ms = 40000;
+    dws_hotswap_begin(fake_mount, nullptr, fake_present, &g_ctx_token);
+    dws_hotswap_set_event_cb(fake_event);
+    dws_hotswap_poll_at(40000);
+    reset_counts();
+    TEST_ASSERT_TRUE(dws_hotswap_ready());
+
+    for (int i = 0; i < 3; i++)
+        dws_hotswap_io(false);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::FAULTED, (int)dws_hotswap_state());
+    TEST_ASSERT_EQUAL_INT(0, g_unmount_calls);
+    TEST_ASSERT_EQUAL_INT(1, g_event_calls);
+
+    // Card is really gone now: the retry finds nothing and settles on ABSENT.
+    g_present_ok = false;
+    dws_hotswap_poll_at(42000);
+    TEST_ASSERT_EQUAL_INT(0, g_unmount_calls);
+    TEST_ASSERT_EQUAL_INT(1, g_present_calls);
+    TEST_ASSERT_EQUAL_INT(0, g_mount_calls); // not present -> mount is not attempted
+    TEST_ASSERT_EQUAL_INT((int)StorageState::ABSENT, (int)dws_hotswap_state());
+    TEST_ASSERT_EQUAL_INT(2, g_event_calls);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::ABSENT, (int)g_event_to);
+}
+
+void test_binding_without_card_detect_lets_the_mount_decide()
+{
+    // A nullptr present callback means "assume a card is there"; an unmountable volume
+    // then stays ABSENT, and an unchanged state fires no event.
+    g_ms = 60000;
+    g_mount_ok = false;
+    dws_hotswap_begin(fake_mount, fake_unmount, nullptr, &g_ctx_token);
+    dws_hotswap_set_event_cb(fake_event);
+    reset_counts();
+
+    dws_hotswap_poll_at(60000);
+    TEST_ASSERT_EQUAL_INT(0, g_present_calls); // nothing to ask
+    TEST_ASSERT_EQUAL_INT(1, g_mount_calls);
+    TEST_ASSERT_FALSE(dws_hotswap_ready());
+    TEST_ASSERT_EQUAL_INT(0, g_event_calls); // ABSENT -> ABSENT is not a transition
+
+    g_mount_ok = true;
+    dws_hotswap_poll_at(62000);
+    TEST_ASSERT_TRUE(dws_hotswap_ready());
+    TEST_ASSERT_EQUAL_INT(1, g_event_calls);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::READY, (int)g_event_to);
+}
+
+void test_binding_without_a_mount_callback_never_becomes_ready()
+{
+    // No way to mount anything means no storage: it must stay fail-closed rather than
+    // report READY on the strength of card-detect alone.
+    g_ms = 70000;
+    g_present_ok = true;
+    dws_hotswap_begin(nullptr, fake_unmount, fake_present, &g_ctx_token);
+    dws_hotswap_set_event_cb(fake_event);
+    reset_counts();
+
+    dws_hotswap_poll_at(70000);
+    TEST_ASSERT_EQUAL_INT(1, g_present_calls);
+    TEST_ASSERT_EQUAL_INT(0, g_mount_calls);
+    TEST_ASSERT_FALSE(dws_hotswap_ready());
+    TEST_ASSERT_EQUAL_INT((int)StorageState::ABSENT, (int)dws_hotswap_state());
+}
+
+void test_binding_event_callback_is_optional()
+{
+    // Clearing the event callback must not stop the machine from running.
+    dws_hotswap_set_event_cb(nullptr);
+    g_ms = 80000;
+    g_present_ok = true;
+    g_mount_ok = true;
+    dws_hotswap_begin(fake_mount, fake_unmount, fake_present, &g_ctx_token);
+    reset_counts();
+
+    dws_hotswap_poll_at(80000);
+    TEST_ASSERT_TRUE(dws_hotswap_ready());
+    TEST_ASSERT_EQUAL_INT(0, g_event_calls);
+    for (int i = 0; i < 3; i++)
+        dws_hotswap_io(false);
+    TEST_ASSERT_EQUAL_INT((int)StorageState::FAULTED, (int)dws_hotswap_state());
+    TEST_ASSERT_EQUAL_INT(1, g_unmount_calls);
+    TEST_ASSERT_EQUAL_INT(0, g_event_calls);
+}
+
+void test_binding_poll_reads_the_library_clock()
+{
+    // poll() is poll_at(dws_millis()), so the same rate limit applies to the loop-driven
+    // form: one probe per interval, no mount storm while a card is missing.
+    g_ms = 90000;
+    g_present_ok = false;
+    g_mount_ok = true;
+    dws_hotswap_begin(fake_mount, fake_unmount, fake_present, &g_ctx_token);
+    dws_hotswap_set_event_cb(fake_event);
+    reset_counts();
+
+    dws_hotswap_poll(); // due immediately (begin back-dates the probe clock)
+    TEST_ASSERT_EQUAL_INT(1, g_present_calls);
+    TEST_ASSERT_FALSE(dws_hotswap_ready());
+
+    g_ms = 91000; // inside the interval
+    dws_hotswap_poll();
+    TEST_ASSERT_EQUAL_INT(1, g_present_calls);
+
+    g_ms = 92000; // interval elapsed, and the card is back
+    g_present_ok = true;
+    dws_hotswap_poll();
+    TEST_ASSERT_EQUAL_INT(2, g_present_calls);
+    TEST_ASSERT_TRUE(dws_hotswap_ready());
+    TEST_ASSERT_EQUAL_INT(1, g_event_calls);
 }
 
 int main(int, char **)
@@ -249,6 +547,7 @@ int main(int, char **)
     RUN_TEST(test_further_failures_while_faulted_are_ignored);
     RUN_TEST(test_io_while_absent_is_ignored);
     RUN_TEST(test_fail_run_saturates_instead_of_wrapping);
+    RUN_TEST(test_fail_run_at_the_uint8_ceiling_does_not_wrap);
     RUN_TEST(test_no_probe_while_ready);
     RUN_TEST(test_probe_is_rate_limited_while_absent);
     RUN_TEST(test_probe_pacing_is_wrapsafe_across_rollover);
@@ -259,5 +558,16 @@ int main(int, char **)
     RUN_TEST(test_null_core_is_not_a_crash);
     RUN_TEST(test_state_names);
     RUN_TEST(test_json_and_overflow_is_fail_closed);
+    // Binding: this one must stay first (it is the only chance to see the pre-begin state).
+    RUN_TEST(test_binding_poll_before_begin_does_nothing);
+    RUN_TEST(test_binding_mounts_on_the_first_poll_and_notifies);
+    RUN_TEST(test_binding_ready_volume_is_never_reprobed);
+    RUN_TEST(test_binding_io_fault_unmounts_immediately_and_notifies);
+    RUN_TEST(test_binding_drops_a_faulted_mount_before_retrying);
+    RUN_TEST(test_binding_faults_and_retries_without_an_unmount_callback);
+    RUN_TEST(test_binding_without_card_detect_lets_the_mount_decide);
+    RUN_TEST(test_binding_without_a_mount_callback_never_becomes_ready);
+    RUN_TEST(test_binding_event_callback_is_optional);
+    RUN_TEST(test_binding_poll_reads_the_library_clock);
     return UNITY_END();
 }

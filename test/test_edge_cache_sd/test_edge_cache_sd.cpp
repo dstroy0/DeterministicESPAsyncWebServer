@@ -69,13 +69,17 @@ static WalDev dev_over(RamDisk *d)
     v.size = d->size;
     return v;
 }
-static void fresh(void)
+static void fresh_sized(uint64_t bytes)
 {
     g_d.buf = g_disk;
-    g_d.size = sizeof(g_disk);
+    g_d.size = bytes;
     g_dev = dev_over(&g_d);
     TEST_ASSERT_TRUE(dws_wal_store_format(&g_wal, &g_dev));
     TEST_ASSERT_TRUE(dws_dbm_open(&g_db, &g_wal));
+}
+static void fresh(void)
+{
+    fresh_sized(sizeof(g_disk));
 }
 static bool reboot(void)
 {
@@ -621,6 +625,48 @@ void test_purge_prefix_skips_key_without_a_path(void)
     TEST_ASSERT_EQUAL_UINT32(2, edge_sd_purge_all(&g_db));
 }
 
+void test_purge_counts_only_the_deletes_that_were_logged(void)
+{
+    // A dbm delete is an append of a tombstone record, so it fails once the log has no room left. The purge
+    // loop must count only the deletes that actually landed; a key whose tombstone could not be written
+    // stays live (and is still there for a later purge once the log has been compacted).
+    fresh_sized(1024); // a data region small enough to run out during the purge
+    put_path("/cdn/f0");
+    put_path("/cdn/f1");
+    const uint32_t before = dws_dbm_count(&g_db);
+    TEST_ASSERT_EQUAL_UINT32(2, before);
+
+    // Record framing: the WAL header plus the dbm payload header (op u8 + key_len u16 + val_len u32).
+    const uint64_t DBM_PAYLOAD_HDR = 1 + 2 + 4;
+    const uint64_t TOMB = WAL_RECORD_HEADER + DBM_PAYLOAD_HDR + 32; // one delete of a 32-byte digest key
+    const char pad_key_fmt[] = "pad%d";
+    const uint64_t PAD_REC_HDR = WAL_RECORD_HEADER + DBM_PAYLOAD_HDR + 4; // "padN" is a 4-byte key
+    const uint64_t leave = 2 * TOMB - 1; // room for exactly one tombstone, one byte short of two
+
+    uint8_t pad[DWS_DBM_VAL_MAX];
+    memset(pad, 'P', sizeof(pad));
+    uint64_t room = dws_wal_store_capacity(&g_wal) - dws_wal_store_used(&g_wal);
+    TEST_ASSERT_TRUE(room > leave + PAD_REC_HDR);
+    for (int i = 0; room > leave; i++)
+    {
+        TEST_ASSERT_TRUE(room - leave >= PAD_REC_HDR); // the gap is always fillable by a whole record
+        uint64_t want = room - leave - PAD_REC_HDR;
+        uint32_t vlen = want > (uint64_t)DWS_DBM_VAL_MAX ? (uint32_t)DWS_DBM_VAL_MAX : (uint32_t)want;
+        char key[8];
+        snprintf(key, sizeof(key), pad_key_fmt, i); // a 4-byte key: not a digest, so the purge skips it
+        TEST_ASSERT_EQUAL_UINT(4, strlen(key));
+        TEST_ASSERT_TRUE(dws_dbm_put(&g_db, key, 4, pad, vlen));
+        room = dws_wal_store_capacity(&g_wal) - dws_wal_store_used(&g_wal);
+    }
+    TEST_ASSERT_EQUAL_UINT64(leave, room);
+    const uint32_t live = dws_dbm_count(&g_db); // the two entries plus the pad keys
+
+    // Both entries match, but only the first tombstone fits: the purge reports one deletion, not two.
+    TEST_ASSERT_EQUAL_UINT32(1, edge_sd_purge_all(&g_db));
+    TEST_ASSERT_EQUAL_UINT32(live - 1, dws_dbm_count(&g_db));     // exactly one key actually left the index
+    TEST_ASSERT_TRUE(has_path("/cdn/f0") != has_path("/cdn/f1")); // and it is one of the two, not both
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -646,5 +692,6 @@ int main(void)
     RUN_TEST(test_dbm_api_null_guards);
     RUN_TEST(test_purge_skips_foreign_and_unreadable_records);
     RUN_TEST(test_purge_prefix_skips_key_without_a_path);
+    RUN_TEST(test_purge_counts_only_the_deletes_that_were_logged);
     return UNITY_END();
 }

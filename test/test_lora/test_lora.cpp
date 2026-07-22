@@ -216,9 +216,95 @@ void test_frame_parse_build_guards()
     TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(&hdr, pay, sizeof(pay), out, 2)); // cap too small
 }
 
+// The codec's pointer guards: a null raw buffer or a null header is refused, while the payload and
+// payload-length outputs are optional - a caller wanting only the header may omit both.
+void test_frame_parse_null_guards_and_optional_outs()
+{
+    dws_lora_header h = {};
+    const uint8_t raw[6] = {0x11, 0x22, 0x33, 0x44, 0xAB, 0xCD};
+    const uint8_t *p = nullptr;
+    uint16_t pl = 0;
+
+    TEST_ASSERT_FALSE(dws_lora_frame_parse(nullptr, sizeof(raw), &h, &p, &pl));
+    TEST_ASSERT_FALSE(dws_lora_frame_parse(raw, sizeof(raw), nullptr, &p, &pl));
+
+    TEST_ASSERT_TRUE(dws_lora_frame_parse(raw, sizeof(raw), &h, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_UINT8(0x11, h.to);
+    TEST_ASSERT_EQUAL_UINT8(0x44, h.flags);
+    TEST_ASSERT_NULL(p); // the omitted outputs stay untouched
+    TEST_ASSERT_EQUAL_UINT16(0, pl);
+}
+
+// dws_lora_frame_build() refuses a null header, a null output buffer, and a payload longer than
+// the radio's maximum - each before writing a byte.
+void test_frame_build_null_and_size_guards()
+{
+    dws_lora_header h = {};
+    uint8_t pay[8] = {0};
+    uint8_t out[DWS_LORA_MAX_PAYLOAD + 4];
+
+    TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(nullptr, pay, 4, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(&h, pay, 4, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(&h, pay, DWS_LORA_MAX_PAYLOAD + 1, out, sizeof(out)));
+}
+
+// dws_lora_init() refuses a null bus, a bus missing either access callback, and a null config -
+// each before touching a single radio register.
+void test_init_rejects_incomplete_bus()
+{
+    dws_lora_config cfg = default_cfg();
+    dws_lora_bus no_read = {nullptr, mock_write, &g_chip};
+    dws_lora_bus no_write = {mock_read, nullptr, &g_chip};
+
+    TEST_ASSERT_FALSE(dws_lora_init(nullptr, &cfg));
+    TEST_ASSERT_FALSE(dws_lora_init(&no_read, &cfg));
+    TEST_ASSERT_FALSE(dws_lora_init(&no_write, &cfg));
+    TEST_ASSERT_FALSE(dws_lora_init(&g_bus, nullptr));
+    TEST_ASSERT_EQUAL_UINT8(0, g_chip.reg[0x01]); // RegOpMode never written
+}
+
+// SF11/SF12 symbols are long enough to need the low-data-rate optimization bit in RegModemConfig3;
+// lower spreading factors must leave it clear.
+void test_init_sets_low_data_rate_optimize_at_high_sf()
+{
+    dws_lora_config cfg = default_cfg();
+    cfg.spreading = 12;
+    TEST_ASSERT_TRUE(dws_lora_init(&g_bus, &cfg));
+    TEST_ASSERT_EQUAL_HEX8(0x0C, g_chip.reg[0x26]); // LowDataRateOptimize | AgcAutoOn
+
+    memset(&g_chip, 0, sizeof(g_chip));
+    g_chip.reg[0x42] = 0x12;
+    cfg.spreading = 7;
+    TEST_ASSERT_TRUE(dws_lora_init(&g_bus, &cfg));
+    TEST_ASSERT_EQUAL_HEX8(0x04, g_chip.reg[0x26]); // AgcAutoOn only
+}
+
+// Every driver entry point that takes a bus refuses a null one; send additionally refuses a null
+// frame and a zero length. None of them writes a register on the way out.
+void test_driver_entry_points_reject_null_bus()
+{
+    uint8_t frame[8] = {0};
+    uint8_t buf[8];
+    int16_t rssi = 0;
+
+    TEST_ASSERT_FALSE(dws_lora_send(nullptr, frame, sizeof(frame)));
+    TEST_ASSERT_FALSE(dws_lora_send(&g_bus, nullptr, sizeof(frame)));
+    TEST_ASSERT_FALSE(dws_lora_send(&g_bus, frame, 0));
+    TEST_ASSERT_FALSE(dws_lora_tx_done(nullptr));
+    dws_lora_set_rx(nullptr);
+    TEST_ASSERT_EQUAL_INT(-1, dws_lora_recv(nullptr, buf, sizeof(buf), &rssi));
+    TEST_ASSERT_EQUAL_INT(-1, dws_lora_recv(&g_bus, nullptr, sizeof(buf), &rssi));
+    TEST_ASSERT_EQUAL_UINT8(0, g_chip.reg[0x01]); // RegOpMode untouched by all of them
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_frame_parse_null_guards_and_optional_outs);
+    RUN_TEST(test_frame_build_null_and_size_guards);
+    RUN_TEST(test_init_rejects_incomplete_bus);
+    RUN_TEST(test_init_sets_low_data_rate_optimize_at_high_sf);
+    RUN_TEST(test_driver_entry_points_reject_null_bus);
     RUN_TEST(test_frame_build_then_parse);
     RUN_TEST(test_frame_parse_rejects_short);
     RUN_TEST(test_frame_build_bounds);

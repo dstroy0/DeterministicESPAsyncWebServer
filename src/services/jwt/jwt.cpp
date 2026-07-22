@@ -93,8 +93,10 @@ bool dws_jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *se
     ssh_hmac_sha256(secret, secret_len, (const uint8_t *)token, signing_len, mac);
 
     char computed[48];
-    if (dws_base64url_encode(mac, sizeof(mac), computed) != 43)
-        return false;
+    // SSH_HMAC_SHA256_LEN is a fixed 32 bytes, and unpadded base64url of 32 bytes is always
+    // 43 characters, so this length check can never fail.
+    if (dws_base64url_encode(mac, sizeof(mac), computed) != 43) // GCOVR_EXCL_LINE
+        return false;                                           // GCOVR_EXCL_LINE
     return ct_eq(computed, sig, 43);
 }
 
@@ -166,7 +168,9 @@ bool dws_jwt_claim_int(const char *token, size_t token_len, const char *name, lo
 
     char key[40];
     int kn = snprintf(key, sizeof(key), "\"%s\"", name);
-    if (kn <= 0 || kn >= (int)sizeof(key))
+    // kn <= 0 is unreachable: snprintf on a plain "%s" format into a valid buffer cannot report an
+    // encoding error, and the two quotes make the would-be length at least 2.
+    if (kn <= 0 || kn >= (int)sizeof(key)) // GCOVR_EXCL_LINE
         return false;
     const char *p = strstr((const char *)buf, key);
     if (!p)
@@ -213,7 +217,8 @@ bool dws_jwt_claim_str(const char *token, size_t token_len, const char *name, ch
 
     char key[40];
     int kn = snprintf(key, sizeof(key), "\"%s\"", name);
-    if (kn <= 0 || kn >= (int)sizeof(key))
+    // kn <= 0 is unreachable for the same reason as in dws_jwt_claim_int() above.
+    if (kn <= 0 || kn >= (int)sizeof(key)) // GCOVR_EXCL_LINE
         return false;
     const char *p = strstr((const char *)buf, key);
     if (!p)

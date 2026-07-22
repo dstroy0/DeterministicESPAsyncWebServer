@@ -7,6 +7,7 @@
 // hmac/hashlib) so the field layout and the address binding are proven, not just self-consistent.
 
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // SSH_HMAC_SHA256_LEN (cookie MAC size)
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
@@ -344,10 +345,144 @@ static void test_cookie_freshness(void)
                                              sizeof(out), &plen));
 }
 
+// dws_dtls_hs_frag_build's range guards: each uint24 field overflowing, a fragment that falls
+// outside the declared message, and an output buffer too small for header + fragment.
+static void test_hs_frag_build_rejects(void)
+{
+    uint8_t body[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint8_t out[64];
+
+    // full_len / frag_offset / frag_length each above the 24-bit wire field.
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_hs_frag_build(1, 0, 0x1000000, 0, body, 8, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_hs_frag_build(1, 0, 100, 0x1000000, body, 8, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_hs_frag_build(1, 0, 100, 0, body, 0x1000000, out, sizeof(out)));
+
+    // fragment_offset + fragment_length runs past the declared message length.
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_hs_frag_build(1, 0, 10, 8, body, 5, out, sizeof(out)));
+
+    // The 12-byte header plus the fragment does not fit the output buffer.
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_hs_frag_build(1, 0, 8, 0, body, 8, out, DTLS_HS_HDR_LEN + 7));
+    // One more byte of room is enough.
+    TEST_ASSERT_EQUAL_size_t(DTLS_HS_HDR_LEN + 8,
+                             dws_dtls_hs_frag_build(1, 0, 8, 0, body, 8, out, DTLS_HS_HDR_LEN + 8));
+}
+
+// Reassembly guards reached only with a hand-built header (dws_dtls_hs_header_parse would have
+// rejected the first): a fragment running past the message end, and an empty fragment of a
+// non-empty message (which contributes nothing and leaves the reassembler incomplete).
+static void test_hs_reasm_header_guards(void)
+{
+    uint8_t body[64];
+    fill(body, sizeof(body));
+    uint8_t buf[64];
+
+    // frag_offset + frag_length > length -> refused.
+    {
+        DtlsHsReasm r;
+        dws_dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
+        DtlsHsHeader h = {1, 40, 0, 30, 20, body}; // 30 + 20 > 40
+        TEST_ASSERT_EQUAL_INT(-1, dws_dtls_hs_reasm_add(&r, &h));
+    }
+    // A zero-length fragment of a non-empty message: accepted but incomplete, and the real
+    // fragment that follows still completes the message.
+    {
+        DtlsHsReasm r;
+        dws_dtls_hs_reasm_init(&r, 0, buf, sizeof(buf));
+        DtlsHsHeader empty = {1, 40, 0, 0, 0, body};
+        TEST_ASSERT_EQUAL_INT(0, dws_dtls_hs_reasm_add(&r, &empty));
+        TEST_ASSERT_TRUE(r.active);
+        TEST_ASSERT_EQUAL_INT(1, feed(&r, 1, 0, 40, 0, body, 40));
+        TEST_ASSERT_EQUAL_MEMORY(body, buf, 40);
+    }
+}
+
+// dws_dtls_ack_build's bounds: a record-number list longer than the 16-bit length prefix, and an
+// output buffer too small for the list it was asked to write.
+static void test_ack_build_rejects(void)
+{
+    uint8_t out[64];
+    // 4096 * 16 = 65536 does not fit the uint16 list-length prefix (the list is never read).
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_ack_build(nullptr, 4096, out, sizeof(out)));
+
+    DtlsRecordNumber rns[2] = {{2, 1}, {2, 2}};
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_ack_build(rns, 2, out, 2 + 2 * 16 - 1)); // one byte short
+    TEST_ASSERT_EQUAL_size_t(2 + 2 * 16, dws_dtls_ack_build(rns, 2, out, 2 + 2 * 16));
+}
+
+// dws_dtls_cookie_make's bounds: a payload larger than the 16-bit length field, a cookie that does
+// not fit the caller's buffer, and one that would exceed DTLS_COOKIE_MAX even with room to spare.
+static void test_cookie_make_rejects(void)
+{
+    uint8_t out[256];
+    const uint8_t payload[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+
+    // payload_len above the 16-bit payload-length field (the payload is never read).
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_dtls_cookie_make(COOKIE_KEY, 1, nullptr, 0x10000, COOKIE_ADDR, sizeof(COOKIE_ADDR), out, sizeof(out)));
+    // total = 11 + payload + 32 = 51 > out_cap.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_dtls_cookie_make(COOKIE_KEY, 1, payload, sizeof(payload), COOKIE_ADDR, sizeof(COOKIE_ADDR), out, 20));
+    // Room in the caller's buffer, but the cookie would exceed DTLS_COOKIE_MAX.
+    uint8_t big[128];
+    memset(big, 0x5A, sizeof(big));
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_dtls_cookie_make(COOKIE_KEY, 1, big, sizeof(big), COOKIE_ADDR, sizeof(COOKIE_ADDR), out, sizeof(out)));
+}
+
+// A payload-free cookie (what the DTLS handshake actually mints) round-trips: it is the minimum
+// 43-byte form and verify reports a zero-length payload without touching the payload buffer.
+static void test_cookie_empty_payload_roundtrip(void)
+{
+    uint8_t cookie[DTLS_COOKIE_MAX];
+    size_t n =
+        dws_dtls_cookie_make(COOKIE_KEY, 4242, nullptr, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie, sizeof(cookie));
+    TEST_ASSERT_EQUAL_size_t(1 + 8 + 2 + SSH_HMAC_SHA256_LEN, n);
+
+    uint8_t payload[4];
+    memset(payload, 0xEE, sizeof(payload));
+    size_t plen = 123;
+    TEST_ASSERT_TRUE(dws_dtls_cookie_verify(COOKIE_KEY, 4242, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie, n, payload,
+                                            sizeof(payload), &plen));
+    TEST_ASSERT_EQUAL_size_t(0, plen);
+    TEST_ASSERT_EQUAL_UINT8(0xEE, payload[0]); // nothing was written
+}
+
+// dws_dtls_cookie_verify's structural rejects: an unknown format version, a declared payload length
+// that disagrees with the cookie length, and a payload larger than the caller's buffer.
+static void test_cookie_verify_structural_rejects(void)
+{
+    uint8_t payload[64];
+    size_t plen = 0;
+    uint8_t bad[sizeof(COOKIE_WIRE)];
+
+    // Version byte other than 1.
+    memcpy(bad, COOKIE_WIRE, sizeof(bad));
+    bad[0] = 2;
+    TEST_ASSERT_FALSE(dws_dtls_cookie_verify(COOKIE_KEY, 0, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), bad, sizeof(bad),
+                                             payload, sizeof(payload), &plen));
+
+    // Declared payload length no longer matches the cookie's actual length.
+    memcpy(bad, COOKIE_WIRE, sizeof(bad));
+    bad[10] = 0x21; // 33 instead of 34
+    TEST_ASSERT_FALSE(dws_dtls_cookie_verify(COOKIE_KEY, 0, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), bad, sizeof(bad),
+                                             payload, sizeof(payload), &plen));
+
+    // The 34-byte payload does not fit the caller's buffer: refused before the MAC is even checked.
+    uint8_t small[16];
+    TEST_ASSERT_FALSE(dws_dtls_cookie_verify(COOKIE_KEY, 0, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), COOKIE_WIRE,
+                                             sizeof(COOKIE_WIRE), small, sizeof(small), &plen));
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_hs_header_roundtrip);
+    RUN_TEST(test_hs_frag_build_rejects);
+    RUN_TEST(test_hs_reasm_header_guards);
+    RUN_TEST(test_ack_build_rejects);
+    RUN_TEST(test_cookie_make_rejects);
+    RUN_TEST(test_cookie_empty_payload_roundtrip);
+    RUN_TEST(test_cookie_verify_structural_rejects);
     RUN_TEST(test_hs_header_parse_rejects);
     RUN_TEST(test_hs_reasm_single_fragment);
     RUN_TEST(test_hs_reasm_in_order);

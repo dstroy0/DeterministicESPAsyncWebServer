@@ -114,6 +114,15 @@ void dws_devicenet_frag_reset(DeviceNetFragRx *rx)
         memset(rx, 0, sizeof(*rx));
 }
 
+// The two "cannot overflow" exclusions below (the non-fragmented and FIRST appends) hold only because a
+// single append into a freshly reset buffer fits DWS_DEVICENET_MSG_MAX. body_len is a uint8_t, so the
+// largest such append is body_len - 1 == 254 octets; anything smaller than that turns those excluded
+// error returns into live code. DWS_DEVICENET_MSG_MAX is a plain #ifndef in ServerConfig.h and can be
+// overridden, so pin the invariant here rather than trusting the default.
+static_assert(DWS_DEVICENET_MSG_MAX >= 254,
+              "DWS_DEVICENET_MSG_MAX must be >= 254 (the largest single-frame append, body_len - 1 with "
+              "body_len at its uint8_t maximum) or frag_append can overflow on the first frame");
+
 // Append @p n octets to the reassembly buffer; false if it would overflow.
 static bool frag_append(DeviceNetFragRx *rx, const uint8_t *p, uint8_t n)
 {
@@ -132,9 +141,10 @@ DeviceNetFragResult dws_devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *
     if (!(body[0] & DEVICENET_HDR_FRAG)) // a complete, non-fragmented message in one frame
     {
         dws_devicenet_frag_reset(rx);
-        if (body_len > 1 && !frag_append(rx, body + 1, (uint8_t)(body_len - 1)))
-            return DeviceNetFragResult::DEVICENET_FRAG_ERR; // GCOVR_EXCL_LINE  unreachable: reset()->len 0, then a
-                                                            // single append of <=254 (uint8 body_len-1) < 256=MSG_MAX
+        // GCOVR_EXCL_LINE below: the append half cannot fail - reset() leaves len 0 and body_len is a uint8_t,
+        // so this appends at most 254 octets, which the static_assert above guarantees MSG_MAX can hold.
+        if (body_len > 1 && !frag_append(rx, body + 1, (uint8_t)(body_len - 1))) // GCOVR_EXCL_LINE
+            return DeviceNetFragResult::DEVICENET_FRAG_ERR;                      // GCOVR_EXCL_LINE
         return DeviceNetFragResult::DEVICENET_FRAG_COMPLETE;
     }
     if (body_len < 2)
@@ -150,10 +160,10 @@ DeviceNetFragResult dws_devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *
         dws_devicenet_frag_reset(rx);
         rx->active = true;
         rx->next_count = (uint8_t)((count + 1u) & DEVICENET_FRAG_COUNT_MASK);
-        if (data_len && !frag_append(rx, data, data_len))
-            return DeviceNetFragResult::DEVICENET_FRAG_ERR; // GCOVR_EXCL_LINE  unreachable: FIRST reset()->len 0, then
-                                                            // a single append of
-                                                            // <=253 (uint8 body_len-2) < 256=MSG_MAX
+        // GCOVR_EXCL_LINE below: as above, FIRST resets first, so this appends at most 253 octets (uint8
+        // body_len - 2) into an empty buffer, which the static_assert above guarantees MSG_MAX can hold.
+        if (data_len && !frag_append(rx, data, data_len))   // GCOVR_EXCL_LINE
+            return DeviceNetFragResult::DEVICENET_FRAG_ERR; // GCOVR_EXCL_LINE
         return DeviceNetFragResult::DEVICENET_FRAG_STARTED;
     case DEVICENET_FRAG_MIDDLE:
         if (!rx->active || count != rx->next_count)

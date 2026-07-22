@@ -337,9 +337,127 @@ void test_bearer_header_guards()
     TEST_ASSERT_FALSE(dws_jwt_bearer_valid("Bearer    not.a.jwt", secret, sizeof(secret))); // leading spaces skipped
 }
 
+// Build a genuinely HS256-signed token with a caller-chosen header JSON, so the "alg" check is the
+// only thing that can reject it.
+static void mk_signed_hdr(char *out, size_t cap, const char *hdr_json, const char *pl_json)
+{
+    char h[128], p[256], signing[400], sig[48];
+    uint8_t mac[SSH_HMAC_SHA256_LEN];
+    dws_base64url_encode((const uint8_t *)hdr_json, strlen(hdr_json), h);
+    dws_base64url_encode((const uint8_t *)pl_json, strlen(pl_json), p);
+    int sl = snprintf(signing, sizeof(signing), "%s.%s", h, p);
+    ssh_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
+    dws_base64url_encode(mac, sizeof(mac), sig);
+    snprintf(out, cap, "%s.%s", signing, sig);
+}
+
+// The "alg" lookup skips spaces and tabs around the colon, but the value must be exactly "HS256":
+// a name that merely *starts with* it is a different algorithm and is rejected even when the
+// signature is a valid HMAC over the token.
+void test_header_alg_whitespace_and_prefix()
+{
+    char t[400];
+    mk_signed_hdr(t, sizeof(t), "{\"alg\" : \"HS256\"}", "{\"sub\":\"a\"}");
+    TEST_ASSERT_TRUE(dws_jwt_verify_hs256(t, strlen(t), sec(), seclen()));
+    mk_signed_hdr(t, sizeof(t), "{\"alg\":\t\"HS256\"}", "{\"sub\":\"a\"}");
+    TEST_ASSERT_TRUE(dws_jwt_verify_hs256(t, strlen(t), sec(), seclen()));
+    mk_signed_hdr(t, sizeof(t), "{\"alg\":\"HS256X\"}", "{\"sub\":\"a\"}");
+    TEST_ASSERT_FALSE(dws_jwt_verify_hs256(t, strlen(t), sec(), seclen()));
+}
+
+// dws_jwt_verify_hs256() refuses a null token and one longer than DWS_JWT_MAX_LEN before doing any
+// parsing or HMAC work.
+void test_verify_length_guards()
+{
+    TEST_ASSERT_FALSE(dws_jwt_verify_hs256(nullptr, 20, sec(), seclen()));
+    static char big[DWS_JWT_MAX_LEN + 8];
+    memset(big, 'a', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    TEST_ASSERT_FALSE(dws_jwt_verify_hs256(big, DWS_JWT_MAX_LEN + 1, sec(), seclen()));
+}
+
+// With no token there are no time claims to evaluate, so dws_jwt_time_valid() reports valid -
+// exactly as it does with no wall clock.
+void test_time_valid_null_token()
+{
+    TEST_ASSERT_TRUE(dws_jwt_time_valid(nullptr, 0, 1700000000, 0));
+}
+
+// dws_jwt_bearer_valid_at() applies the same header guards as the untimed variant: a null header
+// and a non-Bearer scheme are refused, and spaces after the scheme are skipped.
+void test_bearer_valid_at_header_guards()
+{
+    char t[400], hdr[470];
+    mk_signed(t, sizeof(t), "{\"exp\":1700000000}");
+    TEST_ASSERT_FALSE(dws_jwt_bearer_valid_at(nullptr, sec(), seclen(), 1699999000, 0));
+    TEST_ASSERT_FALSE(dws_jwt_bearer_valid_at("Basic abc", sec(), seclen(), 1699999000, 0));
+    snprintf(hdr, sizeof(hdr), "Bearer    %s", t); // extra spaces after the scheme
+    TEST_ASSERT_TRUE(dws_jwt_bearer_valid_at(hdr, sec(), seclen(), 1699999000, 0));
+}
+
+// dws_jwt_claim_int() skips spaces and tabs around the colon, and rejects a value whose first
+// character is above '9' (a bare keyword) as firmly as one below '0' (a quoted string).
+void test_claim_int_value_whitespace_and_non_numeric()
+{
+    long v = 0;
+    char t[256];
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"exp\" : 1700000000}", "sig");
+    TEST_ASSERT_TRUE(dws_jwt_claim_int(t, strlen(t), "exp", &v));
+    TEST_ASSERT_EQUAL_INT32(1700000000, v);
+
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"exp\":\t42}", "sig");
+    TEST_ASSERT_TRUE(dws_jwt_claim_int(t, strlen(t), "exp", &v));
+    TEST_ASSERT_EQUAL_INT32(42, v);
+
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"exp\":true}", "sig");
+    TEST_ASSERT_FALSE(dws_jwt_claim_int(t, strlen(t), "exp", &v));
+}
+
+// dws_jwt_claim_str() refuses a null claim name and a null output, skips spaces and tabs around
+// the colon, and fails closed - leaving an empty result - when the value does not fit the output
+// or when the JSON string ends on a dangling backslash.
+void test_claim_str_guards_whitespace_and_truncation()
+{
+    char buf[32], t[256];
+    TEST_ASSERT_FALSE(dws_jwt_claim_str(TOKEN, strlen(TOKEN), nullptr, buf, sizeof(buf)));
+    TEST_ASSERT_FALSE(dws_jwt_claim_str(TOKEN, strlen(TOKEN), "sub", nullptr, sizeof(buf)));
+
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"s\" : \"one\"}", "sig");
+    TEST_ASSERT_TRUE(dws_jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_STRING("one", buf);
+
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"s\":\t\"two\"}", "sig");
+    TEST_ASSERT_TRUE(dws_jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_STRING("two", buf);
+
+    // A value longer than the output buffer is a failure, not a silent truncation.
+    char small[4];
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"s\":\"abcdefgh\"}", "sig");
+    TEST_ASSERT_FALSE(dws_jwt_claim_str(t, strlen(t), "s", small, sizeof(small)));
+    TEST_ASSERT_EQUAL_STRING("", small);
+
+    // A backslash as the last byte of the payload escapes nothing, so the string never closes.
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"s\":\"ab\\", "sig");
+    TEST_ASSERT_FALSE(dws_jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)));
+}
+
+// dws_jwt_scope_allows() refuses a null required scope as firmly as a null claim or an empty
+// requirement.
+void test_scope_allows_null_required()
+{
+    TEST_ASSERT_FALSE(dws_jwt_scope_allows("read write", nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_header_alg_whitespace_and_prefix);
+    RUN_TEST(test_verify_length_guards);
+    RUN_TEST(test_time_valid_null_token);
+    RUN_TEST(test_bearer_valid_at_header_guards);
+    RUN_TEST(test_claim_int_value_whitespace_and_non_numeric);
+    RUN_TEST(test_claim_str_guards_whitespace_and_truncation);
+    RUN_TEST(test_scope_allows_null_required);
     RUN_TEST(test_base64url_strict_alphabet);
     RUN_TEST(test_verify_malformed_headers);
     RUN_TEST(test_bearer_extra_spaces);

@@ -249,6 +249,7 @@ struct MockPeer
     bool closes;
     int open_ret;
     bool send_ok;
+    int reads; ///< how many times the engine asked the transport for bytes
 };
 static int p_open(void *c, const char *h, uint16_t p, uint32_t t)
 {
@@ -268,6 +269,7 @@ static size_t p_read(void *c, int cid, uint8_t *buf, size_t cap)
 {
     (void)cid;
     MockPeer *m = (MockPeer *)c;
+    m->reads++;
     size_t avail = m->len - m->cursor;
     size_t n = avail < cap ? avail : cap;
     if (m->throttle && n > m->throttle)
@@ -631,6 +633,28 @@ static void test_requester_buffer_full_without_a_frame()
     TEST_ASSERT_EQUAL_UINT(sizeof(g_rbuf), mf.got);
 }
 
+static void test_requester_pump_skips_the_read_when_the_buffer_is_already_full()
+{
+    // The accumulation window is buf + got .. buf + cap. With got already at cap the pump must skip the
+    // read outright rather than call the transport with a zero-length window, and settle the query as
+    // FAILED (buffer exhausted with no complete frame). Pins that nothing can ever be written past cap.
+    static uint8_t hdr[6] = {'E', 'M', EDGE_MESH_VERSION, 1, 0xFF, 0xFF}; // HIT announcing a 64 KiB entry
+    MockPeer m = {hdr, sizeof(hdr), 0, 0, false, 7, true};
+    EdgeFetchTransport t = peer_transport(&m);
+    EdgeMeshFetch mf;
+    edge_mesh_fetch_begin(&mf, &t, "peer", 7645, (const uint8_t *)"x", 1, g_rbuf, sizeof(g_rbuf), 1000);
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::PENDING, mf.st);
+
+    memset(g_rbuf, 0, sizeof(g_rbuf));
+    memcpy(g_rbuf, hdr, sizeof(hdr));
+    mf.got = mf.cap; // the caller-owned buffer is already full from earlier pumps
+    m.reads = 0;
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, edge_mesh_fetch_pump(&mf, &t, 1000));
+    TEST_ASSERT_EQUAL_INT(0, m.reads);      // no read was issued at all
+    TEST_ASSERT_EQUAL_UINT(mf.cap, mf.got); // and the accumulated count did not move past cap
+    TEST_ASSERT_EQUAL_UINT(0, m.cursor);    // the peer's bytes were left where they were
+}
+
 static void test_requester_end_without_a_connection()
 {
     MockPeer m = {(const uint8_t *)"", 0, 0, 0, false, -1, true}; // open fails
@@ -678,6 +702,7 @@ int main()
     RUN_TEST(test_requester_begin_argument_guards);
     RUN_TEST(test_requester_pump_guards);
     RUN_TEST(test_requester_buffer_full_without_a_frame);
+    RUN_TEST(test_requester_pump_skips_the_read_when_the_buffer_is_already_full);
     RUN_TEST(test_requester_end_without_a_connection);
     return UNITY_END();
 }

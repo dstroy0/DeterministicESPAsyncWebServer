@@ -16,9 +16,10 @@
 // Clamp a snprintf result: 0 on truncation / error, else the written length.
 static size_t finish(char *buf, size_t cap, int n)
 {
-    if (n < 0 || (size_t)n >= cap)
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE  n<0 needs an snprintf encoding failure; every call site
+                                   // passes a literal format with valid args, so only the truncation arm runs
     {
-        if (cap)
+        if (cap) // GCOVR_EXCL_LINE  every caller (command/addr/read/spoll/eos) rejects cap==0 before calling finish
             buf[0] = '\0';
         return 0;
     }
@@ -180,8 +181,8 @@ bool dws_gpib_parse_addr(const char *s, size_t len, uint8_t *pad, int *sad)
             return false;
         sad_val = (int)sa;
     }
-    if (i != len)
-        return false;
+    if (i != len)     // GCOVR_EXCL_LINE  unreachable: the space skip above stops at i==len or a non-space, and
+        return false; // GCOVR_EXCL_LINE  the secondary block only falls through when i==len - so i==len here
     if (pad)
         *pad = (uint8_t)p;
     if (sad)

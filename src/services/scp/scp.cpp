@@ -55,7 +55,11 @@ ScpMode dws_scp_parse_cmd(const char *cmd, size_t cmd_len, char *path_out, size_
             last_len = tlen;
         }
     }
-    if (mode == ScpMode::INVALID || !last_tok || last_len == 0 || last_len >= path_cap)
+    // The last_len == 0 arm below can never be true, so this line is branch-excluded. The scan above
+    // only assigns last_tok/last_len after skipping spaces and confirming i < cmd_len, then advances
+    // at least one byte before the token ends - so a recorded token is always >= 1 byte long. The
+    // other three conditions here are covered.
+    if (mode == ScpMode::INVALID || !last_tok || last_len == 0 || last_len >= path_cap) // GCOVR_EXCL_LINE
         return ScpMode::INVALID;
     memcpy(path_out, last_tok, last_len);
     path_out[last_len] = '\0';
@@ -110,7 +114,11 @@ bool dws_scp_parse_cline(const char *line, size_t len, uint32_t *mode_out, uint6
 size_t dws_scp_build_cline(uint32_t mode, uint64_t size, const char *name, char *out, size_t cap)
 {
     int n = snprintf(out, cap, "C%04o %llu %s\n", (unsigned)(mode & 07777), (unsigned long long)size, name);
-    if (n <= 0 || (size_t)n >= cap)
+    // The n <= 0 arm can never be true, so this line is branch-excluded: snprintf returns the length
+    // it WOULD have written (never negative here - no encoding can fail on this format), and that
+    // format always emits at least "C0000 0 \n". Only the truncation arm is reachable, and it is
+    // covered. The guard stays as defence against a non-conforming libc.
+    if (n <= 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE
         return 0;
     return (size_t)n;
 }

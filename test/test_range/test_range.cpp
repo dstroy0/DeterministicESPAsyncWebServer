@@ -323,9 +323,25 @@ void test_serve_file_connection_gone()
     TEST_ASSERT_NULL(strstr(tcp_captured(), "200 OK"));
 }
 
+// A 416 is a full response in its own right, so it carries the configured CORS block
+// alongside the required "Content-Range: bytes * /<size>" (RFC 7233 4.4).
+void test_unsatisfiable_range_416_carries_cors()
+{
+    server.set_cors("*");
+    push_str(0, "GET /data HTTP/1.1\r\nHost: x\r\nRange: bytes=100-200\r\n\r\n");
+    http_parse(0);
+    server.handle();
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "416 Range Not Satisfiable"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Content-Range: bytes */20\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Access-Control-Allow-Origin: *\r\n"));
+    server.set_cors("");
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_unsatisfiable_range_416_carries_cors);
     RUN_TEST(test_file_send_backpressure_resumes_across_polls);
     RUN_TEST(test_file_send_write_fails_then_retries);
     RUN_TEST(test_file_send_short_read_stops);

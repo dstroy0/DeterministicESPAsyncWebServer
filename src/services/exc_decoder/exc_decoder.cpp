@@ -60,7 +60,8 @@ const char *parse_hex(const char *p, uint32_t *out)
 void put_json_str(DWSSb *b, const char *s)
 {
     dws_sb_put(b, "\"");
-    for (const char *p = s ? s : ""; *p; p++)
+    const char *src = s ? s : ""; // GCOVR_EXCL_LINE the only caller passes info->cause, a fixed-size array
+    for (const char *p = src; *p; p++)
     {
         if (*p == '"' || *p == '\\')
         {
@@ -90,7 +91,7 @@ void put_int(DWSSb *b, int v)
     char t[12];
     int n = 0;
     bool neg = v < 0;
-    unsigned u = neg ? (unsigned)(-(long)v) : (unsigned)v;
+    unsigned u = neg ? (unsigned)(-(long)v) : (unsigned)v; // GCOVR_EXCL_LINE neg is always false (core >= 0)
     do
     {
         t[n++] = (char)('0' + u % 10);
@@ -98,9 +99,10 @@ void put_int(DWSSb *b, int v)
     } while (u);
     char o[13];
     int k = 0;
+    // GCOVR_EXCL_START  dws_exc_json's only put_int call is guarded by core >= 0, so v is never negative
     if (neg)
-        o[k++] =
-            '-'; // GCOVR_EXCL_LINE dws_exc_json's only put_int call is guarded by core >= 0, so v is never negative
+        o[k++] = '-';
+    // GCOVR_EXCL_STOP
     for (int i = 0; i < n; i++)
         o[k++] = t[n - 1 - i];
     o[k] = '\0';

@@ -98,6 +98,105 @@ static void test_build_cline_roundtrip()
     TEST_ASSERT_EQUAL_UINT(0, dws_scp_build_cline(0644, 1234, "part.nc", tiny, sizeof(tiny)));
 }
 
+// Null/zero-capacity arguments are rejected before any parsing.
+static void test_parse_cmd_null_args()
+{
+    char path[128];
+    TEST_ASSERT_EQUAL(ScpMode::INVALID, dws_scp_parse_cmd(nullptr, 9, path, sizeof(path)));
+    TEST_ASSERT_EQUAL(ScpMode::INVALID, dws_scp_parse_cmd("scp -t /x", 9, nullptr, sizeof(path)));
+    TEST_ASSERT_EQUAL(ScpMode::INVALID, dws_scp_parse_cmd("scp -t /x", 9, path, 0));
+}
+
+// Trailing whitespace is consumed without inventing an empty final token.
+static void test_parse_cmd_trailing_spaces()
+{
+    char path[128];
+    const char *c = "scp -t /x   ";
+    TEST_ASSERT_EQUAL(ScpMode::SINK, dws_scp_parse_cmd(c, strlen(c), path, sizeof(path)));
+    TEST_ASSERT_EQUAL_STRING("/x", path);
+}
+
+// A one-character token cannot be a flag group, so it is treated as the path.
+static void test_parse_cmd_single_char_path()
+{
+    char path[128];
+    const char *c = "scp -t a";
+    TEST_ASSERT_EQUAL(ScpMode::SINK, dws_scp_parse_cmd(c, strlen(c), path, sizeof(path)));
+    TEST_ASSERT_EQUAL_STRING("a", path);
+}
+
+// A role flag with no path at all is invalid.
+static void test_parse_cmd_flag_without_path()
+{
+    char path[128];
+    TEST_ASSERT_EQUAL(ScpMode::INVALID, dws_scp_parse_cmd("-t", 2, path, sizeof(path)));
+    TEST_ASSERT_EQUAL(ScpMode::INVALID, dws_scp_parse_cmd("   ", 3, path, sizeof(path)));
+}
+
+// The C-record header guards: null line and zero length.
+static void test_parse_cline_null_and_empty()
+{
+    uint32_t mode = 0;
+    uint64_t size = 0;
+    char name[64];
+    TEST_ASSERT_FALSE(dws_scp_parse_cline(nullptr, 12, &mode, &size, name, sizeof(name)));
+    TEST_ASSERT_FALSE(dws_scp_parse_cline("C0644 1 x", 0, &mode, &size, name, sizeof(name)));
+}
+
+// A record that ends inside a numeric field is rejected rather than read past.
+static void test_parse_cline_truncated_fields()
+{
+    uint32_t mode = 0;
+    uint64_t size = 0;
+    char name[64];
+    TEST_ASSERT_FALSE(dws_scp_parse_cline("C0644", 5, &mode, &size, name, sizeof(name)));     // ends in mode
+    TEST_ASSERT_FALSE(dws_scp_parse_cline("C0644 123", 9, &mode, &size, name, sizeof(name))); // ends in size
+}
+
+// Non-numeric junk where a field or its separator belongs is rejected.
+static void test_parse_cline_bad_separators()
+{
+    uint32_t mode = 0;
+    uint64_t size = 0;
+    char name[64];
+    // No octal digits at all after 'C'.
+    TEST_ASSERT_FALSE(dws_scp_parse_cline("Cxyz 10 n\n", strlen("Cxyz 10 n\n"), &mode, &size, name, sizeof(name)));
+    // Size field followed by junk instead of a space.
+    TEST_ASSERT_FALSE(
+        dws_scp_parse_cline("C0644 12x name\n", strlen("C0644 12x name\n"), &mode, &size, name, sizeof(name)));
+}
+
+// An embedded NUL terminates the name just as a newline does.
+static void test_parse_cline_name_stops_at_nul()
+{
+    uint32_t mode = 0;
+    uint64_t size = 0;
+    char name[64];
+    const char rec[] = "C0644 10 abc\0xyz";
+    TEST_ASSERT_TRUE(dws_scp_parse_cline(rec, sizeof(rec) - 1, &mode, &size, name, sizeof(name)));
+    TEST_ASSERT_EQUAL_STRING("abc", name);
+    TEST_ASSERT_EQUAL_UINT64(10, size);
+}
+
+// A name that does not fit the caller's buffer is rejected, not truncated.
+static void test_parse_cline_name_too_long()
+{
+    uint32_t mode = 0;
+    uint64_t size = 0;
+    char tiny[4];
+    const char *rec = "C0644 10 longname\n";
+    TEST_ASSERT_FALSE(dws_scp_parse_cline(rec, strlen(rec), &mode, &size, tiny, sizeof(tiny)));
+}
+
+// mode_out / size_out are optional: the name is still produced without them.
+static void test_parse_cline_optional_outputs()
+{
+    char name[64];
+    const char *rec = "C0644 10 n\n";
+    TEST_ASSERT_TRUE(dws_scp_parse_cline(rec, strlen(rec), nullptr, nullptr, name, sizeof(name)));
+    TEST_ASSERT_EQUAL_STRING("n", name);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -107,5 +206,15 @@ int main()
     RUN_TEST(test_parse_cline);
     RUN_TEST(test_parse_cline_malformed);
     RUN_TEST(test_build_cline_roundtrip);
+    RUN_TEST(test_parse_cmd_null_args);
+    RUN_TEST(test_parse_cmd_trailing_spaces);
+    RUN_TEST(test_parse_cmd_single_char_path);
+    RUN_TEST(test_parse_cmd_flag_without_path);
+    RUN_TEST(test_parse_cline_null_and_empty);
+    RUN_TEST(test_parse_cline_truncated_fields);
+    RUN_TEST(test_parse_cline_bad_separators);
+    RUN_TEST(test_parse_cline_name_stops_at_nul);
+    RUN_TEST(test_parse_cline_name_too_long);
+    RUN_TEST(test_parse_cline_optional_outputs);
     return UNITY_END();
 }

@@ -39,27 +39,35 @@ static WebTerminalCtx s_term;
 static void term_page_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    if (s_term.srv)
+    // This route only exists once dws_web_terminal_begin() has installed it, and that call stores a
+    // non-null server first, so the null arm is unreachable from any registered route.
+    if (s_term.srv) // GCOVR_EXCL_LINE
         s_term.srv->send(slot_id, 200, DWS_MIME_TEXT_HTML, DWS_TERMINAL_PAGE);
 }
 
 static void term_ws_connect(uint8_t ws_id)
 {
-    if (ws_id < MAX_WS_CONNS)
+    // ws_id always addresses a real pool slot: the WebSocket layer numbers ws_pool[i].ws_id = i for
+    // i < MAX_WS_CONNS and dispatches every route callback as cb(ws->ws_id), so the bound check
+    // cannot fail. Same reasoning for the ws_id checks in term_ws_message / term_ws_close below.
+    if (ws_id < MAX_WS_CONNS) // GCOVR_EXCL_LINE
         s_term.is_client[ws_id] = true;
-    if (s_term.srv)
+    // As in term_page_handler: this handler is only reachable once begin() has stored the server.
+    if (s_term.srv) // GCOVR_EXCL_LINE
         s_term.srv->ws_send_text(ws_id, "DeterministicESPAsyncWebServer terminal ready\n");
 }
 
 static void term_ws_message(uint8_t ws_id)
 {
-    if (s_term.cb && ws_id < MAX_WS_CONNS)
+    // Branch-excluded for the ws_id bound only (see term_ws_connect); the s_term.cb arms are both
+    // exercised by the suite (with and without a registered command callback).
+    if (s_term.cb && ws_id < MAX_WS_CONNS) // GCOVR_EXCL_LINE
         s_term.cb(ws_payload(ws_id), ws_id);
 }
 
 static void term_ws_close(uint8_t ws_id)
 {
-    if (ws_id < MAX_WS_CONNS)
+    if (ws_id < MAX_WS_CONNS) // GCOVR_EXCL_LINE  ws_id is always a valid pool index (see term_ws_connect)
         s_term.is_client[ws_id] = false;
 }
 

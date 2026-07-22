@@ -231,6 +231,113 @@ void test_parse_guards()
     TEST_ASSERT_FALSE(dws_focas_parse_response(badlen, sizeof(badlen), &r2)); // says 0x40, 1 follows
 }
 
+// The remaining typed builders share the generic request path; each pins its own selector.
+void test_build_remaining_selectors()
+{
+    uint8_t buf[64];
+    TEST_ASSERT_EQUAL_size_t(36, dws_focas_build_read_alarm(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_HEX8(0x1A, buf[15]); // read_alarm c3 = 0x1a
+    TEST_ASSERT_EQUAL_HEX8(0x21, buf[6]);  // command frame
+
+    TEST_ASSERT_EQUAL_size_t(36, dws_focas_build_read_macro(buf, sizeof(buf), 100, 199));
+    TEST_ASSERT_EQUAL_HEX8(0x15, buf[15]); // read_macro c3 = 0x15
+    TEST_ASSERT_EQUAL_HEX8(0x64, buf[19]); // v1 = first = 100
+    TEST_ASSERT_EQUAL_HEX8(0xC7, buf[23]); // v2 = last = 199
+
+    TEST_ASSERT_EQUAL_size_t(36, dws_focas_build_read_feedrate(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_HEX8(0x24, buf[15]); // read_feedrate c3 = 0x24
+
+    TEST_ASSERT_EQUAL_size_t(36, dws_focas_build_read_spindle(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_HEX8(0x25, buf[15]); // read_spindle c3 = 0x25
+}
+
+void test_build_request_guards()
+{
+    uint8_t buf[64];
+    const uint8_t extra[] = {0xAA};
+    // a declared extra length with no extra pointer
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_focas_build_request(buf, sizeof(buf), FocasCommand::set_macro, 0, 0, 0, 0, 0, nullptr, 1));
+    // extra so long that the 16-bit payload-length field could not hold body + extra
+    TEST_ASSERT_EQUAL_size_t(0, dws_focas_build_request(buf, sizeof(buf), FocasCommand::set_macro, 0, 0, 0, 0, 0, extra,
+                                                        (size_t)0xFFFF - FOCAS_REQ_BODY_LEN + 1));
+    // null destination
+    TEST_ASSERT_EQUAL_size_t(0, dws_focas_build_open(nullptr, 32));
+    TEST_ASSERT_EQUAL_size_t(0, dws_focas_build_close(nullptr, 32));
+}
+
+void test_parse_frame_rejects_each_magic_octet()
+{
+    // All four magic octets are checked independently.
+    FocasFrame f;
+    uint8_t frame[FOCAS_FRAME_HDR_LEN] = {0xA0, 0xA0, 0xA0, 0xA0, 0x00, 0x01, 0x21, 0x02, 0x00, 0x00};
+    TEST_ASSERT_TRUE(dws_focas_parse_frame(frame, sizeof(frame), &f)); // control: intact magic
+    for (int i = 0; i < 4; i++)
+    {
+        uint8_t bad[FOCAS_FRAME_HDR_LEN];
+        memcpy(bad, frame, sizeof(frame));
+        bad[i] = 0x00;
+        TEST_ASSERT_FALSE(dws_focas_parse_frame(bad, sizeof(bad), &f));
+    }
+    TEST_ASSERT_FALSE(dws_focas_parse_frame(frame, sizeof(frame), nullptr)); // null out
+    // a malformed envelope also fails the command-frame convenience wrapper
+    FocasResponse r;
+    uint8_t badmagic[FOCAS_FRAME_HDR_LEN];
+    memcpy(badmagic, frame, sizeof(frame));
+    badmagic[0] = 0x00;
+    TEST_ASSERT_FALSE(dws_focas_parse_command_frame(badmagic, sizeof(badmagic), &r));
+}
+
+void test_parser_null_and_short_guards()
+{
+    // Every parser refuses a null input, a null out, and a buffer shorter than its fixed record.
+    const uint8_t bytes[32] = {0};
+    FocasResponse r;
+    TEST_ASSERT_FALSE(dws_focas_parse_response(nullptr, FOCAS_RESP_HDR_LEN, &r));
+    TEST_ASSERT_FALSE(dws_focas_parse_response(bytes, FOCAS_RESP_HDR_LEN, nullptr));
+    TEST_ASSERT_FALSE(dws_focas_parse_response(bytes, FOCAS_RESP_HDR_LEN - 1, &r));
+    TEST_ASSERT_TRUE(dws_focas_parse_response(bytes, FOCAS_RESP_HDR_LEN, &r)); // exact fit is enough
+
+    FocasSysInfo si;
+    TEST_ASSERT_FALSE(dws_focas_parse_sysinfo(nullptr, FOCAS_SYSINFO_LEN, &si));
+    TEST_ASSERT_FALSE(dws_focas_parse_sysinfo(bytes, FOCAS_SYSINFO_LEN, nullptr));
+    TEST_ASSERT_FALSE(dws_focas_parse_sysinfo(bytes, FOCAS_SYSINFO_LEN - 1, &si));
+
+    uint32_t alarm = 0xDEAD;
+    TEST_ASSERT_FALSE(dws_focas_parse_alarm(nullptr, 4, &alarm));
+    TEST_ASSERT_FALSE(dws_focas_parse_alarm(bytes, 4, nullptr));
+    TEST_ASSERT_FALSE(dws_focas_parse_alarm(bytes, 3, &alarm));
+    TEST_ASSERT_EQUAL_HEX32(0xDEAD, alarm); // untouched by the rejected calls
+
+    FocasValue fv;
+    TEST_ASSERT_FALSE(dws_focas_decode8(nullptr, FOCAS_VALUE_LEN, &fv));
+    TEST_ASSERT_FALSE(dws_focas_decode8(bytes, FOCAS_VALUE_LEN, nullptr));
+    TEST_ASSERT_FALSE(dws_focas_decode8(bytes, FOCAS_VALUE_LEN - 1, &fv));
+}
+
+void test_decode8_base_and_sentinel_edges()
+{
+    // Only base 2 and base 10 are decimal-scaled, and the "no value" sentinel needs BOTH octets
+    // 6 and 7 to be 0xFF.
+    FocasValue fv;
+    const uint8_t base2[] = {0x00, 0x00, 0x00, 0x0C, 0x00, 0x02, 0x00, 0x02}; // 12 / 2^2
+    TEST_ASSERT_TRUE(dws_focas_decode8(base2, sizeof(base2), &fv));
+    TEST_ASSERT_EQUAL_UINT8(2, fv.base);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 3.0f, dws_focas_value_f(&fv));
+
+    const uint8_t base16[] = {0x00, 0x00, 0x00, 0x0C, 0x00, 0x10, 0x00, 0x02}; // base 16: unsupported
+    TEST_ASSERT_FALSE(dws_focas_decode8(base16, sizeof(base16), &fv));
+    TEST_ASSERT_FALSE(fv.valid);
+
+    // octet 6 is 0xFF but octet 7 is not -> not the sentinel, still a real value
+    const uint8_t not_sentinel[] = {0x00, 0x00, 0x00, 0x64, 0x00, 0x0A, 0xFF, 0x01};
+    TEST_ASSERT_TRUE(dws_focas_decode8(not_sentinel, sizeof(not_sentinel), &fv));
+    TEST_ASSERT_EQUAL_UINT8(1, fv.exp);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 10.0f, dws_focas_value_f(&fv));
+
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, dws_focas_value_f(nullptr)); // no value at all
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -245,5 +352,10 @@ int main()
     RUN_TEST(test_decode8_value);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_parse_guards);
+    RUN_TEST(test_build_remaining_selectors);
+    RUN_TEST(test_build_request_guards);
+    RUN_TEST(test_parse_frame_rejects_each_magic_octet);
+    RUN_TEST(test_parser_null_and_short_guards);
+    RUN_TEST(test_decode8_base_and_sentinel_edges);
     return UNITY_END();
 }

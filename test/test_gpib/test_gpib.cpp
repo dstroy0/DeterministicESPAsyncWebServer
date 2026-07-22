@@ -156,6 +156,90 @@ void test_parse_version()
     TEST_ASSERT_FALSE(dws_gpib_parse_version("AR488 controller", 16, &ver, &vlen));
 }
 
+// ── argument guards ──────────────────────────────────────────────────────────────────────────
+
+void test_builders_reject_null_buffer_and_zero_cap()
+{
+    // Every builder needs a destination with room in it; a null command string is refused too.
+    char buf[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_command(nullptr, sizeof(buf), "clr"));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_command(buf, 0, "clr"));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_command(buf, sizeof(buf), nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_addr(nullptr, sizeof(buf), 9, -1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_addr(buf, 0, 9, -1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_read(nullptr, sizeof(buf), GpibRead::UNTIL_EOI, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_read(buf, 0, GpibRead::UNTIL_EOI, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_spoll(nullptr, sizeof(buf), -1, -1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_spoll(buf, 0, -1, -1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_eos(nullptr, sizeof(buf), GpibEos::LF));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_eos(buf, 0, GpibEos::LF));
+}
+
+void test_build_data_guards_and_empty()
+{
+    // A null destination / zero capacity / a declared length with no source are refused; a zero
+    // length with a null source is the legal "just terminate the line" case.
+    uint8_t buf[16];
+    const uint8_t src[] = {'A'};
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_build_data(nullptr, sizeof(buf), src, sizeof(src)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_build_data(buf, 0, src, sizeof(src)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_gpib_build_data(buf, sizeof(buf), nullptr, 1));
+    size_t n = dws_gpib_build_data(buf, sizeof(buf), nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(1, n);
+    TEST_ASSERT_EQUAL_HEX8('\n', buf[0]);
+}
+
+void test_is_command_rejects_null()
+{
+    TEST_ASSERT_FALSE(dws_gpib_is_command(nullptr, 8));
+}
+
+// ── parser edges ─────────────────────────────────────────────────────────────────────────────
+
+void test_parse_decimal_edges()
+{
+    // A null input, a digit below '0', and an optional out pointer.
+    uint32_t v = 0;
+    TEST_ASSERT_FALSE(dws_gpib_parse_decimal(nullptr, 3, &v));
+    TEST_ASSERT_FALSE(dws_gpib_parse_decimal("12-", 3, &v));   // '-' sorts below '0'
+    TEST_ASSERT_FALSE(dws_gpib_parse_decimal("   ", 3, &v));   // trims to nothing
+    TEST_ASSERT_TRUE(dws_gpib_parse_decimal("7", 1, nullptr)); // out is optional
+}
+
+void test_parse_addr_edges()
+{
+    // Null input, an empty/blank line, a non-numeric primary, and the secondary-address rules.
+    uint8_t pad = 0;
+    int sad = 0;
+    TEST_ASSERT_FALSE(dws_gpib_parse_addr(nullptr, 2, &pad, &sad));
+    TEST_ASSERT_FALSE(dws_gpib_parse_addr("  ", 2, &pad, &sad));    // trims to nothing
+    TEST_ASSERT_FALSE(dws_gpib_parse_addr("x", 1, &pad, &sad));     // primary is not a number
+    TEST_ASSERT_FALSE(dws_gpib_parse_addr("9 -1", 4, &pad, &sad));  // secondary is not a number
+    TEST_ASSERT_FALSE(dws_gpib_parse_addr("9 96x", 5, &pad, &sad)); // trailing junk
+    TEST_ASSERT_FALSE(dws_gpib_parse_addr("9 50", 4, &pad, &sad));  // secondary below 96
+    // both out pointers are optional
+    TEST_ASSERT_TRUE(dws_gpib_parse_addr("9", 1, nullptr, &sad));
+    TEST_ASSERT_EQUAL_INT(-1, sad);
+    TEST_ASSERT_TRUE(dws_gpib_parse_addr("9", 1, &pad, nullptr));
+    TEST_ASSERT_EQUAL_UINT8(9, pad);
+}
+
+void test_parse_version_edges()
+{
+    // Null input, a line shorter than the "version " key, a key with nothing after it, and the
+    // optional out pointers.
+    const char *resp = "controller version 1.6\r\n";
+    const char *ver = nullptr;
+    size_t vlen = 0;
+    TEST_ASSERT_FALSE(dws_gpib_parse_version(nullptr, 10, &ver, &vlen));
+    TEST_ASSERT_FALSE(dws_gpib_parse_version("ver", 3, &ver, &vlen));
+    TEST_ASSERT_FALSE(dws_gpib_parse_version("version \r\n", 10, &ver, &vlen)); // no version text
+    TEST_ASSERT_TRUE(dws_gpib_parse_version(resp, strlen(resp), nullptr, &vlen));
+    TEST_ASSERT_EQUAL_size_t(3, vlen);
+    TEST_ASSERT_TRUE(dws_gpib_parse_version(resp, strlen(resp), &ver, nullptr));
+    TEST_ASSERT_EQUAL_MEMORY("1.6", ver, 3);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -169,5 +253,11 @@ int main()
     RUN_TEST(test_parse_decimal);
     RUN_TEST(test_parse_addr);
     RUN_TEST(test_parse_version);
+    RUN_TEST(test_builders_reject_null_buffer_and_zero_cap);
+    RUN_TEST(test_build_data_guards_and_empty);
+    RUN_TEST(test_is_command_rejects_null);
+    RUN_TEST(test_parse_decimal_edges);
+    RUN_TEST(test_parse_addr_edges);
+    RUN_TEST(test_parse_version_edges);
     return UNITY_END();
 }

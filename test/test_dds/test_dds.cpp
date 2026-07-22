@@ -48,16 +48,17 @@ struct Seen
     int count;
     uint8_t ids[8];
     size_t lens[8];
+    const uint8_t *bodies[8];
 };
 static void collect(uint8_t id, uint8_t flags, const uint8_t *body, size_t body_len, void *arg)
 {
     (void)flags;
-    (void)body;
     Seen *s = (Seen *)arg;
     if (s->count < 8)
     {
         s->ids[s->count] = id;
         s->lens[s->count] = body_len;
+        s->bodies[s->count] = body;
         s->count++;
     }
 }
@@ -105,6 +106,123 @@ void test_rtps_build_guards()
     TEST_ASSERT_EQUAL_size_t(0, dws_rtps_submessage(0x15, 0, body, sizeof(body), out, 2)); // cap too small
 }
 
+// Every null-pointer guard on the header builder rejects independently.
+void test_header_null_args(void)
+{
+    uint8_t out[24];
+    TEST_ASSERT_EQUAL_size_t(0, dws_rtps_header(nullptr, VENDOR, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rtps_header(GUID, nullptr, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rtps_header(GUID, VENDOR, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(20, dws_rtps_header(GUID, VENDOR, out, sizeof(out))); // control
+}
+
+// The submessage builder rejects a null destination and a null body with a non-zero
+// length, but a zero length with a null body is a legal empty submessage.
+void test_submessage_null_args(void)
+{
+    uint8_t out[16];
+    uint8_t body[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_size_t(0, dws_rtps_submessage(Rtps::RTPS_SM_DATA, 0, body, 4, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rtps_submessage(Rtps::RTPS_SM_DATA, 0, nullptr, 4, out, sizeof(out)));
+    // body_len == 0 with a null body: header only, no memcpy.
+    size_t n = dws_rtps_submessage(Rtps::RTPS_SM_PAD, Rtps::RTPS_FLAG_ENDIAN, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(4, n);
+    TEST_ASSERT_EQUAL_HEX8(Rtps::RTPS_SM_PAD, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[3]);
+}
+
+// A null message buffer is rejected before the length check.
+void test_parse_null_msg(void)
+{
+    TEST_ASSERT_FALSE(dws_rtps_parse(nullptr, 20, nullptr, nullptr));
+}
+
+// Each of the four magic bytes is checked individually.
+void test_parse_rejects_each_magic_byte(void)
+{
+    uint8_t msg[24];
+    for (int i = 0; i < 4; i++)
+    {
+        dws_rtps_header(GUID, VENDOR, msg, sizeof(msg));
+        msg[i] = 'Z';
+        TEST_ASSERT_FALSE(dws_rtps_parse(msg, 20, nullptr, nullptr));
+    }
+    dws_rtps_header(GUID, VENDOR, msg, sizeof(msg)); // control: intact magic parses
+    TEST_ASSERT_TRUE(dws_rtps_parse(msg, 20, nullptr, nullptr));
+}
+
+// A different MAJOR version is rejected; an OLDER minor is accepted (RTPS is
+// backward compatible), which is the arm the "newer minor" test cannot reach.
+void test_parse_version_major_and_older_minor(void)
+{
+    uint8_t msg[24];
+    dws_rtps_header(GUID, VENDOR, msg, sizeof(msg));
+    msg[4] = 1; // major != ours
+    TEST_ASSERT_FALSE(dws_rtps_parse(msg, 20, nullptr, nullptr));
+    dws_rtps_header(GUID, VENDOR, msg, sizeof(msg));
+    msg[5] = 0; // older minor: accepted
+    TEST_ASSERT_TRUE(dws_rtps_parse(msg, 20, nullptr, nullptr));
+}
+
+// A big-endian submessage (E flag clear) decodes octetsToNextHeader MSB-first.
+void test_parse_big_endian_submessage(void)
+{
+    uint8_t msg[64];
+    size_t n = dws_rtps_header(GUID, VENDOR, msg, sizeof(msg));
+    uint8_t data[4] = {0xDE, 0xAD, 0xBE, 0xEF};
+    n += dws_rtps_submessage(Rtps::RTPS_SM_DATA, 0x00, data, 4, msg + n, sizeof(msg) - n);
+    TEST_ASSERT_EQUAL_HEX8(0x00, msg[22]); // wire order really is big-endian
+    TEST_ASSERT_EQUAL_HEX8(0x04, msg[23]);
+
+    Seen s = {0, {0}, {0}, {nullptr}};
+    TEST_ASSERT_TRUE(dws_rtps_parse(msg, n, collect, &s));
+    TEST_ASSERT_EQUAL_INT(1, s.count);
+    TEST_ASSERT_EQUAL_HEX8(Rtps::RTPS_SM_DATA, s.ids[0]);
+    TEST_ASSERT_EQUAL_size_t(4, s.lens[0]);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(data, s.bodies[0], 4);
+}
+
+// octetsToNextHeader == 0 means "extends to end of message" and terminates the
+// walk. Here it is the last submessage, so the body is empty and reported as null.
+void test_parse_zero_length_terminates(void)
+{
+    uint8_t msg[32];
+    size_t n = dws_rtps_header(GUID, VENDOR, msg, sizeof(msg));
+    n += dws_rtps_submessage(Rtps::RTPS_SM_PAD, Rtps::RTPS_FLAG_ENDIAN, nullptr, 0, msg + n, sizeof(msg) - n);
+    TEST_ASSERT_EQUAL_size_t(24, n);
+
+    Seen s = {0, {0}, {0}, {nullptr}};
+    TEST_ASSERT_TRUE(dws_rtps_parse(msg, n, collect, &s));
+    TEST_ASSERT_EQUAL_INT(1, s.count);
+    TEST_ASSERT_EQUAL_size_t(0, s.lens[0]);
+    TEST_ASSERT_NULL(s.bodies[0]); // empty body is handed over as nullptr
+}
+
+// A submessage whose declared length runs past the end of the datagram is rejected.
+void test_parse_rejects_truncated_submessage(void)
+{
+    uint8_t msg[32];
+    dws_rtps_header(GUID, VENDOR, msg, sizeof(msg));
+    msg[20] = Rtps::RTPS_SM_DATA;
+    msg[21] = Rtps::RTPS_FLAG_ENDIAN;
+    msg[22] = 100; // claims 100 body bytes; only 0 remain
+    msg[23] = 0;
+    Seen s = {0, {0}, {0}, {nullptr}};
+    TEST_ASSERT_FALSE(dws_rtps_parse(msg, 24, collect, &s));
+    TEST_ASSERT_EQUAL_INT(0, s.count); // rejected before any callback
+}
+
+// Parsing with no callback still walks and validates the whole message.
+void test_parse_without_callback(void)
+{
+    uint8_t msg[64];
+    size_t n = dws_rtps_header(GUID, VENDOR, msg, sizeof(msg));
+    uint8_t data[4] = {1, 2, 3, 4};
+    n += dws_rtps_submessage(Rtps::RTPS_SM_DATA, Rtps::RTPS_FLAG_ENDIAN, data, 4, msg + n, sizeof(msg) - n);
+    TEST_ASSERT_TRUE(dws_rtps_parse(msg, n, nullptr, nullptr));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -113,5 +231,14 @@ int main(void)
     RUN_TEST(test_parse_message);
     RUN_TEST(test_parse_rejects);
     RUN_TEST(test_rtps_build_guards);
+    RUN_TEST(test_header_null_args);
+    RUN_TEST(test_submessage_null_args);
+    RUN_TEST(test_parse_null_msg);
+    RUN_TEST(test_parse_rejects_each_magic_byte);
+    RUN_TEST(test_parse_version_major_and_older_minor);
+    RUN_TEST(test_parse_big_endian_submessage);
+    RUN_TEST(test_parse_zero_length_terminates);
+    RUN_TEST(test_parse_rejects_truncated_submessage);
+    RUN_TEST(test_parse_without_callback);
     return UNITY_END();
 }

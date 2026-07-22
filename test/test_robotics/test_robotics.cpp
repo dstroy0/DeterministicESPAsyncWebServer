@@ -16,7 +16,11 @@ enum
     N_MOTIONDEVICES = 6100,
     N_MOTIONDEVICE = 6200,
     N_MD_MANUFACTURER = 6201,
+    N_MD_MODEL = 6202,
+    N_MD_PRODUCTCODE = 6203,
+    N_MD_SERIAL = 6204,
     N_MD_CATEGORY = 6205,
+    N_MDP_INCONTROL = 6212,
     N_MD_PARAMSET = 6210,
     N_MDP_ONPATH = 6211,
     N_MDP_SPEEDOVERRIDE = 6213,
@@ -24,13 +28,20 @@ enum
     N_AXIS_BASE = 6400,
     N_AXIS1 = 6410,
     N_AXIS1_POSITION = 6411,
+    N_AXIS1_SPEED = 6412,
+    N_AXIS1_ACCEL = 6413,
     N_AXIS1_PROFILE = 6414,
     N_AXIS2 = 6420,
     N_AXIS2_SPEED = 6422,
     N_CONTROLLERS = 6600,
     N_CONTROLLER = 6610,
     N_CT_MANUFACTURER = 6611,
+    N_CT_MODEL = 6612,
+    N_CT_PRODUCTCODE = 6613,
+    N_CT_SERIAL = 6614,
     N_CT_SOFTWARE = 6620,
+    N_SW_MANUFACTURER = 6621,
+    N_SW_MODEL = 6622,
     N_SW_REVISION = 6623,
     N_SAFETYSTATES = 6700,
     N_SAFETYSTATE = 6710,
@@ -298,9 +309,144 @@ static void test_read_before_bind_is_a_clean_miss(void)
     TEST_ASSERT_EQUAL_INT32(-1, dws_robotics_browse(0, 85, refs, 4));
 }
 
+// Every MotionDevice / Controller / Software leaf the focused tests above skip still resolves to its
+// bound model field - the arms of the Read switch nothing else visits.
+static void test_read_every_remaining_leaf(void)
+{
+    OpcUaVariant v;
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_MD_PRODUCTCODE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_STRING, v.type);
+    TEST_ASSERT_EQUAL_STRING("AR6-STD", v.str);
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_MD_SERIAL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("SN-R-0007", v.str);
+
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_MDP_INCONTROL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_BOOL, v.type);
+    TEST_ASSERT_TRUE(v.b);
+
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_CT_MODEL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("CTRL-9", v.str);
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_CT_PRODUCTCODE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("C9-STD", v.str);
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_CT_SERIAL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("SN-C-0009", v.str);
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_SW_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("Acme Software", v.str);
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_SW_MODEL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("RobOS", v.str);
+}
+
+// All four axis variables of one axis resolve, each with its own Variant type - in particular
+// ActualAcceleration, the arm the focused axis test does not visit.
+static void test_read_axis_all_four_variables(void)
+{
+    OpcUaVariant v;
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_AXIS1_POSITION, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(v.f64 == 10.5);
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_AXIS1_SPEED, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(v.f64 == 1.0);
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_AXIS1_ACCEL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_DOUBLE, v.type);
+    TEST_ASSERT_TRUE(v.f64 == 0.1);
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_AXIS1_PROFILE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_INT32, v.type);
+}
+
+// Only sub-ids 1..4 under an in-range Axis_k are variables: the Axis object id itself (sub 0) and a
+// sub-id past MotionProfile fall through to the plain node switch and miss, and an id inside the
+// AXIS_BASE decade (k == 0) is not an axis at all.
+static void test_read_axis_sub_id_bounds(void)
+{
+    OpcUaVariant v;
+    TEST_ASSERT_FALSE(dws_robotics_read(DWS_ROBOTICS_NS, N_AXIS1, OPCUA_ATTR_VALUE, &v)); // sub 0: the object
+    TEST_ASSERT_FALSE(
+        dws_robotics_read(DWS_ROBOTICS_NS, N_AXIS1 + 5, OPCUA_ATTR_VALUE, &v)); // sub 5: past MotionProfile
+    TEST_ASSERT_FALSE(dws_robotics_read(DWS_ROBOTICS_NS, N_AXIS_BASE + 5, OPCUA_ATTR_VALUE, &v)); // k == 0
+}
+
+// A Browse buffer smaller than the node's child count is filled to the brim and then left alone -
+// add_ref must drop the overflow instead of writing past out[max-1].
+static void test_browse_clamps_to_max(void)
+{
+    OpcUaReference refs[8];
+    memset(refs, 0, sizeof(refs));
+    int32_t n = browse(DWS_ROBOTICS_NS, N_MOTIONDEVICE, refs, 2); // MotionDevice has 7 children
+    TEST_ASSERT_EQUAL_INT32(2, n);
+    TEST_ASSERT_EQUAL_STRING("Manufacturer", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_STRING("Model", refs[1].browse_name);
+    TEST_ASSERT_NULL(refs[2].browse_name); // the third child was dropped, not written
+}
+
+// Namespace 0 holds standard nodes; only the Objects folder (i=85) is ours, anything else in ns0 misses.
+static void test_browse_ns0_other_than_objects_folder_misses(void)
+{
+    OpcUaReference refs[4];
+    TEST_ASSERT_EQUAL_INT32(-1, browse(0, 84, refs, 4));   // Root folder
+    TEST_ASSERT_EQUAL_INT32(-1, browse(0, 86, refs, 4));   // Types folder
+    TEST_ASSERT_EQUAL_INT32(-1, browse(0, 6000, refs, 4)); // our MotionDeviceSystem id, but in ns0
+}
+
+// An unnamed model still publishes the system under the Objects folder, using the fallback name.
+static void test_browse_objects_folder_without_model_name(void)
+{
+    g_mds.name = nullptr;
+    OpcUaReference refs[4];
+    int32_t n = browse(0, 85, refs, 4);
+    TEST_ASSERT_EQUAL_INT32(1, n);
+    TEST_ASSERT_EQUAL_STRING("MotionDeviceSystem", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_STRING("MotionDeviceSystem", refs[0].display_name);
+    TEST_ASSERT_EQUAL_UINT32(N_MOTIONDEVICESYSTEM, refs[0].target_id);
+}
+
+// The Axes folder never publishes more axes than the build compiled room for, even if the bound
+// model over-declares axis_count - the loop is clamped by DWS_ROBOTICS_AXES as well.
+static void test_browse_axes_clamped_to_compiled_maximum(void)
+{
+    g_mds.device.axis_count = DWS_ROBOTICS_AXES + 1; // over-declared by one
+    OpcUaReference refs[DWS_ROBOTICS_AXES + 2];
+    memset(refs, 0, sizeof(refs));
+    int32_t n = browse(DWS_ROBOTICS_NS, N_MD_AXES, refs, DWS_ROBOTICS_AXES + 2);
+    TEST_ASSERT_EQUAL_INT32((int32_t)DWS_ROBOTICS_AXES, n);
+    TEST_ASSERT_EQUAL_STRING("Axis_1", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_UINT32(N_AXIS_BASE + DWS_ROBOTICS_AXES * 10, refs[DWS_ROBOTICS_AXES - 1].target_id);
+    TEST_ASSERT_NULL(refs[DWS_ROBOTICS_AXES].browse_name); // the over-declared axis was not emitted
+}
+
+// install() binds the model as well as registering the resolvers with the OPC UA server, so a Read
+// right after install resolves against the newly bound system.
+static void test_install_binds_the_model(void)
+{
+    static RoboticsMotionDeviceSystem other;
+    memset(&other, 0, sizeof(other));
+    other.name = "Robot-2";
+    other.device.manufacturer = "Other Robotics";
+    other.device.axis_count = 1;
+    other.device.axes[0].actual_position = 99.5;
+
+    dws_robotics_install(&other);
+
+    OpcUaVariant v;
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_MD_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("Other Robotics", v.str); // the installed model, not the setUp one
+    TEST_ASSERT_TRUE(dws_robotics_read(DWS_ROBOTICS_NS, N_AXIS1_POSITION, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(v.f64 == 99.5);
+    OpcUaReference refs[4];
+    int32_t n = dws_robotics_browse(0, 85, refs, 4);
+    TEST_ASSERT_EQUAL_INT32(1, n);
+    TEST_ASSERT_EQUAL_STRING("Robot-2", refs[0].browse_name);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_read_every_remaining_leaf);
+    RUN_TEST(test_read_axis_all_four_variables);
+    RUN_TEST(test_read_axis_sub_id_bounds);
+    RUN_TEST(test_browse_clamps_to_max);
+    RUN_TEST(test_browse_ns0_other_than_objects_folder_misses);
+    RUN_TEST(test_browse_objects_folder_without_model_name);
+    RUN_TEST(test_browse_axes_clamped_to_compiled_maximum);
+    RUN_TEST(test_install_binds_the_model);
     RUN_TEST(test_browse_objects_folder_has_system);
     RUN_TEST(test_browse_system_folders);
     RUN_TEST(test_browse_motiondevice_components);

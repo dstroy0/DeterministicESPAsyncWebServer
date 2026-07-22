@@ -99,7 +99,9 @@ static HotswapCtx s_hs = {{StorageState::ABSENT, 0, 1, 0, 0, 0, 0}, nullptr, nul
 
 static void hs_notify(StorageState from, StorageState to)
 {
-    if (s_hs.event && from != to)
+    // `from != to` has no false branch to reach: both call sites (poll_at, io) only invoke hs_notify
+    // after dws_hotswap_core_probe / dws_hotswap_core_io reported an actual state change.
+    if (s_hs.event && from != to) // GCOVR_EXCL_LINE - see above
         s_hs.event(from, to, s_hs.ctx);
 }
 
@@ -185,7 +187,9 @@ size_t dws_hotswap_json(char *out, size_t cap)
         return 0;
     int n = snprintf(out, cap, "{\"storage\":\"%s\",\"mounts\":%u,\"faults\":%u}",
                      dws_hotswap_state_name(s_hs.core.state), (unsigned)s_hs.core.mounts, (unsigned)s_hs.core.faults);
-    if (n < 0 || (size_t)n >= cap)
+    // `n < 0` has no true branch to reach: the format is a fixed literal with no encoding-dependent
+    // conversion and cap == 0 was rejected above, so snprintf can only ever report truncation here.
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE - see above
     {
         out[0] = '\0';
         return 0; // fail closed rather than emit a truncated object

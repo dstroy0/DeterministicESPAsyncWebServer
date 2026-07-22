@@ -191,6 +191,104 @@ void test_parse_no_service(void)
     TEST_ASSERT_EQUAL_UINT32(0, p.service_len);
 }
 
+// An AccessResult payload of 256 octets or more needs a 3-octet BER length, so the
+// innermost wrap can never fit its 256-byte scratch: the builder must fail closed
+// rather than truncate. (dws_mms_read_response bounds only `data`, not `data_len`.)
+void test_read_response_rejects_over_long_payload(void)
+{
+    static uint8_t big[512];
+    memset(big, 0x5A, sizeof(big));
+    uint8_t out[1024];
+    // 256 is the first length needing the 3-octet form; 1 + 3 + 256 = 260 > the 256-byte scratch.
+    TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(1, big, 256, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(1, big, 512, out, sizeof(out)));
+    // The destination is left untouched when the build fails closed.
+    out[0] = 0xEE;
+    TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(1, big, 300, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xEE, out[0]);
+}
+
+// The one payload size that fills the 256-byte body buffer exactly drives the OUTER wrap
+// to a 256-octet value, which BER must encode in the 3-octet (0x82) long form. The caller's
+// cap is its own buffer, not the fixed scratch, so this succeeds and round-trips.
+void test_read_response_three_octet_outer_length(void)
+{
+    static uint8_t data[247];
+    memset(data, 0x33, sizeof(data));
+    uint8_t out[512];
+    // 247 -> inner 1+2+247 = 250 -> service 1+2+250 = 253 -> body 3 (invokeID) + 253 = 256 exactly.
+    size_t n = dws_mms_read_response(7, data, sizeof(data), out, sizeof(out));
+    TEST_ASSERT_EQUAL_UINT32(260, n); // tag + 3 length octets + 256 value
+    TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_RESPONSE, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x82, out[1]); // long form, two following length octets
+    TEST_ASSERT_EQUAL_HEX8(0x01, out[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[3]); // 0x0100 == 256
+    // The 2-byte long form decodes back, so the PDU still parses.
+    MmsPdu p;
+    TEST_ASSERT_TRUE(dws_mms_parse(out, n, &p));
+    TEST_ASSERT_EQUAL_UINT32(7, p.invoke_id);
+    TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);
+    TEST_ASSERT_TRUE(find(p.service_body, p.service_len, data, sizeof(data)) >= 0);
+    // One octet less of cap and it fails closed instead of truncating.
+    TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(7, data, sizeof(data), out, n - 1));
+}
+
+// A zero-length AccessResult is legal: `data` may be null when data_len is 0, and the
+// TLV writes the tag + length with no value copied.
+void test_read_response_empty_data(void)
+{
+    uint8_t out[128];
+    size_t n = dws_mms_read_response(3, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_RESPONSE, out[0]);
+    MmsPdu p;
+    TEST_ASSERT_TRUE(dws_mms_parse(out, n, &p));
+    TEST_ASSERT_EQUAL_UINT32(3, p.invoke_id);
+    TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);
+    TEST_ASSERT_EQUAL_UINT32(2, p.service_len); // the empty A1 listOfAccessResult: tag + zero length
+}
+
+// The confirmed-error PDU tag is accepted by the parser alongside request/response.
+void test_parse_confirmed_error_tag(void)
+{
+    uint8_t err[] = {Mms::MMS_PDU_CONFIRMED_ERROR, 0x03, 0x02, 0x01, 0x09};
+    MmsPdu p;
+    TEST_ASSERT_TRUE(dws_mms_parse(err, sizeof(err), &p));
+    TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_ERROR, p.pdu_tag);
+    TEST_ASSERT_EQUAL_UINT32(9, p.invoke_id);
+    TEST_ASSERT_EQUAL_HEX8(0, p.service_tag);
+}
+
+// The remaining BER length-field rejections: an unsupported long form (nb > 2), a long
+// form whose length octets run off the end, and a service length field that starts
+// exactly at the end of the buffer.
+void test_parse_length_field_guards(void)
+{
+    MmsPdu p;
+    // Outer length long form with nb == 3: unsupported (only 1- and 2-byte forms are decoded).
+    uint8_t nb3[] = {0xA0, 0x83, 0x00, 0x00, 0x01, 0x02, 0x01, 0x2A};
+    TEST_ASSERT_FALSE(dws_mms_parse(nb3, sizeof(nb3), &p));
+    // Outer length long form (nb == 1) but the length octet itself is past the end.
+    uint8_t trunc[] = {0xA0, 0x81};
+    TEST_ASSERT_FALSE(dws_mms_parse(trunc, sizeof(trunc), &p));
+    // The service tag is the very last octet, so its length field starts at len -> out of bounds.
+    uint8_t svc_at_end[] = {0xA0, 0x04, 0x02, 0x01, 0x2A, Mms::MMS_SERVICE_READ};
+    TEST_ASSERT_FALSE(dws_mms_parse(svc_at_end, sizeof(svc_at_end), &p));
+}
+
+// Truncations around the invokeID: a body with no room for the invokeID header at all,
+// and an invokeID whose declared content runs past the end of the buffer.
+void test_parse_invoke_id_truncated(void)
+{
+    MmsPdu p;
+    // Zero-length body: off + 2 is already past the 2-octet PDU.
+    uint8_t empty_body[] = {0xA0, 0x00};
+    TEST_ASSERT_FALSE(dws_mms_parse(empty_body, sizeof(empty_body), &p));
+    // invokeID claims 4 content octets but only 1 is present.
+    uint8_t short_id[] = {0xA0, 0x02, 0x02, 0x04, 0x01};
+    TEST_ASSERT_FALSE(dws_mms_parse(short_id, sizeof(short_id), &p));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -205,5 +303,11 @@ int main(void)
     RUN_TEST(test_parse_null_and_short);
     RUN_TEST(test_parse_malformed);
     RUN_TEST(test_parse_no_service);
+    RUN_TEST(test_read_response_rejects_over_long_payload);
+    RUN_TEST(test_read_response_three_octet_outer_length);
+    RUN_TEST(test_read_response_empty_data);
+    RUN_TEST(test_parse_confirmed_error_tag);
+    RUN_TEST(test_parse_length_field_guards);
+    RUN_TEST(test_parse_invoke_id_truncated);
     return UNITY_END();
 }

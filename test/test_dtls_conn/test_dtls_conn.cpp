@@ -1765,10 +1765,154 @@ static void test_hrr_retry_with_corrupt_cookie_rejected(void)
     TEST_ASSERT_EQUAL_UINT8(40, dws_dtls_conn_alert(&conn)); // handshake_failure
 }
 
+// Once the handshake is DONE the only handshake message the server still accepts is a retransmitted
+// Finished; anything else is an unexpected_message rather than a second pass through the state
+// machine.
+static void test_non_finished_message_after_done_rejected(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    ClientSession st;
+    TEST_ASSERT_TRUE(run_to_finished(&conn, &cfg, &st));
+    uint8_t out[256];
+    TEST_ASSERT_TRUE(feed_client_finished(&conn, &st, 0, out, sizeof(out)) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(&conn));
+
+    // A ClientHello in an epoch-2 record, at the message_seq the reassembler is expecting.
+    uint8_t stray[14];
+    stray[0] = TlsHs::TLS_HS_CLIENT_HELLO;
+    stray[1] = 0;
+    stray[2] = 0;
+    stray[3] = 10;
+    memset(stray + 4, 0x33, 10);
+    TEST_ASSERT_EQUAL_INT(-1, feed_epoch2_msg(&conn, &st, 1, 1, stray, sizeof(stray), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(10, dws_dtls_conn_alert(&conn)); // unexpected_message
+}
+
+// An epoch-2 record whose content type is neither handshake nor ACK decrypts and is consumed, but
+// drives nothing: it is not fed to the handshake reassembler and does not become the record number
+// the completion ACK covers.
+static void test_epoch2_other_content_type_ignored(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    ClientSession st;
+    TEST_ASSERT_TRUE(run_to_finished(&conn, &cfg, &st));
+
+    // Application data arriving in epoch 2 (before the handshake finishes): decrypted, replay-marked
+    // and dropped, leaving the connection healthy and still awaiting the Finished.
+    const uint8_t payload[4] = {0xDE, 0xAD, 0xBE, 0xEF};
+    uint8_t rec[128];
+    size_t rl = dws_dtls_ciphertext_protect(&st.cli_hs_write, 0, DTLS_CT_APPLICATION_DATA, payload, sizeof(payload),
+                                            rec, sizeof(rec));
+    TEST_ASSERT_TRUE(rl > 0);
+    uint8_t out[128];
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&conn));
+    TEST_ASSERT_FALSE(dws_dtls_conn_established(&conn));
+    TEST_ASSERT_EQUAL_INT((int)DTLS_PTO_INITIAL_MS, dws_dtls_conn_timeout_ms(&conn)); // still armed
+
+    // The Finished that follows still completes the handshake and is acknowledged.
+    TEST_ASSERT_TRUE(feed_client_finished(&conn, &st, 1, out, sizeof(out)) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(&conn));
+}
+
+// The retransmission timer is stopped by the DONE state itself, not only by the disarm that normally
+// accompanies it: a completed handshake that somehow still has a flight armed never retransmits.
+static void test_timer_stopped_by_done_state(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    ClientSession st;
+    uint8_t out[512];
+    TEST_ASSERT_TRUE(run_to_finished(&conn, &cfg, &st));
+    TEST_ASSERT_TRUE(feed_client_finished(&conn, &st, 0, out, sizeof(out)) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(&conn));
+
+    // Re-arm the timer behind the state machine's back: DONE must still veto the retransmission.
+    conn.awaiting_reply = true;
+    g_ms += DTLS_PTO_MAX_MS;
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_timeout_ms(&conn));
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_on_timeout(&conn, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dtls_conn_alert(&conn)); // nothing was disturbed
+}
+
+// "Established" means the handshake finished AND the epoch-3 application keys were installed: reaching
+// DONE without them is not established, so no application record is ever protected with absent keys.
+static void test_established_requires_app_keys(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    ClientSession st;
+    uint8_t out[512];
+    TEST_ASSERT_TRUE(run_to_finished(&conn, &cfg, &st));
+    TEST_ASSERT_TRUE(feed_client_finished(&conn, &st, 0, out, sizeof(out)) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(&conn));
+
+    conn.ep3_ready = false;
+    TEST_ASSERT_FALSE(dws_dtls_conn_established(&conn));
+    TEST_ASSERT_NULL(dws_dtls_conn_app_write_keys(&conn));
+    TEST_ASSERT_NULL(dws_dtls_conn_app_read_keys(&conn));
+    // ...and with no keys, an application record cannot be opened either.
+    uint8_t app[64];
+    size_t app_len = 0;
+    TEST_ASSERT_FALSE(dws_dtls_conn_open_app(&conn, out, 16, app, sizeof(app), &app_len));
+}
+
+// Reporting the local connection id requires both that a CID was negotiated and that it is non-empty:
+// a negotiated-but-empty id yields nothing to place in the peer's records.
+static void test_local_cid_requires_nonempty_id(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+
+    const uint8_t peer_cid[2] = {0x77, 0x88};
+    DtlsConn conn;
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
+    uint8_t ch[256];
+    size_t chl = build_client_hello_ex(ch, client_pub, true, nullptr, 0, peer_cid, sizeof(peer_cid));
+    uint8_t rec[320];
+    size_t rl = plain_hs_record(rec, sizeof(rec), ch, chl, 0, 0);
+    TEST_ASSERT_TRUE(rl > 0);
+    uint8_t flight[2048];
+    TEST_ASSERT_TRUE(dws_dtls_conn_process(&conn, rec, rl, flight, sizeof(flight)) > 0);
+    TEST_ASSERT_TRUE(conn.cid_negotiated);
+
+    uint8_t cid_out[DTLS_CID_MAX];
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)DTLS_CONN_LOCAL_CID_LEN, (uint32_t)dws_dtls_conn_local_cid(&conn, cid_out));
+
+    // Negotiated, but with an empty local id: nothing is reported and nothing is written out.
+    conn.local_cid_len = 0;
+    memset(cid_out, 0xEE, sizeof(cid_out));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_dtls_conn_local_cid(&conn, cid_out));
+    TEST_ASSERT_EQUAL_UINT8(0xEE, cid_out[0]); // the caller's buffer was left untouched
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake);
+    RUN_TEST(test_timer_stopped_by_done_state);
+    RUN_TEST(test_established_requires_app_keys);
+    RUN_TEST(test_local_cid_requires_nonempty_id);
+    RUN_TEST(test_non_finished_message_after_done_rejected);
+    RUN_TEST(test_epoch2_other_content_type_ignored);
     RUN_TEST(test_full_handshake_rpk);
     RUN_TEST(test_cid_handshake);
     RUN_TEST(test_hrr_group_renegotiation);

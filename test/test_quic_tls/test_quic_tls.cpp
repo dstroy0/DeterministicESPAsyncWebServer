@@ -537,8 +537,11 @@ void test_quic_tls_more_guards()
 
 #if DWS_ENABLE_PQC_KEX
 // Build a ClientHello offering X25519MLKEM768: supported_groups {0x11ec, x25519} and a key_share
-// carrying the client's ML-KEM ek (kat_ek) || X25519 pub (1216 B), plus the other required extensions.
-static size_t build_client_hello_hybrid(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len)
+// carrying the client's ML-KEM ek (@p ek, normally kat_ek) || X25519 pub (1216 B), plus the other
+// required extensions. With @p offer_hybrid_group false the hybrid share is sent but supported_groups
+// advertises only x25519, so the server must not select the hybrid.
+static size_t build_client_hello_hybrid(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len,
+                                        const uint8_t *ek = kat_ek, bool offer_hybrid_group = true)
 {
     size_t p = 0;
     out[p++] = TlsHs::TLS_HS_CLIENT_HELLO;
@@ -562,11 +565,18 @@ static size_t build_client_hello_hybrid(uint8_t *out, const uint8_t client_pub[3
         memcpy(out + p, sv, sizeof(sv));
         p += sizeof(sv);
     }
+    if (offer_hybrid_group)
     {
         static const uint8_t sg[] = {0x00, 0x0a, 0x00, 0x06, 0x00,
                                      0x04, 0x11, 0xec, 0x00, 0x1d}; // supported_groups {X25519MLKEM768, x25519}
         memcpy(out + p, sg, sizeof(sg));
         p += sizeof(sg);
+    }
+    else
+    {
+        static const uint8_t sg1[] = {0x00, 0x0a, 0x00, 0x04, 0x00, 0x02, 0x00, 0x1d}; // supported_groups {x25519}
+        memcpy(out + p, sg1, sizeof(sg1));
+        p += sizeof(sg1);
     }
     {
         static const uint8_t sa[] = {0x00, 0x0d, 0x00, 0x04, 0x00, 0x02, 0x08, 0x07}; // sig_algs ed25519
@@ -584,7 +594,7 @@ static size_t build_client_hello_hybrid(uint8_t *out, const uint8_t client_pub[3
         out[p++] = 0xec; // group
         out[p++] = (uint8_t)((MLKEM768_EK_BYTES + 32) >> 8);
         out[p++] = (uint8_t)((MLKEM768_EK_BYTES + 32) & 0xff);
-        memcpy(out + p, kat_ek, MLKEM768_EK_BYTES);
+        memcpy(out + p, ek, MLKEM768_EK_BYTES);
         p += MLKEM768_EK_BYTES;
         memcpy(out + p, client_pub, 32);
         p += 32;
@@ -929,11 +939,256 @@ void test_hybrid_handshake_roundtrip()
     TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);
 }
+// A hybrid key_share offered WITHOUT X25519MLKEM768 in supported_groups is not usable: the server
+// refuses to select a group the client did not advertise, and (having no classical share either)
+// fails the handshake rather than silently using the share.
+void test_hybrid_share_without_group_offer()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    for (int i = 0; i < 32; i++)
+        cfg.mlkem_m[i] = (uint8_t)(0x5a ^ i);
+    QuicTls qt;
+    dws_quic_tls_server_init(&qt, &cfg);
+
+    QuicTransportParams ctp;
+    dws_quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[128];
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    static uint8_t ch[2048];
+    size_t ch_len = build_client_hello_hybrid(ch, client_pub, ctp_enc, ctp_len, kat_ek, /*offer_hybrid_group=*/false);
+
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(40, qt.alert); // handshake_failure: no usable key_share
+    TEST_ASSERT_FALSE(qt.hs_keys_ready);
+}
+
+// One HelloRetryRequest only: a retry that STILL sends no X25519MLKEM768 key_share is fatal, so a
+// client cannot loop the server through the retry path (RFC 8446 sec 4.1.4).
+void test_hybrid_hrr_retry_without_share_is_fatal()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    for (int i = 0; i < 32; i++)
+        cfg.mlkem_m[i] = (uint8_t)(0x5a ^ i);
+    QuicTls qt;
+    dws_quic_tls_server_init(&qt, &cfg);
+
+    QuicTransportParams ctp;
+    dws_quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[128];
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    static uint8_t ch[2048];
+    size_t ch_len = build_client_hello_hybrid_classical(ch, client_pub, ctp_enc, ctp_len);
+
+    // ClientHello1: hybrid group offered, classical share only -> HelloRetryRequest.
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_TRUE(qt.hrr_sent);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_START, qt.state);
+
+    // ClientHello2 is identical - still no hybrid share. A second HRR is not sent; it is fatal.
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(40, qt.alert); // handshake_failure
+}
+
+// A malformed ML-KEM-768 encapsulation key (a coefficient at or above q, which FIPS 203's modulus
+// check rejects) fails the handshake instead of encapsulating against a bad key.
+void test_hybrid_bad_mlkem_key_rejected()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    for (int i = 0; i < 32; i++)
+        cfg.mlkem_m[i] = (uint8_t)(0x5a ^ i);
+    QuicTls qt;
+    dws_quic_tls_server_init(&qt, &cfg);
+
+    QuicTransportParams ctp;
+    dws_quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[128];
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+
+    static uint8_t bad_ek[MLKEM768_EK_BYTES];
+    memcpy(bad_ek, kat_ek, sizeof(bad_ek));
+    bad_ek[0] = 0xFF; // first 12-bit coefficient becomes 0xFFF = 4095 >= q (3329)
+    bad_ek[1] = 0xFF;
+
+    static uint8_t ch[2048];
+    size_t ch_len = build_client_hello_hybrid(ch, client_pub, ctp_enc, ctp_len, bad_ek);
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(40, qt.alert); // handshake_failure
+    TEST_ASSERT_FALSE(qt.hs_keys_ready);   // no keys were installed from a bad encapsulation
+}
+// The key_share walk skips entries it cannot use and keeps going: a group it does not implement, and
+// an X25519MLKEM768 entry whose key_exchange is the wrong length, are both stepped over so a usable
+// hybrid entry later in the same list is still found (RFC 8446 sec 4.2.8).
+void test_hybrid_key_share_entry_skipping()
+{
+    fill_test_material();
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    QuicTransportParams ctp;
+    dws_quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[128];
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+
+    // Start from the valid hybrid ClientHello, then rebuild its key_share with two unusable entries
+    // in front of the good one.
+    static uint8_t ch[4096];
+    size_t p = 0;
+    ch[p++] = TlsHs::TLS_HS_CLIENT_HELLO;
+    size_t hs_len_at = p;
+    p += 3;
+    ch[p++] = 0x03;
+    ch[p++] = 0x03;
+    for (int i = 0; i < 32; i++)
+        ch[p++] = (uint8_t)i;
+    ch[p++] = 0x00; // session id
+    ch[p++] = 0x00; // cipher suites
+    ch[p++] = 0x02;
+    ch[p++] = 0x13;
+    ch[p++] = 0x01;
+    ch[p++] = 0x01; // compression
+    ch[p++] = 0x00;
+    size_t ext_len_at = p;
+    p += 2;
+    {
+        static const uint8_t sv[] = {0x00, 0x2b, 0x00, 0x03, 0x02, 0x03, 0x04};
+        memcpy(ch + p, sv, sizeof(sv));
+        p += sizeof(sv);
+        static const uint8_t sg[] = {0x00, 0x0a, 0x00, 0x06, 0x00, 0x04, 0x11, 0xec, 0x00, 0x1d};
+        memcpy(ch + p, sg, sizeof(sg));
+        p += sizeof(sg);
+        static const uint8_t sa[] = {0x00, 0x0d, 0x00, 0x04, 0x00, 0x02, 0x08, 0x07};
+        memcpy(ch + p, sa, sizeof(sa));
+        p += sizeof(sa);
+    }
+    { // key_share: [ secp256r1(65B) , X25519MLKEM768 with a 100-byte share , valid X25519MLKEM768 ]
+        ch[p++] = 0x00;
+        ch[p++] = 0x33;
+        size_t el_at = p;
+        p += 2;
+        size_t cs_at = p;
+        p += 2;
+        ch[p++] = 0x00; // group secp256r1 - not implemented here
+        ch[p++] = 0x17;
+        ch[p++] = 0x00;
+        ch[p++] = 0x41; // 65 bytes
+        memset(ch + p, 0x04, 65);
+        p += 65;
+        ch[p++] = 0x11; // group X25519MLKEM768, but the wrong key_exchange length
+        ch[p++] = 0xec;
+        ch[p++] = 0x00;
+        ch[p++] = 0x64; // 100 bytes
+        memset(ch + p, 0x5c, 100);
+        p += 100;
+        ch[p++] = 0x11; // group X25519MLKEM768, correct ek(1184) || x25519(32)
+        ch[p++] = 0xec;
+        ch[p++] = (uint8_t)((MLKEM768_EK_BYTES + 32) >> 8);
+        ch[p++] = (uint8_t)((MLKEM768_EK_BYTES + 32) & 0xff);
+        memcpy(ch + p, kat_ek, MLKEM768_EK_BYTES);
+        p += MLKEM768_EK_BYTES;
+        memcpy(ch + p, client_pub, 32);
+        p += 32;
+        uint16_t cs = (uint16_t)(p - cs_at - 2);
+        ch[cs_at] = (uint8_t)(cs >> 8);
+        ch[cs_at + 1] = (uint8_t)cs;
+        uint16_t el = (uint16_t)(p - el_at - 2);
+        ch[el_at] = (uint8_t)(el >> 8);
+        ch[el_at + 1] = (uint8_t)el;
+    }
+    {
+        static const uint8_t alpn[] = {0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h', '3'};
+        memcpy(ch + p, alpn, sizeof(alpn));
+        p += sizeof(alpn);
+        ch[p++] = 0x00;
+        ch[p++] = 0x39;
+        ch[p++] = (uint8_t)(ctp_len >> 8);
+        ch[p++] = (uint8_t)ctp_len;
+        memcpy(ch + p, ctp_enc, ctp_len);
+        p += ctp_len;
+    }
+    uint16_t ext_len = (uint16_t)(p - ext_len_at - 2);
+    ch[ext_len_at] = (uint8_t)(ext_len >> 8);
+    ch[ext_len_at + 1] = (uint8_t)ext_len;
+    uint32_t hs_len = (uint32_t)(p - hs_len_at - 3);
+    ch[hs_len_at] = (uint8_t)(hs_len >> 16);
+    ch[hs_len_at + 1] = (uint8_t)(hs_len >> 8);
+    ch[hs_len_at + 2] = (uint8_t)hs_len;
+
+    Tls13ClientHello parsed;
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(ch, p, &parsed));
+    TEST_ASSERT_TRUE(parsed.has_hybrid_share); // the third entry was picked up
+    TEST_ASSERT_FALSE(parsed.has_key_share);   // neither unusable entry was mistaken for X25519
+    TEST_ASSERT_TRUE(parsed.offers_x25519mlkem768);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(kat_ek, parsed.client_mlkem_ek, MLKEM768_EK_BYTES);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(client_pub, parsed.client_x25519, 32);
+
+    // And the server really can complete a handshake from it.
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    for (int i = 0; i < 32; i++)
+        cfg.mlkem_m[i] = (uint8_t)(0x5a ^ i);
+    QuicTls qt;
+    dws_quic_tls_server_init(&qt, &cfg);
+    TEST_ASSERT_EQUAL_UINT(p, dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, p));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
+}
 #endif // DWS_ENABLE_PQC_KEX
+
+// process_message's level/state/type dispatch: a handshake message that matches neither arm is an
+// unexpected_message, whichever of the three conditions is the one that does not hold.
+void test_quic_tls_message_dispatch_guards()
+{
+    QuicTlsConfig cfg;
+    QuicTls qt;
+
+    // (a) A ClientHello at the Initial level once the handshake has moved past START.
+    drive_to_wait_finished(&qt, &cfg);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
+    uint8_t ch2[36] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x20};
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch2, sizeof(ch2));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(10, qt.alert); // unexpected_message
+
+    // (b) A Finished at the Initial level on a fresh server: the right level and state, wrong type.
+    fill_test_material();
+    make_server_config(&cfg);
+    uint8_t fin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    dws_quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, fin, sizeof(fin));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(10, qt.alert);
+
+    // (c) A Finished at the Handshake level before the ServerHello: the right level and type, but
+    // the state is still START.
+    dws_quic_tls_server_init(&qt, &cfg);
+    dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, fin, sizeof(fin));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(10, qt.alert);
+
+    // (d) The peer's transport parameters are unavailable until a ClientHello has been parsed.
+    dws_quic_tls_server_init(&qt, &cfg);
+    TEST_ASSERT_NULL(dws_quic_tls_peer_params(&qt));
+    drive_to_wait_finished(&qt, &cfg);
+    TEST_ASSERT_NOT_NULL(dws_quic_tls_peer_params(&qt));
+}
 
 int main(int, char **)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_quic_tls_message_dispatch_guards);
     RUN_TEST(test_full_handshake_roundtrip);
     RUN_TEST(test_reject_bad_client_finished);
     RUN_TEST(test_reject_no_h3_alpn);
@@ -950,6 +1205,10 @@ int main(int, char **)
 #if DWS_ENABLE_PQC_KEX
     RUN_TEST(test_hybrid_handshake_roundtrip);
     RUN_TEST(test_hybrid_hrr_roundtrip);
+    RUN_TEST(test_hybrid_share_without_group_offer);
+    RUN_TEST(test_hybrid_hrr_retry_without_share_is_fatal);
+    RUN_TEST(test_hybrid_bad_mlkem_key_rejected);
+    RUN_TEST(test_hybrid_key_share_entry_skipping);
 #endif
     return UNITY_END();
 }

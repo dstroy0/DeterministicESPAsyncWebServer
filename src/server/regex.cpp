@@ -112,7 +112,11 @@ static bool re_match_class(const char *p, size_t len, char ch)
     while (q < end)
     {
         char lo = re_read_atom(q, end);
-        if (q < end && *q == '-' && (q + 1) < end && q[1] != ']')
+        // The q[1] != ']' arm below can never be false, so this line is branch-excluded. re_atom_len
+        // ends the class at the FIRST unescaped ']', so if q[1] is a ']' it IS the terminator - then
+        // q + 1 == end and the preceding (q + 1) < end has already short-circuited. Confirmed by
+        // exhaustive search over every class body of length <= 7 drawn from { [ ] ^ - \ a }.
+        if (q < end && *q == '-' && (q + 1) < end && q[1] != ']') // GCOVR_EXCL_LINE  see note above
         {
             q++; // consume '-'
             char hi = re_read_atom(q, end);

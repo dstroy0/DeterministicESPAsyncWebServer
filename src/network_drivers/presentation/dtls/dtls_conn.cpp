@@ -41,8 +41,8 @@ bool is_ciphertext(uint8_t b0)
 // our negotiated connection id length (the CID is not length-prefixed on the wire, RFC 9146), 0 if none.
 size_t ciphertext_record_len(const uint8_t *rec, size_t avail, size_t cid_len)
 {
-    if (avail < 1)
-        return 0;
+    if (avail < 1) // GCOVR_EXCL_LINE  the only caller (process_ciphertext_record) passes len - *off with
+        return 0;  // GCOVR_EXCL_LINE  *off < len, so avail is always at least 1
     uint8_t b0 = rec[0];
     size_t off = 1;
     if (b0 & 0x10) // C bit: connection id present, cid_len bytes (known only from negotiation)
@@ -89,15 +89,24 @@ void flight_reset(DtlsConn *c)
 // so a retransmission can use fresh record sequence numbers.
 bool flight_add(DtlsConn *c, uint16_t epoch, const uint8_t *tls_msg, size_t tls_len)
 {
-    if (tls_len < 4 || c->flight_count >= DTLS_FLIGHT_MSGS)
-        return false;
+    // The three guards below are defensive and unreachable from any input the server accepts, which is
+    // why they (and every `if (!flight_add(...))` at the call sites) carry coverage exclusions:
+    //  - tls_len < 4: every caller passes a builder's output, and a TLS handshake message is never
+    //    shorter than its own 4-byte header;
+    //  - flight_count >= DTLS_FLIGHT_MSGS: a flight is at most 5 messages (ServerHello, EncryptedExtensions,
+    //    Certificate, CertificateVerify, Finished) against DTLS_FLIGHT_MSGS = 6, and a HelloRetryRequest
+    //    flight is a single message after flight_reset;
+    //  - !flen: only Certificate can approach DTLS_CONN_MSG_CAP, and DTLS_FLIGHT_CAP is defined as
+    //    DTLS_CONN_MSG_CAP + 512 - more than the ~300 bytes the other four fragments occupy.
+    if (tls_len < 4 || c->flight_count >= DTLS_FLIGHT_MSGS) // GCOVR_EXCL_LINE
+        return false;                                       // GCOVR_EXCL_LINE
     uint8_t msg_type = tls_msg[0];
     uint32_t body_len = (uint32_t)(tls_len - 4);
     uint16_t msg_seq = c->tx_msg_seq++;
     size_t flen = dws_dtls_hs_frag_build(msg_type, msg_seq, body_len, 0, tls_msg + 4, body_len,
                                          c->flight_buf + c->flight_len, sizeof(c->flight_buf) - c->flight_len);
-    if (!flen)
-        return false;
+    if (!flen)        // GCOVR_EXCL_LINE
+        return false; // GCOVR_EXCL_LINE
     c->flight_msgs[c->flight_count].off = c->flight_len;
     c->flight_msgs[c->flight_count].len = (uint16_t)flen;
     c->flight_msgs[c->flight_count].epoch = (uint8_t)epoch;
@@ -170,8 +179,8 @@ int send_hello_retry(DtlsConn *c, const Tls13ClientHello *ch, const uint8_t *ch1
 
     ssh_sha256_init(&c->transcript); // restart: message_hash(Hash(CH1)) replaces ClientHello1
     size_t n = dws_tls13_build_message_hash(c->msgbuf, sizeof(c->msgbuf), ch1_hash);
-    if (!n)
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!n)                                          // GCOVR_EXCL_LINE  a message_hash is 36 bytes and msgbuf is
+        return fail(c, ALERT_INTERNAL_ERROR);        // GCOVR_EXCL_LINE  DTLS_CONN_MSG_CAP (1024): it always fits
     ssh_sha256_update(&c->transcript, c->msgbuf, n); // transcript only; message_hash is never sent
 
     // Stateless cookie with an empty payload: this connection keeps its own transcript across the
@@ -179,16 +188,18 @@ int send_hello_retry(DtlsConn *c, const Tls13ClientHello *ch, const uint8_t *ch1
     uint8_t cookie[DTLS_COOKIE_MAX];
     size_t clen = dws_dtls_cookie_make(c->cfg.cookie_key, dws_millis(), nullptr, 0, c->peer_addr, c->peer_addr_len,
                                        cookie, sizeof(cookie));
-    if (!clen)
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!clen)                                // GCOVR_EXCL_LINE  an empty-payload cookie is 43 bytes against
+        return fail(c, ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  cookie[DTLS_COOKIE_MAX] (128): it always fits
 
     n = dws_tls13_build_hello_retry_request(c->msgbuf, sizeof(c->msgbuf), ch->session_id, ch->session_id_len,
                                             TLS_GROUP_X25519, cookie, clen, /*dtls=*/true);
-    if (!n)
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!n)                                   // GCOVR_EXCL_LINE  an HRR with a 43-byte cookie is ~140 bytes
+        return fail(c, ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  against msgbuf's 1024: it always fits
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
     flight_reset(c);
-    if (!flight_add(c, 0, c->msgbuf, n) || !flight_transmit(c, out, out_cap, out_len))
+    // GCOVR_EXCL_LINE below: flight_add cannot fail here (see its guards) - only the flight_transmit arm
+    // is reachable, and it is covered by a too-small output buffer.
+    if (!flight_add(c, 0, c->msgbuf, n) || !flight_transmit(c, out, out_cap, out_len)) // GCOVR_EXCL_LINE
         return fail(c, ALERT_INTERNAL_ERROR);
     flight_arm(c); // await ClientHello2
     c->hrr_sent = true;
@@ -275,11 +286,11 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
                                             ch.session_id_len, server_share, 32, TLS_GROUP_X25519, /*dtls=*/true,
                                             c->cid_negotiated ? c->local_cid : nullptr,
                                             c->cid_negotiated ? c->local_cid_len : 0);
-    if (!n)
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!n)                                   // GCOVR_EXCL_LINE  a ServerHello is ~130 bytes against msgbuf's
+        return fail(c, ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  1024: it always fits
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!flight_add(c, 0, c->msgbuf, n))
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!flight_add(c, 0, c->msgbuf, n))      // GCOVR_EXCL_LINE  flight_add cannot fail (see its guards):
+        return fail(c, ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  this is the first message of a reset flight
 
     // Handshake-traffic keys from Transcript-Hash(..ServerHello).
     uint8_t hash[SSH_SHA256_DIGEST_LEN];
@@ -301,8 +312,8 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     // EncryptedExtensions.
     n = dws_tls13_build_encrypted_extensions_empty(c->msgbuf, sizeof(c->msgbuf), rpk);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!flight_add(c, 2, c->msgbuf, n))
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!flight_add(c, 2, c->msgbuf, n))      // GCOVR_EXCL_LINE  flight_add cannot fail (see its guards):
+        return fail(c, ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  the flight never fills DTLS_FLIGHT_CAP
 
     // Certificate (X.509 chain, or the RFC 7250 RawPublicKey when negotiated).
 #if DWS_ENABLE_TLS_RPK
@@ -318,17 +329,17 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!flight_add(c, 2, c->msgbuf, n))
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!flight_add(c, 2, c->msgbuf, n))      // GCOVR_EXCL_LINE  flight_add cannot fail (see its guards): the
+        return fail(c, ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  Certificate is capped by msgbuf, which fits
 
     // CertificateVerify signs Transcript-Hash(..Certificate).
     snapshot(&c->transcript, hash);
     n = dws_tls13_build_cert_verify(c->msgbuf, sizeof(c->msgbuf), hash, c->cfg.ed25519_seed);
-    if (!n)
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!n)                                   // GCOVR_EXCL_LINE  a CertificateVerify is 72 bytes against
+        return fail(c, ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  msgbuf's 1024: it always fits
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!flight_add(c, 2, c->msgbuf, n))
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!flight_add(c, 2, c->msgbuf, n))      // GCOVR_EXCL_LINE  flight_add cannot fail (see its guards):
+        return fail(c, ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  the flight never fills DTLS_FLIGHT_CAP
 
     // Server Finished over Transcript-Hash(..CertificateVerify).
     snapshot(&c->transcript, hash);
@@ -336,8 +347,8 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     dws_tls13_finished_mac(&DTLS13_KDF, c->ks.server_hs_traffic, hash, verify);
     n = dws_tls13_build_finished(c->msgbuf, sizeof(c->msgbuf), verify);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!flight_add(c, 2, c->msgbuf, n))
-        return fail(c, ALERT_INTERNAL_ERROR);
+    if (!flight_add(c, 2, c->msgbuf, n))      // GCOVR_EXCL_LINE  flight_add cannot fail (see its guards):
+        return fail(c, ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  the flight never fills DTLS_FLIGHT_CAP
 
     // Application-traffic keys from Transcript-Hash(..server Finished); this hash also verifies the
     // client's Finished.
@@ -359,8 +370,8 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
 // Verify the client's Finished and complete the handshake.
 int handle_client_finished(DtlsConn *c, const uint8_t *msg, size_t msg_len)
 {
-    if (msg[0] != TlsHs::TLS_HS_FINISHED || msg_len != 4 + SSH_SHA256_DIGEST_LEN)
-        return fail(c, ALERT_DECODE_ERROR);
+    if (msg[0] != TlsHs::TLS_HS_FINISHED || msg_len != 4 + SSH_SHA256_DIGEST_LEN) // GCOVR_EXCL_LINE  dispatch_message
+        return fail(c, ALERT_DECODE_ERROR); // only routes a Finished here, so the type arm cannot be taken
     uint8_t expected[SSH_SHA256_DIGEST_LEN];
     dws_tls13_finished_mac(&DTLS13_KDF, c->ks.client_hs_traffic, c->hs_finished_hash, expected);
     uint8_t diff = 0;

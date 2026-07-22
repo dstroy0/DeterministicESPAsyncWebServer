@@ -9,6 +9,7 @@
 // HW-verifiable.
 
 #include "dwserver.h"
+#include "server/dwserver_internal.h" // status_text(): the WebDAV codes are only compiled in this env
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
@@ -811,9 +812,98 @@ void test_webdav_status_on_dead_connection()
     TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len()); // nothing written to a dead slot
 }
 
+// status_text() maps every status code the server can emit to its RFC reason phrase, and
+// anything else to "Unknown". This env is the only one that compiles the WebDAV-gated arms
+// (207 / 412 / 423 / 502), so the whole table is pinned here.
+void test_webdav_status_text_table()
+{
+    struct
+    {
+        int code;
+        const char *phrase;
+    } expect[] = {
+        {200, "OK"},
+        {201, "Created"},
+        {204, "No Content"},
+        {206, "Partial Content"},
+        {207, "Multi-Status"}, // WebDAV-only arm
+        {301, "Moved Permanently"},
+        {302, "Found"},
+        {303, "See Other"},
+        {304, "Not Modified"},
+        {307, "Temporary Redirect"},
+        {308, "Permanent Redirect"},
+        {400, "Bad Request"},
+        {401, "Unauthorized"},
+        {403, "Forbidden"},
+        {404, "Not Found"},
+        {405, "Method Not Allowed"},
+        {408, "Request Timeout"},
+        {409, "Conflict"},
+        {412, "Precondition Failed"}, // WebDAV-only arm
+        {423, "Locked"},              // WebDAV-only arm (LOCK/UNLOCK)
+        {502, "Bad Gateway"},         // WebDAV-only arm (foreign COPY/MOVE destination)
+        {413, "Payload Too Large"},
+        {414, "URI Too Long"},
+        {416, "Range Not Satisfiable"},
+        {429, "Too Many Requests"},
+        {500, "Internal Server Error"},
+        {501, "Not Implemented"},
+        {503, "Service Unavailable"},
+    };
+    for (size_t i = 0; i < sizeof(expect) / sizeof(expect[0]); i++)
+        TEST_ASSERT_EQUAL_STRING(expect[i].phrase, status_text(expect[i].code));
+
+    // Anything outside the table falls to the default arm rather than reading off the end.
+    TEST_ASSERT_EQUAL_STRING("Unknown", status_text(299));
+    TEST_ASSERT_EQUAL_STRING("Unknown", status_text(0));
+    TEST_ASSERT_EQUAL_STRING("Unknown", status_text(-1));
+}
+
+// dav_join's separator handling when the request is the bare mount prefix under a root that
+// already ends in '/': the sub-path is empty, so there is no leading '/' to skip, and the
+// root's own trailing '/' still supplies the separator. The joined path must be the root
+// with its trailing slash stripped - i.e. the collection itself, which GET refuses with 405.
+void test_webdav_join_root_slash_with_empty_subpath()
+{
+    server.dav("/ts", davfs, "/tsroot/");
+    tree_mkdir("/tsroot");
+    tree_put("/tsroot/f.txt", "hi");
+
+    feed_and_handle(0, "GET /ts HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(405)); // resolved to "/tsroot", a collection
+
+    // The same mount still resolves a real member, so the empty-sub case did not corrupt
+    // the separator handling for non-empty sub-paths.
+    rearm();
+    feed_and_handle(0, "GET /ts/f.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(200));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "hi"));
+}
+
+// Once a streamed PUT has short-written, the sink latches the error and every LATER body
+// chunk is dropped instead of being appended past the failure point: the file keeps only
+// what fitted, and the handler still answers 507.
+void test_put_stream_error_latches_for_later_chunks()
+{
+    static uint8_t big[2600]; // > MockNode::data (2048), with several chunks left after the failure
+    memset(big, 'A', sizeof(big));
+    feed_put(0, "/dav/huge.txt", big, sizeof(big));
+    TEST_ASSERT_TRUE(dws_resp_status(507));
+
+    // The node exists and holds at most its capacity - the post-failure chunks were dropped,
+    // not written somewhere else.
+    fs::MockNode *n = fs::_tree_find("/dav/huge.txt");
+    TEST_ASSERT_NOT_NULL(n);
+    TEST_ASSERT_LESS_OR_EQUAL_size_t(sizeof(n->data), n->len);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_webdav_status_text_table);
+    RUN_TEST(test_webdav_join_root_slash_with_empty_subpath);
+    RUN_TEST(test_put_stream_error_latches_for_later_chunks);
     RUN_TEST(test_webdav_join_root_variants);
     RUN_TEST(test_webdav_dav_empty_prefix_mount);
     RUN_TEST(test_webdav_method_dispatch_edges);

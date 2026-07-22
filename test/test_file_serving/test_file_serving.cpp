@@ -532,6 +532,146 @@ void stress_alternate_missing_and_found()
     }
 }
 
+// ====================================================================
+// CONDITIONAL-GET AND MOUNT-RESOLUTION EDGES
+// ====================================================================
+
+// Append a header to an already-parsed request slot. This is what a semantic ingress
+// (HTTP/2 / HTTP/3) does: the HPACK/QPACK-decoded value is copied in verbatim, without
+// the HTTP/1.x byte parser's leading-OWS strip.
+static void inject_header(uint8_t slot, const char *key, const char *val)
+{
+    HttpReq *r = &http_pool[slot];
+    TEST_ASSERT_TRUE(r->header_count < MAX_HEADERS);
+    Header *h = &r->headers[r->header_count++];
+    snprintf(h->key, sizeof(h->key), "%s", key);
+    snprintf(h->val, sizeof(h->val), "%s", val);
+}
+
+// If-None-Match comparison skips leading OWS before the first entity-tag. The HTTP/1.x
+// parser strips it, but a semantic ingress does not, so the tag must still match when the
+// value arrives with the whitespace attached.
+void test_inm_leading_ows_still_matches()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/p.html", "123456789012345", (time_t)1000); // 15 bytes, mtime 1000 -> "f-3e8"
+    server.serve_static("/", g_fs, "/www");
+
+    push_str(0, "GET /p.html HTTP/1.1\r\nHost: x\r\n\r\n");
+    http_parse(0);
+    inject_header(0, "If-None-Match", " \t\"f-3e8\""); // SP + HTAB ahead of the tag
+    server.handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "304 Not Modified"));
+    fs::mock_fs_reset();
+}
+
+// A comma-and-space delimited If-None-Match list is walked entry by entry: a leading
+// separator, spaces around the commas, and a non-matching first entry must not stop the
+// scan finding the real tag further along.
+void test_inm_list_separators_reach_later_tag()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/p.html", "123456789012345", (time_t)1000);
+    server.serve_static("/", g_fs, "/www");
+    feed_and_handle(0, "GET /p.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: , \"a\" , \"f-3e8\"\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "304 Not Modified"));
+    fs::mock_fs_reset();
+}
+
+// A 304 is a full response in its own right: it carries the configured CORS block, the
+// validators, and no body.
+void test_conditional_304_carries_cors_block()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/p.html", "123456789012345", (time_t)1000);
+    server.set_cors("*");
+    server.serve_static("/", g_fs, "/www");
+
+    feed_and_handle(0, "GET /p.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: \"f-3e8\"\r\n\r\n");
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "304 Not Modified"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Access-Control-Allow-Origin: *\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "ETag: \"f-3e8\""));
+    TEST_ASSERT_NULL(strstr(out, "123456789012345")); // no body on a 304
+
+    server.set_cors(""); // restore for later tests
+    fs::mock_fs_reset();
+}
+
+// A url_prefix long enough to fill the route-pattern buffer is stored truncated, so the
+// mount is an exact (non-wildcard) route with no trailing '*'. Resolving a request against
+// it must not strip a character that is not there: the sub-path is empty, so the mount
+// serves its index.html.
+void test_serve_static_prefix_truncated_to_exact_route()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/index.html", "<i>root</i>");
+
+    char prefix[MAX_PATH_LEN + 8];
+    prefix[0] = '/';
+    memset(prefix + 1, 'p', sizeof(prefix) - 2);
+    prefix[sizeof(prefix) - 1] = '\0';
+    server.serve_static(prefix, g_fs, "/www"); // pattern truncated to MAX_PATH_LEN-1, '*' lost
+
+    char req[MAX_PATH_LEN + 64];
+    char path[MAX_PATH_LEN];
+    memcpy(path, prefix, MAX_PATH_LEN - 1);
+    path[MAX_PATH_LEN - 1] = '\0'; // exactly the stored pattern
+    snprintf(req, sizeof(req), "GET %s HTTP/1.1\r\nHost: x\r\n\r\n", path);
+    feed_and_handle(0, req);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "<i>root</i>"));
+    fs::mock_fs_reset();
+}
+
+// A mount whose prefix carries a `:name` segment is matched segment-wise, so a request can
+// legitimately be shorter than the stored pattern. The sub-path is then empty rather than a
+// read past the end of the request path, and the mount's index.html is served.
+void test_serve_static_param_mount_shorter_than_pattern()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/index.html", "<i>idx</i>");
+    server.serve_static("/a/:b", g_fs, "/www");                 // pattern "/a/:b*" - 5 chars before the '*'
+    feed_and_handle(0, "GET /a/x HTTP/1.1\r\nHost: x\r\n\r\n"); // 4 chars: shorter than the prefix
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "<i>idx</i>"));
+    fs::mock_fs_reset();
+}
+
+// A root that already ends in '/' and a bare-prefix request (empty sub-path) must not
+// produce a doubled separator: the join is root + "index.html".
+void test_serve_static_trailing_slash_root_bare_prefix()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/root/index.html", "<i>bare</i>");
+    server.serve_static("/s", g_fs, "/root/");
+    feed_and_handle(0, "GET /s HTTP/1.1\r\nHost: x\r\n\r\n"); // sub-path is empty
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "<i>bare</i>"));
+    fs::mock_fs_reset();
+}
+
+// A mount root long enough that root + sub-path overflows the 256-byte filesystem-path
+// buffer is refused with a 404 rather than served from a silently truncated path.
+void test_serve_static_joined_path_overflow_is_404()
+{
+    fs::mock_fs_reset();
+    static char longroot[201];
+    memset(longroot, 'r', sizeof(longroot) - 1);
+    longroot[0] = '/';
+    longroot[sizeof(longroot) - 1] = '\0'; // 200-char root
+    server.serve_static("/", g_fs, longroot);
+
+    char req[128];
+    char sub[60];
+    memset(sub, 's', sizeof(sub) - 1);
+    sub[sizeof(sub) - 1] = '\0';
+    snprintf(req, sizeof(req), "GET /%s HTTP/1.1\r\nHost: x\r\n\r\n", sub); // 200 + 1 + 59 > 256
+    feed_and_handle(0, req);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "404"));
+    fs::mock_fs_reset();
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -553,6 +693,16 @@ int main()
     RUN_TEST(test_serve_static_head_and_cors_headers);
     RUN_TEST(test_serve_static_inm_non_matching_forms);
     RUN_TEST(test_file_send_pump_connection_lost_midtransfer);
+
+    // Conditional-GET and mount-resolution edges
+    RUN_TEST(test_inm_leading_ows_still_matches);
+    RUN_TEST(test_inm_list_separators_reach_later_tag);
+    RUN_TEST(test_conditional_304_carries_cors_block);
+    RUN_TEST(test_serve_static_prefix_truncated_to_exact_route);
+    RUN_TEST(test_serve_static_param_mount_shorter_than_pattern);
+    RUN_TEST(test_serve_static_trailing_slash_root_bare_prefix);
+    RUN_TEST(test_serve_static_joined_path_overflow_is_404);
+
     RUN_TEST(stress_serve_file_50_requests);
     RUN_TEST(stress_alternate_missing_and_found);
 

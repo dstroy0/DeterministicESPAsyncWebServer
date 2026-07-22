@@ -93,8 +93,11 @@ static bool http_not_modified_since(time_t mtime, const char *ims)
 // (an inbound W/"x" matches our strong "x"). @p etag is our tag, quotes included.
 static bool inm_matches(const char *inm, const char *etag)
 {
+    // Leading OWS is stripped by the HTTP/1.x byte parser, but NOT on a semantic ingress
+    // (HTTP/2 / HTTP/3): those hand over HPACK/QPACK-decoded values verbatim, so a
+    // `if-none-match: <SP>"abc"` reaches here with the whitespace intact.
     while (*inm == ' ' || *inm == '\t')
-        inm++; // GCOVR_EXCL_LINE http_parser strips leading OWS from header values, so inm never starts with WS
+        inm++;
     if (inm[0] == '*')
         return true; // "*" matches the existing representation
     size_t etlen = strnlen(etag, 40);
@@ -268,8 +271,12 @@ void DWS::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, cons
 void DWS::file_send_pump(uint8_t slot_id)
 {
     FileSend &s = s_send.file[slot_id];
+    // GCOVR_EXCL_START  unreachable: both callers already established the state - serve_file_internal
+    // sets s.active immediately before its call, and the poll loop in dwserver.cpp only pumps a slot
+    // whose s_send.file[i].active is set. Kept so the pump is safe to call unconditionally.
     if (!s.active)
         return;
+    // GCOVR_EXCL_STOP
 
     if (!dws_conn_active(slot_id))
     {
@@ -345,15 +352,20 @@ void DWS::serve_static(const char *url_prefix, fs::FS &file_sys, const char *fs_
 
 void DWS::serve_static_request(uint8_t slot_id, HttpReq *req, const Route *r)
 {
+    // GCOVR_EXCL_START  a RouteType::ROUTE_STATIC route always carries static_fs: serve_static() takes
+    // the filesystem by reference and stores its address, so this null-guard cannot fire.
     if (!r->static_fs)
     {
         send(slot_id, 404, DWS_MIME_TEXT_PLAIN, "Not Found");
         return;
     }
+    // GCOVR_EXCL_STOP
 
-    // Request path beyond the mount prefix (route path minus its trailing '*').
+    // Request path beyond the mount prefix (route path minus its trailing '*'). plen == 0 is
+    // unreachable: serve_static() always stores at least "*" (it appends the wildcard when the
+    // prefix lacks one), so the pattern is never empty.
     size_t plen = strnlen(r->path, MAX_PATH_LEN);
-    if (plen > 0 && r->path[plen - 1] == '*')
+    if (plen > 0 && r->path[plen - 1] == '*') // GCOVR_EXCL_BR_LINE  plen == 0 unreachable (see above)
         plen--;
     const char *sub = (strnlen(req->path, MAX_PATH_LEN) >= plen) ? req->path + plen : "";
 
@@ -379,7 +391,10 @@ void DWS::serve_static_request(uint8_t slot_id, HttpReq *req, const Route *r)
     char fs_path[256];
     int wn = dir ? snprintf(fs_path, sizeof(fs_path), "%s%s%sindex.html", root, sep, sub)
                  : snprintf(fs_path, sizeof(fs_path), "%s%s%s", root, sep, sub);
-    if (wn <= 0 || wn >= (int)sizeof(fs_path))
+    // wn <= 0 is unreachable: snprintf only returns negative on an encoding error, and the shortest
+    // result here is non-empty (the directory form appends "index.html", the file form has a
+    // non-empty sub). The truncation half is exercised.
+    if (wn <= 0 || wn >= (int)sizeof(fs_path)) // GCOVR_EXCL_BR_LINE  wn <= 0 unreachable (see above)
     {
         send(slot_id, 404, DWS_MIME_TEXT_PLAIN, "Not Found");
         return;
@@ -395,7 +410,11 @@ void DWS::serve_static_request(uint8_t slot_id, HttpReq *req, const Route *r)
     {
         char gz[260];
         int gn = snprintf(gz, sizeof(gz), "%s.gz", fs_path);
-        if (gn > 0 && gn < (int)sizeof(gz) && r->static_fs->exists(gz))
+        // Neither length half can fail: snprintf cannot return negative for "%s.gz", and fs_path is
+        // a 256-byte buffer, so gn is at most 258 and always under gz's 260. Both are kept because
+        // the two buffer sizes are independent constants. The exclusion is per-line, so it also
+        // drops the exists() halves - those ARE exercised both ways (see the gzip tests).
+        if (gn > 0 && gn < (int)sizeof(gz) && r->static_fs->exists(gz)) // GCOVR_EXCL_BR_LINE  see above
         {
             serve_file_internal(slot_id, head, *r->static_fs, gz, ctype, "gzip");
             return;

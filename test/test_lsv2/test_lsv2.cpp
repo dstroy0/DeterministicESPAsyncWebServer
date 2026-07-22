@@ -8,6 +8,7 @@
 // payload only, so a bare telegram is exactly 8 bytes), cross-checked against the pyLSV2 reference.
 
 #include "services/lsv2/lsv2.h"
+#include <stdint.h>
 #include <string.h>
 #include <unity.h>
 
@@ -200,6 +201,97 @@ void test_roundtrip()
     TEST_ASSERT_EQUAL_size_t(n, consumed);
 }
 
+// ── guards ───────────────────────────────────────────────────────────────────────────────────
+
+void test_build_rejects_bad_args()
+{
+    // Null destination / null mnemonic / a buffer that cannot even hold the header, a declared
+    // payload with a null pointer, and a length that will not fit the 32-bit length field.
+    uint8_t buf[32];
+    const uint8_t pay[] = {0x01, 0x02};
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(nullptr, sizeof(buf), DWS_LSV2_CMD_STATUS, pay, sizeof(pay)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(buf, sizeof(buf), nullptr, pay, sizeof(pay)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(buf, 7, DWS_LSV2_CMD_STATUS, pay, sizeof(pay)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(buf, sizeof(buf), DWS_LSV2_CMD_STATUS, nullptr, 2));
+#if SIZE_MAX > 0xFFFFFFFFu
+    // no allocation is touched - the length field check fires before any copy
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(buf, sizeof(buf), DWS_LSV2_CMD_STATUS, pay, (size_t)0x100000000ULL));
+#endif
+    TEST_ASSERT_EQUAL_size_t(10, dws_lsv2_build(buf, sizeof(buf), DWS_LSV2_CMD_STATUS, pay, sizeof(pay)));
+}
+
+void test_build_login_guards_and_overflow()
+{
+    // Null buffer / null login / a header-only buffer are refused, and a login (or password) that
+    // does not fit with its terminating NUL fails the whole build.
+    uint8_t buf[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(nullptr, sizeof(buf), DWS_LSV2_LOGIN_DNC, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(buf, sizeof(buf), nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(buf, 7, DWS_LSV2_LOGIN_DNC, nullptr));
+    // "INSPECT" needs 8 payload bytes; cap 12 leaves only 4
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(buf, 12, DWS_LSV2_LOGIN_INSPECT, nullptr));
+    // login fits exactly, leaving no room for the terminating NUL of the password
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(buf, 12, "DNC", "pw"));
+    // cap 12 fits "DNC\0" exactly - the boundary the two cases above straddle
+    TEST_ASSERT_EQUAL_size_t(12, dws_lsv2_build_login(buf, 12, "DNC", nullptr));
+}
+
+void test_build_logout_and_filename_guards()
+{
+    uint8_t buf[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_logout(nullptr, sizeof(buf), nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_logout(buf, 7, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_logout(buf, 10, DWS_LSV2_LOGIN_DNC)); // "DNC\0" needs 4
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(nullptr, sizeof(buf), DWS_LSV2_CMD_FILE_LOAD, "A.H"));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(buf, sizeof(buf), nullptr, "A.H"));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(buf, sizeof(buf), DWS_LSV2_CMD_FILE_LOAD, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(buf, 7, DWS_LSV2_CMD_FILE_LOAD, "A.H"));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(buf, 11, DWS_LSV2_CMD_FILE_LOAD, "A.H")); // needs 12
+    TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_run_info(nullptr, sizeof(buf), LSV2_RI_OVERRIDE));
+}
+
+void test_parse_and_is_reject_null_args()
+{
+    // A null out struct, a null input buffer, and null arguments to the mnemonic comparison are
+    // all refused rather than dereferenced.
+    const uint8_t frame[] = {0x00, 0x00, 0x00, 0x00, 'T', '_', 'O', 'K'};
+    Lsv2Telegram t;
+    TEST_ASSERT_FALSE(dws_lsv2_parse(frame, sizeof(frame), nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_lsv2_parse(nullptr, sizeof(frame), &t, nullptr));
+    TEST_ASSERT_TRUE(dws_lsv2_parse(frame, sizeof(frame), &t, nullptr));
+    TEST_ASSERT_FALSE(dws_lsv2_is(nullptr, DWS_LSV2_RSP_OK));
+    TEST_ASSERT_FALSE(dws_lsv2_is(&t, nullptr));
+}
+
+void test_error_payload_shape_is_enforced()
+{
+    // dws_lsv2_error only reports on an error telegram carrying exactly the 2-byte class+code
+    // pair, and both out pointers are optional.
+    const uint8_t wrong_len[] = {0x00, 0x00, 0x00, 0x03, 'T', '_', 'E', 'R', 0x01, 0x02, 0x03};
+    Lsv2Telegram t;
+    TEST_ASSERT_TRUE(dws_lsv2_parse(wrong_len, sizeof(wrong_len), &t, nullptr));
+    TEST_ASSERT_TRUE(dws_lsv2_is_error(&t));
+    TEST_ASSERT_FALSE(dws_lsv2_error(&t, nullptr, nullptr)); // 3 bytes is not class+code
+
+    // a hand-built telegram claiming 2 payload bytes but carrying no payload slice
+    Lsv2Telegram bogus;
+    memcpy(bogus.mnemonic, DWS_LSV2_RSP_ERROR, DWS_LSV2_MNEMONIC_LEN);
+    bogus.payload = nullptr;
+    bogus.payload_len = 2;
+    TEST_ASSERT_FALSE(dws_lsv2_error(&bogus, nullptr, nullptr));
+
+    // both out pointers are optional on the good path
+    const uint8_t good[] = {0x00, 0x00, 0x00, 0x02, 'T', '_', 'E', 'R', 0x05, 0x06};
+    TEST_ASSERT_TRUE(dws_lsv2_parse(good, sizeof(good), &t, nullptr));
+    TEST_ASSERT_TRUE(dws_lsv2_error(&t, nullptr, nullptr));
+    uint8_t cls = 0;
+    TEST_ASSERT_TRUE(dws_lsv2_error(&t, &cls, nullptr));
+    TEST_ASSERT_EQUAL_UINT8(0x05, cls);
+    uint8_t code = 0;
+    TEST_ASSERT_TRUE(dws_lsv2_error(&t, nullptr, &code));
+    TEST_ASSERT_EQUAL_UINT8(0x06, code);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -215,5 +307,10 @@ int main()
     RUN_TEST(test_parse_incomplete);
     RUN_TEST(test_parse_stream_multi);
     RUN_TEST(test_roundtrip);
+    RUN_TEST(test_build_rejects_bad_args);
+    RUN_TEST(test_build_login_guards_and_overflow);
+    RUN_TEST(test_build_logout_and_filename_guards);
+    RUN_TEST(test_parse_and_is_reject_null_args);
+    RUN_TEST(test_error_payload_shape_is_enforced);
     return UNITY_END();
 }

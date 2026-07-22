@@ -205,6 +205,83 @@ void test_frag_overflow()
     TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_ERR, dws_devicenet_frag_feed(&rx, frag, sizeof(frag)));
 }
 
+// Null-pointer arguments to the encoder / reset are rejected without dereferencing.
+void test_null_arguments()
+{
+    // encode_id with a null destination fails closed and writes nothing.
+    TEST_ASSERT_FALSE(dws_devicenet_encode_id(nullptr, DeviceNetGroup::DEVICENET_GROUP_1, 0, 0));
+    // frag_reset tolerates a null context (no crash, nothing to clear).
+    dws_devicenet_frag_reset(nullptr);
+    // A null frame destination is rejected before the body is looked at.
+    const uint8_t one[1] = {0xAB};
+    TEST_ASSERT_FALSE(dws_devicenet_build_explicit(nullptr, DeviceNetGroup::DEVICENET_GROUP_2, 4, 0x21, one, 1));
+}
+
+// build_explicit's body arguments: a header-only message (body_len 0) is legal and
+// emits a 1-octet frame; a non-zero length with a null body is rejected.
+void test_build_explicit_body_arguments()
+{
+    CanFrame f;
+    // body_len 0 with a null body: valid, just the header octet.
+    TEST_ASSERT_TRUE(dws_devicenet_build_explicit(&f, DeviceNetGroup::DEVICENET_GROUP_2,
+                                                  DEVICENET_G2_UNCONNECTED_EXPLICIT_REQ, 0x21, nullptr, 0));
+    TEST_ASSERT_EQUAL_UINT8(1, f.dlc);
+    TEST_ASSERT_EQUAL_HEX8(0x21, f.data[0]);
+    TEST_ASSERT_EQUAL_UINT8(0, f.data[1]); // the rest of the payload is zeroed
+    // body_len set but body null -> rejected.
+    TEST_ASSERT_FALSE(dws_devicenet_build_explicit(&f, DeviceNetGroup::DEVICENET_GROUP_2, 4, 0x21, nullptr, 3));
+}
+
+// A non-fragmented frame carrying only the header octet is a complete, empty message.
+void test_frag_non_fragmented_header_only()
+{
+    const uint8_t body[1] = {0x21}; // FRAG clear, no payload octets
+    DeviceNetFragRx rx;
+    dws_devicenet_frag_reset(&rx);
+    TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_COMPLETE, dws_devicenet_frag_feed(&rx, body, 1));
+    TEST_ASSERT_EQUAL_UINT16(0, rx.len);
+    TEST_ASSERT_FALSE(rx.active);
+}
+
+// Fragments that carry no data octets past the fragmentation octet still advance the
+// session: FIRST/MIDDLE/LAST with body_len 2 are accepted and leave the buffer empty.
+void test_frag_empty_data_fragments()
+{
+    DeviceNetFragRx rx;
+    dws_devicenet_frag_reset(&rx);
+    uint8_t f[2] = {0x80 | 0x21, dws_devicenet_frag_octet(DEVICENET_FRAG_FIRST, 0)};
+    TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_STARTED, dws_devicenet_frag_feed(&rx, f, 2));
+    TEST_ASSERT_EQUAL_UINT16(0, rx.len);
+    f[1] = dws_devicenet_frag_octet(DEVICENET_FRAG_MIDDLE, 1);
+    TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_PROGRESS, dws_devicenet_frag_feed(&rx, f, 2));
+    TEST_ASSERT_EQUAL_UINT16(0, rx.len);
+    f[1] = dws_devicenet_frag_octet(DEVICENET_FRAG_LAST, 2);
+    TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_COMPLETE, dws_devicenet_frag_feed(&rx, f, 2));
+    TEST_ASSERT_EQUAL_UINT16(0, rx.len);
+    TEST_ASSERT_FALSE(rx.active); // LAST closed the session
+}
+
+// The two remaining sequencing rejections: a MIDDLE with no session open, and a LAST
+// whose count does not match the expected one.
+void test_frag_sequence_rejects()
+{
+    DeviceNetFragRx rx;
+    dws_devicenet_frag_reset(&rx);
+    // MIDDLE with no FIRST -> error (no session to continue).
+    uint8_t mid[3] = {0x80 | 0x21, dws_devicenet_frag_octet(DEVICENET_FRAG_MIDDLE, 1), 0xAA};
+    TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_ERR, dws_devicenet_frag_feed(&rx, mid, 3));
+    TEST_ASSERT_FALSE(rx.active);
+
+    // FIRST (count 0, expects 1) then LAST with count 5 -> error, session reset.
+    dws_devicenet_frag_reset(&rx);
+    uint8_t first[3] = {0x80 | 0x21, dws_devicenet_frag_octet(DEVICENET_FRAG_FIRST, 0), 0xBB};
+    TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_STARTED, dws_devicenet_frag_feed(&rx, first, 3));
+    uint8_t last[3] = {0x80 | 0x21, dws_devicenet_frag_octet(DEVICENET_FRAG_LAST, 5), 0xCC};
+    TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_ERR, dws_devicenet_frag_feed(&rx, last, 3));
+    TEST_ASSERT_FALSE(rx.active);
+    TEST_ASSERT_EQUAL_UINT16(0, rx.len);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -219,5 +296,10 @@ int main()
     RUN_TEST(test_id_error_paths);
     RUN_TEST(test_frag_reject_paths);
     RUN_TEST(test_frag_overflow);
+    RUN_TEST(test_null_arguments);
+    RUN_TEST(test_build_explicit_body_arguments);
+    RUN_TEST(test_frag_non_fragmented_header_only);
+    RUN_TEST(test_frag_empty_data_fragments);
+    RUN_TEST(test_frag_sequence_rejects);
     return UNITY_END();
 }

@@ -429,6 +429,118 @@ void test_server_init_bounds_and_handler()
     (void)dws_modbus_proto_handler();
 }
 
+// Input registers round-trip in range and are ignored out of range.
+void test_input_register_accessor_bounds()
+{
+    dws_modbus_set_input_reg(7, 0xCAFE);
+    TEST_ASSERT_EQUAL_UINT16(0xCAFE, dws_modbus_get_input_reg(7));
+    dws_modbus_set_input_reg(0xFFFF, 0x1111); // out of range -> dropped
+    TEST_ASSERT_EQUAL_UINT16(0, dws_modbus_get_input_reg(0xFFFF));
+    TEST_ASSERT_EQUAL_UINT16(0xCAFE, dws_modbus_get_input_reg(7)); // neighbours untouched
+}
+
+// A zero quantity is rejected for bit reads, and an oversized one for register reads
+// (the mirror cases of the checks already covered).
+void test_read_quantity_bounds()
+{
+    const uint8_t EV = (uint8_t)ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE;
+    const uint8_t fc1_zero[] = {0x01, 0x00, 0x00, 0x00, 0x00}; // FC1 qty 0
+    assert_exception(fc1_zero, 5, 0x01, EV);
+    const uint8_t fc3_big[] = {0x03, 0x00, 0x00, 0x00, 0xC8}; // FC3 qty 200 > 125
+    assert_exception(fc3_big, 5, 0x03, EV);
+}
+
+// Writing a single coil OFF (value 0x0000) is the other legal value.
+void test_write_single_coil_off()
+{
+    dws_modbus_set_coil(3, true);
+    uint8_t pdu[] = {0x05, 0x00, 0x03, 0x00, 0x00}; // clear coil 3
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = dws_modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 5, n);
+    TEST_ASSERT_FALSE(dws_modbus_get_coil(3));
+    TEST_ASSERT_EQUAL_INT(1, g_wcalls);
+}
+
+// With no write callback registered every write path still applies and replies.
+void test_writes_without_callback()
+{
+    dws_modbus_on_write(nullptr);
+    uint8_t req[260], resp[260];
+
+    uint8_t fc5[] = {0x05, 0x00, 0x01, 0xFF, 0x00};
+    size_t rl = build_adu(req, 1, 1, fc5, sizeof(fc5));
+    TEST_ASSERT_EQUAL_size_t(7 + 5, dws_modbus_process_adu(req, rl, resp, sizeof(resp)));
+    TEST_ASSERT_TRUE(dws_modbus_get_coil(1));
+
+    uint8_t fc6[] = {0x06, 0x00, 0x02, 0x11, 0x22};
+    rl = build_adu(req, 1, 1, fc6, sizeof(fc6));
+    TEST_ASSERT_EQUAL_size_t(7 + 5, dws_modbus_process_adu(req, rl, resp, sizeof(resp)));
+    TEST_ASSERT_EQUAL_UINT16(0x1122, dws_modbus_get_holding_reg(2));
+
+    uint8_t fc15[] = {0x0F, 0x00, 0x08, 0x00, 0x02, 0x01, 0x03};
+    rl = build_adu(req, 1, 1, fc15, sizeof(fc15));
+    TEST_ASSERT_EQUAL_size_t(7 + 5, dws_modbus_process_adu(req, rl, resp, sizeof(resp)));
+    TEST_ASSERT_TRUE(dws_modbus_get_coil(8));
+    TEST_ASSERT_TRUE(dws_modbus_get_coil(9));
+
+    uint8_t fc16[] = {0x10, 0x00, 0x06, 0x00, 0x01, 0x02, 0x33, 0x44};
+    rl = build_adu(req, 1, 1, fc16, sizeof(fc16));
+    TEST_ASSERT_EQUAL_size_t(7 + 5, dws_modbus_process_adu(req, rl, resp, sizeof(resp)));
+    TEST_ASSERT_EQUAL_UINT16(0x3344, dws_modbus_get_holding_reg(6));
+
+    TEST_ASSERT_EQUAL_INT(0, g_wcalls); // nothing was reported: no callback installed
+}
+
+// The multi-write requests validate quantity bounds and that the declared byte
+// count is actually present in the PDU.
+void test_multi_write_field_validation()
+{
+    const uint8_t EV = (uint8_t)ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE;
+    // FC15: qty 0, qty above the 1968 limit, and a byte count that runs past the PDU.
+    const uint8_t fc15_zero[] = {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00};
+    assert_exception(fc15_zero, 6, 0x0F, EV);
+    const uint8_t fc15_huge[] = {0x0F, 0x00, 0x00, 0x07, 0xD0, 0x00}; // qty 2000 > 1968
+    assert_exception(fc15_huge, 6, 0x0F, EV);
+    const uint8_t fc15_cut[] = {0x0F, 0x00, 0x00, 0x00, 0x05, 0x01}; // bc 1 promised, absent
+    assert_exception(fc15_cut, 6, 0x0F, EV);
+    // FC16: the same three shapes.
+    const uint8_t fc16_zero[] = {0x10, 0x00, 0x00, 0x00, 0x00, 0x00};
+    assert_exception(fc16_zero, 6, 0x10, EV);
+    const uint8_t fc16_huge[] = {0x10, 0x00, 0x00, 0x00, 0xC8, 0x00}; // qty 200 > 123
+    assert_exception(fc16_huge, 6, 0x10, EV);
+    const uint8_t fc16_cut[] = {0x10, 0x00, 0x00, 0x00, 0x01, 0x02}; // bc 2 promised, absent
+    assert_exception(fc16_cut, 6, 0x10, EV);
+}
+
+// The MBAP framing guards: a runt frame, a response buffer with no room for the
+// MBAP header, and a length field below the one-byte-PDU minimum.
+void test_adu_framing_guards()
+{
+    uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x01};
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_process_adu(req, 7, resp, sizeof(resp))); // req_len < 8
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_process_adu(req, rl, resp, 7));           // resp cap < 8
+
+    // len field = 1 (unit id only, no PDU) with a full-size frame on the wire.
+    uint8_t shortlen[] = {0x00, 0x07, 0x00, 0x00, 0x00, 0x01, 0x01, 0x03, 0x00};
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_process_adu(shortlen, sizeof(shortlen), resp, sizeof(resp)));
+}
+
+#if DWS_ENABLE_MODBUS_RTU
+// An RTU response buffer too small even for addr + PDU + CRC is refused up front.
+void test_rtu_response_buffer_too_small()
+{
+    const uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x01};
+    uint8_t req[16], resp[64];
+    size_t rl = build_rtu(req, 0x11, pdu, sizeof(pdu));
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_rtu_process_adu(req, rl, resp, 3, 0x11));
+}
+#endif // DWS_ENABLE_MODBUS_RTU
+
 int main()
 {
     UNITY_BEGIN();
@@ -457,5 +569,14 @@ int main()
     RUN_TEST(test_rtu_edge_cases);
 #endif
     RUN_TEST(test_server_init_bounds_and_handler);
+    RUN_TEST(test_input_register_accessor_bounds);
+    RUN_TEST(test_read_quantity_bounds);
+    RUN_TEST(test_write_single_coil_off);
+    RUN_TEST(test_writes_without_callback);
+    RUN_TEST(test_multi_write_field_validation);
+    RUN_TEST(test_adu_framing_guards);
+#if DWS_ENABLE_MODBUS_RTU
+    RUN_TEST(test_rtu_response_buffer_too_small);
+#endif
     return UNITY_END();
 }

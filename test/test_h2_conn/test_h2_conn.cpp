@@ -620,6 +620,143 @@ void test_h2_respond_content_type_too_big()
     TEST_ASSERT_FALSE(dws_h2_conn_respond(&c, 1, 200, big_ct.c_str(), "x", 1));
 }
 
+// Every callback is optional: with an all-null H2Callbacks the engine still runs the
+// whole preface -> SETTINGS -> HEADERS -> DATA path, it just emits and reports nothing.
+void test_h2_null_callbacks()
+{
+    H2Callbacks cb;
+    memset(&cb, 0, sizeof cb); // no write, no on_header, no on_headers_end, no on_data
+    H2Conn c;
+    dws_h2_conn_init(&c, &cb); // send_our_settings has nowhere to write; must not crash
+
+    std::vector<uint8_t> in(H2_PREFACE, H2_PREFACE + H2_PREFACE_LEN);
+    uint8_t sf[9];
+    in.insert(in.end(), sf, sf + dws_h2_build_settings(sf, sizeof sf, nullptr, nullptr, 0));
+    uint8_t block[128];
+    size_t blen = build_request(block, sizeof block);
+    uint8_t hf[160];
+    in.insert(in.end(), hf, hf + dws_h2_build_headers(hf, sizeof hf, 1, block, blen, false));
+    TEST_ASSERT_TRUE(dws_h2_conn_recv(&c, in.data(), in.size()));
+    // The stream was still opened even though no header callback observed it.
+    TEST_ASSERT_EQUAL_UINT32(1, c.last_peer_stream);
+
+    const uint8_t body[3] = {'a', 'b', 'c'};
+    TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_DATA, H2_FLAG_END_STREAM, 1, body, 3));
+}
+
+// HEADERS on stream 0 is a connection error (requests use odd, client-initiated ids).
+void test_h2_headers_stream_zero()
+{
+    Cap cap;
+    H2Conn c;
+    establish(c, cap);
+    uint8_t block[128];
+    size_t blen = build_request(block, sizeof block);
+    uint8_t hf[160];
+    TEST_ASSERT_FALSE(dws_h2_conn_recv(&c, hf, dws_h2_build_headers(hf, sizeof hf, 0, block, blen, true)));
+}
+
+// A CONTINUATION arriving with no header block in progress is a protocol error.
+void test_h2_continuation_without_headers()
+{
+    Cap cap;
+    H2Conn c;
+    establish(c, cap);
+    uint8_t x[4] = {0};
+    TEST_ASSERT_FALSE(feed_frame(c, H2FrameType::H2_CONTINUATION, H2_FLAG_END_HEADERS, 1, x, 4));
+}
+
+// Frames naming a stream that is not in the table are tolerated: RST_STREAM and
+// WINDOW_UPDATE for an unknown id are no-ops, and stream 0 never matches a slot.
+void test_h2_unknown_stream_frames()
+{
+    Cap cap;
+    H2Conn c;
+    establish(c, cap);
+    const uint8_t err[4] = {0, 0, 0, 8};
+    // RST_STREAM on stream 0: find_stream must not match an empty (id == 0) slot.
+    TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_RST_STREAM, 0, 0, err, 4));
+    // RST_STREAM for a stream that was never opened.
+    TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_RST_STREAM, 0, 7, err, 4));
+    // WINDOW_UPDATE for a stream that was never opened: ignored, connection window untouched.
+    int32_t before = c.conn_send_window;
+    const uint8_t inc[4] = {0, 0, 0, 100};
+    TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_WINDOW_UPDATE, 0, 9, inc, 4));
+    TEST_ASSERT_EQUAL_INT32(before, c.conn_send_window);
+}
+
+// DATA with an empty payload is delivered but replenishes no flow-control window, and
+// DATA naming a stream that is not open is still passed to the app.
+void test_h2_data_empty_and_unknown_stream()
+{
+    Cap cap;
+    H2Conn c;
+    establish(c, cap);
+    open_stream(c, 1);
+    cap.out.clear();
+    TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_DATA, 0, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_INT(0, count_frames(cap.out, H2FrameType::H2_WINDOW_UPDATE)); // nothing consumed
+    TEST_ASSERT_EQUAL_STRING("", cap.body.c_str());
+
+    // DATA with END_STREAM on an id with no stream slot: delivered, no state to update.
+    const uint8_t d[2] = {'o', 'k'};
+    TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_DATA, H2_FLAG_END_STREAM, 5, d, 2));
+    TEST_ASSERT_EQUAL_STRING("ok", cap.body.c_str());
+    TEST_ASSERT_TRUE(cap.data_end);
+}
+
+// respond() frees the stream slot, so a header block still being reassembled when the
+// app responds decodes into a stream that no longer exists - accepted, no state update.
+void test_h2_continuation_after_stream_freed()
+{
+    Cap cap;
+    H2Conn c;
+    establish(c, cap);
+    uint8_t block[128];
+    size_t blen = build_request(block, sizeof block);
+    size_t half = blen / 2;
+    TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_HEADERS, 0, 1, block, half)); // no END_HEADERS
+    TEST_ASSERT_TRUE(dws_h2_conn_respond(&c, 1, 200, nullptr, "x", 1));          // frees the slot
+    TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_CONTINUATION, H2_FLAG_END_HEADERS, 1, block + half, blen - half));
+    TEST_ASSERT_EQUAL_INT(4, (int)cap.req_headers.size()); // headers still decoded and delivered
+}
+
+// A peer that never announced SETTINGS_MAX_FRAME_SIZE falls back to the RFC 9113 default
+// 16384, so a small body goes out as a single DATA frame.
+void test_h2_respond_default_chunk_size()
+{
+    Cap cap;
+    H2Conn c;
+    establish(c, cap);
+    open_stream(c, 1);
+    c.peer.max_frame_size = 0; // unset -> default 16384
+    cap.out.clear();
+    std::string body(1000, 'z');
+    TEST_ASSERT_TRUE(dws_h2_conn_respond(&c, 1, 200, nullptr, body.data(), body.size()));
+    TEST_ASSERT_EQUAL_INT(1, count_frames(cap.out, H2FrameType::H2_DATA));
+}
+
+// A content-type that *just* fits the 256-byte HPACK block leaves no room for the
+// content-length header that follows it, so respond() fails closed rather than
+// emitting a HEADERS frame missing content-length.
+void test_h2_respond_content_length_no_room()
+{
+    Cap cap;
+    H2Conn c;
+    establish(c, cap);
+    open_stream(c, 1);
+    cap.out.clear();
+    // '&' has an 8-bit Huffman code, so the value is stored literally and its encoded size is
+    // predictable: 2 (indexed name) + 2 (length prefix) + 250 = 254 of the 255 bytes left after
+    // ":status: 200", leaving 1 byte - too few for content-length's 2-byte indexed name alone.
+    std::string ct(250, '&');
+    TEST_ASSERT_FALSE(dws_h2_conn_respond(&c, 1, 200, ct.c_str(), "hi", 2));
+    TEST_ASSERT_EQUAL_INT(0, count_frames(cap.out, H2FrameType::H2_HEADERS)); // nothing emitted
+    // A short content-type on the same connection still works, so the stream itself is fine.
+    TEST_ASSERT_TRUE(dws_h2_conn_respond(&c, 1, 200, "text/plain", "hi", 2));
+    TEST_ASSERT_EQUAL_INT(1, count_frames(cap.out, H2FrameType::H2_HEADERS));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -645,5 +782,13 @@ int main()
     RUN_TEST(test_h2_more_guards);
     RUN_TEST(test_h2_continuation_more);
     RUN_TEST(test_h2_respond_content_type_too_big);
+    RUN_TEST(test_h2_null_callbacks);
+    RUN_TEST(test_h2_headers_stream_zero);
+    RUN_TEST(test_h2_continuation_without_headers);
+    RUN_TEST(test_h2_unknown_stream_frames);
+    RUN_TEST(test_h2_data_empty_and_unknown_stream);
+    RUN_TEST(test_h2_continuation_after_stream_freed);
+    RUN_TEST(test_h2_respond_default_chunk_size);
+    RUN_TEST(test_h2_respond_content_length_no_room);
     return UNITY_END();
 }
