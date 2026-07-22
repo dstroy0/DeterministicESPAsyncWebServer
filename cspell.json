@@ -1447,7 +1447,10 @@
     "motiondevice",
     "SYSRDY",
     "setpoints",
-    "Mxxx"
+    "Mxxx",
+    "desynchronizes",
+    "reheal",
+    "reheals"
   ],
   "ignorePaths": [
     "node_modules/**",

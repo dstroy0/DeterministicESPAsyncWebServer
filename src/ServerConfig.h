@@ -2769,6 +2769,28 @@
 #define DWS_HMMD_BAUD 115200
 #endif
 
+/**
+ * @brief IEC 61784-3 black-channel Safety Communication Layer primitives (`services/safety_scl`).
+ *
+ * Default off. The functional-safety profiles (PROFIsafe / IEC 61784-3-3, CIP Safety / -3-2, FSoE /
+ * -3-12, IO-Link Safety) all treat the underlying fieldbus as an untrusted "black channel" and layer
+ * the same three end-to-end checks on top: a CRC signature over the safety payload, a monitoring /
+ * consecutive counter, and a receive watchdog. This lands the counter state machine, the watchdog,
+ * and the fail-safe state machine that combines them, so each profile's codec composes these rather
+ * than reimplementing them. It deliberately does **not** compute the CRC: every profile defines its
+ * own polynomial, width, seed and input ordering, those constants live in paid standards, and a
+ * guessed CRC in a safety layer would look authoritative while silently failing to detect the
+ * corruption it exists to catch - so the caller passes its profile's verdict in as `signature_ok`
+ * and this module owns the consequence, which is profile-independent. Fail-safe latches: once any
+ * check fails the connection stays fail-safe until an explicit `dws_scl_reset`, because a safety
+ * layer that silently reheals lets an intermittent fault present as a working link. Pure, with an
+ * explicit `now` like `DWS_ENABLE_HOTSWAP`, host-tested against a synthetic clock, and wrap-safe
+ * across a `millis()` rollover. No heap, no stdlib.
+ */
+#ifndef DWS_ENABLE_SAFETY_SCL
+#define DWS_ENABLE_SAFETY_SCL 0
+#endif
+
 /** @brief LD2410 UART baud rate (the module's fixed factory default is 256000). */
 #ifndef DWS_LD2410_BAUD
 #define DWS_LD2410_BAUD 256000

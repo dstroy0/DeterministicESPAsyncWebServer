@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **264 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **265 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -268,6 +268,7 @@ The native test matrix has **264 environments**, one per feature, generated from
 | `native_rtc` | `WS_ENABLE_RTC=1` | `test_rtc` | DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in 24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation, and a round-trip over the 2000... |
 | `native_rtcm3` | `WS_ENABLE_NTRIP_CASTER=1` | `test_rtcm3` | RTCM 3.x framing + station-reference codec (services/gnss/rtcm3), the pure core of the GNSS RTK base / NTRIP caster: the transport frame (0xD3 preamble, 10-bit length, CRC-24Q), MSB-first bit I/O, and... |
 | `native_s7comm` | `WS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
+| `native_safety_scl` | `WS_ENABLE_SAFETY_SCL=1` | `test_safety_scl` | IEC 61784-3 black-channel Safety Communication Layer primitives (services/safety_scl): the monitoring-counter state machine, the receive watchdog, and the fail-safe latch the four safety profiles comp... |
 | `native_scp` | `WS_ENABLE_SSH=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_SSH_SCP=1` | `test_scp` | SCP (RCP) protocol wire codec (services/scp): parse an `scp -t/-f <path>` exec command into its sink/source role + target, parse + build the `C<mode> <size> <name>` control line (octal mode, decimal s... |
 | `native_scpi` | `WS_ENABLE_SCPI=1`, `UNITY_INCLUDE_DOUBLE` | `test_scpi` | SCPI / IEEE 488.2 instrument-control codec (services/scpi): the command builder (:-hierarchy header + params + terminator), the response parsers (numeric NR1/NR2/NR3, boolean, quoted string, definite/... |
 | `native_scratch` | default | `test_scratch` | Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset semantics, alignment, and fail-closed exhaustion. |
@@ -554,7 +555,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4166 test cases** across **279 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4182 test cases** across **280 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -33071,6 +33072,181 @@ A thorough directory of all **4166 test cases** across **279 suites**. Expand a 
       * <code>Assert false (dws_s7_parse_header(shorthdr, sizeof(shorthdr), &h))</code>
       * <code>Assert false (dws_s7_parse_header(ack_short, sizeof(ack_short), &h))</code>
       * <code>Assert false (dws_s7_read_next_item(nullptr, 10, &off, &it))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_safety_scl (16 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starts_in_init_and_is_usable</b> &mdash; <i>Starts in init and is usable</i></summary>
+
+    * **Objective**: Starts in init and is usable
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::INIT, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::NONE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert true (dws_scl_ok(&g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_good_frames_run</b> &mdash; <i>Good frames run</i></summary>
+
+    * **Objective**: Good frames run
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::RUNNING, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, g.accepted);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, g.rejected);</code>
+      * <code>Assert true (dws_scl_ok(&g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bad_signature_trips_signature_fault</b> &mdash; <i>Bad signature trips signature fault</i></summary>
+
+    * **Objective**: Bad signature trips signature fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, false, 2, 1002))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::FAILSAFE, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::SIGNATURE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert false (dws_scl_ok(&g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_lost_frame_trips_counter_fault</b> &mdash; <i>Lost frame trips counter fault</i></summary>
+
+    * **Objective**: Lost frame trips counter fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 4, 1003))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::COUNTER, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_duplicate_frame_trips_counter_fault</b> &mdash; <i>Duplicate frame trips counter fault</i></summary>
+
+    * **Objective**: Duplicate frame trips counter fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 2, 1003))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::COUNTER, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reordered_frame_trips_counter_fault</b> &mdash; <i>Reordered frame trips counter fault</i></summary>
+
+    * **Objective**: Reordered frame trips counter fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 1, 1004))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::COUNTER, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inserted_frame_trips_counter_fault</b> &mdash; <i>Inserted frame trips counter fault</i></summary>
+
+    * **Objective**: Inserted frame trips counter fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 99, 1002))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::COUNTER, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_watchdog_trips_on_a_silent_channel</b> &mdash; <i>Watchdog trips on a silent channel</i></summary>
+
+    * **Objective**: Watchdog trips on a silent channel
+    * **Assertions**:
+      * <code>Assert true (dws_scl_poll(&g, 1099))</code>
+      * <code>Assert false (dws_scl_poll(&g, 1100))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::TIMEOUT, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_watchdog_does_not_trip_before_the_first_frame</b> &mdash; <i>Watchdog does not trip before the first frame</i></summary>
+
+    * **Objective**: Watchdog does not trip before the first frame
+    * **Assertions**:
+      * <code>Assert true (dws_scl_poll(&g, 1000000))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::INIT, (uint8_t)dws_scl_state(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_watchdog_is_wrap_safe</b> &mdash; <i>Watchdog is wrap safe</i></summary>
+
+    * **Objective**: Watchdog is wrap safe
+    * **Assertions**:
+      * <code>Assert true (dws_scl_on_frame(&g, true, 0, 0xFFFFFFF0u))</code>
+      * <code>Assert true (dws_scl_poll(&g, 0x00000050u))</code>
+      * <code>Assert false (dws_scl_poll(&g, 0x00000054u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::TIMEOUT, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_watchdog_disables_the_timeout</b> &mdash; <i>Zero watchdog disables the timeout</i></summary>
+
+    * **Objective**: Zero watchdog disables the timeout
+    * **Assertions**:
+      * <code>Assert true (dws_scl_on_frame(&g, true, 0, 1000))</code>
+      * <code>Assert true (dws_scl_poll(&g, 0xFFFFFFFFu))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_failsafe_latches_and_keeps_the_first_fault</b> &mdash; <i>A subsequent perfectly good frame must NOT bring it back, and must not rewrite the fault.</i></summary>
+
+    * **Objective**: A subsequent perfectly good frame must NOT bring it back, and must not rewrite the fault.
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, false, 2, 1002))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::SIGNATURE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert false (dws_scl_on_frame(&g, true, 2, 1003))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::FAILSAFE, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::SIGNATURE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert false (dws_scl_poll(&g, 1004))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reset_re_establishes_and_preserves_tallies</b> &mdash; <i>Reset re establishes and preserves tallies</i></summary>
+
+    * **Objective**: Reset re establishes and preserves tallies
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 77, 1002))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::INIT, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::NONE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert true (dws_scl_ok(&g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(acc, g.accepted); // session tallies survive, so a flapping link shows</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(rej, g.rejected);</code>
+      * <code>Assert true (dws_scl_on_frame(&g, true, 10, 2000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_counter_wraps_at_the_modulus</b> &mdash; <i>the sender helper wraps the same way, which is the point of exposing it</i></summary>
+
+    * **Objective**: the sender helper wraps the same way, which is the point of exposing it
+    * **Assertions**:
+      * <code>Assert true (dws_scl_on_frame(&g, true, 254, 1000))</code>
+      * <code>Assert true (dws_scl_on_frame(&g, true, 255, 1001))</code>
+      * <code>Assert true (dws_scl_on_frame(&g, true, 0, 1002))</code>
+      * <code>Assert true (dws_scl_on_frame(&g, true, 1, 1003))</code>
+      * <code>Assert true (dws_scl_ok(&g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(255, dws_scl_next_counter(254, 256));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_scl_next_counter(255, 256));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_scl_next_counter(0, 256));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_scl_next_counter(0xFFFFFFFFu, 0)); // full range wraps naturally</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_init_normalises_the_first_counter</b> &mdash; <i>Init normalises the first counter</i></summary>
+
+    * **Objective**: Init normalises the first counter
+    * **Assertions**:
+      * <code>Assert true (dws_scl_on_frame(&g, true, 44, 1000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_guards</b> &mdash; <i>a missing connection must never read as usable</i></summary>
+
+    * **Objective**: a missing connection must never read as usable
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(nullptr, true, 0, 0))</code>
+      * <code>Assert false (dws_scl_poll(nullptr, 0))</code>
+      * <code>Assert false (dws_scl_ok(nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::NONE, (uint8_t)dws_scl_fault(nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::FAILSAFE, (uint8_t)dws_scl_state(nullptr));</code>
   </details>
 
 </details>

@@ -1763,6 +1763,23 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       frame meets SIL 3. Land the common primitives once (`services/safety_scl`): a CRC-signature helper, a
       monitoring-counter state machine, and a watchdog/timeout guard, then have each profile's codec compose
       them. Pure + host-tested against per-profile vectors.
+      PARTIAL - `services/safety_scl` (`DWS_ENABLE_SAFETY_SCL`) lands two of the three primitives: the
+      monitoring-counter state machine and the receive watchdog, plus the fail-safe state machine that
+      combines them with a caller-supplied signature verdict. Lost / duplicated / inserted / reordered
+      frames all reduce to one comparison against the expected counter, and each has its own test case.
+      Fail-safe **latches** until an explicit `dws_scl_reset`: a safety layer that silently reheals lets
+      an intermittent fault present as a working link, so a subsequent good frame must not revive it
+      (asserted). Pure, explicit `now`, wrap-safe watchdog. Host-tested (`native_safety_scl`, 16 cases).
+      Still open: the **CRC-signature helper**. This module deliberately does not compute the CRC - every
+      profile defines its own polynomial, width, seed and input ordering, those constants live in paid
+      standards, and a guessed CRC would look authoritative while failing to detect the corruption it
+      exists to catch, so the caller passes its profile's verdict in as `signature_ok`. The right shape
+      for the missing piece is a parameterized CRC engine (width / poly / init / reflect / xorout) that
+      each profile configures - and it belongs in `shared_primitives`, not here, because **many services
+      already hand-roll their own CRC** (c37118, df1, dnp3, enocean, rtcm3, mbplus, modbus, nema_ts2,
+      sdi12, sht3x, thread, wal, zigbee, ...) with no shared implementation - exactly the duplication
+      `shared_primitives/endian.h` was created to end. Adding one more copy inside `safety_scl` would
+      make that worse; consolidating them is its own tracked refactor.
 - [ ] **PROFIsafe (IEC 61784-3-3, PI)** (M) - the SIL3 safety layer over the shipped PROFINET / PROFIBUS
       codecs. `DWS_ENABLE_PROFISAFE` / `services/profisafe`: the Safety-PDU (F-I/O data + status/control
       byte + consecutive number + CRC2 signature), the F-Parameters (F_Dest_Add / F_WD_Time ...) with their
