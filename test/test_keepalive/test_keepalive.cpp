@@ -201,10 +201,35 @@ void test_conn_token_ws_and_bare_keepalive()
     TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state);
 }
 
+// The Connection-header token scan treats any run of SP / HTAB / comma as one delimiter,
+// trims trailing OWS off each element (down to an empty element after a final comma), and
+// only matches a token of exactly the same length - "xlose" is not "close".
+void test_conn_token_delimiter_runs_and_trailing_ows()
+{
+    // A leading comma, then SP, then HTAB: the whole delimiter run is skipped before the token.
+    feed_and_handle(0, "GET /res HTTP/1.1\r\nConnection: , \tkeep-alive\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Connection: keep-alive"));
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
+
+    // Trailing SP + HTAB are trimmed off the element, and the empty element left after the
+    // final comma is skipped rather than compared as a token.
+    tcp_capture_reset();
+    feed_and_handle(1, "GET /res HTTP/1.1\r\nConnection: keep-alive \t, \r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Connection: keep-alive"));
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state);
+
+    // Same length as "close", different bytes -> not a close token.
+    tcp_capture_reset();
+    feed_and_handle(2, "GET /res HTTP/1.1\r\nConnection: xlose\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Connection: keep-alive"));
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[2].state);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_conn_token_ws_and_bare_keepalive);
+    RUN_TEST(test_conn_token_delimiter_runs_and_trailing_ows);
     RUN_TEST(test_http11_default_keeps_alive);
     RUN_TEST(test_http11_explicit_close);
     RUN_TEST(test_http10_default_closes);

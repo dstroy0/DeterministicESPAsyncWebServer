@@ -315,10 +315,140 @@ void test_skip_and_extra_frames()
     TEST_ASSERT_EQUAL_INT(0, (int)dws_quic_frame_parse(unknown, sizeof unknown, &f));
 }
 
+// Every proper prefix of @p buf must be rejected: each successive varint / field read in the
+// parser runs off the end at exactly one of these lengths, so this sweeps all of them at once.
+static void reject_every_prefix(const uint8_t *buf, size_t n)
+{
+    QuicFrame f;
+    for (size_t k = 1; k < n; k++)
+        TEST_ASSERT_EQUAL_INT(0, (int)dws_quic_frame_parse(buf, k, &f));
+    TEST_ASSERT_EQUAL_INT((int)n, (int)dws_quic_frame_parse(buf, n, &f)); // the whole frame parses
+}
+
+// Truncation at EVERY byte boundary of each multi-field frame: the ACK range/ECN loops, CRYPTO,
+// RESET_STREAM, the two-varint group, NEW_CONNECTION_ID and PATH_CHALLENGE. Each prefix must be
+// refused (0), and the complete frame must still parse.
+void test_frame_truncation_sweep()
+{
+    // ACK with ECN: largest 60, delay 5, 2 ranges (gap/len pairs), then the three ECN counts.
+    const uint8_t ack_ecn[12] = {0x03, 60, 5, 2, 3, 2, 4, 1, 1, 1, 2, 0};
+    reject_every_prefix(ack_ecn, sizeof ack_ecn);
+
+    // Plain ACK, no ranges: largest 1000 (2-octet varint), delay 42, 0 ranges, first_range 3.
+    uint8_t ack[16];
+    size_t an = dws_quic_build_ack(ack, sizeof ack, 1000, 42, 3);
+    TEST_ASSERT_TRUE(an > 0);
+    reject_every_prefix(ack, an);
+
+    // CRYPTO with a multi-octet offset and 5 bytes of data.
+    uint8_t cr[32];
+    const uint8_t data[5] = {'h', 'e', 'l', 'l', 'o'};
+    size_t cn = dws_quic_build_crypto(cr, sizeof cr, 1000, data, sizeof data);
+    TEST_ASSERT_TRUE(cn > 0);
+    reject_every_prefix(cr, cn);
+
+    // RESET_STREAM: three varints, each multi-octet so every prefix cuts one short.
+    const uint8_t reset[7] = {QuicFrameType::QUIC_FT_RESET_STREAM, 0x44, 0x00, 0x44, 0x01, 0x44, 0x02};
+    reject_every_prefix(reset, sizeof reset);
+
+    // STOP_SENDING: two varints.
+    const uint8_t stop[5] = {QuicFrameType::QUIC_FT_STOP_SENDING, 0x44, 0x00, 0x44, 0x01};
+    reject_every_prefix(stop, sizeof stop);
+
+    // NEW_CONNECTION_ID: seq, retire-prior-to, 1-byte CID length, CID, 16-byte reset token.
+    uint8_t ncid[24];
+    memset(ncid, 0x5A, sizeof ncid);
+    ncid[0] = QuicFrameType::QUIC_FT_NEW_CONNECTION_ID;
+    ncid[1] = 0x01;
+    ncid[2] = 0x00;
+    ncid[3] = 0x04;
+    reject_every_prefix(ncid, sizeof ncid);
+
+    // PATH_CHALLENGE: 8 opaque bytes.
+    uint8_t path[9];
+    memset(path, 0x11, sizeof path);
+    path[0] = QuicFrameType::QUIC_FT_PATH_CHALLENGE;
+    reject_every_prefix(path, sizeof path);
+}
+
+// Every builder refuses every output capacity below the one it needs, and succeeds at exactly that
+// size - sweeping each internal varint write's overflow guard in turn.
+void test_builder_capacity_sweep()
+{
+    uint8_t out[64];
+    const uint8_t data[5] = {1, 2, 3, 4, 5};
+
+    // ACK: type + largest(2 octets) + delay(2) + range count + first range.
+    size_t need = dws_quic_build_ack(out, sizeof out, 1000, 500, 3);
+    TEST_ASSERT_TRUE(need > 0);
+    for (size_t cap = 0; cap < need; cap++)
+        TEST_ASSERT_EQUAL_INT(0, (int)dws_quic_build_ack(out, cap, 1000, 500, 3));
+    TEST_ASSERT_EQUAL_INT((int)need, (int)dws_quic_build_ack(out, need, 1000, 500, 3));
+
+    // CRYPTO with a multi-octet offset.
+    need = dws_quic_build_crypto(out, sizeof out, 1000, data, sizeof data);
+    TEST_ASSERT_TRUE(need > 0);
+    for (size_t cap = 0; cap < need; cap++)
+        TEST_ASSERT_EQUAL_INT(0, (int)dws_quic_build_crypto(out, cap, 1000, data, sizeof data));
+
+    // STREAM with an offset and FIN.
+    need = dws_quic_build_stream(out, sizeof out, 1000, 2000, data, sizeof data, true);
+    TEST_ASSERT_TRUE(need > 0);
+    for (size_t cap = 0; cap < need; cap++)
+        TEST_ASSERT_EQUAL_INT(0, (int)dws_quic_build_stream(out, cap, 1000, 2000, data, sizeof data, true));
+
+    // MAX_DATA.
+    need = dws_quic_build_max_data(out, sizeof out, 1000000);
+    TEST_ASSERT_TRUE(need > 0);
+    for (size_t cap = 0; cap < need; cap++)
+        TEST_ASSERT_EQUAL_INT(0, (int)dws_quic_build_max_data(out, cap, 1000000));
+
+    // CONNECTION_CLOSE with a multi-octet error code, frame type and reason.
+    need = dws_quic_build_connection_close(out, sizeof out, 1000, 2000, "reason", 6);
+    TEST_ASSERT_TRUE(need > 0);
+    for (size_t cap = 0; cap < need; cap++)
+        TEST_ASSERT_EQUAL_INT(0, (int)dws_quic_build_connection_close(out, cap, 1000, 2000, "reason", 6));
+}
+
+// The zero-length bodies each builder must still emit correctly: an empty CRYPTO frame, an empty
+// STREAM frame, and a CONNECTION_CLOSE with no reason phrase - all round-trip through the parser.
+void test_builders_with_empty_bodies()
+{
+    uint8_t out[32];
+    QuicFrame f;
+
+    // CRYPTO carrying no data: header only, and it parses back with length 0.
+    size_t n = dws_quic_build_crypto(out, sizeof out, 4, nullptr, 0);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_INT((int)n, (int)dws_quic_frame_parse(out, n, &f));
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_CRYPTO, (unsigned)f.type);
+    TEST_ASSERT_EQUAL_UINT64(4, f.crypto.offset);
+    TEST_ASSERT_EQUAL_UINT64(0, f.crypto.length);
+
+    // STREAM carrying no data but a FIN: the pure-FIN frame the engine sends to end a stream.
+    n = dws_quic_build_stream(out, sizeof out, 8, 0, nullptr, 0, true);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_INT((int)n, (int)dws_quic_frame_parse(out, n, &f));
+    TEST_ASSERT_EQUAL_UINT64(8, f.stream.id);
+    TEST_ASSERT_EQUAL_UINT64(0, f.stream.length);
+    TEST_ASSERT_EQUAL_UINT8(1, f.stream.fin);
+
+    // CONNECTION_CLOSE with no reason phrase (what the engine emits).
+    n = dws_quic_build_connection_close(out, sizeof out, 0x0a, 0, nullptr, 0);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_INT((int)n, (int)dws_quic_frame_parse(out, n, &f));
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_CONNECTION_CLOSE, (unsigned)f.type);
+    TEST_ASSERT_EQUAL_UINT64(0x0a, f.close.error_code);
+    TEST_ASSERT_EQUAL_UINT64(0, f.close.reason_len);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_frame_edge_guards);
+    RUN_TEST(test_frame_truncation_sweep);
+    RUN_TEST(test_builder_capacity_sweep);
+    RUN_TEST(test_builders_with_empty_bodies);
     RUN_TEST(test_simple_frames);
     RUN_TEST(test_ack);
     RUN_TEST(test_ack_multi_range);

@@ -170,9 +170,128 @@ void test_frame_build_roundtrip()
     TEST_ASSERT_EQUAL_size_t(0, dws_rtcm3_frame_build(tiny, sizeof(tiny), payload, sizeof(payload)));
 }
 
+// dws_rtcm_bw_u() rejects a zero-width and an over-64-bit field, and once the writer has failed it
+// stays failed: a later well-formed write neither advances the position nor touches the buffer.
+void test_writer_rejects_bad_widths_and_is_sticky()
+{
+    uint8_t buf[8];
+    RtcmBitWriter w;
+
+    memset(buf, 0, sizeof(buf));
+    dws_rtcm_bw_init(&w, buf, sizeof(buf));
+    dws_rtcm_bw_u(&w, 1, 0); // zero-width field
+    TEST_ASSERT_FALSE(w.ok);
+    TEST_ASSERT_EQUAL_size_t(0, w.pos);
+
+    memset(buf, 0, sizeof(buf));
+    dws_rtcm_bw_init(&w, buf, sizeof(buf));
+    dws_rtcm_bw_u(&w, 1, 65); // wider than the 64-bit value it is given
+    TEST_ASSERT_FALSE(w.ok);
+
+    memset(buf, 0, sizeof(buf));
+    dws_rtcm_bw_init(&w, buf, sizeof(buf));
+    dws_rtcm_bw_u(&w, 0xFF, 8);
+    dws_rtcm_bw_u(&w, 0, 0); // fails the writer here
+    TEST_ASSERT_FALSE(w.ok);
+    dws_rtcm_bw_u(&w, 0xFF, 8); // ignored: the writer is already failed
+    TEST_ASSERT_EQUAL_size_t(8, w.pos);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[1]);
+}
+
+// A full-width 64-bit signed field takes the no-mask / no-sign-extend path at both ends of the bit
+// I/O - the stored bits are already the whole word - so the value round-trips unchanged.
+void test_signed_bit_io_full_width()
+{
+    uint8_t buf[8];
+    memset(buf, 0, sizeof(buf));
+    RtcmBitWriter w;
+    dws_rtcm_bw_init(&w, buf, sizeof(buf));
+    dws_rtcm_bw_s(&w, -48500020000LL, 64);
+    TEST_ASSERT_TRUE(w.ok);
+    size_t p = 0;
+    TEST_ASSERT_EQUAL_INT64(-48500020000LL, dws_rtcm_br_s(buf, &p, 64));
+    TEST_ASSERT_EQUAL_size_t(64, p);
+}
+
+// Frame parsing: a buffer long enough but not aligned to the preamble is rejected, a null output
+// makes the call a pure length probe, and a body too short to hold the 12-bit DF002 reports 0.
+void test_frame_parse_edges()
+{
+    const uint8_t notpre[8] = {0x00, 0x00, 0x03, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_size_t(0, dws_rtcm3_frame_parse(notpre, sizeof(notpre), nullptr));
+    TEST_ASSERT_EQUAL_size_t(sizeof(FRAME_1005), dws_rtcm3_frame_parse(FRAME_1005, sizeof(FRAME_1005), nullptr));
+
+    const uint8_t body[1] = {0x3E};
+    uint8_t frame[RTCM3_MAX_FRAME];
+    size_t fn = dws_rtcm3_frame_build(frame, sizeof(frame), body, sizeof(body));
+    Rtcm3Frame f;
+    memset(&f, 0, sizeof(f));
+    TEST_ASSERT_EQUAL_size_t(fn, dws_rtcm3_frame_parse(frame, fn, &f));
+    TEST_ASSERT_TRUE(f.crc_ok);
+    TEST_ASSERT_EQUAL_UINT16(0, f.msg_type); // one byte cannot carry a 12-bit message number
+}
+
+// Frame building: a body over the 10-bit length field and a null output buffer are both refused;
+// an empty body still yields a valid header-plus-CRC frame, and a null body pointer leaves the
+// reserved body bytes untouched while the CRC still covers them.
+void test_frame_build_edges()
+{
+    uint8_t frame[RTCM3_MAX_FRAME];
+    const uint8_t body[3] = {0x3E, 0xD0, 0x00};
+    Rtcm3Frame f;
+
+    TEST_ASSERT_EQUAL_size_t(0, dws_rtcm3_frame_build(frame, sizeof(frame), body, RTCM3_MAX_PAYLOAD + 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rtcm3_frame_build(nullptr, sizeof(frame), body, sizeof(body)));
+
+    size_t n = dws_rtcm3_frame_build(frame, sizeof(frame), body, 0);
+    TEST_ASSERT_EQUAL_size_t(RTCM3_HDR_LEN + RTCM3_CRC_LEN, n);
+    memset(&f, 0, sizeof(f));
+    TEST_ASSERT_EQUAL_size_t(n, dws_rtcm3_frame_parse(frame, n, &f));
+    TEST_ASSERT_TRUE(f.crc_ok);
+    TEST_ASSERT_EQUAL_UINT16(0, f.payload_len);
+
+    memset(frame, 0, sizeof(frame));
+    const size_t n3 = RTCM3_HDR_LEN + 3 + RTCM3_CRC_LEN;
+    TEST_ASSERT_EQUAL_size_t(n3, dws_rtcm3_frame_build(frame, sizeof(frame), nullptr, 3));
+    memset(&f, 0, sizeof(f));
+    TEST_ASSERT_EQUAL_size_t(n3, dws_rtcm3_frame_parse(frame, sizeof(frame), &f));
+    TEST_ASSERT_TRUE(f.crc_ok);
+    TEST_ASSERT_EQUAL_UINT16(3, f.payload_len);
+}
+
+// dws_rtcm3_parse_1005() fails closed on a null payload, a null output, a body shorter than the
+// 19-byte 1005 minimum, a message number that is neither 1005 nor 1006, and a 1006 whose body is
+// too short to hold the antenna-height field.
+void test_parse_1005_rejects_bad_input()
+{
+    Rtcm3StationArp arp;
+    memset(&arp, 0, sizeof(arp));
+    const uint8_t *body = FRAME_1005 + RTCM3_HDR_LEN;
+
+    TEST_ASSERT_FALSE(dws_rtcm3_parse_1005(nullptr, 19, &arp));
+    TEST_ASSERT_FALSE(dws_rtcm3_parse_1005(body, 19, nullptr));
+    TEST_ASSERT_FALSE(dws_rtcm3_parse_1005(body, 18, &arp)); // one byte short of a 1005 body
+
+    // Rewrite DF002 to 1004 (0x3EC), a GPS observable message rather than an ARP one.
+    uint8_t other[19];
+    memcpy(other, body, sizeof(other));
+    other[1] = (uint8_t)((other[1] & 0x0F) | 0xC0);
+    TEST_ASSERT_FALSE(dws_rtcm3_parse_1005(other, sizeof(other), &arp));
+
+    // A 1006 header in a 19-byte body: the 16-bit antenna height would run off the end.
+    uint8_t short1006[19];
+    memcpy(short1006, FRAME_1006 + RTCM3_HDR_LEN, sizeof(short1006));
+    TEST_ASSERT_FALSE(dws_rtcm3_parse_1005(short1006, sizeof(short1006), &arp));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_writer_rejects_bad_widths_and_is_sticky);
+    RUN_TEST(test_signed_bit_io_full_width);
+    RUN_TEST(test_frame_parse_edges);
+    RUN_TEST(test_frame_build_edges);
+    RUN_TEST(test_parse_1005_rejects_bad_input);
     RUN_TEST(test_build_1005_matches_pyrtcm);
     RUN_TEST(test_build_1006_matches_pyrtcm);
     RUN_TEST(test_parse_frame_and_1005);

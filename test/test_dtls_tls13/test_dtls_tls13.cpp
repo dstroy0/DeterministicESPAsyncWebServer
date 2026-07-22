@@ -267,9 +267,89 @@ static void test_parse_server_cert_type_x509_only(void)
     TEST_ASSERT_FALSE(hello.offers_rpk_server_cert);
 }
 
+// A malformed server_certificate_type extension is skipped without failing the parse and leaves the
+// RawPublicKey flag clear: an empty body (no list-length byte) and a list length that overruns.
+static void test_parse_server_cert_type_malformed(void)
+{
+    uint8_t ch[128];
+    Tls13ClientHello hello;
+
+    // Empty extension body: there is not even a list-length byte.
+    size_t n = build_ch_one_ext(ch, 0x0014, nullptr, 0);
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(ch, n, &hello));
+    TEST_ASSERT_FALSE(hello.offers_rpk_server_cert);
+
+    // The declared list length runs past the extension body.
+    const uint8_t overrun[1] = {0x05}; // list length 5, but no entries follow
+    n = build_ch_one_ext(ch, 0x0014, overrun, sizeof(overrun));
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(ch, n, &hello));
+    TEST_ASSERT_FALSE(hello.offers_rpk_server_cert);
+}
+
+// The QUIC EncryptedExtensions (ALPN + transport parameters) also carries the negotiated
+// server_certificate_type = RawPublicKey when it was selected (RFC 7250 sec 4.2) - the same
+// extension the DTLS-profile builder appends, on top of the ALPN / transport-params body.
+static void test_quic_encrypted_extensions_rpk(void)
+{
+    const uint8_t tp[3] = {0x04, 0x01, 0x20};
+    uint8_t plain[64], rpk[64];
+    size_t pn = dws_tls13_build_encrypted_extensions(plain, sizeof(plain), tp, sizeof(tp), /*rpk=*/false);
+    size_t rn = dws_tls13_build_encrypted_extensions(rpk, sizeof(rpk), tp, sizeof(tp), /*rpk=*/true);
+    TEST_ASSERT_TRUE(pn > 0);
+    TEST_ASSERT_EQUAL_size_t(pn + 5, rn); // ext type(2) + length(2) + CertificateType(1)
+
+    // Everything up to the extra extension is byte-identical; the RPK form appends
+    // server_certificate_type(20) -> RawPublicKey(2).
+    TEST_ASSERT_EQUAL_MEMORY(plain + 6, rpk + 6, pn - 6);
+    const uint8_t want[5] = {0x00, 0x14, 0x00, 0x01, 0x02};
+    TEST_ASSERT_EQUAL_MEMORY(want, rpk + rn - 5, sizeof(want));
+    // The two length prefixes grew by exactly the appended extension.
+    TEST_ASSERT_EQUAL_UINT(rn - 4, (unsigned)((rpk[1] << 16) | (rpk[2] << 8) | rpk[3]));
+    TEST_ASSERT_EQUAL_UINT(rn - 6, (unsigned)((rpk[4] << 8) | rpk[5]));
+}
+
+// Every ClientHello extension the parser dispatches on, fed one at a time, so the whole switch is
+// walked in the RawPublicKey build (which has one more arm than the non-RPK one).
+static void test_parse_every_extension_arm(void)
+{
+    struct Ext
+    {
+        uint16_t type;
+        uint8_t body[12];
+        uint16_t len;
+    };
+    static const Ext exts[] = {
+        {0x002b, {0x02, 0x03, 0x04}, 3},                            // supported_versions
+        {0x000a, {0x00, 0x02, 0x00, 0x1d}, 4},                      // supported_groups
+        {0x000d, {0x00, 0x02, 0x08, 0x07}, 4},                      // signature_algorithms
+        {0x0033, {0x00, 0x00}, 2},                                  // key_share (empty client_shares)
+        {0x0010, {0x00, 0x03, 0x02, 'h', '3'}, 5},                  // ALPN
+        {0x0014, {0x02, 0x00, 0x02}, 3},                            // server_certificate_type (RFC 7250)
+        {0x0039, {0x04, 0x01, 0x20}, 3},                            // quic_transport_parameters
+        {0x002c, {0x00, 0x02, 0x11, 0x22}, 4},                      // cookie
+        {0x0036, {0x02, 0xAA, 0xBB}, 3},                            // connection_id
+        {0x0000, {0x00, 0x06, 0x00, 0x00, 0x03, 'a', 'b', 'c'}, 8}, // server_name
+        {0xFFAA, {0x00}, 1},                                        // an unhandled type -> default
+    };
+    uint8_t ch[128];
+    Tls13ClientHello hello;
+    for (size_t i = 0; i < sizeof(exts) / sizeof(exts[0]); i++)
+    {
+        size_t n = build_ch_one_ext(ch, exts[i].type, exts[i].body, exts[i].len);
+        TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(ch, n, &hello));
+    }
+    // The last one (an unknown type) is ignored outright, leaving every flag clear.
+    TEST_ASSERT_FALSE(hello.offers_tls13);
+    TEST_ASSERT_FALSE(hello.has_conn_id);
+    TEST_ASSERT_NULL(hello.dws_quic_tp);
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_parse_server_cert_type_malformed);
+    RUN_TEST(test_quic_encrypted_extensions_rpk);
+    RUN_TEST(test_parse_every_extension_arm);
     RUN_TEST(test_hrr_magic_symbol);
     RUN_TEST(test_hrr_build_kat);
     RUN_TEST(test_hrr_echoes_session_id);

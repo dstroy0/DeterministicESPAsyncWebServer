@@ -60,6 +60,11 @@ static size_t build_frame(uint8_t *dst, WsOpcode opcode, const uint8_t *payload,
     return pos;
 }
 
+// Set for the one test that must observe the module before dws_web_terminal_begin()
+// has ever stored a server handle (the service is a file-static, so that state is
+// only reachable from the first test that runs).
+static bool g_skip_begin = false;
+
 void setUp()
 {
     server = DWS();
@@ -77,6 +82,8 @@ void setUp()
     tcp_capture_reset();
     g_cmd[0] = '\0';
     g_cmd_client = 0xFF;
+    if (g_skip_begin)
+        return;
     dws_web_terminal_begin(server, "/terminal");
     dws_web_terminal_on_command(on_cmd);
 }
@@ -198,9 +205,101 @@ void test_close_clears_client()
     TEST_ASSERT_EQUAL_UINT(0, dws_web_terminal_client_count());
 }
 
+// GET a path on a slot and return everything the transport captured.
+static const char *get_path(uint8_t slot, const char *path)
+{
+    char req[128];
+    snprintf(req, sizeof(req), "GET %s HTTP/1.1\r\nHost: x\r\n\r\n", path);
+    push_str(slot, req);
+    http_parse(slot);
+    server.handle();
+    return tcp_captured();
+}
+
+// Before begin() has stored a server handle the output API must be inert rather
+// than dereference it. Registered first, because the handle is never cleared again.
+void test_api_inert_before_begin()
+{
+    TEST_ASSERT_EQUAL_UINT(0, dws_web_terminal_client_count());
+    tcp_capture_reset();
+    dws_web_terminal_print("early");
+    dws_web_terminal_println("early");
+    dws_web_terminal_printf("early %d", 1);
+    TEST_ASSERT_EQUAL_size_t(0, strlen(tcp_captured()));
+}
+
+// println appends a newline, and a null string sends just the newline.
+void test_println_appends_newline()
+{
+    do_handshake(0);
+    tcp_capture_reset();
+    dws_web_terminal_println("line one");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "line one\n"));
+
+    tcp_capture_reset();
+    dws_web_terminal_println(nullptr);
+    const char *r = tcp_captured();
+    size_t n = strlen(r);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_HEX8('\n', (uint8_t)r[n - 1]); // empty body, newline only
+}
+
+// print(nullptr) sends nothing at all.
+void test_print_null_is_ignored()
+{
+    do_handshake(0);
+    tcp_capture_reset();
+    dws_web_terminal_print(nullptr);
+    TEST_ASSERT_EQUAL_size_t(0, strlen(tcp_captured()));
+}
+
+// A null or empty path falls back to the default "/terminal" mount point.
+void test_begin_defaults_path_when_missing()
+{
+    server = DWS();
+    dws_web_terminal_begin(server, nullptr);
+    tcp_capture_reset();
+    TEST_ASSERT_NOT_NULL(strstr(get_path(0, "/terminal"), "DWS Terminal"));
+
+    server = DWS();
+    dws_web_terminal_begin(server, "");
+    tcp_capture_reset();
+    TEST_ASSERT_NOT_NULL(strstr(get_path(1, "/terminal"), "DWS Terminal"));
+}
+
+// With no command callback registered an inbound frame is simply dropped.
+void test_message_without_callback()
+{
+    do_handshake(0);
+    dws_web_terminal_on_command(nullptr);
+    uint8_t frame[32];
+    size_t n = build_frame(frame, WsOpcode::WS_OP_TEXT, (const uint8_t *)"ignored", 7);
+    push_bytes(0, frame, n);
+    server.handle();
+    TEST_ASSERT_EQUAL_STRING("", g_cmd); // nothing was delivered
+}
+
+// A slot still flagged as a terminal client but whose socket has gone away is
+// skipped by both the broadcast and the client count.
+void test_stale_client_slot_is_skipped()
+{
+    do_handshake(0);
+    TEST_ASSERT_EQUAL_UINT(1, dws_web_terminal_client_count());
+    WsConn *ws = ws_find(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->active = false; // socket gone; the terminal has not been told yet
+    TEST_ASSERT_EQUAL_UINT(0, dws_web_terminal_client_count());
+    tcp_capture_reset();
+    dws_web_terminal_print("ghost");
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "ghost"));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    g_skip_begin = true;
+    RUN_TEST(test_api_inert_before_begin);
+    g_skip_begin = false;
     RUN_TEST(test_serves_terminal_page);
     RUN_TEST(test_ws_upgrade_tracks_client);
     RUN_TEST(test_ws_upgrade_requires_connection_token);
@@ -210,5 +309,10 @@ int main()
     RUN_TEST(test_printf_broadcast);
     RUN_TEST(test_no_broadcast_without_clients);
     RUN_TEST(test_close_clears_client);
+    RUN_TEST(test_println_appends_newline);
+    RUN_TEST(test_print_null_is_ignored);
+    RUN_TEST(test_begin_defaults_path_when_missing);
+    RUN_TEST(test_message_without_callback);
+    RUN_TEST(test_stale_client_slot_is_skipped);
     return UNITY_END();
 }

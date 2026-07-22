@@ -348,10 +348,235 @@ void test_overlong_field_truncated()
     TEST_ASSERT_EQUAL_UINT(DWS_H3_METHOD_LEN - 1, strlen(g_method)); // truncated to fit
 }
 
+// Headers whose names are the same LENGTH as a pseudo-header but a different name must not be
+// captured into that field: ":scheme" (7, like ":method"), "hello" (5, like ":path"), "user-agent"
+// (10, like ":authority") and a short name are all ignored, while the real ones still land.
+void test_h3_pseudo_header_name_variants()
+{
+    g_requests = 0;
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    dws_h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    uint8_t block[256];
+    size_t bp = dws_qpack_encode_prefix(block, sizeof(block));
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":scheme", 7, "https", 5);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, "hello", 5, "world", 5);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, "user-agent", 10, "curl", 4);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, "abc", 3, "z", 1);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":method", 7, "GET", 3);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/ok", 3);
+    uint8_t req[512];
+    size_t rp = dws_h3_build_headers(req, sizeof(req), block, bp);
+
+    strcpy(g_auth, "unset");
+    qc.cb.on_stream_data(qc.cb.app, &qc, 0, req, rp, true);
+    TEST_ASSERT_EQUAL_INT(1, g_requests);
+    TEST_ASSERT_EQUAL_STRING("GET", g_method); // ":scheme" did not overwrite :method
+    TEST_ASSERT_EQUAL_STRING("/ok", g_path);   // "hello" did not overwrite :path
+    TEST_ASSERT_EQUAL_STRING("", g_auth);      // "user-agent" did not become the authority
+}
+
+// A request stream carrying a frame type the engine does not act on, and a zero-length DATA frame,
+// are both walked past: only the real DATA payload reaches the application.
+void test_h3_request_unknown_frame_and_empty_data()
+{
+    g_requests = 0;
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    dws_h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    uint8_t block[128];
+    size_t bp = dws_qpack_encode_prefix(block, sizeof(block));
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":method", 7, "POST", 4);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/u", 2);
+
+    uint8_t req[512];
+    size_t rp = dws_h3_build_headers(req, sizeof(req), block, bp);
+    // A SETTINGS frame is legal on the wire but meaningless here: neither HEADERS nor DATA.
+    const uint64_t ids[] = {H3Setting::H3_SETTINGS_QPACK_BLOCKED_STREAMS};
+    const uint64_t vals[] = {0};
+    rp += dws_h3_build_settings(req + rp, sizeof(req) - rp, ids, vals, 1);
+    rp += dws_h3_build_data(req + rp, sizeof(req) - rp, nullptr, 0); // empty DATA
+    rp += dws_h3_build_data(req + rp, sizeof(req) - rp, (const uint8_t *)"body", 4);
+
+    qc.cb.on_stream_data(qc.cb.app, &qc, 0, req, rp, true);
+    TEST_ASSERT_EQUAL_INT(1, g_requests);
+    TEST_ASSERT_EQUAL_STRING("POST", g_method);
+    TEST_ASSERT_EQUAL_UINT(4, g_body_len);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY("body", g_body, 4);
+}
+
+// With no application callback registered the request is still parsed and marked complete; it is
+// simply not dispatched (nothing is invoked through a null pointer).
+void test_h3_no_request_callback()
+{
+    g_requests = 0;
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    dws_h3_conn_init(&h3, &qc, nullptr, nullptr);
+
+    uint8_t block[128];
+    size_t bp = dws_qpack_encode_prefix(block, sizeof(block));
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":method", 7, "GET", 3);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/x", 2);
+    uint8_t req[256];
+    size_t rp = dws_h3_build_headers(req, sizeof(req), block, bp);
+
+    qc.cb.on_stream_data(qc.cb.app, &qc, 0, req, rp, true);
+    TEST_ASSERT_EQUAL_INT(0, g_requests); // no callback -> nothing dispatched
+    H3Stream *st = find_h3(&h3, 0);
+    TEST_ASSERT_NOT_NULL(st);
+    TEST_ASSERT_TRUE(st->have_headers); // ...but the HEADERS were decoded
+    TEST_ASSERT_EQUAL_STRING("GET", st->method);
+}
+
+// Stream data beyond the per-stream reassembly buffer is clamped, not overrun: the buffer fills to
+// exactly its capacity and the excess is dropped.
+void test_h3_stream_buffer_overflow_clamped()
+{
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    dws_h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    static uint8_t big[DWS_H3_STREAM_BUF + 64];
+    memset(big, 0x00, sizeof(big)); // PADDING-like filler; no complete frame is formed
+    qc.cb.on_stream_data(qc.cb.app, &qc, 0, big, sizeof(big), false);
+
+    H3Stream *st = find_h3(&h3, 0);
+    TEST_ASSERT_NOT_NULL(st);
+    TEST_ASSERT_EQUAL_UINT(DWS_H3_STREAM_BUF, st->buf_len); // clamped to capacity
+}
+
+// Control-stream frame guards: an unparseable frame header, a frame whose payload has not all
+// arrived, and a frame that is not SETTINGS - none of which disturb peer_settings.
+void test_h3_control_stream_frame_guards()
+{
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    dws_h3_conn_init(&h3, &qc, on_request, nullptr);
+    H3Settings defaults;
+    dws_h3_settings_defaults(&defaults);
+
+    // Stream type 0x00 (control) then the first byte of an 8-octet varint: unparseable.
+    uint8_t s[64];
+    size_t sp = dws_quic_varint_encode(s, sizeof(s), 0x00);
+    s[sp++] = 0xC0;
+    qc.cb.on_stream_data(qc.cb.app, &qc, 2, s, sp, false);
+    H3Stream *st = find_h3(&h3, 2);
+    TEST_ASSERT_NOT_NULL(st);
+    TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_CONTROL, st->role);
+    TEST_ASSERT_EQUAL_UINT64(defaults.max_field_section_size, h3.peer_settings.max_field_section_size);
+
+    // A SETTINGS frame header announcing more payload than has arrived: held, not parsed.
+    QuicConn qc2;
+    minimal_qc(&qc2);
+    H3Conn h3b;
+    dws_h3_conn_init(&h3b, &qc2, on_request, nullptr);
+    uint8_t s2[64];
+    size_t sp2 = dws_quic_varint_encode(s2, sizeof(s2), 0x00);
+    sp2 += dws_h3_frame_write_header(s2 + sp2, sizeof(s2) - sp2, H3FrameType::H3_SETTINGS, 40);
+    qc2.cb.on_stream_data(qc2.cb.app, &qc2, 2, s2, sp2, false);
+    TEST_ASSERT_EQUAL_UINT64(defaults.max_field_section_size, h3b.peer_settings.max_field_section_size);
+
+    // A complete control frame that is not SETTINGS is consumed and ignored.
+    QuicConn qc3;
+    minimal_qc(&qc3);
+    H3Conn h3c;
+    dws_h3_conn_init(&h3c, &qc3, on_request, nullptr);
+    uint8_t s3[64];
+    size_t sp3 = dws_quic_varint_encode(s3, sizeof(s3), 0x00);
+    sp3 += dws_h3_frame_write_header(s3 + sp3, sizeof(s3) - sp3, 0x07 /*GOAWAY*/, 1);
+    s3[sp3++] = 0x00;
+    qc3.cb.on_stream_data(qc3.cb.app, &qc3, 2, s3, sp3, false);
+    H3Stream *sc = find_h3(&h3c, 2);
+    TEST_ASSERT_NOT_NULL(sc);
+    TEST_ASSERT_EQUAL_UINT(0, sc->buf_len); // fully consumed
+    TEST_ASSERT_EQUAL_UINT64(defaults.max_field_section_size, h3c.peer_settings.max_field_section_size);
+}
+
+// The uni-stream classification guard: a zero-length delivery leaves the stream unclassified (there
+// is no type varint to read yet), and once classified a later delivery does not re-classify.
+void test_h3_uni_stream_empty_and_repeat_delivery()
+{
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    dws_h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    // Zero-length delivery on a fresh uni stream: nothing buffered, nothing classified.
+    uint8_t none = 0;
+    qc.cb.on_stream_data(qc.cb.app, &qc, 2, &none, 0, false);
+    H3Stream *st = find_h3(&h3, 2);
+    TEST_ASSERT_NOT_NULL(st);
+    TEST_ASSERT_FALSE(st->type_read);
+    TEST_ASSERT_EQUAL_UINT(0, st->buf_len);
+
+    // The type varint arrives and classifies it as the control stream.
+    uint8_t t[16];
+    size_t tn = dws_quic_varint_encode(t, sizeof(t), 0x00);
+    qc.cb.on_stream_data(qc.cb.app, &qc, 2, t, tn, false);
+    TEST_ASSERT_TRUE(st->type_read);
+    TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_CONTROL, st->role);
+
+    // A second delivery on the already-classified stream is treated as control-stream payload, not
+    // as another stream type: the SETTINGS it carries are parsed.
+    uint8_t s[64];
+    const uint64_t ids[] = {H3Setting::H3_SETTINGS_MAX_FIELD_SECTION_SIZE};
+    const uint64_t vals[] = {4321};
+    size_t sp = dws_h3_build_settings(s, sizeof(s), ids, vals, 1);
+    qc.cb.on_stream_data(qc.cb.app, &qc, 2, s, sp, false);
+    TEST_ASSERT_EQUAL_UINT64(4321, h3.peer_settings.max_field_section_size);
+}
+
+// A response with no content-type and an empty body still serializes: the HEADERS carry :status and
+// content-length 0, and no DATA frame is emitted.
+void test_h3_respond_no_content_type_empty_body()
+{
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    dws_h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    TEST_ASSERT_TRUE(dws_h3_conn_respond(&h3, 0, 204, nullptr, nullptr, 0));
+    QuicStream *st = find_stream(&qc, 0);
+    TEST_ASSERT_NOT_NULL(st);
+
+    size_t off = 0;
+    int frames = 0;
+    char scratch[128];
+    e_status[0] = e_ctype[0] = '\0';
+    while (off < st->tx_have)
+    {
+        H3Frame fr;
+        TEST_ASSERT_TRUE(dws_h3_frame_parse(st->tx + off, st->tx_have - off, &fr));
+        TEST_ASSERT_EQUAL_UINT64(H3FrameType::H3_HEADERS, fr.type); // no DATA frame follows
+        dws_qpack_decode(st->tx + off + fr.header_len, (size_t)fr.length, scratch, sizeof(scratch), dws_resp_emit,
+                         nullptr);
+        off += fr.header_len + (size_t)fr.length;
+        frames++;
+    }
+    TEST_ASSERT_EQUAL_INT(1, frames);
+    TEST_ASSERT_EQUAL_STRING("204", e_status);
+    TEST_ASSERT_EQUAL_STRING("", e_ctype); // content-type was not emitted
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_request_dispatch_and_response);
+    RUN_TEST(test_h3_pseudo_header_name_variants);
+    RUN_TEST(test_h3_request_unknown_frame_and_empty_data);
+    RUN_TEST(test_h3_no_request_callback);
+    RUN_TEST(test_h3_stream_buffer_overflow_clamped);
+    RUN_TEST(test_h3_control_stream_frame_guards);
+    RUN_TEST(test_h3_uni_stream_empty_and_repeat_delivery);
+    RUN_TEST(test_h3_respond_no_content_type_empty_body);
     RUN_TEST(test_post_with_body);
     RUN_TEST(test_control_stream_settings_sent);
     RUN_TEST(test_client_control_stream_settings);

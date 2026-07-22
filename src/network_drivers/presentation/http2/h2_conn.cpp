@@ -61,7 +61,9 @@ void send_control(H2Conn *c, size_t (*build)(uint8_t *, size_t))
 {
     uint8_t buf[H2_FRAME_HEADER_LEN + 16];
     size_t n = build(buf, sizeof buf);
-    if (n)
+    // Both builders passed here (SETTINGS ACK, 9 bytes; RST_STREAM, 13) fit this 25-byte buffer, so the
+    // zero return is unreachable; kept so a future builder that can fail is not silently written short.
+    if (n) // GCOVR_EXCL_LINE
         wr(c, buf, n);
 }
 
@@ -357,10 +359,10 @@ bool dws_h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *
     }
     int cl = snprintf(num, sizeof num, "%u", (unsigned)body_len);
     w = dws_hpack_encode_header(block + bo, sizeof block - bo, "content-length", 14, num, (size_t)cl);
-    // GCOVR_EXCL_START  content-length is a decimal number; it cannot overflow the 256B block
+    // Reachable: bo has already been advanced by the caller-supplied content-type, which can consume nearly
+    // the whole block, leaving too little room for content-length even though it is only a few octets.
     if (!w)
         return false;
-    // GCOVR_EXCL_STOP
     bo += w;
 
     uint8_t frame[H2_FRAME_HEADER_LEN + sizeof block];

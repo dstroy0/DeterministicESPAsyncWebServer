@@ -33,6 +33,22 @@ struct TlsAlert
 
 namespace
 {
+/// Capacity of the encoded-transport-parameters scratch the EncryptedExtensions builder is fed.
+constexpr size_t QUIC_TLS_TP_ENC_CAP = 512;
+
+/// Largest EncryptedExtensions this module can emit: handshake header (4) + extensions length (2)
+/// + the ALPN "h3" extension (9) + the transport-parameters extension header (4) + the parameters.
+constexpr size_t QUIC_TLS_EE_MAX = 4 + 2 + 9 + 4 + QUIC_TLS_TP_ENC_CAP;
+
+// EncryptedExtensions is the FIRST message written into flight_hs (flight_hs_len is reset to 0
+// immediately before it), so its emit() cannot overflow - which is why that failure path carries a
+// coverage exclusion. That only holds while flight_hs is at least one whole EncryptedExtensions,
+// and DWS_H3_CRYPTO_BUF is an overridable macro (ServerConfig.h), so pin the relationship here:
+// a build that shrank it would silently make the excluded path reachable.
+static_assert(DWS_H3_CRYPTO_BUF >= QUIC_TLS_EE_MAX,
+              "DWS_H3_CRYPTO_BUF (QuicTls::flight_hs) must hold a whole EncryptedExtensions: the fixed "
+              "512-byte transport-parameter buffer plus the ALPN and extension framing");
+
 void fail(QuicTls *qt, uint8_t alert)
 {
     qt->state = QtlsState::QTLS_FAILED;
@@ -52,8 +68,8 @@ bool emit(QuicTls *qt, uint8_t *flight, size_t cap, size_t *plen, size_t written
     // *plen <= cap is the invariant this append maintains, so cap - *plen never underflows; refuse a
     // write that would run past the flight buffer (each builder already caps to what it was told, so
     // this only fires if that contract is ever broken - it keeps flight+*plen in bounds regardless).
-    if (!written || written > cap - *plen)
-    {
+    if (!written || written > cap - *plen) // GCOVR_EXCL_LINE  every caller passes the builder exactly cap - *plen
+    {                                      // as its own capacity, so a non-zero return can never exceed it
         fail(qt, TlsAlert::TLS_ALERT_INTERNAL_ERROR);
         return false;
     }
@@ -79,9 +95,9 @@ bool send_hello_retry(QuicTls *qt, const uint8_t *msg, size_t msg_len, const Tls
     ssh_sha256_init(&qt->transcript);
     uint8_t mh[40];
     size_t mhn = dws_tls13_build_message_hash(mh, sizeof(mh), ch1_hash);
-    if (!mhn)
+    if (!mhn) // GCOVR_EXCL_LINE  mh[40] always fits the 36-byte hash
     {
-        fail(qt, TlsAlert::TLS_ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE  mh[40] always fits the 36-byte hash
+        fail(qt, TlsAlert::TLS_ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE
         return false;                                 // GCOVR_EXCL_LINE
     }
     ssh_sha256_update(&qt->transcript, mh, mhn); // message_hash is transcript-only, never sent
@@ -90,7 +106,7 @@ bool send_hello_retry(QuicTls *qt, const uint8_t *msg, size_t msg_len, const Tls
     size_t n = dws_tls13_build_hello_retry_request(qt->flight_initial, sizeof(qt->flight_initial), ch->session_id,
                                                    ch->session_id_len, TLS_GROUP_X25519MLKEM768, nullptr, 0,
                                                    /*dtls=*/false);
-    if (!emit(qt, qt->flight_initial, sizeof(qt->flight_initial), &qt->flight_initial_len, n))
+    if (!emit(qt, qt->flight_initial, sizeof(qt->flight_initial), &qt->flight_initial_len, n)) // GCOVR_EXCL_LINE
         return false; // GCOVR_EXCL_LINE  the HRR (~50B) always fits flight_initial (>=256B)
     qt->hrr_sent = true;
     return true; // stay in QTLS_START, awaiting ClientHello2 at the Initial level
@@ -116,7 +132,9 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     use_hybrid = ch.has_hybrid_share && ch.offers_x25519mlkem768;
     // The client offered X25519MLKEM768 but sent only a classical key_share: ask it (once) to retry with
     // the hybrid share rather than silently downgrading to X25519 (RFC 8446 §4.1.4).
-    if (!use_hybrid && ch.offers_x25519mlkem768 && !ch.has_hybrid_share && !qt->hrr_sent)
+    // GCOVR_EXCL_LINE below: !ch.has_hybrid_share is implied by the two operands before it - use_hybrid is
+    // has_hybrid_share && offers_x25519mlkem768, so reaching it with the share present is impossible.
+    if (!use_hybrid && ch.offers_x25519mlkem768 && !ch.has_hybrid_share && !qt->hrr_sent) // GCOVR_EXCL_LINE
         return send_hello_retry(qt, msg, msg_len, &ch);
     // A retry that still lacks the hybrid share is fatal - one HRR only, so a client cannot loop us.
     if (qt->hrr_sent && !use_hybrid)
@@ -196,7 +214,7 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     size_t n = dws_tls13_build_server_hello(qt->flight_initial + qt->flight_initial_len,
                                             sizeof(qt->flight_initial) - qt->flight_initial_len, qt->cfg.random,
                                             ch.session_id, ch.session_id_len, server_share, share_len, group);
-    if (!emit(qt, qt->flight_initial, sizeof(qt->flight_initial), &qt->flight_initial_len, n))
+    if (!emit(qt, qt->flight_initial, sizeof(qt->flight_initial), &qt->flight_initial_len, n)) // GCOVR_EXCL_LINE
         return false; // GCOVR_EXCL_LINE  ServerHello always fits flight_initial (classical <=~160B; the
                       // hybrid's ~1.2 KB share fits the PQC-sized 1400B buffer)
 
@@ -211,13 +229,14 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
 
     // Handshake-level flight: EncryptedExtensions, Certificate, CertificateVerify, Finished.
     qt->flight_hs_len = 0;
-    uint8_t tp_enc[512];
+    uint8_t tp_enc[QUIC_TLS_TP_ENC_CAP];
     size_t tp_len = dws_quic_tp_encode(&qt->cfg.params, tp_enc, sizeof(tp_enc));
 
     n = dws_tls13_build_encrypted_extensions(qt->flight_hs + qt->flight_hs_len,
                                              sizeof(qt->flight_hs) - qt->flight_hs_len, tp_enc, tp_len);
-    if (!emit(qt, qt->flight_hs, sizeof(qt->flight_hs), &qt->flight_hs_len, n))
-        return false; // GCOVR_EXCL_LINE  EncryptedExtensions (tp <= tp_enc[512]) always fits flight_hs[2048]
+    if (!emit(qt, qt->flight_hs, sizeof(qt->flight_hs), &qt->flight_hs_len, n)) // GCOVR_EXCL_LINE
+        return false; // GCOVR_EXCL_LINE  EncryptedExtensions is the first message written into flight_hs and
+                      // DWS_H3_CRYPTO_BUF >= QUIC_TLS_EE_MAX is pinned by the static_assert above
 
     n = dws_tls13_build_certificate(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len,
                                     qt->cfg.cert_der, qt->cfg.cert_len);
@@ -253,8 +272,8 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
 
 bool process_client_finished(QuicTls *qt, const uint8_t *msg, size_t msg_len)
 {
-    if (msg[0] != TlsHs::TLS_HS_FINISHED || msg_len != 4 + 32)
-    {
+    if (msg[0] != TlsHs::TLS_HS_FINISHED || msg_len != 4 + 32) // GCOVR_EXCL_LINE  process_message only routes a
+    {                                                          // Finished here, so the type arm cannot be taken
         fail(qt, TlsAlert::TLS_ALERT_DECODE_ERROR);
         return false;
     }

@@ -81,8 +81,12 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, bo
             p++;
         size_t rlen = (size_t)(p - run);
         total += rlen;
+        // GCOVR_EXCL_BR_START  rlen == 0 cannot fire: control only reaches here when p is NOT at a
+        // "{{", so the scan loop above always advances p at least one byte and a literal run is
+        // always >= 1. (The vlen test in tmpl_take_placeholder, which CAN be 0, is exercised.)
         if (emit && rlen)
             dws_conn_send(slot, run, (u16_t)rlen);
+        // GCOVR_EXCL_BR_STOP
     }
     return total;
 }
@@ -196,8 +200,12 @@ void DWS::send_chunked(uint8_t slot_id, int code, const char *content_type, Chun
 void DWS::chunk_send_pump(uint8_t slot_id)
 {
     ChunkSend &s = s_send.chunk[slot_id];
+    // GCOVR_EXCL_START  unreachable: both callers already established the state - send_chunked() sets
+    // s.active immediately before its call, and the poll loop in dwserver.cpp only pumps a slot whose
+    // s_send.chunk[i].active is set. Kept so the pump is safe to call unconditionally.
     if (!s.active)
         return;
+    // GCOVR_EXCL_STOP
 
     if (!dws_conn_active(slot_id))
     {
@@ -281,8 +289,10 @@ void DWS::add_response_header(uint8_t slot_id, const char *name, const char *val
     size_t used = strnlen(buf, EXTRA_HDR_BUF_SIZE);
     size_t room = EXTRA_HDR_BUF_SIZE - used;
     int n = snprintf(buf + used, room, "%s: %s\r\n", name, value);
-    if (n < 0 || (size_t)n >= room)
-        buf[used] = '\0'; // would not fit: drop this header entirely
+    // n < 0 is unreachable: snprintf only returns negative on an encoding error, which this format
+    // cannot raise. The truncation half of the test is exercised.
+    if (n < 0 || (size_t)n >= room) // GCOVR_EXCL_BR_LINE  n < 0 unreachable (see above)
+        buf[used] = '\0';           // would not fit: drop this header entirely
 }
 
 void DWS::set_cookie(uint8_t slot_id, const char *name, const char *value, const char *attrs)
@@ -298,8 +308,10 @@ void DWS::set_cookie(uint8_t slot_id, const char *name, const char *value, const
         n = snprintf(buf + used, room, "Set-Cookie: %s=%s; %s\r\n", name, value, attrs);
     else
         n = snprintf(buf + used, room, "Set-Cookie: %s=%s\r\n", name, value);
-    if (n < 0 || (size_t)n >= room)
-        buf[used] = '\0'; // would not fit: drop this cookie entirely
+    // n < 0 is unreachable here for the same reason as in add_response_header above; the truncation
+    // half is exercised.
+    if (n < 0 || (size_t)n >= room) // GCOVR_EXCL_BR_LINE  n < 0 unreachable (see above)
+        buf[used] = '\0';           // would not fit: drop this cookie entirely
 }
 
 void DWS::clear_response_headers(uint8_t slot_id)
@@ -404,9 +416,12 @@ static const char *stats_var(const char *name)
         return s_stats.n5xx;
     if (!strcmp(name, "active_conns"))
         return s_stats.active;
-    if (!strcmp(name, "free_heap"))
+    // The not-found tail is unreachable: stats_var is only ever invoked by stats() against
+    // DWS_STATS_JSON, and that asset's seven placeholders are exactly the seven names tested here,
+    // so the last one always matches. Kept because the resolver has to answer an unknown name.
+    if (!strcmp(name, "free_heap")) // GCOVR_EXCL_BR_LINE  always matches (see above)
         return s_stats.heap;
-    return nullptr;
+    return nullptr; // GCOVR_EXCL_LINE  unreachable: every DWS_STATS_JSON name resolves above
 }
 
 void DWS::stats(uint8_t slot_id)
@@ -460,11 +475,11 @@ static const char *metrics_var(const char *name)
         return s_metrics.uptime;
     if (!strcmp(name, "requests_total"))
         return s_metrics.requests;
-    if (!strcmp(name, "dws_resp_2xx"))
+    if (!strcmp(name, "resp_2xx"))
         return s_metrics.n2xx;
-    if (!strcmp(name, "dws_resp_4xx"))
+    if (!strcmp(name, "resp_4xx"))
         return s_metrics.n4xx;
-    if (!strcmp(name, "dws_resp_5xx"))
+    if (!strcmp(name, "resp_5xx"))
         return s_metrics.n5xx;
     if (!strcmp(name, "active_conns"))
         return s_metrics.active;
@@ -476,9 +491,14 @@ static const char *metrics_var(const char *name)
         return s_metrics.minheap;
     if (!strcmp(name, "heap_size"))
         return s_metrics.heapsize;
-    if (!strcmp(name, "max_alloc_heap"))
+    // The not-found tail is unreachable: metrics_var is only ever driven by the placeholders in
+    // DWS_METRICS_PROM.txt, and every one of the 11 resolves to a case above. That is not an
+    // assumption - test_metrics_emits_prometheus asserts every emitted sample line carries a
+    // value, which fails the moment a placeholder stops resolving (as three of them silently did
+    // until the resolver names were aligned with the template).
+    if (!strcmp(name, "max_alloc_heap")) // GCOVR_EXCL_BR_LINE - no placeholder falls past here
         return s_metrics.maxalloc;
-    return nullptr;
+    return nullptr; // GCOVR_EXCL_LINE - see above
 }
 
 void DWS::metrics(uint8_t slot_id)

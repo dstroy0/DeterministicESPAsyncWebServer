@@ -815,6 +815,26 @@ void test_on_open_envelope_and_result_guards()
     TEST_ASSERT_FALSE(dws_opcua_client_on_open(&c, buf, n));
 }
 
+// The OPN header's MessageSize must agree with the delivered frame length: a header claiming a
+// different size than was received is rejected before any body byte is decoded, so a short read or a
+// spliced frame can never be parsed as a valid SecureChannel response.
+void test_on_open_rejects_message_size_mismatch(void)
+{
+    OpcUaClient c;
+    dws_opcua_client_init(&c);
+    uint8_t buf[192];
+    size_t n = build_opn(buf, sizeof(buf), OPCUA_ID_OPEN_RESP, 0, true, OPCUA_STATUS_GOOD, /*with_body=*/true);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(dws_opcua_client_on_open(&c, buf, n)); // baseline: header size == len
+
+    c.channel_id = 0;
+    c.token_id = 0;
+    buf[4] = (uint8_t)(n + 1); // MessageSize one byte longer than the frame actually delivered
+    TEST_ASSERT_FALSE(dws_opcua_client_on_open(&c, buf, n));
+    TEST_ASSERT_EQUAL_UINT32(0, c.channel_id); // rejected before the SecurityToken was applied
+    TEST_ASSERT_EQUAL_UINT32(0, c.token_id);
+}
+
 // A well-formed response whose ResponseHeader carries a Bad ServiceResult is rejected by every
 // service parser - the body is never reported as a result.
 void test_parsers_reject_bad_service_result()
@@ -1007,6 +1027,7 @@ int main()
     RUN_TEST(test_on_ack_header_guards);
     RUN_TEST(test_msg_envelope_guards);
     RUN_TEST(test_on_open_envelope_and_result_guards);
+    RUN_TEST(test_on_open_rejects_message_size_mismatch);
     RUN_TEST(test_parsers_reject_bad_service_result);
     RUN_TEST(test_parsers_reject_truncated_body);
     RUN_TEST(test_on_read_optional_fields_and_limits);

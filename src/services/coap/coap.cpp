@@ -434,9 +434,12 @@ size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
     // Only class-0 GET/POST/PUT/DELETE are supported request methods. RFC 7252 5.8:
     // "A request with an unrecognized or unsupported Method Code MUST generate a 4.05
     // (Method Not Allowed) piggybacked response."
+    // GCOVR_EXCL_START  the `code < COAP_GET` operand cannot be taken: code is unsigned and code == 0
+    // (the empty message) already returned above, so nothing below COAP_GET reaches this line.
     if ((code >> 5) != 0 || code < (uint8_t)CoapMethod::COAP_GET || code > (uint8_t)CoapMethod::COAP_DELETE)
         return emit_header(resp, dws_resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, mid,
                            token, tkl);
+    // GCOVR_EXCL_STOP
 
     // The response the emit path below serializes (block-wise if large). Filled
     // either by the .well-known/core discovery listing or by a resource handler.
@@ -705,11 +708,15 @@ void dws_coap_notify(const char *path)
         s_coap.obs[i].seq = (s_coap.obs[i].seq + 1) & 0xFFFFFF;
         size_t n = emit_header(s_coap.tx, sizeof(s_coap.tx), CoapType::COAP_TYPE_NON, cresp.code, mid,
                                s_coap.obs[i].token, s_coap.obs[i].tkl);
+        // GCOVR_EXCL_START  the n == 0 operand of both tests is unreachable: ServerConfig.h enforces
+        // DWS_COAP_MSG_BUF_SIZE >= DWS_COAP_MAX_PAYLOAD + 16 (>= 17), so emit_header() above always
+        // has room for the 4-byte header plus a token of at most 8 bytes and never returns 0.
         if (n)
             n = emit_options_payload(s_coap.tx, sizeof(s_coap.tx), n, cresp.code, (int32_t)s_coap.obs[i].seq,
                                      cresp.content_format, -1, -1, cresp.payload, cresp.payload_len);
         if (!n || !dws_udp_listener_sendto(s_coap.port, s_coap.obs[i].ip, s_coap.obs[i].port, s_coap.tx, n))
             s_coap.obs[i].active = false; // unreachable -> drop the observer
+        // GCOVR_EXCL_STOP
     }
 }
 
@@ -723,7 +730,7 @@ static void coap_udp_handler(const uint8_t *data, size_t len, const struct DWSUd
     // A Reset from a client rejects our notification -> drop its observations.
     if (len >= 1 && ((data[0] >> 4) & 0x03) == (uint8_t)CoapType::COAP_TYPE_RST)
     {
-        if (have_peer)
+        if (have_peer) // GCOVR_EXCL_LINE  host mock always supplies a peer; a null addr is ESP32/lwIP only
             obs_remove(ip, pport, nullptr, 0);
         return;
     }
@@ -732,7 +739,9 @@ static void coap_udp_handler(const uint8_t *data, size_t len, const struct DWSUd
     if (!rn)
         return;
 
-    if (s_coap.last_method == (uint8_t)CoapMethod::COAP_GET && s_coap.last_observe == 0 && have_peer)
+    // The have_peer operand of this test and of the `else if` below can only be false on an ESP32
+    // lwIP receive with a null source address; the host UDP mock always injects a peer.
+    if (s_coap.last_method == (uint8_t)CoapMethod::COAP_GET && s_coap.last_observe == 0 && have_peer) // GCOVR_EXCL_LINE
     {
         int ridx = find_resource_index(s_coap, s_coap.path);
         if (ridx >= 0)
@@ -743,12 +752,15 @@ static void coap_udp_handler(const uint8_t *data, size_t len, const struct DWSUd
                 // Re-encode the response carrying the Observe option (registration ack).
                 size_t rn2 =
                     dws_coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), (int32_t)s_coap.obs[slot].seq);
-                if (rn2)
+                // rn2 == 0 is unreachable: the re-encode differs from the call above - which already
+                // returned rn > 0 - only by the Observe option, which append_opt() drops rather than
+                // failing on, so the same request into the same buffer cannot now produce 0 bytes.
+                if (rn2) // GCOVR_EXCL_LINE
                     rn = rn2;
             }
         }
     }
-    else if (s_coap.last_observe == 1 && have_peer)
+    else if (s_coap.last_observe == 1 && have_peer) // GCOVR_EXCL_LINE  have_peer is always true on the host
     {
         obs_remove(ip, pport, s_coap.last_token, s_coap.last_tkl);
     }

@@ -275,7 +275,7 @@ static bool r_request_header(UaReader *r, uint32_t *request_handle)
     dws_ua_r_nodeid(r, &auth);     // AuthenticationToken
     (void)dws_ua_r_u64(r);         // Timestamp (DateTime)
     uint32_t rh = dws_ua_r_u32(r); // RequestHandle
-    if (request_handle)
+    if (request_handle) // GCOVR_EXCL_LINE  file-static; all three call sites pass the address of a request-handle field
         *request_handle = rh;
     (void)dws_ua_r_u32(r);         // ReturnDiagnostics
     int32_t aid = dws_ua_r_i32(r); // AuditEntryId (String)
@@ -950,13 +950,12 @@ void dws_ua_w_localizedtext(UaWriter *w, const char *locale, const char *text)
 {
     uint8_t mask = 0;
     if (locale)
-        mask |= 0x01; // GCOVR_EXCL_LINE  Locale present; file-static, both callers pass a null locale -> dead
+        mask |= 0x01; // Locale present
     if (text)
         mask |= 0x02; // Text present
     dws_ua_w_u8(w, mask);
     if (locale)
-        dws_ua_w_string(w, locale,
-                        (int32_t)strnlen(locale, w->cap)); // GCOVR_EXCL_LINE  dead: no caller passes a locale
+        dws_ua_w_string(w, locale, (int32_t)strnlen(locale, w->cap));
     if (text)
         dws_ua_w_string(w, text, (int32_t)strnlen(text, w->cap));
 }
@@ -965,8 +964,8 @@ void dws_ua_w_reference(UaWriter *w, const OpcUaReference *ref)
 {
     if (!ref)
     {
-        w->ok = false; // GCOVR_EXCL_LINE  dead: the sole caller (browse loop) always passes a valid &refs[j]
-        return;        // GCOVR_EXCL_LINE
+        w->ok = false; // a lost reference fails the frame closed rather than being serialized
+        return;
     }
     dws_ua_w_nodeid_numeric(w, 0, ref->ref_type_id);                  // ReferenceTypeId
     dws_ua_w_bool(w, ref->is_forward);                                // IsForward

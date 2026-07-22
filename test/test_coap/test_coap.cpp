@@ -1114,6 +1114,208 @@ void test_coap_udp_handler_basic()
     TEST_ASSERT_EQUAL_UINT(0, dws_udp_captured_len()); // an ACK is not a request -> nothing sent
 }
 
+// RFC 7252 4.2/4.3: a malformed CON is rejected with a Reset, but the identical malformation in a
+// NON message is dropped silently - a non-confirmable message never earns a reply.
+void test_non_confirmable_malformed_is_silent()
+{
+    uint8_t resp[32];
+
+    // A reserved token length (9..15) in a CON is malformed: Reset, with an empty token.
+    uint8_t bad_tkl_con[16] = {(uint8_t)((1 << 6) | ((uint8_t)CoapType::COAP_TYPE_CON << 4) | 9),
+                               (uint8_t)CoapMethod::COAP_GET, 0x01, 0x02};
+    size_t n = dws_coap_server_process(bad_tkl_con, sizeof(bad_tkl_con), resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_UINT(4, n);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)CoapType::COAP_TYPE_RST, (resp[0] >> 4) & 0x03);
+    TEST_ASSERT_EQUAL_UINT8(0, resp[1]);
+
+    // The same four malformations in a NON: no bytes emitted at all.
+    uint8_t bad_ver_non[4] = {(uint8_t)((2 << 6) | ((uint8_t)CoapType::COAP_TYPE_NON << 4) | 0),
+                              (uint8_t)CoapMethod::COAP_GET, 0x01, 0x03};
+    TEST_ASSERT_EQUAL_UINT(0, dws_coap_server_process(bad_ver_non, 4, resp, sizeof(resp)));
+
+    uint8_t bad_tkl_non[4] = {(uint8_t)((1 << 6) | ((uint8_t)CoapType::COAP_TYPE_NON << 4) | 9),
+                              (uint8_t)CoapMethod::COAP_GET, 0x01, 0x04};
+    TEST_ASSERT_EQUAL_UINT(0, dws_coap_server_process(bad_tkl_non, 4, resp, sizeof(resp)));
+
+    uint8_t short_tok_non[4] = {(uint8_t)((1 << 6) | ((uint8_t)CoapType::COAP_TYPE_NON << 4) | 3),
+                                (uint8_t)CoapMethod::COAP_GET, 0x01, 0x05};
+    TEST_ASSERT_EQUAL_UINT(0, dws_coap_server_process(short_tok_non, 4, resp, sizeof(resp)));
+
+    uint8_t empty_non[4] = {(uint8_t)((1 << 6) | ((uint8_t)CoapType::COAP_TYPE_NON << 4) | 0), 0x00, 0x01, 0x06};
+    TEST_ASSERT_EQUAL_UINT(0, dws_coap_server_process(empty_non, 4, resp, sizeof(resp)));
+}
+
+// A message whose Code is a *response* code (class 2) is not a request method at all: 4.05, and no
+// handler runs.
+void test_response_code_as_request_is_method_not_allowed()
+{
+    const char *paths[] = {"temp"};
+    uint8_t req[64], resp[64];
+    size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, COAP_CODE(2, 5) /* 2.05 Content */, nullptr, 0, 0x0D01,
+                      paths, 1, nullptr, 0, -1, nullptr, 0);
+    size_t n = dws_coap_server_process(req, rl, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, d.code);
+    TEST_ASSERT_FALSE(g_called);
+}
+
+// Block1 describes a request *upload*, so it applies only to POST/PUT. On a GET it is inert: the
+// request is served normally instead of entering the reassembly state machine.
+void test_block1_ignored_on_get()
+{
+    uint8_t req[64], resp[128], tok[1] = {0};
+    CoapEnc e;
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 0x0D02);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 27, 3, 1, 2); // Block1 NUM=3, M=1: a 4.08 offset gap if it were honoured
+    size_t n = dws_coap_server_process(req, e.len, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code);
+    TEST_ASSERT_EQUAL_INT(-1, d.block1); // nothing to echo
+    TEST_ASSERT_TRUE(g_called);
+}
+
+// RFC 7959: the block size is fixed for the duration of a Block1 transfer. A follow-on block that
+// changes SZX cannot be placed even when its byte offset lines up, so reassembly fails with 4.08.
+void test_block1_block_size_change_is_incomplete()
+{
+    uint8_t chunk[64];
+    for (int i = 0; i < 64; i++)
+        chunk[i] = (uint8_t)i;
+    uint8_t req[128], resp[256];
+    CoapDec d;
+    CoapEnc e;
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_POST, nullptr, 0, 0x3900);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 27, 0, 1, 2); // SZX=2: 64-byte blocks
+    enc_payload(&e, chunk, 64);
+    size_t n = dws_coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, d.code);
+
+    // NUM=2 at SZX=1 is byte offset 2*32 = 64 - exactly where the transfer stands - so only the
+    // size change makes this block unplaceable.
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_POST, nullptr, 0, 0x3901);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 27, 2, 0, 1);
+    enc_payload(&e, chunk, 32);
+    n = dws_coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_REQUEST_INCOMPLETE, d.code);
+    TEST_ASSERT_FALSE(g_called);
+}
+
+// A Block1 block that carries no payload at all is still a valid transfer step: 2.31 Continue, and
+// it contributes nothing to the reassembly buffer (so the next expected offset is still 0).
+void test_block1_empty_intermediate_block()
+{
+    uint8_t req[64], resp[128];
+    CoapDec d;
+    CoapEnc e;
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_POST, nullptr, 0, 0x3A00);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 27, 0, 1, 2); // NUM=0, M=1, no payload marker
+    size_t n = dws_coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, d.code);
+    TEST_ASSERT_FALSE(g_called);
+
+    // Nothing was buffered, so NUM=1 (offset 64) is now a gap rather than the next block.
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_POST, nullptr, 0, 0x3A01);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 27, 1, 0, 2);
+    n = dws_coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_REQUEST_INCOMPLETE, d.code);
+}
+
+// A handler that answers with an error code, for the "only a 2.xx body is observable/pageable" rule.
+static void h_error(const CoapRequest *req, CoapResponse *resp)
+{
+    record(req);
+    resp->code = (uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST;
+    resp->content_format = CoapContentFormat::COAP_CF_NONE;
+    resp->payload_len = 0;
+}
+
+// An error response carries neither an Observe option (RFC 7641: only a successful representation
+// is a notification) nor Block2 paging, even when the caller supplied a sequence and the client
+// asked for blocks.
+void test_error_response_carries_no_observe_or_block2()
+{
+    TEST_ASSERT_TRUE(dws_coap_server_add_resource("/err", CoapMethodMask::COAP_ALLOW_GET, h_error));
+    uint8_t req[64], resp[128], tok[2] = {0x11, 0x22};
+    CoapEnc e;
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 2, 0x0D03);
+    enc_option(&e, 11, (const uint8_t *)"err", 3);
+    enc_block(&e, 23, 0, 0, 2); // Block2 requested
+    size_t n = dws_coap_server_process_ex(req, e.len, resp, sizeof(resp), 9 /* Observe seq */);
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, d.code);
+    TEST_ASSERT_EQUAL_INT(-1, d.observe);
+    TEST_ASSERT_EQUAL_INT(-1, d.block2);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(tok, d.token, 2); // the token still round-trips
+}
+
+// A resource whose representation is exactly one block long, for the Block2 end-of-body boundary.
+static void h_exact_block(const CoapRequest *req, CoapResponse *resp)
+{
+    record(req);
+    resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
+    resp->content_format = CoapContentFormat::COAP_CF_TEXT;
+    resp->payload_len = 64; // == 2^(DWS_COAP_BLOCK_SZX_MAX + 4)
+    for (size_t i = 0; i < 64; i++)
+        resp->payload[i] = (uint8_t)('a' + (int)(i % 26));
+}
+
+// RFC 7959 2.4: a body that is exactly one block long ends at block 0 with M=0; block 1 then starts
+// at the end of the representation and is a bad request rather than an empty final block.
+void test_block2_offset_at_end_of_representation()
+{
+    TEST_ASSERT_TRUE(dws_coap_server_add_resource("/exact", CoapMethodMask::COAP_ALLOW_GET, h_exact_block));
+    uint8_t req[64], resp[256], tok[1] = {0};
+    CoapDec d;
+    CoapEnc e;
+
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 0x0D04);
+    enc_option(&e, 11, (const uint8_t *)"exact", 5);
+    enc_block(&e, 23, 0, 0, 2);
+    size_t n = dws_coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code);
+    TEST_ASSERT_EQUAL_UINT(0, BLK_M(d.block2)); // the whole body fit in block 0
+    TEST_ASSERT_EQUAL_UINT(64, d.payload_len);
+
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 0x0D05);
+    enc_option(&e, 11, (const uint8_t *)"exact", 5);
+    enc_block(&e, 23, 1, 0, 2); // offset 64 == payload_len
+    n = dws_coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, d.code);
+}
+
+// A successful response with an empty body (a POST that creates nothing to return) still answers a
+// Block2 request: block 0 is the whole - empty - representation, not an out-of-range 4.00.
+void test_block2_on_empty_success_body()
+{
+    uint8_t req[64], resp[128], tok[1] = {0};
+    CoapEnc e;
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_POST, tok, 0, 0x0D06);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 23, 0, 0, 2);
+    size_t n = dws_coap_server_process(req, e.len, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CREATED, d.code);
+    TEST_ASSERT_TRUE(d.block2 >= 0);
+    TEST_ASSERT_EQUAL_UINT(0, BLK_NUM(d.block2));
+    TEST_ASSERT_EQUAL_UINT(0, BLK_M(d.block2));
+    TEST_ASSERT_EQUAL_UINT(0, d.payload_len);
+}
+
 #if DWS_ENABLE_COAP_OBSERVE
 // Build a CON GET /<path> with an Observe option (0 = register, 1 = deregister). Options ascend:
 // Observe (6) before Uri-Path (11).
@@ -1205,6 +1407,216 @@ void test_coap_observe_registry_full()
     }
     dws_coap_notify("/temp"); // deliver to the registered observers
 }
+
+// The Observe value in the last captured reply: 1 for a brand-new registration, and the observer's
+// current sequence when an existing observation was refreshed instead. -2 if nothing was captured.
+static int observe_seq_of_last_reply()
+{
+    CoapDec d;
+    if (!dws_udp_captured_len() || !dec(dws_udp_captured(), dws_udp_captured_len(), &d))
+        return -2;
+    return d.observe;
+}
+
+// The registry keys an observation on all four of (resource, peer IP, peer port, token): a request
+// differing in any one of them is a new observation, not a refresh of an existing one. A refresh is
+// visible as a reply carrying the observer's already-advanced sequence instead of a fresh 1.
+void test_coap_observe_registry_key_fields()
+{
+    dws_udp_reset_listeners();
+    dws_coap_server_begin(5683);
+    dws_udp_capture_enable();
+    const uint8_t tok[2] = {0xAA, 0xBB};
+    uint8_t req[64];
+
+    dws_udp_capture_reset();
+    size_t rl = build_observe_get(req, "temp", 0, tok, sizeof(tok), 0x0201);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(1, observe_seq_of_last_reply()); // new observation
+
+    dws_coap_notify("/temp"); // advances that observer to sequence 2
+
+    dws_udp_capture_reset();
+    rl = build_observe_get(req, "temp", 0, tok, sizeof(tok), 0x0202);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(2, observe_seq_of_last_reply()); // all four keys matched -> a refresh
+
+    dws_udp_capture_reset(); // same peer + token, different resource
+    rl = build_observe_get(req, "ro", 0, tok, sizeof(tok), 0x0203);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(1, observe_seq_of_last_reply());
+
+    dws_udp_capture_reset(); // same peer IP + token + resource, different source port
+    rl = build_observe_get(req, "temp", 0, tok, sizeof(tok), 0x0204);
+    dws_udp_inject(5683, "10.0.0.9", 40001, req, rl);
+    TEST_ASSERT_EQUAL_INT(1, observe_seq_of_last_reply());
+
+    dws_udp_capture_reset(); // same port + token + resource, different peer IP
+    rl = build_observe_get(req, "temp", 0, tok, sizeof(tok), 0x0205);
+    dws_udp_inject(5683, "10.0.0.11", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(1, observe_seq_of_last_reply());
+
+    // Four distinct observations now exist, one of them on /ro: notifying /ro must not re-render
+    // the /temp observers and vice versa.
+    dws_udp_capture_reset();
+    dws_coap_notify("/ro");
+    TEST_ASSERT_TRUE(dws_udp_captured_len() > 0);
+    dws_udp_capture_reset();
+    dws_coap_notify("/temp");
+    TEST_ASSERT_TRUE(dws_udp_captured_len() > 0);
+}
+
+// A zero-length token is a legal Observe registration: the registry stores it, matches it on a
+// refresh, and never confuses it with an observation whose token is a different length.
+void test_coap_observe_zero_length_token()
+{
+    dws_udp_reset_listeners();
+    dws_coap_server_begin(5683);
+    dws_udp_capture_enable();
+    const uint8_t tok[2] = {0xAA, 0xBB};
+    uint8_t req[64];
+
+    // A 2-byte-token observation first, so the empty-token registration below has to reject it on
+    // token *length* rather than on token content.
+    size_t rl = build_observe_get(req, "temp", 0, tok, sizeof(tok), 0x0301);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+
+    dws_udp_capture_reset();
+    rl = build_observe_get(req, "temp", 0, nullptr, 0, 0x0302);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(1, observe_seq_of_last_reply()); // a second observation, not the first
+
+    dws_coap_notify("/temp"); // both observers advance to sequence 2
+
+    dws_udp_capture_reset();
+    rl = build_observe_get(req, "temp", 0, nullptr, 0, 0x0303);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(2, observe_seq_of_last_reply()); // refreshed the empty-token observation
+}
+
+// Deregistration is targeted. An Observe:1 whose token matches nothing, and a Reset from the right
+// IP but the wrong port, both leave the registry untouched; only an exact peer match drops it.
+void test_coap_observe_targeted_removal()
+{
+    dws_udp_reset_listeners();
+    dws_coap_server_begin(5683);
+    dws_udp_capture_enable();
+    const uint8_t tok_a[2] = {0xAA, 0xBB};
+    const uint8_t tok_b[2] = {0xCC, 0xDD};
+    uint8_t req[64], rst[8];
+
+    size_t rl = build_observe_get(req, "temp", 0, tok_a, 2, 0x0401);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl); // peer A
+    rl = build_observe_get(req, "temp", 0, tok_a, 2, 0x0402);
+    dws_udp_inject(5683, "10.0.0.20", 40000, req, rl); // peer B: same port + token, other IP
+    dws_coap_notify("/temp");                          // both advance to sequence 2
+
+    // Observe:1 from peer A carrying an unknown token removes nothing.
+    rl = build_observe_get(req, "temp", 1, tok_b, 2, 0x0403);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    dws_udp_capture_reset();
+    rl = build_observe_get(req, "temp", 0, tok_a, 2, 0x0404);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(2, observe_seq_of_last_reply()); // A's observation survived
+
+    // A Reset from A's IP but a different source port removes nothing either.
+    CoapEnc re;
+    enc_init(&re, rst, (uint8_t)CoapType::COAP_TYPE_RST, 0, nullptr, 0, 0x0405);
+    dws_udp_inject(5683, "10.0.0.9", 49999, rst, re.len);
+    dws_udp_capture_reset();
+    rl = build_observe_get(req, "temp", 0, tok_a, 2, 0x0406);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(2, observe_seq_of_last_reply());
+
+    // A Reset from A's exact address does drop it: the next registration starts over at 1.
+    enc_init(&re, rst, (uint8_t)CoapType::COAP_TYPE_RST, 0, nullptr, 0, 0x0407);
+    dws_udp_inject(5683, "10.0.0.9", 40000, rst, re.len);
+    dws_udp_capture_reset();
+    rl = build_observe_get(req, "temp", 0, tok_a, 2, 0x0408);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(1, observe_seq_of_last_reply());
+
+    // Peer B was never addressed by any of that and is still observing at sequence 2.
+    dws_udp_capture_reset();
+    rl = build_observe_get(req, "temp", 0, tok_a, 2, 0x0409);
+    dws_udp_inject(5683, "10.0.0.20", 40000, req, rl);
+    TEST_ASSERT_EQUAL_INT(2, observe_seq_of_last_reply());
+}
+
+// dws_coap_notify() applies the same defensive body clamp as the request path: a handler that
+// reports more than the payload buffer holds is truncated rather than allowed to overrun it.
+void test_coap_notify_clamps_oversized_body()
+{
+    dws_udp_reset_listeners();
+    TEST_ASSERT_TRUE(dws_coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow));
+    dws_coap_server_begin(5683);
+    dws_udp_capture_enable();
+    const uint8_t tok[1] = {0x5A};
+    uint8_t req[64];
+    size_t rl = build_observe_get(req, "of", 0, tok, 1, 0x0501);
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+
+    dws_udp_capture_reset();
+    dws_coap_notify("/of");
+    TEST_ASSERT_TRUE(dws_udp_captured_len() > 0);
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(dws_udp_captured(), dws_udp_captured_len(), &d));
+    TEST_ASSERT_EQUAL_UINT(DWS_COAP_MAX_PAYLOAD, d.payload_len); // clamped, not payload_cap + 1000
+}
+
+// /.well-known/core is synthesized, not a registered resource, so an Observe on it has nothing to
+// register against: the listing is still served, but the reply carries no Observe option.
+void test_coap_observe_on_discovery_is_not_registered()
+{
+    dws_udp_reset_listeners();
+    dws_coap_server_begin(5683);
+    dws_udp_capture_enable();
+    uint8_t req[64], tok[1] = {0x77};
+    CoapEnc e;
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 1, 0x0601);
+    enc_option(&e, 6, nullptr, 0); // Observe: register
+    enc_option(&e, 11, (const uint8_t *)".well-known", 11);
+    enc_option(&e, 11, (const uint8_t *)"core", 4);
+    dws_udp_capture_reset();
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, e.len);
+    TEST_ASSERT_TRUE(dws_udp_captured_len() > 0);
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(dws_udp_captured(), dws_udp_captured_len(), &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code);
+    TEST_ASSERT_EQUAL_INT(-1, d.observe);
+}
+
+// Transport edge cases: a zero-length datagram is neither a Reset nor a request, and an Observe
+// option on a POST is not a registration (only a GET establishes an observation).
+void test_coap_udp_edge_datagrams()
+{
+    dws_udp_reset_listeners();
+    dws_coap_server_begin(5683);
+    dws_udp_capture_enable();
+
+    uint8_t empty[1] = {0};
+    dws_udp_capture_reset();
+    dws_udp_inject(5683, "10.0.0.9", 40000, empty, 0);
+    TEST_ASSERT_EQUAL_UINT(0, dws_udp_captured_len()); // dropped, nothing emitted
+
+    uint8_t req[64];
+    CoapEnc e;
+    enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_POST, nullptr, 0, 0x0701);
+    enc_option(&e, 6, nullptr, 0); // Observe on a POST
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    dws_udp_capture_reset();
+    dws_udp_inject(5683, "10.0.0.9", 40000, req, e.len);
+    TEST_ASSERT_TRUE(dws_udp_captured_len() > 0);
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(dws_udp_captured(), dws_udp_captured_len(), &d));
+    TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CREATED, d.code);
+    TEST_ASSERT_EQUAL_INT(-1, d.observe); // no observation established
+
+    // ...and no observation was created, so a notify on /temp reaches nobody.
+    dws_udp_capture_reset();
+    dws_coap_notify("/temp");
+    TEST_ASSERT_EQUAL_UINT(0, dws_udp_captured_len());
+}
 #endif // DWS_ENABLE_COAP_OBSERVE
 
 int main()
@@ -1215,7 +1627,21 @@ int main()
 #if DWS_ENABLE_COAP_OBSERVE
     RUN_TEST(test_coap_observe_over_udp);
     RUN_TEST(test_coap_observe_registry_full);
+    RUN_TEST(test_coap_observe_registry_key_fields);
+    RUN_TEST(test_coap_observe_zero_length_token);
+    RUN_TEST(test_coap_observe_targeted_removal);
+    RUN_TEST(test_coap_notify_clamps_oversized_body);
+    RUN_TEST(test_coap_observe_on_discovery_is_not_registered);
+    RUN_TEST(test_coap_udp_edge_datagrams);
 #endif
+    RUN_TEST(test_non_confirmable_malformed_is_silent);
+    RUN_TEST(test_response_code_as_request_is_method_not_allowed);
+    RUN_TEST(test_block1_ignored_on_get);
+    RUN_TEST(test_block1_block_size_change_is_incomplete);
+    RUN_TEST(test_block1_empty_intermediate_block);
+    RUN_TEST(test_error_response_carries_no_observe_or_block2);
+    RUN_TEST(test_block2_offset_at_end_of_representation);
+    RUN_TEST(test_block2_on_empty_success_body);
     RUN_TEST(test_add_resource_limits);
     RUN_TEST(test_short_and_truncated_token);
     RUN_TEST(test_malformed_options_bad_request);

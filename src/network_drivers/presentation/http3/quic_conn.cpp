@@ -16,6 +16,22 @@
 #include "network_drivers/presentation/http3/quic_varint.h"
 #include <string.h>
 
+// A single STREAM frame's payload cannot exceed one datagram, so it can never overflow a stream's
+// reassembly buffer - which is why that clamp in handle_stream carries a coverage exclusion. Both
+// sizes are overridable macros (quic_conn.h), so pin the relationship here rather than let a jumbo
+// DWS_QUIC_MAX_DATAGRAM or a shrunken DWS_QUIC_STREAM_RX silently make the excluded path reachable.
+static_assert(DWS_QUIC_MAX_DATAGRAM < DWS_QUIC_STREAM_RX,
+              "DWS_QUIC_STREAM_RX must exceed DWS_QUIC_MAX_DATAGRAM: one STREAM frame's payload is bounded by the "
+              "datagram, and handle_stream relies on that to deliver it without clamping");
+
+// The frame payload build_frames fills is one datagram; every builder it calls (ACK, CRYPTO header,
+// HANDSHAKE_DONE, STREAM header) must fit with room to spare, which is why their failure guards
+// carry coverage exclusions. RFC 9000 sec 14.1 already requires at least 1200 octets for Initial
+// packets, so pin that floor: a smaller datagram would make those guards reachable.
+static_assert(DWS_QUIC_MAX_DATAGRAM >= 1200,
+              "DWS_QUIC_MAX_DATAGRAM must be at least the RFC 9000 sec 14.1 minimum of 1200 octets, which is also "
+              "what lets build_frames assume every frame builder has room");
+
 namespace
 {
 // The open (decrypt) keys for an encryption level: Initial keys come from the DCID, Handshake and
@@ -44,8 +60,8 @@ QuicStream *stream_get(QuicConn *qc, uint64_t id, bool create)
         if (!free_slot && qc->streams[i].id == UINT64_MAX)
             free_slot = &qc->streams[i];
     }
-    if (!create || !free_slot)
-        return nullptr;
+    if (!create || !free_slot) // GCOVR_EXCL_LINE  create is true at both call sites (handle_stream and
+        return nullptr;        // dws_quic_conn_stream_send), so the lookup-only arm is never taken
     memset(free_slot, 0, sizeof(*free_slot));
     free_slot->id = id;
     return free_slot;
@@ -289,8 +305,8 @@ bool parse_packet_header(const QuicConn *qc, const uint8_t *dg, size_t len, bool
 // Decrypt and process one packet at datagram offset; returns bytes consumed (0 to stop the datagram).
 size_t recv_packet(QuicConn *qc, const uint8_t *dg, size_t len)
 {
-    if (len < 1)
-        return 0; // GCOVR_EXCL_LINE  dws_quic_conn_recv's loop only calls this with off<len, so len-off>=1
+    if (len < 1)  // GCOVR_EXCL_LINE  dws_quic_conn_recv's loop only calls this with off<len, so len-off>=1
+        return 0; // GCOVR_EXCL_LINE
     bool is_long = dws_quic_is_long_header(dg[0]);
 
     int level = 0;
@@ -364,8 +380,8 @@ size_t build_ack_frame(QuicPnSpace *s, uint8_t *buf, size_t cap)
     if (!s->ack_eliciting_rx || !s->have_rx)
         return 0;
     size_t n = dws_quic_build_ack(buf, cap, s->largest_rx, 0, s->largest_rx);
-    if (n)
-        s->ack_eliciting_rx = false;
+    if (n) // GCOVR_EXCL_LINE  build_frames hands this the whole DWS_QUIC_MAX_DATAGRAM scratch (>=1200 by the
+        s->ack_eliciting_rx = false; // static_assert above), and one ACK frame is at most ~20 bytes: it always fits
     return n;
 }
 
@@ -377,16 +393,16 @@ size_t build_crypto_frame(const QuicConn *qc, int level, QuicPnSpace *s, uint8_t
         return 0;
     size_t flen = 0;
     const uint8_t *flight = dws_quic_tls_flight(&qc->tls, level, &flen);
-    if (!flight || s->crypto_tx_off >= flen)
-        return 0;
+    if (!flight || s->crypto_tx_off >= flen) // GCOVR_EXCL_LINE  dws_quic_tls_flight only returns NULL for a level
+        return 0;                            // other than INITIAL/HANDSHAKE, which the guard above already excluded
     size_t remain = flen - (size_t)s->crypto_tx_off;
     // Leave room for the CRYPTO frame header (type + offset + length varints, <= 1+8+8).
     size_t room = (cap > 20) ? (cap - 20) : 0;
     size_t take = remain < room ? remain : room;
-    if (!take)
-        return 0;
+    if (!take)    // GCOVR_EXCL_LINE  remain>0 (checked above) and cap is the datagram scratch less at most one
+        return 0; // GCOVR_EXCL_LINE  ACK, so it always exceeds 20 and room is never 0
     size_t n = dws_quic_build_crypto(buf, cap, s->crypto_tx_off, flight + s->crypto_tx_off, take);
-    if (n)
+    if (n) // GCOVR_EXCL_LINE  take was clamped to cap-20 and the CRYPTO header is at most 17 bytes: it always fits
     {
         s->crypto_tx_off += take;
         *ae = true;
@@ -403,8 +419,9 @@ size_t build_app_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap, bool 
     if (qc->handshake_done_queued)
     {
         size_t n = dws_quic_build_handshake_done(buf + p, cap - p);
-        if (n)
-        {
+        if (n) // GCOVR_EXCL_LINE  HANDSHAKE_DONE is one byte and this is the first frame written after the
+        {      // ACK/CRYPTO, so the datagram-sized scratch always has room for it
+
             p += n;
             qc->handshake_done_queued = false;
             qc->handshake_done_sent = true;
@@ -474,15 +491,47 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
     if (!keys)
         return 0;
 
-    uint8_t frames[DWS_QUIC_MAX_DATAGRAM];
-    bool ae = false;
-    size_t frame_len = build_frames(qc, level, frames, sizeof(frames), &ae);
-    if (frame_len == 0)
-        return 0;
-
     uint64_t pn = s->next_pn;
     uint8_t pn_len = dws_quic_pn_length(pn, s->largest_acked);
     bool is_long = (level != QuicEnc::QUIC_ENC_APP);
+
+    // Reserve the framing BEFORE filling the payload. build_frames() advances the connection's send
+    // offsets (crypto_tx_off, and each stream's tx_off / tx_sent) as it writes, so a payload that
+    // turns out not to fit once the header, packet number and AEAD tag are added cannot simply be
+    // rejected further down: those bytes would already be counted as sent and would never go out.
+    // That is silent data loss, and it was reachable - build_frames was handed the whole
+    // DWS_QUIC_MAX_DATAGRAM scratch while the packet needs header + pn + 16-byte tag on top of it,
+    // so a stream with ~1326+ bytes pending, or a Handshake CRYPTO flight carrying a large
+    // certificate, produced a payload the packet had no room for. Bound the payload instead.
+    size_t overhead = (size_t)QUIC_AEAD_TAG_LEN + pn_len;
+    if (is_long)
+    {
+        // type(1) + version(4) + dcid_len(1) + dcid + scid_len(1) + scid, then the Initial token
+        // varint and the Length varint (bounded generously - both are far smaller in practice).
+        overhead += 7u + qc->dcid_len + qc->scid_len + 1u + 4u;
+    }
+    else
+    {
+        overhead += 1u + qc->dcid_len; // short header: first byte + DCID, no length on the wire
+    }
+    if (cap <= overhead)
+        return 0;
+    size_t budget = cap - overhead;
+
+    uint8_t frames[DWS_QUIC_MAX_DATAGRAM];
+    // Dead with every current caller - quic_server's datagram buffer is itself
+    // DWS_QUIC_MAX_DATAGRAM, so `cap - overhead` is always below `frames` - but kept as the bound
+    // on the memcpy target if a caller ever hands us a larger buffer.
+    if (budget > sizeof(frames)) // GCOVR_EXCL_BR_LINE - see above
+        budget = sizeof(frames); // GCOVR_EXCL_LINE
+    // Leave room for the PADDING the header-protection minimum may need (RFC 9001 sec 5.4.2).
+    if (budget < 4)
+        return 0;
+    budget -= 4;
+    bool ae = false;
+    size_t frame_len = build_frames(qc, level, frames, budget, &ae);
+    if (frame_len == 0)
+        return 0;
 
     // Header protection samples 16 bytes at (packet number + 4), so the packet number and payload
     // together must be at least 4 bytes (RFC 9001 sec 5.4.2). Pad tiny packets (e.g. a lone
@@ -500,27 +549,27 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
         // Invariant header fields, then the type-specific token (Initial only) + Length + PN.
         size_t hn = dws_quic_build_long_header(out, cap, level_lp_type(level), QUIC_VERSION_1, qc->dcid, qc->dcid_len,
                                                qc->scid, qc->scid_len, pn_len);
-        if (!hn)
-            return 0;
+        if (!hn)      // GCOVR_EXCL_BR_LINE - `overhead` above already reserved more than the header
+            return 0; // GCOVR_EXCL_LINE
         p = hn;
         if (level == QuicEnc::QUIC_ENC_INITIAL)
         {
             size_t n = dws_quic_varint_encode(out + p, cap - p, 0); // empty token
-            if (!n)
-                return 0;
+            if (!n)                                                 // GCOVR_EXCL_BR_LINE - reserved in `overhead`
+                return 0;                                           // GCOVR_EXCL_LINE
             p += n;
         }
         uint64_t length = (uint64_t)pn_len + frame_len + QUIC_AEAD_TAG_LEN;
         size_t n = dws_quic_varint_encode(out + p, cap - p, length);
-        if (!n)
-            return 0;
+        if (!n)       // GCOVR_EXCL_BR_LINE - reserved in `overhead`
+            return 0; // GCOVR_EXCL_LINE
         p += n;
     }
     else
     {
         // Short header: 0x40 fixed bit | pn_len-1; then the peer's DCID (no length on the wire).
-        if (1 + qc->dcid_len > cap)
-            return 0;
+        if (1 + qc->dcid_len > cap) // GCOVR_EXCL_BR_LINE - reserved in `overhead`
+            return 0;               // GCOVR_EXCL_LINE
         out[0] = (uint8_t)(0x40 | (pn_len - 1));
         memcpy(out + 1, qc->dcid, qc->dcid_len);
         p = 1 + qc->dcid_len;
@@ -530,8 +579,10 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
     // Bound the whole packet up front (p <= cap here): the header builders checked their own writes
     // but not the packet number + payload + tag that follow, so verify the remainder fits before
     // writing it (avoids a size_t addition wrap in the bounds check, cpp:S3519).
-    if (cap - p < (size_t)pn_len + frame_len + QUIC_AEAD_TAG_LEN)
-        return 0;
+    // Redundant since the payload is now budgeted against `overhead` up front, which is exactly
+    // what makes the offsets build_frames() advanced safe to keep. Retained as defence in depth.
+    if (cap - p < (size_t)pn_len + frame_len + QUIC_AEAD_TAG_LEN) // GCOVR_EXCL_BR_LINE - see above
+        return 0;                                                 // GCOVR_EXCL_LINE
     // Write the (unprotected) truncated packet number.
     for (uint8_t i = 0; i < pn_len; i++)
         out[pn_offset + i] = (uint8_t)(pn >> (8 * (pn_len - 1 - i)));
@@ -580,9 +631,12 @@ size_t dws_quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap)
         // Send at the level the error was seen on (the peer holds those keys); if that space has since
         // been discarded, fall back to the highest level we still hold keys for.
         int level = qc->close_level;
+        // GCOVR_EXCL_START  close_level is a uint8_t and QuicEnc::QUIC_ENC_INITIAL is 0, so the underflow
+        // arm of the range check below can never be taken; the other three arms are all tested.
         if (level < QuicEnc::QUIC_ENC_INITIAL || level > QuicEnc::QUIC_ENC_APP || qc->space[level].discarded ||
             !seal_keys(qc, level))
             level = dws_quic_highest_sealed_level(qc);
+        // GCOVR_EXCL_STOP
         size_t n = build_packet(qc, level, out, cap);
         if (n)
         {

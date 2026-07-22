@@ -4,6 +4,7 @@
 // Unit tests for bounded regex routes (DWS::on_regex()).
 
 #include "dwserver.h"
+#include "server/dwserver_internal.h" // regex_match: matcher edges that cannot ride in a request-line path
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
@@ -195,6 +196,116 @@ void test_class_escaped_members()
     TEST_ASSERT_FALSE(hit("GET", "/r/9a")); // 'a' outside 0-9
 }
 
+// A lone trailing '\' is a 1-byte atom (there is no escapee behind it) and matches
+// nothing, so a pattern ending in one can never complete a match.
+void test_trailing_backslash_atom()
+{
+    TEST_ASSERT_TRUE(regex_match("a", "a")); // control: the same pattern without the '\'
+    TEST_ASSERT_FALSE(regex_match("a\\", "a"));
+    TEST_ASSERT_FALSE(regex_match("a\\", "ab"));
+}
+
+// A ']' immediately after '[' (or '[^') is a literal member, not the terminator.
+void test_class_leading_bracket_is_literal()
+{
+    TEST_ASSERT_TRUE(regex_match("[]]", "]"));
+    TEST_ASSERT_FALSE(regex_match("[]]", "x"));
+    TEST_ASSERT_TRUE(regex_match("[^]]", "x")); // negated: everything but ']'
+    TEST_ASSERT_FALSE(regex_match("[^]]", "]"));
+}
+
+// An unterminated class runs to the NUL; the atom then spans to end-of-pattern and
+// its last byte is treated as the (missing) ']', so that byte is not a member.
+void test_class_unterminated_fails_closed()
+{
+    TEST_ASSERT_TRUE(regex_match("[abc", "a"));
+    TEST_ASSERT_TRUE(regex_match("[abc", "b"));
+    TEST_ASSERT_FALSE(regex_match("[abc", "c")); // 'c' lands on the terminator slot
+    TEST_ASSERT_FALSE(regex_match("[abc", "x"));
+}
+
+// A '\' as the final byte of an unterminated class has nothing to escape: it ends
+// the scan rather than consuming two bytes.
+void test_class_trailing_backslash_in_body()
+{
+    TEST_ASSERT_TRUE(regex_match("[a\\", "a"));
+    TEST_ASSERT_FALSE(regex_match("[a\\", "\\"));
+}
+
+// A '\' directly before the closing ']' cannot consume the ']' (that would run past
+// the class), so it is read as a literal backslash member.
+void test_class_escaped_bound_at_end()
+{
+    TEST_ASSERT_TRUE(regex_match("[a\\]", "a"));
+    TEST_ASSERT_TRUE(regex_match("[a\\]", "\\"));
+    TEST_ASSERT_FALSE(regex_match("[a\\]", "b"));
+}
+
+// "[]" has no body at all (its ']' is the leading literal, leaving an empty span):
+// it matches no character.
+void test_empty_class_matches_nothing()
+{
+    TEST_ASSERT_FALSE(regex_match("[]", "x"));
+    TEST_ASSERT_FALSE(regex_match("[]", "]"));
+    TEST_ASSERT_FALSE(regex_match("[]", ""));
+}
+
+// A '-' just before the closing ']' has no upper bound to pair with, so it is a
+// literal member rather than the start of a range.
+void test_class_trailing_dash_is_literal()
+{
+    TEST_ASSERT_TRUE(regex_match("[a-]+", "a-a"));
+    TEST_ASSERT_TRUE(regex_match("[a-]+", "-"));
+    TEST_ASSERT_FALSE(regex_match("[a-]+", "b"));
+}
+
+// Two ranges in one class: a member of either range matches, and a later
+// non-matching range must not clear a hit already recorded by an earlier one.
+void test_class_two_ranges()
+{
+    TEST_ASSERT_TRUE(regex_match("[a-z0-9]+", "a1"));
+    TEST_ASSERT_TRUE(regex_match("[a-z0-9]+", "9z"));
+    TEST_ASSERT_FALSE(regex_match("[a-z0-9]+", "-"));
+}
+
+// \d / \D at the low edge: a byte below '0' is a non-digit just as one above '9' is.
+void test_escape_class_digit_low_edge()
+{
+    TEST_ASSERT_FALSE(regex_match("\\d", "-"));
+    TEST_ASSERT_FALSE(regex_match("\\d", "x"));
+    TEST_ASSERT_TRUE(regex_match("\\D", "-"));
+    TEST_ASSERT_TRUE(regex_match("\\d", "5"));
+    TEST_ASSERT_FALSE(regex_match("\\D", "5"));
+}
+
+// \w / \W across every sub-range of the word-character test: upper case, digits,
+// underscore, and a byte above 'z' that must not be mistaken for a letter.
+void test_escape_class_word_edges()
+{
+    TEST_ASSERT_TRUE(regex_match("\\w", "A"));  // upper-case range
+    TEST_ASSERT_TRUE(regex_match("\\w", "9"));  // digit range
+    TEST_ASSERT_TRUE(regex_match("\\w", "_"));  // underscore
+    TEST_ASSERT_FALSE(regex_match("\\w", "~")); // above 'z': not a word char
+    TEST_ASSERT_FALSE(regex_match("\\w", "-"));
+    TEST_ASSERT_FALSE(regex_match("\\W", "A"));
+    TEST_ASSERT_FALSE(regex_match("\\W", "9"));
+    TEST_ASSERT_FALSE(regex_match("\\W", "_"));
+    TEST_ASSERT_TRUE(regex_match("\\W", "~"));
+    TEST_ASSERT_TRUE(regex_match("\\W", "-"));
+}
+
+// \s / \S against the actual whitespace bytes. These cannot ride in a request-line
+// path, so the matcher is called directly.
+void test_escape_class_space_direct()
+{
+    TEST_ASSERT_TRUE(regex_match("\\s", " "));
+    TEST_ASSERT_TRUE(regex_match("\\s", "\t"));
+    TEST_ASSERT_FALSE(regex_match("\\s", "q"));
+    TEST_ASSERT_FALSE(regex_match("\\S", " "));
+    TEST_ASSERT_FALSE(regex_match("\\S", "\t"));
+    TEST_ASSERT_TRUE(regex_match("\\S", "q"));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -211,5 +322,16 @@ int main()
     RUN_TEST(test_escape_class_word);
     RUN_TEST(test_escape_class_space);
     RUN_TEST(test_class_escaped_members);
+    RUN_TEST(test_trailing_backslash_atom);
+    RUN_TEST(test_class_leading_bracket_is_literal);
+    RUN_TEST(test_class_unterminated_fails_closed);
+    RUN_TEST(test_class_trailing_backslash_in_body);
+    RUN_TEST(test_class_escaped_bound_at_end);
+    RUN_TEST(test_empty_class_matches_nothing);
+    RUN_TEST(test_class_trailing_dash_is_literal);
+    RUN_TEST(test_class_two_ranges);
+    RUN_TEST(test_escape_class_digit_low_edge);
+    RUN_TEST(test_escape_class_word_edges);
+    RUN_TEST(test_escape_class_space_direct);
     return UNITY_END();
 }

@@ -106,6 +106,63 @@ void test_ef_wrappers_and_guards()
     TEST_ASSERT_EQUAL_size_t(0, dws_nts_ef(0x0304, data, sizeof(data), out, 2));               // overflow
 }
 
+// Every argument guard on the record builder rejects independently.
+void test_ke_record_guards(void)
+{
+    uint8_t body[2] = {0x00, 0x00};
+    uint8_t out[8];
+    TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, body, 2, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, nullptr, 2, out, sizeof(out)));
+    // A body longer than the 16-bit length field can express is refused (the pointer
+    // is never read: the guard returns first).
+    TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, body, 0x10000, out, sizeof(out)));
+    // Header + body must fit the destination.
+    TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, body, 2, out, 4));
+    TEST_ASSERT_EQUAL_size_t(6, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, body, 2, out, 6)); // exact fit
+}
+
+// A non-critical record leaves the critical bit clear in the type field.
+void test_ke_record_non_critical(void)
+{
+    uint8_t out[8];
+    size_t n = dws_nts_ke_record(false, Nts::NTS_KE_AEAD_ALGORITHM, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(4, n);
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[0] & 0x80); // critical bit clear
+    TEST_ASSERT_EQUAL_HEX8(Nts::NTS_KE_AEAD_ALGORITHM, out[1]);
+    TEST_ASSERT_EQUAL_UINT16(0, (uint16_t)((out[2] << 8) | out[3]));
+}
+
+// The request builder fails closed at whichever of its three records runs out of
+// room, and needs exactly 16 bytes.
+void test_ke_request_short_buffers(void)
+{
+    uint8_t out[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_request(out, 5));   // next-protocol does not fit
+    TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_request(out, 11));  // aead does not fit
+    TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_request(out, 15));  // end-of-message does not fit
+    TEST_ASSERT_EQUAL_size_t(16, dws_nts_ke_request(out, 16)); // exact fit
+}
+
+// An extension field with no value is header-only, and a null value with a
+// non-zero length is rejected.
+void test_ef_empty_and_null_value(void)
+{
+    uint8_t out[64];
+    size_t n = dws_nts_ef(NtsEf::NTS_EF_COOKIE, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(4, n); // type + length only, already 4-aligned
+    TEST_ASSERT_EQUAL_UINT16(4, (uint16_t)((out[2] << 8) | out[3]));
+    TEST_ASSERT_EQUAL_size_t(0, dws_nts_ef(NtsEf::NTS_EF_COOKIE, nullptr, 8, out, sizeof(out)));
+}
+
+// A value whose padded length overflows the 16-bit Length field is refused before
+// anything is copied.
+void test_ef_length_field_overflow(void)
+{
+    uint8_t out[64];
+    uint8_t value[8] = {0};
+    TEST_ASSERT_EQUAL_size_t(0, dws_nts_ef(NtsEf::NTS_EF_COOKIE, value, 0xFFFC, out, sizeof(out)));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -114,5 +171,10 @@ int main(void)
     RUN_TEST(test_ke_parse);
     RUN_TEST(test_extension_field_padding);
     RUN_TEST(test_ef_wrappers_and_guards);
+    RUN_TEST(test_ke_record_guards);
+    RUN_TEST(test_ke_record_non_critical);
+    RUN_TEST(test_ke_request_short_buffers);
+    RUN_TEST(test_ef_empty_and_null_value);
+    RUN_TEST(test_ef_length_field_overflow);
     return UNITY_END();
 }

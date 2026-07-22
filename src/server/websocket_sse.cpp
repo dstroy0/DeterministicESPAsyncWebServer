@@ -48,11 +48,16 @@ static const size_t WS_MAX_KEY_LEN = 64;
 static bool ws_accept_key(const char *client_key, char *out)
 {
     size_t key_len = strnlen(client_key, WS_MAX_KEY_LEN + 1);
+    // GCOVR_EXCL_START  unreachable at the default header sizing: client_key is a Header::val, which
+    // is MAX_VAL_LEN (48) bytes, so key_len cannot exceed WS_MAX_KEY_LEN (64). A build that raises
+    // MAX_VAL_LEN past 64 does reach it, and the bound is what lets the concat buffer below be sized
+    // WS_MAX_KEY_LEN + sizeof(WS_MAGIC) - so the guard stays either way.
     if (key_len > WS_MAX_KEY_LEN)
     {
         out[0] = '\0';
         return false;
     }
+    // GCOVR_EXCL_STOP
     // RFC 6455 4.2.1: the Sec-WebSocket-Key must base64-decode to exactly 16 bytes.
     uint8_t raw[24];
     if (dws_base64_decode(client_key, raw, sizeof(raw)) != 16)
@@ -227,8 +232,12 @@ void DWS::ws_send_text(uint8_t ws_id, const char *text)
     uint16_t len = (uint16_t)strnlen(text, 0xFFFF);
     if (ws_send_frame(ws, WsOpcode::WS_OP_TEXT, (const uint8_t *)text, len))
     {
+        // GCOVR_EXCL_BR_START  the false half cannot fire: ws_send_frame returns true only after it
+        // has itself checked dws_conn_active(), and nothing between the two can tear the slot down
+        // on a single-threaded run. It is a re-check for the marshalled (ARDUINO) send path.
         if (dws_conn_active(ws->slot_id))
             dws_conn_flush(ws->slot_id);
+        // GCOVR_EXCL_BR_STOP
     }
 }
 
@@ -241,8 +250,11 @@ void DWS::ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t len)
         return;
     if (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, data, len))
     {
+        // GCOVR_EXCL_BR_START  as in ws_send_text: ws_send_frame already required an active
+        // connection, so the false half of this re-check is unreachable from a host test.
         if (dws_conn_active(ws->slot_id))
             dws_conn_flush(ws->slot_id);
+        // GCOVR_EXCL_BR_STOP
     }
 }
 
@@ -270,8 +282,11 @@ void DWS::dws_sse_send(uint8_t dws_sse_id, const char *data, const char *event, 
     SseConn *sse = &dws_sse_pool[dws_sse_id];
     if (dws_sse_write(sse, data, event, id))
     {
+        // GCOVR_EXCL_BR_START  the false half cannot fire: dws_sse_write returns true only after it
+        // has itself checked dws_conn_active(), so the slot is still live here.
         if (dws_conn_active(sse->slot_id))
             dws_conn_flush(sse->slot_id);
+        // GCOVR_EXCL_BR_STOP
     }
 }
 
@@ -286,8 +301,11 @@ void DWS::dws_sse_broadcast(const char *path, const char *data, const char *even
         SseConn *sse = &dws_sse_pool[i];
         if (dws_sse_write(sse, data, event, id))
         {
+            // GCOVR_EXCL_BR_START  as in dws_sse_send: dws_sse_write already required an active
+            // connection, so the false half of this re-check is unreachable from a host test.
             if (dws_conn_active(sse->slot_id))
                 dws_conn_flush(sse->slot_id);
+            // GCOVR_EXCL_BR_STOP
         }
     }
 }

@@ -15,6 +15,11 @@ enum
     N_MACHINEINFO = 7100,
     N_MI_MANUFACTURER = 7101,
     N_MI_MODEL = 7102,
+    N_MI_SERIAL = 7103,
+    N_MI_PRODUCTCODE = 7104,
+    N_MI_HWREV = 7105,
+    N_MI_SWREV = 7106,
+    N_MI_DEVREV = 7107,
     N_MI_MANUFACTURERURI = 7108,
     N_MACHINESTATUS = 7200,
     N_MS_ISPRESENT = 7201,
@@ -22,13 +27,21 @@ enum
     N_JOBS = 7300,
     N_ACTIVEJOB = 7310,
     N_AJ_JOBNAME = 7311,
+    N_AJ_JOBDESC = 7312,
+    N_AJ_MATERIAL = 7313,
+    N_AJ_PRODUCTNAME = 7314,
+    N_AJ_MOULDID = 7315,
     N_AJ_EXPECTEDCYCLE = 7316,
     N_AJ_NUMCAVITIES = 7317,
     N_AJ_NOMINALPARTS = 7318,
     N_ACTIVEJOBVALUES = 7320,
     N_AJV_JOBCYCLECOUNTER = 7321,
+    N_AJV_MACHINECYCLECOUNTER = 7322,
     N_AJV_LASTCYCLETIME = 7323,
+    N_AJV_AVERAGECYCLETIME = 7324,
     N_AJV_JOBPARTSCOUNTER = 7325,
+    N_AJV_JOBGOODPARTSCOUNTER = 7326,
+    N_AJV_JOBBADPARTSCOUNTER = 7327,
     N_AJV_JOBSTATUS = 7328,
 };
 
@@ -235,6 +248,119 @@ static void test_read_before_bind_is_a_clean_miss(void)
     TEST_ASSERT_EQUAL_INT32(-1, dws_em77_browse(0, 85, refs, 4));
 }
 
+// Every remaining MachineInformation String leaf resolves to its own EmMachineInformation field (an
+// off-by-one in the case table would cross-wire two identity strings).
+static void test_read_every_machineinformation_string(void)
+{
+    OpcUaVariant v;
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_MI_SERIAL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("SN-IMM-0042", v.str);
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_MI_PRODUCTCODE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("IM200-STD", v.str);
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_MI_HWREV, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("H1", v.str);
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_MI_SWREV, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("3.4.0", v.str);
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_MI_DEVREV, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("D2", v.str);
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_MI_MANUFACTURERURI, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_STRING, v.type);
+    TEST_ASSERT_EQUAL_STRING("urn:acme:plastics", v.str);
+}
+
+// Every remaining ActiveJob String leaf resolves to its own EmActiveJob field.
+static void test_read_every_activejob_string(void)
+{
+    OpcUaVariant v;
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_AJ_JOBDESC, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_STRING, v.type);
+    TEST_ASSERT_EQUAL_STRING("widget run", v.str);
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_AJ_MATERIAL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("ABS", v.str);
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_AJ_PRODUCTNAME, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("Widget", v.str);
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_AJ_MOULDID, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("MLD-9", v.str);
+}
+
+// The remaining ActiveJobValues leaves: the counters stay UInt64 (values > 2^32 survive) and the cycle
+// times stay Double.
+static void test_read_remaining_activejobvalues(void)
+{
+    OpcUaVariant v;
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_AJV_MACHINECYCLECOUNTER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_UINT64, v.type);
+    TEST_ASSERT_TRUE(v.u64 == 9000000002ULL);
+
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_AJV_AVERAGECYCLETIME, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_DOUBLE, v.type);
+    TEST_ASSERT_TRUE(v.f64 == 12.6);
+
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_AJV_JOBGOODPARTSCOUNTER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_UINT64, v.type);
+    TEST_ASSERT_TRUE(v.u64 == 19000000003ULL);
+
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_AJV_JOBBADPARTSCOUNTER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_UINT64, v.type);
+    TEST_ASSERT_TRUE(v.u64 == 1000000001ULL);
+}
+
+// A Browse into a buffer smaller than the child count fills exactly the capacity and drops the rest -
+// no write past out[max-1].
+static void test_browse_stops_at_caller_capacity(void)
+{
+    OpcUaReference refs[8];
+    memset(refs, 0, sizeof(refs));
+    int32_t n = browse(DWS_EM77_NS, N_MACHINEINFO, refs, 3); // 8 children, room for 3
+    TEST_ASSERT_EQUAL_INT32(3, n);
+    TEST_ASSERT_EQUAL_STRING("Manufacturer", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_STRING("SerialNumber", refs[2].browse_name);
+    TEST_ASSERT_NULL(refs[3].browse_name); // the 4th child was dropped, not written
+
+    TEST_ASSERT_EQUAL_INT32(0, browse(DWS_EM77_NS, N_ACTIVEJOBVALUES, refs, 0)); // zero capacity writes nothing
+}
+
+// ns0 is only special for the Objects folder: any other ns0 node is outside the model.
+static void test_browse_other_ns0_node_is_a_miss(void)
+{
+    OpcUaReference refs[4];
+    TEST_ASSERT_EQUAL_INT32(-1, browse(0, 86, refs, 4)); // Types folder
+    TEST_ASSERT_EQUAL_INT32(-1, browse(0, 84, refs, 4)); // Root folder
+}
+
+// With no name set on the IMM, the Objects->interface reference falls back to the spec BrowseName.
+static void test_browse_objects_folder_default_name(void)
+{
+    g_imm.name = nullptr;
+    OpcUaReference refs[4];
+    int32_t n = browse(0, 85, refs, 4);
+    TEST_ASSERT_EQUAL_INT32(1, n);
+    TEST_ASSERT_EQUAL_STRING("IMM_MES_Interface", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_STRING("IMM_MES_Interface", refs[0].display_name);
+}
+
+// install() binds the model as well as registering the resolvers with the OPC UA server, so a Read
+// right after install resolves against the newly bound IMM.
+static void test_install_binds_the_model(void)
+{
+    static EmImm other;
+    memset(&other, 0, sizeof(other));
+    other.name = "IMM-2";
+    other.info.serial_number = "SN-IMM-9999";
+    other.active_job_values.job_bad_parts_counter = 7ULL;
+
+    dws_em77_install(&other);
+
+    OpcUaVariant v;
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_MI_SERIAL, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("SN-IMM-9999", v.str); // the installed model, not the setUp one
+    TEST_ASSERT_TRUE(dws_em77_read(DWS_EM77_NS, N_AJV_JOBBADPARTSCOUNTER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(v.u64 == 7ULL);
+    OpcUaReference refs[4];
+    TEST_ASSERT_EQUAL_INT32(1, dws_em77_browse(0, 85, refs, 4));
+    TEST_ASSERT_EQUAL_STRING("IMM-2", refs[0].browse_name);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -249,5 +375,12 @@ int main(void)
     RUN_TEST(test_read_null_string_served_as_empty);
     RUN_TEST(test_read_rejects_unknown_ns_attr_and_node);
     RUN_TEST(test_read_before_bind_is_a_clean_miss);
+    RUN_TEST(test_read_every_machineinformation_string);
+    RUN_TEST(test_read_every_activejob_string);
+    RUN_TEST(test_read_remaining_activejobvalues);
+    RUN_TEST(test_browse_stops_at_caller_capacity);
+    RUN_TEST(test_browse_other_ns0_node_is_a_miss);
+    RUN_TEST(test_browse_objects_folder_default_name);
+    RUN_TEST(test_install_binds_the_model);
     return UNITY_END();
 }

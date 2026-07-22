@@ -345,9 +345,33 @@ static void test_browse_ns0_other_than_objects_folder_misses(void)
     TEST_ASSERT_EQUAL_INT32(-1, browse(0, 5000, refs, 4)); // our MachineTool id, but in ns0
 }
 
+// install() binds the model as well as registering the resolvers with the OPC UA server, so a Read
+// right after install resolves against the newly bound machine.
+static void test_install_binds_the_model(void)
+{
+    static UmatiMachineTool other;
+    memset(&other, 0, sizeof(other));
+    other.name = "CNC-2";
+    other.ident.manufacturer = "Other Machines";
+    other.produced_part_count = 99;
+
+    dws_umati_install(&other);
+
+    OpcUaVariant v;
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_STRING("Other Machines", v.str); // the installed model, not the setUp one
+    TEST_ASSERT_TRUE(dws_umati_read(DWS_UMATI_NS, N_PROD_PARTCOUNT, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_EQUAL_UINT32(99, v.u32);
+    OpcUaReference refs[4];
+    int32_t n = dws_umati_browse(0, 85, refs, 4);
+    TEST_ASSERT_EQUAL_INT32(1, n);
+    TEST_ASSERT_EQUAL_STRING("CNC-2", refs[0].browse_name);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_install_binds_the_model);
     RUN_TEST(test_read_every_remaining_leaf);
     RUN_TEST(test_browse_every_remaining_container);
     RUN_TEST(test_browse_clamps_to_max);

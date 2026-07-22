@@ -107,6 +107,54 @@ void test_engine_abort_and_clear()
     TEST_ASSERT_EQUAL(PackMlState::STOPPED, dws_packml_state_complete(s));
 }
 
+void test_engine_stop_and_abort_are_noops_inside_a_teardown()
+{
+    // Stop must not restart a teardown that is already running, and Abort must not
+    // restart itself - otherwise the acting state would be re-entered forever.
+    TEST_ASSERT_EQUAL(PackMlState::STOPPING, dws_packml_command(PackMlState::STOPPING, PackMlCommand::STOP));
+    TEST_ASSERT_EQUAL(PackMlState::CLEARING, dws_packml_command(PackMlState::CLEARING, PackMlCommand::STOP));
+    TEST_ASSERT_EQUAL(PackMlState::ABORTING, dws_packml_command(PackMlState::ABORTING, PackMlCommand::STOP));
+    TEST_ASSERT_EQUAL(PackMlState::ABORTING, dws_packml_command(PackMlState::ABORTING, PackMlCommand::ABORT));
+    // Abort still overrides a Stop already in progress: a fault outranks a stop.
+    TEST_ASSERT_EQUAL(PackMlState::ABORTING, dws_packml_command(PackMlState::STOPPING, PackMlCommand::ABORT));
+    TEST_ASSERT_EQUAL(PackMlState::ABORTING, dws_packml_command(PackMlState::CLEARING, PackMlCommand::ABORT));
+}
+
+void test_engine_wait_states_ignore_foreign_commands()
+{
+    // Each wait state accepts exactly one command; anything else leaves it untouched,
+    // so a stray HMI button cannot shortcut the model.
+    TEST_ASSERT_EQUAL(PackMlState::HELD, dws_packml_command(PackMlState::HELD, PackMlCommand::START));
+    TEST_ASSERT_EQUAL(PackMlState::SUSPENDED, dws_packml_command(PackMlState::SUSPENDED, PackMlCommand::HOLD));
+    TEST_ASSERT_EQUAL(PackMlState::COMPLETE, dws_packml_command(PackMlState::COMPLETE, PackMlCommand::START));
+    TEST_ASSERT_EQUAL(PackMlState::ABORTED, dws_packml_command(PackMlState::ABORTED, PackMlCommand::RESET));
+    TEST_ASSERT_EQUAL(PackMlState::STOPPED, dws_packml_command(PackMlState::STOPPED, PackMlCommand::CLEAR));
+    TEST_ASSERT_EQUAL(PackMlState::IDLE, dws_packml_command(PackMlState::IDLE, PackMlCommand::UNHOLD));
+    TEST_ASSERT_EQUAL(PackMlState::EXECUTE, dws_packml_command(PackMlState::EXECUTE, PackMlCommand::UNSUSPEND));
+}
+
+void test_engine_acting_states_accept_only_stop_and_abort()
+{
+    // Acting states are transient: nothing but the universal Stop / Abort may interrupt
+    // one, and an uninitialized state accepts nothing else either.
+    TEST_ASSERT_EQUAL(PackMlState::STARTING, dws_packml_command(PackMlState::STARTING, PackMlCommand::HOLD));
+    TEST_ASSERT_EQUAL(PackMlState::CLEARING, dws_packml_command(PackMlState::CLEARING, PackMlCommand::RESET));
+    TEST_ASSERT_EQUAL(PackMlState::COMPLETING, dws_packml_command(PackMlState::COMPLETING, PackMlCommand::START));
+    TEST_ASSERT_EQUAL(PackMlState::UNHOLDING, dws_packml_command(PackMlState::UNHOLDING, PackMlCommand::UNHOLD));
+    TEST_ASSERT_EQUAL(PackMlState::UNDEFINED, dws_packml_command(PackMlState::UNDEFINED, PackMlCommand::START));
+    // ...but Stop and Abort do get through.
+    TEST_ASSERT_EQUAL(PackMlState::STOPPING, dws_packml_command(PackMlState::STARTING, PackMlCommand::STOP));
+    TEST_ASSERT_EQUAL(PackMlState::ABORTING, dws_packml_command(PackMlState::STARTING, PackMlCommand::ABORT));
+}
+
+void test_engine_execute_complete_only_from_execute()
+{
+    // "production done" is meaningless anywhere but Execute, so it must not move the state.
+    TEST_ASSERT_EQUAL(PackMlState::IDLE, dws_packml_execute_complete(PackMlState::IDLE));
+    TEST_ASSERT_EQUAL(PackMlState::HELD, dws_packml_execute_complete(PackMlState::HELD));
+    TEST_ASSERT_EQUAL(PackMlState::COMPLETE, dws_packml_execute_complete(PackMlState::COMPLETE));
+}
+
 // ---- Command validity ------------------------------------------------------
 
 void test_engine_invalid_commands_are_noops()
@@ -143,6 +191,48 @@ void test_state_wire_numbers()
     TEST_ASSERT_EQUAL_UINT8(17, (uint8_t)PackMlState::COMPLETE);
     TEST_ASSERT_EQUAL_STRING("Execute", dws_packml_state_name(PackMlState::EXECUTE));
     TEST_ASSERT_EQUAL_STRING("Abort", dws_packml_command_name(PackMlCommand::ABORT));
+}
+
+void test_every_state_has_its_isa_name()
+{
+    // The names go straight onto an HMI / into a log line, so every one of the 17 states
+    // needs the ISA-TR88.00.02 spelling - a wrong or missing arm reads as "Undefined".
+    TEST_ASSERT_EQUAL_STRING("Clearing", dws_packml_state_name(PackMlState::CLEARING));
+    TEST_ASSERT_EQUAL_STRING("Stopped", dws_packml_state_name(PackMlState::STOPPED));
+    TEST_ASSERT_EQUAL_STRING("Starting", dws_packml_state_name(PackMlState::STARTING));
+    TEST_ASSERT_EQUAL_STRING("Idle", dws_packml_state_name(PackMlState::IDLE));
+    TEST_ASSERT_EQUAL_STRING("Suspended", dws_packml_state_name(PackMlState::SUSPENDED));
+    TEST_ASSERT_EQUAL_STRING("Execute", dws_packml_state_name(PackMlState::EXECUTE));
+    TEST_ASSERT_EQUAL_STRING("Stopping", dws_packml_state_name(PackMlState::STOPPING));
+    TEST_ASSERT_EQUAL_STRING("Aborting", dws_packml_state_name(PackMlState::ABORTING));
+    TEST_ASSERT_EQUAL_STRING("Aborted", dws_packml_state_name(PackMlState::ABORTED));
+    TEST_ASSERT_EQUAL_STRING("Holding", dws_packml_state_name(PackMlState::HOLDING));
+    TEST_ASSERT_EQUAL_STRING("Held", dws_packml_state_name(PackMlState::HELD));
+    TEST_ASSERT_EQUAL_STRING("Unholding", dws_packml_state_name(PackMlState::UNHOLDING));
+    TEST_ASSERT_EQUAL_STRING("Suspending", dws_packml_state_name(PackMlState::SUSPENDING));
+    TEST_ASSERT_EQUAL_STRING("Unsuspending", dws_packml_state_name(PackMlState::UNSUSPENDING));
+    TEST_ASSERT_EQUAL_STRING("Resetting", dws_packml_state_name(PackMlState::RESETTING));
+    TEST_ASSERT_EQUAL_STRING("Completing", dws_packml_state_name(PackMlState::COMPLETING));
+    TEST_ASSERT_EQUAL_STRING("Complete", dws_packml_state_name(PackMlState::COMPLETE));
+    // Anything outside the model, including the pre-init value, is reported as such.
+    TEST_ASSERT_EQUAL_STRING("Undefined", dws_packml_state_name(PackMlState::UNDEFINED));
+    TEST_ASSERT_EQUAL_STRING("Undefined", dws_packml_state_name((PackMlState)200));
+}
+
+void test_every_command_has_its_isa_name()
+{
+    TEST_ASSERT_EQUAL_STRING("Reset", dws_packml_command_name(PackMlCommand::RESET));
+    TEST_ASSERT_EQUAL_STRING("Start", dws_packml_command_name(PackMlCommand::START));
+    TEST_ASSERT_EQUAL_STRING("Stop", dws_packml_command_name(PackMlCommand::STOP));
+    TEST_ASSERT_EQUAL_STRING("Hold", dws_packml_command_name(PackMlCommand::HOLD));
+    TEST_ASSERT_EQUAL_STRING("Unhold", dws_packml_command_name(PackMlCommand::UNHOLD));
+    TEST_ASSERT_EQUAL_STRING("Suspend", dws_packml_command_name(PackMlCommand::SUSPEND));
+    TEST_ASSERT_EQUAL_STRING("Unsuspend", dws_packml_command_name(PackMlCommand::UNSUSPEND));
+    TEST_ASSERT_EQUAL_STRING("Abort", dws_packml_command_name(PackMlCommand::ABORT));
+    TEST_ASSERT_EQUAL_STRING("Clear", dws_packml_command_name(PackMlCommand::CLEAR));
+    // The idle CntrlCmd value (and anything unknown) is "None", not a stray pointer.
+    TEST_ASSERT_EQUAL_STRING("None", dws_packml_command_name(PackMlCommand::NONE));
+    TEST_ASSERT_EQUAL_STRING("None", dws_packml_command_name((PackMlCommand)200));
 }
 
 // ---- Owned service ---------------------------------------------------------
@@ -241,6 +331,105 @@ void test_svc_timers()
     TEST_ASSERT_EQUAL_UINT32(800, st.acc_time_since_reset_ms); // 1800 - 1000
 }
 
+void test_svc_abort_and_clear_cycle()
+{
+    // The fault branch driven through the owned service: Execute -> Aborting -> Aborted,
+    // where only Clear (never Reset) is accepted, then Clearing -> Stopped.
+    dws_packml_svc_command(PackMlCommand::RESET);
+    dws_packml_svc_state_complete(); // Idle
+    dws_packml_svc_command(PackMlCommand::START);
+    dws_packml_svc_state_complete(); // Execute
+    TEST_ASSERT_EQUAL(PackMlState::EXECUTE, dws_packml_svc_state());
+
+    g_ms = 500;
+    TEST_ASSERT_TRUE(dws_packml_svc_command(PackMlCommand::ABORT));
+    TEST_ASSERT_EQUAL(PackMlState::ABORTING, dws_packml_svc_state());
+    TEST_ASSERT_EQUAL(PackMlState::ABORTED, dws_packml_svc_state_complete());
+    // Counting stops the moment production does.
+    dws_packml_svc_count(false);
+    PackMlStatus st;
+    dws_packml_svc_status(&st);
+    TEST_ASSERT_EQUAL_UINT32(0, st.prod_processed);
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, st.mach_speed_actual);
+
+    // Reset does not leave a fault; Clear does.
+    TEST_ASSERT_FALSE(dws_packml_svc_command(PackMlCommand::RESET));
+    TEST_ASSERT_EQUAL(PackMlState::ABORTED, dws_packml_svc_state());
+    g_ms = 700;
+    TEST_ASSERT_TRUE(dws_packml_svc_command(PackMlCommand::CLEAR));
+    TEST_ASSERT_EQUAL(PackMlState::CLEARING, dws_packml_svc_state());
+    // Entering Clearing restamped the state clock, and Clearing completes to Stopped.
+    g_ms = 900;
+    dws_packml_svc_status(&st);
+    TEST_ASSERT_EQUAL_UINT32(200, st.state_current_ms);
+    TEST_ASSERT_EQUAL(PackMlState::STOPPED, dws_packml_svc_state_complete());
+}
+
+void test_svc_stop_from_execute_lands_stopped()
+{
+    // The other teardown: Stop is legal mid-production and completes to Stopped, which
+    // is a mode-changeable state again.
+    dws_packml_svc_command(PackMlCommand::RESET);
+    dws_packml_svc_state_complete();
+    dws_packml_svc_command(PackMlCommand::START);
+    dws_packml_svc_state_complete(); // Execute
+    TEST_ASSERT_TRUE(dws_packml_svc_command(PackMlCommand::STOP));
+    TEST_ASSERT_EQUAL(PackMlState::STOPPING, dws_packml_svc_state());
+    // A second Stop while stopping changes nothing.
+    TEST_ASSERT_FALSE(dws_packml_svc_command(PackMlCommand::STOP));
+    TEST_ASSERT_EQUAL(PackMlState::STOPPED, dws_packml_svc_state_complete());
+    TEST_ASSERT_TRUE(dws_packml_svc_set_mode(PackMlMode::MANUAL));
+}
+
+void test_svc_state_complete_in_a_wait_state_does_not_restamp()
+{
+    // Wait states have no State-Complete transition, so the call must be a true no-op -
+    // in particular it must not reset the StateCurrentTime clock.
+    g_ms = 400;
+    TEST_ASSERT_EQUAL(PackMlState::STOPPED, dws_packml_svc_state_complete());
+    g_ms = 900;
+    PackMlStatus st;
+    dws_packml_svc_status(&st);
+    TEST_ASSERT_EQUAL_UINT32(900, st.state_current_ms); // still timed from the init at 0
+}
+
+void test_svc_complete_run_requires_execute()
+{
+    // ExecuteComplete outside Execute is not a state change and must report so.
+    TEST_ASSERT_FALSE(dws_packml_svc_complete_run());
+    TEST_ASSERT_EQUAL(PackMlState::STOPPED, dws_packml_svc_state());
+    dws_packml_svc_command(PackMlCommand::RESET);
+    dws_packml_svc_state_complete(); // Idle - still not producing
+    TEST_ASSERT_FALSE(dws_packml_svc_complete_run());
+    TEST_ASSERT_EQUAL(PackMlState::IDLE, dws_packml_svc_state());
+}
+
+void test_svc_mode_change_allowed_in_idle_and_aborted()
+{
+    // The mode-change rule is "stable and not producing", which is Stopped, Idle or Aborted.
+    dws_packml_svc_command(PackMlCommand::RESET);
+    dws_packml_svc_state_complete(); // Idle
+    TEST_ASSERT_TRUE(dws_packml_svc_set_mode(PackMlMode::MANUAL));
+    dws_packml_svc_command(PackMlCommand::ABORT);
+    dws_packml_svc_state_complete(); // Aborted
+    TEST_ASSERT_TRUE(dws_packml_svc_set_mode(PackMlMode::MAINTENANCE));
+    PackMlStatus st;
+    dws_packml_svc_status(&st);
+    TEST_ASSERT_EQUAL(PackMlMode::MAINTENANCE, st.unit_mode_current);
+    // But not while the fault is being cleared.
+    dws_packml_svc_command(PackMlCommand::CLEAR); // Clearing
+    TEST_ASSERT_FALSE(dws_packml_svc_set_mode(PackMlMode::PRODUCING));
+    dws_packml_svc_status(&st);
+    TEST_ASSERT_EQUAL(PackMlMode::MAINTENANCE, st.unit_mode_current);
+}
+
+void test_svc_status_null_out_is_ignored()
+{
+    // A null status buffer must be a no-op, not a write through nullptr.
+    dws_packml_svc_status(nullptr);
+    TEST_ASSERT_EQUAL(PackMlState::STOPPED, dws_packml_svc_state());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -250,9 +439,15 @@ int main()
     RUN_TEST(test_engine_suspend_unsuspend);
     RUN_TEST(test_engine_stop_from_many_states);
     RUN_TEST(test_engine_abort_and_clear);
+    RUN_TEST(test_engine_stop_and_abort_are_noops_inside_a_teardown);
+    RUN_TEST(test_engine_wait_states_ignore_foreign_commands);
+    RUN_TEST(test_engine_acting_states_accept_only_stop_and_abort);
+    RUN_TEST(test_engine_execute_complete_only_from_execute);
     RUN_TEST(test_engine_invalid_commands_are_noops);
     RUN_TEST(test_engine_acting_classification);
     RUN_TEST(test_state_wire_numbers);
+    RUN_TEST(test_every_state_has_its_isa_name);
+    RUN_TEST(test_every_command_has_its_isa_name);
     RUN_TEST(test_svc_init_is_stopped);
     RUN_TEST(test_svc_full_run_with_counts);
     RUN_TEST(test_svc_count_only_in_execute);
@@ -260,5 +455,11 @@ int main()
     RUN_TEST(test_svc_mode_change_rules);
     RUN_TEST(test_svc_speed_actual_tracks_execute);
     RUN_TEST(test_svc_timers);
+    RUN_TEST(test_svc_abort_and_clear_cycle);
+    RUN_TEST(test_svc_stop_from_execute_lands_stopped);
+    RUN_TEST(test_svc_state_complete_in_a_wait_state_does_not_restamp);
+    RUN_TEST(test_svc_complete_run_requires_execute);
+    RUN_TEST(test_svc_mode_change_allowed_in_idle_and_aborted);
+    RUN_TEST(test_svc_status_null_out_is_ignored);
     return UNITY_END();
 }

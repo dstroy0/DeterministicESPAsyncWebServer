@@ -1651,9 +1651,760 @@ void test_parse_open_truncated_frames()
     TEST_ASSERT_FALSE(dws_opcua_parse_open(buf, n, &oc));
 }
 
+// ---------------------------------------------------------------------------
+// Codec edge cases
+// ---------------------------------------------------------------------------
+
+// A positive length with a null pointer writes the length and no payload: the writer must not
+// dereference the null source, so the frame stays well-formed (a length field, nothing after it).
+void test_w_string_positive_len_null_pointer()
+{
+    uint8_t buf[16];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    dws_ua_w_string(&w, nullptr, 5); // length says 5, but there is nothing to copy
+    TEST_ASSERT_TRUE(w.ok);
+    TEST_ASSERT_EQUAL_UINT(4, w.n); // just the Int32 length prefix
+    UaReader r = {buf, w.n, 0, false};
+    TEST_ASSERT_EQUAL_INT32(5, dws_ua_r_i32(&r));
+}
+
+// dws_ua_r_string's optional out_len may be omitted, a zero-capacity sink still accepts a null
+// String, and a length that fits the caller's buffer but runs past the frame is a hard underrun.
+void test_r_string_optional_len_zero_cap_and_frame_underrun()
+{
+    uint8_t nul[4];
+    UaWriter w = {nul, sizeof(nul), 0, true};
+    dws_ua_w_string(&w, nullptr, -1); // null String
+
+    char s[8];
+    UaReader r = {nul, w.n, 0, false};
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, s, sizeof(s), nullptr)); // no out_len sink
+    TEST_ASSERT_FALSE(r.err);
+
+    // A null String with no room to write the terminator is still accepted (nothing is stored).
+    r = UaReader{nul, w.n, 0, false};
+    int32_t len = 99;
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, s, 0, &len));
+    TEST_ASSERT_EQUAL_INT32(-1, len);
+
+    // Length 4 fits s[8] but the frame holds only 2 payload bytes -> underrun, err latches.
+    uint8_t trunc[6] = {4, 0, 0, 0, 'a', 'b'};
+    r = UaReader{trunc, sizeof(trunc), 0, false};
+    TEST_ASSERT_FALSE(dws_ua_r_string(&r, s, sizeof(s), &len));
+    TEST_ASSERT_TRUE(r.err);
+}
+
+// A NodeId whose namespace fits a byte but whose identifier does not fit 16 bits cannot use the
+// FourByte form - it must widen to the full Numeric encoding.
+void test_w_nodeid_numeric_widens_for_large_identifier()
+{
+    uint8_t buf[16];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    dws_ua_w_nodeid_numeric(&w, 1, 0x10000); // ns fits a byte, id does not fit a u16
+    TEST_ASSERT_EQUAL_HEX8(0x02, buf[0]);    // Numeric, not FourByte (0x01)
+    UaReader r = {buf, w.n, 0, false};
+    UaNodeId id;
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &id));
+    TEST_ASSERT_TRUE(id.numeric);
+    TEST_ASSERT_EQUAL_UINT16(1, id.ns);
+    TEST_ASSERT_EQUAL_UINT32(0x10000, id.id);
+
+    // The other way round: a small identifier in a namespace too large for a byte also widens.
+    w = UaWriter{buf, sizeof(buf), 0, true};
+    dws_ua_w_nodeid_numeric(&w, 0x0100, 5);
+    TEST_ASSERT_EQUAL_HEX8(0x02, buf[0]);
+    r = UaReader{buf, w.n, 0, false};
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &id));
+    TEST_ASSERT_EQUAL_UINT16(0x0100, id.ns);
+    TEST_ASSERT_EQUAL_UINT32(5, id.id);
+}
+
+// A Guid NodeId truncated to just its encoding byte underruns while reading the namespace, and the
+// 16-byte Guid skip that follows must observe the already-latched error instead of advancing.
+void test_r_nodeid_guid_truncated_latches_error()
+{
+    uint8_t enc_only[1] = {0x04}; // Guid kind, nothing after it
+    UaReader r = {enc_only, sizeof(enc_only), 0, false};
+    UaNodeId id;
+    TEST_ASSERT_FALSE(dws_ua_r_nodeid(&r, &id));
+    TEST_ASSERT_TRUE(r.err);
+    TEST_ASSERT_EQUAL_UINT(1, r.off); // the skip did not advance past the underrun
+}
+
+// The NamespaceUri (0x80) and ServerIndex (0x40) NodeId flags are consumed even when the
+// NamespaceUri String is null, so the reader stays aligned on the bytes that follow.
+void test_r_nodeid_null_namespace_uri_and_server_index_flags()
+{
+    uint8_t buf[32];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    dws_ua_w_u8(&w, 0x00 | 0x80 | 0x40); // TwoByte + NamespaceUri + ServerIndex
+    dws_ua_w_u8(&w, 42);                 // identifier
+    dws_ua_w_i32(&w, -1);                // NamespaceUri (null String -> nothing to skip)
+    dws_ua_w_u32(&w, 7);                 // ServerIndex
+    dws_ua_w_u32(&w, 0xABCDEF01);        // a sentinel the reader must land on
+
+    UaReader r = {buf, w.n, 0, false};
+    UaNodeId id;
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &id));
+    TEST_ASSERT_EQUAL_UINT32(42, id.id);
+    TEST_ASSERT_EQUAL_HEX32(0xABCDEF01, dws_ua_r_u32(&r)); // both flag fields were consumed
+}
+
+// ---------------------------------------------------------------------------
+// Envelope / header guards
+// ---------------------------------------------------------------------------
+
+// Every entry parser runs the 8-byte UACP header check first: a frame too short to hold a header is
+// rejected by all of them without inspecting a single body byte.
+void test_parsers_reject_frame_shorter_than_header()
+{
+    uint8_t stub[4] = {'M', 'S', 'G', 'F'};
+    OpcUaHello hello;
+    OpcUaOpenChannel oc;
+    OpcUaMsg msg;
+    OpcUaReadRequest rr;
+    OpcUaWriteRequest wr;
+    OpcUaBrowseRequest br;
+    UaMsgHeader h;
+
+    TEST_ASSERT_FALSE(dws_opcua_parse_header(stub, sizeof(stub), &h));
+    TEST_ASSERT_FALSE(dws_opcua_parse_hello(stub, sizeof(stub), &hello));
+    TEST_ASSERT_FALSE(dws_opcua_parse_open(stub, sizeof(stub), &oc));
+    TEST_ASSERT_FALSE(dws_opcua_parse_msg(stub, sizeof(stub), &msg));
+    TEST_ASSERT_FALSE(dws_opcua_parse_read(stub, sizeof(stub), &rr));
+    TEST_ASSERT_FALSE(dws_opcua_parse_write(stub, sizeof(stub), &wr));
+    TEST_ASSERT_FALSE(dws_opcua_parse_browse(stub, sizeof(stub), &br));
+}
+
+// A HEL frame whose MessageSize agrees with the delivered length but is still shorter than the five
+// negotiation UInt32s is rejected: the size check and the minimum-payload check are independent.
+void test_parse_hello_rejects_consistent_but_undersized_frame()
+{
+    uint8_t hel[20] = {'H', 'E', 'L', 'F', 20, 0, 0, 0};
+    OpcUaHello hello;
+    TEST_ASSERT_FALSE(dws_opcua_parse_hello(hel, sizeof(hel), &hello)); // size == len, but < 8 + 20
+
+    // A full-size HEL whose MessageSize disagrees with the delivered length is rejected on the size
+    // check alone, before the minimum-payload rule is consulted.
+    uint8_t full[128];
+    size_t n = build_hello(full, sizeof(full), 4096, 4096, 0);
+    TEST_ASSERT_TRUE(dws_opcua_parse_hello(full, n, &hello)); // baseline: size == len
+    full[4] = (uint8_t)(n - 1);                               // claim one byte less than delivered
+    TEST_ASSERT_FALSE(dws_opcua_parse_hello(full, n, &hello));
+}
+
+// Buffer negotiation takes the smaller of the two ends: a client asking for more than the server
+// advertises is clamped to the server's size, and 0 means "no preference" -> the server's size.
+void test_ack_negotiation_clamps_oversized_client_request()
+{
+    uint8_t hel[128];
+    // Client offers far more than DWS_OPCUA_BUF on every axis -> every field clamps to the server's.
+    size_t n = build_hello(hel, sizeof(hel), 0x00FFFFFF, 0x00FFFFFF, 0x00FFFFFF);
+    OpcUaHello hello;
+    TEST_ASSERT_TRUE(dws_opcua_parse_hello(hel, n, &hello));
+
+    uint8_t ack[64];
+    size_t an = dws_opcua_build_ack(&hello, ack, sizeof(ack));
+    TEST_ASSERT_EQUAL_UINT(28, an);
+    UaReader r = {ack + 8, an - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(0, dws_ua_r_u32(&r)); // ProtocolVersion
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, dws_ua_r_u32(&r));
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, dws_ua_r_u32(&r));
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, dws_ua_r_u32(&r));
+
+    // A client asking for less than the server advertises keeps its own smaller sizes.
+    const uint32_t small = DWS_OPCUA_BUF / 4;
+    n = build_hello(hel, sizeof(hel), small, small, small);
+    TEST_ASSERT_TRUE(dws_opcua_parse_hello(hel, n, &hello));
+    an = dws_opcua_build_ack(&hello, ack, sizeof(ack));
+    TEST_ASSERT_EQUAL_UINT(28, an);
+    r = UaReader{ack + 8, an - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(0, dws_ua_r_u32(&r)); // ProtocolVersion
+    TEST_ASSERT_EQUAL_UINT32(small, dws_ua_r_u32(&r));
+    TEST_ASSERT_EQUAL_UINT32(small, dws_ua_r_u32(&r));
+    TEST_ASSERT_EQUAL_UINT32(small, dws_ua_r_u32(&r));
+}
+
+// Build a MSG frame whose body TypeId is a String NodeId (kind 0x03) rather than a numeric one, and
+// whose AdditionalHeader ExtensionObject carries an explicit but empty ByteString body.
+static size_t build_msg_string_typeid(uint8_t *out, size_t cap, uint8_t addhdr_body_enc, bool read_body = false)
+{
+    UaWriter w = {out, cap, 0, true};
+    dws_ua_w_u8(&w, 'M');
+    dws_ua_w_u8(&w, 'S');
+    dws_ua_w_u8(&w, 'G');
+    dws_ua_w_u8(&w, 'F');
+    dws_ua_w_u32(&w, 0); // size placeholder
+    dws_ua_w_u32(&w, 0); // SecureChannelId
+    dws_ua_w_u32(&w, 3); // TokenId
+    dws_ua_w_u32(&w, 4); // SequenceNumber
+    dws_ua_w_u32(&w, 5); // RequestId
+    // Body TypeId as a String NodeId -> not numeric.
+    dws_ua_w_u8(&w, 0x03);
+    dws_ua_w_u16(&w, 0);
+    dws_ua_w_string(&w, "Svc", 3);
+    // RequestHeader.
+    dws_ua_w_nodeid_numeric(&w, 0, 0); // AuthenticationToken
+    dws_ua_w_u64(&w, 0);               // Timestamp
+    dws_ua_w_u32(&w, 77);              // RequestHandle
+    dws_ua_w_u32(&w, 0);               // ReturnDiagnostics
+    dws_ua_w_string(&w, nullptr, -1);  // AuditEntryId
+    dws_ua_w_u32(&w, 0);               // TimeoutHint
+    dws_ua_w_nodeid_numeric(&w, 0, 0); // AdditionalHeader NodeId
+    dws_ua_w_u8(&w, addhdr_body_enc);  // AdditionalHeader ExtensionObject body encoding
+    if (addhdr_body_enc != 0x00)
+        dws_ua_w_i32(&w, -1); // ... with a null ByteString body (nothing to skip)
+    if (read_body)
+    {
+        dws_ua_w_f64(&w, 0.0); // MaxAge
+        dws_ua_w_u32(&w, 0);   // TimestampsToReturn
+        dws_ua_w_i32(&w, 0);   // NodesToRead (empty)
+    }
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+// A non-numeric body TypeId is reported as type_id 0 (no service matches, so the caller answers
+// ServiceFault) rather than being mistaken for a service id, and an ExtensionObject AdditionalHeader
+// with an explicit empty body is consumed without disturbing the RequestHandle.
+void test_parse_msg_string_typeid_and_empty_extension_body()
+{
+    uint8_t buf[128];
+    size_t n = build_msg_string_typeid(buf, sizeof(buf), 0x00); // no AdditionalHeader body
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(dws_opcua_parse_msg(buf, n, &m));
+    TEST_ASSERT_EQUAL_UINT32(0, m.type_id); // a String TypeId is not a service id
+    TEST_ASSERT_EQUAL_UINT32(77, m.request_handle);
+
+    n = build_msg_string_typeid(buf, sizeof(buf), 0x01); // ByteString body, null -> nothing to skip
+    TEST_ASSERT_TRUE(dws_opcua_parse_msg(buf, n, &m));
+    TEST_ASSERT_EQUAL_UINT32(0, m.type_id);
+    TEST_ASSERT_EQUAL_UINT32(77, m.request_handle);
+
+    // The shared service preamble reports the same way, so a String-TypeId frame reaching a service
+    // parser carries type_id 0 and is answered with a ServiceFault rather than being misrouted.
+    n = build_msg_string_typeid(buf, sizeof(buf), 0x00, /*read_body=*/true);
+    OpcUaReadRequest rr;
+    TEST_ASSERT_TRUE(dws_opcua_parse_read(buf, n, &rr));
+    TEST_ASSERT_EQUAL_UINT32(0, rr.msg.type_id);
+    TEST_ASSERT_EQUAL_UINT32(77, rr.msg.request_handle);
+    TEST_ASSERT_EQUAL_UINT32(0, rr.count);
+}
+
+// Build an OPN whose body TypeId is either a String NodeId or a numeric one in a chosen namespace,
+// to drive each conjunct of parse_open's "numeric && ns == 0 && id == OpenSecureChannelRequest".
+static size_t build_open_typeid(uint8_t *out, size_t cap, bool string_type_id, uint16_t ns, uint32_t id)
+{
+    UaWriter w = {out, cap, 0, true};
+    dws_ua_w_u8(&w, 'O');
+    dws_ua_w_u8(&w, 'P');
+    dws_ua_w_u8(&w, 'N');
+    dws_ua_w_u8(&w, 'F');
+    dws_ua_w_u32(&w, 0);
+    dws_ua_w_u32(&w, 0);              // SecureChannelId
+    dws_ua_w_string(&w, nullptr, -1); // SecurityPolicyUri
+    dws_ua_w_string(&w, nullptr, -1); // SenderCertificate
+    dws_ua_w_string(&w, nullptr, -1); // ReceiverCertificateThumbprint
+    dws_ua_w_u32(&w, 1);              // SequenceNumber
+    dws_ua_w_u32(&w, 100);            // RequestId
+    if (string_type_id)
+    {
+        dws_ua_w_u8(&w, 0x03);
+        dws_ua_w_u16(&w, 0);
+        dws_ua_w_string(&w, "Open", 4);
+    }
+    else
+        dws_ua_w_nodeid_numeric(&w, ns, id);
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+// The OPN body TypeId must be numeric, in namespace 0, and exactly OpenSecureChannelRequest - a
+// String NodeId or the right id in the wrong namespace is not an OpenSecureChannel request.
+void test_parse_open_rejects_non_numeric_and_wrong_namespace_typeid()
+{
+    uint8_t buf[128];
+    OpcUaOpenChannel oc;
+
+    size_t n = build_open_typeid(buf, sizeof(buf), /*string_type_id=*/true, 0, 0);
+    TEST_ASSERT_FALSE(dws_opcua_parse_open(buf, n, &oc)); // not numeric
+
+    n = build_open_typeid(buf, sizeof(buf), false, /*ns=*/3, OPCUA_ID_OPEN_REQ);
+    TEST_ASSERT_FALSE(dws_opcua_parse_open(buf, n, &oc)); // right id, wrong namespace
+}
+
+// ---------------------------------------------------------------------------
+// Builder guards
+// ---------------------------------------------------------------------------
+
+// Every builder refuses a null output buffer even when handed a perfectly valid request - the
+// request pointer and the sink are checked independently.
+void test_builders_reject_null_output_buffer()
+{
+    OpcUaHello hello;
+    OpcUaOpenChannel oc;
+    OpcUaMsg msg;
+    OpcUaReadRequest rr;
+    OpcUaWriteRequest wr;
+    OpcUaBrowseRequest br;
+    OpcUaServerInfo info;
+    memset(&hello, 0, sizeof(hello));
+    memset(&oc, 0, sizeof(oc));
+    memset(&msg, 0, sizeof(msg));
+    memset(&rr, 0, sizeof(rr));
+    memset(&wr, 0, sizeof(wr));
+    memset(&br, 0, sizeof(br));
+    memset(&info, 0, sizeof(info));
+
+    TEST_ASSERT_EQUAL_UINT(0, dws_opcua_build_open_response(&oc, 1, 1, 1, 0, 1, nullptr, 64));
+    TEST_ASSERT_EQUAL_UINT(0, dws_opcua_build_create_session_response(&msg, 1, 1, 0.0, &info, 1, 0, nullptr, 64));
+    TEST_ASSERT_EQUAL_UINT(0, dws_opcua_build_get_endpoints_response(&msg, &info, 1, 0, nullptr, 64));
+    TEST_ASSERT_EQUAL_UINT(0, dws_opcua_build_service_fault(&msg, 0, 1, 0, nullptr, 64));
+    TEST_ASSERT_EQUAL_UINT(0, dws_opcua_build_activate_session_response(&msg, 1, 0, nullptr, 64));
+    TEST_ASSERT_EQUAL_UINT(0, dws_opcua_build_read_response(&rr, nullptr, nullptr, 1, 0, nullptr, 64));
+    TEST_ASSERT_EQUAL_UINT(0, dws_opcua_build_write_response(&wr, nullptr, 1, 0, nullptr, 64));
+    TEST_ASSERT_EQUAL_UINT(0, dws_opcua_build_browse_response(&br, nullptr, 1, 0, nullptr, 64));
+    TEST_ASSERT_EQUAL_UINT(0, dws_opcua_build_close_session_response(&msg, 1, 0, nullptr, 64));
+}
+
+// A ServerInfo whose fields are all null still produces a complete EndpointDescription: each field
+// falls back to its compiled-in default rather than serializing a null pointer.
+void test_endpoint_description_falls_back_per_field()
+{
+    OpcUaServerInfo blank;
+    memset(&blank, 0, sizeof(blank)); // present, but every string null
+    OpcUaMsg m;
+    memset(&m, 0, sizeof(m));
+
+    uint8_t with_defaults[512], with_blank[512];
+    size_t a = dws_opcua_build_get_endpoints_response(&m, nullptr, 1, 0, with_defaults, sizeof(with_defaults));
+    size_t b = dws_opcua_build_get_endpoints_response(&m, &blank, 1, 0, with_blank, sizeof(with_blank));
+    TEST_ASSERT_TRUE(a > 0);
+    TEST_ASSERT_TRUE(b > 0);
+    // A null ServerInfo and an all-null ServerInfo take the same fallbacks, so the frames match.
+    TEST_ASSERT_EQUAL_UINT(a, b);
+    TEST_ASSERT_EQUAL_MEMORY(with_defaults, with_blank, a);
+}
+
+// ---------------------------------------------------------------------------
+// DataValue / Variant edge cases
+// ---------------------------------------------------------------------------
+
+// With no values and no statuses supplied, every result encodes as a Good null DataValue: the
+// writer must treat the missing arrays as "nothing to say" rather than dereferencing them.
+void test_read_response_without_values_or_statuses()
+{
+    uint8_t buf[256];
+    uint32_t ids[2] = {1001, 1002};
+    size_t n = build_read(buf, sizeof(buf), 7, 5, 200, 60, ids, 2);
+    OpcUaReadRequest rr;
+    TEST_ASSERT_TRUE(dws_opcua_parse_read(buf, n, &rr));
+
+    uint8_t resp[256];
+    size_t rn = dws_opcua_build_read_response(&rr, nullptr, nullptr, 9, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    for (int i = 0; i < 4; i++)
+        (void)dws_ua_r_u32(&r); // channel / token / seq / request id
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));
+    (void)dws_ua_r_u64(&r);                        // Timestamp
+    (void)dws_ua_r_u32(&r);                        // RequestHandle
+    (void)dws_ua_r_u32(&r);                        // ServiceResult
+    (void)dws_ua_r_u8(&r);                         // ServiceDiagnostics
+    (void)dws_ua_r_i32(&r);                        // StringTable
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));   // AdditionalHeader NodeId
+    (void)dws_ua_r_u8(&r);                         // AdditionalHeader body
+    TEST_ASSERT_EQUAL_INT32(2, dws_ua_r_i32(&r));  // Results[]
+    TEST_ASSERT_EQUAL_HEX8(0x00, dws_ua_r_u8(&r)); // no Value bit, no StatusCode bit
+    TEST_ASSERT_EQUAL_HEX8(0x00, dws_ua_r_u8(&r));
+    TEST_ASSERT_EQUAL_INT32(0, dws_ua_r_i32(&r)); // DiagnosticInfos[]
+    TEST_ASSERT_FALSE(r.err);
+}
+
+// A String Variant carrying a null String round-trips as a null (str_len < 0, no payload consumed)
+// instead of being read as a zero-length string.
+void test_variant_null_string_roundtrip()
+{
+    uint8_t buf[16];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    OpcUaVariant in;
+    memset(&in, 0, sizeof(in));
+    in.type = OpcUaVariantType::OPCUA_VAR_STRING;
+    in.str = nullptr;
+    in.str_len = -1;
+    dws_ua_w_variant(&w, &in);
+    TEST_ASSERT_TRUE(w.ok);
+
+    UaReader r = {buf, w.n, 0, false};
+    OpcUaVariant out;
+    TEST_ASSERT_TRUE(dws_ua_r_variant(&r, &out));
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_STRING, out.type);
+    TEST_ASSERT_EQUAL_INT32(-1, out.str_len);
+    TEST_ASSERT_NULL(out.str); // no payload was pointed at
+    TEST_ASSERT_FALSE(r.err);
+}
+
+// A DataValue may carry a StatusCode with no Value at all; the status is delivered when the caller
+// asks for it and simply discarded when it does not.
+void test_datavalue_status_only_with_and_without_status_sink()
+{
+    uint8_t buf[16];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    dws_ua_w_datavalue(&w, nullptr, OPCUA_STATUS_BAD_NODE_ID_UNKNOWN); // no Variant, Bad status
+    TEST_ASSERT_TRUE(w.ok);
+    TEST_ASSERT_EQUAL_HEX8(0x02, buf[0]); // StatusCode present, Value absent
+
+    OpcUaVariant v;
+    uint32_t st = 0;
+    UaReader r = {buf, w.n, 0, false};
+    TEST_ASSERT_TRUE(dws_ua_r_datavalue(&r, &v, &st));
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NODE_ID_UNKNOWN, st);
+    TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_NULL, v.type); // no Value was present
+
+    r = UaReader{buf, w.n, 0, false};
+    TEST_ASSERT_TRUE(dws_ua_r_datavalue(&r, &v, nullptr)); // status discarded, still well-formed
+    TEST_ASSERT_FALSE(r.err);
+}
+
+// ---------------------------------------------------------------------------
+// Per-request item limits
+// ---------------------------------------------------------------------------
+
+// A request with more nodes than the build captures reports the client's full count in `total` but
+// stores only DWS_OPCUA_*_MAX items - the surplus is parsed and dropped, never written past the array.
+void test_parse_captures_at_most_the_compiled_maximum()
+{
+    uint8_t buf[1024];
+
+    uint32_t ids[DWS_OPCUA_READ_MAX + 1];
+    for (uint32_t i = 0; i < DWS_OPCUA_READ_MAX + 1; i++)
+        ids[i] = 2000 + i;
+    size_t n = build_read(buf, sizeof(buf), 7, 5, 200, 60, ids, DWS_OPCUA_READ_MAX + 1);
+    OpcUaReadRequest rr;
+    TEST_ASSERT_TRUE(dws_opcua_parse_read(buf, n, &rr));
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_READ_MAX + 1, rr.total);
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_READ_MAX, rr.count);
+    TEST_ASSERT_EQUAL_UINT32(2000, rr.items[0].id);
+    TEST_ASSERT_EQUAL_UINT32(2000 + DWS_OPCUA_READ_MAX - 1, rr.items[DWS_OPCUA_READ_MAX - 1].id);
+}
+
+// Build a BrowseRequest listing `count` nodes, to drive the BrowseRequest item cap.
+static size_t build_browse_n(uint8_t *out, size_t cap, uint32_t count)
+{
+    UaWriter w = {out, cap, 0, true};
+    dws_ua_w_u8(&w, 'M');
+    dws_ua_w_u8(&w, 'S');
+    dws_ua_w_u8(&w, 'G');
+    dws_ua_w_u8(&w, 'F');
+    dws_ua_w_u32(&w, 0);
+    dws_ua_w_u32(&w, 0); // SecureChannelId
+    dws_ua_w_u32(&w, 7); // TokenId
+    dws_ua_w_u32(&w, 6); // SequenceNumber
+    dws_ua_w_u32(&w, 300);
+    dws_ua_w_nodeid_numeric(&w, 0, OPCUA_ID_BROWSE_REQ);
+    dws_ua_w_nodeid_numeric(&w, 0, 0); // RequestHeader
+    dws_ua_w_u64(&w, 0);
+    dws_ua_w_u32(&w, 70);
+    dws_ua_w_u32(&w, 0);
+    dws_ua_w_string(&w, nullptr, -1);
+    dws_ua_w_u32(&w, 0);
+    dws_ua_w_nodeid_numeric(&w, 0, 0);
+    dws_ua_w_u8(&w, 0x00);
+    dws_ua_w_nodeid_numeric(&w, 0, 0); // View.ViewId
+    dws_ua_w_u64(&w, 0);               // View.Timestamp
+    dws_ua_w_u32(&w, 0);               // View.ViewVersion
+    dws_ua_w_u32(&w, 0);               // RequestedMaxReferencesPerNode
+    dws_ua_w_i32(&w, (int32_t)count);  // NodesToBrowse count
+    for (uint32_t i = 0; i < count; i++)
+    {
+        dws_ua_w_nodeid_numeric(&w, 1, 3000 + i);
+        dws_ua_w_u32(&w, 0);               // BrowseDirection
+        dws_ua_w_nodeid_numeric(&w, 0, 0); // ReferenceTypeId
+        dws_ua_w_bool(&w, true);           // IncludeSubtypes
+        dws_ua_w_u32(&w, 0);               // NodeClassMask
+        dws_ua_w_u32(&w, 0x3F);            // ResultMask
+    }
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+// Build a WriteRequest of `count` Int32 writes, to drive the WriteRequest item cap.
+static size_t build_write_n(uint8_t *out, size_t cap, uint32_t count)
+{
+    UaWriter w = {out, cap, 0, true};
+    dws_ua_w_u8(&w, 'M');
+    dws_ua_w_u8(&w, 'S');
+    dws_ua_w_u8(&w, 'G');
+    dws_ua_w_u8(&w, 'F');
+    dws_ua_w_u32(&w, 0);
+    dws_ua_w_u32(&w, 0); // SecureChannelId
+    dws_ua_w_u32(&w, 7); // TokenId
+    dws_ua_w_u32(&w, 8); // SequenceNumber
+    dws_ua_w_u32(&w, 400);
+    dws_ua_w_nodeid_numeric(&w, 0, OPCUA_ID_WRITE_REQ);
+    dws_ua_w_nodeid_numeric(&w, 0, 0); // RequestHeader
+    dws_ua_w_u64(&w, 0);
+    dws_ua_w_u32(&w, 80);
+    dws_ua_w_u32(&w, 0);
+    dws_ua_w_string(&w, nullptr, -1);
+    dws_ua_w_u32(&w, 0);
+    dws_ua_w_nodeid_numeric(&w, 0, 0);
+    dws_ua_w_u8(&w, 0x00);
+    dws_ua_w_i32(&w, (int32_t)count); // NodesToWrite count
+    for (uint32_t i = 0; i < count; i++)
+    {
+        dws_ua_w_nodeid_numeric(&w, 1, 4000 + i);
+        dws_ua_w_u32(&w, OPCUA_ATTR_VALUE); // AttributeId
+        dws_ua_w_string(&w, nullptr, -1);   // IndexRange
+        dws_ua_w_u8(&w, 0x01);              // DataValue mask: Value present
+        dws_ua_w_u8(&w, (uint8_t)OpcUaVariantType::OPCUA_VAR_INT32);
+        dws_ua_w_i32(&w, (int32_t)(500 + i));
+    }
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+// The Browse and Write parsers cap captured items the same way Read does.
+void test_parse_browse_and_write_cap_captured_items()
+{
+    uint8_t buf[1024];
+
+    size_t n = build_browse_n(buf, sizeof(buf), DWS_OPCUA_BROWSE_MAX + 1);
+    OpcUaBrowseRequest br;
+    TEST_ASSERT_TRUE(dws_opcua_parse_browse(buf, n, &br));
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BROWSE_MAX + 1, br.total);
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BROWSE_MAX, br.count);
+    TEST_ASSERT_EQUAL_UINT32(3000, br.items[0].id);
+
+    n = build_write_n(buf, sizeof(buf), DWS_OPCUA_WRITE_MAX + 1);
+    OpcUaWriteRequest wr;
+    TEST_ASSERT_TRUE(dws_opcua_parse_write(buf, n, &wr));
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_WRITE_MAX + 1, wr.total);
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_WRITE_MAX, wr.count);
+    TEST_ASSERT_EQUAL_INT32(500, wr.items[0].value.i32);
+}
+
+// With no results array supplied every write is answered Good - the builder must not dereference
+// the missing array.
+void test_write_response_without_results_array()
+{
+    uint8_t buf[512];
+    size_t n = build_write_n(buf, sizeof(buf), 2);
+    OpcUaWriteRequest wr;
+    TEST_ASSERT_TRUE(dws_opcua_parse_write(buf, n, &wr));
+
+    uint8_t resp[256];
+    size_t rn = dws_opcua_build_write_response(&wr, nullptr, 9, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    for (int i = 0; i < 4; i++)
+        (void)dws_ua_r_u32(&r);
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));
+    (void)dws_ua_r_u64(&r);
+    (void)dws_ua_r_u32(&r);
+    (void)dws_ua_r_u32(&r);
+    (void)dws_ua_r_u8(&r);
+    (void)dws_ua_r_i32(&r);
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));
+    (void)dws_ua_r_u8(&r);
+    TEST_ASSERT_EQUAL_INT32(2, dws_ua_r_i32(&r));                 // Results[]
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, dws_ua_r_u32(&r)); // defaulted Good
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, dws_ua_r_u32(&r));
+    TEST_ASSERT_FALSE(r.err);
+}
+
+// ---------------------------------------------------------------------------
+// Browse response encoding
+// ---------------------------------------------------------------------------
+
+// A resolver that returns a reference with no BrowseName and no DisplayName: both encode as their
+// "absent" forms (a null QualifiedName String, a LocalizedText with an empty mask) rather than
+// dereferencing the null pointers.
+static int32_t nameless_ref_handler(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
+{
+    (void)ns;
+    (void)id;
+    (void)max; // the builder always offers DWS_OPCUA_REF_MAX slots
+    out[0].ref_type_id = OPCUA_REFTYPE_ORGANIZES;
+    out[0].is_forward = true;
+    out[0].target_ns = 1;
+    out[0].target_id = 9;
+    out[0].browse_name_ns = 1;
+    out[0].browse_name = nullptr;  // no BrowseName
+    out[0].display_name = nullptr; // no DisplayName
+    out[0].node_class = OPCUA_NODECLASS_VARIABLE;
+    out[0].type_def_id = OPCUA_TYPEDEF_BASE_DATA_VARIABLE;
+    return 1;
+}
+
+void test_browse_response_reference_without_names()
+{
+    uint8_t buf[256];
+    size_t n = build_browse(buf, sizeof(buf), 7, 6, 300, 70, 0, 85);
+    OpcUaBrowseRequest br;
+    TEST_ASSERT_TRUE(dws_opcua_parse_browse(buf, n, &br));
+
+    uint8_t resp[512];
+    size_t rn = dws_opcua_build_browse_response(&br, nameless_ref_handler, 11, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    for (int i = 0; i < 4; i++)
+        (void)dws_ua_r_u32(&r);
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));
+    (void)dws_ua_r_u64(&r);
+    (void)dws_ua_r_u32(&r);
+    (void)dws_ua_r_u32(&r);
+    (void)dws_ua_r_u8(&r);
+    (void)dws_ua_r_i32(&r);
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));
+    (void)dws_ua_r_u8(&r);
+
+    TEST_ASSERT_EQUAL_INT32(1, dws_ua_r_i32(&r));                 // Results[]
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, dws_ua_r_u32(&r)); // BrowseResult.StatusCode
+    char s[32];
+    int32_t sl = 0;
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, s, sizeof(s), &sl)); // ContinuationPoint (null)
+    TEST_ASSERT_EQUAL_INT32(1, dws_ua_r_i32(&r));             // References[]
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));              // ReferenceTypeId
+    TEST_ASSERT_TRUE(dws_ua_r_bool(&r));                      // IsForward
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));              // target NodeId
+    TEST_ASSERT_EQUAL_UINT16(1, dws_ua_r_u16(&r));            // BrowseName.NamespaceIndex
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, s, sizeof(s), &sl));
+    TEST_ASSERT_EQUAL_INT32(-1, sl);               // BrowseName.Name encoded as a null String
+    TEST_ASSERT_EQUAL_HEX8(0x00, dws_ua_r_u8(&r)); // DisplayName mask: neither Locale nor Text
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_NODECLASS_VARIABLE, dws_ua_r_u32(&r));
+    TEST_ASSERT_FALSE(r.err);
+}
+
+// LocalizedText carries an independent presence bit per field: a Locale-only, a Text-only, a both
+// and a neither encoding must each write exactly the mask and the strings they claim.
+void test_localizedtext_every_field_combination()
+{
+    uint8_t buf[64];
+    char s[32];
+    int32_t sl = 0;
+
+    // Both fields present: mask 0x03, Locale then Text.
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    dws_ua_w_localizedtext(&w, "en-US", "Uptime");
+    TEST_ASSERT_TRUE(w.ok);
+    UaReader r = {buf, w.n, 0, false};
+    TEST_ASSERT_EQUAL_HEX8(0x03, dws_ua_r_u8(&r));
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, s, sizeof(s), &sl));
+    TEST_ASSERT_EQUAL_STRING("en-US", s);
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, s, sizeof(s), &sl));
+    TEST_ASSERT_EQUAL_STRING("Uptime", s);
+    TEST_ASSERT_FALSE(r.err);
+
+    // Locale only: mask 0x01, no Text string follows.
+    w = UaWriter{buf, sizeof(buf), 0, true};
+    dws_ua_w_localizedtext(&w, "de-DE", nullptr);
+    r = UaReader{buf, w.n, 0, false};
+    TEST_ASSERT_EQUAL_HEX8(0x01, dws_ua_r_u8(&r));
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, s, sizeof(s), &sl));
+    TEST_ASSERT_EQUAL_STRING("de-DE", s);
+    TEST_ASSERT_EQUAL_UINT(w.n, r.off); // nothing after the Locale
+
+    // Text only (the form every server-side caller uses): mask 0x02.
+    w = UaWriter{buf, sizeof(buf), 0, true};
+    dws_ua_w_localizedtext(&w, nullptr, "Uptime");
+    r = UaReader{buf, w.n, 0, false};
+    TEST_ASSERT_EQUAL_HEX8(0x02, dws_ua_r_u8(&r));
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, s, sizeof(s), &sl));
+    TEST_ASSERT_EQUAL_STRING("Uptime", s);
+
+    // Neither: a bare zero mask, one byte total.
+    w = UaWriter{buf, sizeof(buf), 0, true};
+    dws_ua_w_localizedtext(&w, nullptr, nullptr);
+    TEST_ASSERT_EQUAL_UINT(1, w.n);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[0]);
+}
+
+// Serializing a null ReferenceDescription fails the writer closed rather than dereferencing it, so a
+// caller that loses a reference produces no output instead of a corrupt frame.
+void test_w_reference_null_fails_writer_closed()
+{
+    uint8_t buf[64];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    dws_ua_w_reference(&w, nullptr);
+    TEST_ASSERT_FALSE(w.ok);
+    TEST_ASSERT_EQUAL_UINT(0, w.n); // nothing was written
+}
+
+// With no resolver installed every browsed node answers BadNodeIdUnknown with an empty reference
+// list, so a client always gets a well-formed response instead of a hang.
+void test_browse_response_without_a_resolver()
+{
+    uint8_t buf[256];
+    size_t n = build_browse(buf, sizeof(buf), 7, 6, 300, 70, 0, 85);
+    OpcUaBrowseRequest br;
+    TEST_ASSERT_TRUE(dws_opcua_parse_browse(buf, n, &br));
+
+    uint8_t resp[512];
+    size_t rn = dws_opcua_build_browse_response(&br, nullptr, 11, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    for (int i = 0; i < 4; i++)
+        (void)dws_ua_r_u32(&r);
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));
+    (void)dws_ua_r_u64(&r);
+    (void)dws_ua_r_u32(&r);
+    (void)dws_ua_r_u32(&r);
+    (void)dws_ua_r_u8(&r);
+    (void)dws_ua_r_i32(&r);
+    TEST_ASSERT_TRUE(dws_ua_r_nodeid(&r, &tid));
+    (void)dws_ua_r_u8(&r);
+
+    TEST_ASSERT_EQUAL_INT32(1, dws_ua_r_i32(&r)); // Results[]
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NODE_ID_UNKNOWN, dws_ua_r_u32(&r));
+    char s[32];
+    int32_t sl = 0;
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, s, sizeof(s), &sl)); // ContinuationPoint (null)
+    TEST_ASSERT_EQUAL_INT32(0, dws_ua_r_i32(&r));             // no References
+    TEST_ASSERT_FALSE(r.err);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_w_string_positive_len_null_pointer);
+    RUN_TEST(test_r_string_optional_len_zero_cap_and_frame_underrun);
+    RUN_TEST(test_w_nodeid_numeric_widens_for_large_identifier);
+    RUN_TEST(test_r_nodeid_guid_truncated_latches_error);
+    RUN_TEST(test_r_nodeid_null_namespace_uri_and_server_index_flags);
+    RUN_TEST(test_parsers_reject_frame_shorter_than_header);
+    RUN_TEST(test_parse_hello_rejects_consistent_but_undersized_frame);
+    RUN_TEST(test_ack_negotiation_clamps_oversized_client_request);
+    RUN_TEST(test_parse_msg_string_typeid_and_empty_extension_body);
+    RUN_TEST(test_parse_open_rejects_non_numeric_and_wrong_namespace_typeid);
+    RUN_TEST(test_builders_reject_null_output_buffer);
+    RUN_TEST(test_endpoint_description_falls_back_per_field);
+    RUN_TEST(test_read_response_without_values_or_statuses);
+    RUN_TEST(test_variant_null_string_roundtrip);
+    RUN_TEST(test_datavalue_status_only_with_and_without_status_sink);
+    RUN_TEST(test_parse_captures_at_most_the_compiled_maximum);
+    RUN_TEST(test_parse_browse_and_write_cap_captured_items);
+    RUN_TEST(test_write_response_without_results_array);
+    RUN_TEST(test_browse_response_reference_without_names);
+    RUN_TEST(test_localizedtext_every_field_combination);
+    RUN_TEST(test_w_reference_null_fails_writer_closed);
+    RUN_TEST(test_browse_response_without_a_resolver);
     RUN_TEST(test_parse_read_optional_fields);
     RUN_TEST(test_parse_rejections);
     RUN_TEST(test_build_guards_and_overflow);

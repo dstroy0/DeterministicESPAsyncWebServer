@@ -10,7 +10,9 @@
 //   RACE SIM      - slot state hazards visible to handle()
 
 #include "dwserver.h"
-#include "network_drivers/transport/listener.h" // listener_stop_all() for begin() test cleanup
+#include "network_drivers/session/proto_handler.h" // proto_register/proto_get: the slot-poll dispatch table
+#include "network_drivers/transport/listener.h"    // listener_stop_all() for begin() test cleanup
+#include "server/dwserver_internal.h" // ws/sse upgrade entry points + s_send (cross-loop send continuations)
 #include <unity.h>
 
 // All source layers compiled via native_app env - no stubs needed.
@@ -1164,6 +1166,37 @@ void test_metrics_emits_prometheus()
     TEST_ASSERT_NOT_NULL(strstr(out, "dws_http_responses_total{class=\"2xx\"}"));
     TEST_ASSERT_NOT_NULL(strstr(out, "dws_free_heap_bytes"));
     TEST_ASSERT_NOT_NULL(strstr(out, "dws_uptime_seconds"));
+
+    // Every sample line must actually carry a VALUE. Asserting only that the metric NAME appears
+    // is what let a template/resolver name mismatch ship: three {{resp_Nxx}} placeholders resolved
+    // to nothing, so the body held `dws_http_responses_total{class="2xx"} ` with an empty value -
+    // which is not valid Prometheus text format, and makes a scrape of the WHOLE endpoint fail.
+    const char *body = strstr(out, "\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(body);
+    body += 4;
+    int samples = 0;
+    for (const char *ln = body; *ln;)
+    {
+        const char *eol = strchr(ln, '\n');
+        size_t len = eol ? (size_t)(eol - ln) : strlen(ln);
+        while (len && (ln[len - 1] == '\r' || ln[len - 1] == ' '))
+            len--; // a value-less line is exactly what a trailing-space trim exposes
+        if (len && ln[0] != '#')
+        {
+            // "name{labels} value" - the last space must be followed by at least one character.
+            const char *sp = nullptr;
+            for (size_t i = 0; i < len; i++)
+                if (ln[i] == ' ')
+                    sp = ln + i;
+            TEST_ASSERT_NOT_NULL_MESSAGE(sp, "metric sample line has no value separator");
+            TEST_ASSERT_TRUE_MESSAGE((size_t)(sp - ln) + 1 < len, "metric sample line has an empty value");
+            samples++;
+        }
+        if (!eol)
+            break;
+        ln = eol + 1;
+    }
+    TEST_ASSERT_TRUE_MESSAGE(samples >= 11, "expected every metric placeholder to emit a sample");
     tcp_capture_disable();
 }
 #endif
@@ -1642,6 +1675,739 @@ void test_response_trailer_truncation_clamps()
     tcp_capture_disable();
 }
 
+// ====================================================================
+// DISPATCH / RESPONSE EDGE CASES
+// ====================================================================
+
+// Reset a slot to a live, sendable HTTP connection. arm_slot() deliberately leaves
+// pcb null (routing-only tests), which short-circuits every response path before a
+// byte is written; these tests need the bytes.
+static void live_slot(uint8_t slot)
+{
+    conn_pool[slot] = {};
+    conn_pool[slot].id = slot;
+    conn_pool[slot].state = ConnState::CONN_ACTIVE;
+    conn_pool[slot].proto = ConnProto::PROTO_HTTP;
+    conn_pool[slot].pcb = &_mock_pcb;
+    http_reset(slot);
+    http_pool[slot].version = HttpVersion::HTTP_11; // an HTTP/1.1 peer (chunked is 1.1-only)
+}
+
+// The dispatch loop resets a slot whose handler sent nothing, so a `:name` capture has
+// to be read inside the handler to survive.
+static QueryParam g_seen_params[MAX_PATH_PARAMS];
+static uint8_t g_seen_param_count;
+static void capture_params_handler(uint8_t, HttpReq *req)
+{
+    handler_called = true;
+    g_seen_param_count = req->path_param_count;
+    memcpy(g_seen_params, req->path_params, sizeof(g_seen_params));
+}
+
+// note_response() buckets a response by status class. A code below 200 belongs to
+// none of the 2xx/4xx/5xx buckets but still counts as a request, so /stats reports
+// requests=1 with every class counter still zero.
+void test_stats_counters_ignore_sub_200_status()
+{
+    live_slot(0);
+    g_server->send(0, 100, "text/plain", "x"); // below every class bucket
+
+    live_slot(1);
+    tcp_capture_reset();
+    g_server->stats(1); // renders the counters as they stand before its own response
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "\"requests\":1")); // counted as a request
+    TEST_ASSERT_NOT_NULL(strstr(out, "\"http_2xx\":0"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "\"http_4xx\":0"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "\"http_5xx\":0"));
+}
+
+// The shared response trailer injects the pre-built CORS block into every dynamic
+// response once set_cors() is on, and set_cors(nullptr) turns it back off.
+void test_response_trailer_cors_block_and_null_disable()
+{
+    g_server->set_cors("https://a.example");
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send(0, 200, "text/plain", "ok");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Access-Control-Allow-Origin: https://a.example\r\n"));
+
+    g_server->set_cors(nullptr); // null origin disables CORS (same as "")
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send(0, 200, "text/plain", "ok");
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "Access-Control-Allow-Origin"));
+    tcp_capture_disable();
+}
+
+// set_cache_control(nullptr) clears the pre-built header the same way the empty
+// string does, so a later file response carries no Cache-Control.
+void test_cache_control_null_clears_header()
+{
+    fs::mock_fs_reset();
+    static const char body[] = "x";
+    fs::mock_fs_add("/www/c.txt", body);
+    g_server->serve_static("/", g_static_fs, "/www");
+
+    g_server->set_cache_control("max-age=60");
+    g_server->set_cache_control(nullptr); // cleared, not "Cache-Control: (null)"
+    arm_slot(0, "GET /c.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "Cache-Control"));
+    tcp_capture_disable();
+    fs::mock_fs_reset();
+}
+
+// An empty route pattern is not a wildcard: is_wildcard is only set for a non-empty
+// path ending in '*', so on("") matches nothing (not everything).
+void test_empty_route_pattern_matches_nothing()
+{
+    g_server->on("", HttpMethod::HTTP_GET, record_handler);
+    arm_slot(0, "GET / HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_FALSE(handler_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "404"));
+    tcp_capture_disable();
+}
+
+// `:name` capture limits: captures stop at MAX_PATH_PARAMS, an over-long parameter
+// name is truncated to QUERY_KEY_LEN-1, and an over-long segment value to
+// QUERY_VAL_LEN-1. All three are capacity caps, never overflows.
+void test_path_param_capture_limits()
+{
+    g_server->on("/q/:a/:b/:c/:d/:e", HttpMethod::HTTP_GET, capture_params_handler);
+    arm_slot(0, "GET /q/1/2/3/4/5 HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    g_server->handle();
+    TEST_ASSERT_TRUE(handler_called);
+    TEST_ASSERT_EQUAL_UINT8(MAX_PATH_PARAMS, g_seen_param_count); // 5th capture dropped
+    TEST_ASSERT_EQUAL_STRING("4", g_seen_params[3].val);          // last stored capture
+
+    // An over-long :name and an over-long value are both truncated, not overflowed.
+    DWS srv2;
+    handler_called = false;
+    srv2.on("/k/:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", HttpMethod::HTTP_GET, capture_params_handler);
+    char req[160];
+    char big[60];
+    memset(big, 'v', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    snprintf(req, sizeof(req), "GET /k/%s HTTP/1.1\r\nHost: x\r\n\r\n", big);
+    arm_slot(0, req);
+    conn_pool[0].pcb = &_mock_pcb;
+    srv2.handle();
+    TEST_ASSERT_TRUE(handler_called);
+    TEST_ASSERT_EQUAL_UINT(QUERY_KEY_LEN - 1, (unsigned)strlen(g_seen_params[0].key));
+    TEST_ASSERT_EQUAL_UINT(QUERY_VAL_LEN - 1, (unsigned)strlen(g_seen_params[0].val));
+}
+
+// Segment-by-segment matching rejects every shape that is not an exact segment-count
+// match: fewer path segments than the route, more path segments than the route, and a
+// literal segment of equal length that differs. An empty ("//") segment on both sides
+// still matches, so a `:name` after it is captured.
+void test_path_param_segment_mismatches()
+{
+    g_server->on("/p1/:a", HttpMethod::HTTP_GET, record_handler);       // path runs out early
+    g_server->on("/p2/:a", HttpMethod::HTTP_GET, record_handler);       // route runs out early
+    g_server->on("/p3/:a", HttpMethod::HTTP_GET, record_handler);       // literal differs, same length
+    g_server->on("//:a", HttpMethod::HTTP_GET, capture_params_handler); // empty first segment
+
+    const char *misses[] = {
+        "GET /p1 HTTP/1.1\r\nHost: x\r\n\r\n",     // route wants another segment
+        "GET /p2/x/y HTTP/1.1\r\nHost: x\r\n\r\n", // path has one segment too many
+        "GET /p9/x HTTP/1.1\r\nHost: x\r\n\r\n",   // "p9" != "p3" (equal length)
+    };
+    for (size_t i = 0; i < sizeof(misses) / sizeof(misses[0]); i++)
+    {
+        handler_called = false;
+        arm_slot(0, misses[i]);
+        conn_pool[0].pcb = &_mock_pcb;
+        tcp_capture_reset();
+        g_server->handle();
+        TEST_ASSERT_FALSE_MESSAGE(handler_called, misses[i]);
+        TEST_ASSERT_NOT_NULL_MESSAGE(strstr(tcp_captured(), "404"), misses[i]);
+    }
+
+    // "//v": both route and path carry an empty segment, then ":a" captures "v".
+    handler_called = false;
+    arm_slot(0, "GET //v HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    g_server->handle();
+    TEST_ASSERT_TRUE(handler_called);
+    TEST_ASSERT_EQUAL_STRING("v", g_seen_params[0].val);
+    tcp_capture_disable();
+}
+
+// A worker services only the slots it owns: a slot stamped with another worker's id
+// is skipped entirely, so its completed request stays pending instead of being
+// dispatched twice.
+void test_worker_owner_filter_skips_foreign_slot()
+{
+    g_server->on("/own", HttpMethod::HTTP_GET, record_handler);
+    arm_slot(1, "GET /own HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[1].owner = 1; // owned by another worker
+    g_server->handle();
+    TEST_ASSERT_FALSE(handler_called);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[1].parse_state); // still queued
+
+    conn_pool[1].owner = 0; // hand it back; now it dispatches
+    g_server->handle();
+    TEST_ASSERT_TRUE(handler_called);
+}
+
+// The poll loop drives a slot only through a registered ProtoHandler that supplies an
+// on_poll: an unregistered protocol resolves to no handler, and a handler without an
+// on_poll is skipped. Either way the slot's completed request is never dispatched.
+void test_slot_poll_requires_registered_handler_with_poll()
+{
+    g_server->on("/pp", HttpMethod::HTTP_GET, record_handler);
+    arm_slot(0, "GET /pp HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].proto = ConnProto::PROTO_TELNET; // no handler registered in this build
+    g_server->handle();
+    TEST_ASSERT_FALSE(handler_called);
+
+    static const ProtoHandler no_poll = {nullptr, nullptr, nullptr, nullptr};
+    proto_register(ConnProto::PROTO_TELNET, &no_poll); // registered, but nothing to poll
+    g_server->handle();
+    TEST_ASSERT_FALSE(handler_called);
+
+    proto_register(ConnProto::PROTO_TELNET, nullptr); // restore: telnet is unregistered here
+    conn_pool[0].proto = ConnProto::PROTO_HTTP;
+    g_server->handle();
+    TEST_ASSERT_TRUE(handler_called); // same slot, now polled
+}
+
+// A Content-Length beyond BODY_BUF_SIZE puts the parser in ENTITY_TOO_LARGE and the
+// dispatch loop answers 413 without invoking any route.
+void test_entity_too_large_auto_413()
+{
+    g_server->on("/big", HttpMethod::HTTP_POST, record_handler);
+    arm_slot(0, "POST /big HTTP/1.1\r\nHost: x\r\nContent-Length: 100000\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    TEST_ASSERT_EQUAL(ParseState::PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state);
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_FALSE(handler_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "413 Payload Too Large"));
+    tcp_capture_disable();
+}
+
+// The Allow list de-duplicates: two routes registered for the same path and method
+// contribute one token, not two.
+void test_allow_header_dedupes_repeated_method()
+{
+    g_server->on("/dup", HttpMethod::HTTP_POST, record_handler);
+    g_server->on("/dup", HttpMethod::HTTP_POST, record_handler);
+    arm_slot(0, "GET /dup HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "Allow: POST\r\n"));
+    TEST_ASSERT_NULL(strstr(out, "POST, POST"));
+    tcp_capture_disable();
+}
+
+// The error-and-close path (405 here) honours HEAD by sending headers only, and
+// writes nothing at all once the connection is gone - whether the slot left
+// CONN_ACTIVE or lost its pcb.
+void test_error_close_head_and_dead_connection()
+{
+    g_server->on("/po", HttpMethod::HTTP_POST, record_handler);
+
+    // HEAD on a POST-only route -> 405 headers, no body.
+    arm_slot(0, "HEAD /po HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "405 Method Not Allowed"));
+    TEST_ASSERT_NULL(strstr(out, "\r\n\r\nMethod Not Allowed")); // headers only
+
+    // Slot no longer ACTIVE (pcb still attached) -> nothing written.
+    arm_slot(0, "GET /po HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    conn_pool[0].state = ConnState::CONN_CLOSING;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+
+    // Slot ACTIVE but the pcb is gone -> nothing written.
+    arm_slot(0, "GET /po HTTP/1.1\r\nHost: x\r\n\r\n"); // arm_slot leaves pcb null
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+    tcp_capture_disable();
+}
+
+// A Transfer-Encoding header reaching dispatch is answered 501. The HTTP/1.x byte
+// parser already fails such a request closed (400), so this guard is the one that
+// covers a semantic ingress (HTTP/2 / HTTP/3) whose headers are handed over already
+// decoded - modelled here by populating the request slot directly.
+void test_transfer_encoding_on_semantic_ingress_is_501()
+{
+    g_server->on("/te", HttpMethod::HTTP_POST, record_handler);
+    live_slot(0);
+    HttpReq *r = &http_pool[0];
+    snprintf(r->method, sizeof(r->method), "POST");
+    snprintf(r->path, sizeof(r->path), "/te");
+    r->path_idx = strlen(r->path);
+    r->version = HttpVersion::HTTP_11;
+    snprintf(r->headers[0].key, sizeof(r->headers[0].key), "transfer-encoding");
+    snprintf(r->headers[0].val, sizeof(r->headers[0].val), "chunked");
+    r->header_count = 1;
+    r->parse_state = ParseState::PARSE_COMPLETE;
+
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_FALSE(handler_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "501 Not Implemented"));
+    tcp_capture_disable();
+}
+
+// A static mount answers GET/HEAD only; any other method is a 405 that advertises
+// both in Allow.
+void test_static_mount_rejects_non_get_methods()
+{
+    fs::mock_fs_reset();
+    static const char body[] = "hi";
+    fs::mock_fs_add("/www/a.txt", body);
+    g_server->serve_static("/", g_static_fs, "/www");
+    arm_slot(0, "POST /a.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "405"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Allow: GET, HEAD\r\n"));
+    tcp_capture_disable();
+    fs::mock_fs_reset();
+}
+
+// send()/send_empty() guard their public entry against an out-of-range slot (the
+// reserved dispatch slots sit above MAX_CONNS, so the bound is CONN_POOL_SLOTS), and
+// a null payload is a zero-length body rather than a strnlen of nullptr.
+void test_send_null_payload_and_slot_bounds()
+{
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send(CONN_POOL_SLOTS, 200, "text/plain", "x"); // out of range
+    g_server->send_empty(CONN_POOL_SLOTS, 204);              // out of range
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+
+    tcp_capture_reset();
+    g_server->send(0, 200, "text/plain", (const char *)nullptr);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Content-Length: 0\r\n"));
+    tcp_capture_disable();
+}
+
+// send() picks its write shape from the body: a HEAD response and a zero-length body
+// emit headers only, a small body is coalesced into the header buffer, and a body too
+// large to coalesce goes out as a second write. All three must arrive intact.
+void test_send_body_framing_paths()
+{
+    // HEAD: headers only, but Content-Length still describes the would-be body.
+    live_slot(0);
+    snprintf(http_pool[0].method, sizeof(http_pool[0].method), "HEAD");
+    tcp_capture_reset();
+    g_server->send(0, 200, "text/plain", "abcdef");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Content-Length: 6\r\n"));
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "abcdef"));
+
+    // Empty body: headers only, Content-Length: 0.
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send(0, 200, "text/plain", "");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Content-Length: 0\r\n"));
+
+    // A body larger than the header scratch cannot be coalesced -> separate write.
+    static char big[RESP_HDR_BUF_SIZE + 64];
+    memset(big, 'B', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send(0, 200, "text/plain", big);
+    const char *out = tcp_captured();
+    char want[40];
+    snprintf(want, sizeof(want), "Content-Length: %u\r\n", (unsigned)(sizeof(big) - 1));
+    TEST_ASSERT_NOT_NULL(strstr(out, want));
+    TEST_ASSERT_EQUAL_UINT(sizeof(big) - 1, (unsigned)strlen(strstr(out, "\r\n\r\n") + 4));
+    tcp_capture_disable();
+}
+
+// send_empty() and redirect() both refuse to write once the connection is gone,
+// whether the slot left CONN_ACTIVE or lost its pcb, and reset the parser instead.
+void test_send_empty_and_redirect_dead_connection_guards()
+{
+    live_slot(0);
+    conn_pool[0].state = ConnState::CONN_CLOSING; // not ACTIVE, pcb still attached
+    tcp_capture_reset();
+    g_server->send_empty(0, 204);
+    g_server->redirect(0, 302, "/x");
+    g_server->send(0, 200, "text/plain", "x");
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+
+    live_slot(0);
+    conn_pool[0].pcb = nullptr; // ACTIVE, but the pcb is gone
+    tcp_capture_reset();
+    g_server->send_empty(0, 204);
+    g_server->redirect(0, 302, "/x");
+    g_server->send(0, 200, "text/plain", "x");
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state); // parser reset
+    tcp_capture_disable();
+}
+
+// ====================================================================
+// TEMPLATE / CHUNKED / HEADER-BUFFER EDGES
+// ====================================================================
+
+static const char *tmpl_resolver(const char *name)
+{
+    return strcmp(name, "who") == 0 ? "world" : nullptr;
+}
+
+// The template walker emits a placeholder literally when its name exceeds the 32-char
+// cap (there is no such variable), and an empty template renders a zero-length body.
+void test_send_template_placeholder_edges()
+{
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send_template(0, 200, "text/plain", "a{{0123456789012345678901234567890123}}b", tmpl_resolver);
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "a{{0123456789012345678901234567890123}}b")); // emitted verbatim
+
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send_template(0, 204, "text/plain", "", tmpl_resolver);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Content-Length: 0\r\n"));
+    tcp_capture_disable();
+}
+
+// A chunked response with no source is a headers-only reply: the chunked framing is
+// advertised but no chunk (and no terminator) follows.
+void test_send_chunked_without_source()
+{
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send_chunked(0, 200, "text/plain", nullptr, nullptr);
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "Transfer-Encoding: chunked\r\n"));
+    TEST_ASSERT_NULL(strstr(out, "0\r\n\r\n"));
+    TEST_ASSERT_FALSE(s_send.chunk[0].active);
+    tcp_capture_disable();
+}
+
+static int g_chunk_calls;
+static size_t chunk_src_fill(uint8_t *buf, size_t cap, void *)
+{
+    if (g_chunk_calls++ >= 2)
+        return 0; // end of body
+    size_t n = cap < 40 ? cap : 40;
+    memset(buf, 'q', n);
+    return n;
+}
+
+// A send window smaller than one full CHUNK_BUF_SIZE caps each chunk at the window,
+// and a window of zero parks the transfer; if the peer then disappears the next pump
+// drops the continuation instead of writing into a dead connection.
+void test_chunked_pump_small_window_and_connection_lost()
+{
+    g_chunk_calls = 0;
+    mock_sndbuf() = 64; // smaller than CHUNK_BUF_SIZE: cap comes from the window
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send_chunked(0, 200, "text/plain", chunk_src_fill, nullptr);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Transfer-Encoding: chunked\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "28\r\nqqqq")); // 0x28 == 40 bytes framed
+    TEST_ASSERT_FALSE(s_send.chunk[0].active);                  // source drained, response finished
+
+    // No window at all: the body parks in the pump, still active.
+    g_chunk_calls = 0;
+    mock_sndbuf() = 0;
+    live_slot(0);
+    tcp_capture_reset();
+    g_server->send_chunked(0, 200, "text/plain", chunk_src_fill, nullptr);
+    TEST_ASSERT_TRUE(s_send.chunk[0].active);
+
+    conn_pool[0].pcb = nullptr; // peer went away before the window reopened
+    g_server->handle();
+    TEST_ASSERT_FALSE(s_send.chunk[0].active); // continuation dropped
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "qqqq"));
+
+    mock_sndbuf() = MOCK_SNDBUF_DEFAULT;
+    tcp_capture_disable();
+}
+
+// The per-response header buffer rejects a null value like a null name, accepts a
+// cookie with an empty attribute string (no trailing "; "), and drops - whole - any
+// header or cookie that would not fit, leaving the earlier ones intact.
+void test_response_header_null_value_empty_attrs_and_overflow()
+{
+    live_slot(0);
+    g_server->clear_response_headers(0);
+    g_server->add_response_header(0, "X-Keep", "1");
+    g_server->add_response_header(0, "X-Null", nullptr); // null value -> ignored
+    g_server->set_cookie(0, "c-null", nullptr, nullptr); // null value -> ignored
+    g_server->set_cookie(0, "sid", "abc", "");           // empty attrs -> no "; " suffix
+
+    char filler[EXTRA_HDR_BUF_SIZE];
+    memset(filler, 'f', sizeof(filler) - 1);
+    filler[sizeof(filler) - 1] = '\0';
+    g_server->add_response_header(0, "X-Too-Big", filler); // would overflow -> dropped whole
+    g_server->set_cookie(0, "big", filler, nullptr);       // would overflow -> dropped whole
+
+    tcp_capture_reset();
+    g_server->send(0, 200, "text/plain", "ok");
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "X-Keep: 1\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Set-Cookie: sid=abc\r\n")); // no attribute suffix
+    TEST_ASSERT_NULL(strstr(out, "X-Null"));
+    TEST_ASSERT_NULL(strstr(out, "c-null"));
+    TEST_ASSERT_NULL(strstr(out, "X-Too-Big"));
+    TEST_ASSERT_NULL(strstr(out, "ffff"));
+    tcp_capture_disable();
+}
+
+// mime_type() extension edges: a trailing dot has no extension, an extension that is
+// a strict prefix or extension of a table entry must not match, and a leading
+// non-letter exercises the case-folding compare on a character outside 'A'..'Z'.
+void test_mime_type_extension_edges()
+{
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DWS::mime_type("/file.")); // dot, no extension
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DWS::mime_type("/a.7z"));  // digit first
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DWS::mime_type("/a.jsx")); // longer than "js"
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DWS::mime_type("/a.h"));   // shorter than "htm"
+    TEST_ASSERT_EQUAL_STRING("font/woff2", DWS::mime_type("/a.WOFF2"));             // upper-case folds
+}
+
+// ====================================================================
+// WEBSOCKET / SSE UPGRADE + SEND-API EDGES
+// ====================================================================
+
+#if DWS_ENABLE_WEBSOCKET
+// Push one masked client text frame (RFC 6455 §5.3) into a slot's rx ring.
+static void push_ws_text_frame(uint8_t slot, const char *text)
+{
+    const uint8_t mask[4] = {0x11, 0x22, 0x33, 0x44};
+    size_t n = strlen(text);
+    uint8_t hdr[6] = {0x81, (uint8_t)(0x80 | n), mask[0], mask[1], mask[2], mask[3]};
+    TcpConn *c = &conn_pool[slot];
+    for (size_t i = 0; i < sizeof(hdr); i++)
+    {
+        c->rx_buffer[c->rx_head] = hdr[i];
+        c->rx_head = (c->rx_head + 1) % RX_BUF_SIZE;
+    }
+    for (size_t i = 0; i < n; i++)
+    {
+        c->rx_buffer[c->rx_head] = (uint8_t)(text[i] ^ mask[i % 4]);
+        c->rx_head = (c->rx_head + 1) % RX_BUF_SIZE;
+    }
+}
+
+// Drive a complete RFC 6455 handshake on slot 0 for the route at @p path.
+static void ws_upgrade_slot0(const char *path)
+{
+    char req[220];
+    snprintf(req, sizeof(req),
+             "GET %s HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+             "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n",
+             path);
+    arm_slot(0, req);
+    conn_pool[0].pcb = &_mock_pcb;
+    g_server->handle();
+}
+
+// A WS route registered without an on-connect handler still upgrades: the 101 goes
+// out and the slot is handed to the frame parser, the callback is simply not fired.
+void test_ws_upgrade_without_connect_handler()
+{
+    ws_init();
+    g_server->on_ws("/wsn", nullptr, nullptr, nullptr);
+    tcp_capture_reset();
+    ws_upgrade_slot0("/wsn");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "101 Switching Protocols"));
+    TEST_ASSERT_NOT_NULL(ws_find(0)); // slot promoted to WebSocket
+    tcp_capture_disable();
+    ws_init();
+}
+
+// With no ws_message / ws_close handler registered, a completed frame and a closed
+// connection are still processed: the dispatch scan finds nothing to call, the frame
+// is consumed, and the close releases the WS slot.
+void test_ws_dispatch_without_message_or_close_handler()
+{
+    ws_init();
+    g_server->on("/plain", HttpMethod::HTTP_GET, record_handler); // a non-WS route to scan past
+    g_server->on_ws("/wsq", nullptr, nullptr, nullptr);
+    ws_upgrade_slot0("/wsq");
+    WsConn *ws = ws_find(0);
+    TEST_ASSERT_NOT_NULL(ws);
+
+    push_ws_text_frame(0, "hi");
+    g_server->handle(); // ws_dispatch_message finds no handler; frame consumed
+    TEST_ASSERT_NOT_NULL(ws_find(0));
+    TEST_ASSERT_NOT_EQUAL(WsParseState::WS_FRAME_READY, ws->parse_state);
+
+    ws->parse_state = WsParseState::WS_ERROR; // protocol error seen by the parser
+    g_server->handle();                       // ws_dispatch_close finds no handler; slot freed
+    TEST_ASSERT_NULL(ws_find(0));
+    ws_init();
+}
+
+// The WS handshake gate: only a GET carrying both Upgrade: websocket and a Connection
+// header listing the "upgrade" token is a handshake (everything else is 400), and a
+// handshake with a missing or non-13 version is 426.
+void test_ws_upgrade_handshake_gate()
+{
+    g_server->on_ws("/wsg", nullptr, nullptr, nullptr);
+    const char *bad[] = {
+        "POST /wsg HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n",
+        "GET /wsg HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\n\r\n",                          // no Upgrade header
+        "GET /wsg HTTP/1.1\r\nHost: x\r\nUpgrade: h2c\r\nConnection: Upgrade\r\n\r\n",          // wrong protocol
+        "GET /wsg HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: keep-alive\r\n\r\n", // no token
+    };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++)
+    {
+        arm_slot(0, bad[i]);
+        conn_pool[0].pcb = &_mock_pcb;
+        tcp_capture_reset();
+        g_server->handle();
+        TEST_ASSERT_NOT_NULL_MESSAGE(strstr(tcp_captured(), "400"), bad[i]);
+    }
+
+    // A real handshake with no Sec-WebSocket-Version at all -> 426, same as a wrong one.
+    arm_slot(0, "GET /wsg HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "426 Upgrade Required"));
+    tcp_capture_disable();
+}
+#endif // DWS_ENABLE_WEBSOCKET
+
+// Every upgrade entry point re-checks that the slot is still sendable and bails
+// without writing when it is not (the request may have been parsed a loop before the
+// peer vanished). The 426 path resets the parser rather than emitting a challenge.
+void test_upgrade_entry_points_on_dead_slot()
+{
+#if DWS_ENABLE_WEBSOCKET
+    arm_slot(0, "GET /w HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n");
+    conn_pool[0].pcb = nullptr; // peer gone; the request is still parsed
+    tcp_capture_reset();
+    ws_send_version_required(0);
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
+
+    arm_slot(0, "GET /w HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n");
+    conn_pool[0].pcb = nullptr;
+    tcp_capture_reset();
+    TEST_ASSERT_FALSE(ws_do_upgrade(0, &http_pool[0], nullptr)); // valid key, dead slot
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+#endif
+#if DWS_ENABLE_SSE
+    arm_slot(0, "GET /e HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = nullptr;
+    tcp_capture_reset();
+    TEST_ASSERT_FALSE(dws_sse_do_upgrade(0, &http_pool[0], nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+#endif
+    tcp_capture_disable();
+}
+
+#if DWS_ENABLE_SSE
+static uint8_t g_sse_connected_id;
+static int g_sse_connect_calls;
+static void sse_on_connect(uint8_t id)
+{
+    g_sse_connected_id = id;
+    g_sse_connect_calls++;
+}
+
+// An SSE route registered with an on-connect handler fires it with the newly
+// allocated stream id once the 200 event-stream header is out.
+void test_sse_upgrade_fires_connect_handler()
+{
+    dws_sse_init();
+    g_sse_connect_calls = 0;
+    g_sse_connected_id = 0xFF;
+    g_server->on_sse("/evh", sse_on_connect);
+    arm_slot(0, "GET /evh HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "text/event-stream"));
+    TEST_ASSERT_EQUAL_INT(1, g_sse_connect_calls);
+    TEST_ASSERT_NOT_NULL(dws_sse_find(0));
+    TEST_ASSERT_EQUAL_UINT8(dws_sse_find(0)->dws_sse_id, g_sse_connected_id);
+    tcp_capture_disable();
+    dws_sse_init();
+}
+
+// dws_sse_send / dws_sse_broadcast write nothing once the bound slot's connection is
+// gone: dws_sse_write() reports the failure and no flush follows.
+void test_sse_send_on_dead_slot_writes_nothing()
+{
+    dws_sse_init();
+    live_slot(0);
+    SseConn *sse = dws_sse_alloc(0, "/events");
+    TEST_ASSERT_NOT_NULL(sse);
+    conn_pool[0].pcb = nullptr; // connection gone, pool entry still live
+
+    tcp_capture_reset();
+    g_server->dws_sse_send(sse->dws_sse_id, "x");
+    g_server->dws_sse_broadcast("/events", "x");
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+    tcp_capture_disable();
+    dws_sse_init();
+}
+#endif // DWS_ENABLE_SSE
+
+#if DWS_ENABLE_WEBSOCKET
+// The WS send API on an in-range-but-inactive id, on a connection in the WS_ERROR
+// terminal state, and on a live pool entry whose TCP slot has gone away: all three
+// must write nothing, and ws_disconnect must not flush a dead slot.
+void test_ws_send_api_inactive_error_state_and_dead_slot()
+{
+    ws_init();
+    live_slot(0);
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+
+    // In range but not allocated.
+    tcp_capture_reset();
+    g_server->ws_send_binary(1, (const uint8_t *)"x", 1);
+    g_server->ws_disconnect(1);
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+
+    // WS_ERROR is terminal for sends, exactly like WS_CLOSED.
+    ws->parse_state = WsParseState::WS_ERROR;
+    tcp_capture_reset();
+    g_server->ws_send_text(ws->ws_id, "nope");
+    g_server->ws_send_binary(ws->ws_id, (const uint8_t *)"x", 1);
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+
+    // Live pool entry, dead TCP slot: the frame write fails, so nothing is flushed.
+    ws->parse_state = WsParseState::WS_HEADER1;
+    conn_pool[0].pcb = nullptr;
+    tcp_capture_reset();
+    g_server->ws_send_text(ws->ws_id, "nope");
+    g_server->ws_send_binary(ws->ws_id, (const uint8_t *)"x", 1);
+    g_server->ws_disconnect(ws->ws_id); // close frame cannot go out either
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+    tcp_capture_disable();
+    ws_init();
+}
+#endif // DWS_ENABLE_WEBSOCKET
+
 int main()
 {
     UNITY_BEGIN();
@@ -1747,6 +2513,44 @@ int main()
 #endif
 #if DWS_ENABLE_METRICS
     RUN_TEST(test_metrics_emits_prometheus);
+#endif
+
+    // Dispatch / response edge cases
+    RUN_TEST(test_stats_counters_ignore_sub_200_status);
+    RUN_TEST(test_response_trailer_cors_block_and_null_disable);
+    RUN_TEST(test_cache_control_null_clears_header);
+    RUN_TEST(test_empty_route_pattern_matches_nothing);
+    RUN_TEST(test_path_param_capture_limits);
+    RUN_TEST(test_path_param_segment_mismatches);
+    RUN_TEST(test_worker_owner_filter_skips_foreign_slot);
+    RUN_TEST(test_slot_poll_requires_registered_handler_with_poll);
+    RUN_TEST(test_entity_too_large_auto_413);
+    RUN_TEST(test_allow_header_dedupes_repeated_method);
+    RUN_TEST(test_error_close_head_and_dead_connection);
+    RUN_TEST(test_transfer_encoding_on_semantic_ingress_is_501);
+    RUN_TEST(test_static_mount_rejects_non_get_methods);
+    RUN_TEST(test_send_null_payload_and_slot_bounds);
+    RUN_TEST(test_send_body_framing_paths);
+    RUN_TEST(test_send_empty_and_redirect_dead_connection_guards);
+
+    // Template / chunked / header-buffer edges
+    RUN_TEST(test_send_template_placeholder_edges);
+    RUN_TEST(test_send_chunked_without_source);
+    RUN_TEST(test_chunked_pump_small_window_and_connection_lost);
+    RUN_TEST(test_response_header_null_value_empty_attrs_and_overflow);
+    RUN_TEST(test_mime_type_extension_edges);
+
+    // WebSocket / SSE upgrade + send-API edges
+#if DWS_ENABLE_WEBSOCKET
+    RUN_TEST(test_ws_upgrade_without_connect_handler);
+    RUN_TEST(test_ws_dispatch_without_message_or_close_handler);
+    RUN_TEST(test_ws_upgrade_handshake_gate);
+    RUN_TEST(test_ws_send_api_inactive_error_state_and_dead_slot);
+#endif
+    RUN_TEST(test_upgrade_entry_points_on_dead_slot);
+#if DWS_ENABLE_SSE
+    RUN_TEST(test_sse_upgrade_fires_connect_handler);
+    RUN_TEST(test_sse_send_on_dead_slot_writes_nothing);
 #endif
 
     return UNITY_END();

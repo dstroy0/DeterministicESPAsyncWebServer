@@ -283,9 +283,80 @@ void test_parse_typed_rejections()
     TEST_ASSERT_TRUE(dws_mqttsn_parse_connack(one, 1, &rc));                            // exactly 1 is valid
 }
 
+// Every typed payload parser refuses a null payload pointer, independently of the length check.
+void test_parse_typed_null_payload()
+{
+    uint16_t tid = 0, mid = 0;
+    uint8_t rc = 0, fl = 0;
+    const uint8_t *data = nullptr;
+    size_t dlen = 0, nlen = 0;
+    const char *name = nullptr;
+
+    TEST_ASSERT_FALSE(dws_mqttsn_parse_connack(nullptr, 8, &rc));
+    TEST_ASSERT_FALSE(dws_mqttsn_parse_regack(nullptr, 8, &tid, &mid, &rc));
+    TEST_ASSERT_FALSE(dws_mqttsn_parse_puback(nullptr, 8, &tid, &mid, &rc));
+    TEST_ASSERT_FALSE(dws_mqttsn_parse_suback(nullptr, 8, &fl, &tid, &mid, &rc));
+    TEST_ASSERT_FALSE(dws_mqttsn_parse_publish(nullptr, 8, &fl, &tid, &mid, &data, &dlen));
+    TEST_ASSERT_FALSE(dws_mqttsn_parse_register(nullptr, 8, &tid, &mid, &name, &nlen));
+}
+
+// Every output of every typed parser is optional: a caller that only wants to know whether the
+// payload is well-formed may omit all of them.
+void test_parse_typed_outputs_are_optional()
+{
+    const uint8_t p[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+    TEST_ASSERT_TRUE(dws_mqttsn_parse_connack(p, sizeof(p), nullptr));
+    TEST_ASSERT_TRUE(dws_mqttsn_parse_regack(p, sizeof(p), nullptr, nullptr, nullptr));
+    TEST_ASSERT_TRUE(dws_mqttsn_parse_puback(p, sizeof(p), nullptr, nullptr, nullptr));
+    TEST_ASSERT_TRUE(dws_mqttsn_parse_suback(p, sizeof(p), nullptr, nullptr, nullptr, nullptr));
+    TEST_ASSERT_TRUE(dws_mqttsn_parse_publish(p, sizeof(p), nullptr, nullptr, nullptr, nullptr, nullptr));
+    TEST_ASSERT_TRUE(dws_mqttsn_parse_register(p, sizeof(p), nullptr, nullptr, nullptr, nullptr));
+}
+
+// dws_mqttsn_parse_header() refuses a null header output, a null consumed output, and a buffer too
+// short to hold even the Length and MsgType octets.
+void test_parse_header_output_guards()
+{
+    const uint8_t frame[4] = {4, MQTTSN_PUBACK, 0x00, 0x01};
+    MqttsnHeader h;
+    size_t c = 0;
+    TEST_ASSERT_FALSE(dws_mqttsn_parse_header(frame, sizeof(frame), nullptr, &c));
+    TEST_ASSERT_FALSE(dws_mqttsn_parse_header(frame, sizeof(frame), &h, nullptr));
+    TEST_ASSERT_FALSE(dws_mqttsn_parse_header(frame, 1, &h, &c)); // shorter than Length + MsgType
+    TEST_ASSERT_TRUE(dws_mqttsn_parse_header(frame, sizeof(frame), &h, &c));
+    TEST_ASSERT_EQUAL_size_t(4, c);
+}
+
+// A PUBLISH may carry no data at all, and a body that would push the message past the 16-bit
+// Length field is refused before a single octet is written.
+void test_publish_empty_and_oversized_body()
+{
+    uint8_t buf[16];
+    size_t n = dws_mqttsn_build_publish(buf, sizeof(buf), 0x20, 0x0009, 0x0001, nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(7, n); // 1(len)+1(type)+1(flags)+2(topic)+2(msgid), no data
+    const uint8_t expect[] = {7, MQTTSN_PUBLISH, 0x20, 0x00, 0x09, 0x00, 0x01};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+
+    uint8_t fl = 0;
+    uint16_t tid = 0, mid = 0;
+    const uint8_t *data = nullptr;
+    size_t dlen = 99;
+    TEST_ASSERT_TRUE(dws_mqttsn_parse_publish(buf + 2, n - 2, &fl, &tid, &mid, &data, &dlen));
+    TEST_ASSERT_EQUAL_HEX16(0x0009, tid);
+    TEST_ASSERT_EQUAL_size_t(0, dlen);
+
+    // 70000 data octets cannot be described by the 16-bit Length field.
+    const uint8_t d[2] = {1, 2};
+    TEST_ASSERT_EQUAL_size_t(0, dws_mqttsn_build_publish(buf, sizeof(buf), 0, 1, 1, d, 70000));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_parse_typed_null_payload);
+    RUN_TEST(test_parse_typed_outputs_are_optional);
+    RUN_TEST(test_parse_header_output_guards);
+    RUN_TEST(test_publish_empty_and_oversized_body);
     RUN_TEST(test_make_flags);
     RUN_TEST(test_build_connect_bytes);
     RUN_TEST(test_build_publish_bytes);

@@ -357,10 +357,293 @@ void test_tls13_extension_and_truncation_coverage()
     TEST_ASSERT_EQUAL_UINT(3, (unsigned)ch.dws_quic_tp_len);
 }
 
+// Assemble a DTLS-shaped ClientHello (RFC 9147 sec 5.3): identical to build_ch except for the
+// legacy_cookie field between legacy_session_id and cipher_suites. @p cookie_len is written as the
+// legacy_cookie length and @p cookie_present bytes actually follow it, so a caller can build a
+// well-formed hello (equal) or one whose cookie field is truncated (fewer).
+static size_t build_ch_dtls(uint8_t *msg, const uint8_t *exts, size_t exts_len, uint8_t cookie_len,
+                            uint8_t cookie_present)
+{
+    uint8_t body[600];
+    size_t b = 0;
+    body[b++] = 0x03;
+    body[b++] = 0x03; // legacy_version
+    for (int j = 0; j < 32; j++)
+        body[b++] = 0; // random
+    body[b++] = 0;     // session_id length 0
+    body[b++] = cookie_len;
+    for (uint8_t j = 0; j < cookie_present; j++)
+        body[b++] = (uint8_t)(0xC0 + j); // legacy_cookie bytes
+    body[b++] = 0x00;
+    body[b++] = 0x02;
+    body[b++] = 0x13;
+    body[b++] = 0x01; // cipher_suites (one)
+    body[b++] = 0x01;
+    body[b++] = 0x00; // compression_methods (null)
+    body[b++] = (uint8_t)(exts_len >> 8);
+    body[b++] = (uint8_t)exts_len;
+    if (exts_len)
+        memcpy(body + b, exts, exts_len);
+    b += exts_len;
+    size_t m = 0;
+    msg[m++] = TlsHs::TLS_HS_CLIENT_HELLO;
+    msg[m++] = (uint8_t)(b >> 16);
+    msg[m++] = (uint8_t)(b >> 8);
+    msg[m++] = (uint8_t)b;
+    memcpy(msg + m, body, b);
+    return m + b;
+}
+
+// A ClientHello header whose 24-bit body length is @p body_len while only @p body_len bytes of a
+// fixed filler body follow - used to cut the parse off at an exact field boundary.
+static size_t build_ch_stub(uint8_t *msg, size_t body_len)
+{
+    msg[0] = TlsHs::TLS_HS_CLIENT_HELLO;
+    msg[1] = (uint8_t)(body_len >> 16);
+    msg[2] = (uint8_t)(body_len >> 8);
+    msg[3] = (uint8_t)body_len;
+    msg[4] = 0x03;
+    msg[5] = 0x03; // legacy_version, then zero filler
+    for (size_t i = 6; i < 4 + body_len; i++)
+        msg[i] = 0x00;
+    return 4 + body_len;
+}
+
+// The DTLS ClientHello shape: the legacy_cookie field is present and consumed (so the extensions
+// still parse), and truncating that field - the length byte itself, or the bytes it announces -
+// fails the parse. Also pins that DTLS selects the 0xFEFC supported_versions codepoint, not 0x0304.
+void test_tls13_dtls_client_hello_shape()
+{
+    // supported_versions offering DTLS 1.3 (0xFEFC).
+    static const uint8_t sv_dtls[] = {0x00, 0x2b, 0x00, 0x03, 0x02, 0xFE, 0xFC};
+    uint8_t msg[256];
+    Tls13ClientHello ch;
+
+    size_t n = build_ch_dtls(msg, sv_dtls, sizeof(sv_dtls), 0, 0);
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(msg, n, &ch, /*dtls=*/true));
+    TEST_ASSERT_TRUE(ch.offers_tls13); // matched against TLS_VERSION_DTLS_1_3
+
+    // A non-empty legacy_cookie is skipped just the same.
+    n = build_ch_dtls(msg, sv_dtls, sizeof(sv_dtls), 4, 4);
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(msg, n, &ch, /*dtls=*/true));
+    TEST_ASSERT_TRUE(ch.offers_tls13);
+
+    // The same bytes read as TLS/QUIC (no legacy_cookie field) do NOT yield a DTLS 1.3 offer:
+    // the field misaligns everything after it.
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, n, &ch, /*dtls=*/false) && ch.offers_tls13);
+
+    // The legacy_cookie length byte announces more bytes than are present -> parse fails.
+    n = build_ch_dtls(msg, sv_dtls, sizeof(sv_dtls), 200, 0);
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, n, &ch, /*dtls=*/true));
+
+    // The message ends exactly after legacy_session_id, so the cookie length byte is absent.
+    uint8_t stub[64];
+    size_t sn = build_ch_stub(stub, 35); // legacy_version(2) + random(32) + session_id length(1)
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(stub, sn, &ch, /*dtls=*/true));
+}
+
+// Every ClientHello field boundary the reader can run off: an empty message, and a body cut short
+// at the random, the session-id length, the cipher-suite list, and the extension header fields.
+void test_tls13_client_hello_field_truncations()
+{
+    Tls13ClientHello ch;
+    uint8_t msg[64];
+
+    // No bytes at all: even the handshake type cannot be read.
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, 0, &ch));
+
+    // legacy_version present, but fewer than 32 random bytes follow.
+    size_t n = build_ch_stub(msg, 10);
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, n, &ch));
+
+    // Body ends exactly after the random: no session-id length byte.
+    n = build_ch_stub(msg, 34);
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, n, &ch));
+
+    // Body ends after the (empty) session id: no cipher_suites length.
+    n = build_ch_stub(msg, 36);
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, n, &ch));
+
+    // cipher_suites length announces more bytes than the body holds.
+    n = build_ch_stub(msg, 40);
+    msg[4 + 35] = 0x00;
+    msg[4 + 36] = 0x20; // 32 octets of cipher suites, but only 2 follow
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, n, &ch));
+
+    // extensions_length says 1, so the extension type's two bytes cannot be read.
+    uint8_t one[1] = {0x00};
+    n = build_ch(msg, one, sizeof(one));
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, n, &ch));
+
+    // extensions_length says 3: the type reads, the extension length's two bytes do not.
+    uint8_t three[3] = {0x00, 0x0a, 0x00};
+    n = build_ch(msg, three, sizeof(three));
+    TEST_ASSERT_FALSE(dws_tls13_parse_client_hello(msg, n, &ch));
+}
+
+// Extension-body guards that return without failing the overall parse: an oversized supported_groups
+// list, a key_share entry whose key length is not 32, ALPN entries that are not "h3", a server_name
+// entry that is not a host_name or overruns, and malformed cookie / connection_id bodies.
+void test_tls13_extension_body_guards()
+{
+    struct EC
+    {
+        uint8_t ext[16];
+        size_t elen;
+    };
+    static const EC cases[] = {
+        // supported_groups: declared list length (255) exceeds the extension body.
+        {{0x00, 0x0a, 0x00, 0x04, 0x00, 0xFF, 0x00, 0x1d}, 8},
+        // key_share: an X25519 entry whose key_exchange is 4 bytes, not 32.
+        {{0x00, 0x33, 0x00, 0x0a, 0x00, 0x08, 0x00, 0x1d, 0x00, 0x04, 0xAA, 0xBB, 0xCC, 0xDD}, 14},
+        // ALPN: a 3-byte name, then a 2-byte name that is not "h3".
+        {{0x00, 0x10, 0x00, 0x09, 0x00, 0x07, 0x03, 'a', 'b', 'c', 0x02, 'x', '3'}, 13},
+        // server_name: a name type that is not host_name(0).
+        {{0x00, 0x00, 0x00, 0x08, 0x00, 0x06, 0x01, 0x00, 0x03, 'a', 'b', 'c'}, 12},
+        // server_name: host_name whose declared length runs past the list.
+        {{0x00, 0x00, 0x00, 0x05, 0x00, 0x03, 0x00, 0x00, 0x10}, 9},
+        // cookie: the inner cookie length overruns the extension body.
+        {{0x00, 0x2c, 0x00, 0x02, 0xFF, 0xFF}, 6},
+        // connection_id: an empty extension body (no length byte).
+        {{0x00, 0x36, 0x00, 0x00}, 4},
+        // connection_id: the declared id length overruns the body.
+        {{0x00, 0x36, 0x00, 0x01, 0x05}, 5},
+    };
+    uint8_t msg[128];
+    Tls13ClientHello ch;
+    for (size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); k++)
+    {
+        size_t n = build_ch(msg, cases[k].ext, cases[k].elen);
+        TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(msg, n, &ch)); // guard returns, parse survives
+    }
+    // None of the malformed bodies set their flag.
+    TEST_ASSERT_FALSE(ch.has_conn_id);
+
+    // The well-formed cookie and connection_id extensions ARE captured (the two switch arms the
+    // DTLS handshake relies on).
+    static const uint8_t good[] = {
+        0x00, 0x2c, 0x00, 0x05, 0x00, 0x03, 0x11, 0x22, 0x33, // cookie -> 11 22 33
+        0x00, 0x36, 0x00, 0x03, 0x02, 0xAA, 0xBB,             // connection_id -> AA BB
+    };
+    size_t n = build_ch(msg, good, sizeof(good));
+    TEST_ASSERT_TRUE(dws_tls13_parse_client_hello(msg, n, &ch));
+    TEST_ASSERT_NOT_NULL(ch.cookie);
+    TEST_ASSERT_EQUAL_UINT(3, (unsigned)ch.cookie_len);
+    TEST_ASSERT_EQUAL_UINT8(0x11, ch.cookie[0]);
+    TEST_ASSERT_TRUE(ch.has_conn_id);
+    TEST_ASSERT_EQUAL_UINT(2, (unsigned)ch.conn_id_len);
+    TEST_ASSERT_EQUAL_UINT8(0xAA, ch.conn_id[0]);
+    // A valid key_share alongside them still parses (the X25519 arm with the right length).
+    TEST_ASSERT_FALSE(ch.has_key_share);
+}
+
+// The DTLS version codepoints in the ServerHello / HelloRetryRequest builders (RFC 9147 sec 5.3):
+// legacy_version 0xFEFD and supported_versions 0xFEFC, where TLS uses 0x0303 / 0x0304.
+void test_tls13_builders_dtls_codepoints()
+{
+    uint8_t random[32], pub[32];
+    memset(random, 0x5A, sizeof(random));
+    memset(pub, 0x6B, sizeof(pub));
+    uint8_t out[128];
+
+    size_t n = dws_tls13_build_server_hello(out, sizeof(out), random, nullptr, 0, pub, 32, TLS_GROUP_X25519,
+                                            /*dtls=*/true);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_UINT8(0xFE, out[4]); // legacy_version = DTLS 1.2
+    TEST_ASSERT_EQUAL_UINT8(0xFD, out[5]);
+    // supported_versions -> 0xFEFC is the last extension for a CID-less ServerHello.
+    TEST_ASSERT_EQUAL_UINT8(0xFE, out[n - 2]);
+    TEST_ASSERT_EQUAL_UINT8(0xFC, out[n - 1]);
+
+    // The TLS/QUIC form of the same call uses 0x0303 / 0x0304.
+    n = dws_tls13_build_server_hello(out, sizeof(out), random, nullptr, 0, pub, 32, TLS_GROUP_X25519, /*dtls=*/false);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_UINT8(0x03, out[4]);
+    TEST_ASSERT_EQUAL_UINT8(0x03, out[5]);
+    TEST_ASSERT_EQUAL_UINT8(0x03, out[n - 2]);
+    TEST_ASSERT_EQUAL_UINT8(0x04, out[n - 1]);
+
+    // HelloRetryRequest, both profiles, with and without a cookie extension.
+    const uint8_t cookie[4] = {0xAA, 0xBB, 0xCC, 0xDD};
+    size_t with_cookie = dws_tls13_build_hello_retry_request(out, sizeof(out), nullptr, 0, TLS_GROUP_X25519, cookie,
+                                                             sizeof(cookie), /*dtls=*/true);
+    TEST_ASSERT_TRUE(with_cookie > 0);
+    TEST_ASSERT_EQUAL_UINT8(0xFE, out[4]);
+    TEST_ASSERT_EQUAL_UINT8(0xFD, out[5]);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(dws_tls13_hrr_random, out + 6, 32);
+
+    // No cookie -> the cookie extension is omitted entirely (a shorter message), and the TLS
+    // codepoints are used.
+    size_t no_cookie = dws_tls13_build_hello_retry_request(out, sizeof(out), nullptr, 0, TLS_GROUP_X25519, nullptr, 0,
+                                                           /*dtls=*/false);
+    TEST_ASSERT_TRUE(no_cookie > 0);
+    TEST_ASSERT_TRUE(no_cookie < with_cookie);
+    TEST_ASSERT_EQUAL_UINT8(0x03, out[4]);
+    TEST_ASSERT_EQUAL_UINT8(0x03, out[5]);
+}
+
+// Every builder's capacity guard: a cookie too long for the extension's uint16 length, and an
+// output buffer too small for the HelloRetryRequest, either EncryptedExtensions form, and
+// message_hash. Each must report 0 rather than emit a truncated message.
+void test_tls13_builder_overflow_guards()
+{
+    uint8_t out[128];
+    const uint8_t cookie[4] = {0xAA, 0xBB, 0xCC, 0xDD};
+
+    // cookie_len + 2 must fit a uint16: refused before anything is written.
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_hello_retry_request(out, sizeof(out), nullptr, 0, TLS_GROUP_X25519,
+                                                                  cookie, 0xFFFE, /*dtls=*/false));
+
+    // A HelloRetryRequest that does not fit: sweep every capacity below the needed one.
+    size_t need = dws_tls13_build_hello_retry_request(out, sizeof(out), nullptr, 0, TLS_GROUP_X25519, cookie,
+                                                      sizeof(cookie), /*dtls=*/true);
+    TEST_ASSERT_TRUE(need > 0);
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_hello_retry_request(out, need - 1, nullptr, 0, TLS_GROUP_X25519, cookie,
+                                                                  sizeof(cookie), /*dtls=*/true));
+
+    // The empty (DTLS-profile) EncryptedExtensions is 6 bytes; 5 is not enough.
+    TEST_ASSERT_EQUAL_UINT(6, dws_tls13_build_encrypted_extensions_empty(out, 6));
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_encrypted_extensions_empty(out, 5));
+
+    // message_hash is 36 bytes; 35 is not enough.
+    uint8_t h[32];
+    memset(h, 0x77, sizeof(h));
+    TEST_ASSERT_EQUAL_UINT(36, dws_tls13_build_message_hash(out, 36, h));
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_message_hash(out, 35, h));
+
+    // The QUIC EncryptedExtensions (ALPN + transport params) in a buffer one byte short.
+    const uint8_t tp[3] = {0x04, 0x01, 0x20};
+    need = dws_tls13_build_encrypted_extensions(out, sizeof(out), tp, sizeof(tp));
+    TEST_ASSERT_TRUE(need > 0);
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_encrypted_extensions(out, need - 1, tp, sizeof(tp)));
+}
+
+// The CertificateVerify signed content uses the "client" context string when is_server is false
+// (RFC 8446 sec 4.4.3) - the same length, a different label, so the two never cross-verify.
+void test_tls13_cert_verify_client_context()
+{
+    uint8_t thash[32];
+    memset(thash, 0x5c, sizeof(thash));
+    uint8_t server[160], client[160];
+    size_t sn = dws_tls13_cert_verify_content(server, sizeof(server), thash, true);
+    size_t cn = dws_tls13_cert_verify_content(client, sizeof(client), thash, false);
+    TEST_ASSERT_EQUAL_UINT(sn, cn);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY("TLS 1.3, client CertificateVerify", client + 64, 33);
+    TEST_ASSERT_EQUAL_UINT8(0x00, client[97]);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(thash, client + 98, 32);
+    TEST_ASSERT_TRUE(memcmp(server, client, sn) != 0); // the context word differs
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_tls13_extension_and_truncation_coverage);
+    RUN_TEST(test_tls13_dtls_client_hello_shape);
+    RUN_TEST(test_tls13_client_hello_field_truncations);
+    RUN_TEST(test_tls13_extension_body_guards);
+    RUN_TEST(test_tls13_builders_dtls_codepoints);
+    RUN_TEST(test_tls13_builder_overflow_guards);
+    RUN_TEST(test_tls13_cert_verify_client_context);
     RUN_TEST(test_tls13_malformed_extensions);
     RUN_TEST(test_tls13_parse_guards);
     RUN_TEST(test_tls13_builder_cap_guards);

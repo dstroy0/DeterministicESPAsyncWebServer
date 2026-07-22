@@ -97,8 +97,8 @@ void build_axis_names(RoboticsCtx *c)
         b[3] = 's';
         b[4] = '_';
         size_t o = 5;
-        if (idx >= 10)
-            b[o++] = (char)('0' + (idx / 10));
+        if (idx >= 10) // GCOVR_EXCL_LINE  two-digit render; unreachable while DWS_ROBOTICS_AXES (6) <= 9
+            b[o++] = (char)('0' + (idx / 10)); // GCOVR_EXCL_LINE
         b[o++] = (char)('0' + (idx % 10));
         b[o] = '\0';
     }
@@ -128,11 +128,14 @@ void set_str(OpcUaVariant *o, const char *s)
     o->str = s ? s : "";
     o->str_len = (int32_t)strnlen(o->str, 0xFFFF); // bound the scan: a model string is a caller-owned C string
 }
+// GCOVR_EXCL_START  no node in the MotionDeviceSystem model reads as a UInt32 (the counters and
+// enums are Int32/Double/Boolean/String), so this filler has no caller in the current node table.
 void set_u32(OpcUaVariant *o, uint32_t v)
 {
     o->type = OpcUaVariantType::OPCUA_VAR_UINT32;
     o->u32 = v;
 }
+// GCOVR_EXCL_STOP
 void set_i32(OpcUaVariant *o, int32_t v)
 {
     o->type = OpcUaVariantType::OPCUA_VAR_INT32;
@@ -205,7 +208,9 @@ bool dws_robotics_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVarian
     if (decode_axis(id, mds->device.axis_count, &k, &sub) && sub >= AXVAR_POSITION && sub <= AXVAR_PROFILE)
     {
         const RoboticsAxis *ax = &mds->device.axes[k - 1];
-        switch (sub)
+        // The guard above already pins sub to AXVAR_POSITION..AXVAR_PROFILE, so the default edge is
+        // unreachable; gcov cannot drop a single switch edge, so the dispatch line is excluded whole.
+        switch (sub) // GCOVR_EXCL_LINE
         {
         case AXVAR_POSITION:
             set_f64(out, ax->actual_position);
@@ -219,8 +224,8 @@ bool dws_robotics_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVarian
         case AXVAR_PROFILE:
             set_i32(out, (int32_t)ax->motion_profile);
             return true;
-        default:
-            return false;
+        default:          // GCOVR_EXCL_LINE  unreachable: sub is pinned to 1..4 by the guard above
+            return false; // GCOVR_EXCL_LINE
         }
     }
 

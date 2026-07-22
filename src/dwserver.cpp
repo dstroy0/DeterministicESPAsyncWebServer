@@ -371,7 +371,9 @@ const char *DWS::dws_resp_conn_hdr(uint8_t slot_id, bool *keep_out)
 #else
     (void)slot_id;
 #endif
-    if (keep_out)
+    // The null half cannot fire: every call site passes the address of its own local `keep`. Kept so
+    // the signature keeps saying the report-back is optional.
+    if (keep_out) // GCOVR_EXCL_BR_LINE  keep_out is never null (see above)
         *keep_out = keep;
     return keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
 }
@@ -382,8 +384,12 @@ const char *DWS::dws_resp_conn_hdr(uint8_t slot_id, bool *keep_out)
 // with. Returns the new total length.
 int DWS::append_resp_trailer(char *buf, size_t cap, int hlen, uint8_t slot_id, const char *cl)
 {
+    // GCOVR_EXCL_START  unreachable: hlen is always a snprintf return from the caller's status-line
+    // format, and snprintf only goes negative on an encoding error those formats cannot raise. Kept
+    // because this is the one place that would otherwise index buf at a negative offset.
     if (hlen < 0)
         return 0;
+    // GCOVR_EXCL_STOP
     if ((size_t)hlen >= cap)
         return (int)cap - 1; // status line already filled the buffer (truncated); clamp in-bounds
 #if DWS_HTTP_EMIT_DATE
@@ -404,8 +410,11 @@ int DWS::append_resp_trailer(char *buf, size_t cap, int hlen, uint8_t slot_id, c
 #endif
     int n = snprintf(buf + hlen, cap - (size_t)hlen, "%s%s%s%s\r\n", date_hdr, _cors_enabled ? _cors_header_buf : "",
                      _extra_hdr[slot_id], cl);
+    // GCOVR_EXCL_START  unreachable for the same reason as the hlen guard above: snprintf cannot
+    // return negative for this "%s%s%s%s\r\n" trailer. Kept so a negative can never be added to hlen.
     if (n < 0)
         return hlen;
+    // GCOVR_EXCL_STOP
     // snprintf returns the would-be length; if the trailer truncated, clamp to the
     // bytes actually written so the returned length never exceeds the buffer (else a
     // caller would send/copy past the end - a stack over-read on large extra headers).
@@ -494,8 +503,12 @@ static void dws_h3_rng(uint8_t *out, size_t len)
 // which is exactly what this one instance pointer models.
 static void dws_http_on_poll(uint8_t slot)
 {
+    // GCOVR_EXCL_BR_START  the null half cannot fire: service_once() is the only thing that installs
+    // this forwarder (http_proto_set_poll) and it stores http_instance on the line before, so the
+    // pointer always exists by the time a poll can reach here.
     if (s_inst.http_instance)
         s_inst.http_instance->http_poll_slot(slot);
+    // GCOVR_EXCL_BR_STOP
 }
 
 int32_t DWS::begin(const WebServerConfig *cfg)
@@ -538,8 +551,13 @@ int32_t DWS::begin(const WebServerConfig *cfg)
 #endif
     for (uint8_t i = 0; i < _listener_count; i++)
     {
+        // GCOVR_EXCL_START  listener_add() only fails on a real lwIP fault - a bind/listen refusal
+        // (port already in use) or PCB/queue exhaustion. The host lwIP mock's tcp_new/tcp_bind/
+        // tcp_listen_with_backlog always succeed and it exposes no failure hook, so the error return
+        // has no host path; it is covered on hardware.
         if (listener_add(i, _listen_ports[i], _listen_protos[i], _listen_tls[i]) < 0)
             return (int32_t)DWSResult::DWS_ERR_LISTEN_FAILED;
+        // GCOVR_EXCL_STOP
     }
 #if DWS_ENABLE_HTTP3
     // Bind the HTTP/3 QUIC server (UDP on device; on host it is fed via dws_quic_server_ingest). Requests
@@ -1297,6 +1315,9 @@ static void send_error_close(uint8_t slot_id, const char *status, const char *ex
 
     int blen = (int)strnlen(body, 0xFFFF);
     char header[RESP_HDR_BUF_SIZE];
+    // GCOVR_EXCL_BR_START  the null arm of the extra_hdr ternary is unreachable: both callers
+    // (send_method_not_allowed, send_too_many_requests) build a non-null header string. Kept so the
+    // parameter stays optional for a future caller with nothing extra to add.
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %s\r\n"
                         "%s"
@@ -1304,10 +1325,13 @@ static void send_error_close(uint8_t slot_id, const char *status, const char *ex
                         "Content-Length: %d\r\n"
                         "Connection: close\r\n\r\n",
                         status, extra_hdr ? extra_hdr : "", DWS_MIME_TEXT_PLAIN, blen);
+    // GCOVR_EXCL_BR_STOP
 
     // The last write carries the flush (dws_conn_send_flush = write+tcp_output in one marshal), so
     // an error-and-close costs one round-trip fewer - and 4xx/5xx closes are the hot path under a
     // flood (rate-limit / auth-lockout 429s).
+    // GCOVR_EXCL_BR_START  the blen == 0 half is unreachable: both callers pass a fixed non-empty
+    // reason body ("Method Not Allowed" / "Too Many Requests"). The HEAD half is exercised.
     if (blen > 0 && !req_is_head(slot_id))
     {
         dws_conn_send(slot_id, header, (u16_t)hlen);
@@ -1317,6 +1341,7 @@ static void send_error_close(uint8_t slot_id, const char *status, const char *ex
     {
         dws_conn_send_flush(slot_id, header, (u16_t)hlen);
     }
+    // GCOVR_EXCL_BR_STOP
     dws_conn_begin_close(slot_id); // dwell in ConnState::CONN_CLOSING until the response drains
     http_reset(slot_id);
 }
@@ -1353,8 +1378,12 @@ static void send_too_many_requests(uint8_t slot_id, uint32_t retry_after_s)
 
 bool DWS::route_admits(const Route *r, uint8_t slot_id, HttpReq *req) const
 {
+    // GCOVR_EXCL_START  unreachable: every entry below _route_count was filled by fill_route_base,
+    // which sets is_active, and nothing ever clears it - so the dispatcher never walks an inactive
+    // slot. Kept because is_active is what makes an unfilled table entry safe to skip.
     if (!r->is_active)
         return false;
+    // GCOVR_EXCL_STOP
     bool matched = r->is_regex   ? regex_match(r->path, req->path)
                    : r->is_param ? match_path_params(r->path, req->path, req)
                                  : path_matches(r->path, r->is_wildcard, req->path);

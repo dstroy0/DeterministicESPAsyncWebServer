@@ -73,8 +73,8 @@ void w_bytes(Writer *w, const uint8_t *b, size_t n)
     // Direct pre-copy bound: pos must be within cap AND n must fit in the remaining cap - pos. Written as
     // two explicit guards (no intermediate) so the copy runs only when pos + n <= cap - no underflow of
     // cap - pos (guarded by pos <= cap) and no pos + n wrap (never formed).
-    if (w->pos > w->cap || n > w->cap - w->pos)
-    {
+    if (w->pos > w->cap || n > w->cap - w->pos) // GCOVR_EXCL_LINE  w_u8 refuses to advance past cap, so pos <= cap
+    {                                           // is an invariant and the first arm can never be taken
         w->ok = false;
         return;
     }

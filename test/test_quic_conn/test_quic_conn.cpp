@@ -1094,14 +1094,16 @@ void test_quic_conn_send_tiny_cap()
 }
 
 // Drive a server QuicConn through a complete handshake; leaves it established (1-RTT ready) with the
-// Initial space discarded, and returns the client's Initial secrets + the 1-RTT keys.
+// Initial space discarded, and returns the client's Initial secrets + the 1-RTT keys. @p peer_scid_len
+// is the client's Source Connection ID length, i.e. the DCID the server puts in its 1-RTT short
+// headers; 0 is legal (RFC 9000 sec 5.1) and leaves the most room for the 1-RTT payload.
 static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialSecrets *init, QuicPacketKeys *ap_client,
-                               QuicPacketKeys *ap_server)
+                               QuicPacketKeys *ap_server, uint8_t peer_scid_len = sizeof(CLIENT_SCID))
 {
     QuicTlsConfig cfg;
     make_cfg(&cfg);
-    dws_quic_conn_init(qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), SERVER_SCID,
-                       sizeof(SERVER_SCID), cb);
+    dws_quic_conn_init(qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, peer_scid_len, SERVER_SCID, sizeof(SERVER_SCID),
+                       cb);
     dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), init);
 
     QuicTransportParams ctp;
@@ -1227,10 +1229,881 @@ void test_quic_conn_close_level_fallback()
     TEST_ASSERT_TRUE(dws_quic_conn_is_closed(&qc));
 }
 
+// A connection initialized with no callbacks runs the whole handshake and delivers stream data
+// without dispatching anything: every hook is null-checked before it is invoked.
+void test_quic_conn_null_callbacks()
+{
+    fill();
+    QuicTlsConfig cfg;
+    make_cfg(&cfg);
+    QuicConn qc;
+    dws_quic_conn_init(&qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), SERVER_SCID,
+                       sizeof(SERVER_SCID), nullptr); // no callbacks at all
+    TEST_ASSERT_NULL(qc.cb.on_stream_data);
+    TEST_ASSERT_NULL(qc.cb.on_handshake_done);
+
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+
+    // A STREAM frame with data, and a pure-FIN one, at the Initial level: both take the callback
+    // paths, both find a null hook, and neither disturbs the connection.
+    uint8_t d[3] = {1, 2, 3};
+    uint8_t fr[64];
+    size_t fl = dws_quic_build_stream(fr, sizeof fr, 0, 0, d, 3, false);
+    fl += dws_quic_build_stream(fr + fl, sizeof(fr) - fl, 0, 3, d, 0, true);
+    uint8_t dg[256];
+    size_t dl =
+        build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_UINT(0, g_stream_len); // the test's own callback was never registered
+    TEST_ASSERT_FALSE(dws_quic_conn_is_closed(&qc));
+
+    // A full handshake still completes and still queues HANDSHAKE_DONE with no on_handshake_done.
+    QuicConn qc2;
+    QuicPacketKeys apc, aps;
+    QuicInitialSecrets init2;
+    complete_handshake(&qc2, nullptr, &init2, &apc, &aps);
+    TEST_ASSERT_TRUE(dws_quic_conn_established(&qc2));
+    TEST_ASSERT_FALSE(g_hs_done); // no hook ran
+}
+
+// handle_stream's in-window cases that are not a fresh delivery: a wholly duplicate STREAM frame, a
+// FIN whose final offset is behind the stream's current offset, and a repeated pure-FIN.
+void test_quic_conn_stream_duplicate_and_stale_fin()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t d[4] = {0xA1, 0xA2, 0xA3, 0xA4};
+    uint8_t fr[64], dg[256];
+    uint64_t pn = 0;
+
+    // 4 bytes at offset 0 -> delivered.
+    size_t fl = dws_quic_build_stream(fr, sizeof fr, 0, 0, d, 4, false);
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, pn++, &init.client,
+                           fr, fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_UINT(4, g_stream_len);
+
+    // The identical frame again: entirely behind the window and not a FIN -> nothing delivered.
+    dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, pn++, &init.client, fr,
+                    fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_UINT(4, g_stream_len); // unchanged
+
+    // A FIN at offset 0 length 0: in window, but its final offset (0) is not the stream's current
+    // offset (4), so it is not the end-of-stream marker and is ignored.
+    fl = dws_quic_build_stream(fr, sizeof fr, 0, 0, d, 0, true);
+    dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, pn++, &init.client, fr,
+                    fl);
+    g_stream_fin = false;
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_FALSE(g_stream_fin);
+
+    // The real pure-FIN at offset 4 -> delivered as a zero-length FIN.
+    fl = dws_quic_build_stream(fr, sizeof fr, 0, 4, d, 0, true);
+    dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, pn++, &init.client, fr,
+                    fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_TRUE(g_stream_fin);
+
+    // A retransmission of that FIN: rx_fin is already set, so it is not re-delivered.
+    g_stream_fin = false;
+    dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, pn++, &init.client, fr,
+                    fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_FALSE(g_stream_fin); // no second FIN callback
+}
+
+// Frame-dispatch coverage the happy path never reaches: ACK_ECN and the application-level
+// CONNECTION_CLOSE are both non-ack-eliciting, a stale ACK does not move largest_acked, and the
+// frame types either side of the STREAM range fall through the dispatcher untouched.
+void test_quic_conn_frame_dispatch_variants()
+{
+    fill();
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t dg[512];
+
+    // (a) An ACK_ECN, then a stale ACK: the first advances largest_acked, the second does not.
+    {
+        QuicConn qc;
+        QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+        init_conn(&qc, &cb);
+        // ACK_ECN (0x03): largest 5, delay 0, 0 ranges, first_range 0, ECN counts 0/0/0.
+        const uint8_t ack_ecn[8] = {0x03, 5, 0, 0, 0, 0, 0, 0};
+        size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0,
+                               &init.client, ack_ecn, sizeof ack_ecn);
+        TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+        TEST_ASSERT_EQUAL_INT64(5, qc.space[QuicEnc::QUIC_ENC_INITIAL].largest_acked);
+        TEST_ASSERT_FALSE(qc.space[QuicEnc::QUIC_ENC_INITIAL].ack_eliciting_rx); // ACKs do not elicit
+
+        uint8_t older[8];
+        size_t ol = dws_quic_build_ack(older, sizeof older, 3, 0, 0); // largest 3 < 5
+        dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 1, &init.client,
+                        older, ol);
+        TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+        TEST_ASSERT_EQUAL_INT64(5, qc.space[QuicEnc::QUIC_ENC_INITIAL].largest_acked); // not lowered
+    }
+    // (b) An application CONNECTION_CLOSE (0x1d) closes the connection and is not ack-eliciting.
+    {
+        QuicConn qc;
+        QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+        init_conn(&qc, &cb);
+        const uint8_t app_close[3] = {0x1d, 0x05, 0x00}; // error 5, no reason
+        size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0,
+                               &init.client, app_close, sizeof app_close);
+        TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+        TEST_ASSERT_TRUE(dws_quic_conn_is_closed(&qc));
+        TEST_ASSERT_FALSE(qc.space[QuicEnc::QUIC_ENC_INITIAL].ack_eliciting_rx);
+    }
+    // (c) Frame types below and above the STREAM range (0x08..0x0f) reach the dispatcher's default
+    // arm and are ignored: RESET_STREAM (0x04) and MAX_STREAMS_BIDI (0x12).
+    {
+        QuicConn qc;
+        QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+        init_conn(&qc, &cb);
+        const uint8_t misc[6] = {QuicFrameType::QUIC_FT_RESET_STREAM,     0x00, 0x01, 0x02,
+                                 QuicFrameType::QUIC_FT_MAX_STREAMS_BIDI, 0x08};
+        size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0,
+                               &init.client, misc, sizeof misc);
+        TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+        TEST_ASSERT_FALSE(dws_quic_conn_is_closed(&qc));
+        TEST_ASSERT_EQUAL_UINT(0, g_stream_len); // neither was mistaken for a STREAM frame
+    }
+}
+
+// A long header whose version field is zero (the Version Negotiation codepoint) is dropped: a
+// server never answers one, so it must not reach the key/decrypt path.
+void test_quic_recv_zero_version()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t fr[8] = {QuicFrameType::QUIC_FT_PING};
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, 1);
+    dg[1] = dg[2] = dg[3] = dg[4] = 0x00; // version 0 (not header-protected)
+    TEST_ASSERT_FALSE(dws_quic_conn_recv(&qc, dg, dl));
+}
+
+// A packet number at or below the largest already received does not lower largest_rx (which anchors
+// packet-number decoding and the ACK we generate).
+void test_quic_recv_older_packet_number()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t fr[24] = {QuicFrameType::QUIC_FT_PING}; // PING + PADDING (long enough to header-protect)
+    uint8_t dg[256];
+
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 5, &init.client,
+                           fr, sizeof fr);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_UINT64(5, qc.space[QuicEnc::QUIC_ENC_INITIAL].largest_rx);
+
+    dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 1, &init.client, fr,
+                    sizeof fr);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_UINT64(5, qc.space[QuicEnc::QUIC_ENC_INITIAL].largest_rx); // still 5
+}
+
+// A 1-RTT (short-header) packet whose AEAD tag does not verify stops the datagram walk: unlike a
+// long-header packet there is no Length field to skip past, so nothing after it can be parsed.
+void test_quic_recv_short_header_decrypt_failure()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+
+    uint8_t fr[32];
+    size_t fl = dws_quic_build_ping(fr, sizeof fr);
+    memset(fr + fl, 0, 20);
+    fl += 20;
+    uint8_t dg[256];
+    size_t dl = build_short(dg, sizeof dg, SERVER_SCID, sizeof(SERVER_SCID), 0, &apc, fr, fl);
+    dg[dl - 1] ^= 0xFF; // corrupt the auth tag
+    TEST_ASSERT_FALSE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_FALSE(dws_quic_conn_is_closed(&qc)); // dropped, not fatal
+}
+
+// The CRYPTO stream after the handshake has completed: further bytes keep the TLS state at DONE and
+// must not re-queue HANDSHAKE_DONE, whether it is still queued or has already been sent.
+void test_quic_conn_crypto_after_handshake_done()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+    TEST_ASSERT_TRUE(qc.handshake_done_sent); // complete_handshake drained it
+    TEST_ASSERT_FALSE(qc.handshake_done_queued);
+
+    // A short CRYPTO frame at the Handshake level: fewer than 4 bytes, so no TLS message completes
+    // and the state stays DONE. HANDSHAKE_DONE must NOT be queued again.
+    QuicPacketKeys hs_client_keys;
+    {
+        // Re-derive the client's Handshake write keys from the server's (they are the same secrets
+        // the engine installed).
+        hs_client_keys = qc.tls.hs_client;
+    }
+    uint64_t off = qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].crypto_rx_off;
+    const uint8_t frag[2] = {0xFE, 0xFF};
+    uint8_t fr[64];
+    size_t fl = dws_quic_build_crypto(fr, sizeof fr, off, frag, sizeof frag);
+    memset(fr + fl, 0, 20);
+    fl += 20;
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 7, &hs_client_keys, fr, fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qc.tls.state);
+    TEST_ASSERT_FALSE(qc.handshake_done_queued); // already sent; not re-queued
+    TEST_ASSERT_FALSE(dws_quic_conn_is_closed(&qc));
+
+    // Now with HANDSHAKE_DONE queued but not yet sent: a further CRYPTO fragment - at the offset the
+    // engine is actually waiting for, so it is not dropped as a duplicate - must leave HANDSHAKE_DONE
+    // queued exactly once (the callback does not fire a second time either).
+    qc.handshake_done_sent = false;
+    qc.handshake_done_queued = true;
+    g_hs_done = false;
+    off = qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].crypto_rx_off;
+    TEST_ASSERT_TRUE(off > 0); // the first fragment really was consumed
+    fl = dws_quic_build_crypto(fr, sizeof fr, off, frag, sizeof frag);
+    memset(fr + fl, 0, 20);
+    fl += 20;
+    dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID,
+                    sizeof(CLIENT_SCID), 8, &hs_client_keys, fr, fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_UINT64(off + sizeof(frag), qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].crypto_rx_off);
+    TEST_ASSERT_TRUE(qc.handshake_done_queued);
+    TEST_ASSERT_FALSE(qc.handshake_done_sent); // still queued, not re-sent behind our back
+    TEST_ASSERT_FALSE(g_hs_done);              // on_handshake_done did not run again
+}
+
+// A close request that arrives after the peer has already closed the connection is ignored: the
+// first close wins (RFC 9000 sec 10.2.3), and a draining connection sends nothing more.
+void test_quic_conn_close_after_peer_close()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+
+    uint8_t fr[32];
+    size_t fl = dws_quic_build_connection_close(fr, sizeof fr, QuicErr::QUIC_ERR_NO_ERROR, 0, nullptr, 0);
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, fl);
+    dws_quic_conn_recv(&qc, dg, dl);
+    TEST_ASSERT_TRUE(qc.closed);
+    TEST_ASSERT_TRUE(qc.draining);
+
+    dws_quic_conn_close(&qc, QuicErr::QUIC_ERR_FRAME_ENCODING);
+    TEST_ASSERT_FALSE(qc.close_queued); // already closed: the request is dropped
+    uint8_t out[512];
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_send(&qc, out, sizeof out)); // draining: nothing to send
+}
+
+// A queued CONNECTION_CLOSE that is overtaken by the peer's own close: the close is still emitted
+// once, and the connection then keeps draining without emitting it a second time.
+void test_quic_conn_close_queued_then_peer_close()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    uint8_t ch[512];
+    size_t ch_len = 0;
+    feed_client_initial(&qc, &cb, &init, ch, &ch_len);
+
+    // Drain the owed ACK and the whole server handshake flight first, so that once the close has gone
+    // out there is genuinely nothing else queued and the "draining" send can be observed in isolation.
+    qc.address_validated = true;
+    uint8_t out[DWS_QUIC_MAX_DATAGRAM];
+    for (int i = 0; i < 8 && dws_quic_conn_send(&qc, out, sizeof out) > 0; i++)
+    {
+    }
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_send(&qc, out, sizeof out));
+
+    // Our own close is queued first (application-initiated).
+    dws_quic_conn_close(&qc, QuicErr::QUIC_ERR_NO_ERROR);
+    TEST_ASSERT_TRUE(qc.close_queued);
+
+    // The peer's CONNECTION_CLOSE arrives before we have sent ours: we are now draining too.
+    uint8_t fr[32];
+    size_t fl = dws_quic_build_connection_close(fr, sizeof fr, QuicErr::QUIC_ERR_NO_ERROR, 0, nullptr, 0);
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 1, &init.client, fr, fl);
+    dws_quic_conn_recv(&qc, dg, dl);
+    TEST_ASSERT_TRUE(qc.draining);
+
+    // The queued close still goes out exactly once...
+    TEST_ASSERT_TRUE(dws_quic_conn_send(&qc, out, sizeof out) > 0);
+    TEST_ASSERT_TRUE(qc.close_sent);
+    // ...and the next send, still draining with the close already sent, emits nothing.
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_send(&qc, out, sizeof out));
+}
+
+// A queued CONNECTION_CLOSE that cannot be built into the caller's buffer is NOT marked sent, so a
+// later call with room still reports the error to the peer.
+void test_quic_conn_close_send_no_room()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    uint8_t ch[512];
+    size_t ch_len = 0;
+    feed_client_initial(&qc, &cb, &init, ch, &ch_len);
+
+    dws_quic_conn_close(&qc, QuicErr::QUIC_ERR_NO_ERROR);
+    uint8_t tiny[8];
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_send(&qc, tiny, sizeof tiny));
+    TEST_ASSERT_FALSE(qc.close_sent);
+    TEST_ASSERT_FALSE(qc.closed);
+
+    uint8_t out[512];
+    TEST_ASSERT_TRUE(dws_quic_conn_send(&qc, out, sizeof out) > 0);
+    TEST_ASSERT_TRUE(qc.close_sent);
+}
+
+// A close queued at an encryption level outside INITIAL..APP falls back to the highest level whose
+// keys are still live, rather than indexing a non-existent packet-number space.
+void test_quic_conn_close_level_out_of_range()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    uint8_t ch[512];
+    size_t ch_len = 0;
+    feed_client_initial(&qc, &cb, &init, ch, &ch_len);
+
+    dws_quic_conn_close(&qc, QuicErr::QUIC_ERR_NO_ERROR);
+    qc.close_level = 200; // above QUIC_ENC_APP
+    uint8_t out[512];
+    TEST_ASSERT_TRUE(dws_quic_conn_send(&qc, out, sizeof out) > 0); // emitted at the fallback level
+    TEST_ASSERT_TRUE(dws_quic_conn_is_closed(&qc));
+}
+
+// With every packet-number space discarded there is no level left holding seal keys, so the close
+// level falls back to Initial rather than running off the bottom of the search.
+void test_quic_conn_highest_sealed_level_fallback()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    for (int l = QuicEnc::QUIC_ENC_INITIAL; l <= QuicEnc::QUIC_ENC_APP; l++)
+        qc.space[l].discarded = true;
+
+    dws_quic_conn_close(&qc, QuicErr::QUIC_ERR_NO_ERROR);
+    TEST_ASSERT_TRUE(qc.close_queued);
+    TEST_ASSERT_EQUAL_UINT8(QuicEnc::QUIC_ENC_INITIAL, qc.close_level); // the documented fallback
+}
+
+// The CRYPTO flight is fragmented across datagrams when it does not fit one packet: a large
+// certificate makes the Handshake flight exceed a single packet's room, and the remainder goes out
+// on the next send.
+void test_quic_conn_crypto_flight_fragmented()
+{
+    fill();
+    static uint8_t big_cert[1500];
+    memset(big_cert, 0x30, sizeof(big_cert));
+    QuicTlsConfig cfg;
+    make_cfg(&cfg);
+    cfg.cert_der = big_cert;
+    cfg.cert_len = sizeof(big_cert);
+
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    dws_quic_conn_init(&qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), SERVER_SCID,
+                       sizeof(SERVER_SCID), &cb);
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+
+    QuicTransportParams ctp;
+    dws_quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[128];
+    size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t chb[512];
+    size_t ch_len = build_client_hello(chb, client_pub, ctp_enc, ctp_len);
+    uint8_t frames[1200];
+    size_t fl = dws_quic_build_crypto(frames, sizeof(frames), 0, chb, ch_len);
+    memset(frames + fl, 0, 1100 - fl);
+    fl = 1100;
+    uint8_t dg[1500];
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, frames, fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qc.tls.state);
+
+    // The Handshake flight is larger than one datagram can carry, so it takes more than one send.
+    size_t hs_flight_len = 0;
+    (void)dws_quic_tls_flight(&qc.tls, QuicEnc::QUIC_ENC_HANDSHAKE, &hs_flight_len);
+    TEST_ASSERT_TRUE(hs_flight_len > DWS_QUIC_MAX_DATAGRAM);
+
+    uint8_t out[DWS_QUIC_MAX_DATAGRAM];
+    size_t first = dws_quic_conn_send(&qc, out, sizeof out);
+    TEST_ASSERT_TRUE(first > 0);
+    uint64_t sent_after_first = qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].crypto_tx_off;
+    TEST_ASSERT_TRUE(sent_after_first > 0);
+    TEST_ASSERT_TRUE(sent_after_first < hs_flight_len); // only part of the flight went out
+
+    // Lift the amplification limit so the remainder can follow, and drain the rest.
+    qc.address_validated = true;
+    size_t total = sent_after_first;
+    for (int i = 0; i < 8 && total < hs_flight_len; i++)
+    {
+        TEST_ASSERT_TRUE(dws_quic_conn_send(&qc, out, sizeof out) > 0);
+        total = qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].crypto_tx_off;
+    }
+    TEST_ASSERT_EQUAL_UINT64(hs_flight_len, total); // the whole flight was eventually sent
+}
+
+// build_app_frames' stream loop: a stream with nothing pending is skipped; a response larger than the
+// room left in the frame payload is split, taking only what fits and withholding the FIN until the
+// last byte is taken; and data queued after the FIN went out still goes out with tx_fin_sent latched.
+void test_quic_conn_stream_tx_partitioning()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+
+    // A client STREAM frame creates an inbound stream with nothing queued to send: the loop must
+    // skip it (no data, no pending FIN).
+    uint8_t d[2] = {0x11, 0x22};
+    uint8_t fr[64];
+    size_t fl = dws_quic_build_stream(fr, sizeof fr, 0, 0, d, 2, false);
+    uint8_t sdg[256];
+    size_t sl = build_short(sdg, sizeof sdg, SERVER_SCID, sizeof(SERVER_SCID), 1, &apc, fr, fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, sdg, sl));
+    uint8_t out[DWS_QUIC_MAX_DATAGRAM];
+    (void)dws_quic_conn_send(&qc, out, sizeof out); // emits the owed ACK; stream 0 is skipped
+
+    // A response larger than the room the frame payload has left, with a FIN: the first round takes
+    // `room` rather than `remain` and does NOT set the FIN, because the final size is not reached yet.
+    static uint8_t big[DWS_QUIC_STREAM_TX - 64];
+    memset(big, 0x5A, sizeof(big));
+    size_t queued = dws_quic_conn_stream_send(&qc, 0, big, sizeof(big), true);
+    TEST_ASSERT_EQUAL_UINT(sizeof(big), queued);
+    QuicStream *st = nullptr;
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
+        if (qc.streams[i].id == 0)
+            st = &qc.streams[i];
+    TEST_ASSERT_NOT_NULL(st);
+
+    (void)dws_quic_conn_send(&qc, out, sizeof out);
+    TEST_ASSERT_TRUE(st->tx_sent > 0);
+    TEST_ASSERT_TRUE(st->tx_sent < st->tx_have);       // split: only what fit was taken
+    TEST_ASSERT_EQUAL_UINT64(st->tx_sent, st->tx_off); // the stream offset tracks what was taken
+    TEST_ASSERT_FALSE(st->tx_fin_sent);                // the FIN waits for the last byte
+
+    // The tail now fits in one frame, so this round takes `remain` and carries the FIN.
+    TEST_ASSERT_TRUE(dws_quic_conn_send(&qc, out, sizeof out) > 0);
+    TEST_ASSERT_EQUAL_UINT(st->tx_have, st->tx_sent);
+    TEST_ASSERT_TRUE(st->tx_fin_sent);
+
+    // More data queued after the FIN was already sent still goes out, and tx_fin_sent stays latched.
+    TEST_ASSERT_EQUAL_UINT(2, dws_quic_conn_stream_send(&qc, 0, d, 2, false));
+    size_t before = st->tx_sent;
+    TEST_ASSERT_TRUE(dws_quic_conn_send(&qc, out, sizeof out) > 0);
+    TEST_ASSERT_EQUAL_UINT(before + 2, st->tx_sent);
+    TEST_ASSERT_TRUE(st->tx_fin_sent);
+}
+
+// A stream whose data has already been drained and is then closed with a zero-length FIN emits the
+// FIN on its own: the loop's fin_due arm runs with nothing left to send.
+void test_quic_conn_stream_fin_only()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+
+    uint8_t out[DWS_QUIC_MAX_DATAGRAM];
+    TEST_ASSERT_EQUAL_UINT(4, dws_quic_conn_stream_send(&qc, 0, (const uint8_t *)"BODY", 4, false));
+    TEST_ASSERT_TRUE(dws_quic_conn_send(&qc, out, sizeof out) > 0);
+    QuicStream *st = nullptr;
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
+        if (qc.streams[i].id == 0)
+            st = &qc.streams[i];
+    TEST_ASSERT_NOT_NULL(st);
+    TEST_ASSERT_EQUAL_UINT(st->tx_have, st->tx_sent);
+    TEST_ASSERT_FALSE(st->tx_fin_sent);
+
+    // Close the stream with no payload: nothing is "more", but the FIN is due.
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_stream_send(&qc, 0, (const uint8_t *)"", 0, true));
+    TEST_ASSERT_TRUE(st->tx_fin);
+    size_t n = dws_quic_conn_send(&qc, out, sizeof out);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(st->tx_fin_sent);
+
+    // The empty FIN really is on the wire as a zero-length STREAM frame.
+    uint8_t plain[DWS_QUIC_MAX_DATAGRAM];
+    size_t pt = open_short(out, n, sizeof(CLIENT_SCID), &aps, plain);
+    TEST_ASSERT_NOT_EQUAL(SIZE_MAX, pt);
+    QuicFrame f;
+    size_t got = dws_quic_frame_parse(plain, pt, &f);
+    TEST_ASSERT_TRUE(got > 0);
+    TEST_ASSERT_TRUE(f.type >= QuicFrameType::QUIC_FT_STREAM);
+    TEST_ASSERT_EQUAL_UINT64(0, f.stream.length);
+    TEST_ASSERT_TRUE(f.stream.fin);
+
+    // With the FIN sent and nothing pending the stream is skipped entirely from here on.
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_send(&qc, out, sizeof out));
+}
+
+// When several streams have more data than one frame payload can hold, the ones that no longer fit
+// emit nothing at all rather than a truncated frame - their data waits for the next round, and the
+// backlog still drains completely over successive rounds.
+void test_quic_conn_stream_tx_datagram_full()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+
+    // Large stream ids force 8-byte varints, so a frame header alone needs more room than the tail
+    // of a full datagram has left.
+    static uint8_t payload[500];
+    memset(payload, 0x77, sizeof(payload));
+    uint64_t ids[DWS_QUIC_MAX_STREAMS];
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
+    {
+        ids[i] = 0x3F00000000000000ull + (uint64_t)(i * 4);
+        TEST_ASSERT_EQUAL_UINT(sizeof(payload),
+                               dws_quic_conn_stream_send(&qc, ids[i], payload, sizeof(payload), false));
+    }
+
+    uint8_t out[DWS_QUIC_MAX_DATAGRAM];
+    (void)dws_quic_conn_send(&qc, out, sizeof out);
+
+    // At least one stream got nothing this round - the frame payload had no room left for it - and at
+    // least one was cut short mid-buffer.
+    size_t untouched = 0, partial = 0;
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
+        for (size_t j = 0; j < DWS_QUIC_MAX_STREAMS; j++)
+            if (qc.streams[j].id == ids[i])
+            {
+                if (qc.streams[j].tx_sent == 0)
+                    untouched++;
+                else if (qc.streams[j].tx_sent < qc.streams[j].tx_have)
+                    partial++;
+            }
+    TEST_ASSERT_TRUE(untouched > 0);
+    TEST_ASSERT_TRUE(partial > 0);
+
+    // Everything still drains over subsequent rounds.
+    qc.address_validated = true;
+    for (int round = 0; round < 20; round++)
+        (void)dws_quic_conn_send(&qc, out, sizeof out);
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
+        for (size_t j = 0; j < DWS_QUIC_MAX_STREAMS; j++)
+            if (qc.streams[j].id == ids[i])
+                TEST_ASSERT_EQUAL_UINT(qc.streams[j].tx_have, qc.streams[j].tx_sent);
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_send(&qc, out, sizeof out)); // nothing left queued
+}
+
+// dws_quic_conn_stream_send clamps to the space left in the stream's send buffer, and withholds the
+// FIN when it could not take everything the caller offered (the final size is not yet known).
+void test_quic_conn_stream_send_clamped()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+
+    static uint8_t huge[DWS_QUIC_STREAM_TX + 512];
+    memset(huge, 0x2B, sizeof(huge));
+    size_t took = dws_quic_conn_stream_send(&qc, 0, huge, sizeof(huge), true);
+    TEST_ASSERT_EQUAL_UINT(DWS_QUIC_STREAM_TX, took); // clamped to the buffer
+
+    QuicStream *st = nullptr;
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
+        if (qc.streams[i].id == 0)
+            st = &qc.streams[i];
+    TEST_ASSERT_NOT_NULL(st);
+    TEST_ASSERT_EQUAL_UINT(DWS_QUIC_STREAM_TX, st->tx_have);
+    TEST_ASSERT_FALSE(st->tx_fin); // the caller's FIN was not honoured: not all bytes were accepted
+}
+
+// UINT64_MAX is the free-slot sentinel, so it can never name a real stream: bytes "sent" on it are
+// accepted into a slot that stays free and are never put on the wire.
+void test_quic_conn_stream_send_sentinel_id()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+
+    TEST_ASSERT_EQUAL_UINT(2, dws_quic_conn_stream_send(&qc, UINT64_MAX, (const uint8_t *)"hi", 2, true));
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
+        TEST_ASSERT_EQUAL_UINT64(UINT64_MAX, qc.streams[i].id); // every slot is still free
+
+    uint8_t out[DWS_QUIC_MAX_DATAGRAM];
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_send(&qc, out, sizeof out)); // nothing to send
+}
+
+// The Probe Timeout backs off exponentially, stops doubling at its ceiling, and (once the count is
+// pinned high) saturates the period instead of overflowing the shift.
+void test_quic_conn_pto_backoff_ceiling()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    uint8_t ch[512];
+    size_t ch_len = 0;
+    feed_client_initial(&qc, &cb, &init, ch, &ch_len);
+    uint8_t out[2048];
+    TEST_ASSERT_TRUE(dws_quic_conn_send(&qc, out, sizeof out) > 0); // an ack-eliciting flight is outstanding
+
+    uint32_t now = 1000;
+    dws_quic_conn_on_timeout(&qc, now); // arm
+    TEST_ASSERT_TRUE(qc.pto_armed);
+    // Fire it more times than the backoff counter can grow: it stops at its cap.
+    for (int i = 0; i < 12; i++)
+    {
+        now = qc.pto_deadline_ms + 1;
+        dws_quic_conn_on_timeout(&qc, now);
+    }
+    TEST_ASSERT_EQUAL_UINT8(8, qc.pto_count); // capped
+
+    // With the counter pinned far above the cap the period saturates below 2^31 rather than
+    // overflowing the shift (RFC 9002 sec 6.2.1).
+    qc.pto_count = 40;
+    qc.pto_armed = false;
+    dws_quic_conn_on_timeout(&qc, 0); // re-arm with the saturated period
+    TEST_ASSERT_TRUE(qc.pto_armed);
+    TEST_ASSERT_EQUAL_UINT32(2097152000u, qc.pto_deadline_ms); // DWS_QUIC_PTO_MS << 21
+}
+
+// An "ACK owed" flag on a space that has never received a packet emits no ACK: there is no largest
+// received packet number to acknowledge, so the flag is left standing rather than acked from nothing.
+void test_quic_conn_ack_owed_without_rx()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+    uint8_t out[DWS_QUIC_MAX_DATAGRAM];
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_send(&qc, out, sizeof out)); // baseline: nothing queued
+
+    qc.space[QuicEnc::QUIC_ENC_APP].ack_eliciting_rx = true;
+    qc.space[QuicEnc::QUIC_ENC_APP].have_rx = false;
+    TEST_ASSERT_EQUAL_UINT(0, dws_quic_conn_send(&qc, out, sizeof out));
+    TEST_ASSERT_TRUE(qc.space[QuicEnc::QUIC_ENC_APP].ack_eliciting_rx); // not consumed: nothing was sent
+}
+
+// A close queued at a level we hold no seal keys for falls back to the highest level that still has
+// them, rather than trying to protect the packet with keys that were never installed.
+void test_quic_conn_close_level_without_keys()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb); // no ClientHello yet: only the Initial keys exist
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+
+    // A padded Initial PING gives the connection an amplification budget without starting the TLS
+    // handshake, so the Handshake and 1-RTT keys are still absent.
+    uint8_t fr[64] = {QuicFrameType::QUIC_FT_PING};
+    uint8_t dg[512];
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, sizeof fr);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_START, qc.tls.state);
+
+    dws_quic_conn_close(&qc, QuicErr::QUIC_ERR_NO_ERROR);
+    TEST_ASSERT_TRUE(qc.close_queued);
+    qc.close_level = QuicEnc::QUIC_ENC_APP; // in range and not discarded, but 1-RTT keys are absent
+    TEST_ASSERT_FALSE(qc.space[QuicEnc::QUIC_ENC_APP].discarded);
+
+    uint8_t out[512];
+    size_t n = dws_quic_conn_send(&qc, out, sizeof out);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(dws_quic_conn_is_closed(&qc));
+
+    // It went out at Initial - the only level with keys - so the peer can actually read it.
+    uint8_t plain[512];
+    size_t wire = 0;
+    uint8_t type = 0;
+    size_t pt = open_long(out, n, &init.server, plain, &wire, &type);
+    TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);
+    TEST_ASSERT_NOT_EQUAL(SIZE_MAX, pt);
+    TEST_ASSERT_TRUE(has_frame(plain, pt, QuicFrameType::QUIC_FT_CONNECTION_CLOSE));
+}
+
+// A connection that is draining but was not itself closed still reports closed to the application:
+// no new work may be started on it (RFC 9000 sec 10.2.2).
+void test_quic_conn_is_closed_draining_only()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    TEST_ASSERT_FALSE(dws_quic_conn_is_closed(&qc)); // neither flag
+
+    qc.draining = true;
+    TEST_ASSERT_FALSE(qc.closed);
+    TEST_ASSERT_TRUE(dws_quic_conn_is_closed(&qc)); // draining alone is enough
+}
+
+// The PTO's "is anything outstanding?" test consults every packet-number space in turn: an
+// unacknowledged ack-eliciting packet in the Initial, Handshake OR 1-RTT space arms the timer, a
+// discarded space never counts, and only when no space has anything left does the timer disarm.
+void test_quic_conn_pto_outstanding_per_space()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    static const int levels[3] = {QuicEnc::QUIC_ENC_INITIAL, QuicEnc::QUIC_ENC_HANDSHAKE, QuicEnc::QUIC_ENC_APP};
+
+    for (int i = 0; i < 3; i++)
+    {
+        init_conn(&qc, &cb);
+        // Exactly one space has sent ack-eliciting packet 3 and had only up to 2 acknowledged.
+        qc.space[levels[i]].last_ae_pn = 3;
+        qc.space[levels[i]].largest_acked = 2;
+        dws_quic_conn_on_timeout(&qc, 1000);
+        TEST_ASSERT_TRUE(qc.pto_armed);
+        TEST_ASSERT_EQUAL_UINT32(1000 + DWS_QUIC_PTO_MS, qc.pto_deadline_ms);
+    }
+
+    // Nothing outstanding anywhere: the timer disarms and the backoff resets.
+    init_conn(&qc, &cb);
+    qc.pto_armed = true;
+    qc.pto_count = 3;
+    dws_quic_conn_on_timeout(&qc, 1000);
+    TEST_ASSERT_FALSE(qc.pto_armed);
+    TEST_ASSERT_EQUAL_UINT8(0, qc.pto_count);
+
+    // A discarded space does not count, even with an unacknowledged ack-eliciting packet recorded:
+    // its keys are gone, so there is nothing left to retransmit at that level.
+    init_conn(&qc, &cb);
+    qc.space[QuicEnc::QUIC_ENC_APP].last_ae_pn = 3;
+    qc.space[QuicEnc::QUIC_ENC_APP].largest_acked = 2;
+    qc.space[QuicEnc::QUIC_ENC_APP].discarded = true;
+    dws_quic_conn_on_timeout(&qc, 1000);
+    TEST_ASSERT_FALSE(qc.pto_armed);
+}
+
+// Once the peer has acknowledged everything in every space - Initial discarded, Handshake acked, and
+// now the 1-RTT packet acked too - the PTO disarms instead of retransmitting data the peer already has.
+void test_quic_conn_pto_disarms_when_all_acked()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+
+    // The 1-RTT HANDSHAKE_DONE packet is still unacknowledged, so the PTO arms.
+    dws_quic_conn_on_timeout(&qc, 1000);
+    TEST_ASSERT_TRUE(qc.pto_armed);
+
+    // The client acknowledges 1-RTT packet 0; now no space has anything outstanding.
+    uint8_t fr[32];
+    size_t fl = dws_quic_build_ack(fr, sizeof fr, 0, 0, 0);
+    uint8_t dg[256];
+    size_t dl = build_short(dg, sizeof dg, SERVER_SCID, sizeof(SERVER_SCID), 0, &apc, fr, fl);
+    TEST_ASSERT_TRUE(dws_quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_EQUAL_INT64(0, qc.space[QuicEnc::QUIC_ENC_APP].largest_acked);
+
+    qc.pto_armed = true; // the ACK already cleared it; re-arm so the disarm below is what clears it
+    dws_quic_conn_on_timeout(&qc, 2000);
+    TEST_ASSERT_FALSE(qc.pto_armed);
+    TEST_ASSERT_EQUAL_UINT8(0, qc.pto_count);
+    TEST_ASSERT_FALSE(dws_quic_conn_is_closed(&qc));
+}
+
+// A PTO that fires twice without an intervening send re-queues HANDSHAKE_DONE only once: the second
+// firing sees it already queued (and not sent) and leaves it alone.
+void test_quic_conn_pto_requeues_handshake_done_once()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+    TEST_ASSERT_TRUE(qc.handshake_done_sent);
+
+    // The client never acknowledged the 1-RTT packet, so the APP space is still outstanding.
+    dws_quic_conn_on_timeout(&qc, 1000); // arm
+    dws_quic_conn_on_timeout(&qc, 1000 + DWS_QUIC_PTO_MS + 1);
+    TEST_ASSERT_TRUE(qc.handshake_done_queued);
+    TEST_ASSERT_FALSE(qc.handshake_done_sent);
+
+    // A second PTO without a send in between: already queued, so nothing changes.
+    dws_quic_conn_on_timeout(&qc, qc.pto_deadline_ms + 1);
+    TEST_ASSERT_TRUE(qc.handshake_done_queued);
+    TEST_ASSERT_FALSE(qc.handshake_done_sent);
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake_and_stream);
+    RUN_TEST(test_quic_conn_null_callbacks);
+    RUN_TEST(test_quic_conn_stream_duplicate_and_stale_fin);
+    RUN_TEST(test_quic_conn_frame_dispatch_variants);
+    RUN_TEST(test_quic_recv_zero_version);
+    RUN_TEST(test_quic_recv_older_packet_number);
+    RUN_TEST(test_quic_recv_short_header_decrypt_failure);
+    RUN_TEST(test_quic_conn_crypto_after_handshake_done);
+    RUN_TEST(test_quic_conn_close_after_peer_close);
+    RUN_TEST(test_quic_conn_close_queued_then_peer_close);
+    RUN_TEST(test_quic_conn_close_send_no_room);
+    RUN_TEST(test_quic_conn_close_level_out_of_range);
+    RUN_TEST(test_quic_conn_highest_sealed_level_fallback);
+    RUN_TEST(test_quic_conn_crypto_flight_fragmented);
+    RUN_TEST(test_quic_conn_stream_tx_partitioning);
+    RUN_TEST(test_quic_conn_stream_tx_datagram_full);
+    RUN_TEST(test_quic_conn_stream_fin_only);
+    RUN_TEST(test_quic_conn_stream_send_clamped);
+    RUN_TEST(test_quic_conn_stream_send_sentinel_id);
+    RUN_TEST(test_quic_conn_pto_backoff_ceiling);
+    RUN_TEST(test_quic_conn_ack_owed_without_rx);
+    RUN_TEST(test_quic_conn_close_level_without_keys);
+    RUN_TEST(test_quic_conn_is_closed_draining_only);
+    RUN_TEST(test_quic_conn_pto_outstanding_per_space);
+    RUN_TEST(test_quic_conn_pto_disarms_when_all_acked);
+    RUN_TEST(test_quic_conn_pto_requeues_handshake_done_once);
     RUN_TEST(test_pto_retransmits_flight);
     RUN_TEST(test_connection_close_api);
     RUN_TEST(test_connection_close_on_malformed_frame);

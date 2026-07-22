@@ -118,8 +118,11 @@ static size_t pdu_exception(ModbusFunction fc, ModbusException code, uint8_t *ou
 // response PDU length, or 0 if it cannot fit (caller treats 0 as "send nothing").
 static size_t dws_modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *out, size_t out_cap)
 {
-    if (pdu_len < 1)
-        return 0;
+    // Both callers already guarantee at least one PDU byte, so this guard cannot fire: the TCP path
+    // rejects len < 2 before computing pdu_len = len - 1, and the RTU path rejects req_len < 4 before
+    // computing pdu_len = req_len - 3. Kept as defence in depth for any future caller.
+    if (pdu_len < 1) // GCOVR_EXCL_LINE
+        return 0;    // GCOVR_EXCL_LINE
     ModbusFunction fc = static_cast<ModbusFunction>(pdu[0]);
 
     // Dispatch on the function code; each case validates its own request length and

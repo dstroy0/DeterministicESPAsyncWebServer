@@ -131,6 +131,72 @@ void test_encode_decode_guards()
     TEST_ASSERT_EQUAL_INT(-1, dws_ash_frame_decode(short_raw, sizeof(short_raw), &control, pay, sizeof(pay), &pay_len));
 }
 
+// Null output buffer, and a null payload with a non-zero length, are both refused.
+void test_encode_null_args()
+{
+    uint8_t out[16];
+    uint8_t payload[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(0x00, payload, 4, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(0x00, nullptr, 4, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT16(4, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, sizeof(out))); // control
+}
+
+// A reserved control byte needs two output bytes; one byte of room is not enough.
+void test_encode_stuffed_control_needs_two_bytes()
+{
+    uint8_t out[16];
+    TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(Ash::ASH_FLAG, nullptr, 0, out, 1));
+    // With room it stuffs into escape + (byte ^ 0x20).
+    uint16_t n = dws_ash_frame_encode(Ash::ASH_FLAG, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_GREATER_THAN_UINT16(0, n);
+    TEST_ASSERT_EQUAL_HEX8(Ash::ASH_ESCAPE, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(Ash::ASH_FLAG ^ 0x20, out[1]);
+}
+
+// The RST frame is exactly control + CRC(2) + flag = 4 bytes; every smaller cap
+// fails at the next field rather than writing past the buffer.
+void test_encode_capacity_boundaries()
+{
+    uint8_t out[16];
+    TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, 1)); // no room for CRC hi
+    TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, 2)); // no room for CRC lo
+    TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, 3)); // no room for the flag
+    TEST_ASSERT_EQUAL_UINT16(4, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, 4)); // exact fit
+}
+
+// A null raw buffer means "nothing to decode".
+void test_decode_null_raw()
+{
+    uint8_t control = 0, pay[8];
+    uint16_t plen = 0;
+    TEST_ASSERT_EQUAL_INT(0, dws_ash_frame_decode(nullptr, 4, &control, pay, sizeof(pay), &plen));
+}
+
+// A frame whose destuffed body exceeds the fixed scratch is rejected, not truncated.
+void test_decode_rejects_oversized_frame()
+{
+    uint8_t raw[DWS_ZIGBEE_MAX_DATA + 12];
+    for (uint16_t i = 0; i + 1 < sizeof(raw); i++)
+        raw[i] = 0x01; // neither an escape nor the flag
+    raw[sizeof(raw) - 1] = Ash::ASH_FLAG;
+    uint8_t control = 0, pay[64];
+    uint16_t plen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, dws_ash_frame_decode(raw, sizeof(raw), &control, pay, sizeof(pay), &plen));
+}
+
+// control and pay_len are optional outputs; the payload is still delivered.
+void test_decode_optional_outputs()
+{
+    const uint8_t payload[3] = {0xAA, 0xBB, 0xCC};
+    uint8_t frame[32];
+    uint16_t n = dws_ash_frame_encode(0x42, payload, 3, frame, sizeof(frame));
+    TEST_ASSERT_GREATER_THAN_UINT16(0, n);
+
+    uint8_t pay[16] = {0};
+    TEST_ASSERT_EQUAL_INT((int)n, dws_ash_frame_decode(frame, n, nullptr, pay, sizeof(pay), nullptr));
+    TEST_ASSERT_EQUAL_MEMORY(payload, pay, 3);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -144,5 +210,11 @@ int main()
     RUN_TEST(test_decode_rejects_small_payload_buffer);
     RUN_TEST(test_encode_bounds);
     RUN_TEST(test_encode_decode_guards);
+    RUN_TEST(test_encode_null_args);
+    RUN_TEST(test_encode_stuffed_control_needs_two_bytes);
+    RUN_TEST(test_encode_capacity_boundaries);
+    RUN_TEST(test_decode_null_raw);
+    RUN_TEST(test_decode_rejects_oversized_frame);
+    RUN_TEST(test_decode_optional_outputs);
     return UNITY_END();
 }

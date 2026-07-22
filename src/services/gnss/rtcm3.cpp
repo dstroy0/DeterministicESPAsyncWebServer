@@ -176,8 +176,10 @@ size_t build_arp(uint8_t *out, size_t cap, uint16_t msg, uint16_t station_id, in
         dws_rtcm_bw_u(&w, h, 16); // DF028 antenna height (1006)
         body_bytes = 21;
     }
-    if (!w.ok)
-        return 0;
+    // Every field width above is a constant; they total 152 bits (1005) or 168 (1006), and
+    // sizeof(payload) * 8 is 168 - so the writer can never have failed by this point.
+    if (!w.ok)    // GCOVR_EXCL_LINE
+        return 0; // GCOVR_EXCL_LINE
     return dws_rtcm3_frame_build(out, cap, payload, body_bytes);
 }
 } // namespace

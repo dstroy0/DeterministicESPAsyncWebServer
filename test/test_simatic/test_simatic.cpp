@@ -109,6 +109,59 @@ void test_parse_rejects_bad()
     TEST_ASSERT_FALSE(dws_3964r_parse_block(bigblk, bn, false, tiny, sizeof(tiny), &olen));
 }
 
+void test_build_block_rejects_bad_args()
+{
+    // A null destination, and a null payload pointer with a non-zero length, are refused; a null
+    // payload with len 0 is the legal "empty block" (terminator only).
+    uint8_t buf[8];
+    const uint8_t d[] = {0x41};
+    TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(nullptr, sizeof(buf), d, 1, false));
+    TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, sizeof(buf), nullptr, 1, false));
+    size_t n = dws_3964r_build_block(buf, sizeof(buf), nullptr, 0, false);
+    TEST_ASSERT_EQUAL_size_t(2, n);
+    TEST_ASSERT_EQUAL_HEX8(SIMATIC_DLE, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(SIMATIC_ETX, buf[1]);
+}
+
+void test_build_block_overflow_at_each_stage()
+{
+    // Every write stage is capacity-checked independently: payload byte, the doubled DLE, the
+    // DLE ETX terminator, and the BCC.
+    uint8_t buf[8];
+    const uint8_t d[] = {0x41};
+    const uint8_t dle[] = {SIMATIC_DLE};
+    TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, 0, d, 1, false));   // no room at all
+    TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, 1, dle, 1, false)); // room for DLE, not its double
+    TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, 2, d, 1, false));   // no room for DLE ETX
+    TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, 3, d, 1, true));    // no room for the BCC
+    TEST_ASSERT_EQUAL_size_t(3, dws_3964r_build_block(buf, 3, d, 1, false));   // same block fits without one
+}
+
+void test_parse_block_rejects_null_args()
+{
+    // All three pointers are mandatory; a missing one fails closed rather than writing anywhere.
+    uint8_t out[8];
+    size_t olen = 0;
+    const uint8_t blk[] = {0x41, SIMATIC_DLE, SIMATIC_ETX};
+    TEST_ASSERT_FALSE(dws_3964r_parse_block(nullptr, sizeof(blk), false, out, sizeof(out), &olen));
+    TEST_ASSERT_FALSE(dws_3964r_parse_block(blk, sizeof(blk), false, nullptr, sizeof(out), &olen));
+    TEST_ASSERT_FALSE(dws_3964r_parse_block(blk, sizeof(blk), false, out, sizeof(out), nullptr));
+    TEST_ASSERT_TRUE(dws_3964r_parse_block(blk, sizeof(blk), false, out, sizeof(out), &olen));
+    TEST_ASSERT_EQUAL_size_t(1, olen);
+}
+
+void test_parse_block_missing_bcc_and_doubled_dle_overflow()
+{
+    uint8_t out[8];
+    size_t olen = 0;
+    // R variant whose trailing BCC was truncated away: the terminator alone is not enough
+    const uint8_t nobcc[] = {0x41, SIMATIC_DLE, SIMATIC_ETX};
+    TEST_ASSERT_FALSE(dws_3964r_parse_block(nobcc, sizeof(nobcc), true, out, sizeof(out), &olen));
+    // a doubled DLE that does not fit the caller's buffer is refused (fail-closed)
+    const uint8_t doubled[] = {SIMATIC_DLE, SIMATIC_DLE, SIMATIC_DLE, SIMATIC_ETX};
+    TEST_ASSERT_FALSE(dws_3964r_parse_block(doubled, sizeof(doubled), false, out, 0, &olen));
+}
+
 // ---- 3964R link state machine ---------------------------------------------
 
 void test_sm_send_happy_path()
@@ -235,6 +288,227 @@ void test_sm_reply_from_rx_callback()
     TEST_ASSERT_FALSE(dws_3964r_idle(&c));
 }
 
+void test_sm_send_rejects_when_busy_or_unframeable()
+{
+    // One job in flight at a time, and a payload that cannot be framed inside the block buffer is
+    // rejected without disturbing the idle link.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, true, cap_tx, cap_rx, nullptr);
+    const uint8_t msg[] = {0x01};
+    TEST_ASSERT_TRUE(dws_3964r_send(&c, msg, sizeof(msg), 0));
+    TEST_ASSERT_FALSE(dws_3964r_send(&c, msg, sizeof(msg), 0));
+
+    Simatic3964Ctx d;
+    dws_3964r_init(&d, true, true, cap_tx, cap_rx, nullptr);
+    static uint8_t big[DWS_SIMATIC_BLOCK_MAX];
+    memset(big, 0x41, sizeof(big)); // no room left for DLE ETX BCC
+    TEST_ASSERT_FALSE(dws_3964r_send(&d, big, sizeof(big), 0));
+    TEST_ASSERT_TRUE(dws_3964r_idle(&d));
+}
+
+void test_sm_null_callbacks_are_safe()
+{
+    // tx/rx are optional: the link still runs the handshake and accepts a block, it just has
+    // nowhere to put the bytes.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, true, nullptr, nullptr, nullptr);
+    const uint8_t payload[] = {0x41};
+    uint8_t blk[16];
+    size_t n = dws_3964r_build_block(blk, sizeof(blk), payload, sizeof(payload), true);
+    dws_3964r_rx_byte(&c, SIMATIC_STX, 0);
+    for (size_t i = 0; i < n; i++)
+        dws_3964r_rx_byte(&c, blk[i], (uint32_t)(1 + i));
+    TEST_ASSERT_EQUAL_size_t(0, g_tx.size()); // no sink -> nothing emitted
+    TEST_ASSERT_EQUAL_size_t(0, g_rx.size()); // no delivery callback
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));     // the block was still consumed and the link freed
+}
+
+void test_sm_receive_bad_bcc_naks()
+{
+    // A check-invalid block is NAKed and never delivered.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, true, cap_tx, cap_rx, nullptr);
+    const uint8_t payload[] = {0x41, 0x42};
+    uint8_t blk[16];
+    size_t n = dws_3964r_build_block(blk, sizeof(blk), payload, sizeof(payload), true);
+    blk[n - 1] ^= 0xFF; // corrupt the BCC
+    dws_3964r_rx_byte(&c, SIMATIC_STX, 0);
+    for (size_t i = 0; i < n; i++)
+        dws_3964r_rx_byte(&c, blk[i], (uint32_t)(1 + i));
+    TEST_ASSERT_EQUAL_HEX8(SIMATIC_NAK, g_tx.back());
+    TEST_ASSERT_EQUAL_size_t(0, g_rx.size());
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));
+}
+
+void test_sm_receive_no_bcc_variant_delivers()
+{
+    // Plain 3964 (no BCC): DLE ETX finalizes the block immediately, no trailing check byte.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, false, cap_tx, cap_rx, nullptr);
+    const uint8_t payload[] = {0x41, SIMATIC_DLE};
+    uint8_t blk[16];
+    size_t n = dws_3964r_build_block(blk, sizeof(blk), payload, sizeof(payload), false);
+    dws_3964r_rx_byte(&c, SIMATIC_STX, 0);
+    for (size_t i = 0; i < n; i++)
+        dws_3964r_rx_byte(&c, blk[i], (uint32_t)(1 + i));
+    TEST_ASSERT_EQUAL_HEX8(SIMATIC_DLE, g_tx.back()); // acked
+    TEST_ASSERT_EQUAL_size_t(sizeof(payload), g_rx.size());
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, g_rx.data(), g_rx.size());
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));
+}
+
+void test_sm_receive_illegal_control_naks()
+{
+    // DLE followed by something that is neither DLE nor ETX is a framing error mid-collect.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, true, cap_tx, cap_rx, nullptr);
+    dws_3964r_rx_byte(&c, SIMATIC_STX, 0);
+    dws_3964r_rx_byte(&c, SIMATIC_DLE, 1);
+    dws_3964r_rx_byte(&c, 0x55, 2);
+    TEST_ASSERT_EQUAL_HEX8(SIMATIC_NAK, g_tx.back());
+    TEST_ASSERT_EQUAL_size_t(0, g_rx.size());
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));
+}
+
+void test_sm_receive_overflow_naks()
+{
+    // A partner that never terminates the block fills rxbuf; the next byte is rejected.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, true, cap_tx, cap_rx, nullptr);
+    dws_3964r_rx_byte(&c, SIMATIC_STX, 0);
+    for (size_t i = 0; i < DWS_SIMATIC_BLOCK_MAX; i++)
+        dws_3964r_rx_byte(&c, 0x41, (uint32_t)(1 + i));
+    TEST_ASSERT_FALSE(dws_3964r_idle(&c)); // exactly full, still collecting
+    dws_3964r_rx_byte(&c, 0x41, 1000);     // one byte too many
+    TEST_ASSERT_EQUAL_HEX8(SIMATIC_NAK, g_tx.back());
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));
+}
+
+void test_sm_idle_ignores_non_stx()
+{
+    // Line noise while idle must not open a receive.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, false, cap_tx, cap_rx, nullptr);
+    dws_3964r_rx_byte(&c, 0x55, 0);
+    TEST_ASSERT_EQUAL_size_t(0, g_tx.size());
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));
+}
+
+void test_sm_conn_nak_retries_then_gives_up()
+{
+    // A partner that NAKs the connect gets MAX_CONN_RETRY fresh STXs, then the job is abandoned.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, false, cap_tx, cap_rx, nullptr);
+    const uint8_t msg[] = {0x01};
+    dws_3964r_send(&c, msg, sizeof(msg), 0);
+    for (int i = 1; i < SIMATIC_MAX_CONN_RETRY; i++)
+    {
+        dws_3964r_rx_byte(&c, SIMATIC_NAK, (uint32_t)i);
+        TEST_ASSERT_EQUAL_HEX8(SIMATIC_STX, g_tx.back());
+        TEST_ASSERT_FALSE(dws_3964r_idle(&c));
+    }
+    dws_3964r_rx_byte(&c, SIMATIC_NAK, 99);
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));
+}
+
+void test_sm_await_conn_ignores_other_bytes()
+{
+    // Neither DLE, STX nor NAK: nothing happens, we keep waiting for the connect.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, false, cap_tx, cap_rx, nullptr);
+    const uint8_t msg[] = {0x01};
+    dws_3964r_send(&c, msg, sizeof(msg), 0);
+    g_tx.clear();
+    dws_3964r_rx_byte(&c, 0x55, 1);
+    TEST_ASSERT_EQUAL_size_t(0, g_tx.size());
+    TEST_ASSERT_FALSE(dws_3964r_idle(&c));
+}
+
+void test_sm_await_end_ignores_noise_then_gives_up()
+{
+    // In TX_AWAIT_END only DLE (done) and NAK (repeat) mean anything; MAX_BLOCK_RETRY rejections
+    // abandon the job.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, false, cap_tx, cap_rx, nullptr);
+    const uint8_t msg[] = {0x01};
+    dws_3964r_send(&c, msg, sizeof(msg), 0);
+    dws_3964r_rx_byte(&c, SIMATIC_DLE, 1); // connect -> block sent
+    g_tx.clear();
+    dws_3964r_rx_byte(&c, 0x55, 2);
+    TEST_ASSERT_EQUAL_size_t(0, g_tx.size());
+    TEST_ASSERT_FALSE(dws_3964r_idle(&c));
+    for (int i = 0; i < SIMATIC_MAX_BLOCK_RETRY - 1; i++)
+    {
+        dws_3964r_rx_byte(&c, SIMATIC_NAK, 3); // reject -> repeat from STX
+        TEST_ASSERT_FALSE(dws_3964r_idle(&c));
+        dws_3964r_rx_byte(&c, SIMATIC_DLE, 4); // partner connects again
+    }
+    dws_3964r_rx_byte(&c, SIMATIC_NAK, 5);
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));
+}
+
+void test_sm_tick_before_deadline_is_a_noop()
+{
+    // The QVZ timer must not fire early.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, false, cap_tx, cap_rx, nullptr);
+    const uint8_t msg[] = {0x01};
+    dws_3964r_send(&c, msg, sizeof(msg), 0);
+    g_tx.clear();
+    dws_3964r_tick(&c, DWS_SIMATIC_QVZ_MS - 1);
+    TEST_ASSERT_EQUAL_size_t(0, g_tx.size());
+    TEST_ASSERT_FALSE(dws_3964r_idle(&c));
+}
+
+void test_sm_tick_block_timeout_retries_then_gives_up()
+{
+    // No end DLE within QVZ repeats the block from STX, up to MAX_BLOCK_RETRY times.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, false, cap_tx, cap_rx, nullptr);
+    const uint8_t msg[] = {0x01};
+    dws_3964r_send(&c, msg, sizeof(msg), 0);
+    uint32_t t = 0;
+    for (int i = 0; i < SIMATIC_MAX_BLOCK_RETRY - 1; i++)
+    {
+        dws_3964r_rx_byte(&c, SIMATIC_DLE, t); // connect -> awaiting the end DLE
+        t += DWS_SIMATIC_QVZ_MS;
+        dws_3964r_tick(&c, t);
+        TEST_ASSERT_EQUAL_HEX8(SIMATIC_STX, g_tx.back());
+        TEST_ASSERT_FALSE(dws_3964r_idle(&c));
+    }
+    dws_3964r_rx_byte(&c, SIMATIC_DLE, t);
+    t += DWS_SIMATIC_QVZ_MS;
+    dws_3964r_tick(&c, t);
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));
+}
+
+void test_sm_tick_zvz_aborts_receive()
+{
+    // A partner that stops mid-block trips the ZVZ inter-character timeout -> NAK, link freed.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, true, cap_tx, cap_rx, nullptr);
+    dws_3964r_rx_byte(&c, SIMATIC_STX, 0);
+    dws_3964r_rx_byte(&c, 0x41, 1);
+    dws_3964r_tick(&c, 1 + DWS_SIMATIC_ZVZ_MS);
+    TEST_ASSERT_EQUAL_HEX8(SIMATIC_NAK, g_tx.back());
+    TEST_ASSERT_TRUE(dws_3964r_idle(&c));
+}
+
+void test_sm_unknown_state_is_inert()
+{
+    // Defensive: a state byte outside the four defined states (a corrupted context) makes both
+    // dispatchers fall through - no transition, no bytes on the wire.
+    Simatic3964Ctx c;
+    dws_3964r_init(&c, true, true, cap_tx, cap_rx, nullptr);
+    c.state = (Simatic3964State)0x7F;
+    c.deadline_ms = 0;
+    dws_3964r_rx_byte(&c, SIMATIC_STX, 10);
+    dws_3964r_tick(&c, 10); // deadline already past, so the switch is reached
+    TEST_ASSERT_EQUAL_size_t(0, g_tx.size());
+    TEST_ASSERT_FALSE(dws_3964r_idle(&c));
+    TEST_ASSERT_EQUAL_UINT8(0x7F, (uint8_t)c.state);
+}
+
 // ---- RK512 telegrams ------------------------------------------------------
 
 void test_rk512_build_send_field_order()
@@ -291,6 +565,64 @@ void test_rk512_parse_rejects()
     TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_send(tiny, sizeof(tiny), Rk512Area::DB, 0, 0, w, 1));
 }
 
+void test_rk512_build_guards()
+{
+    // Every builder fails closed on a null destination or a destination too small for its telegram.
+    uint8_t buf[32];
+    const uint16_t w[] = {0x0001};
+    TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_send(nullptr, sizeof(buf), Rk512Area::DB, 0, 0, w, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_send(buf, sizeof(buf), Rk512Area::DB, 0, 0, nullptr, 1));
+    // a null word array with count 0 is the legal header-only SEND
+    TEST_ASSERT_EQUAL_size_t(8, dws_rk512_build_send(buf, sizeof(buf), Rk512Area::DB, 0, 0, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_fetch(nullptr, sizeof(buf), Rk512Area::DB, 0, 0, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_fetch(buf, 7, Rk512Area::DB, 0, 0, 1)); // < header
+    TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_reaction(nullptr, sizeof(buf), 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_reaction(buf, 2, 0)); // < 3
+}
+
+void test_rk512_parse_header_guards()
+{
+    // Null arguments, an area code under the valid range, and a REACTION command byte are all
+    // rejected as request headers.
+    Rk512Header h;
+    const uint8_t ok[] = {0x00, 0x00, (uint8_t)Rk512Area::DB, 0x01, 0x00, 0x00, 0x00, 0x01};
+    TEST_ASSERT_FALSE(dws_rk512_parse_header(nullptr, sizeof(ok), &h));
+    TEST_ASSERT_FALSE(dws_rk512_parse_header(ok, sizeof(ok), nullptr));
+    uint8_t lowarea[8];
+    memcpy(lowarea, ok, sizeof(ok));
+    lowarea[2] = 0x00; // below Rk512Area::DB
+    TEST_ASSERT_FALSE(dws_rk512_parse_header(lowarea, sizeof(lowarea), &h));
+    uint8_t reaction[8];
+    memcpy(reaction, ok, sizeof(ok));
+    reaction[0] = (uint8_t)Rk512Cmd::REACTION;
+    TEST_ASSERT_FALSE(dws_rk512_parse_header(reaction, sizeof(reaction), &h));
+    TEST_ASSERT_TRUE(dws_rk512_parse_header(ok, sizeof(ok), &h)); // the control case still parses
+    TEST_ASSERT_EQUAL(Rk512Cmd::SEND, h.cmd);
+    TEST_ASSERT_EQUAL_UINT8(1, h.dbnr);
+}
+
+void test_rk512_parse_reaction_guards_and_data()
+{
+    // Null arguments / a short buffer / a non-REACTION command byte are refused; a FETCH response
+    // hands back a pointer to the returned words inside the telegram.
+    uint8_t buf[16];
+    uint16_t status = 0;
+    dws_rk512_build_reaction(buf, sizeof(buf), 0x0102);
+    TEST_ASSERT_FALSE(dws_rk512_parse_reaction(nullptr, 3, &status, nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_rk512_parse_reaction(buf, 3, nullptr, nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_rk512_parse_reaction(buf, 2, &status, nullptr, nullptr));
+    const uint8_t notreaction[3] = {(uint8_t)Rk512Cmd::FETCH, 0x00, 0x00};
+    TEST_ASSERT_FALSE(dws_rk512_parse_reaction(notreaction, sizeof(notreaction), &status, nullptr, nullptr));
+    buf[3] = 0x12; // two data words appended by a FETCH responder
+    buf[4] = 0x34;
+    const uint8_t *data = nullptr;
+    size_t dlen = 0;
+    TEST_ASSERT_TRUE(dws_rk512_parse_reaction(buf, 5, &status, &data, &dlen));
+    TEST_ASSERT_EQUAL_UINT16(0x0102, status);
+    TEST_ASSERT_EQUAL_PTR(buf + 3, data);
+    TEST_ASSERT_EQUAL_size_t(2, dlen);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -299,15 +631,36 @@ int main()
     RUN_TEST(test_block_round_trip_with_embedded_dle);
     RUN_TEST(test_block_round_trip_no_bcc);
     RUN_TEST(test_parse_rejects_bad);
+    RUN_TEST(test_build_block_rejects_bad_args);
+    RUN_TEST(test_build_block_overflow_at_each_stage);
+    RUN_TEST(test_parse_block_rejects_null_args);
+    RUN_TEST(test_parse_block_missing_bcc_and_doubled_dle_overflow);
     RUN_TEST(test_sm_send_happy_path);
     RUN_TEST(test_sm_receive_path_delivers);
     RUN_TEST(test_sm_block_nak_retries);
     RUN_TEST(test_sm_qvz_timeout_then_abort);
     RUN_TEST(test_sm_priority_arbitration);
     RUN_TEST(test_sm_reply_from_rx_callback);
+    RUN_TEST(test_sm_send_rejects_when_busy_or_unframeable);
+    RUN_TEST(test_sm_null_callbacks_are_safe);
+    RUN_TEST(test_sm_receive_bad_bcc_naks);
+    RUN_TEST(test_sm_receive_no_bcc_variant_delivers);
+    RUN_TEST(test_sm_receive_illegal_control_naks);
+    RUN_TEST(test_sm_receive_overflow_naks);
+    RUN_TEST(test_sm_idle_ignores_non_stx);
+    RUN_TEST(test_sm_conn_nak_retries_then_gives_up);
+    RUN_TEST(test_sm_await_conn_ignores_other_bytes);
+    RUN_TEST(test_sm_await_end_ignores_noise_then_gives_up);
+    RUN_TEST(test_sm_tick_before_deadline_is_a_noop);
+    RUN_TEST(test_sm_tick_block_timeout_retries_then_gives_up);
+    RUN_TEST(test_sm_tick_zvz_aborts_receive);
+    RUN_TEST(test_sm_unknown_state_is_inert);
     RUN_TEST(test_rk512_build_send_field_order);
     RUN_TEST(test_rk512_build_fetch_and_parse);
     RUN_TEST(test_rk512_reaction_round_trip);
     RUN_TEST(test_rk512_parse_rejects);
+    RUN_TEST(test_rk512_build_guards);
+    RUN_TEST(test_rk512_parse_header_guards);
+    RUN_TEST(test_rk512_parse_reaction_guards_and_data);
     return UNITY_END();
 }

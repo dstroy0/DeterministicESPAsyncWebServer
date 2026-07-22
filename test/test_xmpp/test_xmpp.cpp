@@ -149,9 +149,105 @@ void test_attr_edges(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr("<m to='alice'>", 14, "to", out, 3)); // cap too small
 }
 
+// put_attr() writes ` name="value"` in five separately bounded steps. A capacity that runs out at
+// each of them in turn fails the whole stanza closed rather than emitting a half-written attribute.
+void test_put_attr_fails_at_each_step(void)
+{
+    char buf[64];
+    // "<presence"(9) then ' '(10) "type"(14) '="'(16) "ab"(18) '"'(19) "/>"(21).
+    const size_t caps[] = {10, 11, 15, 17, 19, 21};
+    for (size_t i = 0; i < sizeof(caps) / sizeof(caps[0]); i++)
+        TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_presence("ab", buf, caps[i]));
+    TEST_ASSERT_EQUAL_size_t(21, dws_xmpp_presence("ab", buf, 22)); // one more byte for the NUL
+    TEST_ASSERT_EQUAL_STRING("<presence type=\"ab\"/>", buf);
+}
+
+// Each successive write in dws_xmpp_message() - the open tag, the three attributes, '>', and the
+// optional <body> block - fails closed on its own exact capacity boundary.
+void test_message_fails_at_each_step(void)
+{
+    char buf[80];
+    // <message(8) to=(16) from=(28) type=(40) >(41) <body>(47) hi(49) </body>(56) </message>(66)
+    const size_t caps[] = {8, 9, 17, 29, 41, 47, 48, 56, 66};
+    for (size_t i = 0; i < sizeof(caps) / sizeof(caps[0]); i++)
+        TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_message("to", "from", "chat", "hi", buf, caps[i]));
+    TEST_ASSERT_EQUAL_size_t(66, dws_xmpp_message("to", "from", "chat", "hi", buf, 67));
+    TEST_ASSERT_EQUAL_STRING("<message to=\"to\" from=\"from\" type=\"chat\"><body>hi</body></message>", buf);
+}
+
+// The same for dws_xmpp_iq(): the open tag, both attributes, '>', the child payload, the close tag.
+void test_iq_fails_at_each_step(void)
+{
+    char buf[64];
+    // <iq(3) type=(14) id=(23) >(24) <q/>(28) </iq>(33)
+    const size_t caps[] = {3, 16, 24, 28, 33};
+    for (size_t i = 0; i < sizeof(caps) / sizeof(caps[0]); i++)
+        TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_iq("get", "id1", "<q/>", buf, caps[i]));
+    TEST_ASSERT_EQUAL_size_t(33, dws_xmpp_iq("get", "id1", "<q/>", buf, 34));
+    TEST_ASSERT_EQUAL_STRING("<iq type=\"get\" id=\"id1\"><q/></iq>", buf);
+}
+
+// And for dws_xmpp_stream_open(): the 35-byte preamble, each optional JID attribute, then the
+// fixed namespace/version tail.
+void test_stream_open_fails_at_each_step(void)
+{
+    char buf[160];
+    const size_t caps[] = {35, 37, 46, 60};
+    for (size_t i = 0; i < sizeof(caps) / sizeof(caps[0]); i++)
+        TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stream_open("a", "b", buf, caps[i]));
+    TEST_ASSERT_EQUAL_size_t(136, dws_xmpp_stream_open("a", "b", buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_STRING("<?xml version='1.0'?><stream:stream from=\"a\" to=\"b\""
+                             " xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'"
+                             " version='1.0'>",
+                             buf);
+}
+
+// Both readers fail closed on a null output buffer and on a zero capacity, not only on null input.
+void test_readers_reject_null_out_and_zero_cap(void)
+{
+    char out[16];
+    const char *m = "<message to='a'>";
+    TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name(m, 16, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name(m, 16, out, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr(m, 16, "to", nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr(m, 16, "to", out, 0));
+}
+
+// A stanza name, a start tag and a quoted value may each run to the end of the supplied slice with
+// no terminator: the length bound stops the scan instead of reading past it.
+void test_readers_stop_at_end_of_buffer(void)
+{
+    char out[32];
+    TEST_ASSERT_EQUAL_size_t(2, dws_xmpp_stanza_name("<iq", 3, out, sizeof(out))); // no '>', space or '/'
+    TEST_ASSERT_EQUAL_STRING("iq", out);
+
+    TEST_ASSERT_EQUAL_size_t(1, dws_xmpp_attr("<m to='x'", 9, "to", out, sizeof(out))); // tag never closes
+    TEST_ASSERT_EQUAL_STRING("x", out);
+
+    TEST_ASSERT_EQUAL_size_t(3, dws_xmpp_attr("<m to='abc>", 11, "to", out, sizeof(out))); // quote never closes
+    TEST_ASSERT_EQUAL_STRING("abc", out);
+}
+
+// An attribute whose name merely *starts with* the requested one is not a match - only a name
+// immediately followed by '=' counts - and a value that is not quoted at all fails closed.
+void test_attr_name_must_be_followed_by_equals(void)
+{
+    char out[32];
+    TEST_ASSERT_EQUAL_size_t(1, dws_xmpp_attr("<m top='1' to='2'>", 18, "to", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("2", out);
+    TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr("<m to=x junk>", 13, "to", out, sizeof(out)));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_put_attr_fails_at_each_step);
+    RUN_TEST(test_message_fails_at_each_step);
+    RUN_TEST(test_iq_fails_at_each_step);
+    RUN_TEST(test_stream_open_fails_at_each_step);
+    RUN_TEST(test_readers_reject_null_out_and_zero_cap);
+    RUN_TEST(test_readers_stop_at_end_of_buffer);
+    RUN_TEST(test_attr_name_must_be_followed_by_equals);
     RUN_TEST(test_escape);
     RUN_TEST(test_message);
     RUN_TEST(test_presence);
