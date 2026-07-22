@@ -199,6 +199,7 @@ if [[ $COVERAGE -eq 1 ]]; then
     rm -rf coverage_reports
     mkdir -p coverage_reports
 fi
+COV_FAILED=()   # envs whose gcovr produced nothing (see the gcovr call below)
 
 _covnote=""; [[ $COVERAGE -eq 1 ]] && _covnote=" (with coverage)"
 echo "Running ${#ENV_NAMES[@]} native envs${_covnote}"
@@ -249,9 +250,16 @@ for _i in "${!ENV_NAMES[@]}"; do
         # anchors --filter to the full relative path, so 'src/.*' (not bare 'src/') matches src/... and
         # still excludes test/ + the Unity libdep. Same-source-different-flags cannot be merged in a
         # single gcovr pass, hence per-env.
-        gcovr --root . --filter 'src/.*' --gcov-ignore-parse-errors --sonarqube \
-            "coverage_reports/${_env}.xml" "${PLATFORMIO_BUILD_DIR:-.pio_cov}/$_env" \
-            2>/dev/null || echo "WARN: gcovr failed for $_env"
+        # A silently-missing per-env report is the worst failure mode here: the merge only ever
+        # UNIONS, so an env that stops contributing does not lower the number - it freezes that
+        # env's files at whatever the baseline last said, forever, with nothing in the log to say
+        # so. Record the failure and fail the run at the end instead of warning into the void.
+        if ! gcovr --root . --filter 'src/.*' --gcov-ignore-parse-errors --sonarqube \
+            "coverage_reports/${_env}.xml" "${PLATFORMIO_BUILD_DIR:-.pio_cov}/$_env" 2>/dev/null \
+            || [[ ! -s "coverage_reports/${_env}.xml" ]]; then
+            echo "ERROR: gcovr produced no coverage report for $_env"
+            COV_FAILED+=("$_env")
+        fi
     fi
 done
 WALL_SECS=$(( SECONDS - T0 ))
@@ -503,10 +511,23 @@ if [[ $COVERAGE -eq 1 ]]; then
     # Union every per-env report into one SonarQube coverage report (src/ only) for the scan. On an
     # affected-only run, --cov-baseline overlays the committed coverage so the report stays whole-project
     # (fresh per-file coverage for the changed sources, the baseline kept for everything not rerun).
+    if [[ ${#COV_FAILED[@]} -gt 0 ]]; then
+        echo "ERROR: no coverage report from ${#COV_FAILED[@]} env(s): ${COV_FAILED[*]}"
+        echo "Refusing to merge - a partial merge would silently freeze those files' coverage."
+        rm -rf coverage_reports
+        # Exit 3, distinct from a test failure (PIO_EXIT): the caller tolerates failing TESTS (the
+        # report documents them) but must NOT commit a coverage.xml this run could not produce.
+        exit 3
+    fi
     _cov_out="${PROJECT_ROOT}/test/coverage.xml"
     _cov_overlay=()
     [[ -n "$COV_BASELINE" ]] && _cov_overlay+=(--baseline "$COV_BASELINE")
     [[ -n "$COV_CHANGED" ]] && _cov_overlay+=(--changed "$COV_CHANGED")
+    # Tell the merge which envs actually ran, so it can replace (not just union) every file this
+    # run re-measured in full. Without it the overlay is union-only and stale lines never die.
+    if [[ -f "${PROJECT_ROOT}/test/dep_graph.json" ]]; then
+        _cov_overlay+=(--dep-graph "${PROJECT_ROOT}/test/dep_graph.json" --ran-envs "${ENV_NAMES[*]}")
+    fi
     python3 tools/sonar/merge_coverage.py "$_cov_out" "coverage_reports/*.xml" "${_cov_overlay[@]}"
     rm -rf coverage_reports
     echo "Coverage written: $_cov_out"
