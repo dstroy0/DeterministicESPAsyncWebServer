@@ -2722,6 +2722,26 @@
 #define DWS_ENABLE_LD2410 0
 #endif
 
+/**
+ * @brief RCWL-0516 microwave Doppler presence sensor + the shared one-GPIO presence facade
+ *        (`services/rcwl0516`).
+ *
+ * Default off. The RCWL-0516 has no data protocol - just one 3.3 V OUT pin that latches HIGH on a
+ * moving reflector - so the whole problem is timing, not bytes. `PresenceCore` is a debounced,
+ * hold-extended view of one active-high presence pin: a level must hold for
+ * `DWS_RCWL0516_DEBOUNCE_MS` before it is believed (the OUT pin is comparator-driven and chatters
+ * around the threshold), and presence then persists for `DWS_RCWL0516_HOLD_MS` past the last
+ * believed-HIGH sample, so the module's ~2 s retrigger gaps read as one continuous occupied span
+ * instead of a flapping boolean. The core is pure and takes an explicit `now` like
+ * `DWS_ENABLE_HOTSWAP`, so it is host-tested against a synthetic clock with no GPIO, and every
+ * elapsed-time test is an unsigned difference - wrap-safe across a `millis()` rollover. It is
+ * deliberately sensor-agnostic: the RCWL-0516 is only its first user (via `dws_rcwl0516_core_init`),
+ * and an HMMD OUT pin, a PIR, or an HB100 reuse the same core with their own two constants.
+ */
+#ifndef DWS_ENABLE_RCWL0516
+#define DWS_ENABLE_RCWL0516 0
+#endif
+
 /** @brief LD2410 UART baud rate (the module's fixed factory default is 256000). */
 #ifndef DWS_LD2410_BAUD
 #define DWS_LD2410_BAUD 256000

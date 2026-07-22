@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **262 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **263 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -260,6 +260,7 @@ The native test matrix has **262 environments**, one per feature, generated from
 | `native_radio_sniff` | `WS_ENABLE_RADIO_SNIFF=1` | `test_radio_sniff` | Receive-only radio channel sniffer -> pcap (services/radio_sniff): the int->float32 RSSI encode, the pcap global header (DLT 802.15.4 TAP), and the per-frame TAP record (RSSI + channel TLVs + MAC fram... |
 | `native_range` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_RANGE=1` | `test_range` | HTTP Range requests / 206 Partial Content (RFC 7233): full server built with DWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with seek()) via the tcp_write capture mock. |
 | `native_rawl2` | `WS_ENABLE_RAWL2=1` | `test_rawl2` | Raw L2 Ethernet frame codec (services/rawl2): Ethernet II + 802.1Q VLAN build/parse and the 802.3 FCS (CRC-32). |
+| `native_rcwl0516` | `WS_ENABLE_RCWL0516=1` | `test_rcwl0516` | RCWL-0516 Doppler presence sensor + the shared one-GPIO presence facade (services/rcwl0516): the debounce that swallows comparator chatter, the hold that bridges the module's ~2s retrigger gaps into o... |
 | `native_redis` | `WS_ENABLE_REDIS=1` | `test_redis_resp` | Redis RESP2/RESP3 codec (services/redis_resp): the zero-heap command encoder + the cursor reply parser (RESP2 simple/error/integer/bulk/array/nil plus RESP3 null/boolean/double/big number/bulk error/v... |
 | `native_relay` | `WS_ENABLE_RELAY=1` | `test_relay` | TCP relay / DNAT byte pump (services/relay): the bidirectional relay engine that publishes an internal host:port through the server. |
 | `native_robotics` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_ROBOTICS=1` | `test_robotics` | OPC UA for Robotics (OPC 40010-1) MotionDeviceSystem model (services/robotics) - the Browse hierarchy + the Read resolver over a bound RoboticsMotionDeviceSystem, including the parametric Axes, are ho... |
@@ -552,7 +553,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3687 test cases** across **277 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3697 test cases** across **278 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -27875,6 +27876,121 @@ A thorough directory of all **3687 test cases** across **277 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_eth_build_vlan(mac, mac, 0, false, 100, 0x0800, pay, sizeof(pay), out, 8)); // cap</code>
       * <code>Assert false (dws_eth_parse(vlanish, sizeof(vlanish), &ef))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_rcwl0516 (10 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starts_absent</b> &mdash; <i>Starts absent</i></summary>
+
+    * **Objective**: Starts absent
+    * **Assertions**:
+      * <code>Assert false (dws_presence_core_get(&g_c))</code>
+      * <code>Assert false (dws_presence_take_event(&g_c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_high_asserts_only_after_debounce</b> &mdash; <i>High asserts only after debounce</i></summary>
+
+    * **Objective**: High asserts only after debounce
+    * **Assertions**:
+      * <code>Assert false (dws_presence_core_update(&g_c, true, 1000))</code>
+      * <code>Assert false (dws_presence_core_update(&g_c, true, 1049))</code>
+      * <code>Assert true (dws_presence_core_update(&g_c, true, 1050))</code>
+      * <code>Assert true (dws_presence_core_get(&g_c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chatter_shorter_than_debounce_never_asserts</b> &mdash; <i>Chatter shorter than debounce never asserts</i></summary>
+
+    * **Objective**: Chatter shorter than debounce never asserts
+    * **Assertions**:
+      * <code>Assert false (dws_presence_core_get(&g_c))</code>
+      * <code>Assert false (dws_presence_take_event(&g_c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hold_bridges_the_gap_after_pin_drops</b> &mdash; <i>Pin drops at t=2000. The believed level only follows after the debounce, so the last</i></summary>
+
+    * **Objective**: Pin drops at t=2000. The believed level only follows after the debounce, so the last
+    * **Assertions**:
+      * <code>Assert true (dws_presence_core_get(&g_c))</code>
+      * <code>Assert true (dws_presence_core_get(&g_c))</code>
+      * <code>Assert true (dws_presence_core_get(&g_c))</code>
+      * <code>Assert false (dws_presence_core_update(&g_c, false, 4000))</code>
+      * <code>Assert false (dws_presence_core_get(&g_c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_retrigger_gaps_stay_one_continuous_span</b> &mdash; <i>presence never dropped, so no further edges were reported</i></summary>
+
+    * **Objective**: presence never dropped, so no further edges were reported
+    * **Assertions**:
+      * <code>Assert true (dws_presence_core_get(&g_c))</code>
+      * <code>Assert true (dws_presence_core_get(&g_c))</code>
+      * <code>Assert false (dws_presence_take_event(&g_c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_event_fires_once_per_transition</b> &mdash; <i>Event fires once per transition</i></summary>
+
+    * **Objective**: Event fires once per transition
+    * **Assertions**:
+      * <code>Assert true (dws_presence_take_event(&g_c))</code>
+      * <code>Assert false (dws_presence_take_event(&g_c))</code>
+      * <code>Assert false (dws_presence_core_get(&g_c))</code>
+      * <code>Assert true (dws_presence_take_event(&g_c))</code>
+      * <code>Assert false (dws_presence_take_event(&g_c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_wrap_safe_across_millis_rollover</b> &mdash; <i>last believed-HIGH lands just before the wrap; the hold must expire 2000ms later in wrapped time</i></summary>
+
+    * **Objective**: last believed-HIGH lands just before the wrap; the hold must expire 2000ms later in wrapped time
+    * **Assertions**:
+      * <code>Assert true (dws_presence_core_update(&g_c, true, 0xFFFFFF50u))</code>
+      * <code>Assert true (dws_presence_core_get(&g_c))</code>
+      * <code>Assert true (dws_presence_core_get(&g_c))</code>
+      * <code>Assert true (dws_presence_core_update(&g_c, false, 0x00000030u))</code>
+      * <code>Assert false (dws_presence_core_update(&g_c, false, 0x000007C0u))</code>
+      * <code>Assert false (dws_presence_core_get(&g_c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_debounce_and_zero_hold_are_pass_through</b> &mdash; <i>Zero debounce and zero hold are pass through</i></summary>
+
+    * **Objective**: Zero debounce and zero hold are pass through
+    * **Assertions**:
+      * <code>Assert true (dws_presence_core_update(&c, true, 100))</code>
+      * <code>Assert false (dws_presence_core_update(&c, false, 101))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_repeated_and_static_now_is_harmless</b> &mdash; <i>Polling faster than the clock ticks must not stall or double-count.</i></summary>
+
+    * **Objective**: Polling faster than the clock ticks must not stall or double-count.
+    * **Assertions**:
+      * <code>Assert false (dws_presence_core_get(&g_c))</code>
+      * <code>Assert true (dws_presence_core_update(&g_c, true, 1050))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rcwl_defaults_and_null_guards</b> &mdash; <i>host binding stubs</i></summary>
+
+    * **Objective**: host binding stubs
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_RCWL0516_DEBOUNCE_MS, c.debounce_ms);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_RCWL0516_HOLD_MS, c.hold_ms);</code>
+      * <code>Assert false (dws_presence_core_get(&c))</code>
+      * <code>Assert false (dws_presence_core_update(nullptr, true, 0))</code>
+      * <code>Assert false (dws_presence_core_get(nullptr))</code>
+      * <code>Assert false (dws_presence_take_event(nullptr))</code>
+      * <code>Assert false (dws_rcwl0516_begin(4))</code>
+      * <code>Assert false (dws_rcwl0516_poll())</code>
+      * <code>Assert false (dws_rcwl0516_present())</code>
   </details>
 
 </details>
