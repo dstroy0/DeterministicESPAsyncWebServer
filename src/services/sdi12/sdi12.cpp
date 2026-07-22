@@ -10,6 +10,7 @@
 
 #if DWS_ENABLE_SDI12
 
+#include "shared_primitives/crc.h" // DWS_CRC16_ARC
 #include "shared_primitives/numparse.h"
 #include <string.h>
 
@@ -125,14 +126,10 @@ bool dws_sdi12_parse_values(const char *resp, size_t len, float *out, size_t max
 
 uint16_t dws_sdi12_crc16(const uint8_t *data, size_t len)
 {
-    uint16_t crc = 0;
-    for (size_t i = 0; i < len; i++)
-    {
-        crc ^= data[i];
-        for (int b = 0; b < 8; b++)
-            crc = (crc & 1u) ? (uint16_t)((crc >> 1) ^ SDI12_CRC_POLY) : (uint16_t)(crc >> 1);
-    }
-    return crc;
+    // SDI-12 v1.3 uses the reflected CRC-16 (SDI12_CRC_POLY = 0xA001 = reflect(0x8005), init 0, no
+    // final XOR) - catalogued as CRC-16/ARC. test_crc diffs the shared engine against the loop that
+    // used to live here over every length 0..64, so this is byte-identical to it.
+    return (uint16_t)dws_crc(&DWS_CRC16_ARC, data, len);
 }
 
 void dws_sdi12_crc_encode(uint16_t crc, char out[SDI12_CRC_CHARS])
