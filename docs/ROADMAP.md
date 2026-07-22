@@ -1685,7 +1685,7 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       `0x0011`, register `0x0002`, parameter config `0x0008`). Bridge presence / distance northbound exactly
       like LD2410. Test = captured-frame vectors both directions (`native_hmmd`); the sensor's GPIO OUT pin
       shares the debounced presence bridge below.
-- [ ] **RCWL-0516 microwave Doppler presence sensor** (S) - the low-cost ~3.18 GHz Doppler motion module
+- [x] **RCWL-0516 microwave Doppler presence sensor** (S) - the low-cost ~3.18 GHz Doppler motion module
       (RCWL-9196 controller + MMBR941M RF amp): no data protocol at all - a single 3.3V **OUT** pin that
       latches HIGH for ~2 s on any moving reflector and returns LOW when idle. This is the analog-Doppler end
       of the presence path already noted in the EM / radar section. Add `DWS_ENABLE_RCWL0516` /
@@ -1693,6 +1693,17 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       host-testable by injecting pin levels against a fake clock via `dws_millis`), surfaced to the web
       stack as a boolean presence event - the same one-GPIO presence facade the HMMD OUT pin and other
       bare-output detectors (PIR, HB100) can reuse.
+      SHIPPED - `services/rcwl0516` (`DWS_ENABLE_RCWL0516`). `PresenceCore` is the facade, written
+      sensor-agnostic from the start so the HMMD entry above can reuse it: debounce
+      (`DWS_RCWL0516_DEBOUNCE_MS`, default 50) rejects comparator chatter, and a hold
+      (`DWS_RCWL0516_HOLD_MS`, default 2000, matching the module's retrigger window) bridges the gaps
+      between retriggers into one continuous occupied span. `dws_presence_take_event` consumes a
+      changed-flag once per transition, so callers publish an event per edge rather than a level per
+      poll. Pure, explicit `now` (the `services/hotswap` pattern), starts fail-safe absent, and every
+      elapsed test is an unsigned difference so it is wrap-safe across a `millis()` rollover.
+      Host-tested (`native_rcwl0516`, 10 cases - incl. chatter rejection, retrigger-gap bridging, the
+      rollover, and the degenerate zero-debounce / zero-hold configs). Not HW-verified against a
+      physical module; the timing constants come from the module's documented ~2 s retrigger window.
 - [x] **HLK-LD2410B (Bluetooth variant of the shipped LD2410)** (S) - the LD2410**B** is HiLink's
       BLE-equipped build of the same 24 GHz FMCW presence radar, speaking the **same `FD FC FB FA` framed
       UART protocol** the shipped `services/ld2410` codec already builds and parses

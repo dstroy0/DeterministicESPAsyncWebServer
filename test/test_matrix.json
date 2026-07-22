@@ -1477,6 +1477,12 @@
       "src": ["+<services/ld2410/ld2410.cpp>"],
       "tests": ["test_ld2410"]
     },
+    "native_rcwl0516": {
+      "desc": "RCWL-0516 Doppler presence sensor + the shared one-GPIO presence facade\n(services/rcwl0516): the debounce that swallows comparator chatter, the hold that bridges the\nmodule's ~2s retrigger gaps into one continuous presence span, the consume-once edge event,\nwrap-safety across a millis() rollover, and the degenerate zero-debounce / zero-hold configs.\nPure core driven by a synthetic clock - no GPIO, no real time. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_RCWL0516=1"],
+      "src": ["+<services/rcwl0516/rcwl0516.cpp>"],
+      "tests": ["test_rcwl0516"]
+    },
     "native_sen0192": {
       "desc": "SEN0192 microwave motion sensor presence state machine (services/sen0192): presence\nasserts on an active sample and holds for the configured window after the last active sample, clears\nafter it, counts clear->present edges, and honors OUT polarity. Pure - the GPIO read is ESP32-only.",
       "flags": ["-DDWS_ENABLE_SEN0192=1"],
