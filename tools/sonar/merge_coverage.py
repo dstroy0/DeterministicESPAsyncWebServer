@@ -78,6 +78,12 @@ def per_branch_union(pattern):
     of branches in different envs. Branch indices are only comparable within one shape, so lines are
     unioned per (line, branch-count) and the widest shape seen for a line wins - that is the build
     that actually had the most conditions to cover.
+
+    GCOVR_EXCL_* markers are honoured here the same way gcovr honours them in the SonarQube report
+    it writes alongside this JSON: gcovr drops an excluded line/branch from the XML but still emits
+    it in the JSON tagged "gcovr/excluded". Feeding those back in would resurrect every house
+    exclusion in src/ (and they would then be reported as permanently uncovered, since by
+    construction nothing can execute them).
     """
     acc = {}  # path -> line -> {n_branches: [covered_flags]}
     hits = {}  # path -> line -> line-level covered
@@ -97,8 +103,10 @@ def per_branch_union(pattern):
                 ln = l.get("line_number")
                 if not isinstance(ln, int) or ln < 1:
                     continue
+                if l.get("gcovr/excluded"):
+                    continue  # GCOVR_EXCL_* - gcovr already dropped it from the XML report
                 ph[ln] = ph.get(ln, False) or bool(l.get("count"))
-                brs = l.get("branches") or []
+                brs = [b for b in (l.get("branches") or []) if not b.get("gcovr/excluded")]
                 if not brs:
                     continue
                 shapes = pl.setdefault(ln, {})
