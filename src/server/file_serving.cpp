@@ -16,11 +16,12 @@
 #include "dwserver.h"
 #include "network_drivers/transport/tcp.h" // conn_pool, dws_conn_*, TcpConn/ConnState
 #include "server/dwserver_internal.h"
-#include "server/http_range.h"      // http_parse_byte_range (shared with the edge cache)
-#include "shared_primitives/mime.h" // mime_type, DWS_MIME_*
-#include <stdio.h>                  // snprintf, sscanf
-#include <string.h>                 // strncasecmp, strchr, strstr, strncmp, strnlen
-#include <time.h>                   // gmtime_r, strftime (RFC 1123 / conditional-GET dates)
+#include "server/http_range.h"             // http_parse_byte_range (shared with the edge cache)
+#include "shared_primitives/mime.h"        // mime_type, DWS_MIME_*
+#include "shared_primitives/time_compat.h" // dws_gmtime_r (portable reentrant UTC)
+#include <stdio.h>                         // snprintf, sscanf
+#include <string.h>                        // strncasecmp, strchr, strstr, strncmp, strnlen
+#include <time.h> // strftime (RFC 1123 / conditional-GET dates) (RFC 1123 / conditional-GET dates)
 
 // ---------------------------------------------------------------------------
 // File serving
@@ -37,7 +38,7 @@ void http_rfc1123(time_t t, char *out, size_t cap)
     if (t <= 0)
         return;
     struct tm tmv;
-    if (!gmtime_r(&t, &tmv)) // reentrant: never the shared static buffer (worker-safe)
+    if (!dws_gmtime_r(&t, &tmv)) // reentrant: never the shared static buffer (worker-safe)
         return;
     strftime(out, cap, "%a, %d %b %Y %H:%M:%S GMT", &tmv);
 }
@@ -70,7 +71,7 @@ static bool http_not_modified_since(time_t mtime, const char *ims)
     int imon = (int)(mp - MONTHS) / 3; // 0-based, matches struct tm tm_mon
 
     struct tm tf;
-    if (!gmtime_r(&mtime, &tf)) // reentrant: never the shared static buffer (worker-safe)
+    if (!dws_gmtime_r(&mtime, &tf)) // reentrant: never the shared static buffer (worker-safe)
         return false;
     // Compare file (tf) vs If-Modified-Since fields, most significant first.
     int fy = tf.tm_year + 1900;

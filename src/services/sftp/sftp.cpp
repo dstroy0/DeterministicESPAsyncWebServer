@@ -8,6 +8,8 @@
 
 #include "services/sftp/sftp.h"
 
+#include "shared_primitives/time_compat.h" // dws_gmtime_r (portable reentrant UTC)
+
 #if DWS_ENABLE_SSH_SFTP
 
 #include <stdio.h>
@@ -314,7 +316,7 @@ size_t dws_sftp_format_longname(bool is_dir, uint32_t perms, uint64_t size, uint
     time_t t = (time_t)mtime;
     struct tm tmv;
     memset(&tmv, 0, sizeof(tmv));
-    gmtime_r(&t, &tmv); // reentrant; mtime==0 -> epoch, a harmless placeholder date
+    dws_gmtime_r(&t, &tmv); // reentrant; mtime==0 -> epoch, a harmless placeholder date
     int mon = (tmv.tm_mon >= 0 && tmv.tm_mon < 12) ? tmv.tm_mon : 0;
     snprintf(date, sizeof(date), "%s %2d %5d", kMonths[mon], tmv.tm_mday, tmv.tm_year + 1900);
 

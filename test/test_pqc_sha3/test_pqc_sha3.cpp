@@ -7,8 +7,23 @@
 // uses). Pure host tests.
 
 #include "network_drivers/presentation/pqc/sha3.h"
+#include <stdint.h>
 #include <string.h>
 #include <unity.h>
+
+// The CSPRNG seam (forward-declared in sntrup761.cpp). This suite does not exercise sntrup761, but
+// the native_pqc env compiles sntrup761.cpp into every one of its suite binaries, so this one has
+// to satisfy the symbol too or it does not link - the sibling suites (test_pqc_mlkem,
+// test_pqc_sntrup761) each define the same deterministic source for their own round-trips.
+static uint32_t s_rng = 0xA5A5F00Du;
+void ssh_rng_fill(uint8_t *b, size_t n)
+{
+    for (size_t i = 0; i < n; ++i)
+    {
+        s_rng = s_rng * 1103515245u + 12345u;
+        b[i] = (uint8_t)(s_rng >> 16);
+    }
+}
 
 void setUp()
 {
