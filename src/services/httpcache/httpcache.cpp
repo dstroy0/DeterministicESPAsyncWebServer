@@ -158,7 +158,10 @@ static int32_t cc_parse_delta(const char *v, size_t vlen)
     size_t i = 0;
     while (i < vlen && (v[i] == ' ' || v[i] == '\t' || v[i] == '"'))
         i++;
-    long val = -1;
+    // int64_t, not long: long is 32-bit on LLP64 (Windows), so `val * 10` overflowed (signed UB, wrapped)
+    // before the clamp below could ever observe a value above INT32_MAX. Clamping every iteration keeps
+    // val <= INT32_MAX, so the next multiply-add stays far inside int64_t no matter how many digits arrive.
+    int64_t val = -1;
     bool any = false;
     while (i < vlen && v[i] >= '0' && v[i] <= '9')
     {
@@ -168,8 +171,8 @@ static int32_t cc_parse_delta(const char *v, size_t vlen)
             any = true;
         }
         val = val * 10 + (v[i] - '0');
-        if (val > 2147483647L)
-            val = 2147483647L;
+        if (val > 2147483647)
+            val = 2147483647;
         i++;
     }
     return any ? (int32_t)val : -1;

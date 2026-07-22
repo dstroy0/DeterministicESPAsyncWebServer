@@ -4758,6 +4758,26 @@
 #endif
 
 /**
+ * @brief EUROMAP 77 (OPC 40077) - OPC UA for injection moulding machines (IMM <-> MES) (DWS_ENABLE_EUROMAP77).
+ *
+ * Default off. Requires DWS_ENABLE_OPCUA (builds on the OPC UA Binary server). services/euromap77
+ * exposes the EUROMAP 77 IMM_MES_Interface companion model (OPC 40077, namespace
+ * `http://www.euromap.org/euromap77/`, enums from EUROMAP 83 / OPC 40083): a fixed node hierarchy -
+ * MachineInformation, MachineStatus, and Jobs (ActiveJob + ActiveJobValues with the UInt64 production
+ * counters) - served through the OPC UA Browse + Read resolvers out of a caller-owned EmImm struct you
+ * refresh each loop. Faithful BrowseNames + a read-only monitoring model any OPC UA client browses and
+ * reads by BrowseName. No heap, no stdlib. Same pattern as DWS_ENABLE_UMATI / DWS_ENABLE_ROBOTICS.
+ */
+#ifndef DWS_ENABLE_EUROMAP77
+#define DWS_ENABLE_EUROMAP77 0
+#endif
+
+/** @brief NamespaceIndex the EUROMAP 77 IMM_MES_Interface nodes live at (default 1). */
+#ifndef DWS_EM77_NS
+#define DWS_EM77_NS 1
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service/upload_service.h registers a POST route
@@ -6564,6 +6584,10 @@ enum class DWSIface : uint8_t
 
 #if DWS_ENABLE_ROBOTICS && !DWS_ENABLE_OPCUA
 #error "DeterministicESPAsyncWebServer: DWS_ENABLE_ROBOTICS requires DWS_ENABLE_OPCUA (it builds on the OPC UA server)"
+#endif
+
+#if DWS_ENABLE_EUROMAP77 && !DWS_ENABLE_OPCUA
+#error "DeterministicESPAsyncWebServer: DWS_ENABLE_EUROMAP77 requires DWS_ENABLE_OPCUA (it builds on the OPC UA server)"
 #endif
 
 #if DWS_ENABLE_CONFIG_IO && !DWS_ENABLE_CONFIG_STORE

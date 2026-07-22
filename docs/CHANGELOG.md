@@ -4,14 +4,31 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- clamp delta-seconds with int64_t, not long (LLP64 overflow) ([`a33cefd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a33cefdee3f3c719ee19bc3b21f0911c7770794f))
+
 ### CI / Build
 
+- gate the job on test results instead of discarding them ([`91adf56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91adf565af92ceaf141ac655069ad123d29a4728))
+- update test report + coverage [skip ci] ([`f78332f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f78332fcb13fe293f9d8df78bf641d3841183829))
+- update CHANGELOG.md [skip ci] ([`a0e9451`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0e9451f35c7db2440d5cf0921ecc8d0fa9c5199))
 - update CHANGELOG.md [skip ci] ([`9089587`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9089587e95eaa0e24cbcfb2144f6b12d4e376b03))
+
+### Changes
+
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`0b67d9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b67d9ebbab199e0ef2b9fde1d5d06a73ad34613))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`737ec03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/737ec031002c44f415ffc4ac6ec8e2a3df5258c3))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f88ad00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f88ad004765dfacdca25736de390bef163403e49))
 - update ESP32 build footprints [skip ci] ([`450df3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/450df3c1dcbbce939732313e9a27aac71cafb4fa))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`678e144`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/678e144516d2bb5a8b08d8d7be5ce6e7ac5fad2f))
+
+### Features
+
+- EUROMAP 77 (OPC 40077) IMM_MES_Interface model ([`50c00a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50c00a58b77f1adbcceee7c14b881c8a00f78784))
 
 ### Refactor
 

@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **260 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **261 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -141,6 +141,7 @@ The native test matrix has **260 environments**, one per feature, generated from
 | `native_enip` | `WS_ENABLE_ENIP=1` | `test_enip` | EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession + SendRRData builders (Common Packet Format), and the SendRRData reply extractor. |
 | `native_enocean` | `WS_ENABLE_ENOCEAN=1`, `WS_ENOCEAN_MAX_DATA=16` | `test_enocean` | EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07) against known answers, a build -> parse round trip, malformed framing (bad sync / header CRC / data CRC), incomplet... |
 | `native_espnow` | `WS_ENABLE_ESPNOW=1` | `test_espnow` | ESP-NOW peer messaging (services/espnow) - the envelope codec + peer registry are host-tested here; the esp_now radio binding is ESP32-only. |
+| `native_euromap77` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_EUROMAP77=1` | `test_euromap77` | EUROMAP 77 (OPC 40077) IMM_MES_Interface model (services/euromap77) - OPC UA for injection moulding machines. |
 | `native_exc_decoder` | `WS_ENABLE_EXC_DECODER=1` | `test_exc_decoder` | ESP32 panic / exception decoder (services/exc_decoder): parse a captured Guru Meditation dump (cause, register PC + EXCVADDR, backtrace PC:SP frames) into a structured ExcInfo and serialize it as JSON... |
 | `native_failsafe` | `WS_ENABLE_FAILSAFE=1` | `test_failsafe` | Software watchdog / deadlock detection + safe-state (services/failsafe): the wrap-safe overdue predicate, the lifeline registry, fire-once-per-episode breach callback, and JSON. |
 | `native_fdc2214` | `WS_ENABLE_FDC2214=1` | `test_fdc2214` | FDC2114/2214 capacitance-to-digital field sensor (services/fdc2214): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
@@ -550,7 +551,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3641 test cases** across **276 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3671 test cases** across **276 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -4841,7 +4842,7 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_control (17 tests)</b></summary>
+<summary><b>test_control (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_proportional_only</b> &mdash; <i>Proportional only</i></summary>
@@ -5029,6 +5030,29 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX32(0u, rd_u32le(buf + 12)); // status clear when not saturated</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, pid_log_record(nullptr, sizeof(buf), 0.0f, 0.0f, 0.0f, false));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, pid_log_record(buf, PID_LOG_RECORD_LEN - 1, 0.0f, 0.0f, 0.0f, false));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_slew_down_and_fixed_null</b> &mdash; <i>Slew down and fixed null</i></summary>
+
+    * **Objective**: Slew down and fixed null
+    * **Assertions**:
+      * <code>Assert true (near_f(control_slew(-10.0f, 0.0f, 2.0f), -2.0f))</code>
+      * <code>Assert true (near_f(control_slew(-1.0f, 0.0f, 2.0f), -1.0f))</code>
+      * <code>Assert true (near_f(pid_update_fixed(nullptr, 1.0f, 0.0f), 0.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_antiwindup_integrates_while_saturated_reversing</b> &mdash; <i>Anti-windup itself stops the integral growing once the output rails, so build the integral</i></summary>
+
+    * **Objective**: Anti-windup itself stops the integral growing once the output rails, so build the integral
+    * **Assertions**:
+      * <code>Assert true (integ_hi &gt; 1.0f)</code>
+      * <code>Assert true (near_f(out, 1.0f))</code>
+      * <code>Assert true (p.integ &lt; integ_hi)</code>
+      * <code>Assert true (integ_lo &lt; -1.0f)</code>
+      * <code>Assert true (near_f(out, -1.0f))</code>
+      * <code>Assert true (q.integ &gt; integ_lo)</code>
   </details>
 
 </details>
@@ -14700,7 +14724,7 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (37 tests)</b></summary>
+<summary><b>test_ikev2 (39 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -15310,6 +15334,42 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
       * <code>Assert equal memory (s2, got.start_addr, 4)</code>
       * <code>Assert equal memory (e2, got.end_addr, 4)</code>
       * <code>Assert false (dws_ike_ts_get(buf + 4, n - 4, 2, &got))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sa_build_widest_proposal</b> &mdash; <i>The widest SA this builder can emit - a 255-byte SPI and 255 keyed (12-byte) transforms,</i></summary>
+
+    * **Objective**: The widest SA this builder can emit - a 255-byte SPI and 255 keyed (12-byte) transforms,
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_IKE_PAYLOAD_HDR_LEN + prop_len, n);</code>
+      * <code>Assert true (n &lt;= 0xFFFF)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16((uint16_t)n, (uint16_t)((buf[2] &lt;&lt; 8) | buf[3]));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16((uint16_t)prop_len, (uint16_t)((buf[6] &lt;&lt; 8) | buf[7]));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(255, buf[10]); // spi size</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(255, buf[11]); // transform count</code>
+      * <code>Assert true (dws_ike_sa_first_proposal(buf.data() + 4, n - 4, &prop))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(255, prop.spi_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(255, prop.num_transforms);</code>
+      * <code>Assert equal memory (spi.data(), prop.spi, 255)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(256, t.key_length);</code>
+      * <code>Assert equal int (255, seen)</code>
+      * <code>Assert true (t.last)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ts_build_widest_selector_list</b> &mdash; <i>The widest TS payload - 255 IPv6 selectors, the largest selector at 40 bytes - frames to</i></summary>
+
+    * **Objective**: The widest TS payload - 255 IPv6 selectors, the largest selector at 40 bytes - frames to
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + 4 + 255 * 40, n);</code>
+      * <code>Assert true (n &lt;= 0xFFFF)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16((uint16_t)n, (uint16_t)((buf[2] &lt;&lt; 8) | buf[3]));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(255, dws_ike_ts_count(buf.data() + 4, n - 4));</code>
+      * <code>Assert true (dws_ike_ts_get(buf.data() + 4, n - 4, 254, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(16, got.addr_len);</code>
+      * <code>Assert equal memory (s6, got.start_addr, 16)</code>
+      * <code>Assert equal memory (e6, got.end_addr, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(500, got.start_port);</code>
   </details>
 
 </details>
@@ -20787,7 +20847,7 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ntlmssp (5 tests)</b></summary>
+<summary><b>test_ntlmssp (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_negotiate</b> &mdash; <i>Build negotiate</i></summary>
@@ -20850,6 +20910,77 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
       * <code>TEST_ASSERT_GREATER_THAN_size_t(0, nt_len);</code>
       * <code>TEST_ASSERT_GREATER_THAN_size_t(0, an);</code>
       * <code>Assert equal memory (ntproof, auth + nt_off, 16)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_negotiate_null_buf</b> &mdash; <i>Build negotiate null buf</i></summary>
+
+    * **Objective**: Build negotiate null buf
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntlmssp_build_negotiate(nullptr, 64, NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_challenge_null_args</b> &mdash; <i>Parse challenge null args</i></summary>
+
+    * **Objective**: Parse challenge null args
+    * **Assertions**:
+      * <code>Assert false (dws_ntlmssp_parse_challenge(nullptr, n, &ch))</code>
+      * <code>Assert false (dws_ntlmssp_parse_challenge(m, n, nullptr))</code>
+      * <code>Assert true (dws_ntlmssp_parse_challenge(m, n, &ch))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_challenge_no_target_info</b> &mdash; <i>Parse challenge no target info</i></summary>
+
+    * **Objective**: Parse challenge no target info
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(48, n);</code>
+      * <code>Assert true (dws_ntlmssp_parse_challenge(m, n, &ch))</code>
+      * <code>Assert null (ch.target_info)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, ch.target_info_len);</code>
+      * <code>Assert equal memory (sc, ch.server_challenge, 8)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_authenticate_null_buf</b> &mdash; <i>Build authenticate null buf</i></summary>
+
+    * **Objective**: Build authenticate null buf
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_authenticate_with_lm</b> &mdash; <i>Build authenticate with lm</i></summary>
+
+    * **Objective**: Build authenticate with lm
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 24 + 24 + 6 + 6 + 6, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(24, r16(buf + 12)); // LmChallengeResponseLen</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, r32(buf + 16)); // ...Offset: first thing after the fixed header</code>
+      * <code>Assert equal memory (lm, buf + 64, 24)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(24, r16(buf + 20)); // NtChallengeResponseLen</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(88, r32(buf + 24)); // ...Offset: straight after the LM response</code>
+      * <code>Assert equal memory (nt, buf + 88, 24)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x11223344, r32(buf + 60));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_authenticate_empty_responses</b> &mdash; <i>lm_resp non-null but lm_len 0, and nt_resp null: neither payload is written</i></summary>
+
+    * **Objective**: lm_resp non-null but lm_len 0, and nt_resp null: neither payload is written
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 2 + 2 + 2, n); // header + "D"/"U"/"W" UTF-16LE, no responses</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, r16(buf + 12));  // LmChallengeResponseLen</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, r16(buf + 20));  // NtChallengeResponseLen</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, r32(buf + 16)); // both point at the empty payload start</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, r32(buf + 24));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x0BADF00D, r32(buf + 60));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 2 + 2 + 2, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, r16(buf + 20));  // NtChallengeResponseLen</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, r16(buf + 28));  // DomainNameLen</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, r32(buf + 32)); // DomainNameOffset</code>
+      * <code>Assert equal memory (dom16, buf + 64, 2)</code>
   </details>
 
 </details>
@@ -21766,7 +21897,7 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua (47 tests)</b></summary>
+<summary><b>test_opcua (48 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_read_optional_fields</b> &mdash; <i>Parse read optional fields</i></summary>
@@ -22200,6 +22331,23 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_variant_u64_i64_roundtrip</b> &mdash; <i>UInt64</i></summary>
+
+    * **Objective**: UInt64
+    * **Assertions**:
+      * <code>Assert true (w.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(9, buf[0]); // encoding byte = UInt64 built-in id</code>
+      * <code>Assert true (dws_ua_r_variant(&r, &out))</code>
+      * <code>Assert equal (OpcUaVariantType::OPCUA_VAR_UINT64, out.type)</code>
+      * <code>Assert true (out.u64 == 0x0123456789ABCDEFULL)</code>
+      * <code>Assert true (w2.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(8, buf[0]); // encoding byte = Int64 built-in id</code>
+      * <code>Assert true (dws_ua_r_variant(&r2, &out2))</code>
+      * <code>Assert equal (OpcUaVariantType::OPCUA_VAR_INT64, out2.type)</code>
+      * <code>Assert true (out2.i64 == -123456789012345LL)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_parse_read</b> &mdash; <i>Parse read</i></summary>
 
     * **Objective**: Parse read
@@ -22505,7 +22653,157 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua_client (20 tests)</b></summary>
+<summary><b>test_opcua_client (30 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builders_encode_null_strings</b> &mdash; <i>Builders encode null strings</i></summary>
+
+    * **Objective**: Builders encode null strings
+    * **Assertions**:
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>Assert true (dws_opcua_parse_hello(req, rn, &hello))</code>
+      * <code>Assert equal memory ("\\xFF\\xFF\\xFF\\xFF", req + rn - 4, 4)</code>
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>Assert true (dws_opcua_parse_msg(req, rn, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_GET_ENDPOINTS_REQ, m.type_id);</code>
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>Assert true (dws_opcua_parse_msg(req, rn, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_CREATE_SESSION_REQ, m.type_id);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_on_ack_header_guards</b> &mdash; <i>On ack header guards</i></summary>
+
+    * **Objective**: On ack header guards
+    * **Assertions**:
+      * <code>Assert false (dws_opcua_client_on_ack(tiny, sizeof(tiny), &ai))</code>
+      * <code>Assert true (dws_opcua_client_on_ack(ack, sizeof(ack), &ai))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x11, ai.recv_buf_size);</code>
+      * <code>Assert false (dws_opcua_client_on_ack(ack, sizeof(ack), &ai))</code>
+      * <code>Assert false (dws_opcua_client_on_ack(ack, sizeof(ack), &ai))</code>
+      * <code>Assert false (dws_opcua_client_on_ack(ack, sizeof(ack), &ai))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_msg_envelope_guards</b> &mdash; <i>A String body TypeId is well formed but is not the expected numeric ReadResponse id.</i></summary>
+
+    * **Objective**: A String body TypeId is well formed but is not the expected numeric ReadResponse id.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(tiny, sizeof(tiny), v, s, 1));</code>
+      * <code>Assert true (bad &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(resp, bad, v, s, 1));</code>
+      * <code>Assert true (sn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, dws_opcua_client_on_read(resp, sn, v, s, 1)); // baseline: accepted, 0 results</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(resp, sn, v, s, 1));</code>
+      * <code>Assert true (sn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(resp, sn, v, s, 1));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_on_open_envelope_and_result_guards</b> &mdash; <i>A Bad ServiceResult is rejected even though the token body is complete.</i></summary>
+
+    * **Objective**: A Bad ServiceResult is rejected even though the token body is complete.
+    * **Assertions**:
+      * <code>Assert false (dws_opcua_client_on_open(&c, tiny, sizeof(tiny)))</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_opcua_client_on_open(&c, buf, n))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x2A, c.channel_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x2B, c.token_id);</code>
+      * <code>Assert false (dws_opcua_client_on_open(&c, buf, n))</code>
+      * <code>Assert false (dws_opcua_client_on_open(&c, buf, n))</code>
+      * <code>Assert false (dws_opcua_client_on_open(&c, buf, n))</code>
+      * <code>Assert false (dws_opcua_client_on_open(&c, buf, n))</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert false (dws_opcua_client_on_open(&c, buf, n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parsers_reject_bad_service_result</b> &mdash; <i>CreateSession decodes its body first, then reports the fault through the return value.</i></summary>
+
+    * **Objective**: CreateSession decodes its body first, then reports the fault through the return value.
+    * **Assertions**:
+      * <code>Assert true (sn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_get_endpoints(resp, sn));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(resp, sn, v, s, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_write(resp, sn, s, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_browse(resp, sn, refs, 1));</code>
+      * <code>Assert false (dws_opcua_client_on_create_session(&c, resp, sn))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x22, c.session_auth_id); // token still captured from the decoded body</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parsers_reject_truncated_body</b> &mdash; <i>Parsers reject truncated body</i></summary>
+
+    * **Objective**: Parsers reject truncated body
+    * **Assertions**:
+      * <code>Assert true (sn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_get_endpoints(resp, sn)); // Endpoints count underruns</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_get_endpoints(resp, sn));</code>
+      * <code>Assert false (dws_opcua_client_on_create_session(&c, resp, sn))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_write(resp, sn, got, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_browse(resp, sn, refs, 2));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_on_read_optional_fields_and_limits</b> &mdash; <i>sv[3] stays OPCUA_VAR_NULL -> the server writes a DataValue with an empty mask</i></summary>
+
+    * **Objective**: sv[3] stays OPCUA_VAR_NULL -> the server writes a DataValue with an empty mask
+    * **Assertions**:
+      * <code>Assert true (sn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(4, dws_opcua_client_on_read(resp, sn, cv, cs, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_STRING, cv[0].type);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, cv[0].str_len); // null String: no bytes consumed</code>
+      * <code>Assert null (cv[0].str)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(22, cv[2].i32);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_NULL, cv[3].type); // DataValue carried no Value</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(2, dws_opcua_client_on_read(resp, sn, cv, cs, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(11, cv[1].i32);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_NULL, cv[2].type); // untouched</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(4, dws_opcua_client_on_read(resp, sn, nullptr, cs, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(4, dws_opcua_client_on_read(resp, sn, cv, nullptr, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_on_write_limits_and_null_sink</b> &mdash; <i>On write limits and null sink</i></summary>
+
+    * **Objective**: On write limits and null sink
+    * **Assertions**:
+      * <code>Assert true (sn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(3, dws_opcua_client_on_write(resp, sn, got, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NOT_WRITABLE, got[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(2, dws_opcua_client_on_write(resp, sn, got, 2)); // third result dropped</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0, got[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(3, dws_opcua_client_on_write(resp, sn, nullptr, 3)); // count only</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_on_browse_limits_and_null_sink</b> &mdash; <i>On browse limits and null sink</i></summary>
+
+    * **Objective**: On browse limits and null sink
+    * **Assertions**:
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>Assert true (dws_opcua_parse_browse(req, rn, &br))</code>
+      * <code>Assert true (sn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, dws_opcua_client_on_browse(resp, sn, refs, 1)); // second reference dropped</code>
+      * <code>Assert equal string ("Uptime", refs[0].browse_name)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, refs[1].target_id);                               // untouched</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(2, dws_opcua_client_on_browse(resp, sn, nullptr, 2)); // count only</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_on_browse_display_name_empty_mask</b> &mdash; <i>On browse display name empty mask</i></summary>
+
+    * **Objective**: On browse display name empty mask
+    * **Assertions**:
+      * <code>Assert true (b.ok)</code>
+      * <code>Assert true (sn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, dws_opcua_client_on_browse(resp, sn, refs, 2));</code>
+      * <code>Assert equal string ("Inv", refs[0].browse_name)</code>
+      * <code>Assert false (refs[0].is_forward)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(9, refs[0].target_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, refs[0].target_ns);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(OPCUA_NODECLASS_OBJECT, refs[0].node_class);</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_browse_display_name_locale</b> &mdash; <i>Browse display name locale</i></summary>
@@ -32564,7 +32862,7 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_spnego (14 tests)</b></summary>
+<summary><b>test_spnego (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_wrap_negotiate_bytes</b> &mdash; <i>overflow fails closed</i></summary>
@@ -32698,6 +32996,24 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
     * **Objective**: Parse resptoken not octet
     * **Assertions**:
       * <code>Assert false (dws_spnego_parse_response(blob, sizeof(blob), &rt, &rl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_seq_header_truncated</b> &mdash; <i>Parse seq header truncated</i></summary>
+
+    * **Objective**: Parse seq header truncated
+    * **Assertions**:
+      * <code>Assert false (dws_spnego_parse_response(blob, sizeof(blob), &rt, &rl))</code>
+      * <code>Assert null (rt)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_resptoken_header_truncated</b> &mdash; <i>[1]{ SEQ{ [2] with a 1-byte content: a bare 0x04 tag and no length byte } }</i></summary>
+
+    * **Objective**: [1]{ SEQ{ [2] with a 1-byte content: a bare 0x04 tag and no length byte } }
+    * **Assertions**:
+      * <code>Assert false (dws_spnego_parse_response(blob, sizeof(blob), &rt, &rl))</code>
+      * <code>Assert null (rt)</code>
   </details>
 
 </details>
@@ -39441,7 +39757,7 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_wamp (15 tests)</b></summary>
+<summary><b>test_wamp (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_hello</b> &mdash; <i>Build hello</i></summary>
@@ -39608,9 +39924,9 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_parser_error_paths</b> &mdash; <i>Parser error paths</i></summary>
+    <summary><b>test_parser_error_paths</b> &mdash; <i>Every builder takes an optional details/options JSON object. The suite above always passes</i></summary>
 
-    * **Objective**: Parser error paths
+    * **Objective**: Every builder takes an optional details/options JSON object. The suite above always passes
     * **Assertions**:
       * <code>Assert false (dws_wamp_element(nullptr, 0, &s, &len))</code>
       * <code>Assert false (dws_wamp_element("[]", 0, &s, &len))</code>
@@ -39621,6 +39937,143 @@ A thorough directory of all **3641 test cases** across **276 suites**. Expand a 
       * <code>Assert false (dws_wamp_get_uri("[2,\\"abc\\"]", 1, nullptr, sizeof(uri)))</code>
       * <code>Assert false (dws_wamp_get_uri("[2,\\"abc\\"]", 1, uri, 0))</code>
       * <code>Assert false (dws_wamp_get_uri("[2]", 5, uri, sizeof(uri)))</code>
+      * <code>Assert true (dws_wamp_build_hello(b, sizeof(b), "realm1", "{\\"roles\\":{}}") &gt; 0)</code>
+      * <code>Assert equal string ("[1,\\"realm1\\",{\\"roles\\":{}}]", b)</code>
+      * <code>Assert true (dws_wamp_build_goodbye(b, sizeof(b), "wamp.close", "{\\"message\\":\\"bye\\"}") &gt; 0)</code>
+      * <code>Assert equal string ("[6,{\\"message\\":\\"bye\\"},\\"wamp.close\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_subscribe(b, sizeof(b), 7, "t.a", "{\\"match\\":\\"prefix\\"}") &gt; 0)</code>
+      * <code>Assert equal string ("[32,7,{\\"match\\":\\"prefix\\"},\\"t.a\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_publish(b, sizeof(b), 8, "t.b", "{\\"acknowledge\\":true}", nullptr, nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[16,8,{\\"acknowledge\\":true},\\"t.b\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_call(b, sizeof(b), 9, "p.c", "{\\"timeout\\":10}", nullptr, nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[48,9,{\\"timeout\\":10},\\"p.c\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_register(b, sizeof(b), 10, "p.d", "{\\"invoke\\":\\"roundrobin\\"}") &gt; 0)</code>
+      * <code>Assert equal string ("[64,10,{\\"invoke\\":\\"roundrobin\\"},\\"p.d\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_yield(b, sizeof(b), 11, "{\\"progress\\":true}", nullptr, nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[70,11,{\\"progress\\":true}]", b)</code>
+      * <code>Assert true (dws_wamp_build_hello(b, sizeof(b), "realm1", nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[1,\\"realm1\\",{}]", b)</code>
+      * <code>Assert true (dws_wamp_build_goodbye(b, sizeof(b), "wamp.close", nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[6,{},\\"wamp.close\\"]", b)</code>
+      * <code>Assert true (dws_wamp_element(" \\t\\n\\r[ \\t\\n\\r1 \\t\\n\\r, \\t\\n\\r2 ]", 1, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, n);</code>
+      * <code>Assert equal char ('2', s[0])</code>
+      * <code>Assert true (dws_wamp_element("[[[1],[2]],9]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(9, n); // the whole "[[1],[2]]", not just up to the first ']'</code>
+      * <code>Assert equal string len ("[[1],[2]]", s, 9)</code>
+      * <code>Assert true (dws_wamp_element("[{\\"a\\":{\\"b\\":1}},9]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(13, n);</code>
+      * <code>Assert true (dws_wamp_element("[{\\"a\\":\\"]}\\"},9]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(10, n);</code>
+      * <code>Assert true (dws_wamp_element("[[[1],[2]],9]", 1, &s, &n))</code>
+      * <code>Assert equal char ('9', s[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builder_explicit_options</b> &mdash; <i>...and the other side for HELLO / GOODBYE, whose details argument the suite otherwise</i></summary>
+
+    * **Objective**: ...and the other side for HELLO / GOODBYE, whose details argument the suite otherwise
+    * **Assertions**:
+      * <code>Assert true (dws_wamp_build_hello(b, sizeof(b), "realm1", "{\\"roles\\":{}}") &gt; 0)</code>
+      * <code>Assert equal string ("[1,\\"realm1\\",{\\"roles\\":{}}]", b)</code>
+      * <code>Assert true (dws_wamp_build_goodbye(b, sizeof(b), "wamp.close", "{\\"message\\":\\"bye\\"}") &gt; 0)</code>
+      * <code>Assert equal string ("[6,{\\"message\\":\\"bye\\"},\\"wamp.close\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_subscribe(b, sizeof(b), 7, "t.a", "{\\"match\\":\\"prefix\\"}") &gt; 0)</code>
+      * <code>Assert equal string ("[32,7,{\\"match\\":\\"prefix\\"},\\"t.a\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_publish(b, sizeof(b), 8, "t.b", "{\\"acknowledge\\":true}", nullptr, nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[16,8,{\\"acknowledge\\":true},\\"t.b\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_call(b, sizeof(b), 9, "p.c", "{\\"timeout\\":10}", nullptr, nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[48,9,{\\"timeout\\":10},\\"p.c\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_register(b, sizeof(b), 10, "p.d", "{\\"invoke\\":\\"roundrobin\\"}") &gt; 0)</code>
+      * <code>Assert equal string ("[64,10,{\\"invoke\\":\\"roundrobin\\"},\\"p.d\\"]", b)</code>
+      * <code>Assert true (dws_wamp_build_yield(b, sizeof(b), 11, "{\\"progress\\":true}", nullptr, nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[70,11,{\\"progress\\":true}]", b)</code>
+      * <code>Assert true (dws_wamp_build_hello(b, sizeof(b), "realm1", nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[1,\\"realm1\\",{}]", b)</code>
+      * <code>Assert true (dws_wamp_build_goodbye(b, sizeof(b), "wamp.close", nullptr) &gt; 0)</code>
+      * <code>Assert equal string ("[6,{},\\"wamp.close\\"]", b)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parser_all_whitespace_forms</b> &mdash; <i>Parser all whitespace forms</i></summary>
+
+    * **Objective**: Parser all whitespace forms
+    * **Assertions**:
+      * <code>Assert true (dws_wamp_element(" \\t\\n\\r[ \\t\\n\\r1 \\t\\n\\r, \\t\\n\\r2 ]", 1, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, n);</code>
+      * <code>Assert equal char ('2', s[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parser_nested_containers</b> &mdash; <i>Parser nested containers</i></summary>
+
+    * **Objective**: Parser nested containers
+    * **Assertions**:
+      * <code>Assert true (dws_wamp_element("[[[1],[2]],9]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(9, n); // the whole "[[1],[2]]", not just up to the first ']'</code>
+      * <code>Assert equal string len ("[[1],[2]]", s, 9)</code>
+      * <code>Assert true (dws_wamp_element("[{\\"a\\":{\\"b\\":1}},9]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(13, n);</code>
+      * <code>Assert true (dws_wamp_element("[{\\"a\\":\\"]}\\"},9]", 0, &s, &n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parser_bare_token_terminators</b> &mdash; <i>Parser bare token terminators</i></summary>
+
+    * **Objective**: Parser bare token terminators
+    * **Assertions**:
+      * <code>Assert true (dws_wamp_element("[1,2]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, n);</code>
+      * <code>Assert true (dws_wamp_element("[true]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
+      * <code>Assert true (dws_wamp_element("[null ]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
+      * <code>Assert true (dws_wamp_element("[12\\t]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, n);</code>
+      * <code>Assert true (dws_wamp_element("[34\\n]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, n);</code>
+      * <code>Assert true (dws_wamp_element("[56\\r]", 0, &s, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, n);</code>
+      * <code>Assert true (dws_wamp_element("[{\\"k\\":7}]", 0, &s, &n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parser_optional_out_params</b> &mdash; <i>Parser optional out params</i></summary>
+
+    * **Objective**: Parser optional out params
+    * **Assertions**:
+      * <code>Assert true (dws_wamp_element("[1,2]", 0, nullptr, &n))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, n);</code>
+      * <code>Assert true (dws_wamp_element("[1,2]", 0, &s, nullptr))</code>
+      * <code>Assert equal char ('1', s[0])</code>
+      * <code>Assert true (dws_wamp_element("[1,2]", 0, nullptr, nullptr))</code>
+      * <code>Assert true (dws_wamp_get_uint("[42,2]", 0, nullptr))</code>
+      * <code>Assert true (dws_wamp_get_type("[42,2]", nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_get_uint_rejects_non_digits</b> &mdash; <i>Get uint rejects non digits</i></summary>
+
+    * **Objective**: Get uint rejects non digits
+    * **Assertions**:
+      * <code>Assert false (dws_wamp_get_uint("[1-2,0]", 0, &v))</code>
+      * <code>Assert false (dws_wamp_get_uint("[1a,0]", 0, &v))</code>
+      * <code>Assert false (dws_wamp_get_uint("[\\"7\\",0]", 0, &v))</code>
+      * <code>Assert false (dws_wamp_get_type("[\\"x\\"]", nullptr))</code>
+      * <code>Assert true (dws_wamp_get_uint("[1234567890,0]", 0, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1234567890ull, v);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_get_uri_shape_rejects</b> &mdash; <i>Get uri shape rejects</i></summary>
+
+    * **Objective**: Get uri shape rejects
+    * **Assertions**:
+      * <code>Assert false (dws_wamp_get_uri("[2,1]", 1, uri, sizeof(uri)));         // n &lt; 2 (bare "1")</code>
+      * <code>Assert false (dws_wamp_get_uri("[2,12]", 1, uri, sizeof(uri)))</code>
+      * <code>Assert false (dws_wamp_get_uri("[2,{\\"a\\":1}]", 1, uri, sizeof(uri)))</code>
+      * <code>Assert true (dws_wamp_get_uri("[2,\\"ok\\"]", 1, uri, sizeof(uri)))</code>
+      * <code>Assert equal string ("ok", uri)</code>
   </details>
 
 </details>

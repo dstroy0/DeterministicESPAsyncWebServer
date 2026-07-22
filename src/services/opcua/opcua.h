@@ -289,6 +289,8 @@ enum class OpcUaVariantType : uint8_t
     OPCUA_VAR_BOOL = 1,
     OPCUA_VAR_INT32 = 6,
     OPCUA_VAR_UINT32 = 7,
+    OPCUA_VAR_INT64 = 8,
+    OPCUA_VAR_UINT64 = 9,
     OPCUA_VAR_FLOAT = 10,
     OPCUA_VAR_DOUBLE = 11,
     OPCUA_VAR_STRING = 12,
@@ -301,6 +303,8 @@ struct OpcUaVariant
     bool b;                ///< OpcUaVariantType::OPCUA_VAR_BOOL.
     int32_t i32;           ///< OpcUaVariantType::OPCUA_VAR_INT32.
     uint32_t u32;          ///< OpcUaVariantType::OPCUA_VAR_UINT32.
+    int64_t i64;           ///< OpcUaVariantType::OPCUA_VAR_INT64.
+    uint64_t u64;          ///< OpcUaVariantType::OPCUA_VAR_UINT64.
     float f32;             ///< OpcUaVariantType::OPCUA_VAR_FLOAT.
     double f64;            ///< OpcUaVariantType::OPCUA_VAR_DOUBLE.
     const char *str;       ///< OpcUaVariantType::OPCUA_VAR_STRING (referenced, not copied).
