@@ -838,6 +838,35 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       reviews are regression-tested); the remaining `🔷` entries are documented scope boundaries tracked
       here, not violations. The audit is re-run per subsystem change - the verdict + evidence columns are
       kept current.
+- [x] **Shared CRC engine** (S) - SHIPPED. `shared_primitives/crc.h`: the standard Rocksoft / Williams
+      model (width / poly / init / refin / refout / xorout), so any published CRC is six numbers rather
+      than a new loop. Header-only and pure like `endian.h` - no feature flag, nothing emitted when
+      unused. `begin` / `update` / `final` are split so a frame that is not contiguous in memory (a
+      header struct then a payload buffer) can be checksummed without copying it together first.
+      Bitwise rather than table-driven on purpose: a 256-entry table _per polynomial_ costs more flash
+      than these frames justify, and every caller here checksums tens to hundreds of octets, not
+      megabytes (`services/wal` is the one exception - see the migration item below). Presets ship for
+      CRC-8/SMBUS, CRC-8/MAXIM-DOW, CRC-8/NRSC-5, CRC-16/ARC, CRC-16/MODBUS, CRC-16/IBM-3740,
+      CRC-16/XMODEM, CRC-16/KERMIT, CRC-16/X-25, CRC-16/DNP, CRC-24/OPENPGP, CRC-32/ISO-HDLC and
+      CRC-32/BZIP2. Two independent lines of evidence, both asserted in `test_crc` (10 cases, in
+      `native_dws_primitives`): every preset reproduces its **published catalogue check value** (the
+      CRC of `"123456789"`), and the engine is **diffed against the in-tree hand-rolled loops** across
+      every length 0..64, so a preset meant to retire one of them is proven byte-identical to the
+      interop-tested code it replaces rather than merely plausible.
+- [ ] **Migrate the hand-rolled CRCs onto the shared engine** (M) - the consolidation the CRC engine
+      was written to enable. **16 services** still carry their own CRC loop: `c37118`, `df1`, `dnp3`,
+      `dshot`, `enocean`, `gnss/rtcm3`, `interbus`, `mbplus`, `modbus`, `nema_ts2`, `rawl2`, `sdi12`,
+      `sht3x`, `thread`, `wal`, `zigbee` - the same duplication `endian.h` was created to end. Thirteen
+      of them map onto a shipped preset and are already proven byte-identical to it by `test_crc`, so
+      those migrations are mechanical and regression-guarded. Three need a decision first, and none
+      should be forced: - `wal` is **table-driven** (256-entry CRC-32 lookup) because it checksums bulk log records, not
+      frames - the one place the flash-vs-throughput trade goes the other way. Migrate only if
+      measurement says the bitwise cost is acceptable; otherwise leave it and note why. - `gnss/rtcm3` uses **CRC-24Q** (poly `0x864CFB`, init `0`) - same polynomial as CRC-24/OPENPGP
+      but a different seed, so no shipped preset covers it. Adding one needs its check value
+      confirmed against a published source first, per [[implement-protocols-faithfully]]. - `dshot` is **not a CRC at all** - a 4-bit XOR fold of the three nibbles - so it has nothing to
+      migrate onto and should be left alone. (An earlier revision of this roadmap also listed
+      `hw_health` as hand-rolling a CRC; it does not - it only consumes a `crc_ok` verdict.)
+      Migrate per service with its own interop suite green, one commit each, not as one sweep.
 
 ## Low-level networking (raw Layer 2)
 
@@ -1770,16 +1799,17 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       Fail-safe **latches** until an explicit `dws_scl_reset`: a safety layer that silently reheals lets
       an intermittent fault present as a working link, so a subsequent good frame must not revive it
       (asserted). Pure, explicit `now`, wrap-safe watchdog. Host-tested (`native_safety_scl`, 16 cases).
-      Still open: the **CRC-signature helper**. This module deliberately does not compute the CRC - every
-      profile defines its own polynomial, width, seed and input ordering, those constants live in paid
-      standards, and a guessed CRC would look authoritative while failing to detect the corruption it
-      exists to catch, so the caller passes its profile's verdict in as `signature_ok`. The right shape
-      for the missing piece is a parameterized CRC engine (width / poly / init / reflect / xorout) that
-      each profile configures - and it belongs in `shared_primitives`, not here, because **many services
-      already hand-roll their own CRC** (c37118, df1, dnp3, enocean, rtcm3, mbplus, modbus, nema_ts2,
-      sdi12, sht3x, thread, wal, zigbee, ...) with no shared implementation - exactly the duplication
-      `shared_primitives/endian.h` was created to end. Adding one more copy inside `safety_scl` would
-      make that worse; consolidating them is its own tracked refactor.
+      Still open: the **CRC-signature helper**. The engine half of it now exists -
+      `shared_primitives/crc.h` (see **Maintenance**) is the parameterized width / poly / init /
+      reflect / xorout engine this entry asked for, so "no engine to configure" is no longer the
+      blocker. What remains is genuinely profile-specific: each profile defines not just its
+      polynomial, width and seed but the **input ordering** - which fields, in which order, feed the
+      register - and those constants live in paid standards. A generic `dws_scl_signature()` would
+      still be guessing that ordering, and a wrong safety CRC is worse than none because it looks
+      authoritative while failing to detect the corruption it exists to catch. So the caller still
+      passes its profile's verdict in as `signature_ok`, and the helper lands **per profile**
+      (PROFIsafe CRC2, CIP Safety CRC-S1/S3/S5, FSoE per-slot CRC) as each profile's codec is written
+      against its spec - each one configuring the shared engine rather than hand-rolling a loop.
 - [ ] **PROFIsafe (IEC 61784-3-3, PI)** (M) - the SIL3 safety layer over the shipped PROFINET / PROFIBUS
       codecs. `DWS_ENABLE_PROFISAFE` / `services/profisafe`: the Safety-PDU (F-I/O data + status/control
       byte + consecutive number + CRC2 signature), the F-Parameters (F_Dest_Add / F_WD_Time ...) with their

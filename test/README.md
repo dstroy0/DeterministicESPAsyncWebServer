@@ -134,7 +134,7 @@ The native test matrix has **265 environments**, one per feature, generated from
 | `native_dtls_tls13` | `WS_ENABLE_DTLS=1`, `WS_ENABLE_TLS_RPK=1` | `test_dtls_tls13` | TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 sec 4.1.4 / 4.4.1), compiled for the DTLS path (DWS_ENABLE_DTLS, not HTTP/3): the HelloRetryRequest builder, the cookie extension pa... |
 | `native_dws_arena` | default | `test_dws_arena` | Unified double-ended server arena (network_drivers/session/dws_arena): first-fit persistent end (bottom, individual free + coalesce + boundary shrink) + bump scratch end (top, mark/release/reset) shar... |
 | `native_dws_ip` | default | `test_dws_ip` | IP address core (network_drivers/network/dws_ip): RFC 4291 IPv4/IPv6 text parsing, RFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification (loopback / link-local / pri... |
-| `native_dws_primitives` | default | `test_dws_primitives` | Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof number parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h). |
+| `native_dws_primitives` | default | `test_dws_primitives`, `test_crc` | Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof number parsers (numparse.h), the strict RFC 3629 UTF-8 validator (utf8.h), and the parameterized Rocksoft/William... |
 | `native_edge_cache` | `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1`, `WS_ENABLE_RANGE=1` | `test_edge_cache`, `test_edge_fetch` | CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response header-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime + Expires-Date +... |
 | `native_edge_cache_sd` | `WS_ENABLE_WAL=1`, `WS_ENABLE_DBM=1`, `WS_DBM_VAL_MAX=1024`, `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1` | `test_edge_cache_sd` | CDN edge-cache L2 SD-persistence tier (services/edge_cache/edge_cache_sd): the entry <-> dbm-value serialization roundtrip (all response metadata, Vary variants, binary and max-size bodies), the spill... |
 | `native_edge_mesh` | `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1`, `WS_ENABLE_EDGE_MESH=1` | `test_edge_mesh` | CDN edge-cache mesh sibling-cache codec (services/edge_cache/edge_mesh): the request/response wire frames (build + tri-state accumulating parse over partial reads, magic/version/opcode validation), th... |
@@ -555,7 +555,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4182 test cases** across **280 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4192 test cases** across **281 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -5718,6 +5718,119 @@ A thorough directory of all **4182 test cases** across **280 suites**. Expand a 
       * <code>Assert false (dws_cotp_parse(cr_short, sizeof(cr_short), &h))</code>
       * <code>Assert true (dws_cotp_parse(other, sizeof(other), &h))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x80, h.code);</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_crc (10 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_catalogue_check_values</b> &mdash; <i>Catalogue check values</i></summary>
+
+    * **Objective**: Catalogue check values
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xF4u, check_of(DWS_CRC8_SMBUS));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xA1u, check_of(DWS_CRC8_MAXIM_DOW));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xF7u, check_of(DWS_CRC8_NRSC5));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xBB3Du, check_of(DWS_CRC16_ARC));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x4B37u, check_of(DWS_CRC16_MODBUS));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x29B1u, check_of(DWS_CRC16_IBM_3740));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x31C3u, check_of(DWS_CRC16_XMODEM));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x2189u, check_of(DWS_CRC16_KERMIT));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x906Eu, check_of(DWS_CRC16_X25));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xEA82u, check_of(DWS_CRC16_DNP));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x21CF02u, check_of(DWS_CRC24_OPENPGP));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xCBF43926u, check_of(DWS_CRC32_ISO_HDLC));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xFC891918u, check_of(DWS_CRC32_BZIP2));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reflection_flags_actually_apply</b> &mdash; <i>...and so must differing init values on otherwise identical parameters</i></summary>
+
+    * **Objective**: ...and so must differing init values on otherwise identical parameters
+    * **Assertions**:
+      * <code>Assert not equal (check_of(DWS_CRC16_XMODEM), check_of(DWS_CRC16_KERMIT))</code>
+      * <code>Assert not equal (check_of(DWS_CRC32_ISO_HDLC), check_of(DWS_CRC32_BZIP2))</code>
+      * <code>Assert not equal (check_of(DWS_CRC16_ARC), check_of(DWS_CRC16_MODBUS))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_streaming_matches_one_shot</b> &mdash; <i>octet-at-a-time is the same thing taken to the limit</i></summary>
+
+    * **Objective**: octet-at-a-time is the same thing taken to the limit
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX32(want, dws_crc_final(&p, c));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(want, dws_crc_final(&p, c));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_single_bit_flip_changes_the_crc</b> &mdash; <i>Single bit flip changes the crc</i></summary>
+
+    * **Objective**: Single bit flip changes the crc
+    * **Assertions**:
+      * <code>Assert not equal (base, dws_crc(&p, buf, sizeof(buf)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_order_sensitivity</b> &mdash; <i>Order sensitivity</i></summary>
+
+    * **Objective**: Order sensitivity
+    * **Assertions**:
+      * <code>Assert not equal (dws_crc(&p, a, 3), dws_crc(&p, b, 3))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_leading_zeros_are_significant</b> &mdash; <i>Leading zeros are significant</i></summary>
+
+    * **Objective**: Leading zeros are significant
+    * **Assertions**:
+      * <code>Assert not equal (dws_crc(&p, one, 1), dws_crc(&p, two, 2))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_input_is_the_bare_init</b> &mdash; <i>With no octets folded in, the result is init through the output stage - not an error.</i></summary>
+
+    * **Objective**: With no octets folded in, the result is init through the output stage - not an error.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX32(dws_crc_final(&p, dws_crc_begin(&p)), dws_crc(&p, CHECK_INPUT, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x00000000u, dws_crc(&DWS_CRC32_ISO_HDLC, nullptr, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_width_is_respected</b> &mdash; <i>Every result must fit its declared width - a leaked high bit would corrupt a packed frame.</i></summary>
+
+    * **Objective**: Every result must fit its declared width - a leaked high bit would corrupt a packed frame.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, check_of(DWS_CRC8_SMBUS) & ~0xFFu);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, check_of(DWS_CRC16_ARC) & ~0xFFFFu);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, check_of(DWS_CRC24_OPENPGP) & ~0xFFFFFFu);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_matches_the_hand_rolled_implementations</b> &mdash; <i>A spread of lengths, including the empty and single-octet degenerate cases, over a buffer with</i></summary>
+
+    * **Objective**: A spread of lengths, including the empty and single-octet degenerate cases, over a buffer with
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX16(ref_x25(buf, n), dws_crc(&DWS_CRC16_X25, buf, n));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(ref_ccitt_false(buf, n), dws_crc(&DWS_CRC16_IBM_3740, buf, n));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(ref_arc(buf, n), dws_crc(&DWS_CRC16_ARC, buf, n));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(ref_modbus(buf, n), dws_crc(&DWS_CRC16_MODBUS, buf, n));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(ref_dnp(buf, n), dws_crc(&DWS_CRC16_DNP, buf, n));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(ref_crc32(buf, n), dws_crc(&DWS_CRC32_ISO_HDLC, buf, n));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(ref_crc8_smbus(buf, n), dws_crc(&DWS_CRC8_SMBUS, buf, n));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(ref_sensirion(buf, n), dws_crc(&DWS_CRC8_NRSC5, buf, n));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_guards</b> &mdash; <i>a null buffer with a non-zero length must be refused, not read</i></summary>
+
+    * **Objective**: a null buffer with a non-zero length must be refused, not read
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, dws_crc_begin(nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, dws_crc_final(nullptr, 0x1234u));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, dws_crc(nullptr, CHECK_INPUT, sizeof(CHECK_INPUT)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(start, dws_crc_update(&p, start, nullptr, 4));</code>
   </details>
 
 </details>
