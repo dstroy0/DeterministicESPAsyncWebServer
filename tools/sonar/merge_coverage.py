@@ -57,9 +57,69 @@ def _union_line(lines, ln, cov, btc, cb):
     else:
         cur = lines[ln]
         cur[0] = cur[0] or cov
-        # keep the branch pair from whichever env covered the most branches
+        # Keep the branch pair from whichever env covered the most branches. This is the best that
+        # can be done from the SonarQube generic format, which carries only the per-line AGGREGATE
+        # (branchesToCover, coveredBranches) - it does not say WHICH branches were taken, so two envs
+        # that each cover a different subset cannot be combined. Pass --json-reports to union
+        # per-branch from gcovr's JSON instead; see per_branch_union().
         if (cb if cb is not None else -1) > (cur[2] if cur[2] is not None else -1):
             cur[1], cur[2] = btc, cb
+
+
+def per_branch_union(pattern):
+    """{path: {line: (covered, n_branches, n_covered_branches)}} unioned BRANCH BY BRANCH.
+
+    The XML path above can only keep the single best env per line, so a condition whose branches are
+    split across envs - one env taking the true arm, another the false arm - is reported as partially
+    covered forever, even though the suite as a whole covers every branch. gcovr's JSON keeps the
+    per-branch counts, so here a branch is covered if ANY env took it.
+
+    Envs compile with different -D flags, so the same line can legitimately have a different number
+    of branches in different envs. Branch indices are only comparable within one shape, so lines are
+    unioned per (line, branch-count) and the widest shape seen for a line wins - that is the build
+    that actually had the most conditions to cover.
+    """
+    acc = {}  # path -> line -> {n_branches: [covered_flags]}
+    hits = {}  # path -> line -> line-level covered
+    for rep in sorted(glob.glob(pattern)):
+        try:
+            with open(rep, encoding="utf-8") as fh:
+                doc = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        for f in doc.get("files", []):
+            path = f.get("file", "").replace("\\", "/")
+            if not path:
+                continue
+            pl = acc.setdefault(path, {})
+            ph = hits.setdefault(path, {})
+            for l in f.get("lines", []):
+                ln = l.get("line_number")
+                if not isinstance(ln, int) or ln < 1:
+                    continue
+                ph[ln] = ph.get(ln, False) or bool(l.get("count"))
+                brs = l.get("branches") or []
+                if not brs:
+                    continue
+                shapes = pl.setdefault(ln, {})
+                flags = shapes.setdefault(len(brs), [False] * len(brs))
+                for i, b in enumerate(brs):
+                    if b.get("count"):
+                        flags[i] = True
+
+    out = {}
+    for path, lines in acc.items():
+        rec = {}
+        for ln, covered in hits[path].items():
+            shapes = lines.get(ln)
+            if not shapes:
+                rec[ln] = (covered, None, None)
+            else:
+                width = max(shapes)  # the build with the most conditions on this line
+                flags = shapes[width]
+                rec[ln] = (covered, width, sum(1 for x in flags if x))
+        out[path] = rec
+    return out
 
 
 def _union_file(lines, file_el):
@@ -84,6 +144,8 @@ def main():
     ap.add_argument("--changed", help="file with one changed path per line; these are replaced, not unioned")
     ap.add_argument("--dep-graph", help="test/dep_graph.json (path -> owning envs), for replace-vs-union")
     ap.add_argument("--ran-envs", help="space/newline separated envs that ran to completion this run")
+    ap.add_argument("--json-reports", help="glob of gcovr JSON reports; unions BRANCH BY BRANCH "
+                                           "instead of keeping one env's aggregate per line")
     args = ap.parse_args()
 
     # 1) Union the fresh per-env reports (this run's actual coverage).
@@ -92,6 +154,22 @@ def main():
     for rep in sorted(glob.glob(args.reports)):
         if parse_report(rep, files):
             nrep += 1
+
+    # 1b) If gcovr JSON is available, it supersedes the per-line aggregates above: it can tell which
+    # branches were taken, so a condition split across envs adds up instead of being capped at the
+    # best single env.
+    if args.json_reports:
+        pb = per_branch_union(args.json_reports)
+        upgraded = 0
+        for path, rec in pb.items():
+            dst = files.setdefault(path, {})
+            for ln, (cov, btc, cb) in rec.items():
+                prev = dst.get(ln)
+                if prev and prev[2] is not None and cb is not None and cb > prev[2]:
+                    upgraded += 1
+                dst[ln] = [cov, btc, cb]
+        if upgraded:
+            print(f"  per-branch union recovered {upgraded} line(s) the per-line merge under-counted")
 
     # 2) Overlay the baseline so the report stays whole-project on a partial run.
     if args.baseline:
