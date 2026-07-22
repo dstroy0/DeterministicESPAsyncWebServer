@@ -33,7 +33,7 @@ from each example's `pio ci` size report and aggregated into
 | `DNC`                                                                                                     | L7-Application/EthernetDnc           | 716.7 KB (56.0%) | 59.7 KB (18.7%)  |
 | `DNS_RESOLVER`                                                                                            | L7-Application/DnsResolver           | 741.7 KB (57.9%) | 81.2 KB (25.4%)  |
 | `DNS_SERVER`                                                                                              | L7-Application/DnsServer             | 708.9 KB (55.4%) | 45.0 KB (14.1%)  |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT`                                                                       | L7-Application/EdgeCache             | 756.4 KB (59.1%) | 116.5 KB (36.4%) |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT`                                                                       | L7-Application/EdgeCache             | 756.5 KB (59.1%) | 116.5 KB (36.4%) |
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH`                                                             | L7-Application/MeshCache             | 760.2 KB (59.4%) | 121.3 KB (37.9%) |
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH+EDGE_CACHE_SLOTS+EDGE_FETCH_SLOTS+MESH_MAX_PEERS`            | L7-Application/MeshCache             | 760.9 KB (59.4%) | 112.7 KB (35.2%) |
 | `ENOCEAN+GATEWAY`                                                                                         | Drivers/EnOceanGateway               | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
@@ -80,7 +80,7 @@ from each example's `pio ci` size report and aggregated into
 | `OPCUA`                                                                                                   | L7-Application/OpcUa                 | 744.0 KB (58.1%) | 89.9 KB (28.1%)  |
 | `OPCUA+EUROMAP77`                                                                                         | L7-Application/Euromap77             | 750.7 KB (58.6%) | 90.1 KB (28.2%)  |
 | `OPCUA+OPCUA_CLIENT`                                                                                      | L7-Application/OpcUaClient           | 748.3 KB (58.5%) | 92.5 KB (28.9%)  |
-| `OPCUA+ROBOTICS`                                                                                          | L7-Application/Robotics              | 750.7 KB (58.7%) | 90.3 KB (28.2%)  |
+| `OPCUA+ROBOTICS`                                                                                          | L7-Application/Robotics              | 750.8 KB (58.7%) | 90.3 KB (28.2%)  |
 | `OPCUA+UMATI`                                                                                             | L7-Application/Umati                 | 750.4 KB (58.6%) | 90.1 KB (28.2%)  |
 | `OTA`                                                                                                     | L7-Application/OTA                   | 741.1 KB (57.9%) | 99.8 KB (31.2%)  |
 | `OTA_ROLLBACK`                                                                                            | L7-Application/OtaRollback           | 736.7 KB (57.6%) | 79.9 KB (25.0%)  |
