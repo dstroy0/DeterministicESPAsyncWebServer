@@ -15,16 +15,14 @@
 
 #include <string.h>
 
+#include "shared_primitives/crc.h" // DWS_CRC8_SMBUS
+
 uint8_t dws_esp3_crc8(const uint8_t *buf, uint16_t len)
 {
-    uint8_t crc = 0;
-    for (uint16_t i = 0; i < len; i++)
-    {
-        crc ^= buf[i];
-        for (uint8_t b = 0; b < 8; b++)
-            crc = (crc & 0x80) ? (uint8_t)((crc << 1) ^ 0x07) : (uint8_t)(crc << 1);
-    }
-    return crc;
+    // The ESP3 CRC-8 (the u8CRC8Table generator) is the catalogue's CRC-8/SMBUS: poly 0x07,
+    // MSB-first, init 0, no final XOR. test_crc diffs the shared engine against the loop that used
+    // to live here over every length 0..64, so this is byte-identical to it.
+    return (uint8_t)dws_crc(&DWS_CRC8_SMBUS, buf, len);
 }
 
 int dws_esp3_parse(const uint8_t *raw, uint16_t len, dws_esp3_packet *out)
