@@ -255,7 +255,7 @@
     "example": "L7-Application/GraphQL",
     "flags": "-DDWS_ENABLE_GRAPHQL=1",
     "board": "esp32dev",
-    "flash_bytes": 758269,
+    "flash_bytes": 758281,
     "ram_bytes": 86236
   },
   "GUARDRAILS": {
@@ -724,7 +724,7 @@
     "example": "L7-Application/PrometheusMetrics",
     "flags": "-DDWS_ENABLE_STATS=1 -DDWS_ENABLE_METRICS=1",
     "board": "esp32dev",
-    "flash_bytes": 757317,
+    "flash_bytes": 757301,
     "ram_bytes": 81964
   },
   "STATSD": {
