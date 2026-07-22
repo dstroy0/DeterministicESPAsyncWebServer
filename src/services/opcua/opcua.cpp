@@ -696,6 +696,12 @@ void dws_ua_w_variant(UaWriter *w, const OpcUaVariant *v)
     case OpcUaVariantType::OPCUA_VAR_UINT32:
         dws_ua_w_u32(w, v->u32);
         break;
+    case OpcUaVariantType::OPCUA_VAR_INT64:
+        dws_ua_w_u64(w, (uint64_t)v->i64); // Int64 is two's-complement little-endian - same 8 bytes as UInt64
+        break;
+    case OpcUaVariantType::OPCUA_VAR_UINT64:
+        dws_ua_w_u64(w, v->u64);
+        break;
     case OpcUaVariantType::OPCUA_VAR_FLOAT:
         dws_ua_w_f32(w, v->f32);
         break;
@@ -748,6 +754,12 @@ bool dws_ua_r_variant(UaReader *r, OpcUaVariant *out)
         break;
     case OpcUaVariantType::OPCUA_VAR_UINT32:
         out->u32 = dws_ua_r_u32(r);
+        break;
+    case OpcUaVariantType::OPCUA_VAR_INT64:
+        out->i64 = (int64_t)dws_ua_r_u64(r);
+        break;
+    case OpcUaVariantType::OPCUA_VAR_UINT64:
+        out->u64 = dws_ua_r_u64(r);
         break;
     case OpcUaVariantType::OPCUA_VAR_FLOAT:
         out->f32 = dws_ua_r_f32(r);
