@@ -34,7 +34,14 @@ BUILD_DIR = os.path.join(ROOT, ".pio_cov")
 REPORTS = os.path.join(ROOT, "coverage_reports")
 
 
-def run_env(env: str, jobs: int) -> bool:
+# Windows Application Control intermittently refuses to launch a freshly-linked test binary
+# ("[WinError 4551] An Application Control policy has blocked this file"). It is not a build or
+# test failure and it clears on a rebuild, but left alone it shows up as a failed env and would
+# block the merge - so retry once rather than lose the run.
+_TRANSIENT = ("WinError 4551", "Application Control policy")
+
+
+def run_env(env: str, jobs: int, _retry: bool = True) -> bool:
     envvars = dict(os.environ)
     envvars["PLATFORMIO_BUILD_DIR"] = BUILD_DIR
     envvars["PLATFORMIO_BUILD_FLAGS"] = "-fprofile-arcs -ftest-coverage -lgcov"
@@ -45,10 +52,16 @@ def run_env(env: str, jobs: int) -> bool:
         ["pio", "test", "-e", env],
         cwd=ROOT, env=envvars, capture_output=True, text=True,
     )
-    if p.returncode != 0:
-        sys.stdout.write(p.stdout[-4000:])
-        sys.stdout.write(p.stderr[-2000:])
-    return p.returncode == 0
+    if p.returncode == 0:
+        return True
+    out = p.stdout + p.stderr
+    if _retry and any(m in out for m in _TRANSIENT):
+        print(f"  {env}: blocked by Application Control, rebuilding once", flush=True)
+        shutil.rmtree(os.path.join(BUILD_DIR, env), ignore_errors=True)
+        return run_env(env, jobs, _retry=False)
+    sys.stdout.write(p.stdout[-4000:])
+    sys.stdout.write(p.stderr[-2000:])
+    return False
 
 
 _GCOVR_PY: str | None = None

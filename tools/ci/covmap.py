@@ -23,6 +23,42 @@ import xml.etree.ElementTree as ET
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 INI = os.path.join(ROOT, "platformio.ini")
 DEFAULT_COV = os.path.join(ROOT, "test", "coverage.xml")
+SONAR_PROPS = os.path.join(ROOT, "sonar-project.properties")
+
+
+def sonar_excluded_globs() -> list[str]:
+    """sonar.coverage.exclusions + sonar.exclusions, as fnmatch globs.
+
+    These files are in the gcovr report but SonarCloud does not count them (raw lwIP transport,
+    WiFi/Ethernet physical, mbedTLS - no host execution path - plus generated assets). Counting
+    them locally would mean chasing ~180 uncovered lines that can never move the reported number.
+    """
+    pats: list[str] = []
+    try:
+        with open(SONAR_PROPS, encoding="utf-8") as fh:
+            for raw in fh:
+                line = raw.strip()
+                for key in ("sonar.coverage.exclusions=", "sonar.exclusions="):
+                    if line.startswith(key):
+                        pats += [p.strip() for p in line[len(key):].split(",") if p.strip()]
+    except OSError:
+        pass
+    return pats
+
+
+_EXCL = None
+
+
+def sonar_excluded(path: str) -> bool:
+    global _EXCL
+    if _EXCL is None:
+        _EXCL = sonar_excluded_globs()
+    for pat in _EXCL:
+        # Sonar's '**' spans directories; fnmatch's '*' already crosses '/', so the two forms
+        # collapse to the same test here.
+        if fnmatch.fnmatch(path, pat) or fnmatch.fnmatch(path, pat.replace("**/", "*").replace("**", "*")):
+            return True
+    return False
 
 
 def parse_envs() -> dict[str, dict]:
@@ -123,6 +159,33 @@ def load_cov(path: str) -> dict[str, list[tuple[int, int, int]]]:
     return out
 
 
+def load_lines(path: str) -> dict[str, list[tuple[int, bool]]]:
+    """file -> [(line, covered)] for EVERY executable line (not just branch lines).
+
+    Line and branch coverage fail in different places: a wholly untested function shows up as a
+    run of uncovered lines with no branch gap at all, so a branch-only report calls it clean.
+    """
+    root = ET.parse(path).getroot()
+    out: dict[str, list[tuple[int, bool]]] = {}
+    for f in root.findall("file"):
+        out[f.get("path").replace("\\", "/")] = [
+            (int(l.get("lineNumber")), l.get("covered") == "true") for l in f.findall("lineToCover")
+        ]
+    return out
+
+
+def runs(nums: list[int]) -> list[tuple[int, int]]:
+    """Collapse sorted line numbers into (first, last) runs, so a 40-line dead function
+    prints as one range instead of forty lines."""
+    out: list[tuple[int, int]] = []
+    for n in nums:
+        if out and n == out[-1][1] + 1:
+            out[-1] = (out[-1][0], n)
+        else:
+            out.append((n, n))
+    return out
+
+
 def src_line(path: str, n: int) -> str:
     try:
         with open(os.path.join(ROOT, path), "r", encoding="utf-8", errors="replace") as fh:
@@ -149,6 +212,14 @@ def main() -> int:
     p.add_argument("--cov", default=DEFAULT_COV)
     p.add_argument("--summary", action="store_true", help="per-file totals only")
     p.add_argument("--limit", type=int, default=0)
+    p.add_argument("--all", action="store_true", help="include files SonarCloud excludes from coverage")
+
+    p = sub.add_parser("lines", help="uncovered LINES (a wholly untested function has no branch gap)")
+    p.add_argument("paths", nargs="*")
+    p.add_argument("--cov", default=DEFAULT_COV)
+    p.add_argument("--summary", action="store_true")
+    p.add_argument("--limit", type=int, default=0)
+    p.add_argument("--all", action="store_true", help="include files SonarCloud excludes from coverage")
 
     a = ap.parse_args()
     envs = parse_envs()
@@ -170,8 +241,44 @@ def main() -> int:
                 print(f"  src/{s}")
         return 0
 
+    if a.cmd == "lines":
+        lines = load_lines(a.cov)
+        sel = [p.replace("\\", "/") for p in a.paths] or [
+            f for f in sorted(lines) if a.all or not sonar_excluded(f)
+        ]
+        tot = cov_n = 0
+        rows = []
+        for pth in sel:
+            entries = lines.get(pth)
+            if entries is None:
+                print(f"{pth}: <not in coverage report>", file=sys.stderr)
+                continue
+            miss = sorted(ln for ln, c in entries if not c)
+            tot += len(entries)
+            cov_n += len(entries) - len(miss)
+            if miss:
+                rows.append((len(miss), pth, len(entries), miss))
+        rows.sort(reverse=True)
+        if a.limit:
+            rows = rows[: a.limit]
+        for nmiss, pth, ntot, miss in rows:
+            own = " ".join(owners(envs, pth)) or "<no env>"
+            print(f"\n=== {pth}  {ntot - nmiss}/{ntot} lines, {nmiss} uncovered  [envs: {own}]")
+            if a.summary:
+                continue
+            for lo, hi in runs(miss):
+                if lo == hi:
+                    print(f"  {pth}:{lo}  | {src_line(pth, lo)}")
+                else:
+                    print(f"  {pth}:{lo}-{hi}  ({hi - lo + 1} lines) | {src_line(pth, lo)}")
+        pct = 100.0 * cov_n / tot if tot else 100.0
+        print(f"\nTOTAL {cov_n}/{tot} lines = {pct:.3f}%  ({tot - cov_n} uncovered)")
+        return 0
+
     cov = load_cov(a.cov)
-    sel = [p.replace("\\", "/") for p in a.paths] or sorted(cov)
+    sel = [p.replace("\\", "/") for p in a.paths] or [
+        f for f in sorted(cov) if a.all or not sonar_excluded(f)
+    ]
     total_b = total_c = 0
     rows = []
     for pth in sel:

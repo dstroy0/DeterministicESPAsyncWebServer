@@ -154,7 +154,10 @@ bool edge_header_value(const char *hdrs, size_t len, const char *name, char *out
         while (le < end && *le != '\n')
             le++;
         const char *lend = le; // exclusive; drop a trailing CR
-        if (lend > p && lend[-1] == '\r')
+        // `lend > p` has no false arm to reach: a line starting with CR or LF is the blank line that
+        // ends the header block and already broke out above, so p is always on a content byte and
+        // the line is at least one byte long. The guard stays to keep lend[-1] in bounds.
+        if (lend > p && lend[-1] == '\r') // GCOVR_EXCL_LINE - lend > p always true here, see above
             lend--;
         bool overflow = false;
         if (header_line_value(p, lend, name, namelen, out, out_cap, &overflow))
@@ -246,7 +249,13 @@ int64_t edge_parse_http_date(const char *s, size_t len)
     if (!ok)
         return -1;
 
-    if (mon < 1 || mon > 12 || mday < 1 || mday > 31 || hh > 23 || mm > 59 || ss > 60)
+    // The month check is split off deliberately: rd_month() only ever yields 1..12 (and both date
+    // parsers fail outright when it does not match), so this guard is defensive and unreachable.
+    // Keeping it on its own line lets it be excluded without also dropping the five range checks
+    // below - which ARE reachable and are pinned by tests - out of the branch measurement.
+    if (mon < 1 || mon > 12) // GCOVR_EXCL_LINE - rd_month yields 1..12, see above
+        return -1;
+    if (mday < 1 || mday > 31 || hh > 23 || mm > 59 || ss > 60)
         return -1;
     int64_t days = days_from_civil(year, mon, mday);
     return days * 86400 + (int64_t)hh * 3600 + (int64_t)mm * 60 + ss;
@@ -331,7 +340,10 @@ bool vary_emit_one(const char **pp, EdgeHdrLookup lookup, void *ctx, char *out, 
     }
     name[nl] = '\0';
     *pp = p;
-    if (nl == 0)
+    // Defensive: edge_vary_serialize() skips every separator and breaks on NUL before calling in,
+    // so *p is always a content byte here and the loop above has already taken at least one
+    // character (or returned false on '*'). nl is therefore never 0.
+    if (nl == 0)     // GCOVR_EXCL_LINE - caller guarantees a non-empty token, see above
         return true; // nothing to emit; caller advances
     const char *val = lookup ? lookup(ctx, name) : nullptr;
     if (!k_append(out, pos, out_cap, name, false) || !k_append(out, pos, out_cap, "\x1e", false))

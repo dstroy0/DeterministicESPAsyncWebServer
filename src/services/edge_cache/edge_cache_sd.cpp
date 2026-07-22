@@ -30,7 +30,13 @@ uint16_t get_u16(const uint8_t *p)
 bool put_str(uint8_t *out, size_t cap, size_t *pos, const char *s)
 {
     size_t sl = strnlen(s, cap);
-    if (sl > 0xFFFFu || *pos + 2 + sl > cap)
+    // Split from the capacity check below so excluding it does not also drop that check - which IS
+    // reachable and tested - out of the branch measurement. sl is strnlen-capped to `cap`, the
+    // caller's record buffer, which is orders of magnitude below the 16-bit prefix limit in every
+    // build this library is sized for. The check guards the u16 cast if cap ever grows.
+    if (sl > 0xFFFFu) // GCOVR_EXCL_LINE - sl <= cap, far below 0xFFFF, see above
+        return false; // GCOVR_EXCL_LINE - unreachable body of the guard above
+    if (*pos + 2 + sl > cap)
         return false;
     put_u16(out + *pos, (uint16_t)sl);
     *pos += 2;
