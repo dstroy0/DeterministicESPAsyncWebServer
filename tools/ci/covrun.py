@@ -96,9 +96,14 @@ def gcovr_python() -> str:
 def gcovr(env: str) -> None:
     os.makedirs(REPORTS, exist_ok=True)
     out = os.path.join(REPORTS, f"{env}.xml")
+    # Also emit gcovr's JSON: it keeps the PER-BRANCH counts that the SonarQube generic format
+    # throws away, which is what lets merge_coverage.py union a condition whose branches are split
+    # across envs instead of keeping only the best single env's aggregate.
+    js = os.path.join(REPORTS, f"{env}.json")
     p = subprocess.run(
         [gcovr_python(), "-m", "gcovr", "--root", ".", "--filter", "src/.*",
-         "--gcov-ignore-parse-errors", "--sonarqube", out, os.path.join(BUILD_DIR, env)],
+         "--gcov-ignore-parse-errors", "--sonarqube", out, "--json", js,
+         os.path.join(BUILD_DIR, env)],
         cwd=ROOT, capture_output=True, text=True,
     )
     if p.returncode != 0 or not os.path.exists(out):
@@ -157,7 +162,8 @@ def main() -> int:
         scratch = os.path.join(REPORTS, "_union.xml")
         subprocess.run(
             [gcovr_python(), "tools/sonar/merge_coverage.py", scratch,
-             os.path.join(a.reports_dir, "*.xml")],
+             os.path.join(a.reports_dir, "*.xml"),
+             "--json-reports", os.path.join(a.reports_dir, "*.json")],
             cwd=ROOT, check=True,
         )
         if srcs:
@@ -171,7 +177,8 @@ def main() -> int:
         fh.write("\n".join(srcs))
     subprocess.run(
         [gcovr_python(), "tools/sonar/merge_coverage.py", "test/coverage.xml",
-         os.path.join(a.reports_dir, "*.xml"), "--baseline", BASELINE, "--changed", changed],
+         os.path.join(a.reports_dir, "*.xml"), "--baseline", BASELINE, "--changed", changed,
+         "--json-reports", os.path.join(a.reports_dir, "*.json")],
         cwd=ROOT, check=True,
     )
     os.unlink(changed)
