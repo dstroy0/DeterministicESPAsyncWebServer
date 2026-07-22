@@ -753,9 +753,323 @@ void test_snmp_oid_cmp_request_longer()
     TEST_ASSERT_TRUE(dws_snmp_agent_process(req, rl, resp, sizeof(resp)) > 0);
 }
 
+// ---------------------------------------------------------------------------
+// Registration / configuration edges
+// ---------------------------------------------------------------------------
+
+// A null or empty read-only community falls back to the built-in default ("public"),
+// rather than leaving the agent with no community at all.
+void test_init_community_defaults()
+{
+    uint8_t req[256], resp[256];
+    RespView rv;
+    const char *args[] = {nullptr, ""};
+    for (unsigned i = 0; i < 2; i++)
+    {
+        dws_snmp_agent_init(args[i]); // clears the MIB too, so re-register
+        dws_snmp_agent_set_system(SYSDESCR_VAL, "admin", "esp32", "lab", 72);
+        size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET,
+                              60 + (long)i, 0, 0, OID_SYSDESCR, 9, nullptr);
+        size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+        TEST_ASSERT_TRUE(n > 0); // "public" is accepted in both cases
+        TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+        TEST_ASSERT_EQUAL_STRING(SYSDESCR_VAL, rv.str);
+    }
+}
+
+// An empty rw community clears write access exactly as a null one does.
+void test_empty_rw_community_clears_write()
+{
+    dws_snmp_agent_set_rw_community("");
+    uint8_t req[256], resp[256];
+    SnmpValue sv;
+    memset(&sv, 0, sizeof(sv));
+    sv.type = (uint8_t)SnmpTag::BER_INTEGER;
+    sv.ival = 5;
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_SET, 61, 0,
+                          0, OID_RW, 9, &sv);
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ACCESS, rv.err_status);
+    TEST_ASSERT_FALSE(g_set_called);
+}
+
+// A string object registered with a null value reads back as a zero-length OCTET STRING
+// (not a crash and not a stale pointer).
+void test_add_string_null_value()
+{
+    static const uint32_t OID_NULLSTR[] = {1, 3, 6, 1, 4, 1, 49374, 6, 0};
+    TEST_ASSERT_TRUE(dws_snmp_agent_add_string(OID_NULLSTR, 9, nullptr));
+    uint8_t req[256], resp[256];
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 62, 0,
+                          0, OID_NULLSTR, 9, nullptr);
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, rv.val_tag);
+    TEST_ASSERT_EQUAL_size_t(0, rv.str_len);
+}
+
+// Registration is bounded on both axes: an OID with more arcs than SNMP_MAX_OID_LEN is
+// refused, and once the table holds SNMP_MAX_MIB_ENTRIES objects every further add fails -
+// including the ones dws_snmp_agent_set_system() makes internally.
+void test_registration_table_limits()
+{
+    uint32_t toolong[SNMP_MAX_OID_LEN + 1];
+    for (size_t i = 0; i < SNMP_MAX_OID_LEN + 1; i++)
+        toolong[i] = (uint32_t)(i + 1);
+    TEST_ASSERT_FALSE(dws_snmp_agent_add_integer(toolong, SNMP_MAX_OID_LEN + 1, 1));
+
+    dws_snmp_agent_init("public"); // empty table
+    uint32_t oid[] = {1, 3, 6, 1, 4, 1, 49374, 50, 0};
+    for (size_t i = 0; i < SNMP_MAX_MIB_ENTRIES; i++)
+    {
+        oid[7] = (uint32_t)(50 + i);
+        TEST_ASSERT_TRUE(dws_snmp_agent_add_integer(oid, 9, (long)i));
+    }
+    oid[7] = 200;
+    TEST_ASSERT_FALSE(dws_snmp_agent_add_integer(oid, 9, 1)); // table full
+    TEST_ASSERT_FALSE(dws_snmp_agent_add_string(oid, 9, "x"));
+    TEST_ASSERT_FALSE(dws_snmp_agent_add_dynamic(oid, 9, (uint8_t)SnmpTag::SNMP_COUNTER32, ctr_getter));
+    // set_system on a full table registers nothing (its sysObjectID mib_alloc returns null).
+    dws_snmp_agent_set_system(SYSDESCR_VAL, "admin", "esp32", "lab", 72);
+    uint8_t req[256], resp[256];
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 63, 0,
+                          0, OID_SYSDESCR, 9, nullptr);
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_OBJECT, rv.val_tag); // sysDescr never got in
+}
+
+// mib_find_next returns the lexicographically smallest successor, not the first one it
+// happens to meet: an object registered out of order (sorting before every other entry)
+// still wins the GetNext.
+void test_getnext_picks_smallest_out_of_order()
+{
+    static const uint32_t OID_EARLY[] = {1, 3, 6, 1, 2, 1, 1, 0, 0};  // sorts before sysDescr (.1.0)
+    TEST_ASSERT_TRUE(dws_snmp_agent_add_integer(OID_EARLY, 9, 1234)); // registered last
+    uint8_t req[256], resp[256];
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GETNEXT,
+                          64, 0, 0, OID_SYSPREFIX, 7, nullptr);
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_UINT(9, rv.oid_len);
+    TEST_ASSERT_EQUAL_UINT32(0u, rv.oid[7]); // the late-registered .0.0, not sysDescr .1.0
+    TEST_ASSERT_EQUAL_INT(1234, rv.ival);
+}
+
+// ---------------------------------------------------------------------------
+// v1 error-status variants (v2c counterparts are covered above)
+// ---------------------------------------------------------------------------
+
+// v1 has no notWritable/wrongType/noAccess: the same three Set failures report the
+// classic readOnly / badValue / noSuchName instead.
+void test_set_v1_error_variants()
+{
+    uint8_t req[256], resp[256];
+    RespView rv;
+
+    SnmpValue iv;
+    memset(&iv, 0, sizeof(iv));
+    iv.type = (uint8_t)SnmpTag::BER_INTEGER;
+    iv.ival = 1;
+    // Writable community, but the object has no setter -> readOnly (v2c would say notWritable).
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V1, "private", (uint8_t)SnmpTag::SNMP_PDU_SET, 70, 0,
+                          0, OID_RO, 9, &iv);
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_READ_ONLY, rv.err_status);
+
+    // Setter rejects the value type -> badValue (v2c would say wrongType).
+    SnmpValue sv;
+    memset(&sv, 0, sizeof(sv));
+    sv.type = (uint8_t)SnmpTag::BER_OCTET_STRING;
+    sv.str = "hi";
+    sv.str_len = 2;
+    rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V1, "private", (uint8_t)SnmpTag::SNMP_PDU_SET, 71, 0, 0,
+                   OID_RW, 9, &sv);
+    n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_BAD_VALUE, rv.err_status);
+
+    // Read-only community -> noSuchName (v2c would say noAccess).
+    rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V1, "public", (uint8_t)SnmpTag::SNMP_PDU_SET, 72, 0, 0,
+                   OID_RW, 9, &iv);
+    n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_SUCH_NAME, rv.err_status);
+    TEST_ASSERT_EQUAL_INT(1, rv.err_index);
+}
+
+// ---------------------------------------------------------------------------
+// Dispatch / MIB lookup edges
+// ---------------------------------------------------------------------------
+
+static bool failing_getter(SnmpValue *out)
+{
+    (void)out;
+    return false; // the instance exists but has no readable value right now
+}
+
+// A registered object whose getter declines reports noSuchInstance (the object is known,
+// only this instance's value is unavailable) and echoes the *registered* OID.
+void test_get_failing_getter_is_nosuchinstance()
+{
+    static const uint32_t OID_FAIL[] = {1, 3, 6, 1, 4, 1, 49374, 7, 0};
+    TEST_ASSERT_TRUE(dws_snmp_agent_add_dynamic(OID_FAIL, 9, (uint8_t)SnmpTag::SNMP_COUNTER32, failing_getter));
+    uint8_t req[256], resp[256];
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 65, 0,
+                          0, OID_FAIL, 9, nullptr);
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_INSTANCE, rv.val_tag);
+    TEST_ASSERT_EQUAL_UINT(9, rv.oid_len);
+    TEST_ASSERT_EQUAL_UINT32(7u, rv.oid[7]);
+}
+
+// A GET for an OID shorter than any registered object's type-prefix cannot name a known
+// object, so it is noSuchObject rather than noSuchInstance.
+void test_get_short_oid_is_nosuchobject()
+{
+    static const uint32_t OID_SHORT[] = {1, 3, 6};
+    uint8_t req[256], resp[256];
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 66, 0,
+                          0, OID_SHORT, 3, nullptr);
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_OBJECT, rv.val_tag);
+}
+
+// Build a GetBulk request carrying @p nvb identical repeater varbinds (build_req emits only one).
+static size_t build_getbulk_multi(uint8_t *buf, size_t cap, long reqid, long non_rep, long max_rep, const uint32_t *oid,
+                                  size_t oidn, size_t nvb)
+{
+    BerEnc e;
+    dws_ber_enc_init(&e, buf, cap);
+    size_t msg = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_integer(&e, (int)SnmpVersion::SNMP_V2C);
+    dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)"public", 6);
+    size_t pdus = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::SNMP_PDU_GETBULK);
+    dws_ber_put_integer(&e, reqid);
+    dws_ber_put_integer(&e, non_rep);
+    dws_ber_put_integer(&e, max_rep);
+    size_t vbl = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    for (size_t i = 0; i < nvb; i++)
+    {
+        size_t vb = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+        dws_ber_put_oid(&e, oid, oidn);
+        dws_ber_put_null(&e);
+        dws_ber_seq_end(&e, vb);
+    }
+    dws_ber_seq_end(&e, vbl);
+    dws_ber_seq_end(&e, pdus);
+    dws_ber_seq_end(&e, msg);
+    return e.ok ? e.len : 0;
+}
+
+// GetBulk is capped by the output varbind table: 3 repeaters x 10 repetitions would be 30
+// varbinds, but the walk stops at SNMP_MAX_VARBINDS - both the repetition loop and the
+// per-repeater loop have to honour the cap, mid-repetition.
+void test_getbulk_saturates_varbind_table()
+{
+    uint8_t req[512], resp[2048];
+    size_t rl = build_getbulk_multi(req, sizeof(req), 67, 0, 10, OID_SYSPREFIX, 7, 3);
+    TEST_ASSERT_TRUE(rl > 0);
+    size_t n = dws_snmp_agent_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_UINT(SNMP_MAX_VARBINDS, rv.nvb); // saturated, not 30
+}
+
+// The PDU field reads fail closed one field at a time: a PDU truncated after the
+// request-id, after error-status, after error-index, and one whose varbind list header is
+// present but whose single varbind is a lone byte.
+void test_dispatch_truncated_pdu_fields()
+{
+    uint8_t out[128];
+    const uint8_t no_field2[] = {0xA0, 0x03, 0x02, 0x01, 0x01};
+    const uint8_t no_field3[] = {0xA0, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x00};
+    const uint8_t no_vbl[] = {0xA0, 0x09, 0x02, 0x01, 0x01, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00};
+    // varbind list declares one byte of content; that byte is a bare tag with no length octet.
+    const uint8_t stub_vb[] = {0xA0, 0x0C, 0x02, 0x01, 0x01, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00, 0x30, 0x01, 0x30};
+    const uint8_t *pdus[] = {no_field2, no_field3, no_vbl, stub_vb};
+    const size_t lens[] = {sizeof(no_field2), sizeof(no_field3), sizeof(no_vbl), sizeof(stub_vb)};
+    for (unsigned i = 0; i < 4; i++)
+        TEST_ASSERT_EQUAL_size_t(0, dws_snmp_dispatch_pdu(pdus[i], lens[i], false, true, out, sizeof(out)));
+}
+
+// A GET with an empty varbind list produces an empty response; if even that does not fit
+// the caller's buffer the dispatcher returns 0 rather than re-encoding a tooBig it also
+// cannot fit (the tooBig retry is only for a non-empty varbind list).
+void test_dispatch_empty_varbind_list_tiny_buffer()
+{
+    uint8_t pdu[64];
+    BerEnc e;
+    dws_ber_enc_init(&e, pdu, sizeof(pdu));
+    size_t p = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::SNMP_PDU_GET);
+    dws_ber_put_integer(&e, 1);
+    dws_ber_put_integer(&e, 0);
+    dws_ber_put_integer(&e, 0);
+    size_t vbl = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_seq_end(&e, vbl); // no varbinds
+    dws_ber_seq_end(&e, p);
+    TEST_ASSERT_TRUE(e.ok);
+
+    uint8_t big[128];
+    TEST_ASSERT_TRUE(dws_snmp_dispatch_pdu(pdu, e.len, false, true, big, sizeof(big)) > 0);
+    uint8_t tiny[8]; // too small even for the empty response header
+    TEST_ASSERT_EQUAL_size_t(0, dws_snmp_dispatch_pdu(pdu, e.len, false, true, tiny, sizeof(tiny)));
+}
+
+// The message wrapper fails closed when the datagram ends inside the outer TLV header or
+// straight after the version, before any community can be read.
+void test_message_truncated_before_community()
+{
+    uint8_t resp[128];
+    const uint8_t lone_tag[] = {0x30}; // SEQUENCE tag, no length octet
+    TEST_ASSERT_EQUAL_size_t(0, dws_snmp_agent_process(lone_tag, sizeof(lone_tag), resp, sizeof(resp)));
+    const uint8_t no_community[] = {0x30, 0x03, 0x02, 0x01, 0x01}; // v2c, then nothing
+    TEST_ASSERT_EQUAL_size_t(0, dws_snmp_agent_process(no_community, sizeof(no_community), resp, sizeof(resp)));
+}
+
+// The UDP binding stays silent when the agent produces no response (an unparsable
+// datagram), rather than sending an empty reply.
+void test_udp_handler_drops_unanswerable()
+{
+    dws_udp_reset_listeners();
+    dws_udp_capture_enable();
+    dws_udp_capture_reset();
+    dws_snmp_agent_begin_udp(161);
+    const uint8_t junk[] = {0x02, 0x01, 0x00}; // not a message wrapper -> agent returns 0
+    dws_udp_inject(161, "192.0.2.1", 40000, junk, sizeof(junk));
+    TEST_ASSERT_EQUAL_size_t(0, dws_udp_captured_len()); // nothing sent
+    dws_udp_reset_listeners();
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_init_community_defaults);
+    RUN_TEST(test_empty_rw_community_clears_write);
+    RUN_TEST(test_add_string_null_value);
+    RUN_TEST(test_registration_table_limits);
+    RUN_TEST(test_getnext_picks_smallest_out_of_order);
+    RUN_TEST(test_set_v1_error_variants);
+    RUN_TEST(test_get_failing_getter_is_nosuchinstance);
+    RUN_TEST(test_get_short_oid_is_nosuchobject);
+    RUN_TEST(test_getbulk_saturates_varbind_table);
+    RUN_TEST(test_dispatch_truncated_pdu_fields);
+    RUN_TEST(test_dispatch_empty_varbind_list_tiny_buffer);
+    RUN_TEST(test_message_truncated_before_community);
+    RUN_TEST(test_udp_handler_drops_unanswerable);
     RUN_TEST(test_registration_and_rw_edges);
     RUN_TEST(test_ipaddress_value_encodes);
     RUN_TEST(test_set_wrong_type_and_unknown);

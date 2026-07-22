@@ -317,16 +317,23 @@ size_t dws_sftp_format_longname(bool is_dir, uint32_t perms, uint64_t size, uint
     struct tm tmv;
     memset(&tmv, 0, sizeof(tmv));
     dws_gmtime_r(&t, &tmv); // reentrant; mtime==0 -> epoch, a harmless placeholder date
-    int mon = (tmv.tm_mon >= 0 && tmv.tm_mon < 12) ? tmv.tm_mon : 0;
+    // mtime is a uint32_t, so t is always inside the range every gmtime implementation accepts and the
+    // conversion yields tm_mon in [0,11] by definition; tmv is zeroed above, so even a failed conversion
+    // leaves month 0. The range test is purely a bounds guard on the kMonths[] index below.
+    int mon = (tmv.tm_mon >= 0 && tmv.tm_mon < 12) ? tmv.tm_mon : 0; // GCOVR_EXCL_LINE  tm_mon is always 0..11
     snprintf(date, sizeof(date), "%s %2d %5d", kMonths[mon], tmv.tm_mday, tmv.tm_year + 1900);
 
     int n = snprintf(out, cap, "%s 1 0 0 %llu %s %s", mode, (unsigned long long)size, date, name);
+    // GCOVR_EXCL_START  the format is a fixed literal over a mode string, a decimal size, a date built
+    // above and the caller's name, with no encoding-dependent conversion, so snprintf can only ever
+    // report truncation (handled below) - it has no failing arm to reach here.
     if (n < 0)
     {
         if (cap)
             out[0] = '\0';
         return 0;
     }
+    // GCOVR_EXCL_STOP
     if ((size_t)n < cap)
         return (size_t)n;
     return cap ? cap - 1 : 0;

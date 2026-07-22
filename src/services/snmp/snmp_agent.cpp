@@ -56,6 +56,13 @@ struct SnmpAgentCtx
 };
 static SnmpAgentCtx s_agent;
 
+// community_eq()'s stored[0] != '\0' guard can only be a no-op if the read-only community is
+// never empty. It is seeded from DWS_SNMP_DEFAULT_RO_COMMUNITY (an overridable macro) and
+// dws_snmp_agent_init() falls back to that same macro for a null/empty argument, so pin the
+// macro non-empty here rather than let an override silently make an empty community matchable.
+static_assert(sizeof(DWS_SNMP_DEFAULT_RO_COMMUNITY) > 1,
+              "DWS_SNMP_DEFAULT_RO_COMMUNITY must be a non-empty string literal");
+
 // sysObjectID value (private enterprise placeholder: 1.3.6.1.4.1.49374).
 static const uint32_t g_sys_object_id[] = {1, 3, 6, 1, 4, 1, 49374};
 
@@ -375,7 +382,10 @@ static void dws_snmp_apply_set_all(size_t nvb, bool v2c, long *err_status, long 
 
 static bool community_eq(const char *stored, const char *p, size_t len)
 {
-    return stored[0] != '\0' && strnlen(stored, len + 1) == len && memcmp(stored, p, len) == 0;
+    // The two call sites pass s_agent.ro (always non-empty: dws_snmp_agent_init() falls back to the
+    // static_assert'd non-empty default) and s_agent.rw (only reached when rw_set, which
+    // dws_snmp_agent_set_rw_community() sets only for a non-empty string), so stored is never empty.
+    return stored[0] != '\0' && strnlen(stored, len + 1) == len && memcmp(stored, p, len) == 0; // GCOVR_EXCL_LINE
 }
 
 static size_t encode_pdu(long request_id, long err_status, long err_index, const OutVb *out, size_t nout, uint8_t *buf,
@@ -430,7 +440,9 @@ size_t dws_snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_writ
 
     // Decode the request varbind list.
     size_t nvb = 0;
-    while (d.pos < vbl_end && d.ok)
+    // Every read inside the loop that could clear d.ok returns 0 through its own guard first, so the
+    // decoder is always ok on re-entry - same defense-in-depth rationale as the !d.ok check below.
+    while (d.pos < vbl_end && d.ok) // GCOVR_EXCL_LINE  d.ok is always true here (see above)
     {
         if (nvb >= SNMP_MAX_VARBINDS)
             return 0;
@@ -509,8 +521,11 @@ size_t dws_snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_writ
         if ((size_t)non_rep > nvb)
             non_rep = (long)nvb;
 
-        // Non-repeaters: one GetNext each.
-        for (long i = 0; i < non_rep && nout < SNMP_MAX_VARBINDS; i++)
+        // Non-repeaters: one GetNext each. nout is 0 on entry and rises in step with i, while
+        // non_rep was clamped to nvb (itself capped at SNMP_MAX_VARBINDS by the decode loop), so
+        // i < non_rep always fails first - the nout cap here is defense in depth, unlike the
+        // repeater loops below where several varbinds are appended per repetition.
+        for (long i = 0; i < non_rep && nout < SNMP_MAX_VARBINDS; i++) // GCOVR_EXCL_LINE  nout cap unreachable
         {
             const SnmpMibEntry *en = mib_find_next(s_agent, s_req.in[i].oid, s_req.in[i].oid_len);
             if (en)

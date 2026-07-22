@@ -7,6 +7,7 @@
 
 #include "services/gnss/ntrip_caster.h"
 #include "shared_primitives/numparse.h"
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
@@ -219,6 +220,196 @@ void test_response_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(tiny, sizeof(tiny), NtripVersion::NTRIP_V1, &m, 1));
 }
 
+void test_parse_bare_lf_header_block()
+{
+    // Some minimal rovers terminate with bare LFs. The LFLF fallback must find the block end, and the
+    // header scan must cope with lines that have no trailing CR and with the empty final line.
+    const char *req = "GET /BASE1 HTTP/1.0\nNtrip-Version: Ntrip/2.0\n\n";
+    NtripRequest r;
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(req, strlen(req), &r));
+    TEST_ASSERT_TRUE(r.complete);
+    TEST_ASSERT_TRUE(r.is_get);
+    TEST_ASSERT_EQUAL_STRING("BASE1", r.mountpoint);
+    TEST_ASSERT_EQUAL(NtripVersion::NTRIP_V2, r.version); // headers were still scanned
+}
+
+void test_parse_target_terminators()
+{
+    NtripRequest r;
+    // A query string ends the mountpoint (it is not part of it).
+    const char *q = "GET /BASE1?x=1 HTTP/1.0\r\n\r\n";
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(q, strlen(q), &r));
+    TEST_ASSERT_EQUAL_STRING("BASE1", r.mountpoint);
+
+    // So does an HTTP/0.9-style request line with no version token, CRLF- or LF-terminated.
+    const char *cr = "GET /BASE1\r\n\r\n";
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(cr, strlen(cr), &r));
+    TEST_ASSERT_EQUAL_STRING("BASE1", r.mountpoint);
+    const char *lf = "GET /BASE1\n\n";
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(lf, strlen(lf), &r));
+    TEST_ASSERT_EQUAL_STRING("BASE1", r.mountpoint);
+
+    // An empty target is the source-table request, same as "GET /".
+    const char *empty = "GET \r\n\r\n";
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(empty, strlen(empty), &r));
+    TEST_ASSERT_TRUE(r.want_sourcetable);
+    TEST_ASSERT_EQUAL_STRING("", r.mountpoint);
+
+    // A one-character target that is not "/" is a mountpoint, not a source-table request.
+    const char *one = "GET X HTTP/1.0\r\n\r\n";
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(one, strlen(one), &r));
+    TEST_ASSERT_FALSE(r.want_sourcetable);
+    TEST_ASSERT_EQUAL_STRING("X", r.mountpoint);
+}
+
+void test_parse_overlong_mountpoint_is_truncated_to_the_field()
+{
+    // A target longer than the mountpoint field is clipped rather than overflowing it.
+    char req[128];
+    char longmp[64];
+    memset(longmp, 'M', sizeof(longmp) - 1);
+    longmp[sizeof(longmp) - 1] = '\0';
+    snprintf(req, sizeof(req), "GET /%s HTTP/1.0\r\n\r\n", longmp);
+    NtripRequest r;
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(req, strlen(req), &r));
+    TEST_ASSERT_EQUAL_size_t(DWS_NTRIP_MOUNT_MAX - 1, strlen(r.mountpoint));
+    TEST_ASSERT_EQUAL_INT(0, strncmp(r.mountpoint, longmp, DWS_NTRIP_MOUNT_MAX - 1));
+}
+
+void test_parse_stray_cr_does_not_end_the_header_block()
+{
+    // A CR not followed by LF, and a CRLF+CR not followed by LF, are ordinary bytes: only a real
+    // blank line terminates the block.
+    const char *stray = "GET /M\rX HTTP/1.0\r\n\rY\r\n\r\n";
+    NtripRequest r;
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(stray, strlen(stray), &r));
+    TEST_ASSERT_TRUE(r.complete);
+    TEST_ASSERT_TRUE(r.is_get);
+    TEST_ASSERT_EQUAL_STRING("M", r.mountpoint); // the target still ends at the stray CR
+}
+
+void test_parse_ntrip_version_scan_skips_near_misses()
+{
+    // The version scan looks for the literal "2.0" anywhere in the value; digits that only partly
+    // match must not trip it.
+    const char *near = "GET /M HTTP/1.1\r\nNtrip-Version: 2x 2.5 2.0\r\n\r\n";
+    NtripRequest r;
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(near, strlen(near), &r));
+    TEST_ASSERT_EQUAL(NtripVersion::NTRIP_V2, r.version);
+
+    // A version header that never contains "2.0" leaves the request at v1.
+    const char *v1 = "GET /M HTTP/1.1\r\nNtrip-Version: Ntrip/1.0\r\n\r\n";
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(v1, strlen(v1), &r));
+    TEST_ASSERT_EQUAL(NtripVersion::NTRIP_V1, r.version);
+}
+
+void test_parse_authorization_variants()
+{
+    NtripRequest r;
+    // A non-Basic scheme is ignored (the caster only understands Basic).
+    const char *bearer = "GET /M HTTP/1.0\r\nAuthorization: Bearer abc.def\r\n\r\n";
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(bearer, strlen(bearer), &r));
+    TEST_ASSERT_NULL(r.auth_b64);
+
+    // A header with no value at all is ignored rather than read past its line.
+    const char *bare = "GET /M HTTP/1.0\r\nAuthorization:\r\n\r\n";
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(bare, strlen(bare), &r));
+    TEST_ASSERT_NULL(r.auth_b64);
+
+    // A tab between the colon and the scheme is legal OWS.
+    const char *tabbed = "GET /M HTTP/1.0\r\nAuthorization:\tBasic dXNlcjpwYXNz\r\n\r\n";
+    TEST_ASSERT_TRUE(dws_ntrip_request_parse(tabbed, strlen(tabbed), &r));
+    TEST_ASSERT_NOT_NULL(r.auth_b64);
+    TEST_ASSERT_EQUAL_UINT16(12, r.auth_b64_len);
+    TEST_ASSERT_EQUAL_INT(0, strncmp(r.auth_b64, "dXNlcjpwYXNz", 12));
+}
+
+void test_error_and_unauthorized_responses_truncate_closed()
+{
+    // Every response builder reports 0 rather than emitting a half-written status line.
+    char tiny[4];
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_stream_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_error_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_error_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V2));
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_unauthorized_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_unauthorized_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V2));
+
+    NtripMount m;
+    memset(&m, 0, sizeof(m));
+    m.mountpoint = "BASE1";
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_str_record(tiny, sizeof(tiny), &m));
+}
+
+void test_str_record_requires_a_mountpoint()
+{
+    char rec[192];
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_str_record(rec, sizeof(rec), nullptr));
+    NtripMount m;
+    memset(&m, 0, sizeof(m)); // mountpoint left null
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_str_record(rec, sizeof(rec), &m));
+}
+
+void test_str_record_nmea_required_flag()
+{
+    // The nmea field is 1 when the mount needs a GGA from the rover, 0 otherwise.
+    NtripMount m;
+    memset(&m, 0, sizeof(m));
+    m.mountpoint = "VRS";
+    m.nmea_required = true;
+    char rec[192];
+    size_t n = dws_ntrip_build_str_record(rec, sizeof(rec), &m);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_NOT_NULL(strstr(rec, ";0.00;0.00;1;0;")); // lat;lon;nmea;solution
+}
+
+void test_sourcetable_rejects_an_unbuildable_mount()
+{
+    // The length pass runs every record first, so one bad mount fails the whole table rather than
+    // advertising a Content-Length that the second pass cannot honour.
+    NtripMount mounts[2];
+    memset(mounts, 0, sizeof(mounts));
+    mounts[0].mountpoint = "BASE1";
+    mounts[1].mountpoint = nullptr; // unbuildable
+    char buf[1024];
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(buf, sizeof(buf), NtripVersion::NTRIP_V1, mounts, 2));
+}
+
+void test_sourcetable_capacity_boundaries()
+{
+    NtripMount m;
+    memset(&m, 0, sizeof(m));
+    m.mountpoint = "BASE1";
+    m.identifier = "Roof";
+    m.lat_deg = 37.77;
+    m.lon_deg = -122.42;
+
+    char rec[192];
+    const size_t R = dws_ntrip_build_str_record(rec, sizeof(rec), &m);
+    TEST_ASSERT_TRUE(R > 0);
+
+    char buf[1024];
+    const size_t full = dws_ntrip_build_sourcetable(buf, sizeof(buf), NtripVersion::NTRIP_V1, &m, 1);
+    TEST_ASSERT_TRUE(full > 0);
+    const char *body = strstr(buf, "\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(body);
+    const size_t H = (size_t)(body + 4 - buf); // header block length
+    const size_t END = strlen("ENDSOURCETABLE\r\n");
+    TEST_ASSERT_EQUAL_size_t(H + R + 2 + END, full);
+
+    // One byte short of the record itself: the record pass reports 0 and the table fails closed.
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(buf, H + R, NtripVersion::NTRIP_V1, &m, 1));
+    // The record fits but its CRLF does not.
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(buf, H + R + 1, NtripVersion::NTRIP_V1, &m, 1));
+    // Records fit but the ENDSOURCETABLE terminator + NUL does not.
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(buf, H + R + 2 + END, NtripVersion::NTRIP_V1, &m, 1));
+    // Exactly one more byte is enough: the whole table plus its NUL.
+    memset(buf, 0x7F, sizeof(buf));
+    TEST_ASSERT_EQUAL_size_t(full,
+                             dws_ntrip_build_sourcetable(buf, H + R + 2 + END + 1, NtripVersion::NTRIP_V1, &m, 1));
+    TEST_ASSERT_EQUAL_CHAR('\0', buf[full]);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "ENDSOURCETABLE\r\n"));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -236,5 +427,16 @@ int main()
     RUN_TEST(test_error_response);
     RUN_TEST(test_unauthorized_response);
     RUN_TEST(test_response_overflow_fails_closed);
+    RUN_TEST(test_parse_bare_lf_header_block);
+    RUN_TEST(test_parse_target_terminators);
+    RUN_TEST(test_parse_overlong_mountpoint_is_truncated_to_the_field);
+    RUN_TEST(test_parse_stray_cr_does_not_end_the_header_block);
+    RUN_TEST(test_parse_ntrip_version_scan_skips_near_misses);
+    RUN_TEST(test_parse_authorization_variants);
+    RUN_TEST(test_error_and_unauthorized_responses_truncate_closed);
+    RUN_TEST(test_str_record_requires_a_mountpoint);
+    RUN_TEST(test_str_record_nmea_required_flag);
+    RUN_TEST(test_sourcetable_rejects_an_unbuildable_mount);
+    RUN_TEST(test_sourcetable_capacity_boundaries);
     return UNITY_END();
 }

@@ -70,13 +70,17 @@ static WalDev dev_over(RamDisk *d)
 // Fresh, formatted store + dbm over the shared disk.
 static WalStore g_wal;
 static DWSDbm g_db;
-static void fresh(void)
+static void fresh_sized(uint64_t bytes)
 {
     g_d.buf = g_disk;
-    g_d.size = sizeof(g_disk);
+    g_d.size = bytes;
     g_dev = dev_over(&g_d);
     TEST_ASSERT_TRUE(dws_wal_store_format(&g_wal, &g_dev));
     TEST_ASSERT_TRUE(dws_dbm_open(&g_db, &g_wal));
+}
+static void fresh(void)
+{
+    fresh_sized(sizeof(g_disk));
 }
 // Remount the store + reopen the dbm over the SAME disk bytes (a "reboot").
 static bool reboot(void)
@@ -380,6 +384,249 @@ void test_compact_checkpoint_failure(void)
     TEST_ASSERT_TRUE(get_eq("y", "20"));
 }
 
+// --- corrupt / hand-built log records -------------------------------------------------------------
+// Append a dbm record payload straight to the WAL, bypassing dws_dbm_put, so a reopen replays records
+// the public API would never emit. key_len / val_len are written as given, independently of the actual
+// tail, which is how a truncated or garbage record is modeled.
+static const size_t DBM_RECORD_HDR = 1 + 2 + 4; // op u8 | key_len u16 | val_len u32
+static bool raw_append(uint8_t op, uint16_t key_len_field, uint32_t val_len_field, const void *tail, size_t tail_len)
+{
+    uint8_t rec[DBM_RECORD_HDR + DWS_DBM_KEY_MAX + DWS_DBM_VAL_MAX];
+    rec[0] = op;
+    rec[1] = (uint8_t)key_len_field;
+    rec[2] = (uint8_t)(key_len_field >> 8);
+    rec[3] = (uint8_t)val_len_field;
+    rec[4] = (uint8_t)(val_len_field >> 8);
+    rec[5] = (uint8_t)(val_len_field >> 16);
+    rec[6] = (uint8_t)(val_len_field >> 24);
+    if (tail_len)
+        memcpy(rec + DBM_RECORD_HDR, tail, tail_len);
+    return dws_wal_store_append(&g_wal, rec, (uint32_t)(DBM_RECORD_HDR + tail_len));
+}
+
+void test_replay_skips_malformed_records(void)
+{
+    // Replay must step over anything it cannot trust and keep rebuilding the index from the rest, so one
+    // bad record in the log never costs the whole key set.
+    fresh();
+    TEST_ASSERT_TRUE(put_s("good", "yes"));
+
+    uint8_t stub[3] = {0, 0, 0};
+    TEST_ASSERT_TRUE(dws_wal_store_append(&g_wal, stub, sizeof(stub)));  // shorter than the record header
+    TEST_ASSERT_TRUE(raw_append(0, 0, 0, nullptr, 0));                   // zero-length key
+    TEST_ASSERT_TRUE(raw_append(0, DWS_DBM_KEY_MAX + 1, 0, nullptr, 0)); // key longer than the bound
+    TEST_ASSERT_TRUE(raw_append(0, 4, 100, "abcd", 4));                  // claims 100 value bytes it does not have
+    TEST_ASSERT_TRUE(raw_append(7, 4, 0, "abcd", 4));                    // opcode that is neither put nor delete
+    TEST_ASSERT_TRUE(raw_append(1, 5, 0, "ghost", 5));                   // tombstone for a key never stored
+    TEST_ASSERT_TRUE(dws_dbm_sync(&g_db));
+
+    TEST_ASSERT_TRUE(reboot());
+    TEST_ASSERT_TRUE(get_eq("good", "yes"));
+    TEST_ASSERT_EQUAL_UINT32(1, dws_dbm_count(&g_db)); // nothing bogus was admitted to the index
+    TEST_ASSERT_FALSE(dws_dbm_contains(&g_db, "abcd", 4));
+    TEST_ASSERT_FALSE(dws_dbm_contains(&g_db, "ghost", 5));
+}
+
+void test_reopen_rejects_a_log_with_more_keys_than_slots(void)
+{
+    // The index is a fixed array: a log carrying more distinct live keys than it has slots cannot be
+    // represented, and open must say so rather than silently dropping keys.
+    fresh();
+    char k[16];
+    for (int i = 0; i < DWS_DBM_SLOTS; i++)
+    {
+        snprintf(k, sizeof(k), "s%05d", i);
+        TEST_ASSERT_TRUE(put_s(k, "x"));
+    }
+    TEST_ASSERT_TRUE(raw_append(0, 5, 0, "extra", 5)); // one key past the index capacity
+    TEST_ASSERT_TRUE(dws_dbm_sync(&g_db));
+
+    g_dev = dev_over(&g_d);
+    TEST_ASSERT_TRUE(dws_wal_store_mount(&g_wal, &g_dev));
+    TEST_ASSERT_FALSE(dws_dbm_open(&g_db, &g_wal));
+}
+
+void test_probe_walks_a_saturated_table_for_an_absent_key(void)
+{
+    // With no empty slot left to end the probe chain on, a lookup has to walk the whole table and
+    // still report the key as absent (rather than looping or reporting a neighbour).
+    fresh();
+    char k[16];
+    for (int i = 0; i < DWS_DBM_SLOTS; i++)
+    {
+        snprintf(k, sizeof(k), "s%05d", i);
+        TEST_ASSERT_TRUE(put_s(k, "x"));
+    }
+    TEST_ASSERT_FALSE(dws_dbm_contains(&g_db, "absent", 6));
+    uint8_t b[8];
+    TEST_ASSERT_EQUAL_INT(-1, dws_dbm_get(&g_db, "absent", 6, b, sizeof(b)));
+    TEST_ASSERT_TRUE(get_eq("s00000", "x")); // the keys that are there are still found
+}
+
+void test_insert_reuses_a_tombstone_in_a_saturated_table(void)
+{
+    // Once every slot has been used and freed, a new key must land in the earliest reusable tombstone
+    // even though the probe never meets an empty slot.
+    fresh();
+    char k[16];
+    for (int i = 0; i < DWS_DBM_SLOTS; i++)
+    {
+        snprintf(k, sizeof(k), "s%05d", i);
+        TEST_ASSERT_TRUE(put_s(k, "x"));
+    }
+    for (int i = 0; i < DWS_DBM_SLOTS; i++)
+    {
+        snprintf(k, sizeof(k), "s%05d", i);
+        TEST_ASSERT_TRUE(dws_dbm_del(&g_db, k, (uint16_t)strlen(k)));
+    }
+    TEST_ASSERT_EQUAL_UINT32(0, dws_dbm_count(&g_db));
+
+    TEST_ASSERT_TRUE(put_s("recycled", "v"));
+    TEST_ASSERT_TRUE(get_eq("recycled", "v"));
+    TEST_ASSERT_EQUAL_UINT32(1, dws_dbm_count(&g_db));
+}
+
+void test_hash_collision_slots_are_walked_past(void)
+{
+    // The stored 64-bit hash is only a prefilter; key_len + the key bytes are what actually identify a
+    // slot. Plant two slots carrying the probe hash but a different key - one differing by length, one
+    // by content - and neither lookup nor insert may mistake them for the key.
+    fresh();
+    const char *key = "collide-me";
+    const uint16_t klen = (uint16_t)strlen(key);
+    TEST_ASSERT_TRUE(put_s(key, "v1"));
+
+    int j = -1;
+    for (uint32_t i = 0; i < DWS_DBM_SLOTS; i++)
+        if (g_db.slots[i].state == 1 && g_db.slots[i].key_len == klen && memcmp(g_db.slots[i].key, key, klen) == 0)
+            j = (int)i;
+    TEST_ASSERT_TRUE(j >= 0);
+    const uint64_t h = g_db.slots[j].hash;
+    const int j1 = (j + 1) % DWS_DBM_SLOTS;
+    const int j2 = (j + 2) % DWS_DBM_SLOTS;
+    TEST_ASSERT_EQUAL_UINT8(0, g_db.slots[j1].state); // a fresh table: the rest of the chain is empty
+    TEST_ASSERT_EQUAL_UINT8(0, g_db.slots[j2].state);
+
+    // Slot j: same hash, longer key. Slot j+1: same hash and length, different bytes.
+    g_db.slots[j].key_len = (uint16_t)(klen + 1);
+    memcpy(g_db.slots[j].key, "collide-me!", klen + 1);
+    g_db.slots[j1] = g_db.slots[j];
+    g_db.slots[j1].key_len = klen;
+    memcpy(g_db.slots[j1].key, "collide-mE", klen);
+    g_db.slots[j1].hash = h;
+    g_db.count = 2;
+
+    // Lookup walks both and reports the key absent.
+    TEST_ASSERT_FALSE(dws_dbm_contains(&g_db, key, klen));
+    // Insert walks both too and claims the next free slot instead of overwriting either.
+    TEST_ASSERT_TRUE(put_s(key, "v2"));
+    TEST_ASSERT_EQUAL_UINT8(1, g_db.slots[j2].state);
+    TEST_ASSERT_EQUAL_UINT16(klen + 1, g_db.slots[j].key_len); // the colliding slots are untouched
+    TEST_ASSERT_EQUAL_INT(0, memcmp(g_db.slots[j1].key, "collide-mE", klen));
+    TEST_ASSERT_TRUE(get_eq(key, "v2"));
+    TEST_ASSERT_EQUAL_UINT32(3, dws_dbm_count(&g_db));
+}
+
+void test_put_rejects_an_empty_key(void)
+{
+    // A zero-length key has no identity in the log format (key_len 0 is how a corrupt record reads).
+    fresh();
+    TEST_ASSERT_FALSE(dws_dbm_put(&g_db, "", 0, (const uint8_t *)"v", 1));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_dbm_count(&g_db));
+}
+
+void test_put_fails_closed_when_the_log_is_full(void)
+{
+    // The record is appended before the index is touched, so a full log leaves the index exactly as it
+    // was - the failed key is simply not there, and the ones already stored still read back.
+    fresh_sized(1024);
+    uint8_t val[200];
+    memset(val, 'V', sizeof(val));
+    char k[8];
+    int stored = 0;
+    for (int i = 0; i < 32; i++)
+    {
+        snprintf(k, sizeof(k), "k%02d", i);
+        if (!dws_dbm_put(&g_db, k, (uint16_t)strlen(k), val, sizeof(val)))
+            break;
+        stored++;
+    }
+    TEST_ASSERT_TRUE(stored > 0);
+    TEST_ASSERT_TRUE(stored < 32); // the log really did run out
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)stored, dws_dbm_count(&g_db));
+
+    snprintf(k, sizeof(k), "k%02d", stored); // the key that did not fit is absent
+    TEST_ASSERT_FALSE(dws_dbm_contains(&g_db, k, (uint16_t)strlen(k)));
+    uint8_t out[256];
+    TEST_ASSERT_EQUAL_INT((long)sizeof(val), dws_dbm_get(&g_db, "k00", 3, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(val, out, sizeof(val));
+}
+
+void test_get_fails_when_the_value_cannot_be_read_back(void)
+{
+    // The index says where the value is, but the read still has to succeed; a device error is reported
+    // as a miss rather than handing back an uninitialized buffer.
+    fresh();
+    TEST_ASSERT_TRUE(put_s("v", "payload"));
+    uint8_t out[16];
+    g_fail_read = true;
+    TEST_ASSERT_EQUAL_INT(-1, dws_dbm_get(&g_db, "v", 1, out, sizeof(out)));
+    g_fail_read = false;
+    TEST_ASSERT_TRUE(get_eq("v", "payload")); // and it reads fine once the device recovers
+}
+
+struct IterCtx
+{
+    int seen;
+    int stop_after; // 0 = never stop
+};
+static bool iter_cb(const char *key, uint16_t key_len, void *ctx)
+{
+    (void)key;
+    (void)key_len;
+    IterCtx *c = (IterCtx *)ctx;
+    c->seen++;
+    return c->stop_after == 0 || c->seen < c->stop_after;
+}
+
+void test_iterate_visits_live_keys_and_honours_an_early_stop(void)
+{
+    // iterate walks only live keys (tombstones are skipped), a null callback just counts them, and a
+    // callback that returns false stops the walk where it stands.
+    fresh();
+    put_s("a", "1");
+    put_s("b", "2");
+    put_s("c", "3");
+    TEST_ASSERT_TRUE(dws_dbm_del(&g_db, "b", 1));
+
+    TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_iterate(&g_db, nullptr, nullptr));
+
+    IterCtx all = {0, 0};
+    TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_iterate(&g_db, iter_cb, &all));
+    TEST_ASSERT_EQUAL_INT(2, all.seen);
+
+    IterCtx one = {0, 1};
+    TEST_ASSERT_EQUAL_UINT32(1, dws_dbm_iterate(&g_db, iter_cb, &one)); // stopped after the first key
+    TEST_ASSERT_EQUAL_INT(1, one.seen);
+}
+
+void test_compact_carries_empty_values(void)
+{
+    // A key stored with a zero-length value has nothing to read back from the old log; compaction must
+    // still carry the key across rather than skipping or failing on it.
+    fresh();
+    TEST_ASSERT_TRUE(put_s("a", "1"));
+    TEST_ASSERT_TRUE(dws_dbm_put(&g_db, "empty", 5, nullptr, 0));
+
+    WalStore *dst = fresh_dest(sizeof(g_disk2));
+    TEST_ASSERT_TRUE(dws_dbm_compact(&g_db, dst));
+    TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db));
+    TEST_ASSERT_TRUE(get_eq("a", "1"));
+    uint8_t b[4];
+    TEST_ASSERT_EQUAL_INT(0, dws_dbm_get(&g_db, "empty", 5, b, sizeof(b)));
+    TEST_ASSERT_TRUE(dws_dbm_contains(&g_db, "empty", 5));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -396,5 +643,15 @@ int main(void)
     RUN_TEST(test_compact_dest_too_small_fails_closed);
     RUN_TEST(test_compact_source_read_failure);
     RUN_TEST(test_compact_checkpoint_failure);
+    RUN_TEST(test_replay_skips_malformed_records);
+    RUN_TEST(test_reopen_rejects_a_log_with_more_keys_than_slots);
+    RUN_TEST(test_probe_walks_a_saturated_table_for_an_absent_key);
+    RUN_TEST(test_insert_reuses_a_tombstone_in_a_saturated_table);
+    RUN_TEST(test_hash_collision_slots_are_walked_past);
+    RUN_TEST(test_put_rejects_an_empty_key);
+    RUN_TEST(test_put_fails_closed_when_the_log_is_full);
+    RUN_TEST(test_get_fails_when_the_value_cannot_be_read_back);
+    RUN_TEST(test_iterate_visits_live_keys_and_honours_an_early_stop);
+    RUN_TEST(test_compact_carries_empty_values);
     return UNITY_END();
 }

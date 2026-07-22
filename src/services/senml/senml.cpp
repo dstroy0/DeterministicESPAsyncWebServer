@@ -63,7 +63,9 @@ size_t dws_senml_json_build(char *buf, size_t cap, const SenmlRecord *records, s
             w.kv_str("n", r.name);
         if (r.unit)
             w.kv_str("u", r.unit);
-        switch (r.value_kind)
+        // Every SenmlValueKind enumerator has a case below, so the default edge the compiler
+        // emits for the uint8_t-backed enum is unreachable for any value the API admits.
+        switch (r.value_kind) // GCOVR_EXCL_LINE  exhaustive enum switch; the default edge is dead
         {
         case SenmlValueKind::SENML_V_FLOAT:
             w.key("v");
@@ -149,7 +151,10 @@ size_t dws_senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records
             dws_cbor_int(&w, SENML_LBL_U);
             dws_cbor_text(&w, r.unit);
         }
-        switch (r.value_kind)
+        // Exhaustive over SenmlValueKind, as in the JSON builder above: the compiler's default
+        // edge for the uint8_t-backed enum is unreachable, and record_fields() above is written
+        // against the same four kinds so the declared field count always matches what is emitted.
+        switch (r.value_kind) // GCOVR_EXCL_LINE  exhaustive enum switch; the default edge is dead
         {
         case SenmlValueKind::SENML_V_FLOAT:
             dws_cbor_int(&w, SENML_LBL_V);

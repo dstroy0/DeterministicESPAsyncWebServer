@@ -622,7 +622,7 @@ void test_v3_notify_paths()
 static size_t build_v3_raw_scoped(uint8_t *out, size_t cap, bool auth, const uint8_t *eid, size_t eid_len, long boots,
                                   long time, const char *user, const uint8_t *authkey, long msg_id,
                                   const uint8_t *scoped, size_t scoped_len, bool priv = false,
-                                  size_t auth_plen = SNMP_V3_AUTH_PARAM_LEN)
+                                  size_t auth_plen = SNMP_V3_AUTH_PARAM_LEN, size_t priv_plen = SNMP_V3_PRIV_PARAM_LEN)
 {
     bool digest = auth && auth_plen == SNMP_V3_AUTH_PARAM_LEN; // a non-standard authParams length is rejected pre-HMAC
     uint8_t salt[SNMP_V3_PRIV_PARAM_LEN] = {0, 0, 0, 0, 0, 0, 0, 7};
@@ -644,7 +644,7 @@ static size_t build_v3_raw_scoped(uint8_t *out, size_t cap, bool auth, const uin
     else
         dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     if (priv)
-        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, salt, sizeof(salt));
+        dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, salt, priv_plen);
     else
         dws_ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     dws_ber_seq_end(&se2, s2);
@@ -734,6 +734,7 @@ void test_v3_field_tag_corruption(void)
         size_t off;
         uint8_t val;
     } muts[] = {
+        {ver_tag, 0xFF},          // msgVersion !INTEGER     -> read_integer rejects the tag
         {ver_tag + 2, 0x04},      // msgVersion != 3        -> line 319
         {gdata_tag, 0xFF},        // msgGlobalData !SEQUENCE -> line 323
         {msgid_tag, 0xFF},        // msgID !INTEGER          -> line 326
@@ -916,9 +917,343 @@ void test_v3_response_scopedpdu_overflow()
     TEST_ASSERT_TRUE(saw_ok);
 }
 
+// ==================== message-frame rejection helpers ====================
+
+// Build a v3 message whose msgSecurityParameters content and msgData tail are supplied
+// verbatim, so a test can truncate the USM parameters at any field boundary.
+static size_t build_v3_frame(uint8_t *out, size_t cap, long msg_id, uint8_t flags, const uint8_t *sec, size_t sec_len,
+                             const uint8_t *tail, size_t tail_len)
+{
+    BerEnc e;
+    dws_ber_enc_init(&e, out, cap);
+    size_t msg = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
+    size_t hdr = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_integer(&e, msg_id);
+    dws_ber_put_integer(&e, 65507);
+    dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, &flags, 1);
+    dws_ber_put_integer(&e, 3);
+    dws_ber_seq_end(&e, hdr);
+    dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, sec, sec_len);
+    dws_ber_put_raw(&e, tail, tail_len);
+    dws_ber_seq_end(&e, msg);
+    return e.ok ? e.len : 0;
+}
+
+// msgSecurityParameters holding only the first @p nfields of the six USM fields
+// (engineID, engineBoots, engineTime, userName, authParams, privParams).
+static size_t build_secparams_prefix(uint8_t *out, size_t cap, unsigned nfields)
+{
+    BerEnc e;
+    dws_ber_enc_init(&e, out, cap);
+    size_t s = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    if (nfields >= 1)
+        dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
+    if (nfields >= 2)
+        dws_ber_put_integer(&e, 1);
+    if (nfields >= 3)
+        dws_ber_put_integer(&e, 0);
+    if (nfields >= 4)
+        dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
+    if (nfields >= 5)
+        dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
+    dws_ber_seq_end(&e, s);
+    return e.ok ? e.len : 0;
+}
+
+// A v3 message that ends inside msgGlobalData, or whose msgSecurityParameters run out
+// part-way through the six USM fields, is dropped at exactly that field - the parse never
+// reads past the bytes the datagram actually carries.
+void test_v3_truncated_fields_fail_closed()
+{
+    uint8_t req[320], resp[512];
+
+    // Truncated after version / msgID / msgMaxSize / msgFlags / msgSecurityModel.
+    for (int stop = 0; stop <= 4; stop++)
+    {
+        BerEnc e;
+        dws_ber_enc_init(&e, req, sizeof(req));
+        size_t msg = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+        dws_ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
+        if (stop >= 1)
+        {
+            size_t hdr = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+            dws_ber_put_integer(&e, 500 + stop); // msgID
+            if (stop >= 2)
+                dws_ber_put_integer(&e, 65507); // msgMaxSize
+            if (stop >= 3)
+            {
+                uint8_t fl = 0x04;
+                dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, &fl, 1);
+            }
+            if (stop >= 4)
+                dws_ber_put_integer(&e, 3); // msgSecurityModel
+            dws_ber_seq_end(&e, hdr);
+        }
+        dws_ber_seq_end(&e, msg);
+        TEST_ASSERT_TRUE(e.ok);
+        TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, e.len, resp, sizeof(resp)));
+    }
+
+    // msgSecurityParameters that is not even a SEQUENCE (zero-length), then one truncated
+    // after each of the first five USM fields.
+    const uint8_t tail[] = {0x30, 0x02, 0x04, 0x00};
+    size_t fl = build_v3_frame(req, sizeof(req), 510, 0x04, nullptr, 0, tail, sizeof(tail));
+    TEST_ASSERT_TRUE(fl > 0);
+    TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, fl, resp, sizeof(resp)));
+    for (unsigned nf = 0; nf <= 5; nf++)
+    {
+        uint8_t sec[64];
+        size_t sl = build_secparams_prefix(sec, sizeof(sec), nf);
+        TEST_ASSERT_TRUE(sl > 0);
+        size_t n = build_v3_frame(req, sizeof(req), 520 + (long)nf, 0x04, sec, sl, tail, sizeof(tail));
+        TEST_ASSERT_TRUE(n > 0);
+        TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, n, resp, sizeof(resp)));
+    }
+}
+
+// The outer TLV must be a SEQUENCE, and msgFlags must carry at least the one flag octet
+// the parse reads - a zero-length msgFlags is rejected instead of read out of bounds.
+void test_v3_outer_tag_and_empty_flags()
+{
+    uint8_t resp[512];
+    const uint8_t not_seq[] = {0x04, 0x02, 0x00, 0x00}; // a well-formed OCTET STRING, not a SEQUENCE
+    TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(not_seq, sizeof(not_seq), resp, sizeof(resp)));
+
+    uint8_t req[320];
+    BerEnc e;
+    dws_ber_enc_init(&e, req, sizeof(req));
+    size_t msg = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
+    size_t hdr = dws_ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    dws_ber_put_integer(&e, 530);
+    dws_ber_put_integer(&e, 65507);
+    dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0); // msgFlags, zero length
+    dws_ber_put_integer(&e, 3);
+    dws_ber_seq_end(&e, hdr);
+    dws_ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
+    dws_ber_seq_end(&e, msg);
+    TEST_ASSERT_TRUE(e.ok);
+    TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, e.len, resp, sizeof(resp)));
+}
+
+// parse_scoped rejects a scopedPDU that ends inside any of its three headers (the
+// SEQUENCE, contextEngineID or contextName), not just one carrying a wrong tag.
+void test_v3_scoped_truncated_headers()
+{
+    V3View v;
+    discover(&v);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    dws_snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    uint8_t req[320], resp[512];
+
+    const uint8_t no_len[] = {0x30};                     // SEQUENCE tag, no length octet
+    const uint8_t empty_seq[] = {0x30, 0x00};            // SEQUENCE, no contextEngineID
+    const uint8_t eid_only[] = {0x30, 0x02, 0x04, 0x00}; // contextEngineID, no contextName
+    const uint8_t *scopeds[] = {no_len, empty_seq, eid_only};
+    const size_t lens[] = {sizeof(no_len), sizeof(empty_seq), sizeof(eid_only)};
+    for (unsigned i = 0; i < 3; i++)
+    {
+        size_t rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
+                                        authkey, 540 + (long)i, scopeds[i], lens[i]);
+        TEST_ASSERT_TRUE(rl > 0);
+        TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, rl, resp, sizeof(resp)));
+    }
+}
+
+// A wrong engine ID of the *same length* as ours is still a mismatch (the compare is on
+// the bytes, not just the length) and takes the discovery path.
+void test_v3_same_length_wrong_engine_id()
+{
+    V3View v;
+    discover(&v);
+    uint8_t wrong[SNMP_V3_ENGINEID_MAX];
+    TEST_ASSERT_TRUE(v.engine_id_len <= sizeof(wrong));
+    memcpy(wrong, v.engine_id, v.engine_id_len);
+    wrong[v.engine_id_len - 1] ^= 0xFF; // same length, one byte different
+
+    uint8_t req[320], resp[512];
+    size_t rl = build_get(req, sizeof(req), false, false, wrong, v.engine_id_len, 0, 0, "", nullptr, nullptr, 550, 1,
+                          OID_SYSDESCR, 9);
+    size_t n = dws_snmp_v3_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    V3View r;
+    TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);
+    TEST_ASSERT_EQUAL_UINT32(4u, r.oid[9]); // usmStatsUnknownEngineIDs
+}
+
+// Every way of failing the USM user match reports usmStatsUnknownUserNames: no auth user
+// configured at all, a name of the wrong length, and an empty configured user name.
+void test_v3_unknown_user_variants()
+{
+    V3View v;
+    discover(&v);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    dws_snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    uint8_t req[320], resp[512];
+    V3View r;
+
+    struct
+    {
+        const char *cfg_user;
+        const char *cfg_auth;
+        const char *req_user;
+    } cases[] = {
+        {"myuser", "", "myuser"},        // no auth secret configured -> auth_set false
+        {"myuser", "authpass12", "bob"}, // configured name is a different length
+        {"", "authpass12", ""},          // configured user name is empty
+    };
+    for (unsigned i = 0; i < 3; i++)
+    {
+        dws_snmp_v3_set_user(cases[i].cfg_user, cases[i].cfg_auth, "");
+        size_t rl = build_get(req, sizeof(req), true, false, v.engine_id, v.engine_id_len, v.boots, v.time,
+                              cases[i].req_user, authkey, nullptr, 560 + (long)i, 3, OID_SYSDESCR, 9);
+        TEST_ASSERT_TRUE(rl > 0);
+        size_t n = dws_snmp_v3_process(req, rl, resp, sizeof(resp));
+        TEST_ASSERT_TRUE(n > 0);
+        TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
+        TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);
+        TEST_ASSERT_EQUAL_UINT32(3u, r.oid[9]); // usmStatsUnknownUserNames
+    }
+}
+
+// A message larger than the agent's authentication scratch cannot be digest-checked, so it
+// is refused as a wrong-digest rather than truncated into the buffer.
+void test_v3_oversized_message_is_wrong_digest()
+{
+    V3View v;
+    discover(&v);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    dws_snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+
+    static uint8_t scoped[SNMP_MSG_BUF_SIZE + 64];
+    memset(scoped, 0x00, sizeof(scoped));
+    scoped[0] = 0x30; // shape is irrelevant: the size check fires before any parse
+    static uint8_t req[SNMP_MSG_BUF_SIZE + 256];
+    uint8_t resp[512];
+    size_t rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
+                                    authkey, 570, scoped, sizeof(scoped));
+    TEST_ASSERT_TRUE(rl > SNMP_MSG_BUF_SIZE); // genuinely past the scratch buffer
+    size_t n = dws_snmp_v3_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    V3View r;
+    TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);
+    TEST_ASSERT_EQUAL_UINT32(5u, r.oid[9]); // usmStatsWrongDigests
+}
+
+// Timeliness rejects a boots counter that does not match ours even when engineTime is
+// current (RFC 3414 3.2: both must agree, not just the time).
+void test_v3_boots_mismatch_not_in_time()
+{
+    V3View v;
+    discover(&v);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    dws_snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+
+    uint8_t req[320], resp[512];
+    size_t rl = build_get(req, sizeof(req), true, false, v.engine_id, v.engine_id_len, v.boots + 7, v.time, "myuser",
+                          authkey, nullptr, 580, 4, OID_SYSDESCR, 9);
+    size_t n = dws_snmp_v3_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    V3View r;
+    TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);
+    TEST_ASSERT_EQUAL_UINT32(2u, r.oid[9]);        // usmStatsNotInTimeWindows
+    TEST_ASSERT_EQUAL_UINT8(0x01, r.flags & 0x03); // and it is authenticated
+}
+
+// Privacy edges on an otherwise valid authPriv request: a salt that is not the 8-byte
+// usmAesCfb128 privacy parameter is a decryptionError, and encrypted msgData too short to
+// even hold a TLV header is dropped.
+void test_v3_privacy_parameter_edges()
+{
+    V3View v;
+    discover(&v);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    dws_snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    uint8_t req[320], resp[512];
+
+    const uint8_t any[] = {0x04, 0x02, 0x00, 0x00};
+    size_t rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
+                                    authkey, 590, any, sizeof(any), true, SNMP_V3_AUTH_PARAM_LEN, 4 /* short salt */);
+    TEST_ASSERT_TRUE(rl > 0);
+    size_t n = dws_snmp_v3_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    V3View r;
+    TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);
+    TEST_ASSERT_EQUAL_UINT32(6u, r.oid[9]); // usmStatsDecryptionErrors
+
+    const uint8_t stub[] = {0x04}; // OCTET STRING tag with no length octet
+    rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser", authkey,
+                             591, stub, sizeof(stub), true);
+    TEST_ASSERT_TRUE(rl > 0);
+    TEST_ASSERT_EQUAL_UINT(0, dws_snmp_v3_process(req, rl, resp, sizeof(resp)));
+}
+
+// dws_snmp_v3_init only adopts an engine ID of a legal length (5..SNMP_V3_ENGINEID_MAX);
+// anything shorter or longer leaves the previous engine ID in place. Configuring a null
+// user clears the user and both secrets.
+void test_v3_init_length_guards_and_null_user()
+{
+    V3View before;
+    discover(&before);
+
+    uint8_t tooshort[4] = {0x80, 0x00, 0x00, 0x01};
+    dws_snmp_v3_init(tooshort, sizeof(tooshort));
+    V3View after;
+    discover(&after);
+    TEST_ASSERT_EQUAL_UINT(before.engine_id_len, after.engine_id_len);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(before.engine_id, after.engine_id, before.engine_id_len);
+
+    uint8_t toolong[SNMP_V3_ENGINEID_MAX + 1];
+    memset(toolong, 0xA5, sizeof(toolong));
+    dws_snmp_v3_init(toolong, sizeof(toolong));
+    discover(&after);
+    TEST_ASSERT_EQUAL_UINT(before.engine_id_len, after.engine_id_len);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(before.engine_id, after.engine_id, before.engine_id_len);
+
+    // A null user name / null secrets leave no usable USM user: an authenticated request
+    // for any name is answered with usmStatsUnknownUserNames.
+    dws_snmp_v3_set_user(nullptr, nullptr, nullptr);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    dws_snmp_usm_localize_key("authpass12", after.engine_id, after.engine_id_len, authkey);
+    uint8_t req[320], resp[512];
+    size_t rl = build_get(req, sizeof(req), true, false, after.engine_id, after.engine_id_len, after.boots, after.time,
+                          "myuser", authkey, nullptr, 600, 5, OID_SYSDESCR, 9);
+    size_t n = dws_snmp_v3_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    V3View r;
+    TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);
+    TEST_ASSERT_EQUAL_UINT32(3u, r.oid[9]);
+}
+
+// A v3 trap reports failure when the transport refuses the datagram. The host UDP stub
+// only accepts a send while capture is armed, so this test MUST run before any test that
+// calls dws_udp_capture_enable() - there is no way to disarm it again.
+void test_v3_trap_reports_transport_failure()
+{
+    uint32_t trap_oid[] = {1, 3, 6, 1, 4, 1, 49374, 0, 1};
+    TEST_ASSERT_EQUAL_size_t(0, dws_udp_captured_len()); // capture still disarmed
+    TEST_ASSERT_FALSE(dws_snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_v3_trap_reports_transport_failure); // must precede any dws_udp_capture_enable()
+    RUN_TEST(test_v3_truncated_fields_fail_closed);
+    RUN_TEST(test_v3_outer_tag_and_empty_flags);
+    RUN_TEST(test_v3_scoped_truncated_headers);
+    RUN_TEST(test_v3_same_length_wrong_engine_id);
+    RUN_TEST(test_v3_unknown_user_variants);
+    RUN_TEST(test_v3_oversized_message_is_wrong_digest);
+    RUN_TEST(test_v3_boots_mismatch_not_in_time);
+    RUN_TEST(test_v3_privacy_parameter_edges);
+    RUN_TEST(test_v3_init_length_guards_and_null_user);
     RUN_TEST(test_v3_response_scopedpdu_overflow);
     RUN_TEST(test_v3_field_tag_corruption);
     RUN_TEST(test_v3_scoped_parse_rejections);

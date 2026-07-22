@@ -89,7 +89,11 @@ bool dws_ber_put_integer(BerEnc *e, long v)
     {
         tmp[k++] = (uint8_t)(val & 0xFF);
         val >>= 8;
+        // GCOVR_EXCL_START  the k < sizeof(tmp) bound can never fail: after sizeof(long) shifts val is 0 (v >= 0,
+        // so the top byte's sign bit is clear) or -1 (v < 0, sign bit set), and either way the first operand has
+        // already ended the loop. It is a defensive bound on the tmp[] write, not a reachable exit.
     } while (!((val == 0 && !(tmp[k - 1] & 0x80)) || (val == -1 && (tmp[k - 1] & 0x80))) && k < (int)sizeof(tmp));
+    // GCOVR_EXCL_STOP
 
     enc_byte(e, (uint8_t)SnmpTag::BER_INTEGER);
     enc_len(e, (size_t)k);
@@ -109,7 +113,9 @@ bool dws_ber_put_uint(BerEnc *e, uint8_t tag, uint32_t v)
     {
         tmp[k++] = (uint8_t)(val & 0xFF);
         val >>= 8;
-    } while (val && k < 4);
+        // val is uint32_t, so after 4 shifts it is 0 and `val` has already ended the loop: the k < 4
+        // bound is a defensive cap on the tmp[] write, never a reachable exit.
+    } while (val && k < 4); // GCOVR_EXCL_LINE  k < 4 can never be false (see above)
     if (tmp[k - 1] & 0x80)
         tmp[k++] = 0x00; // keep it positive
 

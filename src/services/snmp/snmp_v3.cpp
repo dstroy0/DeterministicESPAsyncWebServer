@@ -77,6 +77,18 @@ struct SnmpV3Ctx
 };
 static SnmpV3Ctx s_v3;
 
+// v3_sec is a fixed 256 bytes but what build_message() packs into it scales with two overridable
+// macros, so pin the worst case at compile time instead of assuming it. The msgSecurityParameters
+// SEQUENCE is: 4 (seq tag + back-patched 3-byte length) + 3 + SNMP_V3_ENGINEID_MAX (engineID
+// OCTET STRING) + 7 + 7 (engineBoots/engineTime INTEGERs, <=5 content octets each) + 3 +
+// SNMP_V3_USER_MAX (userName) + 2 + SNMP_V3_AUTH_PARAM_LEN (authParams) + 2 +
+// SNMP_V3_PRIV_PARAM_LEN (privParams). Raising either max past this turns the "cannot overflow"
+// guard below into a live path, so make that a build error rather than a silent behaviour change.
+static_assert(4 + 3 + SNMP_V3_ENGINEID_MAX + 7 + 7 + 3 + SNMP_V3_USER_MAX + 2 + SNMP_V3_AUTH_PARAM_LEN + 2 +
+                      SNMP_V3_PRIV_PARAM_LEN <=
+                  sizeof(SnmpV3Ctx::v3_sec),
+              "v3_sec is too small for SNMP_V3_ENGINEID_MAX + SNMP_V3_USER_MAX: raise v3_sec or lower the maxima");
+
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
@@ -176,8 +188,11 @@ static long inner_request_id(const uint8_t *mdata, size_t mdata_len, bool priv)
     uint8_t tag;
     size_t l;
     long rid;
-    if (!dws_ber_read_header(&d, &tag, &l) || !dws_ber_read_integer(&d, &rid))
-        return 0;
+    // parse_scoped already read this exact header and sized pdu_len as (header bytes + content
+    // length), so re-reading it from the start of pdu always succeeds; only the request-id
+    // INTEGER read below can fail.
+    if (!dws_ber_read_header(&d, &tag, &l) || !dws_ber_read_integer(&d, &rid)) // GCOVR_EXCL_LINE  the header
+        return 0;                                                              // re-read cannot fail (see above)
     return rid;
 }
 
@@ -198,7 +213,7 @@ static size_t build_message(long msg_id, bool auth, bool priv, const uint8_t *sc
         put_be32(iv, s_v3.boots);
         put_be32(iv + 4, now);
         memcpy(iv + 8, salt, SNMP_V3_PRIV_PARAM_LEN);
-        if (scoped_len > sizeof(s_v3.v3_d))
+        if (scoped_len > sizeof(s_v3.v3_d)) // GCOVR_EXCL_LINE  see below
             return 0; // GCOVR_EXCL_LINE  scoped is built in v3_c, the same size (SNMP_MSG_BUF_SIZE) as v3_d
         dws_snmp_aes128_cfb(s_v3.priv_key, iv, scoped, s_v3.v3_d, scoped_len, true);
         data_ptr = s_v3.v3_d;
@@ -230,9 +245,9 @@ static size_t build_message(long msg_id, bool auth, bool priv, const uint8_t *sc
     else
         dws_ber_put_octet_string(&se, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     dws_ber_seq_end(&se, ss);
-    if (!se.ok)
-        return 0; // GCOVR_EXCL_LINE  secParams (<=~120B: 32B engineID + 32B user + 24B auth + ints) never overflow
-                  // v3_sec[256]
+    if (!se.ok)   // GCOVR_EXCL_LINE  see below
+        return 0; // GCOVR_EXCL_LINE  the static_assert on v3_sec above makes a secParams overflow a build error,
+                  // so se.ok always holds here
     size_t sec_len = se.len;
 
     // Full message.
@@ -290,7 +305,7 @@ static size_t build_report(long msg_id, bool auth, uint32_t stat, uint32_t count
     dws_ber_seq_end(&e, vb);
     dws_ber_seq_end(&e, vbl);
     dws_ber_seq_end(&e, pdu);
-    if (!e.ok)
+    if (!e.ok)    // GCOVR_EXCL_LINE  see below
         return 0; // GCOVR_EXCL_LINE  the Report is one fixed usmStats varbind, far under v3_b (SNMP_MSG_BUF_SIZE)
 
     BerEnc sc;
@@ -300,7 +315,7 @@ static size_t build_report(long msg_id, bool auth, uint32_t stat, uint32_t count
     dws_ber_put_octet_string(&sc, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     dws_ber_put_raw(&sc, s_v3.v3_b, e.len);
     dws_ber_seq_end(&sc, s);
-    if (!sc.ok)
+    if (!sc.ok)   // GCOVR_EXCL_LINE  see below
         return 0; // GCOVR_EXCL_LINE  fixed tiny Report scopedPDU never overflows v3_c (SNMP_MSG_BUF_SIZE)
 
     return build_message(msg_id, auth, false, s_v3.v3_c, sc.len, resp, dws_resp_cap);
@@ -379,7 +394,7 @@ size_t dws_snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, si
         return 0;
     const uint8_t *pparm = sd.buf + sd.pos;
     sd.pos += pparm_len;
-    if (!sd.ok)
+    if (!sd.ok)   // GCOVR_EXCL_LINE  see below
         return 0; // GCOVR_EXCL_LINE  redundant: every secParams field read above returns on failure, so sd.ok holds
                   // here
 
@@ -453,7 +468,7 @@ size_t dws_snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, si
             return 0;
         const uint8_t *ct = md.buf + md.pos;
         size_t ct_len = l;
-        if (ct_len > sizeof(s_v3.v3_a))
+        if (ct_len > sizeof(s_v3.v3_a)) // GCOVR_EXCL_LINE  see below
             return 0; // GCOVR_EXCL_LINE  ct_len <= mdata_len < req_len, and req_len<=sizeof(v3_a) was enforced at the
                       // digest step
         uint8_t iv[16];
