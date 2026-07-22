@@ -706,7 +706,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `NTP`               |            25.9 KB |          17.7 KB |
 | L7    | `MDNS`              |            25.5 KB |          17.1 KB |
 | L7    | `TIME_SOURCE`       |            21.5 KB |          16.8 KB |
-| L7    | `EDGE_CACHE`        |            21.2 KB |          51.9 KB |
+| L7    | `EDGE_CACHE`        |            21.3 KB |          51.9 KB |
 | L7    | `DASHBOARD`         |            21.1 KB |          15.6 KB |
 | L7    | `NTRIP_CASTER`      |            18.1 KB |          18.1 KB |
 | L7    | `OIDC`              |            14.2 KB |          32.9 KB |
