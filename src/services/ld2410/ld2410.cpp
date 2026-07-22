@@ -208,6 +208,65 @@ size_t dws_ld2410_cmd_restart(uint8_t *buf, size_t cap)
     return cmd_frame(buf, cap, 0x00A3, nullptr, 0);
 }
 
+// --- LD2410B-only ----------------------------------------------------------
+size_t dws_ld2410_cmd_bluetooth(uint8_t *buf, size_t cap, bool on)
+{
+    const uint8_t v[2] = {(uint8_t)(on ? 0x01 : 0x00), 0x00}; // value 0x0001 on / 0x0000 off
+    return cmd_frame(buf, cap, 0x00A4, v, 2);
+}
+
+size_t dws_ld2410_cmd_get_mac(uint8_t *buf, size_t cap)
+{
+    const uint8_t v[2] = {0x01, 0x00}; // value 0x0001
+    return cmd_frame(buf, cap, 0x00A5, v, 2);
+}
+
+size_t dws_ld2410_cmd_set_bt_password(uint8_t *buf, size_t cap, const char password[6])
+{
+    if (!password)
+        return 0;
+    // Exactly 6 octets, natural order - the spec's worked example sends "HiLink" as 48 69 4C 69 6E 6B.
+    const uint8_t v[6] = {(uint8_t)password[0], (uint8_t)password[1], (uint8_t)password[2],
+                          (uint8_t)password[3], (uint8_t)password[4], (uint8_t)password[5]};
+    return cmd_frame(buf, cap, 0x00A9, v, 6);
+}
+
+// --- command-ACK decoding --------------------------------------------------
+bool dws_ld2410_parse_ack(const uint8_t *f, size_t len, Ld2410Ack *out)
+{
+    // header(4) + len(2) + word(2) + status(2) + [data] + footer(4)
+    if (!f || !out || len < 14)
+        return false;
+    for (int k = 0; k < 4; k++)
+        if (f[k] != CMD_HDR[k])
+            return false;
+    size_t dl = (size_t)f[4] | ((size_t)f[5] << 8); // intra-frame length: word + status + data
+    if (dl < 4 || len != 4 + 2 + dl + 4)
+        return false; // the declared length must account for exactly this frame
+    for (int k = 0; k < 4; k++)
+        if (f[6 + dl + k] != CMD_FTR[k])
+            return false;
+    out->command = (uint16_t)((uint16_t)f[6] | ((uint16_t)f[7] << 8));
+    out->status = (uint16_t)((uint16_t)f[8] | ((uint16_t)f[9] << 8));
+    out->payload_len = dl - 4;
+    out->payload = out->payload_len ? f + 10 : nullptr;
+    return true;
+}
+
+bool dws_ld2410_ack_ok(const Ld2410Ack *ack)
+{
+    return ack && ack->status == 0;
+}
+
+bool dws_ld2410_ack_mac(const Ld2410Ack *ack, uint8_t mac[6])
+{
+    if (!ack || !mac || ack->command != 0x01A5 || ack->status != 0 || ack->payload_len < 6 || !ack->payload)
+        return false;
+    for (int k = 0; k < 6; k++)
+        mac[k] = ack->payload[k];
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 // UART binding
 // ---------------------------------------------------------------------------

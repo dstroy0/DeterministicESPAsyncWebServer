@@ -109,6 +109,61 @@ size_t dws_ld2410_cmd_engineering(uint8_t *buf, size_t cap, bool on);
 /** @brief Restart the module (word 0x00A3). */
 size_t dws_ld2410_cmd_restart(uint8_t *buf, size_t cap);
 
+// --- LD2410B-only config commands ------------------------------------------------------------
+// The LD2410B is HiLink's BLE-equipped build of the same radar and speaks this identical
+// `FD FC FB FA` protocol, so everything above applies to it unchanged. The three commands below
+// exist only on the B: they configure the Bluetooth radio over the *wired* UART. The BLE control
+// channel itself is out of scope here - this is the serial side only. Each is still bracketed by
+// enable/end like any other config command.
+
+/** @brief LD2410B: turn the Bluetooth radio on (value 0x0001) or off (0x0000). Word 0x00A4. */
+size_t dws_ld2410_cmd_bluetooth(uint8_t *buf, size_t cap, bool on);
+
+/** @brief LD2410B: query the module's Bluetooth MAC address (word 0x00A5, value 0x0001). */
+size_t dws_ld2410_cmd_get_mac(uint8_t *buf, size_t cap);
+
+/**
+ * @brief LD2410B: set the 6-octet Bluetooth control password (word 0x00A9). Takes effect after a
+ *        restart and survives power loss. @p password is exactly 6 octets, sent in natural order
+ *        (the factory default is the ASCII "HiLink" -> 48 69 4C 69 6E 6B); it is not NUL-terminated
+ *        and is not padded, so pass 6 octets.
+ *
+ * The companion "obtain Bluetooth access" command (0x00A8) is deliberately absent: the protocol
+ * document states it answers only over Bluetooth and not the serial port, so it belongs to the BLE
+ * control channel, which this wired driver does not cover.
+ */
+size_t dws_ld2410_cmd_set_bt_password(uint8_t *buf, size_t cap, const char password[6]);
+
+// --- Command-ACK decoding --------------------------------------------------------------------
+// The module answers every config command with a frame in the same `FD FC FB FA` envelope, whose
+// command word is the request's word with 0x0100 set (0x00A5 -> 0x01A5) followed by a 2-octet
+// status. Needed to read a query's result (the MAC) and to tell an accepted command from a
+// rejected one; the report stream (`F4 F3 F2 F1`) is a separate frame kind and is unaffected.
+
+/** @brief A decoded command-ACK frame. @ref payload points into the caller's frame (not copied). */
+struct Ld2410Ack
+{
+    uint16_t command;       ///< ACK command word: the request word | 0x0100 (e.g. 0x01A5 for get-MAC).
+    uint16_t status;        ///< 0 = success, 1 = failure.
+    const uint8_t *payload; ///< command-specific data after the status word (nullptr if none).
+    size_t payload_len;     ///< octets at @ref payload.
+};
+
+/**
+ * @brief Decode one command-ACK frame (header, intra-frame length, footer and length agreement all
+ *        checked). @return false if @p frame is not a well-formed ACK.
+ */
+bool dws_ld2410_parse_ack(const uint8_t *frame, size_t len, Ld2410Ack *out);
+
+/** @brief True if @p ack reports success (@ref Ld2410Ack::status == 0). */
+bool dws_ld2410_ack_ok(const Ld2410Ack *ack);
+
+/**
+ * @brief Extract the 6-octet MAC from a get-MAC ACK (word 0x01A5) into @p mac, in wire order.
+ * @return false unless @p ack is a successful get-MAC ACK carrying at least 6 payload octets.
+ */
+bool dws_ld2410_ack_mac(const Ld2410Ack *ack, uint8_t mac[6]);
+
 // --- ESP32 binding (Serial pump; no-ops on a host build) -------------------------------------
 
 /** @brief Open UART2 at DWS_LD2410_BAUD on @p rx_pin / @p tx_pin. @return true on ESP32. */
