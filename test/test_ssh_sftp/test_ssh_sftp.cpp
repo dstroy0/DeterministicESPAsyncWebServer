@@ -334,6 +334,197 @@ static void test_fs_path_resolve()
     TEST_ASSERT_EQUAL_INT(-2, fs_path_resolve("/gcode", "/a-very-long-subpath-name", small, sizeof(small)));
 }
 
+// --- reader / writer failure latching -------------------------------------------------------------
+static void test_reader_latches_the_first_underflow()
+{
+    // Once a read runs past the end the reader stays failed: every later read short-circuits on !ok and
+    // returns a zero rather than reading whatever follows in memory.
+    uint8_t one[1] = {0x7E};
+    SftpReader r;
+    dws_sftp_rd_init(&r, one, sizeof(one));
+    TEST_ASSERT_EQUAL_HEX8(0x7E, dws_sftp_rd_u8(&r));
+    TEST_ASSERT_EQUAL_HEX8(0, dws_sftp_rd_u8(&r)); // one byte past the end
+    TEST_ASSERT_FALSE(r.ok);
+    TEST_ASSERT_EQUAL_HEX8(0, dws_sftp_rd_u8(&r)); // already failed
+    TEST_ASSERT_EQUAL_HEX32(0, dws_sftp_rd_u32(&r));
+    TEST_ASSERT_EQUAL_HEX64(0, dws_sftp_rd_u64(&r));
+
+    uint8_t three[3] = {1, 2, 3};
+    dws_sftp_rd_init(&r, three, sizeof(three));
+    TEST_ASSERT_EQUAL_HEX64(0, dws_sftp_rd_u64(&r)); // wants 8, only 3
+    TEST_ASSERT_FALSE(r.ok);
+    TEST_ASSERT_EQUAL_HEX64(0, dws_sftp_rd_u64(&r)); // already failed
+
+    // A string whose own length prefix cannot be read fails on the prefix, not on the body.
+    uint8_t two[2] = {0, 0};
+    dws_sftp_rd_init(&r, two, sizeof(two));
+    TEST_ASSERT_FALSE(dws_sftp_rd_string(&r, nullptr, nullptr));
+    TEST_ASSERT_FALSE(r.ok);
+}
+
+static void test_attrs_extended_stops_on_a_truncated_pair()
+{
+    // The extension walk is bounded by the reader's health as well as the declared count, so a count
+    // that overstates what is present stops rather than spinning on a dead reader.
+    uint8_t buf[64];
+    SftpWriter w;
+    dws_sftp_wr_init(&w, buf, sizeof(buf));
+    dws_sftp_wr_u32(&w, SSH_FILEXFER_ATTR_EXTENDED);
+    dws_sftp_wr_u32(&w, 3);         // claims three extension pairs...
+    dws_sftp_wr_string(&w, "a", 1); // ...but only one string is actually present
+    size_t total = dws_sftp_wr_finish(&w);
+
+    SftpReader r;
+    dws_sftp_rd_init(&r, buf + 4, total - 4);
+    SftpAttrs out;
+    TEST_ASSERT_FALSE(dws_sftp_rd_attrs(&r, &out));
+    TEST_ASSERT_FALSE(r.ok);
+}
+
+static void test_writer_latches_overflow_at_every_primitive()
+{
+    // A writer that has overflowed stays overflowed and writes nothing more, so a caller that ignores
+    // the flag until finish() still cannot emit a partial packet.
+    uint8_t buf[16];
+    memset(buf, 0x5A, sizeof(buf));
+
+    SftpWriter w;
+    dws_sftp_wr_init(&w, buf, 4); // the length prefix uses the whole buffer
+    TEST_ASSERT_FALSE(w.ovf);
+    dws_sftp_wr_u8(&w, 0x11);
+    TEST_ASSERT_TRUE(w.ovf);
+    dws_sftp_wr_u8(&w, 0x22); // already overflowed
+    TEST_ASSERT_EQUAL_UINT(0, dws_sftp_wr_finish(&w));
+
+    dws_sftp_wr_init(&w, buf, 8); // 4 spare bytes, a u64 needs 8
+    dws_sftp_wr_u64(&w, 0x1122334455667788ULL);
+    TEST_ASSERT_TRUE(w.ovf);
+    dws_sftp_wr_u64(&w, 0);         // already overflowed
+    dws_sftp_wr_bytes(&w, "xy", 2); // already overflowed
+    TEST_ASSERT_EQUAL_UINT(0, dws_sftp_wr_finish(&w));
+
+    // A capacity that cannot even hold the length prefix starts out overflowed.
+    dws_sftp_wr_init(&w, buf, 3);
+    TEST_ASSERT_TRUE(w.ovf);
+    TEST_ASSERT_EQUAL_UINT(0, dws_sftp_wr_finish(&w));
+
+    for (size_t i = 0; i < sizeof(buf); i++)
+        TEST_ASSERT_EQUAL_HEX8(0x5A, buf[i]); // not one byte was written
+
+    // A healthy writer whose remaining room fits the length prefix but not the body overflows on the body.
+    uint8_t body[14];
+    TEST_ASSERT_EQUAL_UINT(0, dws_sftp_build_data(1, "abcde", 5, body, sizeof(body)));
+}
+
+static void test_build_attrs()
+{
+    // SSH_FXP_ATTRS is the STAT/FSTAT reply: header, request id, then the attribute blob.
+    SftpAttrs a;
+    a.flags = SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_ACMODTIME;
+    a.size = 4096;
+    a.permissions = SFTP_S_IFREG | 0644;
+    a.atime = 1700000000u;
+    a.mtime = 1700000123u;
+
+    uint8_t buf[64];
+    size_t n = dws_sftp_build_attrs(77, &a, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    SftpReader r;
+    dws_sftp_rd_init(&r, buf + 4, n - 4);
+    TEST_ASSERT_EQUAL_UINT8(SSH_FXP_ATTRS, dws_sftp_rd_u8(&r));
+    TEST_ASSERT_EQUAL_UINT32(77, dws_sftp_rd_u32(&r));
+    SftpAttrs out;
+    TEST_ASSERT_TRUE(dws_sftp_rd_attrs(&r, &out));
+    TEST_ASSERT_EQUAL_HEX32(a.flags, out.flags);
+    TEST_ASSERT_EQUAL_HEX64(a.size, out.size);
+    TEST_ASSERT_EQUAL_HEX32(a.permissions, out.permissions);
+    TEST_ASSERT_EQUAL_UINT32(a.atime, out.atime);
+    TEST_ASSERT_EQUAL_UINT32(a.mtime, out.mtime);
+    TEST_ASSERT_EQUAL_UINT(n - 4, r.off);
+
+    // And it fails closed rather than emitting a partial blob when the buffer is too small.
+    uint8_t tiny[8];
+    TEST_ASSERT_EQUAL_UINT(0, dws_sftp_build_attrs(77, &a, tiny, sizeof(tiny)));
+}
+
+static void test_wr_attrs_emits_uidgid()
+{
+    // UIDGID is written as a zero pair (the server has no user model) and must round-trip past the reader.
+    SftpAttrs a;
+    a.flags = SSH_FILEXFER_ATTR_UIDGID | SSH_FILEXFER_ATTR_PERMISSIONS;
+    a.size = 0;
+    a.permissions = SFTP_S_IFREG | 0600;
+    a.atime = a.mtime = 0;
+
+    uint8_t buf[64];
+    SftpWriter w;
+    dws_sftp_wr_init(&w, buf, sizeof(buf));
+    dws_sftp_wr_attrs(&w, &a);
+    size_t total = dws_sftp_wr_finish(&w);
+    TEST_ASSERT_EQUAL_UINT(4 + 4 + 4 + 4 + 4, total); // flags + uid + gid + permissions
+
+    SftpReader r;
+    dws_sftp_rd_init(&r, buf + 4, total - 4);
+    SftpAttrs out;
+    TEST_ASSERT_TRUE(dws_sftp_rd_attrs(&r, &out));
+    TEST_ASSERT_EQUAL_HEX32(a.flags, out.flags);
+    TEST_ASSERT_EQUAL_HEX32(a.permissions, out.permissions);
+    TEST_ASSERT_EQUAL_UINT(total - 4, r.off);
+}
+
+static void test_patch_u32_past_the_buffer_is_ignored()
+{
+    // The count patch is a blind poke at a remembered offset; a patch that would run off the end must
+    // do nothing rather than write past the caller's buffer.
+    uint8_t buf[16];
+    memset(buf, 0x5A, sizeof(buf));
+    SftpWriter w;
+    dws_sftp_wr_init(&w, buf, sizeof(buf));
+    dws_sftp_wr_patch_u32(&w, sizeof(buf) - 3, 0x11223344); // needs 4 bytes, only 3 left
+    for (size_t i = 0; i < sizeof(buf); i++)
+        TEST_ASSERT_EQUAL_HEX8(0x5A, buf[i]);
+}
+
+static void test_build_status_without_a_message()
+{
+    // A null message is a legal STATUS: it goes on the wire as a zero-length string, not a crash.
+    uint8_t buf[64];
+    size_t n = dws_sftp_build_status(4, SSH_FX_OK, nullptr, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    SftpReader r;
+    dws_sftp_rd_init(&r, buf + 4, n - 4);
+    TEST_ASSERT_EQUAL_UINT8(SSH_FXP_STATUS, dws_sftp_rd_u8(&r));
+    TEST_ASSERT_EQUAL_UINT32(4, dws_sftp_rd_u32(&r));
+    TEST_ASSERT_EQUAL_UINT32(SSH_FX_OK, dws_sftp_rd_u32(&r));
+    uint32_t ml = 0xFFFF;
+    TEST_ASSERT_TRUE(dws_sftp_rd_string(&r, nullptr, &ml));
+    TEST_ASSERT_EQUAL_UINT32(0, ml); // empty message
+    TEST_ASSERT_TRUE(dws_sftp_rd_string(&r, nullptr, &ml));
+    TEST_ASSERT_EQUAL_UINT32(0, ml); // empty language tag
+    TEST_ASSERT_TRUE(r.ok);
+}
+
+static void test_longname_truncates_to_the_buffer()
+{
+    // A longname that does not fit is clipped to the buffer (NUL included) and the clipped length is
+    // reported, so the caller never emits more bytes than it owns.
+    char full[64];
+    size_t nfull = dws_sftp_format_longname(false, 0644, 1234, 0, "file.nc", full, sizeof(full));
+    TEST_ASSERT_TRUE(nfull > 12);
+
+    char small[12];
+    memset(small, 0x7F, sizeof(small));
+    size_t n = dws_sftp_format_longname(false, 0644, 1234, 0, "file.nc", small, sizeof(small));
+    TEST_ASSERT_EQUAL_UINT(sizeof(small) - 1, n);
+    TEST_ASSERT_EQUAL_CHAR('\0', small[sizeof(small) - 1]);
+    TEST_ASSERT_EQUAL_MEMORY(full, small, sizeof(small) - 1); // the prefix that did fit
+
+    // A zero-capacity buffer writes nothing and reports nothing.
+    char none[1] = {0x7F};
+    TEST_ASSERT_EQUAL_UINT(0, dws_sftp_format_longname(false, 0644, 1234, 0, "file.nc", none, 0));
+    TEST_ASSERT_EQUAL_CHAR(0x7F, none[0]);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -351,5 +542,13 @@ int main()
     RUN_TEST(test_name_multi_entry);
     RUN_TEST(test_longname_format);
     RUN_TEST(test_builder_overflow);
+    RUN_TEST(test_reader_latches_the_first_underflow);
+    RUN_TEST(test_attrs_extended_stops_on_a_truncated_pair);
+    RUN_TEST(test_writer_latches_overflow_at_every_primitive);
+    RUN_TEST(test_build_attrs);
+    RUN_TEST(test_wr_attrs_emits_uidgid);
+    RUN_TEST(test_patch_u32_past_the_buffer_is_ignored);
+    RUN_TEST(test_build_status_without_a_message);
+    RUN_TEST(test_longname_truncates_to_the_buffer);
     return UNITY_END();
 }

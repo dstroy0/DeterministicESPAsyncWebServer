@@ -818,6 +818,285 @@ void test_pubkey_oversized_signed_prefix()
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
 }
 
+// Assemble a publickey USERAUTH_REQUEST carrying an arbitrary algorithm name, key blob and raw
+// signature - enough to drive every blob / signature rejection path from the wire.
+static size_t build_pubkey_req_generic(uint8_t *pkt, const char *algo, const uint8_t *blob, size_t blob_len,
+                                       const uint8_t *sig, size_t sig_len, bool with_sig)
+{
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_string(pkt + n, "alice");
+    n += put_string(pkt + n, "ssh-connection");
+    n += put_string(pkt + n, "publickey");
+    pkt[n++] = with_sig ? 1 : 0;
+    n += put_string(pkt + n, algo);
+    wr_u32(pkt + n, (uint32_t)blob_len);
+    n += 4;
+    memcpy(pkt + n, blob, blob_len);
+    n += blob_len;
+    if (with_sig)
+    {
+        uint32_t al = (uint32_t)strlen(algo);
+        wr_u32(pkt + n, 4 + al + 4 + (uint32_t)sig_len);
+        n += 4;
+        n += put_string(pkt + n, algo);
+        wr_u32(pkt + n, (uint32_t)sig_len);
+        n += 4;
+        memcpy(pkt + n, sig, sig_len);
+        n += sig_len;
+    }
+    return n;
+}
+
+// With no public-key verifier installed no key can be authorized, however well-formed it is.
+void test_pubkey_without_verifier_fails()
+{
+    dws_ssh_auth_set_pubkey_cb(nullptr);
+    set_session_id_0_to_31();
+    uint8_t blob[512];
+    size_t bl = hexdec(PK_BLOB_HEX, blob);
+    uint8_t pkt[1024], out[512];
+    size_t olen = 0;
+    size_t n = build_pubkey_req(pkt, blob, bl, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+    TEST_ASSERT_FALSE(ssh_sess[0].authed);
+    dws_ssh_auth_set_pubkey_cb(pk_cb_alice);
+}
+
+// The ssh-rsa key type is matched element-wise (a name of a different LENGTH is rejected on the
+// length test alone), and an mpint that is all zero bytes strips to the empty value and still
+// parses - the decision then belongs to the application verifier, not the parser.
+void test_pubkey_rsa_blob_type_length_and_zero_mpint()
+{
+    dws_ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+    uint8_t b[400], pkt[1024], out[1024];
+    size_t bl, n, olen = 0;
+
+    bl = put_string(b, "ssh-rsa-x"); // 9 chars, not 7
+    n = build_pubkey_req(pkt, b, bl, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    bl = put_string(b, "ssh-rsa");
+    wr_u32(b + bl, 4); // exponent: four zero bytes
+    bl += 4;
+    memset(b + bl, 0, 4);
+    bl += 4;
+    wr_u32(b + bl, 4); // modulus: four zero bytes
+    bl += 4;
+    memset(b + bl, 0, 4);
+    bl += 4;
+    n = build_pubkey_req(pkt, b, bl, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_PK_OK, out[0]);
+}
+
+// An ssh-ed25519 blob whose public-key string is truncated, or is not exactly 32 bytes, is
+// rejected; so is a signature of any length other than the 64 bytes Ed25519 produces.
+void test_pubkey_ed25519_blob_and_siglen_rejections()
+{
+    dws_ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+    uint8_t b[128], pkt[512], out[512];
+    size_t bl, n, olen = 0;
+
+    bl = put_string(b, "ssh-ed25519");
+    wr_u32(b + bl, 32); // declares 32 bytes, none present
+    bl += 4;
+    n = build_pubkey_req_generic(pkt, "ssh-ed25519", b, bl, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    bl = put_string(b, "ssh-ed25519");
+    wr_u32(b + bl, 31); // one byte short of an Ed25519 public key
+    bl += 4;
+    memset(b + bl, 0xAB, 31);
+    bl += 31;
+    n = build_pubkey_req_generic(pkt, "ssh-ed25519", b, bl, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    // Well-formed key, signature of the wrong length: refused before any verify work.
+    bl = put_string(b, "ssh-ed25519");
+    wr_u32(b + bl, 32);
+    bl += 4;
+    memset(b + bl, 0xAB, 32);
+    bl += 32;
+    uint8_t sig[63];
+    memset(sig, 0x5C, sizeof(sig));
+    n = build_pubkey_req_generic(pkt, "ssh-ed25519", b, bl, sig, sizeof(sig), true);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+    TEST_ASSERT_FALSE(ssh_sess[0].authed);
+}
+
+// An ecdsa-sha2-nistp256 blob is rejected at every field: a missing or wrong curve identifier, a
+// missing or wrongly sized point, and a point that is not in uncompressed (0x04) form.
+void test_pubkey_ecdsa_blob_rejections()
+{
+    dws_ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+    uint8_t b[200], pkt[512], out[512];
+    size_t bl, n, olen = 0;
+    uint8_t q[SSH_ECDSA_P256_PUB_LEN];
+    memset(q, 0x11, sizeof(q));
+    q[0] = 0x04;
+
+    // curve identifier declared but absent.
+    bl = put_string(b, "ecdsa-sha2-nistp256");
+    wr_u32(b + bl, 8);
+    bl += 4;
+    n = build_pubkey_req_generic(pkt, "ecdsa-sha2-nistp256", b, bl, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    // curve identifiers of the wrong length, then the right length but the wrong name.
+    const char *curves[2] = {"nistp25", "nistp257"};
+    for (int c = 0; c < 2; c++)
+    {
+        bl = put_string(b, "ecdsa-sha2-nistp256");
+        bl += put_string(b + bl, curves[c]);
+        wr_u32(b + bl, SSH_ECDSA_P256_PUB_LEN);
+        bl += 4;
+        memcpy(b + bl, q, SSH_ECDSA_P256_PUB_LEN);
+        bl += SSH_ECDSA_P256_PUB_LEN;
+        n = build_pubkey_req_generic(pkt, "ecdsa-sha2-nistp256", b, bl, nullptr, 0, false);
+        TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+        TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+    }
+
+    // point declared but absent.
+    bl = put_string(b, "ecdsa-sha2-nistp256");
+    bl += put_string(b + bl, "nistp256");
+    wr_u32(b + bl, SSH_ECDSA_P256_PUB_LEN);
+    bl += 4;
+    n = build_pubkey_req_generic(pkt, "ecdsa-sha2-nistp256", b, bl, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    // point of the wrong size, then a compressed point (leading byte != 0x04).
+    for (int c = 0; c < 2; c++)
+    {
+        const uint32_t qlen = c == 0 ? SSH_ECDSA_P256_PUB_LEN - 1u : SSH_ECDSA_P256_PUB_LEN;
+        bl = put_string(b, "ecdsa-sha2-nistp256");
+        bl += put_string(b + bl, "nistp256");
+        wr_u32(b + bl, qlen);
+        bl += 4;
+        memcpy(b + bl, q, qlen);
+        if (c == 1)
+            b[bl] = 0x02; // compressed form is not accepted
+        bl += qlen;
+        n = build_pubkey_req_generic(pkt, "ecdsa-sha2-nistp256", b, bl, nullptr, 0, false);
+        TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+        TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+    }
+}
+
+// The ECDSA signature blob (mpint r || mpint s, RFC 5656 §3.1.2) is rejected when either half is
+// missing or wider than a P-256 coordinate, and a well-formed signature over the wrong data fails
+// verification rather than being accepted.
+void test_pubkey_ecdsa_signature_rejections()
+{
+    dws_ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+
+    uint8_t d[32];
+    memset(d, 0, sizeof(d));
+    d[31] = 0x0A;
+    uint8_t q[SSH_ECDSA_P256_PUB_LEN];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(q, d));
+    uint8_t b[200];
+    size_t bl = put_string(b, "ecdsa-sha2-nistp256");
+    bl += put_string(b + bl, "nistp256");
+    wr_u32(b + bl, SSH_ECDSA_P256_PUB_LEN);
+    bl += 4;
+    memcpy(b + bl, q, SSH_ECDSA_P256_PUB_LEN);
+    bl += SSH_ECDSA_P256_PUB_LEN;
+
+    uint8_t wide[33];
+    memset(wide, 0x9C, sizeof(wide)); // 33 significant bytes: wider than a P-256 coordinate
+    uint8_t small[1] = {0x01};
+
+    uint8_t sigblob[128];
+    uint8_t pkt[512], out[512];
+    size_t olen = 0;
+    struct
+    {
+        const uint8_t *r;
+        size_t rlen;
+        const uint8_t *s;
+        size_t slen;
+        bool with_s;
+    } cases[5] = {
+        {nullptr, 0, nullptr, 0, false},      // no r at all
+        {small, 1, nullptr, 0, false},        // r only, s missing
+        {wide, sizeof(wide), small, 1, true}, // r too wide
+        {small, 1, wide, sizeof(wide), true}, // s too wide
+        {small, 1, small, 1, true},           // parses, but signs nothing
+    };
+    for (int c = 0; c < 5; c++)
+    {
+        size_t sl = 0;
+        if (cases[c].r)
+        {
+            wr_u32(sigblob + sl, (uint32_t)cases[c].rlen);
+            sl += 4;
+            memcpy(sigblob + sl, cases[c].r, cases[c].rlen);
+            sl += cases[c].rlen;
+        }
+        if (cases[c].with_s)
+        {
+            wr_u32(sigblob + sl, (uint32_t)cases[c].slen);
+            sl += 4;
+            memcpy(sigblob + sl, cases[c].s, cases[c].slen);
+            sl += cases[c].slen;
+        }
+        size_t n = build_pubkey_req_generic(pkt, "ecdsa-sha2-nistp256", b, bl, sigblob, sl, true);
+        TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+        TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+        TEST_ASSERT_FALSE(ssh_sess[0].authed);
+    }
+}
+
+static bool pk_cb_reject(const char *u, const uint8_t *blob, size_t n)
+{
+    (void)u;
+    (void)blob;
+    (void)n;
+    return false;
+}
+
+// A verifier that IS installed but refuses the offered key produces USERAUTH_FAILURE - a distinct
+// path from having no verifier at all, and it must not fall through to a signature check.
+void test_pubkey_verifier_rejects_key()
+{
+    dws_ssh_auth_set_pubkey_cb(pk_cb_reject);
+    set_session_id_0_to_31();
+    uint8_t blob[512];
+    size_t bl = hexdec(PK_BLOB_HEX, blob);
+    uint8_t pkt[1024], out[512];
+    size_t olen = 0;
+    size_t n = build_pubkey_req(pkt, blob, bl, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+    TEST_ASSERT_FALSE(ssh_sess[0].authed);
+    dws_ssh_auth_set_pubkey_cb(pk_cb_alice);
+}
+
+// USERAUTH_FAILURE carries the partial-success boolean the caller asks for (RFC 4252 §5.1).
+void test_build_failure_partial_success_flag()
+{
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_build_failure(out, &olen, sizeof(out), true));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+    TEST_ASSERT_EQUAL_UINT8(1, out[olen - 1]);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_build_failure(out, &olen, sizeof(out), false));
+    TEST_ASSERT_EQUAL_UINT8(0, out[olen - 1]);
+}
+
 // handle_request rejects an out-of-range slot and a payload that does not parse.
 void test_handle_request_index_and_parse_guards()
 {
@@ -837,6 +1116,13 @@ int main()
     RUN_TEST(test_pubkey_blob_parse_failures);
     RUN_TEST(test_pubkey_oversized_signed_prefix);
     RUN_TEST(test_handle_request_index_and_parse_guards);
+    RUN_TEST(test_pubkey_without_verifier_fails);
+    RUN_TEST(test_pubkey_rsa_blob_type_length_and_zero_mpint);
+    RUN_TEST(test_pubkey_ed25519_blob_and_siglen_rejections);
+    RUN_TEST(test_pubkey_ecdsa_blob_rejections);
+    RUN_TEST(test_pubkey_ecdsa_signature_rejections);
+    RUN_TEST(test_pubkey_verifier_rejects_key);
+    RUN_TEST(test_build_failure_partial_success_flag);
     RUN_TEST(test_service_request_accept);
     RUN_TEST(test_service_request_rejects_unknown);
     RUN_TEST(test_parse_password_request);
