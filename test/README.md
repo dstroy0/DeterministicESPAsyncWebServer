@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **263 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **264 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -170,6 +170,7 @@ The native test matrix has **263 environments**, one per feature, generated from
 | `native_happy_eyeballs` | `WS_ENABLE_HAPPY_EYEBALLS=1` | `test_happy_eyeballs` | Dual-stack Happy Eyeballs selection (services/happy_eyeballs): RFC 6724 destination preference scoring, the candidate-list sort + RFC 8305 address-family interleave, and the Connection Attempt Delay g... |
 | `native_hart` | `WS_ENABLE_HART=1` | `test_hart` | HART / HART-IP codec (services/hart): the HART command frame (longitudinal XOR checksum, short + long addressing) build/parse and the 8-octet HART-IP message header. |
 | `native_hislip` | `WS_ENABLE_HISLIP=1` | `test_hislip` | HiSLIP (High-Speed LAN Instrument Protocol, IVI-6.1) message codec (services/hislip): the fixed 16-byte header build/parse (HS prologue + type + control + 32-bit param + 64-bit payload length, big-end... |
+| `native_hmmd` | `WS_ENABLE_HMMD=1` | `test_hmmd` | Waveshare HMMD 24GHz mmWave micro-motion radar codec (services/hmmd): the LD2410-family little-endian framing, the report parse (detection flag, distance, all 16 gate energies), rejecting malformed fr... |
 | `native_hostlink` | `WS_ENABLE_HOSTLINK=1` | `test_hostlink` | Omron Host Link (C-mode) frame codec (services/hostlink): the FCS (XOR), the ASCII command builder (@UU + header + text + FCS + *CR), and the FCS-validating parser + end-code reader. |
 | `native_hotswap` | `WS_ENABLE_HOTSWAP=1` | `test_hotswap` | Removable-storage hot-swap safeties (services/hotswap): the ABSENT/READY/FAULTED state machine - a run of consecutive I/O errors faults a volume while a single one does not, any success resets the run... |
 | `native_hpack` | `WS_ENABLE_HTTP2=1` | `test_hpack` | HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the Huffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion (C.3.1), dynamic-table i... |
@@ -553,7 +554,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3697 test cases** across **278 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3724 test cases** across **280 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -12580,6 +12581,162 @@ A thorough directory of all **3697 test cases** across **278 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hislip_build_data(small, sizeof(small), true, 0, 0, (const uint8_t *)"*IDN?\\n", 6));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hislip_build_data(buf, sizeof(buf), false, 0, 0, nullptr, 4));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_hmmd (11 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_geometry_is_self_consistent</b> &mdash; <i>4 header + 2 length + 35 payload + 4 footer == 45, the reference library's kMaxFrameLength.</i></summary>
+
+    * **Objective**: 4 header + 2 length + 35 payload + 4 footer == 45, the reference library's kMaxFrameLength.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(45, (uint32_t)DWS_HMMD_FRAME_MAX);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(35, (uint32_t)DWS_HMMD_REPORT_LEN);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_HMMD_FRAME_MAX, (uint32_t)(4 + 2 + DWS_HMMD_REPORT_LEN + 4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_HMMD_REPORT_LEN, (uint32_t)(1 + 2 + 2 * DWS_HMMD_GATES));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_report</b> &mdash; <i>Parse report</i></summary>
+
+    * **Objective**: Parse report
+    * **Assertions**:
+      * <code>Assert true (dws_hmmd_parse_report(REPORT, DWS_HMMD_FRAME_MAX, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, r.detected);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(137, r.distance_cm);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(100, r.gate_energy[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(115, r.gate_energy[DWS_HMMD_GATES - 1]);</code>
+      * <code>Assert true (dws_hmmd_present(&r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(137, dws_hmmd_distance_cm(&r));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_report_not_detected</b> &mdash; <i>distance is meaningless with no target, so the helper reports 0 rather than stale range</i></summary>
+
+    * **Objective**: distance is meaningless with no target, so the helper reports 0 rather than stale range
+    * **Assertions**:
+      * <code>Assert true (dws_hmmd_parse_report(REPORT, DWS_HMMD_FRAME_MAX, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, r.detected);</code>
+      * <code>Assert false (dws_hmmd_present(&r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_hmmd_distance_cm(&r));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(400, r.distance_cm); // ...but the raw field is still decoded</code>
+      * <code>Assert false (dws_hmmd_present(nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_hmmd_distance_cm(nullptr));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reject_malformed_report</b> &mdash; <i>Reject malformed report</i></summary>
+
+    * **Objective**: Reject malformed report
+    * **Assertions**:
+      * <code>Assert false (dws_hmmd_parse_report(bad, sizeof(bad), &r))</code>
+      * <code>Assert false (dws_hmmd_parse_report(bad, sizeof(bad), &r))</code>
+      * <code>Assert false (dws_hmmd_parse_report(bad, sizeof(bad), &r))</code>
+      * <code>Assert false (dws_hmmd_parse_report(REPORT, DWS_HMMD_FRAME_MAX - 1, &r))</code>
+      * <code>Assert false (dws_hmmd_parse_report(REPORT, DWS_HMMD_FRAME_MAX + 1, &r))</code>
+      * <code>Assert false (dws_hmmd_parse_report(nullptr, DWS_HMMD_FRAME_MAX, &r))</code>
+      * <code>Assert false (dws_hmmd_parse_report(REPORT, DWS_HMMD_FRAME_MAX, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_resync_and_split</b> &mdash; <i>leading noise, including a false partial header (F4 then a non-F3)</i></summary>
+
+    * **Objective**: leading noise, including a false partial header (F4 then a non-F3)
+    * **Assertions**:
+      * <code>Assert equal int (0, reports)</code>
+      * <code>Assert equal int (1, reports)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(250, r.distance_cm);</code>
+      * <code>Assert equal int (2, reports)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, r.detected);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_absurd_length_drops</b> &mdash; <i>header + a length larger than the frame buffer must drop and resync, then decode the next</i></summary>
+
+    * **Objective**: header + a length larger than the frame buffer must drop and resync, then decode the next
+    * **Assertions**:
+      * <code>Assert false (dws_hmmd_stream_push(&s, huge[i], &r))</code>
+      * <code>Assert equal int (1, reports)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(42, r.distance_cm);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_command_encoders</b> &mdash; <i>open command mode: word 0x00FF, value 0x0001 -> len 4</i></summary>
+
+    * **Objective**: open command mode: word 0x00FF, value 0x0001 -> len 4
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(14, (uint32_t)dws_hmmd_cmd_open(f, sizeof(f)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(open_f, f, 14);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(12, (uint32_t)dws_hmmd_cmd_close(f, sizeof(f)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(close_f, f, 12);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(12, (uint32_t)dws_hmmd_cmd_read_firmware(f, sizeof(f)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(fw_f, f, 12);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(12, (uint32_t)dws_hmmd_cmd_read_serial(f, sizeof(f)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x11, f[6]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, f[7]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(12, (uint32_t)dws_hmmd_cmd_read_config(f, sizeof(f)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x08, f[6]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(14, (uint32_t)dws_hmmd_cmd_read_register(f, sizeof(f), sel, sizeof(sel)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x04, f[4]); // len = word(2) + value(2)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x02, f[6]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x34, f[8]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x12, f[9]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_command_encoder_guards</b> &mdash; <i>a non-zero value length with a null value pointer must be refused, not read</i></summary>
+
+    * **Objective**: a non-zero value length with a null value pointer must be refused, not read
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_hmmd_cmd_open(f, 13));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_hmmd_cmd_close(f, 11));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_hmmd_cmd_open(nullptr, sizeof(f)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_hmmd_cmd_build(f, sizeof(f), 0x0002, nullptr, 2));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ack_decoding</b> &mdash; <i>ACK to read-config: word 0x0108 (reply convention), then two data octets</i></summary>
+
+    * **Objective**: ACK to read-config: word 0x0108 (reply convention), then two data octets
+    * **Assertions**:
+      * <code>Assert true (dws_hmmd_parse_ack(ack, sizeof(ack), &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x0108, a.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, (uint32_t)a.payload_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xAB, a.payload[0]);</code>
+      * <code>Assert true (dws_hmmd_ack_matches(&a, 0x0008))</code>
+      * <code>Assert false (dws_hmmd_ack_matches(&a, 0x0011))</code>
+      * <code>Assert false (dws_hmmd_ack_matches(nullptr, 0x0008))</code>
+      * <code>Assert true (dws_hmmd_parse_ack(bare, sizeof(bare), &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)a.payload_len);</code>
+      * <code>Assert null (a.payload)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ack_rejects_malformed</b> &mdash; <i>Ack rejects malformed</i></summary>
+
+    * **Objective**: Ack rejects malformed
+    * **Assertions**:
+      * <code>Assert false (dws_hmmd_parse_ack(nullptr, 12, &a))</code>
+      * <code>Assert false (dws_hmmd_parse_ack(good, 12, nullptr))</code>
+      * <code>Assert false (dws_hmmd_parse_ack(good, 11, &a))</code>
+      * <code>Assert false (dws_hmmd_parse_ack(bad, 12, &a))</code>
+      * <code>Assert false (dws_hmmd_parse_ack(bad, 12, &a))</code>
+      * <code>Assert false (dws_hmmd_parse_ack(bad, 12, &a))</code>
+      * <code>Assert false (dws_hmmd_parse_ack(bad, 12, &a))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_binding_stubs</b> &mdash; <i>Host binding stubs</i></summary>
+
+    * **Objective**: Host binding stubs
+    * **Assertions**:
+      * <code>Assert false (dws_hmmd_begin(16, 17))</code>
+      * <code>Assert false (dws_hmmd_poll())</code>
+      * <code>Assert null (dws_hmmd_last())</code>
+      * <code>Assert false (dws_hmmd_stream_push(nullptr, 0, &r))</code>
   </details>
 
 </details>
@@ -28959,6 +29116,181 @@ A thorough directory of all **3697 test cases** across **278 suites**. Expand a 
       * <code>Assert false (dws_s7_parse_header(shorthdr, sizeof(shorthdr), &h))</code>
       * <code>Assert false (dws_s7_parse_header(ack_short, sizeof(ack_short), &h))</code>
       * <code>Assert false (dws_s7_read_next_item(nullptr, 10, &off, &it))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_safety_scl (16 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_starts_in_init_and_is_usable</b> &mdash; <i>Starts in init and is usable</i></summary>
+
+    * **Objective**: Starts in init and is usable
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::INIT, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::NONE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert true (dws_scl_ok(&g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_good_frames_run</b> &mdash; <i>Good frames run</i></summary>
+
+    * **Objective**: Good frames run
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::RUNNING, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, g.accepted);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, g.rejected);</code>
+      * <code>Assert true (dws_scl_ok(&g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bad_signature_trips_signature_fault</b> &mdash; <i>Bad signature trips signature fault</i></summary>
+
+    * **Objective**: Bad signature trips signature fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, false, 2, 1002))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::FAILSAFE, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::SIGNATURE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert false (dws_scl_ok(&g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_lost_frame_trips_counter_fault</b> &mdash; <i>Lost frame trips counter fault</i></summary>
+
+    * **Objective**: Lost frame trips counter fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 4, 1003))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::COUNTER, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_duplicate_frame_trips_counter_fault</b> &mdash; <i>Duplicate frame trips counter fault</i></summary>
+
+    * **Objective**: Duplicate frame trips counter fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 2, 1003))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::COUNTER, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reordered_frame_trips_counter_fault</b> &mdash; <i>Reordered frame trips counter fault</i></summary>
+
+    * **Objective**: Reordered frame trips counter fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 1, 1004))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::COUNTER, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inserted_frame_trips_counter_fault</b> &mdash; <i>Inserted frame trips counter fault</i></summary>
+
+    * **Objective**: Inserted frame trips counter fault
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 99, 1002))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::COUNTER, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_watchdog_trips_on_a_silent_channel</b> &mdash; <i>Watchdog trips on a silent channel</i></summary>
+
+    * **Objective**: Watchdog trips on a silent channel
+    * **Assertions**:
+      * <code>Assert true (dws_scl_poll(&g, 1099))</code>
+      * <code>Assert false (dws_scl_poll(&g, 1100))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::TIMEOUT, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_watchdog_does_not_trip_before_the_first_frame</b> &mdash; <i>Watchdog does not trip before the first frame</i></summary>
+
+    * **Objective**: Watchdog does not trip before the first frame
+    * **Assertions**:
+      * <code>Assert true (dws_scl_poll(&g, 1000000))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::INIT, (uint8_t)dws_scl_state(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_watchdog_is_wrap_safe</b> &mdash; <i>Watchdog is wrap safe</i></summary>
+
+    * **Objective**: Watchdog is wrap safe
+    * **Assertions**:
+      * <code>Assert true (dws_scl_on_frame(&g, true, 0, 0xFFFFFFF0u))</code>
+      * <code>Assert true (dws_scl_poll(&g, 0x00000050u))</code>
+      * <code>Assert false (dws_scl_poll(&g, 0x00000054u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::TIMEOUT, (uint8_t)dws_scl_fault(&g));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_watchdog_disables_the_timeout</b> &mdash; <i>Zero watchdog disables the timeout</i></summary>
+
+    * **Objective**: Zero watchdog disables the timeout
+    * **Assertions**:
+      * <code>Assert true (dws_scl_on_frame(&g, true, 0, 1000))</code>
+      * <code>Assert true (dws_scl_poll(&g, 0xFFFFFFFFu))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_failsafe_latches_and_keeps_the_first_fault</b> &mdash; <i>A subsequent perfectly good frame must NOT bring it back, and must not rewrite the fault.</i></summary>
+
+    * **Objective**: A subsequent perfectly good frame must NOT bring it back, and must not rewrite the fault.
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, false, 2, 1002))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::SIGNATURE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert false (dws_scl_on_frame(&g, true, 2, 1003))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::FAILSAFE, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::SIGNATURE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert false (dws_scl_poll(&g, 1004))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reset_re_establishes_and_preserves_tallies</b> &mdash; <i>Reset re establishes and preserves tallies</i></summary>
+
+    * **Objective**: Reset re establishes and preserves tallies
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(&g, true, 77, 1002))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::INIT, (uint8_t)dws_scl_state(&g));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::NONE, (uint8_t)dws_scl_fault(&g));</code>
+      * <code>Assert true (dws_scl_ok(&g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(acc, g.accepted); // session tallies survive, so a flapping link shows</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(rej, g.rejected);</code>
+      * <code>Assert true (dws_scl_on_frame(&g, true, 10, 2000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_counter_wraps_at_the_modulus</b> &mdash; <i>the sender helper wraps the same way, which is the point of exposing it</i></summary>
+
+    * **Objective**: the sender helper wraps the same way, which is the point of exposing it
+    * **Assertions**:
+      * <code>Assert true (dws_scl_on_frame(&g, true, 254, 1000))</code>
+      * <code>Assert true (dws_scl_on_frame(&g, true, 255, 1001))</code>
+      * <code>Assert true (dws_scl_on_frame(&g, true, 0, 1002))</code>
+      * <code>Assert true (dws_scl_on_frame(&g, true, 1, 1003))</code>
+      * <code>Assert true (dws_scl_ok(&g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(255, dws_scl_next_counter(254, 256));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_scl_next_counter(255, 256));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_scl_next_counter(0, 256));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_scl_next_counter(0xFFFFFFFFu, 0)); // full range wraps naturally</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_init_normalises_the_first_counter</b> &mdash; <i>Init normalises the first counter</i></summary>
+
+    * **Objective**: Init normalises the first counter
+    * **Assertions**:
+      * <code>Assert true (dws_scl_on_frame(&g, true, 44, 1000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_guards</b> &mdash; <i>a missing connection must never read as usable</i></summary>
+
+    * **Objective**: a missing connection must never read as usable
+    * **Assertions**:
+      * <code>Assert false (dws_scl_on_frame(nullptr, true, 0, 0))</code>
+      * <code>Assert false (dws_scl_poll(nullptr, 0))</code>
+      * <code>Assert false (dws_scl_ok(nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::NONE, (uint8_t)dws_scl_fault(nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::FAILSAFE, (uint8_t)dws_scl_state(nullptr));</code>
   </details>
 
 </details>
