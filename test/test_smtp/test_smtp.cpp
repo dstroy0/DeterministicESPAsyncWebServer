@@ -549,9 +549,190 @@ void test_plain_ignores_an_advertised_starttls()
     TEST_ASSERT_TRUE(m.sent.find("STARTTLS\r\n") == std::string::npos);
 }
 
+// --- reply parsing edges --------------------------------------------------
+
+// A line that is not a well-formed "NNN" status line is skipped, whatever makes it
+// malformed - too short, a non-digit in any of the three code positions, or a bare CR
+// that is not a line ending. The real final line after it still drives the dialogue.
+void test_reply_parser_skips_malformed_lines()
+{
+    const char *junk[] = {
+        "ab\r\n",    // shorter than a 3-digit code
+        "+ab\r\n",   // first code character below '0'
+        "Zab\r\n",   // first code character above '9'
+        "2 b\r\n",   // second below '0'
+        "2Zb\r\n",   // second above '9'
+        "22 \r\n",   // third below '0'
+        "22Z\r\n",   // third above '9'
+        "22\rx\r\n", // a bare CR that is not a line ending
+    };
+    for (unsigned i = 0; i < sizeof(junk) / sizeof(junk[0]); i++)
+    {
+        Mock m;
+        m.replies = happy_replies();
+        m.replies[0] = std::string(junk[i]) + "220 mail.example.net ESMTP\r\n";
+        SmtpConfig c = base_cfg();
+        SmtpMessage msg = base_msg();
+        TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
+    }
+}
+
+// A reply line that is exactly the 3-digit code with nothing after it is a final line
+// (RFC 5321 sec 4.2: the space is only required when text follows).
+void test_reply_bare_three_digit_line_is_final()
+{
+    Mock m;
+    m.replies = happy_replies();
+    m.replies[0] = "220\r\n";
+    SmtpConfig c = base_cfg();
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
+}
+
+// The EHLO capability scan handles the shapes a real server emits around the keyword:
+// a bare "NNN-" line with no keyword, a bare CR inside the reply, a keyword carrying
+// parameters, and a keyword starting with a non-letter.
+void test_ehlo_capability_scan_edges()
+{
+    const char *ehlo_replies[] = {
+        "250-\r\n250-STARTTLS\r\n250 OK\r\n",         // a line too short to hold a keyword
+        "250-a\rb\r\n250-STARTTLS\r\n250 OK\r\n",     // a bare CR mid-reply
+        "250-STARTTLS FOO\r\n250 OK\r\n",             // keyword followed by parameters
+        "250-8BITMIME\r\n250-STARTTLS\r\n250 OK\r\n", // keyword starting with a digit
+    };
+    for (unsigned i = 0; i < sizeof(ehlo_replies) / sizeof(ehlo_replies[0]); i++)
+    {
+        Mock m = starttls_mock();
+        m.replies[1] = ehlo_replies[i];
+        SmtpConfig c = base_cfg();
+        c.port = 587;
+        c.security = SmtpSecurity::SMTP_STARTTLS;
+        SmtpMessage msg = base_msg();
+        TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m));
+        TEST_ASSERT_EQUAL_INT(1, m.upgrades); // STARTTLS was still recognised in each shape
+    }
+}
+
+// --- optional / missing configuration -------------------------------------
+
+// Every optional field may be null: a null subject and body produce an empty subject
+// header and an empty message, and a null or empty helo falls back to "esp32".
+void test_null_optional_fields()
+{
+    for (int variant = 0; variant < 2; variant++)
+    {
+        Mock m;
+        m.replies = happy_replies();
+        SmtpConfig c = base_cfg();
+        c.helo = variant ? "" : nullptr; // both fall back to the default
+        SmtpMessage msg = base_msg();
+        msg.subject = nullptr;
+        msg.body = nullptr;
+        TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
+        TEST_ASSERT_TRUE(m.sent.find("EHLO esp32\r\n") != std::string::npos);
+        TEST_ASSERT_TRUE(m.sent.find("Subject: \r\n") != std::string::npos); // empty, not "(null)"
+        TEST_ASSERT_TRUE(m.sent.find("\r\n\r\n.\r\n") != std::string::npos); // empty body, then the terminator
+    }
+}
+
+// A null password is sent as an empty secret rather than dereferenced.
+void test_null_password_sends_empty_secret()
+{
+    Mock m;
+    m.replies = {"220 ESMTP\r\n", "250 OK\r\n", "334 VXNlcm5hbWU6\r\n", "334 UGFzc3dvcmQ6\r\n", "235 Ok\r\n",
+                 "250 Ok\r\n",    "250 Ok\r\n", "354 go\r\n",           "250 queued\r\n",       "221 Bye\r\n"};
+    SmtpConfig c = base_cfg();
+    c.user = "user";
+    c.pass = nullptr;
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
+    TEST_ASSERT_TRUE(m.sent.find("dXNlcg==\r\n") != std::string::npos); // base64("user")
+    TEST_ASSERT_TRUE(m.sent.find("AUTH LOGIN\r\n\r\n") == std::string::npos);
+}
+
+// An empty username means "no credentials configured", exactly as a null one does: the
+// AUTH exchange is skipped entirely.
+void test_empty_user_skips_auth()
+{
+    Mock m;
+    m.replies = happy_replies();
+    SmtpConfig c = base_cfg();
+    c.user = ""; // configured but empty
+    c.pass = "pw";
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
+    TEST_ASSERT_TRUE(m.sent.find("AUTH") == std::string::npos);
+}
+
+// Every required argument is checked before a single byte goes out.
+void test_arg_validation_rejects_each_missing_field()
+{
+    Mock m;
+    m.replies = happy_replies();
+    SmtpConfig c = base_cfg();
+    SmtpMessage msg = base_msg();
+
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(nullptr, &msg, mock_send, mock_recv, nullptr, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&c, nullptr, mock_send, mock_recv, nullptr, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, nullptr, mock_recv, nullptr, &m));
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, nullptr, nullptr, &m));
+
+    SmtpConfig nohost = base_cfg();
+    nohost.host = nullptr;
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&nohost, &msg, mock_send, mock_recv, nullptr, &m));
+
+    SmtpConfig nofrom = base_cfg();
+    nofrom.from = nullptr;
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&nofrom, &msg, mock_send, mock_recv, nullptr, &m));
+
+    SmtpMessage noto = base_msg();
+    noto.to = nullptr;
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &noto, mock_send, mock_recv, nullptr, &m));
+
+    SmtpMessage emptyto = base_msg();
+    emptyto.to = "";
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &emptyto, mock_send, mock_recv, nullptr, &m));
+
+    TEST_ASSERT_TRUE(m.sent.empty()); // nothing was ever transmitted
+}
+
+// --- envelope / transport edges -------------------------------------------
+
+// RCPT TO may be answered 251 (user not local, will forward), which is success.
+void test_rcpt_251_is_accepted()
+{
+    Mock m;
+    m.replies = happy_replies();
+    m.replies[3] = "251 User not local; will forward\r\n";
+    SmtpConfig c = base_cfg();
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
+}
+
+// A short write on a command issued through the command() helper (rather than the EHLO
+// that greet_ehlo writes directly) is reported as an I/O error.
+void test_command_helper_send_failure()
+{
+    Mock m;
+    m.replies = {"220 ESMTP\r\n", "250 OK\r\n"};
+    m.fail_send_prefix = "MAIL FROM"; // goes out via cmd_expect -> command -> send_str
+    SmtpConfig c = base_cfg();
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_reply_parser_skips_malformed_lines);
+    RUN_TEST(test_reply_bare_three_digit_line_is_final);
+    RUN_TEST(test_ehlo_capability_scan_edges);
+    RUN_TEST(test_null_optional_fields);
+    RUN_TEST(test_null_password_sends_empty_secret);
+    RUN_TEST(test_empty_user_skips_auth);
+    RUN_TEST(test_arg_validation_rejects_each_missing_field);
+    RUN_TEST(test_rcpt_251_is_accepted);
+    RUN_TEST(test_command_helper_send_failure);
     RUN_TEST(test_happy_path_no_auth);
     RUN_TEST(test_auth_login);
     RUN_TEST(test_auth_rejected);

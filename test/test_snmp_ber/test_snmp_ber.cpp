@@ -45,6 +45,10 @@ void test_integer_vectors()
     check_int(-1, vm1, sizeof(vm1));
     const uint8_t vm128[] = {0x02, 0x01, 0x80};
     check_int(-128, vm128, sizeof(vm128));
+    // -256 needs a second octet: after the first shift val is -1 but the emitted byte (0x00) has a
+    // clear sign bit, so a bare 0x00 would decode as +0 - the encoder must keep the 0xFF sign octet.
+    const uint8_t vm256[] = {0x02, 0x02, 0xFF, 0x00};
+    check_int(-256, vm256, sizeof(vm256));
 }
 
 void test_oid_vector()
@@ -381,9 +385,109 @@ void test_ber_skip()
     TEST_ASSERT_FALSE(dws_ber_skip(&d2, 1));
 }
 
+// The encoder fails closed when handed no buffer at all, or a zero-capacity one, rather
+// than reporting ok and writing through a null/zero-length destination.
+void test_enc_init_rejects_unusable_buffer()
+{
+    uint8_t buf[8];
+    BerEnc e;
+    dws_ber_enc_init(&e, nullptr, sizeof(buf)); // no buffer
+    TEST_ASSERT_FALSE(e.ok);
+    TEST_ASSERT_FALSE(dws_ber_put_null(&e)); // and stays closed for every write
+    dws_ber_enc_init(&e, buf, 0);            // buffer, but no capacity
+    TEST_ASSERT_FALSE(e.ok);
+    TEST_ASSERT_FALSE(dws_ber_put_integer(&e, 1));
+    TEST_ASSERT_EQUAL_size_t(0, e.len);
+}
+
+// A decoder that has already failed stays failed: read_header on a !ok decoder returns
+// false without touching the (null) buffer.
+void test_read_header_on_failed_decoder()
+{
+    BerDec d;
+    dws_ber_dec_init(&d, nullptr, 4); // ok == false
+    TEST_ASSERT_FALSE(d.ok);
+    uint8_t tag;
+    size_t len;
+    TEST_ASSERT_FALSE(dws_ber_read_header(&d, &tag, &len));
+    TEST_ASSERT_EQUAL_size_t(0, d.pos); // cursor untouched
+}
+
+// A zero-length INTEGER is malformed (X.690 8.3.1 requires at least one content octet)
+// and must be rejected rather than decoded as 0; so is a well-formed TLV of another type.
+void test_read_integer_rejects_bad_tlv()
+{
+    const uint8_t zero_len[] = {0x02, 0x00};
+    BerDec d;
+    dws_ber_dec_init(&d, zero_len, sizeof(zero_len));
+    long v = 12345;
+    TEST_ASSERT_FALSE(dws_ber_read_integer(&d, &v));
+    TEST_ASSERT_FALSE(d.ok);
+    TEST_ASSERT_EQUAL_INT(12345, v); // output left alone
+
+    const uint8_t octet_string[] = {0x04, 0x01, 0x05}; // parses as a TLV, but is not an INTEGER
+    dws_ber_dec_init(&d, octet_string, sizeof(octet_string));
+    TEST_ASSERT_FALSE(dws_ber_read_integer(&d, &v));
+    TEST_ASSERT_FALSE(d.ok);
+    TEST_ASSERT_EQUAL_INT(12345, v);
+}
+
+// A negative INTEGER sign-extends from the first content octet's high bit, so a
+// one-octet 0xFF decodes as -1 (not 255) and a two-octet 0xFF 0x00 as -256.
+void test_read_integer_sign_extends_negative()
+{
+    const uint8_t m1[] = {0x02, 0x01, 0xFF};
+    BerDec d;
+    dws_ber_dec_init(&d, m1, sizeof(m1));
+    long v = 0;
+    TEST_ASSERT_TRUE(dws_ber_read_integer(&d, &v));
+    TEST_ASSERT_EQUAL_INT(-1, v);
+
+    const uint8_t m256[] = {0x02, 0x02, 0xFF, 0x00};
+    dws_ber_dec_init(&d, m256, sizeof(m256));
+    TEST_ASSERT_TRUE(dws_ber_read_integer(&d, &v));
+    TEST_ASSERT_EQUAL_INT(-256, v);
+}
+
+// dws_ber_read_oid rejects a truncated TLV header, and refuses a caller array too
+// small to hold even the two arcs the first subidentifier always yields.
+void test_read_oid_truncated_header_and_tiny_max()
+{
+    const uint8_t truncated[] = {0x06}; // OID tag with no length octet
+    BerDec d;
+    dws_ber_dec_init(&d, truncated, sizeof(truncated));
+    uint32_t arcs[8];
+    size_t n = 99;
+    TEST_ASSERT_FALSE(dws_ber_read_oid(&d, arcs, 8, &n));
+    TEST_ASSERT_FALSE(d.ok);
+
+    const uint8_t oid_1_3_6_1[] = {0x06, 0x03, 0x2B, 0x06, 0x01};
+    dws_ber_dec_init(&d, oid_1_3_6_1, sizeof(oid_1_3_6_1));
+    TEST_ASSERT_FALSE(dws_ber_read_oid(&d, arcs, 1, &n)); // max < 2 cannot hold arc0 + arc1
+    TEST_ASSERT_FALSE(d.ok);
+}
+
+// dws_ber_skip fails closed when the cursor is already past the end of the buffer,
+// even for a zero-length skip - it never trusts pos <= len.
+void test_ber_skip_cursor_past_end()
+{
+    const uint8_t data[4] = {1, 2, 3, 4};
+    BerDec d;
+    dws_ber_dec_init(&d, data, sizeof(data));
+    d.pos = sizeof(data) + 1; // cursor beyond the buffer
+    TEST_ASSERT_FALSE(dws_ber_skip(&d, 0));
+    TEST_ASSERT_FALSE(d.ok);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_enc_init_rejects_unusable_buffer);
+    RUN_TEST(test_read_header_on_failed_decoder);
+    RUN_TEST(test_read_integer_rejects_bad_tlv);
+    RUN_TEST(test_read_integer_sign_extends_negative);
+    RUN_TEST(test_read_oid_truncated_header_and_tiny_max);
+    RUN_TEST(test_ber_skip_cursor_past_end);
     RUN_TEST(test_integer_vectors);
     RUN_TEST(test_oid_vector);
     RUN_TEST(test_octet_string_and_null);

@@ -233,9 +233,79 @@ void test_senml_null_args()
     TEST_ASSERT_EQUAL_size_t(0, dws_senml_cbor_build(cb, sizeof(cb), nullptr, 1));
 }
 
+// A magnitude outside the int64 range is emitted as a float rather than being truncated
+// through the integral fast path.
+void test_json_non_integral_magnitudes()
+{
+    SenmlRecord r = {};
+    r.name = "big";
+    r.value_kind = SenmlValueKind::SENML_V_FLOAT;
+
+    r.value = 1e19; // above the int64 range
+    char buf[64];
+    TEST_ASSERT_GREATER_THAN(0, (int)dws_senml_json_build(buf, sizeof(buf), &r, 1));
+    TEST_ASSERT_EQUAL_STRING("[{\"n\":\"big\",\"v\":1e+19}]", buf);
+
+    r.value = -1e19; // below the int64 range
+    TEST_ASSERT_GREATER_THAN(0, (int)dws_senml_json_build(buf, sizeof(buf), &r, 1));
+    TEST_ASSERT_EQUAL_STRING("[{\"n\":\"big\",\"v\":-1e+19}]", buf);
+}
+
+// A STRING record carrying no string emits no value at all - and the CBOR map's declared
+// field count drops to match, so the pack stays well-formed.
+void test_string_kind_without_value()
+{
+    SenmlRecord r = {};
+    r.name = "s";
+    r.value_kind = SenmlValueKind::SENML_V_STRING;
+    r.value_str = nullptr;
+
+    char jb[64];
+    TEST_ASSERT_GREATER_THAN(0, (int)dws_senml_json_build(jb, sizeof(jb), &r, 1));
+    TEST_ASSERT_EQUAL_STRING("[{\"n\":\"s\"}]", jb);
+
+    uint8_t cb[32];
+    size_t n = dws_senml_cbor_build(cb, sizeof(cb), &r, 1);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    CborReader rd;
+    dws_cbor_reader_init(&rd, cb, n);
+    size_t arr, fields;
+    TEST_ASSERT_TRUE(dws_cbor_read_array(&rd, &arr));
+    TEST_ASSERT_EQUAL_size_t(1, arr);
+    TEST_ASSERT_TRUE(dws_cbor_read_map(&rd, &fields));
+    TEST_ASSERT_EQUAL_size_t(1, fields); // only n - the absent vs is not counted
+    int64_t key;
+    const char *s;
+    size_t sl;
+    TEST_ASSERT_TRUE(dws_cbor_read_int(&rd, &key));
+    TEST_ASSERT_EQUAL_INT64(0, key); // n
+    TEST_ASSERT_TRUE(dws_cbor_read_text(&rd, &s, &sl));
+    TEST_ASSERT_EQUAL_MEMORY("s", s, sl);
+}
+
+// A zero-count pack is valid and short-circuits the records null-check, in both encodings.
+void test_empty_pack_allows_null_records()
+{
+    char jb[16];
+    TEST_ASSERT_GREATER_THAN(0, (int)dws_senml_json_build(jb, sizeof(jb), nullptr, 0));
+    TEST_ASSERT_EQUAL_STRING("[]", jb);
+
+    uint8_t cb[16];
+    size_t cn = dws_senml_cbor_build(cb, sizeof(cb), nullptr, 0);
+    TEST_ASSERT_GREATER_THAN(0, (int)cn);
+    CborReader rd;
+    size_t arr;
+    dws_cbor_reader_init(&rd, cb, cn);
+    TEST_ASSERT_TRUE(dws_cbor_read_array(&rd, &arr));
+    TEST_ASSERT_EQUAL_size_t(0, arr);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_json_non_integral_magnitudes);
+    RUN_TEST(test_string_kind_without_value);
+    RUN_TEST(test_empty_pack_allows_null_records);
     RUN_TEST(test_json_canonical);
     RUN_TEST(test_json_base_time_and_none);
     RUN_TEST(test_cbor_all_kinds);

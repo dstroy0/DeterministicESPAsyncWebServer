@@ -425,9 +425,315 @@ void test_jwks_malformed_keys()
     TEST_ASSERT_TRUE(dws_oidc_jwks_find("{\"keys\":[{\"n\":\"AAAA\",\"e\":\"AAAAAAA\"}]}", nullptr, &key));
 }
 
+// Load the RT keypair into both the in-test signing fixture and @p key, so a test can
+// mint a validly-signed token and verify it. Idempotent - each token-minting test calls it
+// rather than depending on an earlier test having run.
+static void setup_rt_key(DWSOidcKey &key)
+{
+    hex2bytes(_test_rsa_n, RT_N, 256);
+    hex2bytes(_test_rsa_d, RT_D, 256);
+    _test_rsa_e[0] = 0;
+    _test_rsa_e[1] = 1;
+    _test_rsa_e[2] = 0;
+    _test_rsa_e[3] = 1; // e = 65537
+    dws_ssh_rsa_load_pubkey();
+    key.loaded = true;
+    hex2bytes(key.n, RT_N, 256);
+    key.e[0] = 0;
+    key.e[1] = 1;
+    key.e[2] = 0;
+    key.e[3] = 1;
+}
+
+// Wrap @p hdr_json as the header segment of an otherwise-dummy 3-segment token, so
+// dws_oidc_token_kid() runs the JSON field scanner over exactly those bytes (the decoded
+// header is the scanner's whole buffer, letting a value sit flush against its end).
+static void kid_token_from_header(const char *hdr_json, char *tok, size_t cap)
+{
+    char seg0[256];
+    b64url_enc((const uint8_t *)hdr_json, strlen(hdr_json), seg0);
+    snprintf(tok, cap, "%s.payload.signature", seg0);
+}
+
+// find_field's separator skip accepts every JSON whitespace form between the member name
+// and its value, and stops cleanly when the value is missing entirely (buffer ends first).
+void test_find_field_separator_forms()
+{
+    char tok[512];
+    char kid[64];
+
+    // space / tab / colon / newline / CR all skipped before the value.
+    kid_token_from_header("{\"kid\" \t:\n\r \"a\"}", tok, sizeof(tok));
+    TEST_ASSERT_TRUE(dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)));
+    TEST_ASSERT_EQUAL_STRING("a", kid);
+
+    // The member name is the last thing in the buffer: the skip loop runs off the end.
+    kid_token_from_header("{\"kid\": ", tok, sizeof(tok));
+    TEST_ASSERT_FALSE(dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)));
+}
+
+// find_field's value scanners stop at the buffer end rather than reading past it: a string
+// whose final byte is a lone backslash, and a number that runs to the last byte.
+void test_find_field_value_runs_to_buffer_end()
+{
+    char tok[512];
+    char kid[64];
+
+    // Trailing backslash with no following byte: the escape skip must not step past the end.
+    kid_token_from_header("{\"kid\":\"ab\\", tok, sizeof(tok));
+    TEST_ASSERT_FALSE(dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)));
+
+    // Digits run to the final byte; the value is a number, so get_str rejects it.
+    kid_token_from_header("{\"kid\":123", tok, sizeof(tok));
+    TEST_ASSERT_FALSE(dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)));
+
+    // A value that is neither string, array, '-' nor a digit is rejected outright.
+    kid_token_from_header("{\"kid\":!}", tok, sizeof(tok));
+    TEST_ASSERT_FALSE(dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)));
+}
+
+// A negative numeric claim is parsed with its sign, and a non-numeric `exp` is rejected.
+void test_get_int64_negative_and_non_numeric()
+{
+    DWSOidcKey key;
+    setup_rt_key(key);
+    char tok[2048];
+    char pl[256];
+
+    // exp = -5 exercises the signed path; any now_unix is >= -5, so the token reads as expired.
+    snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":\"%s\",\"exp\":-5}", ISS, AUD);
+    make_jwt(pl, tok, sizeof(tok));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
+
+    // exp present but a string, not a number -> get_int64 rejects on type.
+    snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":\"%s\",\"exp\":\"4102444800\"}", ISS, AUD);
+    make_jwt(pl, tok, sizeof(tok));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
+}
+
+// aud matching compares the whole value: a same-length-but-different string, a same-length
+// -but-different array entry, and a numeric aud are all rejected.
+void test_aud_same_length_mismatch_and_numeric()
+{
+    DWSOidcKey key;
+    setup_rt_key(key);
+    char tok[2048];
+    char pl[256];
+
+    // "client-124" is exactly as long as the expected "client-123" but differs.
+    snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":\"client-124\",\"exp\":4102444800}", ISS);
+    make_jwt(pl, tok, sizeof(tok));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
+
+    // Same, inside an array: the entry length matches so memcmp decides.
+    snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":[\"client-124\"],\"exp\":4102444800}", ISS);
+    make_jwt(pl, tok, sizeof(tok));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
+
+    // aud is a number: neither the string nor the array form applies.
+    snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":123,\"exp\":4102444800}", ISS);
+    make_jwt(pl, tok, sizeof(tok));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
+}
+
+// split3 requires all three segments to be non-empty, whichever one is missing.
+void test_split3_rejects_empty_segments()
+{
+    DWSOidcKey key;
+    key.loaded = false;
+    TEST_ASSERT_TRUE(dws_oidc_jwks_find(K_JWKS, "test-key-1", &key));
+
+    const char *empty_hdr = ".b.c";
+    const char *empty_pl = "a..c";
+    const char *empty_sig = "a.b.";
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,
+                          dws_oidc_verify_with_key(empty_hdr, strlen(empty_hdr), &key, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,
+                          dws_oidc_verify_with_key(empty_pl, strlen(empty_pl), &key, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,
+                          dws_oidc_verify_with_key(empty_sig, strlen(empty_sig), &key, ISS, AUD, NOW, nullptr));
+}
+
+// right_align only tolerates an over-long field when the extra byte is a leading zero, and
+// an empty exponent is rejected outright.
+void test_jwk_field_widths()
+{
+    DWSOidcKey key;
+    key.loaded = false;
+
+    // e decodes to 5 bytes whose leading byte is NOT zero -> does not fit the 4-byte field.
+    const uint8_t e5[5] = {0x01, 0x00, 0x00, 0x00, 0x01};
+    char e_b64[16];
+    b64url_enc(e5, sizeof(e5), e_b64);
+    char jwks[128];
+    snprintf(jwks, sizeof(jwks), "{\"keys\":[{\"n\":\"AAAA\",\"e\":\"%s\"}]}", e_b64);
+    TEST_ASSERT_FALSE(dws_oidc_jwks_find(jwks, nullptr, &key));
+
+    // An empty exponent decodes to zero bytes.
+    TEST_ASSERT_FALSE(dws_oidc_jwks_find("{\"keys\":[{\"n\":\"AAAA\",\"e\":\"\"}]}", nullptr, &key));
+
+    // n decodes to 258 bytes - over the 256-byte modulus field by more than one leading zero.
+    uint8_t n_big[258];
+    for (size_t i = 0; i < sizeof(n_big); i++)
+        n_big[i] = (uint8_t)(i + 1);
+    char n_b64[400];
+    b64url_enc(n_big, sizeof(n_big), n_b64);
+    char jwks_bign[600];
+    snprintf(jwks_bign, sizeof(jwks_bign), "{\"keys\":[{\"n\":\"%s\",\"e\":\"AQAB\"}]}", n_b64);
+    TEST_ASSERT_FALSE(dws_oidc_jwks_find(jwks_bign, nullptr, &key));
+}
+
+// jwks_find with an empty (rather than null) kid means "any usable key", and the scan ends
+// when the document runs out mid-array instead of reading past it.
+void test_jwks_empty_kid_and_truncated_document()
+{
+    DWSOidcKey key;
+    key.loaded = false;
+
+    // Empty kid behaves like "no kid requested": the first usable RSA key is taken.
+    TEST_ASSERT_TRUE(dws_oidc_jwks_find(K_JWKS, "", &key));
+    TEST_ASSERT_TRUE(key.loaded);
+
+    // Empty kid + an unusable key: the scan must not treat it as a kid match and stop early,
+    // it just moves on and runs out of document.
+    DWSOidcKey none;
+    none.loaded = false;
+    TEST_ASSERT_FALSE(dws_oidc_jwks_find("{\"keys\":[{\"kid\":\"k1\"}]}", "", &none));
+
+    // The document ends exactly at the key object's closing brace: the scan loop terminates
+    // on the buffer bound rather than on a failed memchr.
+    TEST_ASSERT_FALSE(dws_oidc_jwks_find("{\"keys\":[{\"kid\":\"a\"}", "zzz", &none));
+}
+
+// verify_with_key's argument guards: a null key pointer and a token over the length cap.
+void test_verify_with_key_arg_guards()
+{
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,
+                          dws_oidc_verify_with_key("a.b.c", 5, nullptr, ISS, AUD, NOW, nullptr));
+
+    DWSOidcKey key;
+    key.loaded = false;
+    TEST_ASSERT_TRUE(dws_oidc_jwks_find(K_JWKS, "test-key-1", &key));
+
+    // Longer than DWS_OIDC_MAX_LEN: rejected before any parsing happens.
+    char big[DWS_OIDC_MAX_LEN + 101];
+    memset(big, 'a', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    big[10] = '.';
+    big[20] = '.';
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,
+                          dws_oidc_verify_with_key(big, strlen(big), &key, ISS, AUD, NOW, nullptr));
+}
+
+// The iss / aud checks are opt-in: null or empty expectations skip them, while a set
+// expectation against a token that has no iss claim at all still fails closed.
+void test_verify_optional_iss_aud_expectations()
+{
+    DWSOidcKey key;
+    setup_rt_key(key);
+    char tok[2048];
+    char pl[256];
+
+    // A token carrying neither iss nor aud verifies when neither is expected...
+    snprintf(pl, sizeof(pl), "{\"sub\":\"u\",\"exp\":4102444800}");
+    make_jwt(pl, tok, sizeof(tok));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, nullptr, nullptr, NOW, nullptr));
+    // ...and equally when the expectations are present but empty.
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, "", "", NOW, nullptr));
+
+    // But an expected issuer against a token with no iss claim is a mismatch.
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ISS,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, nullptr, NOW, nullptr));
+}
+
+// exp is mandatory; nbf is optional and passes once it is in the past.
+void test_verify_exp_required_nbf_past()
+{
+    DWSOidcKey key;
+    setup_rt_key(key);
+    char tok[2048];
+    char pl[256];
+
+    // No exp claim at all -> treated as expired, not as "no expiry".
+    snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":\"%s\",\"sub\":\"u\"}", ISS, AUD);
+    make_jwt(pl, tok, sizeof(tok));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
+
+    // nbf already passed -> accepted.
+    snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":\"%s\",\"exp\":4102444800,\"nbf\":1600000000}", ISS, AUD);
+    make_jwt(pl, tok, sizeof(tok));
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,
+                          dws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
+}
+
+// Leave exactly @p keep bytes free in the scratch arena, so the next N borrows can be made
+// to succeed or fail individually.
+static void scratch_leave(size_t keep)
+{
+    scratch_reset();
+    size_t cap = scratch_capacity();
+    TEST_ASSERT_TRUE(cap > keep);
+    TEST_ASSERT_NOT_NULL(scratch_alloc(cap - keep, 1));
+}
+
+// verify_with_key borrows four buffers from the scratch arena and must fail closed if ANY of
+// them cannot be had - not just the first. Starve each borrow in turn.
+void test_verify_scratch_partial_exhaustion()
+{
+    DWSOidcKey key;
+    key.loaded = false;
+    TEST_ASSERT_TRUE(dws_oidc_jwks_find(K_JWKS, "test-key-1", &key));
+
+    const size_t HDR = 512;
+    const size_t SIG = DWS_OIDC_RSA_BYTES;
+    const size_t PL = DWS_OIDC_MAX_LEN;
+    const size_t ISSC = 256;
+
+    // Room for the header buffer but not the signature buffer.
+    scratch_leave(HDR + SIG - 1);
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,
+                          dws_oidc_verify_with_key(K_TOK_VALID, strlen(K_TOK_VALID), &key, ISS, AUD, NOW, nullptr));
+
+    // Room for header + signature but not the payload buffer.
+    scratch_leave(HDR + SIG + PL - 1);
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,
+                          dws_oidc_verify_with_key(K_TOK_VALID, strlen(K_TOK_VALID), &key, ISS, AUD, NOW, nullptr));
+
+    // Room for everything except the issuer buffer.
+    scratch_leave(HDR + SIG + PL + ISSC - 1);
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,
+                          dws_oidc_verify_with_key(K_TOK_VALID, strlen(K_TOK_VALID), &key, ISS, AUD, NOW, nullptr));
+
+    // With room for all four the same token verifies, proving the arena was the only thing
+    // failing above.
+    scratch_leave(HDR + SIG + PL + ISSC);
+    TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,
+                          dws_oidc_verify_with_key(K_TOK_VALID, strlen(K_TOK_VALID), &key, ISS, AUD, NOW, nullptr));
+    scratch_reset();
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_verify_scratch_partial_exhaustion);
+    RUN_TEST(test_find_field_separator_forms);
+    RUN_TEST(test_find_field_value_runs_to_buffer_end);
+    RUN_TEST(test_get_int64_negative_and_non_numeric);
+    RUN_TEST(test_aud_same_length_mismatch_and_numeric);
+    RUN_TEST(test_split3_rejects_empty_segments);
+    RUN_TEST(test_jwk_field_widths);
+    RUN_TEST(test_jwks_empty_kid_and_truncated_document);
+    RUN_TEST(test_verify_with_key_arg_guards);
+    RUN_TEST(test_verify_optional_iss_aud_expectations);
+    RUN_TEST(test_verify_exp_required_nbf_past);
     RUN_TEST(test_oidc_parse_edge_guards);
     RUN_TEST(test_oidc_signed_claim_guards);
     RUN_TEST(test_jwks_malformed_keys);

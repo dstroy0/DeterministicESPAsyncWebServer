@@ -25,7 +25,9 @@ namespace
 bool send_str(SmtpSendFn send, void *ctx, const char *s)
 {
     size_t n = strnlen(s, DWS_SMTP_LINE_MAX + 1);
-    return n == 0 || send(ctx, (const uint8_t *)s, n) == (int)n;
+    // Every caller passes a CRLF-terminated command - a string literal, or a snprintf'd line with a
+    // fixed non-empty prefix - so n is never 0; the check just keeps send_str total for any string.
+    return n == 0 || send(ctx, (const uint8_t *)s, n) == (int)n; // GCOVR_EXCL_LINE  n == 0 unreachable
 }
 
 // Is buf[0..len) a complete SMTP reply? A reply is one or more CRLF lines that share a
@@ -64,7 +66,9 @@ bool ieq(const char *a, const char *b, size_t n)
         char cb = b[i];
         if (ca >= 'A' && ca <= 'Z')
             ca = (char)(ca - 'A' + 'a');
-        if (cb >= 'A' && cb <= 'Z')
+        // b is always the caller's `want`, and reply_has_cap's only call site passes the literal
+        // "STARTTLS", so cb is always an upper-case letter here. Folding it keeps ieq symmetric.
+        if (cb >= 'A' && cb <= 'Z') // GCOVR_EXCL_LINE  cb is always 'A'..'Z' (see above)
             cb = (char)(cb - 'A' + 'a');
         if (ca != cb)
             return false;
@@ -106,7 +110,9 @@ SmtpResult read_reply_cap(SmtpRecvFn recv, void *ctx, int *code, const char *wan
     {
         if (reply_complete(buf, len, code))
         {
-            if (want && found)
+            // The two call sites pass want and found together (read_reply passes neither,
+            // greet_ehlo passes both), so the pair is never half-populated.
+            if (want && found) // GCOVR_EXCL_LINE  want and found are always both set or both null
                 *found = reply_has_cap(buf, len, want);
             return SmtpResult::SMTP_OK;
         }
@@ -145,9 +151,10 @@ int auth_send_b64(SmtpSendFn send, SmtpRecvFn recv, void *ctx, const char *secre
         return (int)SmtpResult::SMTP_ERR_OVERFLOW;
     dws_base64_encode((const uint8_t *)secret, slen, b64);
     int n = snprintf(line, sizeof(line), "%s\r\n", b64);
-    if (n < 0 || (size_t)n >= sizeof(line))
+    if (n < 0 || (size_t)n >= sizeof(line))        // GCOVR_EXCL_LINE  see below
         return (int)SmtpResult::SMTP_ERR_OVERFLOW; // GCOVR_EXCL_LINE  b64+CRLF was just checked to fit
-                                                   // sizeof(b64)==sizeof(line); can't overflow
+                                                   // sizeof(b64)==sizeof(line); can't overflow, and
+                                                   // snprintf cannot fail formatting one %s into memory
     return command(send, recv, ctx, line);
 }
 
@@ -163,7 +170,9 @@ int build_message(char *out, size_t cap, const SmtpConfig *cfg, const SmtpMessag
                       "Content-Type: text/plain; charset=UTF-8\r\n"
                       "\r\n",
                       cfg->from, msg->to, msg->subject ? msg->subject : "");
-    if (hn < 0 || (size_t)hn >= cap)
+    // hn < 0 is unreachable: snprintf only reports failure on an output/encoding error, which
+    // formatting %s into a caller buffer cannot produce. The >= cap truncation check is live.
+    if (hn < 0 || (size_t)hn >= cap) // GCOVR_EXCL_LINE  hn < 0 unreachable (see above)
         return (int)SmtpResult::SMTP_ERR_OVERFLOW;
     size_t n = (size_t)hn;
 
@@ -194,8 +203,11 @@ int build_message(char *out, size_t cap, const SmtpConfig *cfg, const SmtpMessag
         out[n++] = c;
         at_line_start = false;
     }
-    // Body must end with CRLF before the terminator.
-    if (!(n >= 2 && out[n - 2] == '\r' && out[n - 1] == '\n'))
+    // Body must end with CRLF before the terminator. n >= 2 always holds (n starts at the
+    // fixed-header length, well over 2), and the only CR ever written to out is the one the
+    // LF->CRLF rewrite emits immediately before its LF (a body CR is dropped above), so
+    // out[n-2]=='\r' implies out[n-1]=='\n' - both are guards, not reachable states.
+    if (!(n >= 2 && out[n - 2] == '\r' && out[n - 1] == '\n')) // GCOVR_EXCL_LINE  see above
     {
         if (n + 2 > cap)
             return (int)SmtpResult::SMTP_ERR_OVERFLOW;
@@ -233,7 +245,7 @@ SmtpResult greet_ehlo(const SmtpConfig *cfg, SmtpSendFn send, SmtpRecvFn recv, v
     // The capability list is only trustworthy once the channel is secure, which is why the
     // STARTTLS path reissues this command after the upgrade.
     int n = snprintf(line, cap, "EHLO %s\r\n", (cfg->helo && cfg->helo[0]) ? cfg->helo : "esp32");
-    if (n < 0 || (size_t)n >= cap)
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE  n < 0 unreachable: snprintf of %s into memory cannot fail
         return SmtpResult::SMTP_ERR_OVERFLOW;
     if (!send_str(send, ctx, line))
         return SmtpResult::SMTP_ERR_IO;
@@ -284,14 +296,14 @@ SmtpResult send_envelope(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSend
                          char *line, size_t cap)
 {
     int n = snprintf(line, cap, "MAIL FROM:<%s>\r\n", cfg->from);
-    if (n < 0 || (size_t)n >= cap)
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE  n < 0 unreachable: snprintf of %s into memory cannot fail
         return SmtpResult::SMTP_ERR_OVERFLOW;
     SmtpResult r = cmd_expect(send, recv, ctx, line, 250, SmtpResult::SMTP_ERR_PROTOCOL);
     if (r != SmtpResult::SMTP_OK)
         return r;
 
     n = snprintf(line, cap, "RCPT TO:<%s>\r\n", msg->to);
-    if (n < 0 || (size_t)n >= cap)
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE  n < 0 unreachable: snprintf of %s into memory cannot fail
         return SmtpResult::SMTP_ERR_OVERFLOW;
     int code = command(send, recv, ctx, line);
     if (code < 0)

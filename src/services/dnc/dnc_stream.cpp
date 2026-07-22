@@ -71,9 +71,12 @@ DncStreamResult dnc_stream(const DncCfg *cfg, const char *program, size_t prog_l
         return DncStreamResult::DNC_STREAM_ERR_IO;
 
     // program-start marker
+    // A marker is at most three bytes ('%' or EOR, plus the CR/LF end-of-block) and buf is
+    // DWS_DNC_LINE_MAX + 8, so the encode has no failing arm to reach here; the check is what keeps
+    // that true if the marker ever grows.
     size_t n = dws_dnc_encode_marker(cfg, buf, sizeof(buf));
-    if (n == 0)
-        return DncStreamResult::DNC_STREAM_ERR_ENCODE;
+    if (n == 0)                                        // GCOVR_EXCL_LINE  a 3-byte marker always fits buf, see above
+        return DncStreamResult::DNC_STREAM_ERR_ENCODE; // GCOVR_EXCL_LINE  unreachable body of the guard above
     if (!emit(&flow, send, recv, ctx, buf, n))
         return DncStreamResult::DNC_STREAM_ERR_IO;
 

@@ -30,7 +30,9 @@ namespace
 const char *mem_find(const char *hs, const char *he, const char *needle)
 {
     size_t nl = strnlen(needle, (size_t)(he - hs) + 1);
-    if (nl == 0 || (size_t)(he - hs) < nl)
+    // Both callers pass a quoted member name ("\"alg\"", "\"keys\"", ...), never the empty
+    // string, and strnlen's limit is always >= 1, so nl >= 1 here.
+    if (nl == 0 || (size_t)(he - hs) < nl) // GCOVR_EXCL_LINE  nl == 0 unreachable (see above)
         return nullptr;
     for (const char *p = hs; p + nl <= he; p++)
         if (memcmp(p, needle, nl) == 0)
@@ -45,10 +47,10 @@ bool find_field(const char *s, const char *e, const char *name, const char **vst
 {
     char needle[96];
     int nn = snprintf(needle, sizeof(needle), "\"%s\"", name);
-    // GCOVR_EXCL_LINE every internal caller passes a short fixed field name (alg/iss/aud/exp/nbf/sub/email/n/e/kid), so
-    // the 96-byte needle never overflows
-    if (nn <= 0 || nn >= (int)sizeof(needle))
-        return false; // GCOVR_EXCL_LINE unreachable: field names are short literals (see above)
+    // Every internal caller passes a short fixed field name (alg/iss/aud/exp/nbf/sub/email/n/e/kid), so the
+    // 96-byte needle never overflows, and snprintf of one %s into memory cannot report an error.
+    if (nn <= 0 || nn >= (int)sizeof(needle)) // GCOVR_EXCL_LINE  unreachable: field names are short literals
+        return false;                         // GCOVR_EXCL_LINE  (see above)
     const char *p = mem_find(s, e, needle);
     if (!p)
         return false;
@@ -117,7 +119,11 @@ bool get_str(const char *s, const char *e, const char *name, char *out, size_t c
     while (i < vl)
     {
         char ch = v[i];
-        if (ch == '\\' && i + 1 < vl)
+        // i + 1 < vl always holds when ch is a backslash: find_field walks this same value with
+        // the same pairwise escape skip and only stops at an UNescaped '"', so a backslash it
+        // examined always had a following byte inside the value. A value can therefore never end
+        // on a backslash that this loop reaches as a fresh iteration - the bound is defensive.
+        if (ch == '\\' && i + 1 < vl) // GCOVR_EXCL_LINE  i + 1 < vl cannot be false here (see above)
             ch = v[++i];
         if (o + 1 >= cap)
             return false;
@@ -135,7 +141,9 @@ bool get_int64(const char *s, const char *e, const char *name, int64_t *out)
     const char *v;
     size_t vl;
     char t;
-    if (!find_field(s, e, name, &v, &vl, &t) || t != 'n' || vl == 0)
+    // vl == 0 is unreachable for a type-'n' value: find_field only reports 'n' after consuming a
+    // leading '-' or at least one digit, so the extent it hands back is always >= 1 byte.
+    if (!find_field(s, e, name, &v, &vl, &t) || t != 'n' || vl == 0) // GCOVR_EXCL_LINE  vl == 0 unreachable
         return false;
     bool neg = (*v == '-');
     size_t i = neg ? 1 : 0;
@@ -161,7 +169,10 @@ bool aud_contains(const char *s, const char *e, const char *want)
     {
         const char *p = v;        // points at '['
         const char *end = v + vl; // just past ']'
-        while (p < end)
+        // The loop always leaves via break or return, never via this condition: find_field sizes
+        // vl to include the closing ']', so a quote found inside can be at most end - 2 and the
+        // p = r + 1 step below therefore always lands strictly before end.
+        while (p < end) // GCOVR_EXCL_LINE  p < end cannot be false (see above)
         {
             const char *q = (const char *)memchr(p, '"', (size_t)(end - p));
             if (!q)

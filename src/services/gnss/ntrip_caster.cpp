@@ -80,7 +80,10 @@ void scan_headers(const char *buf, const char *end, NtripRequest *out)
     while (line < end)
     {
         const char *le = line;
-        while (le < end && *le != '\n')
+        // find_header_end only ever reports a block that ends ON the terminating '\n' (hend = i+4 past
+        // CRLFCRLF, or i+2 past LFLF), so end[-1] == '\n' and every line in [buf,end) is LF-terminated:
+        // the scan always stops on a newline and the `le < end` bound has no true exit to reach.
+        while (le < end && *le != '\n') // GCOVR_EXCL_LINE  le < end cannot go false, see above
             le++;
         const char *lend = le; // exclusive; trim a trailing '\r'
         if (lend > line && *(lend - 1) == '\r')
@@ -132,7 +135,9 @@ bool dws_ntrip_request_parse(const char *buf, size_t len, NtripRequest *out)
     out->is_get = true;
     p = skip_ws(p + 4, end);
     const char *target = p;
-    while (p < end && *p != ' ' && *p != '\r' && *p != '\n' && *p != '?')
+    // Same invariant as scan_headers: end[-1] is the '\n' that closed the header block, so the target
+    // scan always stops on that newline at the latest and the `p < end` bound never fires.
+    while (p < end && *p != ' ' && *p != '\r' && *p != '\n' && *p != '?') // GCOVR_EXCL_LINE  see above
         p++;
     size_t tlen = (size_t)(p - target);
 
@@ -172,7 +177,9 @@ size_t dws_ntrip_build_stream_response(char *out, size_t cap, NtripVersion versi
                      "Connection: close\r\n\r\n");
     else
         n = snprintf(out, cap, "ICY 200 OK\r\n\r\n");
-    if (n < 0 || (size_t)n >= cap)
+    // Every builder below uses a fixed format literal with no encoding-dependent conversion, so snprintf
+    // can only ever report truncation here; `n < 0` has no true branch to reach.
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE  n<0 needs an snprintf encoding failure, see above
         return 0;
     return (size_t)n;
 }
@@ -184,7 +191,7 @@ size_t dws_ntrip_build_error_response(char *out, size_t cap, NtripVersion versio
         n = snprintf(out, cap, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
     else
         n = snprintf(out, cap, "ERROR - Bad Request\r\n");
-    if (n < 0 || (size_t)n >= cap)
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE  n<0 needs an snprintf encoding failure, see above
         return 0;
     return (size_t)n;
 }
@@ -200,7 +207,7 @@ size_t dws_ntrip_build_unauthorized_response(char *out, size_t cap, NtripVersion
                      "Connection: close\r\n\r\n");
     else
         n = snprintf(out, cap, "ERROR - Bad Password\r\n");
-    if (n < 0 || (size_t)n >= cap)
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE  n<0 needs an snprintf encoding failure, see above
         return 0;
     return (size_t)n;
 }
@@ -222,7 +229,7 @@ size_t dws_ntrip_build_str_record(char *out, size_t cap, const NtripMount *m)
     //     generator;compr;auth;fee;bitrate;misc   (carrier 0 = station reference only, no observations)
     int n = snprintf(out, cap, "STR;%s;%s;RTCM 3.3;%s;0;%s;none;%s;%s;%s;%d;0;%s;none;N;N;9600;", m->mountpoint, ident,
                      fmtd, nav, ctry, lat, lon, m->nmea_required ? 1 : 0, gen);
-    if (n < 0 || (size_t)n >= cap)
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_LINE  n<0 needs an snprintf encoding failure, see above
         return 0;
     return (size_t)n;
 }
@@ -262,7 +269,7 @@ size_t dws_ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, 
                       "Content-Type: text/plain\r\n"
                       "Content-Length: %u\r\n\r\n",
                       (unsigned)body_len);
-    if (hn < 0 || (size_t)hn >= cap)
+    if (hn < 0 || (size_t)hn >= cap) // GCOVR_EXCL_LINE  hn<0 needs an snprintf encoding failure, see above
         return 0;
 
     size_t pos = (size_t)hn;
