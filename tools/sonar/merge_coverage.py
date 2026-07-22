@@ -9,23 +9,34 @@ Output is a single SonarQube generic-coverage report (one <file> per path).
 
 Incremental (affected-only) CI runs pass --baseline: only the envs affected by the
 diff run, so the fresh reports cover only some files. The committed coverage.xml is
-overlaid so the output is still whole-project:
+overlaid so the output is still whole-project.
 
-  * a file listed in --changed (the .cpp that actually changed) is REPLACED by its
-    fresh coverage - the baseline's line numbers are stale after the edit, and the
-    changed feature's env(s) ran to completion so the fresh view is authoritative;
-  * any other file present in a fresh report (a shared header, or a neighbour source
-    recompiled because it shares an env) is UNIONED with the baseline - a partial run
-    only exercised part of its callers, so replacing would wrongly lower it;
-  * a file only in the baseline (not recompiled this run) is kept verbatim.
+Which rule applies to a file depends on whether THIS run re-measured all of it. Pass
+--dep-graph/--ran-envs and the decision is made per file from the compiler include
+graph (test/dep_graph.json: path -> the envs that compile or include it):
+
+  * every env that owns the file ran  -> AUTHORITATIVE: the fresh view REPLACES the
+    baseline outright, and if the file produced no coverage at all this run its
+    baseline record is DROPPED (it was deleted or renamed);
+  * only some of its envs ran         -> UNION with the baseline (this run exercised
+    only part of its callers, so replacing would wrongly lower it);
+  * not recompiled at all             -> baseline kept verbatim.
+
+Union is monotonic - it can only ever raise a line - so a file that is never made
+authoritative can never lose a stale entry. That is how the committed baseline drifts:
+before this, ONLY the changed .cpp paths were replaceable, so a coverage record could
+outlive the code it described (headers were excluded outright, and deleted files were
+immortal). --changed is still honoured as an extra force-replace set.
 
 Usage:
     merge_coverage.py <out.xml> <report-glob>
-    merge_coverage.py <out.xml> <report-glob> --baseline coverage.xml --changed changed.txt
+    merge_coverage.py <out.xml> <report-glob> --baseline coverage.xml \
+        --dep-graph test/dep_graph.json --ran-envs "native_a native_b"
 """
 
 import argparse
 import glob
+import json
 import xml.etree.ElementTree as ET
 
 
@@ -71,6 +82,8 @@ def main():
     ap.add_argument("reports", nargs="?", default="coverage_reports/*.xml", help="glob of per-env reports")
     ap.add_argument("--baseline", help="committed coverage.xml to overlay under the fresh reports")
     ap.add_argument("--changed", help="file with one changed path per line; these are replaced, not unioned")
+    ap.add_argument("--dep-graph", help="test/dep_graph.json (path -> owning envs), for replace-vs-union")
+    ap.add_argument("--ran-envs", help="space/newline separated envs that ran to completion this run")
     args = ap.parse_args()
 
     # 1) Union the fresh per-env reports (this run's actual coverage).
@@ -89,16 +102,46 @@ def main():
                     changed = {ln.strip().replace("\\", "/") for ln in fh if ln.strip()}
             except FileNotFoundError:
                 pass
+        # A file is AUTHORITATIVE when every env that owns it (per the compiler include graph) ran
+        # to completion here: this run saw all of its callers, so the fresh view is the whole truth
+        # and the baseline must not be allowed to add to it. Without this only --changed paths were
+        # ever replaceable, and union-only merging made every other stale line immortal.
+        owners = {}
+        ran = set()
+        if args.dep_graph and args.ran_envs:
+            try:
+                with open(args.dep_graph, encoding="utf-8") as fh:
+                    owners = {k.replace("\\", "/"): set(v) for k, v in json.load(fh).items()}
+            except (OSError, ValueError) as exc:
+                print(f"  warning: --dep-graph unusable ({exc}); falling back to union-only")
+            ran = set(args.ran_envs.split())
+
+        def authoritative(path):
+            own = owners.get(path)
+            # Unknown to the graph (brand-new file, or no graph) -> not authoritative: union is the
+            # safe direction, since replacing on partial data would wrongly lower a file.
+            return bool(own) and own <= ran
+
         base = {}
         parse_report(args.baseline, base)
+        dropped_stale = []
         for path, lines in base.items():
-            if path in changed:
-                continue  # changed source: baseline is stale, keep only the fresh view
+            if path in changed or authoritative(path):
+                continue  # fully re-measured (or explicitly changed): keep only the fresh view
             if path not in files:
                 files[path] = lines  # untouched file: keep the baseline verbatim
             else:
-                for ln, val in lines.items():  # shared/recompiled: union (never lower)
+                for ln, val in lines.items():  # partially re-measured: union (never lower)
                     _union_line(files[path], ln, val[0], val[1], val[2])
+
+        # A file whose every env ran but which produced no coverage at all is gone (deleted or
+        # renamed). Union-only merging kept such records forever; drop them.
+        for path in base:
+            if path not in files and authoritative(path):
+                dropped_stale.append(path)
+        if dropped_stale:
+            print(f"  dropped {len(dropped_stale)} stale baseline file(s) no longer producing "
+                  f"coverage: {', '.join(sorted(dropped_stale)[:10])}")
 
     # Emit only Sonar-valid <file> elements. The generic-coverage parser rejects a file with no
     # <lineToCover>, an empty path, a lineNumber < 1, or coveredBranches > branchesToCover; a single

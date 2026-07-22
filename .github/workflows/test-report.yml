@@ -29,6 +29,13 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Weekly from-scratch regeneration (Sunday 04:17 UTC). The affected-only path overlays the
+    # committed baseline, so any file it never re-measures in full keeps whatever that baseline
+    # last said. The per-file rules make that rare, but "rare" still accumulates over hundreds of
+    # pushes - and a stale coverage.xml is invisible (it looks like a normal report; it just
+    # describes code that has moved on). This is the backstop that bounds the drift at one week.
+    - cron: "17 4 * * 0"
   workflow_dispatch:
     inputs:
       full:
@@ -103,6 +110,7 @@ jobs:
 
           FORCE=0
           [ "$DISPATCH_FULL" = "true" ] && FORCE=1
+          [ "$EVENT" = "schedule" ] && FORCE=1 # weekly from-scratch rebuild (see the cron trigger)
           printf '%s' "$PR_LABELS" | grep -q '"full-ci"' && FORCE=1 || true
           if git rev-parse --verify -q "$HEAD^{commit}" >/dev/null; then
             git log -1 --format=%B "$HEAD" | grep -qiE '\[(ci )?full( ci)?\]' && FORCE=1 || true
@@ -117,7 +125,11 @@ jobs:
           else
             git diff --name-only "$BASE" "$HEAD" > changed_all.txt
             SEL="$(python3 test/select_envs.py --base "$BASE" --head "$HEAD" < changed_all.txt)"
-            grep -E '^src/.*\.(cpp|c)$' changed_all.txt > changed_src.txt || true
+            # Headers belong here too: inline/constexpr code in a .h carries branches and shows up
+            # in the coverage report under its own path (src/services/control/control.h has 36).
+            # Excluding them meant an edited header's baseline entries - now pointing at shifted
+            # line numbers - could only ever be unioned, never corrected.
+            grep -E '^src/.*\.(cpp|cc|c|h|hpp)$' changed_all.txt > changed_src.txt || true
           fi
 
           if [ "$SEL" = "FULL" ]; then MODE=full; ENVS="";
@@ -140,19 +152,29 @@ jobs:
             bash tools/sonar/gen_compiledb.sh
           fi
 
+      # Failing TESTS must not fail this job - the report exists to document them. A failure to
+      # PRODUCE coverage (exit 3) is different: committing then would freeze the affected files at
+      # whatever the baseline last said, invisibly. So tolerate every code but 3.
       # FULL: regenerate test/TEST_REPORT.md + test/coverage.xml from the whole matrix.
       - name: Run the whole suite (report + coverage)
         if: ${{ steps.sel.outputs.mode == 'full' }}
-        run: bash test/run_tests.sh --coverage || true
+        run: |
+          set +e; bash test/run_tests.sh --coverage; rc=$?; set -e
+          [ "$rc" = "3" ] && { echo "::error::coverage generation failed - not committing"; exit 1; }
+          exit 0
 
       # AFFECTED: run only the touched envs, then overlay onto the committed report + coverage baseline.
       - name: Run the affected suite and merge
         if: ${{ steps.sel.outputs.mode == 'affected' }}
         run: |
+          set +e
           bash test/run_tests.sh --coverage \
             --report-out partial_report.md \
             --cov-baseline test/coverage.xml --cov-changed changed_src.txt \
-            ${{ steps.sel.outputs.envs }} || true
+            ${{ steps.sel.outputs.envs }}
+          rc=$?
+          set -e
+          [ "$rc" = "3" ] && { echo "::error::coverage generation failed - not committing"; exit 1; }
           python3 test/merge_report.py test/TEST_REPORT.md partial_report.md test/TEST_REPORT.md
           rm -f partial_report.md changed_all.txt changed_src.txt
 
