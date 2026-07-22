@@ -177,6 +177,107 @@ void test_end_to_end()
     TEST_ASSERT_EQUAL_MEMORY(ntproof, auth + nt_off, 16);
 }
 
+// The NEGOTIATE builder fails closed on a null buffer (the !buf side of its guard; the existing
+// coverage only drives the cap side).
+void test_build_negotiate_null_buf()
+{
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntlmssp_build_negotiate(nullptr, 64, NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS));
+}
+
+// The CHALLENGE parser rejects a null message and a null output struct (the !msg / !out sides of
+// its guard; the existing coverage only drives the len side).
+void test_parse_challenge_null_args()
+{
+    uint8_t sc[8] = {0};
+    uint8_t ti[4] = {0};
+    uint8_t m[128];
+    size_t n = build_challenge(m, sc, ti, 4);
+    NtlmChallenge ch;
+    TEST_ASSERT_FALSE(dws_ntlmssp_parse_challenge(nullptr, n, &ch));
+    TEST_ASSERT_FALSE(dws_ntlmssp_parse_challenge(m, n, nullptr));
+    TEST_ASSERT_TRUE(dws_ntlmssp_parse_challenge(m, n, &ch)); // the same message is otherwise fine
+}
+
+// A CHALLENGE that advertises no target info parses, and reports an empty (null) blob rather than
+// pointing into the message.
+void test_parse_challenge_no_target_info()
+{
+    uint8_t sc[8];
+    unhex("0011223344556677", sc);
+    uint8_t ti[4] = {0};
+    uint8_t m[128];
+    size_t n = build_challenge(m, sc, ti, 0); // TargetInfoLen 0
+    TEST_ASSERT_EQUAL_size_t(48, n);
+
+    NtlmChallenge ch;
+    memset(&ch, 0xAA, sizeof(ch));
+    TEST_ASSERT_TRUE(dws_ntlmssp_parse_challenge(m, n, &ch));
+    TEST_ASSERT_NULL(ch.target_info);
+    TEST_ASSERT_EQUAL_UINT16(0, ch.target_info_len);
+    TEST_ASSERT_EQUAL_MEMORY(sc, ch.server_challenge, 8);
+}
+
+// The AUTHENTICATE builder fails closed on a null buffer (the !buf side of its guard; the existing
+// coverage only drives the total > cap side).
+void test_build_authenticate_null_buf()
+{
+    uint8_t nt[16];
+    memset(nt, 0x11, sizeof(nt));
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_ntlmssp_build_authenticate(nullptr, 256, nullptr, 0, nt, sizeof(nt), "Dom", "Usr", "Wks", 0));
+}
+
+// An LM response is laid out ahead of the NT response and its field triplet points at it. The SMB
+// client always sends NTLMv2 only, so this is the one path that takes the lm_resp guard's true side.
+void test_build_authenticate_with_lm()
+{
+    uint8_t lm[24], nt[24];
+    memset(lm, 0x5A, sizeof(lm));
+    memset(nt, 0xA5, sizeof(nt));
+    uint8_t buf[256];
+    size_t n = dws_ntlmssp_build_authenticate(buf, sizeof(buf), lm, sizeof(lm), nt, sizeof(nt), "Dom", "Usr", "Wks",
+                                              0x11223344);
+    TEST_ASSERT_EQUAL_size_t(64 + 24 + 24 + 6 + 6 + 6, n);
+
+    TEST_ASSERT_EQUAL_UINT16(24, r16(buf + 12)); // LmChallengeResponseLen
+    TEST_ASSERT_EQUAL_UINT32(64, r32(buf + 16)); // ...Offset: first thing after the fixed header
+    TEST_ASSERT_EQUAL_MEMORY(lm, buf + 64, 24);
+
+    TEST_ASSERT_EQUAL_UINT16(24, r16(buf + 20)); // NtChallengeResponseLen
+    TEST_ASSERT_EQUAL_UINT32(88, r32(buf + 24)); // ...Offset: straight after the LM response
+    TEST_ASSERT_EQUAL_MEMORY(nt, buf + 88, 24);
+    TEST_ASSERT_EQUAL_UINT32(0x11223344, r32(buf + 60));
+}
+
+// A non-null response pointer paired with a zero length copies nothing, and a null pointer is
+// skipped outright: the remaining sides of the LM and NT payload guards.
+void test_build_authenticate_empty_responses()
+{
+    uint8_t resp[8];
+    memset(resp, 0x77, sizeof(resp));
+    uint8_t buf[256];
+
+    // lm_resp non-null but lm_len 0, and nt_resp null: neither payload is written
+    memset(buf, 0, sizeof(buf));
+    size_t n = dws_ntlmssp_build_authenticate(buf, sizeof(buf), resp, 0, nullptr, 0, "D", "U", "W", 0x0BADF00D);
+    TEST_ASSERT_EQUAL_size_t(64 + 2 + 2 + 2, n); // header + "D"/"U"/"W" UTF-16LE, no responses
+    TEST_ASSERT_EQUAL_UINT16(0, r16(buf + 12));  // LmChallengeResponseLen
+    TEST_ASSERT_EQUAL_UINT16(0, r16(buf + 20));  // NtChallengeResponseLen
+    TEST_ASSERT_EQUAL_UINT32(64, r32(buf + 16)); // both point at the empty payload start
+    TEST_ASSERT_EQUAL_UINT32(64, r32(buf + 24));
+    TEST_ASSERT_EQUAL_UINT32(0x0BADF00D, r32(buf + 60));
+
+    // nt_resp non-null but nt_len 0: the NT payload is still empty, so the names start at 64
+    memset(buf, 0, sizeof(buf));
+    n = dws_ntlmssp_build_authenticate(buf, sizeof(buf), nullptr, 0, resp, 0, "D", "U", "W", 0);
+    TEST_ASSERT_EQUAL_size_t(64 + 2 + 2 + 2, n);
+    TEST_ASSERT_EQUAL_UINT16(0, r16(buf + 20));  // NtChallengeResponseLen
+    TEST_ASSERT_EQUAL_UINT16(2, r16(buf + 28));  // DomainNameLen
+    TEST_ASSERT_EQUAL_UINT32(64, r32(buf + 32)); // DomainNameOffset
+    const uint8_t dom16[2] = {'D', 0};
+    TEST_ASSERT_EQUAL_MEMORY(dom16, buf + 64, 2); // 0x77 was never copied over the name area
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -185,5 +286,11 @@ int main()
     RUN_TEST(test_parse_challenge_rejects);
     RUN_TEST(test_build_authenticate);
     RUN_TEST(test_end_to_end);
+    RUN_TEST(test_build_negotiate_null_buf);
+    RUN_TEST(test_parse_challenge_null_args);
+    RUN_TEST(test_parse_challenge_no_target_info);
+    RUN_TEST(test_build_authenticate_null_buf);
+    RUN_TEST(test_build_authenticate_with_lm);
+    RUN_TEST(test_build_authenticate_empty_responses);
     return UNITY_END();
 }

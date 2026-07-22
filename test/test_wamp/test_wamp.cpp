@@ -217,6 +217,134 @@ void test_parser_error_paths()
     TEST_ASSERT_FALSE(dws_wamp_get_uri("[2]", 5, uri, sizeof(uri)));             // element not present
 }
 
+// Every builder takes an optional details/options JSON object. The suite above always passes
+// nullptr (the "{}" default); this pins the other side of that choice - a caller-supplied object
+// must be emitted verbatim, in the slot the WAMP message structure puts it in.
+void test_builder_explicit_options()
+{
+    char b[160];
+    TEST_ASSERT_TRUE(dws_wamp_build_hello(b, sizeof(b), "realm1", "{\"roles\":{}}") > 0);
+    TEST_ASSERT_EQUAL_STRING("[1,\"realm1\",{\"roles\":{}}]", b);
+    TEST_ASSERT_TRUE(dws_wamp_build_goodbye(b, sizeof(b), "wamp.close", "{\"message\":\"bye\"}") > 0);
+    TEST_ASSERT_EQUAL_STRING("[6,{\"message\":\"bye\"},\"wamp.close\"]", b);
+    TEST_ASSERT_TRUE(dws_wamp_build_subscribe(b, sizeof(b), 7, "t.a", "{\"match\":\"prefix\"}") > 0);
+    TEST_ASSERT_EQUAL_STRING("[32,7,{\"match\":\"prefix\"},\"t.a\"]", b);
+    TEST_ASSERT_TRUE(dws_wamp_build_publish(b, sizeof(b), 8, "t.b", "{\"acknowledge\":true}", nullptr, nullptr) > 0);
+    TEST_ASSERT_EQUAL_STRING("[16,8,{\"acknowledge\":true},\"t.b\"]", b);
+    TEST_ASSERT_TRUE(dws_wamp_build_call(b, sizeof(b), 9, "p.c", "{\"timeout\":10}", nullptr, nullptr) > 0);
+    TEST_ASSERT_EQUAL_STRING("[48,9,{\"timeout\":10},\"p.c\"]", b);
+    TEST_ASSERT_TRUE(dws_wamp_build_register(b, sizeof(b), 10, "p.d", "{\"invoke\":\"roundrobin\"}") > 0);
+    TEST_ASSERT_EQUAL_STRING("[64,10,{\"invoke\":\"roundrobin\"},\"p.d\"]", b);
+    TEST_ASSERT_TRUE(dws_wamp_build_yield(b, sizeof(b), 11, "{\"progress\":true}", nullptr, nullptr) > 0);
+    TEST_ASSERT_EQUAL_STRING("[70,11,{\"progress\":true}]", b);
+
+    // ...and the other side for HELLO / GOODBYE, whose details argument the suite otherwise
+    // always supplies: omitting it must emit the empty object, not nothing at all.
+    TEST_ASSERT_TRUE(dws_wamp_build_hello(b, sizeof(b), "realm1", nullptr) > 0);
+    TEST_ASSERT_EQUAL_STRING("[1,\"realm1\",{}]", b);
+    TEST_ASSERT_TRUE(dws_wamp_build_goodbye(b, sizeof(b), "wamp.close", nullptr) > 0);
+    TEST_ASSERT_EQUAL_STRING("[6,{},\"wamp.close\"]", b);
+}
+
+// skip_ws accepts all four JSON whitespace characters; the scanner must tolerate them between
+// the bracket, the elements and the commas.
+void test_parser_all_whitespace_forms()
+{
+    const char *s = nullptr;
+    size_t n = 0;
+    TEST_ASSERT_TRUE(dws_wamp_element(" \t\n\r[ \t\n\r1 \t\n\r, \t\n\r2 ]", 1, &s, &n));
+    TEST_ASSERT_EQUAL_size_t(1, n);
+    TEST_ASSERT_EQUAL_CHAR('2', s[0]);
+}
+
+// A container closing at depth > 1 must NOT end the scan - only the outermost close does. Nested
+// brackets of both kinds, and a bracket character inside a string, which the scanner skips whole.
+void test_parser_nested_containers()
+{
+    const char *s = nullptr;
+    size_t n = 0;
+    TEST_ASSERT_TRUE(dws_wamp_element("[[[1],[2]],9]", 0, &s, &n));
+    TEST_ASSERT_EQUAL_size_t(9, n); // the whole "[[1],[2]]", not just up to the first ']'
+    TEST_ASSERT_EQUAL_STRING_LEN("[[1],[2]]", s, 9);
+    TEST_ASSERT_TRUE(dws_wamp_element("[{\"a\":{\"b\":1}},9]", 0, &s, &n));
+    TEST_ASSERT_EQUAL_size_t(13, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[{\"a\":\"]}\"},9]", 0, &s, &n)); // brackets inside a string
+    TEST_ASSERT_EQUAL_size_t(10, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[[[1],[2]],9]", 1, &s, &n)); // element after a nested one
+    TEST_ASSERT_EQUAL_CHAR('9', s[0]);
+}
+
+// A bare token (number / true / false / null) ends at any of the seven terminators, and a value
+// position that starts ON a terminator is malformed rather than a zero-length token.
+void test_parser_bare_token_terminators()
+{
+    const char *s = nullptr;
+    size_t n = 0;
+    TEST_ASSERT_TRUE(dws_wamp_element("[1,2]", 0, &s, &n)); // ','
+    TEST_ASSERT_EQUAL_size_t(1, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[true]", 0, &s, &n)); // ']'
+    TEST_ASSERT_EQUAL_size_t(4, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[null ]", 0, &s, &n)); // ' '
+    TEST_ASSERT_EQUAL_size_t(4, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[12\t]", 0, &s, &n)); // '\t'
+    TEST_ASSERT_EQUAL_size_t(2, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[34\n]", 0, &s, &n)); // '\n'
+    TEST_ASSERT_EQUAL_size_t(2, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[56\r]", 0, &s, &n)); // '\r'
+    TEST_ASSERT_EQUAL_size_t(2, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[{\"k\":7}]", 0, &s, &n)); // '}' ends the token inside
+    TEST_ASSERT_EQUAL_size_t(7, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[1}", 0, &s, &n)); // stray '}' terminates a bare token
+    TEST_ASSERT_EQUAL_size_t(1, n);
+    // NUL also ends a bare token. The scan is deliberately lenient here: element 0 is complete
+    // before the (missing) ']', so it is returned rather than rejected for the unclosed array.
+    TEST_ASSERT_TRUE(dws_wamp_element("[78", 0, &s, &n));
+    TEST_ASSERT_EQUAL_size_t(2, n);
+    TEST_ASSERT_FALSE(dws_wamp_element("[78", 1, &s, &n));  // ...but element 1 really is absent
+    TEST_ASSERT_FALSE(dws_wamp_element("[,1]", 0, &s, &n)); // value position starts on ','
+    TEST_ASSERT_FALSE(dws_wamp_element("[", 0, &s, &n));    // NUL where an element was expected
+}
+
+// start / len are both optional out-parameters, as are the out-parameters of get_uint and
+// get_type: a caller that only wants the yes/no answer may pass null and must still get it.
+void test_parser_optional_out_params()
+{
+    const char *s = nullptr;
+    size_t n = 0;
+    TEST_ASSERT_TRUE(dws_wamp_element("[1,2]", 0, nullptr, &n)); // null start
+    TEST_ASSERT_EQUAL_size_t(1, n);
+    TEST_ASSERT_TRUE(dws_wamp_element("[1,2]", 0, &s, nullptr)); // null len
+    TEST_ASSERT_EQUAL_CHAR('1', s[0]);
+    TEST_ASSERT_TRUE(dws_wamp_element("[1,2]", 0, nullptr, nullptr)); // both null
+    TEST_ASSERT_TRUE(dws_wamp_get_uint("[42,2]", 0, nullptr));        // null out
+    TEST_ASSERT_TRUE(dws_wamp_get_type("[42,2]", nullptr));           // null out
+}
+
+// get_uint accepts digits only: a character below '0' and one above '9' must each be rejected
+// (the two arms of the digit test), as must a non-numeric element.
+void test_get_uint_rejects_non_digits()
+{
+    uint64_t v = 0;
+    TEST_ASSERT_FALSE(dws_wamp_get_uint("[1-2,0]", 0, &v));   // '-' is below '0'
+    TEST_ASSERT_FALSE(dws_wamp_get_uint("[1a,0]", 0, &v));    // 'a' is above '9'
+    TEST_ASSERT_FALSE(dws_wamp_get_uint("[\"7\",0]", 0, &v)); // quoted, not a bare number
+    TEST_ASSERT_FALSE(dws_wamp_get_type("[\"x\"]", nullptr)); // type element not numeric
+    TEST_ASSERT_TRUE(dws_wamp_get_uint("[1234567890,0]", 0, &v));
+    TEST_ASSERT_EQUAL_UINT64(1234567890ull, v);
+}
+
+// get_uri requires a properly quoted string: too short, no opening quote, and no closing quote
+// are each rejected (the three arms of the shape test).
+void test_get_uri_shape_rejects()
+{
+    char uri[16];
+    TEST_ASSERT_FALSE(dws_wamp_get_uri("[2,1]", 1, uri, sizeof(uri)));         // n < 2 (bare "1")
+    TEST_ASSERT_FALSE(dws_wamp_get_uri("[2,12]", 1, uri, sizeof(uri)));        // n == 2 but not quoted
+    TEST_ASSERT_FALSE(dws_wamp_get_uri("[2,{\"a\":1}]", 1, uri, sizeof(uri))); // opens with '{'
+    TEST_ASSERT_TRUE(dws_wamp_get_uri("[2,\"ok\"]", 1, uri, sizeof(uri)));
+    TEST_ASSERT_EQUAL_STRING("ok", uri);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -235,5 +363,12 @@ int main()
     RUN_TEST(test_builder_null_guards);
     RUN_TEST(test_emit_uint_zero_and_no_args);
     RUN_TEST(test_parser_error_paths);
+    RUN_TEST(test_builder_explicit_options);
+    RUN_TEST(test_parser_all_whitespace_forms);
+    RUN_TEST(test_parser_nested_containers);
+    RUN_TEST(test_parser_bare_token_terminators);
+    RUN_TEST(test_parser_optional_out_params);
+    RUN_TEST(test_get_uint_rejects_non_digits);
+    RUN_TEST(test_get_uri_shape_rejects);
     return UNITY_END();
 }

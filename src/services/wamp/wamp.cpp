@@ -269,7 +269,9 @@ bool dws_wamp_get_uint(const char *msg, size_t index, uint64_t *out)
 {
     const char *s;
     size_t n;
-    if (!dws_wamp_element(msg, index, &s, &n) || n == 0)
+    // n == 0 is defensive only: scan_value() either fails (0, rejected inside dws_wamp_element) or
+    // returns an index strictly past where it started, so a returned element is never empty.
+    if (!dws_wamp_element(msg, index, &s, &n) || n == 0) // GCOVR_EXCL_LINE  n==0 arm unreachable (see above)
         return false;
     uint64_t v = 0;
     for (size_t i = 0; i < n; i++)
@@ -299,7 +301,10 @@ bool dws_wamp_get_uri(const char *msg, size_t index, char *out, size_t out_cap)
     size_t n;
     if (!out || out_cap == 0 || !dws_wamp_element(msg, index, &s, &n))
         return false;
-    if (n < 2 || s[0] != '"' || s[n - 1] != '"') // must be a quoted string
+    // The trailing-quote arm is defensive only: an element that starts with '"' was scanned by
+    // scan_string(), which returns the index just past the CLOSING quote or fails outright, so
+    // s[n-1] is always '"' once s[0] is.
+    if (n < 2 || s[0] != '"' || s[n - 1] != '"') // GCOVR_EXCL_LINE  s[n-1] arm unreachable (see above)
         return false;
     size_t body = n - 2;
     if (body + 1 > out_cap) // need room for the NUL

@@ -501,9 +501,11 @@ void test_response_parsers_reject_negative_count()
     TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_browse(resp, n, refs, 1));
 }
 
-// Build an OPN response frame with a controllable SecurityPolicyUri length, body TypeId, and whether
-// a ResponseHeader follows - to drive on_open's skip/guard paths.
-static size_t build_opn(uint8_t *out, size_t cap, uint32_t type_id, int32_t policy_len, bool with_rh)
+// Build an OPN response frame with a controllable SecurityPolicyUri length, body TypeId, whether a
+// ResponseHeader follows (and its ServiceResult), and whether the SecurityToken body follows - to
+// drive on_open's skip/guard paths. A String-kind TypeId exercises the non-numeric NodeId rejection.
+static size_t build_opn(uint8_t *out, size_t cap, uint32_t type_id, int32_t policy_len, bool with_rh,
+                        uint32_t svc = OPCUA_STATUS_GOOD, bool with_body = false, bool string_type_id = false)
 {
     UaWriter w = {out, cap, 0, true};
     dws_ua_w_u8(&w, 'O');
@@ -519,17 +521,73 @@ static size_t build_opn(uint8_t *out, size_t cap, uint32_t type_id, int32_t poli
     dws_ua_w_i32(&w, -1);     // ReceiverCertificateThumbprint (null)
     dws_ua_w_u32(&w, 0);      // SequenceNumber
     dws_ua_w_u32(&w, 0);      // RequestId
-    dws_ua_w_nodeid_numeric(&w, 0, type_id);
+    if (string_type_id)
+    {
+        dws_ua_w_u8(&w, 0x03);              // NodeId encoding: String
+        dws_ua_w_u16(&w, 0);                // NamespaceIndex
+        dws_ua_w_string(&w, "OpenResp", 8); // String identifier
+    }
+    else
+        dws_ua_w_nodeid_numeric(&w, 0, type_id);
     if (with_rh)
     {
         dws_ua_w_u64(&w, 0);
         dws_ua_w_u32(&w, 0);
-        dws_ua_w_u32(&w, OPCUA_STATUS_GOOD);
+        dws_ua_w_u32(&w, svc);
         dws_ua_w_u8(&w, 0);
         dws_ua_w_i32(&w, 0);
         dws_ua_w_nodeid_numeric(&w, 0, 0);
         dws_ua_w_u8(&w, 0);
     }
+    if (with_body)
+    {
+        dws_ua_w_u32(&w, 0);    // ServerProtocolVersion
+        dws_ua_w_u32(&w, 0x2A); // SecurityToken.ChannelId
+        dws_ua_w_u32(&w, 0x2B); // SecurityToken.TokenId
+        dws_ua_w_u64(&w, 0);    // CreatedAt
+        dws_ua_w_u32(&w, 1000); // RevisedLifetime
+    }
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = (uint8_t)(w.n >> 16);
+    out[7] = (uint8_t)(w.n >> 24);
+    return w.ok ? w.n : 0;
+}
+
+// Assemble a MSG response frame: envelope + body TypeId + a ResponseHeader carrying `svc`, then
+// `body_len` raw service-body bytes. Lets a test hand any client parser an otherwise well-formed
+// frame with a chosen ServiceResult and a truncated / hand-rolled body. `string_type_id` swaps the
+// numeric body TypeId for a String NodeId (what a peer using string identifiers would send).
+static size_t forge_msg(uint8_t *out, size_t cap, uint32_t type_id, uint32_t svc, const uint8_t *body, size_t body_len,
+                        bool string_type_id = false, const char *magic = "MSG")
+{
+    UaWriter w = {out, cap, 0, true};
+    dws_ua_w_u8(&w, (uint8_t)magic[0]);
+    dws_ua_w_u8(&w, (uint8_t)magic[1]);
+    dws_ua_w_u8(&w, (uint8_t)magic[2]);
+    dws_ua_w_u8(&w, 'F');
+    dws_ua_w_u32(&w, 0); // size placeholder
+    dws_ua_w_u32(&w, 0); // SecureChannelId
+    dws_ua_w_u32(&w, 0); // TokenId
+    dws_ua_w_u32(&w, 0); // SequenceNumber
+    dws_ua_w_u32(&w, 0); // RequestId
+    if (string_type_id)
+    {
+        dws_ua_w_u8(&w, 0x03); // NodeId encoding: String
+        dws_ua_w_u16(&w, 0);
+        dws_ua_w_string(&w, "Resp", 4);
+    }
+    else
+        dws_ua_w_nodeid_numeric(&w, 0, type_id);
+    dws_ua_w_u64(&w, 0);               // ResponseHeader.Timestamp
+    dws_ua_w_u32(&w, 0);               // RequestHandle
+    dws_ua_w_u32(&w, svc);             // ServiceResult
+    dws_ua_w_u8(&w, 0);                // ServiceDiagnostics
+    dws_ua_w_i32(&w, 0);               // StringTable count (none)
+    dws_ua_w_nodeid_numeric(&w, 0, 0); // AdditionalHeader NodeId (null)
+    dws_ua_w_u8(&w, 0);                // AdditionalHeader ExtensionObject (no body)
+    for (size_t i = 0; i < body_len; i++)
+        dws_ua_w_u8(&w, body[i]);
     out[4] = (uint8_t)w.n;
     out[5] = (uint8_t)(w.n >> 8);
     out[6] = (uint8_t)(w.n >> 16);
@@ -636,9 +694,325 @@ void test_browse_display_name_locale()
     TEST_ASSERT_EQUAL_UINT16(1, refs[0].target_ns);
 }
 
+// Every builder that forwards a caller-supplied string encodes a null String (length -1) when handed
+// a null pointer, and the framed request still round-trips through the server's parsers.
+void test_builders_encode_null_strings()
+{
+    uint8_t req[256];
+    size_t rn = dws_opcua_client_hello(nullptr, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+    OpcUaHello hello;
+    TEST_ASSERT_TRUE(dws_opcua_parse_hello(req, rn, &hello));
+    TEST_ASSERT_EQUAL_MEMORY("\xFF\xFF\xFF\xFF", req + rn - 4, 4); // EndpointUrl written as a null String
+
+    OpcUaClient c;
+    dws_opcua_client_init(&c);
+    rn = dws_opcua_client_get_endpoints(&c, nullptr, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(dws_opcua_parse_msg(req, rn, &m));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_GET_ENDPOINTS_REQ, m.type_id);
+
+    rn = dws_opcua_client_create_session(&c, nullptr, nullptr, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+    TEST_ASSERT_TRUE(dws_opcua_parse_msg(req, rn, &m));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_CREATE_SESSION_REQ, m.type_id);
+}
+
+// on_ack validates the UACP header before the body: a frame shorter than the header, each byte of
+// the "ACK" magic, and a MessageSize that disagrees with the delivered frame.
+void test_on_ack_header_guards()
+{
+    OpcUaAckInfo ai;
+    uint8_t tiny[4] = {'A', 'C', 'K', 'F'};
+    TEST_ASSERT_FALSE(dws_opcua_client_on_ack(tiny, sizeof(tiny), &ai)); // no room for the 8-byte header
+
+    uint8_t ack[28];
+    memset(ack, 0, sizeof(ack));
+    memcpy(ack, "ACKF", 4);
+    ack[4] = 28;
+    ack[12] = 0x11; // ReceiveBufferSize, to prove the body is read on the accepted frame
+    TEST_ASSERT_TRUE(dws_opcua_client_on_ack(ack, sizeof(ack), &ai));
+    TEST_ASSERT_EQUAL_UINT32(0x11, ai.recv_buf_size);
+
+    ack[4] = 27; // MessageSize disagrees with the frame length
+    TEST_ASSERT_FALSE(dws_opcua_client_on_ack(ack, sizeof(ack), &ai));
+    ack[4] = 28;
+    ack[1] = 'X'; // "AXK"
+    TEST_ASSERT_FALSE(dws_opcua_client_on_ack(ack, sizeof(ack), &ai));
+    ack[1] = 'C';
+    ack[2] = 'X'; // "ACX"
+    TEST_ASSERT_FALSE(dws_opcua_client_on_ack(ack, sizeof(ack), &ai));
+}
+
+// cr_msg_open validates the whole envelope before touching the service body: a frame too short for a
+// UACP header, each byte of the "MSG" magic, a MessageSize that disagrees with the frame, and a
+// non-numeric body TypeId are all rejected.
+void test_msg_envelope_guards()
+{
+    OpcUaVariant v[1];
+    uint32_t s[1];
+    uint8_t tiny[4] = {'M', 'S', 'G', 'F'};
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(tiny, sizeof(tiny), v, s, 1));
+
+    uint8_t resp[128];
+    const uint8_t cnt0[4] = {0, 0, 0, 0}; // Results[] with no entries
+    const char *wrong[3] = {"XSG", "MXG", "MSX"};
+    for (int i = 0; i < 3; i++)
+    {
+        size_t bad =
+            forge_msg(resp, sizeof(resp), OPCUA_ID_READ_RESP, OPCUA_STATUS_GOOD, cnt0, sizeof(cnt0), false, wrong[i]);
+        TEST_ASSERT_TRUE(bad > 0);
+        TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(resp, bad, v, s, 1));
+    }
+
+    size_t sn = forge_msg(resp, sizeof(resp), OPCUA_ID_READ_RESP, OPCUA_STATUS_GOOD, cnt0, sizeof(cnt0));
+    TEST_ASSERT_TRUE(sn > 0);
+    TEST_ASSERT_EQUAL_INT32(0, dws_opcua_client_on_read(resp, sn, v, s, 1)); // baseline: accepted, 0 results
+    uint8_t save = resp[4];
+    resp[4] = (uint8_t)(save + 1); // MessageSize now disagrees with the frame
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(resp, sn, v, s, 1));
+    resp[4] = save;
+
+    // A String body TypeId is well formed but is not the expected numeric ReadResponse id.
+    sn = forge_msg(resp, sizeof(resp), OPCUA_ID_READ_RESP, OPCUA_STATUS_GOOD, cnt0, sizeof(cnt0),
+                   /*string_type_id=*/true);
+    TEST_ASSERT_TRUE(sn > 0);
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(resp, sn, v, s, 1));
+}
+
+// on_open validates the OPN envelope, the body TypeId kind, the ServiceResult and the presence of the
+// SecurityToken body; only a Good, complete response updates the client's channel/token ids.
+void test_on_open_envelope_and_result_guards()
+{
+    OpcUaClient c;
+    dws_opcua_client_init(&c);
+    uint8_t tiny[4] = {'O', 'P', 'N', 'F'};
+    TEST_ASSERT_FALSE(dws_opcua_client_on_open(&c, tiny, sizeof(tiny)));
+
+    uint8_t buf[192];
+    size_t n = build_opn(buf, sizeof(buf), OPCUA_ID_OPEN_RESP, 0, true, OPCUA_STATUS_GOOD, /*with_body=*/true);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(dws_opcua_client_on_open(&c, buf, n)); // baseline: Good + full SecurityToken
+    TEST_ASSERT_EQUAL_UINT32(0x2A, c.channel_id);
+    TEST_ASSERT_EQUAL_UINT32(0x2B, c.token_id);
+
+    buf[1] = 'X'; // "OXN"
+    TEST_ASSERT_FALSE(dws_opcua_client_on_open(&c, buf, n));
+    buf[1] = 'P';
+    buf[2] = 'X'; // "OPX"
+    TEST_ASSERT_FALSE(dws_opcua_client_on_open(&c, buf, n));
+
+    // A Bad ServiceResult is rejected even though the token body is complete.
+    n = build_opn(buf, sizeof(buf), OPCUA_ID_OPEN_RESP, 0, true, OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED, true);
+    TEST_ASSERT_FALSE(dws_opcua_client_on_open(&c, buf, n));
+    // A Good ResponseHeader with the SecurityToken body missing underruns the reader.
+    n = build_opn(buf, sizeof(buf), OPCUA_ID_OPEN_RESP, 0, true, OPCUA_STATUS_GOOD, false);
+    TEST_ASSERT_FALSE(dws_opcua_client_on_open(&c, buf, n));
+    // A String body TypeId is not the numeric OpenSecureChannelResponse id.
+    n = build_opn(buf, sizeof(buf), 0, 0, true, OPCUA_STATUS_GOOD, true, /*string_type_id=*/true);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_FALSE(dws_opcua_client_on_open(&c, buf, n));
+}
+
+// A well-formed response whose ResponseHeader carries a Bad ServiceResult is rejected by every
+// service parser - the body is never reported as a result.
+void test_parsers_reject_bad_service_result()
+{
+    const uint8_t cnt0[4] = {0, 0, 0, 0};
+    const uint32_t bad = OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
+    uint8_t resp[128];
+
+    size_t sn = forge_msg(resp, sizeof(resp), OPCUA_ID_GET_ENDPOINTS_RESP, bad, cnt0, sizeof(cnt0));
+    TEST_ASSERT_TRUE(sn > 0);
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_get_endpoints(resp, sn));
+
+    OpcUaVariant v[1];
+    uint32_t s[1];
+    sn = forge_msg(resp, sizeof(resp), OPCUA_ID_READ_RESP, bad, cnt0, sizeof(cnt0));
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_read(resp, sn, v, s, 1));
+
+    sn = forge_msg(resp, sizeof(resp), OPCUA_ID_WRITE_RESP, bad, cnt0, sizeof(cnt0));
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_write(resp, sn, s, 1));
+
+    OpcUaClientRef refs[1];
+    sn = forge_msg(resp, sizeof(resp), OPCUA_ID_BROWSE_RESP, bad, cnt0, sizeof(cnt0));
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_browse(resp, sn, refs, 1));
+
+    // CreateSession decodes its body first, then reports the fault through the return value.
+    const uint8_t ids[4] = {0x00, 0x11, 0x00, 0x22}; // SessionId then AuthenticationToken (TwoByte NodeIds)
+    OpcUaClient c;
+    dws_opcua_client_init(&c);
+    sn = forge_msg(resp, sizeof(resp), OPCUA_ID_CREATE_SESSION_RESP, bad, ids, sizeof(ids));
+    TEST_ASSERT_FALSE(dws_opcua_client_on_create_session(&c, resp, sn));
+    TEST_ASSERT_EQUAL_UINT32(0x22, c.session_auth_id); // token still captured from the decoded body
+}
+
+// A frame that promises a body it does not carry underruns the reader; each parser fails closed
+// instead of reporting a partial result.
+void test_parsers_reject_truncated_body()
+{
+    uint8_t resp[96];
+    size_t sn = forge_msg(resp, sizeof(resp), OPCUA_ID_GET_ENDPOINTS_RESP, OPCUA_STATUS_GOOD, nullptr, 0);
+    TEST_ASSERT_TRUE(sn > 0);
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_get_endpoints(resp, sn)); // Endpoints count underruns
+
+    const uint8_t neg[4] = {0xFF, 0xFF, 0xFF, 0xFF}; // Endpoints[] count = -1
+    sn = forge_msg(resp, sizeof(resp), OPCUA_ID_GET_ENDPOINTS_RESP, OPCUA_STATUS_GOOD, neg, sizeof(neg));
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_get_endpoints(resp, sn));
+
+    OpcUaClient c;
+    dws_opcua_client_init(&c);
+    sn = forge_msg(resp, sizeof(resp), OPCUA_ID_CREATE_SESSION_RESP, OPCUA_STATUS_GOOD, nullptr, 0);
+    TEST_ASSERT_FALSE(dws_opcua_client_on_create_session(&c, resp, sn)); // SessionId NodeId underruns
+
+    const uint8_t one[4] = {1, 0, 0, 0}; // one result promised, none present
+    uint32_t got[2];
+    sn = forge_msg(resp, sizeof(resp), OPCUA_ID_WRITE_RESP, OPCUA_STATUS_GOOD, one, sizeof(one));
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_write(resp, sn, got, 2));
+
+    OpcUaClientRef refs[2];
+    sn = forge_msg(resp, sizeof(resp), OPCUA_ID_BROWSE_RESP, OPCUA_STATUS_GOOD, one, sizeof(one));
+    TEST_ASSERT_EQUAL_INT32(-1, dws_opcua_client_on_browse(resp, sn, refs, 2));
+}
+
+// on_read handles the optional DataValue fields and the caller's buffer limits: a DataValue with no
+// Value at all, a null String Variant (nothing to skip), more results than the caller's buffer, and
+// either output array omitted.
+void test_on_read_optional_fields_and_limits()
+{
+    OpcUaReadRequest rr;
+    memset(&rr, 0, sizeof(rr));
+    rr.count = 4;
+
+    OpcUaVariant sv[4];
+    memset(sv, 0, sizeof(sv));
+    sv[0].type = OpcUaVariantType::OPCUA_VAR_STRING; // null String: length -1, no bytes follow
+    sv[0].str = nullptr;
+    sv[0].str_len = -1;
+    sv[1].type = OpcUaVariantType::OPCUA_VAR_INT32;
+    sv[1].i32 = 11;
+    sv[2].type = OpcUaVariantType::OPCUA_VAR_INT32;
+    sv[2].i32 = 22;
+    // sv[3] stays OPCUA_VAR_NULL -> the server writes a DataValue with an empty mask
+
+    uint8_t resp[256];
+    size_t sn = dws_opcua_build_read_response(&rr, sv, nullptr, 1, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    OpcUaVariant cv[4];
+    uint32_t cs[4];
+    memset(cv, 0, sizeof(cv));
+    TEST_ASSERT_EQUAL_INT32(4, dws_opcua_client_on_read(resp, sn, cv, cs, 4));
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_STRING, cv[0].type);
+    TEST_ASSERT_EQUAL_INT32(-1, cv[0].str_len); // null String: no bytes consumed
+    TEST_ASSERT_NULL(cv[0].str);
+    TEST_ASSERT_EQUAL_INT32(22, cv[2].i32);
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_NULL, cv[3].type); // DataValue carried no Value
+
+    // More results than the caller's buffer: the surplus is counted out, never written.
+    memset(cv, 0, sizeof(cv));
+    TEST_ASSERT_EQUAL_INT32(2, dws_opcua_client_on_read(resp, sn, cv, cs, 2));
+    TEST_ASSERT_EQUAL_INT32(11, cv[1].i32);
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_NULL, cv[2].type); // untouched
+
+    // Either sink may be omitted - the caller may only want the count, or only the statuses.
+    TEST_ASSERT_EQUAL_INT32(4, dws_opcua_client_on_read(resp, sn, nullptr, cs, 4));
+    TEST_ASSERT_EQUAL_INT32(4, dws_opcua_client_on_read(resp, sn, cv, nullptr, 4));
+}
+
+// on_write respects the caller's buffer limit and tolerates a null results array.
+void test_on_write_limits_and_null_sink()
+{
+    OpcUaWriteRequest wr;
+    memset(&wr, 0, sizeof(wr));
+    wr.count = 3;
+    uint32_t res[3] = {OPCUA_STATUS_GOOD, OPCUA_STATUS_BAD_NOT_WRITABLE, OPCUA_STATUS_BAD_NODE_ID_UNKNOWN};
+
+    uint8_t resp[128];
+    size_t sn = dws_opcua_build_write_response(&wr, res, 1, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    uint32_t got[3] = {0, 0, 0};
+    TEST_ASSERT_EQUAL_INT32(3, dws_opcua_client_on_write(resp, sn, got, 3));
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NOT_WRITABLE, got[1]);
+
+    memset(got, 0, sizeof(got));
+    TEST_ASSERT_EQUAL_INT32(2, dws_opcua_client_on_write(resp, sn, got, 2)); // third result dropped
+    TEST_ASSERT_EQUAL_HEX32(0, got[2]);
+
+    TEST_ASSERT_EQUAL_INT32(3, dws_opcua_client_on_write(resp, sn, nullptr, 3)); // count only
+}
+
+// on_browse respects the caller's buffer limit and tolerates a null refs array.
+void test_on_browse_limits_and_null_sink()
+{
+    OpcUaClient c;
+    dws_opcua_client_init(&c);
+    uint8_t req[256];
+    size_t rn = dws_opcua_client_browse(&c, 0, 85, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+    OpcUaBrowseRequest br;
+    TEST_ASSERT_TRUE(dws_opcua_parse_browse(req, rn, &br));
+
+    uint8_t resp[512];
+    size_t sn = dws_opcua_build_browse_response(&br, srv_browse, 4, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    OpcUaClientRef refs[2];
+    memset(refs, 0, sizeof(refs));
+    TEST_ASSERT_EQUAL_INT32(1, dws_opcua_client_on_browse(resp, sn, refs, 1)); // second reference dropped
+    TEST_ASSERT_EQUAL_STRING("Uptime", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_UINT32(0, refs[1].target_id);                               // untouched
+    TEST_ASSERT_EQUAL_INT32(2, dws_opcua_client_on_browse(resp, sn, nullptr, 2)); // count only
+}
+
+// A ReferenceDescription whose DisplayName LocalizedText sets neither the Locale nor the Text bit is
+// legal on the wire: the client skips nothing and still decodes the reference.
+void test_on_browse_display_name_empty_mask()
+{
+    uint8_t body[128];
+    UaWriter b = {body, sizeof(body), 0, true};
+    dws_ua_w_i32(&b, 1);                 // Results count
+    dws_ua_w_u32(&b, OPCUA_STATUS_GOOD); // BrowseResult.StatusCode
+    dws_ua_w_i32(&b, -1);                // ContinuationPoint (null ByteString)
+    dws_ua_w_i32(&b, 1);                 // References count
+    dws_ua_w_nodeid_numeric(&b, 0, OPCUA_REFTYPE_HAS_COMPONENT);
+    dws_ua_w_bool(&b, false);          // IsForward = false (an inverse reference)
+    dws_ua_w_nodeid_numeric(&b, 2, 9); // TargetId
+    dws_ua_w_u16(&b, 2);               // BrowseName.NamespaceIndex
+    dws_ua_w_string(&b, "Inv", 3);     // BrowseName.Name
+    dws_ua_w_u8(&b, 0x00);             // DisplayName mask: neither Locale nor Text present
+    dws_ua_w_u32(&b, OPCUA_NODECLASS_OBJECT);
+    dws_ua_w_nodeid_numeric(&b, 0, OPCUA_TYPEDEF_BASE_OBJECT);
+    TEST_ASSERT_TRUE(b.ok);
+
+    uint8_t resp[256];
+    size_t sn = forge_msg(resp, sizeof(resp), OPCUA_ID_BROWSE_RESP, OPCUA_STATUS_GOOD, body, b.n);
+    TEST_ASSERT_TRUE(sn > 0);
+
+    OpcUaClientRef refs[2];
+    TEST_ASSERT_EQUAL_INT32(1, dws_opcua_client_on_browse(resp, sn, refs, 2));
+    TEST_ASSERT_EQUAL_STRING("Inv", refs[0].browse_name);
+    TEST_ASSERT_FALSE(refs[0].is_forward);
+    TEST_ASSERT_EQUAL_UINT32(9, refs[0].target_id);
+    TEST_ASSERT_EQUAL_UINT16(2, refs[0].target_ns);
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_NODECLASS_OBJECT, refs[0].node_class);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_builders_encode_null_strings);
+    RUN_TEST(test_on_ack_header_guards);
+    RUN_TEST(test_msg_envelope_guards);
+    RUN_TEST(test_on_open_envelope_and_result_guards);
+    RUN_TEST(test_parsers_reject_bad_service_result);
+    RUN_TEST(test_parsers_reject_truncated_body);
+    RUN_TEST(test_on_read_optional_fields_and_limits);
+    RUN_TEST(test_on_write_limits_and_null_sink);
+    RUN_TEST(test_on_browse_limits_and_null_sink);
+    RUN_TEST(test_on_browse_display_name_empty_mask);
     RUN_TEST(test_browse_display_name_locale);
     RUN_TEST(test_on_read_all_variant_types);
     RUN_TEST(test_client_parsers_reject_fault);

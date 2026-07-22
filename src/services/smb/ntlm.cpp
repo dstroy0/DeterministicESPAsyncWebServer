@@ -68,7 +68,7 @@ static void dws_hmac_md5_2(const uint8_t key[16], const uint8_t *m1, size_t l1, 
     dws_md5_init(&c);
     dws_md5_update(&c, ipad, 64);
     dws_md5_update(&c, m1, l1);
-    if (m2 && l2)
+    if (m2 && l2) // GCOVR_EXCL_LINE  the sole caller always passes temp: non-null and always >= 32 bytes
         dws_md5_update(&c, m2, l2);
     dws_md5_final(&c, inner);
     dws_md5_init(&c);

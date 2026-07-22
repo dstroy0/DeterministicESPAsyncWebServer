@@ -80,8 +80,10 @@ size_t dws_smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_g
     if (!buf || !client_guid || cap < total)
         return 0;
 
+    // GCOVR_EXCL_START  cap >= total (64 + 36 + 8) >= SMB2_HEADER_SIZE was checked above, so this cannot fail
     if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0) == 0)
         return 0;
+    // GCOVR_EXCL_STOP
 
     uint8_t *b = buf + SMB2_HEADER_SIZE; // NEGOTIATE request body
     memset(b, 0, 36);
@@ -140,8 +142,10 @@ size_t dws_smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_i
     const size_t total = SMB2_HEADER_SIZE + body + sec_len;
     if (!buf || !sec_buf || sec_len == 0 || sec_len > 0xFFFF || cap < total)
         return 0;
+    // GCOVR_EXCL_START  cap >= total (64 + 24 + sec_len) >= SMB2_HEADER_SIZE was checked above, so this cannot fail
     if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_SESSION_SETUP, 1, message_id, 0, session_id) == 0)
         return 0;
+    // GCOVR_EXCL_STOP
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
@@ -193,8 +197,10 @@ size_t dws_smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id
     const size_t total = SMB2_HEADER_SIZE + body + path_len;
     if (!buf || !path_utf16 || path_len == 0 || path_len > 0xFFFF || cap < total)
         return 0;
+    // GCOVR_EXCL_START  cap >= total (64 + 8 + path_len) >= SMB2_HEADER_SIZE was checked above, so this cannot fail
     if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_TREE_CONNECT, 1, message_id, 0, session_id) == 0)
         return 0;
+    // GCOVR_EXCL_STOP
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
@@ -233,8 +239,10 @@ size_t dws_smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint
     const size_t total = SMB2_HEADER_SIZE + body + name_len;
     if (!buf || !name_utf16 || name_len == 0 || name_len > 0xFFFF || cap < total)
         return 0;
+    // GCOVR_EXCL_START  cap >= total (64 + 56 + name_len) >= SMB2_HEADER_SIZE was checked above, so this cannot fail
     if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_CREATE, 1, message_id, tree_id, session_id) == 0)
         return 0;
+    // GCOVR_EXCL_STOP
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
@@ -280,8 +288,10 @@ size_t dws_smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint6
     const size_t total = SMB2_HEADER_SIZE + body;
     if (!buf || !file_id || cap < total)
         return 0;
+    // GCOVR_EXCL_START  cap >= total (64 + 24) >= SMB2_HEADER_SIZE was checked above, so this cannot fail
     if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_CLOSE, 1, message_id, tree_id, session_id) == 0)
         return 0;
+    // GCOVR_EXCL_STOP
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
@@ -315,8 +325,10 @@ size_t dws_smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64
     const size_t total = SMB2_HEADER_SIZE + body + 1; // + a 1-byte buffer (StructureSize 49 convention)
     if (!buf || !file_id || cap < total)
         return 0;
+    // GCOVR_EXCL_START  cap >= total (64 + 48 + 1) >= SMB2_HEADER_SIZE was checked above, so this cannot fail
     if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_READ, 1, message_id, tree_id, session_id) == 0)
         return 0;
+    // GCOVR_EXCL_STOP
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body + 1);
@@ -367,8 +379,10 @@ size_t dws_smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint6
     const size_t total = SMB2_HEADER_SIZE + body + data_len;
     if (!buf || !file_id || !data || data_len == 0 || data_len > 0xFFFFFFFF || cap < total)
         return 0;
+    // GCOVR_EXCL_START  cap >= total (64 + 48 + data_len) >= SMB2_HEADER_SIZE was checked above, so this cannot fail
     if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_WRITE, 1, message_id, tree_id, session_id) == 0)
         return 0;
+    // GCOVR_EXCL_STOP
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
