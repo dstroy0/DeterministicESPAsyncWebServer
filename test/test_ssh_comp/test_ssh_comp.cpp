@@ -9,8 +9,11 @@
 // wire and the whole session forms one valid, context-takeover zlib stream.
 
 #include "network_drivers/presentation/inflate/inflate.h"
+#include "network_drivers/presentation/ssh/auth/ssh_auth.h"         // password verifier for the dispatch path
+#include "network_drivers/presentation/ssh/connection/ssh_server.h" // dispatcher compression triggers
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "network_drivers/presentation/ssh/transport/ssh_transport.h" // KEXINIT s2c compression negotiation
 #include "network_drivers/session/scratch.h"
 #include <string.h>
 #include <unity.h>
@@ -197,6 +200,197 @@ void test_comp_activation_idempotent()
     TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
 }
 
+// ---- KEXINIT negotiation + the dispatcher's activation trigger -------------
+
+static const uint8_t COMP_ED_SEED[32] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb,
+                                         0xcc, 0xdd, 0xee, 0xff, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+                                         0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10};
+
+static size_t put_str(uint8_t *p, const char *s)
+{
+    uint32_t n = (uint32_t)strlen(s);
+    p[0] = (uint8_t)(n >> 24);
+    p[1] = (uint8_t)(n >> 16);
+    p[2] = (uint8_t)(n >> 8);
+    p[3] = (uint8_t)n;
+    memcpy(p + 4, s, n);
+    return 4 + n;
+}
+
+// Client KEXINIT carrying the eight negotiable name-lists in @p rows (kex, host key, cipher c2s/s2c,
+// mac c2s/s2c, compression c2s/s2c).
+static size_t build_client_kexinit(uint8_t *out, const char *const rows[8])
+{
+    size_t o = 0;
+    out[o++] = SSH_MSG_KEXINIT;
+    for (int j = 0; j < 16; j++)
+        out[o++] = (uint8_t)j; // cookie
+    for (int j = 0; j < 8; j++)
+        o += put_str(out + o, rows[j]);
+    o += put_str(out + o, ""); // languages c2s
+    o += put_str(out + o, ""); // languages s2c
+    out[o++] = 0;              // first_kex_packet_follows
+    for (int j = 0; j < 4; j++)
+        out[o++] = 0; // reserved
+    return o;
+}
+
+// With s2c compression built in, KEXINIT picks the client's best offer in server preference order
+// (zlib@openssh.com > zlib > none) and refuses a client that offers none of the three.
+void test_kexinit_negotiates_s2c_compression()
+{
+    dws_ssh_hostkey_ed25519_set(COMP_ED_SEED);
+    const char *K = "curve25519-sha256";
+    const char *H = "ssh-ed25519";
+    const char *C = "aes256-ctr";
+    const char *M = "hmac-sha2-256";
+    uint8_t buf[512];
+
+    // zlib@openssh.com is delayed: negotiated at KEXINIT, started only at USERAUTH_SUCCESS.
+    ssh_transport_init(0);
+    ssh_comp_reset(0);
+    const char *delayed[8] = {K, H, C, C, M, M, "none", "zlib@openssh.com,none"};
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, build_client_kexinit(buf, delayed)));
+    TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
+    ssh_comp_on_newkeys(0);
+    TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
+    ssh_comp_on_auth_success(0);
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+
+    // Plain "zlib" is chosen when the delayed variant is not offered, and starts at NEWKEYS.
+    ssh_transport_init(0);
+    ssh_comp_reset(0);
+    const char *immediate[8] = {K, H, C, C, M, M, "none", "zlib,none"};
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, build_client_kexinit(buf, immediate)));
+    ssh_comp_on_newkeys(0);
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+
+    // "none" is still a valid outcome and never starts a stream.
+    ssh_transport_init(0);
+    ssh_comp_reset(0);
+    const char *plain[8] = {K, H, C, C, M, M, "none", "none"};
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, build_client_kexinit(buf, plain)));
+    ssh_comp_on_newkeys(0);
+    ssh_comp_on_auth_success(0);
+    TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
+
+    // A client offering nothing we implement for s2c has no mutual algorithm.
+    ssh_transport_init(0);
+    ssh_comp_reset(0);
+    const char *unknown[8] = {K, H, C, C, M, M, "none", "lzo@openssh.com"};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, build_client_kexinit(buf, unknown)));
+}
+
+// Before the s2c stream starts, ssh_pkt_send frames the payload verbatim - the compress step is
+// skipped entirely, so the bytes on the wire are the payload itself.
+void test_packet_send_uncompressed_before_activation()
+{
+    ssh_pkt_init(0);
+    ssh_comp_reset(0);
+    TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
+    const uint8_t payload[6] = {SSH_MSG_IGNORE, 'p', 'l', 'a', 'i', 'n'};
+    static uint8_t wire[SSH_WIRE_CAP];
+    size_t wlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)));
+    TEST_ASSERT_EQUAL_MEMORY(payload, wire + 5, sizeof(payload));
+}
+
+// ssh_newkeys_sent turns the outbound direction on and starts a non-delayed "zlib" stream with it;
+// zlib@openssh.com is untouched (it waits for USERAUTH_SUCCESS).
+void test_newkeys_sent_starts_immediate_stream_only()
+{
+    ssh_pkt_init(0);
+    ssh_comp_reset(0);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB);
+    ssh_newkeys_sent(0);
+    TEST_ASSERT_TRUE(ssh_pkt[0].enc_out);
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+
+    ssh_pkt_init(0);
+    ssh_comp_reset(0);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB_DELAYED);
+    ssh_newkeys_sent(0);
+    TEST_ASSERT_TRUE(ssh_pkt[0].enc_out);
+    TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
+
+    ssh_newkeys_sent(MAX_SSH_CONNS); // out-of-range slot: no-op, no crash
+    ssh_pkt_init(0);
+    ssh_comp_reset(0);
+}
+
+// A payload larger than the compressor's maximum input fails the send closed. Emitting it
+// uncompressed instead would desync the context-takeover stream for every packet after it.
+void test_packet_compress_rejects_oversized_payload()
+{
+    ssh_pkt_init(0);
+    ssh_comp_reset(0);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB);
+    ssh_comp_on_newkeys(0);
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+    scratch_reset();
+
+    static uint8_t payload[DWS_SSH_ZLIB_MAX_IN + 1];
+    memset(payload, 'z', sizeof(payload));
+    payload[0] = SSH_MSG_IGNORE;
+    static uint8_t wire[SSH_WIRE_CAP];
+    size_t wlen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)));
+    ssh_comp_reset(0);
+    ssh_pkt_init(0);
+}
+
+static uint8_t comp_emt[16];
+static int comp_emt_n;
+static void comp_rec_emit(uint8_t slot, const uint8_t *p, size_t n)
+{
+    (void)slot;
+    if (comp_emt_n < 16 && n > 0)
+        comp_emt[comp_emt_n++] = p[0];
+}
+static bool comp_pw_cb(const char *u, const char *p)
+{
+    return strcmp(u, "alice") == 0 && strcmp(p, "s3cret") == 0;
+}
+
+// zlib@openssh.com starts its stream on the first packet AFTER USERAUTH_SUCCESS, so the dispatcher
+// fires the trigger on a success and leaves it alone on a failure.
+void test_dispatch_auth_success_starts_delayed_compression()
+{
+    ssh_transport_init(0);
+    ssh_pkt_init(0);
+    ssh_comp_reset(0);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB_DELAYED);
+    dws_ssh_auth_set_password_cb(comp_pw_cb);
+    dws_ssh_server_set_emit_cb(comp_rec_emit);
+
+    uint8_t pkt[128];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_str(pkt + n, "alice");
+    n += put_str(pkt + n, "ssh-connection");
+    n += put_str(pkt + n, "password");
+    pkt[n++] = 0;
+    size_t base = n;
+
+    // A rejected password leaves the stream stopped.
+    n = base + put_str(pkt + base, "wrong");
+    ssh_sess[0].phase = SshPhase::SSH_PHASE_AUTH;
+    comp_emt_n = 0;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pkt, n));
+    TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_FAILURE, comp_emt[0]);
+    TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
+
+    // The accepted password starts it.
+    n = base + put_str(pkt + base, "s3cret");
+    ssh_sess[0].phase = SshPhase::SSH_PHASE_AUTH;
+    comp_emt_n = 0;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pkt, n));
+    TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_SUCCESS, comp_emt[0]);
+    TEST_ASSERT_TRUE(ssh_sess[0].authed);
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+    ssh_comp_reset(0);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -208,5 +402,10 @@ int main()
     RUN_TEST(test_packet_compress_scratch_exhausted);
     RUN_TEST(test_comp_slot_guards);
     RUN_TEST(test_comp_activation_idempotent);
+    RUN_TEST(test_kexinit_negotiates_s2c_compression);
+    RUN_TEST(test_packet_send_uncompressed_before_activation);
+    RUN_TEST(test_newkeys_sent_starts_immediate_stream_only);
+    RUN_TEST(test_packet_compress_rejects_oversized_payload);
+    RUN_TEST(test_dispatch_auth_success_starts_delayed_compression);
     return UNITY_END();
 }

@@ -84,11 +84,11 @@ int dws_ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload,
         // own KEXINIT, generate a fresh ephemeral, and await KEXDH_INIT.
         if (ssh_kexinit_parse(i, payload, len) != 0)
             return -1;
-        if (ssh_kexinit_build(i, buf, &n, sizeof(buf)) != 0)
-            return -1;
+        if (ssh_kexinit_build(i, buf, &n, sizeof(buf)) != 0) // GCOVR_EXCL_LINE  cannot fail: i is checked above and
+            return -1;                                       // GCOVR_EXCL_LINE  buf is SSH_PKT_BUF_SIZE
         emit(i, buf, n);
-        if (ssh_kex_generate(i) != 0) // ephemeral for the just-negotiated KEX method
-            return -1;
+        if (ssh_kex_generate(i) != 0) // GCOVR_EXCL_LINE  cannot fail: i is checked above and every method's
+            return -1;                // GCOVR_EXCL_LINE  ephemeral generation is infallible for i < MAX_SSH_CONNS
         s->phase = SshPhase::SSH_PHASE_DH_INIT;
         return 0;
 
@@ -111,8 +111,8 @@ int dws_ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload,
         // we accept for pubkey userauth (server-sig-algs) so a modern client will
         // sign an RSA key - it otherwise reports "no mutual signature algorithm".
         // First encrypted message, before the client's SERVICE_REQUEST.
-        if (s->ext_info_c && ssh_extinfo_build(buf, &n, sizeof(buf)) == 0)
-            emit(i, buf, n);
+        if (s->ext_info_c && ssh_extinfo_build(buf, &n, sizeof(buf)) == 0) // GCOVR_EXCL_LINE  the build half cannot
+            emit(i, buf, n); // fail: EXT_INFO is ~90 bytes and buf is SSH_PKT_BUF_SIZE
         return 0;
 
     case SSH_MSG_EXT_INFO:
@@ -140,13 +140,13 @@ int dws_ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload,
 #if DWS_ENABLE_SSH_ZLIB
         // zlib@openssh.com: the compression stream starts on the FIRST packet AFTER USERAUTH_SUCCESS
         // (which itself just went out uncompressed). Idempotent - a later re-auth cannot restart it.
-        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_SUCCESS)
-            ssh_comp_on_auth_success(i);
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_SUCCESS) // GCOVR_EXCL_LINE  n > 0 always: every handler that
+            ssh_comp_on_auth_success(i);                 // returns 0 has written a reply
 #endif
         // Brute-force defense (RFC 4252 §4): bound failed attempts per connection. Only an actual
         // USERAUTH_FAILURE counts - a SUCCESS or the publickey PK_OK probe does not. Too many ->
         // DISCONNECT then close.
-        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE)
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE) // GCOVR_EXCL_LINE  n > 0 always (see above)
         {
             if (++s->auth_failures >= SSH_MAX_AUTH_ATTEMPTS)
             {
@@ -168,10 +168,10 @@ int dws_ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload,
             return -1;
         emit(i, buf, n);
 #if DWS_ENABLE_SSH_ZLIB
-        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_SUCCESS)
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_SUCCESS) // GCOVR_EXCL_LINE  n > 0 always (see above)
             ssh_comp_on_auth_success(i);
 #endif
-        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE)
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE) // GCOVR_EXCL_LINE  n > 0 always (see above)
         {
             if (++s->auth_failures >= SSH_MAX_AUTH_ATTEMPTS)
             {
@@ -244,11 +244,14 @@ int dws_ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload,
         // message must travel in its own binary packet (RFC 4253 6): a strict peer
         // runs packet_check_eom() after every message and rejects two in one. Emit
         // the two halves as separate packets.
+        // GCOVR_EXCL_START  n == 10 cannot be false: handle_close only returns 0 after writing exactly the
+        // ten bytes of CHANNEL_EOF + CHANNEL_CLOSE, so that half of the guard is unreachable.
         if (dws_ssh_channel_handle_close(i, payload, len, buf, &n, sizeof(buf)) == 0 && n == 10)
         {
             emit(i, buf, 5);     // CHANNEL_EOF
             emit(i, buf + 5, 5); // CHANNEL_CLOSE
         }
+        // GCOVR_EXCL_STOP
         return 0;
 
     default: {

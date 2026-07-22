@@ -405,10 +405,154 @@ void test_poll_rekey_emit_fails()
     TEST_PASS();
 }
 
+// A slot that is in range but mapped to no TCP connection (never accepted, or already closed) is
+// refused by every outbound entry point.
+void test_conn_entrypoints_reject_unmapped_slot()
+{
+    const uint8_t data[3] = {1, 2, 3};
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_conn_send(0, 0, data, sizeof(data)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_conn_close_channel(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_conn_open_forwarded(0, "h", 22, "o", 1));
+}
+
+// The framed wire form is larger than the payload it carries, so an arena with room for the
+// payload but not for the wire buffer must still fail closed rather than emit a partial packet.
+void test_conn_outbound_arena_fits_payload_not_wire()
+{
+    dws_ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    ssh_chan[j][0].open = true;
+    ssh_chan[j][0].local_id = 0;
+    ssh_chan[j][0].peer_id = 1;
+    ssh_chan[j][0].peer_window = 100000;
+    ssh_chan[j][0].peer_max_pkt = 100000;
+
+    scratch_reset();
+    while (scratch_capacity() - scratch_used() >= SSH_WIRE_CAP)
+        TEST_ASSERT_NOT_NULL(scratch_alloc(16, 1));
+    TEST_ASSERT_TRUE(scratch_capacity() - scratch_used() >= SSH_PKT_BUF_SIZE);
+
+    const uint8_t data[3] = {1, 2, 3};
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_conn_send(j, 0, data, sizeof(data)));
+    ssh_chan[j][0].open = false; // free the sole channel slot for a server-initiated open
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_conn_open_forwarded(j, "10.0.0.1", 80, "1.2.3.4", 90));
+    scratch_reset();
+}
+
+// The receive path drains the ring without asking whether the socket is still sendable, so the
+// dispatcher's emit callback has to: a reply produced for a connection whose pcb died between the
+// read and the write is dropped instead of being handed to the transport.
+void test_conn_emit_drops_reply_on_dead_socket()
+{
+    dws_ssh_conn_accept(0);
+    const char *banner = "SSH-2.0-TestClient\r\n";
+    push_bytes(0, (const uint8_t *)banner, strlen(banner));
+    uint8_t payload[700];
+    size_t plen = build_kexinit_payload(payload);
+    uint8_t pkt[768];
+    size_t pktlen = frame_packet(pkt, payload, plen);
+    push_bytes(0, pkt, pktlen);
+
+    conn_pool[0].pcb = nullptr; // socket gone; the client's bytes are still in the ring
+    tcp_capture_reset();
+    dws_ssh_conn_rx(0);
+    TEST_ASSERT_EQUAL(0, tcp_captured_len()); // the KEXINIT reply never reached the socket
+    uint8_t j = conn_pool[0].proto_slot;
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_DH_INIT, ssh_sess[j].phase); // ...but it was negotiated
+}
+
+// poll and rx ignore a connection whose proto_slot names an SSH session that belongs to a
+// different TCP slot (a stale mapping left behind by a reused slot).
+void test_conn_poll_rx_foreign_slot_mapping()
+{
+    dws_ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    conn_pool[1].proto_slot = j; // conn 1 points at conn 0's session
+    const char *banner = "SSH-2.0-Other\r\n";
+    push_bytes(1, (const uint8_t *)banner, strlen(banner));
+    tcp_capture_reset();
+    dws_ssh_conn_poll(1);
+    dws_ssh_conn_rx(1);
+    TEST_ASSERT_EQUAL(0, tcp_captured_len());
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_BANNER, ssh_sess[j].phase); // conn 0's session untouched
+    conn_pool[1].proto_slot = DWS_PROTO_SLOT_NONE;
+}
+
+// The poll-driven re-key fires only for an open session that is not already re-keying AND has
+// actually spent its volume / time budget.
+void test_conn_poll_rekey_preconditions()
+{
+    dws_ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    ssh_sess[j].phase = SshPhase::SSH_PHASE_OPEN;
+    ssh_sess[j].last_kex_ms = 0;
+    ssh_pkt[j].seq_no_send = 0;
+    ssh_pkt[j].seq_no_recv = 0;
+
+    ssh_pkt[j].kex_active = true; // a key exchange is already in flight
+    tcp_capture_reset();
+    dws_ssh_conn_poll(0);
+    TEST_ASSERT_EQUAL(0, tcp_captured_len());
+
+    ssh_pkt[j].kex_active = false; // open and idle, but nothing has been spent yet
+    dws_ssh_conn_poll(0);
+    TEST_ASSERT_EQUAL(0, tcp_captured_len());
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_OPEN, ssh_sess[j].phase);
+}
+
+// The identification banner is only written when the socket is genuinely sendable: neither a
+// missing pcb nor a non-ACTIVE state produces a write, and the session is set up either way.
+void test_conn_accept_skips_banner_on_dead_socket()
+{
+    conn_pool[0].pcb = nullptr; // ACTIVE, but no pcb
+    tcp_capture_reset();
+    dws_ssh_conn_accept(0);
+    TEST_ASSERT_NOT_EQUAL(DWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot);
+    TEST_ASSERT_EQUAL(0, tcp_captured_len());
+    dws_ssh_conn_close(0);
+
+    conn_pool[1].state = ConnState::CONN_CLOSING; // pcb present, wrong state
+    tcp_capture_reset();
+    dws_ssh_conn_accept(1);
+    TEST_ASSERT_EQUAL(0, tcp_captured_len());
+    dws_ssh_conn_close(1);
+    conn_pool[1].state = ConnState::CONN_ACTIVE;
+}
+
+// The banner is consumed exactly: a read carrying only the identification line leaves nothing for
+// the packet layer, and the NEXT read starts straight at the binary-packet path.
+void test_conn_rx_banner_then_packet_in_separate_reads()
+{
+    dws_ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    const char *banner = "SSH-2.0-TestClient\r\n";
+    push_bytes(0, (const uint8_t *)banner, strlen(banner));
+    tcp_capture_reset();
+    dws_ssh_conn_rx(0);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_KEXINIT, ssh_sess[j].phase);
+    TEST_ASSERT_EQUAL(0, tcp_captured_len()); // nothing followed the banner in that read
+
+    uint8_t payload[700];
+    size_t plen = build_kexinit_payload(payload);
+    uint8_t pkt[768];
+    size_t pktlen = frame_packet(pkt, payload, plen);
+    push_bytes(0, pkt, pktlen);
+    dws_ssh_conn_rx(0); // already past the banner phase
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_DH_INIT, ssh_sess[j].phase);
+    TEST_ASSERT_TRUE(tcp_captured_len() > 0);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_conn_entrypoints_reject_unmapped_slot);
     RUN_TEST(test_conn_outbound_arena_exhausted);
+    RUN_TEST(test_conn_outbound_arena_fits_payload_not_wire);
+    RUN_TEST(test_conn_emit_drops_reply_on_dead_socket);
+    RUN_TEST(test_conn_poll_rx_foreign_slot_mapping);
+    RUN_TEST(test_conn_poll_rekey_preconditions);
+    RUN_TEST(test_conn_accept_skips_banner_on_dead_socket);
+    RUN_TEST(test_conn_rx_banner_then_packet_in_separate_reads);
     RUN_TEST(test_conn_outbound_pkt_send_fails);
     RUN_TEST(test_poll_rekey_emit_fails);
     RUN_TEST(test_accept_sends_server_banner);

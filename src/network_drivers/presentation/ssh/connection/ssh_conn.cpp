@@ -48,11 +48,16 @@ static void ensure_init()
 
 static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
 {
-    if (i >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[i] == 0xFF)
+    if (i >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[i] == 0xFF) // GCOVR_EXCL_LINE  i is always in range: every caller
         return; // GCOVR_EXCL_LINE  defensive: ssh_emit is only invoked by dispatch/poll with a live, mapped slot
     TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[i]];
+    // NOT defensive - this fires in practice. dws_ssh_conn_rx checks only the slot mapping, never
+    // liveness, so a socket that dies between the inbound read and the reply reaches here with a
+    // mapped but dead conn. (An earlier GCOVR_EXCL here claimed "the invoking dispatch/poll already
+    // verified the conn is ACTIVE with a pcb"; that is not true of the rx path, and the exclusion
+    // was hiding a live branch. test_conn_emit_drops_reply_on_dead_socket now covers it.)
     if (!dws_conn_active(conn->id))
-        return; // GCOVR_EXCL_LINE  defensive: the invoking dispatch/poll already verified the conn is ACTIVE with a pcb
+        return;
 
     // Borrow the wire buffer from the shared scratch arena (released on return).
     const size_t wire_cap = SSH_WIRE_CAP;
@@ -133,8 +138,11 @@ int dws_ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
 
     uint8_t close_msgs[10];
     size_t clen = 0;
+    // GCOVR_EXCL_START  clen != 10 cannot be true: build_close only returns 0 after writing exactly the ten
+    // bytes of CHANNEL_EOF + CHANNEL_CLOSE, so that half of the guard is unreachable.
     if (dws_ssh_channel_build_close(ssh_slot, channel, close_msgs, &clen, sizeof(close_msgs)) != 0 || clen != 10)
         return -1;
+    // GCOVR_EXCL_STOP
 
     // close_msgs holds CHANNEL_EOF then CHANNEL_CLOSE; each is its own SSH message,
     // so frame and send the two halves as two binary packets (RFC 4253 6). Borrow
@@ -209,8 +217,11 @@ void dws_ssh_conn_poll(uint8_t conn_slot)
         {
             uint8_t buf[SSH_PKT_BUF_SIZE];
             size_t n = 0;
+            // GCOVR_EXCL_START  begin_rekey cannot fail here: j < MAX_SSH_CONNS is checked above, buf is
+            // SSH_PKT_BUF_SIZE, and generating the new ephemeral is infallible for a valid slot.
             if (ssh_transport_begin_rekey(j, buf, &n, sizeof(buf)) == 0)
                 ssh_emit(j, buf, n);
+            // GCOVR_EXCL_STOP
         }
     }
 
@@ -257,11 +268,14 @@ void dws_ssh_conn_accept(uint8_t conn_slot)
     // Send the server identification banner (raw, before any binary packet).
     uint8_t banner[64];
     size_t blen = 0;
+    // GCOVR_EXCL_START  the banner build cannot fail: SSH_SERVER_VERSION + CRLF is 17 bytes into a 64-byte
+    // buffer, so only the liveness half of this guard is exercisable.
     if (ssh_transport_server_banner(banner, &blen, sizeof(banner)) == 0 && dws_conn_active(conn->id))
     {
         dws_conn_send(conn->id, banner, (u16_t)blen);
         dws_conn_flush(conn->id);
     }
+    // GCOVR_EXCL_STOP
 }
 
 static void close_conn(uint8_t conn_slot)

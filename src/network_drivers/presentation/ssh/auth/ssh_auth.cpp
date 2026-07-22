@@ -142,10 +142,12 @@ static bool parse_ssh_ed25519_blob(const uint8_t *blob, uint32_t blen, uint8_t p
     size_t off = 0;
     const uint8_t *type;
     uint32_t type_len;
-    if (!read_string_ref(blob, blen, &off, &type, &type_len))
-        return false;
-    if (type_len != 11 || memcmp(type, "ssh-ed25519", 11) != 0)
-        return false;
+    // The caller only reaches here after matching the 15-byte string("ssh-ed25519") prefix on the blob,
+    // so the type field is already proven present and correct.
+    if (!read_string_ref(blob, blen, &off, &type, &type_len))   // GCOVR_EXCL_LINE  prefix match implies blen >= 15
+        return false;                                           // GCOVR_EXCL_LINE
+    if (type_len != 11 || memcmp(type, "ssh-ed25519", 11) != 0) // GCOVR_EXCL_LINE  prefix match implies this type
+        return false;                                           // GCOVR_EXCL_LINE
     const uint8_t *pk;
     uint32_t pk_len;
     if (!read_string_ref(blob, blen, &off, &pk, &pk_len))
@@ -163,10 +165,11 @@ static bool parse_ssh_ecdsa_blob(const uint8_t *blob, uint32_t blen, uint8_t pub
     size_t off = 0;
     const uint8_t *type;
     uint32_t type_len;
-    if (!read_string_ref(blob, blen, &off, &type, &type_len))
-        return false;
-    if (type_len != 19 || memcmp(type, "ecdsa-sha2-nistp256", 19) != 0)
-        return false;
+    // As above: the caller matched the 23-byte string("ecdsa-sha2-nistp256") prefix before calling in.
+    if (!read_string_ref(blob, blen, &off, &type, &type_len)) // GCOVR_EXCL_LINE  prefix match implies blen >= 23
+        return false;                                         // GCOVR_EXCL_LINE
+    if (type_len != 19 || memcmp(type, "ecdsa-sha2-nistp256", 19) != 0) // GCOVR_EXCL_LINE  prefix implies this type
+        return false;                                                   // GCOVR_EXCL_LINE
     const uint8_t *curve;
     uint32_t curve_len;
     if (!read_string_ref(blob, blen, &off, &curve, &curve_len))

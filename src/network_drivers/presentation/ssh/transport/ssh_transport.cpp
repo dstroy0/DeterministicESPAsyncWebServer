@@ -877,7 +877,7 @@ static int sign_hash(uint8_t i, const uint8_t *H, size_t h_len, uint8_t *sig, si
     // algorithm only chooses the signature hash (RFC 8332).
     const bool sha512 = (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512);
     const SshRsaHash rh = sha512 ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
-    if (sig_cap < SSH_RSA_SIG_BYTES ||
+    if (sig_cap < SSH_RSA_SIG_BYTES ||        // GCOVR_EXCL_LINE  neither operand can be true: the caller's buffer is
         ssh_rsa_sign(H, h_len, rh, sig) != 0) // GCOVR_EXCL_LINE  sig buffer is 256B and the negotiated
         return -1; // GCOVR_EXCL_LINE  RSA key is loaded (available), so neither the size nor the sign can fail
     *sig_len = SSH_RSA_SIG_BYTES;
@@ -931,11 +931,11 @@ int ssh_kex_generate(uint8_t i)
         // point Q_S = d*G is re-derived in ssh_kexdh_handle (avoids a curve-specific session field).
         // Re-draw on the negligible chance a raw 32-byte value is 0 or >= n (an invalid P-256 scalar).
         uint8_t qtmp[SSH_ECDSA_P256_PUB_LEN];
-        for (int t = 0; t < 8; t++)
-        {
+        for (int t = 0; t < 8; t++) // GCOVR_EXCL_LINE  the loop can only run past its first pass if the RNG
+        {                           // hands back an invalid P-256 scalar, which no host build can provoke
             ssh_rng_fill(ssh_sess[i].ecdh_sk, 32);
-            if (ssh_ecdsa_p256_pubkey(qtmp, ssh_sess[i].ecdh_sk))
-                return 0;
+            if (ssh_ecdsa_p256_pubkey(qtmp, ssh_sess[i].ecdh_sk)) // GCOVR_EXCL_LINE  a random 32-byte value is a
+                return 0;                                         // valid scalar with overwhelming probability
         }
         return -1; // GCOVR_EXCL_LINE  a random 32-byte scalar is a valid P-256 key with overwhelming probability
     }

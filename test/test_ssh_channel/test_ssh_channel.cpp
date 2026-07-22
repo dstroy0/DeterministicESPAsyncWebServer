@@ -982,6 +982,278 @@ void test_chan_global_request_reply_caps()
     TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, g, n, out, &ol, 0)); // 232
 }
 
+// Every entry point that leads with a message byte rejects BOTH a zero-length payload (no message
+// byte at all) and a payload whose message byte belongs to some other message.
+void test_chan_empty_and_mistyped_payloads()
+{
+    uint8_t out[32];
+    size_t ol = 0;
+    uint8_t z[17] = {0}; // leading byte 0 is not any handled message type
+
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(MAX_SSH_CONNS, z, sizeof(z), out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, z, 0, out, &ol, sizeof(out)));
+
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_open(0, z, 0, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_open(0, z, sizeof(z), out, &ol, sizeof(out)));
+
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_request(0, z, 0, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_request(0, z, sizeof(z), out, &ol, sizeof(out)));
+
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_data(0, z, 0, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_data(0, z, sizeof(z), out, &ol, sizeof(out)));
+
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_open_confirm(0, z, 16)); // one byte short of 17
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_open_failure(MAX_SSH_CONNS, z, 5));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_open_failure(0, z, 4)); // one byte short of 5
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_window_adjust(MAX_SSH_CONNS, z, 9));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_window_adjust(0, z, 8)); // one byte short of 9
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_close(MAX_SSH_CONNS, z, 5, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_close(0, z, 4, out, &ol, sizeof(out)));
+
+    // A full-length CONFIRMATION payload carrying some other message number.
+    uint8_t cf[17] = {0};
+    cf[0] = SSH_MSG_CHANNEL_OPEN_FAILURE;
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_open_confirm(0, cf, sizeof(cf)));
+
+    // A CONFIRMATION naming a channel id past the table finds nothing pending.
+    cf[0] = SSH_MSG_CHANNEL_OPEN_CONFIRM;
+    wr_u32(cf + 1, DWS_SSH_MAX_CHANNELS + 4u);
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_open_confirm(0, cf, sizeof(cf)));
+}
+
+// Name matching compares the whole element, not just its length: a request name / channel type /
+// request type that is exactly as long as one we handle but differs in content must not match.
+void test_chan_same_length_names_do_not_match()
+{
+    uint8_t out[64];
+    size_t ol = 99;
+    size_t n;
+    uint8_t g[64];
+
+    // "tcpip-forwarX" is 13 chars like "tcpip-forward"; "cancel-tcpip-forwarX" is 20 like the cancel
+    // form. Both fall through to the unrecognized-request reply instead of the forward handler.
+    dws_ssh_channel_set_rforward_open_cb(rfwd_open_cb);
+    dws_ssh_channel_set_rforward_cancel_cb(rfwd_cancel_cb);
+    n = make_global_other(g, "tcpip-forwarX", true);
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_REQUEST_FAILURE, out[0]);
+    n = make_global_other(g, "cancel-tcpip-forwarX", true);
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_REQUEST_FAILURE, out[0]);
+    TEST_ASSERT_EQUAL_INT(0, rfwd_open_count);
+    TEST_ASSERT_EQUAL_INT(0, rfwd_cancel_count);
+
+    // "sessioX" (7) and "direct-tcpiX" (12) are unknown channel types -> reason 3.
+    const char *types[2] = {"sessioX", "direct-tcpiX"};
+    for (int t = 0; t < 2; t++)
+    {
+        uint8_t op[64];
+        n = 0;
+        op[n++] = SSH_MSG_CHANNEL_OPEN;
+        n += put_string(op + n, types[t]);
+        wr_u32(op + n, 11);
+        wr_u32(op + n + 4, 32768);
+        wr_u32(op + n + 8, 32768);
+        n += 12;
+        TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_open(0, op, n, out, &ol, sizeof(out)));
+        TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_FAILURE, out[0]);
+        TEST_ASSERT_EQUAL_UINT32(3u, rd_u32(out + 5)); // unknown channel type
+    }
+}
+
+// The CHANNEL_REQUEST accept set is matched element-wise as well: pty-req and env are accepted,
+// while same-length impostors of shell / exec / pty-req / env are refused.
+void test_chan_request_accept_set()
+{
+    uint32_t id = open_session(21, 32768);
+    uint8_t out[64];
+    size_t ol = 0;
+    const char *accepted[2] = {"pty-req", "env"};
+    for (int k = 0; k < 2; k++)
+    {
+        uint8_t rq[64];
+        size_t n = 0;
+        rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+        wr_u32(rq + n, id);
+        n += 4;
+        n += put_string(rq + n, accepted[k]);
+        rq[n++] = 1; // want_reply
+        TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+        TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, out[0]);
+    }
+    const char *refused[4] = {"shelX", "exeX", "pty-reX", "enX"};
+    for (int k = 0; k < 4; k++)
+    {
+        uint8_t rq[64];
+        size_t n = 0;
+        rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+        wr_u32(rq + n, id);
+        n += 4;
+        n += put_string(rq + n, refused[k]);
+        rq[n++] = 1;
+        TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+        TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_FAILURE, out[0]);
+    }
+}
+
+// A tcpip-forward / direct-tcpip whose address string parses but leaves no room for the port that
+// must follow it is rejected (the length field is present, the value is not).
+void test_chan_missing_trailing_port()
+{
+    uint8_t out[64];
+    size_t ol = 0;
+    uint8_t g[64];
+    size_t n = 0;
+    g[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(g + n, "tcpip-forward");
+    g[n++] = 1;                        // want_reply
+    n += put_string(g + n, "0.0.0.0"); // address parses, then the payload ends
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)));
+
+    dws_ssh_channel_set_forward_open_cb(fwd_open_cb);
+    uint8_t dt[64];
+    n = 0;
+    dt[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(dt + n, "direct-tcpip");
+    wr_u32(dt + n, 3);
+    wr_u32(dt + n + 4, 32768);
+    wr_u32(dt + n + 8, 32768);
+    n += 12;
+    n += put_string(dt + n, "127.0.0.1"); // host parses, then the payload ends
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_handle_open(0, dt, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(0, fwd_open_count); // never reached the connect hook
+}
+
+// A refused remote forward with want_reply unset is silent, and cancel-tcpip-forward with no cancel
+// owner installed is refused the same way an unowned tcpip-forward is.
+void test_chan_rforward_refused_paths()
+{
+    uint8_t out[16];
+    size_t ol = 99;
+    uint8_t g[64];
+
+    size_t n = make_global_fwd(g, "tcpip-forward", false, "0.0.0.0", 8080); // no owner, no reply wanted
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(0u, ol);
+
+    ol = 99;
+    n = make_global_fwd(g, "cancel-tcpip-forward", true, "0.0.0.0", 8080); // no cancel owner
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(1u, ol);
+    TEST_ASSERT_EQUAL(SSH_MSG_REQUEST_FAILURE, out[0]);
+    TEST_ASSERT_EQUAL_INT(0, rfwd_cancel_count);
+}
+
+// open_forwarded rejects an out-of-range slot and a null originator address, and a CHANNEL_OPEN
+// FAILURE with no confirm owner installed still frees the pending slot.
+void test_chan_forwarded_open_guards_and_silent_failure()
+{
+    uint8_t out[128];
+    size_t ol = 0;
+    TEST_ASSERT_EQUAL_INT(
+        -1, dws_ssh_channel_open_forwarded(MAX_SSH_CONNS, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_open_forwarded(0, "10.0.0.1", 80, nullptr, 90, out, &ol, sizeof(out)));
+
+    int ch = dws_ssh_channel_open_forwarded(0, "10.0.0.1", 22, "1.2.3.4", 40000, out, &ol, sizeof(out));
+    TEST_ASSERT_TRUE(ch >= 0);
+    uint8_t pkt[17] = {0};
+    pkt[0] = SSH_MSG_CHANNEL_OPEN_FAILURE;
+    wr_u32(pkt + 1, (uint32_t)ch);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_open_failure(0, pkt, sizeof(pkt))); // no confirm cb installed
+    TEST_ASSERT_EQUAL_INT(0, confirm_count);
+    TEST_ASSERT_FALSE(ssh_chan[0][ch].pending);
+    TEST_ASSERT_FALSE(ssh_chan[0][ch].open);
+}
+
+// Inbound data with no sink installed is still accounted against the window; an empty CHANNEL_DATA
+// string skips delivery entirely; and a window replenish that cannot fit the output buffer is
+// dropped rather than truncated (the window stays spent).
+void test_chan_data_without_sinks_and_empty_payload()
+{
+    uint8_t out[64];
+    size_t ol = 0;
+    uint8_t pkt[64];
+
+    // Session channel with no data callback.
+    dws_ssh_channel_set_data_cb(nullptr);
+    uint32_t id = open_session(31, 32768);
+    size_t n = make_data(pkt, id, "abc");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, pkt, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(0, data_cb_count);
+    TEST_ASSERT_EQUAL_UINT32(SSH_CHAN_WINDOW - 3u, ssh_chan[0][id].local_window);
+
+    // A zero-length data string is accepted and delivers nothing.
+    n = make_data(pkt, id, "");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, pkt, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT32(SSH_CHAN_WINDOW - 3u, ssh_chan[0][id].local_window);
+
+    // direct-tcpip channel with no forward-data callback.
+    dws_ssh_channel_set_forward_open_cb(fwd_open_cb);
+    dws_ssh_channel_set_forward_data_cb(nullptr);
+    n = make_direct_tcpip(pkt, 32, "10.1.2.3", 443);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_open(0, pkt, n, out, &ol, sizeof(out)));
+    uint32_t fid = rd_u32(out + 5);
+    n = make_data(pkt, fid, "xyz");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, pkt, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(0, fwd_data_count);
+
+    // The window falls below half but the caller's buffer cannot hold a WINDOW_ADJUST.
+    ssh_chan[0][id].local_window = 100;
+    n = make_data(pkt, id, "0123456789");
+    ol = 99;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, pkt, n, out, &ol, 5));
+    TEST_ASSERT_EQUAL(0u, ol);
+    TEST_ASSERT_EQUAL_UINT32(90u, ssh_chan[0][id].local_window); // not replenished
+}
+
+// build_data rejects an out-of-range slot and a write larger than the peer's maximum packet size
+// (even when the peer window would allow it); build_close rejects a buffer under ten bytes; and a
+// WINDOW_ADJUST that would wrap the 32-bit peer window saturates instead.
+void test_chan_outbound_limits_and_window_saturation()
+{
+    uint8_t out[64];
+    size_t ol = 0;
+    const uint8_t data[5] = {1, 2, 3, 4, 5};
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_build_data(MAX_SSH_CONNS, 0, data, sizeof(data), out, &ol, sizeof(out)));
+
+    uint32_t id = open_session(44, 32768);
+    ssh_chan[0][id].peer_window = 1000;
+    ssh_chan[0][id].peer_max_pkt = 2; // window is ample, the per-packet cap is not
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_build_data(0, id, data, sizeof(data), out, &ol, sizeof(out)));
+
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_channel_build_close(0, id, out, &ol, 9)); // one byte short of EOF+CLOSE
+
+    ssh_chan[0][id].peer_window = 0xFFFFFFF0u;
+    uint8_t wa[9];
+    wa[0] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+    wr_u32(wa + 1, id);
+    wr_u32(wa + 5, 0x40u); // would wrap past 2^32
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_window_adjust(0, wa, sizeof(wa)));
+    TEST_ASSERT_EQUAL_UINT32(0xFFFFFFFFu, ssh_chan[0][id].peer_window);
+}
+
+#if DWS_ENABLE_SSH_SFTP || DWS_ENABLE_SSH_SCP
+// Build a CHANNEL_REQUEST on channel @p id: request type @p rtype, want_reply, then (optionally) a
+// request-specific string argument. @p trunc_arg appends a length header whose bytes never arrive.
+static size_t make_chan_request(uint8_t *rq, uint32_t id, const char *rtype, const char *arg, bool trunc_arg)
+{
+    size_t n = 0;
+    rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(rq + n, id);
+    n += 4;
+    n += put_string(rq + n, rtype);
+    rq[n++] = 1; // want_reply
+    if (arg)
+        n += put_string(rq + n, arg);
+    if (trunc_arg)
+    {
+        wr_u32(rq + n, 64); // declares 64 argument bytes, none present
+        n += 4;
+    }
+    return n;
+}
+#endif
+
 #if DWS_ENABLE_SSH_SFTP
 static int dws_sftp_open_count;
 static uint32_t dws_sftp_open_channel;
@@ -1054,6 +1326,46 @@ void test_unknown_subsystem_refused()
     TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_FAILURE, out[0]);
 }
+
+// The SFTP classifier matches "subsystem" and its "sftp" argument element-wise, and tolerates a
+// missing open callback: a same-length impostor request type, a same-length impostor argument and a
+// truncated argument are all refused, while "sftp" is accepted even with no binding installed.
+void test_sftp_subsystem_match_and_missing_cb()
+{
+    dws_ssh_channel_set_sftp_open_cb(nullptr);
+    dws_ssh_channel_set_sftp_data_cb(nullptr);
+    dws_sftp_open_count = 0;
+    dws_sftp_data_count = 0;
+    uint32_t id = open_session(9, 32768);
+    uint8_t rq[64];
+    uint8_t out[64];
+    size_t ol = 0;
+
+    size_t n = make_chan_request(rq, id, "subsystex", "sftp", false); // 9 chars, not "subsystem"
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_FAILURE, out[0]);
+
+    n = make_chan_request(rq, id, "subsystem", "sftq", false); // 4 chars, not "sftp"
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_FAILURE, out[0]);
+
+    n = make_chan_request(rq, id, "subsystem", nullptr, true); // argument length header only
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_FAILURE, out[0]);
+    TEST_ASSERT_EQUAL_INT(0, dws_sftp_open_count);
+
+    // Accepted with no binding: the channel is tagged SFTP and its data is simply dropped.
+    n = make_chan_request(rq, id, "subsystem", "sftp", false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, out[0]);
+    TEST_ASSERT_EQUAL_INT(0, dws_sftp_open_count);
+
+    uint8_t dp[32];
+    size_t dn = make_data(dp, id, "FXP");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(0, dws_sftp_data_count);
+    TEST_ASSERT_EQUAL_INT(0, data_cb_count); // and never mistaken for session data
+}
 #endif // DWS_ENABLE_SSH_SFTP
 
 #if DWS_ENABLE_SSH_SCP
@@ -1107,6 +1419,53 @@ void test_scp_exec_routes()
     TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)));
     TEST_ASSERT_EQUAL_INT(1, dws_scp_data_count);
 }
+
+// The SCP classifier only fires on an exec whose command really begins "scp ": a same-length
+// impostor request type, a command shorter than the prefix, a same-length command that differs, and
+// a truncated command argument all leave the channel a plain session (exec itself stays accepted).
+// With no SCP binding installed the exec is still accepted and its data is dropped.
+void test_scp_exec_match_and_missing_cb()
+{
+    dws_ssh_channel_set_scp_open_cb(nullptr);
+    dws_ssh_channel_set_scp_data_cb(nullptr);
+    dws_ssh_channel_set_data_cb(data_cb);
+    dws_scp_open_count = 0;
+    dws_scp_data_count = 0;
+    data_cb_count = 0;
+    uint32_t id = open_session(12, 32768);
+    uint8_t rq[64];
+    uint8_t out[64];
+    size_t ol = 0;
+
+    size_t n = make_chan_request(rq, id, "exeX", "scp -t /x", false); // 4 chars, not "exec"
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_FAILURE, out[0]);
+
+    const char *not_scp[3] = {"ls", "scpX -t /x", nullptr};
+    for (int k = 0; k < 3; k++)
+    {
+        n = make_chan_request(rq, id, "exec", not_scp[k], not_scp[k] == nullptr);
+        TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+        TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, out[0]); // exec is accepted, just not tagged SCP
+    }
+    TEST_ASSERT_EQUAL_INT(0, dws_scp_open_count);
+
+    // Data on the untagged channel is still ordinary session data.
+    uint8_t dp[32];
+    size_t dn = make_data(dp, id, "hello");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(1, data_cb_count);
+
+    // A real "scp " command with no binding installed: accepted, tagged, and its data dropped.
+    n = make_chan_request(rq, id, "exec", "scp -f /gcode/part.nc", false);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, out[0]);
+    TEST_ASSERT_EQUAL_INT(0, dws_scp_open_count);
+    dn = make_data(dp, id, "C0644");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(0, dws_scp_data_count);
+    TEST_ASSERT_EQUAL_INT(1, data_cb_count); // unchanged: an SCP channel is not session data
+}
 #endif // DWS_ENABLE_SSH_SCP
 
 int main()
@@ -1117,6 +1476,14 @@ int main()
     RUN_TEST(test_chan_open_cap_guards);
     RUN_TEST(test_chan_forward_and_channel_guards);
     RUN_TEST(test_chan_global_request_reply_caps);
+    RUN_TEST(test_chan_empty_and_mistyped_payloads);
+    RUN_TEST(test_chan_same_length_names_do_not_match);
+    RUN_TEST(test_chan_request_accept_set);
+    RUN_TEST(test_chan_missing_trailing_port);
+    RUN_TEST(test_chan_rforward_refused_paths);
+    RUN_TEST(test_chan_forwarded_open_guards_and_silent_failure);
+    RUN_TEST(test_chan_data_without_sinks_and_empty_payload);
+    RUN_TEST(test_chan_outbound_limits_and_window_saturation);
     RUN_TEST(test_open_session_confirms);
     RUN_TEST(test_open_unknown_type_fails);
     RUN_TEST(test_direct_tcpip_no_cb_prohibited);
@@ -1152,9 +1519,11 @@ int main()
 #if DWS_ENABLE_SSH_SFTP
     RUN_TEST(test_sftp_subsystem_routes);
     RUN_TEST(test_unknown_subsystem_refused);
+    RUN_TEST(test_sftp_subsystem_match_and_missing_cb);
 #endif
 #if DWS_ENABLE_SSH_SCP
     RUN_TEST(test_scp_exec_routes);
+    RUN_TEST(test_scp_exec_match_and_missing_cb);
 #endif
     return UNITY_END();
 }

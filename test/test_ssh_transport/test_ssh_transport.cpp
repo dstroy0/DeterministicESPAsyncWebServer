@@ -1694,12 +1694,124 @@ void test_kexdh_handle_ecdh_p256_rejects_malformed_init()
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, truncated, sizeof(truncated), reply, &rlen, sizeof(reply)));
 }
 
+// Defensive: a server that selected ecdsa-sha2-nistp256 as its host-key algorithm while holding no
+// P-256 key (mis-provisioned, or the algorithm forced by hand) cannot sign the exchange hash, so
+// the key exchange fails closed instead of emitting a signature made with a zero scalar.
+// MUST run before any test installs a P-256 host key - the transport ctx is not per-session.
+void test_kexdh_handle_ecdsa_hostkey_absent_fails()
+{
+    TEST_ASSERT_FALSE(dws_ssh_hostkey_ecdsa_available());
+    ssh_transport_init(0);
+    ssh_sess[0].kex_alg = SshKexAlg::SSH_KEX_CURVE25519;
+    ssh_sess[0].hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256;
+    ssh_sess[0].v_c_len = ssh_sess[0].i_c_len = ssh_sess[0].i_s_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+
+    uint8_t client_sk[32];
+    uint8_t qc[32];
+    for (int j = 0; j < 32; j++)
+        client_sk[j] = (uint8_t)(0x20 + j);
+    ssh_x25519_base(qc, client_sk);
+
+    uint8_t pkt[64];
+    pkt[0] = SSH_MSG_KEXDH_INIT;
+    pkt[1] = pkt[2] = pkt[3] = 0;
+    pkt[4] = 32;
+    memcpy(pkt + 5, qc, 32);
+    uint8_t reply[512];
+    size_t rlen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 32, reply, &rlen, sizeof(reply)));
+    TEST_ASSERT_NOT_EQUAL(SshPhase::SSH_PHASE_NEWKEYS, ssh_sess[0].phase);
+}
+
+// RFC 4253 §4.2 preamble handling copes with the degenerate lines too: a bare LF (an empty line,
+// so there is no trailing CR to strip) and a line shorter than the four bytes "SSH-" needs.
+void test_recv_banner_empty_and_short_preamble_lines()
+{
+    ssh_transport_init(0);
+    const char *data = "\nab\r\nSSH-2.0-Real\r\n";
+    size_t consumed = 0;
+    TEST_ASSERT_EQUAL_INT(1, ssh_transport_recv_banner(0, (const uint8_t *)data, strlen(data), &consumed));
+    TEST_ASSERT_EQUAL_STRING("SSH-2.0-Real", ssh_sess[0].v_c);
+    TEST_ASSERT_EQUAL_size_t(strlen(data), consumed);
+}
+
+// KEXINIT parsing rejects a payload too short to hold the message byte and the 16-byte cookie, and
+// one of the right size that carries some other message number.
+void test_kexinit_parse_rejects_short_and_mistyped()
+{
+    ssh_transport_init(0);
+    uint8_t buf[64];
+    memset(buf, 0, sizeof(buf));
+    buf[0] = SSH_MSG_KEXINIT;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, 16)); // one byte short of msg + cookie
+    buf[0] = SSH_MSG_NEWKEYS;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, sizeof(buf)));
+}
+
+// An mpint of nothing but zero bytes is the value zero: the leading-zero strip walks the whole
+// field and e comes out as an all-zero 2048-bit value (which bn_dh_validate then rejects).
+void test_kexdh_parse_init_accepts_all_zero_mpint()
+{
+    uint8_t e_be[256];
+    memset(e_be, 0xAA, sizeof(e_be));
+    uint8_t pkt[16] = {SSH_MSG_KEXDH_INIT, 0, 0, 0, 4, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexdh_parse_init(pkt, 9, e_be));
+    for (size_t k = 0; k < sizeof(e_be); k++)
+        TEST_ASSERT_EQUAL_UINT8(0, e_be[k]);
+}
+
+// ecdh-sha2-nistp256: an ephemeral scalar that is not a valid P-256 private key (zero) cannot
+// produce a server public point, so the exchange fails before any shared secret is computed.
+void test_kexdh_handle_ecdh_p256_rejects_bad_ephemeral()
+{
+    ssh_transport_init(0);
+    setup_rsa_fixture();
+    ssh_sess[0].kex_alg = SshKexAlg::SSH_KEX_ECDH_NISTP256;
+    ssh_sess[0].hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+    memset(ssh_sess[0].ecdh_sk, 0, 32); // zero is not in [1, n)
+
+    uint8_t qc[SSH_ECDSA_P256_PUB_LEN];
+    uint8_t d[32];
+    memset(d, 0, sizeof(d));
+    d[31] = 0x07;
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(qc, d)); // a well-formed client point
+
+    uint8_t pkt[8 + SSH_ECDSA_P256_PUB_LEN];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_KEXDH_INIT;
+    pkt[n++] = 0;
+    pkt[n++] = 0;
+    pkt[n++] = 0;
+    pkt[n++] = (uint8_t)SSH_ECDSA_P256_PUB_LEN;
+    memcpy(pkt + n, qc, SSH_ECDSA_P256_PUB_LEN);
+    n += SSH_ECDSA_P256_PUB_LEN;
+
+    uint8_t reply[512];
+    size_t rlen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)));
+}
+
+// The re-key trigger watches BOTH sequence numbers: a receive-heavy session hits the threshold on
+// seq_no_recv alone (RFC 4253 §9).
+void test_rekey_needed_on_receive_sequence_alone()
+{
+    ssh_pkt_init(0);
+    ssh_pkt[0].seq_no_send = 0;
+    ssh_pkt[0].seq_no_recv = SSH_REKEY_PACKET_THRESHOLD;
+    TEST_ASSERT_TRUE(ssh_rekey_needed(0));
+    ssh_pkt_init(0);
+}
+
 int main()
 {
     UNITY_BEGIN();
     // First: dws_ssh_hostkey_ecdsa_set must be probed before any test installs a P-256 host key, so
     // the "an invalid scalar changes nothing" assertion is made against a clean transport ctx.
     RUN_TEST(test_hostkey_ecdsa_set_rejects_invalid_scalar);
+    // Also order-sensitive: must see the transport ctx with no P-256 key installed.
+    RUN_TEST(test_kexdh_handle_ecdsa_hostkey_absent_fails);
     RUN_TEST(test_transport_index_guards);
     RUN_TEST(test_banner_and_build_caps);
     RUN_TEST(test_kexinit_parse_field_and_trunc);
@@ -1754,6 +1866,11 @@ int main()
     RUN_TEST(test_extinfo_build_modern_first_order);
     RUN_TEST(test_kexdh_handle_curve25519_rejects_malformed_init);
     RUN_TEST(test_kexdh_handle_ecdh_p256_rejects_malformed_init);
+    RUN_TEST(test_recv_banner_empty_and_short_preamble_lines);
+    RUN_TEST(test_kexinit_parse_rejects_short_and_mistyped);
+    RUN_TEST(test_kexdh_parse_init_accepts_all_zero_mpint);
+    RUN_TEST(test_kexdh_handle_ecdh_p256_rejects_bad_ephemeral);
+    RUN_TEST(test_rekey_needed_on_receive_sequence_alone);
     // Runs LAST on purpose: it provisions all three host-key types and the availability lives in the
     // (non-per-session) transport ctx that setUp does not clear, so leaving it set must not perturb the
     // order-sensitive earlier tests (e.g. rejects_hostkey_we_lack assumes only the RSA fixture is held).
