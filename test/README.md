@@ -554,7 +554,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3708 test cases** across **279 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4166 test cases** across **279 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -1111,7 +1111,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_application (72 tests)</b></summary>
+<summary><b>test_application (100 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_response_trailer_truncation_clamps</b> &mdash; <i>(a) The status line alone overflows the header buffer -> hlen >= cap -> clamp.</i></summary>
@@ -1783,15 +1783,310 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_metrics_emits_prometheus</b> &mdash; <i>Metrics emits prometheus</i></summary>
+    <summary><b>test_metrics_emits_prometheus</b> &mdash; <i>Every sample line must actually carry a VALUE. Asserting only that the metric NAME appears</i></summary>
 
-    * **Objective**: Metrics emits prometheus
+    * **Objective**: Every sample line must actually carry a VALUE. Asserting only that the metric NAME appears
     * **Assertions**:
       * <code>Assert not null (strstr(out, "text/plain; version=0.0.4"))</code>
       * <code>Assert not null (strstr(out, "# TYPE dws_http_requests_total counter"))</code>
       * <code>Assert not null (strstr(out, "dws_http_responses_total{class=\\"2xx\\"}"))</code>
       * <code>Assert not null (strstr(out, "dws_free_heap_bytes"))</code>
       * <code>Assert not null (strstr(out, "dws_uptime_seconds"))</code>
+      * <code>Assert not null (body)</code>
+      * <code>Assert not null message (sp, "metric sample line has no value separator")</code>
+      * <code>Assert true message ((size_t)(sp - ln) + 1 &lt; len, "metric sample line has an empty value")</code>
+      * <code>Assert true message (samples &gt;= 11, "expected every metric placeholder to emit a sample")</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stats_counters_ignore_sub_200_status</b> &mdash; <i>Stats counters ignore sub 200 status</i></summary>
+
+    * **Objective**: Stats counters ignore sub 200 status
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "\\"requests\\":1"))</code>
+      * <code>Assert not null (strstr(out, "\\"http_2xx\\":0"))</code>
+      * <code>Assert not null (strstr(out, "\\"http_4xx\\":0"))</code>
+      * <code>Assert not null (strstr(out, "\\"http_5xx\\":0"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_trailer_cors_block_and_null_disable</b> &mdash; <i>Response trailer cors block and null disable</i></summary>
+
+    * **Objective**: Response trailer cors block and null disable
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "Access-Control-Allow-Origin: https://a.example\\r\\n"))</code>
+      * <code>Assert null (strstr(tcp_captured(), "Access-Control-Allow-Origin"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cache_control_null_clears_header</b> &mdash; <i>Cache control null clears header</i></summary>
+
+    * **Objective**: Cache control null clears header
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert null (strstr(tcp_captured(), "Cache-Control"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_route_pattern_matches_nothing</b> &mdash; <i>Empty route pattern matches nothing</i></summary>
+
+    * **Objective**: Empty route pattern matches nothing
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "404"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_path_param_capture_limits</b> &mdash; <i>An over-long :name and an over-long value are both truncated, not overflowed.</i></summary>
+
+    * **Objective**: An over-long :name and an over-long value are both truncated, not overflowed.
+    * **Assertions**:
+      * <code>Assert true (handler_called)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(MAX_PATH_PARAMS, g_seen_param_count); // 5th capture dropped</code>
+      * <code>Assert equal string ("4", g_seen_params[3].val)</code>
+      * <code>Assert true (handler_called)</code>
+      * <code>Assert equal uint (QUERY_KEY_LEN - 1, (unsigned)strlen(g_seen_params[0].key))</code>
+      * <code>Assert equal uint (QUERY_VAL_LEN - 1, (unsigned)strlen(g_seen_params[0].val))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_path_param_segment_mismatches</b> &mdash; <i>"//v": both route and path carry an empty segment, then ":a" captures "v".</i></summary>
+
+    * **Objective**: "//v": both route and path carry an empty segment, then ":a" captures "v".
+    * **Assertions**:
+      * <code>Assert false message (handler_called, misses[i])</code>
+      * <code>Assert not null message (strstr(tcp_captured(), "404"), misses[i])</code>
+      * <code>Assert true (handler_called)</code>
+      * <code>Assert equal string ("v", g_seen_params[0].val)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_worker_owner_filter_skips_foreign_slot</b> &mdash; <i>Worker owner filter skips foreign slot</i></summary>
+
+    * **Objective**: Worker owner filter skips foreign slot
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[1].parse_state)</code>
+      * <code>Assert true (handler_called)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_slot_poll_requires_registered_handler_with_poll</b> &mdash; <i>Slot poll requires registered handler with poll</i></summary>
+
+    * **Objective**: Slot poll requires registered handler with poll
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert true (handler_called)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_entity_too_large_auto_413</b> &mdash; <i>Entity too large auto 413</i></summary>
+
+    * **Objective**: Entity too large auto 413
+    * **Assertions**:
+      * <code>Assert equal (ParseState::PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "413 Payload Too Large"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_allow_header_dedupes_repeated_method</b> &mdash; <i>Allow header dedupes repeated method</i></summary>
+
+    * **Objective**: Allow header dedupes repeated method
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "Allow: POST\\r\\n"))</code>
+      * <code>Assert null (strstr(out, "POST, POST"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_close_head_and_dead_connection</b> &mdash; <i>HEAD on a POST-only route -> 405 headers, no body.</i></summary>
+
+    * **Objective**: HEAD on a POST-only route -> 405 headers, no body.
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "405 Method Not Allowed"))</code>
+      * <code>Assert null (strstr(out, "\\r\\n\\r\\nMethod Not Allowed"))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_transfer_encoding_on_semantic_ingress_is_501</b> &mdash; <i>Transfer encoding on semantic ingress is 501</i></summary>
+
+    * **Objective**: Transfer encoding on semantic ingress is 501
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "501 Not Implemented"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_static_mount_rejects_non_get_methods</b> &mdash; <i>Static mount rejects non get methods</i></summary>
+
+    * **Objective**: Static mount rejects non get methods
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "405"))</code>
+      * <code>Assert not null (strstr(out, "Allow: GET, HEAD\\r\\n"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_null_payload_and_slot_bounds</b> &mdash; <i>Send null payload and slot bounds</i></summary>
+
+    * **Objective**: Send null payload and slot bounds
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Content-Length: 0\\r\\n"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_body_framing_paths</b> &mdash; <i>HEAD: headers only, but Content-Length still describes the would-be body.</i></summary>
+
+    * **Objective**: HEAD: headers only, but Content-Length still describes the would-be body.
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "Content-Length: 6\\r\\n"))</code>
+      * <code>Assert null (strstr(tcp_captured(), "abcdef"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Content-Length: 0\\r\\n"))</code>
+      * <code>Assert not null (strstr(out, want))</code>
+      * <code>Assert equal uint (sizeof(big) - 1, (unsigned)strlen(strstr(out, "\\r\\n\\r\\n") + 4))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_empty_and_redirect_dead_connection_guards</b> &mdash; <i>Send empty and redirect dead connection guards</i></summary>
+
+    * **Objective**: Send empty and redirect dead connection guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_template_placeholder_edges</b> &mdash; <i>Send template placeholder edges</i></summary>
+
+    * **Objective**: Send template placeholder edges
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "a{{0123456789012345678901234567890123}}b"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Content-Length: 0\\r\\n"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_chunked_without_source</b> &mdash; <i>Send chunked without source</i></summary>
+
+    * **Objective**: Send chunked without source
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "Transfer-Encoding: chunked\\r\\n"))</code>
+      * <code>Assert null (strstr(out, "0\\r\\n\\r\\n"))</code>
+      * <code>Assert false (s_send.chunk[0].active)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chunked_pump_small_window_and_connection_lost</b> &mdash; <i>No window at all: the body parks in the pump, still active.</i></summary>
+
+    * **Objective**: No window at all: the body parks in the pump, still active.
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "Transfer-Encoding: chunked\\r\\n"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "28\\r\\nqqqq"))</code>
+      * <code>Assert false (s_send.chunk[0].active)</code>
+      * <code>Assert true (s_send.chunk[0].active)</code>
+      * <code>Assert false (s_send.chunk[0].active)</code>
+      * <code>Assert null (strstr(tcp_captured(), "qqqq"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_header_null_value_empty_attrs_and_overflow</b> &mdash; <i>Response header null value empty attrs and overflow</i></summary>
+
+    * **Objective**: Response header null value empty attrs and overflow
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "X-Keep: 1\\r\\n"))</code>
+      * <code>Assert not null (strstr(out, "Set-Cookie: sid=abc\\r\\n"))</code>
+      * <code>Assert null (strstr(out, "X-Null"))</code>
+      * <code>Assert null (strstr(out, "c-null"))</code>
+      * <code>Assert null (strstr(out, "X-Too-Big"))</code>
+      * <code>Assert null (strstr(out, "ffff"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mime_type_extension_edges</b> &mdash; <i>Mime type extension edges</i></summary>
+
+    * **Objective**: Mime type extension edges
+    * **Assertions**:
+      * <code>Assert equal string ("application/octet-stream", DWS::mime_type("/file."))</code>
+      * <code>Assert equal string ("application/octet-stream", DWS::mime_type("/a.7z"))</code>
+      * <code>Assert equal string ("application/octet-stream", DWS::mime_type("/a.jsx"))</code>
+      * <code>Assert equal string ("application/octet-stream", DWS::mime_type("/a.h"))</code>
+      * <code>Assert equal string ("font/woff2", DWS::mime_type("/a.WOFF2"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_upgrade_without_connect_handler</b> &mdash; <i>Ws upgrade without connect handler</i></summary>
+
+    * **Objective**: Ws upgrade without connect handler
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "101 Switching Protocols"))</code>
+      * <code>Assert not null (ws_find(0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_dispatch_without_message_or_close_handler</b> &mdash; <i>Ws dispatch without message or close handler</i></summary>
+
+    * **Objective**: Ws dispatch without message or close handler
+    * **Assertions**:
+      * <code>Assert not null (ws)</code>
+      * <code>Assert not null (ws_find(0))</code>
+      * <code>Assert not equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert null (ws_find(0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_upgrade_handshake_gate</b> &mdash; <i>A real handshake with no Sec-WebSocket-Version at all -> 426, same as a wrong one.</i></summary>
+
+    * **Objective**: A real handshake with no Sec-WebSocket-Version at all -> 426, same as a wrong one.
+    * **Assertions**:
+      * <code>Assert not null message (strstr(tcp_captured(), "400"), bad[i])</code>
+      * <code>Assert not null (strstr(tcp_captured(), "426 Upgrade Required"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_send_api_inactive_error_state_and_dead_slot</b> &mdash; <i>In range but not allocated.</i></summary>
+
+    * **Objective**: In range but not allocated.
+    * **Assertions**:
+      * <code>Assert not null (ws)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_upgrade_entry_points_on_dead_slot</b> &mdash; <i>Upgrade entry points on dead slot</i></summary>
+
+    * **Objective**: Upgrade entry points on dead slot
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert false (ws_do_upgrade(0, &http_pool[0], nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+      * <code>Assert false (dws_sse_do_upgrade(0, &http_pool[0], nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_upgrade_fires_connect_handler</b> &mdash; <i>Sse upgrade fires connect handler</i></summary>
+
+    * **Objective**: Sse upgrade fires connect handler
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "text/event-stream"))</code>
+      * <code>Assert equal int (1, g_sse_connect_calls)</code>
+      * <code>Assert not null (dws_sse_find(0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(dws_sse_find(0)-&gt;dws_sse_id, g_sse_connected_id);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_send_on_dead_slot_writes_nothing</b> &mdash; <i>Sse send on dead slot writes nothing</i></summary>
+
+    * **Objective**: Sse send on dead slot writes nothing
+    * **Assertions**:
+      * <code>Assert not null (sse)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
   </details>
 
 </details>
@@ -2029,7 +2324,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_auth (13 tests)</b></summary>
+<summary><b>test_auth (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_unprotected_route_fires_handler</b> &mdash; <i>Unprotected route fires handler</i></summary>
@@ -2129,6 +2424,102 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert not null (strstr(tcp_captured(), "405"))</code>
       * <code>Assert null (strstr(tcp_captured(), "401"))</code>
       * <code>Assert not null (strstr(tcp_captured(), "Allow: POST"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_basic_auth_same_length_wrong_credentials</b> &mdash; <i>base64("xser:pass") - username same length, different bytes.</i></summary>
+
+    * **Objective**: base64("xser:pass") - username same length, different bytes.
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_basic_auth_invalid_base64_rejected</b> &mdash; <i>Basic auth invalid base64 rejected</i></summary>
+
+    * **Objective**: Basic auth invalid base64 rejected
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unauth_challenge_cors_and_head</b> &mdash; <i>HEAD is served by the GET route, so it is challenged too - headers only.</i></summary>
+
+    * **Objective**: HEAD is served by the GET route, so it is challenged too - headers only.
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Access-Control-Allow-Origin: *\\r\\n"))</code>
+      * <code>Assert not null (strstr(out, "401"))</code>
+      * <code>Assert not null (strstr(out, "Content-Length: 12\\r\\n"))</code>
+      * <code>Assert null (strstr(out, "\\r\\n\\r\\nUnauthorized"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unauth_challenge_on_dead_connection</b> &mdash; <i>Unauth challenge on dead connection</i></summary>
+
+    * **Objective**: Unauth challenge on dead connection
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_digest_field_parser_boundaries</b> &mdash; <i>(a) Comma-delimited with no space after the comma, and "nc" also occurs inside</i></summary>
+
+    * **Objective**: (a) Comma-delimited with no space after the comma, and "nc" also occurs inside
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_digest_token_values_and_truncation</b> &mdash; <i>Space-separated tokens; the final value runs to the end of the header.</i></summary>
+
+    * **Objective**: Space-separated tokens; the final value runs to the end of the header.
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_digest_nonce_shape_and_mac</b> &mdash; <i>Digest nonce shape and mac</i></summary>
+
+    * **Objective**: Digest nonce shape and mac
+    * **Assertions**:
+      * <code>Assert false message (handler_called, bad_nonces[i])</code>
+      * <code>Assert not null message (strstr(tcp_captured(), "401"), bad_nonces[i])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_digest_missing_field_rejected</b> &mdash; <i>Digest missing field rejected</i></summary>
+
+    * **Objective**: Digest missing field rejected
+    * **Assertions**:
+      * <code>Assert false message (handler_called, omit[i])</code>
+      * <code>Assert not null message (strstr(tcp_captured(), "401"), omit[i])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_digest_uri_includes_query_string</b> &mdash; <i>Path only: does not match the "/d?a=1" target -> refused.</i></summary>
+
+    * **Objective**: Path only: does not match the "/d?a=1" target -> refused.
+    * **Assertions**:
+      * <code>Assert true (grab_nonce(tcp_captured(), nonce, sizeof(nonce)))</code>
+      * <code>Assert false (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "401"))</code>
+      * <code>Assert true (handler_called)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4005,7 +4396,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_coap (46 tests)</b></summary>
+<summary><b>test_coap (60 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_response_option_capacity_stop</b> &mdash; <i>Response option capacity stop</i></summary>
@@ -4042,6 +4433,174 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
     * **Objective**: Distinct tokens from one peer fill the DWS_COAP_MAX_OBSERVERS slots; extras are declined
     * **Assertions**:
       * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_coap_observe_registry_key_fields</b> &mdash; <i>Four distinct observations now exist, one of them on /ro: notifying /ro must not re-render</i></summary>
+
+    * **Objective**: Four distinct observations now exist, one of them on /ro: notifying /ro must not re-render
+    * **Assertions**:
+      * <code>Assert equal int (1, observe_seq_of_last_reply())</code>
+      * <code>Assert equal int (2, observe_seq_of_last_reply())</code>
+      * <code>Assert equal int (1, observe_seq_of_last_reply())</code>
+      * <code>Assert equal int (1, observe_seq_of_last_reply())</code>
+      * <code>Assert equal int (1, observe_seq_of_last_reply())</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_coap_observe_zero_length_token</b> &mdash; <i>A 2-byte-token observation first, so the empty-token registration below has to reject it on</i></summary>
+
+    * **Objective**: A 2-byte-token observation first, so the empty-token registration below has to reject it on
+    * **Assertions**:
+      * <code>Assert equal int (1, observe_seq_of_last_reply())</code>
+      * <code>Assert equal int (2, observe_seq_of_last_reply())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_coap_observe_targeted_removal</b> &mdash; <i>Observe:1 from peer A carrying an unknown token removes nothing.</i></summary>
+
+    * **Objective**: Observe:1 from peer A carrying an unknown token removes nothing.
+    * **Assertions**:
+      * <code>Assert equal int (2, observe_seq_of_last_reply())</code>
+      * <code>Assert equal int (2, observe_seq_of_last_reply())</code>
+      * <code>Assert equal int (1, observe_seq_of_last_reply())</code>
+      * <code>Assert equal int (2, observe_seq_of_last_reply())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_coap_notify_clamps_oversized_body</b> &mdash; <i>Coap notify clamps oversized body</i></summary>
+
+    * **Objective**: Coap notify clamps oversized body
+    * **Assertions**:
+      * <code>Assert true (dws_coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow))</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
+      * <code>Assert true (dec(dws_udp_captured(), dws_udp_captured_len(), &d))</code>
+      * <code>Assert equal uint (DWS_COAP_MAX_PAYLOAD, d.payload_len)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_coap_observe_on_discovery_is_not_registered</b> &mdash; <i>Coap observe on discovery is not registered</i></summary>
+
+    * **Objective**: Coap observe on discovery is not registered
+    * **Assertions**:
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
+      * <code>Assert true (dec(dws_udp_captured(), dws_udp_captured_len(), &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal int (-1, d.observe)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_coap_udp_edge_datagrams</b> &mdash; <i>...and no observation was created, so a notify on /temp reaches nobody.</i></summary>
+
+    * **Objective**: ...and no observation was created, so a notify on /temp reaches nobody.
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_udp_captured_len())</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
+      * <code>Assert true (dec(dws_udp_captured(), dws_udp_captured_len(), &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CREATED, d.code)</code>
+      * <code>Assert equal int (-1, d.observe)</code>
+      * <code>Assert equal uint (0, dws_udp_captured_len())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_non_confirmable_malformed_is_silent</b> &mdash; <i>A reserved token length (9..15) in a CON is malformed: Reset, with an empty token.</i></summary>
+
+    * **Objective**: A reserved token length (9..15) in a CON is malformed: Reset, with an empty token.
+    * **Assertions**:
+      * <code>Assert equal uint (4, n)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)CoapType::COAP_TYPE_RST, (resp[0] &gt;&gt; 4) & 0x03);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, resp[1]);</code>
+      * <code>Assert equal uint (0, dws_coap_server_process(bad_ver_non, 4, resp, sizeof(resp)))</code>
+      * <code>Assert equal uint (0, dws_coap_server_process(bad_tkl_non, 4, resp, sizeof(resp)))</code>
+      * <code>Assert equal uint (0, dws_coap_server_process(short_tok_non, 4, resp, sizeof(resp)))</code>
+      * <code>Assert equal uint (0, dws_coap_server_process(empty_non, 4, resp, sizeof(resp)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_code_as_request_is_method_not_allowed</b> &mdash; <i>Response code as request is method not allowed</i></summary>
+
+    * **Objective**: Response code as request is method not allowed
+    * **Assertions**:
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, d.code)</code>
+      * <code>Assert false (g_called)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_block1_ignored_on_get</b> &mdash; <i>Block1 ignored on get</i></summary>
+
+    * **Objective**: Block1 ignored on get
+    * **Assertions**:
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal int (-1, d.block1)</code>
+      * <code>Assert true (g_called)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_block1_block_size_change_is_incomplete</b> &mdash; <i>NUM=2 at SZX=1 is byte offset 2*32 = 64 - exactly where the transfer stands - so only the</i></summary>
+
+    * **Objective**: NUM=2 at SZX=1 is byte offset 2*32 = 64 - exactly where the transfer stands - so only the
+    * **Assertions**:
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, d.code)</code>
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_REQUEST_INCOMPLETE, d.code)</code>
+      * <code>Assert false (g_called)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_block1_empty_intermediate_block</b> &mdash; <i>Nothing was buffered, so NUM=1 (offset 64) is now a gap rather than the next block.</i></summary>
+
+    * **Objective**: Nothing was buffered, so NUM=1 (offset 64) is now a gap rather than the next block.
+    * **Assertions**:
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, d.code)</code>
+      * <code>Assert false (g_called)</code>
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_REQUEST_INCOMPLETE, d.code)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_response_carries_no_observe_or_block2</b> &mdash; <i>Error response carries no observe or block2</i></summary>
+
+    * **Objective**: Error response carries no observe or block2
+    * **Assertions**:
+      * <code>Assert true (dws_coap_server_add_resource("/err", CoapMethodMask::COAP_ALLOW_GET, h_error))</code>
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, d.code)</code>
+      * <code>Assert equal int (-1, d.observe)</code>
+      * <code>Assert equal int (-1, d.block2)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(tok, d.token, 2); // the token still round-trips</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_block2_offset_at_end_of_representation</b> &mdash; <i>Block2 offset at end of representation</i></summary>
+
+    * **Objective**: Block2 offset at end of representation
+    * **Assertions**:
+      * <code>Assert true (dws_coap_server_add_resource("/exact", CoapMethodMask::COAP_ALLOW_GET, h_exact_block))</code>
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal uint (0, BLK_M(d.block2))</code>
+      * <code>Assert equal uint (64, d.payload_len)</code>
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, d.code)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_block2_on_empty_success_body</b> &mdash; <i>Block2 on empty success body</i></summary>
+
+    * **Objective**: Block2 on empty success body
+    * **Assertions**:
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CREATED, d.code)</code>
+      * <code>Assert true (d.block2 &gt;= 0)</code>
+      * <code>Assert equal uint (0, BLK_NUM(d.block2))</code>
+      * <code>Assert equal uint (0, BLK_M(d.block2))</code>
+      * <code>Assert equal uint (0, d.payload_len)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5423,7 +5982,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dbm (13 tests)</b></summary>
+<summary><b>test_dbm (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_put_get_overwrite</b> &mdash; <i>Put get overwrite</i></summary>
@@ -5602,10 +6161,143 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert true (get_eq("y", "20"))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_replay_skips_malformed_records</b> &mdash; <i>Replay must step over anything it cannot trust and keep rebuilding the index from the rest, so one</i></summary>
+
+    * **Objective**: Replay must step over anything it cannot trust and keep rebuilding the index from the rest, so one
+    * **Assertions**:
+      * <code>Assert true (put_s("good", "yes"))</code>
+      * <code>Assert true (dws_wal_store_append(&g_wal, stub, sizeof(stub)))</code>
+      * <code>Assert true (raw_append(0, 0, 0, nullptr, 0))</code>
+      * <code>Assert true (raw_append(0, DWS_DBM_KEY_MAX + 1, 0, nullptr, 0))</code>
+      * <code>Assert true (raw_append(0, 4, 100, "abcd", 4))</code>
+      * <code>Assert true (raw_append(7, 4, 0, "abcd", 4))</code>
+      * <code>Assert true (raw_append(1, 5, 0, "ghost", 5))</code>
+      * <code>Assert true (dws_dbm_sync(&g_db))</code>
+      * <code>Assert true (reboot())</code>
+      * <code>Assert true (get_eq("good", "yes"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_dbm_count(&g_db)); // nothing bogus was admitted to the index</code>
+      * <code>Assert false (dws_dbm_contains(&g_db, "abcd", 4))</code>
+      * <code>Assert false (dws_dbm_contains(&g_db, "ghost", 5))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reopen_rejects_a_log_with_more_keys_than_slots</b> &mdash; <i>The index is a fixed array: a log carrying more distinct live keys than it has slots cannot be</i></summary>
+
+    * **Objective**: The index is a fixed array: a log carrying more distinct live keys than it has slots cannot be
+    * **Assertions**:
+      * <code>Assert true (put_s(k, "x"))</code>
+      * <code>Assert true (raw_append(0, 5, 0, "extra", 5))</code>
+      * <code>Assert true (dws_dbm_sync(&g_db))</code>
+      * <code>Assert true (dws_wal_store_mount(&g_wal, &g_dev))</code>
+      * <code>Assert false (dws_dbm_open(&g_db, &g_wal))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_probe_walks_a_saturated_table_for_an_absent_key</b> &mdash; <i>With no empty slot left to end the probe chain on, a lookup has to walk the whole table and</i></summary>
+
+    * **Objective**: With no empty slot left to end the probe chain on, a lookup has to walk the whole table and
+    * **Assertions**:
+      * <code>Assert true (put_s(k, "x"))</code>
+      * <code>Assert false (dws_dbm_contains(&g_db, "absent", 6))</code>
+      * <code>Assert equal int (-1, dws_dbm_get(&g_db, "absent", 6, b, sizeof(b)))</code>
+      * <code>Assert true (get_eq("s00000", "x"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_insert_reuses_a_tombstone_in_a_saturated_table</b> &mdash; <i>Once every slot has been used and freed, a new key must land in the earliest reusable tombstone</i></summary>
+
+    * **Objective**: Once every slot has been used and freed, a new key must land in the earliest reusable tombstone
+    * **Assertions**:
+      * <code>Assert true (put_s(k, "x"))</code>
+      * <code>Assert true (dws_dbm_del(&g_db, k, (uint16_t)strlen(k)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_dbm_count(&g_db));</code>
+      * <code>Assert true (put_s("recycled", "v"))</code>
+      * <code>Assert true (get_eq("recycled", "v"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_dbm_count(&g_db));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hash_collision_slots_are_walked_past</b> &mdash; <i>The stored 64-bit hash is only a prefilter; key_len + the key bytes are what actually identify a</i></summary>
+
+    * **Objective**: The stored 64-bit hash is only a prefilter; key_len + the key bytes are what actually identify a
+    * **Assertions**:
+      * <code>Assert true (put_s(key, "v1"))</code>
+      * <code>Assert true (j &gt;= 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g_db.slots[j1].state); // a fresh table: the rest of the chain is empty</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g_db.slots[j2].state);</code>
+      * <code>Assert false (dws_dbm_contains(&g_db, key, klen))</code>
+      * <code>Assert true (put_s(key, "v2"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g_db.slots[j2].state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(klen + 1, g_db.slots[j].key_len); // the colliding slots are untouched</code>
+      * <code>Assert equal int (0, memcmp(g_db.slots[j1].key, "collide-mE", klen))</code>
+      * <code>Assert true (get_eq(key, "v2"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, dws_dbm_count(&g_db));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_put_rejects_an_empty_key</b> &mdash; <i>A zero-length key has no identity in the log format (key_len 0 is how a corrupt record reads).</i></summary>
+
+    * **Objective**: A zero-length key has no identity in the log format (key_len 0 is how a corrupt record reads).
+    * **Assertions**:
+      * <code>Assert false (dws_dbm_put(&g_db, "", 0, (const uint8_t *)"v", 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_dbm_count(&g_db));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_put_fails_closed_when_the_log_is_full</b> &mdash; <i>The record is appended before the index is touched, so a full log leaves the index exactly as it</i></summary>
+
+    * **Objective**: The record is appended before the index is touched, so a full log leaves the index exactly as it
+    * **Assertions**:
+      * <code>Assert true (stored &gt; 0)</code>
+      * <code>Assert true (stored &lt; 32)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)stored, dws_dbm_count(&g_db));</code>
+      * <code>Assert false (dws_dbm_contains(&g_db, k, (uint16_t)strlen(k)))</code>
+      * <code>Assert equal int ((long)sizeof(val), dws_dbm_get(&g_db, "k00", 3, out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(val, out, sizeof(val));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_get_fails_when_the_value_cannot_be_read_back</b> &mdash; <i>The index says where the value is, but the read still has to succeed; a device error is reported</i></summary>
+
+    * **Objective**: The index says where the value is, but the read still has to succeed; a device error is reported
+    * **Assertions**:
+      * <code>Assert true (put_s("v", "payload"))</code>
+      * <code>Assert equal int (-1, dws_dbm_get(&g_db, "v", 1, out, sizeof(out)))</code>
+      * <code>Assert true (get_eq("v", "payload"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_iterate_visits_live_keys_and_honours_an_early_stop</b> &mdash; <i>iterate walks only live keys (tombstones are skipped), a null callback just counts them, and a</i></summary>
+
+    * **Objective**: iterate walks only live keys (tombstones are skipped), a null callback just counts them, and a
+    * **Assertions**:
+      * <code>Assert true (dws_dbm_del(&g_db, "b", 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_iterate(&g_db, nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_iterate(&g_db, iter_cb, &all));</code>
+      * <code>Assert equal int (2, all.seen)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_dbm_iterate(&g_db, iter_cb, &one)); // stopped after the first key</code>
+      * <code>Assert equal int (1, one.seen)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_compact_carries_empty_values</b> &mdash; <i>A key stored with a zero-length value has nothing to read back from the old log; compaction must</i></summary>
+
+    * **Objective**: A key stored with a zero-length value has nothing to read back from the old log; compaction must
+    * **Assertions**:
+      * <code>Assert true (put_s("a", "1"))</code>
+      * <code>Assert true (dws_dbm_put(&g_db, "empty", 5, nullptr, 0))</code>
+      * <code>Assert true (dws_dbm_compact(&g_db, dst))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db));</code>
+      * <code>Assert true (get_eq("a", "1"))</code>
+      * <code>Assert equal int (0, dws_dbm_get(&g_db, "empty", 5, b, sizeof(b)))</code>
+      * <code>Assert true (dws_dbm_contains(&g_db, "empty", 5))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_dds (5 tests)</b></summary>
+<summary><b>test_dds (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_header</b> &mdash; <i>Too small a buffer -> 0.</i></summary>
@@ -5658,6 +6350,99 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_header(guid, vendor, out, 4)); // cap too small</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_submessage(0x15, 0, body, sizeof(body), out, 2)); // cap too small</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_header_null_args</b> &mdash; <i>Header null args</i></summary>
+
+    * **Objective**: Header null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_header(nullptr, VENDOR, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_header(GUID, nullptr, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_header(GUID, VENDOR, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(20, dws_rtps_header(GUID, VENDOR, out, sizeof(out))); // control</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_submessage_null_args</b> &mdash; <i>body_len == 0 with a null body: header only, no memcpy.</i></summary>
+
+    * **Objective**: body_len == 0 with a null body: header only, no memcpy.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_submessage(Rtps::RTPS_SM_DATA, 0, body, 4, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_submessage(Rtps::RTPS_SM_DATA, 0, nullptr, 4, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Rtps::RTPS_SM_PAD, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[3]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_null_msg</b> &mdash; <i>Parse null msg</i></summary>
+
+    * **Objective**: Parse null msg
+    * **Assertions**:
+      * <code>Assert false (dws_rtps_parse(nullptr, 20, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_rejects_each_magic_byte</b> &mdash; <i>Parse rejects each magic byte</i></summary>
+
+    * **Objective**: Parse rejects each magic byte
+    * **Assertions**:
+      * <code>Assert false (dws_rtps_parse(msg, 20, nullptr, nullptr))</code>
+      * <code>Assert true (dws_rtps_parse(msg, 20, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_version_major_and_older_minor</b> &mdash; <i>Parse version major and older minor</i></summary>
+
+    * **Objective**: Parse version major and older minor
+    * **Assertions**:
+      * <code>Assert false (dws_rtps_parse(msg, 20, nullptr, nullptr))</code>
+      * <code>Assert true (dws_rtps_parse(msg, 20, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_big_endian_submessage</b> &mdash; <i>Parse big endian submessage</i></summary>
+
+    * **Objective**: Parse big endian submessage
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, msg[22]); // wire order really is big-endian</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, msg[23]);</code>
+      * <code>Assert true (dws_rtps_parse(msg, n, collect, &s))</code>
+      * <code>Assert equal int (1, s.count)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Rtps::RTPS_SM_DATA, s.ids[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, s.lens[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, s.bodies[0], 4);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_zero_length_terminates</b> &mdash; <i>Parse zero length terminates</i></summary>
+
+    * **Objective**: Parse zero length terminates
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(24, n);</code>
+      * <code>Assert true (dws_rtps_parse(msg, n, collect, &s))</code>
+      * <code>Assert equal int (1, s.count)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, s.lens[0]);</code>
+      * <code>Assert null (s.bodies[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_rejects_truncated_submessage</b> &mdash; <i>Parse rejects truncated submessage</i></summary>
+
+    * **Objective**: Parse rejects truncated submessage
+    * **Assertions**:
+      * <code>Assert false (dws_rtps_parse(msg, 24, collect, &s))</code>
+      * <code>Assert equal int (0, s.count)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_without_callback</b> &mdash; <i>Parse without callback</i></summary>
+
+    * **Objective**: Parse without callback
+    * **Assertions**:
+      * <code>Assert true (dws_rtps_parse(msg, n, nullptr, nullptr))</code>
   </details>
 
 </details>
@@ -5809,7 +6594,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_devicenet (11 tests)</b></summary>
+<summary><b>test_devicenet (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_id_group1</b> &mdash; <i>Id group1</i></summary>
@@ -5952,6 +6737,64 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (rx.active)</code>
       * <code>TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_STARTED,</code>
       * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_ERR, dws_devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_arguments</b> &mdash; <i>encode_id with a null destination fails closed and writes nothing.</i></summary>
+
+    * **Objective**: encode_id with a null destination fails closed and writes nothing.
+    * **Assertions**:
+      * <code>Assert false (dws_devicenet_encode_id(nullptr, DeviceNetGroup::DEVICENET_GROUP_1, 0, 0))</code>
+      * <code>Assert false (dws_devicenet_build_explicit(nullptr, DeviceNetGroup::DEVICENET_GROUP_2, 4, 0x21, one, 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_explicit_body_arguments</b> &mdash; <i>body_len 0 with a null body: valid, just the header octet.</i></summary>
+
+    * **Objective**: body_len 0 with a null body: valid, just the header octet.
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(dws_devicenet_build_explicit(&f, DeviceNetGroup::DEVICENET_GROUP_2,</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, f.dlc);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x21, f.data[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, f.data[1]); // the rest of the payload is zeroed</code>
+      * <code>Assert false (dws_devicenet_build_explicit(&f, DeviceNetGroup::DEVICENET_GROUP_2, 4, 0x21, nullptr, 3))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frag_non_fragmented_header_only</b> &mdash; <i>Frag non fragmented header only</i></summary>
+
+    * **Objective**: Frag non fragmented header only
+    * **Assertions**:
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_COMPLETE, dws_devicenet_frag_feed(&rx, body, 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, rx.len);</code>
+      * <code>Assert false (rx.active)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frag_empty_data_fragments</b> &mdash; <i>Frag empty data fragments</i></summary>
+
+    * **Objective**: Frag empty data fragments
+    * **Assertions**:
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_STARTED, dws_devicenet_frag_feed(&rx, f, 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, rx.len);</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_PROGRESS, dws_devicenet_frag_feed(&rx, f, 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, rx.len);</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_COMPLETE, dws_devicenet_frag_feed(&rx, f, 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, rx.len);</code>
+      * <code>Assert false (rx.active)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frag_sequence_rejects</b> &mdash; <i>MIDDLE with no FIRST -> error (no session to continue).</i></summary>
+
+    * **Objective**: MIDDLE with no FIRST -> error (no session to continue).
+    * **Assertions**:
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_ERR, dws_devicenet_frag_feed(&rx, mid, 3))</code>
+      * <code>Assert false (rx.active)</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_STARTED, dws_devicenet_frag_feed(&rx, first, 3))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_ERR, dws_devicenet_frag_feed(&rx, last, 3))</code>
+      * <code>Assert false (rx.active)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, rx.len);</code>
   </details>
 
 </details>
@@ -6876,7 +7719,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dnc_stream (8 tests)</b></summary>
+<summary><b>test_dnc_stream (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_iso_roundtrip</b> &mdash; <i>Iso roundtrip</i></summary>
@@ -6965,6 +7808,76 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_IO, dnc_stream(&cfg, "M30", 3, mock_send, mock_recv, &m))</code>
       * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_ARG, dnc_stream(nullptr, "M30", 3, mock_send, mock_recv, &m))</code>
       * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_ARG, dnc_stream(&cfg, nullptr, 3, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_send_or_recv_rejected</b> &mdash; <i>Both halves of the seam are required: there is no "send-only" drip feed (the engine must be able</i></summary>
+
+    * **Objective**: Both halves of the seam are required: there is no "send-only" drip feed (the engine must be able
+    * **Assertions**:
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_ARG, dnc_stream(&cfg, "M30", 3, nullptr, mock_recv, &m))</code>
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_ARG, dnc_stream(&cfg, "M30", 3, mock_send, nullptr, &m))</code>
+      * <code>Assert equal int (0, m.send_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reverse_channel_error_fails_the_stream</b> &mdash; <i>A recv error is not "no bytes available": the engine cannot know the controller's flow state any</i></summary>
+
+    * **Objective**: A recv error is not "no bytes available": the engine cannot know the controller's flow state any
+    * **Assertions**:
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_IO, dnc_stream(&cfg, "M30", 3, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (0, m.send_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_xoff_never_released_gives_up</b> &mdash; <i>A controller that asserts XOFF and never releases it must not hang the feed forever.</i></summary>
+
+    * **Objective**: A controller that asserts XOFF and never releases it must not hang the feed forever.
+    * **Assertions**:
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_IO, dnc_stream(&cfg, "M30", 3, mock_send, mock_recv, &m))</code>
+      * <code>Assert true (m.paused_seen)</code>
+      * <code>Assert true (m.recv_calls &gt; DWS_DNC_XOFF_MAX_POLLS)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reverse_channel_error_while_paused</b> &mdash; <i>The reverse channel breaking mid-pause is an error, not an implicit XON.</i></summary>
+
+    * **Objective**: The reverse channel breaking mid-pause is an error, not an implicit XON.
+    * **Assertions**:
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_IO, dnc_stream(&cfg, "M30", 3, mock_send, mock_recv, &m))</code>
+      * <code>Assert true (m.paused_seen)</code>
+      * <code>Assert true (m.recv_calls &lt; DWS_DNC_XOFF_MAX_POLLS)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_failure_at_each_stage</b> &mdash; <i>Stage 1 of a leadered stream is the leader runout itself.</i></summary>
+
+    * **Objective**: Stage 1 of a leadered stream is the leader runout itself.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_ERR_IO,</code>
+      * <code>Assert equal int (1, leader.send_calls)</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_ERR_IO,</code>
+      * <code>Assert equal int (1, block.prog_start)</code>
+      * <code>Assert equal int (0, block.nlines)</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_ERR_IO,</code>
+      * <code>Assert equal int (1, endmark.nlines)</code>
+      * <code>Assert equal int (0, endmark.prog_end)</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_ERR_IO,</code>
+      * <code>Assert equal int (1, trailer.prog_start)</code>
+      * <code>Assert equal int (1, trailer.prog_end)</code>
+      * <code>Assert equal int (5, trailer.send_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_blank_lines_and_crlf_source</b> &mdash; <i>A CRLF source has its CR stripped, and a blank line produces an empty block (no decoded line).</i></summary>
+
+    * **Objective**: A CRLF source has its CR stripped, and a blank line produces an empty block (no decoded line).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_OK,</code>
+      * <code>Assert equal int (3, m.nlines)</code>
+      * <code>Assert equal string ("G90", m.lines[0])</code>
+      * <code>Assert equal string ("G0 X0", m.lines[1])</code>
+      * <code>Assert equal string ("M30", m.lines[2])</code>
   </details>
 
 </details>
@@ -7997,7 +8910,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_edge_cache_sd (22 tests)</b></summary>
+<summary><b>test_edge_cache_sd (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_serialize_roundtrip_all_fields</b> &mdash; <i>Serialize roundtrip all fields</i></summary>
@@ -8261,6 +9174,22 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert true (edge_sd_get(&g_db, odd.digest, &out, g_scratch, sizeof(g_scratch)))</code>
       * <code>Assert true (has_path("/cdn/keepme"))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, edge_sd_purge_all(&g_db));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_purge_counts_only_the_deletes_that_were_logged</b> &mdash; <i>A dbm delete is an append of a tombstone record, so it fails once the log has no room left. The purge</i></summary>
+
+    * **Objective**: A dbm delete is an append of a tombstone record, so it fails once the log has no room left. The purge
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, before);</code>
+      * <code>Assert true (room &gt; leave + PAD_REC_HDR)</code>
+      * <code>Assert true (room - leave &gt;= PAD_REC_HDR)</code>
+      * <code>Assert equal uint (4, strlen(key))</code>
+      * <code>Assert true (dws_dbm_put(&g_db, key, 4, pad, vlen))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(leave, room);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, edge_sd_purge_all(&g_db));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(live - 1, dws_dbm_count(&g_db));     // exactly one key actually left the index</code>
+      * <code>Assert true (has_path("/cdn/f0") != has_path("/cdn/f1"))</code>
   </details>
 
 </details>
@@ -8558,7 +9487,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_exc_decoder (7 tests)</b></summary>
+<summary><b>test_exc_decoder (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_exc_edge_guards</b> &mdash; <i>"PC" on the very first line (strncmp anchor, not the "\nPC" search).</i></summary>
@@ -8653,6 +9582,103 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX32(0x400DABCD, info.frames[1].pc);</code>
       * <code>Assert true (dws_exc_json(&info, buf, sizeof(buf)) &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(&info, buf, 8)); // tiny cap fails closed</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hex_literal_rejections</b> &mdash; <i>parse_hex refuses anything that is not "0x"/"0X" + at least one hex digit, and stops at 8 digits.</i></summary>
+
+    * **Objective**: parse_hex refuses anything that is not "0x"/"0X" + at least one hex digit, and stops at 8 digits.
+    * **Assertions**:
+      * <code>Assert false (dws_exc_parse("PC      : zz\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0, info.pc);</code>
+      * <code>Assert false (dws_exc_parse("PC      : 01234\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0, info.pc);</code>
+      * <code>Assert false (dws_exc_parse("PC      : 0x\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0, info.pc);</code>
+      * <code>Assert true (dws_exc_parse("PC      : 0X400dbeef\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x400dbeef, info.pc);</code>
+      * <code>Assert true (dws_exc_parse("PC      : 0x123456789\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x12345678, info.pc);</code>
+      * <code>Assert true (dws_exc_parse("PC      : 0x1z\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x1, info.pc);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_field_without_colon_or_value</b> &mdash; <i>A recognized field name with no ':' after it, and one whose value will not parse, are both ignored.</i></summary>
+
+    * **Objective**: A recognized field name with no ':' after it, and one whose value will not parse, are both ignored.
+    * **Assertions**:
+      * <code>Assert false (dws_exc_parse("EXCVADDR 0x2a\\n", &info))</code>
+      * <code>Assert false (info.has_excvaddr)</code>
+      * <code>Assert false (dws_exc_parse("EXCVADDR: zz\\n", &info))</code>
+      * <code>Assert false (info.has_excvaddr)</code>
+      * <code>Assert false (dws_exc_parse("dump\\nPC 400d1234\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0, info.pc);</code>
+      * <code>Assert false (dws_exc_parse("EXCVADDR:\\t0x0000002a\\n", &info))</code>
+      * <code>Assert true (info.has_excvaddr)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x2a, info.excvaddr);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_core_field_variants</b> &mdash; <i>"Core " followed by a non-digit leaves core at -1; a digit run ends at the first non-digit.</i></summary>
+
+    * **Objective**: "Core " followed by a non-digit leaves core at -1; a digit run ends at the first non-digit.
+    * **Assertions**:
+      * <code>Assert false (dws_exc_parse("Core \\nregister dump:\\n", &info))</code>
+      * <code>Assert equal int (-1, info.core)</code>
+      * <code>Assert false (dws_exc_parse("Core xx\\n", &info))</code>
+      * <code>Assert equal int (-1, info.core)</code>
+      * <code>Assert true (dws_exc_parse("Core 1: panic'ed (Abort).\\n", &info))</code>
+      * <code>Assert equal int (1, info.core)</code>
+      * <code>Assert true (dws_exc_parse("Core 1234567 panic'ed (Big).\\n", &info))</code>
+      * <code>Assert equal int (123456, info.core)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_multi_digit_core_in_json</b> &mdash; <i>A two-digit core exercises the multi-iteration decimal emitter.</i></summary>
+
+    * **Objective**: A two-digit core exercises the multi-iteration decimal emitter.
+    * **Assertions**:
+      * <code>Assert true (dws_exc_parse("Guru Meditation Error: Core  12 panic'ed (IllegalInstruction).\\n", &info))</code>
+      * <code>Assert equal int (12, info.core)</code>
+      * <code>Assert true (dws_exc_json(&info, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "\\"core\\":12,"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cause_truncation</b> &mdash; <i>The cause is bounded by the field width, and an unterminated cause stops at end-of-string.</i></summary>
+
+    * **Objective**: The cause is bounded by the field width, and an unterminated cause stops at end-of-string.
+    * **Assertions**:
+      * <code>Assert true (dws_exc_parse(text, &info))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(info.cause) - 1, strlen(info.cause));</code>
+      * <code>Assert equal string ("ABCDEFGHIJKLMNOPQRSTUVWXYZ01234", info.cause)</code>
+      * <code>Assert true (dws_exc_parse("Core 0 panic'ed (Trunc", &info)); // no ')</code>
+      * <code>Assert equal string ("Trunc", info.cause)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_backtrace_frame_cap_and_separator</b> &mdash; <i>The frame list stops at DWS_EXC_MAX_FRAMES even when more pairs follow.</i></summary>
+
+    * **Objective**: The frame list stops at DWS_EXC_MAX_FRAMES even when more pairs follow.
+    * **Assertions**:
+      * <code>Assert true (dws_exc_parse(text, &info))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_EXC_MAX_FRAMES, info.frame_count);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x400d0000, info.frames[0].pc);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x400d0000 + DWS_EXC_MAX_FRAMES - 1, info.frames[DWS_EXC_MAX_FRAMES - 1].pc);</code>
+      * <code>Assert false (dws_exc_parse("Backtrace: 0x400d1234 0x3ffb2200\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, info.frame_count);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_true_on_zero_pc_frame</b> &mdash; <i>A single frame whose pc is 0 still counts as a successful parse (frame_count carries it).</i></summary>
+
+    * **Objective**: A single frame whose pc is 0 still counts as a successful parse (frame_count carries it).
+    * **Assertions**:
+      * <code>Assert true (dws_exc_parse("Backtrace: 0x00000000:0x3ffb2200\\n", &info))</code>
+      * <code>Assert equal string ("", info.cause)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0, info.pc);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, info.frame_count);</code>
   </details>
 
 </details>
@@ -8998,7 +10024,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_file_serving (19 tests)</b></summary>
+<summary><b>test_file_serving (26 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_missing_file_returns_404</b> &mdash; <i>Missing file returns 404</i></summary>
@@ -9167,6 +10193,68 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert true (s_send.file[0].active)</code>
       * <code>Assert false (s_send.file[0].active)</code>
       * <code>Assert null (strstr(tcp_captured(), "ZZZZ"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inm_leading_ows_still_matches</b> &mdash; <i>Inm leading ows still matches</i></summary>
+
+    * **Objective**: Inm leading ows still matches
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "304 Not Modified"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inm_list_separators_reach_later_tag</b> &mdash; <i>Inm list separators reach later tag</i></summary>
+
+    * **Objective**: Inm list separators reach later tag
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "304 Not Modified"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conditional_304_carries_cors_block</b> &mdash; <i>Conditional 304 carries cors block</i></summary>
+
+    * **Objective**: Conditional 304 carries cors block
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "304 Not Modified"))</code>
+      * <code>Assert not null (strstr(out, "Access-Control-Allow-Origin: *\\r\\n"))</code>
+      * <code>Assert not null (strstr(out, "ETag: \\"f-3e8\\""))</code>
+      * <code>Assert null (strstr(out, "123456789012345"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_prefix_truncated_to_exact_route</b> &mdash; <i>Serve static prefix truncated to exact route</i></summary>
+
+    * **Objective**: Serve static prefix truncated to exact route
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "&lt;i&gt;root&lt;/i&gt;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_param_mount_shorter_than_pattern</b> &mdash; <i>Serve static param mount shorter than pattern</i></summary>
+
+    * **Objective**: Serve static param mount shorter than pattern
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "&lt;i&gt;idx&lt;/i&gt;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_trailing_slash_root_bare_prefix</b> &mdash; <i>Serve static trailing slash root bare prefix</i></summary>
+
+    * **Objective**: Serve static trailing slash root bare prefix
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "&lt;i&gt;bare&lt;/i&gt;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_joined_path_overflow_is_404</b> &mdash; <i>Serve static joined path overflow is 404</i></summary>
+
+    * **Objective**: Serve static joined path overflow is 404
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "404"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9406,7 +10494,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_focas (11 tests)</b></summary>
+<summary><b>test_focas (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_open</b> &mdash; <i>Build open</i></summary>
@@ -9553,6 +10641,83 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert true (f.type == FocasFrameType::open_resp)</code>
       * <code>Assert false (dws_focas_parse_command_frame(openresp, sizeof(openresp), &r))</code>
       * <code>Assert false (dws_focas_parse_response(badlen, sizeof(badlen), &r2))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_remaining_selectors</b> &mdash; <i>Build remaining selectors</i></summary>
+
+    * **Objective**: Build remaining selectors
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(36, dws_focas_build_read_alarm(buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x1A, buf[15]); // read_alarm c3 = 0x1a</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x21, buf[6]);  // command frame</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(36, dws_focas_build_read_macro(buf, sizeof(buf), 100, 199));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x15, buf[15]); // read_macro c3 = 0x15</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x64, buf[19]); // v1 = first = 100</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC7, buf[23]); // v2 = last = 199</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(36, dws_focas_build_read_feedrate(buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x24, buf[15]); // read_feedrate c3 = 0x24</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(36, dws_focas_build_read_spindle(buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x25, buf[15]); // read_spindle c3 = 0x25</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_request_guards</b> &mdash; <i>a declared extra length with no extra pointer</i></summary>
+
+    * **Objective**: a declared extra length with no extra pointer
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_focas_build_request(buf, sizeof(buf), FocasCommand::set_macro, 0, 0, 0, 0, 0, extra,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_focas_build_open(nullptr, 32));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_focas_build_close(nullptr, 32));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_frame_rejects_each_magic_octet</b> &mdash; <i>All four magic octets are checked independently.</i></summary>
+
+    * **Objective**: All four magic octets are checked independently.
+    * **Assertions**:
+      * <code>Assert true (dws_focas_parse_frame(frame, sizeof(frame), &f))</code>
+      * <code>Assert false (dws_focas_parse_frame(bad, sizeof(bad), &f))</code>
+      * <code>Assert false (dws_focas_parse_frame(frame, sizeof(frame), nullptr))</code>
+      * <code>Assert false (dws_focas_parse_command_frame(badmagic, sizeof(badmagic), &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parser_null_and_short_guards</b> &mdash; <i>Every parser refuses a null input, a null out, and a buffer shorter than its fixed record.</i></summary>
+
+    * **Objective**: Every parser refuses a null input, a null out, and a buffer shorter than its fixed record.
+    * **Assertions**:
+      * <code>Assert false (dws_focas_parse_response(nullptr, FOCAS_RESP_HDR_LEN, &r))</code>
+      * <code>Assert false (dws_focas_parse_response(bytes, FOCAS_RESP_HDR_LEN, nullptr))</code>
+      * <code>Assert false (dws_focas_parse_response(bytes, FOCAS_RESP_HDR_LEN - 1, &r))</code>
+      * <code>Assert true (dws_focas_parse_response(bytes, FOCAS_RESP_HDR_LEN, &r))</code>
+      * <code>Assert false (dws_focas_parse_sysinfo(nullptr, FOCAS_SYSINFO_LEN, &si))</code>
+      * <code>Assert false (dws_focas_parse_sysinfo(bytes, FOCAS_SYSINFO_LEN, nullptr))</code>
+      * <code>Assert false (dws_focas_parse_sysinfo(bytes, FOCAS_SYSINFO_LEN - 1, &si))</code>
+      * <code>Assert false (dws_focas_parse_alarm(nullptr, 4, &alarm))</code>
+      * <code>Assert false (dws_focas_parse_alarm(bytes, 4, nullptr))</code>
+      * <code>Assert false (dws_focas_parse_alarm(bytes, 3, &alarm))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xDEAD, alarm); // untouched by the rejected calls</code>
+      * <code>Assert false (dws_focas_decode8(nullptr, FOCAS_VALUE_LEN, &fv))</code>
+      * <code>Assert false (dws_focas_decode8(bytes, FOCAS_VALUE_LEN, nullptr))</code>
+      * <code>Assert false (dws_focas_decode8(bytes, FOCAS_VALUE_LEN - 1, &fv))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode8_base_and_sentinel_edges</b> &mdash; <i>Only base 2 and base 10 are decimal-scaled, and the "no value" sentinel needs BOTH octets</i></summary>
+
+    * **Objective**: Only base 2 and base 10 are decimal-scaled, and the "no value" sentinel needs BOTH octets
+    * **Assertions**:
+      * <code>Assert true (dws_focas_decode8(base2, sizeof(base2), &fv))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, fv.base);</code>
+      * <code>Assert float within (0.0005f, 3.0f, dws_focas_value_f(&fv))</code>
+      * <code>Assert false (dws_focas_decode8(base16, sizeof(base16), &fv))</code>
+      * <code>Assert false (fv.valid)</code>
+      * <code>Assert true (dws_focas_decode8(not_sentinel, sizeof(not_sentinel), &fv))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, fv.exp);</code>
+      * <code>Assert float within (0.0005f, 10.0f, dws_focas_value_f(&fv))</code>
+      * <code>Assert equal float (0.0f, dws_focas_value_f(nullptr))</code>
   </details>
 
 </details>
@@ -10707,7 +11872,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_gpib (10 tests)</b></summary>
+<summary><b>test_gpib (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_command_generic</b> &mdash; <i>overflow fails closed</i></summary>
@@ -10830,10 +11995,90 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (dws_gpib_parse_version("AR488 controller", 16, &ver, &vlen))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_builders_reject_null_buffer_and_zero_cap</b> &mdash; <i>Every builder needs a destination with room in it; a null command string is refused too.</i></summary>
+
+    * **Objective**: Every builder needs a destination with room in it; a null command string is refused too.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_command(nullptr, sizeof(buf), "clr"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_command(buf, 0, "clr"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_command(buf, sizeof(buf), nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_addr(nullptr, sizeof(buf), 9, -1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_addr(buf, 0, 9, -1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_read(nullptr, sizeof(buf), GpibRead::UNTIL_EOI, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_read(buf, 0, GpibRead::UNTIL_EOI, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_spoll(nullptr, sizeof(buf), -1, -1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_spoll(buf, 0, -1, -1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_eos(nullptr, sizeof(buf), GpibEos::LF));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_eos(buf, 0, GpibEos::LF));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_data_guards_and_empty</b> &mdash; <i>A null destination / zero capacity / a declared length with no source are refused; a zero</i></summary>
+
+    * **Objective**: A null destination / zero capacity / a declared length with no source are refused; a zero
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_build_data(nullptr, sizeof(buf), src, sizeof(src)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_build_data(buf, 0, src, sizeof(src)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_gpib_build_data(buf, sizeof(buf), nullptr, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('\\n', buf[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_is_command_rejects_null</b> &mdash; <i>Is command rejects null</i></summary>
+
+    * **Objective**: Is command rejects null
+    * **Assertions**:
+      * <code>Assert false (dws_gpib_is_command(nullptr, 8))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_decimal_edges</b> &mdash; <i>A null input, a digit below '0', and an optional out pointer.</i></summary>
+
+    * **Objective**: A null input, a digit below '0', and an optional out pointer.
+    * **Assertions**:
+      * <code>Assert false (dws_gpib_parse_decimal(nullptr, 3, &v))</code>
+      * <code>Assert false (dws_gpib_parse_decimal("12-", 3, &v))</code>
+      * <code>Assert false (dws_gpib_parse_decimal("   ", 3, &v))</code>
+      * <code>Assert true (dws_gpib_parse_decimal("7", 1, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_addr_edges</b> &mdash; <i>Null input, an empty/blank line, a non-numeric primary, and the secondary-address rules.</i></summary>
+
+    * **Objective**: Null input, an empty/blank line, a non-numeric primary, and the secondary-address rules.
+    * **Assertions**:
+      * <code>Assert false (dws_gpib_parse_addr(nullptr, 2, &pad, &sad))</code>
+      * <code>Assert false (dws_gpib_parse_addr("  ", 2, &pad, &sad))</code>
+      * <code>Assert false (dws_gpib_parse_addr("x", 1, &pad, &sad))</code>
+      * <code>Assert false (dws_gpib_parse_addr("9 -1", 4, &pad, &sad))</code>
+      * <code>Assert false (dws_gpib_parse_addr("9 96x", 5, &pad, &sad))</code>
+      * <code>Assert false (dws_gpib_parse_addr("9 50", 4, &pad, &sad))</code>
+      * <code>Assert true (dws_gpib_parse_addr("9", 1, nullptr, &sad))</code>
+      * <code>Assert equal int (-1, sad)</code>
+      * <code>Assert true (dws_gpib_parse_addr("9", 1, &pad, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(9, pad);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_version_edges</b> &mdash; <i>Null input, a line shorter than the "version " key, a key with nothing after it, and the</i></summary>
+
+    * **Objective**: Null input, a line shorter than the "version " key, a key with nothing after it, and the
+    * **Assertions**:
+      * <code>Assert false (dws_gpib_parse_version(nullptr, 10, &ver, &vlen))</code>
+      * <code>Assert false (dws_gpib_parse_version("ver", 3, &ver, &vlen))</code>
+      * <code>Assert false (dws_gpib_parse_version("version \\r\\n", 10, &ver, &vlen))</code>
+      * <code>Assert true (dws_gpib_parse_version(resp, strlen(resp), nullptr, &vlen))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, vlen);</code>
+      * <code>Assert true (dws_gpib_parse_version(resp, strlen(resp), &ver, nullptr))</code>
+      * <code>Assert equal memory ("1.6", ver, 3)</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_gpio_map (9 tests)</b></summary>
+<summary><b>test_gpio_map (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dir_name</b> &mdash; <i>Dir name</i></summary>
@@ -10921,10 +12166,280 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
     * **Objective**: Host build: the GPIO bind functions are no-ops (no digitalRead/Write).
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_json_null_and_zero_cap</b> &mdash; <i>Json null and zero cap</i></summary>
+
+    * **Objective**: Json null and zero cap
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_gpio_json(pins, 1, nullptr, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_gpio_json(pins, 1, buf, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_json_null_label</b> &mdash; <i>Json null label</i></summary>
+
+    * **Objective**: Json null label
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert equal string ("{\\"pins\\":[{\\"pin\\":5,\\"label\\":\\"\\",\\"dir\\":\\"in\\",\\"level\\":0}]}", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_json_every_short_buffer_fails_closed</b> &mdash; <i>Json every short buffer fails closed</i></summary>
+
+    * **Objective**: Json every short buffer fails closed
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert equal int (0, dws_gpio_json(pins, 1, buf, (size_t)cap))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x5A, (uint8_t)buf[cap]); // one past the cap is untouched</code>
+      * <code>Assert equal int (n, dws_gpio_json(pins, 1, full, (size_t)n + 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_set_null_args</b> &mdash; <i>Parse set null args</i></summary>
+
+    * **Objective**: Parse set null args
+    * **Assertions**:
+      * <code>Assert false (dws_gpio_parse_set(nullptr, 13, &pin, &level))</code>
+      * <code>Assert false (dws_gpio_parse_set(b, strlen(b), nullptr, &level))</code>
+      * <code>Assert false (dws_gpio_parse_set(b, strlen(b), &pin, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_set_name_without_equals</b> &mdash; <i>Parse set name without equals</i></summary>
+
+    * **Objective**: Parse set name without equals
+    * **Assertions**:
+      * <code>Assert true (dws_gpio_parse_set(b, strlen(b), &pin, &level))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, pin);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, level);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_set_non_digit_values</b> &mdash; <i>Parse set non digit values</i></summary>
+
+    * **Objective**: Parse set non digit values
+    * **Assertions**:
+      * <code>Assert false (dws_gpio_parse_set("pin=", 4, &pin, &level))</code>
+      * <code>Assert false (dws_gpio_parse_set(b, strlen(b), &pin, &level))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_set_value_stops_at_non_digit</b> &mdash; <i>Parse set value stops at non digit</i></summary>
+
+    * **Objective**: Parse set value stops at non digit
+    * **Assertions**:
+      * <code>Assert true (dws_gpio_parse_set(b, strlen(b), &pin, &level))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, pin);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, level);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_is_output_null_table</b> &mdash; <i>Is output null table</i></summary>
+
+    * **Objective**: Is output null table
+    * **Assertions**:
+      * <code>Assert false (dws_gpio_is_output(nullptr, 2, 2))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_graphql (32 tests)</b></summary>
+<summary><b>test_graphql (46 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_lexer_whitespace_and_eof_comment</b> &mdash; <i>Lexer whitespace and eof comment</i></summary>
+
+    * **Objective**: Lexer whitespace and eof comment
+    * **Assertions**:
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":\\"esp32\\",\\"uptime\\":12345}}", run("{\\tname\\r\\n\\tuptime\\r}"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":\\"esp32\\"}}", run("{ name } # comment with no newline"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_underscore_field_name</b> &mdash; <i>Underscore field name</i></summary>
+
+    * **Objective**: Underscore field name
+    * **Assertions**:
+      * <code>Assert equal string ("{\\"data\\":{\\"_priv\\":null}}", run("{ _priv }"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_query_keyword_without_operation_name</b> &mdash; <i>Query keyword without operation name</i></summary>
+
+    * **Objective**: Query keyword without operation name
+    * **Assertions**:
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":\\"esp32\\"}}", run("query { name }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("query"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("@ { name }"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_trailing_backslash_in_string_arg</b> &mdash; <i>Every stage of the number scanner can end on end-of-input - the integer digits, the fraction</i></summary>
+
+    * **Objective**: Every stage of the number scanner can end on end-of-input - the integer digits, the fraction
+    * **Assertions**:
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"ab\\\\"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:12"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1.5"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e5"))</code>
+      * <code>TEST_ASSERT_EQUAL_STRING("{\\"data\\":{\\"sensor\\":{\\"value\\":70}}}",</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e2}"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":70}}}", run("{ sensor(id: 7, big: 1e4000) { value } }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: !) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUM) }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"nullstr\\":\\"\\"}}", run("{ nullstr }"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK,</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":null,\\"uptime\\":null}}", out)</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":-1}}}", run("{ sensor(other: 7) { value } }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"greet\\":\\"hi ?\\"}}", run("{ greet(other: \\"x\\") }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(other: true) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, buf, 0))</code>
+      * <code>Assert equal char ('x', buf[0])</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{", 1, resolver, buf, 8))</code>
+      * <code>Assert equal char ('\\0', buf[0])</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,</code>
+      * <code>Assert equal string (kErr, buf)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, dws_graphql_execute("{a}", 3, resolver, buf, 19))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, dws_graphql_execute("{a}", 3, resolver, buf, 20))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"a\\":null}}", buf)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: LONGENUMVALUE) }"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUMVALU) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: true) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: false) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: null) }"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_number_truncated_at_end_of_input</b> &mdash; <i>Uppercase `E`, an explicit `+` exponent sign and a negative fraction are all accepted number</i></summary>
+
+    * **Objective**: Uppercase `E`, an explicit `+` exponent sign and a negative fraction are all accepted number
+    * **Assertions**:
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:12"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1.5"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e5"))</code>
+      * <code>TEST_ASSERT_EQUAL_STRING("{\\"data\\":{\\"sensor\\":{\\"value\\":70}}}",</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e2}"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":70}}}", run("{ sensor(id: 7, big: 1e4000) { value } }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: !) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUM) }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"nullstr\\":\\"\\"}}", run("{ nullstr }"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK,</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":null,\\"uptime\\":null}}", out)</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":-1}}}", run("{ sensor(other: 7) { value } }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"greet\\":\\"hi ?\\"}}", run("{ greet(other: \\"x\\") }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(other: true) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, buf, 0))</code>
+      * <code>Assert equal char ('x', buf[0])</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{", 1, resolver, buf, 8))</code>
+      * <code>Assert equal char ('\\0', buf[0])</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,</code>
+      * <code>Assert equal string (kErr, buf)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, dws_graphql_execute("{a}", 3, resolver, buf, 19))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, dws_graphql_execute("{a}", 3, resolver, buf, 20))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"a\\":null}}", buf)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: LONGENUMVALUE) }"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUMVALU) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: true) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: false) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: null) }"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_number_exponent_and_sign_forms</b> &mdash; <i>Number exponent and sign forms</i></summary>
+
+    * **Objective**: Number exponent and sign forms
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_STRING("{\\"data\\":{\\"sensor\\":{\\"value\\":70}}}",</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e2}"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_number_huge_exponent_is_clamped</b> &mdash; <i>Number huge exponent is clamped</i></summary>
+
+    * **Objective**: Number huge exponent is clamped
+    * **Assertions**:
+      * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":70}}}", run("{ sensor(id: 7, big: 1e4000) { value } }"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unsupported_value_tokens_fail</b> &mdash; <i>Unsupported value tokens fail</i></summary>
+
+    * **Objective**: Unsupported value tokens fail
+    * **Assertions**:
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: !) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUM) }"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_resolver_null_string_pointer</b> &mdash; <i>Resolver null string pointer</i></summary>
+
+    * **Objective**: Resolver null string pointer
+    * **Assertions**:
+      * <code>Assert equal string ("{\\"data\\":{\\"nullstr\\":\\"\\"}}", run("{ nullstr }"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_no_resolver_yields_all_null</b> &mdash; <i>No resolver yields all null</i></summary>
+
+    * **Objective**: No resolver yields all null
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK,</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":null,\\"uptime\\":null}}", out)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_arg_name_mismatch_is_skipped</b> &mdash; <i>Arg name mismatch is skipped</i></summary>
+
+    * **Objective**: Arg name mismatch is skipped
+    * **Assertions**:
+      * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":-1}}}", run("{ sensor(other: 7) { value } }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"greet\\":\\"hi ?\\"}}", run("{ greet(other: \\"x\\") }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(other: true) }"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_capacity_output_fails</b> &mdash; <i>Zero capacity output fails</i></summary>
+
+    * **Objective**: Zero capacity output fails
+    * **Assertions**:
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, buf, 0))</code>
+      * <code>Assert equal char ('x', buf[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_document_capacity_edges</b> &mdash; <i>A data document that fills the buffer exactly is still an overflow: there is no room for the NUL</i></summary>
+
+    * **Objective**: A data document that fills the buffer exactly is still an overflow: there is no room for the NUL
+    * **Assertions**:
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{", 1, resolver, buf, 8))</code>
+      * <code>Assert equal char ('\\0', buf[0])</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,</code>
+      * <code>Assert equal string (kErr, buf)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, dws_graphql_execute("{a}", 3, resolver, buf, 19))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, dws_graphql_execute("{a}", 3, resolver, buf, 20))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"a\\":null}}", buf)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: LONGENUMVALUE) }"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUMVALU) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: true) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: false) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: null) }"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_data_document_exact_fit_is_overflow</b> &mdash; <i>`{"data":{"a":null}}` is exactly 19 bytes, so 19 fails and 20 succeeds.</i></summary>
+
+    * **Objective**: `{"data":{"a":null}}` is exactly 19 bytes, so 19 fails and 20 succeeds.
+    * **Assertions**:
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, dws_graphql_execute("{a}", 3, resolver, buf, 19))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, dws_graphql_execute("{a}", 3, resolver, buf, 20))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"a\\":null}}", buf)</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_malformed_tokens_fail</b> &mdash; <i>Malformed tokens fail</i></summary>
@@ -11209,6 +12724,43 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":-1}}}", run("{ sensor(id: \\"x\\") { value } }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(on: 1) }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":\\"esp32\\",\\"uptime\\":12345}}", run("{\\tname\\r\\n\\tuptime\\r}"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":\\"esp32\\"}}", run("{ name } # comment with no newline"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"_priv\\":null}}", run("{ _priv }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":\\"esp32\\"}}", run("query { name }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("query"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("@ { name }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"ab\\\\"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:12"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1.5"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e5"))</code>
+      * <code>TEST_ASSERT_EQUAL_STRING("{\\"data\\":{\\"sensor\\":{\\"value\\":70}}}",</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a:1e2}"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":70}}}", run("{ sensor(id: 7, big: 1e4000) { value } }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: !) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUM) }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"nullstr\\":\\"\\"}}", run("{ nullstr }"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK,</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"name\\":null,\\"uptime\\":null}}", out)</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":-1}}}", run("{ sensor(other: 7) { value } }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"greet\\":\\"hi ?\\"}}", run("{ greet(other: \\"x\\") }"))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(other: true) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, buf, 0))</code>
+      * <code>Assert equal char ('x', buf[0])</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{", 1, resolver, buf, 8))</code>
+      * <code>Assert equal char ('\\0', buf[0])</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,</code>
+      * <code>Assert equal string (kErr, buf)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, dws_graphql_execute("{a}", 3, resolver, buf, 19))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, dws_graphql_execute("{a}", 3, resolver, buf, 20))</code>
+      * <code>Assert equal string ("{\\"data\\":{\\"a\\":null}}", buf)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: LONGENUMVALUE) }"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_PARSE,</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: ENUMVALU) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: true) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: false) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ f(a: null) }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11425,7 +12977,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_h2_conn (22 tests)</b></summary>
+<summary><b>test_h2_conn (30 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_init_and_request</b> &mdash; <i>Assemble: preface + empty client SETTINGS + HEADERS(stream 1, END_HEADERS\|END_STREAM).</i></summary>
@@ -11670,6 +13222,87 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (dws_h2_conn_respond(&c, 1, 200, big_ct.c_str(), "x", 1))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_h2_null_callbacks</b> &mdash; <i>The stream was still opened even though no header callback observed it.</i></summary>
+
+    * **Objective**: The stream was still opened even though no header callback observed it.
+    * **Assertions**:
+      * <code>Assert true (dws_h2_conn_recv(&c, in.data(), in.size()))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, c.last_peer_stream);</code>
+      * <code>Assert true (feed_frame(c, H2FrameType::H2_DATA, H2_FLAG_END_STREAM, 1, body, 3))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h2_headers_stream_zero</b> &mdash; <i>H2 headers stream zero</i></summary>
+
+    * **Objective**: H2 headers stream zero
+    * **Assertions**:
+      * <code>Assert false (dws_h2_conn_recv(&c, hf, dws_h2_build_headers(hf, sizeof hf, 0, block, blen, true)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h2_continuation_without_headers</b> &mdash; <i>H2 continuation without headers</i></summary>
+
+    * **Objective**: H2 continuation without headers
+    * **Assertions**:
+      * <code>Assert false (feed_frame(c, H2FrameType::H2_CONTINUATION, H2_FLAG_END_HEADERS, 1, x, 4))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h2_unknown_stream_frames</b> &mdash; <i>RST_STREAM on stream 0: find_stream must not match an empty (id == 0) slot.</i></summary>
+
+    * **Objective**: RST_STREAM on stream 0: find_stream must not match an empty (id == 0) slot.
+    * **Assertions**:
+      * <code>Assert true (feed_frame(c, H2FrameType::H2_RST_STREAM, 0, 0, err, 4))</code>
+      * <code>Assert true (feed_frame(c, H2FrameType::H2_RST_STREAM, 0, 7, err, 4))</code>
+      * <code>Assert true (feed_frame(c, H2FrameType::H2_WINDOW_UPDATE, 0, 9, inc, 4))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(before, c.conn_send_window);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h2_data_empty_and_unknown_stream</b> &mdash; <i>DATA with END_STREAM on an id with no stream slot: delivered, no state to update.</i></summary>
+
+    * **Objective**: DATA with END_STREAM on an id with no stream slot: delivered, no state to update.
+    * **Assertions**:
+      * <code>Assert true (feed_frame(c, H2FrameType::H2_DATA, 0, 1, nullptr, 0))</code>
+      * <code>Assert equal int (0, count_frames(cap.out, H2FrameType::H2_WINDOW_UPDATE))</code>
+      * <code>Assert equal string ("", cap.body.c_str())</code>
+      * <code>Assert true (feed_frame(c, H2FrameType::H2_DATA, H2_FLAG_END_STREAM, 5, d, 2))</code>
+      * <code>Assert equal string ("ok", cap.body.c_str())</code>
+      * <code>Assert true (cap.data_end)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h2_continuation_after_stream_freed</b> &mdash; <i>H2 continuation after stream freed</i></summary>
+
+    * **Objective**: H2 continuation after stream freed
+    * **Assertions**:
+      * <code>Assert true (feed_frame(c, H2FrameType::H2_HEADERS, 0, 1, block, half))</code>
+      * <code>Assert true (dws_h2_conn_respond(&c, 1, 200, nullptr, "x", 1))</code>
+      * <code>Assert true (feed_frame(c, H2FrameType::H2_CONTINUATION, H2_FLAG_END_HEADERS, 1, block + half, blen - half))</code>
+      * <code>Assert equal int (4, (int)cap.req_headers.size())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h2_respond_default_chunk_size</b> &mdash; <i>H2 respond default chunk size</i></summary>
+
+    * **Objective**: H2 respond default chunk size
+    * **Assertions**:
+      * <code>Assert true (dws_h2_conn_respond(&c, 1, 200, nullptr, body.data(), body.size()))</code>
+      * <code>Assert equal int (1, count_frames(cap.out, H2FrameType::H2_DATA))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h2_respond_content_length_no_room</b> &mdash; <i>'&' has an 8-bit Huffman code, so the value is stored literally and its encoded size is</i></summary>
+
+    * **Objective**: '&' has an 8-bit Huffman code, so the value is stored literally and its encoded size is
+    * **Assertions**:
+      * <code>Assert false (dws_h2_conn_respond(&c, 1, 200, ct.c_str(), "hi", 2))</code>
+      * <code>Assert equal int (0, count_frames(cap.out, H2FrameType::H2_HEADERS))</code>
+      * <code>Assert true (dws_h2_conn_respond(&c, 1, 200, "text/plain", "hi", 2))</code>
+      * <code>Assert equal int (1, count_frames(cap.out, H2FrameType::H2_HEADERS))</code>
+  </details>
+
 </details>
 
 <details>
@@ -11779,7 +13412,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_h3_conn (11 tests)</b></summary>
+<summary><b>test_h3_conn (18 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_request_dispatch_and_response</b> &mdash; <i>Build a GET request: HEADERS(:method GET, :path /index.html, :authority example.org).</i></summary>
@@ -11801,6 +13434,89 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert true (saw_data)</code>
       * <code>Assert equal string ("200", e_status)</code>
       * <code>Assert equal string ("text/plain", e_ctype)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h3_pseudo_header_name_variants</b> &mdash; <i>H3 pseudo header name variants</i></summary>
+
+    * **Objective**: H3 pseudo header name variants
+    * **Assertions**:
+      * <code>Assert equal int (1, g_requests)</code>
+      * <code>Assert equal string ("GET", g_method)</code>
+      * <code>Assert equal string ("/ok", g_path)</code>
+      * <code>Assert equal string ("", g_auth)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h3_request_unknown_frame_and_empty_data</b> &mdash; <i>A SETTINGS frame is legal on the wire but meaningless here: neither HEADERS nor DATA.</i></summary>
+
+    * **Objective**: A SETTINGS frame is legal on the wire but meaningless here: neither HEADERS nor DATA.
+    * **Assertions**:
+      * <code>Assert equal int (1, g_requests)</code>
+      * <code>Assert equal string ("POST", g_method)</code>
+      * <code>Assert equal uint (4, g_body_len)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY("body", g_body, 4);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h3_no_request_callback</b> &mdash; <i>H3 no request callback</i></summary>
+
+    * **Objective**: H3 no request callback
+    * **Assertions**:
+      * <code>Assert equal int (0, g_requests)</code>
+      * <code>Assert not null (st)</code>
+      * <code>Assert true (st-&gt;have_headers)</code>
+      * <code>Assert equal string ("GET", st-&gt;method)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h3_stream_buffer_overflow_clamped</b> &mdash; <i>H3 stream buffer overflow clamped</i></summary>
+
+    * **Objective**: H3 stream buffer overflow clamped
+    * **Assertions**:
+      * <code>Assert not null (st)</code>
+      * <code>Assert equal uint (DWS_H3_STREAM_BUF, st-&gt;buf_len)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h3_control_stream_frame_guards</b> &mdash; <i>Stream type 0x00 (control) then the first byte of an 8-octet varint: unparseable.</i></summary>
+
+    * **Objective**: Stream type 0x00 (control) then the first byte of an 8-octet varint: unparseable.
+    * **Assertions**:
+      * <code>Assert not null (st)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_CONTROL, st-&gt;role);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(defaults.max_field_section_size, h3.peer_settings.max_field_section_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(defaults.max_field_section_size, h3b.peer_settings.max_field_section_size);</code>
+      * <code>Assert not null (sc)</code>
+      * <code>Assert equal uint (0, sc-&gt;buf_len)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(defaults.max_field_section_size, h3c.peer_settings.max_field_section_size);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h3_uni_stream_empty_and_repeat_delivery</b> &mdash; <i>Zero-length delivery on a fresh uni stream: nothing buffered, nothing classified.</i></summary>
+
+    * **Objective**: Zero-length delivery on a fresh uni stream: nothing buffered, nothing classified.
+    * **Assertions**:
+      * <code>Assert not null (st)</code>
+      * <code>Assert false (st-&gt;type_read)</code>
+      * <code>Assert equal uint (0, st-&gt;buf_len)</code>
+      * <code>Assert true (st-&gt;type_read)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_CONTROL, st-&gt;role);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(4321, h3.peer_settings.max_field_section_size);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h3_respond_no_content_type_empty_body</b> &mdash; <i>H3 respond no content type empty body</i></summary>
+
+    * **Objective**: H3 respond no content type empty body
+    * **Assertions**:
+      * <code>Assert true (dws_h3_conn_respond(&h3, 0, 204, nullptr, nullptr, 0))</code>
+      * <code>Assert not null (st)</code>
+      * <code>Assert true (dws_h3_frame_parse(st-&gt;tx + off, st-&gt;tx_have - off, &fr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(H3FrameType::H3_HEADERS, fr.type); // no DATA frame follows</code>
+      * <code>Assert equal int (1, frames)</code>
+      * <code>Assert equal string ("204", e_status)</code>
+      * <code>Assert equal string ("", e_ctype)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -12840,7 +14556,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_hotswap (20 tests)</b></summary>
+<summary><b>test_hotswap (31 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_starts_absent_not_ready</b> &mdash; <i>Starting READY would let a caller write before anything was ever mounted.</i></summary>
@@ -12943,6 +14659,16 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_fail_run_at_the_uint8_ceiling_does_not_wrap</b> &mdash; <i>The saturation guard itself, with the counter already parked at the ceiling: the</i></summary>
+
+    * **Objective**: The saturation guard itself, with the counter already parked at the ceiling: the
+    * **Assertions**:
+      * <code>Assert true (dws_hotswap_core_io(&c, false))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xFF, c.fail_run);</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)c.state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_no_probe_while_ready</b> &mdash; <i>No probe while ready</i></summary>
 
     * **Objective**: No probe while ready
@@ -13039,15 +14765,153 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_json_and_overflow_is_fail_closed</b> &mdash; <i>Json and overflow is fail closed</i></summary>
+    <summary><b>test_json_and_overflow_is_fail_closed</b> &mdash; <i>A real buffer with no room at all: rejected before snprintf is handed a zero cap.</i></summary>
 
-    * **Objective**: Json and overflow is fail closed
+    * **Objective**: A real buffer with no room at all: rejected before snprintf is handed a zero cap.
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert equal string ("{\\"storage\\":\\"absent\\",\\"mounts\\":0,\\"faults\\":0}", buf)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_hotswap_json(tiny, sizeof(tiny)));</code>
       * <code>Assert equal string ("", tiny)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_hotswap_json(nullptr, 16));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_hotswap_json(buf, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_poll_before_begin_does_nothing</b> &mdash; <i>No callbacks installed yet: poll must not probe or claim storage. (Must be the</i></summary>
+
+    * **Objective**: No callbacks installed yet: poll must not probe or claim storage. (Must be the
+    * **Assertions**:
+      * <code>Assert equal int (0, g_mount_calls)</code>
+      * <code>Assert equal int (0, g_present_calls)</code>
+      * <code>Assert equal int ((int)StorageState::ABSENT, (int)dws_hotswap_state())</code>
+      * <code>Assert false (dws_hotswap_ready())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_mounts_on_the_first_poll_and_notifies</b> &mdash; <i>begin() back-dates the probe clock, so a card already in the slot mounts on the</i></summary>
+
+    * **Objective**: begin() back-dates the probe clock, so a card already in the slot mounts on the
+    * **Assertions**:
+      * <code>Assert false (dws_hotswap_ready()); // begin()</code>
+      * <code>Assert true (dws_hotswap_ready())</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)dws_hotswap_state())</code>
+      * <code>Assert equal int (1, g_present_calls)</code>
+      * <code>Assert equal int (1, g_mount_calls)</code>
+      * <code>Assert equal int (0, g_unmount_calls)</code>
+      * <code>Assert equal ptr (&g_ctx_token, g_seen_ctx)</code>
+      * <code>Assert equal int (1, g_event_calls)</code>
+      * <code>Assert equal int ((int)StorageState::ABSENT, (int)g_event_from)</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)g_event_to)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_ready_volume_is_never_reprobed</b> &mdash; <i>Nothing to remount while READY, so the per-loop poll must cost no callbacks at all.</i></summary>
+
+    * **Objective**: Nothing to remount while READY, so the per-loop poll must cost no callbacks at all.
+    * **Assertions**:
+      * <code>Assert equal int (0, g_present_calls)</code>
+      * <code>Assert equal int (0, g_mount_calls)</code>
+      * <code>Assert equal int (0, g_event_calls)</code>
+      * <code>Assert true (dws_hotswap_ready())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_io_fault_unmounts_immediately_and_notifies</b> &mdash; <i>The point of the whole owner: on the failure that faults the volume the mount is</i></summary>
+
+    * **Objective**: The point of the whole owner: on the failure that faults the volume the mount is
+    * **Assertions**:
+      * <code>Assert true (dws_hotswap_ready())</code>
+      * <code>Assert equal int (0, g_unmount_calls)</code>
+      * <code>Assert false (dws_hotswap_ready())</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)dws_hotswap_state())</code>
+      * <code>Assert equal int (1, g_unmount_calls)</code>
+      * <code>Assert equal int (1, g_event_calls)</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)g_event_from)</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)g_event_to)</code>
+      * <code>Assert equal int (1, g_unmount_calls)</code>
+      * <code>Assert equal int (1, g_event_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_drops_a_faulted_mount_before_retrying</b> &mdash; <i>The remount attempt unmounts first, so it starts clean instead of reusing handles</i></summary>
+
+    * **Objective**: The remount attempt unmounts first, so it starts clean instead of reusing handles
+    * **Assertions**:
+      * <code>Assert equal int (1, g_unmount_calls)</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)dws_hotswap_state())</code>
+      * <code>Assert equal int (2, g_unmount_calls)</code>
+      * <code>Assert equal int (1, g_mount_calls)</code>
+      * <code>Assert true (dws_hotswap_ready())</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)g_event_from)</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)g_event_to)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_faults_and_retries_without_an_unmount_callback</b> &mdash; <i>unmount is optional. Without one the fault must still be recorded and notified,</i></summary>
+
+    * **Objective**: unmount is optional. Without one the fault must still be recorded and notified,
+    * **Assertions**:
+      * <code>Assert true (dws_hotswap_ready())</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)dws_hotswap_state())</code>
+      * <code>Assert equal int (0, g_unmount_calls)</code>
+      * <code>Assert equal int (1, g_event_calls)</code>
+      * <code>Assert equal int (0, g_unmount_calls)</code>
+      * <code>Assert equal int (1, g_present_calls)</code>
+      * <code>Assert equal int (0, g_mount_calls)</code>
+      * <code>Assert equal int ((int)StorageState::ABSENT, (int)dws_hotswap_state())</code>
+      * <code>Assert equal int (2, g_event_calls)</code>
+      * <code>Assert equal int ((int)StorageState::ABSENT, (int)g_event_to)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_without_card_detect_lets_the_mount_decide</b> &mdash; <i>A nullptr present callback means "assume a card is there"; an unmountable volume</i></summary>
+
+    * **Objective**: A nullptr present callback means "assume a card is there"; an unmountable volume
+    * **Assertions**:
+      * <code>Assert equal int (0, g_present_calls)</code>
+      * <code>Assert equal int (1, g_mount_calls)</code>
+      * <code>Assert false (dws_hotswap_ready())</code>
+      * <code>Assert equal int (0, g_event_calls)</code>
+      * <code>Assert true (dws_hotswap_ready())</code>
+      * <code>Assert equal int (1, g_event_calls)</code>
+      * <code>Assert equal int ((int)StorageState::READY, (int)g_event_to)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_without_a_mount_callback_never_becomes_ready</b> &mdash; <i>No way to mount anything means no storage: it must stay fail-closed rather than</i></summary>
+
+    * **Objective**: No way to mount anything means no storage: it must stay fail-closed rather than
+    * **Assertions**:
+      * <code>Assert equal int (1, g_present_calls)</code>
+      * <code>Assert equal int (0, g_mount_calls)</code>
+      * <code>Assert false (dws_hotswap_ready())</code>
+      * <code>Assert equal int ((int)StorageState::ABSENT, (int)dws_hotswap_state())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_event_callback_is_optional</b> &mdash; <i>Clearing the event callback must not stop the machine from running.</i></summary>
+
+    * **Objective**: Clearing the event callback must not stop the machine from running.
+    * **Assertions**:
+      * <code>Assert true (dws_hotswap_ready())</code>
+      * <code>Assert equal int (0, g_event_calls)</code>
+      * <code>Assert equal int ((int)StorageState::FAULTED, (int)dws_hotswap_state())</code>
+      * <code>Assert equal int (1, g_unmount_calls)</code>
+      * <code>Assert equal int (0, g_event_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binding_poll_reads_the_library_clock</b> &mdash; <i>poll() is poll_at(dws_millis()), so the same rate limit applies to the loop-driven</i></summary>
+
+    * **Objective**: poll() is poll_at(dws_millis()), so the same rate limit applies to the loop-driven
+    * **Assertions**:
+      * <code>Assert equal int (1, g_present_calls)</code>
+      * <code>Assert false (dws_hotswap_ready())</code>
+      * <code>Assert equal int (1, g_present_calls)</code>
+      * <code>Assert equal int (2, g_present_calls)</code>
+      * <code>Assert true (dws_hotswap_ready())</code>
+      * <code>Assert equal int (1, g_event_calls)</code>
   </details>
 
 </details>
@@ -16646,7 +18510,81 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_jwt (22 tests)</b></summary>
+<summary><b>test_jwt (29 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_header_alg_whitespace_and_prefix</b> &mdash; <i>Header alg whitespace and prefix</i></summary>
+
+    * **Objective**: Header alg whitespace and prefix
+    * **Assertions**:
+      * <code>Assert true (dws_jwt_verify_hs256(t, strlen(t), sec(), seclen()))</code>
+      * <code>Assert true (dws_jwt_verify_hs256(t, strlen(t), sec(), seclen()))</code>
+      * <code>Assert false (dws_jwt_verify_hs256(t, strlen(t), sec(), seclen()))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_verify_length_guards</b> &mdash; <i>Verify length guards</i></summary>
+
+    * **Objective**: Verify length guards
+    * **Assertions**:
+      * <code>Assert false (dws_jwt_verify_hs256(nullptr, 20, sec(), seclen()))</code>
+      * <code>Assert false (dws_jwt_verify_hs256(big, DWS_JWT_MAX_LEN + 1, sec(), seclen()))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_time_valid_null_token</b> &mdash; <i>Time valid null token</i></summary>
+
+    * **Objective**: Time valid null token
+    * **Assertions**:
+      * <code>Assert true (dws_jwt_time_valid(nullptr, 0, 1700000000, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bearer_valid_at_header_guards</b> &mdash; <i>Bearer valid at header guards</i></summary>
+
+    * **Objective**: Bearer valid at header guards
+    * **Assertions**:
+      * <code>Assert false (dws_jwt_bearer_valid_at(nullptr, sec(), seclen(), 1699999000, 0))</code>
+      * <code>Assert false (dws_jwt_bearer_valid_at("Basic abc", sec(), seclen(), 1699999000, 0))</code>
+      * <code>Assert true (dws_jwt_bearer_valid_at(hdr, sec(), seclen(), 1699999000, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_claim_int_value_whitespace_and_non_numeric</b> &mdash; <i>Claim int value whitespace and non numeric</i></summary>
+
+    * **Objective**: Claim int value whitespace and non numeric
+    * **Assertions**:
+      * <code>Assert true (dws_jwt_claim_int(t, strlen(t), "exp", &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1700000000, v);</code>
+      * <code>Assert true (dws_jwt_claim_int(t, strlen(t), "exp", &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(42, v);</code>
+      * <code>Assert false (dws_jwt_claim_int(t, strlen(t), "exp", &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_claim_str_guards_whitespace_and_truncation</b> &mdash; <i>A value longer than the output buffer is a failure, not a silent truncation.</i></summary>
+
+    * **Objective**: A value longer than the output buffer is a failure, not a silent truncation.
+    * **Assertions**:
+      * <code>Assert false (dws_jwt_claim_str(TOKEN, strlen(TOKEN), nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert false (dws_jwt_claim_str(TOKEN, strlen(TOKEN), "sub", nullptr, sizeof(buf)))</code>
+      * <code>Assert true (dws_jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)))</code>
+      * <code>Assert equal string ("one", buf)</code>
+      * <code>Assert true (dws_jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)))</code>
+      * <code>Assert equal string ("two", buf)</code>
+      * <code>Assert false (dws_jwt_claim_str(t, strlen(t), "s", small, sizeof(small)))</code>
+      * <code>Assert equal string ("", small)</code>
+      * <code>Assert false (dws_jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)))</code>
+      * <code>Assert false (dws_jwt_scope_allows("read write", nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scope_allows_null_required</b> &mdash; <i>Scope allows null required</i></summary>
+
+    * **Objective**: Scope allows null required
+    * **Assertions**:
+      * <code>Assert false (dws_jwt_scope_allows("read write", nullptr))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_base64url_strict_alphabet</b> &mdash; <i>URL-safe characters decode.</i></summary>
@@ -16732,6 +18670,30 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (dws_jwt_bearer_valid(nullptr, secret, sizeof(secret)))</code>
       * <code>Assert false (dws_jwt_bearer_valid("Basic abc", secret, sizeof(secret)))</code>
       * <code>Assert false (dws_jwt_bearer_valid("Bearer    not.a.jwt", secret, sizeof(secret)))</code>
+      * <code>Assert true (dws_jwt_verify_hs256(t, strlen(t), sec(), seclen()))</code>
+      * <code>Assert true (dws_jwt_verify_hs256(t, strlen(t), sec(), seclen()))</code>
+      * <code>Assert false (dws_jwt_verify_hs256(t, strlen(t), sec(), seclen()))</code>
+      * <code>Assert false (dws_jwt_verify_hs256(nullptr, 20, sec(), seclen()))</code>
+      * <code>Assert false (dws_jwt_verify_hs256(big, DWS_JWT_MAX_LEN + 1, sec(), seclen()))</code>
+      * <code>Assert true (dws_jwt_time_valid(nullptr, 0, 1700000000, 0))</code>
+      * <code>Assert false (dws_jwt_bearer_valid_at(nullptr, sec(), seclen(), 1699999000, 0))</code>
+      * <code>Assert false (dws_jwt_bearer_valid_at("Basic abc", sec(), seclen(), 1699999000, 0))</code>
+      * <code>Assert true (dws_jwt_bearer_valid_at(hdr, sec(), seclen(), 1699999000, 0))</code>
+      * <code>Assert true (dws_jwt_claim_int(t, strlen(t), "exp", &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1700000000, v);</code>
+      * <code>Assert true (dws_jwt_claim_int(t, strlen(t), "exp", &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(42, v);</code>
+      * <code>Assert false (dws_jwt_claim_int(t, strlen(t), "exp", &v))</code>
+      * <code>Assert false (dws_jwt_claim_str(TOKEN, strlen(TOKEN), nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert false (dws_jwt_claim_str(TOKEN, strlen(TOKEN), "sub", nullptr, sizeof(buf)))</code>
+      * <code>Assert true (dws_jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)))</code>
+      * <code>Assert equal string ("one", buf)</code>
+      * <code>Assert true (dws_jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)))</code>
+      * <code>Assert equal string ("two", buf)</code>
+      * <code>Assert false (dws_jwt_claim_str(t, strlen(t), "s", small, sizeof(small)))</code>
+      * <code>Assert equal string ("", small)</code>
+      * <code>Assert false (dws_jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)))</code>
+      * <code>Assert false (dws_jwt_scope_allows("read write", nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16905,7 +18867,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_keepalive (11 tests)</b></summary>
+<summary><b>test_keepalive (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_conn_token_ws_and_bare_keepalive</b> &mdash; <i>Conn token ws and bare keepalive</i></summary>
@@ -16915,6 +18877,19 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert not null (strstr(tcp_captured(), "Connection: close"))</code>
       * <code>Assert not null (strstr(tcp_captured(), "Connection: keep-alive"))</code>
       * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_token_delimiter_runs_and_trailing_ows</b> &mdash; <i>A leading comma, then SP, then HTAB: the whole delimiter run is skipped before the token.</i></summary>
+
+    * **Objective**: A leading comma, then SP, then HTAB: the whole delimiter run is skipped before the token.
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "Connection: keep-alive"))</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Connection: keep-alive"))</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Connection: keep-alive"))</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[2].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17333,7 +19308,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_log (10 tests)</b></summary>
+<summary><b>test_log (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_debug_is_below_the_floor_and_emits_nothing</b> &mdash; <i>Debug is below the floor and emits nothing</i></summary>
@@ -17434,6 +19409,89 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal int (1, s_sink_calls)</code>
       * <code>Assert equal string ("", s_last_line)</code>
       * <code>Assert equal string ("I ", dws_log_at(0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ring_atomic_wrapper_round_trips</b> &mdash; <i>Ring atomic wrapper round trips</i></summary>
+
+    * **Objective**: Ring atomic wrapper round trips
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, (size_t)a); // default-constructed is zero</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, (size_t)a); // operator T(): acquire load</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, (size_t)copied);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, (size_t)assigned);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, (size_t)seeded);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ring_read_byte_and_available</b> &mdash; <i>Tail has caught the head: empty.</i></summary>
+
+    * **Objective**: Tail has caught the head: empty.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_ring_available(head, tail, sizeof(buf)));</code>
+      * <code>Assert true (dws_ring_read_byte(buf, sizeof(buf), head, tail, &out))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('a', out);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_ring_available(head, tail, sizeof(buf)));</code>
+      * <code>Assert true (dws_ring_read_byte(buf, sizeof(buf), head, tail, &out))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('b', out);</code>
+      * <code>Assert true (dws_ring_read_byte(buf, sizeof(buf), head, tail, &out))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('c', out);</code>
+      * <code>Assert false (dws_ring_read_byte(buf, sizeof(buf), head, tail, &out))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ring_available(head, tail, sizeof(buf)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ring_read_bulk_stops_at_head_and_maxn</b> &mdash; <i>Ring read bulk stops at head and maxn</i></summary>
+
+    * **Objective**: Ring read bulk stops at head and maxn
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_ring_read(buf, sizeof(buf), head, tail, dst, 2)); // limited by maxn</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('0', dst[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('1', dst[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_ring_read(buf, sizeof(buf), head, tail, dst, sizeof(dst))); // limited by head</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('2', dst[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('4', dst[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ring_read(buf, sizeof(buf), head, tail, dst, sizeof(dst))); // now empty</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ring_peek_and_consume_wrap</b> &mdash; <i>Ring peek and consume wrap</i></summary>
+
+    * **Objective**: Ring peek and consume wrap
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8('G', dst[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('H', dst[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('A', dst[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('B', dst[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(6, (size_t)tail); // peeking consumed nothing</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('A', dst[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('B', dst[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, (size_t)tail); // (6 + 4) % 8</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ring_free_reserves_one_slot</b> &mdash; <i>Ring free reserves one slot</i></summary>
+
+    * **Objective**: Ring free reserves one slot
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(7, dws_ring_free(head, tail, 8)); // empty -&gt; cap - 1</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_ring_free(head, tail, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ring_free(head, tail, 8)); // full</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ring_write_span_wraps</b> &mdash; <i>Whole copy fits before the wrap point: the chunk is clamped to len.</i></summary>
+
+    * **Objective**: Whole copy fits before the wrap point: the chunk is clamped to len.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(3, head);</code>
+      * <code>Assert equal memory ("abc", buf, 3)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, head); // (6 + 4) % 8</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('W', buf[6]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('X', buf[7]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('Y', buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('Z', buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dws_ring_write_span(buf, sizeof(buf), 4, (const uint8_t *)"", 0));</code>
   </details>
 
 </details>
@@ -17553,7 +19611,68 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_lora (14 tests)</b></summary>
+<summary><b>test_lora (19 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_parse_null_guards_and_optional_outs</b> &mdash; <i>Frame parse null guards and optional outs</i></summary>
+
+    * **Objective**: Frame parse null guards and optional outs
+    * **Assertions**:
+      * <code>Assert false (dws_lora_frame_parse(nullptr, sizeof(raw), &h, &p, &pl))</code>
+      * <code>Assert false (dws_lora_frame_parse(raw, sizeof(raw), nullptr, &p, &pl))</code>
+      * <code>Assert true (dws_lora_frame_parse(raw, sizeof(raw), &h, nullptr, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x11, h.to);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x44, h.flags);</code>
+      * <code>Assert null (p)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, pl);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_build_null_and_size_guards</b> &mdash; <i>Frame build null and size guards</i></summary>
+
+    * **Objective**: Frame build null and size guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(nullptr, pay, 4, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(&h, pay, 4, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_lora_frame_build(&h, pay, DWS_LORA_MAX_PAYLOAD + 1, out, sizeof(out)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_init_rejects_incomplete_bus</b> &mdash; <i>Init rejects incomplete bus</i></summary>
+
+    * **Objective**: Init rejects incomplete bus
+    * **Assertions**:
+      * <code>Assert false (dws_lora_init(nullptr, &cfg))</code>
+      * <code>Assert false (dws_lora_init(&no_read, &cfg))</code>
+      * <code>Assert false (dws_lora_init(&no_write, &cfg))</code>
+      * <code>Assert false (dws_lora_init(&g_bus, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g_chip.reg[0x01]); // RegOpMode never written</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_init_sets_low_data_rate_optimize_at_high_sf</b> &mdash; <i>Init sets low data rate optimize at high sf</i></summary>
+
+    * **Objective**: Init sets low data rate optimize at high sf
+    * **Assertions**:
+      * <code>Assert true (dws_lora_init(&g_bus, &cfg))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0C, g_chip.reg[0x26]); // LowDataRateOptimize | AgcAutoOn</code>
+      * <code>Assert true (dws_lora_init(&g_bus, &cfg))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, g_chip.reg[0x26]); // AgcAutoOn only</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_driver_entry_points_reject_null_bus</b> &mdash; <i>Driver entry points reject null bus</i></summary>
+
+    * **Objective**: Driver entry points reject null bus
+    * **Assertions**:
+      * <code>Assert false (dws_lora_send(nullptr, frame, sizeof(frame)))</code>
+      * <code>Assert false (dws_lora_send(&g_bus, nullptr, sizeof(frame)))</code>
+      * <code>Assert false (dws_lora_send(&g_bus, frame, 0))</code>
+      * <code>Assert false (dws_lora_tx_done(nullptr))</code>
+      * <code>Assert equal int (-1, dws_lora_recv(nullptr, buf, sizeof(buf), &rssi))</code>
+      * <code>Assert equal int (-1, dws_lora_recv(&g_bus, nullptr, sizeof(buf), &rssi))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g_chip.reg[0x01]); // RegOpMode untouched by all of them</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_frame_build_then_parse</b> &mdash; <i>Frame build then parse</i></summary>
@@ -17689,7 +19808,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_lsv2 (12 tests)</b></summary>
+<summary><b>test_lsv2 (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_no_payload</b> &mdash; <i>R_ST with no payload -> exactly 8 bytes: 00 00 00 00 'R' '_' 'S' 'T'</i></summary>
@@ -17834,6 +19953,77 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(0x00, t.payload[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(25, t.payload[1]); // LSV2_RI_OVERRIDE</code>
       * <code>TEST_ASSERT_EQUAL_size_t(n, consumed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_rejects_bad_args</b> &mdash; <i>Null destination / null mnemonic / a buffer that cannot even hold the header, a declared</i></summary>
+
+    * **Objective**: Null destination / null mnemonic / a buffer that cannot even hold the header, a declared
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(nullptr, sizeof(buf), DWS_LSV2_CMD_STATUS, pay, sizeof(pay)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(buf, sizeof(buf), nullptr, pay, sizeof(pay)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(buf, 7, DWS_LSV2_CMD_STATUS, pay, sizeof(pay)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(buf, sizeof(buf), DWS_LSV2_CMD_STATUS, nullptr, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build(buf, sizeof(buf), DWS_LSV2_CMD_STATUS, pay, (size_t)0x100000000ULL));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(10, dws_lsv2_build(buf, sizeof(buf), DWS_LSV2_CMD_STATUS, pay, sizeof(pay)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_login_guards_and_overflow</b> &mdash; <i>Null buffer / null login / a header-only buffer are refused, and a login (or password) that</i></summary>
+
+    * **Objective**: Null buffer / null login / a header-only buffer are refused, and a login (or password) that
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(nullptr, sizeof(buf), DWS_LSV2_LOGIN_DNC, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(buf, sizeof(buf), nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(buf, 7, DWS_LSV2_LOGIN_DNC, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(buf, 12, DWS_LSV2_LOGIN_INSPECT, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_login(buf, 12, "DNC", "pw"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(12, dws_lsv2_build_login(buf, 12, "DNC", nullptr));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_logout_and_filename_guards</b> &mdash; <i>Build logout and filename guards</i></summary>
+
+    * **Objective**: Build logout and filename guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_logout(nullptr, sizeof(buf), nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_logout(buf, 7, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_logout(buf, 10, DWS_LSV2_LOGIN_DNC)); // "DNC\\0" needs 4</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(nullptr, sizeof(buf), DWS_LSV2_CMD_FILE_LOAD, "A.H"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(buf, sizeof(buf), nullptr, "A.H"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(buf, sizeof(buf), DWS_LSV2_CMD_FILE_LOAD, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(buf, 7, DWS_LSV2_CMD_FILE_LOAD, "A.H"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_filename(buf, 11, DWS_LSV2_CMD_FILE_LOAD, "A.H")); // needs 12</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lsv2_build_run_info(nullptr, sizeof(buf), LSV2_RI_OVERRIDE));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_and_is_reject_null_args</b> &mdash; <i>A null out struct, a null input buffer, and null arguments to the mnemonic comparison are</i></summary>
+
+    * **Objective**: A null out struct, a null input buffer, and null arguments to the mnemonic comparison are
+    * **Assertions**:
+      * <code>Assert false (dws_lsv2_parse(frame, sizeof(frame), nullptr, nullptr))</code>
+      * <code>Assert false (dws_lsv2_parse(nullptr, sizeof(frame), &t, nullptr))</code>
+      * <code>Assert true (dws_lsv2_parse(frame, sizeof(frame), &t, nullptr))</code>
+      * <code>Assert false (dws_lsv2_is(nullptr, DWS_LSV2_RSP_OK))</code>
+      * <code>Assert false (dws_lsv2_is(&t, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_payload_shape_is_enforced</b> &mdash; <i>dws_lsv2_error only reports on an error telegram carrying exactly the 2-byte class+code</i></summary>
+
+    * **Objective**: dws_lsv2_error only reports on an error telegram carrying exactly the 2-byte class+code
+    * **Assertions**:
+      * <code>Assert true (dws_lsv2_parse(wrong_len, sizeof(wrong_len), &t, nullptr))</code>
+      * <code>Assert true (dws_lsv2_is_error(&t))</code>
+      * <code>Assert false (dws_lsv2_error(&t, nullptr, nullptr))</code>
+      * <code>Assert false (dws_lsv2_error(&bogus, nullptr, nullptr))</code>
+      * <code>Assert true (dws_lsv2_parse(good, sizeof(good), &t, nullptr))</code>
+      * <code>Assert true (dws_lsv2_error(&t, nullptr, nullptr))</code>
+      * <code>Assert true (dws_lsv2_error(&t, &cls, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x05, cls);</code>
+      * <code>Assert true (dws_lsv2_error(&t, nullptr, &code))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x06, code);</code>
   </details>
 
 </details>
@@ -18598,7 +20788,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mms (11 tests)</b></summary>
+<summary><b>test_mms (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_read_request_structure</b> &mdash; <i>invokeID 42 -> 02 01 2A present near the front.</i></summary>
@@ -18731,10 +20921,81 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(0, p.service_len);</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_response_rejects_over_long_payload</b> &mdash; <i>256 is the first length needing the 3-octet form; 1 + 3 + 256 = 260 > the 256-byte scratch.</i></summary>
+
+    * **Objective**: 256 is the first length needing the 3-octet form; 1 + 3 + 256 = 260 > the 256-byte scratch.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(1, big, 256, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(1, big, 512, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(1, big, 300, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xEE, out[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_response_three_octet_outer_length</b> &mdash; <i>247 -> inner 1+2+247 = 250 -> service 1+2+250 = 253 -> body 3 (invokeID) + 253 = 256 exactly.</i></summary>
+
+    * **Objective**: 247 -> inner 1+2+247 = 250 -> service 1+2+250 = 253 -> body 3 (invokeID) + 253 = 256 exactly.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(260, n); // tag + 3 length octets + 256 value</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_RESPONSE, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x82, out[1]); // long form, two following length octets</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, out[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[3]); // 0x0100 == 256</code>
+      * <code>Assert true (dws_mms_parse(out, n, &p))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(7, p.invoke_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);</code>
+      * <code>Assert true (find(p.service_body, p.service_len, data, sizeof(data)) &gt;= 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(7, data, sizeof(data), out, n - 1));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_response_empty_data</b> &mdash; <i>Read response empty data</i></summary>
+
+    * **Objective**: Read response empty data
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_RESPONSE, out[0]);</code>
+      * <code>Assert true (dws_mms_parse(out, n, &p))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, p.invoke_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, p.service_len); // the empty A1 listOfAccessResult: tag + zero length</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_confirmed_error_tag</b> &mdash; <i>Parse confirmed error tag</i></summary>
+
+    * **Objective**: Parse confirmed error tag
+    * **Assertions**:
+      * <code>Assert true (dws_mms_parse(err, sizeof(err), &p))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_ERROR, p.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(9, p.invoke_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0, p.service_tag);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_length_field_guards</b> &mdash; <i>Outer length long form with nb == 3: unsupported (only 1- and 2-byte forms are decoded).</i></summary>
+
+    * **Objective**: Outer length long form with nb == 3: unsupported (only 1- and 2-byte forms are decoded).
+    * **Assertions**:
+      * <code>Assert false (dws_mms_parse(nb3, sizeof(nb3), &p))</code>
+      * <code>Assert false (dws_mms_parse(trunc, sizeof(trunc), &p))</code>
+      * <code>Assert false (dws_mms_parse(svc_at_end, sizeof(svc_at_end), &p))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_invoke_id_truncated</b> &mdash; <i>Zero-length body: off + 2 is already past the 2-octet PDU.</i></summary>
+
+    * **Objective**: Zero-length body: off + 2 is already past the 2-octet PDU.
+    * **Assertions**:
+      * <code>Assert false (dws_mms_parse(empty_body, sizeof(empty_body), &p))</code>
+      * <code>Assert false (dws_mms_parse(short_id, sizeof(short_id), &p))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_modbus (23 tests)</b></summary>
+<summary><b>test_modbus (30 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_read_holding_registers</b> &mdash; <i>Read holding registers</i></summary>
@@ -18980,6 +21241,73 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (dws_modbus_get_coil(0xFFFF))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_modbus_get_holding_reg(0xFFFF)); // out of range -&gt; 0</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_input_register_accessor_bounds</b> &mdash; <i>Input register accessor bounds</i></summary>
+
+    * **Objective**: Input register accessor bounds
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0xCAFE, dws_modbus_get_input_reg(7));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_modbus_get_input_reg(0xFFFF));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0xCAFE, dws_modbus_get_input_reg(7)); // neighbours untouched</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_quantity_bounds</b> &mdash; <i>Read quantity bounds</i></summary>
+
+    * **Objective**: Read quantity bounds
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_single_coil_off</b> &mdash; <i>Write single coil off</i></summary>
+
+    * **Objective**: Write single coil off
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(7 + 5, n);</code>
+      * <code>Assert false (dws_modbus_get_coil(3))</code>
+      * <code>Assert equal int (1, g_wcalls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_writes_without_callback</b> &mdash; <i>Writes without callback</i></summary>
+
+    * **Objective**: Writes without callback
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(7 + 5, dws_modbus_process_adu(req, rl, resp, sizeof(resp)));</code>
+      * <code>Assert true (dws_modbus_get_coil(1))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7 + 5, dws_modbus_process_adu(req, rl, resp, sizeof(resp)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x1122, dws_modbus_get_holding_reg(2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7 + 5, dws_modbus_process_adu(req, rl, resp, sizeof(resp)));</code>
+      * <code>Assert true (dws_modbus_get_coil(8))</code>
+      * <code>Assert true (dws_modbus_get_coil(9))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7 + 5, dws_modbus_process_adu(req, rl, resp, sizeof(resp)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x3344, dws_modbus_get_holding_reg(6));</code>
+      * <code>Assert equal int (0, g_wcalls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_multi_write_field_validation</b> &mdash; <i>FC15: qty 0, qty above the 1968 limit, and a byte count that runs past the PDU.</i></summary>
+
+    * **Objective**: FC15: qty 0, qty above the 1968 limit, and a byte count that runs past the PDU.
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_adu_framing_guards</b> &mdash; <i>len field = 1 (unit id only, no PDU) with a full-size frame on the wire.</i></summary>
+
+    * **Objective**: len field = 1 (unit id only, no PDU) with a full-size frame on the wire.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_process_adu(req, 7, resp, sizeof(resp))); // req_len &lt; 8</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_process_adu(req, rl, resp, 7));           // resp cap &lt; 8</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_process_adu(shortlen, sizeof(shortlen), resp, sizeof(resp)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rtu_response_buffer_too_small</b> &mdash; <i>Rtu response buffer too small</i></summary>
+
+    * **Objective**: Rtu response buffer too small
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_rtu_process_adu(req, rl, resp, 3, 0x11));</code>
   </details>
 
 </details>
@@ -19453,7 +21781,58 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mqtt_sn (13 tests)</b></summary>
+<summary><b>test_mqtt_sn (17 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_typed_null_payload</b> &mdash; <i>Parse typed null payload</i></summary>
+
+    * **Objective**: Parse typed null payload
+    * **Assertions**:
+      * <code>Assert false (dws_mqttsn_parse_connack(nullptr, 8, &rc))</code>
+      * <code>Assert false (dws_mqttsn_parse_regack(nullptr, 8, &tid, &mid, &rc))</code>
+      * <code>Assert false (dws_mqttsn_parse_puback(nullptr, 8, &tid, &mid, &rc))</code>
+      * <code>Assert false (dws_mqttsn_parse_suback(nullptr, 8, &fl, &tid, &mid, &rc))</code>
+      * <code>Assert false (dws_mqttsn_parse_publish(nullptr, 8, &fl, &tid, &mid, &data, &dlen))</code>
+      * <code>Assert false (dws_mqttsn_parse_register(nullptr, 8, &tid, &mid, &name, &nlen))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_typed_outputs_are_optional</b> &mdash; <i>Parse typed outputs are optional</i></summary>
+
+    * **Objective**: Parse typed outputs are optional
+    * **Assertions**:
+      * <code>Assert true (dws_mqttsn_parse_connack(p, sizeof(p), nullptr))</code>
+      * <code>Assert true (dws_mqttsn_parse_regack(p, sizeof(p), nullptr, nullptr, nullptr))</code>
+      * <code>Assert true (dws_mqttsn_parse_puback(p, sizeof(p), nullptr, nullptr, nullptr))</code>
+      * <code>Assert true (dws_mqttsn_parse_suback(p, sizeof(p), nullptr, nullptr, nullptr, nullptr))</code>
+      * <code>Assert true (dws_mqttsn_parse_publish(p, sizeof(p), nullptr, nullptr, nullptr, nullptr, nullptr))</code>
+      * <code>Assert true (dws_mqttsn_parse_register(p, sizeof(p), nullptr, nullptr, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_header_output_guards</b> &mdash; <i>Parse header output guards</i></summary>
+
+    * **Objective**: Parse header output guards
+    * **Assertions**:
+      * <code>Assert false (dws_mqttsn_parse_header(frame, sizeof(frame), nullptr, &c))</code>
+      * <code>Assert false (dws_mqttsn_parse_header(frame, sizeof(frame), &h, nullptr))</code>
+      * <code>Assert false (dws_mqttsn_parse_header(frame, 1, &h, &c))</code>
+      * <code>Assert true (dws_mqttsn_parse_header(frame, sizeof(frame), &h, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, c);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_publish_empty_and_oversized_body</b> &mdash; <i>70000 data octets cannot be described by the 16-bit Length field.</i></summary>
+
+    * **Objective**: 70000 data octets cannot be described by the 16-bit Length field.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(7, n); // 1(len)+1(type)+1(flags)+2(topic)+2(msgid), no data</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+      * <code>Assert true (dws_mqttsn_parse_publish(buf + 2, n - 2, &fl, &tid, &mid, &data, &dlen))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0009, tid);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dlen);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mqttsn_build_publish(buf, sizeof(buf), 0, 1, 1, d, 70000));</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_make_flags</b> &mdash; <i>DUP, QoS 2, retain, will, clean, short topic name.</i></summary>
@@ -21500,7 +23879,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ntrip_caster (14 tests)</b></summary>
+<summary><b>test_ntrip_caster (25 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_v1_stream_request</b> &mdash; <i>Parse v1 stream request</i></summary>
@@ -21655,10 +24034,144 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(tiny, sizeof(tiny), NtripVersion::NTRIP_V1, &m, 1));</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_bare_lf_header_block</b> &mdash; <i>Some minimal rovers terminate with bare LFs. The LFLF fallback must find the block end, and the</i></summary>
+
+    * **Objective**: Some minimal rovers terminate with bare LFs. The LFLF fallback must find the block end, and the
+    * **Assertions**:
+      * <code>Assert true (dws_ntrip_request_parse(req, strlen(req), &r))</code>
+      * <code>Assert true (r.complete)</code>
+      * <code>Assert true (r.is_get)</code>
+      * <code>Assert equal string ("BASE1", r.mountpoint)</code>
+      * <code>Assert equal (NtripVersion::NTRIP_V2, r.version)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_target_terminators</b> &mdash; <i>A query string ends the mountpoint (it is not part of it).</i></summary>
+
+    * **Objective**: A query string ends the mountpoint (it is not part of it).
+    * **Assertions**:
+      * <code>Assert true (dws_ntrip_request_parse(q, strlen(q), &r))</code>
+      * <code>Assert equal string ("BASE1", r.mountpoint)</code>
+      * <code>Assert true (dws_ntrip_request_parse(cr, strlen(cr), &r))</code>
+      * <code>Assert equal string ("BASE1", r.mountpoint)</code>
+      * <code>Assert true (dws_ntrip_request_parse(lf, strlen(lf), &r))</code>
+      * <code>Assert equal string ("BASE1", r.mountpoint)</code>
+      * <code>Assert true (dws_ntrip_request_parse(empty, strlen(empty), &r))</code>
+      * <code>Assert true (r.want_sourcetable)</code>
+      * <code>Assert equal string ("", r.mountpoint)</code>
+      * <code>Assert true (dws_ntrip_request_parse(one, strlen(one), &r))</code>
+      * <code>Assert false (r.want_sourcetable)</code>
+      * <code>Assert equal string ("X", r.mountpoint)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_overlong_mountpoint_is_truncated_to_the_field</b> &mdash; <i>A target longer than the mountpoint field is clipped rather than overflowing it.</i></summary>
+
+    * **Objective**: A target longer than the mountpoint field is clipped rather than overflowing it.
+    * **Assertions**:
+      * <code>Assert true (dws_ntrip_request_parse(req, strlen(req), &r))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_NTRIP_MOUNT_MAX - 1, strlen(r.mountpoint));</code>
+      * <code>Assert equal int (0, strncmp(r.mountpoint, longmp, DWS_NTRIP_MOUNT_MAX - 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_stray_cr_does_not_end_the_header_block</b> &mdash; <i>A CR not followed by LF, and a CRLF+CR not followed by LF, are ordinary bytes: only a real</i></summary>
+
+    * **Objective**: A CR not followed by LF, and a CRLF+CR not followed by LF, are ordinary bytes: only a real
+    * **Assertions**:
+      * <code>Assert true (dws_ntrip_request_parse(stray, strlen(stray), &r))</code>
+      * <code>Assert true (r.complete)</code>
+      * <code>Assert true (r.is_get)</code>
+      * <code>Assert equal string ("M", r.mountpoint)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_ntrip_version_scan_skips_near_misses</b> &mdash; <i>The version scan looks for the literal "2.0" anywhere in the value; digits that only partly</i></summary>
+
+    * **Objective**: The version scan looks for the literal "2.0" anywhere in the value; digits that only partly
+    * **Assertions**:
+      * <code>Assert true (dws_ntrip_request_parse(near, strlen(near), &r))</code>
+      * <code>Assert equal (NtripVersion::NTRIP_V2, r.version)</code>
+      * <code>Assert true (dws_ntrip_request_parse(v1, strlen(v1), &r))</code>
+      * <code>Assert equal (NtripVersion::NTRIP_V1, r.version)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_authorization_variants</b> &mdash; <i>A non-Basic scheme is ignored (the caster only understands Basic).</i></summary>
+
+    * **Objective**: A non-Basic scheme is ignored (the caster only understands Basic).
+    * **Assertions**:
+      * <code>Assert true (dws_ntrip_request_parse(bearer, strlen(bearer), &r))</code>
+      * <code>Assert null (r.auth_b64)</code>
+      * <code>Assert true (dws_ntrip_request_parse(bare, strlen(bare), &r))</code>
+      * <code>Assert null (r.auth_b64)</code>
+      * <code>Assert true (dws_ntrip_request_parse(tabbed, strlen(tabbed), &r))</code>
+      * <code>Assert not null (r.auth_b64)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(12, r.auth_b64_len);</code>
+      * <code>Assert equal int (0, strncmp(r.auth_b64, "dXNlcjpwYXNz", 12))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_and_unauthorized_responses_truncate_closed</b> &mdash; <i>Every response builder reports 0 rather than emitting a half-written status line.</i></summary>
+
+    * **Objective**: Every response builder reports 0 rather than emitting a half-written status line.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_stream_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_error_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_error_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_unauthorized_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_unauthorized_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_str_record(tiny, sizeof(tiny), &m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_str_record_requires_a_mountpoint</b> &mdash; <i>Str record requires a mountpoint</i></summary>
+
+    * **Objective**: Str record requires a mountpoint
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_str_record(rec, sizeof(rec), nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_str_record(rec, sizeof(rec), &m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_str_record_nmea_required_flag</b> &mdash; <i>The nmea field is 1 when the mount needs a GGA from the rover, 0 otherwise.</i></summary>
+
+    * **Objective**: The nmea field is 1 when the mount needs a GGA from the rover, 0 otherwise.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert not null (strstr(rec, ";0.00;0.00;1;0;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sourcetable_rejects_an_unbuildable_mount</b> &mdash; <i>The length pass runs every record first, so one bad mount fails the whole table rather than</i></summary>
+
+    * **Objective**: The length pass runs every record first, so one bad mount fails the whole table rather than
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(buf, sizeof(buf), NtripVersion::NTRIP_V1, mounts, 2));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sourcetable_capacity_boundaries</b> &mdash; <i>One byte short of the record itself: the record pass reports 0 and the table fails closed.</i></summary>
+
+    * **Objective**: One byte short of the record itself: the record pass reports 0 and the table fails closed.
+    * **Assertions**:
+      * <code>Assert true (R &gt; 0)</code>
+      * <code>Assert true (full &gt; 0)</code>
+      * <code>Assert not null (body)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(H + R + 2 + END, full);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(buf, H + R, NtripVersion::NTRIP_V1, &m, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(buf, H + R + 1, NtripVersion::NTRIP_V1, &m, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntrip_build_sourcetable(buf, H + R + 2 + END, NtripVersion::NTRIP_V1, &m, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(full,</code>
+      * <code>Assert equal char ('\\0', buf[full])</code>
+      * <code>Assert not null (strstr(buf, "ENDSOURCETABLE\\r\\n"))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_nts (5 tests)</b></summary>
+<summary><b>test_nts (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ke_record</b> &mdash; <i>Ke record</i></summary>
@@ -21717,6 +24230,58 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert true (dws_nts_ef_unique_id(data, sizeof(data), out, sizeof(out)) &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ef(0x0304, data, sizeof(data), nullptr, sizeof(out))); // null out</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ef(0x0304, data, sizeof(data), out, 2));               // overflow</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ke_record_guards</b> &mdash; <i>A body longer than the 16-bit length field can express is refused (the pointer</i></summary>
+
+    * **Objective**: A body longer than the 16-bit length field can express is refused (the pointer
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, body, 2, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, nullptr, 2, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, body, 0x10000, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, body, 2, out, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(6, dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, body, 2, out, 6)); // exact fit</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ke_record_non_critical</b> &mdash; <i>Ke record non critical</i></summary>
+
+    * **Objective**: Ke record non critical
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[0] & 0x80); // critical bit clear</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Nts::NTS_KE_AEAD_ALGORITHM, out[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, (uint16_t)((out[2] &lt;&lt; 8) | out[3]));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ke_request_short_buffers</b> &mdash; <i>Ke request short buffers</i></summary>
+
+    * **Objective**: Ke request short buffers
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_request(out, 5));   // next-protocol does not fit</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_request(out, 11));  // aead does not fit</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ke_request(out, 15));  // end-of-message does not fit</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(16, dws_nts_ke_request(out, 16)); // exact fit</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ef_empty_and_null_value</b> &mdash; <i>Ef empty and null value</i></summary>
+
+    * **Objective**: Ef empty and null value
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n); // type + length only, already 4-aligned</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, (uint16_t)((out[2] &lt;&lt; 8) | out[3]));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ef(NtsEf::NTS_EF_COOKIE, nullptr, 8, out, sizeof(out)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ef_length_field_overflow</b> &mdash; <i>Ef length field overflow</i></summary>
+
+    * **Objective**: Ef length field overflow
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ef(NtsEf::NTS_EF_COOKIE, value, 0xFFFC, out, sizeof(out)));</code>
   </details>
 
 </details>
@@ -22052,7 +24617,199 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_oidc (19 tests)</b></summary>
+<summary><b>test_oidc (30 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_verify_scratch_partial_exhaustion</b> &mdash; <i>Room for the header buffer but not the signature buffer.</i></summary>
+
+    * **Objective**: Room for the header buffer but not the signature buffer.
+    * **Assertions**:
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_find_field_separator_forms</b> &mdash; <i>space / tab / colon / newline / CR all skipped before the value.</i></summary>
+
+    * **Objective**: space / tab / colon / newline / CR all skipped before the value.
+    * **Assertions**:
+      * <code>Assert true (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert equal string ("a", kid)</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert false (dws_oidc_jwks_find(jwks, nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find(jwks_bign, nullptr, &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "", &key))</code>
+      * <code>Assert true (key.loaded)</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "", &none))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\"}", "zzz", &none))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ISS,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>Assert true (cap &gt; keep)</code>
+      * <code>Assert not null (scratch_alloc(cap - keep, 1))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_find_field_value_runs_to_buffer_end</b> &mdash; <i>Trailing backslash with no following byte: the escape skip must not step past the end.</i></summary>
+
+    * **Objective**: Trailing backslash with no following byte: the escape skip must not step past the end.
+    * **Assertions**:
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert false (dws_oidc_jwks_find(jwks, nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find(jwks_bign, nullptr, &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "", &key))</code>
+      * <code>Assert true (key.loaded)</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "", &none))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\"}", "zzz", &none))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ISS,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>Assert true (cap &gt; keep)</code>
+      * <code>Assert not null (scratch_alloc(cap - keep, 1))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_get_int64_negative_and_non_numeric</b> &mdash; <i>exp = -5 exercises the signed path; any now_unix is >= -5, so the token reads as expired.</i></summary>
+
+    * **Objective**: exp = -5 exercises the signed path; any now_unix is >= -5, so the token reads as expired.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_aud_same_length_mismatch_and_numeric</b> &mdash; <i>"client-124" is exactly as long as the expected "client-123" but differs.</i></summary>
+
+    * **Objective**: "client-124" is exactly as long as the expected "client-123" but differs.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_split3_rejects_empty_segments</b> &mdash; <i>Split3 rejects empty segments</i></summary>
+
+    * **Objective**: Split3 rejects empty segments
+    * **Assertions**:
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_jwk_field_widths</b> &mdash; <i>e decodes to 5 bytes whose leading byte is NOT zero -> does not fit the 4-byte field.</i></summary>
+
+    * **Objective**: e decodes to 5 bytes whose leading byte is NOT zero -> does not fit the 4-byte field.
+    * **Assertions**:
+      * <code>Assert false (dws_oidc_jwks_find(jwks, nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find(jwks_bign, nullptr, &key))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_jwks_empty_kid_and_truncated_document</b> &mdash; <i>Empty kid behaves like "no kid requested": the first usable RSA key is taken.</i></summary>
+
+    * **Objective**: Empty kid behaves like "no kid requested": the first usable RSA key is taken.
+    * **Assertions**:
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "", &key))</code>
+      * <code>Assert true (key.loaded)</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "", &none))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\"}", "zzz", &none))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ISS,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>Assert true (cap &gt; keep)</code>
+      * <code>Assert not null (scratch_alloc(cap - keep, 1))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_verify_with_key_arg_guards</b> &mdash; <i>Longer than DWS_OIDC_MAX_LEN: rejected before any parsing happens.</i></summary>
+
+    * **Objective**: Longer than DWS_OIDC_MAX_LEN: rejected before any parsing happens.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_verify_optional_iss_aud_expectations</b> &mdash; <i>A token carrying neither iss nor aud verifies when neither is expected...</i></summary>
+
+    * **Objective**: A token carrying neither iss nor aud verifies when neither is expected...
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ISS,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_verify_exp_required_nbf_past</b> &mdash; <i>No exp claim at all -> treated as expired, not as "no expiry".</i></summary>
+
+    * **Objective**: No exp claim at all -> treated as expired, not as "no expiry".
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_oidc_parse_edge_guards</b> &mdash; <i>Crafted headers whose "alg" value trips a find_field edge (before sig verify) -> ERR_ALG:</i></summary>
@@ -22118,6 +24875,43 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
       * <code>Assert true (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert true (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert equal string ("a", kid)</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert false (dws_oidc_jwks_find(jwks, nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find(jwks_bign, nullptr, &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "", &key))</code>
+      * <code>Assert true (key.loaded)</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "", &none))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\"}", "zzz", &none))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ISS,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>Assert true (cap &gt; keep)</code>
+      * <code>Assert not null (scratch_alloc(cap - keep, 1))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22184,6 +24978,43 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
       * <code>Assert true (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert true (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert equal string ("a", kid)</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(tok, strlen(tok), kid, sizeof(kid)))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert false (dws_oidc_jwks_find(jwks, nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find(jwks_bign, nullptr, &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "", &key))</code>
+      * <code>Assert true (key.loaded)</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "", &none))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\"}", "zzz", &none))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ISS,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_EXPIRED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
+      * <code>Assert true (cap &gt; keep)</code>
+      * <code>Assert not null (scratch_alloc(cap - keep, 1))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_OK,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22318,7 +25149,319 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua (48 tests)</b></summary>
+<summary><b>test_opcua (70 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_w_string_positive_len_null_pointer</b> &mdash; <i>W string positive len null pointer</i></summary>
+
+    * **Objective**: W string positive len null pointer
+    * **Assertions**:
+      * <code>Assert true (w.ok)</code>
+      * <code>Assert equal uint (4, w.n)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(5, dws_ua_r_i32(&r));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_r_string_optional_len_zero_cap_and_frame_underrun</b> &mdash; <i>A null String with no room to write the terminator is still accepted (nothing is stored).</i></summary>
+
+    * **Objective**: A null String with no room to write the terminator is still accepted (nothing is stored).
+    * **Assertions**:
+      * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), nullptr))</code>
+      * <code>Assert false (r.err)</code>
+      * <code>Assert true (dws_ua_r_string(&r, s, 0, &len))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, len);</code>
+      * <code>Assert false (dws_ua_r_string(&r, s, sizeof(s), &len))</code>
+      * <code>Assert true (r.err)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_w_nodeid_numeric_widens_for_large_identifier</b> &mdash; <i>The other way round: a small identifier in a namespace too large for a byte also widens.</i></summary>
+
+    * **Objective**: The other way round: a small identifier in a namespace too large for a byte also widens.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[0]);    // Numeric, not FourByte (0x01)</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &id))</code>
+      * <code>Assert true (id.numeric)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, id.ns);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x10000, id.id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[0]);</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &id))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x0100, id.ns);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, id.id);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_r_nodeid_guid_truncated_latches_error</b> &mdash; <i>R nodeid guid truncated latches error</i></summary>
+
+    * **Objective**: R nodeid guid truncated latches error
+    * **Assertions**:
+      * <code>Assert false (dws_ua_r_nodeid(&r, &id))</code>
+      * <code>Assert true (r.err)</code>
+      * <code>Assert equal uint (1, r.off)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_r_nodeid_null_namespace_uri_and_server_index_flags</b> &mdash; <i>R nodeid null namespace uri and server index flags</i></summary>
+
+    * **Objective**: R nodeid null namespace uri and server index flags
+    * **Assertions**:
+      * <code>Assert true (dws_ua_r_nodeid(&r, &id))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(42, id.id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xABCDEF01, dws_ua_r_u32(&r)); // both flag fields were consumed</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parsers_reject_frame_shorter_than_header</b> &mdash; <i>Parsers reject frame shorter than header</i></summary>
+
+    * **Objective**: Parsers reject frame shorter than header
+    * **Assertions**:
+      * <code>Assert false (dws_opcua_parse_header(stub, sizeof(stub), &h))</code>
+      * <code>Assert false (dws_opcua_parse_hello(stub, sizeof(stub), &hello))</code>
+      * <code>Assert false (dws_opcua_parse_open(stub, sizeof(stub), &oc))</code>
+      * <code>Assert false (dws_opcua_parse_msg(stub, sizeof(stub), &msg))</code>
+      * <code>Assert false (dws_opcua_parse_read(stub, sizeof(stub), &rr))</code>
+      * <code>Assert false (dws_opcua_parse_write(stub, sizeof(stub), &wr))</code>
+      * <code>Assert false (dws_opcua_parse_browse(stub, sizeof(stub), &br))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_hello_rejects_consistent_but_undersized_frame</b> &mdash; <i>A full-size HEL whose MessageSize disagrees with the delivered length is rejected on the size</i></summary>
+
+    * **Objective**: A full-size HEL whose MessageSize disagrees with the delivered length is rejected on the size
+    * **Assertions**:
+      * <code>Assert false (dws_opcua_parse_hello(hel, sizeof(hel), &hello))</code>
+      * <code>Assert true (dws_opcua_parse_hello(full, n, &hello))</code>
+      * <code>Assert false (dws_opcua_parse_hello(full, n, &hello))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ack_negotiation_clamps_oversized_client_request</b> &mdash; <i>Client offers far more than DWS_OPCUA_BUF on every axis -> every field clamps to the server's.</i></summary>
+
+    * **Objective**: Client offers far more than DWS_OPCUA_BUF on every axis -> every field clamps to the server's.
+    * **Assertions**:
+      * <code>Assert true (dws_opcua_parse_hello(hel, n, &hello))</code>
+      * <code>Assert equal uint (28, an)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_ua_r_u32(&r)); // ProtocolVersion</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, dws_ua_r_u32(&r));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, dws_ua_r_u32(&r));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, dws_ua_r_u32(&r));</code>
+      * <code>Assert true (dws_opcua_parse_hello(hel, n, &hello))</code>
+      * <code>Assert equal uint (28, an)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_ua_r_u32(&r)); // ProtocolVersion</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(small, dws_ua_r_u32(&r));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(small, dws_ua_r_u32(&r));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(small, dws_ua_r_u32(&r));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_msg_string_typeid_and_empty_extension_body</b> &mdash; <i>The shared service preamble reports the same way, so a String-TypeId frame reaching a service</i></summary>
+
+    * **Objective**: The shared service preamble reports the same way, so a String-TypeId frame reaching a service
+    * **Assertions**:
+      * <code>Assert true (dws_opcua_parse_msg(buf, n, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, m.type_id); // a String TypeId is not a service id</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(77, m.request_handle);</code>
+      * <code>Assert true (dws_opcua_parse_msg(buf, n, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, m.type_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(77, m.request_handle);</code>
+      * <code>Assert true (dws_opcua_parse_read(buf, n, &rr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, rr.msg.type_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(77, rr.msg.request_handle);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, rr.count);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_open_rejects_non_numeric_and_wrong_namespace_typeid</b> &mdash; <i>Parse open rejects non numeric and wrong namespace typeid</i></summary>
+
+    * **Objective**: Parse open rejects non numeric and wrong namespace typeid
+    * **Assertions**:
+      * <code>Assert false (dws_opcua_parse_open(buf, n, &oc))</code>
+      * <code>Assert false (dws_opcua_parse_open(buf, n, &oc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builders_reject_null_output_buffer</b> &mdash; <i>Builders reject null output buffer</i></summary>
+
+    * **Objective**: Builders reject null output buffer
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_opcua_build_open_response(&oc, 1, 1, 1, 0, 1, nullptr, 64))</code>
+      * <code>Assert equal uint (0, dws_opcua_build_create_session_response(&msg, 1, 1, 0.0, &info, 1, 0, nullptr, 64))</code>
+      * <code>Assert equal uint (0, dws_opcua_build_get_endpoints_response(&msg, &info, 1, 0, nullptr, 64))</code>
+      * <code>Assert equal uint (0, dws_opcua_build_service_fault(&msg, 0, 1, 0, nullptr, 64))</code>
+      * <code>Assert equal uint (0, dws_opcua_build_activate_session_response(&msg, 1, 0, nullptr, 64))</code>
+      * <code>Assert equal uint (0, dws_opcua_build_read_response(&rr, nullptr, nullptr, 1, 0, nullptr, 64))</code>
+      * <code>Assert equal uint (0, dws_opcua_build_write_response(&wr, nullptr, 1, 0, nullptr, 64))</code>
+      * <code>Assert equal uint (0, dws_opcua_build_browse_response(&br, nullptr, 1, 0, nullptr, 64))</code>
+      * <code>Assert equal uint (0, dws_opcua_build_close_session_response(&msg, 1, 0, nullptr, 64))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_endpoint_description_falls_back_per_field</b> &mdash; <i>A null ServerInfo and an all-null ServerInfo take the same fallbacks, so the frames match.</i></summary>
+
+    * **Objective**: A null ServerInfo and an all-null ServerInfo take the same fallbacks, so the frames match.
+    * **Assertions**:
+      * <code>Assert true (a &gt; 0)</code>
+      * <code>Assert true (b &gt; 0)</code>
+      * <code>Assert equal uint (a, b)</code>
+      * <code>Assert equal memory (with_defaults, with_blank, a)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_response_without_values_or_statuses</b> &mdash; <i>Read response without values or statuses</i></summary>
+
+    * **Objective**: Read response without values or statuses
+    * **Assertions**:
+      * <code>Assert true (dws_opcua_parse_read(buf, n, &rr))</code>
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(2, dws_ua_r_i32(&r));  // Results[]</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, dws_ua_r_u8(&r)); // no Value bit, no StatusCode bit</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, dws_ua_r_u8(&r));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, dws_ua_r_i32(&r)); // DiagnosticInfos[]</code>
+      * <code>Assert false (r.err)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_variant_null_string_roundtrip</b> &mdash; <i>Variant null string roundtrip</i></summary>
+
+    * **Objective**: Variant null string roundtrip
+    * **Assertions**:
+      * <code>Assert true (w.ok)</code>
+      * <code>Assert true (dws_ua_r_variant(&r, &out))</code>
+      * <code>Assert equal (OpcUaVariantType::OPCUA_VAR_STRING, out.type)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, out.str_len);</code>
+      * <code>Assert null (out.str)</code>
+      * <code>Assert false (r.err)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_datavalue_status_only_with_and_without_status_sink</b> &mdash; <i>Datavalue status only with and without status sink</i></summary>
+
+    * **Objective**: Datavalue status only with and without status sink
+    * **Assertions**:
+      * <code>Assert true (w.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[0]); // StatusCode present, Value absent</code>
+      * <code>Assert true (dws_ua_r_datavalue(&r, &v, &st))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NODE_ID_UNKNOWN, st);</code>
+      * <code>Assert equal (OpcUaVariantType::OPCUA_VAR_NULL, v.type)</code>
+      * <code>Assert true (dws_ua_r_datavalue(&r, &v, nullptr))</code>
+      * <code>Assert false (r.err)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_captures_at_most_the_compiled_maximum</b> &mdash; <i>Parse captures at most the compiled maximum</i></summary>
+
+    * **Objective**: Parse captures at most the compiled maximum
+    * **Assertions**:
+      * <code>Assert true (dws_opcua_parse_read(buf, n, &rr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_READ_MAX + 1, rr.total);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_READ_MAX, rr.count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000, rr.items[0].id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000 + DWS_OPCUA_READ_MAX - 1, rr.items[DWS_OPCUA_READ_MAX - 1].id);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_browse_and_write_cap_captured_items</b> &mdash; <i>Parse browse and write cap captured items</i></summary>
+
+    * **Objective**: Parse browse and write cap captured items
+    * **Assertions**:
+      * <code>Assert true (dws_opcua_parse_browse(buf, n, &br))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BROWSE_MAX + 1, br.total);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BROWSE_MAX, br.count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3000, br.items[0].id);</code>
+      * <code>Assert true (dws_opcua_parse_write(buf, n, &wr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_WRITE_MAX + 1, wr.total);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_WRITE_MAX, wr.count);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(500, wr.items[0].value.i32);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_response_without_results_array</b> &mdash; <i>Write response without results array</i></summary>
+
+    * **Objective**: Write response without results array
+    * **Assertions**:
+      * <code>Assert true (dws_opcua_parse_write(buf, n, &wr))</code>
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(2, dws_ua_r_i32(&r));                 // Results[]</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, dws_ua_r_u32(&r)); // defaulted Good</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, dws_ua_r_u32(&r));</code>
+      * <code>Assert false (r.err)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_browse_response_reference_without_names</b> &mdash; <i>Browse response reference without names</i></summary>
+
+    * **Objective**: Browse response reference without names
+    * **Assertions**:
+      * <code>Assert true (dws_opcua_parse_browse(buf, n, &br))</code>
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, dws_ua_r_i32(&r));                 // Results[]</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, dws_ua_r_u32(&r)); // BrowseResult.StatusCode</code>
+      * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), &sl)); // ContinuationPoint (null)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, dws_ua_r_i32(&r));             // References[]</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>Assert true (dws_ua_r_bool(&r))</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, dws_ua_r_u16(&r));            // BrowseName.NamespaceIndex</code>
+      * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), &sl))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, sl);               // BrowseName.Name encoded as a null String</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, dws_ua_r_u8(&r)); // DisplayName mask: neither Locale nor Text</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(OPCUA_NODECLASS_VARIABLE, dws_ua_r_u32(&r));</code>
+      * <code>Assert false (r.err)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_localizedtext_every_field_combination</b> &mdash; <i>Both fields present: mask 0x03, Locale then Text.</i></summary>
+
+    * **Objective**: Both fields present: mask 0x03, Locale then Text.
+    * **Assertions**:
+      * <code>Assert true (w.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x03, dws_ua_r_u8(&r));</code>
+      * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), &sl))</code>
+      * <code>Assert equal string ("en-US", s)</code>
+      * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), &sl))</code>
+      * <code>Assert equal string ("Uptime", s)</code>
+      * <code>Assert false (r.err)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, dws_ua_r_u8(&r));</code>
+      * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), &sl))</code>
+      * <code>Assert equal string ("de-DE", s)</code>
+      * <code>Assert equal uint (w.n, r.off)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, dws_ua_r_u8(&r));</code>
+      * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), &sl))</code>
+      * <code>Assert equal string ("Uptime", s)</code>
+      * <code>Assert equal uint (1, w.n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_w_reference_null_fails_writer_closed</b> &mdash; <i>W reference null fails writer closed</i></summary>
+
+    * **Objective**: W reference null fails writer closed
+    * **Assertions**:
+      * <code>Assert false (w.ok)</code>
+      * <code>Assert equal uint (0, w.n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_browse_response_without_a_resolver</b> &mdash; <i>Browse response without a resolver</i></summary>
+
+    * **Objective**: Browse response without a resolver
+    * **Assertions**:
+      * <code>Assert true (dws_opcua_parse_browse(buf, n, &br))</code>
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>Assert true (dws_ua_r_nodeid(&r, &tid))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, dws_ua_r_i32(&r)); // Results[]</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NODE_ID_UNKNOWN, dws_ua_r_u32(&r));</code>
+      * <code>Assert true (dws_ua_r_string(&r, s, sizeof(s), &sl)); // ContinuationPoint (null)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, dws_ua_r_i32(&r));             // no References</code>
+      * <code>Assert false (r.err)</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_read_optional_fields</b> &mdash; <i>Parse read optional fields</i></summary>
@@ -23074,7 +26217,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua_client (30 tests)</b></summary>
+<summary><b>test_opcua_client (31 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_builders_encode_null_strings</b> &mdash; <i>Builders encode null strings</i></summary>
@@ -23136,6 +26279,18 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (dws_opcua_client_on_open(&c, buf, n))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert false (dws_opcua_client_on_open(&c, buf, n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_on_open_rejects_message_size_mismatch</b> &mdash; <i>On open rejects message size mismatch</i></summary>
+
+    * **Objective**: On open rejects message size mismatch
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_opcua_client_on_open(&c, buf, n))</code>
+      * <code>Assert false (dws_opcua_client_on_open(&c, buf, n))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c.channel_id); // rejected before the SecurityToken was applied</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c.token_id);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23606,7 +26761,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_packml (16 tests)</b></summary>
+<summary><b>test_packml (28 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_engine_startup_to_execute</b> &mdash; <i>Engine startup to execute</i></summary>
@@ -23677,6 +26832,57 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_engine_stop_and_abort_are_noops_inside_a_teardown</b> &mdash; <i>Stop must not restart a teardown that is already running, and Abort must not</i></summary>
+
+    * **Objective**: Stop must not restart a teardown that is already running, and Abort must not
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::STOPPING, dws_packml_command(PackMlState::STOPPING, PackMlCommand::STOP))</code>
+      * <code>Assert equal (PackMlState::CLEARING, dws_packml_command(PackMlState::CLEARING, PackMlCommand::STOP))</code>
+      * <code>Assert equal (PackMlState::ABORTING, dws_packml_command(PackMlState::ABORTING, PackMlCommand::STOP))</code>
+      * <code>Assert equal (PackMlState::ABORTING, dws_packml_command(PackMlState::ABORTING, PackMlCommand::ABORT))</code>
+      * <code>Assert equal (PackMlState::ABORTING, dws_packml_command(PackMlState::STOPPING, PackMlCommand::ABORT))</code>
+      * <code>Assert equal (PackMlState::ABORTING, dws_packml_command(PackMlState::CLEARING, PackMlCommand::ABORT))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_wait_states_ignore_foreign_commands</b> &mdash; <i>Each wait state accepts exactly one command; anything else leaves it untouched,</i></summary>
+
+    * **Objective**: Each wait state accepts exactly one command; anything else leaves it untouched,
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::HELD, dws_packml_command(PackMlState::HELD, PackMlCommand::START))</code>
+      * <code>Assert equal (PackMlState::SUSPENDED, dws_packml_command(PackMlState::SUSPENDED, PackMlCommand::HOLD))</code>
+      * <code>Assert equal (PackMlState::COMPLETE, dws_packml_command(PackMlState::COMPLETE, PackMlCommand::START))</code>
+      * <code>Assert equal (PackMlState::ABORTED, dws_packml_command(PackMlState::ABORTED, PackMlCommand::RESET))</code>
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_command(PackMlState::STOPPED, PackMlCommand::CLEAR))</code>
+      * <code>Assert equal (PackMlState::IDLE, dws_packml_command(PackMlState::IDLE, PackMlCommand::UNHOLD))</code>
+      * <code>Assert equal (PackMlState::EXECUTE, dws_packml_command(PackMlState::EXECUTE, PackMlCommand::UNSUSPEND))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_acting_states_accept_only_stop_and_abort</b> &mdash; <i>Acting states are transient: nothing but the universal Stop / Abort may interrupt</i></summary>
+
+    * **Objective**: Acting states are transient: nothing but the universal Stop / Abort may interrupt
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::STARTING, dws_packml_command(PackMlState::STARTING, PackMlCommand::HOLD))</code>
+      * <code>Assert equal (PackMlState::CLEARING, dws_packml_command(PackMlState::CLEARING, PackMlCommand::RESET))</code>
+      * <code>Assert equal (PackMlState::COMPLETING, dws_packml_command(PackMlState::COMPLETING, PackMlCommand::START))</code>
+      * <code>Assert equal (PackMlState::UNHOLDING, dws_packml_command(PackMlState::UNHOLDING, PackMlCommand::UNHOLD))</code>
+      * <code>Assert equal (PackMlState::UNDEFINED, dws_packml_command(PackMlState::UNDEFINED, PackMlCommand::START))</code>
+      * <code>Assert equal (PackMlState::STOPPING, dws_packml_command(PackMlState::STARTING, PackMlCommand::STOP))</code>
+      * <code>Assert equal (PackMlState::ABORTING, dws_packml_command(PackMlState::STARTING, PackMlCommand::ABORT))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_engine_execute_complete_only_from_execute</b> &mdash; <i>"production done" is meaningless anywhere but Execute, so it must not move the state.</i></summary>
+
+    * **Objective**: "production done" is meaningless anywhere but Execute, so it must not move the state.
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::IDLE, dws_packml_execute_complete(PackMlState::IDLE))</code>
+      * <code>Assert equal (PackMlState::HELD, dws_packml_execute_complete(PackMlState::HELD))</code>
+      * <code>Assert equal (PackMlState::COMPLETE, dws_packml_execute_complete(PackMlState::COMPLETE))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_engine_invalid_commands_are_noops</b> &mdash; <i>Start only from Idle; Hold only from Execute; Reset only from Stopped/Complete; etc.</i></summary>
 
     * **Objective**: Start only from Idle; Hold only from Execute; Reset only from Stopped/Complete; etc.
@@ -23716,6 +26922,50 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(17, (uint8_t)PackMlState::COMPLETE);</code>
       * <code>Assert equal string ("Execute", dws_packml_state_name(PackMlState::EXECUTE))</code>
       * <code>Assert equal string ("Abort", dws_packml_command_name(PackMlCommand::ABORT))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_every_state_has_its_isa_name</b> &mdash; <i>The names go straight onto an HMI / into a log line, so every one of the 17 states</i></summary>
+
+    * **Objective**: The names go straight onto an HMI / into a log line, so every one of the 17 states
+    * **Assertions**:
+      * <code>Assert equal string ("Clearing", dws_packml_state_name(PackMlState::CLEARING))</code>
+      * <code>Assert equal string ("Stopped", dws_packml_state_name(PackMlState::STOPPED))</code>
+      * <code>Assert equal string ("Starting", dws_packml_state_name(PackMlState::STARTING))</code>
+      * <code>Assert equal string ("Idle", dws_packml_state_name(PackMlState::IDLE))</code>
+      * <code>Assert equal string ("Suspended", dws_packml_state_name(PackMlState::SUSPENDED))</code>
+      * <code>Assert equal string ("Execute", dws_packml_state_name(PackMlState::EXECUTE))</code>
+      * <code>Assert equal string ("Stopping", dws_packml_state_name(PackMlState::STOPPING))</code>
+      * <code>Assert equal string ("Aborting", dws_packml_state_name(PackMlState::ABORTING))</code>
+      * <code>Assert equal string ("Aborted", dws_packml_state_name(PackMlState::ABORTED))</code>
+      * <code>Assert equal string ("Holding", dws_packml_state_name(PackMlState::HOLDING))</code>
+      * <code>Assert equal string ("Held", dws_packml_state_name(PackMlState::HELD))</code>
+      * <code>Assert equal string ("Unholding", dws_packml_state_name(PackMlState::UNHOLDING))</code>
+      * <code>Assert equal string ("Suspending", dws_packml_state_name(PackMlState::SUSPENDING))</code>
+      * <code>Assert equal string ("Unsuspending", dws_packml_state_name(PackMlState::UNSUSPENDING))</code>
+      * <code>Assert equal string ("Resetting", dws_packml_state_name(PackMlState::RESETTING))</code>
+      * <code>Assert equal string ("Completing", dws_packml_state_name(PackMlState::COMPLETING))</code>
+      * <code>Assert equal string ("Complete", dws_packml_state_name(PackMlState::COMPLETE))</code>
+      * <code>Assert equal string ("Undefined", dws_packml_state_name(PackMlState::UNDEFINED))</code>
+      * <code>Assert equal string ("Undefined", dws_packml_state_name((PackMlState)200))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_every_command_has_its_isa_name</b> &mdash; <i>The idle CntrlCmd value (and anything unknown) is "None", not a stray pointer.</i></summary>
+
+    * **Objective**: The idle CntrlCmd value (and anything unknown) is "None", not a stray pointer.
+    * **Assertions**:
+      * <code>Assert equal string ("Reset", dws_packml_command_name(PackMlCommand::RESET))</code>
+      * <code>Assert equal string ("Start", dws_packml_command_name(PackMlCommand::START))</code>
+      * <code>Assert equal string ("Stop", dws_packml_command_name(PackMlCommand::STOP))</code>
+      * <code>Assert equal string ("Hold", dws_packml_command_name(PackMlCommand::HOLD))</code>
+      * <code>Assert equal string ("Unhold", dws_packml_command_name(PackMlCommand::UNHOLD))</code>
+      * <code>Assert equal string ("Suspend", dws_packml_command_name(PackMlCommand::SUSPEND))</code>
+      * <code>Assert equal string ("Unsuspend", dws_packml_command_name(PackMlCommand::UNSUSPEND))</code>
+      * <code>Assert equal string ("Abort", dws_packml_command_name(PackMlCommand::ABORT))</code>
+      * <code>Assert equal string ("Clear", dws_packml_command_name(PackMlCommand::CLEAR))</code>
+      * <code>Assert equal string ("None", dws_packml_command_name(PackMlCommand::NONE))</code>
+      * <code>Assert equal string ("None", dws_packml_command_name((PackMlCommand)200))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23790,6 +27040,77 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(500, st.acc_time_since_reset_ms); // reset at 1000</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(300, st.state_current_ms);        // 1800 - 1500</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(800, st.acc_time_since_reset_ms); // 1800 - 1000</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_abort_and_clear_cycle</b> &mdash; <i>The fault branch driven through the owned service: Execute -> Aborting -> Aborted,</i></summary>
+
+    * **Objective**: The fault branch driven through the owned service: Execute -> Aborting -> Aborted,
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::EXECUTE, dws_packml_svc_state())</code>
+      * <code>Assert true (dws_packml_svc_command(PackMlCommand::ABORT))</code>
+      * <code>Assert equal (PackMlState::ABORTING, dws_packml_svc_state())</code>
+      * <code>Assert equal (PackMlState::ABORTED, dws_packml_svc_state_complete())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, st.prod_processed);</code>
+      * <code>Assert equal float (0.0f, st.mach_speed_actual)</code>
+      * <code>Assert false (dws_packml_svc_command(PackMlCommand::RESET))</code>
+      * <code>Assert equal (PackMlState::ABORTED, dws_packml_svc_state())</code>
+      * <code>Assert true (dws_packml_svc_command(PackMlCommand::CLEAR))</code>
+      * <code>Assert equal (PackMlState::CLEARING, dws_packml_svc_state())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(200, st.state_current_ms);</code>
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_svc_state_complete())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_stop_from_execute_lands_stopped</b> &mdash; <i>The other teardown: Stop is legal mid-production and completes to Stopped, which</i></summary>
+
+    * **Objective**: The other teardown: Stop is legal mid-production and completes to Stopped, which
+    * **Assertions**:
+      * <code>Assert true (dws_packml_svc_command(PackMlCommand::STOP))</code>
+      * <code>Assert equal (PackMlState::STOPPING, dws_packml_svc_state())</code>
+      * <code>Assert false (dws_packml_svc_command(PackMlCommand::STOP))</code>
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_svc_state_complete())</code>
+      * <code>Assert true (dws_packml_svc_set_mode(PackMlMode::MANUAL))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_state_complete_in_a_wait_state_does_not_restamp</b> &mdash; <i>Wait states have no State-Complete transition, so the call must be a true no-op -</i></summary>
+
+    * **Objective**: Wait states have no State-Complete transition, so the call must be a true no-op -
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_svc_state_complete())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(900, st.state_current_ms); // still timed from the init at 0</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_complete_run_requires_execute</b> &mdash; <i>ExecuteComplete outside Execute is not a state change and must report so.</i></summary>
+
+    * **Objective**: ExecuteComplete outside Execute is not a state change and must report so.
+    * **Assertions**:
+      * <code>Assert false (dws_packml_svc_complete_run())</code>
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_svc_state())</code>
+      * <code>Assert false (dws_packml_svc_complete_run())</code>
+      * <code>Assert equal (PackMlState::IDLE, dws_packml_svc_state())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_mode_change_allowed_in_idle_and_aborted</b> &mdash; <i>The mode-change rule is "stable and not producing", which is Stopped, Idle or Aborted.</i></summary>
+
+    * **Objective**: The mode-change rule is "stable and not producing", which is Stopped, Idle or Aborted.
+    * **Assertions**:
+      * <code>Assert true (dws_packml_svc_set_mode(PackMlMode::MANUAL))</code>
+      * <code>Assert true (dws_packml_svc_set_mode(PackMlMode::MAINTENANCE))</code>
+      * <code>Assert equal (PackMlMode::MAINTENANCE, st.unit_mode_current)</code>
+      * <code>Assert false (dws_packml_svc_set_mode(PackMlMode::PRODUCING))</code>
+      * <code>Assert equal (PackMlMode::MAINTENANCE, st.unit_mode_current)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_svc_status_null_out_is_ignored</b> &mdash; <i>A null status buffer must be a no-op, not a write through nullptr.</i></summary>
+
+    * **Objective**: A null status buffer must be a no-op, not a write through nullptr.
+    * **Assertions**:
+      * <code>Assert equal (PackMlState::STOPPED, dws_packml_svc_state())</code>
   </details>
 
 </details>
@@ -26554,7 +29875,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_conn (27 tests)</b></summary>
+<summary><b>test_quic_conn (52 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_full_handshake_and_stream</b> &mdash; <i>Client Initial keys from the same DCID the server used.</i></summary>
@@ -26588,6 +29909,332 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert true (sl &gt; 0)</code>
       * <code>Assert not equal (SIZE_MAX, p2)</code>
       * <code>Assert true (resent)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_null_callbacks</b> &mdash; <i>A STREAM frame with data, and a pure-FIN one, at the Initial level: both take the callback</i></summary>
+
+    * **Objective**: A STREAM frame with data, and a pure-FIN one, at the Initial level: both take the callback
+    * **Assertions**:
+      * <code>Assert null (qc.cb.on_stream_data)</code>
+      * <code>Assert null (qc.cb.on_handshake_done)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert equal uint (0, g_stream_len)</code>
+      * <code>Assert false (dws_quic_conn_is_closed(&qc))</code>
+      * <code>Assert true (dws_quic_conn_established(&qc2))</code>
+      * <code>Assert false (g_hs_done)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_stream_duplicate_and_stale_fin</b> &mdash; <i>4 bytes at offset 0 -> delivered.</i></summary>
+
+    * **Objective**: 4 bytes at offset 0 -> delivered.
+    * **Assertions**:
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert equal uint (4, g_stream_len)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert equal uint (4, g_stream_len)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert false (g_stream_fin)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert true (g_stream_fin)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert false (g_stream_fin)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_frame_dispatch_variants</b> &mdash; <i>(a) An ACK_ECN, then a stale ACK: the first advances largest_acked, the second does not.</i></summary>
+
+    * **Objective**: (a) An ACK_ECN, then a stale ACK: the first advances largest_acked, the second does not.
+    * **Assertions**:
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(5, qc.space[QuicEnc::QUIC_ENC_INITIAL].largest_acked);</code>
+      * <code>Assert false (qc.space[QuicEnc::QUIC_ENC_INITIAL].ack_eliciting_rx)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(5, qc.space[QuicEnc::QUIC_ENC_INITIAL].largest_acked); // not lowered</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert true (dws_quic_conn_is_closed(&qc))</code>
+      * <code>Assert false (qc.space[QuicEnc::QUIC_ENC_INITIAL].ack_eliciting_rx)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert false (dws_quic_conn_is_closed(&qc))</code>
+      * <code>Assert equal uint (0, g_stream_len)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_recv_zero_version</b> &mdash; <i>Quic recv zero version</i></summary>
+
+    * **Objective**: Quic recv zero version
+    * **Assertions**:
+      * <code>Assert false (dws_quic_conn_recv(&qc, dg, dl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_recv_older_packet_number</b> &mdash; <i>Quic recv older packet number</i></summary>
+
+    * **Objective**: Quic recv older packet number
+    * **Assertions**:
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(5, qc.space[QuicEnc::QUIC_ENC_INITIAL].largest_rx);</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(5, qc.space[QuicEnc::QUIC_ENC_INITIAL].largest_rx); // still 5</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_recv_short_header_decrypt_failure</b> &mdash; <i>Quic recv short header decrypt failure</i></summary>
+
+    * **Objective**: Quic recv short header decrypt failure
+    * **Assertions**:
+      * <code>Assert false (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert false (dws_quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_crypto_after_handshake_done</b> &mdash; <i>A short CRYPTO frame at the Handshake level: fewer than 4 bytes, so no TLS message completes</i></summary>
+
+    * **Objective**: A short CRYPTO frame at the Handshake level: fewer than 4 bytes, so no TLS message completes
+    * **Assertions**:
+      * <code>Assert true (qc.handshake_done_sent)</code>
+      * <code>Assert false (qc.handshake_done_queued)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qc.tls.state);</code>
+      * <code>Assert false (qc.handshake_done_queued)</code>
+      * <code>Assert false (dws_quic_conn_is_closed(&qc))</code>
+      * <code>Assert true (off &gt; 0)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(off + sizeof(frag), qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].crypto_rx_off);</code>
+      * <code>Assert true (qc.handshake_done_queued)</code>
+      * <code>Assert false (qc.handshake_done_sent)</code>
+      * <code>Assert false (g_hs_done)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_close_after_peer_close</b> &mdash; <i>Quic conn close after peer close</i></summary>
+
+    * **Objective**: Quic conn close after peer close
+    * **Assertions**:
+      * <code>Assert true (qc.closed)</code>
+      * <code>Assert true (qc.draining)</code>
+      * <code>Assert false (qc.close_queued)</code>
+      * <code>Assert equal uint (0, dws_quic_conn_send(&qc, out, sizeof out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_close_queued_then_peer_close</b> &mdash; <i>Drain the owed ACK and the whole server handshake flight first, so that once the close has gone</i></summary>
+
+    * **Objective**: Drain the owed ACK and the whole server handshake flight first, so that once the close has gone
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_quic_conn_send(&qc, out, sizeof out))</code>
+      * <code>Assert true (qc.close_queued)</code>
+      * <code>Assert true (qc.draining)</code>
+      * <code>Assert true (dws_quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert true (qc.close_sent)</code>
+      * <code>Assert equal uint (0, dws_quic_conn_send(&qc, out, sizeof out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_close_send_no_room</b> &mdash; <i>Quic conn close send no room</i></summary>
+
+    * **Objective**: Quic conn close send no room
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_quic_conn_send(&qc, tiny, sizeof tiny))</code>
+      * <code>Assert false (qc.close_sent)</code>
+      * <code>Assert false (qc.closed)</code>
+      * <code>Assert true (dws_quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert true (qc.close_sent)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_close_level_out_of_range</b> &mdash; <i>Quic conn close level out of range</i></summary>
+
+    * **Objective**: Quic conn close level out of range
+    * **Assertions**:
+      * <code>Assert true (dws_quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert true (dws_quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_highest_sealed_level_fallback</b> &mdash; <i>Quic conn highest sealed level fallback</i></summary>
+
+    * **Objective**: Quic conn highest sealed level fallback
+    * **Assertions**:
+      * <code>Assert true (qc.close_queued)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QuicEnc::QUIC_ENC_INITIAL, qc.close_level); // the documented fallback</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_crypto_flight_fragmented</b> &mdash; <i>The Handshake flight is larger than one datagram can carry, so it takes more than one send.</i></summary>
+
+    * **Objective**: The Handshake flight is larger than one datagram can carry, so it takes more than one send.
+    * **Assertions**:
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qc.tls.state);</code>
+      * <code>Assert true (hs_flight_len &gt; DWS_QUIC_MAX_DATAGRAM)</code>
+      * <code>Assert true (first &gt; 0)</code>
+      * <code>Assert true (sent_after_first &gt; 0)</code>
+      * <code>Assert true (sent_after_first &lt; hs_flight_len)</code>
+      * <code>Assert true (dws_quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(hs_flight_len, total); // the whole flight was eventually sent</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_stream_tx_partitioning</b> &mdash; <i>A client STREAM frame creates an inbound stream with nothing queued to send: the loop must</i></summary>
+
+    * **Objective**: A client STREAM frame creates an inbound stream with nothing queued to send: the loop must
+    * **Assertions**:
+      * <code>Assert true (dws_quic_conn_recv(&qc, sdg, sl))</code>
+      * <code>Assert equal uint (sizeof(big), queued)</code>
+      * <code>Assert not null (st)</code>
+      * <code>Assert true (st-&gt;tx_sent &gt; 0)</code>
+      * <code>Assert true (st-&gt;tx_sent &lt; st-&gt;tx_have)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(st-&gt;tx_sent, st-&gt;tx_off); // the stream offset tracks what was taken</code>
+      * <code>Assert false (st-&gt;tx_fin_sent)</code>
+      * <code>Assert true (dws_quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert equal uint (st-&gt;tx_have, st-&gt;tx_sent)</code>
+      * <code>Assert true (st-&gt;tx_fin_sent)</code>
+      * <code>Assert equal uint (2, dws_quic_conn_stream_send(&qc, 0, d, 2, false))</code>
+      * <code>Assert true (dws_quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert equal uint (before + 2, st-&gt;tx_sent)</code>
+      * <code>Assert true (st-&gt;tx_fin_sent)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_stream_tx_datagram_full</b> &mdash; <i>Large stream ids force 8-byte varints, so a frame header alone needs more room than the tail</i></summary>
+
+    * **Objective**: Large stream ids force 8-byte varints, so a frame header alone needs more room than the tail
+    * **Assertions**:
+      * <code>Assert equal uint (sizeof(payload)</code>
+      * <code>Assert true (untouched &gt; 0)</code>
+      * <code>Assert true (partial &gt; 0)</code>
+      * <code>Assert equal uint (qc.streams[j].tx_have, qc.streams[j].tx_sent)</code>
+      * <code>Assert equal uint (0, dws_quic_conn_send(&qc, out, sizeof out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_stream_fin_only</b> &mdash; <i>Close the stream with no payload: nothing is "more", but the FIN is due.</i></summary>
+
+    * **Objective**: Close the stream with no payload: nothing is "more", but the FIN is due.
+    * **Assertions**:
+      * <code>Assert equal uint (4, dws_quic_conn_stream_send(&qc, 0, (const uint8_t *)"BODY", 4, false))</code>
+      * <code>Assert true (dws_quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert not null (st)</code>
+      * <code>Assert equal uint (st-&gt;tx_have, st-&gt;tx_sent)</code>
+      * <code>Assert false (st-&gt;tx_fin_sent)</code>
+      * <code>Assert equal uint (0, dws_quic_conn_stream_send(&qc, 0, (const uint8_t *)"", 0, true))</code>
+      * <code>Assert true (st-&gt;tx_fin)</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (st-&gt;tx_fin_sent)</code>
+      * <code>Assert not equal (SIZE_MAX, pt)</code>
+      * <code>Assert true (got &gt; 0)</code>
+      * <code>Assert true (f.type &gt;= QuicFrameType::QUIC_FT_STREAM)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, f.stream.length);</code>
+      * <code>Assert true (f.stream.fin)</code>
+      * <code>Assert equal uint (0, dws_quic_conn_send(&qc, out, sizeof out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_stream_send_clamped</b> &mdash; <i>Quic conn stream send clamped</i></summary>
+
+    * **Objective**: Quic conn stream send clamped
+    * **Assertions**:
+      * <code>Assert equal uint (DWS_QUIC_STREAM_TX, took)</code>
+      * <code>Assert not null (st)</code>
+      * <code>Assert equal uint (DWS_QUIC_STREAM_TX, st-&gt;tx_have)</code>
+      * <code>Assert false (st-&gt;tx_fin)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_stream_send_sentinel_id</b> &mdash; <i>Quic conn stream send sentinel id</i></summary>
+
+    * **Objective**: Quic conn stream send sentinel id
+    * **Assertions**:
+      * <code>Assert equal uint (2, dws_quic_conn_stream_send(&qc, UINT64_MAX, (const uint8_t *)"hi", 2, true))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(UINT64_MAX, qc.streams[i].id); // every slot is still free</code>
+      * <code>Assert equal uint (0, dws_quic_conn_send(&qc, out, sizeof out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_pto_backoff_ceiling</b> &mdash; <i>Fire it more times than the backoff counter can grow: it stops at its cap.</i></summary>
+
+    * **Objective**: Fire it more times than the backoff counter can grow: it stops at its cap.
+    * **Assertions**:
+      * <code>Assert true (dws_quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert true (qc.pto_armed)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(8, qc.pto_count); // capped</code>
+      * <code>Assert true (qc.pto_armed)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2097152000u, qc.pto_deadline_ms); // DWS_QUIC_PTO_MS &lt;&lt; 21</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_ack_owed_without_rx</b> &mdash; <i>Quic conn ack owed without rx</i></summary>
+
+    * **Objective**: Quic conn ack owed without rx
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_quic_conn_send(&qc, out, sizeof out))</code>
+      * <code>Assert equal uint (0, dws_quic_conn_send(&qc, out, sizeof out))</code>
+      * <code>Assert true (qc.space[QuicEnc::QUIC_ENC_APP].ack_eliciting_rx)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_close_level_without_keys</b> &mdash; <i>A padded Initial PING gives the connection an amplification budget without starting the TLS</i></summary>
+
+    * **Objective**: A padded Initial PING gives the connection an amplification budget without starting the TLS
+    * **Assertions**:
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_START, qc.tls.state);</code>
+      * <code>Assert true (qc.close_queued)</code>
+      * <code>Assert false (qc.space[QuicEnc::QUIC_ENC_APP].discarded)</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_quic_conn_is_closed(&qc))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);</code>
+      * <code>Assert not equal (SIZE_MAX, pt)</code>
+      * <code>Assert true (has_frame(plain, pt, QuicFrameType::QUIC_FT_CONNECTION_CLOSE))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_is_closed_draining_only</b> &mdash; <i>Quic conn is closed draining only</i></summary>
+
+    * **Objective**: Quic conn is closed draining only
+    * **Assertions**:
+      * <code>Assert false (dws_quic_conn_is_closed(&qc))</code>
+      * <code>Assert false (qc.closed)</code>
+      * <code>Assert true (dws_quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_pto_outstanding_per_space</b> &mdash; <i>Exactly one space has sent ack-eliciting packet 3 and had only up to 2 acknowledged.</i></summary>
+
+    * **Objective**: Exactly one space has sent ack-eliciting packet 3 and had only up to 2 acknowledged.
+    * **Assertions**:
+      * <code>Assert true (qc.pto_armed)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000 + DWS_QUIC_PTO_MS, qc.pto_deadline_ms);</code>
+      * <code>Assert false (qc.pto_armed)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, qc.pto_count);</code>
+      * <code>Assert false (qc.pto_armed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_pto_disarms_when_all_acked</b> &mdash; <i>The 1-RTT HANDSHAKE_DONE packet is still unacknowledged, so the PTO arms.</i></summary>
+
+    * **Objective**: The 1-RTT HANDSHAKE_DONE packet is still unacknowledged, so the PTO arms.
+    * **Assertions**:
+      * <code>Assert true (qc.pto_armed)</code>
+      * <code>Assert true (dws_quic_conn_recv(&qc, dg, dl))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(0, qc.space[QuicEnc::QUIC_ENC_APP].largest_acked);</code>
+      * <code>Assert false (qc.pto_armed)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, qc.pto_count);</code>
+      * <code>Assert false (dws_quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_pto_requeues_handshake_done_once</b> &mdash; <i>The client never acknowledged the 1-RTT packet, so the APP space is still outstanding.</i></summary>
+
+    * **Objective**: The client never acknowledged the 1-RTT packet, so the APP space is still outstanding.
+    * **Assertions**:
+      * <code>Assert true (qc.handshake_done_sent)</code>
+      * <code>Assert true (qc.handshake_done_queued)</code>
+      * <code>Assert false (qc.handshake_done_sent)</code>
+      * <code>Assert true (qc.handshake_done_queued)</code>
+      * <code>Assert false (qc.handshake_done_sent)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26974,7 +30621,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_frame (11 tests)</b></summary>
+<summary><b>test_quic_frame (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_frame_edge_guards</b> &mdash; <i>STREAM with LEN set but the Length varint is absent -> rejected at the length read.</i></summary>
@@ -26990,6 +30637,55 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal int (0, (int)dws_quic_build_stream(b, 2, 4, 100, d, 3, true))</code>
       * <code>Assert equal int (0, (int)dws_quic_build_stream(b, 2, 0, 0, d, 3, false))</code>
       * <code>Assert equal int (0, (int)dws_quic_build_stream(b, 3, 0, 0, d, 3, false))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_truncation_sweep</b> &mdash; <i>ACK with ECN: largest 60, delay 5, 2 ranges (gap/len pairs), then the three ECN counts.</i></summary>
+
+    * **Objective**: ACK with ECN: largest 60, delay 5, 2 ranges (gap/len pairs), then the three ECN counts.
+    * **Assertions**:
+      * <code>Assert true (an &gt; 0)</code>
+      * <code>Assert true (cn &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builder_capacity_sweep</b> &mdash; <i>ACK: type + largest(2 octets) + delay(2) + range count + first range.</i></summary>
+
+    * **Objective**: ACK: type + largest(2 octets) + delay(2) + range count + first range.
+    * **Assertions**:
+      * <code>Assert true (need &gt; 0)</code>
+      * <code>Assert equal int (0, (int)dws_quic_build_ack(out, cap, 1000, 500, 3))</code>
+      * <code>Assert equal int ((int)need, (int)dws_quic_build_ack(out, need, 1000, 500, 3))</code>
+      * <code>Assert true (need &gt; 0)</code>
+      * <code>Assert equal int (0, (int)dws_quic_build_crypto(out, cap, 1000, data, sizeof data))</code>
+      * <code>Assert true (need &gt; 0)</code>
+      * <code>Assert equal int (0, (int)dws_quic_build_stream(out, cap, 1000, 2000, data, sizeof data, true))</code>
+      * <code>Assert true (need &gt; 0)</code>
+      * <code>Assert equal int (0, (int)dws_quic_build_max_data(out, cap, 1000000))</code>
+      * <code>Assert true (need &gt; 0)</code>
+      * <code>Assert equal int (0, (int)dws_quic_build_connection_close(out, cap, 1000, 2000, "reason", 6))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builders_with_empty_bodies</b> &mdash; <i>CRYPTO carrying no data: header only, and it parses back with length 0.</i></summary>
+
+    * **Objective**: CRYPTO carrying no data: header only, and it parses back with length 0.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert equal int ((int)n, (int)dws_quic_frame_parse(out, n, &f))</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_CRYPTO, (unsigned)f.type)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(4, f.crypto.offset);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, f.crypto.length);</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert equal int ((int)n, (int)dws_quic_frame_parse(out, n, &f))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(8, f.stream.id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, f.stream.length);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, f.stream.fin);</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert equal int ((int)n, (int)dws_quic_frame_parse(out, n, &f))</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_CONNECTION_CLOSE, (unsigned)f.type)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0x0a, f.close.error_code);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, f.close.reason_len);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -27327,7 +31023,23 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_tls (15 tests)</b></summary>
+<summary><b>test_quic_tls (20 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_tls_message_dispatch_guards</b> &mdash; <i>(a) A ClientHello at the Initial level once the handshake has moved past START.</i></summary>
+
+    * **Objective**: (a) A ClientHello at the Initial level once the handshake has moved past START.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(10, qt.alert); // unexpected_message</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(10, qt.alert);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(10, qt.alert);</code>
+      * <code>Assert null (dws_quic_tls_peer_params(&qt))</code>
+      * <code>Assert not null (dws_quic_tls_peer_params(&qt))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_full_handshake_roundtrip</b> &mdash; <i>Client transport params.</i></summary>
@@ -27518,6 +31230,52 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);</code>
       * <code>Assert equal uint (sizeof(cfin), used)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_share_without_group_offer</b> &mdash; <i>Hybrid share without group offer</i></summary>
+
+    * **Objective**: Hybrid share without group offer
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(40, qt.alert); // handshake_failure: no usable key_share</code>
+      * <code>Assert false (qt.hs_keys_ready)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_hrr_retry_without_share_is_fatal</b> &mdash; <i>ClientHello1: hybrid group offered, classical share only -> HelloRetryRequest.</i></summary>
+
+    * **Objective**: ClientHello1: hybrid group offered, classical share only -> HelloRetryRequest.
+    * **Assertions**:
+      * <code>Assert true (qt.hrr_sent)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_START, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(40, qt.alert); // handshake_failure</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_bad_mlkem_key_rejected</b> &mdash; <i>Hybrid bad mlkem key rejected</i></summary>
+
+    * **Objective**: Hybrid bad mlkem key rejected
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(40, qt.alert); // handshake_failure</code>
+      * <code>Assert false (qt.hs_keys_ready)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_key_share_entry_skipping</b> &mdash; <i>Start from the valid hybrid ClientHello, then rebuild its key_share with two unusable entries</i></summary>
+
+    * **Objective**: Start from the valid hybrid ClientHello, then rebuild its key_share with two unusable entries
+    * **Assertions**:
+      * <code>Assert true (dws_tls13_parse_client_hello(ch, p, &parsed))</code>
+      * <code>Assert true (parsed.has_hybrid_share)</code>
+      * <code>Assert false (parsed.has_key_share)</code>
+      * <code>Assert true (parsed.offers_x25519mlkem768)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(kat_ek, parsed.client_mlkem_ek, MLKEM768_EK_BYTES);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(client_pub, parsed.client_x25519, 32);</code>
+      * <code>Assert equal uint (p, dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, p))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);</code>
   </details>
 
 </details>
@@ -27757,7 +31515,17 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_range (20 tests)</b></summary>
+<summary><b>test_range (21 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unsatisfiable_range_416_carries_cors</b> &mdash; <i>Unsatisfiable range 416 carries cors</i></summary>
+
+    * **Objective**: Unsatisfiable range 416 carries cors
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "416 Range Not Satisfiable"))</code>
+      * <code>Assert not null (strstr(out, "Content-Range: bytes */20\\r\\n"))</code>
+      * <code>Assert not null (strstr(out, "Access-Control-Allow-Origin: *\\r\\n"))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_file_send_backpressure_resumes_across_polls</b> &mdash; <i>File send backpressure resumes across polls</i></summary>
@@ -28450,7 +32218,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_regex (13 tests)</b></summary>
+<summary><b>test_regex (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_numeric_class_plus</b> &mdash; <i>Numeric class plus</i></summary>
@@ -28583,6 +32351,129 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (hit("GET", "/c/x"))</code>
       * <code>Assert true (hit("GET", "/r/507"))</code>
       * <code>Assert false (hit("GET", "/r/9a"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_trailing_backslash_atom</b> &mdash; <i>Trailing backslash atom</i></summary>
+
+    * **Objective**: Trailing backslash atom
+    * **Assertions**:
+      * <code>Assert true (regex_match("a", "a"))</code>
+      * <code>Assert false (regex_match("a\\\\", "a"))</code>
+      * <code>Assert false (regex_match("a\\\\", "ab"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_class_leading_bracket_is_literal</b> &mdash; <i>Class leading bracket is literal</i></summary>
+
+    * **Objective**: Class leading bracket is literal
+    * **Assertions**:
+      * <code>Assert true (regex_match("[]]", "]"))</code>
+      * <code>Assert false (regex_match("[]]", "x"))</code>
+      * <code>Assert true (regex_match("[^]]", "x"))</code>
+      * <code>Assert false (regex_match("[^]]", "]"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_class_unterminated_fails_closed</b> &mdash; <i>Class unterminated fails closed</i></summary>
+
+    * **Objective**: Class unterminated fails closed
+    * **Assertions**:
+      * <code>Assert true (regex_match("[abc", "a"))</code>
+      * <code>Assert true (regex_match("[abc", "b"))</code>
+      * <code>Assert false (regex_match("[abc", "c"))</code>
+      * <code>Assert false (regex_match("[abc", "x"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_class_trailing_backslash_in_body</b> &mdash; <i>Class trailing backslash in body</i></summary>
+
+    * **Objective**: Class trailing backslash in body
+    * **Assertions**:
+      * <code>Assert true (regex_match("[a\\\\", "a"))</code>
+      * <code>Assert false (regex_match("[a\\\\", "\\\\"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_class_escaped_bound_at_end</b> &mdash; <i>Class escaped bound at end</i></summary>
+
+    * **Objective**: Class escaped bound at end
+    * **Assertions**:
+      * <code>Assert true (regex_match("[a\\\\]", "a"))</code>
+      * <code>Assert true (regex_match("[a\\\\]", "\\\\"))</code>
+      * <code>Assert false (regex_match("[a\\\\]", "b"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_class_matches_nothing</b> &mdash; <i>Empty class matches nothing</i></summary>
+
+    * **Objective**: Empty class matches nothing
+    * **Assertions**:
+      * <code>Assert false (regex_match("[]", "x"))</code>
+      * <code>Assert false (regex_match("[]", "]"))</code>
+      * <code>Assert false (regex_match("[]", ""))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_class_trailing_dash_is_literal</b> &mdash; <i>Class trailing dash is literal</i></summary>
+
+    * **Objective**: Class trailing dash is literal
+    * **Assertions**:
+      * <code>Assert true (regex_match("[a-]+", "a-a"))</code>
+      * <code>Assert true (regex_match("[a-]+", "-"))</code>
+      * <code>Assert false (regex_match("[a-]+", "b"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_class_two_ranges</b> &mdash; <i>Class two ranges</i></summary>
+
+    * **Objective**: Class two ranges
+    * **Assertions**:
+      * <code>Assert true (regex_match("[a-z0-9]+", "a1"))</code>
+      * <code>Assert true (regex_match("[a-z0-9]+", "9z"))</code>
+      * <code>Assert false (regex_match("[a-z0-9]+", "-"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_escape_class_digit_low_edge</b> &mdash; <i>Escape class digit low edge</i></summary>
+
+    * **Objective**: Escape class digit low edge
+    * **Assertions**:
+      * <code>Assert false (regex_match("\\\\d", "-"))</code>
+      * <code>Assert false (regex_match("\\\\d", "x"))</code>
+      * <code>Assert true (regex_match("\\\\D", "-"))</code>
+      * <code>Assert true (regex_match("\\\\d", "5"))</code>
+      * <code>Assert false (regex_match("\\\\D", "5"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_escape_class_word_edges</b> &mdash; <i>Escape class word edges</i></summary>
+
+    * **Objective**: Escape class word edges
+    * **Assertions**:
+      * <code>Assert true (regex_match("\\\\w", "A"))</code>
+      * <code>Assert true (regex_match("\\\\w", "9"))</code>
+      * <code>Assert true (regex_match("\\\\w", "_"))</code>
+      * <code>Assert false (regex_match("\\\\w", "~"))</code>
+      * <code>Assert false (regex_match("\\\\w", "-"))</code>
+      * <code>Assert false (regex_match("\\\\W", "A"))</code>
+      * <code>Assert false (regex_match("\\\\W", "9"))</code>
+      * <code>Assert false (regex_match("\\\\W", "_"))</code>
+      * <code>Assert true (regex_match("\\\\W", "~"))</code>
+      * <code>Assert true (regex_match("\\\\W", "-"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_escape_class_space_direct</b> &mdash; <i>Escape class space direct</i></summary>
+
+    * **Objective**: Escape class space direct
+    * **Assertions**:
+      * <code>Assert true (regex_match("\\\\s", " "))</code>
+      * <code>Assert true (regex_match("\\\\s", "\\t"))</code>
+      * <code>Assert false (regex_match("\\\\s", "q"))</code>
+      * <code>Assert false (regex_match("\\\\S", " "))</code>
+      * <code>Assert false (regex_match("\\\\S", "\\t"))</code>
+      * <code>Assert true (regex_match("\\\\S", "q"))</code>
   </details>
 
 </details>
@@ -28884,7 +32775,71 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_rtcm3 (11 tests)</b></summary>
+<summary><b>test_rtcm3 (16 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_writer_rejects_bad_widths_and_is_sticky</b> &mdash; <i>Writer rejects bad widths and is sticky</i></summary>
+
+    * **Objective**: Writer rejects bad widths and is sticky
+    * **Assertions**:
+      * <code>Assert false (w.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, w.pos);</code>
+      * <code>Assert false (w.ok)</code>
+      * <code>Assert false (w.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, w.pos);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_signed_bit_io_full_width</b> &mdash; <i>Signed bit io full width</i></summary>
+
+    * **Objective**: Signed bit io full width
+    * **Assertions**:
+      * <code>Assert true (w.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-48500020000LL, dws_rtcm_br_s(buf, &p, 64));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(64, p);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_parse_edges</b> &mdash; <i>Frame parse edges</i></summary>
+
+    * **Objective**: Frame parse edges
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtcm3_frame_parse(notpre, sizeof(notpre), nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(FRAME_1005), dws_rtcm3_frame_parse(FRAME_1005, sizeof(FRAME_1005), nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(fn, dws_rtcm3_frame_parse(frame, fn, &f));</code>
+      * <code>Assert true (f.crc_ok)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, f.msg_type); // one byte cannot carry a 12-bit message number</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_build_edges</b> &mdash; <i>Frame build edges</i></summary>
+
+    * **Objective**: Frame build edges
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtcm3_frame_build(frame, sizeof(frame), body, RTCM3_MAX_PAYLOAD + 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtcm3_frame_build(nullptr, sizeof(frame), body, sizeof(body)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(RTCM3_HDR_LEN + RTCM3_CRC_LEN, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, dws_rtcm3_frame_parse(frame, n, &f));</code>
+      * <code>Assert true (f.crc_ok)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, f.payload_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n3, dws_rtcm3_frame_build(frame, sizeof(frame), nullptr, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n3, dws_rtcm3_frame_parse(frame, sizeof(frame), &f));</code>
+      * <code>Assert true (f.crc_ok)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, f.payload_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_1005_rejects_bad_input</b> &mdash; <i>Rewrite DF002 to 1004 (0x3EC), a GPS observable message rather than an ARP one.</i></summary>
+
+    * **Objective**: Rewrite DF002 to 1004 (0x3EC), a GPS observable message rather than an ARP one.
+    * **Assertions**:
+      * <code>Assert false (dws_rtcm3_parse_1005(nullptr, 19, &arp))</code>
+      * <code>Assert false (dws_rtcm3_parse_1005(body, 19, nullptr))</code>
+      * <code>Assert false (dws_rtcm3_parse_1005(body, 18, &arp))</code>
+      * <code>Assert false (dws_rtcm3_parse_1005(other, sizeof(other), &arp))</code>
+      * <code>Assert false (dws_rtcm3_parse_1005(short1006, sizeof(short1006), &arp))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_1005_matches_pyrtcm</b> &mdash; <i>Build 1005 matches pyrtcm</i></summary>
@@ -29887,7 +33842,48 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_senml (9 tests)</b></summary>
+<summary><b>test_senml (12 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_json_non_integral_magnitudes</b> &mdash; <i>Json non integral magnitudes</i></summary>
+
+    * **Objective**: Json non integral magnitudes
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)dws_senml_json_build(buf, sizeof(buf), &r, 1))</code>
+      * <code>Assert equal string ("[{\\"n\\":\\"big\\",\\"v\\":1e+19}]", buf)</code>
+      * <code>Assert greater than (0, (int)dws_senml_json_build(buf, sizeof(buf), &r, 1))</code>
+      * <code>Assert equal string ("[{\\"n\\":\\"big\\",\\"v\\":-1e+19}]", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_string_kind_without_value</b> &mdash; <i>String kind without value</i></summary>
+
+    * **Objective**: String kind without value
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)dws_senml_json_build(jb, sizeof(jb), &r, 1))</code>
+      * <code>Assert equal string ("[{\\"n\\":\\"s\\"}]", jb)</code>
+      * <code>Assert greater than (0, (int)n)</code>
+      * <code>Assert true (dws_cbor_read_array(&rd, &arr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, arr);</code>
+      * <code>Assert true (dws_cbor_read_map(&rd, &fields))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, fields); // only n - the absent vs is not counted</code>
+      * <code>Assert true (dws_cbor_read_int(&rd, &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(0, key); // n</code>
+      * <code>Assert true (dws_cbor_read_text(&rd, &s, &sl))</code>
+      * <code>Assert equal memory ("s", s, sl)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_pack_allows_null_records</b> &mdash; <i>Empty pack allows null records</i></summary>
+
+    * **Objective**: Empty pack allows null records
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)dws_senml_json_build(jb, sizeof(jb), nullptr, 0))</code>
+      * <code>Assert equal string ("[]", jb)</code>
+      * <code>Assert greater than (0, (int)cn)</code>
+      * <code>Assert true (dws_cbor_read_array(&rd, &arr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, arr);</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_json_canonical</b> &mdash; <i>Json canonical</i></summary>
@@ -30437,7 +34433,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_simatic (15 tests)</b></summary>
+<summary><b>test_simatic (36 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_bcc_is_xor</b> &mdash; <i>a doubled DLE pair cancels in the XOR (0x10 ^ 0x10 = 0)</i></summary>
@@ -30488,6 +34484,51 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (dws_3964r_parse_block(dangle, sizeof(dangle), false, out, sizeof(out), &olen))</code>
       * <code>Assert false (dws_3964r_parse_block(badctl, sizeof(badctl), false, out, sizeof(out), &olen))</code>
       * <code>Assert false (dws_3964r_parse_block(bigblk, bn, false, tiny, sizeof(tiny), &olen))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_block_rejects_bad_args</b> &mdash; <i>A null destination, and a null payload pointer with a non-zero length, are refused; a null</i></summary>
+
+    * **Objective**: A null destination, and a null payload pointer with a non-zero length, are refused; a null
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(nullptr, sizeof(buf), d, 1, false));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, sizeof(buf), nullptr, 1, false));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_DLE, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_ETX, buf[1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_block_overflow_at_each_stage</b> &mdash; <i>Every write stage is capacity-checked independently: payload byte, the doubled DLE, the</i></summary>
+
+    * **Objective**: Every write stage is capacity-checked independently: payload byte, the doubled DLE, the
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, 0, d, 1, false));   // no room at all</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, 1, dle, 1, false)); // room for DLE, not its double</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, 2, d, 1, false));   // no room for DLE ETX</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_3964r_build_block(buf, 3, d, 1, true));    // no room for the BCC</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_3964r_build_block(buf, 3, d, 1, false));   // same block fits without one</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_block_rejects_null_args</b> &mdash; <i>All three pointers are mandatory; a missing one fails closed rather than writing anywhere.</i></summary>
+
+    * **Objective**: All three pointers are mandatory; a missing one fails closed rather than writing anywhere.
+    * **Assertions**:
+      * <code>Assert false (dws_3964r_parse_block(nullptr, sizeof(blk), false, out, sizeof(out), &olen))</code>
+      * <code>Assert false (dws_3964r_parse_block(blk, sizeof(blk), false, nullptr, sizeof(out), &olen))</code>
+      * <code>Assert false (dws_3964r_parse_block(blk, sizeof(blk), false, out, sizeof(out), nullptr))</code>
+      * <code>Assert true (dws_3964r_parse_block(blk, sizeof(blk), false, out, sizeof(out), &olen))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, olen);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_block_missing_bcc_and_doubled_dle_overflow</b> &mdash; <i>R variant whose trailing BCC was truncated away: the terminator alone is not enough</i></summary>
+
+    * **Objective**: R variant whose trailing BCC was truncated away: the terminator alone is not enough
+    * **Assertions**:
+      * <code>Assert false (dws_3964r_parse_block(nobcc, sizeof(nobcc), true, out, sizeof(out), &olen))</code>
+      * <code>Assert false (dws_3964r_parse_block(doubled, sizeof(doubled), false, out, 0, &olen))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30554,6 +34595,145 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_sm_send_rejects_when_busy_or_unframeable</b> &mdash; <i>One job in flight at a time, and a payload that cannot be framed inside the block buffer is</i></summary>
+
+    * **Objective**: One job in flight at a time, and a payload that cannot be framed inside the block buffer is
+    * **Assertions**:
+      * <code>Assert true (dws_3964r_send(&c, msg, sizeof(msg), 0))</code>
+      * <code>Assert false (dws_3964r_send(&c, msg, sizeof(msg), 0))</code>
+      * <code>Assert false (dws_3964r_send(&d, big, sizeof(big), 0))</code>
+      * <code>Assert true (dws_3964r_idle(&d))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_null_callbacks_are_safe</b> &mdash; <i>tx/rx are optional: the link still runs the handshake and accepts a block, it just has</i></summary>
+
+    * **Objective**: tx/rx are optional: the link still runs the handshake and accepts a block, it just has
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_tx.size()); // no sink -&gt; nothing emitted</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_rx.size()); // no delivery callback</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_receive_bad_bcc_naks</b> &mdash; <i>A check-invalid block is NAKed and never delivered.</i></summary>
+
+    * **Objective**: A check-invalid block is NAKed and never delivered.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_NAK, g_tx.back());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_rx.size());</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_receive_no_bcc_variant_delivers</b> &mdash; <i>Plain 3964 (no BCC): DLE ETX finalizes the block immediately, no trailing check byte.</i></summary>
+
+    * **Objective**: Plain 3964 (no BCC): DLE ETX finalizes the block immediately, no trailing check byte.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_DLE, g_tx.back()); // acked</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(payload), g_rx.size());</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, g_rx.data(), g_rx.size());</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_receive_illegal_control_naks</b> &mdash; <i>DLE followed by something that is neither DLE nor ETX is a framing error mid-collect.</i></summary>
+
+    * **Objective**: DLE followed by something that is neither DLE nor ETX is a framing error mid-collect.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_NAK, g_tx.back());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_rx.size());</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_receive_overflow_naks</b> &mdash; <i>A partner that never terminates the block fills rxbuf; the next byte is rejected.</i></summary>
+
+    * **Objective**: A partner that never terminates the block fills rxbuf; the next byte is rejected.
+    * **Assertions**:
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_NAK, g_tx.back());</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_idle_ignores_non_stx</b> &mdash; <i>Line noise while idle must not open a receive.</i></summary>
+
+    * **Objective**: Line noise while idle must not open a receive.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_tx.size());</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_conn_nak_retries_then_gives_up</b> &mdash; <i>A partner that NAKs the connect gets MAX_CONN_RETRY fresh STXs, then the job is abandoned.</i></summary>
+
+    * **Objective**: A partner that NAKs the connect gets MAX_CONN_RETRY fresh STXs, then the job is abandoned.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_STX, g_tx.back());</code>
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_await_conn_ignores_other_bytes</b> &mdash; <i>Neither DLE, STX nor NAK: nothing happens, we keep waiting for the connect.</i></summary>
+
+    * **Objective**: Neither DLE, STX nor NAK: nothing happens, we keep waiting for the connect.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_tx.size());</code>
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_await_end_ignores_noise_then_gives_up</b> &mdash; <i>In TX_AWAIT_END only DLE (done) and NAK (repeat) mean anything; MAX_BLOCK_RETRY rejections</i></summary>
+
+    * **Objective**: In TX_AWAIT_END only DLE (done) and NAK (repeat) mean anything; MAX_BLOCK_RETRY rejections
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_tx.size());</code>
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_tick_before_deadline_is_a_noop</b> &mdash; <i>The QVZ timer must not fire early.</i></summary>
+
+    * **Objective**: The QVZ timer must not fire early.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_tx.size());</code>
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_tick_block_timeout_retries_then_gives_up</b> &mdash; <i>No end DLE within QVZ repeats the block from STX, up to MAX_BLOCK_RETRY times.</i></summary>
+
+    * **Objective**: No end DLE within QVZ repeats the block from STX, up to MAX_BLOCK_RETRY times.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_STX, g_tx.back());</code>
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_tick_zvz_aborts_receive</b> &mdash; <i>A partner that stops mid-block trips the ZVZ inter-character timeout -> NAK, link freed.</i></summary>
+
+    * **Objective**: A partner that stops mid-block trips the ZVZ inter-character timeout -> NAK, link freed.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(SIMATIC_NAK, g_tx.back());</code>
+      * <code>Assert true (dws_3964r_idle(&c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sm_unknown_state_is_inert</b> &mdash; <i>Defensive: a state byte outside the four defined states (a corrupted context) makes both</i></summary>
+
+    * **Objective**: Defensive: a state byte outside the four defined states (a corrupted context) makes both
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_tx.size());</code>
+      * <code>Assert false (dws_3964r_idle(&c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x7F, (uint8_t)c.state);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_rk512_build_send_field_order</b> &mdash; <i>[SEND, coord=0, area=DB, dbnr=5, addr BE, count BE, words BE]</i></summary>
 
     * **Objective**: [SEND, coord=0, area=DB, dbnr=5, addr BE, count BE, words BE]
@@ -30595,6 +34775,49 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert false (dws_rk512_parse_header(shortbuf, sizeof(shortbuf), &h))</code>
       * <code>Assert false (dws_rk512_parse_header(badarea, sizeof(badarea), &h))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_send(tiny, sizeof(tiny), Rk512Area::DB, 0, 0, w, 1));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rk512_build_guards</b> &mdash; <i>Every builder fails closed on a null destination or a destination too small for its telegram.</i></summary>
+
+    * **Objective**: Every builder fails closed on a null destination or a destination too small for its telegram.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_send(nullptr, sizeof(buf), Rk512Area::DB, 0, 0, w, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_send(buf, sizeof(buf), Rk512Area::DB, 0, 0, nullptr, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, dws_rk512_build_send(buf, sizeof(buf), Rk512Area::DB, 0, 0, nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_fetch(nullptr, sizeof(buf), Rk512Area::DB, 0, 0, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_fetch(buf, 7, Rk512Area::DB, 0, 0, 1)); // &lt; header</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_reaction(nullptr, sizeof(buf), 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rk512_build_reaction(buf, 2, 0)); // &lt; 3</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rk512_parse_header_guards</b> &mdash; <i>Null arguments, an area code under the valid range, and a REACTION command byte are all</i></summary>
+
+    * **Objective**: Null arguments, an area code under the valid range, and a REACTION command byte are all
+    * **Assertions**:
+      * <code>Assert false (dws_rk512_parse_header(nullptr, sizeof(ok), &h))</code>
+      * <code>Assert false (dws_rk512_parse_header(ok, sizeof(ok), nullptr))</code>
+      * <code>Assert false (dws_rk512_parse_header(lowarea, sizeof(lowarea), &h))</code>
+      * <code>Assert false (dws_rk512_parse_header(reaction, sizeof(reaction), &h))</code>
+      * <code>Assert true (dws_rk512_parse_header(ok, sizeof(ok), &h))</code>
+      * <code>Assert equal (Rk512Cmd::SEND, h.cmd)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, h.dbnr);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rk512_parse_reaction_guards_and_data</b> &mdash; <i>Null arguments / a short buffer / a non-REACTION command byte are refused; a FETCH response</i></summary>
+
+    * **Objective**: Null arguments / a short buffer / a non-REACTION command byte are refused; a FETCH response
+    * **Assertions**:
+      * <code>Assert false (dws_rk512_parse_reaction(nullptr, 3, &status, nullptr, nullptr))</code>
+      * <code>Assert false (dws_rk512_parse_reaction(buf, 3, nullptr, nullptr, nullptr))</code>
+      * <code>Assert false (dws_rk512_parse_reaction(buf, 2, &status, nullptr, nullptr))</code>
+      * <code>Assert false (dws_rk512_parse_reaction(notreaction, sizeof(notreaction), &status, nullptr, nullptr))</code>
+      * <code>Assert true (dws_rk512_parse_reaction(buf, 5, &status, &data, &dlen))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x0102, status);</code>
+      * <code>Assert equal ptr (buf + 3, data)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dlen);</code>
   </details>
 
 </details>
@@ -31786,7 +36009,94 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smtp (30 tests)</b></summary>
+<summary><b>test_smtp (39 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_parser_skips_malformed_lines</b> &mdash; <i>Reply parser skips malformed lines</i></summary>
+
+    * **Objective**: Reply parser skips malformed lines
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_bare_three_digit_line_is_final</b> &mdash; <i>Reply bare three digit line is final</i></summary>
+
+    * **Objective**: Reply bare three digit line is final
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ehlo_capability_scan_edges</b> &mdash; <i>Ehlo capability scan edges</i></summary>
+
+    * **Objective**: Ehlo capability scan edges
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, mock_starttls, &m))</code>
+      * <code>Assert equal int (1, m.upgrades)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_optional_fields</b> &mdash; <i>Null optional fields</i></summary>
+
+    * **Objective**: Null optional fields
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
+      * <code>Assert true (m.sent.find("EHLO esp32\\r\\n") != std::string::npos)</code>
+      * <code>Assert true (m.sent.find("Subject: \\r\\n") != std::string::npos); // empty, not "(null)</code>
+      * <code>Assert true (m.sent.find("\\r\\n\\r\\n.\\r\\n") != std::string::npos)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_password_sends_empty_secret</b> &mdash; <i>Null password sends empty secret</i></summary>
+
+    * **Objective**: Null password sends empty secret
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
+      * <code>Assert true (m.sent.find("dXNlcg==\\r\\n") != std::string::npos); // base64("user")</code>
+      * <code>Assert true (m.sent.find("AUTH LOGIN\\r\\n\\r\\n") == std::string::npos)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_user_skips_auth</b> &mdash; <i>Empty user skips auth</i></summary>
+
+    * **Objective**: Empty user skips auth
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
+      * <code>Assert true (m.sent.find("AUTH") == std::string::npos)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_arg_validation_rejects_each_missing_field</b> &mdash; <i>Arg validation rejects each missing field</i></summary>
+
+    * **Objective**: Arg validation rejects each missing field
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(nullptr, &msg, mock_send, mock_recv, nullptr, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&c, nullptr, mock_send, mock_recv, nullptr, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, nullptr, mock_recv, nullptr, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, nullptr, nullptr, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&nohost, &msg, mock_send, mock_recv, nullptr, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&nofrom, &msg, mock_send, mock_recv, nullptr, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &noto, mock_send, mock_recv, nullptr, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &emptyto, mock_send, mock_recv, nullptr, &m))</code>
+      * <code>Assert true (m.sent.empty())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rcpt_251_is_accepted</b> &mdash; <i>Rcpt 251 is accepted</i></summary>
+
+    * **Objective**: Rcpt 251 is accepted
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_command_helper_send_failure</b> &mdash; <i>Command helper send failure</i></summary>
+
+    * **Objective**: Command helper send failure
+    * **Assertions**:
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, nullptr, &m))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_happy_path_no_auth</b> &mdash; <i>Commands, in order.</i></summary>
@@ -32077,7 +36387,147 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_agent (28 tests)</b></summary>
+<summary><b>test_snmp_agent (41 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_init_community_defaults</b> &mdash; <i>Init community defaults</i></summary>
+
+    * **Objective**: Init community defaults
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert equal string (SYSDESCR_VAL, rv.str)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_rw_community_clears_write</b> &mdash; <i>Empty rw community clears write</i></summary>
+
+    * **Objective**: Empty rw community clears write
+    * **Assertions**:
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ACCESS, rv.err_status)</code>
+      * <code>Assert false (g_set_called)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_add_string_null_value</b> &mdash; <i>Add string null value</i></summary>
+
+    * **Objective**: Add string null value
+    * **Assertions**:
+      * <code>Assert true (dws_snmp_agent_add_string(OID_NULLSTR, 9, nullptr))</code>
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, rv.val_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, rv.str_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_registration_table_limits</b> &mdash; <i>set_system on a full table registers nothing (its sysObjectID mib_alloc returns null).</i></summary>
+
+    * **Objective**: set_system on a full table registers nothing (its sysObjectID mib_alloc returns null).
+    * **Assertions**:
+      * <code>Assert false (dws_snmp_agent_add_integer(toolong, SNMP_MAX_OID_LEN + 1, 1))</code>
+      * <code>Assert true (dws_snmp_agent_add_integer(oid, 9, (long)i))</code>
+      * <code>Assert false (dws_snmp_agent_add_integer(oid, 9, 1))</code>
+      * <code>Assert false (dws_snmp_agent_add_string(oid, 9, "x"))</code>
+      * <code>Assert false (dws_snmp_agent_add_dynamic(oid, 9, (uint8_t)SnmpTag::SNMP_COUNTER32, ctr_getter))</code>
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_OBJECT, rv.val_tag); // sysDescr never got in</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_getnext_picks_smallest_out_of_order</b> &mdash; <i>Getnext picks smallest out of order</i></summary>
+
+    * **Objective**: Getnext picks smallest out of order
+    * **Assertions**:
+      * <code>Assert true (dws_snmp_agent_add_integer(OID_EARLY, 9, 1234))</code>
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert equal uint (9, rv.oid_len)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0u, rv.oid[7]); // the late-registered .0.0, not sysDescr .1.0</code>
+      * <code>Assert equal int (1234, rv.ival)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_v1_error_variants</b> &mdash; <i>Writable community, but the object has no setter -> readOnly (v2c would say notWritable).</i></summary>
+
+    * **Objective**: Writable community, but the object has no setter -> readOnly (v2c would say notWritable).
+    * **Assertions**:
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_READ_ONLY, rv.err_status)</code>
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_BAD_VALUE, rv.err_status)</code>
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_SUCH_NAME, rv.err_status)</code>
+      * <code>Assert equal int (1, rv.err_index)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_get_failing_getter_is_nosuchinstance</b> &mdash; <i>Get failing getter is nosuchinstance</i></summary>
+
+    * **Objective**: Get failing getter is nosuchinstance
+    * **Assertions**:
+      * <code>Assert true (dws_snmp_agent_add_dynamic(OID_FAIL, 9, (uint8_t)SnmpTag::SNMP_COUNTER32, failing_getter))</code>
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_INSTANCE, rv.val_tag);</code>
+      * <code>Assert equal uint (9, rv.oid_len)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(7u, rv.oid[7]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_get_short_oid_is_nosuchobject</b> &mdash; <i>Get short oid is nosuchobject</i></summary>
+
+    * **Objective**: Get short oid is nosuchobject
+    * **Assertions**:
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_OBJECT, rv.val_tag);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_getbulk_saturates_varbind_table</b> &mdash; <i>Getbulk saturates varbind table</i></summary>
+
+    * **Objective**: Getbulk saturates varbind table
+    * **Assertions**:
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>Assert equal uint (SNMP_MAX_VARBINDS, rv.nvb)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_truncated_pdu_fields</b> &mdash; <i>varbind list declares one byte of content; that byte is a bare tag with no length octet.</i></summary>
+
+    * **Objective**: varbind list declares one byte of content; that byte is a bare tag with no length octet.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_dispatch_pdu(pdus[i], lens[i], false, true, out, sizeof(out)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_empty_varbind_list_tiny_buffer</b> &mdash; <i>Dispatch empty varbind list tiny buffer</i></summary>
+
+    * **Objective**: Dispatch empty varbind list tiny buffer
+    * **Assertions**:
+      * <code>Assert true (e.ok)</code>
+      * <code>Assert true (dws_snmp_dispatch_pdu(pdu, e.len, false, true, big, sizeof(big)) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_dispatch_pdu(pdu, e.len, false, true, tiny, sizeof(tiny)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_message_truncated_before_community</b> &mdash; <i>Message truncated before community</i></summary>
+
+    * **Objective**: Message truncated before community
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_agent_process(lone_tag, sizeof(lone_tag), resp, sizeof(resp)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snmp_agent_process(no_community, sizeof(no_community), resp, sizeof(resp)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_udp_handler_drops_unanswerable</b> &mdash; <i>Udp handler drops unanswerable</i></summary>
+
+    * **Objective**: Udp handler drops unanswerable
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_udp_captured_len()); // nothing sent</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_registration_and_rw_edges</b> &mdash; <i>With the rw community cleared, a Set arriving on the ro community is answered</i></summary>
@@ -32373,12 +36823,78 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_ber (21 tests)</b></summary>
+<summary><b>test_snmp_ber (27 tests)</b></summary>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_integer_vectors</b> &mdash; <i>Integer vectors</i></summary>
+    <summary><b>test_enc_init_rejects_unusable_buffer</b> &mdash; <i>Enc init rejects unusable buffer</i></summary>
 
-    * **Objective**: Integer vectors
+    * **Objective**: Enc init rejects unusable buffer
+    * **Assertions**:
+      * <code>Assert false (e.ok)</code>
+      * <code>Assert false (dws_ber_put_null(&e))</code>
+      * <code>Assert false (e.ok)</code>
+      * <code>Assert false (dws_ber_put_integer(&e, 1))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, e.len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_header_on_failed_decoder</b> &mdash; <i>Read header on failed decoder</i></summary>
+
+    * **Objective**: Read header on failed decoder
+    * **Assertions**:
+      * <code>Assert false (d.ok)</code>
+      * <code>Assert false (dws_ber_read_header(&d, &tag, &len))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, d.pos); // cursor untouched</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_integer_rejects_bad_tlv</b> &mdash; <i>Read integer rejects bad tlv</i></summary>
+
+    * **Objective**: Read integer rejects bad tlv
+    * **Assertions**:
+      * <code>Assert false (dws_ber_read_integer(&d, &v))</code>
+      * <code>Assert false (d.ok)</code>
+      * <code>Assert equal int (12345, v)</code>
+      * <code>Assert false (dws_ber_read_integer(&d, &v))</code>
+      * <code>Assert false (d.ok)</code>
+      * <code>Assert equal int (12345, v)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_integer_sign_extends_negative</b> &mdash; <i>Read integer sign extends negative</i></summary>
+
+    * **Objective**: Read integer sign extends negative
+    * **Assertions**:
+      * <code>Assert true (dws_ber_read_integer(&d, &v))</code>
+      * <code>Assert equal int (-1, v)</code>
+      * <code>Assert true (dws_ber_read_integer(&d, &v))</code>
+      * <code>Assert equal int (-256, v)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_oid_truncated_header_and_tiny_max</b> &mdash; <i>Read oid truncated header and tiny max</i></summary>
+
+    * **Objective**: Read oid truncated header and tiny max
+    * **Assertions**:
+      * <code>Assert false (dws_ber_read_oid(&d, arcs, 8, &n))</code>
+      * <code>Assert false (d.ok)</code>
+      * <code>Assert false (dws_ber_read_oid(&d, arcs, 1, &n))</code>
+      * <code>Assert false (d.ok)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ber_skip_cursor_past_end</b> &mdash; <i>Ber skip cursor past end</i></summary>
+
+    * **Objective**: Ber skip cursor past end
+    * **Assertions**:
+      * <code>Assert false (dws_ber_skip(&d, 0))</code>
+      * <code>Assert false (d.ok)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_integer_vectors</b> &mdash; <i>-256 needs a second octet: after the first shift val is -1 but the emitted byte (0x00) has a</i></summary>
+
+    * **Objective**: -256 needs a second octet: after the first shift val is -1 but the emitted byte (0x00) has a
   </details>
 
   <details style="margin-left: 20px;">
@@ -32695,7 +37211,126 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_v3 (22 tests)</b></summary>
+<summary><b>test_snmp_v3 (32 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_trap_reports_transport_failure</b> &mdash; <i>V3 trap reports transport failure</i></summary>
+
+    * **Objective**: V3 trap reports transport failure
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_udp_captured_len()); // capture still disarmed</code>
+      * <code>Assert false (dws_snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_truncated_fields_fail_closed</b> &mdash; <i>Truncated after version / msgID / msgMaxSize / msgFlags / msgSecurityModel.</i></summary>
+
+    * **Objective**: Truncated after version / msgID / msgMaxSize / msgFlags / msgSecurityModel.
+    * **Assertions**:
+      * <code>Assert true (e.ok)</code>
+      * <code>Assert equal uint (0, dws_snmp_v3_process(req, e.len, resp, sizeof(resp)))</code>
+      * <code>Assert true (fl &gt; 0)</code>
+      * <code>Assert equal uint (0, dws_snmp_v3_process(req, fl, resp, sizeof(resp)))</code>
+      * <code>Assert true (sl &gt; 0)</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert equal uint (0, dws_snmp_v3_process(req, n, resp, sizeof(resp)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_outer_tag_and_empty_flags</b> &mdash; <i>V3 outer tag and empty flags</i></summary>
+
+    * **Objective**: V3 outer tag and empty flags
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_snmp_v3_process(not_seq, sizeof(not_seq), resp, sizeof(resp)))</code>
+      * <code>Assert true (e.ok)</code>
+      * <code>Assert equal uint (0, dws_snmp_v3_process(req, e.len, resp, sizeof(resp)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_scoped_truncated_headers</b> &mdash; <i>V3 scoped truncated headers</i></summary>
+
+    * **Objective**: V3 scoped truncated headers
+    * **Assertions**:
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert equal uint (0, dws_snmp_v3_process(req, rl, resp, sizeof(resp)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_same_length_wrong_engine_id</b> &mdash; <i>V3 same length wrong engine id</i></summary>
+
+    * **Objective**: V3 same length wrong engine id
+    * **Assertions**:
+      * <code>Assert true (v.engine_id_len &lt;= sizeof(wrong))</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (parse_v3(resp, n, nullptr, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4u, r.oid[9]); // usmStatsUnknownEngineIDs</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_unknown_user_variants</b> &mdash; <i>V3 unknown user variants</i></summary>
+
+    * **Objective**: V3 unknown user variants
+    * **Assertions**:
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (parse_v3(resp, n, nullptr, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3u, r.oid[9]); // usmStatsUnknownUserNames</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_oversized_message_is_wrong_digest</b> &mdash; <i>V3 oversized message is wrong digest</i></summary>
+
+    * **Objective**: V3 oversized message is wrong digest
+    * **Assertions**:
+      * <code>Assert true (rl &gt; SNMP_MSG_BUF_SIZE)</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (parse_v3(resp, n, nullptr, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5u, r.oid[9]); // usmStatsWrongDigests</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_boots_mismatch_not_in_time</b> &mdash; <i>V3 boots mismatch not in time</i></summary>
+
+    * **Objective**: V3 boots mismatch not in time
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (parse_v3(resp, n, nullptr, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2u, r.oid[9]);        // usmStatsNotInTimeWindows</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x01, r.flags & 0x03); // and it is authenticated</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_privacy_parameter_edges</b> &mdash; <i>V3 privacy parameter edges</i></summary>
+
+    * **Objective**: V3 privacy parameter edges
+    * **Assertions**:
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (parse_v3(resp, n, nullptr, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(6u, r.oid[9]); // usmStatsDecryptionErrors</code>
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert equal uint (0, dws_snmp_v3_process(req, rl, resp, sizeof(resp)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_init_length_guards_and_null_user</b> &mdash; <i>A null user name / null secrets leave no usable USM user: an authenticated request</i></summary>
+
+    * **Objective**: A null user name / null secrets leave no usable USM user: an authenticated request
+    * **Assertions**:
+      * <code>Assert equal uint (before.engine_id_len, after.engine_id_len)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(before.engine_id, after.engine_id, before.engine_id_len);</code>
+      * <code>Assert equal uint (before.engine_id_len, after.engine_id_len)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(before.engine_id, after.engine_id, before.engine_id_len);</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (parse_v3(resp, n, nullptr, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3u, r.oid[9]);</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_v3_response_scopedpdu_overflow</b> &mdash; <i>V3 response scopedpdu overflow</i></summary>
@@ -34598,7 +39233,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_auth (21 tests)</b></summary>
+<summary><b>test_ssh_auth (28 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_service_request_errors</b> &mdash; <i>Service request errors</i></summary>
@@ -34674,6 +39309,89 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (-1, dws_ssh_auth_handle_request(MAX_SSH_CONNS, p, 1, out, &olen, sizeof(out)))</code>
       * <code>Assert equal int (-1, dws_ssh_auth_handle_request(0, p, 1, out, &olen, sizeof(out)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pubkey_without_verifier_fails</b> &mdash; <i>Pubkey without verifier fails</i></summary>
+
+    * **Objective**: Pubkey without verifier fails
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert false (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pubkey_rsa_blob_type_length_and_zero_mpint</b> &mdash; <i>Pubkey rsa blob type length and zero mpint</i></summary>
+
+    * **Objective**: Pubkey rsa blob type length and zero mpint
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_PK_OK, out[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pubkey_ed25519_blob_and_siglen_rejections</b> &mdash; <i>Well-formed key, signature of the wrong length: refused before any verify work.</i></summary>
+
+    * **Objective**: Well-formed key, signature of the wrong length: refused before any verify work.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert false (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pubkey_ecdsa_blob_rejections</b> &mdash; <i>curve identifier declared but absent.</i></summary>
+
+    * **Objective**: curve identifier declared but absent.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pubkey_ecdsa_signature_rejections</b> &mdash; <i>Pubkey ecdsa signature rejections</i></summary>
+
+    * **Objective**: Pubkey ecdsa signature rejections
+    * **Assertions**:
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(q, d))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert false (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pubkey_verifier_rejects_key</b> &mdash; <i>Pubkey verifier rejects key</i></summary>
+
+    * **Objective**: Pubkey verifier rejects key
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>Assert false (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_failure_partial_success_flag</b> &mdash; <i>Build failure partial success flag</i></summary>
+
+    * **Objective**: Build failure partial success flag
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_build_failure(out, &olen, sizeof(out), true))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, out[olen - 1]);</code>
+      * <code>Assert equal int (0, dws_ssh_auth_build_failure(out, &olen, sizeof(out), false))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, out[olen - 1]);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34893,7 +39611,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_channel (40 tests)</b></summary>
+<summary><b>test_ssh_channel (50 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_chan_slot_and_msgtype_guards</b> &mdash; <i>Chan slot and msgtype guards</i></summary>
@@ -34958,6 +39676,124 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal int (-1, ssh_global_request_handle(0, g, n, out, &ol, 0))</code>
       * <code>Assert equal int (-1, ssh_global_request_handle(0, g, n, out, &ol, 3))</code>
       * <code>Assert equal int (-1, ssh_global_request_handle(0, g, n, out, &ol, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chan_empty_and_mistyped_payloads</b> &mdash; <i>A full-length CONFIRMATION payload carrying some other message number.</i></summary>
+
+    * **Objective**: A full-length CONFIRMATION payload carrying some other message number.
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_global_request_handle(MAX_SSH_CONNS, z, sizeof(z), out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, ssh_global_request_handle(0, z, 0, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open(0, z, 0, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open(0, z, sizeof(z), out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_request(0, z, 0, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_request(0, z, sizeof(z), out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_data(0, z, 0, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_data(0, z, sizeof(z), out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open_confirm(0, z, 16))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open_failure(MAX_SSH_CONNS, z, 5))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open_failure(0, z, 4))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_window_adjust(MAX_SSH_CONNS, z, 9))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_window_adjust(0, z, 8))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_close(MAX_SSH_CONNS, z, 5, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_close(0, z, 4, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open_confirm(0, cf, sizeof(cf)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open_confirm(0, cf, sizeof(cf)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chan_same_length_names_do_not_match</b> &mdash; <i>"tcpip-forwarX" is 13 chars like "tcpip-forward"; "cancel-tcpip-forwarX" is 20 like the cancel</i></summary>
+
+    * **Objective**: "tcpip-forwarX" is 13 chars like "tcpip-forward"; "cancel-tcpip-forwarX" is 20 like the cancel
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_REQUEST_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_REQUEST_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, rfwd_open_count)</code>
+      * <code>Assert equal int (0, rfwd_cancel_count)</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open(0, op, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_FAILURE, out[0])</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3u, rd_u32(out + 5)); // unknown channel type</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chan_request_accept_set</b> &mdash; <i>Chan request accept set</i></summary>
+
+    * **Objective**: Chan request accept set
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chan_missing_trailing_port</b> &mdash; <i>Chan missing trailing port</i></summary>
+
+    * **Objective**: Chan missing trailing port
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open(0, dt, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, fwd_open_count)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chan_rforward_refused_paths</b> &mdash; <i>Chan rforward refused paths</i></summary>
+
+    * **Objective**: Chan rforward refused paths
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (0u, ol)</code>
+      * <code>Assert equal int (0, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (1u, ol)</code>
+      * <code>Assert equal (SSH_MSG_REQUEST_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, rfwd_cancel_count)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chan_forwarded_open_guards_and_silent_failure</b> &mdash; <i>Chan forwarded open guards and silent failure</i></summary>
+
+    * **Objective**: Chan forwarded open guards and silent failure
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_open_forwarded(0, "10.0.0.1", 80, nullptr, 90, out, &ol, sizeof(out)))</code>
+      * <code>Assert true (ch &gt;= 0)</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open_failure(0, pkt, sizeof(pkt)))</code>
+      * <code>Assert equal int (0, confirm_count)</code>
+      * <code>Assert false (ssh_chan[0][ch].pending)</code>
+      * <code>Assert false (ssh_chan[0][ch].open)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chan_data_without_sinks_and_empty_payload</b> &mdash; <i>Session channel with no data callback.</i></summary>
+
+    * **Objective**: Session channel with no data callback.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, pkt, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, data_cb_count)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SSH_CHAN_WINDOW - 3u, ssh_chan[0][id].local_window);</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, pkt, n, out, &ol, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SSH_CHAN_WINDOW - 3u, ssh_chan[0][id].local_window);</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open(0, pkt, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, pkt, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, fwd_data_count)</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, pkt, n, out, &ol, 5))</code>
+      * <code>Assert equal (0u, ol)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(90u, ssh_chan[0][id].local_window); // not replenished</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chan_outbound_limits_and_window_saturation</b> &mdash; <i>Chan outbound limits and window saturation</i></summary>
+
+    * **Objective**: Chan outbound limits and window saturation
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ssh_channel_build_data(MAX_SSH_CONNS, 0, data, sizeof(data), out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_build_data(0, id, data, sizeof(data), out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_build_close(0, id, out, &ol, 9))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_window_adjust(0, wa, sizeof(wa)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0xFFFFFFFFu, ssh_chan[0][id].peer_window);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35351,6 +40187,26 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_sftp_subsystem_match_and_missing_cb</b> &mdash; <i>Accepted with no binding: the channel is tagged SFTP and its data is simply dropped.</i></summary>
+
+    * **Objective**: Accepted with no binding: the channel is tagged SFTP and its data is simply dropped.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_sftp_open_count)</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
+      * <code>Assert equal int (0, dws_sftp_open_count)</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_sftp_data_count)</code>
+      * <code>Assert equal int (0, data_cb_count)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_scp_exec_routes</b> &mdash; <i>Scp exec routes</i></summary>
 
     * **Objective**: Scp exec routes
@@ -35363,10 +40219,30 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal int (1, dws_scp_data_count)</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_scp_exec_match_and_missing_cb</b> &mdash; <i>Data on the untagged channel is still ordinary session data.</i></summary>
+
+    * **Objective**: Data on the untagged channel is still ordinary session data.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
+      * <code>Assert equal int (0, dws_scp_open_count)</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (1, data_cb_count)</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
+      * <code>Assert equal int (0, dws_scp_open_count)</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_scp_data_count)</code>
+      * <code>Assert equal int (1, data_cb_count)</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_ssh_comp (8 tests)</b></summary>
+<summary><b>test_ssh_comp (13 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_delayed_activation</b> &mdash; <i>Delayed activation</i></summary>
@@ -35442,10 +40318,80 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert true (ssh_comp_s2c_active(0))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_negotiates_s2c_compression</b> &mdash; <i>zlib@openssh.com is delayed: negotiated at KEXINIT, started only at USERAUTH_SUCCESS.</i></summary>
+
+    * **Objective**: zlib@openssh.com is delayed: negotiated at KEXINIT, started only at USERAUTH_SUCCESS.
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, build_client_kexinit(buf, delayed)))</code>
+      * <code>Assert false (ssh_comp_s2c_active(0))</code>
+      * <code>Assert false (ssh_comp_s2c_active(0))</code>
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, build_client_kexinit(buf, immediate)))</code>
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, build_client_kexinit(buf, plain)))</code>
+      * <code>Assert false (ssh_comp_s2c_active(0))</code>
+      * <code>Assert equal int (-1, ssh_kexinit_parse(0, buf, build_client_kexinit(buf, unknown)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_packet_send_uncompressed_before_activation</b> &mdash; <i>Packet send uncompressed before activation</i></summary>
+
+    * **Objective**: Packet send uncompressed before activation
+    * **Assertions**:
+      * <code>Assert false (ssh_comp_s2c_active(0))</code>
+      * <code>Assert equal int (0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)))</code>
+      * <code>Assert equal memory (payload, wire + 5, sizeof(payload))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_newkeys_sent_starts_immediate_stream_only</b> &mdash; <i>Newkeys sent starts immediate stream only</i></summary>
+
+    * **Objective**: Newkeys sent starts immediate stream only
+    * **Assertions**:
+      * <code>Assert true (ssh_pkt[0].enc_out)</code>
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+      * <code>Assert true (ssh_pkt[0].enc_out)</code>
+      * <code>Assert false (ssh_comp_s2c_active(0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_packet_compress_rejects_oversized_payload</b> &mdash; <i>Packet compress rejects oversized payload</i></summary>
+
+    * **Objective**: Packet compress rejects oversized payload
+    * **Assertions**:
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+      * <code>Assert equal int (-1, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_auth_success_starts_delayed_compression</b> &mdash; <i>A rejected password leaves the stream stopped.</i></summary>
+
+    * **Objective**: A rejected password leaves the stream stopped.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pkt, n))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_FAILURE, comp_emt[0]);</code>
+      * <code>Assert false (ssh_comp_s2c_active(0))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pkt, n))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_SUCCESS, comp_emt[0]);</code>
+      * <code>Assert true (ssh_sess[0].authed)</code>
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_ssh_conn (16 tests)</b></summary>
+<summary><b>test_ssh_conn (23 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_entrypoints_reject_unmapped_slot</b> &mdash; <i>Conn entrypoints reject unmapped slot</i></summary>
+
+    * **Objective**: Conn entrypoints reject unmapped slot
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ssh_conn_send(0, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_close_channel(0, 0))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_open_forwarded(0, "h", 22, "o", 1))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_conn_outbound_arena_exhausted</b> &mdash; <i>Conn outbound arena exhausted</i></summary>
@@ -35455,6 +40401,66 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal int (-1, dws_ssh_conn_send(j, 0, data, sizeof(data)))</code>
       * <code>Assert equal int (-1, dws_ssh_conn_close_channel(j, 0))</code>
       * <code>Assert equal int (-1, dws_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_outbound_arena_fits_payload_not_wire</b> &mdash; <i>Conn outbound arena fits payload not wire</i></summary>
+
+    * **Objective**: Conn outbound arena fits payload not wire
+    * **Assertions**:
+      * <code>Assert not null (scratch_alloc(16, 1))</code>
+      * <code>Assert true (scratch_capacity() - scratch_used() &gt;= SSH_PKT_BUF_SIZE)</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_open_forwarded(j, "10.0.0.1", 80, "1.2.3.4", 90))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_emit_drops_reply_on_dead_socket</b> &mdash; <i>Conn emit drops reply on dead socket</i></summary>
+
+    * **Objective**: Conn emit drops reply on dead socket
+    * **Assertions**:
+      * <code>Assert equal (0, tcp_captured_len())</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, ssh_sess[j].phase)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_poll_rx_foreign_slot_mapping</b> &mdash; <i>Conn poll rx foreign slot mapping</i></summary>
+
+    * **Objective**: Conn poll rx foreign slot mapping
+    * **Assertions**:
+      * <code>Assert equal (0, tcp_captured_len())</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_BANNER, ssh_sess[j].phase)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_poll_rekey_preconditions</b> &mdash; <i>Conn poll rekey preconditions</i></summary>
+
+    * **Objective**: Conn poll rekey preconditions
+    * **Assertions**:
+      * <code>Assert equal (0, tcp_captured_len())</code>
+      * <code>Assert equal (0, tcp_captured_len())</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[j].phase)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_accept_skips_banner_on_dead_socket</b> &mdash; <i>Conn accept skips banner on dead socket</i></summary>
+
+    * **Objective**: Conn accept skips banner on dead socket
+    * **Assertions**:
+      * <code>Assert not equal (DWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
+      * <code>Assert equal (0, tcp_captured_len())</code>
+      * <code>Assert equal (0, tcp_captured_len())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_rx_banner_then_packet_in_separate_reads</b> &mdash; <i>Conn rx banner then packet in separate reads</i></summary>
+
+    * **Objective**: Conn rx banner then packet in separate reads
+    * **Assertions**:
+      * <code>Assert equal (SshPhase::SSH_PHASE_KEXINIT, ssh_sess[j].phase)</code>
+      * <code>Assert equal (0, tcp_captured_len())</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, ssh_sess[j].phase)</code>
+      * <code>Assert true (tcp_captured_len() &gt; 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35778,7 +40784,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_kbdint (7 tests)</b></summary>
+<summary><b>test_ssh_kbdint (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_kbdint_request_prompts</b> &mdash; <i>name(4)=0 \|\| instruction(4)=0 \|\| lang(4)=0 \|\| num-prompts(4)=1 \|\| string("Password: ") \|\| echo=0</i></summary>
@@ -35852,10 +40858,71 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert not null (strstr(list, "keyboard-interactive"))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_request_without_verifier_or_room</b> &mdash; <i>Kbdint request without verifier or room</i></summary>
+
+    * **Objective**: Kbdint request without verifier or room
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_FAILURE, out[0]);</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, 8))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_info_response_wire_guards</b> &mdash; <i>Kbdint info response wire guards</i></summary>
+
+    * **Objective**: Kbdint info response wire guards
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_info_response(MAX_SSH_CONNS, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, req, rq, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_info_response(0, pkt, 0, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, req, rq, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_info_response(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, req, rq, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_info_response(0, stub, sizeof(stub), out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, req, rq, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_info_response(0, trunc, sizeof(trunc), out, &olen, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_FAILURE, out[0]);</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, req, rq, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_info_response(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_FAILURE, out[0]);</code>
+      * <code>Assert false (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_dispatch_guards_and_success</b> &mdash; <i>Kbdint dispatch guards and success</i></summary>
+
+    * **Objective**: Kbdint dispatch guards and success
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_INFO_RESPONSE, pkt, n))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_INFO_RESPONSE, pkt, n))</code>
+      * <code>Assert equal int (0, dispatch_kbdint_round("s3cret"))</code>
+      * <code>Assert equal int (2, emt_n)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_INFO_REQUEST, emt_type[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_SUCCESS, emt_type[1]);</code>
+      * <code>Assert true (ssh_sess[0].authed)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kbdint_dispatch_failures_hit_the_limit</b> &mdash; <i>Kbdint dispatch failures hit the limit</i></summary>
+
+    * **Objective**: Kbdint dispatch failures hit the limit
+    * **Assertions**:
+      * <code>Assert equal int (0, dispatch_kbdint_round("wrong"))</code>
+      * <code>Assert equal int (2, emt_n)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_USERAUTH_FAILURE, emt_type[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)k, ssh_sess[0].auth_failures);</code>
+      * <code>Assert equal int (-1, dispatch_kbdint_round("wrong"))</code>
+      * <code>Assert equal int (3, emt_n)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_MSG_DISCONNECT, emt_type[2]);</code>
+      * <code>Assert false (ssh_sess[0].authed)</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_ssh_pqc (4 tests)</b></summary>
+<summary><b>test_ssh_pqc (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_decaps_ref_matches_kat</b> &mdash; <i>Decaps ref matches kat</i></summary>
@@ -35909,10 +40976,90 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_c2s, ssh_keys[0].chacha_key_c2s, SSH_CHACHAPOLY_KEY_LEN);</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_kex_generate_per_method</b> &mdash; <i>Kex generate per method</i></summary>
+
+    * **Objective**: Kex generate per method
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert not equal (0, acc)</code>
+      * <code>Assert equal int (-1, ssh_kex_generate(MAX_SSH_CONNS))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_advertises_both_hybrids_first</b> &mdash; <i>Kexinit advertises both hybrids first</i></summary>
+
+    * **Objective**: Kexinit advertises both hybrids first
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_build(0, buf, &n, sizeof(buf)))</code>
+      * <code>Assert true (rd_string(buf, n, &off, &list, &ll))</code>
+      * <code>Assert true (ll &lt; sizeof(kex))</code>
+      * <code>Assert equal int (0, strncmp(kex, "mlkem768x25519-sha256,", 22))</code>
+      * <code>Assert not null (strstr(kex, "sntrup761x25519-sha512@openssh.com"))</code>
+      * <code>Assert not null (strstr(kex, "curve25519-sha256"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sntrup761_hybrid_kex_end_to_end</b> &mdash; <i>Sntrup761 hybrid kex end to end</i></summary>
+
+    * **Objective**: Sntrup761 hybrid kex end to end
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_SHA512_DIGEST_LEN, s-&gt;session_id_len); // SHA-512 exchange hash</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_NEWKEYS, s-&gt;phase)</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &ks, &ks_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &s_reply, &sr_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &sigblob, &sb_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_SNTRUP761_CT_BYTES + 32, sr_len); // ciphertext(1039) || Q_S(32)</code>
+      * <code>Assert true (rd_string(ks, ks_len, &ko, &kt, &kt_len))</code>
+      * <code>Assert equal memory ("ssh-ed25519", kt, 11)</code>
+      * <code>Assert true (rd_string(ks, ks_len, &ko, &hostpub, &hp_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(32, hp_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(H, s-&gt;session_id, SSH_SHA512_DIGEST_LEN);</code>
+      * <code>Assert true (rd_string(sigblob, sb_len, &so, &st, &st_len))</code>
+      * <code>Assert true (rd_string(sigblob, sb_len, &so, &sig, &sl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
+      * <code>Assert true (ssh_ed25519_verify(hostpub, H, SSH_SHA512_DIGEST_LEN, sig))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_classical_dh_kex_in_pqc_build</b> &mdash; <i>Classical dh kex in pqc build</i></summary>
+
+    * **Objective**: Classical dh kex in pqc build
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_SHA256_DIGEST_LEN, s-&gt;session_id_len); // not the SHA-512 hybrid hash</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_NEWKEYS, s-&gt;phase)</code>
+      * <code>Assert true (ssh_keys[0].active)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_init_malformed_rejected</b> &mdash; <i>Hybrid init malformed rejected</i></summary>
+
+    * **Objective**: Hybrid init malformed rejected
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, tooshort, sizeof(tooshort), reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, buf, 5 + want[a], reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, buf, 5 + want[a], reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, buf, 5 + want[a] - 1, reply, &rlen, sizeof(reply)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_rejects_low_order_point_and_bad_ek</b> &mdash; <i>ML-KEM: a genuine encapsulation key, but Q_C is the all-zero point.</i></summary>
+
+    * **Objective**: ML-KEM: a genuine encapsulation key, but Q_C is the all-zero point.
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_ssh_server (32 tests)</b></summary>
+<summary><b>test_ssh_server (39 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ssh_dispatch_bad_slot</b> &mdash; <i>Ssh dispatch bad slot</i></summary>
@@ -36042,6 +41189,89 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal int (0, ssh_pkt_recv(0, rx, out_len, pkt_rec_handler))</code>
       * <code>Assert equal int (1, g_pkt_calls)</code>
       * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, out_len, pkt_rec_handler))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_pkt_client_role_and_zero_remainder_padding</b> &mdash; <i>Ssh pkt client role and zero remainder padding</i></summary>
+
+    * **Objective**: Ssh pkt client role and zero remainder padding
+    * **Assertions**:
+      * <code>Assert false (ssh_pkt[0].is_client)</code>
+      * <code>Assert true (ssh_pkt[0].is_client)</code>
+      * <code>Assert equal int (0, ssh_pkt_send(0, payload, sizeof(payload), out, &out_len, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(16, out[4]); // padding 0 is below the minimum -&gt; one whole extra block</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + 1 + 11 + 16, out_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_pkt_client_role_all_cipher_modes</b> &mdash; <i>Ssh pkt client role all cipher modes</i></summary>
+
+    * **Objective**: Ssh pkt client role all cipher modes
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_pkt_aesgcm_minimum_padding</b> &mdash; <i>Ssh pkt aesgcm minimum padding</i></summary>
+
+    * **Objective**: Ssh pkt aesgcm minimum padding
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1u + 13u + 18u, pkt_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + pkt_len + SSH_AESGCM_TAG_LEN, wlen);</code>
+      * <code>Assert equal int (0, ssh_pkt_recv(0, wire, wlen, pkt_rec_handler))</code>
+      * <code>Assert equal int (1, g_pkt_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_pkt_chachapoly_frame_errors</b> &mdash; <i>A genuinely sealed packet carrying padding_length 2 (< 4).</i></summary>
+
+    * **Objective**: A genuinely sealed packet carrying padding_length 2 (< 4).
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 64, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 64, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, sealed, sizeof(sealed), pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, sealed, sizeof(sealed), pkt_rec_handler))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_pkt_aesgcm_frame_errors</b> &mdash; <i>Length announced but the body has not arrived: buffered, nothing dispatched.</i></summary>
+
+    * **Objective**: Length announced but the body has not arrived: buffered, nothing dispatched.
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 64, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 64, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 64, pkt_rec_handler))</code>
+      * <code>Assert equal int (0, ssh_pkt_recv(0, rx, 12, pkt_rec_handler))</code>
+      * <code>Assert equal int (0, g_pkt_calls)</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 4 + 16 + SSH_AESGCM_TAG_LEN, pkt_rec_handler))</code>
+      * <code>Assert equal int (0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, wire, wlen, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, wire, n, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, wire, n, pkt_rec_handler))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_pkt_ctr_etm_frame_errors</b> &mdash; <i>MAC verifies, padding_length does not.</i></summary>
+
+    * **Objective**: MAC verifies, padding_length does not.
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 64, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 64, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 64, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, wire, n, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, wire, n, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, flood, sizeof(flood), pkt_rec_handler))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_pkt_ctr_emac_and_plain_frame_errors</b> &mdash; <i>Fewer than 16 bytes: not enough to peek the encrypted length, so nothing is consumed.</i></summary>
+
+    * **Objective**: Fewer than 16 bytes: not enough to peek the encrypted length, so nothing is consumed.
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_pkt_recv(0, partial, sizeof(partial), pkt_rec_handler))</code>
+      * <code>Assert equal int (0, g_pkt_calls)</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, wire, sizeof(hdr), pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, wire, sizeof(plain) + 32, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, huge, sizeof(huge), pkt_rec_handler))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36287,7 +41517,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (56 tests)</b></summary>
+<summary><b>test_ssh_transport (62 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hostkey_ecdsa_set_rejects_invalid_scalar</b> &mdash; <i>Hostkey ecdsa set rejects invalid scalar</i></summary>
@@ -36296,6 +41526,17 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal (before, dws_ssh_hostkey_ecdsa_available())</code>
       * <code>Assert equal (before, dws_ssh_hostkey_ecdsa_available())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexdh_handle_ecdsa_hostkey_absent_fails</b> &mdash; <i>Kexdh handle ecdsa hostkey absent fails</i></summary>
+
+    * **Objective**: Kexdh handle ecdsa hostkey absent fails
+    * **Assertions**:
+      * <code>Assert false (dws_ssh_hostkey_ecdsa_available())</code>
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 32, reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert not equal (SshPhase::SSH_PHASE_NEWKEYS, ssh_sess[0].phase)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36920,6 +42161,52 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal int (-1, ssh_kexdh_handle(0, wrong_type, sizeof(wrong_type), reply, &rlen, sizeof(reply)))</code>
       * <code>Assert equal int (-1, ssh_kexdh_handle(0, wrong_len, sizeof(wrong_len), reply, &rlen, sizeof(reply)))</code>
       * <code>Assert equal int (-1, ssh_kexdh_handle(0, truncated, sizeof(truncated), reply, &rlen, sizeof(reply)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_banner_empty_and_short_preamble_lines</b> &mdash; <i>Recv banner empty and short preamble lines</i></summary>
+
+    * **Objective**: Recv banner empty and short preamble lines
+    * **Assertions**:
+      * <code>Assert equal int (1, ssh_transport_recv_banner(0, (const uint8_t *)data, strlen(data), &consumed))</code>
+      * <code>Assert equal string ("SSH-2.0-Real", ssh_sess[0].v_c)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(data), consumed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_rejects_short_and_mistyped</b> &mdash; <i>Kexinit parse rejects short and mistyped</i></summary>
+
+    * **Objective**: Kexinit parse rejects short and mistyped
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_kexinit_parse(0, buf, 16))</code>
+      * <code>Assert equal int (-1, ssh_kexinit_parse(0, buf, sizeof(buf)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexdh_parse_init_accepts_all_zero_mpint</b> &mdash; <i>Kexdh parse init accepts all zero mpint</i></summary>
+
+    * **Objective**: Kexdh parse init accepts all zero mpint
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexdh_parse_init(pkt, 9, e_be))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, e_be[k]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexdh_handle_ecdh_p256_rejects_bad_ephemeral</b> &mdash; <i>Kexdh handle ecdh p256 rejects bad ephemeral</i></summary>
+
+    * **Objective**: Kexdh handle ecdh p256 rejects bad ephemeral
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(qc, d))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rekey_needed_on_receive_sequence_alone</b> &mdash; <i>Rekey needed on receive sequence alone</i></summary>
+
+    * **Objective**: Rekey needed on receive sequence alone
+    * **Assertions**:
+      * <code>Assert true (ssh_rekey_needed(0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -38472,7 +43759,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_tls13_msg (11 tests)</b></summary>
+<summary><b>test_tls13_msg (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_tls13_extension_and_truncation_coverage</b> &mdash; <i>Body ends right after cipher_suites -> r_u8(compression_methods length) truncates.</i></summary>
@@ -38484,6 +43771,104 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert true (ch.offers_h3_alpn)</code>
       * <code>Assert not null (ch.dws_quic_tp)</code>
       * <code>Assert equal uint (3, (unsigned)ch.dws_quic_tp_len)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tls13_dtls_client_hello_shape</b> &mdash; <i>supported_versions offering DTLS 1.3 (0xFEFC).</i></summary>
+
+    * **Objective**: supported_versions offering DTLS 1.3 (0xFEFC).
+    * **Assertions**:
+      * <code>Assert true (dws_tls13_parse_client_hello(msg, n, &ch, /*dtls=*/true))</code>
+      * <code>Assert true (ch.offers_tls13)</code>
+      * <code>Assert true (dws_tls13_parse_client_hello(msg, n, &ch, /*dtls=*/true))</code>
+      * <code>Assert true (ch.offers_tls13)</code>
+      * <code>Assert false (dws_tls13_parse_client_hello(msg, n, &ch, /*dtls=*/false) && ch.offers_tls13)</code>
+      * <code>Assert false (dws_tls13_parse_client_hello(msg, n, &ch, /*dtls=*/true))</code>
+      * <code>Assert false (dws_tls13_parse_client_hello(stub, sn, &ch, /*dtls=*/true))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tls13_client_hello_field_truncations</b> &mdash; <i>No bytes at all: even the handshake type cannot be read.</i></summary>
+
+    * **Objective**: No bytes at all: even the handshake type cannot be read.
+    * **Assertions**:
+      * <code>Assert false (dws_tls13_parse_client_hello(msg, 0, &ch))</code>
+      * <code>Assert false (dws_tls13_parse_client_hello(msg, n, &ch))</code>
+      * <code>Assert false (dws_tls13_parse_client_hello(msg, n, &ch))</code>
+      * <code>Assert false (dws_tls13_parse_client_hello(msg, n, &ch))</code>
+      * <code>Assert false (dws_tls13_parse_client_hello(msg, n, &ch))</code>
+      * <code>Assert false (dws_tls13_parse_client_hello(msg, n, &ch))</code>
+      * <code>Assert false (dws_tls13_parse_client_hello(msg, n, &ch))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tls13_extension_body_guards</b> &mdash; <i>supported_groups: declared list length (255) exceeds the extension body.</i></summary>
+
+    * **Objective**: supported_groups: declared list length (255) exceeds the extension body.
+    * **Assertions**:
+      * <code>Assert true (dws_tls13_parse_client_hello(msg, n, &ch))</code>
+      * <code>Assert false (ch.has_conn_id)</code>
+      * <code>Assert true (dws_tls13_parse_client_hello(msg, n, &ch))</code>
+      * <code>Assert not null (ch.cookie)</code>
+      * <code>Assert equal uint (3, (unsigned)ch.cookie_len)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x11, ch.cookie[0]);</code>
+      * <code>Assert true (ch.has_conn_id)</code>
+      * <code>Assert equal uint (2, (unsigned)ch.conn_id_len)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xAA, ch.conn_id[0]);</code>
+      * <code>Assert false (ch.has_key_share)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tls13_builders_dtls_codepoints</b> &mdash; <i>supported_versions -> 0xFEFC is the last extension for a CID-less ServerHello.</i></summary>
+
+    * **Objective**: supported_versions -> 0xFEFC is the last extension for a CID-less ServerHello.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xFE, out[4]); // legacy_version = DTLS 1.2</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xFD, out[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xFE, out[n - 2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xFC, out[n - 1]);</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x03, out[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x03, out[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x03, out[n - 2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x04, out[n - 1]);</code>
+      * <code>Assert true (with_cookie &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xFE, out[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xFD, out[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(dws_tls13_hrr_random, out + 6, 32);</code>
+      * <code>Assert true (no_cookie &gt; 0)</code>
+      * <code>Assert true (no_cookie &lt; with_cookie)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x03, out[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x03, out[5]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tls13_builder_overflow_guards</b> &mdash; <i>cookie_len + 2 must fit a uint16: refused before anything is written.</i></summary>
+
+    * **Objective**: cookie_len + 2 must fit a uint16: refused before anything is written.
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_tls13_build_hello_retry_request(out, sizeof(out)</code>
+      * <code>Assert true (need &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_hello_retry_request(out, need - 1, nullptr, 0, TLS_GROUP_X25519, cookie,</code>
+      * <code>Assert equal uint (6, dws_tls13_build_encrypted_extensions_empty(out, 6))</code>
+      * <code>Assert equal uint (0, dws_tls13_build_encrypted_extensions_empty(out, 5))</code>
+      * <code>Assert equal uint (36, dws_tls13_build_message_hash(out, 36, h))</code>
+      * <code>Assert equal uint (0, dws_tls13_build_message_hash(out, 35, h))</code>
+      * <code>Assert true (need &gt; 0)</code>
+      * <code>Assert equal uint (0, dws_tls13_build_encrypted_extensions(out, need - 1, tp, sizeof(tp)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tls13_cert_verify_client_context</b> &mdash; <i>Tls13 cert verify client context</i></summary>
+
+    * **Objective**: Tls13 cert verify client context
+    * **Assertions**:
+      * <code>Assert equal uint (sn, cn)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY("TLS 1.3, client CertificateVerify", client + 64, 33);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x00, client[97]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(thash, client + 98, 32);</code>
+      * <code>Assert true (memcmp(server, client, sn) != 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -39462,7 +44847,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_vfs (12 tests)</b></summary>
+<summary><b>test_vfs (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_write_then_read_file</b> &mdash; <i>Write then read file</i></summary>
@@ -39596,6 +44981,102 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
       * <code>Assert equal int (-1, dws_vfs_read(999, b, sizeof(b)))</code>
       * <code>Assert equal int (-1, dws_vfs_write(999, b, sizeof(b)))</code>
       * <code>Assert true (dws_vfs_read_file("/nope", b, sizeof(b)) &lt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unmounted_all_entry_points</b> &mdash; <i>Unmounted all entry points</i></summary>
+
+    * **Objective**: Unmounted all entry points
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_vfs_read(0, b, sizeof(b)))</code>
+      * <code>Assert equal int (-1, dws_vfs_write(0, b, sizeof(b)))</code>
+      * <code>Assert false (dws_vfs_remove("/a"))</code>
+      * <code>Assert false (dws_vfs_rename("/a", "/b"))</code>
+      * <code>Assert true (dws_vfs_read_file("/a", b, sizeof(b)) &lt; 0)</code>
+      * <code>Assert true (dws_vfs_write_file("/a", "x", 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_handle_validity_edges</b> &mdash; <i>In range, but no longer open.</i></summary>
+
+    * **Objective**: In range, but no longer open.
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_vfs_read(-1, b, sizeof(b)))</code>
+      * <code>Assert equal int (-1, dws_vfs_write(-1, b, sizeof(b)))</code>
+      * <code>Assert true (dws_vfs_write_file("/hv", "data", 4))</code>
+      * <code>Assert true (h &gt;= 0)</code>
+      * <code>Assert equal int (-1, dws_vfs_read(h, b, sizeof(b)))</code>
+      * <code>Assert equal int (-1, dws_vfs_write(h, b, sizeof(b)))</code>
+      * <code>Assert true (dws_vfs_open("/hv", DWSVfsMode::DWS_VFS_READ) &gt;= 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_to_read_handle_rejected</b> &mdash; <i>Write to read handle rejected</i></summary>
+
+    * **Objective**: Write to read handle rejected
+    * **Assertions**:
+      * <code>Assert true (dws_vfs_write_file("/ro", "data", 4))</code>
+      * <code>Assert true (h &gt;= 0)</code>
+      * <code>Assert equal int (-1, dws_vfs_write(h, "xx", 2))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(4, dws_vfs_size("/ro"));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rename_argument_guards</b> &mdash; <i>Rename argument guards</i></summary>
+
+    * **Objective**: Rename argument guards
+    * **Assertions**:
+      * <code>Assert true (dws_vfs_write_file("/r1", "data", 4))</code>
+      * <code>Assert false (dws_vfs_rename(nullptr, "/r2"))</code>
+      * <code>Assert false (dws_vfs_rename("/r1", nullptr))</code>
+      * <code>Assert false (dws_vfs_rename("/r1", longname))</code>
+      * <code>Assert true (dws_vfs_exists("/r1"))</code>
+      * <code>Assert false (dws_vfs_exists("/r2"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rename_overwrites_destination</b> &mdash; <i>Rename overwrites destination</i></summary>
+
+    * **Objective**: Rename overwrites destination
+    * **Assertions**:
+      * <code>Assert true (dws_vfs_write_file("/src", "NEW", 3))</code>
+      * <code>Assert true (dws_vfs_write_file("/dst", "oldcontent", 10))</code>
+      * <code>Assert true (dws_vfs_rename("/src", "/dst"))</code>
+      * <code>Assert false (dws_vfs_exists("/src"))</code>
+      * <code>Assert true (dws_vfs_exists("/dst"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(3, dws_vfs_size("/dst")); // the source's contents won</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(3, n);</code>
+      * <code>Assert equal string ("NEW", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_file_handle_exhaustion</b> &mdash; <i>Read file handle exhaustion</i></summary>
+
+    * **Objective**: Read file handle exhaustion
+    * **Assertions**:
+      * <code>Assert true (dws_vfs_write_file("/rf", "0123456789", 10))</code>
+      * <code>Assert true (handles[i] &gt;= 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_vfs_read_file("/rf", buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(10, dws_vfs_read_file("/rf", buf, sizeof(buf))); // works again</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_file_larger_than_capacity</b> &mdash; <i>Write file larger than capacity</i></summary>
+
+    * **Objective**: Write file larger than capacity
+    * **Assertions**:
+      * <code>Assert false (dws_vfs_write_file("/cap", big, sizeof(big)))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32((long)DWS_VFS_RAM_FILE_SIZE, dws_vfs_size("/cap"));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_progress_backend_terminates</b> &mdash; <i>Zero progress backend terminates</i></summary>
+
+    * **Objective**: Zero progress backend terminates
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(0, dws_vfs_read_file("/x", buf, sizeof(buf))); // gave up at 0 bytes</code>
+      * <code>Assert false (dws_vfs_write_file("/x", "abcd", 4))</code>
+      * <code>Assert true (dws_vfs_write_file("/x", "abcd", 4))</code>
   </details>
 
 </details>
@@ -40788,7 +46269,16 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_web_terminal (9 tests)</b></summary>
+<summary><b>test_web_terminal (15 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_api_inert_before_begin</b> &mdash; <i>Api inert before begin</i></summary>
+
+    * **Objective**: Api inert before begin
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_web_terminal_client_count())</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, strlen(tcp_captured()));</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_serves_terminal_page</b> &mdash; <i>Serves terminal page</i></summary>
@@ -40871,6 +46361,52 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal uint (1, dws_web_terminal_client_count())</code>
       * <code>Assert equal uint (0, dws_web_terminal_client_count())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_println_appends_newline</b> &mdash; <i>Println appends newline</i></summary>
+
+    * **Objective**: Println appends newline
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "line one\\n"))</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('\\n', (uint8_t)r[n - 1]); // empty body, newline only</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_print_null_is_ignored</b> &mdash; <i>Print null is ignored</i></summary>
+
+    * **Objective**: Print null is ignored
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, strlen(tcp_captured()));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_begin_defaults_path_when_missing</b> &mdash; <i>Begin defaults path when missing</i></summary>
+
+    * **Objective**: Begin defaults path when missing
+    * **Assertions**:
+      * <code>Assert not null (strstr(get_path(0, "/terminal"), "DWS Terminal"))</code>
+      * <code>Assert not null (strstr(get_path(1, "/terminal"), "DWS Terminal"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_message_without_callback</b> &mdash; <i>Message without callback</i></summary>
+
+    * **Objective**: Message without callback
+    * **Assertions**:
+      * <code>Assert equal string ("", g_cmd)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stale_client_slot_is_skipped</b> &mdash; <i>Stale client slot is skipped</i></summary>
+
+    * **Objective**: Stale client slot is skipped
+    * **Assertions**:
+      * <code>Assert equal uint (1, dws_web_terminal_client_count())</code>
+      * <code>Assert not null (ws)</code>
+      * <code>Assert equal uint (0, dws_web_terminal_client_count())</code>
+      * <code>Assert null (strstr(tcp_captured(), "ghost"))</code>
   </details>
 
 </details>
@@ -41143,7 +46679,38 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav_handler (38 tests)</b></summary>
+<summary><b>test_webdav_handler (41 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_status_text_table</b> &mdash; <i>Anything outside the table falls to the default arm rather than reading off the end.</i></summary>
+
+    * **Objective**: Anything outside the table falls to the default arm rather than reading off the end.
+    * **Assertions**:
+      * <code>Assert equal string (expect[i].phrase, status_text(expect[i].code))</code>
+      * <code>Assert equal string ("Unknown", status_text(299))</code>
+      * <code>Assert equal string ("Unknown", status_text(0))</code>
+      * <code>Assert equal string ("Unknown", status_text(-1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_join_root_slash_with_empty_subpath</b> &mdash; <i>The same mount still resolves a real member, so the empty-sub case did not corrupt</i></summary>
+
+    * **Objective**: The same mount still resolves a real member, so the empty-sub case did not corrupt
+    * **Assertions**:
+      * <code>Assert true (dws_resp_status(405))</code>
+      * <code>Assert true (dws_resp_status(200))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "hi"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_put_stream_error_latches_for_later_chunks</b> &mdash; <i>The node exists and holds at most its capacity - the post-failure chunks were dropped,</i></summary>
+
+    * **Objective**: The node exists and holds at most its capacity - the post-failure chunks were dropped,
+    * **Assertions**:
+      * <code>Assert true (dws_resp_status(507))</code>
+      * <code>Assert not null (n)</code>
+      * <code>TEST_ASSERT_LESS_OR_EQUAL_size_t(sizeof(n-&gt;data), n-&gt;len);</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_webdav_join_root_variants</b> &mdash; <i>(a) root ending in '/': "/tsroot/" + "/f.txt" must not become "/tsroot//f.txt".</i></summary>
@@ -42904,7 +48471,81 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_xmpp (11 tests)</b></summary>
+<summary><b>test_xmpp (18 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_put_attr_fails_at_each_step</b> &mdash; <i>"<presence"(9) then ' '(10) "type"(14) '="'(16) "ab"(18) '"'(19) "/>"(21).</i></summary>
+
+    * **Objective**: "<presence"(9) then ' '(10) "type"(14) '="'(16) "ab"(18) '"'(19) "/>"(21).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_presence("ab", buf, caps[i]));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(21, dws_xmpp_presence("ab", buf, 22)); // one more byte for the NUL</code>
+      * <code>Assert equal string ("&lt;presence type=\\"ab\\"/&gt;", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_message_fails_at_each_step</b> &mdash; <i><message(8) to=(16) from=(28) type=(40) >(41) <body>(47) hi(49) </body>(56) </message>(66)</i></summary>
+
+    * **Objective**: <message(8) to=(16) from=(28) type=(40) >(41) <body>(47) hi(49) </body>(56) </message>(66)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_message("to", "from", "chat", "hi", buf, caps[i]));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(66, dws_xmpp_message("to", "from", "chat", "hi", buf, 67));</code>
+      * <code>Assert equal string ("&lt;message to=\\"to\\" from=\\"from\\" type=\\"chat\\"&gt;&lt;body&gt;hi&lt;/body&gt;&lt;/message&gt;", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_iq_fails_at_each_step</b> &mdash; <i><iq(3) type=(14) id=(23) >(24) <q/>(28) </iq>(33)</i></summary>
+
+    * **Objective**: <iq(3) type=(14) id=(23) >(24) <q/>(28) </iq>(33)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_iq("get", "id1", "&lt;q/&gt;", buf, caps[i]));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(33, dws_xmpp_iq("get", "id1", "&lt;q/&gt;", buf, 34));</code>
+      * <code>Assert equal string ("&lt;iq type=\\"get\\" id=\\"id1\\"&gt;&lt;q/&gt;&lt;/iq&gt;", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_open_fails_at_each_step</b> &mdash; <i>Stream open fails at each step</i></summary>
+
+    * **Objective**: Stream open fails at each step
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stream_open("a", "b", buf, caps[i]));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(136, dws_xmpp_stream_open("a", "b", buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_STRING("&lt;?xml version='1.0'?&gt;&lt;stream:stream from=\\"a\\" to=\\"b\\""</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_readers_reject_null_out_and_zero_cap</b> &mdash; <i>Readers reject null out and zero cap</i></summary>
+
+    * **Objective**: Readers reject null out and zero cap
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name(m, 16, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name(m, 16, out, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr(m, 16, "to", nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr(m, 16, "to", out, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_readers_stop_at_end_of_buffer</b> &mdash; <i>Readers stop at end of buffer</i></summary>
+
+    * **Objective**: Readers stop at end of buffer
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_xmpp_stanza_name("&lt;iq", 3, out, sizeof(out))); // no '&gt;', space or '/'</code>
+      * <code>Assert equal string ("iq", out)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_xmpp_attr("&lt;m to='x'", 9, "to", out, sizeof(out))); // tag never closes</code>
+      * <code>Assert equal string ("x", out)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_xmpp_attr("&lt;m to='abc&gt;", 11, "to", out, sizeof(out))); // quote never closes</code>
+      * <code>Assert equal string ("abc", out)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_attr_name_must_be_followed_by_equals</b> &mdash; <i>Attr name must be followed by equals</i></summary>
+
+    * **Objective**: Attr name must be followed by equals
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_xmpp_attr("&lt;m top='1' to='2'&gt;", 18, "to", out, sizeof(out)));</code>
+      * <code>Assert equal string ("2", out)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr("&lt;m to=x junk&gt;", 13, "to", out, sizeof(out)));</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_escape</b> &mdash; <i>Overflow -> 0.</i></summary>
@@ -43039,7 +48680,7 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_zigbee (10 tests)</b></summary>
+<summary><b>test_zigbee (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_crc16_rst_kat</b> &mdash; <i>CRC-16/CCITT (poly 0x1021, init 0xFFFF) of {0xC0} is 0x38BC (the ASH RST frame CRC).</i></summary>
@@ -43134,6 +48775,64 @@ A thorough directory of all **3708 test cases** across **279 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(0x00, payload, sizeof(payload), out, 2)); // overflow</code>
       * <code>Assert equal int (-1, dws_ash_frame_decode(short_raw, sizeof(short_raw), &control, pay, sizeof(pay), &pay_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_null_args</b> &mdash; <i>Encode null args</i></summary>
+
+    * **Objective**: Encode null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(0x00, payload, 4, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(0x00, nullptr, 4, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, sizeof(out))); // control</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_stuffed_control_needs_two_bytes</b> &mdash; <i>With room it stuffs into escape + (byte ^ 0x20).</i></summary>
+
+    * **Objective**: With room it stuffs into escape + (byte ^ 0x20).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(Ash::ASH_FLAG, nullptr, 0, out, 1));</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Ash::ASH_ESCAPE, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Ash::ASH_FLAG ^ 0x20, out[1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_capacity_boundaries</b> &mdash; <i>Encode capacity boundaries</i></summary>
+
+    * **Objective**: Encode capacity boundaries
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, 1)); // no room for CRC hi</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, 2)); // no room for CRC lo</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, 3)); // no room for the flag</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, dws_ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, 4)); // exact fit</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_null_raw</b> &mdash; <i>Decode null raw</i></summary>
+
+    * **Objective**: Decode null raw
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ash_frame_decode(nullptr, 4, &control, pay, sizeof(pay), &plen))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_rejects_oversized_frame</b> &mdash; <i>Decode rejects oversized frame</i></summary>
+
+    * **Objective**: Decode rejects oversized frame
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ash_frame_decode(raw, sizeof(raw), &control, pay, sizeof(pay), &plen))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_optional_outputs</b> &mdash; <i>Decode optional outputs</i></summary>
+
+    * **Objective**: Decode optional outputs
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, n);</code>
+      * <code>Assert equal int ((int)n, dws_ash_frame_decode(frame, n, nullptr, pay, sizeof(pay), nullptr))</code>
+      * <code>Assert equal memory (payload, pay, 3)</code>
   </details>
 
 </details>
