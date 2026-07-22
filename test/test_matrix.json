@@ -1477,6 +1477,12 @@
       "src": ["+<services/ld2410/ld2410.cpp>"],
       "tests": ["test_ld2410"]
     },
+    "native_hmmd": {
+      "desc": "Waveshare HMMD 24GHz mmWave micro-motion radar codec (services/hmmd): the LD2410-family\nlittle-endian framing, the report parse (detection flag, distance, all 16 gate energies), rejecting\nmalformed frames, the byte-by-byte stream reassembler (resync past noise, split feeds, absurd-length\ndrop), the exact bytes of the command encoders (open/close command mode, firmware 0x0000, serial\n0x0011, config 0x0008, register 0x0002), and ACK decoding. Pure - the UART pump is ESP32-only.",
+      "flags": ["-DDWS_ENABLE_HMMD=1"],
+      "src": ["+<services/hmmd/hmmd.cpp>"],
+      "tests": ["test_hmmd"]
+    },
     "native_rcwl0516": {
       "desc": "RCWL-0516 Doppler presence sensor + the shared one-GPIO presence facade\n(services/rcwl0516): the debounce that swallows comparator chatter, the hold that bridges the\nmodule's ~2s retrigger gaps into one continuous presence span, the consume-once edge event,\nwrap-safety across a millis() rollover, and the degenerate zero-debounce / zero-hold configs.\nPure core driven by a synthetic clock - no GPIO, no real time. Pure host tests.",
       "flags": ["-DDWS_ENABLE_RCWL0516=1"],

@@ -2742,6 +2742,33 @@
 #define DWS_ENABLE_RCWL0516 0
 #endif
 
+/**
+ * @brief Waveshare HMMD 24 GHz mmWave micro-motion radar codec (`services/hmmd`).
+ *
+ * Default off. The HMMD (Waveshare's FMCW micro-motion module on the S3KM1110 / SXKMxxx0 radar SoC)
+ * is a close relative of the LD2410 and shares its framing exactly: a report frame
+ * `F4 F3 F2 F1 | len(2) | ... | F8 F7 F6 F5` and a command frame
+ * `FD FC FB FA | len(2) | word(2) | [value] | 04 03 02 01`, everything little-endian. Where the
+ * LD2410 splits moving vs stationary across 9 gates, the HMMD reports one detection flag, one
+ * distance, and the per-gate energy of 16 gates - it is a micro-motion detector, so a still person
+ * breathing is the case it exists to catch. `dws_hmmd_parse_report` decodes a report and
+ * `HmmdStream` reassembles frames byte-by-byte with resync on noise (fixed buffer, no heap),
+ * mirroring `Ld2410Stream`; the command encoders cover open/close command mode plus the firmware
+ * version (0x0000), serial number (0x0011), parameter config (0x0008) and register (0x0002) reads,
+ * and `dws_hmmd_parse_ack` decodes the replies. The module's bare GPIO OUT pin carries no protocol -
+ * feed it to `PresenceCore` from `DWS_ENABLE_RCWL0516` for debounced, hold-extended presence
+ * (an application-level wiring choice; this service does not depend on that one). Framing, payload
+ * layout, and command encoding come from the public 2Grey/s3km1110 reference; no vendor SDK is used.
+ */
+#ifndef DWS_ENABLE_HMMD
+#define DWS_ENABLE_HMMD 0
+#endif
+
+/** @brief HMMD UART baud rate (the module's factory default is 115200). */
+#ifndef DWS_HMMD_BAUD
+#define DWS_HMMD_BAUD 115200
+#endif
+
 /** @brief LD2410 UART baud rate (the module's fixed factory default is 256000). */
 #ifndef DWS_LD2410_BAUD
 #define DWS_LD2410_BAUD 256000
