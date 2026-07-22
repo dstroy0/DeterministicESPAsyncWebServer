@@ -11,6 +11,7 @@
  */
 
 #include "services/zigbee/zigbee.h"
+#include "shared_primitives/crc.h" // DWS_CRC16_IBM_3740
 
 #if DWS_ENABLE_ZIGBEE
 
@@ -19,14 +20,6 @@ namespace
 bool is_reserved(uint8_t b)
 {
     return b == 0x7E || b == 0x7D || b == 0x11 || b == 0x13 || b == 0x18 || b == 0x1A;
-}
-
-uint16_t crc16_byte(uint16_t crc, uint8_t b)
-{
-    crc ^= (uint16_t)b << 8;
-    for (uint8_t i = 0; i < 8; i++)
-        crc = (crc & 0x8000) ? (uint16_t)((crc << 1) ^ 0x1021) : (uint16_t)(crc << 1);
-    return crc;
 }
 
 // Append a byte to out with ASH stuffing; return false if it would overflow cap.
@@ -51,20 +44,22 @@ bool put_stuffed(uint8_t *out, uint16_t *p, uint16_t cap, uint8_t b)
 
 uint16_t dws_ash_crc16(const uint8_t *buf, uint16_t len)
 {
-    uint16_t crc = 0xFFFF;
-    for (uint16_t i = 0; i < len; i++)
-        crc = crc16_byte(crc, buf[i]);
-    return crc;
+    // ASH uses CRC-CCITT (poly 0x1021, init 0xFFFF, unreflected), catalogued as CRC-16/IBM-3740.
+    // test_crc diffs the shared engine against the loop that used to live here over every length
+    // 0..64, so this is byte-identical to it.
+    return (uint16_t)dws_crc(&DWS_CRC16_IBM_3740, buf, len);
 }
 
 uint16_t dws_ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)
 {
     if (!out || len > DWS_ZIGBEE_MAX_DATA || (payload == nullptr && len > 0))
         return 0;
-    // CRC over control + payload.
-    uint16_t crc = crc16_byte(0xFFFF, control);
-    for (uint16_t i = 0; i < len; i++)
-        crc = crc16_byte(crc, payload[i]);
+    // CRC over control + payload. They are not contiguous in memory, which is what the engine's
+    // begin/update/final split is for - no scratch buffer to assemble them into.
+    uint32_t c = dws_crc_begin(&DWS_CRC16_IBM_3740);
+    c = dws_crc_update(&DWS_CRC16_IBM_3740, c, &control, 1);
+    c = dws_crc_update(&DWS_CRC16_IBM_3740, c, payload, len);
+    const uint16_t crc = (uint16_t)dws_crc_final(&DWS_CRC16_IBM_3740, c);
 
     uint16_t p = 0;
     if (!put_stuffed(out, &p, cap, control))
