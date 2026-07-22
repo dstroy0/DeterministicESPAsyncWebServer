@@ -1477,6 +1477,12 @@
       "src": ["+<services/ld2410/ld2410.cpp>"],
       "tests": ["test_ld2410"]
     },
+    "native_safety_scl": {
+      "desc": "IEC 61784-3 black-channel Safety Communication Layer primitives (services/safety_scl):\nthe monitoring-counter state machine, the receive watchdog, and the fail-safe latch the four safety\nprofiles compose. Covers each way a black channel misbehaves - corruption, loss, duplication,\nreordering, insertion - plus the watchdog (incl. a millis() rollover and the disabled case), the\nno-silent-reheal latch, counter wrapping at a narrow modulus, and the explicit re-establish. The\nCRC is the profile's, not this module's. Pure core on a synthetic clock. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_SAFETY_SCL=1"],
+      "src": ["+<services/safety_scl/safety_scl.cpp>"],
+      "tests": ["test_safety_scl"]
+    },
     "native_hmmd": {
       "desc": "Waveshare HMMD 24GHz mmWave micro-motion radar codec (services/hmmd): the LD2410-family\nlittle-endian framing, the report parse (detection flag, distance, all 16 gate energies), rejecting\nmalformed frames, the byte-by-byte stream reassembler (resync past noise, split feeds, absurd-length\ndrop), the exact bytes of the command encoders (open/close command mode, firmware 0x0000, serial\n0x0011, config 0x0008, register 0x0002), and ACK decoding. Pure - the UART pump is ESP32-only.",
       "flags": ["-DDWS_ENABLE_HMMD=1"],
