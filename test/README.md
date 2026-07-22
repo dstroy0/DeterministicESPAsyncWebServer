@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **261 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **262 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -144,6 +144,7 @@ The native test matrix has **261 environments**, one per feature, generated from
 | `native_euromap77` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_EUROMAP77=1` | `test_euromap77` | EUROMAP 77 (OPC 40077) IMM_MES_Interface model (services/euromap77) - OPC UA for injection moulding machines. |
 | `native_exc_decoder` | `WS_ENABLE_EXC_DECODER=1` | `test_exc_decoder` | ESP32 panic / exception decoder (services/exc_decoder): parse a captured Guru Meditation dump (cause, register PC + EXCVADDR, backtrace PC:SP frames) into a structured ExcInfo and serialize it as JSON... |
 | `native_failsafe` | `WS_ENABLE_FAILSAFE=1` | `test_failsafe` | Software watchdog / deadlock detection + safe-state (services/failsafe): the wrap-safe overdue predicate, the lifeline registry, fire-once-per-episode breach callback, and JSON. |
+| `native_fanuc_j519` | `WS_ENABLE_FANUC_J519=1` | `test_fanuc_j519` | FANUC Stream Motion / option J519 UDP codec (services/fanuc_j519): the robot counterpart to FOCAS. |
 | `native_fdc2214` | `WS_ENABLE_FDC2214=1` | `test_fdc2214` | FDC2114/2214 capacitance-to-digital field sensor (services/fdc2214): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
 | `native_fins` | `WS_ENABLE_FINS=1` | `test_fins` | Omron FINS frame codec (services/fins): the command builder + Memory Area Read convenience + the command / response parsers (10-octet header, MRC/SRC, MRES/SRES end code). |
 | `native_flow_export` | `WS_ENABLE_FLOW_EXPORT=1` | `test_flow_export` | Flow-record export codec (services/flow_export): NetFlow v5 fixed header/record builders + the NetFlow v9 / IPFIX template-then-data cursor (length/count patching, v9 4-octet padding). |
@@ -551,7 +552,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3671 test cases** across **276 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3684 test cases** across **277 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -8736,6 +8737,211 @@ A thorough directory of all **3671 test cases** across **276 suites**. Expand a 
       * <code>Assert true (id &gt;= 0)</code>
       * <code>Assert true (dws_failsafe_feed(id))</code>
       * <code>Assert true (dws_failsafe_json_at(0, buf, sizeof(buf)) &gt; 0)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_fanuc_j519 (13 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_start_and_stop_exact_bytes</b> &mdash; <i>Build start and stop exact bytes</i></summary>
+
+    * **Objective**: Build start and stop exact bytes
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(8, (uint32_t)dws_j519_build_start(g_buf, sizeof(g_buf), 1));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(want_start, g_buf, 8);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(8, (uint32_t)dws_j519_build_stop(g_buf, sizeof(g_buf), 1));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(want_stop, g_buf, 8);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_peek_reads_type_and_version</b> &mdash; <i>null out-params are permitted; a short buffer is refused</i></summary>
+
+    * **Objective**: null out-params are permitted; a short buffer is refused
+    * **Assertions**:
+      * <code>Assert true (dws_j519_peek(g_buf, 8, &type, &ver))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x01020304, ver);</code>
+      * <code>Assert true (dws_j519_peek(g_buf, 8, nullptr, nullptr))</code>
+      * <code>Assert false (dws_j519_peek(g_buf, 7, &type, &ver))</code>
+      * <code>Assert false (dws_j519_peek(nullptr, 8, &type, &ver))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_motion_exact_field_offsets</b> &mdash; <i>sequence 0x11223344 little-endian at 8</i></summary>
+
+    * **Objective**: sequence 0x11223344 little-endian at 8
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, (uint32_t)dws_j519_build_motion(g_buf, sizeof(g_buf), &m));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g_buf[0]); // type 1, little-endian</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g_buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g_buf[4]); // version</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x44, g_buf[8]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x33, g_buf[9]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x22, g_buf[10]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x11, g_buf[11]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g_buf[12]);    // last_data</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g_buf[13]);    // read_io_type = DI</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x02, g_buf[14]); // read_io_index 0x0102 le</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x01, g_buf[15]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x04, g_buf[16]); // read_io_mask 0x0304 le</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x03, g_buf[17]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g_buf[18]);    // data_style = joint</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, g_buf[19]);    // write_io_type = DO</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x06, g_buf[20]); // write_io_index 0x0506 le</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x05, g_buf[21]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x08, g_buf[22]); // write_io_mask 0x0708 le</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x07, g_buf[23]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x0A, g_buf[24]); // write_io_value 0x090A le</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x09, g_buf[25]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g_buf[26]); // unused must be zeroed, not left poisoned</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g_buf[27]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(F_ONE, g_buf + 28, 4);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(F_NEG2_5, g_buf + 32, 4);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_motion_roundtrip</b> &mdash; <i>Motion roundtrip</i></summary>
+
+    * **Objective**: Motion roundtrip
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, (uint32_t)dws_j519_build_motion(g_buf, sizeof(g_buf), &m));</code>
+      * <code>Assert true (dws_j519_parse_motion(g_buf, 64, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(m.version_no, got.version_no);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(m.sequence_no, got.sequence_no);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(m.last_data, got.last_data);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(m.read_io_type, got.read_io_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(m.read_io_index, got.read_io_index);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(m.read_io_mask, got.read_io_mask);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(m.data_style, got.data_style);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(m.write_io_type, got.write_io_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(m.write_io_index, got.write_io_index);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(m.write_io_mask, got.write_io_mask);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(m.write_io_value, got.write_io_value);</code>
+      * <code>Assert equal float (m.joint_data[i], got.joint_data[i])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_status_exact_field_offsets</b> &mdash; <i>the three 9-float blocks sit at 24 / 60 / 96</i></summary>
+
+    * **Objective**: the three 9-float blocks sit at 24 / 60 / 96
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(132, (uint32_t)dws_j519_build_status(g_buf, sizeof(g_buf), &s));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g_buf[0]); // type 0 (robot-&gt;PC = Status)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x88, g_buf[8]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(J519_STATUS_READY | J519_STATUS_SYSRDY, g_buf[12]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(9, g_buf[13]);    // read_io_type = RO</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x16, g_buf[18]); // read_io_value 0x1516 le</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x15, g_buf[19]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xCC, g_buf[20]); // time_stamp 0x99AABBCC le</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x99, g_buf[23]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(F_ONE, g_buf + 24, 4);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(F_NEG2_5, g_buf + 60, 4);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_status_roundtrip</b> &mdash; <i>Status roundtrip</i></summary>
+
+    * **Objective**: Status roundtrip
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(132, (uint32_t)dws_j519_build_status(g_buf, sizeof(g_buf), &s));</code>
+      * <code>Assert true (dws_j519_parse_status(g_buf, 132, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(s.sequence_no, got.sequence_no);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(s.status, got.status);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(s.read_io_value, got.read_io_value);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(s.time_stamp, got.time_stamp);</code>
+      * <code>Assert equal float (s.cartesian_pose[i], got.cartesian_pose[i])</code>
+      * <code>Assert equal float (s.joint_pose[i], got.joint_pose[i])</code>
+      * <code>Assert equal float (s.motor_current[i], got.motor_current[i])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_request_roundtrip_and_bytes</b> &mdash; <i>Request roundtrip and bytes</i></summary>
+
+    * **Objective**: Request roundtrip and bytes
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(16, (uint32_t)dws_j519_build_request(g_buf, sizeof(g_buf), &q));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, g_buf[0]);  // type 3</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, g_buf[8]);  // axis</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g_buf[12]); // threshold type = acceleration</code>
+      * <code>Assert true (dws_j519_parse_request(g_buf, 16, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(q.axis_no, got.axis_no);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(q.threshold_type, got.threshold_type);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ack_roundtrip_and_table_offsets</b> &mdash; <i>no-load table at 24, max-load table at 104</i></summary>
+
+    * **Objective**: no-load table at 24, max-load table at 104
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(184, (uint32_t)dws_j519_build_ack(g_buf, sizeof(g_buf), &a));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, g_buf[0]);     // type 3</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xEF, g_buf[20]); // unknown0 preserved verbatim, little-endian</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xDE, g_buf[23]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(F_ONE, g_buf + 24 + 4, 4); // no_load[1] == 1.0f</code>
+      * <code>Assert true (dws_j519_parse_ack(g_buf, 184, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(a.axis_no, got.axis_no);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(a.threshold_type, got.threshold_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(a.max_cart_speed, got.max_cart_speed);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(a.unknown0, got.unknown0);</code>
+      * <code>Assert equal float (a.threshold_no_load[i], got.threshold_no_load[i])</code>
+      * <code>Assert equal float (a.threshold_max_load[i], got.threshold_max_load[i])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_shared_type_codes_are_separated_by_length</b> &mdash; <i>an 8-octet Start must not parse as a Robot Status (both type 0)</i></summary>
+
+    * **Objective**: an 8-octet Start must not parse as a Robot Status (both type 0)
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(8, (uint32_t)dws_j519_build_start(g_buf, sizeof(g_buf), 1));</code>
+      * <code>Assert false (dws_j519_parse_status(g_buf, 8, &st))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(16, (uint32_t)dws_j519_build_request(g_buf, sizeof(g_buf), &q));</code>
+      * <code>Assert false (dws_j519_parse_ack(g_buf, 16, &ack))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parsers_reject_wrong_type</b> &mdash; <i>right length for a motion command, but ask the request parser for it</i></summary>
+
+    * **Objective**: right length for a motion command, but ask the request parser for it
+    * **Assertions**:
+      * <code>Assert false (dws_j519_parse_request(g_buf, 16, &q))</code>
+      * <code>Assert false (dws_j519_parse_motion(g_buf, 64, &got))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parsers_reject_off_by_one_lengths</b> &mdash; <i>Parsers reject off by one lengths</i></summary>
+
+    * **Objective**: Parsers reject off by one lengths
+    * **Assertions**:
+      * <code>Assert false (dws_j519_parse_motion(g_buf, 63, &got))</code>
+      * <code>Assert false (dws_j519_parse_motion(g_buf, 65, &got))</code>
+      * <code>Assert true (dws_j519_parse_motion(g_buf, 64, &got))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builders_reject_short_capacity</b> &mdash; <i>Builders reject short capacity</i></summary>
+
+    * **Objective**: Builders reject short capacity
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_start(g_buf, 7, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_stop(g_buf, 7, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_motion(g_buf, 63, &m));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_request(g_buf, 15, &q));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_status(g_buf, 131, &s));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_ack(g_buf, 183, &a));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_guards</b> &mdash; <i>Null guards</i></summary>
+
+    * **Objective**: Null guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_start(nullptr, 64, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_motion(g_buf, sizeof(g_buf), nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_motion(nullptr, 64, &m));</code>
+      * <code>Assert false (dws_j519_parse_motion(nullptr, 64, &got))</code>
+      * <code>Assert false (dws_j519_parse_motion(g_buf, 64, nullptr))</code>
   </details>
 
 </details>

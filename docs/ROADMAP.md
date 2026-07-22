@@ -1035,7 +1035,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       web + socket messaging** (SNPX / the RPC the robot's PC interface uses). Start with a zero-heap codec
       byte-checked against a public reference, then HW-verify against a real controller. Note: "Run MyRobot"
       (above) is the Siemens SINUMERIK route to running a robot from a CNC - a distinct path we also want.
-      (Robot cell interop is currently **unimplemented** - this is the tracked entry point.)
+      PARTIAL - the **Stream Motion** leg has shipped: `services/fanuc_j519` (`DWS_ENABLE_FANUC_J519`), a
+      zero-heap symmetric codec for the J519 UDP protocol (all six packets, the 9-axis binary32 pose /
+      joint / motor-current blocks, the 20-entry threshold tables), byte-checked at every field offset
+      against the public Wireshark dissector `fanuc-stream-motion/packet-fanuc-stream-motion-j519` and
+      host-tested (`native_fanuc_j519`, 13 cases). Still open on this entry: the **PROFINET /
+      EtherNet-IP** assembly-object mapping over the shipped `services/enip`, the **KAREL / SNPX**
+      socket messaging, and **HW verification of the J519 codec against a real controller** (the codec
+      has never been run against physical hardware - only against the documented wire format).
 - [ ] **Secure machine agent: G-code deployment over a single secure port** (L) - the device as a
       secure local agent that deploys CNC part programs (G-code) to a machine tool over ONE authenticated,
       encrypted port: NC-program transfer/staging multiplexed on the existing TLS endpoint (or a secured
