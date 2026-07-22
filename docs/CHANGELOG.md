@@ -6,13 +6,20 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- stop counting bytes as sent when the packet cannot hold them ([`9d48b1d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9d48b1df7095d2a63e274ee1be4ad6005ffe639d))
+- stack buffer overflow on a long bareword argument value ([`d5b5528`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5b55283d63ee7fc1aa4608d5db32a42bb129cd5))
 - fix(docs) README.md ([`e168e53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e168e5300c4a3c95ed7b726c766458509873c03d))
+- honour GCOVR_EXCL in the per-branch union ([`c202567`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c202567a8e97c598ee880790fd500ac825aebd15))
+- union coverage BRANCH BY BRANCH across envs, not per line ([`3bbfaf5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3bbfaf5868dd719299dc090d0f0e96e7fa950b3b))
+- pin DWS_SMB_BUF so the request-builder guards are provably dead ([`d5c2945`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5c2945298ebc4d219fd376f736177269ac0f923))
 - clamp delta-seconds with int64_t, not long (LLP64 overflow) ([`a33cefd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a33cefdee3f3c719ee19bc3b21f0911c7770794f))
 - stop test/coverage.xml going stale ([`f95a667`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f95a6678d5ba05395352f1846e658610cac23654))
 - make the whole native matrix buildable off Linux ([`49fe992`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49fe99241dd74b5aad238ae4476db4d094854423))
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`844f082`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/844f082bf192512d047b03e7b4ffdea6dafa5610))
+- update CHANGELOG.md [skip ci] ([`6dc6b0f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6dc6b0f7bee13a9e0b3d0b57c62fe9b16f5af0c8))
 - update test report + coverage [skip ci] ([`db34f89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db34f890fdd9977aa3c8df4e6ffb9ac5d9d95c68))
 - update CHANGELOG.md [skip ci] ([`688e0aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/688e0aa42305c5a7e317b4736816b8eaf4ddb536))
 - update CHANGELOG.md [skip ci] ([`d1d3cae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1d3cae0bc2f39e403998466fcb708f262dbf1a4))
@@ -30,6 +37,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`834323b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/834323b3d529d61798db282b1dc0b483ec4e1793))
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`5f80cff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f80cff0787fabcf0c8aa1f88ab0be778b0a1d4e))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`305e155`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/305e15564fc67e2aee2ac83775a3c4848d36e591))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`504cf2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/504cf2f9c865f6736881eca2c069fa124598d1d0))
 - update(docs) README.md ([`9639f6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9639f6d8fb3b467e8553f86a8d324d6484db9ee7))
@@ -39,6 +48,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ca853a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca853a3e3fa481221216d938f3aa033af77d01ac))
 - update ESP32 build footprints [skip ci] ([`f915447`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f915447013a90263bf584d26a1faac7fa005d0ff))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`37d5456`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37d5456e62fcb58814a2b6b86854eeee1718d6bc))
 - update ESP32 build footprints [skip ci] ([`f596319`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f596319783ab987e62ae4c378630c4c8de6c7da0))
@@ -66,6 +76,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- 100% line + branch on snmp, smtp, oidc, senml, ntrip, dnc, dbm, sftp ([`88c861d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88c861d0ab7d56d25ab9126eeef353b1f47d748b))
+- 100% line + branch across the SSH transport, auth and connection layers ([`043e2e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/043e2e51a862f05f118de6e99c2293f6067ee8d2))
+- 100% line + branch on the edge cache tier ([`b967385`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b967385c45e93d6067aae5c1237fd353b100b6e2))
 - raise branch coverage toward 100% (control, wamp, ikev2, smb, opcua) ([`f6c4b47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6c4b47ec5f870c0a16d83c2bf5e8c2faa4634ce))
 - raise branch coverage across 18 native suites ([`f11ebc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f11ebc692db8ec03bb20e9dc2a94136fb275fb83))
 
