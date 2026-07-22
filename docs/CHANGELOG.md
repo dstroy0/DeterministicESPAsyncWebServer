@@ -6,12 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- fix(docs) README.md ([`e168e53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e168e5300c4a3c95ed7b726c766458509873c03d))
 - clamp delta-seconds with int64_t, not long (LLP64 overflow) ([`a33cefd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a33cefdee3f3c719ee19bc3b21f0911c7770794f))
 - stop test/coverage.xml going stale ([`f95a667`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f95a6678d5ba05395352f1846e658610cac23654))
 - make the whole native matrix buildable off Linux ([`49fe992`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49fe99241dd74b5aad238ae4476db4d094854423))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`c635c37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c635c37f92f03f5239b05cc937fa71654a381de6))
 - update CHANGELOG.md [skip ci] ([`626b69f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/626b69f8cd456c135e3176c42a29f913b668247c))
 - update test report + coverage [skip ci] ([`f72be48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f72be484f874a98a4bed38fcf14cf65d5a401cd4))
 - update CHANGELOG.md [skip ci] ([`58359fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58359fcb73f0e6ecc7879afa2e3398e608bf07be))
@@ -25,6 +27,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`305e155`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/305e15564fc67e2aee2ac83775a3c4848d36e591))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`504cf2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/504cf2f9c865f6736881eca2c069fa124598d1d0))
 - update(docs) README.md ([`9639f6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9639f6d8fb3b467e8553f86a8d324d6484db9ee7))
 - Merge remote-tracking branch 'origin/main' ([`111aa05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/111aa056758f4a195bacd7dae64b96644438343d))
