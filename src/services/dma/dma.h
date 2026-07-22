@@ -83,6 +83,10 @@ struct dws_dma_event
 {
     const uint8_t *data;   ///< RX: received bytes (into a ping-pong buffer); TX: nullptr
     uint32_t t_ms;         ///< dws_millis() at completion (0 on host builds)
+    uint32_t t_us;         ///< dws_micros() at completion (0 on host builds) - a high-rate
+                           ///< peripheral (SPI slave DMA off a fast external DAQ/scope) can
+                           ///< complete several transfers inside one t_ms tick; use t_us to
+                           ///< measure inter-transfer jitter / trigger latency at that rate.
     uint16_t len;          ///< bytes transferred
     uint16_t seq;          ///< per-channel completion sequence (wraps)
     uint8_t channel;       ///< channel id [0, DWS_DMA_CHANNELS)

@@ -71,12 +71,13 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **265 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **267 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
 | `native` | `WS_ENFORCE_HOST_HEADER=0` | `test_transport`, `test_presentation`, `test_session`, `test_http_parser`, `test_websocket`, `test_sse`, `test_base64` | Layers 4-6: transport + session + presentation + standalone parser (no app layer) These suites predate the RFC 7230 Â§5.4 Host rule and feed bare HTTP/1.1 request lines to exercise parser mechanics; H... |
 | `native_accept_gate` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_ACCEPT_THROTTLE=1`, `WS_ENABLE_PER_IP_THROTTLE=1`, `WS_ENABLE_IP_ALLOWLIST=1`, `WS_ACCEPT_THROTTLE_MAX=3`, `WS_ACCEPT_THROTTLE_WINDOW_MS=1000`, `WS_PER_IP_THROTTLE_MAX=2`, `WS_PER_IP_THROTTLE_WINDOW_MS=1000`, `WS_PER_IP_THROTTLE_SLOTS=4`, `WS_IP_ALLOWLIST_SLOTS=4` | `test_accept_gate` | Accept-time connection gates with their flags ON (DWS_ENABLE_ACCEPT_THROTTLE / PER_IP_THROTTLE / IP_ALLOWLIST): the global fixed-window throttle, the per-source-IP bucket table (independent budgets, w... |
+| `native_ad9238` | `WS_ENABLE_AD9238=1` | `test_ad9238` | AD9238 SPI configuration-port codec (services/ad9238): the 16-bit instruction word (R/W + byte-count + 13-bit address) for single-byte register writes/reads, the device-update transfer transaction, an... |
 | `native_ads` | `WS_ENABLE_ADS=1` | `test_ads` | Beckhoff ADS / AMS codec (services/ads): the AMS/TCP + AMS-header request builders (little-endian, target-before-source addressing, cmd id + state flags + cbData + invoke id) for Read/Write/ReadWrite/... |
 | `native_ads1115` | `WS_ENABLE_ADS1115=1` | `test_ads1115` | ADS1115 16-bit ADC codec (services/ads1115): building the 16-bit config word for a single-shot single-ended reading (channel MUX, gain, data rate, start/mode/comparator bits, with out-of-range fallbac... |
 | `native_amqp` | `WS_ENABLE_AMQP=1` | `test_amqp` | AMQP 0-9-1 frame codec (services/amqp): the protocol header, the frame + method builders, the heartbeat, and the frame/method parsers (type/channel/size/payload/0xCE). |
@@ -316,6 +317,7 @@ The native test matrix has **265 environments**, one per feature, generated from
 | `native_tls13_msg` | `WS_ENABLE_HTTP3=1` | `test_tls13_msg` | TLS 1.3 handshake messages for the QUIC handshake (network_drivers/presentation/http3/ tls13_msg, RFC 8446 sec 4): ClientHello parse (X25519 key_share + capability flags), and the server flight. |
 | `native_tls_policy` | `WS_ENABLE_TLS_POLICY=1` | `test_tls_policy` | TLS version negotiation + pinned cipher policy (services/tls_policy): the server-style version pick (highest supported not above the client's), the version name, cipher selection by server preference ... |
 | `native_totp` | `WS_ENABLE_TOTP=1` | `test_totp` | TOTP two-factor (services/totp): HMAC-SHA1 HOTP/TOTP + base32, host-tested against the RFC 6238 vectors (builds on the software SHA-1). |
+| `native_trace_capture` | `WS_ENABLE_TRACE_CAPTURE=1`, `WS_TC_MAX_WINDOW_SAMPLES=32` | `test_trace_capture` | Pre/post-trigger sample-window assembler (services/trace_capture), v5 high-rate acquisition: a continuously-running pre-trigger ring, trigger() freezing it as the window's pre-trigger half, feed() fil... |
 | `native_tsan` | `g`, `O1`, `fsanitize=thread`, `pthread` | `test_concurrency` | Same harness under ThreadSanitizer: proves ZERO data races on the slot fields (the DWSAtomic acquire/release happens-before lets the plain rx_buffer[] writes be read on the other core safely). |
 | `native_udp_telemetry` | `WS_ENABLE_UDP_TELEMETRY=1` | `test_udp_telemetry` | UDP telemetry line builder (services/udp_telemetry): InfluxDB line-protocol formatting, host-tested. |
 | `native_udp_transport` | default | `test_udp_transport` | UDP transport multicast receive (network_drivers/transport/udp.cpp): joining an IPv4 multicast group by dotted-quad, rejecting a non-multicast or malformed group, delivering a group datagram to the re... |
@@ -555,7 +557,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4192 test cases** across **281 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4205 test cases** across **283 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -707,6 +709,89 @@ A thorough directory of all **4192 test cases** across **281 suites**. Expand a 
       * <code>Assert false (listener_ip_allow_add(&bad, 33))</code>
       * <code>Assert true (listener_ip_allow_add(&r, 32))</code>
       * <code>Assert false (listener_ip_allow_add(&overflow, 32))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ad9238 (7 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_instruction_word_write_single_byte</b> &mdash; <i>Instruction word write single byte</i></summary>
+
+    * **Objective**: Instruction word write single byte
+    * **Assertions**:
+      * <code>Assert true (dws_ad9238_build_instruction(false, 0x0009, 1, hdr))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, hdr[0]); // R/W=0, W1:W0=00 (1 byte), addr hi</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x09, hdr[1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_instruction_word_read_sets_msb</b> &mdash; <i>Instruction word read sets msb</i></summary>
+
+    * **Objective**: Instruction word read sets msb
+    * **Assertions**:
+      * <code>Assert true (dws_ad9238_build_instruction(true, 0x0001, 1, hdr))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x80, hdr[0]); // R/W=1</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, hdr[1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_instruction_word_byte_count_field</b> &mdash; <i>streaming (W1:W0=11): word = R/W(0) \| W1:W0(11) << 13 \| addr(0x100) = 0x6000 \| 0x0100 = 0x6100.</i></summary>
+
+    * **Objective**: streaming (W1:W0=11): word = R/W(0) \| W1:W0(11) << 13 \| addr(0x100) = 0x6000 \| 0x0100 = 0x6100.
+    * **Assertions**:
+      * <code>Assert true (dws_ad9238_build_instruction(false, 0x0100, 4, hdr))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x61, hdr[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, hdr[1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_instruction_word_rejects_bad_input</b> &mdash; <i>Instruction word rejects bad input</i></summary>
+
+    * **Objective**: Instruction word rejects bad input
+    * **Assertions**:
+      * <code>Assert false (dws_ad9238_build_instruction(false, 0x00, 1, nullptr))</code>
+      * <code>Assert false (dws_ad9238_build_instruction(false, 0x00, 0, hdr))</code>
+      * <code>Assert false (dws_ad9238_build_instruction(false, 0x00, 5, hdr))</code>
+      * <code>Assert false (dws_ad9238_build_instruction(false, 0x2000, 1, hdr))</code>
+      * <code>Assert true (dws_ad9238_build_instruction(false, 0x1FFF, 1, hdr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write_transaction</b> &mdash; <i>Build write transaction</i></summary>
+
+    * **Objective**: Build write transaction
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x09, out[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, out[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_write(0x09, 0x01, nullptr, 3)); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_write(0x09, 0x01, out, 2));     // undersized cap</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_read_transaction</b> &mdash; <i>Build read transaction</i></summary>
+
+    * **Objective**: Build read transaction
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_ad9238_build_read((uint16_t)Ad9238Reg::AD9238_REG_CHIP_ID, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x80, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, out[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_read(0x01, nullptr, 2)); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_read(0x01, out, 1));     // undersized cap</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_transfer_writes_device_update</b> &mdash; <i>Build transfer writes device update</i></summary>
+
+    * **Objective**: Build transfer writes device update
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_ad9238_build_transfer(out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, out[1]); // AD9238_REG_DEVICE_UPDATE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, out[2]); // SW transfer bit</code>
   </details>
 
 </details>
@@ -44382,6 +44467,95 @@ A thorough directory of all **4192 test cases** across **281 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (dws_base32_decode("MFRGG===", out, sizeof(out)) &gt;= 0)</code>
       * <code>Assert equal int (-1, dws_base32_decode("MFRG!", out, sizeof(out)))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_trace_capture (6 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_begin_validates</b> &mdash; <i>Begin validates</i></summary>
+
+    * **Objective**: Begin validates
+    * **Assertions**:
+      * <code>Assert false (dws_tc_begin(nullptr))</code>
+      * <code>Assert false (dws_tc_begin(&cfg))</code>
+      * <code>Assert false (dws_tc_begin(&cfg))</code>
+      * <code>Assert false (dws_tc_begin(&cfg))</code>
+      * <code>Assert true (begin(4, 4))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pretrigger_ring_wraps_and_freezes_on_trigger</b> &mdash; <i>Feed 6 samples into a 4-deep pre-trigger ring: only the last 4 (2,3,4,5) survive.</i></summary>
+
+    * **Objective**: Feed 6 samples into a 4-deep pre-trigger ring: only the last 4 (2,3,4,5) survive.
+    * **Assertions**:
+      * <code>Assert true (begin(4, 4))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(6, dws_tc_feed(pre, 6));</code>
+      * <code>Assert false (dws_tc_capturing())</code>
+      * <code>Assert true (dws_tc_trigger())</code>
+      * <code>Assert true (dws_tc_capturing())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, dws_tc_feed(post, 4));</code>
+      * <code>Assert false (dws_tc_capturing())</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_windows.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, w.pretrigger_samples);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, w.samples.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(expect[i], w.samples[i]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, w.trace_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, st.windows_completed);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, st.triggers_dropped);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_trigger_fail_closed_while_capturing</b> &mdash; <i>Trigger fail closed while capturing</i></summary>
+
+    * **Objective**: Trigger fail closed while capturing
+    * **Assertions**:
+      * <code>Assert true (begin(2, 4))</code>
+      * <code>Assert true (dws_tc_trigger())</code>
+      * <code>Assert false (dws_tc_trigger())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, st.triggers_dropped);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_windows.size()); // still filling, no sink call yet</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_feed_before_begin_or_after_end_drops</b> &mdash; <i>Feed before begin or after end drops</i></summary>
+
+    * **Objective**: Feed before begin or after end drops
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_tc_feed(s, 3)); // never began</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, st.samples_dropped);</code>
+      * <code>Assert true (begin(2, 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_tc_feed(s, 3)); // ended</code>
+      * <code>Assert false (dws_tc_trigger())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_pretrigger_edge_case</b> &mdash; <i>Zero pretrigger edge case</i></summary>
+
+    * **Objective**: Zero pretrigger edge case
+    * **Assertions**:
+      * <code>Assert true (begin(0, 3))</code>
+      * <code>Assert true (dws_tc_trigger())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, dws_tc_feed(post, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_windows.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, g_windows[0].pretrigger_samples);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, g_windows[0].samples.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(7, g_windows[0].samples[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(9, g_windows[0].samples[2]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_multiple_sequential_windows_increment_trace_id</b> &mdash; <i>Multiple sequential windows increment trace id</i></summary>
+
+    * **Objective**: Multiple sequential windows increment trace id
+    * **Assertions**:
+      * <code>Assert true (begin(1, 1))</code>
+      * <code>Assert true (dws_tc_trigger())</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, g_windows.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)i, g_windows[i].trace_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, st.windows_completed);</code>
   </details>
 
 </details>
