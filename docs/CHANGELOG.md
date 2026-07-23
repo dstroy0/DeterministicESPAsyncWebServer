@@ -19,6 +19,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`66c1a59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/66c1a590f7b49badfad893c24ebca28f2cb7fd9b))
+- update CHANGELOG.md [skip ci] ([`7bb8523`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bb85232e7b788531d077a839b5a32035df6da96))
 - update test report + coverage [skip ci] ([`f7ebe93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7ebe93485b1d3f30debe838dc472b4c18452676))
 - update CHANGELOG.md [skip ci] ([`22b5d3e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22b5d3e2a15dd9b4b4561df7501ffb00105a8dbe))
 - update test report + coverage [skip ci] ([`40f086f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/40f086f41f29df8b724722f762cb471a53be3ebb))
@@ -50,6 +52,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge pull request #18 from dstroy0/docs/configurator-and-diagram-redesign ([`ae111bd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae111bd49c7c0d4fe0c1e1995808067e8d56b9a9))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`4337a7b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4337a7ba6feb49582e5083ccf2d86b41d0e708c2))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`2901622`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2901622a2c043169cd01c2f0b89efdff45cf0f6a))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`16aa07c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16aa07c2d2693c4640d393e2a232d4645624af95))
@@ -64,6 +67,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- de-noise build configurator, rebuild flag graph, uniform feature tables ([`9017e9b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9017e9bd70c24323c1ecca92b10cb9162d874cc5))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`12c60a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12c60a8045ba2e43bdc03d46242fc586da5258fa))
 - update ESP32 build footprints [skip ci] ([`6d4c479`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d4c4794d0ad7ad1eb0ad74d9f0aca2ffdd3f22d))
 - record the migration and stop describing the retired loops as current ([`43e45f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43e45f9f4256d5911c18532514872521f037129b))
 - update ESP32 build footprints [skip ci] ([`c134fdd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c134fdd2aa3421e33a21afe71a8f5642a1fce1cc))
