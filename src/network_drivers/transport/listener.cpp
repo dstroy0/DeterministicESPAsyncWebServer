@@ -325,8 +325,13 @@ bool listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
  * sets its protocol, wires the per-connection callbacks, and posts EvtType::EVT_CONNECT
  * to the owning listener's queue.  Rejects the connection with ERR_ABRT when
  * the pool is full - ERR_ABRT tells lwIP the PCB is already gone from our side.
+ *
+ * Non-static (like tcp.cpp's lowlevel_*_cb) so the host unit tests can call it
+ * directly with a fabricated newpcb: on native there is no real lwIP accept event
+ * to drive it through tcp_accept(), whose mock (test/mocks/lwip/tcp.h) does not
+ * store or invoke the registered callback at all.
  */
-static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
+err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 {
     if (err != ERR_OK || newpcb == nullptr)
         return ERR_VAL;
@@ -362,10 +367,21 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     // Per-source-IP flood defense: drop accepts beyond one address's per-window
     // budget (the global throttle cannot tell one noisy client from many). Keyed on
     // the full address, so an IPv6 peer cannot spray a /64 past a per-address cap.
-    if (!listener_accept_allowed_ip(&remote, dws_millis()))
+    //
+    // The reject branch below is unreachable THROUGH THIS CALL SITE on native: `remote`
+    // is hardcoded to DWSIpFamily::DWS_IP_NONE just above (no real lwIP pcb to read an
+    // address from), and listener_accept_allowed_ip()'s very first check
+    // (dws_ip_is_unspecified) always allows an unspecified address through, deferring to
+    // the global throttle - see test_accept_gate.cpp's test_per_ip_unspecified_defers.
+    // The function's own reject path IS fully host-tested directly with a synthetic
+    // DWSIp (test_per_ip_independent_budgets et al.); only ITS USE HERE, gated behind a
+    // peer address this host build can never resolve, cannot be driven to the false case.
+    if (!listener_accept_allowed_ip(&remote, dws_millis())) // GCOVR_EXCL_BR_LINE - see above
     {
+        // GCOVR_EXCL_START - unreachable: see the comment above this `if`
         tcp_abort(newpcb);
         return ERR_ABRT;
+        // GCOVR_EXCL_STOP
     }
 #endif
 

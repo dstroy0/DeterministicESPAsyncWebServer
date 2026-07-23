@@ -270,6 +270,94 @@ void test_closing_timeout_reaps_stuck_slot()
     TEST_ASSERT_EQUAL_UINT32(0, dws_conn_counters().closing_gauge);
 }
 
+// DeterministicAsyncTCP::stop() posts a DWS_CONN_R_ABORT transition for every ACTIVE/CLOSING
+// slot it aborts (this specific call site, inside stop()'s own loop - not the direct
+// dws_obs_transition() call test_each_reason_bumps_its_counter already drives).
+void test_stop_posts_abort_transition_for_each_live_slot()
+{
+    struct tcp_pcb pcb;
+    conn_pool[0].id = 0;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
+    conn_pool[0].pcb = &pcb;
+
+    DeterministicAsyncTCP::stop();
+    TEST_ASSERT_EQUAL(DWSConnReason::DWS_CONN_R_ABORT, g_reason);
+    TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().closes_abort);
+}
+
+// A slot that errors while already dwelling in ConnState::CONN_CLOSING just releases the slot
+// (DRAINED, gauge-only) - it must not also count as an ERROR close (its response was already
+// sent; the session already reset). This call site is lowlevel_err_cb's own CLOSING branch,
+// not the direct dws_obs_transition() call test_closing_gauge_is_derived_from_pool drives.
+void test_err_cb_during_closing_counts_drained_not_error()
+{
+    struct tcp_pcb pcb;
+    pcb.snd_queuelen = 1; // dwell, don't finalize immediately
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
+    conn_pool[0].pcb = &pcb;
+    dws_conn_begin_close(0);
+    TEST_ASSERT_EQUAL(ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state);
+    dws_conn_counters_reset();
+
+    lowlevel_err_cb(&conn_pool[0], ERR_ABRT);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
+    TEST_ASSERT_NULL(conn_pool[0].pcb);
+    TEST_ASSERT_EQUAL(DWSConnReason::DWS_CONN_R_DRAINED, g_reason);
+    DWSConnCounters c = dws_conn_counters();
+    TEST_ASSERT_EQUAL_UINT32(0, c.closes_error); // not counted as an error close
+    TEST_ASSERT_EQUAL_UINT32(0, c.closing_gauge);
+}
+
+// listener_enqueue() failing (the target listener slot inactive) inside tcp.cpp's own
+// enqueue() helper - reached from the real recv callback, not a direct dws_obs_notice() call
+// - is observed as a defer-drop notice rather than silently losing the event.
+void test_enqueue_failure_from_recv_cb_counts_defer_drop()
+{
+    struct tcp_pcb pcb;
+    conn_pool[0].id = 0;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
+    conn_pool[0].pcb = &pcb;
+    conn_pool[0].rx_head = 0;
+    conn_pool[0].rx_tail = 0;
+    conn_pool[0].listener_id = 1;    // listener 1 was never listener_add()'ed by setUp()
+    listener_pool[1].active = false; // -> listener_enqueue() reports failure
+
+    uint8_t byte = 'x';
+    struct pbuf p;
+    memset(&p, 0, sizeof(p));
+    p.payload = &byte;
+    p.len = 1;
+    p.tot_len = 1;
+    TEST_ASSERT_EQUAL_INT(ERR_OK, lowlevel_recv_cb(&conn_pool[0], &pcb, &p, ERR_OK));
+    TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().defer_drops);
+    TEST_ASSERT_EQUAL(DWSConnReason::DWS_CONN_R_DEFER_DROP, g_reason);
+}
+
+// listener_accept_cb() posts its own DWS_CONN_R_ACCEPT transition on a successful accept -
+// a different call site than the ones test_each_reason_bumps_its_counter drives directly.
+// (listener_accept_cb is non-static specifically so this can be called directly - see
+// listener.cpp / listener.h.)
+void test_accept_cb_posts_accept_transition()
+{
+    struct tcp_pcb pcb = {};
+    TEST_ASSERT_EQUAL_INT(ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK));
+    TEST_ASSERT_EQUAL(DWSConnReason::DWS_CONN_R_ACCEPT, g_reason);
+    TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().accepts);
+}
+
+// listener_accept_cb()'s own enqueue-failure fallback (the target listener marked inactive)
+// posts a defer-drop notice - the accept itself still succeeds, only the EvtType::EVT_CONNECT
+// post is dropped.
+void test_accept_cb_enqueue_failure_posts_defer_drop()
+{
+    listener_pool[0].active = false;
+    struct tcp_pcb pcb = {};
+    TEST_ASSERT_EQUAL_INT(ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK));
+    TEST_ASSERT_EQUAL(DWSConnReason::DWS_CONN_R_DEFER_DROP, g_reason);
+    TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().defer_drops);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state); // still claimed
+}
+
 void test_recv_during_closing_is_drained_not_processed()
 {
     struct tcp_pcb pcb;
@@ -309,5 +397,10 @@ int main()
     RUN_TEST(test_begin_close_noop_if_not_active);
     RUN_TEST(test_closing_timeout_reaps_stuck_slot);
     RUN_TEST(test_recv_during_closing_is_drained_not_processed);
+    RUN_TEST(test_stop_posts_abort_transition_for_each_live_slot);
+    RUN_TEST(test_err_cb_during_closing_counts_drained_not_error);
+    RUN_TEST(test_enqueue_failure_from_recv_cb_counts_defer_drop);
+    RUN_TEST(test_accept_cb_posts_accept_transition);
+    RUN_TEST(test_accept_cb_enqueue_failure_posts_defer_drop);
     return UNITY_END();
 }

@@ -666,10 +666,16 @@ static void closing_finalize(uint8_t slot, struct tcp_pcb *pcb)
 
 // If the slot is ConnState::CONN_CLOSING and its TX queue has drained (peer ACKed the whole
 // response), finalize it now. Called only from tcpip_thread context.
+//
+// The early-return guard below is unreachable: closing_check() has exactly two callers,
+// dws_conn_begin_close()'s host path (which already validated slot < MAX_CONNS and just set
+// state to CONN_CLOSING immediately before this call) and lowlevel_sent_cb() (which only
+// calls here after checking slot->state == ConnState::CONN_CLOSING itself, with slot->id
+// always a valid conn_pool index by construction). Both guarantee the condition is false.
 static void closing_check(uint8_t slot, struct tcp_pcb *pcb)
 {
-    if (slot >= MAX_CONNS || conn_pool[slot].state != ConnState::CONN_CLOSING)
-        return;
+    if (slot >= MAX_CONNS || conn_pool[slot].state != ConnState::CONN_CLOSING) // GCOVR_EXCL_BR_LINE - see above
+        return;                                                                // GCOVR_EXCL_LINE - see above
     if (!pcb || pcb->snd_queuelen == 0)
         closing_finalize(slot, pcb);
 }
