@@ -19,6 +19,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`a64a70c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a64a70c79b52254b372859730b5ed069d1aaa519))
+- update CHANGELOG.md [skip ci] ([`41b749f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/41b749f4e55e90d1114dcb5448c0f3aafc7ee454))
 - update test report + coverage [skip ci] ([`66c1a59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/66c1a590f7b49badfad893c24ebca28f2cb7fd9b))
 - update CHANGELOG.md [skip ci] ([`7bb8523`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bb85232e7b788531d077a839b5a32035df6da96))
 - update test report + coverage [skip ci] ([`f7ebe93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7ebe93485b1d3f30debe838dc472b4c18452676))
@@ -120,6 +122,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- raise line+branch coverage to 100% and remediate SonarCloud smells [full ci] ([`8498757`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/849875785eb96286afd51bdfd50e9e97a718b6fb))
 - close remaining transport/physical coverage gaps for real ([`65d6652`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65d6652dcbba61baa38b674a72c17c8d52f7b61a))
 - adversarially re-verify GCOVR_EXCL markers added this session ([`b57d0f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b57d0f162f9442ad7305d1e504b18c5b97104641))
 - raise line/branch coverage across native envs toward 100% ([`4da3fd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4da3fd3ce8ae29dd673bb8d9e7a6f928e34e4655))
