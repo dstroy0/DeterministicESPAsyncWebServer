@@ -8,20 +8,17 @@
 
 #include "services/sht3x/sht3x.h"
 #include "ServerConfig.h"
-#include "services/clock.h" // dwsdelay
+#include "services/clock.h"        // dwsdelay
+#include "shared_primitives/crc.h" // DWS_CRC8_NRSC5
 
 #if DWS_ENABLE_SHT3X
 
 uint8_t dws_sht3x_crc8(const uint8_t *data, size_t len)
 {
-    uint8_t crc = 0xFF; // Sensirion CRC-8: poly 0x31, init 0xFF, MSB-first, no final XOR
-    for (size_t i = 0; i < len; i++)
-    {
-        crc ^= data[i];
-        for (int b = 0; b < 8; b++)
-            crc = (crc & 0x80) ? (uint8_t)((crc << 1) ^ 0x31) : (uint8_t)(crc << 1);
-    }
-    return crc;
+    // The Sensirion CRC-8 is the catalogue's CRC-8/NRSC-5 (poly 0x31, init 0xFF, no reflection, no
+    // final XOR). The loop that used to live here is gone, not reworded: test_crc diffs the shared
+    // engine against that exact loop over every length 0..64, so this is byte-identical to it.
+    return (uint8_t)dws_crc(&DWS_CRC8_NRSC5, data, len);
 }
 
 int32_t dws_sht3x_temp_mc(uint16_t raw)

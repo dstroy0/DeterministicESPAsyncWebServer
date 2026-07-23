@@ -7,6 +7,7 @@
  */
 
 #include "services/rawl2/rawl2.h"
+#include "shared_primitives/crc.h" // DWS_CRC32_ISO_HDLC
 
 #if DWS_ENABLE_RAWL2
 
@@ -85,14 +86,9 @@ bool dws_eth_parse(const uint8_t *frame, size_t len, EthFrame *out)
 uint32_t dws_eth_fcs(const uint8_t *bytes, size_t len)
 {
     // CRC-32/ISO-HDLC (the Ethernet FCS): reflected poly 0xEDB88320, init/xorout 0xFFFFFFFF.
-    uint32_t crc = 0xFFFFFFFFu;
-    for (size_t i = 0; i < len; i++)
-    {
-        crc ^= bytes[i];
-        for (int b = 0; b < 8; b++)
-            crc = (crc >> 1) ^ (0xEDB88320u & (uint32_t)(-(int32_t)(crc & 1)));
-    }
-    return ~crc;
+    // test_crc diffs the shared engine against the loop that used to live here over every length
+    // 0..64, so this is byte-identical to it.
+    return dws_crc(&DWS_CRC32_ISO_HDLC, bytes, len);
 }
 
 #endif // DWS_ENABLE_RAWL2

@@ -211,4 +211,46 @@ inline uint32_t dws_lat_avg_us(const DWSLatencyStat *s)
     return s->count ? (uint32_t)(s->sum_us / s->count) : 0u;
 }
 
+// ---------------------------------------------------------------------------
+// CPU cycle counter (v5 clock-awareness): sub-microsecond jitter measurement
+// ---------------------------------------------------------------------------
+//
+// dws_micros() wraps the platform micros(), which on ESP32 is itself derived from
+// a 1 MHz-divided cycle counter - roughly 1 us of quantization noise. That is too
+// coarse to characterize a single SPI-DMA transaction: at a 20 MHz SPI clock one
+// byte is 400 ns, and a fast external DAQ/scope can complete several DMA transfers
+// within one microsecond tick. dws_cycles() reads the CPU cycle counter directly
+// (CCOUNT on Xtensa ESP32 / ESP32-S3) for nanosecond-grade deltas - trigger-to-first-
+// -sample latency, inter-transfer jitter - the same primitive services/dma and the
+// pentesting rig's cryptobench already use ad hoc via ESP.getCycleCount(); this
+// gives every subsystem one named, documented entry point instead. Like dws_micros,
+// it wraps (roughly every 18 s at 240 MHz) - use it only for short deltas via
+// wrap-safe unsigned subtraction.
+
+/**
+ * @brief Free-running CPU cycle count. ISR-safe. On ARDUINO/ESP32 this is the
+ *        hardware cycle counter (CCOUNT); on host it falls back to dws_micros()
+ *        scaled by @p host_fallback_mhz (a coarse stand-in - override with a real
+ *        cycle source in a host test that needs nanosecond precision).
+ */
+inline uint32_t dws_cycles(void)
+{
+#ifdef ARDUINO
+    return ESP.getCycleCount();
+#else
+    const uint32_t host_fallback_mhz = 240; // arbitrary stand-in; deltas only, never absolute
+    return dws_micros() * host_fallback_mhz;
+#endif
+}
+
+/**
+ * @brief Convert a cycle-count delta to nanoseconds at @p cpu_mhz (the running CPU
+ *        frequency, e.g. getCpuFrequencyMhz() on ESP32). @p delta_cycles must come
+ *        from a wrap-safe unsigned subtraction of two dws_cycles() reads.
+ */
+inline uint32_t dws_cycles_to_ns(uint32_t delta_cycles, uint32_t cpu_mhz)
+{
+    return cpu_mhz ? (uint32_t)(((uint64_t)delta_cycles * 1000u) / cpu_mhz) : 0u;
+}
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_CLOCK_H

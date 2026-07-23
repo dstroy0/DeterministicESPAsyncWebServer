@@ -838,6 +838,47 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       reviews are regression-tested); the remaining `🔷` entries are documented scope boundaries tracked
       here, not violations. The audit is re-run per subsystem change - the verdict + evidence columns are
       kept current.
+- [x] **Shared CRC engine** (S) - SHIPPED. `shared_primitives/crc.h`: the standard Rocksoft / Williams
+      model (width / poly / init / refin / refout / xorout), so any published CRC is six numbers rather
+      than a new loop. Header-only and pure like `endian.h` - no feature flag, nothing emitted when
+      unused. `begin` / `update` / `final` are split so a frame that is not contiguous in memory (a
+      header struct then a payload buffer) can be checksummed without copying it together first.
+      Bitwise rather than table-driven on purpose: a 256-entry table _per polynomial_ costs more flash
+      than these frames justify, and every caller here checksums tens to hundreds of octets, not
+      megabytes (`services/wal` is the one exception - see the migration item below). Presets ship for
+      CRC-8/SMBUS, CRC-8/MAXIM-DOW, CRC-8/NRSC-5, CRC-16/ARC, CRC-16/MODBUS, CRC-16/IBM-3740,
+      CRC-16/XMODEM, CRC-16/KERMIT, CRC-16/X-25, CRC-16/DNP, CRC-24/OPENPGP, CRC-32/ISO-HDLC and
+      CRC-32/BZIP2. Two independent lines of evidence, both asserted in `test_crc` (10 cases, in
+      `native_dws_primitives`): every preset reproduces its **published catalogue check value** (the
+      CRC of `"123456789"`), and the engine is **diffed against the in-tree hand-rolled loops** across
+      every length 0..64, so a preset meant to retire one of them is proven byte-identical to the
+      interop-tested code it replaces rather than merely plausible.
+- [x] **Migrate the hand-rolled CRCs onto the shared engine** (M) - _13 of 16 done; the remaining
+      three are deliberate exclusions, see below._ The consolidation the CRC engine was written to
+      enable. Sixteen services each carried their own CRC loop - the same duplication `endian.h` was
+      created to end. Thirteen mapped onto a shipped preset and are now migrated, one commit each so
+      a regression bisects to a single codec: `c37118`, `df1`, `dnp3`, `enocean`, `interbus`,
+      `mbplus`, `modbus`, `nema_ts2`, `rawl2`, `sdi12`, `sht3x`, `thread`, `zigbee`. Net -42 lines,
+      and every service's own suite stayed green (150 cases). The substitutions are proven rather
+      than assumed: `test_crc` diffs the shared engine against each of those exact loops over every
+      length 0..64, so "byte-identical" is asserted in CI, not argued in a commit message.
+      Two of them also stopped needing a scratch buffer - `zigbee` (control byte + payload) and `df1`
+      (data + a trailing ETX) CRC two non-adjacent regions, which is what the engine's
+      begin/update/final split exists for. Note their running value is the engine's internal
+      register, held unreflected until `final()` for a reflected CRC, so it is not interchangeable
+      with the old right-shift intermediate - those call sites were converted whole rather than one
+      call at a time.
+      The remaining three are **not** pending work; each is excluded for a reason:
+    - `wal` is **table-driven** (256-entry CRC-32 lookup) because it checksums bulk log records, not
+      frames - the one place the flash-vs-throughput trade goes the other way. Migrate only if
+      measurement says the bitwise cost is acceptable; otherwise it stays as it is.
+    - `gnss/rtcm3` uses **CRC-24Q** (poly `0x864CFB`, init `0`) - same polynomial as CRC-24/OPENPGP but
+      a different seed, so no shipped preset covers it. Adding one needs its check value confirmed
+      against a published source first rather than computed with this engine and asserted against
+      itself, which would prove nothing.
+    - `dshot` is **not a CRC at all** - a 4-bit XOR fold of the three nibbles - so it has nothing to
+      migrate onto. (An earlier revision of this roadmap also listed `hw_health` as hand-rolling a CRC;
+      it does not - it only consumes a `crc_ok` verdict.)
 
 ## Low-level networking (raw Layer 2)
 
@@ -1763,6 +1804,24 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       frame meets SIL 3. Land the common primitives once (`services/safety_scl`): a CRC-signature helper, a
       monitoring-counter state machine, and a watchdog/timeout guard, then have each profile's codec compose
       them. Pure + host-tested against per-profile vectors.
+      PARTIAL - `services/safety_scl` (`DWS_ENABLE_SAFETY_SCL`) lands two of the three primitives: the
+      monitoring-counter state machine and the receive watchdog, plus the fail-safe state machine that
+      combines them with a caller-supplied signature verdict. Lost / duplicated / inserted / reordered
+      frames all reduce to one comparison against the expected counter, and each has its own test case.
+      Fail-safe **latches** until an explicit `dws_scl_reset`: a safety layer that silently reheals lets
+      an intermittent fault present as a working link, so a subsequent good frame must not revive it
+      (asserted). Pure, explicit `now`, wrap-safe watchdog. Host-tested (`native_safety_scl`, 16 cases).
+      Still open: the **CRC-signature helper**. The engine half of it now exists -
+      `shared_primitives/crc.h` (see **Maintenance**) is the parameterized width / poly / init /
+      reflect / xorout engine this entry asked for, so "no engine to configure" is no longer the
+      blocker. What remains is genuinely profile-specific: each profile defines not just its
+      polynomial, width and seed but the **input ordering** - which fields, in which order, feed the
+      register - and those constants live in paid standards. A generic `dws_scl_signature()` would
+      still be guessing that ordering, and a wrong safety CRC is worse than none because it looks
+      authoritative while failing to detect the corruption it exists to catch. So the caller still
+      passes its profile's verdict in as `signature_ok`, and the helper lands **per profile**
+      (PROFIsafe CRC2, CIP Safety CRC-S1/S3/S5, FSoE per-slot CRC) as each profile's codec is written
+      against its spec - each one configuring the shared engine rather than hand-rolling a loop.
 - [ ] **PROFIsafe (IEC 61784-3-3, PI)** (M) - the SIL3 safety layer over the shipped PROFINET / PROFIBUS
       codecs. `DWS_ENABLE_PROFISAFE` / `services/profisafe`: the Safety-PDU (F-I/O data + status/control
       byte + consecutive number + CRC2 signature), the F-Parameters (F_Dest_Add / F_WD_Time ...) with their

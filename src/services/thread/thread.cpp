@@ -11,6 +11,7 @@
  */
 
 #include "services/thread/thread.h"
+#include "shared_primitives/crc.h" // DWS_CRC16_X25
 
 #if DWS_ENABLE_THREAD
 
@@ -599,14 +600,10 @@ const char *dws_spinel_status_name(uint32_t status)
 
 uint16_t dws_spinel_fcs(const uint8_t *buf, uint16_t len)
 {
-    uint16_t crc = 0xFFFF;
-    for (uint16_t i = 0; i < len; i++)
-    {
-        crc ^= buf[i];
-        for (uint8_t b = 0; b < 8; b++)
-            crc = (crc & 1) ? (uint16_t)((crc >> 1) ^ 0x8408) : (uint16_t)(crc >> 1);
-    }
-    return (uint16_t)(crc ^ 0xFFFF);
+    // The HDLC-lite FCS is CRC-16/X-25 (reflected poly 0x8408, init 0xFFFF, xorout 0xFFFF).
+    // test_crc diffs the shared engine against the loop that used to live here over every length
+    // 0..64, and asserts the catalogue check value 0x906E that this suite already pinned.
+    return (uint16_t)dws_crc(&DWS_CRC16_X25, buf, len);
 }
 
 uint16_t dws_spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)

@@ -415,6 +415,49 @@
 #endif
 
 // ---------------------------------------------------------------------------
+// Trace capture: pre/post-trigger window assembler (DWS_ENABLE_TRACE_CAPTURE)
+// ---------------------------------------------------------------------------
+//
+// Sits downstream of DWS_ENABLE_DMA (or any other sample source) on a high-rate
+// acquisition front end: dws_tc_feed() is called with every batch of arriving samples
+// and a continuously-running pre-trigger ring always holds the most recent samples;
+// dws_tc_trigger() freezes that ring as the pre-trigger half of a window and the next
+// arriving samples fill the post-trigger half, so the emitted window straddles the
+// trigger instant like a benchtop oscilloscope's pretrigger/posttrigger split. One
+// capture in flight at a time, fail-closed. Storage is static (zero heap) - the sum of
+// the configured pretrigger + posttrigger sample counts must fit DWS_TC_MAX_WINDOW_SAMPLES.
+// See services/trace_capture/trace_capture.h.
+
+/** @brief Enable the pre/post-trigger window assembler (default off). */
+#ifndef DWS_ENABLE_TRACE_CAPTURE
+#define DWS_ENABLE_TRACE_CAPTURE 0
+#endif
+
+/** @brief Max samples a window may hold (pretrigger_samples + posttrigger_samples), static-allocated. */
+#ifndef DWS_TC_MAX_WINDOW_SAMPLES
+#define DWS_TC_MAX_WINDOW_SAMPLES 4096
+#endif
+
+#if DWS_ENABLE_TRACE_CAPTURE && DWS_TC_MAX_WINDOW_SAMPLES < 1
+#error "DeterministicESPAsyncWebServer: DWS_TC_MAX_WINDOW_SAMPLES must be >= 1"
+#endif
+
+// ---------------------------------------------------------------------------
+// AD9238 SPI configuration-port codec (DWS_ENABLE_AD9238)
+// ---------------------------------------------------------------------------
+//
+// A pure codec for the AD9238 dual ADC's low-speed SPI CONFIGURATION port (power-down,
+// output format, output test patterns, offset trim) - NOT its parallel sample-data bus,
+// which is out of an MCU's reach at this part's sample rates. See services/ad9238/ad9238.h
+// for the hardware-verification caveat: the per-register bit fields are transcribed from
+// the datasheet, not yet confirmed against physical silicon.
+
+/** @brief Enable the AD9238 SPI configuration-port codec (default off). */
+#ifndef DWS_ENABLE_AD9238
+#define DWS_ENABLE_AD9238 0
+#endif
+
+// ---------------------------------------------------------------------------
 // Interface forwarding plane (DWS_ENABLE_FORWARD) - v5 hardware ingest
 // ---------------------------------------------------------------------------
 //
@@ -2767,6 +2810,28 @@
 /** @brief HMMD UART baud rate (the module's factory default is 115200). */
 #ifndef DWS_HMMD_BAUD
 #define DWS_HMMD_BAUD 115200
+#endif
+
+/**
+ * @brief IEC 61784-3 black-channel Safety Communication Layer primitives (`services/safety_scl`).
+ *
+ * Default off. The functional-safety profiles (PROFIsafe / IEC 61784-3-3, CIP Safety / -3-2, FSoE /
+ * -3-12, IO-Link Safety) all treat the underlying fieldbus as an untrusted "black channel" and layer
+ * the same three end-to-end checks on top: a CRC signature over the safety payload, a monitoring /
+ * consecutive counter, and a receive watchdog. This lands the counter state machine, the watchdog,
+ * and the fail-safe state machine that combines them, so each profile's codec composes these rather
+ * than reimplementing them. It deliberately does **not** compute the CRC: every profile defines its
+ * own polynomial, width, seed and input ordering, those constants live in paid standards, and a
+ * guessed CRC in a safety layer would look authoritative while silently failing to detect the
+ * corruption it exists to catch - so the caller passes its profile's verdict in as `signature_ok`
+ * and this module owns the consequence, which is profile-independent. Fail-safe latches: once any
+ * check fails the connection stays fail-safe until an explicit `dws_scl_reset`, because a safety
+ * layer that silently reheals lets an intermittent fault present as a working link. Pure, with an
+ * explicit `now` like `DWS_ENABLE_HOTSWAP`, host-tested against a synthetic clock, and wrap-safe
+ * across a `millis()` rollover. No heap, no stdlib.
+ */
+#ifndef DWS_ENABLE_SAFETY_SCL
+#define DWS_ENABLE_SAFETY_SCL 0
 #endif
 
 /** @brief LD2410 UART baud rate (the module's fixed factory default is 256000). */

@@ -125,10 +125,10 @@
       "tests": ["test_edge_mesh"]
     },
     "native_dws_primitives": {
-      "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
+      "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof\nnumber parsers (numparse.h), the strict RFC 3629 UTF-8 validator (utf8.h), and the parameterized\nRocksoft/Williams CRC engine (crc.h). Every preset is asserted against its published catalogue check\nvalue (the CRC of \"123456789\"), and the engine is then diffed against the hand-rolled CRC loops the\nin-tree services used to carry - X-25, CCITT-FALSE, ARC, MODBUS, DNP, CRC-32, ESP3 CRC-8 and the\nSensirion CRC-8 - across every length 0..64. Those loops are interop-proven against real peers, so\nthe 13 services now calling the engine are proven byte-identical to the code they retired rather\nthan merely plausible; the transcriptions here are what still pins that behaviour. Plus the streaming\nsplit, the reflect flags, width masking, and single-bit-flip detection. Header-only; pure host tests.",
       "flags": [],
       "src": ["-<*>"],
-      "tests": ["test_dws_primitives"]
+      "tests": ["test_dws_primitives", "test_crc"]
     },
     "native_dws_ip": {
       "desc": "IP address core (network_drivers/network/dws_ip): RFC 4291 IPv4/IPv6 text parsing,\nRFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification\n(loopback / link-local / private-ULA / multicast / global). Pure host tests.",
@@ -798,6 +798,21 @@
       ],
       "src": ["+<services/dma/dma.cpp>"],
       "tests": ["test_dma"]
+    },
+    "native_trace_capture": {
+      "desc": "Pre/post-trigger sample-window assembler (services/trace_capture), v5 high-rate\nacquisition: a continuously-running pre-trigger ring, trigger() freezing it as the window's\npre-trigger half, feed() filling the post-trigger half and firing the sink on completion,\none capture in flight fail-closed (dropped triggers counted), samples fed before begin() /\nafter end() counted dropped, and multiple sequential windows with a correct trace_id\nsequence. Pure host tests (dws_cycles() falls back to a coarse host stand-in; only ordering,\nnot magnitude, is asserted for assembly_cycles).",
+      "flags": [
+        "-DDWS_ENABLE_TRACE_CAPTURE=1",
+        "-DDWS_TC_MAX_WINDOW_SAMPLES=32"
+      ],
+      "src": ["+<services/trace_capture/trace_capture.cpp>"],
+      "tests": ["test_trace_capture"]
+    },
+    "native_ad9238": {
+      "desc": "AD9238 SPI configuration-port codec (services/ad9238): the 16-bit instruction word\n(R/W + byte-count + 13-bit address) for single-byte register writes/reads, the device-update\ntransfer transaction, and the input-validation fail-closed paths (null buffer, undersized\ncap, zero/oversize byte count, out-of-range address). Pure host tests - the SPI clocking and\nthe per-register bit-field meanings are the datasheet's / the application's, not this codec's.",
+      "flags": ["-DDWS_ENABLE_AD9238=1"],
+      "src": ["+<services/ad9238/ad9238.cpp>"],
+      "tests": ["test_ad9238"]
     },
     "native_forward": {
       "desc": "Interface forwarding plane (services/forward), v5 bridge / router: default-deny,\nan ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the\nsource, the per-rule rate cap (host test clock), send-failure counting, the interface /\nrule table limits, the ingress ACL (byte-pattern permit/deny, first-match, default\naction), policy routing (byte-pattern -> egress, precedence + fail-closed), and the opt-in\ninspection hook. Pure host tests; the DMA-driven wiring is HW-verified.",
@@ -1476,6 +1491,12 @@
       "flags": ["-DDWS_ENABLE_LD2410=1"],
       "src": ["+<services/ld2410/ld2410.cpp>"],
       "tests": ["test_ld2410"]
+    },
+    "native_safety_scl": {
+      "desc": "IEC 61784-3 black-channel Safety Communication Layer primitives (services/safety_scl):\nthe monitoring-counter state machine, the receive watchdog, and the fail-safe latch the four safety\nprofiles compose. Covers each way a black channel misbehaves - corruption, loss, duplication,\nreordering, insertion - plus the watchdog (incl. a millis() rollover and the disabled case), the\nno-silent-reheal latch, counter wrapping at a narrow modulus, and the explicit re-establish. The\nCRC is the profile's, not this module's. Pure core on a synthetic clock. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_SAFETY_SCL=1"],
+      "src": ["+<services/safety_scl/safety_scl.cpp>"],
+      "tests": ["test_safety_scl"]
     },
     "native_hmmd": {
       "desc": "Waveshare HMMD 24GHz mmWave micro-motion radar codec (services/hmmd): the LD2410-family\nlittle-endian framing, the report parse (detection flag, distance, all 16 gate energies), rejecting\nmalformed frames, the byte-by-byte stream reassembler (resync past noise, split feeds, absurd-length\ndrop), the exact bytes of the command encoders (open/close command mode, firmware 0x0000, serial\n0x0011, config 0x0008, register 0x0002), and ACK decoding. Pure - the UART pump is ESP32-only.",

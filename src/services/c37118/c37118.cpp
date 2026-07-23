@@ -12,18 +12,15 @@
 
 #include <string.h>
 
+#include "shared_primitives/crc.h" // DWS_CRC16_IBM_3740
 #include "shared_primitives/endian.h"
 
 uint16_t dws_c37118_crc(const uint8_t *data, size_t len)
 {
-    uint16_t crc = 0xFFFF;
-    for (size_t i = 0; i < len; i++)
-    {
-        crc ^= (uint16_t)data[i] << 8;
-        for (int b = 0; b < 8; b++)
-            crc = (crc & 0x8000) ? (uint16_t)((crc << 1) ^ 0x1021) : (uint16_t)(crc << 1);
-    }
-    return crc;
+    // IEEE C37.118 uses CRC-CCITT (poly 0x1021, init 0xFFFF, unreflected), catalogued as
+    // CRC-16/IBM-3740. test_crc diffs the shared engine against the loop that used to live here
+    // over every length 0..64, so this is byte-identical to it.
+    return (uint16_t)dws_crc(&DWS_CRC16_IBM_3740, data, len);
 }
 
 size_t dws_c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t version, uint16_t idcode, uint32_t soc,

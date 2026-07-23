@@ -7,6 +7,7 @@
  */
 
 #include "services/dnp3/dnp3.h"
+#include "shared_primitives/crc.h" // DWS_CRC16_DNP
 
 #if DWS_ENABLE_DNP3
 
@@ -14,14 +15,10 @@
 
 uint16_t dws_dnp3_crc(const uint8_t *data, size_t len)
 {
-    uint16_t crc = 0x0000;
-    for (size_t i = 0; i < len; i++)
-    {
-        crc ^= data[i];
-        for (int b = 0; b < 8; b++)
-            crc = (crc & 1) ? (uint16_t)((crc >> 1) ^ 0xA6BC) : (uint16_t)(crc >> 1); // 0xA6BC = reflect(0x3D65)
-    }
-    return (uint16_t)(crc ^ 0xFFFF);
+    // The DNP3 link-layer block check: reflected poly 0xA6BC = reflect(0x3D65), init 0, final XOR
+    // 0xFFFF - catalogued as CRC-16/DNP. test_crc diffs the shared engine against the loop that used
+    // to live here over every length 0..64, so this is byte-identical to it.
+    return (uint16_t)dws_crc(&DWS_CRC16_DNP, data, len);
 }
 
 // Append a CRC over [data, data+n) low octet first.
