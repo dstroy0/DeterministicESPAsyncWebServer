@@ -164,6 +164,51 @@ void test_dmx_rdm_error_paths()
     TEST_ASSERT_FALSE(dws_rdm_parse(trunc, n, &g, &c)); // buffered n < 42
 }
 
+// Remaining dws_dmx_build / dws_dmx_get_channel branch combinations: null buf, n == 0
+// (a valid, empty-channel build), n != 0 with a null channels pointer, a null get_channel
+// buf, and a channel number above DMX_MAX_CHANNELS.
+void test_dmx_build_get_channel_branches()
+{
+    uint8_t ch[4] = {1, 2, 3, 4};
+    uint8_t buf[8];
+
+    TEST_ASSERT_EQUAL_size_t(0, dws_dmx_build(nullptr, sizeof(buf), DMX_SC_DIMMER, ch, 4)); // null buf
+
+    // n == 0 is a valid, empty-channel build: just the start code, no memcpy.
+    size_t n0 = dws_dmx_build(buf, sizeof(buf), DMX_SC_DIMMER, nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(1, n0);
+    TEST_ASSERT_EQUAL_HEX8(DMX_SC_DIMMER, buf[0]);
+
+    TEST_ASSERT_EQUAL_size_t(0, dws_dmx_build(buf, sizeof(buf), DMX_SC_DIMMER, nullptr, 4)); // n!=0, null channels
+
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dmx_get_channel(nullptr, sizeof(buf), 1));                // null buf
+    TEST_ASSERT_EQUAL_UINT8(0, dws_dmx_get_channel(buf, sizeof(buf), DMX_MAX_CHANNELS + 1)); // ch > max
+}
+
+// Remaining dws_rdm_parse branch combinations: null out, a wrong sub-start code (buf[0] is
+// still valid so the first half of the start-code check is false), and a null consumed
+// pointer on an otherwise-successful parse.
+void test_rdm_parse_null_out_and_consumed()
+{
+    RdmPacket p;
+    memset(&p, 0, sizeof(p));
+    p.cc = RDM_CC_GET;
+    p.pid = RDM_PID_DEVICE_INFO;
+    uint8_t buf[64];
+    size_t n = dws_rdm_build(buf, sizeof(buf), &p, nullptr, 0);
+
+    size_t c;
+    TEST_ASSERT_FALSE(dws_rdm_parse(buf, n, nullptr, &c)); // null out
+
+    RdmPacket g;
+    TEST_ASSERT_TRUE(dws_rdm_parse(buf, n, &g, nullptr)); // consumed is optional
+
+    uint8_t bad_sub_sc[64];
+    memcpy(bad_sub_sc, buf, n);
+    bad_sub_sc[1] = 0xAA; // wrong sub-start code; buf[0] is still RDM_SC
+    TEST_ASSERT_FALSE(dws_rdm_parse(bad_sub_sc, n, &g, &c));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -173,5 +218,7 @@ int main()
     RUN_TEST(test_rdm_set_with_data);
     RUN_TEST(test_rdm_parse_rejects_bad);
     RUN_TEST(test_dmx_rdm_error_paths);
+    RUN_TEST(test_dmx_build_get_channel_branches);
+    RUN_TEST(test_rdm_parse_null_out_and_consumed);
     return UNITY_END();
 }

@@ -328,6 +328,56 @@ void test_read_id16_and_truncation()
     TEST_ASSERT_FALSE(dws_lwm2m_tlv_read(trunc_len, sizeof(trunc_len), &pos, &t));
 }
 
+// write_bool with v == false takes the ternary's else branch (byte 0x00).
+void test_write_bool_false()
+{
+    uint8_t buf[16];
+    Lwm2mTlvWriter w;
+    dws_lwm2m_tlv_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(dws_lwm2m_tlv_write_bool(&w, 5, false));
+    size_t total = dws_lwm2m_tlv_finish(&w);
+    const uint8_t expect[] = {0xC1, 0x05, 0x00};
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), total);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, total);
+}
+
+// Once a write overflows and latches w->error, a later write on the same writer
+// short-circuits on the already-set error flag rather than re-checking capacity.
+void test_write_after_error_latched()
+{
+    uint8_t buf[2];
+    Lwm2mTlvWriter w;
+    dws_lwm2m_tlv_init(&w, buf, sizeof(buf));
+    uint8_t dummy[4] = {0, 0, 0, 0};
+    TEST_ASSERT_FALSE(dws_lwm2m_tlv_write(&w, LWM2M_TLV_RESOURCE, 0, dummy, 4)); // overflows, latches error
+    // This write would fit in the 2-byte buffer on its own, but the writer is
+    // already latched into the error state, so it is rejected without another
+    // capacity check.
+    TEST_ASSERT_FALSE(dws_lwm2m_tlv_write(&w, LWM2M_TLV_RESOURCE, 1, nullptr, 0));
+}
+
+// dws_lwm2m_tlv_read rejects a null buffer, null pos, or null out independently.
+void test_read_null_args()
+{
+    const uint8_t buf[] = {0xC1, 0x00, 0x01};
+    size_t pos = 0;
+    Lwm2mTlv t;
+    TEST_ASSERT_FALSE(dws_lwm2m_tlv_read(nullptr, sizeof(buf), &pos, &t));
+    TEST_ASSERT_FALSE(dws_lwm2m_tlv_read(buf, sizeof(buf), nullptr, &t));
+    TEST_ASSERT_FALSE(dws_lwm2m_tlv_read(buf, sizeof(buf), &pos, nullptr));
+}
+
+// dws_lwm2m_tlv_value_int rejects a null value pointer, and tolerates a null
+// out pointer on an otherwise-valid decode (result computed but not stored).
+void test_value_int_null_args()
+{
+    int64_t out;
+    TEST_ASSERT_FALSE(dws_lwm2m_tlv_value_int(nullptr, 1, &out));
+
+    const uint8_t v1[] = {0x2A};
+    TEST_ASSERT_TRUE(dws_lwm2m_tlv_value_int(v1, 1, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -345,5 +395,9 @@ int main()
     RUN_TEST(test_write_error_paths);
     RUN_TEST(test_write_float_roundtrip);
     RUN_TEST(test_read_id16_and_truncation);
+    RUN_TEST(test_write_bool_false);
+    RUN_TEST(test_write_after_error_latched);
+    RUN_TEST(test_read_null_args);
+    RUN_TEST(test_value_int_null_args);
     return UNITY_END();
 }

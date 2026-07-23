@@ -149,6 +149,120 @@ void test_nmea2000_error_paths()
     TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_ERR, dws_n2k_fastpacket_feed(&rx, &bad_total));
 }
 
+// Fast Packet builder rejects a total_len beyond DWS_N2K_FP_MAX (the last guard clause of
+// dws_n2k_fastpacket_build_frame, distinct from the total_len == 0 case already covered above).
+void test_fastpacket_build_frame_total_too_large()
+{
+    CanFrame f;
+    const uint8_t data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    TEST_ASSERT_FALSE(dws_n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, DWS_N2K_FP_MAX + 1));
+}
+
+// Resetting a null context must be a safe no-op, not a crash.
+void test_fastpacket_reset_null_is_safe()
+{
+    dws_n2k_fastpacket_reset(nullptr);
+    TEST_ASSERT_TRUE(true);
+}
+
+// A first frame declaring a total length beyond DWS_N2K_FP_MAX is rejected by the reassembler
+// (distinct from the total == 0 case already covered by test_nmea2000_error_paths).
+void test_fastpacket_feed_total_too_large_errors()
+{
+    uint8_t data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 8));
+    f.data[1] = 250; // > DWS_N2K_FP_MAX (223)
+    N2kFastPacketRx rx;
+    dws_n2k_fastpacket_reset(&rx);
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_ERR, dws_n2k_fastpacket_feed(&rx, &f));
+    TEST_ASSERT_FALSE(rx.active);
+}
+
+// A continuation frame arriving with no sequence in progress is ignored (rx->active is false).
+void test_fastpacket_continuation_without_active_sequence_ignored()
+{
+    uint8_t msg[20] = {0};
+    N2kFastPacketRx rx;
+    dws_n2k_fastpacket_reset(&rx);
+    CanFrame f1;
+    TEST_ASSERT_TRUE(dws_n2k_fastpacket_build_frame(&f1, 3, 1, 6, 0x01F801, 0x15, 0xFF, msg, 20));
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, dws_n2k_fastpacket_feed(&rx, &f1));
+    TEST_ASSERT_FALSE(rx.active);
+}
+
+// A continuation frame with the matching sequence counter but a different source address must
+// not be merged into the in-progress message.
+void test_fastpacket_continuation_wrong_source_ignored()
+{
+    uint8_t msg[20];
+    for (int i = 0; i < 20; i++)
+        msg[i] = (uint8_t)i;
+    N2kFastPacketRx rx;
+    dws_n2k_fastpacket_reset(&rx);
+    CanFrame f0;
+    dws_n2k_fastpacket_build_frame(&f0, 3, 0, 6, 0x01F801, 0x15, 0xFF, msg, 20);
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_STARTED, dws_n2k_fastpacket_feed(&rx, &f0));
+
+    CanFrame other_sa;
+    dws_n2k_fastpacket_build_frame(&other_sa, 3, 1, 6, 0x01F801, 0x22, 0xFF, msg, 20); // different sa
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, dws_n2k_fastpacket_feed(&rx, &other_sa));
+    TEST_ASSERT_TRUE(rx.active); // sequence 3 still in progress
+}
+
+// A continuation frame with the matching sequence counter and source but a different PGN must
+// not be merged into the in-progress message.
+void test_fastpacket_continuation_wrong_pgn_ignored()
+{
+    uint8_t msg[20];
+    for (int i = 0; i < 20; i++)
+        msg[i] = (uint8_t)i;
+    N2kFastPacketRx rx;
+    dws_n2k_fastpacket_reset(&rx);
+    CanFrame f0;
+    dws_n2k_fastpacket_build_frame(&f0, 3, 0, 6, 0x01F801, 0x15, 0xFF, msg, 20);
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_STARTED, dws_n2k_fastpacket_feed(&rx, &f0));
+
+    CanFrame other_pgn;
+    dws_n2k_fastpacket_build_frame(&other_pgn, 3, 1, 6, 0x01FD00, 0x15, 0xFF, msg, 20); // different pgn
+    TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_IGNORED, dws_n2k_fastpacket_feed(&rx, &other_pgn));
+    TEST_ASSERT_TRUE(rx.active); // sequence 3 still in progress
+}
+
+// A 19-octet message's final (3rd) continuation frame carries only 6 remaining octets, fewer
+// than a full N2K_FP_FN_DATA continuation payload; exercises the "short last frame" branch in
+// both the builder and the reassembler.
+void test_fastpacket_roundtrip_short_last_frame()
+{
+    uint8_t msg[19];
+    for (int i = 0; i < 19; i++)
+        msg[i] = (uint8_t)(0x60 + i);
+    const uint32_t pgn = 0x01F801;
+    const uint8_t sa = 0x15;
+    const uint8_t seq = 5;
+
+    uint8_t frames = dws_n2k_fastpacket_num_frames(19);
+    TEST_ASSERT_EQUAL_UINT8(3, frames);
+
+    N2kFastPacketRx rx;
+    dws_n2k_fastpacket_reset(&rx);
+    for (uint8_t i = 0; i < frames; i++)
+    {
+        CanFrame f;
+        TEST_ASSERT_TRUE(dws_n2k_fastpacket_build_frame(&f, seq, i, 6, pgn, sa, 0xFF, msg, 19));
+        N2kFpResult r = dws_n2k_fastpacket_feed(&rx, &f);
+        if (i == 0)
+            TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_STARTED, r);
+        else if (i + 1 < frames)
+            TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_PROGRESS, r);
+        else
+            TEST_ASSERT_EQUAL_INT(N2kFpResult::N2K_FP_COMPLETE, r);
+    }
+    TEST_ASSERT_EQUAL_UINT16(19, rx.total_len);
+    TEST_ASSERT_EQUAL_HEX32(pgn, rx.pgn);
+    TEST_ASSERT_EQUAL_MEMORY(msg, rx.buf, 19);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -159,5 +273,12 @@ int main()
     RUN_TEST(test_fastpacket_interleaved_sequence_ignored);
     RUN_TEST(test_fastpacket_out_of_order_errors);
     RUN_TEST(test_nmea2000_error_paths);
+    RUN_TEST(test_fastpacket_build_frame_total_too_large);
+    RUN_TEST(test_fastpacket_reset_null_is_safe);
+    RUN_TEST(test_fastpacket_feed_total_too_large_errors);
+    RUN_TEST(test_fastpacket_continuation_without_active_sequence_ignored);
+    RUN_TEST(test_fastpacket_continuation_wrong_source_ignored);
+    RUN_TEST(test_fastpacket_continuation_wrong_pgn_ignored);
+    RUN_TEST(test_fastpacket_roundtrip_short_last_frame);
     return UNITY_END();
 }

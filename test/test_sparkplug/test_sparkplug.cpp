@@ -195,6 +195,65 @@ void test_spb_error_and_kind_paths()
     TEST_ASSERT_EQUAL_UINT(0, dws_spb_build_payload(buf, sizeof(buf), 1, 0, &ms, 1)); // per-metric overflow
 }
 
+// Remaining branch gaps: dws_spb_build_topic's null message_type / null edge_node arms,
+// a STRING metric with a null string_value (the value field is omitted, not just skipped
+// silently on garbage), the metric-kind switch's no-match fallthrough (an out-of-range
+// SpbMetricKind - never produced by this codebase, but the generated branch exists and a
+// caller could still hand one in via a raw cast, so it's exercised rather than excluded),
+// and dws_spb_build_payload's null-buf and n==0 arms.
+void test_spb_more_branch_coverage()
+{
+    char tbuf[64];
+    TEST_ASSERT_EQUAL_UINT(0, dws_spb_build_topic(tbuf, sizeof(tbuf), "g", nullptr, "e", nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, dws_spb_build_topic(tbuf, sizeof(tbuf), "g", "NDATA", nullptr, nullptr));
+
+    // STRING kind with no string_value: name + datatype only, no value field.
+    SpbMetric ms2 = {};
+    ms2.name = "s2";
+    ms2.datatype = SPB_DT_STRING;
+    ms2.kind = SpbMetricKind::SPB_M_STRING;
+    uint8_t buf2[64];
+    size_t n2 = dws_spb_build_metric(buf2, sizeof(buf2), &ms2);
+    TEST_ASSERT_TRUE(n2 > 0);
+    size_t pos2 = 0;
+    PbField f2;
+    TEST_ASSERT_TRUE(dws_pb_read_field(buf2, n2, &pos2, &f2));
+    TEST_ASSERT_EQUAL_UINT32(1, f2.field_number); // name
+    TEST_ASSERT_TRUE(dws_pb_read_field(buf2, n2, &pos2, &f2));
+    TEST_ASSERT_EQUAL_UINT32(4, f2.field_number);               // datatype
+    TEST_ASSERT_FALSE(dws_pb_read_field(buf2, n2, &pos2, &f2)); // no string_value field
+
+    // Out-of-range kind: none of the switch cases match, so again just name + datatype.
+    SpbMetric mu = {};
+    mu.name = "unk";
+    mu.datatype = SPB_DT_INT32;
+    mu.kind = (SpbMetricKind)99;
+    uint8_t buf3[64];
+    size_t n3 = dws_spb_build_metric(buf3, sizeof(buf3), &mu);
+    TEST_ASSERT_TRUE(n3 > 0);
+    size_t pos3 = 0;
+    PbField f3;
+    TEST_ASSERT_TRUE(dws_pb_read_field(buf3, n3, &pos3, &f3));
+    TEST_ASSERT_EQUAL_UINT32(1, f3.field_number); // name
+    TEST_ASSERT_TRUE(dws_pb_read_field(buf3, n3, &pos3, &f3));
+    TEST_ASSERT_EQUAL_UINT32(4, f3.field_number);               // datatype
+    TEST_ASSERT_FALSE(dws_pb_read_field(buf3, n3, &pos3, &f3)); // no value field
+
+    TEST_ASSERT_EQUAL_UINT(0, dws_spb_build_payload(nullptr, 128, 1, 0, nullptr, 0)); // null buf
+
+    // n == 0: timestamp + seq only, no metrics field.
+    uint8_t pbuf[32];
+    size_t pn = dws_spb_build_payload(pbuf, sizeof(pbuf), 42, 7, nullptr, 0);
+    TEST_ASSERT_TRUE(pn > 0);
+    size_t pp = 0;
+    PbField pf;
+    TEST_ASSERT_TRUE(dws_pb_read_field(pbuf, pn, &pp, &pf));
+    TEST_ASSERT_EQUAL_UINT32(1, pf.field_number); // timestamp
+    TEST_ASSERT_TRUE(dws_pb_read_field(pbuf, pn, &pp, &pf));
+    TEST_ASSERT_EQUAL_UINT32(3, pf.field_number);             // seq
+    TEST_ASSERT_FALSE(dws_pb_read_field(pbuf, pn, &pp, &pf)); // no metrics field
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -205,5 +264,6 @@ int main()
     RUN_TEST(test_metric_int_and_string);
     RUN_TEST(test_metric_alias);
     RUN_TEST(test_overflow_fails_closed);
+    RUN_TEST(test_spb_more_branch_coverage);
     return UNITY_END();
 }

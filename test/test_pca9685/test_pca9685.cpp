@@ -26,6 +26,12 @@ void test_prescale()
     TEST_ASSERT_EQUAL_UINT8(3, dws_pca9685_prescale(1526)); // clamps at PRESCALE_MIN
     TEST_ASSERT_EQUAL_UINT8(3, dws_pca9685_prescale(4000)); // above range -> min
     TEST_ASSERT_EQUAL_UINT8(255, dws_pca9685_prescale(0));  // guard: no divide by zero
+    // Low enough frequency that the raw (pre - 1) value overflows PRESCALE_MAX, exercising the
+    // high-side clamp (unlike freq=24/1526/4000 above, which land at or below 255 already).
+    TEST_ASSERT_EQUAL_UINT8(255, dws_pca9685_prescale(20));
+    // High enough frequency that round(25e6 / (4096*freq)) truncates to 0, exercising the
+    // `pre ? pre - 1 : 0` false branch before the low-side clamp brings it back to PRESCALE_MIN.
+    TEST_ASSERT_EQUAL_UINT8(3, dws_pca9685_prescale(20000));
 }
 
 void test_channel_reg()
@@ -63,8 +69,9 @@ void test_set_pwm_bytes()
     TEST_ASSERT_EQUAL_UINT8_ARRAY(want_full, b, 5);
 
     // guards
-    TEST_ASSERT_EQUAL_INT(0, (int)dws_pca9685_set_pwm_bytes(b, 4, 0, 0, 0));  // buffer too small
-    TEST_ASSERT_EQUAL_INT(0, (int)dws_pca9685_set_pwm_bytes(b, 5, 16, 0, 0)); // channel out of range
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_pca9685_set_pwm_bytes(b, 4, 0, 0, 0));    // buffer too small
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_pca9685_set_pwm_bytes(b, 5, 16, 0, 0));   // channel out of range
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_pca9685_set_pwm_bytes(NULL, 5, 0, 0, 0)); // null buffer
 }
 
 void test_prescale_zero_and_host_stubs()

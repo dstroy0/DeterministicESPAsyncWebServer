@@ -56,6 +56,12 @@ void test_build_config_too_small(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_fdc2214_build_config(small, sizeof(small), 0xFFFF, 0x0400));
 }
 
+void test_build_config_null_buf(void)
+{
+    // buf == NULL must be rejected before the capacity check is even reached.
+    TEST_ASSERT_EQUAL_size_t(0, dws_fdc2214_build_config(NULL, FDC2214_CONFIG_MAX, 0xFFFF, 0x0400));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -63,5 +69,6 @@ int main(void)
     RUN_TEST(test_freq_scale);
     RUN_TEST(test_build_config);
     RUN_TEST(test_build_config_too_small);
+    RUN_TEST(test_build_config_null_buf);
     return UNITY_END();
 }

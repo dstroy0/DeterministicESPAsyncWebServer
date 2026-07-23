@@ -69,7 +69,8 @@ static TelnetConn *find_conn(uint8_t slot)
 
 static void raw_send(uint8_t slot, const void *data, size_t n)
 {
-    if (!dws_conn_active(slot) || n == 0)
+    if (!dws_conn_active(slot) ||
+        n == 0) // GCOVR_EXCL_BR_LINE  n==0 is unreachable: every call site below passes a fixed nonzero literal length
         return;
     dws_conn_send(slot, data, (u16_t)n);
     dws_conn_flush(slot);
@@ -180,7 +181,9 @@ void dws_telnet_rx(uint8_t slot)
     uint8_t b;
     while (dws_conn_read_byte(slot, &b))
     {
-        switch (t->st)
+        switch (t->st) // GCOVR_EXCL_BR_LINE  t->st is a TelnetState enum class and every enumerator
+                       // (TN_NORMAL/TN_IAC/TN_OPT/TN_SB) has a case below; the compiler's defensive "no case matched"
+                       // branch can't be reached from any host input
         {
         case TelnetState::TN_NORMAL:
             if (b == TelnetByte::T_IAC)

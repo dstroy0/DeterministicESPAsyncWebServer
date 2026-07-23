@@ -340,6 +340,39 @@ void test_null_guards(void)
     TEST_ASSERT_FALSE(dws_j519_parse_motion(g_buf, 64, nullptr));
 }
 
+// test_null_guards and test_builders_reject_short_capacity only exercise the null-buf and
+// short-cap branches of each `!buf || ... || cap < LEN` guard for start/motion. The remaining
+// builders/parsers share the same OR-chain shape but never got a null-buf / null-payload /
+// null-out case, so those branches were never taken: cover exactly those here.
+void test_remaining_null_guard_branches(void)
+{
+    J519Request q;
+    memset(&q, 0, sizeof(q));
+    q.version_no = 1;
+
+    J519RobotStatus s;
+    make_status(&s);
+
+    J519Ack a;
+    make_ack(&a);
+
+    // builders: null buf (buf is checked before the payload pointer or cap)
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_stop(nullptr, 64, 1));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_request(nullptr, 64, &q));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_status(nullptr, 200, &s));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_ack(nullptr, 200, &a));
+
+    // builders: valid buf but null payload pointer
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_request(g_buf, sizeof(g_buf), nullptr));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_status(g_buf, sizeof(g_buf), nullptr));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)dws_j519_build_ack(g_buf, sizeof(g_buf), nullptr));
+
+    // parsers: null out-param - `!out` short-circuits before hdr_ok touches buf/len at all
+    TEST_ASSERT_FALSE(dws_j519_parse_request(g_buf, DWS_J519_LEN_REQUEST, nullptr));
+    TEST_ASSERT_FALSE(dws_j519_parse_status(g_buf, DWS_J519_LEN_STATUS, nullptr));
+    TEST_ASSERT_FALSE(dws_j519_parse_ack(g_buf, DWS_J519_LEN_ACK, nullptr));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -356,5 +389,6 @@ int main(void)
     RUN_TEST(test_parsers_reject_off_by_one_lengths);
     RUN_TEST(test_builders_reject_short_capacity);
     RUN_TEST(test_null_guards);
+    RUN_TEST(test_remaining_null_guard_branches);
     return UNITY_END();
 }

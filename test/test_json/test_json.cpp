@@ -250,6 +250,240 @@ void test_reader_all_escapes()
     TEST_ASSERT_EQUAL_STRING(expect, out);
 }
 
+// A null buffer and a zero-capacity buffer both leave the writer not-ok from construction
+// (covers both operands of the `buf != nullptr && cap >= 1` guard, and the ctor's `if (_ok)`).
+void test_writer_null_buffer_and_zero_capacity()
+{
+    JsonWriter w1(nullptr, 16);
+    TEST_ASSERT_FALSE(w1.ok());
+
+    char buf[4];
+    JsonWriter w2(buf, 0);
+    TEST_ASSERT_FALSE(w2.ok());
+}
+
+// Whitespace (space, tab, CR, LF) between tokens is skipped by the reader, exercising every
+// arm of is_ws() as a true branch (the false arm is already hit by every non-ws character).
+void test_reader_whitespace_between_tokens()
+{
+    const char *body = "{\n\t \"a\" \r\n : \t 1 ,\n \"b\" : 2 }";
+    long v = 0;
+    TEST_ASSERT_TRUE(json_get_int(body, "a", &v));
+    TEST_ASSERT_EQUAL_INT(1, v);
+    TEST_ASSERT_TRUE(json_get_int(body, "b", &v));
+    TEST_ASSERT_EQUAL_INT(2, v);
+}
+
+// json_get_str rejects a non-string value (found, but not '"') instead of only the missing-key case.
+void test_reader_get_str_on_non_string_value()
+{
+    char out[16];
+    TEST_ASSERT_FALSE(json_get_str(kBody, "port", out, sizeof(out))); // bare number, not a string
+}
+
+// A null key is rejected the same way as a null json body.
+void test_reader_null_key_guard()
+{
+    char out[8];
+    TEST_ASSERT_FALSE(json_get_str(kBody, nullptr, out, sizeof(out)));
+}
+
+// A string value is skipped (not the target key) while it is unterminated: the trailing '\'
+// has nothing after it (skip_string's "p[1] absent" arm), and the whole object is malformed
+// (no closing brace either), so the target key is never found.
+void test_reader_skips_unterminated_string_with_trailing_backslash()
+{
+    long v = 0;
+    TEST_ASSERT_FALSE(json_get_int("{\"a\":\"x\\", "b", &v));
+}
+
+// The target value itself ends in a trailing backslash with nothing after it: the backslash
+// is appended literally instead of being treated as the start of an escape.
+void test_reader_get_str_trailing_backslash_no_escape()
+{
+    char out[8];
+    TEST_ASSERT_TRUE(json_get_str("{\"a\":\"x\\", "a", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("x\\", out);
+}
+
+// json_get_str on a value that is never closed by a '"' still returns true, copying what it
+// found up to the NUL (the while loop's "ran out of buffer" exit, not the "hit a quote" exit).
+void test_reader_get_str_unterminated_value()
+{
+    char out[32];
+    TEST_ASSERT_TRUE(json_get_str("{\"a\":\"unterminated", "a", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("unterminated", out);
+}
+
+// Skipping a nested value that opens with '[' (not just '{'), and a doubly-nested structure so
+// the depth-tracking loop's "not back to zero yet" arm runs before the final closing bracket.
+void test_reader_skips_array_and_doubly_nested_value()
+{
+    const char *body = "{\"skip\":[1,2,{\"x\":1}],\"keep\":7}";
+    long v = 0;
+    TEST_ASSERT_TRUE(json_get_int(body, "keep", &v));
+    TEST_ASSERT_EQUAL_INT(7, v);
+
+    const char *nested = "{\"a\":{\"b\":{\"c\":1}},\"z\":2}";
+    TEST_ASSERT_TRUE(json_get_int(nested, "z", &v));
+    TEST_ASSERT_EQUAL_INT(2, v);
+}
+
+// A malformed primitive terminated by ']' or a lone trailing comma before the buffer ends -
+// both exercise skip_value's primitive-scan terminator set beyond the common ',' / '}' cases.
+void test_reader_malformed_primitive_terminators()
+{
+    long v = 0;
+    TEST_ASSERT_FALSE(json_get_int("{\"a\":1],\"b\":2}", "b", &v)); // stray ']' stops the scan
+    TEST_ASSERT_FALSE(json_get_int("{\"a\":1,", "b", &v));          // trailing comma, then NUL
+    TEST_ASSERT_FALSE(json_get_int("{\"a\":1", "z", &v));           // no terminator at all, then NUL
+}
+
+// A truncated member name ("{\"" with nothing after the opening quote) makes json_find_value's
+// key-length ternary take its "kend <= kstart" (empty) arm.
+void test_reader_truncated_member_name()
+{
+    char out[8];
+    TEST_ASSERT_FALSE(json_get_str("{\"", "a", out, sizeof(out)));
+}
+
+// A trailing comma immediately followed by the end of the buffer (no next member, no '}').
+void test_reader_trailing_comma_then_end()
+{
+    char out[8];
+    TEST_ASSERT_FALSE(json_get_str("{\"a\":1,", "b", out, sizeof(out)));
+}
+
+// hex_val: a lowercase letter past 'f' (still >= 'a') is rejected, the missing arm of its
+// a-f range check.
+void test_reader_unicode_hex_lowercase_out_of_range()
+{
+    char out[16];
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\u00g1\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("?00g1", out); // 'g' is not a hex digit -> '?' then the rest literally
+}
+
+// json_hex4: the first hex digit position falsy (nothing at all after "\u", buffer ends there).
+void test_reader_unicode_escape_nothing_after_u()
+{
+    char out[8];
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\u", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("?", out);
+}
+
+// json_hex4: exactly three valid hex digits then the buffer ends (the 4th digit position is
+// falsy after the first three succeeded), the missing arm distinct from a short run broken by
+// a non-hex character.
+void test_reader_unicode_escape_three_digits_then_end()
+{
+    char out[16];
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uABC", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("?ABC", out);
+}
+
+// json_hex4: exactly one, then exactly two, valid hex digits before the buffer ends - each
+// distinct from the "nothing at all" and "three digits" edges already covered, so every digit
+// position's "value valid but nothing follows" arm is exercised once.
+void test_reader_unicode_escape_one_and_two_digits_then_end()
+{
+    char out[8];
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\u0", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("?0", out);
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\u01", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("?01", out);
+}
+
+// A primitive value skipped while searching for another key can be immediately followed by
+// '}' (single-member object, no trailing comma).
+void test_reader_skips_primitive_terminated_by_close_brace()
+{
+    long v = 0;
+    TEST_ASSERT_FALSE(json_get_int("{\"a\":1}", "z", &v));
+}
+
+// "false" immediately followed by ',' with no separating whitespace (the "true" case already
+// covers this terminator via kBody; "false" needs its own direct hit).
+void test_reader_false_bool_before_comma()
+{
+    bool b = true;
+    TEST_ASSERT_TRUE(json_get_bool("{\"a\":false,\"b\":1}", "a", &b));
+    TEST_ASSERT_FALSE(b);
+}
+
+// A high surrogate followed by a backslash escape that is NOT \u (json_decode_u's
+// "p[1]=='\\' && p[2]=='u'" check taking p[2]!='u') still resolves to the unpaired U+FFFD
+// replacement, and the trailing escape (\n) still decodes normally afterward.
+void test_reader_unicode_high_surrogate_followed_by_non_u_escape()
+{
+    char out[16];
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uD800\\n\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xEF, (unsigned char)out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0xBF, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0xBD, (unsigned char)out[2]);
+    TEST_ASSERT_EQUAL_HEX8('\n', (unsigned char)out[3]);
+    TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[4]);
+}
+
+// A high surrogate followed by a valid \u escape that is NOT in the low-surrogate range (both
+// below and above it) leaves the high surrogate unpaired (U+FFFD) instead of combining.
+void test_reader_unicode_high_surrogate_followed_by_non_low_surrogate()
+{
+    char out[16];
+    // Codepoint 0x0041 ('A') is well below the low-surrogate range (0xDC00..0xDFFF).
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uD800\\u0041\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xEF, (unsigned char)out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0xBF, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0xBD, (unsigned char)out[2]);
+    TEST_ASSERT_EQUAL_UINT8('A', (unsigned char)out[3]);
+    // Codepoint 0xE001 is above the low-surrogate range.
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uD800\\uE001\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xEF, (unsigned char)out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0xBF, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0xBD, (unsigned char)out[2]);
+}
+
+// A standalone \u escape at/above 0xE000 (past the low-surrogate range, and not preceded by a
+// high surrogate) takes the "not a lone low surrogate either" arm and encodes normally.
+void test_reader_unicode_above_surrogate_range_standalone()
+{
+    char out[8];
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uE000\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xEE, (unsigned char)out[0]); // U+E000 -> 3-byte UTF-8 EE 80 80
+    TEST_ASSERT_EQUAL_HEX8(0x80, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x80, (unsigned char)out[2]);
+    TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[3]);
+}
+
+// json_get_bool's terminator set after "true"/"false": '}', a space, no terminator at all
+// (buffer ends right after the literal), and a stray ']' all count as valid ends; any other
+// trailing character does not.
+void test_reader_bool_terminators()
+{
+    bool b = false;
+    TEST_ASSERT_TRUE(json_get_bool("{\"a\":true}", "a", &b));
+    TEST_ASSERT_TRUE(b);
+    TEST_ASSERT_TRUE(json_get_bool("{\"a\":false}", "a", &b));
+    TEST_ASSERT_FALSE(b);
+
+    TEST_ASSERT_TRUE(json_get_bool("{\"a\":true , \"b\":1}", "a", &b));
+    TEST_ASSERT_TRUE(b);
+    TEST_ASSERT_TRUE(json_get_bool("{\"a\":false , \"b\":1}", "a", &b));
+    TEST_ASSERT_FALSE(b);
+
+    TEST_ASSERT_TRUE(json_get_bool("{\"a\":true", "a", &b));
+    TEST_ASSERT_TRUE(b);
+    TEST_ASSERT_TRUE(json_get_bool("{\"a\":false", "a", &b));
+    TEST_ASSERT_FALSE(b);
+
+    TEST_ASSERT_TRUE(json_get_bool("{\"a\":true]}", "a", &b));
+    TEST_ASSERT_TRUE(b);
+    TEST_ASSERT_TRUE(json_get_bool("{\"a\":false]}", "a", &b));
+    TEST_ASSERT_FALSE(b);
+
+    TEST_ASSERT_FALSE(json_get_bool("{\"a\":truex}", "a", &b));
+    TEST_ASSERT_FALSE(json_get_bool("{\"a\":falsex}", "a", &b));
+}
+
 // \uXXXX with lower- and upper-case hex letters each decode to their UTF-8 encoding.
 void test_reader_unicode_hex_case()
 {
@@ -382,5 +616,26 @@ int main()
     RUN_TEST(test_reader_unicode_surrogate_edges);
     RUN_TEST(test_reader_false_bool);
     RUN_TEST(test_reader_malformed);
+    RUN_TEST(test_writer_null_buffer_and_zero_capacity);
+    RUN_TEST(test_reader_whitespace_between_tokens);
+    RUN_TEST(test_reader_get_str_on_non_string_value);
+    RUN_TEST(test_reader_null_key_guard);
+    RUN_TEST(test_reader_skips_unterminated_string_with_trailing_backslash);
+    RUN_TEST(test_reader_get_str_trailing_backslash_no_escape);
+    RUN_TEST(test_reader_get_str_unterminated_value);
+    RUN_TEST(test_reader_skips_array_and_doubly_nested_value);
+    RUN_TEST(test_reader_malformed_primitive_terminators);
+    RUN_TEST(test_reader_truncated_member_name);
+    RUN_TEST(test_reader_trailing_comma_then_end);
+    RUN_TEST(test_reader_unicode_hex_lowercase_out_of_range);
+    RUN_TEST(test_reader_unicode_escape_nothing_after_u);
+    RUN_TEST(test_reader_unicode_escape_three_digits_then_end);
+    RUN_TEST(test_reader_unicode_high_surrogate_followed_by_non_u_escape);
+    RUN_TEST(test_reader_unicode_high_surrogate_followed_by_non_low_surrogate);
+    RUN_TEST(test_reader_unicode_above_surrogate_range_standalone);
+    RUN_TEST(test_reader_bool_terminators);
+    RUN_TEST(test_reader_unicode_escape_one_and_two_digits_then_end);
+    RUN_TEST(test_reader_skips_primitive_terminated_by_close_brace);
+    RUN_TEST(test_reader_false_bool_before_comma);
     return UNITY_END();
 }

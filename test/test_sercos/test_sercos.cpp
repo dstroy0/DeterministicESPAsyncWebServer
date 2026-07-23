@@ -79,6 +79,38 @@ void test_sercos_build_guards()
         0, dws_sercos_build(Sercos::SERCOS_TEL_MDT, 0, 0, data, sizeof(data), out, 2)); // cap too small
     TEST_ASSERT_EQUAL_size_t(0,
                              dws_sercos_build(Sercos::SERCOS_TEL_MDT, 0, 0, nullptr, 4, out, sizeof(out))); // null data
+    TEST_ASSERT_EQUAL_size_t(0, dws_sercos_build(Sercos::SERCOS_TEL_MDT, 0, 0, nullptr, 0, nullptr, 0));    // null out
+}
+
+void test_idn_parse_null_out_pointers(void)
+{
+    // Doc contract: "any out-pointer may be null" - exercise every pointer being null
+    // (including all three at once, which must not crash) and confirm the pointers
+    // that ARE non-null are still populated correctly regardless of their null siblings.
+    uint16_t idn = dws_sercos_idn(true, 5, 200);
+
+    dws_sercos_idn_parse(idn, nullptr, nullptr, nullptr);
+
+    bool prod = false;
+    dws_sercos_idn_parse(idn, &prod, nullptr, nullptr);
+    TEST_ASSERT_TRUE(prod);
+
+    uint8_t set = 0;
+    dws_sercos_idn_parse(idn, nullptr, &set, nullptr);
+    TEST_ASSERT_EQUAL_UINT8(5, set);
+
+    uint16_t block = 0;
+    dws_sercos_idn_parse(idn, nullptr, nullptr, &block);
+    TEST_ASSERT_EQUAL_UINT16(200, block);
+}
+
+void test_sercos_parse_null_guards(void)
+{
+    uint8_t out[8];
+    size_t n = dws_sercos_build(Sercos::SERCOS_TEL_MDT, 0, 0, nullptr, 0, out, sizeof(out));
+    SercosTelegram t;
+    TEST_ASSERT_FALSE(dws_sercos_parse(nullptr, n, &t));  // null frame
+    TEST_ASSERT_FALSE(dws_sercos_parse(out, n, nullptr)); // null out
 }
 
 int main(void)
@@ -88,5 +120,7 @@ int main(void)
     RUN_TEST(test_telegram_roundtrip);
     RUN_TEST(test_at_telegram_and_rejects);
     RUN_TEST(test_sercos_build_guards);
+    RUN_TEST(test_idn_parse_null_out_pointers);
+    RUN_TEST(test_sercos_parse_null_guards);
     return UNITY_END();
 }

@@ -77,6 +77,12 @@ void test_parse_null_out()
     TEST_ASSERT_TRUE(dws_sht3x_parse(r, nullptr, nullptr)); // must verify CRCs without writing out
 }
 
+void test_parse_null_resp()
+{
+    int32_t t = 0, h = 0;
+    TEST_ASSERT_FALSE(dws_sht3x_parse(nullptr, &t, &h)); // null response buffer must be rejected
+}
+
 void test_host_i2c_stubs()
 {
     // Host build: no I2C. begin() fails and read() reports failure.
@@ -93,6 +99,7 @@ int main()
     RUN_TEST(test_parse_valid);
     RUN_TEST(test_parse_bad_crc);
     RUN_TEST(test_parse_null_out);
+    RUN_TEST(test_parse_null_resp);
     RUN_TEST(test_host_i2c_stubs);
     return UNITY_END();
 }

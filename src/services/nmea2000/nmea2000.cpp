@@ -63,7 +63,8 @@ N2kFpResult dws_n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
     if (!rx || !f || !f->extended || f->dlc < 2)
         return N2kFpResult::N2K_FP_IGNORED;
     J1939Id id;
-    if (!dws_j1939_decode_id(f->id, &id))
+    if (!dws_j1939_decode_id(f->id, &id))   // GCOVR_EXCL_LINE  unreachable: dws_j1939_decode_id only fails on a null
+                                            // out, and &id is non-null
         return N2kFpResult::N2K_FP_IGNORED; // GCOVR_EXCL_LINE  unreachable: dws_j1939_decode_id only fails on a null
                                             // out, and &id is non-null
 

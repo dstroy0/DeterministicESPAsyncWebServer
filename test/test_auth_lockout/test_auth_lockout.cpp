@@ -197,6 +197,30 @@ void test_succeed_unspecified_and_table_full_eviction()
     TEST_ASSERT_TRUE(auth_lockout_remaining_ms(&extra, 100000u) > 0);
 }
 
+// A specified address that was never recorded (not in the table) is a safe no-op:
+// find_bucket() returns nullptr and auth_lockout_succeed() must not dereference it.
+void test_succeed_unknown_address_is_noop()
+{
+    auth_lockout_reset();
+    DWSIp unknown = v4w(0x0A0000BBu);
+    auth_lockout_succeed(&unknown); // not in the table -> nullptr bucket, no-op
+    TEST_ASSERT_EQUAL_UINT32(0, auth_lockout_remaining_ms(&unknown, 0));
+}
+
+// The per-address failure counter saturates at UINT16_MAX instead of wrapping:
+// once fails has reached the cap, further failures must leave it (and the
+// resulting lockout duration) unchanged rather than rolling back to 0.
+void test_fail_counter_saturates_at_uint16_max()
+{
+    auth_lockout_reset();
+    DWSIp ip = v4w(0x0A0000AAu);
+    for (uint32_t i = 0; i < 0x10000u + 4u; i++)
+        auth_lockout_fail(&ip, 0);
+    // Still locked at the configured maximum - the counter never wrapped back to 0
+    // (which would have shown up here as a shorter, or zero, remaining lockout).
+    TEST_ASSERT_EQUAL_UINT32(DWS_AUTH_LOCKOUT_MAX_MS, auth_lockout_remaining_ms(&ip, 0));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -212,5 +236,7 @@ int main()
     RUN_TEST(test_table_full_tracks_new_address);
     RUN_TEST(test_active_lockout_survives_eviction);
     RUN_TEST(test_succeed_unspecified_and_table_full_eviction);
+    RUN_TEST(test_succeed_unknown_address_is_noop);
+    RUN_TEST(test_fail_counter_saturates_at_uint16_max);
     return UNITY_END();
 }

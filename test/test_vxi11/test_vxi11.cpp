@@ -453,6 +453,24 @@ void test_readstb_and_error_resp_reject_paths()
     TEST_ASSERT_TRUE(dws_vxi11_parse_error_resp(b, o, nullptr));
 }
 
+// reply_results() itself: exercise the first arm of its `!dws_rpc_parse_reply(...) || astat != SUCCESS`
+// guard (a malformed RPC header, as opposed to a well-formed header carrying a non-SUCCESS accept_stat)
+// reached through one of the per-proc parsers, so the header-parse failure short-circuits before the
+// accept_stat check is ever evaluated.
+void test_resp_parser_rejects_malformed_rpc_header()
+{
+    uint8_t b[64];
+    Vxi11WriteResp wr;
+    size_t o = 0;
+    o = put32(b, o, 2);
+    o = put32(b, o, 0); // CALL, not REPLY -> dws_rpc_parse_reply fails before accept_stat is read
+    o = put32(b, o, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, 0);
+    o = put32(b, o, 0);
+    TEST_ASSERT_FALSE(dws_vxi11_parse_write_resp(b, o, &wr));
+}
+
 void test_error_str_full_table()
 {
     TEST_ASSERT_EQUAL_STRING("syntax error", dws_vxi11_error_str(DWS_VXI11_ERR_SYNTAX));
@@ -492,6 +510,7 @@ int main()
     RUN_TEST(test_write_resp_reject_paths);
     RUN_TEST(test_read_resp_reject_paths);
     RUN_TEST(test_readstb_and_error_resp_reject_paths);
+    RUN_TEST(test_resp_parser_rejects_malformed_rpc_header);
     RUN_TEST(test_error_str_full_table);
     return UNITY_END();
 }

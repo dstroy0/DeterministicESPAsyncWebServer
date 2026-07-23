@@ -222,6 +222,158 @@ void test_host_transport_stubs()
     TEST_PASS();
 }
 
+// ---- coverage: parse_url null-arg / port-digit branch edges --------------
+
+void test_url_parse_arg_and_port_edges()
+{
+    bool https;
+    char host[64], path[64];
+    uint16_t port;
+
+    // Each out-param (host, port, path) must reject on its own, not just when url/is_https are
+    // missing (test_url_edge_rejections already covers those two).
+    TEST_ASSERT_FALSE(http_client_parse_url("http://h/", &https, nullptr, sizeof(host), &port, path, sizeof(path)));
+    TEST_ASSERT_FALSE(http_client_parse_url("http://h/", &https, host, sizeof(host), nullptr, path, sizeof(path)));
+    TEST_ASSERT_FALSE(http_client_parse_url("http://h/", &https, host, sizeof(host), &port, nullptr, sizeof(path)));
+
+    // ':' followed by a char that's not a digit and *greater* than '9' (edge_rejections only
+    // covers a char below '0').
+    TEST_ASSERT_FALSE(http_client_parse_url("http://h:x/y", &https, host, sizeof(host), &port, path, sizeof(path)));
+
+    // A second ':' right after a valid port stops the digit loop (without erroring); whatever
+    // follows becomes the path verbatim.
+    TEST_ASSERT_TRUE(http_client_parse_url("http://h:80:1/z", &https, host, sizeof(host), &port, path, sizeof(path)));
+    TEST_ASSERT_EQUAL_UINT16(80, port);
+    TEST_ASSERT_EQUAL_STRING(":1/z", path);
+}
+
+// ---- coverage: build_request null-arg / port / body-len / mime edges -----
+
+void test_build_request_arg_and_port_edges()
+{
+    char out[256];
+    const uint8_t body[] = "x";
+
+    // Each out-param (host, path, out) must reject on its own (edge_rejections already covers
+    // null method and cap == 0).
+    TEST_ASSERT_EQUAL_size_t(0,
+                             http_client_build_request("GET", nullptr, 80, "/", nullptr, nullptr, 0, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0,
+                             http_client_build_request("GET", "h", 80, nullptr, nullptr, nullptr, 0, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0,
+                             http_client_build_request("GET", "h", 80, "/", nullptr, nullptr, 0, nullptr, sizeof(out)));
+
+    // Port 443 is the other "default" port: the Host header omits it, same as port 80.
+    size_t n = http_client_build_request("GET", "h", 443, "/", nullptr, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_NOT_NULL(strstr(out, "Host: h\r\n"));
+    TEST_ASSERT_NULL(strstr(out, "Host: h:443"));
+
+    // A non-null body pointer with body_len == 0 must take the no-body path.
+    n = http_client_build_request("GET", "h", 80, "/", "text/plain", body, 0, out, sizeof(out));
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_NULL(strstr(out, "Content-Length"));
+
+    // A real body with content_type == nullptr falls back to the default octet-stream mime type.
+    n = http_client_build_request("POST", "h", 80, "/", nullptr, body, 1, out, sizeof(out));
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_NOT_NULL(strstr(out, "Content-Type: application/octet-stream\r\n"));
+}
+
+// ---- coverage: parse_response framing edges (buf/len/status guards) ------
+
+void test_response_framing_edges()
+{
+    size_t off = 0, blen = 0;
+
+    // Null buffer and a too-short buffer (< 12 bytes) are rejected before any parsing begins.
+    TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,
+                          http_client_parse_response(nullptr, 20, &off, &blen));
+    char short_resp[] = "HTTP/1.1 2"; // 10 bytes, under the 12-byte floor
+    TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,
+                          http_client_parse_response((uint8_t *)short_resp, sizeof(short_resp) - 1, &off, &blen));
+
+    // A space is found, but fewer than 3 status digits remain in the buffer after it.
+    char no_room[] = "HTTP/1.1xxx 1"; // space at index 11, only 1 byte left
+    TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,
+                          http_client_parse_response((uint8_t *)no_room, sizeof(no_room) - 1, &off, &blen));
+
+    // Status digits that parse below 100 (edge_rejections only covers above 599).
+    char low_status[] = "HTTP/1.1 099 X\r\n\r\n";
+    TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,
+                          http_client_parse_response((uint8_t *)low_status, sizeof(low_status) - 1, &off, &blen));
+
+    // A lone '\r' (no '\n') and a "\r\n\r" not followed by '\n' are near-misses for the header
+    // terminator; the scanner must keep looking instead of matching early or stopping short.
+    char near_miss[] = "HTTP/1.1 200 OK\rX\r\n\rZ\r\n\r\nbody";
+    int st = http_client_parse_response((uint8_t *)near_miss, sizeof(near_miss) - 1, &off, &blen);
+    TEST_ASSERT_EQUAL_INT(200, st);
+    TEST_ASSERT_EQUAL_size_t(4, blen);
+    TEST_ASSERT_EQUAL_MEMORY("body", near_miss + off, 4);
+}
+
+// ---- coverage: find_header name-boundary / whitespace-skip edges ---------
+
+void test_response_header_scan_edges()
+{
+    size_t off = 0, blen = 0;
+
+    // A header whose name is a prefix of the target name, but not followed by ':', must not be
+    // treated as a match - the scanner keeps looking for the real header.
+    char prefix[] = "HTTP/1.1 200 OK\r\nContent-Length-Foo: 99\r\nContent-Length: 4\r\n\r\nbody";
+    int st = http_client_parse_response((uint8_t *)prefix, sizeof(prefix) - 1, &off, &blen);
+    TEST_ASSERT_EQUAL_INT(200, st);
+    TEST_ASSERT_EQUAL_size_t(4, blen);
+    TEST_ASSERT_EQUAL_MEMORY("body", prefix + off, 4);
+
+    // A header value led by a tab instead of a space.
+    char tabbed[] = "HTTP/1.1 200 OK\r\nContent-Length:\t4\r\n\r\nbody";
+    st = http_client_parse_response((uint8_t *)tabbed, sizeof(tabbed) - 1, &off, &blen);
+    TEST_ASSERT_EQUAL_INT(200, st);
+    TEST_ASSERT_EQUAL_size_t(4, blen);
+    TEST_ASSERT_EQUAL_MEMORY("body", tabbed + off, 4);
+
+    // A header value that is nothing but spaces, running right up to the header terminator: the
+    // whitespace-skip loop must exit via "v < end" going false, not via a non-space char.
+    char spaces_only[] = "HTTP/1.1 200 OK\r\nContent-Length:   \r\n\r\nbody";
+    st = http_client_parse_response((uint8_t *)spaces_only, sizeof(spaces_only) - 1, &off, &blen);
+    TEST_ASSERT_EQUAL_INT(200, st);
+}
+
+// ---- coverage: chunked-decode junk / truncation edges ---------------------
+
+void test_response_chunked_junk_edges()
+{
+    size_t off = 0, blen = 0;
+
+    // Transfer-Encoding present but not "chunked": falls through to the Content-Length path.
+    char not_chunked[] = "HTTP/1.1 200 OK\r\nTransfer-Encoding: identity\r\nContent-Length: 4\r\n\r\nbody";
+    int st = http_client_parse_response((uint8_t *)not_chunked, sizeof(not_chunked) - 1, &off, &blen);
+    TEST_ASSERT_EQUAL_INT(200, st);
+    TEST_ASSERT_EQUAL_size_t(4, blen);
+    TEST_ASSERT_EQUAL_MEMORY("body", not_chunked + off, 4);
+
+    // A chunk-size line of valid hex digits that runs off the end of the buffer with no trailing
+    // CRLF at all: the hex-scan and skip-to-newline loops must both exit via "in < len" going
+    // false (buffer exhaustion), not via a break or a found '\r'/'\n'.
+    char truncated_hex[] = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nFF";
+    st = http_client_parse_response((uint8_t *)truncated_hex, sizeof(truncated_hex) - 1, &off, &blen);
+    TEST_ASSERT_EQUAL_INT(200, st);
+    TEST_ASSERT_EQUAL_size_t(0, blen);
+
+    // Chunk-size line starting with a character below '0' (edge_rejections' ';' case is above '9').
+    char below_digit[] = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n!ext\r\nx";
+    st = http_client_parse_response((uint8_t *)below_digit, sizeof(below_digit) - 1, &off, &blen);
+    TEST_ASSERT_EQUAL_INT(200, st);
+    TEST_ASSERT_EQUAL_size_t(0, blen);
+
+    // Chunk-size line starting with a lowercase letter past 'f' (out of both hex letter ranges).
+    char past_hex[] = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\ng\r\n0\r\n\r\n";
+    st = http_client_parse_response((uint8_t *)past_hex, sizeof(past_hex) - 1, &off, &blen);
+    TEST_ASSERT_EQUAL_INT(200, st);
+    TEST_ASSERT_EQUAL_size_t(0, blen);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -240,5 +392,10 @@ int main()
     RUN_TEST(test_parse_chunked_oversize_size_clamped);
     RUN_TEST(test_parse_connection_close_body);
     RUN_TEST(test_parse_malformed);
+    RUN_TEST(test_url_parse_arg_and_port_edges);
+    RUN_TEST(test_build_request_arg_and_port_edges);
+    RUN_TEST(test_response_framing_edges);
+    RUN_TEST(test_response_header_scan_edges);
+    RUN_TEST(test_response_chunked_junk_edges);
     return UNITY_END();
 }

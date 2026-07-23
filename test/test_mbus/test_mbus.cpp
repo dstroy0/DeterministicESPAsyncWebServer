@@ -170,12 +170,15 @@ void test_build_and_parse_guards()
     TEST_ASSERT_EQUAL_size_t(0, dws_mbus_build_long(nullptr, 32, 0, 0, 0, d, 4));
     TEST_ASSERT_EQUAL_size_t(0, dws_mbus_build_long(buf, 32, 0, 0, 0, nullptr, 4)); // data_len && !data
     TEST_ASSERT_EQUAL_size_t(0, dws_mbus_build_long(buf, 5, 0, 0, 0, d, 4));        // cap < total
+    TEST_ASSERT_EQUAL_size_t(0,
+                             dws_mbus_build_long(buf, sizeof(buf), 0, 0, 0, nullptr, 253)); // data_len > MBUS_MAX_DATA
 
     // Parser guards.
     MbusFrame f;
     size_t c;
     TEST_ASSERT_FALSE(dws_mbus_parse(nullptr, 5, &f, &c));
     TEST_ASSERT_FALSE(dws_mbus_parse(buf, 0, &f, &c));
+    TEST_ASSERT_FALSE(dws_mbus_parse(buf, 5, nullptr, &c)); // out == nullptr
     const uint8_t unknown[] = {0x99, 0, 0, 0, 0};
     TEST_ASSERT_FALSE(dws_mbus_parse(unknown, sizeof(unknown), &f, &c)); // unrecognized start octet
 
@@ -192,6 +195,50 @@ void test_build_and_parse_guards()
 
     const uint8_t l[] = {0x68, 0x07, 0x07}; // long start, header truncated (< 4)
     TEST_ASSERT_FALSE(dws_mbus_parse(l, sizeof(l), &f, &c));
+
+    const uint8_t l_short_L[] = {0x68, 0x02, 0x02, 0x68}; // L < 3 (below the control-frame minimum)
+    TEST_ASSERT_FALSE(dws_mbus_parse(l_short_L, sizeof(l_short_L), &f, &c));
+    const uint8_t l_bad_repeat[] = {0x68, 0x03, 0x03, 0x00}; // second start-repeat octet wrong
+    TEST_ASSERT_FALSE(dws_mbus_parse(l_bad_repeat, sizeof(l_bad_repeat), &f, &c));
+
+    uint8_t ctrl[16];
+    size_t ctrl_n = dws_mbus_build_long(ctrl, sizeof(ctrl), 0x08, 0x01, 0x51, nullptr, 0);
+    TEST_ASSERT_FALSE(dws_mbus_parse(ctrl, ctrl_n - 1, &f, &c)); // len < total
+}
+
+void test_long_frame_control()
+{
+    // data_len == 0 builds a control frame: a long frame carrying no user data.
+    uint8_t buf[16];
+    size_t n = dws_mbus_build_long(buf, sizeof(buf), MBUS_C_SND_UD, 0x03, MBUS_CI_DATA_SEND, nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(9, n);    // 6 framing octets + L(=3)
+    TEST_ASSERT_EQUAL_HEX8(3, buf[1]); // L = 3 + 0
+    TEST_ASSERT_EQUAL_HEX8(3, buf[2]);
+
+    MbusFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_mbus_parse(buf, n, &f, &c));
+    TEST_ASSERT_EQUAL_INT(MbusFrameType::MBUS_FRAME_LONG, f.type);
+    TEST_ASSERT_EQUAL_UINT8(0, f.data_len);
+    TEST_ASSERT_NULL(f.data);
+}
+
+void test_parse_null_consumed()
+{
+    // consumed may be nullptr on all three successful-parse paths.
+    uint8_t ack[4];
+    dws_mbus_build_ack(ack, sizeof(ack));
+    MbusFrame f;
+    TEST_ASSERT_TRUE(dws_mbus_parse(ack, 1, &f, nullptr));
+
+    uint8_t s[8];
+    size_t sn = dws_mbus_build_snd_nke(s, sizeof(s), 0x05);
+    TEST_ASSERT_TRUE(dws_mbus_parse(s, sn, &f, nullptr));
+
+    uint8_t l[32];
+    const uint8_t data[2] = {0x01, 0x02};
+    size_t ln = dws_mbus_build_long(l, sizeof(l), MBUS_C_RSP_UD, 0x01, MBUS_CI_RSP_VARIABLE, data, 2);
+    TEST_ASSERT_TRUE(dws_mbus_parse(l, ln, &f, nullptr));
 }
 
 void test_dif_data_len_remaining()
@@ -236,6 +283,21 @@ void test_record_edges()
     const uint8_t lvar_big[] = {0x0D, 0x7C, 0xC0}; // LVAR > 0xBF unsupported
     pos = 0;
     TEST_ASSERT_FALSE(dws_mbus_record_next(lvar_big, sizeof(lvar_big), &pos, &r));
+
+    // Pointer guards.
+    const uint8_t any[] = {0x00, 0x00};
+    pos = 0;
+    TEST_ASSERT_FALSE(dws_mbus_record_next(nullptr, sizeof(any), &pos, &r)); // body == nullptr
+    TEST_ASSERT_FALSE(dws_mbus_record_next(any, sizeof(any), nullptr, &r));  // pos == nullptr
+    pos = 0;
+    TEST_ASSERT_FALSE(dws_mbus_record_next(any, sizeof(any), &pos, nullptr)); // out == nullptr
+
+    // DIF NONE coding: VIF present but zero-length value data.
+    pos = 0;
+    TEST_ASSERT_TRUE(dws_mbus_record_next(any, sizeof(any), &pos, &r));
+    TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_NONE, r.coding);
+    TEST_ASSERT_EQUAL_UINT8(0, r.data_len);
+    TEST_ASSERT_NULL(r.data);
 }
 
 // A VIF with the extension bit set is followed by a present VIFE octet (the chain read).
@@ -263,6 +325,8 @@ int main()
     RUN_TEST(test_record_walk);
     RUN_TEST(test_record_truncated_fails);
     RUN_TEST(test_build_and_parse_guards);
+    RUN_TEST(test_long_frame_control);
+    RUN_TEST(test_parse_null_consumed);
     RUN_TEST(test_dif_data_len_remaining);
     RUN_TEST(test_record_edges);
     RUN_TEST(test_record_vife_chain);

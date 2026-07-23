@@ -90,6 +90,40 @@ void test_eth_build_parse_guards()
     TEST_ASSERT_FALSE(dws_eth_parse(vlanish, sizeof(vlanish), &ef));
 }
 
+void test_eth_build_null_src_out_and_zero_payload(void)
+{
+    uint8_t out[64];
+    uint8_t mac[6] = {1, 2, 3, 4, 5, 6};
+    uint8_t pay[4] = {0xAA, 0xBB, 0xCC, 0xDD};
+
+    // dws_eth_build: null src, null out, zero-length payload (skips the copy), and a
+    // non-zero payload_len paired with a null payload pointer (each is a distinct guard branch).
+    TEST_ASSERT_EQUAL_size_t(0, dws_eth_build(mac, nullptr, 0x0800, pay, sizeof(pay), out, sizeof(out))); // null src
+    TEST_ASSERT_EQUAL_size_t(0, dws_eth_build(mac, mac, 0x0800, pay, sizeof(pay), nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(RawL2::ETH_HDR_LEN,
+                             dws_eth_build(mac, mac, 0x0800, nullptr, 0, out, sizeof(out)));    // payload_len == 0
+    TEST_ASSERT_EQUAL_size_t(0, dws_eth_build(mac, mac, 0x0800, nullptr, 4, out, sizeof(out))); // len>0, null payload
+
+    // dws_eth_build_vlan: the same set of guard branches.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_eth_build_vlan(mac, nullptr, 0, false, 100, 0x0800, pay, sizeof(pay), out, sizeof(out))); // null src
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_eth_build_vlan(mac, mac, 0, false, 100, 0x0800, pay, sizeof(pay), nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(RawL2::ETH_VLAN_HDR_LEN, dws_eth_build_vlan(mac, mac, 0, false, 100, 0x0800, nullptr, 0,
+                                                                         out, sizeof(out))); // payload_len == 0
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_eth_build_vlan(mac, mac, 0, false, 100, 0x0800, nullptr, 4, out, sizeof(out))); // len>0, null payload
+}
+
+void test_eth_parse_null_guards(void)
+{
+    uint8_t buf[32];
+    memset(buf, 0, sizeof(buf));
+    EthFrame ef;
+    TEST_ASSERT_FALSE(dws_eth_parse(nullptr, sizeof(buf), &ef)); // null frame
+    TEST_ASSERT_FALSE(dws_eth_parse(buf, sizeof(buf), nullptr)); // null out
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -98,5 +132,7 @@ int main(void)
     RUN_TEST(test_parse);
     RUN_TEST(test_fcs_check_vector);
     RUN_TEST(test_eth_build_parse_guards);
+    RUN_TEST(test_eth_build_null_src_out_and_zero_payload);
+    RUN_TEST(test_eth_parse_null_guards);
     return UNITY_END();
 }

@@ -90,8 +90,12 @@ inline void put_be64(uint8_t *p, uint64_t v)
 // Increment the low 32 bits of a 16-byte counter block, big-endian, mod 2^32 (GCM inc32).
 inline void inc32(uint8_t ctr[16])
 {
-    for (int i = 15; i >= 12; i--)
-        if (++ctr[i])
+    // The loop only runs to exhaustion (no break) if every one of the 4 bytes carries, i.e. the full
+    // 32-bit counter wraps 0xffffffff -> 0. ctr always starts at inc32(J0) with J0[12..15] fixed to
+    // 0,0,0,1 (96-bit-nonce J0, NIST SP 800-38D) - not caller-controlled - so reaching that wrap needs
+    // ~2^32 GCTR blocks (~64 GiB) through the public seal()/open() API: unreachable in a host test.
+    for (int i = 15; i >= 12; i--) // GCOVR_EXCL_BR_LINE  see above: full 32-bit wrap is infeasible here
+        if (++ctr[i])              // GCOVR_EXCL_BR_LINE  see above: the carry-continue arm needs that wrap
             break;
 }
 

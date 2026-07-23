@@ -92,6 +92,17 @@ void test_str()
     check(b, dws_msgpack_len(&w), e3, 6);
 }
 
+// A NULL string pointer takes the "" branch of dws_msgpack_str's length ternary.
+void test_str_null_pointer()
+{
+    uint8_t b[4];
+    MsgpackWriter w;
+    dws_msgpack_init(&w, b, sizeof(b));
+    dws_msgpack_str(&w, nullptr);
+    uint8_t e[] = {0xa0}; // zero-length fixstr, same as dws_msgpack_str(&w, "")
+    check(b, dws_msgpack_len(&w), e, 1);
+}
+
 void test_bytes()
 {
     uint8_t b[16];
@@ -695,6 +706,91 @@ void test_read_truncated_widths()
     TEST_ASSERT_FALSE(dws_msgpack_read_map(&r, &c));
 }
 
+// read_nil's byte check fails closed when a value is present but isn't 0xc0
+// (distinct from the empty-buffer / sticky-error branches covered elsewhere).
+void test_read_nil_wrong_byte()
+{
+    MsgpackReader r;
+    uint8_t b = 0xc3; // bool `true`, not nil
+    dws_msgpack_reader_init(&r, &b, 1);
+    TEST_ASSERT_FALSE(dws_msgpack_read_nil(&r));
+    TEST_ASSERT_FALSE(dws_msgpack_reader_ok(&r));
+}
+
+// Once r->err is sticky, every reader entrypoint must fail closed on the
+// `r->err ||` branch itself, without ever reaching the pos/byte checks that
+// follow it. A truncated uint8 (0xcc with no argument byte) sets err with pos
+// still short of len, so the follow-on calls hit err==true, not pos>=len.
+void test_reads_after_sticky_error()
+{
+    uint8_t truncated[] = {0xcc}; // uint8 marker, argument byte missing
+    MsgpackReader r;
+    dws_msgpack_reader_init(&r, truncated, sizeof(truncated));
+    uint64_t uv;
+    TEST_ASSERT_FALSE(dws_msgpack_read_uint(&r, &uv)); // sets r->err = true
+    TEST_ASSERT_FALSE(dws_msgpack_reader_ok(&r));
+
+    int64_t iv;
+    bool bv;
+    float fv;
+    const char *sp;
+    const uint8_t *bp;
+    size_t n, c;
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, dws_msgpack_peek(&r));
+    TEST_ASSERT_FALSE(dws_msgpack_read_uint(&r, &uv));
+    TEST_ASSERT_FALSE(dws_msgpack_read_int(&r, &iv));
+    TEST_ASSERT_FALSE(dws_msgpack_read_bool(&r, &bv));
+    TEST_ASSERT_FALSE(dws_msgpack_read_nil(&r));
+    TEST_ASSERT_FALSE(dws_msgpack_read_float(&r, &fv));
+    TEST_ASSERT_FALSE(dws_msgpack_read_str(&r, &sp, &n));
+    TEST_ASSERT_FALSE(dws_msgpack_read_bytes(&r, &bp, &n));
+    TEST_ASSERT_FALSE(dws_msgpack_read_array(&r, &c));
+    TEST_ASSERT_FALSE(dws_msgpack_read_map(&r, &c));
+}
+
+// read_blob's fixstr check (want_str && b>=0xa0 && b<=0xbf) needs a byte below
+// the fixstr lower bound with want_str true to exercise the "b>=0xa0" false leg;
+// every other test in this file uses a byte >= 0xa0.
+void test_read_str_below_fixstr_range()
+{
+    MsgpackReader r;
+    uint8_t b = 0x05; // positive fixint: valid byte, but not any str-family marker
+    dws_msgpack_reader_init(&r, &b, 1);
+    const char *s;
+    size_t n;
+    TEST_ASSERT_FALSE(dws_msgpack_read_str(&r, &s, &n));
+}
+
+// read_count's fix-range check (b>=fix_lo && b<=fix_hi) needs a byte below
+// fix_lo to exercise the "b>=fix_lo" false leg; every other test in this file
+// uses a byte at or above the fixarray/fixmap lower bound.
+void test_read_array_below_fixarray_range()
+{
+    MsgpackReader r;
+    uint8_t b = 0x05; // positive fixint: below fixarray's 0x90 lower bound
+    dws_msgpack_reader_init(&r, &b, 1);
+    size_t c;
+    TEST_ASSERT_FALSE(dws_msgpack_read_array(&r, &c));
+}
+
+// read_count's f32 (array32/map32) header take_be call has only been exercised
+// on its failure leg elsewhere (truncated headers); decode valid array32/map32
+// headers here so the take_be-succeeds leg runs too.
+void test_read_count_wide32_success()
+{
+    MsgpackReader r;
+    uint8_t arr32[] = {0xdd, 0x00, 0x00, 0x00, 0x02}; // array32 header, count = 2
+    dws_msgpack_reader_init(&r, arr32, sizeof(arr32));
+    size_t c;
+    TEST_ASSERT_TRUE(dws_msgpack_read_array(&r, &c));
+    TEST_ASSERT_EQUAL_size_t(2, c);
+
+    uint8_t map32[] = {0xdf, 0x00, 0x00, 0x00, 0x03}; // map32 header, count = 3
+    dws_msgpack_reader_init(&r, map32, sizeof(map32));
+    TEST_ASSERT_TRUE(dws_msgpack_read_map(&r, &c));
+    TEST_ASSERT_EQUAL_size_t(3, c);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -709,6 +805,7 @@ int main()
     RUN_TEST(test_decode_wide_fails_closed);
     RUN_TEST(test_int);
     RUN_TEST(test_str);
+    RUN_TEST(test_str_null_pointer);
     RUN_TEST(test_bytes);
     RUN_TEST(test_simple);
     RUN_TEST(test_float);
@@ -721,5 +818,10 @@ int main()
     RUN_TEST(test_decode_array_and_map);
     RUN_TEST(test_decode_roundtrip);
     RUN_TEST(test_decode_fails_closed);
+    RUN_TEST(test_read_nil_wrong_byte);
+    RUN_TEST(test_reads_after_sticky_error);
+    RUN_TEST(test_read_str_below_fixstr_range);
+    RUN_TEST(test_read_array_below_fixarray_range);
+    RUN_TEST(test_read_count_wide32_success);
     return UNITY_END();
 }

@@ -7,6 +7,7 @@
 // rendering behave. SHA-256 is exercised through ssh_sha256.
 
 #include "services/audit_log/audit_log.h"
+#include "shared_primitives/hex.h"
 #include <string.h>
 #include <unity.h>
 
@@ -240,6 +241,94 @@ void test_dump_fails_closed_all_stages()
     }
 }
 
+// dws_audit_format's guard clause is `!e || !out || cap == 0`; the other tests
+// exercise a null entry and a zero cap but never a null output buffer - cover
+// that third arm directly.
+void test_format_fails_closed_on_null_out(void)
+{
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "x");
+    const DWSAuditEntry *e = dws_audit_at(0);
+    char full[256];
+    TEST_ASSERT_TRUE(dws_audit_format(e, full, sizeof(full)) > 0);
+    TEST_ASSERT_EQUAL_INT(0, dws_audit_format(e, nullptr, sizeof(full)));
+}
+
+// dws_audit_dump_json's closing-brace check needs cap strictly greater than the
+// full rendered length (one extra byte for the NUL); cap == flen exactly is the
+// one value the cap-sweep in test_dump_fails_closed_all_stages never reaches
+// (it stops at flen - 1), so probe that exact boundary directly.
+void test_dump_fails_closed_at_exact_length(void)
+{
+    for (int i = 0; i < 3; i++)
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "rec");
+    char full[1024];
+    int flen = dws_audit_dump_json(full, sizeof(full));
+    TEST_ASSERT_TRUE(flen > 0);
+    char exact[1024];
+    TEST_ASSERT_EQUAL_INT(0, dws_audit_dump_json(exact, (size_t)flen));
+}
+
+// dws_hex_digit's uppercase arm (the `upper` default arg) isn't reached by any
+// other call in this env's build_src_filter (audit_log.cpp always calls it with
+// the default lowercase); exercise both arms directly.
+void test_hex_digit_upper_and_lower(void)
+{
+    TEST_ASSERT_EQUAL_CHAR('a', dws_hex_digit(10));
+    TEST_ASSERT_EQUAL_CHAR('A', dws_hex_digit(10, true));
+    TEST_ASSERT_EQUAL_CHAR('f', dws_hex_digit(15, false));
+    TEST_ASSERT_EQUAL_CHAR('F', dws_hex_digit(15, true));
+}
+
+// dws_hex_val: none of audit_log.cpp's call sites use it (it only ever encodes,
+// never decodes), so no other test in this env's build reaches it. Cover all
+// three matching arms (digit, lower a-f, upper A-F) and the fall-through -1.
+void test_hex_val_all_arms(void)
+{
+    TEST_ASSERT_EQUAL_INT(0, dws_hex_val('0'));
+    TEST_ASSERT_EQUAL_INT(9, dws_hex_val('9'));
+    TEST_ASSERT_EQUAL_INT(10, dws_hex_val('a'));
+    TEST_ASSERT_EQUAL_INT(15, dws_hex_val('f'));
+    TEST_ASSERT_EQUAL_INT(10, dws_hex_val('A'));
+    TEST_ASSERT_EQUAL_INT(15, dws_hex_val('F'));
+    TEST_ASSERT_EQUAL_INT(-1, dws_hex_val('g'));
+    TEST_ASSERT_EQUAL_INT(-1, dws_hex_val('!'));
+}
+
+// dws_hex_encode is unused by audit_log.cpp (it builds hex text one nibble at a
+// time via dws_hex_digit instead); exercise it directly, both case arms and the
+// n==0 loop-skip.
+void test_hex_encode_upper_and_lower(void)
+{
+    const uint8_t bytes[3] = {0x0A, 0xFF, 0x01};
+    char out[7];
+    dws_hex_encode(bytes, 3, out); // default: lowercase
+    TEST_ASSERT_EQUAL_STRING("0aff01", out);
+    dws_hex_encode(bytes, 3, out, true); // uppercase
+    TEST_ASSERT_EQUAL_STRING("0AFF01", out);
+    char empty_out[1];
+    dws_hex_encode(bytes, 0, empty_out); // loop body never runs
+    TEST_ASSERT_EQUAL_STRING("", empty_out);
+}
+
+// dws_hex_decode is unused by audit_log.cpp (the log is append/verify-only, it
+// never decodes hex back to bytes); exercise every branch directly: odd length,
+// length within cap but decoded size over cap, an invalid high nibble, an
+// invalid low nibble (high still valid), and full round-trip success.
+void test_hex_decode_all_branches(void)
+{
+    uint8_t out[4];
+    TEST_ASSERT_EQUAL_INT(-1, dws_hex_decode("abc", 3, out, sizeof(out))); // odd length
+    TEST_ASSERT_EQUAL_INT(-1, dws_hex_decode("aabbccdd", 8, out, 2));      // 4 bytes > cap 2
+    TEST_ASSERT_EQUAL_INT(-1, dws_hex_decode("g0", 2, out, sizeof(out)));  // bad hi nibble
+    TEST_ASSERT_EQUAL_INT(-1, dws_hex_decode("0g", 2, out, sizeof(out)));  // bad lo nibble
+    TEST_ASSERT_EQUAL_INT(1, dws_hex_decode("aA", 2, out, sizeof(out)));   // 1 byte decoded
+    TEST_ASSERT_EQUAL_UINT8(0xAA, out[0]);
+    TEST_ASSERT_EQUAL_INT(3, dws_hex_decode("0aFF01", 6, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(0x0A, out[0]);
+    TEST_ASSERT_EQUAL_UINT8(0xFF, out[1]);
+    TEST_ASSERT_EQUAL_UINT8(0x01, out[2]);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -259,5 +348,11 @@ int main()
     RUN_TEST(test_json_escape_all_chars);
     RUN_TEST(test_format_fails_closed_all_stages);
     RUN_TEST(test_dump_fails_closed_all_stages);
+    RUN_TEST(test_format_fails_closed_on_null_out);
+    RUN_TEST(test_dump_fails_closed_at_exact_length);
+    RUN_TEST(test_hex_digit_upper_and_lower);
+    RUN_TEST(test_hex_val_all_arms);
+    RUN_TEST(test_hex_encode_upper_and_lower);
+    RUN_TEST(test_hex_decode_all_branches);
     return UNITY_END();
 }

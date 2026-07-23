@@ -7,6 +7,7 @@
 
 #include "lwip/tcp.h"
 #include "network_drivers/presentation/telnet/telnet.h"
+#include "network_drivers/session/proto_handler.h" // ProtoHandler: full type needed to check dws_telnet_proto_handler()'s fields
 #include "network_drivers/transport/tcp.h"
 #include <stdint.h>
 #include <string.h>
@@ -20,7 +21,7 @@
 #define OPT_ECHO 1
 #define OPT_SGA 3
 
-static char g_last_cmd[128];
+static char g_last_cmd[TELNET_BUF_SIZE]; // matches TelnetConn::line[] so a full-length line round-trips uncut
 static int g_cmd_count;
 
 static void cmd_cb(const char *line, uint8_t id)
@@ -247,6 +248,110 @@ void test_inactive_conn_sends_nothing()
     TEST_ASSERT_EQUAL_STRING("x", g_last_cmd); // line still dispatched
 }
 
+// Client-sent WONT/DONT get no reply (only WILL/DO are answered by this server); both option
+// bytes are consumed and the parser returns to TN_NORMAL either way.
+void test_iac_wont_and_dont_are_silent()
+{
+    dws_telnet_accept(0);
+    tcp_capture_reset();
+    const uint8_t wont[3] = {IAC, WONT, 24};
+    push_bytes(0, wont, 3);
+    dws_telnet_rx(0);
+    TEST_ASSERT_EQUAL_UINT(0, tcp_captured_len());
+
+    const uint8_t dont[3] = {IAC, DONT, 24};
+    push_bytes(0, dont, 3);
+    dws_telnet_rx(0);
+    TEST_ASSERT_EQUAL_UINT(0, tcp_captured_len());
+}
+
+// DO SGA (already offered, like DO ECHO) is silently ignored - the other half of the
+// "don't answer an option we already offered" guard.
+void test_iac_do_sga_is_silent()
+{
+    dws_telnet_accept(0);
+    tcp_capture_reset();
+    const uint8_t seq[3] = {IAC, DO, OPT_SGA};
+    push_bytes(0, seq, 3);
+    dws_telnet_rx(0);
+    TEST_ASSERT_EQUAL_UINT(0, tcp_captured_len());
+}
+
+// With no command callback installed, a completed line still echoes and re-prompts but
+// dispatches nothing (the null-callback half of the guard in handle_data).
+void test_line_no_cmd_cb_is_noop()
+{
+    dws_telnet_accept(0);
+    dws_telnet_on_command(nullptr);
+    tcp_capture_reset();
+    push_str(0, "hello\n");
+    dws_telnet_rx(0);
+    TEST_ASSERT_EQUAL_INT(0, g_cmd_count);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "> "));
+}
+
+// Backspace/DEL on an empty line is a no-op (len stays 0, no underflow); DEL (0x7F) removes a
+// character exactly like backspace (0x08) does.
+void test_backspace_del_and_empty_noop()
+{
+    dws_telnet_accept(0);
+    tcp_capture_reset();
+    const uint8_t seq[] = {0x08, 'a', 0x7F, '\n'}; // BS on empty line (no-op), then 'a', then DEL removes it
+    push_bytes(0, seq, sizeof(seq));
+    dws_telnet_rx(0);
+    TEST_ASSERT_EQUAL_STRING("", g_last_cmd);
+}
+
+// Once the line buffer is full (TELNET_BUF_SIZE-1 bytes), further characters before the
+// newline are dropped rather than overflowing t->line[].
+void test_line_buffer_overflow_truncates()
+{
+    dws_telnet_accept(0);
+    tcp_capture_reset();
+    uint8_t seq[TELNET_BUF_SIZE + 10];
+    for (int i = 0; i < TELNET_BUF_SIZE + 9; i++)
+        seq[i] = 'a';
+    seq[TELNET_BUF_SIZE + 9] = '\n';
+    push_bytes(0, seq, sizeof(seq));
+    dws_telnet_rx(0);
+    TEST_ASSERT_EQUAL_UINT(TELNET_BUF_SIZE - 1, strlen(g_last_cmd));
+}
+
+// dws_telnet_print/println swallow a null pointer instead of dereferencing it, and a printf
+// whose format yields zero output broadcasts nothing. Also exercises send_escaped's n==0
+// guard via an empty (non-null) string on an active connection.
+void test_print_println_null_and_printf_empty()
+{
+    dws_telnet_accept(0);
+
+    tcp_capture_reset();
+    dws_telnet_print(nullptr);
+    TEST_ASSERT_EQUAL_UINT(0, tcp_captured_len());
+
+    tcp_capture_reset();
+    dws_telnet_print(""); // strnlen("") == 0 -> send_escaped's n==0 guard while the conn is active
+    TEST_ASSERT_EQUAL_UINT(0, tcp_captured_len());
+
+    tcp_capture_reset();
+    dws_telnet_println(nullptr);
+    TEST_ASSERT_EQUAL_STRING("\r\n", tcp_captured()); // the unconditional CRLF still goes out
+
+    tcp_capture_reset();
+    dws_telnet_printf("");
+    TEST_ASSERT_EQUAL_UINT(0, tcp_captured_len());
+}
+
+// The Layer 5 ProtoHandler accessor exposes the installed dispatch table.
+void test_proto_handler_accessor()
+{
+    const ProtoHandler *h = dws_telnet_proto_handler();
+    TEST_ASSERT_NOT_NULL(h);
+    TEST_ASSERT_TRUE((void *)h->on_accept == (void *)dws_telnet_accept);
+    TEST_ASSERT_TRUE((void *)h->on_data == (void *)dws_telnet_rx);
+    TEST_ASSERT_TRUE((void *)h->on_close == (void *)dws_telnet_close);
+    TEST_ASSERT_NULL(h->on_poll);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -265,5 +370,12 @@ int main()
     RUN_TEST(test_accept_no_capacity);
     RUN_TEST(test_output_escaping_and_printf);
     RUN_TEST(test_inactive_conn_sends_nothing);
+    RUN_TEST(test_iac_wont_and_dont_are_silent);
+    RUN_TEST(test_iac_do_sga_is_silent);
+    RUN_TEST(test_line_no_cmd_cb_is_noop);
+    RUN_TEST(test_backspace_del_and_empty_noop);
+    RUN_TEST(test_line_buffer_overflow_truncates);
+    RUN_TEST(test_print_println_null_and_printf_empty);
+    RUN_TEST(test_proto_handler_accessor);
     return UNITY_END();
 }

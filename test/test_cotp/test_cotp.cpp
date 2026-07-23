@@ -150,6 +150,90 @@ void test_guards_and_types()
     TEST_ASSERT_EQUAL_HEX8(0x80, h.code);
 }
 
+// dws_tpkt_build: the zero-length-payload path (data_len==0, no payload copy) and the
+// total-exceeds-0xFFFF overflow branch (distinct from the total > cap branch already covered
+// above). The oversize payload pointer is never dereferenced (the function returns 0 before
+// any memcpy), so it need not point at real backing memory of that size.
+void test_tpkt_build_edge_cases()
+{
+    uint8_t buf[16];
+    size_t n =
+        dws_tpkt_build(buf, sizeof(buf), nullptr, 0); // payload_len==0: skip the null-payload check and the memcpy
+    TEST_ASSERT_EQUAL_size_t(TPKT_HEADER_SIZE, n);
+    TEST_ASSERT_EQUAL_HEX8(TPKT_VERSION, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]);
+    TEST_ASSERT_EQUAL_HEX8(TPKT_HEADER_SIZE, buf[3]);
+
+    uint8_t dummy[1];
+    TEST_ASSERT_EQUAL_size_t(0, dws_tpkt_build(buf, sizeof(buf), dummy, 0x10000)); // total > 0xFFFF
+}
+
+// dws_tpkt_parse: a declared total shorter than the TPKT header itself (distinct from the
+// total > len truncation branch already covered above), and all three optional out-params
+// left null.
+void test_tpkt_parse_edge_cases()
+{
+    const uint8_t too_short_total[] = {0x03, 0x00, 0x00, 0x02, 0xAA}; // declares total=2 < header(4)
+    const uint8_t *p;
+    size_t plen, consumed;
+    TEST_ASSERT_FALSE(dws_tpkt_parse(too_short_total, sizeof(too_short_total), &p, &plen, &consumed));
+
+    const uint8_t payload[] = {0x11, 0x22};
+    uint8_t buf[16];
+    size_t n = dws_tpkt_build(buf, sizeof(buf), payload, sizeof(payload));
+    TEST_ASSERT_TRUE(dws_tpkt_parse(buf, n, nullptr, nullptr, nullptr)); // every out-param optional
+}
+
+// dws_cotp_build_dt: the zero-length-data path (skips the null-data check and the memcpy),
+// and eot==false (the ternary's other arm).
+void test_cotp_dt_edge_cases()
+{
+    uint8_t buf[16];
+    size_t n = dws_cotp_build_dt(buf, sizeof(buf), nullptr, 0, true); // data_len==0
+    TEST_ASSERT_EQUAL_size_t(COTP_DT_HEADER_LEN, n);
+
+    const uint8_t data[] = {0x01, 0x02};
+    n = dws_cotp_build_dt(buf, sizeof(buf), data, sizeof(data), false); // eot==false
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]);
+    CotpHeader h;
+    TEST_ASSERT_TRUE(dws_cotp_parse(buf, n, &h));
+    TEST_ASSERT_FALSE(h.eot);
+}
+
+// dws_cotp_build_cr: after_li > 0xFF (distinct from the total > cap branch already covered
+// above). The check happens before any byte is written, so extra_params need not be read.
+void test_cotp_cr_after_li_overflow()
+{
+    uint8_t buf[300];
+    uint8_t extra[250]; // 9 fixed header octets + 250 > 0xFF
+    TEST_ASSERT_EQUAL_size_t(0, dws_cotp_build_cr(buf, sizeof(buf), 1, 0x0A, extra, sizeof(extra)));
+}
+
+// dws_cotp_parse guard clause: null buf, null out, and li==0 (li<1), each in isolation from
+// the len<2 / header>len branches already covered above.
+void test_cotp_parse_guard_edge_cases()
+{
+    uint8_t buf[4] = {0x02, COTP_DT, 0x00, 0x00};
+    CotpHeader h;
+    TEST_ASSERT_FALSE(dws_cotp_parse(nullptr, sizeof(buf), &h));  // null buf
+    TEST_ASSERT_FALSE(dws_cotp_parse(buf, sizeof(buf), nullptr)); // null out
+
+    uint8_t li_zero[2] = {0x00, 0x00}; // LI==0: header==1 <= len, but li<1
+    TEST_ASSERT_FALSE(dws_cotp_parse(li_zero, sizeof(li_zero), &h));
+}
+
+// dws_cotp_parse: a Connection Confirm (COTP_CC), the sibling branch of COTP_CR that the
+// existing tests never exercise.
+void test_cotp_parse_cc()
+{
+    uint8_t cc[] = {0x06, COTP_CC, 0x00, 0x03, 0x00, 0x04, 0x00}; // LI=6, dst_ref=3, src_ref=4
+    CotpHeader h;
+    TEST_ASSERT_TRUE(dws_cotp_parse(cc, sizeof(cc), &h));
+    TEST_ASSERT_EQUAL_HEX8(COTP_CC, h.code);
+    TEST_ASSERT_EQUAL_HEX16(0x0003, h.dst_ref);
+    TEST_ASSERT_EQUAL_HEX16(0x0004, h.src_ref);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -160,5 +244,11 @@ int main()
     RUN_TEST(test_full_stack);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_guards_and_types);
+    RUN_TEST(test_tpkt_build_edge_cases);
+    RUN_TEST(test_tpkt_parse_edge_cases);
+    RUN_TEST(test_cotp_dt_edge_cases);
+    RUN_TEST(test_cotp_cr_after_li_overflow);
+    RUN_TEST(test_cotp_parse_guard_edge_cases);
+    RUN_TEST(test_cotp_parse_cc);
     return UNITY_END();
 }

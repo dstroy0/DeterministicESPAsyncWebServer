@@ -45,6 +45,14 @@ void test_build_uplink_bounds()
     TEST_ASSERT_EQUAL_UINT16(0, dws_sigfox_build_uplink(p, 4, small, sizeof(small))); // needs 17, cap 10
 }
 
+void test_build_uplink_null_args()
+{
+    const uint8_t payload[2] = {0xAB, 0x12};
+    char out[32];
+    TEST_ASSERT_EQUAL_UINT16(0, dws_sigfox_build_uplink(payload, 2, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_UINT16(0, dws_sigfox_build_uplink(nullptr, 2, out, sizeof(out)));     // null payload
+}
+
 void test_parse_response_ok()
 {
     TEST_ASSERT_EQUAL_INT(dws_sigfox_result::SIGFOX_OK, dws_sigfox_parse_response("OK\r\n", 4));
@@ -62,6 +70,11 @@ void test_parse_response_pending()
     TEST_ASSERT_EQUAL_INT(dws_sigfox_result::SIGFOX_PENDING, dws_sigfox_parse_response("", 0));
 }
 
+void test_parse_response_null_buf()
+{
+    TEST_ASSERT_EQUAL_INT(dws_sigfox_result::SIGFOX_PENDING, dws_sigfox_parse_response(nullptr, 5));
+}
+
 void test_parse_response_error_wins()
 {
     // If a buffer holds both (e.g. an echoed "OK" token then an ERROR), ERROR is reported.
@@ -75,9 +88,11 @@ int main()
     RUN_TEST(test_build_uplink_hex_encode);
     RUN_TEST(test_build_uplink_single_byte);
     RUN_TEST(test_build_uplink_bounds);
+    RUN_TEST(test_build_uplink_null_args);
     RUN_TEST(test_parse_response_ok);
     RUN_TEST(test_parse_response_error);
     RUN_TEST(test_parse_response_pending);
+    RUN_TEST(test_parse_response_null_buf);
     RUN_TEST(test_parse_response_error_wins);
     return UNITY_END();
 }

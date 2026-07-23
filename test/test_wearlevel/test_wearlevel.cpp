@@ -53,6 +53,7 @@ void test_mark_saturates_and_bounds(void)
     TEST_ASSERT_EQUAL_UINT32(0xFFFFFFFFu, c[0]);
     dws_wearlevel_mark(c, 2, 5); // out of range: no-op
     TEST_ASSERT_EQUAL_UINT32(0, c[1]);
+    dws_wearlevel_mark(nullptr, 2, 0); // null counts: no-op, must not crash
 }
 
 void test_spread(void)
@@ -60,6 +61,10 @@ void test_spread(void)
     uint32_t c[3] = {10, 4, 7};
     TEST_ASSERT_EQUAL_UINT32(6, dws_wearlevel_spread(c, 3)); // 10 - 4
     TEST_ASSERT_EQUAL_UINT32(0, dws_wearlevel_spread(nullptr, 3));
+    uint32_t rising[3] = {2, 5, 9};                               // strictly increasing: exercises the "new max" branch
+    TEST_ASSERT_EQUAL_UINT32(7, dws_wearlevel_spread(rising, 3)); // 9 - 2
+    uint32_t nonnull[1] = {42};
+    TEST_ASSERT_EQUAL_UINT32(0, dws_wearlevel_spread(nonnull, 0)); // non-null counts, n == 0
 }
 
 int main(void)

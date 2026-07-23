@@ -89,7 +89,21 @@ void test_registry_full(void)
 void test_feed_bad_id(void)
 {
     TEST_ASSERT_FALSE(dws_failsafe_feed_at(-1, 0));
-    TEST_ASSERT_FALSE(dws_failsafe_feed_at(3, 0)); // not armed
+    TEST_ASSERT_FALSE(dws_failsafe_feed_at(3, 0));                          // not armed
+    TEST_ASSERT_FALSE(dws_failsafe_feed_at(DWS_FAILSAFE_MAX_LIFELINES, 0)); // id >= registry size
+}
+
+// A breach with no callback installed still marks the lifeline breached and reports it in the mask;
+// it just has nothing to call.
+void test_breach_without_callback(void)
+{
+    dws_failsafe_on_breach(nullptr, nullptr); // overrides the setUp() default
+    int a = dws_failsafe_register_at("solo", 500, 1000);
+    TEST_ASSERT_EQUAL_INT(0, a);
+    uint32_t mask = dws_failsafe_check_at(1600); // overdue (age 600 > 500)
+    TEST_ASSERT_EQUAL_UINT32(1u << 0, mask);
+    TEST_ASSERT_EQUAL_INT(-1, s_fired_id);  // unchanged: no callback ran
+    TEST_ASSERT_EQUAL_INT(0, s_fire_count); // unchanged: no callback ran
 }
 
 void test_json(void)
@@ -106,6 +120,39 @@ void test_json(void)
     // After the deadline, overdue flips true.
     dws_failsafe_json_at(2000, buf, sizeof(buf));
     TEST_ASSERT_NOT_NULL(strstr(buf, "\"overdue\":true"));
+}
+
+// Guard clauses: a null output buffer or a zero capacity both bail out immediately.
+void test_json_null_out_and_zero_cap(void)
+{
+    char buf[8];
+    TEST_ASSERT_EQUAL_INT(0, dws_failsafe_json_at(0, nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(0, dws_failsafe_json_at(0, buf, 0));
+}
+
+// A lifeline registered with a null name serializes as an empty "name" field instead of dereferencing
+// the null pointer.
+void test_json_unnamed_lifeline(void)
+{
+    dws_failsafe_register_at(nullptr, 500, 1000);
+    char buf[128];
+    int n = dws_failsafe_json_at(1200, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"name\":\"\","));
+}
+
+// A capacity too small to hold even the opening literal exercises the truncation path in both fs_put
+// (the plain-text copier) and fs_put_u32 (the decimal-digit copier): both must stop writing exactly at
+// cap - 1 and leave the buffer NUL-terminated, never overrunning it.
+void test_json_truncated_buffer(void)
+{
+    dws_failsafe_register_at("motor", 500, 1000);
+    char buf[3];
+    int n = dws_failsafe_json_at(1200, buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_INT(2, n);
+    TEST_ASSERT_EQUAL_CHAR('{', buf[0]);
+    TEST_ASSERT_EQUAL_CHAR('"', buf[1]);
+    TEST_ASSERT_EQUAL_CHAR('\0', buf[2]);
 }
 
 void test_millis_wrappers_and_json()
@@ -129,7 +176,11 @@ int main(void)
     RUN_TEST(test_breach_fires_once_then_clears_on_feed);
     RUN_TEST(test_registry_full);
     RUN_TEST(test_feed_bad_id);
+    RUN_TEST(test_breach_without_callback);
     RUN_TEST(test_json);
+    RUN_TEST(test_json_null_out_and_zero_cap);
+    RUN_TEST(test_json_unnamed_lifeline);
+    RUN_TEST(test_json_truncated_buffer);
     RUN_TEST(test_millis_wrappers_and_json);
     return UNITY_END();
 }

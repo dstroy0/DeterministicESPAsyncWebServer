@@ -60,6 +60,11 @@ void test_v4_mapped()
     TEST_ASSERT_TRUE(dws_ip_parse("::ffff:10.0.0.1", &ip));
     TEST_ASSERT_TRUE(dws_ip_is_v4_mapped(&ip));
     TEST_ASSERT_EQUAL_HEX32(0x0A000001u, dws_ip_to_v4_be(&ip));
+    // Guards: a null pointer and a plain v4-family address are both "not mapped".
+    TEST_ASSERT_FALSE(dws_ip_is_v4_mapped(nullptr));
+    DWSIp v4;
+    TEST_ASSERT_TRUE(dws_ip_parse("10.0.0.1", &v4));
+    TEST_ASSERT_FALSE(dws_ip_is_v4_mapped(&v4));
 }
 
 void test_classify_v4()
@@ -83,6 +88,21 @@ void test_classify_v4()
     TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_MULTICAST, dws_ip_classify(&ip));
     dws_ip_parse("8.8.8.8", &ip);
     TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
+    // Each byte of the all-zero check failing individually (not just the first).
+    dws_ip_parse("0.1.0.0", &ip);
+    TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
+    dws_ip_parse("0.0.1.0", &ip);
+    TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
+    dws_ip_parse("0.0.0.1", &ip);
+    TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
+    dws_ip_parse("169.1.2.3", &ip); // first octet matches link-local, second doesn't
+    TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
+    dws_ip_parse("172.10.0.1", &ip); // 172 but second octet below the 16-31 private range
+    TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
+    dws_ip_parse("192.1.2.3", &ip); // 192 but second octet isn't 168
+    TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
+    dws_ip_parse("250.1.2.3", &ip); // above the 224-239 multicast range
+    TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
 }
 
 void test_classify_v6()
@@ -105,24 +125,37 @@ void test_classify_v6()
     // v4-mapped classifies as its v4 scope.
     dws_ip_parse("::ffff:127.0.0.1", &ip);
     TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip));
+    dws_ip_parse("fe00::1", &ip); // b[0]==0xfe but the top two bits of b[1] aren't 0x80
+    TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
+    // b[0..9] all zero and b[10]==0xff, but b[11] != 0xff: not v4-mapped (falls through to GLOBAL).
+    dws_ip_parse("::ff00:0:0", &ip);
+    TEST_ASSERT_FALSE(dws_ip_is_v4_mapped(&ip));
+    TEST_ASSERT_EQUAL(DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip));
 }
 
 void test_reject_malformed()
 {
     DWSIp ip;
     TEST_ASSERT_FALSE(dws_ip_parse("", &ip));
-    TEST_ASSERT_FALSE(dws_ip_parse("256.0.0.1", &ip));         // octet > 255
-    TEST_ASSERT_FALSE(dws_ip_parse("1.2.3", &ip));             // too few octets
-    TEST_ASSERT_FALSE(dws_ip_parse("1.2.3.4.5", &ip));         // too many
-    TEST_ASSERT_FALSE(dws_ip_parse("1::2::3", &ip));           // two "::"
-    TEST_ASSERT_FALSE(dws_ip_parse("1:2:3:4:5:6:7:8:9", &ip)); // 9 groups
-    TEST_ASSERT_FALSE(dws_ip_parse("1:2:3:4:5:6:7", &ip));     // 7 groups, no "::"
-    TEST_ASSERT_FALSE(dws_ip_parse("12345::1", &ip));          // hextet too long
-    TEST_ASSERT_FALSE(dws_ip_parse("2001:db8:::1", &ip));      // triple colon
-    TEST_ASSERT_FALSE(dws_ip_parse("2001:db8::1:", &ip));      // trailing single colon
-    TEST_ASSERT_FALSE(dws_ip_parse("2001:xyz::1", &ip));       // bad hex
-    TEST_ASSERT_FALSE(dws_ip_parse("::ffff:1.2.3.4:5", &ip));  // v4 not last
-    TEST_ASSERT_FALSE(dws_ip_parse("hello", &ip));             // no separators
+    TEST_ASSERT_FALSE(dws_ip_parse("256.0.0.1", &ip));             // octet > 255
+    TEST_ASSERT_FALSE(dws_ip_parse("1.2.3", &ip));                 // too few octets
+    TEST_ASSERT_FALSE(dws_ip_parse("1.2.3.4.5", &ip));             // too many
+    TEST_ASSERT_FALSE(dws_ip_parse("1::2::3", &ip));               // two "::"
+    TEST_ASSERT_FALSE(dws_ip_parse("1:2:3:4:5:6:7:8:9", &ip));     // 9 groups
+    TEST_ASSERT_FALSE(dws_ip_parse("1:2:3:4:5:6:7", &ip));         // 7 groups, no "::"
+    TEST_ASSERT_FALSE(dws_ip_parse("12345::1", &ip));              // hextet too long
+    TEST_ASSERT_FALSE(dws_ip_parse("2001:db8:::1", &ip));          // triple colon
+    TEST_ASSERT_FALSE(dws_ip_parse("2001:db8::1:", &ip));          // trailing single colon
+    TEST_ASSERT_FALSE(dws_ip_parse("2001:xyz::1", &ip));           // bad hex
+    TEST_ASSERT_FALSE(dws_ip_parse("::ffff:1.2.3.4:5", &ip));      // v4 not last
+    TEST_ASSERT_FALSE(dws_ip_parse("hello", &ip));                 // no separators
+    TEST_ASSERT_FALSE(dws_ip_parse("1..2.3", &ip));                // empty octet mid-address
+    TEST_ASSERT_FALSE(dws_ip_parse("1.2.3.", &ip));                // empty trailing octet
+    TEST_ASSERT_FALSE(dws_ip_parse("!.2.3.4", &ip));               // char below '0' in a v4 octet
+    TEST_ASSERT_FALSE(dws_ip_parse("2001:!db8::1", &ip));          // char below '0' in a v6 hextet
+    TEST_ASSERT_FALSE(dws_ip_parse(":", &ip));                     // a single ':' (len==1, no second colon)
+    TEST_ASSERT_FALSE(dws_ip_parse("::1.2.3.999", &ip));           // embedded v4 tail octet out of range
+    TEST_ASSERT_FALSE(dws_ip_parse("1:2:3:4:5:6:7:1.2.3.4", &ip)); // too many groups before embedded v4
 }
 
 void test_equal_and_from_v4()
@@ -141,6 +174,10 @@ void test_equal_and_from_v4()
     DWSIp v6;
     TEST_ASSERT_TRUE(dws_ip_parse("::c0a8:101", &v6));
     TEST_ASSERT_FALSE(dws_ip_equal(&a, &v6));
+
+    // Null guards on either side.
+    TEST_ASSERT_FALSE(dws_ip_equal(nullptr, &b));
+    TEST_ASSERT_FALSE(dws_ip_equal(&a, nullptr));
 }
 
 void test_from_v6_bytes()
@@ -212,6 +249,10 @@ void test_prefix_match()
     TEST_ASSERT_FALSE(dws_ip_prefix_match(&in24, &v6net, 24));  // v4 addr vs v6 net
     TEST_ASSERT_FALSE(dws_ip_prefix_match(&in24, &net24, 33));  // prefix > 32 for v4
     TEST_ASSERT_FALSE(dws_ip_prefix_match(&v6in, &v6net, 129)); // prefix > 128 for v6
+
+    // Null guards on either side.
+    TEST_ASSERT_FALSE(dws_ip_prefix_match(nullptr, &net24, 24));
+    TEST_ASSERT_FALSE(dws_ip_prefix_match(&in24, nullptr, 24));
 }
 
 void test_ip_classify_equal_cidr_and_parse_edges()
@@ -229,6 +270,9 @@ void test_ip_classify_equal_cidr_and_parse_edges()
     DWSIp out = dws_ip_from_v4_octets(192, 168, 16, 0);  // 3rd byte 0x10, high nibble 1 -> out of /20
     TEST_ASSERT_TRUE(dws_ip_prefix_match(&in, &net, 20));
     TEST_ASSERT_FALSE(dws_ip_prefix_match(&out, &net, 20));
+    // Both DWSIpFamily::DWS_IP_NONE (same family, so the family check passes): the bits-for-family
+    // ternary falls through both arms to 0, which the bits==0 guard then rejects.
+    TEST_ASSERT_FALSE(dws_ip_prefix_match(&none, &none2, 0));
     // Parse edges: a lone leading ':' and an over-long string are rejected.
     DWSIp p;
     TEST_ASSERT_FALSE(dws_ip_parse(":1", &p));
@@ -249,7 +293,9 @@ void test_ip_classify_equal_cidr_and_parse_edges()
     // format guards: null ptr, non-v6/v4 family, and buffers too small for v4/v6/mapped.
     char buf[64];
     TEST_ASSERT_EQUAL_UINT(0, dws_ip_format(nullptr, buf, sizeof(buf)));
-    TEST_ASSERT_EQUAL_UINT(0, dws_ip_format(&none, buf, sizeof(buf))); // DWSIpFamily::DWS_IP_NONE family
+    TEST_ASSERT_EQUAL_UINT(0, dws_ip_format(&none, buf, sizeof(buf)));     // DWSIpFamily::DWS_IP_NONE family
+    TEST_ASSERT_EQUAL_UINT(0, dws_ip_format(&none, nullptr, sizeof(buf))); // null out buffer
+    TEST_ASSERT_EQUAL_UINT(0, dws_ip_format(&none, buf, 0));               // cap == 0
     DWSIp v4 = dws_ip_from_v4_octets(255, 255, 255, 255);
     TEST_ASSERT_EQUAL_UINT(0, dws_ip_format(&v4, buf, 4)); // "255.255.255.255" needs 16
     DWSIp v6;

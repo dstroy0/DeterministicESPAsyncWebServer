@@ -28,7 +28,7 @@ bool emit_option(uint8_t *out, size_t *o, size_t cap, uint16_t delta, const uint
     uint8_t lext[2];
     int dexn = 0;
     int lexn = 0;
-    if (delta < 13)
+    if (delta < 13) // GCOVR_EXCL_BR_LINE  false arm unreachable: see the delta note below
         dn = (uint8_t)delta;
     // GCOVR_EXCL_START  delta is always 11 (first Uri-Path option) or 0 (later ones) from the sole caller
     // dws_wisun_build_coap, so an option delta never reaches the 13/14 extended-encoding branches.
@@ -66,8 +66,8 @@ bool emit_option(uint8_t *out, size_t *o, size_t cap, uint16_t delta, const uint
     if (start + 1 + dexn + lexn + vlen > cap)
         return false;
     out[(*o)++] = (uint8_t)((dn << 4) | ln);
-    for (int i = 0; i < dexn; i++)
-        out[(*o)++] = dext[i]; // GCOVR_EXCL_LINE  dexn is always 0 (see the delta note above)
+    for (int i = 0; i < dexn; i++) // GCOVR_EXCL_BR_LINE  dexn is always 0 (see the delta note above); loop never enters
+        out[(*o)++] = dext[i];     // GCOVR_EXCL_LINE  dexn is always 0 (see the delta note above)
     for (int i = 0; i < lexn; i++)
         out[(*o)++] = lext[i];
     for (uint16_t i = 0; i < vlen; i++)

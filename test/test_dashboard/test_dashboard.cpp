@@ -5,6 +5,7 @@
 // core). Pure logic - no server - so it runs on the host.
 
 #include "services/dashboard/dashboard.h"
+#include "shared_primitives/fmtbuf.h"
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
@@ -214,6 +215,82 @@ void test_parse_control_edges()
     TEST_ASSERT_FALSE(dws_dashboard_parse_control("{\"k\":\"toolong\",\"v\":1}", small, sizeof(small), &v));
 }
 
+// A widget with null label/key/unit must not crash the serializers, and set()'s key
+// scan must short-circuit past it (not dereference the null key) on the way to a
+// widget that does match.
+void test_null_widget_fields_are_skipped_and_serialize_empty()
+{
+    static const DWSWidget NULL_FIELDS_W[] = {
+        {DWSWidgetType::DWS_WIDGET_VALUE, nullptr, nullptr, 0, 0, nullptr},
+        {DWSWidgetType::DWS_WIDGET_VALUE, "Real", "real", 0, 0, ""},
+    };
+    dws_dashboard_configure(NULL_FIELDS_W, 2);
+
+    TEST_ASSERT_TRUE(dws_dashboard_set("real", 42.0f));
+
+    char buf[256];
+    TEST_ASSERT_TRUE(dws_dashboard_layout_json(buf, sizeof(buf)) > 0);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"label\":\"\",\"key\":\"\",\"min\":0,\"max\":0,\"unit\":\"\""));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"key\":\"real\""));
+
+    TEST_ASSERT_TRUE(dws_dashboard_values_json(buf, sizeof(buf)) > 0);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"\":0"));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"real\":42"));
+}
+
+// A null output pointer fails closed even when cap is nonzero (cap == 0 is covered by
+// test_null_widget_table_guards already).
+void test_serializers_null_out_pointer()
+{
+    TEST_ASSERT_EQUAL_INT(0, dws_dashboard_layout_json(nullptr, 64));
+    TEST_ASSERT_EQUAL_INT(0, dws_dashboard_values_json(nullptr, 64));
+}
+
+// Tabs, not just spaces, are tolerated around the ':' in a control message.
+void test_parse_control_tab_whitespace()
+{
+    char key[32];
+    float v = 0.0f;
+    TEST_ASSERT_TRUE(dws_dashboard_parse_control("{\"k\"\t:\t\"tabkey\",\"v\":1}", key, sizeof(key), &v));
+    TEST_ASSERT_EQUAL_STRING("tabkey", key);
+    TEST_ASSERT_EQUAL_FLOAT(1.0f, v);
+}
+
+// A "k" value that is not a quoted string (e.g. a bare number) is rejected.
+void test_parse_control_non_string_key_value()
+{
+    char key[32];
+    float v = 0.0f;
+    TEST_ASSERT_FALSE(dws_dashboard_parse_control("{\"k\":5,\"v\":1}", key, sizeof(key), &v));
+}
+
+// An unterminated key that runs off the end of the message (no closing quote anywhere,
+// even with a "v" field present so parsing actually reaches the key scan) is rejected.
+void test_parse_control_unterminated_key_runs_to_eof()
+{
+    char key[32];
+    float v = 0.0f;
+    TEST_ASSERT_FALSE(dws_dashboard_parse_control("{\"v\":1,\"k\":\"unterminated", key, sizeof(key), &v));
+}
+
+// dispatch_control() with a well-formed message but no registered callback parses fine
+// but reports no callback was invoked.
+void test_dispatch_control_no_callback_registered()
+{
+    dws_dashboard_on_control(nullptr);
+    TEST_ASSERT_FALSE(dws_dashboard_dispatch_control("{\"k\":\"x\",\"v\":1}"));
+}
+
+// dws_fmt_append() fails closed immediately when *pos is already at (or past) cap,
+// before attempting to format anything.
+void test_fmtbuf_append_pos_already_at_cap()
+{
+    char buf[4] = {0};
+    size_t pos = 4;
+    TEST_ASSERT_EQUAL_INT(-1, dws_fmt_append(buf, sizeof(buf), &pos, "x"));
+    TEST_ASSERT_EQUAL_UINT(4, pos);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -232,5 +309,12 @@ int main()
     RUN_TEST(test_parse_control_rejects_malformed);
     RUN_TEST(test_dispatch_control_invokes_cb);
     RUN_TEST(test_layout_control_types);
+    RUN_TEST(test_null_widget_fields_are_skipped_and_serialize_empty);
+    RUN_TEST(test_serializers_null_out_pointer);
+    RUN_TEST(test_parse_control_tab_whitespace);
+    RUN_TEST(test_parse_control_non_string_key_value);
+    RUN_TEST(test_parse_control_unterminated_key_runs_to_eof);
+    RUN_TEST(test_dispatch_control_no_callback_registered);
+    RUN_TEST(test_fmtbuf_append_pos_already_at_cap);
     return UNITY_END();
 }

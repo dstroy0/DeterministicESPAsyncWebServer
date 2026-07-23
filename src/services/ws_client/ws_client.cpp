@@ -71,7 +71,9 @@ size_t ws_client_build_handshake(uint8_t *out, size_t cap, const char *host, con
                      "Sec-WebSocket-Key: %s\r\n"
                      "Sec-WebSocket-Version: 13\r\n\r\n",
                      path, host, key_b64);
-    if (n < 0 || (size_t)n >= cap)
+    // n < 0 is unreachable: snprintf cannot return negative for either fixed "%s..." format
+    // string above (no encoding error is possible writing plain header text to memory).
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_BR_LINE
         return 0;
     return (size_t)n;
 }

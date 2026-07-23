@@ -76,6 +76,9 @@ void test_parse_rejects_bad_preamble_and_start()
     n = sample(buf, sizeof(buf));
     buf[2] = 0x00; // start should be 00 FF
     TEST_ASSERT_EQUAL_INT(-1, dws_pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
+    n = sample(buf, sizeof(buf));
+    buf[1] = 0x22; // start's first byte should be 0x00 (preamble at buf[0] is untouched)
+    TEST_ASSERT_EQUAL_INT(-1, dws_pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
 }
 
 void test_parse_rejects_bad_lcs()
@@ -98,6 +101,7 @@ void test_parse_needs_more_bytes()
 {
     uint8_t buf[16];
     uint16_t n = sample(buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_INT(0, dws_pn532_parse_frame(buf, 0, nullptr, nullptr, nullptr));     // len == 0, raw non-null
     TEST_ASSERT_EQUAL_INT(0, dws_pn532_parse_frame(buf, 4, nullptr, nullptr, nullptr));     // header incomplete
     TEST_ASSERT_EQUAL_INT(0, dws_pn532_parse_frame(buf, n - 1, nullptr, nullptr, nullptr)); // body incomplete
 }
@@ -107,6 +111,23 @@ void test_parse_rejects_over_length()
     // frame_len 20 (> DWS_PN532_MAX_DATA + 1 = 9) is rejected early.
     uint8_t buf[8] = {0x00, 0x00, 0xFF, 0x14, 0xEC, 0xD5, 0x00, 0x00};
     TEST_ASSERT_EQUAL_INT(-1, dws_pn532_parse_frame(buf, sizeof(buf), nullptr, nullptr, nullptr));
+}
+
+void test_parse_rejects_zero_length()
+{
+    // frame_len == 0 (no TFI at all) with a matching LCS is rejected explicitly, distinct
+    // from the over-length rejection above.
+    uint8_t buf[5] = {0x00, 0x00, 0xFF, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_INT(-1, dws_pn532_parse_frame(buf, sizeof(buf), nullptr, nullptr, nullptr));
+}
+
+void test_parse_success_with_null_outputs()
+{
+    // A fully valid, complete frame with every output pointer null must not dereference
+    // them and must still report the number of bytes consumed.
+    uint8_t buf[16];
+    uint16_t n = sample(buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_INT((int)n, dws_pn532_parse_frame(buf, n, nullptr, nullptr, nullptr));
 }
 
 void test_ack_frame()
@@ -122,6 +143,24 @@ void test_ack_frame()
     TEST_ASSERT_FALSE(dws_pn532_is_ack(buf, n)); // a normal frame is not an ACK
     uint8_t small[3];
     TEST_ASSERT_EQUAL_UINT16(0, dws_pn532_build_ack(small, sizeof(small))); // too small
+    TEST_ASSERT_EQUAL_UINT16(0, dws_pn532_build_ack(nullptr, 6));           // out == nullptr
+}
+
+void test_build_frame_null_data_and_out_guards()
+{
+    uint8_t out[16];
+    const uint8_t cmd[1] = {0x02};
+    // out == nullptr is rejected regardless of other args.
+    TEST_ASSERT_EQUAL_UINT16(0, dws_pn532_build_frame(PN532_TFI_HOST, cmd, 1, nullptr, 16));
+
+    // data == nullptr with len == 0 is a legal "no PData" frame (TFI only).
+    uint16_t n = dws_pn532_build_frame(PN532_TFI_HOST, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_UINT16(8, n); // 8 + 0
+    const uint8_t expect[8] = {0x00, 0x00, 0xFF, 0x01, 0xFF, 0xD4, 0x2C, 0x00};
+    TEST_ASSERT_EQUAL_MEMORY(expect, out, 8);
+
+    // data == nullptr with len > 0 is rejected (nothing to copy).
+    TEST_ASSERT_EQUAL_UINT16(0, dws_pn532_build_frame(PN532_TFI_HOST, nullptr, 2, out, sizeof(out)));
 }
 
 void test_build_bounds()
@@ -155,8 +194,11 @@ int main()
     RUN_TEST(test_parse_rejects_bad_dcs);
     RUN_TEST(test_parse_needs_more_bytes);
     RUN_TEST(test_parse_rejects_over_length);
+    RUN_TEST(test_parse_rejects_zero_length);
+    RUN_TEST(test_parse_success_with_null_outputs);
     RUN_TEST(test_ack_frame);
     RUN_TEST(test_build_bounds);
+    RUN_TEST(test_build_frame_null_data_and_out_guards);
     RUN_TEST(test_frame_parse_and_ack_guards);
     return UNITY_END();
 }

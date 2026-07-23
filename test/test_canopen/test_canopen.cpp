@@ -380,6 +380,95 @@ void test_parse_sdo_response_variants()
     TEST_ASSERT_FALSE(dws_canopen_parse_sdo_response(&f, NULL));
 }
 
+// A zero-length PDO is valid (the `len && !data` guard must not reject len==0 with a
+// null payload), and it must produce a zero-length frame.
+void test_pdo_zero_length()
+{
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_canopen_build_tpdo(&f, 1, 5, NULL, 0));
+    TEST_ASSERT_EQUAL_UINT32(0x185, f.id); // TPDO1 base + node 5
+    TEST_ASSERT_EQUAL_UINT8(0, f.dlc);
+}
+
+// build_sdo_write's argument-validation OR-chain needs a null-out, an out-of-range node
+// (both 0 and >127), and a null data pointer paired with an in-range length to exercise
+// every branch of `!out || !valid_node(node_id) || len < 1 || len > 4 || !data`.
+void test_sdo_write_arg_validation()
+{
+    CanFrame f;
+    const uint8_t val[2] = {1, 2};
+    TEST_ASSERT_FALSE(dws_canopen_build_sdo_write(NULL, 5, 0x6040, 0, val, 2));
+    TEST_ASSERT_FALSE(dws_canopen_build_sdo_write(&f, 0, 0x6040, 0, val, 2));
+    TEST_ASSERT_FALSE(dws_canopen_build_sdo_write(&f, 128, 0x6040, 0, val, 2));
+    TEST_ASSERT_FALSE(dws_canopen_build_sdo_write(&f, 5, 0x6040, 0, NULL, 2));
+}
+
+// build_emcy and build_sdo_abort must reject a null out (test_build_arg_validation covers
+// their invalid-node branches but not this one), and build_sdo_abort's to_server=true path
+// (client -> server, 0x600 base) is otherwise never exercised (only to_server=false is).
+void test_emcy_and_sdo_abort_null_out_and_to_server()
+{
+    TEST_ASSERT_FALSE(dws_canopen_build_emcy(NULL, 5, 0, 0, NULL));
+    TEST_ASSERT_FALSE(dws_canopen_build_sdo_abort(NULL, 5, 0, 0, 0, true));
+
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_canopen_build_sdo_abort(&f, 0x20, 0x1000, 0, CANOPEN_ABORT_TIMEOUT, true));
+    TEST_ASSERT_EQUAL_UINT32(0x600 + 0x20, f.id); // client -> server
+    TEST_ASSERT_EQUAL_HEX8(0x80, f.data[0]);
+}
+
+// parse_emcy: the `f->extended` disjunct is never true in the other tests, and each
+// optional output pointer (node_id/error_code/error_reg/msef) is always non-null there,
+// so their `if (ptr)` false branches are otherwise never taken.
+void test_parse_emcy_extended_and_null_outputs()
+{
+    const uint8_t msef[5] = {1, 2, 3, 4, 5};
+    CanFrame f;
+    dws_canopen_build_emcy(&f, 5, 0x1000, 0x02, msef);
+    f.extended = true;
+    uint8_t node = 0, reg = 0, out_msef[5] = {0};
+    uint16_t code = 0;
+    TEST_ASSERT_FALSE(dws_canopen_parse_emcy(&f, &node, &code, &reg, out_msef));
+
+    dws_canopen_build_emcy(&f, 5, 0x1000, 0x02, msef); // rebuild: not extended
+    TEST_ASSERT_TRUE(dws_canopen_parse_emcy(&f, NULL, NULL, NULL, NULL));
+}
+
+// parse_heartbeat: a null frame, an extended frame, a function-matching frame whose node
+// is 0 (crafted directly - the builder itself refuses node 0), and null optional outputs
+// are otherwise never exercised.
+void test_parse_heartbeat_extended_null_and_node_zero()
+{
+    uint8_t node = 0, state = 0;
+    TEST_ASSERT_FALSE(dws_canopen_parse_heartbeat(NULL, &node, &state));
+
+    CanFrame f;
+    dws_canopen_build_heartbeat(&f, 9, CANOPEN_STATE_OPERATIONAL);
+    f.extended = true;
+    TEST_ASSERT_FALSE(dws_canopen_parse_heartbeat(&f, &node, &state));
+
+    CanFrame node_zero;
+    memset(&node_zero, 0, sizeof(node_zero));
+    node_zero.id = CANOPEN_COB_HEARTBEAT; // function matches, node field is 0
+    node_zero.dlc = 1;
+    TEST_ASSERT_FALSE(dws_canopen_parse_heartbeat(&node_zero, &node, &state));
+
+    dws_canopen_build_heartbeat(&f, 9, CANOPEN_STATE_OPERATIONAL);
+    TEST_ASSERT_TRUE(dws_canopen_parse_heartbeat(&f, NULL, NULL));
+}
+
+// parse_sdo_response's `f->extended` disjunct is never true elsewhere.
+void test_parse_sdo_response_extended()
+{
+    CanFrame f;
+    memset(&f, 0, sizeof(f));
+    f.id = 0x580 + 5;
+    f.dlc = 8;
+    f.extended = true;
+    CanopenSdoResponse r;
+    TEST_ASSERT_FALSE(dws_canopen_parse_sdo_response(&f, &r));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -400,5 +489,11 @@ int main()
     RUN_TEST(test_parse_emcy_rejections);
     RUN_TEST(test_parse_heartbeat_rejections);
     RUN_TEST(test_parse_sdo_response_variants);
+    RUN_TEST(test_pdo_zero_length);
+    RUN_TEST(test_sdo_write_arg_validation);
+    RUN_TEST(test_emcy_and_sdo_abort_null_out_and_to_server);
+    RUN_TEST(test_parse_emcy_extended_and_null_outputs);
+    RUN_TEST(test_parse_heartbeat_extended_null_and_node_zero);
+    RUN_TEST(test_parse_sdo_response_extended);
     return UNITY_END();
 }

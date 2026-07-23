@@ -120,6 +120,21 @@ void test_survey_averages_out_scatter()
     TEST_ASSERT_FALSE(dws_gnss_survey_complete(&s, 5, 3.0)); // not enough observations
 }
 
+// The variance clamp in dws_gnss_survey_accuracy_m: sdx2/n - mean^2 can dip a hair below zero from
+// floating-point rounding, and the guard clamps each axis to 0 before the sqrt. Real fixes essentially
+// never trigger it, so drive it directly by crafting sums (via the struct's public fields, same as
+// test_survey_empty_has_no_mean pokes GnssEcef directly) where every axis's "variance" is negative.
+void test_survey_accuracy_clamps_negative_variance()
+{
+    GnssSurvey s;
+    dws_gnss_survey_reset(&s);
+    s.has_origin = true;
+    s.count = 2;
+    s.sdx = s.sdy = s.sdz = 10.0;      // mean per axis = 5.0 -> mean^2 * n = 50.0
+    s.sdx2 = s.sdy2 = s.sdz2 = 49.999; // < 50.0 -> vx/vy/vz all compute negative before the clamp
+    TEST_ASSERT_EQUAL_DOUBLE(0.0, dws_gnss_survey_accuracy_m(&s));
+}
+
 void test_survey_empty_has_no_mean()
 {
     GnssSurvey s;
@@ -241,6 +256,20 @@ void test_gga_nonnumeric_lat_rejected()
     TEST_ASSERT_FALSE(dws_gnss_gga_to_geodetic(&m, &g));
 }
 
+// dm_to_deg's `!field` guard: a real parse never leaves a field pointer null, so force it directly (the
+// Nmea0183 fields[] array is public, same technique as overriding GnssSurvey's fields above) to hit the
+// short-circuit true arm of `!field || len == 0` that the empty/non-numeric-field tests can't reach.
+void test_gga_null_lat_field_rejected()
+{
+    char buf[96];
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(
+        build_parse_gga("GPGGA,124515.00,3723.2475,N,12202.1236,W,1,08,0.9,30.5,M,-25.0,M,,", buf, sizeof(buf), &m));
+    m.fields[2] = nullptr; // simulate a null field pointer
+    GnssGeodetic g;
+    TEST_ASSERT_FALSE(dws_gnss_gga_to_geodetic(&m, &g));
+}
+
 // A GGA whose longitude field is empty -> the lon dm_to_deg call rejects (after lat parses fine).
 void test_gga_empty_lon_rejected()
 {
@@ -310,6 +339,21 @@ void test_gga_lowercase_hemispheres()
     TEST_ASSERT_DOUBLE_WITHIN(1e-6, -122.0353933333, g.lon_deg); // 'w' -> negative
 }
 
+// Hemisphere fields with length != 1 take the short-circuit false arm of `field_len == 1 && (...)` (the
+// letter is never even looked at); both existing tests always pass a single-char N/S and E/W field, so
+// leave both hemisphere fields empty here to hit that arm on both guards.
+void test_gga_empty_hemisphere_fields_not_negated()
+{
+    char buf[96];
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(
+        build_parse_gga("GPGGA,124515.00,3723.2475,,12202.1236,,1,08,0.9,30.5,M,-25.0,M,,", buf, sizeof(buf), &m));
+    GnssGeodetic g;
+    TEST_ASSERT_TRUE(dws_gnss_gga_to_geodetic(&m, &g));
+    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 37.3874583333, g.lat_deg);  // no hemisphere letter -> stays positive
+    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 122.0353933333, g.lon_deg); // no hemisphere letter -> stays positive
+}
+
 // A GGA with no geoid-separation field (field_count 11) -> geoid defaults to 0, height == MSL.
 void test_gga_geoid_absent_defaults_zero()
 {
@@ -364,6 +408,7 @@ int main()
     RUN_TEST(test_m_to_01mm_rounds_half_away);
     RUN_TEST(test_survey_single_fix_matches_reference);
     RUN_TEST(test_survey_averages_out_scatter);
+    RUN_TEST(test_survey_accuracy_clamps_negative_variance);
     RUN_TEST(test_survey_empty_has_no_mean);
     RUN_TEST(test_gga_to_geodetic);
     RUN_TEST(test_gga_no_fix_rejected);
@@ -372,12 +417,14 @@ int main()
     RUN_TEST(test_ecef_to_geodetic_south_pole);
     RUN_TEST(test_gga_empty_lat_rejected);
     RUN_TEST(test_gga_nonnumeric_lat_rejected);
+    RUN_TEST(test_gga_null_lat_field_rejected);
     RUN_TEST(test_gga_empty_lon_rejected);
     RUN_TEST(test_gga_empty_quality_rejected);
     RUN_TEST(test_gga_empty_altitude_rejected);
     RUN_TEST(test_gga_too_few_fields_rejected);
     RUN_TEST(test_gga_southern_eastern_hemisphere);
     RUN_TEST(test_gga_lowercase_hemispheres);
+    RUN_TEST(test_gga_empty_hemisphere_fields_not_negated);
     RUN_TEST(test_gga_geoid_absent_defaults_zero);
     RUN_TEST(test_gga_bad_args_and_types_rejected);
     RUN_TEST(test_survey_add_gga_rejects_bad_fix);

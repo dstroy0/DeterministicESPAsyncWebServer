@@ -104,6 +104,59 @@ void test_oauth2_build_parse_guards()
     TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_code_request("a b&c", "uri", "cid", "sec", "ver", out, 8));
 }
 
+void test_unreserved_uppercase_and_tilde_pass_through()
+{
+    // Uppercase letters and '~' are both in the unreserved set (RFC 3986) and must
+    // be copied verbatim, not percent-encoded.
+    int n = dws_oauth2_build_code_request("AB~cd", "u", "id", nullptr, nullptr, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_NOT_NULL(strstr(out, "code=AB~cd"));
+}
+
+void test_build_code_request_individual_null_guards()
+{
+    char buf[64];
+    TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_code_request("code", nullptr, "id", nullptr, nullptr, buf,
+                                                           sizeof(buf))); // null redirect_uri
+    TEST_ASSERT_EQUAL_INT(
+        0, dws_oauth2_build_code_request("code", "uri", nullptr, nullptr, nullptr, buf, sizeof(buf))); // null client_id
+    TEST_ASSERT_EQUAL_INT(
+        0, dws_oauth2_build_code_request("code", "uri", "id", nullptr, nullptr, nullptr, sizeof(buf)));     // null out
+    TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_code_request("code", "uri", "id", nullptr, nullptr, buf, 0)); // cap == 0
+}
+
+void test_build_refresh_request_individual_null_guards()
+{
+    char buf[64];
+    TEST_ASSERT_EQUAL_INT(0,
+                          dws_oauth2_build_refresh_request("rt", nullptr, nullptr, buf, sizeof(buf))); // null client_id
+    TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_refresh_request("rt", "id", nullptr, nullptr, sizeof(buf))); // null out
+    TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_refresh_request("rt", "id", nullptr, buf, 0));               // cap == 0
+}
+
+void test_build_refresh_request_without_secret()
+{
+    int n = dws_oauth2_build_refresh_request("rt-token", "client-42", nullptr, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_STRING("grant_type=refresh_token&refresh_token=rt-token&client_id=client-42", out);
+    TEST_ASSERT_NULL(strstr(out, "client_secret"));
+}
+
+void test_refresh_request_percent_encode_overflow()
+{
+    // Prefix "grant_type=refresh_token&refresh_token=" is exactly 39 chars. With a
+    // 41-byte buffer only 2 bytes remain once the prefix is written, which is enough
+    // for put_enc's plain-byte guard but not its 3-byte %XX escape guard, so encoding
+    // the first (non-unreserved) char of the token trips put_enc's overflow path.
+    char tiny[41];
+    TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_refresh_request("!x", "cid", nullptr, tiny, sizeof(tiny)));
+}
+
+void test_parse_token_response_null_out()
+{
+    TEST_ASSERT_FALSE(dws_oauth2_parse_token_response("{\"access_token\":\"x\"}", nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -116,5 +169,11 @@ int main()
     RUN_TEST(test_parse_minimal_response);
     RUN_TEST(test_parse_error_response_fails);
     RUN_TEST(test_oauth2_build_parse_guards);
+    RUN_TEST(test_unreserved_uppercase_and_tilde_pass_through);
+    RUN_TEST(test_build_code_request_individual_null_guards);
+    RUN_TEST(test_build_refresh_request_individual_null_guards);
+    RUN_TEST(test_build_refresh_request_without_secret);
+    RUN_TEST(test_refresh_request_percent_encode_overflow);
+    RUN_TEST(test_parse_token_response_null_out);
     return UNITY_END();
 }

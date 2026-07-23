@@ -164,6 +164,35 @@ void test_dispatch_not_found_guards()
     TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_NOT_FOUND, dws_southbound_write("nope", 0, 42)); // no driver
 }
 
+void test_find_null_name(void)
+{
+    // dws_southbound_find's own null-name guard, independent of any dispatch caller.
+    TEST_ASSERT_NULL(dws_southbound_find(nullptr));
+}
+
+void test_read_missing_capability(void)
+{
+    // A driver that implements write but not read, to hit dws_southbound_read's
+    // "d->read == nullptr" guard (distinct from the read-side "ro" driver above).
+    SouthboundDriver wo = {"wo", nullptr, fake_write, nullptr, nullptr, &g_ctx};
+    TEST_ASSERT_EQUAL_INT(Sb::SB_OK, dws_southbound_register(&wo));
+    int32_t v = 0;
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_UNSUPPORTED, dws_southbound_read("wo", 0, &v));
+}
+
+void test_block_not_found_and_arg_edges(void)
+{
+    dws_southbound_register(&g_full);
+    int32_t out[2] = {0};
+    int32_t in[2] = {1, 2};
+    // Unknown driver name reaches the block paths' own "not found" guard.
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_NOT_FOUND, dws_southbound_read_block("nope", 0, out, 2));
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_NOT_FOUND, dws_southbound_write_block("nope", 0, in, 2));
+    // Null out pointer (read_block) and zero count with a valid pointer (write_block).
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_southbound_read_block("fake", 0, nullptr, 2));
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_southbound_write_block("fake", 0, in, 0));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -173,5 +202,8 @@ int main(void)
     RUN_TEST(test_unsupported_capability);
     RUN_TEST(test_registry_full);
     RUN_TEST(test_dispatch_not_found_guards);
+    RUN_TEST(test_find_null_name);
+    RUN_TEST(test_read_missing_capability);
+    RUN_TEST(test_block_not_found_and_arg_edges);
     return UNITY_END();
 }

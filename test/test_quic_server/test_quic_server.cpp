@@ -566,6 +566,340 @@ void test_quic_server_pool_full()
     dws_quic_server_stop();
 }
 
+// copy_str (peer-ip capture) is fed a null ip and an ip longer than the 16-byte peer_ip/ring ip
+// fields: the "if (src)" guard and the "n + 1 < cap" capacity guard must each be exercised. The
+// datagram content is irrelevant - a bare short header is enough since it never matches a connection.
+void test_quic_server_copy_str_edges()
+{
+    fill();
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = test_rng;
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
+
+    uint8_t one[1] = {0x40};
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(one, sizeof(one), nullptr, 1));
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(one, sizeof(one), "AAAAAAAAAAAAAAAAAAAA", 2)); // 20 chars > ip[16]
+
+    dws_quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(0, dws_quic_server_active_conns()); // neither datagram matched or opened a connection
+
+    dws_quic_server_stop();
+}
+
+// With no output sink registered (host build), server_send's "if (s_quic.out_sink)" guard must
+// silently drop the handshake-response flight rather than call through a null pointer.
+void test_quic_server_no_out_sink()
+{
+    fill();
+    dws_quic_server_set_out_sink_cb(nullptr, nullptr); // guard against a previous test's sink lingering
+
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = test_rng;
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
+
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    QuicTransportParams ctp;
+    dws_quic_tp_defaults(&ctp);
+    uint8_t ctpe[128];
+    size_t ctpl = dws_quic_tp_encode(&ctp, ctpe, sizeof(ctpe));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t chl = build_client_hello(ch, client_pub, ctpe, ctpl);
+    uint8_t frames[1200];
+    size_t fl = dws_quic_build_crypto(frames, sizeof(frames), 0, ch, chl);
+    memset(frames + fl, 0, 1100 - fl);
+    fl = 1100;
+    uint8_t dg[1500];
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, frames, fl);
+
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(dg, dl, "192.0.2.10", 40000));
+    dws_quic_server_poll(0); // generates a handshake-response flight that server_send must drop silently
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());
+    TEST_ASSERT_EQUAL_INT(0, g_out_n); // no sink registered -> nothing captured, but no crash either
+
+    dws_quic_server_stop();
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr); // restore for any test relying on the global sink
+}
+
+// dws_quic_server_respond() with an unknown conn_id while a real connection IS active: slot_by_id's
+// loop must fall through the id mismatch (used == true, id != conn_id), not just the used == false
+// case already covered by test_quic_server_input_guards.
+void test_quic_server_respond_unknown_id_with_active_conn()
+{
+    fill();
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = test_rng;
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
+
+    uint8_t dg0[256];
+    size_t dl0 = make_min_initial(dg0, sizeof(dg0), ODCID, sizeof(ODCID));
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(dg0, dl0, "192.0.2.10", 40000));
+    dws_quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns()); // the one active conn gets id 1 (next_id starts at 1)
+
+    TEST_ASSERT_FALSE(dws_quic_server_respond(2, 0, 200, "text/plain", nullptr, 0)); // no slot has id 2
+
+    dws_quic_server_stop();
+}
+
+// dws_quic_server_begin() with port == 0 must fall back to DWS_HTTP3_PORT (every other test in this
+// file passes a nonzero port, so the ternary's zero branch is otherwise never taken).
+void test_quic_server_begin_default_port()
+{
+    fill();
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = test_rng;
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(0, &scfg, app_request, nullptr));
+    dws_quic_server_stop();
+}
+
+// route()'s long-header cid_eq matching (against an open connection's SCID and ODCID) and its
+// version/type guard for treating an unmatched packet as a new Initial, plus the short-header
+// matching loop, each need their untaken branch exercised: a DCID whose LENGTH differs from the
+// open connection's SCID/ODCID (cid_eq's alen==blen short-circuit), a DCID that exactly equals the
+// open connection's SCID (cid_eq's memcmp short-circuit match), a non-INITIAL long header (the
+// type != INITIAL branch), an unsupported version (the version != 1 branch), and a short header with
+// the right length but the wrong SCID content (the memcmp mismatch branch).
+void test_quic_server_route_header_edges()
+{
+    fill();
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = test_rng; // 3rd rng call yields SERVER_SCID, a known value to address packets to
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
+
+    // Open one connection so the loops below have a real "used" slot to compare against.
+    uint8_t dg0[256];
+    size_t dl0 = make_min_initial(dg0, sizeof(dg0), ODCID, sizeof(ODCID));
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(dg0, dl0, "192.0.2.10", 40000));
+    dws_quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());
+
+    // A long-header HANDSHAKE packet (not INITIAL) with a DCID SHORTER than the open connection's
+    // 8-byte SCID/ODCID: cid_eq's alen == blen short-circuits false against both, and the
+    // version/type guard's "type != INITIAL" branch keeps it from opening a new connection.
+    uint8_t short_dcid[4] = {0x11, 0x22, 0x33, 0x44};
+    uint8_t hs_hdr[64];
+    size_t hs_len =
+        dws_quic_build_long_header(hs_hdr, sizeof(hs_hdr), QuicLongPacket::QUIC_LP_HANDSHAKE, QUIC_VERSION_1,
+                                   short_dcid, sizeof(short_dcid), CLIENT_SCID, sizeof(CLIENT_SCID), 1);
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(hs_hdr, hs_len, "192.0.2.11", 40001));
+
+    // A long-header Initial with an unsupported version: the "version == 1" branch goes false and
+    // short-circuits before the type check.
+    uint8_t other_dcid[8] = {0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78};
+    uint8_t ver_hdr[64];
+    size_t ver_len = dws_quic_build_long_header(ver_hdr, sizeof(ver_hdr), QuicLongPacket::QUIC_LP_INITIAL, 0xAABBCCDDu,
+                                                other_dcid, sizeof(other_dcid), CLIENT_SCID, sizeof(CLIENT_SCID), 1);
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(ver_hdr, ver_len, "192.0.2.12", 40002));
+
+    // A long-header HANDSHAKE packet whose DCID is exactly the open connection's SCID (SERVER_SCID):
+    // cid_eq's alen == blen AND memcmp == 0 both go true, so it matches by SCID directly (the ODCID
+    // compare is short-circuited away).
+    uint8_t scid_hdr[64];
+    size_t scid_hdr_len =
+        dws_quic_build_long_header(scid_hdr, sizeof(scid_hdr), QuicLongPacket::QUIC_LP_HANDSHAKE, QUIC_VERSION_1,
+                                   SERVER_SCID, sizeof(SERVER_SCID), CLIENT_SCID, sizeof(CLIENT_SCID), 1);
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(scid_hdr, scid_hdr_len, "192.0.2.13", 40003));
+
+    dws_quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns()); // still just the one connection
+
+    // A short header (1-RTT) with the right length but a SCID that does not match: the memcmp
+    // mismatch branch of the short-header routing loop.
+    uint8_t wrong_scid[1 + DWS_QUIC_SCID_LEN];
+    wrong_scid[0] = 0x40;
+    for (int i = 0; i < DWS_QUIC_SCID_LEN; i++)
+        wrong_scid[1 + i] = (uint8_t)(0xEE + i);
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(wrong_scid, sizeof(wrong_scid), "192.0.2.14", 40004));
+    dws_quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());
+
+    dws_quic_server_stop();
+}
+
+// A client CONNECTION_CLOSE well before the idle timeout: dws_quic_conn_is_closed() must reap the
+// slot on its own (flush_and_reap's "||" short-circuits before the idle-timeout comparison), not
+// just via the idle path already covered by test_idle_connection_reaped.
+void test_quic_server_close_reaped_before_idle()
+{
+    fill();
+    uint32_t now = 5000;
+
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = test_rng;
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
+
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+
+    uint8_t frames0[64];
+    size_t fl0 = dws_quic_build_ack(frames0, sizeof(frames0), 0, 0, 0);
+    uint8_t dg0[256];
+    size_t dl0 = build_long(dg0, sizeof(dg0), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                            sizeof(CLIENT_SCID), 0, &init.client, frames0, fl0);
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(dg0, dl0, "192.0.2.20", 40010));
+    dws_quic_server_poll(now);
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());
+
+    uint8_t cc_frames[64];
+    size_t cc_len = dws_quic_build_connection_close(cc_frames, sizeof(cc_frames), 0, 0, nullptr, 0);
+    uint8_t dg1[256];
+    size_t dl1 = build_long(dg1, sizeof(dg1), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                            sizeof(CLIENT_SCID), 1, &init.client, cc_frames, cc_len);
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(dg1, dl1, "192.0.2.20", 40010));
+    now += 5; // far short of DWS_QUIC_IDLE_MS
+    dws_quic_server_poll(now);
+    TEST_ASSERT_EQUAL_UINT8(0, dws_quic_server_active_conns()); // reaped by is_closed(), not by idle
+
+    dws_quic_server_stop();
+}
+
+// With on_request == nullptr, dws_h3_on_request's "if (s_quic.on_request)" guard must skip the
+// forwarding call instead of dereferencing a null function pointer, once a real HTTP/3 request
+// completes on a fully-established connection.
+void test_quic_server_on_request_null()
+{
+    fill();
+
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = test_rng;
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, nullptr, nullptr)); // no request callback
+
+    QuicInitialSecrets init;
+    dws_quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+
+    QuicTransportParams ctp;
+    dws_quic_tp_defaults(&ctp);
+    ctp.initial_max_data = 524288;
+    ctp.initial_max_sd_bidi_local = 131072;
+    uint8_t ctpe[128];
+    size_t ctpl = dws_quic_tp_encode(&ctp, ctpe, sizeof(ctpe));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t chl = build_client_hello(ch, client_pub, ctpe, ctpl);
+    uint8_t frames[1200];
+    size_t fl = dws_quic_build_crypto(frames, sizeof(frames), 0, ch, chl);
+    memset(frames + fl, 0, 1100 - fl);
+    fl = 1100;
+    uint8_t dg[1500];
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, frames, fl);
+
+    g_out_n = 0;
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(dg, dl, "192.0.2.10", 40000));
+    dws_quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());
+    TEST_ASSERT_GREATER_THAN(0, g_out_n);
+
+    uint8_t plain[2048], sh[512], hsf[1024];
+    size_t wire = 0;
+    uint8_t ty = 0;
+    size_t pt = open_long(g_out[0], g_out_len[0], &init.server, plain, &wire, &ty);
+    size_t shl = extract_crypto(plain, pt, sh);
+    uint8_t server_pub[32], ecdhe[32];
+    ssh_x25519_base(server_pub, SERVER_PRIV);
+    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+    SshSha256Ctx t;
+    uint8_t chsh[32], chsf[32];
+    ssh_sha256_init(&t);
+    ssh_sha256_update(&t, ch, chl);
+    ssh_sha256_update(&t, sh, shl);
+    {
+        SshSha256Ctx tmp = t;
+        ssh_sha256_final(&tmp, chsh);
+    }
+    Tls13KeySchedule cks;
+    dws_tls13_ks_early(&TLS13_KDF, &cks);
+    dws_tls13_ks_handshake(&cks, ecdhe, chsh);
+    QuicPacketKeys hs_s, hs_c, ap_c;
+    dws_quic_keys_from_secret(cks.server_hs_traffic, &hs_s);
+    dws_quic_keys_from_secret(cks.client_hs_traffic, &hs_c);
+    size_t hw = 0;
+    uint8_t hty = 0;
+    size_t hpt = open_long(g_out[0] + wire, g_out_len[0] - wire, &hs_s, plain, &hw, &hty);
+    size_t hsfl = extract_crypto(plain, hpt, hsf);
+    ssh_sha256_update(&t, hsf, hsfl);
+    ssh_sha256_final(&t, chsf);
+    dws_tls13_ks_master(&cks, chsf);
+    dws_quic_keys_from_secret(cks.client_ap_traffic, &ap_c);
+
+    uint8_t ifr[64];
+    size_t ifl = dws_quic_build_ack(ifr, sizeof(ifr), 0, 0, 0);
+    uint8_t idg[256];
+    size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                            sizeof(CLIENT_SCID), 1, &init.client, ifr, ifl);
+    uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    dws_tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, chsf, cfin + 4);
+    uint8_t hfr[64];
+    size_t hfl = dws_quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
+    hfl += dws_quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));
+    size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID),
+                            CLIENT_SCID, sizeof(CLIENT_SCID), 0, &hs_c, hfr, hfl);
+    g_out_n = 0;
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000));
+    dws_quic_server_poll(0);
+
+    uint8_t block[128];
+    size_t bp = dws_qpack_encode_prefix(block, sizeof(block));
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":method", 7, "GET", 3);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/hello", 6);
+    bp += dws_qpack_encode_header(block + bp, sizeof(block) - bp, ":authority", 10, "h3.test", 7);
+    uint8_t h3req[256];
+    size_t h3l = dws_h3_build_headers(h3req, sizeof(h3req), block, bp);
+    uint8_t sfr[300];
+    size_t sfrl = dws_quic_build_stream(sfr, sizeof(sfr), 0, 0, h3req, h3l, true);
+    uint8_t s1[512];
+    size_t s1l = build_short(s1, sizeof(s1), SERVER_SCID, sizeof(SERVER_SCID), 0, &ap_c, sfr, sfrl);
+
+    g_out_n = 0;
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(s1, s1l, "192.0.2.10", 40000));
+    dws_quic_server_poll(0); // the H3 engine completes the request and calls dws_h3_on_request, which
+                             // must see s_quic.on_request == nullptr and skip forwarding, not crash
+
+    TEST_ASSERT_EQUAL_STRING("", g_method); // never invoked: no crash and nothing forwarded
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());
+
+    dws_quic_server_stop();
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -573,5 +907,12 @@ int main(int, char **)
     RUN_TEST(test_idle_connection_reaped);
     RUN_TEST(test_quic_server_input_guards);
     RUN_TEST(test_quic_server_pool_full);
+    RUN_TEST(test_quic_server_copy_str_edges);
+    RUN_TEST(test_quic_server_no_out_sink);
+    RUN_TEST(test_quic_server_begin_default_port);
+    RUN_TEST(test_quic_server_respond_unknown_id_with_active_conn);
+    RUN_TEST(test_quic_server_route_header_edges);
+    RUN_TEST(test_quic_server_close_reaped_before_idle);
+    RUN_TEST(test_quic_server_on_request_null);
     return UNITY_END();
 }

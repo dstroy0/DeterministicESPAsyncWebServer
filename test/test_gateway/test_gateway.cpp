@@ -201,8 +201,13 @@ void test_topic_format()
     n = dws_gateway_topic(&m, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_STRING("lora/2/66", buf);
 
+    dws_gateway_set_topic_prefix(nullptr); // null -> falls back to DWS_GW_DEFAULT_PREFIX
+    n = dws_gateway_topic(&m, buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_STRING("gw/2/66", buf);
+
     char tiny[4];
-    TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(&m, tiny, sizeof(tiny))); // too small -> 0
+    TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(&m, tiny, sizeof(tiny)));   // too small -> 0
+    TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(&m, nullptr, sizeof(buf))); // null buf -> 0
 }
 
 void test_add_port_validation_and_table_full()
@@ -239,8 +244,18 @@ void test_topic_zero_and_overflow_steps()
     TEST_ASSERT_TRUE(dws_gateway_topic(&m, buf, sizeof(buf)) > 0);
     TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(nullptr, buf, sizeof(buf))); // null msg
     TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(&m, buf, 0));                // zero buflen
-    for (uint16_t cap = 1; cap <= 4; cap++)                                    // fail at successive append steps
-        TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(&m, buf, cap));
+    for (uint16_t cap = 1; cap <= 6; cap++)                                    // fail at successive append steps:
+        TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(&m, buf, cap));          // prefix, both '/'s, both digits
+}
+
+void test_get_stats_null_out_is_noop()
+{
+    add_port(0, dws_gateway_kind::DWS_GW_LORA, 0, false);
+    dws_gateway_set_uplink_cb(cap_uplink, nullptr);
+    const uint8_t x[1] = {1};
+    dws_gateway_uplink(0, 1, x, 1, 0);
+    dws_gateway_get_stats(nullptr);                    // out == nullptr -> must not write/crash
+    TEST_ASSERT_EQUAL_UINT32(1, stats().up_published); // real stats unaffected
 }
 
 int main()
@@ -258,5 +273,6 @@ int main()
     RUN_TEST(test_add_port_validation_and_table_full);
     RUN_TEST(test_seq_increments_per_uplink);
     RUN_TEST(test_topic_zero_and_overflow_steps);
+    RUN_TEST(test_get_stats_null_out_is_noop);
     return UNITY_END();
 }

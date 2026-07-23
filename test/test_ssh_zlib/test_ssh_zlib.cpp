@@ -204,6 +204,18 @@ void test_output_overflow_fails_closed()
     TEST_ASSERT_EQUAL_INT(-1, rc);
 }
 
+// A corrupted `hist` (past the hist<=WINDOW invariant normal operation always maintains) must still
+// fail closed rather than overrun the work buffer in the memcpy that follows. SshDeflate is a caller-
+// owned flat struct with no encapsulation, so this pokes the field directly to defend the guard itself.
+void test_hist_overflow_invariant_rejected()
+{
+    g_z.hist = SSH_ZLIB_WORK_SIZE; // hist + src_len will exceed the work buffer capacity
+    uint8_t buf[1] = {'x'};
+    size_t olen = 0;
+    int rc = ssh_deflate_packet(&g_z, buf, sizeof(buf), g_out, sizeof(g_out), &olen);
+    TEST_ASSERT_EQUAL_INT(-1, rc);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -216,5 +228,6 @@ int main()
     RUN_TEST(test_fuzz_low_entropy_stream);
     RUN_TEST(test_oversize_input_rejected);
     RUN_TEST(test_output_overflow_fails_closed);
+    RUN_TEST(test_hist_overflow_invariant_rejected);
     return UNITY_END();
 }

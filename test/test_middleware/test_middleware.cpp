@@ -241,6 +241,31 @@ void test_rate_limit_disabled_by_default()
     }
 }
 
+// use(nullptr) is rejected without touching the chain (the other half of the capacity guard's
+// OR, which test_use_respects_capacity_cap already covers).
+void test_use_rejects_null_middleware()
+{
+    server.use(nullptr);
+    server.use(mw_pass);
+    server.on("/t", HttpMethod::HTTP_GET, h_ok);
+    do_req(0, "GET /t HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_EQUAL_INT(1, g_log_count); // only mw_pass ran; the null entry was dropped
+    TEST_ASSERT_TRUE(g_handler_called);
+}
+
+// A rate limit enabled with a zero window is treated as disabled - the window_ms == 0 half of
+// the guard, distinct from the max_requests == 0 (never-enabled) half every other test hits.
+void test_rate_limit_zero_window_disables()
+{
+    server.enable_rate_limit(1, 0);
+    server.on("/t", HttpMethod::HTTP_GET, h_ok);
+    for (int i = 0; i < 5; i++)
+    {
+        const char *r = do_req(0, "GET /t HTTP/1.1\r\n\r\n");
+        TEST_ASSERT_NOT_NULL(strstr(r, "200 OK")); // never rate-limited
+    }
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -253,5 +278,7 @@ int main()
     RUN_TEST(test_rate_limit_allows_then_rejects);
     RUN_TEST(test_rate_limit_window_resets);
     RUN_TEST(test_rate_limit_disabled_by_default);
+    RUN_TEST(test_use_rejects_null_middleware);
+    RUN_TEST(test_rate_limit_zero_window_disables);
     return UNITY_END();
 }

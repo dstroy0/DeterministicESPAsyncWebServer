@@ -643,8 +643,11 @@ bool write_leaf_page(uint8_t *page, uint32_t page_size, uint32_t hdr_off, const 
         size_t k = dws_sqlite_varint_encode(rl, cp, cell_len);
         k += dws_sqlite_varint_encode(rows[r].rowid, cp + k, cell_len - k);
         uint32_t w = dws_sqlite_encode_record(rows[r].cols, rows[r].ncols, cp + k, cell_len - (uint32_t)k);
+        // Unreachable: record_len() and dws_sqlite_encode_record() derive their size from the same
+        // per-column value_serial()/write_value() logic, so w == rl always holds for any cols/ncols
+        // that reached this point - kept only as a guard against future logic drift between the two.
         if (w != rl)
-            return false; // internal invariant: measured length must match written length
+            return false; // GCOVR_EXCL_LINE  internal invariant (provably not hit; see above)
         wr_be16(page + hdr_off + 8 + 2 * r, (uint16_t)off); // cell pointer for row r
     }
     return true;

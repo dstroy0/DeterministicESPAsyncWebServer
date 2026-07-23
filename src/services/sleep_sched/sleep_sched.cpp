@@ -38,8 +38,13 @@ uint32_t dws_sleep_next(uint32_t now, uint32_t last_active_ms, const DWSSleepCfg
     }
     if (window > ceil_ms)
         window = ceil_ms;
+    // GCOVR_EXCL_START  unreachable: ceil_ms is max(min_ms, max_ms) (see above), window is seeded to
+    // min_ms (or 1 when min_ms is 0) and from there only ever grows - by doubling or by the ceiling
+    // clamp above, which lands it on ceil_ms >= min_ms - so it can never fall below min_ms. Kept as a
+    // defensive floor.
     if (window < cfg->min_ms)
         window = cfg->min_ms;
+    // GCOVR_EXCL_STOP
     return window;
 }
 

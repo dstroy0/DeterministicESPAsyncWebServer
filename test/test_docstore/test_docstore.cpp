@@ -265,6 +265,24 @@ void test_find_count_only_null_cb(void)
     TEST_ASSERT_EQUAL_UINT32(0, dws_docstore_find_str(&g_ds, "grp", "z", nullptr, nullptr));
 }
 
+// A document whose value becomes unreadable mid-scan (e.g. a truncated/corrupted backing store) is
+// skipped rather than counted as a match, and the scan still runs to completion over the rest.
+void test_find_skips_unreadable_document(void)
+{
+    fresh();
+    put_doc("a", "{\"grp\":\"x\"}");
+    put_doc("b", "{\"grp\":\"x\"}");
+
+    // Truncate the backing device out from under the store: any value pread now reads short and fails,
+    // without touching the in-RAM slot index that dws_dbm_iterate walks.
+    g_d.size = 4;
+
+    Collected c = {};
+    uint32_t m = dws_docstore_find_str(&g_ds, "grp", "x", collect, &c);
+    TEST_ASSERT_EQUAL_UINT32(0, m);
+    TEST_ASSERT_EQUAL_INT(0, c.n);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -275,5 +293,6 @@ int main(void)
     RUN_TEST(test_find_early_stop);
     RUN_TEST(test_find_field_absent);
     RUN_TEST(test_find_count_only_null_cb);
+    RUN_TEST(test_find_skips_unreadable_document);
     return UNITY_END();
 }

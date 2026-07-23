@@ -13,8 +13,8 @@
 // Unlike strstr, it does not stop at a NUL, so a body containing NUL bytes scans correctly.
 static char *mem_find(char *hay, size_t hlen, const char *needle, size_t nlen)
 {
-    if (nlen == 0 || nlen > hlen)
-        return nullptr;
+    if (nlen == 0 || nlen > hlen) // GCOVR_EXCL_BR_LINE  nlen==0 never true: every caller in this file passes
+        return nullptr;           // a fixed literal (2) or a length derived from an already-checked nonzero blen
     for (size_t i = 0; i + nlen <= hlen; i++)
         if (memcmp(hay + i, needle, nlen) == 0)
             return hay + i;
@@ -59,7 +59,11 @@ bool dws_multipart_parse(HttpReq *req, Multipart *mp)
 
     char bval[MAX_BOUNDARY_LEN + 1];
     size_t blen = 0;
-    while (*bsearch && *bsearch != '"' && *bsearch != ';' && *bsearch != ' ' && blen < MAX_BOUNDARY_LEN)
+    // blen reaching MAX_BOUNDARY_LEN (72) never terminates this loop in practice: bsearch points into
+    // the stored Content-Type value, which http_parser caps at MAX_VAL_LEN-1 (47) bytes total, and
+    // "boundary=" alone consumes 9+ of those - so the NUL (or a '"'/';'/' ' delimiter) is always hit first.
+    while (*bsearch && *bsearch != '"' && *bsearch != ';' && *bsearch != ' ' && // GCOVR_EXCL_BR_LINE
+           blen < MAX_BOUNDARY_LEN)
         bval[blen++] = *bsearch++;
     bval[blen] = '\0';
 

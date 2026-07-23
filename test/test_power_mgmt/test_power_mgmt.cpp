@@ -157,6 +157,11 @@ void test_null_cfg_is_not_a_crash()
     TEST_ASSERT_EQUAL_UINT16(0, p.cpu_mhz);
 }
 
+void test_null_cfg_defaults_is_not_a_crash()
+{
+    dws_power_cfg_defaults(nullptr); // must not crash; there is no output to assert on
+}
+
 void test_defaults_are_self_consistent()
 {
     PowerCfg d;
@@ -186,6 +191,32 @@ void test_json_reports_a_missing_sensor_as_null()
     TEST_ASSERT_EQUAL_STRING("{\"cpu_mhz\":80,\"throttled\":false,\"recovering\":false,\"temp_c\":null}", buf);
 }
 
+void test_json_missing_sensor_reports_throttled_and_recovering_true()
+{
+    // The no-sensor branch has its own throttled/recovering ternaries; exercise both true arms,
+    // which test_json_reports_a_missing_sensor_as_null (both false) does not reach.
+    char buf[128];
+    PowerPlan p;
+    p.cpu_mhz = 80;
+    p.throttled = true;
+    p.recovering = true;
+    TEST_ASSERT_TRUE(dws_power_json(&p, INT16_MIN, buf, sizeof(buf)) > 0);
+    TEST_ASSERT_EQUAL_STRING("{\"cpu_mhz\":80,\"throttled\":true,\"recovering\":true,\"temp_c\":null}", buf);
+}
+
+void test_json_with_a_sensor_reading_reports_recovering_true()
+{
+    // test_json only ever sees recovering=false; cover the recovering-true arm of the
+    // has-a-sensor branch's ternary too.
+    char buf[128];
+    PowerPlan p;
+    p.cpu_mhz = 80;
+    p.throttled = false;
+    p.recovering = true;
+    TEST_ASSERT_TRUE(dws_power_json(&p, 41, buf, sizeof(buf)) > 0);
+    TEST_ASSERT_EQUAL_STRING("{\"cpu_mhz\":80,\"throttled\":false,\"recovering\":true,\"temp_c\":41}", buf);
+}
+
 void test_json_overflow_is_fail_closed()
 {
     char tiny[12];
@@ -193,6 +224,19 @@ void test_json_overflow_is_fail_closed()
     TEST_ASSERT_EQUAL_UINT32(0, dws_power_json(&p, 41, tiny, sizeof(tiny)));
     TEST_ASSERT_EQUAL_STRING("", tiny);
     TEST_ASSERT_EQUAL_UINT32(0, dws_power_json(nullptr, 41, tiny, sizeof(tiny)));
+}
+
+void test_json_null_out_is_rejected()
+{
+    PowerPlan p = plan(0, 41, false, 60000, false);
+    TEST_ASSERT_EQUAL_UINT32(0, dws_power_json(&p, 41, nullptr, 128));
+}
+
+void test_json_zero_cap_is_rejected()
+{
+    char buf[128];
+    PowerPlan p = plan(0, 41, false, 60000, false);
+    TEST_ASSERT_EQUAL_UINT32(0, dws_power_json(&p, 41, buf, 0));
 }
 
 int main(int, char **)
@@ -213,9 +257,14 @@ int main(int, char **)
     RUN_TEST(test_brownout_and_hot_both_reported);
     RUN_TEST(test_missing_sensor_does_not_read_as_ice_cold);
     RUN_TEST(test_null_cfg_is_not_a_crash);
+    RUN_TEST(test_null_cfg_defaults_is_not_a_crash);
     RUN_TEST(test_defaults_are_self_consistent);
     RUN_TEST(test_json);
     RUN_TEST(test_json_reports_a_missing_sensor_as_null);
+    RUN_TEST(test_json_missing_sensor_reports_throttled_and_recovering_true);
+    RUN_TEST(test_json_with_a_sensor_reading_reports_recovering_true);
     RUN_TEST(test_json_overflow_is_fail_closed);
+    RUN_TEST(test_json_null_out_is_rejected);
+    RUN_TEST(test_json_zero_cap_is_rejected);
     return UNITY_END();
 }

@@ -63,7 +63,10 @@ size_t dws_quic_tp_encode(const QuicTransportParams *tp, uint8_t *out, size_t ca
     size_t p = 0;
     bool ok = true;
     if (tp->has_original_dcid)
-        ok = ok && put_param(out, cap, &p, QuicTp::QUIC_TP_ORIGINAL_DCID, tp->original_dcid, tp->original_dcid_len);
+        // This is the first assignment in the ok-chain (ok is still its line-64 default), so the
+        // "ok already false" arm of this && can never fire.
+        ok = ok && put_param(out, cap, &p, QuicTp::QUIC_TP_ORIGINAL_DCID, tp->original_dcid, // GCOVR_EXCL_BR_LINE
+                             tp->original_dcid_len);
     if (tp->has_initial_scid)
         ok = ok && put_param(out, cap, &p, QuicTp::QUIC_TP_INITIAL_SCID, tp->initial_scid, tp->initial_scid_len);
     if (tp->has_retry_scid)

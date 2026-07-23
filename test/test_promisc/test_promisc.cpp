@@ -135,6 +135,36 @@ void test_reject_short()
     TEST_ASSERT_FALSE(wifi_frame_parse(nullptr, 64, &fi));
 }
 
+void test_null_out_pointer()
+{
+    uint8_t f[64];
+    hdr3(f, 0x80, 0x00, A_DST, A_AP, A_AP, 1);
+    // frame and len are both valid; only out is null - must still be rejected.
+    TEST_ASSERT_FALSE(wifi_frame_parse(f, sizeof(f), nullptr));
+}
+
+void test_qos_order_bit_ht_control()
+{
+    uint8_t f[64];
+    // QoS Data subtype 8 with the Order bit set: fc0 = 0x88, fc1 = 0x80. hlen = 24 + 2 (QoS) + 4
+    // (HT Control) = 30.
+    hdr3(f, 0x88, 0x80, A_DST, A_AP, A_AP, 5);
+    WifiFrameInfo fi;
+    TEST_ASSERT_TRUE(wifi_frame_parse(f, sizeof(f), &fi));
+    TEST_ASSERT_TRUE(fi.is_qos);
+    TEST_ASSERT_EQUAL_UINT16(30, fi.hdr_len);
+}
+
+void test_qos_len_less_than_hlen()
+{
+    uint8_t f[64];
+    // QoS Data subtype 8, no DS/order bits: fc0 = 0x88, fc1 = 0x00. Computed hlen = 24 + 2 = 26,
+    // but only 24 bytes are reported captured - shorter than the QoS-extended header.
+    hdr3(f, 0x88, 0x00, A_DST, A_AP, A_AP, 3);
+    WifiFrameInfo fi;
+    TEST_ASSERT_FALSE(wifi_frame_parse(f, 24, &fi));
+}
+
 void test_pcap_headers()
 {
     uint8_t g[DWS_PCAP_GLOBAL_HDR_LEN];
@@ -176,6 +206,9 @@ int main()
     RUN_TEST(test_wds_four_address);
     RUN_TEST(test_control_frame);
     RUN_TEST(test_reject_short);
+    RUN_TEST(test_null_out_pointer);
+    RUN_TEST(test_qos_order_bit_ht_control);
+    RUN_TEST(test_qos_len_less_than_hlen);
     RUN_TEST(test_pcap_headers);
     RUN_TEST(test_host_stubs_and_short_frame);
     return UNITY_END();

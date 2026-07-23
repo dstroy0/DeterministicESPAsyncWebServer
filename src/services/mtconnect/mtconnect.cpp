@@ -16,7 +16,9 @@ namespace
 {
 void put(DWSMtcStreams *s, const char *text)
 {
-    if (!s->ok || !text) // null text is a no-op: harden the helper itself, not just every call site
+    // null text is a no-op: harden the helper itself, not just every call site.
+    if (!s->ok || !text) // GCOVR_EXCL_BR_LINE  !text is unreachable: every call site in this file
+                         // guards with a literal or a ternary; kept as a defensive backstop only.
         return;
     size_t tl = strnlen(text, s->cap + 1);
     if (s->len + tl >= s->cap)
@@ -30,7 +32,9 @@ void put(DWSMtcStreams *s, const char *text)
 
 void put_escaped(DWSMtcStreams *s, const char *text)
 {
-    if (!s->ok || !text) // null text is a no-op: harden the helper itself, not just every call site
+    // null text is a no-op: harden the helper itself, not just every call site.
+    if (!s->ok || !text) // GCOVR_EXCL_BR_LINE  !text is unreachable: every call site in this file
+                         // guards with a literal or a ternary; kept as a defensive backstop only.
         return;
     for (const char *p = text; *p; p++)
     {
@@ -200,7 +204,9 @@ size_t dws_mtc_error(uint64_t instance_id, const char *error_code, const char *m
     put(&s, "</Error></Errors></MTConnectError>");
     // Null-check `out` directly (not just s.ok, which already implies it) so the NUL terminator
     // write is provably safe to the analyzer as well as at runtime.
-    if (!s.ok || out == nullptr)
+    if (!s.ok || out == nullptr) // GCOVR_EXCL_BR_LINE  out==nullptr here is unreachable: s.ok already
+                                 // encodes out!=nullptr (s.ok assignment above), so when s.ok is
+                                 // true out cannot be null.
         return 0;
     out[s.len] = '\0';
     return s.len;
@@ -362,8 +368,11 @@ namespace
 // Bounded, always-NUL-terminated copy into a fixed field.
 void mtc_copy_str(char *dst, size_t cap, const char *src)
 {
-    if (cap == 0)
-        return;
+    // cap == 0 is unreachable: every call site passes sizeof() of a fixed DWSMtcObservation field
+    // (DWS_MTC_STR_MAX/TS_MAX/VAL_MAX + 1, all compile-time non-zero constants in ServerConfig.h),
+    // never a literal 0. Kept as a defensive backstop against a future zero-sized field.
+    if (cap == 0) // GCOVR_EXCL_LINE
+        return;   // GCOVR_EXCL_LINE
     size_t i = 0;
     if (src)
         for (; i < cap - 1 && src[i] != '\0'; i++) // range check first (short-circuits the src read)

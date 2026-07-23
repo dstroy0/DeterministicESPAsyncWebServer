@@ -38,13 +38,20 @@ static bool upload_stream_begin(HttpReq *req)
 {
     if (strcmp(req->method, "POST") != 0)
         return false;
-    if (!s_upl.path || strcmp(req->path, s_upl.path) != 0)
+    // The `!s_upl.path` half is unreachable: s_upl.path is only ever set by dws_upload_begin(),
+    // which immediately hands that same pointer to server.on() -> fill_route_base(), whose
+    // strncpy() would fault on a null path before any request could reach this hook. So by the
+    // time this hook is installed, s_upl.path is always a live C string.
+    if (!s_upl.path || strcmp(req->path, s_upl.path) != 0) // GCOVR_EXCL_BR_LINE  null path unreachable (see above)
         return false;
 
     s_upl.active = false;
     s_upl.error = false;
     s_upl.written = 0;
-    if (s_upl.fs && s_upl.dest)
+    // The `s_upl.fs` half is unreachable: it is always the address of the `fs::FS &fs` reference
+    // parameter of dws_upload_begin(), and a reference can't be null without UB at the call site -
+    // only s_upl.dest (a plain pointer) can legitimately be null here.
+    if (s_upl.fs && s_upl.dest) // GCOVR_EXCL_BR_LINE  null fs unreachable (see above)
     {
         s_upl.file = s_upl.fs->open(s_upl.dest, "w");
         if (s_upl.file)

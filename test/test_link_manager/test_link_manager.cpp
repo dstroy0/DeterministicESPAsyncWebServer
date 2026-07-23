@@ -61,6 +61,16 @@ void test_tie_break_lower_index(void)
     TEST_ASSERT_EQUAL_INT(0, dws_link_active(&m));
 }
 
+void test_select_escalates_to_later_higher_priority(void)
+{
+    // Both up, but the higher priority sits at the *later* index: the scan must still pick it,
+    // exercising the right-hand side of `best < 0 || priority[i] > priority[best]` evaluating true.
+    LinkIface ifaces[2] = {{LinkKind::LINK_KIND_WIFI_AP, 5, true}, {LinkKind::LINK_KIND_ETH, 20, true}};
+    LinkManager m;
+    dws_link_init(&m, ifaces, 2);
+    TEST_ASSERT_EQUAL_INT(1, dws_link_active(&m));
+}
+
 void test_out_of_range_no_change(void)
 {
     dws_link_set(&g_m, 1, true, nullptr, nullptr);
@@ -116,6 +126,7 @@ int main(void)
     RUN_TEST(test_init_none_up);
     RUN_TEST(test_escalation_and_failover);
     RUN_TEST(test_tie_break_lower_index);
+    RUN_TEST(test_select_escalates_to_later_higher_priority);
     RUN_TEST(test_out_of_range_no_change);
     RUN_TEST(test_select_null_guards);
     RUN_TEST(test_init_and_active_null);

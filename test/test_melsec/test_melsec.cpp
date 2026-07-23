@@ -95,6 +95,12 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, dws_melsec_build_read(small, sizeof(small), MELSEC_DEV_D, 0, 1, 0)); // needs 21
 }
 
+// A null destination buffer fails closed regardless of the reported capacity.
+void test_build_null_buf_fails_closed()
+{
+    TEST_ASSERT_EQUAL_size_t(0, dws_melsec_build_read(nullptr, 32, MELSEC_DEV_D, 100, 5, 0x0010));
+}
+
 // The response parser rejects a null/short buffer and a data-length field smaller than
 // the mandatory 2-octet end code.
 void test_parse_guards()
@@ -106,6 +112,17 @@ void test_parse_guards()
     // Valid response header but the length field claims 1 octet - less than the end code.
     const uint8_t tiny_len[11] = {0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00};
     TEST_ASSERT_FALSE(dws_melsec_parse_response(tiny_len, sizeof(tiny_len), &r));
+    // Null out-parameter.
+    const uint8_t ok[11] = {0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00};
+    TEST_ASSERT_FALSE(dws_melsec_parse_response(ok, sizeof(ok), nullptr));
+}
+
+// Correct first subheader octet (0xD0) but a mismatched second octet is still rejected.
+void test_parse_rejects_bad_second_subheader_octet()
+{
+    MelsecResponse r;
+    const uint8_t bad_sub1[] = {0xD0, 0x01, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00};
+    TEST_ASSERT_FALSE(dws_melsec_parse_response(bad_sub1, sizeof(bad_sub1), &r));
 }
 
 int main()
@@ -117,6 +134,8 @@ int main()
     RUN_TEST(test_parse_response_error);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_build_null_buf_fails_closed);
     RUN_TEST(test_parse_guards);
+    RUN_TEST(test_parse_rejects_bad_second_subheader_octet);
     return UNITY_END();
 }

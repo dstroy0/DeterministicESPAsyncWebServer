@@ -62,6 +62,40 @@ void test_parse_rejects_bad_crc_and_short(void)
     TEST_ASSERT_FALSE(dws_nema_ts2_parse(buf, 4, &f)); // too short
 }
 
+void test_build_rejects_bad_args(void)
+{
+    uint8_t data[2] = {0xAA, 0xBB};
+    uint8_t buf[8];
+
+    // null output buffer.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_nema_ts2_build(0x01, 0x00, NemaTs2::NEMA_TS2_FT_CMD_MMU, data, 2, nullptr, sizeof(buf)));
+
+    // non-zero data_len with a null data pointer.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_nema_ts2_build(0x01, 0x00, NemaTs2::NEMA_TS2_FT_CMD_MMU, nullptr, 2, buf, sizeof(buf)));
+}
+
+void test_build_rejects_undersized_cap(void)
+{
+    uint8_t data[2] = {0xAA, 0xBB};
+    uint8_t buf[8];
+
+    // frame would be 3 + 2 + 2 = 7 bytes; cap of 6 is one byte too small.
+    TEST_ASSERT_EQUAL_size_t(0, dws_nema_ts2_build(0x01, 0x00, NemaTs2::NEMA_TS2_FT_CMD_MMU, data, 2, buf, 6));
+}
+
+void test_parse_rejects_null_args(void)
+{
+    uint8_t data[2] = {0xAA, 0xBB};
+    uint8_t buf[8];
+    size_t n = dws_nema_ts2_build(0x02, 0x00, NemaTs2::NEMA_TS2_FT_CMD_MMU, data, 2, buf, sizeof(buf));
+    NemaTs2Frame f;
+
+    TEST_ASSERT_FALSE(dws_nema_ts2_parse(nullptr, n, &f));  // null frame
+    TEST_ASSERT_FALSE(dws_nema_ts2_parse(buf, n, nullptr)); // null out
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -69,5 +103,8 @@ int main(void)
     RUN_TEST(test_build_and_parse);
     RUN_TEST(test_no_data_frame);
     RUN_TEST(test_parse_rejects_bad_crc_and_short);
+    RUN_TEST(test_build_rejects_bad_args);
+    RUN_TEST(test_build_rejects_undersized_cap);
+    RUN_TEST(test_parse_rejects_null_args);
     return UNITY_END();
 }

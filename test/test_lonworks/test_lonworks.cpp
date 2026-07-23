@@ -94,6 +94,50 @@ void test_snvt_clamps_and_guards()
     dws_lon_snvt_switch_encode(-5.0, 1, sw); // negative percent clamps to 0
 }
 
+void test_nv_build_null_guards(void)
+{
+    uint8_t out[8];
+    uint8_t val[2] = {1, 2};
+    // out == nullptr guard branch.
+    TEST_ASSERT_EQUAL_size_t(0, dws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0, val, sizeof(val), nullptr, sizeof(out)));
+    // value_len > 0 but value == nullptr guard branch.
+    TEST_ASSERT_EQUAL_size_t(0, dws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0, nullptr, 2, out, sizeof(out)));
+}
+
+void test_nv_parse_null_guards(void)
+{
+    uint8_t pdu[3] = {0x80, 0x00, 0x00};
+    LonNv nv;
+    // pdu == nullptr guard branch.
+    TEST_ASSERT_FALSE(dws_lon_parse_nv(nullptr, 3, &nv));
+    // out == nullptr guard branch.
+    TEST_ASSERT_FALSE(dws_lon_parse_nv(pdu, 3, nullptr));
+}
+
+void test_snvt_temp_clamp_high_in_range(void)
+{
+    // (celsius + 273.15) * 100 = 47315, which is inside int32_t range so the cast is
+    // well-defined (unlike the 1e9 case above, whose cast overflows int32_t and saturates
+    // to INT32_MIN via UB on this host/compiler - never actually crossing the +32767 clamp).
+    // This exercises the true branch of the "v > 32767" clamp with a well-defined value.
+    uint8_t enc[2];
+    dws_lon_snvt_temp_encode(200.0, enc);
+    TEST_ASSERT_EQUAL_UINT16(32767, (uint16_t)((enc[0] << 8) | enc[1]));
+}
+
+void test_snvt_switch_decode_null_outputs(void)
+{
+    uint8_t enc[2] = {100, 1};
+    double pct = -1.0;
+    uint8_t st = 0xAA;
+    // percent == nullptr: only state should be written.
+    dws_lon_snvt_switch_decode(enc, nullptr, &st);
+    TEST_ASSERT_EQUAL_UINT8(1, st);
+    // state == nullptr: only percent should be written.
+    dws_lon_snvt_switch_decode(enc, &pct, nullptr);
+    TEST_ASSERT_TRUE(absd(pct - 50.0) < 0.01);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -102,5 +146,9 @@ int main(void)
     RUN_TEST(test_snvt_temp);
     RUN_TEST(test_snvt_switch);
     RUN_TEST(test_snvt_clamps_and_guards);
+    RUN_TEST(test_nv_build_null_guards);
+    RUN_TEST(test_nv_parse_null_guards);
+    RUN_TEST(test_snvt_temp_clamp_high_in_range);
+    RUN_TEST(test_snvt_switch_decode_null_outputs);
     return UNITY_END();
 }

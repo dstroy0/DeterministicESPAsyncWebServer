@@ -92,6 +92,84 @@ void test_build_and_parse_guard_subconditions(void)
     TEST_ASSERT_FALSE(dws_pb_parse(bad_sd2, sizeof(bad_sd2), &tg));
 }
 
+void test_sd2_build_more_guards(void)
+{
+    uint8_t out[16];
+    uint8_t data[3] = {0xAA, 0xBB, 0xCC};
+    // Null out pointer fails closed before any other subcondition is checked.
+    TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd2(0x05, 0x02, Profibus::PB_FC_SRD_LOW, data, 3, nullptr, sizeof(out)));
+    // Non-zero data_len with a null data pointer fails closed.
+    TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd2(0x05, 0x02, Profibus::PB_FC_SRD_LOW, nullptr, 3, out, sizeof(out)));
+}
+
+void test_sd2_zero_length_data(void)
+{
+    // data_len == 0 (data may be null): the memcpy is skipped and the parsed data pointer stays null.
+    uint8_t out[16];
+    size_t n = dws_pb_build_sd2(0x05, 0x02, Profibus::PB_FC_SRD_LOW, nullptr, 0, out, sizeof(out));
+    // le = 3 + 0 = 3; total = 4 + 3 + 2 = 9.
+    TEST_ASSERT_EQUAL_size_t(9, n);
+
+    PbTelegram t;
+    TEST_ASSERT_TRUE(dws_pb_parse(out, n, &t));
+    TEST_ASSERT_EQUAL_size_t(0, t.data_len);
+    TEST_ASSERT_NULL(t.data);
+}
+
+void test_sd1_parse_corruption(void)
+{
+    uint8_t out[8];
+    size_t n = dws_pb_build_sd1(0x03, 0x02, Profibus::PB_FC_REQUEST_FDL_STATUS, out, sizeof(out));
+    PbTelegram t;
+
+    // FCS mismatch (ED still correct) fails closed.
+    uint8_t bad_fcs[6];
+    memcpy(bad_fcs, out, n);
+    bad_fcs[4] ^= 0xFF;
+    TEST_ASSERT_FALSE(dws_pb_parse(bad_fcs, n, &t));
+
+    // FCS correct, but ED mismatch fails closed.
+    uint8_t bad_ed[6];
+    memcpy(bad_ed, out, n);
+    bad_ed[5] = 0x00;
+    TEST_ASSERT_FALSE(dws_pb_parse(bad_ed, n, &t));
+}
+
+void test_parse_unknown_sd(void)
+{
+    // Neither SD1 nor SD2: falls through both checks and fails closed at the end.
+    const uint8_t frame[6] = {0x00, 0x03, 0x02, 0x49, 0x4E, Profibus::PB_ED};
+    PbTelegram t;
+    TEST_ASSERT_FALSE(dws_pb_parse(frame, sizeof(frame), &t));
+}
+
+void test_sd2_parse_length_guards(void)
+{
+    uint8_t data[2] = {0x11, 0x22};
+    uint8_t out[16];
+    size_t n = dws_pb_build_sd2(0x05, 0x02, Profibus::PB_FC_SRD_LOW, data, 2, out, sizeof(out));
+    PbTelegram t;
+
+    // len >= 6 (passes the top-level guard) but < 9 fails closed before the LE/LEr checks.
+    TEST_ASSERT_FALSE(dws_pb_parse(out, 8, &t));
+
+    // LE == LEr (matches), but the repeated SD2 marker byte is wrong.
+    uint8_t bad_marker[16];
+    memcpy(bad_marker, out, n);
+    bad_marker[3] = 0x00;
+    TEST_ASSERT_FALSE(dws_pb_parse(bad_marker, n, &t));
+
+    // len >= 9, but LE declares more body than the supplied buffer actually holds.
+    const uint8_t short_body[9] = {Profibus::PB_SD2, 10, 10, Profibus::PB_SD2, 1, 2, 3, 4, 5};
+    TEST_ASSERT_FALSE(dws_pb_parse(short_body, sizeof(short_body), &t));
+
+    // FCS correct, but the ED byte is corrupted.
+    uint8_t bad_ed[16];
+    memcpy(bad_ed, out, n);
+    bad_ed[n - 1] = 0x00;
+    TEST_ASSERT_FALSE(dws_pb_parse(bad_ed, n, &t));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -100,5 +178,10 @@ int main(void)
     RUN_TEST(test_sd2_roundtrip);
     RUN_TEST(test_parse_rejects);
     RUN_TEST(test_build_and_parse_guard_subconditions);
+    RUN_TEST(test_sd2_build_more_guards);
+    RUN_TEST(test_sd2_zero_length_data);
+    RUN_TEST(test_sd1_parse_corruption);
+    RUN_TEST(test_parse_unknown_sd);
+    RUN_TEST(test_sd2_parse_length_guards);
     return UNITY_END();
 }

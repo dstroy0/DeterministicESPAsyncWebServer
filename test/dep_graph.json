@@ -20,6 +20,7 @@
 "native_cclink",
 "native_cia402",
 "native_cip",
+"native_client",
 "native_cloudevents",
 "native_coap",
 "native_coap_observe",
@@ -275,6 +276,7 @@
 "native_cclink",
 "native_cia402",
 "native_cip",
+"native_client",
 "native_cloudevents",
 "native_coap",
 "native_coap_observe",
@@ -530,6 +532,7 @@
 "native_cclink",
 "native_cia402",
 "native_cip",
+"native_client",
 "native_cloudevents",
 "native_coap",
 "native_coap_observe",
@@ -785,6 +788,7 @@
 "native_cclink",
 "native_cia402",
 "native_cip",
+"native_client",
 "native_cloudevents",
 "native_coap",
 "native_coap_observe",
@@ -2567,6 +2571,12 @@
 "native_webdav_handler",
 "native_workers",
 "native_ws_deflate"
+],
+"src/network_drivers/transport/client.cpp": [
+"native_client"
+],
+"src/network_drivers/transport/client.h": [
+"native_client"
 ],
 "src/network_drivers/transport/diffserv.cpp": [
 "native_diffserv"

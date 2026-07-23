@@ -260,7 +260,9 @@ void coaps_route_datagram(const CoapsIngest *ig, uint32_t now, uint8_t *out, siz
     // A DTLSCiphertext with the C bit (0b001C....) carries a connection id: route by it so a peer that
     // has roamed to a new address still reaches its connection (RFC 9146 / RFC 9147 §9). Otherwise route
     // by source address; a fresh peer's (plaintext) ClientHello opens a slot.
-    bool cid_rec = ig->len >= 1 && (ig->data[0] & 0xE0) == 0x20 && (ig->data[0] & 0x10);
+    // GCOVR_EXCL_BR_LINE below: ig->len >= 1 is always true here - ring_push (the ring's only producer)
+    // rejects len == 0, so no entry ring_pop hands back can have a zero length.
+    bool cid_rec = ig->len >= 1 && (ig->data[0] & 0xE0) == 0x20 && (ig->data[0] & 0x10); // GCOVR_EXCL_BR_LINE
     CoapsSlot *s = cid_rec ? slot_by_cid(ig->data + 1, ig->len - 1) : nullptr;
     if (!s)
         s = slot_by_peer(ig->ip, ig->port);
@@ -293,7 +295,10 @@ void coaps_service_slot(CoapsSlot *s, uint32_t now, uint8_t *out, size_t out_cap
         int n = dws_dtls_conn_on_timeout(&s->conn, out, out_cap);
         if (n > 0)
             server_send(s->peer_ip, s->peer_port, out, (size_t)n);
-        else if (n < 0)
+        // GCOVR_EXCL_BR_LINE below: n is never 0 here. dws_dtls_conn_on_timeout's own "not due yet" /
+        // not-awaiting-reply early-return-0 checks recompute the exact same fields and clock this call's
+        // guard (timeout_ms(&s->conn) == 0) already evaluated true for, with no state change in between.
+        else if (n < 0) // GCOVR_EXCL_BR_LINE
         {
             s->used = false; // retransmission ceiling hit: abandon the handshake
             return;

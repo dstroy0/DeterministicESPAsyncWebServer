@@ -75,6 +75,14 @@ void test_trap_threshold()
     TEST_ASSERT_EQUAL_UINT8(DWSLogLevel::DWS_LOG_ERROR, g_last_level);
 }
 
+void test_log_null_message()
+{
+    // A null message must not crash and must fall back to an empty string body.
+    dws_log(DWSLogLevel::DWS_LOG_INFO, nullptr);
+    TEST_ASSERT_EQUAL_UINT16(1, dws_log_count());
+    TEST_ASSERT_EQUAL_STRING("I ", dws_log_at(0));
+}
+
 void test_dump_guards()
 {
     char out[64];
@@ -93,6 +101,7 @@ int main()
     RUN_TEST(test_dump);
     RUN_TEST(test_rotation_drops_oldest);
     RUN_TEST(test_trap_threshold);
+    RUN_TEST(test_log_null_message);
     RUN_TEST(test_dump_guards);
     return UNITY_END();
 }

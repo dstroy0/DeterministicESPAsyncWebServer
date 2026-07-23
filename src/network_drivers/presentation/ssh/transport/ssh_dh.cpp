@@ -128,7 +128,13 @@ void ssh_kdf_derive(const uint8_t K_be[256], const uint8_t *H, const uint8_t *se
     ssh_kexhash_final(&h, acc); // acc[0..blk-1] = K1
     have = blk;
 
-    while (have < out_len && have + blk <= SSH_KDF_MAX)
+    // have + blk > SSH_KDF_MAX (loop exit via the right operand) is unreachable: blk is only ever 32 or
+    // 64 (ssh_kexhash_len(is512)) and SSH_KDF_MAX is 128, an exact multiple of both; out_len is already
+    // clamped to <= SSH_KDF_MAX above, and have only grows in whole increments of blk starting at blk -
+    // so whenever have < out_len (<= SSH_KDF_MAX) it is at most SSH_KDF_MAX - blk, and this half is
+    // always true.
+    while (have < out_len &&
+           have + blk <= SSH_KDF_MAX) // GCOVR_EXCL_BR_LINE  have+blk never exceeds SSH_KDF_MAX, see above
     {
         ssh_kexhash_init(&h, is512);
         hash_K(&h, K_be, k_is_string, k_str_len);

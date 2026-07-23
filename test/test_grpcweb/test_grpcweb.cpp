@@ -137,6 +137,114 @@ void test_trailer_status_parse_paths()
     TEST_ASSERT_FALSE(dws_grpcweb_trailer_status((const uint8_t *)nokey, strlen(nokey), &status));
 }
 
+// A zero-length body: dws_grpcweb_frame must skip the (never-taken) memcpy and still emit a
+// bare 5-octet prefix; also exercises the body_len==0 short-circuit in the overflow guard.
+void test_frame_zero_length_body()
+{
+    uint8_t buf[16];
+    size_t n = dws_grpcweb_frame_message(buf, sizeof(buf), nullptr, 0, false);
+    TEST_ASSERT_EQUAL_size_t(GRPCWEB_PREFIX_LEN, n);
+    const uint8_t expect[GRPCWEB_PREFIX_LEN] = {0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, GRPCWEB_PREFIX_LEN);
+}
+
+// A body_len above what a 32-bit length prefix can express is rejected before any buffer
+// access (the pointer is non-null but never dereferenced).
+void test_frame_body_len_too_large()
+{
+    uint8_t buf[16];
+    uint8_t dummy[1] = {0};
+    TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame(buf, sizeof(buf), 0, dummy, (size_t)0x100000000ULL));
+}
+
+// dws_grpcweb_frame_trailer null-buf guard, plus the "\r\n" put failing right after the
+// status digits (distinct from the earlier key/digit overflow cases).
+void test_trailer_frame_more_guards()
+{
+    TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame_trailer(nullptr, 64, 0, nullptr)); // null buf
+    uint8_t buf[64];
+    // "grpc-status:" (12) + "0" (1) fits in 19, but the trailing "\r\n" (2 more) does not.
+    TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame_trailer(buf, 19, 0, nullptr));
+}
+
+// An empty (non-null) message string takes the same no-message path as a null message.
+void test_trailer_empty_message()
+{
+    uint8_t buf[64];
+    size_t n = dws_grpcweb_frame_trailer(buf, sizeof(buf), 0, "");
+    const char *body = "grpc-status:0\r\n";
+    size_t blen = strlen(body);
+    TEST_ASSERT_EQUAL_size_t(GRPCWEB_PREFIX_LEN + blen, n);
+    TEST_ASSERT_EQUAL_MEMORY(body, buf + GRPCWEB_PREFIX_LEN, blen);
+}
+
+// Message-block overflow paths distinct from the "grpc-message:" key overflow already
+// covered: the message body itself overflowing, and the trailing "\r\n" after it overflowing.
+void test_trailer_message_body_and_crlf_overflow()
+{
+    uint8_t buf[64];
+    // After "grpc-status:0\r\n" (15) the prefix is at 20; "grpc-message:" (13) fits exactly
+    // at cap==33, leaving no room for the 1-octet message body.
+    TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame_trailer(buf, 33, 0, "X"));
+    // With a 2-octet message, cap==35 fits the key and the body but not the trailing "\r\n".
+    TEST_ASSERT_EQUAL_size_t(0, dws_grpcweb_frame_trailer(buf, 35, 0, "hi"));
+}
+
+// dws_grpcweb_parse null-pointer guards for the out-param and consumed-length arguments
+// (the null-buf and short-length guards are already covered elsewhere).
+void test_parse_null_guards()
+{
+    uint8_t buf[16] = {0};
+    GrpcWebFrame f;
+    size_t c;
+    TEST_ASSERT_FALSE(dws_grpcweb_parse(nullptr, sizeof(buf), &f, &c));  // null buf
+    TEST_ASSERT_FALSE(dws_grpcweb_parse(buf, sizeof(buf), nullptr, &c)); // null out
+    TEST_ASSERT_FALSE(dws_grpcweb_parse(buf, sizeof(buf), &f, nullptr)); // null consumed
+}
+
+// grpc-status only matches at the start of a line: a leading non-matching line forces the
+// scan past i==0, and the real key is found later, preceded by '\n'.
+void test_trailer_status_multiline()
+{
+    const char *body = "foo:1\r\ngrpc-status:9\r\n";
+    int status = -1;
+    TEST_ASSERT_TRUE(dws_grpcweb_trailer_status((const uint8_t *)body, strlen(body), &status));
+    TEST_ASSERT_EQUAL_INT(9, status);
+}
+
+// Boundary cases in the digit check right after "grpc-status:": nothing follows the key at
+// all, and a character below '0' follows it (as opposed to the already-covered above-'9' case).
+void test_trailer_status_digit_bounds()
+{
+    int status = -1;
+    const char *no_digit = "grpc-status:"; // key ends exactly at the buffer end
+    TEST_ASSERT_FALSE(dws_grpcweb_trailer_status((const uint8_t *)no_digit, strlen(no_digit), &status));
+    const char *low_char = "grpc-status:-1"; // '-' is below '0'
+    TEST_ASSERT_FALSE(dws_grpcweb_trailer_status((const uint8_t *)low_char, strlen(low_char), &status));
+}
+
+// The digit-accumulation loop can stop for two different reasons: running out of buffer
+// (no trailing delimiter at all) or hitting a non-digit above '9' (as opposed to the
+// already-covered below-'0' terminator).
+void test_trailer_status_digit_loop_bounds()
+{
+    int status = -1;
+    const char *no_trailer = "grpc-status:7"; // digits run right up to the end of the buffer
+    TEST_ASSERT_TRUE(dws_grpcweb_trailer_status((const uint8_t *)no_trailer, strlen(no_trailer), &status));
+    TEST_ASSERT_EQUAL_INT(7, status);
+    status = -1;
+    const char *high_char = "grpc-status:5:"; // ':' is above '9'
+    TEST_ASSERT_TRUE(dws_grpcweb_trailer_status((const uint8_t *)high_char, strlen(high_char), &status));
+    TEST_ASSERT_EQUAL_INT(5, status);
+}
+
+// A null status out-param is a valid "just validate" call: parsing must still succeed.
+void test_trailer_status_null_output()
+{
+    const char *body = "grpc-status:3";
+    TEST_ASSERT_TRUE(dws_grpcweb_trailer_status((const uint8_t *)body, strlen(body), nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -149,5 +257,15 @@ int main()
     RUN_TEST(test_frame_overflow_fails_closed);
     RUN_TEST(test_frame_and_trailer_guards);
     RUN_TEST(test_trailer_status_parse_paths);
+    RUN_TEST(test_frame_zero_length_body);
+    RUN_TEST(test_frame_body_len_too_large);
+    RUN_TEST(test_trailer_frame_more_guards);
+    RUN_TEST(test_trailer_empty_message);
+    RUN_TEST(test_trailer_message_body_and_crlf_overflow);
+    RUN_TEST(test_parse_null_guards);
+    RUN_TEST(test_trailer_status_multiline);
+    RUN_TEST(test_trailer_status_digit_bounds);
+    RUN_TEST(test_trailer_status_digit_loop_bounds);
+    RUN_TEST(test_trailer_status_null_output);
     return UNITY_END();
 }

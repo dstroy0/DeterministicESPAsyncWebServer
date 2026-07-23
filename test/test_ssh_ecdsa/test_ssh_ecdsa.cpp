@@ -187,6 +187,110 @@ static void test_ecdsa_pubkey_rejects_bad_scalar(void)
     TEST_ASSERT_FALSE(ssh_ecdsa_p256_pubkey(pub, priv)); // d = 2^256-1 > n
 }
 
+// ssh_ecdsa_p256_sign() validates its own private scalar independently of pubkey()'s check.
+static void test_ecdsa_sign_rejects_bad_scalar(void)
+{
+    uint8_t priv[32];
+    uint8_t sig[64];
+    memset(priv, 0, 32);
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_sign(sig, (const uint8_t *)"x", 1, priv)); // d = 0
+    memset(priv, 0xFF, 32);
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_sign(sig, (const uint8_t *)"x", 1, priv)); // d = 2^256-1 > n
+}
+
+// verify() rejects a public key with a compressed-point (or any non-0x04) prefix.
+static void test_ecdsa_verify_rejects_bad_prefix(void)
+{
+    uint8_t priv[32];
+    hexdec(PRIV, priv);
+    uint8_t pub[65];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+    pub[0] = 0x02; // compressed-point prefix, not accepted
+
+    uint8_t sig[64];
+    hexdec(SAMPLE_R, sig);
+    hexdec(SAMPLE_S, sig + 32);
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig));
+}
+
+// on_curve() must reject a coordinate that is out of the field range [0, p), a distinct failure mode
+// from an in-range-but-off-curve coordinate (already exercised by test_ecdsa_verify_rejects_tamper).
+static void test_ecdsa_verify_rejects_out_of_range_coord(void)
+{
+    uint8_t priv[32];
+    hexdec(PRIV, priv);
+    uint8_t pub[65];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+
+    uint8_t sig[64];
+    hexdec(SAMPLE_R, sig);
+    hexdec(SAMPLE_S, sig + 32);
+
+    uint8_t bad_pub[65];
+    memcpy(bad_pub, pub, 65);
+    memset(bad_pub + 1, 0xFF, 32); // X = 2^256-1 >= p
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(bad_pub, (const uint8_t *)"sample", 6, sig));
+
+    memcpy(bad_pub, pub, 65);
+    memset(bad_pub + 33, 0xFF, 32); // Y = 2^256-1 >= p
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(bad_pub, (const uint8_t *)"sample", 6, sig));
+}
+
+// verify() rejects a signature whose r or s is 0 or >= the group order n, before ever touching the
+// public key's curve math.
+static void test_ecdsa_verify_rejects_out_of_range_sig(void)
+{
+    uint8_t priv[32];
+    hexdec(PRIV, priv);
+    uint8_t pub[65];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+
+    // The P-256 group order n itself: an out-of-range (>= n) r/s value.
+    static const char *N_HEX = "FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551";
+    uint8_t n_bytes[32];
+    hexdec(N_HEX, n_bytes);
+
+    uint8_t base[64];
+    hexdec(SAMPLE_R, base);
+    hexdec(SAMPLE_S, base + 32);
+
+    uint8_t bad[64];
+    memcpy(bad, base, 64);
+    memset(bad, 0, 32); // r = 0
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
+
+    memcpy(bad, base, 64);
+    memcpy(bad, n_bytes, 32); // r = n (>= n)
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
+
+    memcpy(bad, base, 64);
+    memset(bad + 32, 0, 32); // s = 0
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
+
+    memcpy(bad, base, 64);
+    memcpy(bad + 32, n_bytes, 32); // s = n (>= n)
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
+}
+
+// verify() must reject a signature crafted so R = u1*G + u2*Q is the point at infinity: with r = s = 1,
+// w = s^-1 = 1, u1 = e, u2 = r = 1, so R = e*G + Q; picking Q = -e*G (i.e. deriving Q from the private
+// scalar d' = (n - e) mod n, e = SHA256("forge") mod n) forces R = O. This is a real ECDSA edge case a
+// maliciously crafted, otherwise well-formed (pub, sig) pair can hit and must be rejected.
+static void test_ecdsa_verify_rejects_forged_infinity(void)
+{
+    static const char *DPRIME = "8E4BE2912B723A724570A306120CF010574EFCBB21727CC963EE1D77BF129CD4";
+    uint8_t dpriv[32];
+    hexdec(DPRIME, dpriv);
+    uint8_t pub[65];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, dpriv));
+
+    uint8_t sig[64];
+    memset(sig, 0, 64);
+    sig[31] = 0x01; // r = 1
+    sig[63] = 0x01; // s = 1
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"forge", 5, sig));
+}
+
 // ---- ECDH (ecdh-sha2-nistp256) --------------------------------------------
 // Pinned to RFC 5903 §8.1 (256-Bit Random ECP Group): two private keys, their public points,
 // and the single shared secret X coordinate both sides must agree on.
@@ -267,6 +371,19 @@ static void test_ecdh_rejects_bad_point(void)
     TEST_ASSERT_FALSE(ssh_ecdsa_p256_ecdh(out, comp, priv));
 }
 
+// ecdh() validates its own private scalar independently of pubkey()'s / sign()'s checks.
+static void test_ecdh_rejects_bad_scalar(void)
+{
+    uint8_t rpub[65];
+    mkpub(rpub, ECDH_RX, ECDH_RY);
+    uint8_t priv[32];
+    uint8_t out[32];
+    memset(priv, 0, 32);
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_ecdh(out, rpub, priv)); // d = 0
+    memset(priv, 0xFF, 32);
+    TEST_ASSERT_FALSE(ssh_ecdsa_p256_ecdh(out, rpub, priv)); // d = 2^256-1 > n
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -278,8 +395,14 @@ int main(int, char **)
     RUN_TEST(test_ecdsa_roundtrip_other_key);
     RUN_TEST(test_ecdsa_random_roundtrip_stress);
     RUN_TEST(test_ecdsa_pubkey_rejects_bad_scalar);
+    RUN_TEST(test_ecdsa_sign_rejects_bad_scalar);
+    RUN_TEST(test_ecdsa_verify_rejects_bad_prefix);
+    RUN_TEST(test_ecdsa_verify_rejects_out_of_range_coord);
+    RUN_TEST(test_ecdsa_verify_rejects_out_of_range_sig);
+    RUN_TEST(test_ecdsa_verify_rejects_forged_infinity);
     RUN_TEST(test_ecdh_rfc5903_shared_secret);
     RUN_TEST(test_ecdh_rfc5903_pubkeys);
     RUN_TEST(test_ecdh_rejects_bad_point);
+    RUN_TEST(test_ecdh_rejects_bad_scalar);
     return UNITY_END();
 }

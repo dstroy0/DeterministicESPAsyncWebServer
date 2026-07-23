@@ -101,7 +101,9 @@ void dws_arena_persist_free(DWSArena *a, void *p)
     if (b->used)
     {
         b->used = 0;
-        if (a->persist_used >= b->size)
+        // The false half is unreachable: persist_used only ever accumulates this same block's
+        // own size (at alloc time), so it can never be smaller than b->size while b->used was true.
+        if (a->persist_used >= b->size) // GCOVR_EXCL_BR_LINE
             a->persist_used -= b->size;
     }
 
@@ -151,8 +153,11 @@ void *dws_arena_scratch_alloc_aligned(DWSArena *a, size_t n, size_t align)
         return nullptr;
     // The base is DWS_ARENA_MAX_ALIGN-aligned, so aligning the offset down aligns the pointer.
     size_t nt = (a->scratch_top - n) & ~(size_t)(align - 1);
-    if (nt < a->persist_end || nt > a->scratch_top)
-        return nullptr; // would cross the persistent end (or underflow)
+    // The "nt > a->scratch_top" half is unreachable: the guard above already established
+    // n <= a->scratch_top, so the subtraction cannot underflow, and masking off low bits can
+    // only ever decrease the value further - nt <= a->scratch_top always holds.
+    if (nt < a->persist_end || nt > a->scratch_top) // GCOVR_EXCL_BR_LINE
+        return nullptr;                             // would cross the persistent end (or underflow)
     a->scratch_top = nt;
     size_t used = a->size - a->scratch_top;
     if (used > a->scratch_hw)

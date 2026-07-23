@@ -328,6 +328,43 @@ void test_unprotect_rejects_tampered()
     TEST_ASSERT_TRUE(got == (size_t)-1);
 }
 
+// --- short-header (is_long=false) protect/unprotect + null out_pn -------------------------------
+// The RFC 9001 A.2/A.3 vectors above only exercise long-header packets (is_long=true), so the
+// `is_long ? 0x0f : 0x1f` first-byte header-protection mask never takes its false branch in either
+// dws_quic_packet_protect or dws_quic_packet_unprotect. There is no published short-header (1-RTT)
+// KAT in this file, so this is a self-consistent round trip: protect() then unprotect() must recover
+// the exact plaintext. It also passes a null out_pn to unprotect(), covering the optional-output
+// branch (`if (out_pn)`) that every other test always supplies.
+void test_short_header_roundtrip_null_out_pn()
+{
+    uint8_t dcid[8];
+    hx("8394c8f03e515708", dcid, 8);
+    QuicInitialSecrets s;
+    dws_quic_derive_initial_secrets(dcid, 8, &s);
+
+    const size_t pn_offset = 9;
+    const uint8_t pn_len = 2;
+    const uint8_t payload[8] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+
+    uint8_t pkt[64];
+    memset(pkt, 0, sizeof pkt);
+    pkt[0] = 0x41; // short header (0x80 clear), fixed bit set, low 2 bits = pn_len-1 (=1 -> pn_len 2)
+    memcpy(pkt + 1, dcid, 8);
+    pkt[pn_offset] = 0x00;
+    pkt[pn_offset + 1] = 0x07; // truncated packet number for full_pn = 7
+    memcpy(pkt + pn_offset + pn_len, payload, sizeof payload);
+
+    size_t total = dws_quic_packet_protect(pkt, sizeof pkt, pn_offset, pn_len, /*full_pn*/ 7, sizeof payload, &s.client,
+                                           /*is_long*/ false);
+    TEST_ASSERT_EQUAL_INT((int)(pn_offset + pn_len + sizeof payload + QUIC_AEAD_TAG_LEN), (int)total);
+
+    uint8_t out[8];
+    size_t got = dws_quic_packet_unprotect(pkt, pn_offset, total - pn_offset, /*largest_pn*/ 0, &s.client,
+                                           /*is_long*/ false, out, /*out_pn*/ nullptr);
+    TEST_ASSERT_EQUAL_INT((int)sizeof payload, (int)got);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(payload, out, sizeof payload);
+}
+
 // --- dws_quic_retry_integrity_tag guard ---------------------------------------------------------
 // Either an over-long ODCID (> QUIC_MAX_CID_LEN) or a Retry that would overflow the AAD scratch
 // buffer zeroes the tag rather than reading out of bounds. Drives both sides of the compound guard.
@@ -424,6 +461,7 @@ int main()
     RUN_TEST(test_protect_rejects_small_cap);
     RUN_TEST(test_unprotect_rejects_short);
     RUN_TEST(test_unprotect_rejects_tampered);
+    RUN_TEST(test_short_header_roundtrip_null_out_pn);
     RUN_TEST(test_retry_tag_rejects_oversize);
     RUN_TEST(test_hkdf_expand_label_multiblock);
     return UNITY_END();

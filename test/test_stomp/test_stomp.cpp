@@ -123,6 +123,13 @@ void test_parse_skips_leading_heartbeats()
     TEST_ASSERT_TRUE(dws_stomp_parse_frame(raw, len, &f, &c));
     TEST_ASSERT_EQUAL_MEMORY("RECEIPT", f.command, f.command_len);
     TEST_ASSERT_EQUAL_size_t(len, c);
+
+    // A leading \r (as in a \r\n heart-beat) is skipped too, not just bare \n.
+    const char raw_cr[] = "\r\nRECEIPT\nreceipt-id:1\n\n\0";
+    size_t len_cr = sizeof(raw_cr) - 1;
+    TEST_ASSERT_TRUE(dws_stomp_parse_frame(raw_cr, len_cr, &f, &c));
+    TEST_ASSERT_EQUAL_MEMORY("RECEIPT", f.command, f.command_len);
+    TEST_ASSERT_EQUAL_size_t(len_cr, c);
 }
 
 void test_parse_incomplete_and_malformed()
@@ -173,6 +180,14 @@ void test_build_cr_escape_and_guards()
     const char *nk[] = {nullptr};
     const char *nv[] = {"v"};
     TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(full, sizeof(full), "SEND", nk, nv, 1, nullptr, 0));
+    // A null per-entry header value (as opposed to key) also fails closed.
+    const char *nv2[] = {nullptr};
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(full, sizeof(full), "SEND", keys, nv2, 1, nullptr, 0));
+    // A whole-array-null header_keys / header_vals (distinct from a null entry) fails closed too.
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(full, sizeof(full), "SEND", nullptr, vals, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(full, sizeof(full), "SEND", keys, nullptr, 1, nullptr, 0));
+    // body_len > 0 with a null body pointer fails closed (no headers, so the header-array guards above don't fire).
+    TEST_ASSERT_EQUAL_size_t(0, dws_stomp_build_frame(full, sizeof(full), "SEND", nullptr, nullptr, 0, nullptr, 5));
 
     // Every capacity below the full length fails closed (walks each overflow return).
     for (size_t cap = 1; cap < flen; cap++)
@@ -187,13 +202,75 @@ void test_parse_more_edges()
     StompFrame f;
     size_t c;
     TEST_ASSERT_FALSE(dws_stomp_parse_frame(nullptr, 5, &f, &c));          // null args
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("x", 1, nullptr, &c));         // null out
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("x", 1, &f, nullptr));         // null consumed
     TEST_ASSERT_FALSE(dws_stomp_parse_frame("SEND", 4, &f, &c));           // command line incomplete
     TEST_ASSERT_FALSE(dws_stomp_parse_frame("SEND\nfoo:bar", 12, &f, &c)); // header line incomplete
 
     TEST_ASSERT_FALSE(dws_stomp_parse_frame("MSG\ncontent-length:\n\nx", 22, &f, &c));   // empty content-length
     TEST_ASSERT_FALSE(dws_stomp_parse_frame("MSG\ncontent-length:xy\n\nx", 24, &f, &c)); // non-digit content-length
+    TEST_ASSERT_FALSE(dws_stomp_parse_frame("MSG\ncontent-length:-1\n\nx", 24, &f, &c)); // leading non-digit ('-')
     const char not_on_nul[] = "MSG\ncontent-length:2\n\nabcd"; // 2 bytes then 'c', not the NUL
     TEST_ASSERT_FALSE(dws_stomp_parse_frame(not_on_nul, sizeof(not_on_nul) - 1, &f, &c));
+}
+
+// Headers beyond DWS_STOMP_MAX_HEADERS are parsed (the frame is still valid) but not stored.
+void test_parse_header_capacity_cap()
+{
+    const char *keys[DWS_STOMP_MAX_HEADERS + 1];
+    const char *vals[DWS_STOMP_MAX_HEADERS + 1];
+    char kbuf[DWS_STOMP_MAX_HEADERS + 1][4];
+    for (size_t i = 0; i < DWS_STOMP_MAX_HEADERS + 1; i++)
+    {
+        kbuf[i][0] = 'h';
+        kbuf[i][1] = (char)('a' + i);
+        kbuf[i][2] = '\0';
+        keys[i] = kbuf[i];
+        vals[i] = "v";
+    }
+    char buf[1024];
+    size_t n = dws_stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, DWS_STOMP_MAX_HEADERS + 1, nullptr, 0);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+
+    StompFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_stomp_parse_frame(buf, n, &f, &c));
+    TEST_ASSERT_EQUAL_size_t(DWS_STOMP_MAX_HEADERS, f.header_count); // the (MAX+1)th header is dropped, not stored
+}
+
+// A second content-length header is ignored (first occurrence wins), and a same-length header
+// name that isn't actually "content-length" is correctly not mistaken for it.
+void test_parse_duplicate_content_length_and_lookalike_header()
+{
+    // "contentxlength" is 14 chars, same as "content-length", but does not match it.
+    const char raw[] = "MESSAGE\ncontentxlength:5\ncontent-length:5\ncontent-length:9\n\nHELLO\0";
+    size_t len = sizeof(raw) - 1; // keep our explicit body-terminating NUL, drop only the implicit one
+    StompFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_stomp_parse_frame(raw, len, &f, &c));
+    TEST_ASSERT_EQUAL_size_t(3, f.header_count);
+    TEST_ASSERT_EQUAL_size_t(5, f.body_len); // from the FIRST content-length (5), not the second (9)
+    TEST_ASSERT_EQUAL_MEMORY("HELLO", f.body, 5);
+}
+
+// dws_stomp_header(): a same-length-but-different-name lookup, and val-only / val_len-only lookups.
+void test_header_lookup_edge_branches()
+{
+    const char raw[] = "MESSAGE\ndestination:/topic/x\n\n\0";
+    size_t len = sizeof(raw) - 1;
+    StompFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_stomp_parse_frame(raw, len, &f, &c));
+
+    // "destinatioX" is the same length (11) as "destination" but not equal to it.
+    TEST_ASSERT_FALSE(dws_stomp_header(&f, "destinatioX", nullptr, nullptr));
+
+    const char *v;
+    size_t vl;
+    TEST_ASSERT_TRUE(dws_stomp_header(&f, "destination", nullptr, &vl)); // val not requested
+    TEST_ASSERT_EQUAL_size_t(8, vl);
+    TEST_ASSERT_TRUE(dws_stomp_header(&f, "destination", &v, nullptr)); // val_len not requested
+    TEST_ASSERT_EQUAL_MEMORY("/topic/x", v, 8);
 }
 
 void test_header_and_unescape_null()
@@ -223,6 +300,9 @@ int main()
     RUN_TEST(test_parse_content_length_body_with_nul);
     RUN_TEST(test_parse_skips_leading_heartbeats);
     RUN_TEST(test_parse_incomplete_and_malformed);
+    RUN_TEST(test_parse_header_capacity_cap);
+    RUN_TEST(test_parse_duplicate_content_length_and_lookalike_header);
+    RUN_TEST(test_header_lookup_edge_branches);
     RUN_TEST(test_unescape);
     RUN_TEST(test_unescape_rejects_bad);
     return UNITY_END();

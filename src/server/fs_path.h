@@ -34,7 +34,9 @@ inline bool fs_path_join(const char *root, const char *sub, char *out, size_t ca
     bool sub_slash = (sub[0] == '/');
     const char *sep = (root_slash || sub_slash) ? "" : "/";
     int wn = snprintf(out, cap, "%s%s%s", root, sep, sub);
-    return wn > 0 && wn < (int)cap;
+    // wn <= 0 is unreachable: snprintf only returns negative on an encoding error, and root/sep/sub
+    // are always plain, non-null C strings here (see file_serving.cpp's identical guard).
+    return wn > 0 && wn < (int)cap; // GCOVR_EXCL_BR_LINE  wn <= 0 unreachable (see above)
 }
 
 /**

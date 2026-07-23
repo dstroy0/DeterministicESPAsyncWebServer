@@ -50,6 +50,17 @@ void test_build_handshake_subprotocol()
     TEST_ASSERT_NOT_NULL(strstr((char *)buf, "Sec-WebSocket-Version: 13\r\n\r\n"));
 }
 
+// A non-null but empty subprotocol string is the same as none: the pointer is
+// truthy but subprotocol[0] is '\0', so the header must still be omitted.
+void test_build_handshake_empty_subprotocol()
+{
+    uint8_t buf[256];
+    size_t n = ws_client_build_handshake(buf, sizeof(buf), "example.com", "/chat", "dGhlIHNhbXBsZSBub25jZQ==", "");
+    TEST_ASSERT_GREATER_THAN(0, n);
+    buf[n] = '\0';
+    TEST_ASSERT_NULL(strstr((char *)buf, "Sec-WebSocket-Protocol"));
+}
+
 void test_check_response_ok()
 {
     const char *resp = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -70,6 +81,74 @@ void test_check_response_not_101()
 {
     const char *resp = "HTTP/1.1 400 Bad Request\r\n\r\n";
     TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)resp, strlen(resp), "x"));
+}
+
+// Status line has a near-miss "10" followed by a non-'1' digit ("100") but never the
+// literal substring "101" anywhere - exercises the ok101 scan's q[2]=='1' false arm
+// (distinct from the q[0]/q[1] mismatches the other status-line tests already hit).
+void test_check_response_not_101_near_miss()
+{
+    const char *resp = "HTTP/1.0 100 Continue\r\n\r\n";
+    TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)resp, strlen(resp), "x"));
+}
+
+// A header name that is a strict prefix of the searched name but is not followed by
+// ':' (e.g. "Sec-WebSocket-Accept-Foo") must be skipped in favor of the real header
+// that follows - exercises find_header's p[nlen] == ':' false arm.
+void test_check_response_header_name_prefix_mismatch()
+{
+    const char *resp = "HTTP/1.1 101 Switching Protocols\r\n"
+                       "Sec-WebSocket-Accept-Foo: bogus\r\n"
+                       "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n";
+    TEST_ASSERT_TRUE(ws_client_check_response((const uint8_t *)resp, strlen(resp), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="));
+}
+
+// The header's OWS runs all the way to the end of the buffer with no CRLF terminator
+// at all - exercises find_header's OWS-skip and value-scan loops exiting via
+// end-of-buffer (v < end / e < end false) rather than via a matched '\r'/'\n'.
+void test_check_response_header_value_at_buffer_end()
+{
+    const char *resp = "HTTP/1.1 101 Switching Protocols\r\nSec-WebSocket-Accept:   ";
+    TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)resp, strlen(resp), "x"));
+}
+
+// The header value is terminated by a bare LF (no CR first) - exercises the
+// value-length scan's *e != '\n' negative arm taken directly, without first failing
+// the *e != '\r' check.
+void test_check_response_header_value_bare_lf()
+{
+    const char *resp = "HTTP/1.1 101 Switching Protocols\r\nSec-WebSocket-Accept: abc\n\r\n";
+    TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)resp, strlen(resp), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="));
+}
+
+// A trailing, non-matching header line (long enough that find_header's outer loop
+// guard still admits it) has no terminating '\n' at all (buffer just ends) -
+// exercises the "skip to next line" scan (while p < end && *p != '\n') exiting via
+// end-of-buffer, and the following "if (p < end) p++" false arm.
+void test_check_response_trailing_header_no_newline()
+{
+    const char *resp = "HTTP/1.1 101 Switching Protocols\r\nX-Not-The-Header-Name: abcdefghijklmnopqrstuvwxyz";
+    TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)resp, strlen(resp), "x"));
+}
+
+// OWS after the colon includes a literal HTAB, not just a space - exercises the
+// OWS-skip loop's *v == '\t' true arm (distinct from the ' ' arm every other test
+// with leading OWS exercises).
+void test_check_response_header_value_ows_tab()
+{
+    const char *resp =
+        "HTTP/1.1 101 Switching Protocols\r\nSec-WebSocket-Accept:\ts3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n";
+    TEST_ASSERT_TRUE(ws_client_check_response((const uint8_t *)resp, strlen(resp), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="));
+}
+
+// Same-length Accept value that differs in content - exercises the memcmp() != 0 arm
+// distinctly from the vlen-mismatch arm test_check_response_bad_accept already hits
+// (that one differs in length, not just content).
+void test_check_response_accept_same_length_mismatch()
+{
+    const char *resp = "HTTP/1.1 101 Switching Protocols\r\n"
+                       "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOx=\r\n\r\n";
+    TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)resp, strlen(resp), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="));
 }
 
 void test_build_frame_masked()
@@ -270,9 +349,17 @@ int main(int, char **)
     RUN_TEST(test_accept_rfc_example);
     RUN_TEST(test_build_handshake);
     RUN_TEST(test_build_handshake_subprotocol);
+    RUN_TEST(test_build_handshake_empty_subprotocol);
     RUN_TEST(test_check_response_ok);
     RUN_TEST(test_check_response_bad_accept);
     RUN_TEST(test_check_response_not_101);
+    RUN_TEST(test_check_response_not_101_near_miss);
+    RUN_TEST(test_check_response_header_name_prefix_mismatch);
+    RUN_TEST(test_check_response_header_value_at_buffer_end);
+    RUN_TEST(test_check_response_header_value_bare_lf);
+    RUN_TEST(test_check_response_trailing_header_no_newline);
+    RUN_TEST(test_check_response_header_value_ows_tab);
+    RUN_TEST(test_check_response_accept_same_length_mismatch);
     RUN_TEST(test_build_frame_masked);
     RUN_TEST(test_build_frame_extended_len);
     RUN_TEST(test_parse_frame_server_text);

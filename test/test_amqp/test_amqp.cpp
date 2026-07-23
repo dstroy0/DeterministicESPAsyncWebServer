@@ -141,6 +141,76 @@ void test_build_and_parse_guards()
     TEST_ASSERT_FALSE(dws_amqp_parse_frame(tiny, sizeof(tiny), &fr, &consumed)); // too short
 }
 
+// null buf must fail closed (the !buf arm of the guard is otherwise never taken).
+void test_protocol_header_null_buf()
+{
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_protocol_header(nullptr, 8));
+}
+
+// A frame with real payload bytes (not the empty heartbeat payload) so the memcpy arm of
+// dws_amqp_build_frame actually executes, then parses back to confirm the bytes survive.
+void test_build_frame_with_payload_round_trip()
+{
+    const uint8_t payload[] = {0x10, 0x20, 0x30, 0x40, 0x50};
+    uint8_t buf[32];
+    size_t n = dws_amqp_build_frame(buf, sizeof(buf), AMQP_FRAME_HEADER, 3, payload, sizeof(payload));
+    TEST_ASSERT_EQUAL_size_t(AMQP_FRAME_OVERHEAD + sizeof(payload), n);
+    TEST_ASSERT_EQUAL_HEX8(AMQP_FRAME_HEADER, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, buf + 7, sizeof(payload));
+    TEST_ASSERT_EQUAL_HEX8(AMQP_FRAME_END, buf[n - 1]);
+
+    AmqpFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_amqp_parse_frame(buf, n, &f, &c));
+    TEST_ASSERT_EQUAL_size_t(sizeof(payload), f.payload_len);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, f.payload, sizeof(payload));
+}
+
+// A payload_len above the 32-bit size field's range must fail closed. buf/payload are real
+// (non-null) so the earlier null checks stay false and this arm is the one that trips; the
+// function returns before ever touching payload, so it need not actually be that large.
+void test_build_frame_payload_len_overflow_fails_closed()
+{
+    uint8_t buf[16];
+    uint8_t dummy_payload[1] = {0xAB};
+    size_t huge_len = (size_t)0xFFFFFFFFu + 1; // > 0xFFFFFFFFu (host size_t is 64-bit)
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_frame(buf, sizeof(buf), 1, 0, dummy_payload, huge_len));
+}
+
+// null buf, and args_len set with a null args pointer, must both fail closed.
+void test_build_method_guards()
+{
+    const uint8_t args[] = {1};
+    uint8_t buf[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_method(nullptr, sizeof(buf), 1, 10, 10, args, sizeof(args)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_method(buf, sizeof(buf), 1, 10, 10, nullptr, 5));
+}
+
+// null buf and null out must both fail closed; a null consumed pointer on an otherwise-valid
+// frame must still succeed (consumed is optional).
+void test_parse_frame_optional_out_params()
+{
+    uint8_t buf[8] = {0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xCE};
+    AmqpFrame f;
+    size_t c;
+    TEST_ASSERT_FALSE(dws_amqp_parse_frame(nullptr, sizeof(buf), &f, &c));
+    TEST_ASSERT_FALSE(dws_amqp_parse_frame(buf, sizeof(buf), nullptr, &c));
+    TEST_ASSERT_TRUE(dws_amqp_parse_frame(buf, sizeof(buf), &f, nullptr));
+}
+
+// A null payload must fail closed; all four output pointers are individually optional, so a
+// call passing every one as null must still succeed and simply skip the assignments.
+void test_parse_method_optional_out_params()
+{
+    uint16_t cls, meth;
+    const uint8_t *a;
+    size_t alen;
+    TEST_ASSERT_FALSE(dws_amqp_parse_method(nullptr, 10, &cls, &meth, &a, &alen));
+
+    const uint8_t payload[4] = {0x00, 0x0A, 0x00, 0x14};
+    TEST_ASSERT_TRUE(dws_amqp_parse_method(payload, sizeof(payload), nullptr, nullptr, nullptr, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -152,5 +222,11 @@ int main()
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_build_and_parse_guards);
+    RUN_TEST(test_protocol_header_null_buf);
+    RUN_TEST(test_build_frame_with_payload_round_trip);
+    RUN_TEST(test_build_frame_payload_len_overflow_fails_closed);
+    RUN_TEST(test_build_method_guards);
+    RUN_TEST(test_parse_frame_optional_out_params);
+    RUN_TEST(test_parse_method_optional_out_params);
     return UNITY_END();
 }

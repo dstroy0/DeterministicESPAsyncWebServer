@@ -89,7 +89,10 @@ void *scratch_alloc(size_t n, size_t align)
 
     if (align == 0)
         align = SCRATCH_DEFAULT_ALIGN;
-    assert((align & (align - 1)) == 0 && "scratch alignment must be a power of two");
+    // The false half is a caller-contract violation (align documented as a power of
+    // two) and aborts the process, so it cannot be exercised from an in-process host
+    // test without killing the whole test binary mid-run.
+    assert((align & (align - 1)) == 0 && "scratch alignment must be a power of two"); // GCOVR_EXCL_BR_LINE
 
     // Round the current offset up to the requested alignment.
     size_t base = (s_scratch.off[w] + (align - 1)) & ~(align - 1);
@@ -125,7 +128,10 @@ void scratch_release(size_t mark)
 {
     int w = cur_worker();
     assert_single_owner(w);
-    assert(mark <= s_scratch.off[w] && "scratch_release mark is above the current offset");
+    // The false half is a caller-contract violation (mark must come from an earlier
+    // scratch_mark() on this same worker) and aborts the process, so it cannot be
+    // exercised from an in-process host test without killing the whole test binary.
+    assert(mark <= s_scratch.off[w] && "scratch_release mark is above the current offset"); // GCOVR_EXCL_BR_LINE
     s_scratch.off[w] = mark;
 }
 

@@ -135,6 +135,14 @@ void test_root_dispersion_advertised()
     TEST_ASSERT_EQUAL_UINT32(0u, rd_be32(out + 4));          // root delay 0
 }
 
+void test_begin_is_host_stub()
+{
+    // On a host build (no ARDUINO/lwIP) dws_ntp_server_begin() cannot bind UDP/123, so it must
+    // always report false regardless of the stratum/refid it is asked to advertise.
+    TEST_ASSERT_FALSE(dws_ntp_server_begin(1, NTP_REFID_GPS));
+    TEST_ASSERT_FALSE(dws_ntp_server_begin(3));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -146,5 +154,6 @@ int main()
     RUN_TEST(test_big_endian_encoding);
     RUN_TEST(test_length_guards);
     RUN_TEST(test_root_dispersion_advertised);
+    RUN_TEST(test_begin_is_host_stub);
     return UNITY_END();
 }

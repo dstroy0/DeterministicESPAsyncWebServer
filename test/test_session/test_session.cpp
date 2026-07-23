@@ -9,6 +9,7 @@
 //   RACE SIM  - ordering hazards across tick boundaries
 
 #include "network_drivers/presentation/presentation.h"
+#include "network_drivers/session/proto_handler.h" // proto_register()/proto_get()/ProtoHandler (dispatch table edge cases)
 #include "network_drivers/session/session.h"
 #include "network_drivers/transport/listener.h"
 #include <unity.h>
@@ -269,6 +270,91 @@ void test_multiple_events_drained_in_one_tick()
 }
 
 // ====================================================================
+// DISPATCH TABLE EDGE CASES - proto_register() / proto_get() / dispatch_event()
+// ====================================================================
+
+// An out-of-range ConnProto must not write past proto_handlers[] (proto_register)
+// and must resolve to nullptr rather than an out-of-bounds read (proto_get).
+void test_proto_register_out_of_range_is_nop()
+{
+    proto_register((ConnProto)250, nullptr);
+    TEST_PASS();
+}
+
+void test_proto_get_out_of_range_returns_null()
+{
+    TEST_ASSERT_NULL(proto_get((ConnProto)250));
+}
+
+// An event for a slot carrying ConnProto::PROTO_NONE (or any unregistered protocol)
+// has no handler - dispatch_event() must drop it rather than dereference nullptr.
+void test_dispatch_drops_unregistered_protocol_event()
+{
+    conn_pool[0].proto = ConnProto::PROTO_NONE;
+    http_pool[0].parse_state = ParseState::PARSE_COMPLETE; // sentinel: must survive untouched
+
+    TcpEvt evt = {EvtType::EVT_CONNECT, 0, 0};
+    queue_stage_raw(&evt, sizeof(evt));
+    server_tick();
+
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state); // handler never ran
+}
+
+// A registered handler with null callback fields (a protocol module that doesn't implement
+// a given event) must be skipped, not called through a null pointer. ConnProto::PROTO_TELNET
+// is never registered by proto_register_builtins() in this build, so it's free to reuse here.
+void test_dispatch_skips_null_callback_fields()
+{
+    static const ProtoHandler fake_handler = {nullptr, nullptr, nullptr, nullptr};
+    proto_register(ConnProto::PROTO_TELNET, &fake_handler);
+
+    conn_pool[0].proto = ConnProto::PROTO_TELNET;
+    http_pool[0].parse_state = ParseState::PARSE_COMPLETE; // sentinel across all three events
+
+    TcpEvt e0 = {EvtType::EVT_CONNECT, 0, 0};
+    queue_stage_raw(&e0, sizeof(e0));
+    server_tick();
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state); // on_accept null -> no-op
+
+    TcpEvt e1 = {EvtType::EVT_DATA, 0, 0};
+    queue_stage_raw(&e1, sizeof(e1));
+    server_tick();
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state); // on_data null -> no-op
+
+    TcpEvt e2 = {EvtType::EVT_DISCONNECT, 0, 0};
+    queue_stage_raw(&e2, sizeof(e2));
+    server_tick();
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state); // on_close null -> no-op
+
+    conn_pool[0].proto = ConnProto::PROTO_HTTP; // restore for any later test relying on setUp's default
+}
+
+// dispatch_event()'s switch on evt.type has no default: EvtType is a uint8_t-backed enum, so a
+// value outside {EVT_CONNECT, EVT_DATA, EVT_DISCONNECT, EVT_ERROR} (e.g. stale/garbage queue
+// memory) falls through the switch untouched - must be a silent no-op, not a crash.
+void test_dispatch_ignores_unknown_evt_type()
+{
+    http_pool[0].parse_state = ParseState::PARSE_COMPLETE; // sentinel: must survive untouched
+
+    TcpEvt evt = {(EvtType)99, 0, 0};
+    queue_stage_raw(&evt, sizeof(evt));
+    server_tick();
+
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state); // no case matched -> no-op
+}
+
+// A listener slot marked active with a null queue (e.g. a failed queue-create) must be
+// skipped by the drain loop, not dereferenced.
+void test_tick_skips_active_listener_with_null_queue()
+{
+    listener_pool[1].active = true;
+    listener_pool[1].queue = nullptr;
+    server_tick(); // must not crash
+    listener_pool[1].active = false;
+    TEST_PASS();
+}
+
+// ====================================================================
 // RACE CONDITION SIMULATIONS
 // ====================================================================
 
@@ -366,6 +452,14 @@ int main()
     RUN_TEST(test_evt_error_calls_http_reset);
     RUN_TEST(test_evt_data_calls_http_parse);
     RUN_TEST(test_multiple_events_drained_in_one_tick);
+
+    // Dispatch table edge cases
+    RUN_TEST(test_proto_register_out_of_range_is_nop);
+    RUN_TEST(test_proto_get_out_of_range_returns_null);
+    RUN_TEST(test_dispatch_drops_unregistered_protocol_event);
+    RUN_TEST(test_dispatch_skips_null_callback_fields);
+    RUN_TEST(test_dispatch_ignores_unknown_evt_type);
+    RUN_TEST(test_tick_skips_active_listener_with_null_queue);
 
     // Race condition simulations
     RUN_TEST(race_external_free_between_ticks);

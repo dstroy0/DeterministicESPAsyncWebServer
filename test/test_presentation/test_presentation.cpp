@@ -10,6 +10,10 @@
 //   RACE SIM      - simulated concurrent-access scenarios
 
 #include "network_drivers/presentation/presentation.h"
+#include "network_drivers/session/proto_handler.h" // ProtoHandler: full type needed to call ->on_poll()
+#if DWS_ENABLE_WEBSOCKET
+#include "network_drivers/presentation/websocket/websocket.h" // ws_alloc(): upgraded-slot guard in http_parse()
+#endif
 #include <unity.h>
 
 // tcp.cpp + presentation.cpp are compiled into the native env.
@@ -837,6 +841,66 @@ void race_parse_after_complete_is_nop()
     TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
 }
 
+// ====================================================================
+// FUNCTION I/O TESTS - http_conn_open() / http_parse() guard clauses
+// ====================================================================
+
+void test_fn_conn_open_out_of_range_is_nop()
+{
+    http_conn_open(MAX_CONNS);
+    http_conn_open(255);
+    TEST_PASS();
+}
+
+void test_fn_parse_out_of_range_is_nop()
+{
+    http_parse(MAX_CONNS);
+    http_parse(255);
+    TEST_PASS();
+}
+
+#if DWS_ENABLE_WEBSOCKET
+// Once a slot has upgraded to WebSocket, http_parse() must not touch its rx ring
+// (those bytes are WS frame data, not HTTP) - it returns immediately.
+void test_fn_parse_is_nop_on_ws_upgraded_slot()
+{
+    TEST_ASSERT_NOT_NULL(ws_alloc(0));
+    push(0, "GET / HTTP/1.1\r\n\r\n");
+    size_t before = dws_conn_available(0);
+    http_parse(0);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state); // untouched
+    TEST_ASSERT_EQUAL(before, dws_conn_available(0));                      // bytes left in the ring
+    ws_free(0);
+}
+#endif
+
+// ====================================================================
+// FUNCTION I/O TESTS - HTTP ProtoHandler poll seam
+// ====================================================================
+
+static uint8_t s_poll_seen_slot = 0xFF;
+static void test_poll_fn(uint8_t slot)
+{
+    s_poll_seen_slot = slot;
+}
+
+// Before any application installs a pump, on_poll() must be a silent no-op.
+// (Must run before test_fn_poll_trampoline_calls_installed_fn below - the installed
+// pump is process-lifetime state in presentation.cpp, not reset between tests.)
+void test_fn_poll_trampoline_noop_before_install()
+{
+    s_poll_seen_slot = 0xFF;
+    http_proto_handler()->on_poll(2);
+    TEST_ASSERT_EQUAL(0xFF, s_poll_seen_slot); // nothing ran
+}
+
+void test_fn_poll_trampoline_calls_installed_fn()
+{
+    http_proto_set_poll(test_poll_fn);
+    http_proto_handler()->on_poll(3);
+    TEST_ASSERT_EQUAL(3, s_poll_seen_slot);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -851,6 +915,17 @@ int main()
     RUN_TEST(test_fn_reset_clears_body_fields);
     RUN_TEST(test_fn_reset_out_of_range_is_nop);
     RUN_TEST(test_fn_reset_is_idempotent);
+
+    // Function I/O: http_conn_open() / http_parse() guard clauses
+    RUN_TEST(test_fn_conn_open_out_of_range_is_nop);
+    RUN_TEST(test_fn_parse_out_of_range_is_nop);
+#if DWS_ENABLE_WEBSOCKET
+    RUN_TEST(test_fn_parse_is_nop_on_ws_upgraded_slot);
+#endif
+
+    // Function I/O: HTTP ProtoHandler poll seam (order matters - see comment above)
+    RUN_TEST(test_fn_poll_trampoline_noop_before_install);
+    RUN_TEST(test_fn_poll_trampoline_calls_installed_fn);
 
     // Function I/O: http_get_header()
     RUN_TEST(test_fn_get_header_null_when_no_headers);

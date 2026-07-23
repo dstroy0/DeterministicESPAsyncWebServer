@@ -91,6 +91,61 @@ void test_pref_scopes_and_order_edges()
     TEST_PASS();
 }
 
+void test_pref_null_and_none(void)
+{
+    // Null pointer and an empty (DWS_IP_NONE) address both hit the sentinel-return arm.
+    TEST_ASSERT_EQUAL_INT(-1, dws_he_pref(nullptr));
+    DWSIp none_ip;
+    none_ip.family = DWSIpFamily::DWS_IP_NONE;
+    TEST_ASSERT_EQUAL_INT(-1, dws_he_pref(&none_ip));
+}
+
+void test_order_null_list_is_noop(void)
+{
+    // A null list must return immediately without dereferencing it.
+    dws_he_order(nullptr, 5);
+    TEST_PASS();
+}
+
+void test_order_v4_mapped_treated_as_v4(void)
+{
+    // ::ffff:a.b.c.d is family V6 but eff_is_v6() must treat it as V4 for interleave purposes.
+    DWSIp list[2];
+    dws_ip_parse("::ffff:203.0.113.5", &list[0]); // v4-mapped v6, global scope
+    dws_ip_parse("2606:4700::1", &list[1]);       // native v6, global scope
+    dws_he_order(list, 2);
+    // Native v6 outranks v4 (mapped or not) within the same scope, so it sorts first.
+    TEST_ASSERT_EQUAL_UINT8(0x26, list[0].bytes[0]);
+}
+
+void test_order_oversized_list_skips_interleave(void)
+{
+    // A list longer than DWS_HE_MAX (16) is stable-sorted but the interleave step is skipped
+    // (the fixed DWS_HE_MAX-sized scratch buffers cannot hold it).
+    DWSIp list[17];
+    for (size_t i = 0; i < 17; i++)
+        list[i] = v4(10, 0, 0, (uint8_t)i);
+    list[16] = v4(8, 8, 8, 8); // one global address, placed last pre-sort
+    dws_he_order(list, 17);
+    TEST_ASSERT_EQUAL_UINT8(8, list[0].bytes[0]); // sort still ran: global address moved to front
+}
+
+void test_order_family_imbalance_drains_v6(void)
+{
+    // 3 global v6 + 1 global v4, v6-first: v4 exhausts after one pick and the "preferred family
+    // exhausted, drain the other" arm fires while it is still (nominally) v4's turn.
+    DWSIp list[4];
+    dws_ip_parse("2606:4700::1", &list[0]);
+    dws_ip_parse("2606:4700::2", &list[1]);
+    dws_ip_parse("2606:4700::3", &list[2]);
+    list[3] = v4(8, 8, 8, 8);
+    dws_he_order(list, 4);
+    TEST_ASSERT_EQUAL_INT(DWSIpFamily::DWS_IP_V6, list[0].family);
+    TEST_ASSERT_EQUAL_INT(DWSIpFamily::DWS_IP_V4, list[1].family);
+    TEST_ASSERT_EQUAL_INT(DWSIpFamily::DWS_IP_V6, list[2].family);
+    TEST_ASSERT_EQUAL_INT(DWSIpFamily::DWS_IP_V6, list[3].family);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -99,5 +154,10 @@ int main(void)
     RUN_TEST(test_order_single_family);
     RUN_TEST(test_attempt_due);
     RUN_TEST(test_pref_scopes_and_order_edges);
+    RUN_TEST(test_pref_null_and_none);
+    RUN_TEST(test_order_null_list_is_noop);
+    RUN_TEST(test_order_v4_mapped_treated_as_v4);
+    RUN_TEST(test_order_oversized_list_skips_interleave);
+    RUN_TEST(test_order_family_imbalance_drains_v6);
     return UNITY_END();
 }

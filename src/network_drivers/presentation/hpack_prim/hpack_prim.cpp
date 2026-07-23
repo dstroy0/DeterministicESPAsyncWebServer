@@ -192,13 +192,17 @@ bool dws_hpack_huff_decode(const uint8_t *in, size_t n, char *out, size_t cap, s
             len++;
             // RFC 7541 Huffman is a complete prefix code (Kraft sum 1, max length 30), so every bit
             // path matches a symbol by length 30 and len can never reach 31.
-            if (len > 30)
+            if (len > 30)     // GCOVR_EXCL_BR_LINE  true branch unreachable (see above)
                 return false; // GCOVR_EXCL_LINE unreachable: complete code always matches by len 30 (see above)
             uint16_t cnt = DEC_COUNT[len];
             if (cnt)
             {
                 uint32_t first = DEC_FIRSTCODE[len];
-                if (code >= first && code - first < cnt)
+                // DEC_FIRSTCODE is canonical (first[L] == (first[Lprev]+count[Lprev]) << (L-Lprev) for the
+                // next nonzero-count length), and code resets to 0/len to 0 after every match, so by
+                // induction code is always >= first[len] at this point; "code < first" cannot fire for any
+                // input and is kept only as a defensive bound.
+                if (code >= first && code - first < cnt) // GCOVR_EXCL_BR_LINE  code < first unreachable (see above)
                 {
                     uint16_t sym = DEC_SYM[DEC_FIRSTSYM[len] + (code - first)];
                     if (sym == 256) // EOS symbol must never be decoded

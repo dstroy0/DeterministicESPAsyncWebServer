@@ -140,6 +140,86 @@ void test_sdi12_error_paths()
     TEST_ASSERT_FALSE(dws_sdi12_check_crc("ab\r\n", 4)); // after trimming CRLF, too short for data + CRC
 }
 
+// dws_sdi12_build_concurrent's with_crc=true arm ("CC") wasn't exercised elsewhere.
+void test_build_concurrent_crc()
+{
+    char buf[16];
+    dws_sdi12_build_concurrent(buf, sizeof(buf), '2', true);
+    TEST_ASSERT_EQUAL_STRING("2CC!", buf);
+}
+
+// addr / ready_sec / num_values are each optional (nullptr skips the corresponding write).
+void test_parse_measure_null_outputs()
+{
+    const char *resp = "00122\r\n";
+    TEST_ASSERT_TRUE(dws_sdi12_parse_measure(resp, strlen(resp), nullptr, nullptr, nullptr));
+
+    char addr = 0;
+    uint16_t ready = 0;
+    uint8_t n = 0;
+    TEST_ASSERT_TRUE(dws_sdi12_parse_measure(resp, strlen(resp), nullptr, &ready, &n));
+    TEST_ASSERT_TRUE(dws_sdi12_parse_measure(resp, strlen(resp), &addr, nullptr, &n));
+    TEST_ASSERT_TRUE(dws_sdi12_parse_measure(resp, strlen(resp), &addr, &ready, nullptr));
+}
+
+// Exactly 5 octets, no CRLF: the value-count loop must stop because i reaches len,
+// not because it hit a non-digit octet.
+void test_parse_measure_count_runs_to_buffer_end()
+{
+    const char *resp = "00125";
+    uint8_t n = 0;
+    TEST_ASSERT_TRUE(dws_sdi12_parse_measure(resp, strlen(resp), nullptr, nullptr, &n));
+    TEST_ASSERT_EQUAL_UINT8(5, n);
+}
+
+void test_parse_values_stops_at_max()
+{
+    float v[4];
+    size_t n = 0;
+
+    // 3 values present but max is 2: the loop must exit via cnt<max turning false.
+    const char *resp = "0+1+2+3\r\n";
+    TEST_ASSERT_TRUE(dws_sdi12_parse_values(resp, strlen(resp), v, 2, &n));
+    TEST_ASSERT_EQUAL_size_t(2, n);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 1.0f, v[0]);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 2.0f, v[1]);
+
+    // No terminator and fewer values than max: the loop must exit via i<len turning
+    // false (there is no '\r'/'\n' to trigger the internal break).
+    const char *resp_no_term = "0+1.5";
+    n = 0;
+    TEST_ASSERT_TRUE(dws_sdi12_parse_values(resp_no_term, strlen(resp_no_term), v, 4, &n));
+    TEST_ASSERT_EQUAL_size_t(1, n);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 1.5f, v[0]);
+}
+
+void test_parse_values_bare_lf_and_minus_no_digits()
+{
+    // A lone '\n' terminator (no preceding '\r') exercises the c=='\n' branch directly
+    // (c=='\r' must evaluate false first).
+    const char *resp_lf = "0+1.5\n";
+    float v[4];
+    size_t n = 0;
+    TEST_ASSERT_TRUE(dws_sdi12_parse_values(resp_lf, strlen(resp_lf), v, 4, &n));
+    TEST_ASSERT_EQUAL_size_t(1, n);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 1.5f, v[0]);
+
+    // A '-' with no digits following it leaves dws_strtof's end == start, so it must
+    // be skipped like any other non-numeric octet.
+    const char *resp_minus = "0-X+2.5\r\n";
+    n = 0;
+    TEST_ASSERT_TRUE(dws_sdi12_parse_values(resp_minus, strlen(resp_minus), v, 4, &n));
+    TEST_ASSERT_EQUAL_size_t(1, n);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 2.5f, v[0]);
+}
+
+// An all-CR/LF buffer trims down to len == 0 (the trim loop's len>0 guard turning
+// false), which is then rejected for being shorter than the CRC.
+void test_check_crc_trims_to_nothing()
+{
+    TEST_ASSERT_FALSE(dws_sdi12_check_crc("\r\n", 2));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -150,5 +230,11 @@ int main()
     RUN_TEST(test_crc_roundtrip);
     RUN_TEST(test_crc_encode_printable);
     RUN_TEST(test_sdi12_error_paths);
+    RUN_TEST(test_build_concurrent_crc);
+    RUN_TEST(test_parse_measure_null_outputs);
+    RUN_TEST(test_parse_measure_count_runs_to_buffer_end);
+    RUN_TEST(test_parse_values_stops_at_max);
+    RUN_TEST(test_parse_values_bare_lf_and_minus_no_digits);
+    RUN_TEST(test_check_crc_trims_to_nothing);
     return UNITY_END();
 }

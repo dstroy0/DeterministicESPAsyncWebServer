@@ -141,6 +141,57 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, dws_iface_bridge_txn_parse(nullptr, 10, nullptr, nullptr, nullptr));
 }
 
+void test_null_arg_guards()
+{
+    // add() with a NULL rule pointer fails closed and touches nothing.
+    TEST_ASSERT_FALSE(dws_iface_bridge_add(nullptr));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_iface_bridge_count());
+
+    // map() with a NULL target fails closed and touches nothing.
+    TEST_ASSERT_FALSE(dws_iface_bridge_map("10.0.0.1", 7600, BridgeProto::tcp, nullptr));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_iface_bridge_count());
+}
+
+void test_map_empty_ip_is_any_interface()
+{
+    // A non-NULL but empty ip string is treated the same as NULL: "any interface".
+    BridgeTarget u = uart_target();
+    TEST_ASSERT_TRUE(dws_iface_bridge_map("", 5200, BridgeProto::tcp, &u));
+    const BridgeRule *r = dws_iface_bridge_find(5200, BridgeProto::tcp);
+    TEST_ASSERT_NOT_NULL(r);
+    TEST_ASSERT_EQUAL(DWSIpFamily::DWS_IP_NONE, r->listen_ip.family);
+}
+
+void test_txn_parse_null_outputs()
+{
+    // A complete frame parsed with every output pointer NULL: the caller can probe "is this frame
+    // complete?" (non-zero return) without wanting the decoded fields.
+    const uint8_t frame[6] = {0x00, 0x02, 0x00, 0x01, 0xAA, 0xBB}; // write_len=2, read_len=1
+    size_t used = dws_iface_bridge_txn_parse(frame, sizeof(frame), nullptr, nullptr, nullptr);
+    TEST_ASSERT_EQUAL_size_t(sizeof(frame), used);
+}
+
+void test_txn_build_edge_cases()
+{
+    uint8_t out[16];
+
+    // out == NULL fails closed regardless of cap.
+    TEST_ASSERT_EQUAL_size_t(0, dws_iface_bridge_txn_build(nullptr, sizeof(out), nullptr, 0, 0));
+
+    // write_len == 0: header-only frame; the payload copy is skipped even though write_data is NULL.
+    size_t n0 = dws_iface_bridge_txn_build(out, sizeof(out), nullptr, 0, 8);
+    TEST_ASSERT_EQUAL_size_t(DWS_BRIDGE_TXN_HDR, n0);
+    const uint8_t expect0[] = {0x00, 0x00, 0x00, 0x08};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect0, out, n0);
+
+    // write_len > 0 but write_data == NULL: header is still built, payload copy is skipped (fails
+    // safe rather than dereferencing a NULL source).
+    size_t n1 = dws_iface_bridge_txn_build(out, sizeof(out), nullptr, 5, 0);
+    TEST_ASSERT_EQUAL_size_t(DWS_BRIDGE_TXN_HDR + 5, n1);
+    TEST_ASSERT_EQUAL_UINT8(0x00, out[0]);
+    TEST_ASSERT_EQUAL_UINT8(0x05, out[1]);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -151,5 +202,9 @@ int main()
     RUN_TEST(test_txn_roundtrip);
     RUN_TEST(test_txn_partial_and_readonly);
     RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_null_arg_guards);
+    RUN_TEST(test_map_empty_ip_is_any_interface);
+    RUN_TEST(test_txn_parse_null_outputs);
+    RUN_TEST(test_txn_build_edge_cases);
     return UNITY_END();
 }

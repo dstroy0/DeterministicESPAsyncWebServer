@@ -73,6 +73,40 @@ void test_window_eviction()
     TEST_ASSERT_FLOAT_WITHIN(1e-4f, 4.0f, dws_window_max(&w));
 }
 
+// A zero-capacity window or an unbound (NULL) buffer is a defensive no-op:
+// push must not touch count/head/sums, and it must not crash.
+void test_window_push_guards()
+{
+    float buf[4];
+
+    // cap == 0, buf non-NULL.
+    DWSWindow w_zero_cap;
+    dws_window_init(&w_zero_cap, buf, 0);
+    dws_window_push(&w_zero_cap, 1.0f);
+    TEST_ASSERT_EQUAL_UINT16(0, dws_window_count(&w_zero_cap));
+
+    // buf == NULL, cap non-zero.
+    DWSWindow w_null_buf;
+    dws_window_init(&w_null_buf, NULL, 4);
+    dws_window_push(&w_null_buf, 1.0f);
+    TEST_ASSERT_EQUAL_UINT16(0, dws_window_count(&w_null_buf));
+}
+
+// Variance clamps a tiny negative result caused by floating-point rounding in
+// the running sums (sum_sq/count - mean*mean can dip just below 0). Construct
+// that state directly since it's not reliably reachable via real float pushes.
+void test_window_variance_clamps_negative_rounding()
+{
+    float buf[4];
+    DWSWindow w;
+    dws_window_init(&w, buf, 4);
+    w.count = 2;
+    w.sum = 2.0;
+    w.sum_sq = 1.999999; // slightly under mean*mean*count == 1.0*1.0*2 == 2.0
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, dws_window_variance(&w));
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, dws_window_stddev(&w)); // sqrt of clamped 0, not NaN
+}
+
 // Rate of change: first sample yields 0, then units per second.
 void test_rate_basic()
 {
@@ -122,6 +156,8 @@ int main()
     RUN_TEST(test_window_empty);
     RUN_TEST(test_window_single_sample);
     RUN_TEST(test_window_eviction);
+    RUN_TEST(test_window_push_guards);
+    RUN_TEST(test_window_variance_clamps_negative_rounding);
     RUN_TEST(test_rate_basic);
     RUN_TEST(test_rate_zero_dt);
     RUN_TEST(test_totalizer_constant_rate);

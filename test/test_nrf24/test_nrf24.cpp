@@ -192,6 +192,61 @@ void test_data_rate_variants()
     TEST_ASSERT_TRUE(dws_nrf24_init(&g_bus, &c2));
 }
 
+void test_init_rejects_null_args()
+{
+    nrf_config c = default_cfg();
+    TEST_ASSERT_FALSE(dws_nrf24_init(nullptr, &c)); // null bus
+
+    nrf_bus no_spi = {nullptr, mock_ce, nullptr};
+    TEST_ASSERT_FALSE(dws_nrf24_init(&no_spi, &c)); // null bus->spi
+
+    nrf_bus no_ce = {mock_spi, nullptr, nullptr};
+    TEST_ASSERT_FALSE(dws_nrf24_init(&no_ce, &c)); // null bus->ce
+
+    TEST_ASSERT_FALSE(dws_nrf24_init(&g_bus, nullptr)); // null cfg
+
+    nrf_config no_addr = default_cfg();
+    no_addr.address = nullptr;
+    TEST_ASSERT_FALSE(dws_nrf24_init(&g_bus, &no_addr)); // null cfg->address
+}
+
+void test_send_rejects_null_args_and_zero_len()
+{
+    const uint8_t data[3] = {0x01, 0x02, 0x03};
+    TEST_ASSERT_FALSE(dws_nrf24_send(nullptr, data, 3));   // null bus
+    TEST_ASSERT_FALSE(dws_nrf24_send(&g_bus, nullptr, 3)); // null data
+    TEST_ASSERT_FALSE(dws_nrf24_send(&g_bus, data, 0));    // zero length
+}
+
+void test_tx_done_null_bus()
+{
+    TEST_ASSERT_FALSE(dws_nrf24_tx_done(nullptr));
+}
+
+void test_set_rx_null_bus_is_noop()
+{
+    dws_nrf24_set_rx(nullptr); // must not crash, must not touch the bus
+}
+
+void test_recv_rejects_null_args()
+{
+    uint8_t buf[16];
+    TEST_ASSERT_EQUAL_INT(-1, dws_nrf24_recv(nullptr, buf, sizeof(buf), nullptr));    // null bus
+    TEST_ASSERT_EQUAL_INT(-1, dws_nrf24_recv(&g_bus, nullptr, sizeof(buf), nullptr)); // null buf
+}
+
+void test_recv_with_null_pipe_out_ok()
+{
+    for (int i = 0; i < 8; i++)
+        g.rx_payload[i] = (uint8_t)(0x60 + i);
+    g.reg[0x07] = 0x40 | (3 << 1); // STATUS RX_DR, pipe 3
+    uint8_t buf[16];
+    int n = dws_nrf24_recv(&g_bus, buf, sizeof(buf), nullptr); // caller does not want the pipe
+    TEST_ASSERT_EQUAL_INT(8, n);
+    TEST_ASSERT_EQUAL_MEMORY(g.rx_payload, buf, 8);
+    TEST_ASSERT_EQUAL_HEX8(0x00, g.reg[0x07] & 0x40); // RX_DR cleared
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -206,5 +261,11 @@ int main()
     RUN_TEST(test_recv_fifo_empty_pipe);
     RUN_TEST(test_recv_truncates_to_cap);
     RUN_TEST(test_data_rate_variants);
+    RUN_TEST(test_init_rejects_null_args);
+    RUN_TEST(test_send_rejects_null_args_and_zero_len);
+    RUN_TEST(test_tx_done_null_bus);
+    RUN_TEST(test_set_rx_null_bus_is_noop);
+    RUN_TEST(test_recv_rejects_null_args);
+    RUN_TEST(test_recv_with_null_pipe_out_ok);
     return UNITY_END();
 }

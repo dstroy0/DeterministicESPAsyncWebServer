@@ -227,6 +227,52 @@ void test_lane_api_urgent_and_drain()
     dws_pq_stop_lane(dws_pq_lane::DWS_PQ_LANE_DMA);
 }
 
+void test_lane_guards_reject_bad_lane_and_null_item()
+{
+    // A bad lane (>= DWS_PQ_LANE_COUNT) must fail closed / return safe defaults on every
+    // lane-scoped entry point, and a null item must be rejected on the plain post path
+    // (mirrors the already-covered null-item guard on the urgent post path).
+    dws_pq_lane bad = (dws_pq_lane)dws_pq_lane::DWS_PQ_LANE_COUNT;
+    DWSPqConfig cfg = {};
+    cfg.handler = on_item_dma;
+    TEST_ASSERT_FALSE(dws_pq_start_lane(bad, &cfg));
+    uint32_t v = 1;
+    TEST_ASSERT_FALSE(dws_pq_post_lane(bad, &v, 0));
+    TEST_ASSERT_FALSE(dws_pq_running_lane(bad));
+    TEST_ASSERT_EQUAL_size_t(0, dws_pq_high_water_lane(bad));
+    dws_pq_stop_lane(bad); // must not crash; no state to change
+
+    TEST_ASSERT_FALSE(dws_pq_post_lane(dws_pq_lane::DWS_PQ_LANE_FORWARD, nullptr, 0));
+}
+
+void test_post_lane_urgent_fails_closed_when_full()
+{
+    stop_all_lanes();
+    DWSPqConfig cfg = {};
+    cfg.handler = on_item_dma;
+    TEST_ASSERT_TRUE(dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &cfg));
+    for (uint32_t i = 0; i < DWS_PQ_DEPTH; i++)
+        TEST_ASSERT_TRUE(dws_pq_post_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &i, 0));
+    uint32_t urgent = 999;
+    TEST_ASSERT_FALSE(
+        dws_pq_post_lane_urgent(dws_pq_lane::DWS_PQ_LANE_DMA, &urgent, 0)); // full -> dropped, not bumped in
+    dws_pq_drain_lane(dws_pq_lane::DWS_PQ_LANE_DMA);
+    TEST_ASSERT_EQUAL_size_t(DWS_PQ_DEPTH, g_seen_dma.size());
+    dws_pq_stop_lane(dws_pq_lane::DWS_PQ_LANE_DMA);
+}
+
+void test_drain_lane_without_handler_skips_call_safely()
+{
+    // FORWARD is never started elsewhere in this suite, so its handler stays null. The host
+    // post_lane() doesn't require the lane to be 'started', so an item can still be queued
+    // directly; draining it must skip the callback instead of invoking a null handler.
+    uint32_t v = 42;
+    TEST_ASSERT_TRUE(dws_pq_post_lane(dws_pq_lane::DWS_PQ_LANE_FORWARD, &v, 0));
+    dws_pq_drain_lane(dws_pq_lane::DWS_PQ_LANE_FORWARD); // must not crash with a null handler
+    TEST_ASSERT_EQUAL_size_t(0, g_seen.size());
+    TEST_ASSERT_EQUAL_size_t(0, g_seen_dma.size());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -242,5 +288,8 @@ int main()
     RUN_TEST(test_lane_start_stop_running_independent);
     RUN_TEST(test_lane_high_water_is_per_lane);
     RUN_TEST(test_lane_api_urgent_and_drain);
+    RUN_TEST(test_lane_guards_reject_bad_lane_and_null_item);
+    RUN_TEST(test_post_lane_urgent_fails_closed_when_full);
+    RUN_TEST(test_drain_lane_without_handler_skips_call_safely);
     return UNITY_END();
 }

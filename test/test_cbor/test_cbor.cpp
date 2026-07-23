@@ -247,6 +247,92 @@ void test_decode_roundtrip_map()
     TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_INVALID, dws_cbor_peek(&r)); // everything consumed
 }
 
+// A null string pointer takes the ternary's false branch (0 length) instead of
+// strnlen(), still emitting a valid empty text item.
+void test_cbor_text_null_ptr()
+{
+    uint8_t b[4];
+    CborWriter w;
+    dws_cbor_init(&w, b, sizeof(b));
+    dws_cbor_text(&w, nullptr);
+    TEST_ASSERT_TRUE(dws_cbor_ok(&w));
+    uint8_t e[] = {0x60};
+    check(b, dws_cbor_len(&w), e, 1);
+}
+
+// Once err is sticky-set by a failed read, every decoder entry point (which all
+// funnel through read_head, or check r->err directly) must fail closed on the
+// r->err branch alone, without re-examining pos/len or the payload.
+void test_cbor_reader_sticky_err_repeat()
+{
+    CborReader r;
+    uint64_t uv;
+    int64_t iv;
+    bool bv;
+    float fv;
+    size_t c, sl;
+    const char *s;
+    const uint8_t *bp;
+
+    uint8_t rsv[] = {0x1c}; // reserved additional-info -> sets err on first read
+    dws_cbor_reader_init(&r, rsv, sizeof(rsv));
+    TEST_ASSERT_FALSE(dws_cbor_read_uint(&r, &uv));
+    TEST_ASSERT_FALSE(dws_cbor_reader_ok(&r));
+
+    // r is now sticky-erred; every further call must fail closed immediately.
+    TEST_ASSERT_FALSE(dws_cbor_read_uint(&r, &uv));
+    TEST_ASSERT_FALSE(dws_cbor_read_int(&r, &iv));
+    TEST_ASSERT_FALSE(dws_cbor_read_bool(&r, &bv));
+    TEST_ASSERT_FALSE(dws_cbor_read_null(&r));
+    TEST_ASSERT_FALSE(dws_cbor_read_float(&r, &fv));
+    TEST_ASSERT_FALSE(dws_cbor_read_text(&r, &s, &sl));
+    TEST_ASSERT_FALSE(dws_cbor_read_bytes(&r, &bp, &sl));
+    TEST_ASSERT_FALSE(dws_cbor_read_array(&r, &c));
+    TEST_ASSERT_FALSE(dws_cbor_read_map(&r, &c));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_INVALID, dws_cbor_peek(&r));
+}
+
+// dws_cbor_peek branches not hit by test_peek_each_type: an empty buffer
+// (pos>=len with no prior error), bool false (info==20, only true/info==21 was
+// tested), and a raw double marker (0xfb, info==27, only float32/info==26 was
+// tested).
+void test_peek_edge_cases()
+{
+    CborReader r;
+    uint8_t d = 0;
+    dws_cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_INVALID, dws_cbor_peek(&r));
+
+    uint8_t bf[] = {0xf4}; // bool false -> info == 20
+    dws_cbor_reader_init(&r, bf, sizeof(bf));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_BOOL, dws_cbor_peek(&r));
+
+    uint8_t dbl[] = {0xfb, 0, 0, 0, 0, 0, 0, 0, 0}; // double marker -> info == 27
+    dws_cbor_reader_init(&r, dbl, sizeof(dbl));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_FLOAT, dws_cbor_peek(&r));
+}
+
+// read_str: the major type matches but the declared length overruns the
+// buffer -- distinct from the wrong-major-type branch already covered by
+// test_cbor_decode_more_types.
+void test_cbor_read_str_length_overrun()
+{
+    CborReader r;
+    const char *s;
+    size_t sl;
+    const uint8_t *bp;
+
+    uint8_t txt[] = {0x65, 'h', 'e', 'l', 'l'}; // text(5) but only 4 bytes follow
+    dws_cbor_reader_init(&r, txt, sizeof(txt));
+    TEST_ASSERT_FALSE(dws_cbor_read_text(&r, &s, &sl));
+    TEST_ASSERT_FALSE(dws_cbor_reader_ok(&r));
+
+    uint8_t byt[] = {0x45, 1, 2, 3}; // bytes(5) but only 3 bytes follow
+    dws_cbor_reader_init(&r, byt, sizeof(byt));
+    TEST_ASSERT_FALSE(dws_cbor_read_bytes(&r, &bp, &sl));
+    TEST_ASSERT_FALSE(dws_cbor_reader_ok(&r));
+}
+
 // A buffer shorter than the encoded item fails closed.
 void test_decode_truncated()
 {
@@ -493,6 +579,10 @@ int main()
     RUN_TEST(test_float);
     RUN_TEST(test_array_and_map);
     RUN_TEST(test_overflow_fails_closed);
+    RUN_TEST(test_cbor_text_null_ptr);
+    RUN_TEST(test_cbor_reader_sticky_err_repeat);
+    RUN_TEST(test_peek_edge_cases);
+    RUN_TEST(test_cbor_read_str_length_overrun);
     RUN_TEST(test_decode_uint);
     RUN_TEST(test_decode_int);
     RUN_TEST(test_decode_float_roundtrip);

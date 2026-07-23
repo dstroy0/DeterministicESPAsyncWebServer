@@ -176,6 +176,68 @@ void test_bacnet_guards_and_truncations()
     TEST_ASSERT_FALSE(dws_npdu_parse(no_hop, 5, &info));
 }
 
+// dws_bvlc_build: a zero-length NPDU payload (e.g. a header-only BVLC-Result) exercises the
+// "no npdu" side of the length guard and skips the memcpy; a declared length that itself
+// exceeds the 16-bit BVLL length field trips the overflow guard before the cap is even checked.
+void test_bvlc_build_zero_len_and_giant_overflow()
+{
+    uint8_t buf[16];
+    size_t n = dws_bvlc_build(buf, sizeof(buf), BVLC_FUNC_RESULT, nullptr, 0);
+    const uint8_t expect[] = {0x81, 0x00, 0x00, 0x04}; // type, func, len 4 (header only)
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+
+    uint8_t dummy_npdu[1] = {0};
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_bvlc_build(buf, sizeof(buf), BVLC_FUNC_ORIGINAL_UNICAST, dummy_npdu, 0x10000)); // total > 0xFFFF
+}
+
+// dws_bvlc_parse: a null buffer, a buffer shorter than the fixed header, a declared BVLL
+// length that is itself smaller than the header, and all-null optional outputs.
+void test_bvlc_parse_edge_branches()
+{
+    uint8_t func;
+    const uint8_t *p;
+    size_t plen;
+    TEST_ASSERT_FALSE(dws_bvlc_parse(nullptr, 8, &func, &p, &plen)); // null buffer
+
+    const uint8_t too_short[2] = {0x81, 0x0A};
+    TEST_ASSERT_FALSE(dws_bvlc_parse(too_short, sizeof(too_short), &func, &p, &plen)); // len < header
+
+    const uint8_t small_total[4] = {0x81, 0x0A, 0x00, 0x03}; // declares total 3, less than the header
+    TEST_ASSERT_FALSE(dws_bvlc_parse(small_total, sizeof(small_total), &func, &p, &plen));
+
+    const uint8_t header_only[4] = {0x81, 0x0A, 0x00, 0x04}; // valid, no npdu payload
+    TEST_ASSERT_TRUE(
+        dws_bvlc_parse(header_only, sizeof(header_only), nullptr, nullptr, nullptr)); // all outputs optional
+}
+
+// dws_npdu_build: a zero-length APDU (header-only NPDU) exercises the "no apdu" side of the
+// length guard and skips the trailing memcpy; a destination announced (dadr_len != 0) with a
+// null DADR pointer trips the guard and fails closed.
+void test_npdu_build_zero_apdu_and_null_dadr()
+{
+    uint8_t buf[16];
+    size_t n = dws_npdu_build(buf, sizeof(buf), false, NPDU_PRIO_NORMAL, false, 0, nullptr, 0, 0, nullptr, 0);
+    const uint8_t expect[] = {0x01, 0x00};
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_npdu_build(buf, sizeof(buf), false, NPDU_PRIO_NORMAL, true, 0x0005, nullptr, 3, 0xFF, nullptr, 0));
+}
+
+// dws_npdu_parse: a null buffer, a null output pointer, and a length too short to hold the
+// fixed version+control octets.
+void test_npdu_parse_null_buf_out_and_short()
+{
+    const uint8_t frame[2] = {NPDU_VERSION, 0x00};
+    NpduInfo info;
+    TEST_ASSERT_FALSE(dws_npdu_parse(nullptr, sizeof(frame), &info)); // null buffer
+    TEST_ASSERT_FALSE(dws_npdu_parse(frame, sizeof(frame), nullptr)); // null output
+    TEST_ASSERT_FALSE(dws_npdu_parse(frame, 1, &info));               // len < 2
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -188,5 +250,9 @@ int main()
     RUN_TEST(test_full_stack);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_overflow_fails_closed);
+    RUN_TEST(test_bvlc_build_zero_len_and_giant_overflow);
+    RUN_TEST(test_bvlc_parse_edge_branches);
+    RUN_TEST(test_npdu_build_zero_apdu_and_null_dadr);
+    RUN_TEST(test_npdu_parse_null_buf_out_and_short);
     return UNITY_END();
 }

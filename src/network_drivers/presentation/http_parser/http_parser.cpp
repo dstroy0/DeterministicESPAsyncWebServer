@@ -597,8 +597,12 @@ static bool fwd_extract_client(const char *s, size_t n, char *out, size_t cap)
         size_t i = 1;
         for (; i < n && s[i] != ']'; i++)
         {
-            if (tlen + 1 >= sizeof(tok))
-                return false;
+            // Unreachable in this build: n comes from a stored header value, capped at
+            // MAX_VAL_LEN-1 (47) bytes total. "for=[" alone takes 5, leaving at most 42 bytes
+            // of bracket content - never enough to drive tlen up to sizeof(tok)-1 (45, since
+            // DWS_IP_STR_MAX is 46), so this guard can never actually trip on the host.
+            if (tlen + 1 >= sizeof(tok)) // GCOVR_EXCL_BR_LINE  see above: needs >=46 content bytes, budget caps at 42
+                return false;            // GCOVR_EXCL_LINE
             tok[tlen++] = s[i];
         }
         if (i >= n) // unterminated bracket
@@ -665,7 +669,10 @@ bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool
             const char *fend = fv;
             size_t lim = elen - (size_t)(fv - fwd);
             size_t k = 0;
-            while (k < lim && fend[k] != ';' && fend[k] != ',')
+            // fend[k]==',' is unreachable here: lim is derived from elen, which is itself the
+            // offset of the first ',' (or end of string when there is none) - so k can never
+            // walk far enough to land on a comma without k<lim failing first.
+            while (k < lim && fend[k] != ';' && fend[k] != ',') // GCOVR_EXCL_BR_LINE  see above: the ',' arm can't fire
                 k++;
             if (fwd_extract_client(fv, k, ip_out, ip_cap))
                 return true;
@@ -734,7 +741,10 @@ bool http_get_form(const HttpReq *req, const char *key, char *out, size_t out_si
                 i++;
             ve = i;
         }
-        if (i < len && body[i] == '&')
+        // body[i] != '&' here is unreachable: the two scans above only ever stop early on '=' or
+        // '&' (handled by the block above) or by running out of body (i == len) - so whenever
+        // i < len still holds at this point, body[i] can only be '&'.
+        if (i < len && body[i] == '&') // GCOVR_EXCL_BR_LINE  see above: the not-'&' arm can't fire
             i++;
 
         if (key_matches)

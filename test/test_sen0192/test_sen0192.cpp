@@ -83,6 +83,30 @@ void test_active_age()
     TEST_ASSERT_EQUAL_UINT32(750, dws_sen0192_motion_active_age_ms(&m, 1750));
 }
 
+void test_tick_present_unseeded_holds()
+{
+    // present && !seeded cannot occur through the public update()/tick() sequence (present is only ever
+    // set true in the same branch that sets seeded true), but Sen0192Motion is a flat, unencapsulated
+    // struct, so exercise the defensive combination directly: with no seeded timestamp to age against,
+    // tick() must leave presence asserted rather than guess an age.
+    Sen0192Motion m;
+    dws_sen0192_motion_init(&m, 1000, true);
+    m.present = true;
+    m.seeded = false;
+    TEST_ASSERT_TRUE(dws_sen0192_motion_tick(&m, 999999));
+    TEST_ASSERT_TRUE(dws_sen0192_motion_present(&m));
+}
+
+void test_host_build_gpio_binding_stubs()
+{
+    // This test binary is a host (non-ARDUINO) build, so the GPIO-binding functions compile to the
+    // no-op stubs at the bottom of sen0192.cpp; exercise them for coverage of that build variant.
+    TEST_ASSERT_FALSE(dws_sen0192_begin());
+    TEST_ASSERT_FALSE(dws_sen0192_poll());
+    TEST_ASSERT_FALSE(dws_sen0192_present());
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sen0192_motion_count());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -91,5 +115,7 @@ int main()
     RUN_TEST(test_reasserts_as_new_event);
     RUN_TEST(test_active_low_polarity);
     RUN_TEST(test_active_age);
+    RUN_TEST(test_tick_present_unseeded_holds);
+    RUN_TEST(test_host_build_gpio_binding_stubs);
     return UNITY_END();
 }

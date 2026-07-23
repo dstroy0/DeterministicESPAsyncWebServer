@@ -7,7 +7,8 @@
 // extraction, aud-as-array, and every rejection (alg, signature, iss, aud, exp,
 // missing key, malformed).
 
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h" // in-test RS256 signing
+#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h" // bn_* direct coverage
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"    // in-test RS256 signing
 #include "network_drivers/session/scratch.h"
 #include "services/oidc/oidc.h"
 #include <stdint.h>
@@ -720,6 +721,359 @@ void test_verify_scratch_partial_exhaustion()
     scratch_reset();
 }
 
+// --- ssh_bignum.cpp direct coverage --------------------------------------------------
+//
+// Group-14 DH (bn_expmod_group14 / bn_dh_validate) is never reached through the OIDC
+// verifier - RSA verification uses its own full-width bignum path in ssh_rsa.cpp, not
+// the Montgomery group-14 machinery. These call the public bn_* API directly.
+
+// bn_is_zero: the all-zero case runs the limb loop to completion; a nonzero limb returns
+// early instead.
+void test_bn_is_zero(void)
+{
+    SshBigNum z;
+    memset(z.d, 0, sizeof(z.d));
+    TEST_ASSERT_TRUE(bn_is_zero(&z));
+
+    SshBigNum nz;
+    memset(nz.d, 0, sizeof(nz.d));
+    nz.d[0] = 1;
+    TEST_ASSERT_FALSE(bn_is_zero(&nz));
+}
+
+// bn_dh_validate (RFC 4253 §8: 1 < v < p-1) exercises both the "must be > 1" scan (the
+// short-circuit when no high limb is set, and the early-break when one is) and the
+// "must be < p-1" comparison (less / equal / greater, via bn_cmp/bn_cmp_raw).
+void test_bn_dh_validate_range_guards(void)
+{
+    SshBigNum v;
+
+    // v == 0: no high limb set, d[0] <= 1 -> reject.
+    memset(v.d, 0, sizeof(v.d));
+    TEST_ASSERT_EQUAL_INT(-1, bn_dh_validate(&v));
+
+    // v == 1: same short path, still <= 1 -> reject.
+    v.d[0] = 1;
+    TEST_ASSERT_EQUAL_INT(-1, bn_dh_validate(&v));
+
+    // v == 2: short path, but d[0] > 1 clears the ">1" guard; well under p-1 -> accept.
+    v.d[0] = 2;
+    TEST_ASSERT_EQUAL_INT(0, bn_dh_validate(&v));
+
+    // v == p: a high limb is set (the ">1" scan finds it and breaks early), but v > p-1
+    // -> reject via the bn_cmp "greater than" branch.
+    v = group14_p;
+    TEST_ASSERT_EQUAL_INT(-1, bn_dh_validate(&v));
+
+    // v == p-1: high limb set, but v is not < p-1 (equal) -> reject.
+    v = group14_p;
+    v.d[0]--;
+    TEST_ASSERT_EQUAL_INT(-1, bn_dh_validate(&v));
+
+    // v == p-2: high limb set, and v < p-1 -> accept.
+    v = group14_p;
+    v.d[0] -= 2;
+    TEST_ASSERT_EQUAL_INT(0, bn_dh_validate(&v));
+}
+
+// bn_expmod_group14: the native software Montgomery path (bn_init/bn_monpro/bn_shl1/
+// bn_sub_inplace) is otherwise completely unreached from the OIDC tests. Since
+// 2^5 = 32 is far smaller than the group-14 prime, the expected result needs no
+// independent modexp implementation to check against - it is exactly base^exp with no
+// modular reduction - while the 2048-iteration square-and-multiply loop underneath still
+// runs in full, exercising bn_init's one-time R/R^2 setup and every bn_monpro reduction
+// branch along the way.
+void test_bn_expmod_group14_small_exponent(void)
+{
+    SshBigNum exp;
+    memset(exp.d, 0, sizeof(exp.d));
+    exp.d[0] = 5;
+
+    SshBigNum out;
+    bn_expmod_group14(&out, &group14_g, &exp);
+
+    SshBigNum expected;
+    memset(expected.d, 0, sizeof(expected.d));
+    expected.d[0] = 32; // 2^5, unreduced since 32 << group14_p
+    TEST_ASSERT_EQUAL_INT(0, bn_cmp(&out, &expected));
+}
+
+// bn_init() memoizes the Montgomery R/R^2 setup behind a static "already initialized"
+// guard (s_g14.initialized) so it only runs once for the whole process; the test above is
+// what performs that first-time setup. This second, independent modexp call runs after it
+// (same process, RUN_TEST order) and is what exercises the early-return guard itself -
+// s_g14.initialized is already true, so bn_init() must return immediately without
+// recomputing R/R^2.
+void test_bn_expmod_group14_reinit_short_circuit(void)
+{
+    SshBigNum exp;
+    memset(exp.d, 0, sizeof(exp.d));
+    exp.d[0] = 3;
+
+    SshBigNum out;
+    bn_expmod_group14(&out, &group14_g, &exp);
+
+    SshBigNum expected;
+    memset(expected.d, 0, sizeof(expected.d));
+    expected.d[0] = 8; // 2^3, unreduced since 8 << group14_p
+    TEST_ASSERT_EQUAL_INT(0, bn_cmp(&out, &expected));
+}
+
+// bn_monpro's Montgomery-domain product can land >= p after the SOS reduction pass and
+// needs the conditional correction subtract (bn_sub_inplace) - never exercised by the small
+// base/exponent above, since the running Montgomery product never grows past p there. base =
+// exp = 255 (0xFF, 8 bits) is nowhere near p, but 255's 8 set bits mean several genuine
+// multiply-ins during the square-and-multiply loop, which is enough for the running product
+// to cross p at a couple of points along the way - found by exhaustively probing base bit
+// widths for the smallest one that reaches this branch at all. The expected value is
+// 255^255 mod p, computed independently out-of-band (Python's arbitrary-precision pow(255,
+// 255, p)) and pinned here as a constant, so this checks exact numeric correctness, not just
+// that the code runs.
+void test_bn_expmod_group14_large_operand_needs_reduction(void)
+{
+    static const char EXP255_255_MOD_P[] = "005e5c8b0eb95ab08f9d37ef127fc01bd0e33de52647528396d78d5f8da31989"
+                                           "e67814f6bba1fb0f0207010ff5f2347b19d5f6598fc91bf5a88f77daa3d7b382"
+                                           "fec484f3d205c06a34445384c0e7ab0d883788c68c012cb433055edda746a484"
+                                           "09444ea91147273b79fc3eabb70eca552af650c234bb01ed404427f17cdddd71"
+                                           "d08e39ef9c3982e3ce44e670456aa8154c1fdbd9c35947f494636a425c69bf89"
+                                           "e9c75ad3b7a0a559af0f5da9947c8deba64417310713b23e7ef4de50bb2a3e90"
+                                           "bc2ac3da5201cca8d6e5dfea887c4f7a4e92175d9f88bd2779b57f9eb35be752"
+                                           "8f965a06da0ac41dcb3a34f1d8ab7d8fee620a94faa42c395997756b007ffeff";
+
+    SshBigNum base;
+    memset(base.d, 0, sizeof(base.d));
+    base.d[0] = 255;
+
+    SshBigNum exp;
+    memset(exp.d, 0, sizeof(exp.d));
+    exp.d[0] = 255;
+
+    SshBigNum out;
+    bn_expmod_group14(&out, &base, &exp);
+
+    uint8_t expected_bytes[256];
+    hex2bytes(expected_bytes, EXP255_255_MOD_P, 256);
+    SshBigNum expected;
+    bn_from_bytes(&expected, expected_bytes, 256);
+    TEST_ASSERT_EQUAL_INT(0, bn_cmp(&out, &expected));
+}
+
+// --- ssh_rsa.cpp direct coverage -----------------------------------------------------
+
+// SHA-512 selects the SHA-512 DigestInfo/hash in rsa_digest(), on both the sign and
+// verify paths; RS256 (used by every OIDC token test above) is fixed to SHA-256, so
+// SHA-512 is otherwise never reached.
+void test_rsa_sign_verify_sha512(void)
+{
+    hex2bytes(_test_rsa_n, RT_N, 256);
+    hex2bytes(_test_rsa_d, RT_D, 256);
+    _test_rsa_e[0] = 0;
+    _test_rsa_e[1] = 1;
+    _test_rsa_e[2] = 0;
+    _test_rsa_e[3] = 1; // e = 65537
+
+    static const char msg[] = "sha512 coverage message";
+    uint8_t sig[SSH_RSA_SIG_BYTES];
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA512, sig));
+
+    uint8_t n_be[SSH_RSA_KEY_BYTES];
+    hex2bytes(n_be, RT_N, 256);
+    uint8_t e_be[4] = {0, 1, 0, 1};
+    TEST_ASSERT_EQUAL_INT(
+        0, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), sig, SSH_RSA_SIG_BYTES, SshRsaHash::SHA512));
+}
+
+// bn_modexp_full's private-exponent scan short-circuits to "result = 1" when every limb
+// of the exponent is zero (top_limb never finds a set bit) - unreachable with any real
+// RSA private key, but directly reachable through the native test fixture.
+void test_rsa_sign_zero_exponent(void)
+{
+    hex2bytes(_test_rsa_n, RT_N, 256);
+    memset(_test_rsa_d, 0, sizeof(_test_rsa_d)); // d == 0
+    _test_rsa_e[0] = 0;
+    _test_rsa_e[1] = 1;
+    _test_rsa_e[2] = 0;
+    _test_rsa_e[3] = 1;
+
+    static const char msg[] = "zero exponent";
+    uint8_t sig[SSH_RSA_SIG_BYTES];
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig));
+
+    // s = em^0 mod n == 1, encoded big-endian as 255 zero bytes followed by 0x01.
+    for (size_t i = 0; i < SSH_RSA_SIG_BYTES - 1; i++)
+        TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);
+    TEST_ASSERT_EQUAL_HEX8(0x01, sig[SSH_RSA_SIG_BYTES - 1]);
+
+    // Restore d for any later test that (re)signs with the RT key.
+    hex2bytes(_test_rsa_d, RT_D, 256);
+}
+
+// bn_reduce_full's "is r >= m" limb scan assumes greater-or-equal and looks MSB-down for
+// the first differing limb to disprove it. With any real 2048-bit RSA modulus the operands
+// differ within the first limb or two, so the scan never runs past a handful of high limbs
+// and never finds every limb equal. A deliberately tiny modulus (n = 5, not a realistic RSA
+// key - a focused unit test of the reduction's comparison loop, reached the only way it can
+// be: through the public sign path with a value large enough to need many reduction steps)
+// forces the scan to compare against 63 leading zero limbs on every one of the reduction's
+// ~2048 steps (equal every time - the r[k] == m[k] continuation), and the long run of 0xFF
+// pad bytes in the PKCS#1 block means the running remainder lands on exactly n itself at
+// some steps too, so the scan also completes with no differing limb found at all.
+void test_rsa_sign_tiny_modulus_reduction_equal_limbs(void)
+{
+    memset(_test_rsa_n, 0, SSH_RSA_KEY_BYTES);
+    _test_rsa_n[SSH_RSA_KEY_BYTES - 1] = 5; // n = 5
+    memset(_test_rsa_d, 0, SSH_RSA_KEY_BYTES);
+    _test_rsa_d[SSH_RSA_KEY_BYTES - 1] = 1; // d = 1
+    _test_rsa_e[0] = 0;
+    _test_rsa_e[1] = 0;
+    _test_rsa_e[2] = 0;
+    _test_rsa_e[3] = 1;
+
+    static const char msg[] = "tiny modulus";
+    uint8_t sig[SSH_RSA_SIG_BYTES];
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig));
+
+    // Every result is < n == 5, so the high 255 bytes are all zero.
+    for (size_t i = 0; i < SSH_RSA_SIG_BYTES - 1; i++)
+        TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);
+    TEST_ASSERT_TRUE(sig[SSH_RSA_SIG_BYTES - 1] < 5);
+
+    // Restore the RT key for any later test that (re)signs with it.
+    hex2bytes(_test_rsa_n, RT_N, 256);
+    hex2bytes(_test_rsa_d, RT_D, 256);
+    _test_rsa_e[1] = 1;
+}
+
+// ssh_rsa_verify rejects a signature of the wrong length before touching any bignum
+// state, and separately rejects (without crashing) a signature that is numerically >= the
+// modulus (RFC 8017 requires s < n); an all-0xFF byte string is guaranteed larger than any
+// 2048-bit RSA modulus whose top byte's MSB is clear, as RT_N's is.
+void test_rsa_verify_length_and_range_guards(void)
+{
+    uint8_t n_be[SSH_RSA_KEY_BYTES];
+    hex2bytes(n_be, RT_N, 256);
+    uint8_t e_be[4] = {0, 1, 0, 1};
+    static const char msg[] = "guard check";
+
+    uint8_t short_sig[10] = {0};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), short_sig,
+                                             sizeof(short_sig), SshRsaHash::SHA256));
+
+    uint8_t big_sig[SSH_RSA_KEY_BYTES];
+    memset(big_sig, 0xFF, sizeof(big_sig));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig),
+                                             SshRsaHash::SHA256));
+}
+
+// bn_modexp_pub's public-exponent bit scan starts unconditionally at bit 31 with no
+// precondition that e is nonzero (unlike bn_modexp_full's private-exponent scan, which is
+// guarded by an earlier all-limbs-zero check covered by test_rsa_sign_zero_exponent above).
+// A real "ssh-rsa" public exponent is never 0, but e's raw bytes come straight off the wire
+// in ssh_rsa_verify, so a malformed/zero e must not run past the top of the scan. e = 0
+// drives `top` down to -1 (never finding a set bit), which is what this covers.
+void test_rsa_verify_zero_public_exponent(void)
+{
+    uint8_t n_be[SSH_RSA_KEY_BYTES];
+    hex2bytes(n_be, RT_N, 256);
+    uint8_t e_be[4] = {0, 0, 0, 0}; // e == 0
+    static const char msg[] = "zero e";
+
+    uint8_t sig[SSH_RSA_SIG_BYTES] = {0};
+    sig[SSH_RSA_SIG_BYTES - 1] = 1; // s = 1, s < n so the range guard passes
+
+    // s^0 mod n == 1, which never matches the expected PKCS#1 block, so verify still
+    // fails - but only after bn_modexp_pub's e == 0 short-circuit runs without looping.
+    TEST_ASSERT_EQUAL_INT(
+        -1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), sig, SSH_RSA_SIG_BYTES, SshRsaHash::SHA256));
+}
+
+// ssh_rsa_encode_pubkey: the not-yet-loaded guard, the too-small-buffer guard, and the
+// success path - which exercises put_mpint's leading-zero-strip and MSB-pad logic in both
+// directions in a single call. RT's e (00 01 00 01) has a leading zero to strip and its
+// trimmed top byte's MSB is clear, so no pad byte is added; RT_N has no leading zero but
+// its top byte's MSB is set, so a 0x00 pad byte is inserted ahead of it.
+void test_rsa_encode_pubkey(void)
+{
+    // Not loaded -> guard (line coverage only; state is fully re-established below).
+    ssh_host_pubkey.loaded = false;
+    uint8_t out[SSH_RSA_PUBKEY_BLOB_MAX];
+    size_t out_len = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_encode_pubkey(out, &out_len, sizeof(out)));
+
+    // Load the RT key so n/e are known.
+    hex2bytes(_test_rsa_n, RT_N, 256);
+    _test_rsa_e[0] = 0;
+    _test_rsa_e[1] = 1;
+    _test_rsa_e[2] = 0;
+    _test_rsa_e[3] = 1;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_rsa_load_pubkey());
+
+    // Buffer too small.
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_encode_pubkey(out, &out_len, 4));
+
+    // Success path.
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_encode_pubkey(out, &out_len, sizeof(out)));
+
+    // uint32 len("ssh-rsa") + "ssh-rsa".
+    TEST_ASSERT_EQUAL_HEX8(0, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0, out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0, out[2]);
+    TEST_ASSERT_EQUAL_HEX8(7, out[3]);
+    TEST_ASSERT_EQUAL_MEMORY("ssh-rsa", out + 4, 7);
+
+    // mpint e: leading 0x00 stripped, trimmed top byte 0x01 has its MSB clear -> no pad,
+    // 3-byte length.
+    size_t p = 4 + 7;
+    TEST_ASSERT_EQUAL_HEX8(0, out[p + 0]);
+    TEST_ASSERT_EQUAL_HEX8(0, out[p + 1]);
+    TEST_ASSERT_EQUAL_HEX8(0, out[p + 2]);
+    TEST_ASSERT_EQUAL_HEX8(3, out[p + 3]);
+    TEST_ASSERT_EQUAL_HEX8(0x01, out[p + 4]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[p + 5]);
+    TEST_ASSERT_EQUAL_HEX8(0x01, out[p + 6]);
+    p += 4 + 3;
+
+    // mpint n: top byte 0xa8 has its MSB set -> a 0x00 pad byte precedes it, length 257.
+    TEST_ASSERT_EQUAL_HEX8(0, out[p + 0]);
+    TEST_ASSERT_EQUAL_HEX8(0, out[p + 1]);
+    TEST_ASSERT_EQUAL_HEX8(1, out[p + 2]);
+    TEST_ASSERT_EQUAL_HEX8(1, out[p + 3]); // 257 = 0x00000101
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[p + 4]);
+    TEST_ASSERT_EQUAL_HEX8(0xa8, out[p + 5]);
+    p += 4 + 1 + 256;
+    TEST_ASSERT_EQUAL_INT((int)p, (int)out_len);
+}
+
+// put_mpint's "strip leading zero bytes" scan can run all the way to the end of the input
+// (off == data_len) when every byte is zero - never hit by RT's real e or n above. A zero
+// public exponent hits it, and the consequent src_len == 0 branch in the need_pad check
+// right after, via a genuine mpint edge case: RFC 4251 SS5 encodes the integer zero as a
+// zero-length string, which is exactly what off running to data_len and src_len landing on
+// 0 produces.
+void test_rsa_encode_pubkey_zero_exponent(void)
+{
+    hex2bytes(_test_rsa_n, RT_N, 256);
+    memset(_test_rsa_e, 0, sizeof(_test_rsa_e)); // e == 0
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_rsa_load_pubkey());
+
+    uint8_t out[SSH_RSA_PUBKEY_BLOB_MAX];
+    size_t out_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_encode_pubkey(out, &out_len, sizeof(out)));
+
+    // mpint e: zero-length string (RFC 4251 SS5's canonical zero encoding) - just the
+    // 4-byte length prefix, no pad byte, no data.
+    size_t p = 4 + 7;
+    TEST_ASSERT_EQUAL_HEX8(0, out[p + 0]);
+    TEST_ASSERT_EQUAL_HEX8(0, out[p + 1]);
+    TEST_ASSERT_EQUAL_HEX8(0, out[p + 2]);
+    TEST_ASSERT_EQUAL_HEX8(0, out[p + 3]); // length 0
+    p += 4;
+
+    // Restore e for any later test.
+    _test_rsa_e[1] = 1;
+    _test_rsa_e[3] = 1;
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -753,5 +1107,17 @@ int main()
     RUN_TEST(test_reject_tampered_signature);
     RUN_TEST(test_reject_unknown_key);
     RUN_TEST(test_reject_malformed);
+    RUN_TEST(test_bn_is_zero);
+    RUN_TEST(test_bn_dh_validate_range_guards);
+    RUN_TEST(test_bn_expmod_group14_small_exponent);
+    RUN_TEST(test_bn_expmod_group14_reinit_short_circuit);
+    RUN_TEST(test_bn_expmod_group14_large_operand_needs_reduction);
+    RUN_TEST(test_rsa_sign_verify_sha512);
+    RUN_TEST(test_rsa_sign_zero_exponent);
+    RUN_TEST(test_rsa_sign_tiny_modulus_reduction_equal_limbs);
+    RUN_TEST(test_rsa_verify_length_and_range_guards);
+    RUN_TEST(test_rsa_verify_zero_public_exponent);
+    RUN_TEST(test_rsa_encode_pubkey);
+    RUN_TEST(test_rsa_encode_pubkey_zero_exponent);
     return UNITY_END();
 }

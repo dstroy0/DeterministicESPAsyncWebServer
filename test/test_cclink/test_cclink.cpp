@@ -80,6 +80,59 @@ void test_build_and_accessor_guards()
     TEST_ASSERT_EQUAL_UINT16(0, dws_cclink_get_word(words, 2, 999));                 // out of range -> 0
 }
 
+void test_build_null_args(void)
+{
+    uint8_t buf[16];
+    // out == nullptr -> rejected before any other check.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_cclink_build(1, CclinkCmd::CCLINK_CMD_POLL, nullptr, 0, nullptr, 0, nullptr, sizeof(buf)));
+    // bit_len > 0 but bits == nullptr -> rejected.
+    TEST_ASSERT_EQUAL_size_t(0,
+                             dws_cclink_build(1, CclinkCmd::CCLINK_CMD_POLL, nullptr, 3, nullptr, 0, buf, sizeof(buf)));
+    // word_len > 0 but words == nullptr -> rejected.
+    TEST_ASSERT_EQUAL_size_t(0,
+                             dws_cclink_build(1, CclinkCmd::CCLINK_CMD_POLL, nullptr, 0, nullptr, 3, buf, sizeof(buf)));
+}
+
+void test_build_zero_bit_len(void)
+{
+    // bit_len == 0 (with non-empty word data) on a successful build path.
+    uint8_t words[4] = {0x01, 0x02, 0x03, 0x04};
+    uint8_t buf[16];
+    size_t n = dws_cclink_build(2, CclinkCmd::CCLINK_CMD_POLL, nullptr, 0, words, 4, buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_size_t(2 + 0 + 4 + 1, n);
+    CcLinkFrame f;
+    TEST_ASSERT_TRUE(dws_cclink_parse(buf, n, &f));
+    TEST_ASSERT_EQUAL_size_t(4, f.payload_len);
+}
+
+void test_parse_null_args(void)
+{
+    uint8_t buf[3] = {0x01, 0x02, 0x03};
+    CcLinkFrame f;
+    TEST_ASSERT_FALSE(dws_cclink_parse(nullptr, sizeof(buf), &f));
+    TEST_ASSERT_FALSE(dws_cclink_parse(buf, sizeof(buf), nullptr));
+}
+
+void test_parse_no_payload(void)
+{
+    // station + command + checksum only -> body <= 2 -> payload == nullptr.
+    uint8_t buf[8];
+    size_t n = dws_cclink_build(3, CclinkCmd::CCLINK_CMD_TEST, nullptr, 0, nullptr, 0, buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_size_t(3, n);
+    CcLinkFrame f;
+    TEST_ASSERT_TRUE(dws_cclink_parse(buf, n, &f));
+    TEST_ASSERT_EQUAL_size_t(0, f.payload_len);
+    TEST_ASSERT_NULL(f.payload);
+}
+
+void test_accessor_null_ptrs(void)
+{
+    TEST_ASSERT_FALSE(dws_cclink_get_bit(nullptr, 2, 0));
+    dws_cclink_set_bit(nullptr, 2, 0, true); // out-of-range on null bits -> no-op, must not crash
+    TEST_ASSERT_EQUAL_UINT16(0, dws_cclink_get_word(nullptr, 2, 0));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -88,5 +141,10 @@ int main(void)
     RUN_TEST(test_bit_accessors);
     RUN_TEST(test_parse_rejects);
     RUN_TEST(test_build_and_accessor_guards);
+    RUN_TEST(test_build_null_args);
+    RUN_TEST(test_build_zero_bit_len);
+    RUN_TEST(test_parse_null_args);
+    RUN_TEST(test_parse_no_payload);
+    RUN_TEST(test_accessor_null_ptrs);
     return UNITY_END();
 }

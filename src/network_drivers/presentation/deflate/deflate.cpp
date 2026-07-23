@@ -136,7 +136,10 @@ void emit_match(DWSBitWriter *w, const Tables *t, int len, int dist)
         dws_bitw_put(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
 
     int di = 0;
-    while (di < 29 && dist >= DIST_BASE[di + 1])
+    // di == 29 (loop exit via the left operand) is unreachable: dist is always <=
+    // WINDOW (512) here - the chain walk in deflate_raw() discards any candidate
+    // farther away - and DIST_BASE[18] is 513, so di never advances past 17.
+    while (di < 29 && dist >= DIST_BASE[di + 1]) // GCOVR_EXCL_BR_LINE  di<29 never goes false, see above
         di++;
     dws_bitw_put(w, t->d_code[di], t->d_len[di]);
     if (DIST_EXTRA[di])

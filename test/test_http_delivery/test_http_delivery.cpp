@@ -77,6 +77,11 @@ void test_builder_edge_guards(void)
     const char *paths[1] = {"/a"};
     TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, 1, "v", nullptr, sizeof(buf))); // null out
     TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(nullptr, 2, "v", buf, sizeof(buf)));   // n>0, null paths
+    TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, 1, "v", buf, 0)); // zero cap, non-null out
+    // Null version falls back to "" rather than dereferencing.
+    size_t n = dws_delivery_sw_manifest(paths, 1, nullptr, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"version\":\"\""));
 }
 
 // What the /precache.json route depends on: a full-size manifest fits the shipped buffer, and an

@@ -73,6 +73,24 @@ void test_null_cfg(void)
     TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(5000, 0, nullptr));
 }
 
+void test_zero_min_and_max_clamps_seed_window_down(void)
+{
+    // min_ms=0 -> the "or 1" seed kicks in (window starts at 1); max_ms=0 too, so ceil_ms=0.
+    // With 0 doublings the seeded window (1) never gets a chance to double, so it is still > ceil_ms
+    // (0) after the loop and must be clamped down to the ceiling.
+    DWSSleepCfg cfg = {1000, 0, 0, 500};
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(2000, 1000, &cfg));
+}
+
+void test_window_hits_ceiling_exactly_before_doubling(void)
+{
+    // min_ms=4, max_ms=8: window doubles 4 -> 8 on the first iteration (4 is not > ceil_ms/2 == 4,
+    // so it doubles instead of clamping), then the second iteration's pre-doubling guard sees
+    // window (8) already >= ceil_ms (8) and breaks on that arm directly.
+    DWSSleepCfg cfg = {1000, 4, 8, 500};
+    TEST_ASSERT_EQUAL_UINT32(8, dws_sleep_next(3000, 1000, &cfg));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -84,5 +102,7 @@ int main(void)
     RUN_TEST(test_degenerate_max_below_min);
     RUN_TEST(test_wrap_safe);
     RUN_TEST(test_null_cfg);
+    RUN_TEST(test_zero_min_and_max_clamps_seed_window_down);
+    RUN_TEST(test_window_hits_ceiling_exactly_before_doubling);
     return UNITY_END();
 }

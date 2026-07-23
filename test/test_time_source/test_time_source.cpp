@@ -113,6 +113,20 @@ void test_null_fn_rejected()
     TEST_ASSERT_FALSE(dws_time_source_add("bad", 0, nullptr));
 }
 
+void test_table_full_all_unavailable_exhausts_scan()
+{
+    // Fill every slot (DWS_TIME_SOURCE_MAX) with sources that all report no valid
+    // time. With fewer than DWS_TIME_SOURCE_MAX sources registered, dws_time_now()'s
+    // scan loop always exits early via "no more sources" (sel < 0) once the used
+    // sources are exhausted; with every slot full it instead runs all
+    // DWS_TIME_SOURCE_MAX passes and exits via the loop condition itself.
+    for (int i = 0; i < DWS_TIME_SOURCE_MAX; i++)
+        TEST_ASSERT_TRUE(dws_time_source_add("s", (uint8_t)i, dws_rtc_fn));
+    g_rtc = 0;
+    TEST_ASSERT_EQUAL_UINT32(0, dws_time_now());
+    TEST_ASSERT_NULL(dws_time_source_active());
+}
+
 void test_reset_clears_sources()
 {
     dws_time_source_add("ntp", 0, dws_ntp_fn);
@@ -148,6 +162,7 @@ int main()
     RUN_TEST(test_fallback_queries_in_priority_order);
     RUN_TEST(test_table_full_rejects);
     RUN_TEST(test_null_fn_rejected);
+    RUN_TEST(test_table_full_all_unavailable_exhausts_scan);
     RUN_TEST(test_reset_clears_sources);
     RUN_TEST(test_http_date_from_active_source);
     return UNITY_END();

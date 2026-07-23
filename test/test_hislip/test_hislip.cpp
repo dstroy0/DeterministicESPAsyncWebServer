@@ -56,6 +56,22 @@ void test_header_rejects()
     TEST_ASSERT_EQUAL_size_t(0, dws_hislip_build_header(small, sizeof(small), HislipMsg::DATA, 0, 0, 0));
 }
 
+void test_header_null_args()
+{
+    // build_header fails closed on a null buffer
+    TEST_ASSERT_EQUAL_size_t(0, dws_hislip_build_header(nullptr, 16, HislipMsg::DATA, 0, 0, 0));
+
+    HislipHeader h;
+    const uint8_t good[16] = {'H', 'S', 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // parse_header fails closed on a null source buffer
+    TEST_ASSERT_FALSE(dws_hislip_parse_header(nullptr, 16, &h));
+    // parse_header fails closed on a null output pointer
+    TEST_ASSERT_FALSE(dws_hislip_parse_header(good, 16, nullptr));
+    // prologue byte 0 ok, byte 1 wrong ('S' -> 'X')
+    const uint8_t bad_second_byte[16] = {'H', 'X', 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(dws_hislip_parse_header(bad_second_byte, 16, &h));
+}
+
 // ── message type codes (spot-check the enum against the IVI-6.1 table) ──────────────────────────
 
 void test_message_type_codes()
@@ -100,6 +116,25 @@ void test_parse_initialize()
     TEST_ASSERT_FALSE(dws_hislip_parse_initialize(buf, DWS_HISLIP_HEADER_LEN + 3, &init));
 }
 
+void test_parse_initialize_rejects()
+{
+    uint8_t buf[64];
+    size_t n = dws_hislip_build_initialize(buf, sizeof(buf), DWS_HISLIP_VERSION_1_0, 0x1234, "hislip0");
+    HislipInitialize init;
+
+    // null output pointer
+    TEST_ASSERT_FALSE(dws_hislip_parse_initialize(buf, n, nullptr));
+
+    // header itself fails to parse (bad prologue)
+    const uint8_t bad[16] = {'X', 'S', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(dws_hislip_parse_initialize(bad, sizeof(bad), &init));
+
+    // well-formed header, but wrong message type (DATA, not INITIALIZE)
+    uint8_t data_buf[32];
+    size_t dn = dws_hislip_build_data(data_buf, sizeof(data_buf), false, 0, 0, nullptr, 0);
+    TEST_ASSERT_FALSE(dws_hislip_parse_initialize(data_buf, dn, &init));
+}
+
 void test_initialize_response()
 {
     uint8_t buf[16];
@@ -113,6 +148,25 @@ void test_initialize_response()
     TEST_ASSERT_EQUAL_HEX16(0x0042, resp.session_id);
     TEST_ASSERT_TRUE(resp.overlap);
     TEST_ASSERT_TRUE(resp.encryption_mandatory);
+}
+
+void test_parse_initialize_response_rejects()
+{
+    uint8_t buf[16];
+    size_t n = dws_hislip_build_initialize_response(buf, sizeof(buf), 0, DWS_HISLIP_VERSION_1_0, 0x0001);
+    HislipInitializeResponse resp;
+
+    // null output pointer
+    TEST_ASSERT_FALSE(dws_hislip_parse_initialize_response(buf, n, nullptr));
+
+    // header itself fails to parse (bad prologue)
+    const uint8_t bad[16] = {'X', 'S', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(dws_hislip_parse_initialize_response(bad, sizeof(bad), &resp));
+
+    // well-formed header, but wrong message type (ASYNC_INITIALIZE, not INITIALIZE_RESPONSE)
+    uint8_t async_buf[16];
+    size_t an = dws_hislip_build_async_initialize(async_buf, sizeof(async_buf), 0x0042);
+    TEST_ASSERT_FALSE(dws_hislip_parse_initialize_response(async_buf, an, &resp));
 }
 
 void test_async_initialize()
@@ -181,19 +235,40 @@ void test_build_overflow()
     TEST_ASSERT_EQUAL_size_t(0, dws_hislip_build_data(buf, sizeof(buf), false, 0, 0, nullptr, 4));
 }
 
+void test_build_with_payload_edge_cases()
+{
+    // build_with_payload (via build_data) fails closed on a null destination buffer
+    const uint8_t payload[] = {'X'};
+    TEST_ASSERT_EQUAL_size_t(0, dws_hislip_build_data(nullptr, 64, false, 0, 0, payload, sizeof(payload)));
+
+    // Initialize with a null sub-address takes the zero-length payload path (no memcpy, no
+    // sub-address strnlen call)
+    uint8_t buf[16];
+    size_t n = dws_hislip_build_initialize(buf, sizeof(buf), DWS_HISLIP_VERSION_1_0, 0x1234, nullptr);
+    TEST_ASSERT_EQUAL_size_t(DWS_HISLIP_HEADER_LEN, n);
+    HislipHeader h;
+    TEST_ASSERT_TRUE(dws_hislip_parse_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)HislipMsg::INITIALIZE, (uint8_t)h.type);
+    TEST_ASSERT_EQUAL_HEX64(0, h.payload_len);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_header_roundtrip);
     RUN_TEST(test_header_rejects);
+    RUN_TEST(test_header_null_args);
     RUN_TEST(test_message_type_codes);
     RUN_TEST(test_build_initialize_vector);
     RUN_TEST(test_parse_initialize);
+    RUN_TEST(test_parse_initialize_rejects);
     RUN_TEST(test_initialize_response);
+    RUN_TEST(test_parse_initialize_response_rejects);
     RUN_TEST(test_async_initialize);
     RUN_TEST(test_build_dataend_vector);
     RUN_TEST(test_data_roundtrip);
     RUN_TEST(test_message_id_increment);
     RUN_TEST(test_build_overflow);
+    RUN_TEST(test_build_with_payload_edge_cases);
     return UNITY_END();
 }

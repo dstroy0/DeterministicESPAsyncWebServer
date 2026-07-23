@@ -106,6 +106,66 @@ void test_host_stubs_and_line_overflow()
     TEST_PASS();
 }
 
+// A zero-capacity buffer skips the initial null-terminate (cap==0) and the
+// measurement append fails closed immediately (no room, not even for '\0').
+void test_zero_capacity_line_overflows()
+{
+    char buf[8];
+    DWSLine l;
+    dws_line_init(&l, buf, 0, "m");
+    TEST_ASSERT_TRUE(l.overflow);
+    TEST_ASSERT_FALSE(dws_line_ok(&l));
+}
+
+// A NULL measurement is tolerated (treated as empty), not a crash.
+void test_null_measurement_is_empty()
+{
+    char buf[64];
+    DWSLine l;
+    dws_line_init(&l, buf, sizeof(buf), NULL);
+    dws_line_add_int(&l, "f", 1);
+    TEST_ASSERT_TRUE(dws_line_ok(&l));
+    TEST_ASSERT_EQUAL_STRING(" f=1i", buf); // no measurement text, field still appended
+}
+
+// A NULL tag value (or key) is tolerated: the escaped-append is a no-op, so
+// the '=' separator is written with nothing after it, not a crash.
+void test_null_tag_value_appends_nothing()
+{
+    char buf[64];
+    DWSLine l;
+    dws_line_init(&l, buf, sizeof(buf), "m");
+    dws_line_add_tag(&l, "host", NULL);
+    dws_line_add_int(&l, "f", 1);
+    TEST_ASSERT_TRUE(dws_line_ok(&l));
+    TEST_ASSERT_EQUAL_STRING("m,host= f=1i", buf);
+}
+
+// Setting the timestamp before any field is present is a misuse -> fails closed
+// (mirrors the tag-after-field ordering rule, but for the trailing timestamp).
+void test_timestamp_before_fields_fails_closed()
+{
+    char buf[64];
+    DWSLine l;
+    dws_line_init(&l, buf, sizeof(buf), "m");
+    dws_line_set_timestamp(&l, 42);
+    TEST_ASSERT_TRUE(l.overflow);
+    TEST_ASSERT_FALSE(dws_line_ok(&l));
+}
+
+// A well-formed (ok) line reaches the host dws_udp_telemetry_send() stub via
+// dws_udp_telemetry_cast(); on host builds it always returns false (no transport).
+void test_cast_valid_line_reaches_host_send_stub()
+{
+    char buf[64];
+    DWSLine l;
+    dws_line_init(&l, buf, sizeof(buf), "env");
+    dws_line_add_int(&l, "rssi", -42);
+    TEST_ASSERT_TRUE(dws_line_ok(&l));
+    TEST_ASSERT_FALSE(dws_udp_telemetry_cast(&l));               // host stub: never sends
+    TEST_ASSERT_FALSE(dws_udp_telemetry_send(buf, sizeof(buf))); // host stub: always false
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -117,5 +177,10 @@ int main()
     RUN_TEST(test_tag_escaping);
     RUN_TEST(test_tag_after_field_fails_closed);
     RUN_TEST(test_host_stubs_and_line_overflow);
+    RUN_TEST(test_zero_capacity_line_overflows);
+    RUN_TEST(test_null_measurement_is_empty);
+    RUN_TEST(test_null_tag_value_appends_nothing);
+    RUN_TEST(test_timestamp_before_fields_fails_closed);
+    RUN_TEST(test_cast_valid_line_reaches_host_send_stub);
     return UNITY_END();
 }

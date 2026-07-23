@@ -249,12 +249,13 @@ int64_t edge_parse_http_date(const char *s, size_t len)
     if (!ok)
         return -1;
 
-    // The month check is split off deliberately: rd_month() only ever yields 1..12 (and both date
-    // parsers fail outright when it does not match), so this guard is defensive and unreachable.
-    // Keeping it on its own line lets it be excluded without also dropping the five range checks
-    // below - which ARE reachable and are pinned by tests - out of the branch measurement.
-    if (mon < 1 || mon > 12) // GCOVR_EXCL_LINE - rd_month yields 1..12, see above
+    // GCOVR_EXCL_START  unreachable: rd_month() only ever yields 1..12 (and both date parsers fail
+    // outright when it does not match), so this guard is defensive. Kept because it is the one place
+    // that would otherwise let an out-of-range month reach days_from_civil(). The five range checks
+    // below ARE reachable and are pinned by tests, so they stay outside this exclusion.
+    if (mon < 1 || mon > 12)
         return -1;
+    // GCOVR_EXCL_STOP
     if (mday < 1 || mday > 31 || hh > 23 || mm > 59 || ss > 60)
         return -1;
     int64_t days = days_from_civil(year, mon, mday);
@@ -340,11 +341,12 @@ bool vary_emit_one(const char **pp, EdgeHdrLookup lookup, void *ctx, char *out, 
     }
     name[nl] = '\0';
     *pp = p;
-    // Defensive: edge_vary_serialize() skips every separator and breaks on NUL before calling in,
-    // so *p is always a content byte here and the loop above has already taken at least one
-    // character (or returned false on '*'). nl is therefore never 0.
-    if (nl == 0)     // GCOVR_EXCL_LINE - caller guarantees a non-empty token, see above
+    // GCOVR_EXCL_START  unreachable: edge_vary_serialize() skips every separator and breaks on NUL
+    // before calling in, so *p is always a content byte here and the loop above has already taken at
+    // least one character (or returned false on '*'). nl is therefore never 0.
+    if (nl == 0)
         return true; // nothing to emit; caller advances
+    // GCOVR_EXCL_STOP
     const char *val = lookup ? lookup(ctx, name) : nullptr;
     if (!k_append(out, pos, out_cap, name, false) || !k_append(out, pos, out_cap, "\x1e", false))
         return false;

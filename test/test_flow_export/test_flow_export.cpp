@@ -227,6 +227,35 @@ void test_flow_guards_and_overflows()
     TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));
 }
 
+// v5 writers' null-arg guards: buf==nullptr and header/record==nullptr, each in isolation
+// (test_v5_write_overflow only exercises the cap-too-small branch of the same guard).
+void test_v5_write_null_guards()
+{
+    FlowV5Header h = {};
+    uint8_t hbuf[FLOW_V5_HEADER_SIZE];
+    TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_header(nullptr, sizeof(hbuf), &h));
+    TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_header(hbuf, sizeof(hbuf), nullptr));
+
+    FlowV5Record r = {};
+    uint8_t rbuf[FLOW_V5_RECORD_SIZE];
+    TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_record(nullptr, sizeof(rbuf), &r));
+    TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_record(rbuf, sizeof(rbuf), nullptr));
+}
+
+// flow_export_data_record's !record and len==0 guard branches, taken with a set actually
+// open (test_flow_guards_and_overflows only reaches !record / len==0 with no set open, so
+// those two conditions short-circuit away before being evaluated).
+void test_data_record_null_and_zero_len_with_set_open()
+{
+    uint8_t buf[128];
+    FlowWriter w;
+    TEST_ASSERT_TRUE(flow_v9_begin(&w, buf, sizeof(buf), 0, 0, 0, 0));
+    TEST_ASSERT_TRUE(flow_export_data_begin(&w, 256));
+    uint8_t rec[4] = {1, 2, 3, 4};
+    TEST_ASSERT_FALSE(flow_export_data_record(&w, nullptr, 4)); // !record, set open
+    TEST_ASSERT_FALSE(flow_export_data_record(&w, rec, 0));     // len == 0, set open + valid record
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -238,5 +267,7 @@ int main()
     RUN_TEST(test_finish_overflow_fails_closed);
     RUN_TEST(test_v5_write_overflow);
     RUN_TEST(test_flow_guards_and_overflows);
+    RUN_TEST(test_v5_write_null_guards);
+    RUN_TEST(test_data_record_null_and_zero_len_with_set_open);
     return UNITY_END();
 }

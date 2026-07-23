@@ -74,6 +74,36 @@ void test_long_key_default_period_and_base32()
     TEST_ASSERT_EQUAL_INT(-1, dws_base32_decode("MFRG!", out, sizeof(out))); // invalid char
 }
 
+void test_verify_period_zero_default()
+{
+    // dws_totp_verify's period == 0 branch defaults to 30, same as dws_totp's.
+    uint64_t t = 1111111111ull;
+    uint32_t code30 = dws_totp(SECRET, SECRET_LEN, t, 30, 8);
+    TEST_ASSERT_TRUE(dws_totp_verify(SECRET, SECRET_LEN, t, code30, 0, 8, 0));
+}
+
+void test_verify_window_skips_negative_step()
+{
+    // At unix_time 0 (step 0) with window 1, the w=-1 candidate step is negative
+    // and must be skipped (loop `continue`), not treated as a valid step.
+    uint32_t code0 = dws_totp(SECRET, SECRET_LEN, 0ull, 30, 8);
+    TEST_ASSERT_TRUE(dws_totp_verify(SECRET, SECRET_LEN, 0ull, code0, 30, 8, 1));
+}
+
+void test_base32_decode_null_args()
+{
+    uint8_t out[16];
+    TEST_ASSERT_EQUAL_INT(-1, dws_base32_decode(NULL, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_base32_decode("ABC", NULL, sizeof(out)));
+}
+
+void test_base32_decode_rejects_char_above_z()
+{
+    uint8_t out[16];
+    // '~' (0x7E) is >= 'a' but > 'z', exercising the else-if's upper-bound branch.
+    TEST_ASSERT_EQUAL_INT(-1, dws_base32_decode("A~", out, sizeof(out)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -82,5 +112,9 @@ int main()
     RUN_TEST(test_base32_decode);
     RUN_TEST(test_base32_rejects_invalid);
     RUN_TEST(test_long_key_default_period_and_base32);
+    RUN_TEST(test_verify_period_zero_default);
+    RUN_TEST(test_verify_window_skips_negative_step);
+    RUN_TEST(test_base32_decode_null_args);
+    RUN_TEST(test_base32_decode_rejects_char_above_z);
     return UNITY_END();
 }

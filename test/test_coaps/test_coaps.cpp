@@ -10,6 +10,7 @@
 #include "network_drivers/presentation/dtls/dtls_conn.h"
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
 #include "network_drivers/presentation/dtls/dtls_record.h"
+#include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
@@ -17,6 +18,7 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "services/coap/coap.h"
 #include "services/coap/coaps.h"
+#include "shared_primitives/aes_block.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
@@ -406,6 +408,39 @@ static void test_coaps_forwards_handshake(void)
     TEST_ASSERT_TRUE(fl > 0); // the server flight was produced via the handshake-forward path
 }
 
+// dws_quic_aes128_gcm_open's ct_len < QUIC_AEAD_TAG_LEN guard (RFC 5116 sec 5.1): a ciphertext shorter
+// than the 16-byte tag can never carry a valid tag, so open() must reject it before touching AES/GHASH
+// at all (ct/out are never dereferenced on this path, so nullptr is safe for the zero-length case).
+static void test_quic_aead_open_rejects_short_ciphertext(void)
+{
+    uint8_t key[16] = {0};
+    uint8_t nonce[12] = {0};
+    uint8_t out[16];
+    TEST_ASSERT_FALSE(dws_quic_aes128_gcm_open(key, nonce, nullptr, 0, nullptr, 0, out));
+    uint8_t short_ct[QUIC_AEAD_TAG_LEN - 1] = {0};
+    TEST_ASSERT_FALSE(dws_quic_aes128_gcm_open(key, nonce, nullptr, 0, short_ct, sizeof(short_ct), out));
+}
+
+// aes_block.h's key schedule is shared by AES-128 (nk=4, used here by QUIC/DTLS) and AES-256 (nk=8, used
+// by the SSH ciphers). This build only ever instantiates it with nk=4, so the nk>6 mid-word-SubWord step
+// (FIPS 197 sec 5.2) never runs here. Call the shared primitive directly with nk=8/nr=14 against the
+// FIPS-197 Appendix C.3 AES-256 KAT to cover that step from this env too.
+static void test_aes256_key_expand_kat(void)
+{
+    static const uint8_t key[32] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+                                    0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
+                                    0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f};
+    static const uint8_t pt[16] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+                                   0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
+    static const uint8_t expect_ct[16] = {0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
+                                          0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89};
+    uint32_t rk[60];
+    dws_aes_key_expand(key, 8, rk);
+    uint8_t ct[16];
+    dws_aes_encrypt_block(rk, 14, pt, ct);
+    TEST_ASSERT_EQUAL_MEMORY(expect_ct, ct, 16);
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -415,5 +450,7 @@ int main(int, char **)
     RUN_TEST(test_coaps_non_app_record);
     RUN_TEST(test_coaps_wrong_epoch_record);
     RUN_TEST(test_coaps_forwards_handshake);
+    RUN_TEST(test_quic_aead_open_rejects_short_ciphertext);
+    RUN_TEST(test_aes256_key_expand_kat);
     return UNITY_END();
 }

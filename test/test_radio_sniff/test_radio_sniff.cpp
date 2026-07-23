@@ -31,6 +31,16 @@ void test_i2f32(void)
     TEST_ASSERT_EQUAL_HEX32(0x3F800000, dws_radiosniff_i2f32(1));    // 1.0f
 }
 
+void test_i2f32_wide_magnitude(void)
+{
+    // |dbm| >= 2^23 takes the "highest bit at/above the mantissa width" leg of the mantissa
+    // ternary (right-shift instead of left-shift): dws_radiosniff_i2f32 is a generic
+    // int->float32 bit encoder (exposed for testing), so exercise it outside the usual dBm
+    // range to reach that leg.
+    TEST_ASSERT_EQUAL_HEX32(0x4B000000, dws_radiosniff_i2f32(8388608));  // 2^23 -> 8388608.0f
+    TEST_ASSERT_EQUAL_HEX32(0xCB000000, dws_radiosniff_i2f32(-8388608)); // -8388608.0f
+}
+
 void test_global_header(void)
 {
     uint8_t buf[32];
@@ -75,12 +85,26 @@ void test_tap_record_overflow(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_radiosniff_tap_record(small, sizeof(small), frame, 5, -55, 11, 0, 0));
 }
 
+void test_tap_record_bad_args(void)
+{
+    const uint8_t frame[5] = {1, 2, 3, 4, 5};
+    uint8_t buf[64];
+    // out == NULL.
+    TEST_ASSERT_EQUAL_size_t(0, dws_radiosniff_tap_record(NULL, sizeof(buf), frame, 5, -55, 11, 0, 0));
+    // frame == NULL.
+    TEST_ASSERT_EQUAL_size_t(0, dws_radiosniff_tap_record(buf, sizeof(buf), NULL, 5, -55, 11, 0, 0));
+    // flen == 0.
+    TEST_ASSERT_EQUAL_size_t(0, dws_radiosniff_tap_record(buf, sizeof(buf), frame, 0, -55, 11, 0, 0));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_i2f32);
+    RUN_TEST(test_i2f32_wide_magnitude);
     RUN_TEST(test_global_header);
     RUN_TEST(test_tap_record);
     RUN_TEST(test_tap_record_overflow);
+    RUN_TEST(test_tap_record_bad_args);
     return UNITY_END();
 }

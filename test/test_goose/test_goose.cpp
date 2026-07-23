@@ -130,6 +130,72 @@ void test_goose_error_and_longform(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g2, out, 30)); // >=22 but the PDU cannot fit
 }
 
+// dws_ber_str's `s ? s : ""` / `s ? strnlen(...) : 0` ternaries (null gocbRef), dws_ber_bool's
+// `v ? 0xFF : 0x00` ternary (simulation true), and the `g->t ? g->t : ZT` ternary (a caller-supplied
+// UtcTime) all only ever took their "false"/default operand in the tests above; drive each one's
+// other side here.
+void test_goose_null_string_true_bool_and_time(void)
+{
+    DWSGoose g = base();
+    g.gocb_ref = nullptr; // dws_ber_str: s is null -> value "" / length 0.
+    g.simulation = true;  // dws_ber_bool: v is true -> 0xFF.
+    uint8_t tbuf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    g.t = tbuf; // g->t is non-null -> use it instead of ZT.
+    uint8_t out[128];
+    size_t n = dws_goose_pdu(&g, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 0);
+    const uint8_t gocb[] = {0x80, 0x00}; // empty gocbRef
+    TEST_ASSERT_TRUE(find(out, n, gocb, 2) >= 0);
+    const uint8_t sim[] = {0x87, 0x01, 0xFF}; // simulation true
+    TEST_ASSERT_TRUE(find(out, n, sim, 3) >= 0);
+    const uint8_t t[] = {0x84, 0x08, 1, 2, 3, 4, 5, 6, 7, 8}; // caller-supplied t
+    TEST_ASSERT_TRUE(find(out, n, t, sizeof(t)) >= 0);
+}
+
+// dws_goose_pdu's field chain is a run of `&&`-joined encoders; each field's success (already
+// exercised above) and failure (only exercised for a couple of fields above) both need to be seen
+// for full branch coverage of that field's `&&`. Drive cap to the exact cumulative size needed
+// just before each successive field, so that field's tlv() always overflows while every prior
+// field in the chain fit exactly. The last entry (44) fails on the final 0xAB allData tlv() itself
+// -- every prior field (through 0x8A numDatSetEntries) fits exactly, so that field's `&&` is seen
+// taking its "succeeded, keep going" branch right before the chain finally fails.
+void test_goose_pdu_field_boundary_failures(void)
+{
+    DWSGoose g = base();
+    uint8_t out[64];
+    static const size_t fail_cap[] = {
+        4,  // 0x80 gocbRef
+        7,  // 0x81 timeAllowedToLive
+        10, // 0x82 datSet
+        13, // 0x83 goID
+        16, // 0x84 t
+        26, // 0x85 stNum
+        29, // 0x86 sqNum
+        32, // 0x87 simulation
+        35, // 0x88 confRev
+        38, // 0x89 ndsCom
+        41, // 0x8A numDatSetEntries
+        44, // 0xAB allData
+    };
+    for (size_t i = 0; i < sizeof(fail_cap) / sizeof(fail_cap[0]); i++)
+    {
+        TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(&g, out, fail_cap[i]));
+    }
+}
+
+// dws_goose_frame has its own null-pointer guard (dst, src, g, out) ahead of the size check;
+// only the dst-null and cap<22 sides were exercised above.
+void test_goose_frame_null_guards(void)
+{
+    DWSGoose g = base();
+    uint8_t dst[6] = {0};
+    uint8_t src[6] = {0};
+    uint8_t out[128];
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, nullptr, 0x1234, &g, out, sizeof(out)));  // null src
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, nullptr, out, sizeof(out))); // null g
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g, nullptr, sizeof(out)));  // null out
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -137,5 +203,8 @@ int main(void)
     RUN_TEST(test_integer_leading_zero);
     RUN_TEST(test_frame);
     RUN_TEST(test_goose_error_and_longform);
+    RUN_TEST(test_goose_null_string_true_bool_and_time);
+    RUN_TEST(test_goose_pdu_field_boundary_failures);
+    RUN_TEST(test_goose_frame_null_guards);
     return UNITY_END();
 }

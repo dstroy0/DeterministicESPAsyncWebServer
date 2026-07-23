@@ -431,6 +431,86 @@ static void test_dtls_replay_mark_below_window(void)
     TEST_ASSERT_TRUE(dws_dtls_replay_check(&w, 201));  // ahead of the window is accepted
 }
 
+// dws_dtls_plaintext_parse rejects a record whose legacy_version high byte is correct but whose low
+// byte is wrong (the second half of the `||` version check, not exercised by the "high byte wrong"
+// case in test_dtls_plaintext_roundtrip).
+static void test_dtls_plaintext_parse_wrong_version_low_byte(void)
+{
+    const uint8_t frag[4] = {1, 2, 3, 4};
+    uint8_t rec[32];
+    size_t n = dws_dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 1, frag, sizeof(frag), rec, sizeof(rec));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_UINT8(0xFE, rec[1]); // high byte correct (left side of the || is false)
+    rec[2] = 0x00;                         // low byte wrong -> right side of the || is true
+    DtlsPlaintext pt;
+    TEST_ASSERT_EQUAL_size_t(0, dws_dtls_plaintext_parse(rec, n, &pt));
+}
+
+// A CID record whose caller-supplied length is right but the record is too short to actually hold
+// that many CID bytes is rejected (the "off + expected_cid_len > rec_len" arm, distinct from the
+// "wrong CID bytes" and "no CID negotiated" rejections already covered).
+static void test_dtls_cid_record_too_short_for_expected_cid(void)
+{
+    DtlsRecordKeys k;
+    dws_dtls_record_keys_derive(&k, DtlsCipher::AES_128_GCM_SHA256, 3, KAT_SECRET);
+    const uint8_t cid[4] = {0xCA, 0xFE, 0xBA, 0xBE};
+    const uint8_t pt[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint8_t wire[64];
+    size_t n = dws_dtls_ciphertext_protect(&k, 11, DTLS_CT_APPLICATION_DATA, pt, sizeof(pt), wire, sizeof(wire), cid,
+                                           sizeof(cid));
+    TEST_ASSERT_TRUE(n > 0);
+
+    uint8_t out[64];
+    DtlsCiphertext info;
+    // Truncate the record to fewer bytes than 1 (unified-header first byte) + sizeof(cid): the C bit is
+    // still set (byte 0 is untouched) but there isn't room for the full expected CID.
+    TEST_ASSERT_FALSE(
+        dws_dtls_ciphertext_unprotect(&k, 11, wire, 1 + sizeof(cid) - 1, out, sizeof(out), &info, cid, sizeof(cid)));
+}
+
+// A record with the S bit clear (8-bit, not 16-bit, sequence number) is rejected once its garbage AEAD
+// body fails to open, exercising the seq_len=1 arm that dws_dtls_ciphertext_protect never produces
+// itself (it always sets S=1) but the wire format / unprotect() still has to handle.
+static void test_dtls_unprotect_seq8_variant(void)
+{
+    DtlsRecordKeys k;
+    dws_dtls_record_keys_derive(&k, DtlsCipher::AES_128_GCM_SHA256, 0, KAT_SECRET);
+    // byte0: fixed(001) | L=1 | epoch=0, S=0 -> 8-bit sequence number. 1 (hdr) + 1 (seq8) + 2 (length) +
+    // 17 (enc_len, >= tag(16) + 1 inner byte) = 21 bytes.
+    uint8_t rec[21];
+    memset(rec, 0, sizeof(rec));
+    rec[0] = 0x24; // 0010 0100: FIXED | LENGTH, no CID, no SEQ16, epoch 0
+    rec[1] = 0x00; // 8-bit sequence number byte
+    rec[2] = 0x00;
+    rec[3] = 0x11; // enc_len = 17
+    uint8_t out[64];
+    DtlsCiphertext info;
+    // Garbage AEAD body -> tag check fails, but the seq_len=1 branch is exercised on the way there.
+    TEST_ASSERT_FALSE(dws_dtls_ciphertext_unprotect(&k, 0, rec, sizeof(rec), out, sizeof(out), &info));
+}
+
+// Sequence-number reconstruction where the near-expected candidate would overflow past UINT64_MAX when
+// projected forward a full window: `candidate + win` wraps around to (or below) `candidate` itself, so
+// the forward-wrap arm's second condition must read false even though the first reads true (RFC 9147
+// §4.2.2 / RFC 9000 App. A.3 decode, guarding the "candidate + win > candidate" overflow check). The
+// reconstructed sequence number then does not match what was actually protected, so the AEAD tag fails.
+static void test_dtls_seq_reconstruction_overflow_guard(void)
+{
+    DtlsRecordKeys k;
+    dws_dtls_record_keys_derive(&k, DtlsCipher::AES_128_GCM_SHA256, 2, KAT_SECRET);
+    const uint8_t pt[4] = {1, 2, 3, 4};
+    uint8_t wire[64];
+    // seq's low 16 bits are 0 and its high bits are all 1s so that "candidate + win" wraps to 0.
+    uint64_t seq = 0xFFFFFFFFFFFF0000ull;
+    size_t n = dws_dtls_ciphertext_protect(&k, seq, DTLS_CT_APPLICATION_DATA, pt, sizeof(pt), wire, sizeof(wire));
+    TEST_ASSERT_TRUE(n > 0);
+    uint8_t out[64];
+    DtlsCiphertext info;
+    // next_seq = UINT64_MAX drives candidate + hwin <= next_seq (true) while candidate + win overflows
+    // (so > candidate reads false); the resulting mis-decoded sequence number fails the AEAD tag.
+    TEST_ASSERT_FALSE(dws_dtls_ciphertext_unprotect(&k, 0xFFFFFFFFFFFFFFFFull, wire, n, out, sizeof(out), &info));
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -450,5 +530,9 @@ int main(int, char **)
     RUN_TEST(test_dtls_unprotect_bounds);
     RUN_TEST(test_dtls_unprotect_all_zero_inner);
     RUN_TEST(test_dtls_replay_mark_below_window);
+    RUN_TEST(test_dtls_plaintext_parse_wrong_version_low_byte);
+    RUN_TEST(test_dtls_cid_record_too_short_for_expected_cid);
+    RUN_TEST(test_dtls_unprotect_seq8_variant);
+    RUN_TEST(test_dtls_seq_reconstruction_overflow_guard);
     return UNITY_END();
 }

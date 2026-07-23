@@ -53,6 +53,18 @@ void test_select_cipher(void)
     TEST_ASSERT_EQUAL_HEX16(0, dws_tls_select_cipher(offered3, 2, pinned, 2));
 }
 
+void test_select_cipher_null_args(void)
+{
+    const uint16_t pinned[] = {0xC02F, 0xCCA8};
+    const uint16_t offered[] = {0xC02F, 0xCCA8};
+    // Null client_offered -> 0, defensive early-out.
+    TEST_ASSERT_EQUAL_HEX16(0, dws_tls_select_cipher(NULL, 2, pinned, 2));
+    // Null server_pinned -> 0, defensive early-out.
+    TEST_ASSERT_EQUAL_HEX16(0, dws_tls_select_cipher(offered, 2, NULL, 2));
+    // Both null -> 0.
+    TEST_ASSERT_EQUAL_HEX16(0, dws_tls_select_cipher(NULL, 0, NULL, 0));
+}
+
 void test_is_aead(void)
 {
     TEST_ASSERT_TRUE(dws_tls_is_aead(0x1301));  // TLS_AES_128_GCM_SHA256
@@ -68,6 +80,7 @@ int main(void)
     RUN_TEST(test_negotiate_version);
     RUN_TEST(test_version_name);
     RUN_TEST(test_select_cipher);
+    RUN_TEST(test_select_cipher_null_args);
     RUN_TEST(test_is_aead);
     return UNITY_END();
 }

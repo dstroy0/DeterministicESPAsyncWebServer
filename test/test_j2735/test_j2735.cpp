@@ -225,6 +225,61 @@ void test_j2735_guards_and_truncation()
     TEST_ASSERT_FALSE(dws_j2735_map_decode(buf, 7, &isect, lout, 4, &count));  // header ok, lanes underrun
 }
 
+void test_j2735_extra_branch_coverage(void)
+{
+    // dws_uper_put_bits: nbits == 0 on an otherwise-ok writer is a no-op (the guard's second operand,
+    // never exercised elsewhere since every other caller only ever passes a nonzero width).
+    uint8_t buf[8];
+    UperWriter w;
+    dws_uper_writer_init(&w, buf, sizeof(buf));
+    dws_uper_put_bits(&w, 0xFF, 0);
+    TEST_ASSERT_EQUAL_size_t(0, w.bit_pos);
+    TEST_ASSERT_TRUE(w.ok);
+
+    // dws_j2735_spat_encode: count == 0 (states may be null - never dereferenced) succeeds, while
+    // count > 0 with null states trips the (count && !states) guard.
+    uint8_t sbuf[8];
+    TEST_ASSERT_TRUE(dws_j2735_spat_encode(nullptr, 0, sbuf, sizeof(sbuf)) > 0);
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_spat_encode(nullptr, 5, sbuf, sizeof(sbuf)));
+
+    // dws_j2735_spat_decode: null out_states / null out_count guard branches.
+    J2735MovementState sst[1] = {{1, 6, 0, 0}};
+    uint8_t sbuf2[8];
+    size_t sn = dws_j2735_spat_encode(sst, 1, sbuf2, sizeof(sbuf2));
+    TEST_ASSERT_TRUE(sn > 0);
+    J2735MovementState sout[1];
+    size_t scount = 0;
+    TEST_ASSERT_FALSE(dws_j2735_spat_decode(sbuf2, sn, nullptr, 1, &scount)); // null out_states
+    TEST_ASSERT_FALSE(dws_j2735_spat_decode(sbuf2, sn, sout, 1, nullptr));    // null out_count
+
+    // dws_j2735_spat_decode: a zero-length buffer can't even read the count field, so r.ok is already
+    // false by the time the post-count "count > max_states" guard runs.
+    TEST_ASSERT_FALSE(dws_j2735_spat_decode(sbuf2, 0, sout, 1, &scount));
+
+    // dws_j2735_map_encode: null out, count == 0 (lanes may be null), and count > 0 with null lanes.
+    J2735MapIntersection isect = {1, 2, 3};
+    uint8_t mbuf[16];
+    J2735Lane lanes[1] = {{1, true, 0, 0}};
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_map_encode(&isect, lanes, 1, nullptr, sizeof(mbuf))); // null out
+    TEST_ASSERT_TRUE(dws_j2735_map_encode(&isect, nullptr, 0, mbuf, sizeof(mbuf)) > 0);         // count == 0
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_map_encode(&isect, nullptr, 5, mbuf, sizeof(mbuf)));  // count > 0, null lanes
+
+    // dws_j2735_map_decode: null isect / null out_lanes / null out_count guard branches.
+    uint8_t mbuf2[16];
+    size_t mn = dws_j2735_map_encode(&isect, lanes, 1, mbuf2, sizeof(mbuf2));
+    TEST_ASSERT_TRUE(mn > 0);
+    J2735MapIntersection di;
+    J2735Lane lout[1];
+    size_t mcount = 0;
+    TEST_ASSERT_FALSE(dws_j2735_map_decode(mbuf2, mn, nullptr, lout, 1, &mcount)); // null isect
+    TEST_ASSERT_FALSE(dws_j2735_map_decode(mbuf2, mn, &di, nullptr, 1, &mcount));  // null out_lanes
+    TEST_ASSERT_FALSE(dws_j2735_map_decode(mbuf2, mn, &di, lout, 1, nullptr));     // null out_count
+
+    // dws_j2735_map_decode: a zero-length buffer can't even read the header, so r.ok is already false
+    // by the time the post-count "count > max_lanes" guard runs.
+    TEST_ASSERT_FALSE(dws_j2735_map_decode(mbuf2, 0, &di, lout, 1, &mcount));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -239,5 +294,6 @@ int main(void)
     RUN_TEST(test_map_roundtrip);
     RUN_TEST(test_uper_overflow_and_bsm_guard);
     RUN_TEST(test_j2735_guards_and_truncation);
+    RUN_TEST(test_j2735_extra_branch_coverage);
     return UNITY_END();
 }

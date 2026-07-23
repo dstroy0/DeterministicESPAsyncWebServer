@@ -26,6 +26,12 @@ void test_has_extension(void)
     TEST_ASSERT_FALSE(dws_spa_has_extension("/a.b/c"));
     // Trailing dot is not an extension.
     TEST_ASSERT_FALSE(dws_spa_has_extension("/weird."));
+    // Null path: bail out before touching it.
+    TEST_ASSERT_FALSE(dws_spa_has_extension(nullptr));
+    // No '/' at all: the whole path is the segment (ternary's non-slash branch).
+    TEST_ASSERT_TRUE(dws_spa_has_extension("file.txt"));
+    // Segment starts with the dot (dotfile): the dot is the segment, not an extension.
+    TEST_ASSERT_FALSE(dws_spa_has_extension("/.hidden"));
 }
 
 void test_route(void)
@@ -40,6 +46,12 @@ void test_route(void)
     TEST_ASSERT_EQUAL_INT(DWSSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route("/api/devices/42", "/api/"));
     // No API prefix configured: an /api path is just a route.
     TEST_ASSERT_EQUAL_INT(DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/api/state", nullptr));
+    // Null path: bail out before touching it.
+    TEST_ASSERT_EQUAL_INT(DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route(nullptr, "/api/"));
+    // A path that doesn't start with '/' is neither the empty/root case nor under the prefix.
+    TEST_ASSERT_EQUAL_INT(DWSSpaAction::DWS_SPA_SERVE_FILE, dws_spa_route("relative.txt", "/api/"));
+    // Non-null but empty API prefix: treated as "none configured".
+    TEST_ASSERT_EQUAL_INT(DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/dashboard", ""));
 }
 
 // --- fallback HMI ---------------------------------------------------------
@@ -217,6 +229,16 @@ void test_stream_bad_args_do_not_crash(void)
     TEST_ASSERT_TRUE(dws_ui_stream_done(&n));
 }
 
+void test_stream_not_done_mid_stream(void)
+{
+    // A valid, non-null stream that still has fragments left must report not-done - the counterpart
+    // to the null-stream and already-finished cases covered elsewhere.
+    bool alarm = true;
+    DWSUiStream s;
+    dws_ui_stream_begin(&s, FRAGS, 4, &alarm);
+    TEST_ASSERT_FALSE(dws_ui_stream_done(&s));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -236,5 +258,6 @@ int main(void)
     RUN_TEST(test_stream_empty_set_is_done_immediately);
     RUN_TEST(test_stream_skips_a_null_body);
     RUN_TEST(test_stream_bad_args_do_not_crash);
+    RUN_TEST(test_stream_not_done_mid_stream);
     return UNITY_END();
 }

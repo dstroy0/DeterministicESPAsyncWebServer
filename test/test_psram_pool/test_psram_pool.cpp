@@ -48,6 +48,12 @@ void test_place_edges(void)
     TEST_ASSERT_EQUAL_INT(DWSPlace::PLACE_DRAM, dws_psram_place(100, false, 1100, 0, 4096, 1000));
 }
 
+void test_place_small_neither_fits(void)
+{
+    // small / hot buffer: DRAM too tight (reserve dominates) AND PSRAM too small -> FAIL.
+    TEST_ASSERT_EQUAL_INT(DWSPlace::PLACE_FAIL, dws_psram_place(512, false, 33000, 100, 4096, 32768));
+}
+
 void test_pingpong(void)
 {
     PingPong pp;
@@ -63,6 +69,15 @@ void test_pingpong(void)
     TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_fill_index(&pp));
 }
 
+void test_pingpong_null_safety(void)
+{
+    // Every dws_pingpong_* accessor guards against a null PingPong* and returns a fixed fallback.
+    dws_pingpong_init(NULL); // must not crash; nothing to assert (no state to touch).
+    TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_fill_index(NULL));
+    TEST_ASSERT_EQUAL_UINT8(1, dws_pingpong_drain_index(NULL));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_swap(NULL));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -70,6 +85,8 @@ int main(void)
     RUN_TEST(test_place_small_prefers_dram);
     RUN_TEST(test_place_dma_forces_dram);
     RUN_TEST(test_place_edges);
+    RUN_TEST(test_place_small_neither_fits);
     RUN_TEST(test_pingpong);
+    RUN_TEST(test_pingpong_null_safety);
     return UNITY_END();
 }

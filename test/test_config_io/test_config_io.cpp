@@ -85,6 +85,78 @@ void test_export_import_null_guards()
     TEST_ASSERT_EQUAL_INT(0, dws_config_import("ns", fields, 1, nullptr, 0));           // null text
 }
 
+void test_export_zero_cap_fails_closed()
+{
+    dws_config_begin("t");
+    dws_config_set_str("ssid", "value");
+    char buf[8] = {'z', '\0'}; // sentinel: a zero-cap call must return before touching it
+    TEST_ASSERT_EQUAL_INT(0, dws_config_export("t", SCHEMA, N, buf, 0));
+    TEST_ASSERT_EQUAL_CHAR('z', buf[0]); // untouched, confirming the cap==0 early return
+}
+
+void test_field_type_skips_null_key_entries()
+{
+    // A malformed schema entry (null key) must be skipped by field_type's lookup, not
+    // dereferenced, so a valid entry later in the table is still found.
+    static const DWSCfgField schema_with_gap[] = {
+        {nullptr, DWSCfgType::DWS_CFG_U32},
+        {"zz", DWSCfgType::DWS_CFG_U32},
+    };
+    dws_config_begin("t");
+    const char *txt = "zz=7\n";
+    int c = dws_config_import("t", schema_with_gap, 2, txt, strlen(txt));
+    TEST_ASSERT_EQUAL_INT(1, c);
+    TEST_ASSERT_EQUAL_UINT32(7, dws_config_get_u32("zz", 0));
+}
+
+void test_config_apply_field_rejects_unknown_type()
+{
+    // A field whose type is neither DWS_CFG_STR nor DWS_CFG_U32 (a malformed schema
+    // entry) must be rejected rather than applied by either setter.
+    static const DWSCfgField bad_schema[] = {
+        {"weird", static_cast<DWSCfgType>(9)},
+    };
+    dws_config_begin("t");
+    const char *txt = "weird=5\n";
+    int c = dws_config_import("t", bad_schema, 1, txt, strlen(txt));
+    TEST_ASSERT_EQUAL_INT(0, c);
+}
+
+void test_import_line_without_equals_and_no_trailing_newline()
+{
+    // "bogus" has no '=' (exercises the "no '=' on this line" skip path), and the
+    // text ends without a trailing '\n' (exercises the end-of-line scan running off
+    // the end of the buffer instead of finding '\n').
+    dws_config_begin("t");
+    const char *txt = "bogus\nport=42";
+    int c = dws_config_import("t", SCHEMA, N, txt, strlen(txt));
+    TEST_ASSERT_EQUAL_INT(1, c);
+    TEST_ASSERT_EQUAL_UINT32(42, dws_config_get_u32("port", 0));
+}
+
+void test_import_key_and_value_length_boundaries()
+{
+    // Three malformed lines, one per length guard on the key=val split:
+    //   - "=novaluekey"          : klen == 0 (nothing before '=')
+    //   - "0123456789abcdef=5"   : klen == KEY_MAX (16), one past the 15-char cap
+    //   - "aa=<128 x's>"         : vlen == VAL_MAX (128), one past the 127-char cap
+    // None should be applied, and none should touch the fixed key[]/val[] buffers.
+    dws_config_begin("t");
+    char txt[300];
+    txt[0] = '\0';
+    strcat(txt, "=novaluekey\n");
+    strcat(txt, "0123456789abcdef=5\n");
+    strcat(txt, "aa=");
+    size_t pos = strlen(txt);
+    for (size_t i = 0; i < 128; i++)
+        txt[pos++] = 'x';
+    txt[pos++] = '\n';
+    txt[pos] = '\0';
+
+    int c = dws_config_import("t", SCHEMA, N, txt, strlen(txt));
+    TEST_ASSERT_EQUAL_INT(0, c);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -93,5 +165,10 @@ int main()
     RUN_TEST(test_import_skips_unknown_keys);
     RUN_TEST(test_export_overflow_fails_closed);
     RUN_TEST(test_export_import_null_guards);
+    RUN_TEST(test_export_zero_cap_fails_closed);
+    RUN_TEST(test_field_type_skips_null_key_entries);
+    RUN_TEST(test_config_apply_field_rejects_unknown_type);
+    RUN_TEST(test_import_line_without_equals_and_no_trailing_newline);
+    RUN_TEST(test_import_key_and_value_length_boundaries);
     return UNITY_END();
 }

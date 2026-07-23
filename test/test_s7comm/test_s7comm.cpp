@@ -177,6 +177,59 @@ void test_null_and_short_guards()
     TEST_ASSERT_FALSE(dws_s7_read_next_item(nullptr, 10, &off, &it)); // null data
 }
 
+// A null `out` on an otherwise-valid header parse must fail (the !out arm of the guard).
+void test_parse_header_null_out()
+{
+    const uint8_t buf[10] = {S7_PROTOCOL_ID, S7_ROSCTR_JOB, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(dws_s7_parse_header(buf, sizeof(buf), nullptr));
+}
+
+// A null offset or null out on an otherwise-valid item read must each fail on their own arm.
+void test_read_next_item_null_offset_and_out()
+{
+    const uint8_t data[] = {0xFF, 0x04, 0x00, 0x08, 0xAB};
+    size_t off = 0;
+    S7DataItem it;
+    TEST_ASSERT_FALSE(dws_s7_read_next_item(data, sizeof(data), nullptr, &it));  // null offset
+    TEST_ASSERT_FALSE(dws_s7_read_next_item(data, sizeof(data), &off, nullptr)); // null out
+}
+
+// BIT and INT transport sizes are also length-in-bits (only BYTE is exercised elsewhere).
+void test_read_next_item_bit_and_int_transport()
+{
+    const uint8_t bit_item[] = {0xFF, S7_DTS_BIT, 0x00, 0x08, 0xAB}; // 8 bits = 1 byte
+    size_t off = 0;
+    S7DataItem it;
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(bit_item, sizeof(bit_item), &off, &it));
+    TEST_ASSERT_EQUAL_HEX8(S7_DTS_BIT, it.transport_size);
+    TEST_ASSERT_EQUAL_size_t(1, it.data_len);
+    TEST_ASSERT_EQUAL_HEX8(0xAB, it.data[0]);
+
+    const uint8_t int_item[] = {0xFF, S7_DTS_INT, 0x00, 0x10, 0x12, 0x34}; // 16 bits = 2 bytes
+    off = 0;
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(int_item, sizeof(int_item), &off, &it));
+    TEST_ASSERT_EQUAL_HEX8(S7_DTS_INT, it.transport_size);
+    TEST_ASSERT_EQUAL_size_t(2, it.data_len);
+}
+
+// An even-length item that is NOT the last one must NOT consume a pad byte.
+void test_parse_response_even_length_not_last()
+{
+    const uint8_t data[] = {
+        0xFF, 0x04, 0x00, 0x10, 0xAA, 0xBB, // item 1: 16 bits = 2 bytes (even), more data follows
+        0xFF, 0x04, 0x00, 0x08, 0xCC        // item 2: 8 bits = 1 byte (last)
+    };
+    size_t off = 0;
+    S7DataItem it;
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(data, sizeof(data), &off, &it));
+    TEST_ASSERT_EQUAL_size_t(2, it.data_len);
+    TEST_ASSERT_EQUAL_size_t(6, off); // no pad byte inserted after an even-length item
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(data, sizeof(data), &off, &it));
+    TEST_ASSERT_EQUAL_size_t(1, it.data_len);
+    TEST_ASSERT_EQUAL_HEX8(0xCC, it.data[0]);
+    TEST_ASSERT_EQUAL_size_t(sizeof(data), off);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -189,5 +242,9 @@ int main()
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_null_and_short_guards);
+    RUN_TEST(test_parse_header_null_out);
+    RUN_TEST(test_read_next_item_null_offset_and_out);
+    RUN_TEST(test_read_next_item_bit_and_int_transport);
+    RUN_TEST(test_parse_response_even_length_not_last);
     return UNITY_END();
 }

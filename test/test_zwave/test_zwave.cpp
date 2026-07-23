@@ -91,7 +91,8 @@ void test_control_bytes()
     uint8_t ack[1];
     TEST_ASSERT_EQUAL_UINT16(1, dws_zwave_build_ack(ack, sizeof(ack)));
     TEST_ASSERT_EQUAL_HEX8(Zwave::ZWAVE_ACK, ack[0]);
-    TEST_ASSERT_EQUAL_UINT16(0, dws_zwave_build_ack(ack, 0)); // no room
+    TEST_ASSERT_EQUAL_UINT16(0, dws_zwave_build_ack(ack, 0));     // no room
+    TEST_ASSERT_EQUAL_UINT16(0, dws_zwave_build_ack(nullptr, 1)); // null out
 }
 
 void test_build_bounds()
@@ -103,6 +104,46 @@ void test_build_bounds()
     uint8_t big[64];
     TEST_ASSERT_EQUAL_UINT16(
         0, dws_zwave_build_frame(dws_zwave_type::ZWAVE_REQ, 0x13, big, 17, big, sizeof(big))); // 17 > MAX_DATA 16
+}
+
+void test_build_rejects_null_out()
+{
+    const uint8_t data[2] = {0x01, 0x02};
+    TEST_ASSERT_EQUAL_UINT16(0, dws_zwave_build_frame(dws_zwave_type::ZWAVE_REQ, 0x13, data, 2, nullptr, 16));
+}
+
+void test_build_rejects_null_data_with_nonzero_len()
+{
+    uint8_t out[16];
+    // data_len > 0 but data is null: invalid combination, rejected before any bytes are written.
+    TEST_ASSERT_EQUAL_UINT16(0, dws_zwave_build_frame(dws_zwave_type::ZWAVE_REQ, 0x13, nullptr, 5, out, sizeof(out)));
+}
+
+void test_parse_rejects_null_raw()
+{
+    uint8_t type = 0, cmd = 0, pdlen = 0;
+    const uint8_t *pd = nullptr;
+    TEST_ASSERT_EQUAL_INT(0, dws_zwave_parse_frame(nullptr, 5, &type, &cmd, &pd, &pdlen));
+}
+
+void test_parse_needs_more_bytes_on_zero_len()
+{
+    const uint8_t frame[5] = {0x01, 0x03, 0x00, 0x15, 0xE9};
+    TEST_ASSERT_EQUAL_INT(0, dws_zwave_parse_frame(frame, 0, nullptr, nullptr, nullptr, nullptr));
+}
+
+void test_parse_rejects_frame_len_too_short()
+{
+    // frame_len (raw[1]) must be at least 3 (Type + Command + Checksum); 2 is too short.
+    const uint8_t frame[4] = {0x01, 0x02, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_INT(-1, dws_zwave_parse_frame(frame, sizeof(frame), nullptr, nullptr, nullptr, nullptr));
+}
+
+void test_parse_allows_null_out_params()
+{
+    // A successful parse must tolerate any subset of the out-params being null.
+    const uint8_t frame[5] = {0x01, 0x03, 0x00, 0x15, 0xE9};
+    TEST_ASSERT_EQUAL_INT(5, dws_zwave_parse_frame(frame, sizeof(frame), nullptr, nullptr, nullptr, nullptr));
 }
 
 int main()
@@ -117,5 +158,11 @@ int main()
     RUN_TEST(test_parse_rejects_over_length);
     RUN_TEST(test_control_bytes);
     RUN_TEST(test_build_bounds);
+    RUN_TEST(test_build_rejects_null_out);
+    RUN_TEST(test_build_rejects_null_data_with_nonzero_len);
+    RUN_TEST(test_parse_rejects_null_raw);
+    RUN_TEST(test_parse_needs_more_bytes_on_zero_len);
+    RUN_TEST(test_parse_rejects_frame_len_too_short);
+    RUN_TEST(test_parse_allows_null_out_params);
     return UNITY_END();
 }
