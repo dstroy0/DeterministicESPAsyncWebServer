@@ -56,9 +56,14 @@ const SouthboundDriver *dws_southbound_find(const char *name)
 {
     if (!name)
         return nullptr;
-    // The null halves of the first two && arms below are unreachable: register() rejects a null
-    // drv/drv->name before ever storing it, and clear() nulls the array and resets count together,
-    // so for i < count, drivers[i] and drivers[i]->name are always non-null.
+    // Only the first && arm's false side is structurally unreachable: s_sb.drivers[i] can never be
+    // null for i < count, because register() only ever stores a drv already proven non-null (its own
+    // !drv check above) in the same statement that increments count, and clear() resets the whole
+    // array and count together - no public-API path leaves a live index holding a null pointer. The
+    // second arm (drivers[i]->name) is NOT similarly guaranteed: the registry stores a *borrowed*
+    // pointer, so a caller can null out a registered driver's name field after registration (see
+    // test_find_skips_driver_mutated_name_null) - that guard is live, tested defensive code, not dead
+    // code; the exclusion below covers only the first arm's genuinely dead branch.
     for (size_t i = 0; i < s_sb.count; i++)
         if (s_sb.drivers[i] && s_sb.drivers[i]->name && strcmp(s_sb.drivers[i]->name, name) == 0) // GCOVR_EXCL_BR_LINE
             return s_sb.drivers[i];

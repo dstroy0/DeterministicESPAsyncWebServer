@@ -46,7 +46,12 @@ inline int dws_fmt_append(char *out, size_t cap, size_t *pos, const char *fmt, .
     // doc comment above), built from plain %s/%g/%d conversions that never fault. Forcing a genuine
     // negative return (e.g. via an oversized field width) does not fail gracefully on this toolchain -
     // it aborts the process - so it cannot be exercised from a host test without crashing the runner.
-    if (w < 0 || (size_t)w >= cap - *pos) // GCOVR_EXCL_BR_LINE
+    // Split out from the fits-in-buffer check below so the exclusion covers only this truly-unreachable
+    // case: the fits-in-buffer branch is real and already exercised (both ways) by the fmtbuf/dashboard
+    // truncation tests, and folding it into the same compound condition would hide that from coverage too.
+    if (w < 0)     // GCOVR_EXCL_LINE
+        return -1; // GCOVR_EXCL_LINE
+    if ((size_t)w >= cap - *pos)
         return -1;
     *pos += (size_t)w;
     return 0;

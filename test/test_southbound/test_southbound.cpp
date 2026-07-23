@@ -180,6 +180,20 @@ void test_read_missing_capability(void)
     TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_UNSUPPORTED, dws_southbound_read("wo", 0, &v));
 }
 
+void test_find_skips_driver_mutated_name_null(void)
+{
+    // dws_southbound_find() stores a *borrowed* pointer (const SouthboundDriver *), not a copy: the
+    // registry has no control over the pointed-to object after register() returns. register()'s own
+    // null-name guard only proves drv->name was non-null at registration time; it says nothing about
+    // later mutation through the caller's own (non-const) handle to that same object. So find()'s
+    // "s_sb.drivers[i]->name &&" guard is a live defense against exactly that: a driver whose name
+    // field goes null out from under the registry between register() and find().
+    static SouthboundDriver mutable_drv = {"mutable", fake_read, nullptr, nullptr, nullptr, &g_ctx};
+    TEST_ASSERT_EQUAL_INT(Sb::SB_OK, dws_southbound_register(&mutable_drv));
+    mutable_drv.name = nullptr; // mutate the borrowed driver's name field after registration.
+    TEST_ASSERT_NULL(dws_southbound_find("mutable"));
+}
+
 void test_block_not_found_and_arg_edges(void)
 {
     dws_southbound_register(&g_full);
@@ -204,6 +218,7 @@ int main(void)
     RUN_TEST(test_dispatch_not_found_guards);
     RUN_TEST(test_find_null_name);
     RUN_TEST(test_read_missing_capability);
+    RUN_TEST(test_find_skips_driver_mutated_name_null);
     RUN_TEST(test_block_not_found_and_arg_edges);
     return UNITY_END();
 }

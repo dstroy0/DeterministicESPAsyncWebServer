@@ -84,9 +84,11 @@ void put_param(Buf &b, const char *key, const char *val)
 
 int finish(Buf &b)
 {
-    if (!b.ok || b.n >= b.cap) // GCOVR_EXCL_BR_LINE  b.n>=b.cap (b.ok true) is unreachable: every
-        return 0;              // put_raw/put_enc write is bounds-checked before commit, so b.n < b.cap
-                               // is an invariant whenever b.ok stays true (see their +1/+3 >= cap guards).
+    if (!b.ok || b.n >= b.cap) // GCOVR_EXCL_BR_LINE  b.n>=b.cap while b.ok is true is unreachable: both
+        return 0;              // public builders reject cap==0 before constructing Buf, so b.n=0 < b.cap
+                               // holds at construction, and every put_raw/put_enc write only commits
+                               // after checking b.n+1 (or +3) < b.cap, so b.n < b.cap stays invariant
+                               // for as long as b.ok remains true.
     b.o[b.n] = '\0';
     return (int)b.n;
 }

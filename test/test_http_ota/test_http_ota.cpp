@@ -5,7 +5,13 @@
 // BODY_BUF_SIZE is streamed to a sink in chunks and reaches ParseState::PARSE_COMPLETE
 // (bypassing the 413 cap), while the default 413 behavior is preserved when no
 // hook matches. Uses a mock sink (no ESP32 Update dependency).
+//
+// Also covers an unrelated fwd_extract_client() edge case (see
+// test_xff_bracketed_ipv6_overflow below): this is the only native_* environment that
+// links http_parser.cpp without also linking test_http_parser.cpp, so it is where that
+// edge case's own coverage must be demonstrated for this build.
 
+#include "network_drivers/network/ip.h" // DWS_IP_STR_MAX for the bracketed-IPv6 overflow case
 #include "network_drivers/presentation/http_parser/http_parser.h"
 #include <stdio.h>
 #include <string.h>
@@ -89,11 +95,44 @@ void test_nonmatching_path_not_streamed()
     TEST_ASSERT_EQUAL_UINT(0, (unsigned)g_total);
 }
 
+// fwd_extract_client()'s bracketed-IPv6 scratch buffer (tok[DWS_IP_STR_MAX]) overflow guard
+// is unreachable via "Forwarded: for=[...]" - the "for=" prefix eats 4 of the header value's
+// MAX_VAL_LEN-1 (47) budget bytes, capping bracket content at 43 bytes, short of the 46 needed
+// to trip the guard. But fwd_extract_client() is also called directly on X-Forwarded-For with
+// no "for=" prefix stealing budget, so the full 47 bytes are available: '[' + 46 non-']' bytes
+// drives tlen to DWS_IP_STR_MAX-1 (45) and trips the guard on the 46th content byte.
+void test_xff_bracketed_ipv6_overflow()
+{
+    char req[128];
+    int off = snprintf(req, sizeof(req), "GET / HTTP/1.1\r\nX-Forwarded-For: [");
+    for (int i = 0; i < DWS_IP_STR_MAX; i++) // 46 non-']' bytes: exactly enough to trip the guard
+        req[off++] = 'f';
+    off += snprintf(req + off, sizeof(req) - (size_t)off, "\r\n\r\n"); // no ']' - overflow fires first
+    req[off] = '\0';
+
+    HttpReq r;
+    r.slot_id = 0;
+    http_parser_reset(&r);
+    feed(&r, req);
+
+    char ip[DWS_IP_STR_MAX];
+    TEST_ASSERT_FALSE(http_forwarded_client(&r, ip, sizeof(ip), nullptr));
+
+    // Same call path, ordinary short bracketed IPv6: the guard's other arm (no overflow).
+    HttpReq r2;
+    r2.slot_id = 0;
+    http_parser_reset(&r2);
+    feed(&r2, "GET / HTTP/1.1\r\nX-Forwarded-For: [2001:db8::1]\r\n\r\n");
+    TEST_ASSERT_TRUE(http_forwarded_client(&r2, ip, sizeof(ip), nullptr));
+    TEST_ASSERT_EQUAL_STRING("2001:db8::1", ip);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_large_body_streams_to_completion);
     RUN_TEST(test_no_hooks_large_body_is_413);
     RUN_TEST(test_nonmatching_path_not_streamed);
+    RUN_TEST(test_xff_bracketed_ipv6_overflow);
     return UNITY_END();
 }

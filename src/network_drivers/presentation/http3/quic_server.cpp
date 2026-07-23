@@ -174,8 +174,11 @@ QuicSlot *alloc_slot()
             memset(s, 0, sizeof *s);
             s->used = true;
             s->id = s_quic.next_id++;
-            if (s_quic.next_id == 0) // GCOVR_EXCL_LINE  wraps only after 2^32 allocations: unreachable from a host test
-                s_quic.next_id = 1;  // GCOVR_EXCL_LINE  never hand out 0; see the wrap guard above
+            if (s_quic.next_id == 0) // GCOVR_EXCL_BR_LINE  the check itself runs every alloc; only the
+                                     // true branch (wrap) is unreachable - it needs 2^32 allocations in
+                                     // one process lifetime (next_id is never reset except by begin()),
+                                     // which no host test can drive
+                s_quic.next_id = 1;  // GCOVR_EXCL_LINE  dead unless the wrap above is taken; never hand out id 0
             return s;
         }
     return nullptr;
@@ -235,8 +238,11 @@ QuicSlot *open_conn(const QuicLongHeader *lh, const char *ip, uint16_t port)
 QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader *lh_out)
 {
     *is_initial = false;
-    if (len < 1)        // GCOVR_EXCL_LINE  poll only routes ring entries; ring_push rejects len==0, so len>=1 here
-        return nullptr; // GCOVR_EXCL_LINE  same: this branch cannot be taken from any host-reachable input
+    if (len < 1)        // GCOVR_EXCL_BR_LINE  the check itself runs on every route() call (poll's only caller);
+                        // only the true branch is unreachable - route()'s sole call site is
+                        // dws_quic_server_poll, fed by ring_pop() from a ring that ring_push() (both
+                        // ingest paths) already refuses to fill with len==0, so len>=1 always holds here
+        return nullptr; // GCOVR_EXCL_LINE  dead unless the len<1 branch above is taken
     if (dws_quic_is_long_header(dg[0]))
     {
         if (!dws_quic_parse_long_header(dg, len, lh_out))

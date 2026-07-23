@@ -39,10 +39,9 @@ static size_t put_field(uint8_t *p, const uint8_t *data, size_t len)
 }
 static inline size_t put_str(uint8_t *p, const char *s)
 {
-    return put_field(p, (const uint8_t *)s,
-                     s ? strnlen(s, DWS_MQTT_BUF_SIZE)
-                       : 0); // GCOVR_EXCL_BR_LINE  s is never null: every call site below passes the "MQTT" literal or
-                             // a pointer already guarded non-null by its caller
+    return put_field(p, (const uint8_t *)s, // GCOVR_EXCL_BR_LINE  s is never null: every call site in this TU (the
+                     s ? strnlen(s, DWS_MQTT_BUF_SIZE) // "MQTT" literal, or client_id/will_topic/user/pass already
+                       : 0); // guarded non-null by dws_mqtt_build_connect before calling) is non-null
 }
 
 size_t dws_mqtt_encode_remlen(uint8_t *out, uint32_t len)

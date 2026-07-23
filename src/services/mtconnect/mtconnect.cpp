@@ -17,8 +17,11 @@ namespace
 void put(DWSMtcStreams *s, const char *text)
 {
     // null text is a no-op: harden the helper itself, not just every call site.
-    if (!s->ok || !text) // GCOVR_EXCL_BR_LINE  !text is unreachable: every call site in this file
-                         // guards with a literal or a ternary; kept as a defensive backstop only.
+    if (!s->ok || !text) // GCOVR_EXCL_BR_LINE  !text is unreachable: put() has internal linkage, so
+                         // every call site lives in this file; each passes a string literal, an
+                         // x ? x : "" ternary, or a local that can only ever hold a literal (wrap,
+                         // sub, mtc_cat_str()'s return) - never a raw possibly-null variable. Kept
+                         // as a defensive backstop only.
         return;
     size_t tl = strnlen(text, s->cap + 1);
     if (s->len + tl >= s->cap)
@@ -33,8 +36,11 @@ void put(DWSMtcStreams *s, const char *text)
 void put_escaped(DWSMtcStreams *s, const char *text)
 {
     // null text is a no-op: harden the helper itself, not just every call site.
-    if (!s->ok || !text) // GCOVR_EXCL_BR_LINE  !text is unreachable: every call site in this file
-                         // guards with a literal or a ternary; kept as a defensive backstop only.
+    if (!s->ok || !text) // GCOVR_EXCL_BR_LINE  !text is unreachable: put_escaped() has internal
+                         // linkage, so every call site lives in this file; each passes an
+                         // x ? x : "" ternary, or is reached only inside an "if (x && x[0])" guard
+                         // (name/units/serialNumber/toolId/deviceUuid/timestamp/limit) that already
+                         // proved x non-null. Kept as a defensive backstop only.
         return;
     for (const char *p = text; *p; p++)
     {

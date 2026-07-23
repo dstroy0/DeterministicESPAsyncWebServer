@@ -69,8 +69,11 @@ static TelnetConn *find_conn(uint8_t slot)
 
 static void raw_send(uint8_t slot, const void *data, size_t n)
 {
-    if (!dws_conn_active(slot) ||
-        n == 0) // GCOVR_EXCL_BR_LINE  n==0 is unreachable: every call site below passes a fixed nonzero literal length
+    if (!dws_conn_active(slot) || // GCOVR_EXCL_BR_LINE  n==0 is unreachable: every call site below passes a
+                                  // fixed nonzero literal length. (Marker must sit on this line: gcov attributes
+                                  // the whole multi-line condition's branches to the "if" line, not the operand's
+                                  // own line - a marker on the next line silently fails to exclude anything.)
+        n == 0)
         return;
     dws_conn_send(slot, data, (u16_t)n);
     dws_conn_flush(slot);

@@ -68,9 +68,13 @@ static int pump(DWSRelayEnd *src, DWSRelayEnd *dst, uint8_t *buf, uint16_t *len,
     if (*src_eof && *off >= *len)
     {
         *dir_done = true;
-        // the !*dst_shut_sent false arm is unreachable: *dst_shut_sent is only ever set true right
-        // here, in the same statement that sets *dir_done true, and the guard at the top of this
-        // function (`if (*dir_done) return 0;`) prevents this block from running a second time.
+        // The `!*dst_shut_sent` == false side is unreachable: *dst_shut_sent is written only inside
+        // this block (right below), which can execute at most once per direction over a DWSRelay's
+        // lifetime - *dir_done just went true on the line above, and the guard at the top of this
+        // function (`if (*dir_done) return 0;`) skips this whole block on every later call for that
+        // direction. dws_relay_init() zero-fills the struct, so *dst_shut_sent starts false, and
+        // nothing outside this block (and outside dws_relay_init's memset) ever writes it. So on
+        // this - the only - entry, *dst_shut_sent cannot already be true.
         if (dst->shutdown && !*dst_shut_sent) // GCOVR_EXCL_BR_LINE
         {
             dst->shutdown(dst->ctx); // propagate the half-close to the peer that stops receiving

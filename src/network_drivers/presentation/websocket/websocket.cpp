@@ -355,12 +355,18 @@ void ws_parse(WsConn *ws)
             return;
 
         uint8_t byte = 0;
-        // Unreachable on the host: available() and read_byte() read the same rx_head/rx_tail
-        // synchronously with nothing else running in between in a single-threaded test, so they
-        // can never disagree here. On-device this guards a genuine interrupt race (the lwIP recv
-        // callback can drain/refill the ring between the two calls); there is no way to reproduce
-        // that interleaving without real concurrency, so it is out of scope for a host test.
-        if (!dws_conn_read_byte(ws->slot_id, &byte)) // GCOVR_EXCL_BR_LINE  see above: can't disagree on host
+        // Unreachable by construction (not merely untested): this while-condition's
+        // dws_conn_available() and this call's dws_conn_read_byte() read the identical
+        // rx_head/rx_tail pair for this slot with no call in between that could touch either
+        // index. rx_head is advanced only by lowlevel_recv_cb() (tcp.cpp), which refuses
+        // (ERR_MEM, backpressure) any segment that would not fit in the free space already
+        // computed against rx_tail - so head can never overrun tail, meaning available() can
+        // only grow, never shrink, between the two reads. rx_tail is advanced only by this
+        // same synchronous consumer call. So available() > 0 here structurally guarantees
+        // read_byte() succeeds - true on the host AND on-device (SPSC ring, single producer /
+        // single consumer per slot); there is no interrupt-race window at this specific call
+        // site to reproduce.
+        if (!dws_conn_read_byte(ws->slot_id, &byte)) // GCOVR_EXCL_BR_LINE  see above: cannot fail here by construction
             break;                                   // GCOVR_EXCL_LINE
         ws_feed_byte(ws, byte);
     }

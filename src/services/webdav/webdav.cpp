@@ -180,24 +180,27 @@ size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
     char esc[256];
 
     dws_webdav_xml_escape(esc, sizeof(esc), href);
-    // The href block is at most 26 + esc(<=255) + 62 == 343 bytes, and adding the collection
-    // marker + resourcetype close reaches <=376 - all well within tmp[512], so these three
+    // The href block is at most 27 + esc(<=255) + 66 == 348 bytes, and adding the collection
+    // marker + resourcetype close reaches <=381 - all well within tmp[512], so these three
     // atomic-append guards cannot fire (esc is capped by its own 256-byte buffer above).
-    if (!app(tmp, sizeof(tmp), &t, "  <D:response>\n    <D:href>") ||
-        !app(tmp, sizeof(tmp), &t, esc) || // GCOVR_EXCL_LINE unreachable: href block <=343 < tmp[512] (see above)
-        !app(tmp, sizeof(tmp), &t,
-             "</D:href>\n    <D:propstat>\n      <D:prop>\n        <D:resourcetype>")) // GCOVR_EXCL_LINE unreachable:
-                                                                                       // href block <=343 < tmp[512]
-                                                                                       // (see above)
-        return len; // GCOVR_EXCL_LINE unreachable: href block <=343 < tmp[512] (see above)
+    //
+    // GCOVR_EXCL_START  buffer-overflow guard, unreachable per the budget above. A block (not
+    // per-line markers) because gcov attributes this multi-line OR-condition's uncovered branch to
+    // the call-opening line of the third app() (the wrapped string-literal argument line), not to
+    // the line carrying the comment - a per-line marker on the wrong line leaves the branch
+    // reported as a real gap.
+    if (!app(tmp, sizeof(tmp), &t, "  <D:response>\n    <D:href>") || !app(tmp, sizeof(tmp), &t, esc) ||
+        !app(tmp, sizeof(tmp), &t, "</D:href>\n    <D:propstat>\n      <D:prop>\n        <D:resourcetype>"))
+        return len;
+    // GCOVR_EXCL_STOP
 
     if (is_collection)
     {
-        if (!app(tmp, sizeof(tmp), &t, "<D:collection/>")) // GCOVR_EXCL_LINE unreachable: <=358 < tmp[512] (see above)
-            return len;                                    // GCOVR_EXCL_LINE unreachable: <=358 < tmp[512] (see above)
+        if (!app(tmp, sizeof(tmp), &t, "<D:collection/>")) // GCOVR_EXCL_LINE unreachable: <=363 < tmp[512] (see above)
+            return len;                                    // GCOVR_EXCL_LINE unreachable: <=363 < tmp[512] (see above)
     }
-    if (!app(tmp, sizeof(tmp), &t, "</D:resourcetype>\n")) // GCOVR_EXCL_LINE unreachable: <=376 < tmp[512] (see above)
-        return len;                                        // GCOVR_EXCL_LINE unreachable: <=376 < tmp[512] (see above)
+    if (!app(tmp, sizeof(tmp), &t, "</D:resourcetype>\n")) // GCOVR_EXCL_LINE unreachable: <=381 < tmp[512] (see above)
+        return len;                                        // GCOVR_EXCL_LINE unreachable: <=381 < tmp[512] (see above)
 
     if (!is_collection)
     {
@@ -215,7 +218,7 @@ size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
         while (rn > 0)
             num[ni++] = rev[--rn];
         num[ni] = '\0';
-        // The href block above tops out at <=381 bytes (<=343 plus the optional
+        // The href block above tops out at <=381 bytes (<=348 plus the optional
         // <D:collection/> + </D:resourcetype> close, though this branch only runs for
         // !is_collection so it's really <=366); this fixed getcontentlength markup + a
         // 10-digit uint32_t max add <=60 more, so the running total never nears tmp[512]

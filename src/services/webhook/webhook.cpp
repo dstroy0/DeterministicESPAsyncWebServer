@@ -62,9 +62,15 @@ int dws_ifttt_url(const char *event, const char *key, char *out, size_t cap)
         return 0;
     }
     int w = snprintf(out, cap, "https://maker.ifttt.com/trigger/%s/with/key/%s", event, key);
-    if (w < 0 || (size_t)w >= cap) // GCOVR_EXCL_BR_LINE  w < 0 is unreachable: this snprintf only
-                                   // substitutes %s from non-null C strings (guarded above), which
-                                   // cannot raise an encoding/output error on this host libc.
+    if (w < 0 || (size_t)w >= cap) // GCOVR_EXCL_BR_LINE  w < 0 is unreachable: verified empirically on
+                                   // this host libc (MinGW/UCRT) that truncation returns the would-be
+                                   // length, never -1. Per the C99/POSIX contract the only defined
+                                   // negative-return cause is an encoding error, and the only
+                                   // specifiers here are %s, which copy event/key bytes verbatim with
+                                   // no locale/multibyte decoding - no byte content can trigger one.
+                                   // The sole remaining theoretical trigger (would-be length
+                                   // arithmetic overflowing INT_MAX) needs ~2^31-byte event/key
+                                   // strings, infeasible to construct in this host test suite.
     {
         out[0] = '\0';
         return 0;

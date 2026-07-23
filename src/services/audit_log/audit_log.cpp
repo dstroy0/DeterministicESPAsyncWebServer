@@ -234,8 +234,14 @@ int dws_audit_format(const DWSAuditEntry *e, char *out, size_t cap)
         return 0;
     int head = snprintf(out, cap, "{\"seq\":%lu,\"ts\":%lu,\"cat\":\"%s\",\"msg\":\"", (unsigned long)e->seq,
                         (unsigned long)e->ts, dws_audit_cat_name(e->category));
-    if (head < 0 || (size_t)head >= cap) // GCOVR_EXCL_BR_LINE  head<0 is unreachable: snprintf cannot
-                                         // return negative for this "%lu%lu%s..." format
+    // Only head<0 is unreachable here: this format is fixed ("%lu%lu%s...", no floating point,
+    // no wide chars) with always-valid args (dws_audit_cat_name never returns null; the produced
+    // text is bounded by DWS_AUDIT_MSG_LEN/DWS_AUDIT_HASH_LEN, both small fixed constants, so the
+    // result can never approach INT_MAX either) - snprintf cannot signal an encoding error for it.
+    // The (size_t)head>=cap arm IS reachable and tested (test_format_fails_closed_all_stages's cap
+    // sweep); gcovr has no sub-line exclusion granularity, so silencing the dead head<0 arm means
+    // excluding the whole line's branch data.
+    if (head < 0 || (size_t)head >= cap) // GCOVR_EXCL_BR_LINE
         return 0;
     size_t pos = (size_t)head;
     pos = json_escape(out, pos, cap, e->msg);
@@ -273,8 +279,14 @@ int dws_audit_dump_json(char *out, size_t cap)
     else
         head = snprintf(out, cap, "{\"intact\":false,\"first_broken\":%lu,\"count\":%u,\"entries\":[",
                         (unsigned long)broken, (unsigned)s_audit.count);
-    if (head < 0 || (size_t)head >= cap) // GCOVR_EXCL_BR_LINE  head<0 is unreachable: snprintf cannot
-                                         // return negative for either "%s...:[" format above
+    // Only head<0 is unreachable here, for the same reason as dws_audit_format's identical guard:
+    // both snprintf formats above are fixed ("%s...:[" with %u/%lu, no floating point, no wide
+    // chars), the args are always valid, and the produced text is bounded by s_audit.count's small
+    // fixed max (DWS_AUDIT_LOG_ENTRIES), so it can never approach INT_MAX. The (size_t)head>=cap
+    // arm IS reachable and tested (test_dump_fails_closed_all_stages's cap sweep); gcovr has no
+    // sub-line exclusion granularity, so silencing the dead head<0 arm means excluding the whole
+    // line's branch data.
+    if (head < 0 || (size_t)head >= cap) // GCOVR_EXCL_BR_LINE
         return 0;
     size_t pos = (size_t)head;
 
