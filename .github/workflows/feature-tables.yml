@@ -59,6 +59,7 @@ jobs:
       - name: Render diagram PNGs
         run: |
           npm install -g @mermaid-js/mermaid-cli@11
+          sudo apt-get update && sudo apt-get install -y graphviz  # dot renders the flag-deps forest
           bash tools/render_diagrams.sh
 
       # Regenerate the per-feature footprint budget table in the README from the isolated

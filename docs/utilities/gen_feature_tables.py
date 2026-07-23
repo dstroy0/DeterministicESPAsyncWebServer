@@ -22,6 +22,19 @@ import os
 import re
 import sys
 
+import feature_taxonomy as tax
+from feature_taxonomy import (
+    APPLICATION_LAYER,
+    CATEGORY_MEMBERS,
+    CATEGORY_ORDER,
+    LAYER_MEMBERS,
+    LAYER_ORDER,
+    category_of,
+    github_anchor,
+    html_escape,
+    layer_of,
+)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FEATURES_MD = os.path.join(ROOT, "docs", "FEATURES.md")
 CONFIG_H = os.path.join(ROOT, "src", "ServerConfig.h")
@@ -40,298 +53,6 @@ END = "<!-- END GENERATED FEATURE TABLES -->"
 
 COLUMNS = 5
 
-# Features are grouped into tables by the OSI layer they live at (the same view the
-# README's Overview describes), and alphabetized within each layer. LAYER_ORDER is the
-# render order; LAYER_MEMBERS lists the FEATURES.md headings that belong to each
-# non-application layer - everything not listed falls through to "Application (L7)"
-# (most features are application-layer services). Edit a set to move an entry.
-LAYER_ORDER = [
-    "Foundation",
-    "Physical & Data Link (L1-L2)",
-    "Network (L3)",
-    "Transport (L4)",
-    "Session (L5)",
-    "Presentation (L6)",
-    "Application (L7)",
-]
-APPLICATION_LAYER = "Application (L7)"
-LAYER_MEMBERS = {
-    "Foundation": {
-        "Config IO",
-        "Config Store",
-        "Device ID",
-        "DMA Peripheral Ingest",
-        "Exception Decoder",
-        "Failsafe Watchdog",
-        "GPIO Map",
-        "Guardrails",
-        "Hardware Health",
-        "Preempting Work Queue",
-        "PSRAM Pool",
-        "RTC",
-        "Sleep Scheduler",
-        "Southbound",
-        "Time Source",
-        "VFS",
-        "Wear Leveling",
-    },
-    "Physical & Data Link (L1-L2)": {
-        "ADS1115",
-        "BLE GATT",
-        "Bus Capture",
-        "CC1101",
-        "DShot",
-        "EnOcean",
-        "ESP-NOW",
-        "Ethernet",
-        "FDC2214",
-        "INA219",
-        "Interface Forwarding",
-        "LD2410",
-        "LDC1614",
-        "LoRa",
-        "MPR121",
-        "nRF24",
-        "PCA9685",
-        "PN532",
-        "Radio Gateway",
-        "Radio Power",
-        "Radio Sniffer",
-        "Raw L2",
-        "SHT3x",
-        "Sigfox",
-        "Thread",
-        "VL53L0X",
-        "Wi-Fi Capture",
-        "Wi-Fi Sniffer",
-        "Wi-SUN",
-        "Z-Wave",
-        "Zigbee",
-    },
-    "Network (L3)": {
-        "Dns Resolver",
-        "Happy Eyeballs",
-        "IPv6",
-        "Link Manager",
-        "Network Adaptation",
-        "Proxy Protocol",
-    },
-    "Transport (L4)": {
-        "Accept Throttle",
-        "IP Allowlist",
-        "Keep-Alive",
-        "MTLS",
-        "Per IP Throttle",
-        "Socket Pool",
-        "TLS",
-        "TLS Policy",
-        "TLS Resumption",
-    },
-    "Session (L5)": {
-        "SSH",
-        "SSH Compression",
-        "SSH SFTP",
-        "SSH SCP",
-        "Telnet",
-    },
-    "Presentation (L6)": {
-        "Auth",
-        "Auth Lockout",
-        "CBOR",
-        "CloudEvents",
-        "HTTP Delivery",
-        "HTTP/1.1 Parser",
-        "HTTP/2",
-        "HTTP/3",
-        "JSON",
-        "JWT",
-        "MessagePack",
-        "Multipart",
-        "Protobuf",
-        "SenML",
-        "SSE",
-        "Web Terminal",
-        "WebSocket",
-        "WS Deflate",
-    },
-}
-
-# The Application (L7) layer holds ~125 features - too many for one table. Subdivide it into functional
-# categories (render order = CATEGORY_ORDER). CATEGORY_MEMBERS lists the FEATURES.md headings in each;
-# every application-layer heading should appear in exactly one set. An application feature left out of
-# all of them falls through to an "Application (L7) - Other" table (a build-time nudge to place it).
-# Only application-layer features belong here (build_block validates that). Non-application layers
-# (Foundation, L1-L6) keep their single per-layer table.
-CATEGORY_ORDER = [
-    "Web & HTTP",
-    "Auth, Identity & Security",
-    "IoT, Messaging & APIs",
-    "Industrial & Fieldbus",
-    "SCADA, Energy & Monitoring",
-    "Machine Tools & OT",
-    "Transportation & ITS",
-    "Clients & Gateways",
-    "Storage & Database",
-    "Time & Discovery",
-    "Observability & Telemetry",
-    "Firmware & System",
-]
-CATEGORY_MEMBERS = {
-    "Web & HTTP": {
-        "Chunked Responses",
-        "CORS",
-        "Dashboard",
-        "Edge Cache",
-        "Edge Cache Mesh",
-        "ETag",
-        "File Serving",
-        "HTTP Cache",
-        "Middleware",
-        "Range",
-        "Routing",
-        "SPA Router",
-        "Templating",
-        "Themes",
-        "Upload",
-        "WebDAV",
-    },
-    "Auth, Identity & Security": {
-        "Audit Log",
-        "CSRF",
-        "OAuth2",
-        "OIDC",
-        "TOTP",
-    },
-    "IoT, Messaging & APIs": {
-        "AMQP",
-        "CoAP",
-        "CoAP Block",
-        "CoAP Observe",
-        "DDS-RTPS",
-        "GraphQL",
-        "gRPC-Web",
-        "LwM2M",
-        "MQTT",
-        "MQTT SN",
-        "MQTT TLS",
-        "NATS",
-        "Sparkplug",
-        "Stomp",
-        "WAMP",
-        "XMPP",
-    },
-    "Industrial & Fieldbus": {
-        "ADS (Beckhoff)",
-        "BACnet",
-        "CANopen",
-        "CiA 402",
-        "Control",
-        "CC-Link",
-        "CIP",
-        "COTP",
-        "DeviceNet",
-        "DF1",
-        "DirectNET",
-        "DMX512",
-        "EtherNet/IP",
-        "FINS",
-        "HART",
-        "Host Link",
-        "INTERBUS",
-        "IO-Link",
-        "LonWorks",
-        "MELSEC",
-        "Modbus",
-        "Modbus Master",
-        "Modbus Plus",
-        "Modbus RTU",
-        "POWERLINK",
-        "PROFIBUS",
-        "PROFINET",
-        "S7comm",
-        "SDI-12",
-        "SERCOS III",
-        "SNP",
-    },
-    "SCADA, Energy & Monitoring": {
-        "C37.118",
-        "DNP3",
-        "GOOSE",
-        "ICCP",
-        "IEC 60870",
-        "M-Bus",
-        "MMS",
-        "OpenADR",
-        "SEP2",
-        "SunSpec",
-    },
-    "Machine Tools & OT": {
-        "DNC (CNC drip-feed)",
-        "MTConnect",
-        "OPC-UA",
-        "OPC-UA Client",
-        "umati (OPC UA for Machine Tools)",
-    },
-    "Transportation & ITS": {
-        "ATC",
-        "J1939",
-        "J2735",
-        "NEMA TS2",
-        "NMEA 0183",
-        "NMEA 2000",
-        "NTCIP",
-        "OCIT",
-        "UTMC",
-        "WAVE",
-    },
-    "Clients & Gateways": {
-        "FTP client",
-        "HTTP Client",
-        "HTTP Client TLS",
-        "Relay (TCP forward / DNAT)",
-        "SMB",
-        "SMTP",
-        "Webhook",
-        "WS Client",
-        "WS Client TLS",
-    },
-    "Storage & Database": {
-        "DBM Key-Value Store",
-        "Document Store",
-        "Redis",
-        "SQLite",
-        "Write-Ahead Log",
-    },
-    "Time & Discovery": {
-        "Adaptive mDNS",
-        "DNS Server",
-        "MDNS",
-        "NTP",
-        "NTP Server",
-        "NTS",
-    },
-    "Observability & Telemetry": {
-        "Diag",
-        "Flow Export",
-        "Log-Buffer",
-        "Metrics",
-        "Observability",
-        "Partition Monitor",
-        "SNMP",
-        "SNMP Trap",
-        "SNMP V3",
-        "Stats",
-        "StatsD",
-        "Syslog",
-        "Telemetry",
-        "UDP Telemetry",
-    },
-    "Firmware & System": {
-        "OTA",
-        "OTA Rollback",
-        "Provisioning",
-    },
-}
 
 # Where each target file's links to FEATURES.md point.
 TARGETS = {
@@ -340,61 +61,21 @@ TARGETS = {
 }
 
 
-def github_anchor(heading):
-    """Reproduce GitHub's heading-to-anchor rule (lowercase, drop punctuation
-    other than spaces and hyphens, spaces to hyphens)."""
-    a = heading.strip().lower()
-    a = re.sub(r"[^a-z0-9 \-]", "", a)
-    return a.replace(" ", "-")
-
-
-def html_escape(text):
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
-
-
-def parse_features(path):
-    """Return [(name, description)] in document order. The description is the
-    first prose paragraph under the heading (skipping the optional flag line)."""
-    with open(path, "r", encoding="utf-8") as f:
-        lines = f.read().splitlines()
-
-    entries = []
-    i = 0
-    while i < len(lines):
-        m = re.match(r"^## (.+?)\s*$", lines[i])
-        if not m:
-            i += 1
-            continue
-        name = m.group(1).strip()
-        i += 1
-        # Skip blank lines, then an optional `` `FLAG` `` line, then blanks.
-        while i < len(lines) and not lines[i].strip():
-            i += 1
-        if i < len(lines) and re.match(r"^`DWS_[A-Z0-9_]+`\s*$", lines[i].strip()):
-            i += 1
-            while i < len(lines) and not lines[i].strip():
-                i += 1
-        # Collect the description paragraph (until a blank line or next heading).
-        desc = []
-        while i < len(lines) and lines[i].strip() and not lines[i].startswith("#"):
-            desc.append(lines[i].strip())
-            i += 1
-        entries.append((name, " ".join(desc).strip()))
-    return entries
-
-
 def render_table(title, rows, link_prefix):
-    """Render one HTML table with a merged, centered header spanning all columns.
+    """Render one HTML table, uniform in width across every table and left-justified.
 
-    All tables are full width (`width="100%"`) and their cells centered
-    (`align="center"`) so they render consistently on GitHub, which honors only those
-    presentational attributes. The short last row carries no empty padding cells (the
-    absent columns simply collapse). The `feature-table` class lets the docs site
-    (docs/custom.css) apply the themed borders / equal columns / hover on top.
+    GitHub's Markdown renderer keeps none of a stylesheet - only presentational attributes
+    survive - so uniform, aligned columns have to be baked into the HTML: every table is
+    `width="100%"`, every cell is a fixed `width="20%"` (COLUMNS = 5 => equal fifths), and the
+    short last row is padded with empty cells so all five columns line up instead of the
+    remaining cells stretching to fill. Cells are `align="left"` so the flags read as a tidy
+    left-aligned grid rather than drifting to centre. The `feature-table` class + `td:empty`
+    rule in the docs site (docs/custom.css) hide the padding cells and theme the borders on top.
     """
+    colw = f"{100 // COLUMNS}%"
     out = [
         '<table class="feature-table" width="100%">',
-        f'<thead><tr><th colspan="{COLUMNS}" align="center">{html_escape(title)}</th></tr></thead>',
+        f'<thead><tr><th colspan="{COLUMNS}" align="left">{html_escape(title)}</th></tr></thead>',
         "<tbody>",
     ]
     for r in range(0, len(rows), COLUMNS):
@@ -403,29 +84,18 @@ def render_table(title, rows, link_prefix):
         for name, desc in chunk:
             href = f"{link_prefix}#{github_anchor(name)}"
             out.append(
-                f'  <td align="center"><a href="{html_escape(href)}" title="{html_escape(desc)}">{html_escape(name)}</a></td>'
+                f'  <td align="left" width="{colw}"><a href="{html_escape(href)}"'
+                f' title="{html_escape(desc)}">{html_escape(name)}</a></td>'
             )
-        out.append("</tr>")  # no padding: absent trailing cells collapse
+        for _ in range(COLUMNS - len(chunk)):  # pad so every table keeps five aligned columns
+            out.append(f'  <td align="left" width="{colw}"></td>')
+        out.append("</tr>")
     out += ["</tbody>", "</table>"]
     return "\n".join(out)
 
 
-def layer_of(name):
-    for layer, members in LAYER_MEMBERS.items():
-        if name in members:
-            return layer
-    return APPLICATION_LAYER
-
-
-def category_of(name):
-    for cat, members in CATEGORY_MEMBERS.items():
-        if name in members:
-            return cat
-    return None
-
-
 def build_block(link_prefix):
-    entries = parse_features(FEATURES_MD)
+    entries = [(e["name"], e["desc"]) for e in tax.parse_features(FEATURES_MD)]
     # Validate the layer map so a renamed/removed heading is caught, not silently dropped.
     known = {e[0] for e in entries}
     mapped = set().union(*LAYER_MEMBERS.values())
@@ -446,7 +116,11 @@ def build_block(link_prefix):
     for name, desc in entries:
         by_layer[layer_of(name)].append((name, desc))
 
-    parts = [BEGIN, ""]
+    # Wrap the tables in a Prettier range-ignore so this generator stays the single authority on
+    # their markup: the CI Prettier pass (and the pre-commit hook) skips the block instead of
+    # re-indenting the width-attributed cells, so `--check` matches byte-for-byte and there is no
+    # format tug-of-war between the generator and Prettier.
+    parts = [BEGIN, "", "<!-- prettier-ignore-start -->", ""]
     for layer in LAYER_ORDER:
         rows = sorted(by_layer[layer], key=lambda e: e[0].lower())
         if not rows:
@@ -467,7 +141,7 @@ def build_block(link_prefix):
                 parts += [render_table(c, by_cat[c], link_prefix), ""]
         if other:
             parts += [render_table(APPLICATION_LAYER + " - Other", other, link_prefix), ""]
-    parts.append(END)
+    parts += ["<!-- prettier-ignore-end -->", "", END]
     return "\n".join(parts)
 
 
