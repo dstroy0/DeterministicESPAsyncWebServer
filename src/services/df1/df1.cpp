@@ -7,6 +7,7 @@
  */
 
 #include "services/df1/df1.h"
+#include "shared_primitives/crc.h" // DWS_CRC16_ARC
 
 #if DWS_ENABLE_DF1
 
@@ -18,21 +19,26 @@ uint8_t dws_df1_bcc(const uint8_t *data, size_t len)
     return (uint8_t)(0u - s); // 2's complement (modulo 256)
 }
 
-// Reflected CRC-16 (poly 0xA001 = reflect(0x8005)), continuing from @p crc.
-static uint16_t crc16(uint16_t crc, const uint8_t *data, size_t len)
+// DF1's block check is the reflected CRC-16 (poly 0xA001 = reflect(0x8005), init 0, no final XOR),
+// catalogued as CRC-16/ARC. test_crc diffs the shared engine against the loop that used to live here
+// over every length 0..64.
+//
+// The CRC covers the data *plus* a trailing ETX that is not adjacent to it in memory, so the callers
+// below run the engine's begin/update/final split rather than assembling a scratch buffer. Note the
+// running value they carry is the engine's internal register, which for a reflected CRC is held
+// unreflected until final() - it is not interchangeable with the old right-shift intermediate, which
+// is why those call sites convert as a whole rather than swapping one call.
+static uint16_t df1_crc_data_plus_etx(const uint8_t *data, size_t len, uint8_t etx)
 {
-    for (size_t i = 0; i < len; i++)
-    {
-        crc ^= data[i];
-        for (int b = 0; b < 8; b++)
-            crc = (crc & 1) ? (uint16_t)((crc >> 1) ^ 0xA001) : (uint16_t)(crc >> 1);
-    }
-    return crc;
+    uint32_t c = dws_crc_begin(&DWS_CRC16_ARC);
+    c = dws_crc_update(&DWS_CRC16_ARC, c, data, len);
+    c = dws_crc_update(&DWS_CRC16_ARC, c, &etx, 1);
+    return (uint16_t)dws_crc_final(&DWS_CRC16_ARC, c);
 }
 
 uint16_t dws_df1_crc(const uint8_t *data, size_t len)
 {
-    return crc16(0x0000, data, len);
+    return (uint16_t)dws_crc(&DWS_CRC16_ARC, data, len);
 }
 
 size_t dws_df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_len, Df1Check check)
@@ -62,10 +68,8 @@ size_t dws_df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t
 
     if (check == Df1Check::DF1_CHECK_CRC)
     {
-        uint8_t etx = DF1_ETX;
-        uint16_t c = crc16(0x0000, data, data_len); // CRC over the data ...
-        c = crc16(c, &etx, 1);                      // ... plus the ETX
-        buf[p++] = (uint8_t)(c & 0xFF);             // low byte first
+        uint16_t c = df1_crc_data_plus_etx(data, data_len, DF1_ETX);
+        buf[p++] = (uint8_t)(c & 0xFF); // low byte first
         buf[p++] = (uint8_t)(c >> 8);
     }
     else
@@ -123,9 +127,7 @@ bool dws_df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t
     {
         if (i + 2 > len)
             return false;
-        uint8_t etx = DF1_ETX;
-        uint16_t c = crc16(0x0000, out, o);
-        c = crc16(c, &etx, 1);
+        uint16_t c = df1_crc_data_plus_etx(out, o, DF1_ETX);
         uint16_t got = (uint16_t)(buf[i] | ((uint16_t)buf[i + 1] << 8)); // low byte first
         if (c != got)
             return false;

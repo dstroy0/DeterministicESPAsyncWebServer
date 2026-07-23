@@ -1447,7 +1447,20 @@
     "motiondevice",
     "SYSRDY",
     "setpoints",
-    "Mxxx"
+    "Mxxx",
+    "desynchronizes",
+    "reheal",
+    "reheals",
+    "NRSC",
+    "OPENPGP",
+    "Rocksoft",
+    "SMBUS",
+    "XMODEM",
+    "checksummed",
+    "refin",
+    "refout",
+    "bareword",
+    "bfbdcfd"
   ],
   "ignorePaths": [
     "node_modules/**",

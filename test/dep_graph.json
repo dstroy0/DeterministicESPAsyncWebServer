@@ -2,6 +2,7 @@
 "src/ServerConfig.h": [
 "native",
 "native_accept_gate",
+"native_ad9238",
 "native_ads",
 "native_ads1115",
 "native_amqp",
@@ -188,6 +189,7 @@
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
+"native_safety_scl",
 "native_scp",
 "native_scpi",
 "native_scratch",
@@ -231,6 +233,7 @@
 "native_tls13_msg",
 "native_tls_policy",
 "native_totp",
+"native_trace_capture",
 "native_udp_telemetry",
 "native_udp_transport",
 "native_umati",
@@ -258,6 +261,7 @@
 "src/board_profiles/board_profile.h": [
 "native",
 "native_accept_gate",
+"native_ad9238",
 "native_ads",
 "native_ads1115",
 "native_amqp",
@@ -444,6 +448,7 @@
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
+"native_safety_scl",
 "native_scp",
 "native_scpi",
 "native_scratch",
@@ -487,6 +492,7 @@
 "native_tls13_msg",
 "native_tls_policy",
 "native_totp",
+"native_trace_capture",
 "native_udp_telemetry",
 "native_udp_transport",
 "native_umati",
@@ -514,6 +520,7 @@
 "src/board_profiles/classic_defaults.h": [
 "native",
 "native_accept_gate",
+"native_ad9238",
 "native_ads",
 "native_ads1115",
 "native_amqp",
@@ -700,6 +707,7 @@
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
+"native_safety_scl",
 "native_scp",
 "native_scpi",
 "native_scratch",
@@ -743,6 +751,7 @@
 "native_tls13_msg",
 "native_tls_policy",
 "native_totp",
+"native_trace_capture",
 "native_udp_telemetry",
 "native_udp_transport",
 "native_umati",
@@ -770,6 +779,7 @@
 "src/board_profiles/derived_sizing.h": [
 "native",
 "native_accept_gate",
+"native_ad9238",
 "native_ads",
 "native_ads1115",
 "native_amqp",
@@ -956,6 +966,7 @@
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
+"native_safety_scl",
 "native_scp",
 "native_scpi",
 "native_scratch",
@@ -999,6 +1010,7 @@
 "native_tls13_msg",
 "native_tls_policy",
 "native_totp",
+"native_trace_capture",
 "native_udp_telemetry",
 "native_udp_transport",
 "native_umati",
@@ -2783,6 +2795,12 @@
 "native_upload",
 "native_webdav_handler"
 ],
+"src/services/ad9238/ad9238.cpp": [
+"native_ad9238"
+],
+"src/services/ad9238/ad9238.h": [
+"native_ad9238"
+],
 "src/services/ads/ads.cpp": [
 "native_ads"
 ],
@@ -2920,6 +2938,7 @@
 "native_ssh_kbdint",
 "native_ssh_pqc",
 "native_telnet",
+"native_trace_capture",
 "native_upload",
 "native_webdav_handler",
 "native_workers",
@@ -3817,6 +3836,12 @@
 "src/services/s7comm/s7comm.h": [
 "native_s7comm"
 ],
+"src/services/safety_scl/safety_scl.cpp": [
+"native_safety_scl"
+],
+"src/services/safety_scl/safety_scl.h": [
+"native_safety_scl"
+],
 "src/services/scp/scp.cpp": [
 "native_scp"
 ],
@@ -4079,6 +4104,12 @@
 "native_pentest",
 "native_totp"
 ],
+"src/services/trace_capture/trace_capture.cpp": [
+"native_trace_capture"
+],
+"src/services/trace_capture/trace_capture.h": [
+"native_trace_capture"
+],
 "src/services/udp_telemetry/udp_telemetry.cpp": [
 "native_udp_telemetry"
 ],
@@ -4295,6 +4326,23 @@
 "native_devicenet",
 "native_j1939",
 "native_nmea2000"
+],
+"src/shared_primitives/crc.h": [
+"native_c37118",
+"native_df1",
+"native_dnp3",
+"native_enocean",
+"native_interbus",
+"native_mbplus",
+"native_modbus",
+"native_modbus_master",
+"native_nema_ts2",
+"native_pentest",
+"native_rawl2",
+"native_sdi12",
+"native_sht3x",
+"native_thread",
+"native_zigbee"
 ],
 "src/shared_primitives/crypto_opt.h": [
 "native_crypto_kat",
@@ -4560,6 +4608,7 @@
 "native_ssh_kbdint",
 "native_ssh_pqc",
 "native_telnet",
+"native_trace_capture",
 "native_upload",
 "native_webdav_handler",
 "native_workers",

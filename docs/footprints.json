@@ -136,22 +136,22 @@
     "example": "Peripherals/DmaIngest",
     "flags": "-DDWS_ENABLE_DMA=1 -DDWS_ENABLE_PREEMPT_QUEUE=1 -DDWS_DMA_SIMULATE=1",
     "board": "esp32dev",
-    "flash_bytes": 269385,
-    "ram_bytes": 28600
+    "flash_bytes": 269437,
+    "ram_bytes": 28608
   },
   "DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE": {
     "example": "Foundation/InterfaceForward",
     "flags": "-DDWS_ENABLE_DMA=1 -DDWS_ENABLE_PREEMPT_QUEUE=1 -DDWS_ENABLE_FORWARD=1 -DDWS_DMA_SIMULATE=1",
     "board": "esp32dev",
-    "flash_bytes": 270797,
+    "flash_bytes": 270849,
     "ram_bytes": 29096
   },
   "DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE": {
     "example": "Drivers/RadioGateway",
     "flags": "-DDWS_ENABLE_DMA=1 -DDWS_ENABLE_PREEMPT_QUEUE=1 -DDWS_ENABLE_GATEWAY=1 -DDWS_DMA_SIMULATE=1",
     "board": "esp32dev",
-    "flash_bytes": 270541,
-    "ram_bytes": 28720
+    "flash_bytes": 270593,
+    "ram_bytes": 28728
   },
   "DNC": {
     "example": "L7-Application/EthernetDnc",
@@ -199,7 +199,7 @@
     "example": "Drivers/EnOceanGateway",
     "flags": "-DDWS_ENABLE_ENOCEAN=1 -DDWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 268693,
+    "flash_bytes": 268701,
     "ram_bytes": 21848
   },
   "ESPNOW": {
@@ -255,7 +255,7 @@
     "example": "L7-Application/GraphQL",
     "flags": "-DDWS_ENABLE_GRAPHQL=1",
     "board": "esp32dev",
-    "flash_bytes": 758269,
+    "flash_bytes": 758281,
     "ram_bytes": 86236
   },
   "GUARDRAILS": {
@@ -640,7 +640,7 @@
     "example": "Drivers/Sht3x",
     "flags": "-DDWS_ENABLE_SHT3X=1",
     "board": "esp32dev",
-    "flash_bytes": 287029,
+    "flash_bytes": 287037,
     "ram_bytes": 21800
   },
   "SIGFOX": {
@@ -724,7 +724,7 @@
     "example": "L7-Application/PrometheusMetrics",
     "flags": "-DDWS_ENABLE_STATS=1 -DDWS_ENABLE_METRICS=1",
     "board": "esp32dev",
-    "flash_bytes": 757317,
+    "flash_bytes": 757301,
     "ram_bytes": 81964
   },
   "STATSD": {
@@ -759,7 +759,7 @@
     "example": "Drivers/ThreadGateway",
     "flags": "-DDWS_ENABLE_THREAD=1 -DDWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 271797,
+    "flash_bytes": 271889,
     "ram_bytes": 22616
   },
   "TLS": {
@@ -899,7 +899,7 @@
     "example": "Drivers/ZigbeeGateway",
     "flags": "-DDWS_ENABLE_ZIGBEE=1 -DDWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 269237,
+    "flash_bytes": 269409,
     "ram_bytes": 22104
   },
   "ZWAVE+GATEWAY": {

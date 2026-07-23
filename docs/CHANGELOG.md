@@ -18,6 +18,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`9820f90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9820f9012eff258a71a9305cab5a268d81b3d09e))
+- update CHANGELOG.md [skip ci] ([`7173ae5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7173ae50d0080fd9be38ed24eeb5338e01dd1852))
+- update test report + coverage [skip ci] ([`eb21e0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb21e0e154f15c7bc18e3d018c20f4e72d084bad))
+- update CHANGELOG.md [skip ci] ([`befeb91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/befeb91bd5c16117ce56719f460f134a10b0f422))
 - update test report + coverage [skip ci] ([`844f082`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/844f082bf192512d047b03e7b4ffdea6dafa5610))
 - update CHANGELOG.md [skip ci] ([`6dc6b0f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6dc6b0f7bee13a9e0b3d0b57c62fe9b16f5af0c8))
 - update test report + coverage [skip ci] ([`db34f89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db34f890fdd9977aa3c8df4e6ffb9ac5d9d95c68))
@@ -48,6 +52,11 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- record the migration and stop describing the retired loops as current ([`43e45f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43e45f9f4256d5911c18532514872521f037129b))
+- update ESP32 build footprints [skip ci] ([`c134fdd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c134fdd2aa3421e33a21afe71a8f5642a1fce1cc))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`05be5e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05be5e1925ef09ee363a567d1e9abe2f02e95d86))
+- update ESP32 build footprints [skip ci] ([`06a3a20`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06a3a20d6a9aa4fff4d24f88c99693caa4999b8c))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f38676d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f38676d9f80a90aeb1c5686d53f873b319b7b533))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ca853a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca853a3e3fa481221216d938f3aa033af77d01ac))
 - update ESP32 build footprints [skip ci] ([`f915447`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f915447013a90263bf584d26a1faac7fa005d0ff))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`37d5456`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37d5456e62fcb58814a2b6b86854eeee1718d6bc))
@@ -62,6 +71,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- rebuild the DAQ/SCA suite into a full teaching + research platform ([`2fc7d36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fc7d36270e457a04d32024cefd17bf5b353b601))
+- parameterized CRC engine ([`73f28fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73f28fc6895b69c0d4903877601de24d0a7f772c))
+- IEC 61784-3 black-channel Safety Communication Layer primitives ([`7964617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7964617a07205f7fcbf0fee6a3949cccf0ab754b))
 - Waveshare HMMD 24GHz mmWave micro-motion radar codec ([`36ad3c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36ad3c553218c3f106d76565c4803a532ff56dca))
 - RCWL-0516 presence sensor + shared one-GPIO presence facade ([`882c38a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/882c38ac782135418ab54875807083b309916e31))
 - support the HLK-LD2410B, and decode command ACKs ([`3ae0466`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ae0466be441afc6dede863038e433c45259f605))
@@ -71,6 +83,19 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- use the shared CRC engine ([`ee62a7b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee62a7b9e962a1f668283c8bbafb4689bac5dd54))
+- use the shared CRC engine ([`c9d8af5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9d8af594057d9fba9e1e5002e3063e10919d81c))
+- use the shared CRC engine ([`d81a3a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d81a3a1bcff75a78299c2abbfd70e1ec6089f4ed))
+- use the shared CRC engine ([`bf1b0dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf1b0dcff66be3f252b433e74cf14ef74466af9b))
+- use the shared CRC engine ([`8c1d99a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c1d99a79e94cb2f10c6eabdea666164b2d13557))
+- use the shared CRC engine ([`14a59cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14a59ccd1f934bfc26543f9176ccfda38f8bd140))
+- use the shared CRC engine ([`6f3e9cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f3e9ccc4c4dc1876f8a6f478bd44c9d2ac521e2))
+- use the shared CRC engine ([`7b079cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b079cdaeda45eaba810dc13632b6ca7ee27f3c8))
+- use the shared CRC engine ([`8b827f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b827f1ab0a9319eff8462cb971e027b5ed61697))
+- use the shared CRC engine ([`386e33a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/386e33a4f71fbbbd3461b01b47d0ce3ef9a2e273))
+- use the shared CRC engine ([`541d7fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/541d7fac595162d5778c1abbb11e4d30a75d0bbd))
+- use the shared CRC engine ([`f03fc65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f03fc6541709bbc008fdb0f50e5bf758ee782d39))
+- use the shared CRC engine ([`272601d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/272601d4012b9de2cf7d8c21382ebc20153b6faa))
 - one declaration per line in ieq (S1659) ([`871055b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/871055b86b7056823a4c1023fced3788ee1325ce))
 - remediate open SonarCloud findings ([`4f3af9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f3af9c7b1f2773982ae7f4df77239561b048180))
 
