@@ -8,6 +8,12 @@ Every optional feature is a compile-time flag (default off unless noted); enable
 
 Opt-in global accept-rate throttle (connection-flood defense). Default off (zero cost / no behavior change). When set to 1 the accept callback rejects new connections once more than DWS_ACCEPT_THROTTLE_MAX have been accepted within a DWS_ACCEPT_THROTTLE_WINDOW_MS fixed window (global across all listeners, two static counters - no per-IP table). This bounds connection churn (e.g. reconnect brute-force) on top of the bounded connection pool and the per-connection auth limits. mitigate finer-grained / per-IP attacks at the network layer.
 
+## AD9238
+
+`DWS_ENABLE_AD9238`
+
+SPI configuration-port codec for the AD9238 - and the shared Analog Devices high-speed-ADC SPI register map it belongs to. Default off. The AD9238 (12-bit, 20/40/65 MSPS dual ADC) exposes two interfaces that must not be confused: the **sample data path** is a parallel CMOS/LVDS bus running far beyond what an MCU can bit-bang, so it is out of scope here (see `reverse_engineering/` for the FPGA/CPLD-buffered burst-drain architecture), and the low-speed 3-wire **SPI configuration port** (SCLK / SDIO / CSB, MSB first) that controls power-down, output data format, output test patterns, and offset trim. services/ad9238 is that control-port codec: `dws_ad9238_build_*` frame the 16-bit instruction word (R/W + 2-bit byte-count + 13-bit address) and the shadow-register "device update" transfer that this whole ADI high-speed-ADC generation shares, per the AD9238 Rev. D datasheet SPI Register Map, with fail-closed input validation (null buffer, undersized cap, zero/oversize byte count, out-of-range address). Pure codec (builds/parses byte sequences); the SPI clocking and the per-register bit-field meanings are the application's / the datasheet's - the same contract as services/scpi and services/gpib. Host-tested (`native_ad9238`). See src/services/ad9238/ad9238.h.
+
 ## Adaptive mDNS
 
 `DWS_ENABLE_MDNS_ADAPTIVE`
@@ -1266,6 +1272,12 @@ StatsD metrics client - push counters/gauges/timings/sets to a StatsD collector.
 
 STOMP 1.2 frame codec. Default off. services/stomp is a zero-heap codec for the Simple/Streaming Text Oriented Messaging Protocol: `dws_stomp_build_frame()` writes a frame (command + escaped `key:value` headers + blank line + NUL-terminated body) and `dws_stomp_parse_frame()` is a non-mutating cursor reporting the command, header key/value slices, and body (honoring `content-length`, tolerating `\r\n` line endings, and skipping broker heart-beats), with `dws_stomp_header()` lookup and `dws_stomp_unescape()` for the header escapes (`\r` `\n` `\c` `\\`). Drives CONNECT / SEND / SUBSCRIBE / MESSAGE / ACK against a broker (ActiveMQ / RabbitMQ / Artemis) over the shipped outbound client transport, or STOMP-over-WebSocket via the WS client. Pure and host-tested; the connection and subscription state are the application's. See src/services/stomp.h.
 
+## Streaming Request Body
+
+`DWS_ENABLE_STREAM_BODY`
+
+Opt-in streaming delivery of large request bodies. Default off. Normally a request body is buffered whole and handed to the route once complete; with this flag the HTTP/1.1 parser instead drives per-chunk stream hooks (begin / data / abort) as body bytes arrive, so an arbitrarily large upload - a firmware image, a WebDAV `PUT`, a large multipart part - is written straight to its destination (flash, a file) as it streams, without ever holding the whole body in RAM. This preserves the zero-heap, bounded-memory contract for uploads that exceed any fixed buffer: memory use is one `RX_BUF_SIZE` window regardless of body size. The canonical consumer is a WebDAV `PUT` under a DAV mount (`dav_stream_put_begin` / `dav_stream_put_data` / abort trampolines wire the parser hook to the file), and the OTA update path uses the same seam. Because the body is never fully buffered, it raises the minimum `RX_BUF_SIZE` (see `src/board_profiles/derived_sizing.h`). The parser streaming hook is host-tested (`native_ota`); the FS-backed WebDAV PUT path is hardware-verified. See src/network_drivers/presentation/http_parser/http_parser.cpp.
+
 ## SunSpec
 
 `DWS_ENABLE_SUNSPEC`
@@ -1341,6 +1353,12 @@ TLS session resumption via RFC 5077 session tickets (requires TLS). Default off.
 `DWS_ENABLE_TOTP`
 
 Opt-in TOTP two-factor auth (RFC 6238). Default off. services/totp computes and verifies time-based one-time passwords (HMAC-SHA1 over the existing SHA-1, Google Authenticator compatible) and decodes base32 shared secrets, for a second factor on top of password / JWT auth. Pure and host-tested against the RFC 6238 vectors; the verifier checks a +/- step window for clock skew.
+
+## Trace Capture
+
+`DWS_ENABLE_TRACE_CAPTURE`
+
+Pre/post-trigger sample-window assembler - the high-rate acquisition primitive that sits downstream of services/dma on a sampling front end. Default off. `dws_tc_feed()` is called with every batch of samples as they arrive (most naturally from a DMA-complete handler) into a continuously running **pre-trigger ring** that always holds the most recent `pretrigger_samples`. When `dws_tc_trigger()` fires - a GPIO ISR, a software threshold detector, or an external front-end's own trigger line - the ring's current contents become the pre-trigger half of the emitted window and subsequent feeds fill the post-trigger half, so the window straddles the trigger instant exactly like a benchtop oscilloscope's pretrigger/posttrigger split, even though the trigger is only detected after the pre-trigger samples already went by. One capture in flight at a time, fail-closed: a trigger while a window is still filling is rejected and counted (`triggers_dropped`), never queued or stomped - the same determinism contract as services/dma's one-TX-in-flight rule. Static storage, no heap. The natural source is an external ADC front-end (an AD9226/AD9238 draining over SPI or UART DMA) or a scope digitizer. Host-tested (`native_trace_capture`). See src/services/trace_capture/trace_capture.h.
 
 ## UDP Telemetry
 

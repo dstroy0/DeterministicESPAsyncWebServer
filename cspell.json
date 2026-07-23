@@ -1460,7 +1460,15 @@
     "refin",
     "refout",
     "bareword",
-    "bfbdcfd"
+    "bfbdcfd",
+    "benchtop",
+    "CPLD",
+    "LVDS",
+    "MSPS",
+    "SCLK",
+    "DBENCH",
+    "eaws",
+    "starttransfer"
   ],
   "ignorePaths": [
     "node_modules/**",
