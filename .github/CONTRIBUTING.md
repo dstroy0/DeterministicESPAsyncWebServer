@@ -76,6 +76,66 @@ host machine, separate from the `#ifdef ARDUINO` hardware wrappers.
 New logic must ship with a native test. Make it work, then optimize, then re-run
 the tests to confirm no regression.
 
+## What every contribution must ship
+
+The required artifacts depend on _what_ you are adding. Review and CI check for
+these; a PR missing them will be sent back.
+
+- **A service** - a feature that lives in its own `src/services/<name>/`
+  directory - must ship **all** of:
+    - the implementation in `src/services/<name>/`;
+    - a native test in `test/test_<name>/` **and** its entry in
+      [test/test_matrix.json](../test/test_matrix.json) (then regenerate
+      `platformio.ini` as above - do not hand-edit the generated region);
+    - a **micro-benchmark** in `perf/services/<name>/` (which mirrors `src/`): an
+      on-device CCOUNT sketch (`platformio.ini` + `src/main.cpp`) and/or a host
+      bench (`host.cpp`);
+    - a runnable **example** under `examples/<Layer-or-Drivers>/<Name>/` (a
+      `.ino` plus its `README.md`, and a `build_opt.h` when it needs flags);
+    - an entry in [docs/FEATURES.md](../docs/FEATURES.md) - **the source of truth
+      for features**; the README feature table and the docs site both link to it.
+
+- **Core** - a piece of a network layer rather than a service, i.e. code under
+  `src/network_drivers/<layer>/`, `src/server/`, or `src/shared_primitives/` -
+  lives in the appropriate layer directory and ships a **bench** in the mirrored
+  `perf/` path (`perf/network_drivers/<layer>/<name>/`, `perf/server/<name>/`, or
+  `perf/core/<name>/`, same sketch+`host.cpp` shape as a service), a **native
+  test** (+ matrix entry), and an **example**, plus a
+  [docs/FEATURES.md](../docs/FEATURES.md) entry **if it is user-facing** (a
+  `DWS_ENABLE_*` flag or an observable behavior); purely internal plumbing may
+  skip the FEATURES entry.
+
+`perf/` mirrors `src/` exactly: `perf/services/<name>/`,
+`perf/network_drivers/<layer>/<name>/`, `perf/server/<name>/`, `perf/core/<name>/`,
+each a uniform dir with an on-device CCOUNT sketch (`platformio.ini` + `src/main.cpp`
+using `#include "device_bench.h"`) and an optional `host.cpp`. See
+[perf/README.md](../perf/README.md).
+
+- **An example only** (no new library code) requires just its `README.md`, in
+  the style below.
+
+### Example README style (enforced)
+
+Every example's `README.md` follows the house style - see any example under
+`examples/`, e.g. [examples/Drivers/Ads1115/README.md](../examples/Drivers/Ads1115/README.md):
+
+1. **Title:** `# Name - one-line "what it is"`.
+2. **What it is,** in plain language, up front - a newcomer should get the point
+   before seeing any code.
+3. **A detailed, full explanation:** why you would use it, the hardware/setup it
+   needs, wiring (a pin table when relevant), how to flash it and what the
+   expected serial/HTTP output looks like, and where it fits the bigger picture -
+   plus a **Troubleshooting** list for the common failure modes.
+4. **A "Build and run (PlatformIO)" block** with the exact
+   `pio ci ... --project-option="build_flags=-DDWS_ENABLE_<FEATURE>=1"` command
+   (the flag must reach the whole build, not just the sketch - the #1 CI gotcha).
+5. **A "How it works (for the curious)" section** that walks the **actual source
+   verbatim, heavily annotated** - name the real functions and key lines, and
+   cite the test that covers them.
+
+The examples index [docs/EXAMPLES.md](../docs/EXAMPLES.md) is generated from
+these READMEs, so the per-example README is where the real documentation lives.
+
 ## Code style
 
 - **Formatting is enforced.** C/C++/`.ino` follow
@@ -115,9 +175,11 @@ update the build-flag tree in the README.
 - Keep PRs focused. One logical change per PR.
 - Fill out the pull request template. CI runs clang-format, Prettier, cspell,
   CodeQL, the native test suites, and the pentest suite; all must pass.
-- New features need: implementation, a native test, a compile check, and an
-  example. Hardware verification is appreciated but the maintainer will confirm
-  on real hardware before release.
+- New features need the full artifact set from
+  [What every contribution must ship](#what-every-contribution-must-ship)
+  (implementation, native test + matrix entry, micro-benchmark, example, and a
+  `docs/FEATURES.md` entry), plus a compile check. Hardware verification is
+  appreciated but the maintainer will confirm on real hardware before release.
 
 ## Reporting bugs and security issues
 

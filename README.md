@@ -113,7 +113,7 @@ Benchmarked head-to-head against **[ESPAsyncWebServer 3.11.2](https://github.com
 | Small GET latency under load (c4) | flat ~7 ms           | ~20 ms              | -        |
 | Heap while serving                | **0** (static pools) | per-connection heap | -        |
 
-The edge is **HTTP keep-alive** (persistent connections, on by default - ESPAsyncWebServer closes after every request) and **bounded, zero-heap concurrency**. Honestly: single-request RTT and large-file throughput are network-bound and roughly equal between the two - the difference is connection reuse and concurrency handling, not per-request compute. Full methodology, caveats, and a reproducible harness live in **[benchmarks/](benchmarks/)**.
+The edge is **HTTP keep-alive** (persistent connections, on by default - ESPAsyncWebServer closes after every request) and **bounded, zero-heap concurrency**. Honestly: single-request RTT and large-file throughput are network-bound and roughly equal between the two - the difference is connection reuse and concurrency handling, not per-request compute. Full methodology, caveats, and a reproducible harness live in **[perf/ab_comparison/](perf/ab_comparison/)**.
 
 ### SSH & QUIC handshake crypto (ESP32-S3)
 
