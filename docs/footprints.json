@@ -850,7 +850,7 @@
     "example": "L7-Application/WebDav",
     "flags": "-DDWS_ENABLE_WEBDAV=1 -DMAX_CONNS=3 -DMAX_WS_CONNS=1 -DMAX_SSE_CONNS=1 -DMAX_ROUTES=8 -DDWS_WEBDAV_MAX_ENTRIES=8 -DDWS_WEBDAV_BUF_SIZE=1024",
     "board": "esp32dev",
-    "flash_bytes": 822897,
+    "flash_bytes": 822901,
     "ram_bytes": 90876
   },
   "WEB_TERMINAL": {
@@ -899,7 +899,7 @@
     "example": "Drivers/ZigbeeGateway",
     "flags": "-DDWS_ENABLE_ZIGBEE=1 -DDWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 269409,
+    "flash_bytes": 269417,
     "ram_bytes": 22104
   },
   "ZWAVE+GATEWAY": {
