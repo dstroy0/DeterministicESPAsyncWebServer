@@ -558,7 +558,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4932 test cases** across **284 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4936 test cases** across **284 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -47368,7 +47368,62 @@ A thorough directory of all **4932 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_comp (21 tests)</b></summary>
+<summary><b>test_ssh_comp (23 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_all_switch_arms</b> &mdash; <i>KEXINIT -> server KEXINIT, phase DH_INIT.</i></summary>
+
+    * **Objective**: KEXINIT -> server KEXINIT, phase DH_INIT.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_KEXINIT, pkt, n))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_NEWKEYS, &nk, 1))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_SERVICE, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, pkt, n))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pkt, n))</code>
+      * <code>Assert true (s-&gt;authed)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN, pkt, n))</code>
+      * <code>Assert true (ssh_chan[0][0].open)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_REQUEST, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_DATA, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_WINDOW_ADJUST, w, sizeof(w)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_EOF, eofm, sizeof(eofm)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_GLOBAL_REQUEST, pkt, n))</code>
+      * <code>Assert equal int (1, dsp_n)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN_CONFIRM, oc, sizeof(oc)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN_FAILURE, of, sizeof(of)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, cl, sizeof(cl)))</code>
+      * <code>Assert false (ssh_chan[0][0].open)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_IGNORE, &ign, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_EXT_INFO, &ext, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, 200, &unk, 1))</code>
+      * <code>Assert equal (SSH_MSG_UNIMPLEMENTED, dsp_type[0])</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_DISCONNECT, &disc, 1))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(MAX_SSH_CONNS, SSH_MSG_IGNORE, &ign, 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_guard_and_error_arms</b> &mdash; <i>KEXINIT with a payload too short to negotiate -> parse fails.</i></summary>
+
+    * **Objective**: KEXINIT with a payload too short to negotiate -> parse fails.
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXINIT, badkex, sizeof(badkex)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, badkexdh, sizeof(badkexdh)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, badkexdh, sizeof(badkexdh)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, badsvc, sizeof(badsvc)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, badsvc, sizeof(badsvc)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, badua, sizeof(badua)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, badua, sizeof(badua)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pw, pn))</code>
+      * <code>Assert equal int (1, s-&gt;auth_failures)</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pw, pn))</code>
+      * <code>Assert equal (SSH_MSG_DISCONNECT, dsp_type[dsp_n - 1])</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, authed_arms[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, handler_arms[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, 201, &unk, 1))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_delayed_activation</b> &mdash; <i>Delayed activation</i></summary>
@@ -48091,7 +48146,65 @@ A thorough directory of all **4932 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_kbdint (11 tests)</b></summary>
+<summary><b>test_ssh_kbdint (13 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_all_switch_arms</b> &mdash; <i>KEXINIT -> server KEXINIT, phase DH_INIT.</i></summary>
+
+    * **Objective**: KEXINIT -> server KEXINIT, phase DH_INIT.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_KEXINIT, pkt, n))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_NEWKEYS, &nk, 1))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_SERVICE, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, pkt, n))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_INFO_RESPONSE, ir, sizeof(ir)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pkt, n))</code>
+      * <code>Assert true (s-&gt;authed)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN, pkt, n))</code>
+      * <code>Assert true (ssh_chan[0][0].open)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_REQUEST, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_DATA, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_WINDOW_ADJUST, w, sizeof(w)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_EOF, eofm, sizeof(eofm)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_GLOBAL_REQUEST, pkt, n))</code>
+      * <code>Assert equal int (1, dsp_n)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN_CONFIRM, oc, sizeof(oc)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN_FAILURE, of, sizeof(of)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, cl, sizeof(cl)))</code>
+      * <code>Assert false (ssh_chan[0][0].open)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_IGNORE, &ign, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_EXT_INFO, &ext, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, 200, &unk, 1))</code>
+      * <code>Assert equal (SSH_MSG_UNIMPLEMENTED, dsp_type[0])</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_DISCONNECT, &disc, 1))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(MAX_SSH_CONNS, SSH_MSG_IGNORE, &ign, 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_guard_and_error_arms</b> &mdash; <i>KEXINIT with a payload too short to negotiate -> parse fails.</i></summary>
+
+    * **Objective**: KEXINIT with a payload too short to negotiate -> parse fails.
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXINIT, badkex, sizeof(badkex)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, badkexdh, sizeof(badkexdh)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, badkexdh, sizeof(badkexdh)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, badsvc, sizeof(badsvc)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, badsvc, sizeof(badsvc)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, badua, sizeof(badua)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, badua, sizeof(badua)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_INFO_RESPONSE, badir, sizeof(badir)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_INFO_RESPONSE, badir, sizeof(badir)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pw, pn))</code>
+      * <code>Assert equal int (1, s-&gt;auth_failures)</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pw, pn))</code>
+      * <code>Assert equal (SSH_MSG_DISCONNECT, dsp_type[dsp_n - 1])</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, authed_arms[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, handler_arms[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, 201, &unk, 1))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_kbdint_request_prompts</b> &mdash; <i>name(4)=0 \|\| instruction(4)=0 \|\| lang(4)=0 \|\| num-prompts(4)=1 \|\| string("Password: ") \|\| echo=0</i></summary>
