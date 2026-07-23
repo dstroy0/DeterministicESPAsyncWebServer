@@ -18,6 +18,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`40f086f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/40f086f41f29df8b724722f762cb471a53be3ebb))
+- update CHANGELOG.md [skip ci] ([`9b20b65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b20b65b2dae7b69517166e777678db69d5b7d51))
 - update test report + coverage [skip ci] ([`546bbec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/546bbec066221df31699530f83aea0563b2b1a82))
 - update CHANGELOG.md [skip ci] ([`df10427`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df104275a3e0542e63b6736fbba5a8ab44082417))
 - update test report + coverage [skip ci] ([`d4ffb16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4ffb16ae5306c0c7e8602ca4cc4114982e409f9))
@@ -45,6 +47,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`4337a7b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4337a7ba6feb49582e5083ccf2d86b41d0e708c2))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`2901622`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2901622a2c043169cd01c2f0b89efdff45cf0f6a))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`16aa07c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16aa07c2d2693c4640d393e2a232d4645624af95))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`834323b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/834323b3d529d61798db282b1dc0b483ec4e1793))
@@ -108,6 +111,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- close remaining transport/physical coverage gaps for real ([`65d6652`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65d6652dcbba61baa38b674a72c17c8d52f7b61a))
 - adversarially re-verify GCOVR_EXCL markers added this session ([`b57d0f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b57d0f162f9442ad7305d1e504b18c5b97104641))
 - raise line/branch coverage across native envs toward 100% ([`4da3fd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4da3fd3ce8ae29dd673bb8d9e7a6f928e34e4655))
 - 100% line + branch on snmp, smtp, oidc, senml, ntrip, dnc, dbm, sftp ([`88c861d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88c861d0ab7d56d25ab9126eeef353b1f47d748b))
