@@ -69,7 +69,14 @@ HardwareSerial *uart_for(uint8_t unit)
     switch (unit)
     {
     case 0:
+        // With USB-CDC-on-boot, `Serial` is the USB CDC (HWCDC) and UART0 is exposed as `Serial0`
+        // (a HardwareSerial); otherwise `Serial` itself is the UART0 HardwareSerial. Mirror the core's
+        // own guard (cores/esp32/HardwareSerial.h) so unit 0 always resolves to a real HardwareSerial.
+#if ARDUINO_USB_CDC_ON_BOOT
+        return &Serial0;
+#else
         return &Serial;
+#endif
 #if SOC_UART_NUM > 1
     case 1:
         return &Serial1;
