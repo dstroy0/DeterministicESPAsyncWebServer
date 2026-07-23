@@ -453,12 +453,12 @@ table.feature-table th {
     background-color: #001100 !important;
     color: #2bb35a !important;
     font-weight: 700;
-    text-align: center;
+    text-align: left;
     padding: 8px 12px;
     border-bottom: 1px solid #008000 !important;
 }
 table.feature-table td {
-    text-align: center;
+    text-align: left;
     padding: 6px 10px;
     border: 1px solid #0a3311 !important;
     color: #2bb35a !important;

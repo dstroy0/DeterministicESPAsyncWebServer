@@ -270,14 +270,25 @@ def write_mmd(name, mmd):
         f.write(mmd + "\n")
 
 
-def picture(name, alt, rel):
-    """A <picture> that serves the dark PNG in dark mode and the light PNG otherwise (@ rel path prefix)."""
-    return (
+def picture(name, alt, rel, width=None, zoom=False):
+    """A <picture> that serves the dark PNG in dark mode and the light PNG otherwise (@ rel path prefix).
+
+    This is a tall top-to-bottom waterfall, so at full column width it dominates the page on GitHub.
+    Pass `width` to cap the rendered size (GitHub honours `width` on <img>) and `zoom=True` to wrap it
+    in a link to the full-size PNG - the same click-to-enlarge treatment the flag-deps graph uses - so
+    the diagram reads as a compact figure but is still legible at full resolution on click."""
+    img = f'  <img alt="{alt}" src="{rel}/{name}.light.png"' + (f' width="{width}"' if width else "") + ">"
+    block = (
         "<picture>\n"
         f'  <source media="(prefers-color-scheme: dark)" srcset="{rel}/{name}.dark.png">\n'
-        f'  <img alt="{alt}" src="{rel}/{name}.light.png">\n'
+        f"{img}\n"
         "</picture>"
     )
+    if zoom:
+        return (
+            f'<a href="{rel}/{name}.light.png" title="Open the request-lifecycle diagram full size">\n' f"{block}\n</a>"
+        )
+    return block
 
 
 def build_block():
@@ -285,6 +296,10 @@ def build_block():
     return "\n".join(
         [
             BEGIN,
+            "",
+            # Prettier range-ignore so the capped-width <img> / click-to-zoom <a> markup and the compact
+            # color table survive exactly as generated (CI's Prettier pass skips the block).
+            "<!-- prettier-ignore-start -->",
             "",
             "> Generated from the public API, `proto_builtins.cpp`, and `presentation/` by"
             " `docs/utilities/gen_api_flow.py` - do not edit by hand. The picture is a pre-rendered PNG"
@@ -313,7 +328,11 @@ def build_block():
                 "api_flow",
                 "Request lifecycle: a request travels down the OSI layers to your handler; the response returns",
                 "docs/diagrams",
+                width=460,
+                zoom=True,
             ),
+            "",
+            "<!-- prettier-ignore-end -->",
             "",
             END,
         ]
@@ -326,6 +345,8 @@ def build_detail_block():
         [
             BEGIN_DETAIL,
             "",
+            "<!-- prettier-ignore-start -->",
+            "",
             "> Generated from the public API, `proto_builtins.cpp`, and `presentation/` by"
             " `docs/utilities/gen_api_flow.py` - do not edit by hand. This is the fully expanded twin of the"
             " simplified request-lifecycle chart in the [README](../README.md): the same top-to-bottom"
@@ -334,6 +355,8 @@ def build_detail_block():
             " source: [`diagrams/api_flow_detail.mmd`](diagrams/api_flow_detail.mmd).",
             "",
             picture("api_flow_detail", "Full request lifecycle with every method, protocol, and module", "diagrams"),
+            "",
+            "<!-- prettier-ignore-end -->",
             "",
             END_DETAIL,
         ]
