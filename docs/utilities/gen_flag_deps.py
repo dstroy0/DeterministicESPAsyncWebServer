@@ -115,21 +115,6 @@ def parse_guards(text):
     return hard, resource, derived
 
 
-def node_class(hard, resource, derived):
-    """Assign each node exactly one class, precedence derived > parent > child."""
-    parents = {p for p, _ in hard}
-    derived_flags = {d for _, d in derived}
-    nodes = set()
-    for p, c in hard:
-        nodes |= {p, c}
-    nodes |= {c for c, _ in resource}
-    nodes |= {s for s, _ in derived} | derived_flags
-    cls = {}
-    for n in nodes:
-        cls[n] = "derived" if n in derived_flags else "parent" if n in parents else "child"
-    return cls
-
-
 def primary_tree(hard):
     """Reduce the hard-dependency DAG to a TREE (exactly one parent edge per child) so the drawn graph
     has no crossing lines. A child with several hard parents keeps an edge only to its "primary" parent
@@ -153,80 +138,122 @@ def primary_tree(hard):
     return sorted(tree), {p: sorted(cs) for p, cs in sorted(extra.items())}
 
 
-def mermaid(hard, resource, derived):
-    # Layout only (curved edges, roomy spacing). No 'theme' override so GitHub swaps its light / dark
-    # Mermaid theme automatically; the classDefs use translucent fills + no fixed text color to match.
-    init = (
-        "%%{init: {'themeVariables':{"
-        # A font that actually ships in the headless Chromium the PNG is rasterized with. The old
-        # 'system-ui,Segoe UI' stack is absent there, so Chromium substituted a wider font than Mermaid
-        # measured and clipped the last character of every label. Trebuchet/Verdana/Arial are present.
-        "'fontFamily':'monospace','fontSize':'13px',"
-        "'lineColor':'#94a3b8'},"  # soft slate-gray edges, gentle on both light and dark
-        # htmlLabels:false -> labels render as SVG <text>, not foreignObject HTML. mmdc measures the HTML
-        # label width but rasterizes text at slightly different metrics, clipping the last glyph of every
-        # box; SVG text measures and rasterizes the same, so it fits.
-        "'flowchart':{'htmlLabels':false,'curve':'basis','nodeSpacing':22,'rankSpacing':75,'padding':12,'useMaxWidth':false}}}%%"
-    )
-    out = [init, "flowchart LR"]
-    out.append("  %% Optional feature families hang off the always-compiled core (dotted = optional, NOT")
-    out.append("  %% a dependency); within a family a solid A --> B means B requires A (a hard #error).")
-    out.append("  %% Auto-generated from the #error / #if guards in src/ServerConfig.h.")
+# Light / dark node + edge palettes. A filled node box covers the page background, so the same
+# graph reads on GitHub's white or dark canvas; only the two .dot files below differ, one per theme.
+PALETTES = {
+    "light": {
+        "bg": "white",
+        "green_fill": "#d6f2e0",
+        "green_line": "#2f9e5f",
+        "blue_fill": "#e9eafc",
+        "blue_line": "#7379e6",
+        "text": "#1f2937",
+        "edge": "#8a94a3",
+        "tls_bg": "#2f9e5f",
+        "tls_text": "white",
+    },
+    "dark": {
+        "bg": "#0d1117",
+        "green_fill": "#173626",
+        "green_line": "#3fb950",
+        "blue_fill": "#1c2338",
+        "blue_line": "#7c85e8",
+        "text": "#e6edf3",
+        "edge": "#6b7480",
+        "tls_bg": "#238636",
+        "tls_text": "#eaffef",
+    },
+}
+
+
+def flag_tree(hard):
+    """Reduce the hard-dependency graph to the FOREST that gets drawn: TLS is pulled out of the
+    tree entirely (every feature that requires it gets an in-node green TLS badge instead of a
+    crossing edge to a shared TLS hub), and what remains is run through primary_tree() so each
+    child keeps exactly one parent. A forest of single-parent trees is planar, so Graphviz draws
+    it with zero crossing edges and each rank left-aligned in its own column.
+    Returns (tree_edges, parents, tls_children, nodes)."""
+    tls_children = {c for p, c in hard if p == "TLS"}
+    non_tls = {(p, c) for p, c in hard if p != "TLS"}
+    tree, _extra = primary_tree(non_tls)
+    parents = {p for p, _ in tree}
+    nodes = {n for pair in hard for n in pair} | {"TLS"}
+    return tree, parents, tls_children, nodes
+
+
+def dot(hard, theme):
+    """A Graphviz DOT drawing of the flag forest for one theme. rankdir=LR puts every feature in a
+    left-aligned column by depth; the tree is crossing-free by construction; TLS requirements are
+    green badges baked into the node label (an HTML-like table cell), never edges."""
+    pal = PALETTES[theme]
+    tree, parents, tls_children, nodes = flag_tree(hard)
+
+    def node_line(n):
+        is_parent = n in parents
+        fill = pal["green_fill"] if is_parent else pal["blue_fill"]
+        line = pal["green_line"] if is_parent else pal["blue_line"]
+        if n in tls_children:
+            # HTML-like label: the flag name plus a small green "TLS" chip in the same box, so the
+            # "requires TLS" fact attaches to the feature with no edge to cross anything.
+            label = (
+                '<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="1"><TR>'
+                f'<TD><FONT COLOR="{pal["text"]}">{n}  </FONT></TD>'
+                f'<TD BGCOLOR="{pal["tls_bg"]}"><FONT COLOR="{pal["tls_text"]}" POINT-SIZE="8.5">TLS</FONT></TD>'
+                "</TR></TABLE>>"
+            )
+        else:
+            label = f'"{n}"'
+        return f'  {n} [label={label}, fillcolor="{fill}", color="{line}"];'
+
+    out = [
+        "// GENERATED by docs/utilities/gen_flag_deps.py - do not edit by hand.",
+        "// Edit src/ServerConfig.h (the #error/#if guards) and re-run the generator.",
+        "digraph flag_deps {",
+        f'  rankdir=LR; bgcolor="{pal["bg"]}";',
+        "  graph [nodesep=0.16, ranksep=0.85, splines=true];",
+        '  node [shape=box, style="rounded,filled", fontname="monospace", fontsize=11,'
+        f' fontcolor="{pal["text"]}", margin="0.11,0.05", penwidth=1.3];',
+        f'  edge [color="{pal["edge"]}", penwidth=1.2, arrowsize=0.7];',
+        "",
+    ]
+    for n in sorted(nodes):
+        out.append(node_line(n))
     out.append("")
-    # A single apex (the always-on server core) anchors the graph into a pyramid: core -> parent families
-    # -> their children. Without it the parent families are disconnected and Mermaid strings them out in
-    # one flat row (a wide, unreadable ribbon). The core edges are DOTTED so they read as "this optional
-    # family sits on the core", distinct from the SOLID hard-#error parent -> child edges. The auto-derived
-    # flags and PSRAM gates (a second/third edge network that used to tangle the picture) are listed in
-    # tables beside the graph (build_block), not drawn here.
-    parents = sorted({p for p, _ in hard})
-    children = sorted({c for _, c in hard} - set(parents))  # a node that is itself a parent stays green
-    out.append('  CORE(["server core (always compiled)"])')
-    # mermaid-cli measures the label text element ~1 glyph narrower than Chromium rasterizes it and
-    # clips the last character of every node. Box padding does not help (the clip is on the text
-    # element) and trailing spaces are trimmed, so append a sacrificial " ." - the period is a real,
-    # non-trimmed glyph that takes the clip, leaving the full flag name (+ an invisible space) visible.
-    for n in parents + children:
-        out.append(f'  {n}["{n}"]')
-    out.append("")
-    for p in parents:
-        out.append(f"  CORE -.-> {p}")
-    out.append("")
-    tree, _extra = primary_tree(hard)
-    for p, c in tree:
-        out.append(f"  {p} --> {c}")
-    out.append("")
-    # Translucent fills (~15% alpha) + accent stroke + no fixed text color, so nodes read on either the
-    # light or dark GitHub background (the page tints through) and the theme's text color stays legible.
-    out.append("  class CORE core;")
-    if parents:
-        out.append(f"  class {','.join(parents)} parent;")
-    if children:
-        out.append(f"  class {','.join(children)} child;")
-    out.append("  classDef core fill:#64748b26,stroke:#475569,stroke-width:2px;")
-    out.append("  classDef parent fill:#10b98126,stroke:#059669,stroke-width:1.5px;")
-    out.append("  classDef child fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;")
-    out.append("  linkStyle default stroke-width:1.5px;")
+    for p, c in sorted(tree):
+        out.append(f"  {p} -> {c};")
+    out.append("}")
     return "\n".join(out)
 
 
 def build_block():
     hard, resource, derived = parse_guards(open(CONFIG_H, encoding="utf-8").read())
     # Pre-render to a PNG (via tools/render_diagrams.sh) so it shows in the GitHub app + Doxygen too.
+    # One Graphviz .dot per theme; Graphviz lays the single-parent forest out crossing-free.
     os.makedirs(DIAGRAMS, exist_ok=True)
-    with open(os.path.join(DIAGRAMS, "flag_deps.mmd"), "w", encoding="utf-8", newline="\n") as f:
-        f.write(mermaid(hard, resource, derived) + "\n")
+    for theme in ("light", "dark"):
+        with open(os.path.join(DIAGRAMS, f"flag_deps.{theme}.dot"), "w", encoding="utf-8", newline="\n") as f:
+            f.write(dot(hard, theme) + "\n")
+    # Drop the previous Mermaid source so a stale flag_deps.mmd is not left to re-render.
+    stale = os.path.join(DIAGRAMS, "flag_deps.mmd")
+    if os.path.exists(stale):
+        os.remove(stale)
     lines = [
         BEGIN,
         "",
+        # Prettier range-ignore: keep this generator the single authority on the block's markup
+        # (compact pipe tables, one-line prose) so `--check` is exact and CI's Prettier pass does not
+        # re-flow it into a different shape than the generator emits.
+        "<!-- prettier-ignore-start -->",
+        "",
         "> Generated from the `#error` / `#if` guards in [src/ServerConfig.h](src/ServerConfig.h) by"
         " `docs/utilities/gen_flag_deps.py` - do not edit by hand. Pre-rendered PNG (shows in the GitHub"
-        " app + Doxygen); mermaid source: [`docs/diagrams/flag_deps.mmd`](docs/diagrams/flag_deps.mmd).",
+        " app + Doxygen); Graphviz source: [`docs/diagrams/flag_deps.light.dot`](docs/diagrams/flag_deps.light.dot).",
         "",
         "Each **green** node is a parent feature and each **blue** node a child that requires it (a hard"
-        " `#error` otherwise) - enable the parent to build the child. **Click the diagram to view it full"
-        " size.** (Auto-derived flags and PSRAM-class features are listed below the picture rather than"
-        " drawn as edges, so the graph stays a clean family tree.)",
+        " `#error` otherwise) - enable the parent to build the child. A green **`TLS`** badge on a node means"
+        " that feature also needs `DWS_ENABLE_TLS` (shown as a badge rather than an edge so no lines cross)."
+        " **Click the diagram to view it full size.** (Auto-derived flags and PSRAM-class features are listed"
+        " below the picture rather than drawn as edges, so the graph stays a clean family forest.)",
         "",
         '<a href="docs/diagrams/flag_deps.light.png" title="Open the build-flag dependency graph full size">',
         "<picture>",
@@ -236,15 +263,15 @@ def build_block():
         "</a>",
         "",
     ]
-    _, extra = primary_tree(hard)
+    # Secondary requirements (a child needing a second parent) are not drawn, to keep every tree
+    # single-parent and therefore uncrossed; TLS is already handled by the badge above, so exclude it.
+    _, extra = primary_tree({(p, c) for p, c in hard if p != "TLS"})
     if extra:
-        # A few children require two parents; only the primary edge is drawn (to keep the tree
-        # uncrossed), so the second requirement is stated here.
         notes = "; ".join(
             f"**{', '.join('`DWS_ENABLE_' + c + '`' for c in cs)}** also need `DWS_ENABLE_{p}`"
             for p, cs in extra.items()
         )
-        lines += [f"> Not drawn (so the tree stays uncrossed): {notes}.", ""]
+        lines += [f"> Not drawn (so the forest stays uncrossed): {notes}.", ""]
     if derived:
         lines += [
             "<details><summary><b>Auto-derived flags</b> - enabling the left flag turns the right one on"
@@ -269,6 +296,8 @@ def build_block():
         ]
     lines += [
         f"_{len(hard)} hard dependencies, {len(resource)} PSRAM gates, {len(derived)} derived flags._",
+        "",
+        "<!-- prettier-ignore-end -->",
         "",
         END,
     ]
