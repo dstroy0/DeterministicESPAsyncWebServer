@@ -18,6 +18,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`546bbec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/546bbec066221df31699530f83aea0563b2b1a82))
+- update CHANGELOG.md [skip ci] ([`df10427`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df104275a3e0542e63b6736fbba5a8ab44082417))
 - update test report + coverage [skip ci] ([`d4ffb16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4ffb16ae5306c0c7e8602ca4cc4114982e409f9))
 - update CHANGELOG.md [skip ci] ([`214c0aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/214c0aa53479a068ecac50ee90d844dbe04d57a3))
 - update CHANGELOG.md [skip ci] ([`9820f90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9820f9012eff258a71a9305cab5a268d81b3d09e))
@@ -43,6 +45,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`2901622`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2901622a2c043169cd01c2f0b89efdff45cf0f6a))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`16aa07c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16aa07c2d2693c4640d393e2a232d4645624af95))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`834323b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/834323b3d529d61798db282b1dc0b483ec4e1793))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`5f80cff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f80cff0787fabcf0c8aa1f88ab0be778b0a1d4e))
@@ -105,6 +108,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- adversarially re-verify GCOVR_EXCL markers added this session ([`b57d0f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b57d0f162f9442ad7305d1e504b18c5b97104641))
 - raise line/branch coverage across native envs toward 100% ([`4da3fd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4da3fd3ce8ae29dd673bb8d9e7a6f928e34e4655))
 - 100% line + branch on snmp, smtp, oidc, senml, ntrip, dnc, dbm, sftp ([`88c861d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88c861d0ab7d56d25ab9126eeef353b1f47d748b))
 - 100% line + branch across the SSH transport, auth and connection layers ([`043e2e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/043e2e51a862f05f118de6e99c2293f6067ee8d2))
