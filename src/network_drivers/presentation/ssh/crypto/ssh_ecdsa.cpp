@@ -755,8 +755,9 @@ void dws_hmac_cat(uint8_t out[32], const uint8_t key[32], const uint8_t *v, size
 // of distinct keys/messages), so the retry path in ecdsa_sign_core is dead for the same reason.
 bool ecdsa_try_sign(const uint32_t k[8], const uint32_t d[8], const uint32_t e[8], uint8_t sig[64])
 {
-    if (fp_is_zero(k) || fp_cmp(k, P256_N) >= 0) // GCOVR_EXCL_LINE  see comment above
-        return false;                            // GCOVR_EXCL_LINE  see comment above
+    if (fp_is_zero(k) ||
+        fp_cmp(k, P256_N) >= 0) // GCOVR_EXCL_BR_LINE  runs every call; only the trip is excluded, see comment above
+        return false;           // GCOVR_EXCL_LINE  see comment above
     Pt R;
     pt_scalarmul(&R, k, &P256_G);
     // k is already range-checked to [1, n-1] above, and P-256 has cofactor 1 (its group order is the
@@ -769,16 +770,16 @@ bool ecdsa_try_sign(const uint32_t k[8], const uint32_t d[8], const uint32_t e[8
     pt_to_affine(rx, ry, &R);
     uint32_t r[8];
     fp_reduce_once(r, rx, P256_N); // r = Rx mod n (Rx < p < 2n -> one subtract)
-    if (fp_is_zero(r))             // GCOVR_EXCL_LINE  RFC 6979 rejection sampling, see comment above ecdsa_try_sign
-        return false;              // GCOVR_EXCL_LINE  see comment above
+    if (fp_is_zero(r)) // GCOVR_EXCL_BR_LINE  runs every call; only r==0 is excluded, see comment above ecdsa_try_sign
+        return false;  // GCOVR_EXCL_LINE  see comment above
     uint32_t kinv[8];
     uint32_t s[8];
     fp_inv(kinv, k, &FN);
     fp_mul(s, r, d, &FN);    // r*d
     fp_add(s, s, e, &FN);    // e + r*d
     fp_mul(s, kinv, s, &FN); // k^-1 (e + r*d)
-    if (fp_is_zero(s))       // GCOVR_EXCL_LINE  RFC 6979 rejection sampling, see comment above ecdsa_try_sign
-        return false;        // GCOVR_EXCL_LINE  see comment above
+    if (fp_is_zero(s)) // GCOVR_EXCL_BR_LINE  runs every call; only s==0 is excluded, see comment above ecdsa_try_sign
+        return false;  // GCOVR_EXCL_LINE  see comment above
     store_be(sig, r);
     store_be(sig + 32, s);
     return true;

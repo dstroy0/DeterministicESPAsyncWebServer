@@ -138,12 +138,17 @@ inline void put_be64(uint8_t *p, uint64_t v)
 // Increment the low 32 bits of a 16-byte counter block, big-endian, mod 2^32 (GCM inc32).
 inline void inc32(uint8_t ctr[16])
 {
-    // The loop only runs to exhaustion (no break) if every one of the 4 bytes carries, i.e. the full
-    // 32-bit counter wraps 0xffffffff -> 0. ctr always starts at inc32(J0) with J0[12..15] fixed to
-    // 0,0,0,1 (96-bit-nonce J0, NIST SP 800-38D) - not caller-controlled - so reaching that wrap needs
-    // ~2^32 GCTR blocks (~64 GiB) through the public seal()/open() API: unreachable in a host test.
-    for (int i = 15; i >= 12; i--) // GCOVR_EXCL_BR_LINE  see above: full 32-bit wrap is infeasible here
-        if (++ctr[i])              // GCOVR_EXCL_BR_LINE  see above: the carry-continue arm needs that wrap
+    // A single-byte carry (ctr[15] 0xff -> 0x00, propagating into ctr[14]) is cheap to reach: ctr
+    // always starts at inc32(J0) = ...,0,2 (J0[12..15] fixed to 0,0,0,1, NIST SP 800-38D; not
+    // caller-controlled), so byte 15 wraps once 254 GCTR blocks (4064 B) go through one seal()/open()
+    // call - see test_aesgcm_gctr_counter_byte_carry (test_ssh_auth.cpp), which does exactly that and
+    // covers both the loop re-entry on line below and the if's carry-continue arm.
+    // The *whole-loop-exhausts* outcome (all 4 bytes carry, i.e. a full 0xffffffff -> 0 wrap of the
+    // 32-bit counter) is the one still genuinely unreachable from a host test: it needs ~2^32 GCTR
+    // blocks (~64 GiB) in a single seal()/open() call - infeasible to allocate/compute here.
+    for (int i = 15; i >= 12;
+         i--) // GCOVR_EXCL_BR_LINE  only the full-exhaustion (all 4 bytes carry) outcome is excluded; see above
+        if (++ctr[i])
             break;
 }
 

@@ -90,12 +90,18 @@ inline void put_be64(uint8_t *p, uint64_t v)
 // Increment the low 32 bits of a 16-byte counter block, big-endian, mod 2^32 (GCM inc32).
 inline void inc32(uint8_t ctr[16])
 {
-    // The loop only runs to exhaustion (no break) if every one of the 4 bytes carries, i.e. the full
-    // 32-bit counter wraps 0xffffffff -> 0. ctr always starts at inc32(J0) with J0[12..15] fixed to
-    // 0,0,0,1 (96-bit-nonce J0, NIST SP 800-38D) - not caller-controlled - so reaching that wrap needs
-    // ~2^32 GCTR blocks (~64 GiB) through the public seal()/open() API: unreachable in a host test.
-    for (int i = 15; i >= 12; i--) // GCOVR_EXCL_BR_LINE  see above: full 32-bit wrap is infeasible here
-        if (++ctr[i])              // GCOVR_EXCL_BR_LINE  see above: the carry-continue arm needs that wrap
+    // A single-byte carry (i=15 wrapping into i=14, etc.) only needs ctr[15] to roll 0xff -> 0x00,
+    // i.e. ~256 GCTR blocks (~4 KiB of plaintext) through the public seal()/open() API - well within
+    // reach of a host test, so that carry-continue arm is exercised below and is NOT excluded.
+    // What genuinely cannot be reached is the loop running all 4 iterations to exhaustion with no
+    // break at all, i.e. every one of the 4 bytes carrying in the SAME inc32() call, which only
+    // happens when the full 32-bit counter was 0xffffffff before this call. ctr always starts at
+    // inc32(J0) with J0[12..15] fixed to 0,0,0,1 (96-bit-nonce J0, NIST SP 800-38D) - not
+    // caller-controlled - so reaching that requires one seal()/open() call over ~2^32 contiguous
+    // GCTR blocks (~64 GiB of plaintext in one call): infeasible in a host test.
+    for (int i = 15; i >= 12;
+         i--) // GCOVR_EXCL_BR_LINE  loop-exhausted-with-no-break needs the ~64GiB full wrap; see above
+        if (++ctr[i])
             break;
 }
 

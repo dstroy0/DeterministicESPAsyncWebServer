@@ -147,13 +147,15 @@ static void bn_init(void)
     {
         uint32_t overflow = bn_shl1(s_g14.r2.d, SSH_BN_LIMBS);
         // If overflow bit set OR result >= p, subtract p.
-        // bn_init() runs this doubling exactly once per process (memoized by
-        // s_g14.initialized, see above) over the fixed group14_p constant - no test input
-        // can vary it, so this is one specific, deterministic 2048-step trace. Across every
-        // one of those steps, "overflow == false" never coincides with "the doubled value
-        // is already >= p" (confirmed against the gcov branch counts: the cmp is taken
-        // 1047 times, always false). That exact combination is provably unreachable here,
-        // not merely untested.
+        // bn_init() takes no parameters and reads no state besides the compile-time constant
+        // group14_p; combined with the s_g14.initialized memo guard above, this doubling loop
+        // runs as exactly one fixed 2048-step trace for the entire process lifetime - no test
+        // input, call order, or code path can make any step see different data. Verified
+        // independently by a bit-exact simulation of all 2048 steps (not the gcov run itself):
+        // for this specific prime/starting-value pair, every time bn_shl1() does not overflow,
+        // the doubled 2048-bit value is already < p, so the cmp_raw() half of this OR is never
+        // the deciding vote - it only ever agrees with an overflow that is already false.
+        // Structurally unreachable (a mathematical constant of this trace), not merely untested.
         if (overflow || bn_cmp_raw(s_g14.r2.d, group14_p.d, SSH_BN_LIMBS) >= 0) // GCOVR_EXCL_BR_LINE
             bn_sub_inplace(s_g14.r2.d, group14_p.d, SSH_BN_LIMBS);
     }
@@ -204,17 +206,16 @@ static void bn_monpro(SshBigNum *out, const SshBigNum *a, const SshBigNum *b)
     // Result is in t[64..127].  Conditionally subtract p if result >= p.
     uint32_t *res = t + SSH_BN_LIMBS;
     // For 0 <= a,b < p the raw (pre-correction) SOS value is < 2p, so it needs the guard
-    // limb t[128] for the case where it reaches/exceeds 2^2048 - group14_p's top two limbs
-    // are both 0xFFFFFFFF, i.e. p sits within about 2^-64 of 2^2048, so "the raw value is
-    // >= p but still < 2^2048" (t[128] == 0 yet the cmp_raw() half alone is true) is a sliver
-    // roughly 2^-64 of the [0, 2p) output range: real, not provably impossible, but
-    // reaching it needs a specific (a, b) pair solved out of the bit-serial reduction rather
-    // than any base/exponent a modexp caller would plausibly choose (a targeted search over
-    // exponent bit patterns and base bit-widths - see the coverage session's notes - always
-    // landed on the t[128] path instead, tested above by
-    // test_bn_expmod_group14_large_operand_needs_reduction). Both halves of this OR reach the
-    // identical bn_sub_inplace() correction, so untested here adds no behavioral gap.
-    if (t[128] || bn_cmp_raw(res, group14_p.d, SSH_BN_LIMBS) >= 0) // GCOVR_EXCL_BR_LINE
+    // limb t[128] for the case where it reaches/exceeds 2^2048. group14_p's top two limbs are
+    // both 0xFFFFFFFF, i.e. p sits within about 2^-64 of 2^2048, so "the raw value is >= p but
+    // still < 2^2048" (t[128] == 0 yet the cmp_raw() half alone is true) is a razor-thin sliver
+    // of the [0, 2p) output range for a "generic" (a, b) - but it is directly constructible:
+    // base = R^-1 mod p (R = 2^2048) makes the very first MonPro call inside
+    // bn_expmod_group14() - MonPro(base, R^2 mod p), i.e. converting base to Montgomery form -
+    // compute base*R mod p = 1 exactly, landing the pre-correction raw value at exactly p+1
+    // (t[128]==0, cmp_raw()>=0 true). Exercised by
+    // test_bn_expmod_group14_hits_correction_sliver_without_overflow_limb (test_ssh_conn.cpp).
+    if (t[128] || bn_cmp_raw(res, group14_p.d, SSH_BN_LIMBS) >= 0)
         bn_sub_inplace(res, group14_p.d, SSH_BN_LIMBS);
 
     memcpy(out->d, res, SSH_BN_LIMBS * sizeof(uint32_t));

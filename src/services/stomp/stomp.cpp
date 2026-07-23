@@ -156,8 +156,12 @@ bool dws_stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t 
         return false; // command line incomplete
     out->command = buf + i;
     out->command_len = line_len(buf, i, nl);
-    if (out->command_len == 0) // GCOVR_EXCL_BR_LINE  the true arm is unreachable: leading EOLs are skipped so
-                               // buf[i] is non-newline => command_len>=1 (see the skip loop above)
+    if (out->command_len == 0) // GCOVR_EXCL_BR_LINE  the true arm is unreachable: the skip loop above
+                               // guarantees buf[i] is neither '\r' nor '\n', so the search for nl (the
+                               // next '\n' at or after i) always advances past i, giving nl>=i+1. If
+                               // line_len trims a trailing '\r' the trimmed length is only 0 when that
+                               // '\r' is buf[i] itself (nl==i+1), which cannot happen since buf[i]!='\r'
+                               // is already established => command_len>=1 in every case
         return false;          // GCOVR_EXCL_LINE  unreachable for the same reason as the branch above
     size_t cur = nl + 1;
 

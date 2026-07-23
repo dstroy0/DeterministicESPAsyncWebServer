@@ -74,10 +74,17 @@ size_t dws_power_json(const PowerPlan *plan, int16_t temp_c, char *out, size_t c
         n = snprintf(out, cap, "{\"cpu_mhz\":%u,\"throttled\":%s,\"recovering\":%s,\"temp_c\":%d}",
                      (unsigned)plan->cpu_mhz, plan->throttled ? "true" : "false", plan->recovering ? "true" : "false",
                      (int)temp_c);
-    // n < 0 is unreachable: the two format strings above use only %u/%s/%d on plain ASCII
-    // literals, which cannot raise the encoding error snprintf would need to go negative
-    // (same reasoning as the hlen guard in DWS::append_resp_trailer).
-    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_BR_LINE
+    // GCOVR_EXCL_START  n < 0 is unreachable: the two format strings above use only %u/%s/%d on
+    // plain ASCII literals, which cannot raise the encoding error snprintf would need to go
+    // negative (same reasoning as the hlen guard in DWS::append_resp_trailer). Split out from the
+    // cap check below so that check's own branch coverage is not swallowed by this dead one.
+    if (n < 0)
+    {
+        out[0] = '\0';
+        return 0;
+    }
+    // GCOVR_EXCL_STOP
+    if ((size_t)n >= cap)
     {
         out[0] = '\0';
         return 0; // fail closed rather than emit a truncated object

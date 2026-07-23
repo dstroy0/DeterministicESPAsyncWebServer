@@ -9,12 +9,14 @@
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
 #include "network_drivers/presentation/ssh/connection/ssh_server.h" // dws_ssh_server_set_emit_cb (emit-wiring regression)
+#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h" // bn_expmod_group14 direct coverage (Montgomery guard sliver)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include "network_drivers/session/scratch.h"
 #include "network_drivers/transport/tcp.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unity.h>
 
@@ -62,6 +64,15 @@ static void push_bytes(uint8_t slot, const uint8_t *d, size_t n)
     {
         c->rx_buffer[c->rx_head] = d[i];
         c->rx_head = (c->rx_head + 1) % RX_BUF_SIZE;
+    }
+}
+
+static void hex2bytes(uint8_t *out, const char *hex, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        char b[3] = {hex[2 * i], hex[2 * i + 1], 0};
+        out[i] = (uint8_t)strtol(b, nullptr, 16);
     }
 }
 
@@ -542,6 +553,50 @@ void test_conn_rx_banner_then_packet_in_separate_reads()
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
 }
 
+// bn_monpro()'s final correction guard (ssh_bignum.cpp) is "if (t[128] || raw>=p)". The
+// t[128] half (raw overflowed past 2^2048) is exercised by ordinary DH handshakes elsewhere
+// in this suite; the raw>=p half, reached with t[128] still 0, is not - group14_p's top 64
+// bits are all 1 (p sits within ~2^1984 of 2^2048), so for operands that land the raw SOS
+// value roughly uniformly across [0, 2p) that "still under 2^2048 but over p" window is only
+// about 2^-65 of the range and a real handshake essentially never lands in it. It is reachable
+// with a deliberately chosen operand though: base = R^-1 mod p (R = 2^2048, computed
+// out-of-band with Python's pow(R,-1,p)) makes the very first MonPro call inside
+// bn_expmod_group14 - MonPro(base, R^2 mod p), which converts base into Montgomery form -
+// compute base*R mod p = 1 exactly, so its pre-correction raw value is exactly p+1: under
+// 2^2048 (t[128]==0) but over p (raw>=p true). base is itself a legal DH public value (1 <
+// base < p-1, checked below), so this is well within what a real peer could send as e/f. With
+// exp=1 the expected output is base itself (base^1 mod p == base), so this checks exact
+// correctness, not just that the branch runs.
+void test_bn_expmod_group14_hits_correction_sliver_without_overflow_limb(void)
+{
+    static const char BASE_RINV_MOD_P[] = "f1d8005ff5b8c4112ffb39750e04f8f47b9f13a8b88bc0d138357328129d2c3f"
+                                          "4fb076749f1093dafcf49f0dc56104d33e5d407469d9aa3c469dd452656c4b8c"
+                                          "561ac43e5c47f020451eaf1b6d6b588b8369d0482fd5e6c8281582ff0f06d4e4"
+                                          "3f217fc36c8d15ae7ad34029dccfedd510771b76e4cd91bb6394e97b82ad74c6"
+                                          "2d747f72c59261cd43e22ff42b9c2053713e5fb11c276327a72545b06b5b32ce"
+                                          "64efadef56a4345a22159875387974238f38ab5dd67c6e91116096a36ddd96a0"
+                                          "f2111f35f58b216b80289086b09148f6dc5436edb441bc5ba41f0256a7f399da"
+                                          "eae00940b306a2b0ed48a96bbcbc056c804cb001a0de6e7ef5a04400c911dbc3";
+
+    uint8_t base_be[256];
+    hex2bytes(base_be, BASE_RINV_MOD_P, 256);
+    SshBigNum base;
+    bn_from_bytes(&base, base_be, 256);
+
+    // Sanity: base must satisfy the documented bn_expmod_group14() precondition (RFC 4253 §8:
+    // a real peer's e/f is validated the same way before it ever reaches this function).
+    TEST_ASSERT_EQUAL_INT(0, bn_dh_validate(&base));
+
+    SshBigNum exp;
+    memset(exp.d, 0, sizeof(exp.d));
+    exp.d[0] = 1; // exponent = 1 -> out must equal base exactly
+
+    SshBigNum out;
+    bn_expmod_group14(&out, &base, &exp);
+
+    TEST_ASSERT_EQUAL_INT(0, bn_cmp(&out, &base));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -568,5 +623,6 @@ int main()
     RUN_TEST(test_poll_ignores_inactive_conn);
     RUN_TEST(test_rx_disconnect_tears_down);
     RUN_TEST(test_rx_overlong_banner_closes);
+    RUN_TEST(test_bn_expmod_group14_hits_correction_sliver_without_overflow_limb);
     return UNITY_END();
 }

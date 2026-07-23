@@ -199,6 +199,36 @@ static void test_aes128gcm(void)
 }
 
 // ====================================================================
+// AEAD_AES_128_GCM counter carry: none of the vectors above exceed 256
+// GCTR blocks, so the GCM counter's low byte (dws_quic_aead.cpp inc32())
+// never rolls 0xff -> 0x00 and carries into the next byte. A plaintext
+// past 256*16 = 4096 bytes forces that single-byte carry through the
+// public seal()/open() API (no KAT oracle needed - this is an internal
+// round-trip check, not an externally-sourced vector).
+// ====================================================================
+#define CTR_CARRY_PT_LEN 4200 // > 256*16: guarantees >=1 low-byte carry in the GCM counter
+static void test_aes128gcm_ctr_carry(void)
+{
+    static const uint8_t key[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                                    0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
+    static const uint8_t iv[12] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b};
+    static uint8_t pt[CTR_CARRY_PT_LEN];
+    static uint8_t sealed[CTR_CARRY_PT_LEN + 16];
+    static uint8_t opened[CTR_CARRY_PT_LEN];
+    for (size_t i = 0; i < CTR_CARRY_PT_LEN; i++)
+        pt[i] = (uint8_t)(i * 131u + 7u);
+
+    dws_quic_aes128_gcm_seal(key, iv, nullptr, 0, pt, CTR_CARRY_PT_LEN, sealed);
+    bool ok = dws_quic_aes128_gcm_open(key, iv, nullptr, 0, sealed, CTR_CARRY_PT_LEN + 16, opened);
+    TEST_ASSERT_TRUE(ok);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, opened, CTR_CARRY_PT_LEN);
+
+    // negative: a flipped tag byte must still fail authentication past the carry boundary
+    sealed[CTR_CARRY_PT_LEN + 15] ^= 0x80;
+    TEST_ASSERT_FALSE(dws_quic_aes128_gcm_open(key, iv, nullptr, 0, sealed, CTR_CARRY_PT_LEN + 16, opened));
+}
+
+// ====================================================================
 // X25519 (RFC 7748 / Wycheproof): scalar*point is deterministic, so the
 // computed shared secret must equal the vector for valid and acceptable alike.
 // ====================================================================
@@ -327,6 +357,7 @@ int main(int, char **)
     RUN_TEST(test_hmac_sha256);
     RUN_TEST(test_hmac_sha512);
     RUN_TEST(test_aes128gcm);
+    RUN_TEST(test_aes128gcm_ctr_carry);
     RUN_TEST(test_x25519);
     RUN_TEST(test_ed25519_verify);
     RUN_TEST(test_ed25519_sign);

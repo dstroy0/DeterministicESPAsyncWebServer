@@ -17,13 +17,13 @@ namespace
 // Append a short-form TLV (value length < 128). Returns bytes written at out, or 0 on overflow.
 size_t tlv(uint8_t tag, const uint8_t *val, size_t val_len, uint8_t *out, size_t cap)
 {
-    if (val_len > 0x7F || 2 + val_len > cap) // GCOVR_EXCL_BR_LINE  val_len>0x7F half is dead: every
-        return 0;                            // call site below passes <=9 bytes (fixed 1/4-byte fields
-                                             // or int_content's <=4-byte output), never near 0x7F.
+    if (val_len > 0x7F || 2 + val_len > cap) // GCOVR_EXCL_BR_LINE  val_len>0x7F half is dead: tlv() has
+        return 0;                            // internal linkage, so its only 7 call sites (all in this
+                                             // file) pass val_len<=15 (RealQ's line-99 wrap) - never near 0x7F.
     out[0] = tag;
     out[1] = (uint8_t)val_len;
-    if (val_len) // GCOVR_EXCL_BR_LINE  false half is dead: every call site passes val_len>=1 (fixed
-        memcpy(out + 2, val, val_len); // 1/4-byte fields, or int_content which always returns >=1).
+    if (val_len) // GCOVR_EXCL_BR_LINE  false half is dead: every call site passes val_len>=1 (a literal
+        memcpy(out + 2, val, val_len); // 1/4-byte field, int_content's >=1 result, or n built from those).
     return 2 + val_len;
 }
 

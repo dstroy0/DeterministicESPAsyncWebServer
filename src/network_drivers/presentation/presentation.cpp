@@ -108,10 +108,17 @@ void http_parse(uint8_t slot_id)
         }
 
         uint8_t byte = 0;
-        // The false arm (ring drained between available() and here) is a genuine
-        // producer/consumer race between this loop and the lwIP callback that fills the
-        // ring on another context - unreachable in this single-threaded host harness,
-        // which has no concurrent producer to race against.
+        // The false arm cannot fire on any thread count, not merely on this single-
+        // threaded host harness: dws_conn_available() and dws_conn_read_byte() both
+        // compare the same slot's rx_head vs rx_tail, and nothing between the two
+        // calls here mutates either (the switch above only reads req->parse_state).
+        // rx_tail is single-consumer-owned - this loop is the only writer for this
+        // slot - and the producer (tcp.cpp's recv callback) always checks
+        // dws_ring_free() before writing, so rx_head can never be advanced to equal
+        // the rx_tail snapshot available() just found nonzero ("the free-space check
+        // ... guarantees it fits, so head can never overrun tail" - tcp.cpp). A
+        // "drain" of the ring between the two calls would require a second consumer,
+        // which the single-consumer-per-slot design does not have.
         if (!dws_conn_read_byte(slot_id, &byte)) // GCOVR_EXCL_BR_LINE
             break;                               // GCOVR_EXCL_LINE
         http_parser_feed(req, byte);

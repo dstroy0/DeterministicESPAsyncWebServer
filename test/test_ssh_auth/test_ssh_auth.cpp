@@ -6,6 +6,7 @@
 
 #include "baseline_keys.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
@@ -1107,6 +1108,41 @@ void test_handle_request_index_and_parse_guards()
     TEST_ASSERT_EQUAL_INT(-1, dws_ssh_auth_handle_request(0, p, 1, out, &olen, sizeof(out))); // parse fails
 }
 
+// ---- aes256-gcm@openssh.com cipher (keyed by ssh_dh_derive_keys_sid() for this same auth/transport
+// flow when AES-GCM is negotiated) ------------------------------------------
+
+// Inside gctr(), the 32-bit GCTR block counter (the low 4 bytes of the 16-byte CTR block - distinct
+// from the RFC 5647 8-byte invocation counter in the nonce) always starts at 2 for every seal()/open()
+// call and is not caller-controlled, so the only way to force a byte-level carry out of ctr[15] (0xff
+// -> 0x00, propagating into ctr[14]) is to actually drive enough 16-byte GCTR blocks through one call:
+// byte 15 wraps once 254 blocks (4064 B) have been processed. ssh_aesgcm_seal()/open() have no
+// buffer-size limit of their own (only the SSH packet layer's SSH_PKT_BUF_SIZE does, and that is a
+// packet-layer policy this crypto primitive is not bound by), so a single 4096 B seal()+open() round
+// trip reaches the byte-carry arm without anywhere near the ~2^32-block full-counter wrap.
+void test_aesgcm_gctr_counter_byte_carry(void)
+{
+    SshAesGcmCtx enc, dec;
+    uint8_t key[32], iv[12];
+    for (int i = 0; i < 32; i++)
+        key[i] = (uint8_t)(i * 3 + 5);
+    for (int i = 0; i < 12; i++)
+        iv[i] = (uint8_t)(0x20 + i);
+    ssh_aesgcm_init(&enc, key, iv);
+    ssh_aesgcm_init(&dec, key, iv);
+
+    static uint8_t pt[4096], ct[4096 + SSH_AESGCM_TAG_LEN], rt[4096];
+    for (size_t i = 0; i < sizeof(pt); i++)
+        pt[i] = (uint8_t)(i * 31 + 7);
+    const uint8_t aad[4] = {0, 0, 0x10, 0x00};
+
+    ssh_aesgcm_seal(&enc, aad, sizeof(aad), pt, sizeof(pt), ct);
+    TEST_ASSERT_TRUE(ssh_aesgcm_open(&dec, aad, sizeof(aad), ct, sizeof(pt), ct + sizeof(pt), rt));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, sizeof(pt));
+
+    ssh_aesgcm_wipe(&enc);
+    ssh_aesgcm_wipe(&dec);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1138,5 +1174,6 @@ int main()
     RUN_TEST(test_pubkey_ed25519_valid_signature_succeeds);
     RUN_TEST(test_pubkey_tampered_signature_fails);
     RUN_TEST(test_pubkey_unauthorized_key_fails);
+    RUN_TEST(test_aesgcm_gctr_counter_byte_carry);
     return UNITY_END();
 }

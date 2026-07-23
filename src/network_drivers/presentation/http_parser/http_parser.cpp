@@ -594,15 +594,18 @@ static bool fwd_extract_client(const char *s, size_t n, char *out, size_t cap)
     if (s[0] == '[')
     {
         // Bracketed IPv6: take the text between '[' and ']'; a trailing ":port" is ignored.
+        // Reachable: n is bounded by MAX_VAL_LEN-1 (47) only when this is the whole stored
+        // header value. Via "Forwarded: for=[...]" the "for=" prefix consumes 4 of those 47
+        // bytes before n is even measured, capping bracket content at 43 - short of the 46
+        // needed to trip this guard. But fwd_extract_client() is also called directly on
+        // X-Forwarded-For (no "for=" prefix), so the full 47 bytes are available there:
+        // '[' + 46 non-']' content bytes drives tlen to sizeof(tok)-1 (45) and trips the guard
+        // on the 46th byte.
         size_t i = 1;
         for (; i < n && s[i] != ']'; i++)
         {
-            // Unreachable in this build: n comes from a stored header value, capped at
-            // MAX_VAL_LEN-1 (47) bytes total. "for=[" alone takes 5, leaving at most 42 bytes
-            // of bracket content - never enough to drive tlen up to sizeof(tok)-1 (45, since
-            // DWS_IP_STR_MAX is 46), so this guard can never actually trip on the host.
-            if (tlen + 1 >= sizeof(tok)) // GCOVR_EXCL_BR_LINE  see above: needs >=46 content bytes, budget caps at 42
-                return false;            // GCOVR_EXCL_LINE
+            if (tlen + 1 >= sizeof(tok))
+                return false;
             tok[tlen++] = s[i];
         }
         if (i >= n) // unterminated bracket
@@ -741,9 +744,12 @@ bool http_get_form(const HttpReq *req, const char *key, char *out, size_t out_si
                 i++;
             ve = i;
         }
-        // body[i] != '&' here is unreachable: the two scans above only ever stop early on '=' or
-        // '&' (handled by the block above) or by running out of body (i == len) - so whenever
-        // i < len still holds at this point, body[i] can only be '&'.
+        // body[i] != '&' here is unreachable: if the first scan above stopped because
+        // body[i]=='&' (no '=' before it), that is already the '&' we're checking for. If it
+        // instead stopped on '=', the '=' block's own scan only ever stops early on '&' - it
+        // has no '=' check - so it too can only leave body[i]=='&' when i<len. The remaining
+        // stop condition for both scans, i==len, is excluded by the i<len test itself. So
+        // whenever i < len still holds at this point, body[i] can only be '&'.
         if (i < len && body[i] == '&') // GCOVR_EXCL_BR_LINE  see above: the not-'&' arm can't fire
             i++;
 
