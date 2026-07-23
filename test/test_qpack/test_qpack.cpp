@@ -265,9 +265,28 @@ void test_qpack_emit_fail_and_namelen_past()
     TEST_ASSERT_FALSE(decode_all(namelen_past, 3, &s));
 }
 
+// Field-line integer decode failures that the || guards must catch, not just the range checks.
+void test_qpack_field_int_truncation()
+{
+    Sink s;
+    // Indexed Field Line (T=1 static), prefix-6 integer 63 (all-ones) with no continuation byte:
+    // dws_hpack_decode_int fails, so line 220's first || arm rejects it (before the idx >= 99 check).
+    const uint8_t idx_trunc[3] = {0x00, 0x00, 0xFF}; // 1 1 111111 = indexed, static, prefix 63, truncated
+    TEST_ASSERT_FALSE(decode_all(idx_trunc, 3, &s));
+    // Literal Field Line with Name Reference (T=1 static), prefix-4 integer 15 with no continuation:
+    // decode_int fails at line 232.
+    const uint8_t nameref_trunc[3] = {0x00, 0x00, 0x5F}; // 01 0 1 1111 = name-ref, static, prefix 15, truncated
+    TEST_ASSERT_FALSE(decode_all(nameref_trunc, 3, &s));
+    // Literal Field Line with Name Reference (T=1 static) whose static index resolves to 99 (>= 99):
+    // decode_int succeeds, so line 235's idx >= 99 arm rejects it.
+    const uint8_t nameref_badidx[4] = {0x00, 0x00, 0x5F, 0x54}; // 15 + 84 = 99
+    TEST_ASSERT_FALSE(decode_all(nameref_badidx, 4, &s));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_qpack_field_int_truncation);
     RUN_TEST(test_appendix_b1_decode);
     RUN_TEST(test_encode_indexed);
     RUN_TEST(test_encode_nameref_roundtrip);

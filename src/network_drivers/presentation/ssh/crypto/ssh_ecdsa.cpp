@@ -755,7 +755,7 @@ void dws_hmac_cat(uint8_t out[32], const uint8_t key[32], const uint8_t *v, size
 // of distinct keys/messages), so the retry path in ecdsa_sign_core is dead for the same reason.
 bool ecdsa_try_sign(const uint32_t k[8], const uint32_t d[8], const uint32_t e[8], uint8_t sig[64])
 {
-    if (fp_is_zero(k) ||
+    if (fp_is_zero(k) || // GCOVR_EXCL_BR_LINE  runs every call; only the k==0 trip is excluded, see comment above
         fp_cmp(k, P256_N) >= 0) // GCOVR_EXCL_BR_LINE  runs every call; only the trip is excluded, see comment above
         return false;           // GCOVR_EXCL_LINE  see comment above
     Pt R;

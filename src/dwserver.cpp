@@ -467,7 +467,8 @@ static void dws_pump_trampoline(int worker_id)
 static void dws_h3_request_trampoline(void *app, uint32_t conn_id, uint64_t stream_id, const char *method,
                                       const char *path, const char *authority, const uint8_t *body, size_t body_len)
 {
-    if (app)
+    if (app) // GCOVR_EXCL_BR_LINE  app is always the non-null `this` passed to dws_quic_server_begin(); this static
+             // trampoline has no other caller, so app==null is unreachable
         ((DWS *)app)->dispatch_h3_request(conn_id, stream_id, method, path, authority, body, body_len);
 }
 

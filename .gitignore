@@ -30,8 +30,8 @@ docs/favicons/dist/
 # pentest rig run artifact (generated)
 rig_report.json
 
-# local CodeQL pre-ship gate output (SARIF copied back from the WSL runner; see
-# ~/.claude/scripts/wsl_codeql.sh). The CI CodeQL workflow is the source of truth.
+# local CodeQL pre-ship gate output (SARIF copied back from a local WSL runner
+# script). The CI CodeQL workflow is the source of truth.
 .codeql-local/
 
 # Espressif datasheet PDFs pulled for local reference while building src/board_profiles/.

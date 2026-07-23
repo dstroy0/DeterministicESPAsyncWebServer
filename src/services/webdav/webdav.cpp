@@ -194,11 +194,8 @@ size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
         return len;
     // GCOVR_EXCL_STOP
 
-    if (is_collection)
-    {
-        if (!app(tmp, sizeof(tmp), &t, "<D:collection/>")) // GCOVR_EXCL_LINE unreachable: <=363 < tmp[512] (see above)
-            return len;                                    // GCOVR_EXCL_LINE unreachable: <=363 < tmp[512] (see above)
-    }
+    if (is_collection && !app(tmp, sizeof(tmp), &t, "<D:collection/>")) // GCOVR_EXCL_BR_LINE app overflow unreachable
+        return len;                                        // GCOVR_EXCL_LINE unreachable: <=363 < tmp[512] (see above)
     if (!app(tmp, sizeof(tmp), &t, "</D:resourcetype>\n")) // GCOVR_EXCL_LINE unreachable: <=381 < tmp[512] (see above)
         return len;                                        // GCOVR_EXCL_LINE unreachable: <=381 < tmp[512] (see above)
 
@@ -213,7 +210,8 @@ size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
         {
             rev[rn++] = (char)('0' + (int)(s % 10));
             s /= 10;
-        } while (s && rn < (int)sizeof(rev));
+        } while (s && rn < (int)sizeof(rev)); // GCOVR_EXCL_BR_LINE unreachable rn-bound: a uint32_t is <=10 digits, rn
+                                              // never reaches sizeof(rev)==24
         int ni = 0;
         while (rn > 0)
             num[ni++] = rev[--rn];
@@ -229,7 +227,12 @@ size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
             return len;                                            // GCOVR_EXCL_LINE unreachable: see comment above
         if (content_type && content_type[0])
         {
-            if (!app(tmp, sizeof(tmp), &t, "        <D:getcontenttype>") || !app(tmp, sizeof(tmp), &t, content_type) ||
+            // gcov lumps this multi-app OR onto one line; the only uncovered arm is the fixed
+            // 26B opener literal overflowing tmp[512] - unreachable per the budget above (running
+            // total <=~446 < 512). BR_LINE excludes the whole condition (the caller-supplied
+            // content_type/close overflow arms it also carries are exercised by the long-value test).
+            if (!app(tmp, sizeof(tmp), &t, "        <D:getcontenttype>") ||
+                !app(tmp, sizeof(tmp), &t, content_type) || // GCOVR_EXCL_BR_LINE
                 !app(tmp, sizeof(tmp), &t, "</D:getcontenttype>\n"))
                 return len;
         }
@@ -262,7 +265,10 @@ size_t dws_webdav_ms_end(char *buf, size_t cap, size_t len)
 // True for a byte that ends an XML element name (whitespace, '/', '>').
 static bool name_end_char(char c)
 {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '/' || c == '>';
+    // The only caller scans a name span bounded by the '>' index (its tag-end loop stops there),
+    // so this helper never sees '>'; that leg is a defensive, host-unreachable arm. gcov attributes
+    // every operand's branch to this one line, so BR_LINE also drops the (exercised) ws/'/' arms.
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '/' || c == '>'; // GCOVR_EXCL_BR_LINE
 }
 
 size_t dws_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len)

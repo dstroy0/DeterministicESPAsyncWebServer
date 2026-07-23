@@ -94,7 +94,9 @@ void dws_conn_counters_reset()
 static void obs_bump(DWSConnReason reason)
 {
     int idx = -1;
-    switch (reason)
+    // Every DWSConnReason enumerator has a case and there is no default label, so the compiler's
+    // implicit-default arm is unreachable for any valid enum value.
+    switch (reason) // GCOVR_EXCL_BR_LINE
     {
     case DWSConnReason::DWS_CONN_R_ACCEPT:
         idx = 0;
@@ -723,7 +725,9 @@ void DeterministicAsyncTCP::pool_init(const WebServerConfig *cfg)
     // stack (the whole rx_buffer[RX_BUF_SIZE]), which overflows the loopTask stack
     // at begin() once RX_BUF_SIZE is set large. Copy-assigning from the static
     // template stays in BSS and uses DWSAtomic::operator= (no atomic memset UB).
-    static const TcpConn blank = {};
+    // GCOVR_EXCL_BR_LINE - the static-local guard's exception-cleanup arm is unreachable: the
+    // TcpConn aggregate init only value-initializes noexcept DWSAtomic members, so it never throws.
+    static const TcpConn blank = {}; // GCOVR_EXCL_BR_LINE
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = blank;

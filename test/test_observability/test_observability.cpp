@@ -113,6 +113,16 @@ void test_no_hook_after_unregister()
     TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().accepts); // counters still move
 }
 
+// A notice (dws_obs_notice, distinct from the transition path above) with no hook registered
+// still counts but must not dispatch - drives the null-callback arm of the notice's own guard.
+void test_notice_without_hook_still_counts()
+{
+    dws_conn_on_event(nullptr);
+    dws_obs_notice(0, ConnState::CONN_ACTIVE, DWSConnReason::DWS_CONN_R_BACKPRESSURE);
+    TEST_ASSERT_EQUAL(0, g_calls); // hook silent
+    TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().backpressure);
+}
+
 // ---- integration: the real transport callbacks ----------------------------
 
 void test_recv_fin_counts_remote_close()
@@ -384,6 +394,7 @@ int main()
     RUN_TEST(test_closing_gauge_is_derived_from_pool);
     RUN_TEST(test_reset_clears_cumulative_not_derived_gauge);
     RUN_TEST(test_no_hook_after_unregister);
+    RUN_TEST(test_notice_without_hook_still_counts);
     RUN_TEST(test_recv_fin_counts_remote_close);
     RUN_TEST(test_err_cb_counts_error_close);
     RUN_TEST(test_timeout_sweep_counts_timeout);

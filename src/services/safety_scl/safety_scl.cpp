@@ -21,7 +21,9 @@ namespace
 // interesting one that actually broke the connection.
 void trip(SclConn *c, SclFault why)
 {
-    if (c->state != SclState::FAILSAFE)
+    // Both callers (dws_scl_on_frame, dws_scl_poll) already early-return when state == FAILSAFE, so
+    // trip() is never entered in that state; the guard latches the first fault as belt-and-suspenders.
+    if (c->state != SclState::FAILSAFE) // GCOVR_EXCL_BR_LINE  false arm unreachable (see above)
     {
         c->state = SclState::FAILSAFE;
         c->fault = why;
@@ -88,7 +90,7 @@ bool dws_scl_poll(SclConn *c, uint32_t now)
         return false;
     // Only a connection that has actually run can time out; one still in INIT is starting up, not
     // silent. A zero watchdog disables the check entirely.
-    if (c->state == SclState::RUNNING && c->watchdog_ms && (uint32_t)(now - c->last_ok_ms) >= c->watchdog_ms)
+    if (c->state == SclState::RUNNING && c->watchdog_ms && (now - c->last_ok_ms) >= c->watchdog_ms)
     {
         trip(c, SclFault::TIMEOUT);
         return false;

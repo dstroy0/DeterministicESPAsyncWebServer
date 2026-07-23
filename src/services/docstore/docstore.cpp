@@ -33,12 +33,12 @@ bool dws_docstore_del(DWSDocStore *ds, const char *id, uint16_t id_len)
     return dws_dbm_del(ds->db, id, id_len);
 }
 
-bool dws_docstore_contains(DWSDocStore *ds, const char *id, uint16_t id_len)
+bool dws_docstore_contains(const DWSDocStore *ds, const char *id, uint16_t id_len)
 {
     return dws_dbm_contains(ds->db, id, id_len);
 }
 
-uint32_t dws_docstore_count(DWSDocStore *ds)
+uint32_t dws_docstore_count(const DWSDocStore *ds)
 {
     return dws_dbm_count(ds->db);
 }

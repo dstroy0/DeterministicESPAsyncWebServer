@@ -17,8 +17,10 @@
 #include <unity.h>
 
 #if DWS_ENABLE_WS_DEFLATE
-#include "lwip/tcp.h" // mock write-capture (tcp_capture_reset / tcp_captured)
+#include "lwip/tcp.h"                                     // mock write-capture (tcp_capture_reset / tcp_captured)
+#include "network_drivers/presentation/deflate/deflate.h" // DEFLATE_SCRATCH_SIZE for the starved-send path
 #include "network_drivers/presentation/inflate/inflate.h"
+#include "network_drivers/session/scratch.h" // arena-exhaustion drive for the fail-closed path
 #endif
 
 // ---------------------------------------------------------------------------
@@ -1132,6 +1134,190 @@ void test_ws_deflate_inflate_error_closes()
     TEST_ASSERT_EQUAL(WsParseState::WS_ERROR, ws->parse_state); // inflate error -> closed
 }
 
+// A compressed (RSV1) message whose DEFLATE stream inflates to more than
+// WS_FRAME_SIZE bytes must fail the connection with 1009 (WS_CLOSE_TOO_BIG).
+// The 9 compressed bytes below are `zlib.compressobj(-15)` of 600 'A's with the
+// RFC 7692 00 00 ff ff marker stripped (the parser re-appends it); 600 > 512.
+void test_ws_permessage_deflate_inflate_overflow_closes()
+{
+    static const uint8_t comp[] = {114, 116, 28, 5, 163, 128, 250, 0, 0};
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true;
+
+    uint8_t frame[32];
+    size_t n = build_frame(frame, WsOpcode::WS_OP_BINARY, true, comp, (uint16_t)sizeof(comp), true);
+    frame[0] |= 0x40; // RSV1 = compressed message
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WsParseState::WS_ERROR, ws->parse_state); // inflate overflow -> 1009, fail closed
+}
+
+// A compressed (RSV1) message that arrives with the scratch arena already
+// exhausted cannot borrow its inflate buffers; ws_finish_frame must fail closed
+// (1002, WS_CLOSE_PROTOCOL) rather than dereference a null borrow. Drain the
+// arena up front, then restore it so later tests see a clean arena.
+void test_ws_permessage_deflate_scratch_exhausted_closes()
+{
+    static const uint8_t comp[] = {242, 72, 205, 201, 201, 215, 81, 8, 207, 47, 202, 73, 81, 4, 0};
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true;
+
+    // Consume the whole arena so every scratch_alloc() in ws_finish_frame returns null.
+    void *hog = scratch_alloc(scratch_capacity(), 1);
+    TEST_ASSERT_NOT_NULL(hog);
+
+    uint8_t frame[32];
+    size_t n = build_frame(frame, WsOpcode::WS_OP_BINARY, true, comp, (uint16_t)sizeof(comp), true);
+    frame[0] |= 0x40; // RSV1 = compressed message
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WsParseState::WS_ERROR, ws->parse_state); // arena exhausted -> fail closed
+
+    scratch_reset(); // hand the arena back for the remaining tests
+}
+
+// Feed one compressed (RSV1) frame with the arena pre-drained to leave exactly
+// `leave` free bytes, so a chosen scratch_alloc() in ws_finish_frame is the one
+// that fails. Exercises the middle/last legs of the `if (!in || !out || !tbl)`
+// short-circuit (out==null with in!=null; tbl==null with in,out!=null).
+static void feed_compressed_with_arena_leaving(size_t leave)
+{
+    static const uint8_t comp[] = {242, 72, 205, 201, 201, 215, 81, 8, 207, 47, 202, 73, 81, 4, 0};
+    conn_pool[0].rx_head = conn_pool[0].rx_tail = 0;
+    ws_free(0);
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true;
+
+    scratch_reset();
+    void *hog = scratch_alloc(scratch_capacity() - leave, 1);
+    TEST_ASSERT_NOT_NULL(hog);
+
+    uint8_t frame[32];
+    size_t n = build_frame(frame, WsOpcode::WS_OP_BINARY, true, comp, (uint16_t)sizeof(comp), true);
+    frame[0] |= 0x40;
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WsParseState::WS_ERROR, ws->parse_state);
+    scratch_reset();
+}
+
+// The inbound arena-exhaustion guard `if (!in || !out || !tbl)` must fail closed
+// on ANY of the three borrows, not just the first. comp_len is 15, so in wants
+// 19 bytes, out wants WS_FRAME_SIZE (512), tbl wants INFLATE_SCRATCH_SIZE (1536).
+void test_ws_permessage_deflate_partial_scratch_failures()
+{
+    feed_compressed_with_arena_leaving(19 + 100);      // in ok, out fails
+    feed_compressed_with_arena_leaving(19 + 512 + 16); // in ok, out ok, tbl fails
+}
+
+// A pmd-negotiated connection that receives an UNcompressed data frame (no RSV1)
+// exercises `msg_compressed = pmd && (rsv & 0x40)` with pmd true / rsv clear, and
+// the RSV-validation `(rsv & 0x40) && !(pmd && new_data)` with the 0x40 bit clear.
+void test_ws_pmd_negotiated_uncompressed_frame_accepted()
+{
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true; // extension negotiated, but this frame is not compressed
+    const char *text = "plain";
+    uint8_t frame[16];
+    size_t n = build_frame(frame, WsOpcode::WS_OP_TEXT, true, (const uint8_t *)text, (uint16_t)strlen(text), true);
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WsParseState::WS_FRAME_READY, ws->parse_state);
+    TEST_ASSERT_FALSE(ws->msg_compressed);
+    TEST_ASSERT_EQUAL_STRING("plain", (const char *)ws->buf);
+}
+
+// Outbound compression on a BINARY frame (opcode==BINARY leg of the send-side
+// guard) and, with the arena drained, the `if (scr && cbuf)` fall-through that
+// sends the payload uncompressed rather than dereferencing a null borrow.
+void test_ws_outbound_binary_and_scratch_starved()
+{
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true;
+    ws_set_frag_size(0);
+
+    // BINARY, compressible: takes the opcode==BINARY leg and actually compresses.
+    static uint8_t bin[64];
+    for (int i = 0; i < 64; i++)
+        bin[i] = (uint8_t)(i & 1); // highly repetitive -> shrinks
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WsOpcode::WS_OP_BINARY, bin, sizeof(bin)));
+    const uint8_t *s = (const uint8_t *)tcp_captured();
+    TEST_ASSERT_EQUAL_UINT8(0x80 | 0x40 | (uint8_t)WsOpcode::WS_OP_BINARY, s[0]); // RSV1 set
+    tcp_capture_disable();
+
+    // scr (DEFLATE_SCRATCH_SIZE) cannot be borrowed -> compression skipped, sent raw.
+    scratch_reset();
+    void *hog = scratch_alloc(scratch_capacity(), 1);
+    TEST_ASSERT_NOT_NULL(hog);
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WsOpcode::WS_OP_BINARY, bin, sizeof(bin)));
+    s = (const uint8_t *)tcp_captured();
+    TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_BINARY, s[0]); // no RSV1: not compressed
+    tcp_capture_disable();
+
+    // scr ok but cbuf (cap bytes) cannot be borrowed -> same fall-through.
+    scratch_reset();
+    hog = scratch_alloc(scratch_capacity() - (DEFLATE_SCRATCH_SIZE + 8), 1);
+    TEST_ASSERT_NOT_NULL(hog);
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WsOpcode::WS_OP_BINARY, bin, sizeof(bin)));
+    s = (const uint8_t *)tcp_captured();
+    TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_BINARY, s[0]); // no RSV1: cbuf borrow failed
+    tcp_capture_disable();
+    scratch_reset();
+}
+
+// Outbound send-side guard `pmd && len>0 && (TEXT||BINARY)`: pmd true with len==0
+// (short-circuits at len) and pmd true on a control opcode (both data legs false).
+void test_ws_outbound_pmd_zero_len_and_control()
+{
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true;
+    ws_set_frag_size(0);
+
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WsOpcode::WS_OP_TEXT, nullptr, 0)); // len==0 leg
+    tcp_capture_disable();
+
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(
+        ws_send_frame(ws, WsOpcode::WS_OP_PING, (const uint8_t *)"AAAA", 4)); // control, both data legs false
+    tcp_capture_disable();
+}
+
+// RFC 7692: RSV1 marks compression only on the FIRST frame of a message; a
+// CONTINUATION frame with RSV1 set is a protocol error. Reaching that check
+// exercises the `!(pmd && new_data)` leg of the RSV-validation with new_data
+// false (continuation) while pmd is true and RSV1 is set.
+void test_ws_pmd_continuation_with_rsv1_rejected()
+{
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true;
+
+    // Frame 1: TEXT, FIN=0 - opens a fragmented message.
+    uint8_t f1[16];
+    size_t n1 = build_frame(f1, WsOpcode::WS_OP_TEXT, false, (const uint8_t *)"He", 2, true);
+    push_bytes(0, f1, n1);
+    ws_parse(ws);
+    TEST_ASSERT_TRUE(ws->fragmenting);
+
+    // Frame 2: CONTINUATION, FIN=1, RSV1 set - illegal per RFC 7692.
+    uint8_t f2[16];
+    size_t n2 = build_frame(f2, WsOpcode::WS_OP_CONTINUATION, true, (const uint8_t *)"llo", 3, true);
+    f2[0] |= 0x40; // RSV1 on a continuation frame
+    push_bytes(0, f2, n2);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WsParseState::WS_ERROR, ws->parse_state);
+}
+
 #endif // DWS_ENABLE_WS_DEFLATE
 
 // Outbound fragmentation (RFC 6455 sec 5.4): a data message longer than the frag size is split into
@@ -1393,6 +1579,13 @@ int main()
     RUN_TEST(test_ws_permessage_deflate_outbound);
     RUN_TEST(test_ws_deflate_inflate_error_closes);
     RUN_TEST(test_ws_outbound_incompressible_not_flagged);
+    RUN_TEST(test_ws_permessage_deflate_inflate_overflow_closes);
+    RUN_TEST(test_ws_permessage_deflate_scratch_exhausted_closes);
+    RUN_TEST(test_ws_permessage_deflate_partial_scratch_failures);
+    RUN_TEST(test_ws_pmd_negotiated_uncompressed_frame_accepted);
+    RUN_TEST(test_ws_outbound_binary_and_scratch_starved);
+    RUN_TEST(test_ws_outbound_pmd_zero_len_and_control);
+    RUN_TEST(test_ws_pmd_continuation_with_rsv1_rejected);
 #endif
 
     RUN_TEST(test_ws_outbound_fragmentation);

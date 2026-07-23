@@ -412,9 +412,112 @@ void test_h3_request_served_by_route()
     dws_quic_server_stop();
 }
 
+// begin() shape-checks that the HTTP/3 end-to-end path never takes: a server with no listeners and no
+// HTTP/3 is rejected; a plain TCP server (a listener, no HTTP/3) is accepted and its service_once() gate
+// runs with dws_h3_running still false. Must run BEFORE the h3 test, which sets dws_h3_running true for
+// the rest of the process. Separate instances so the global h3 server the other tests use is untouched.
+static DWS s_begin_nolisten;
+static DWS s_begin_listen;
+void test_h3_begin_edges()
+{
+    // No listeners, no HTTP/3 -> rejected (listener_count==0 && !_h3_enabled true side).
+    TEST_ASSERT_EQUAL_INT32((int32_t)DWSResult::DWS_ERR_NO_LISTENERS, s_begin_nolisten.begin());
+
+    // A TCP listener, no HTTP/3 -> accepted (listener_count!=0) and the h3 bind is skipped (_h3_enabled false).
+    TEST_ASSERT_EQUAL_INT32((int32_t)DWSResult::DWS_OK, s_begin_listen.begin(8080));
+
+    // Pump the gate with h3 not running (dws_h3_running still false here) and on a non-zero worker id ->
+    // the otherwise-untaken sides of `worker_id == 0 && s_inst.dws_h3_running` in service_once().
+    s_begin_listen.service_once(0);
+    s_begin_listen.service_once(1);
+}
+
+// A route whose handler answers with a no-body response, exercising send_empty()'s HTTP/3 sink path.
+static bool g_empty_ran = false;
+static void h_empty(uint8_t slot, HttpReq *)
+{
+    g_empty_ran = true;
+    server.send_empty(slot, 204); // -> conn->dws_resp_sink -> dws_quic_server_respond (send_empty sink branch)
+}
+
+// Directly drive DWS::dispatch_h3_request / dws_h3_cert / send_empty over the edge inputs that the
+// full end-to-end path never produces: bad cert args, oversized method/path/query/authority, a query
+// string, an empty/absent :authority, and a request body. There is no live QUIC connection here, so
+// dws_quic_server_respond() harmlessly returns false for the bogus conn id; we only care that the
+// dispatch bookkeeping runs every branch.
+void test_h3_dispatch_edges()
+{
+    fill();
+    server.on("/hello", HttpMethod::HTTP_GET, h_hello);
+    server.on("/empty", HttpMethod::HTTP_GET, h_empty);
+
+    const uint32_t CID = 0xDEADBEEF; // no such QUIC slot -> respond() returns false, no transport needed
+
+    // dws_h3_cert argument validation: each bad arg returns false (covers the || guard + return false).
+    TEST_ASSERT_FALSE(server.dws_h3_cert(nullptr, sizeof(CERT), SERVER_SEED, 443));
+    TEST_ASSERT_FALSE(server.dws_h3_cert(CERT, 0, SERVER_SEED, 443));
+    TEST_ASSERT_FALSE(server.dws_h3_cert(CERT, sizeof(CERT), nullptr, 443));
+
+    // Oversized method (> DWS_METHOD_BUF_SIZE) -> truncated; unknown method -> 501 via sink.
+    char long_method[32];
+    memset(long_method, 'A', sizeof(long_method) - 1);
+    long_method[sizeof(long_method) - 1] = 0;
+    server.dispatch_h3_request(CID, 0, long_method, "/hello", "h3.test", nullptr, 0);
+
+    // Path carrying a short query string: '?' split + query copied (short, no truncation).
+    g_handler_ran = false;
+    server.dispatch_h3_request(CID, 0, "GET", "/hello?a=1&b=2", "h3.test", nullptr, 0);
+    TEST_ASSERT_TRUE(g_handler_ran); // route still matched on the query-stripped path
+
+    // Oversized query (> MAX_QUERY_LEN) -> query truncated.
+    char long_query[256];
+    long_query[0] = '/';
+    memcpy(long_query + 1, "hello?", 6);
+    memset(long_query + 7, 'q', sizeof(long_query) - 8);
+    long_query[sizeof(long_query) - 1] = 0;
+    server.dispatch_h3_request(CID, 0, "GET", long_query, "h3.test", nullptr, 0);
+
+    // Oversized path (> MAX_PATH_LEN, no query) -> path truncated; no route matches -> 404 via sink.
+    char long_path[256];
+    long_path[0] = '/';
+    memset(long_path + 1, 'p', sizeof(long_path) - 2);
+    long_path[sizeof(long_path) - 1] = 0;
+    server.dispatch_h3_request(CID, 0, "GET", long_path, "h3.test", nullptr, 0);
+
+    // Oversized :authority (> MAX_VAL_LEN) -> Host header value truncated.
+    char long_auth[128];
+    memset(long_auth, 'h', sizeof(long_auth) - 1);
+    long_auth[sizeof(long_auth) - 1] = 0;
+    server.dispatch_h3_request(CID, 0, "GET", "/hello", long_auth, nullptr, 0);
+
+    // Absent and empty :authority -> the authority guard's short-circuit branches.
+    server.dispatch_h3_request(CID, 0, "GET", "/hello", nullptr, nullptr, 0);
+    server.dispatch_h3_request(CID, 0, "GET", "/hello", "", nullptr, 0);
+
+    // Request body present (non-empty) -> body copied into the slot's HttpReq.
+    static const uint8_t BODY[16] = {'h', 'e', 'l', 'l', 'o', '-', 'b', 'o', 'd', 'y', '!', '!', '!', '!', '!', '!'};
+    server.dispatch_h3_request(CID, 0, "GET", "/hello", "h3.test", BODY, sizeof(BODY));
+    // Non-null body pointer but zero length -> the body_len half of the guard is false.
+    server.dispatch_h3_request(CID, 0, "GET", "/hello", "h3.test", BODY, 0);
+
+    // A handler that calls send_empty() -> exercises send_empty()'s dws_resp_sink branch.
+    g_empty_ran = false;
+    server.dispatch_h3_request(CID, 0, "GET", "/empty", "h3.test", nullptr, 0);
+    TEST_ASSERT_TRUE(g_empty_ran);
+
+    // send() / send_empty() on a slot with NO HTTP/3 sink -> the non-sink (TCP-transport) branch of the
+    // dws_resp_sink guard. The slot has no pcb, so both fall straight through to http_reset().
+    conn_pool[0].dws_resp_sink = nullptr;
+    conn_pool[0].pcb = nullptr;
+    server.send(0, 200, "text/plain", "x"); // send(): dws_resp_sink == nullptr
+    server.send_empty(0, 204);              // send_empty(): dws_resp_sink == nullptr
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_h3_begin_edges); // first: before the h3 test latches dws_h3_running true
     RUN_TEST(test_h3_request_served_by_route);
+    RUN_TEST(test_h3_dispatch_edges);
     return UNITY_END();
 }

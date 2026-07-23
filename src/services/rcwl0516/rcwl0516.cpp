@@ -22,7 +22,7 @@ namespace
 // A limit of 0 is always satisfied, which is what disables debounce / hold.
 inline bool elapsed(uint32_t now, uint32_t since, uint32_t limit)
 {
-    return (uint32_t)(now - since) >= limit;
+    return (now - since) >= limit;
 }
 } // namespace
 

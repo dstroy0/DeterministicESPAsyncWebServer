@@ -282,6 +282,21 @@ void test_null_guards(void)
     TEST_ASSERT_EQUAL_HEX32(start, dws_crc_update(&p, start, nullptr, 4));
 }
 
+// A width outside the supported 8..32 range is clamped (defensive input validation): < 8 behaves as
+// width 8, > 32 as width 32. Exercises both clamp arms of dws_crc_detail::clamp_width.
+void test_out_of_range_width_is_clamped(void)
+{
+    const DwsCrcParams lo4 = {4, 0x07u, 0x00u, false, false, 0x00u}; // < 8 -> clamps to 8
+    const DwsCrcParams lo8 = {8, 0x07u, 0x00u, false, false, 0x00u}; // width 8
+    TEST_ASSERT_EQUAL_HEX32(dws_crc(&lo8, CHECK_INPUT, sizeof(CHECK_INPUT)),
+                            dws_crc(&lo4, CHECK_INPUT, sizeof(CHECK_INPUT)));
+
+    const DwsCrcParams hi40 = {40, 0x04C11DB7u, 0xFFFFFFFFu, true, true, 0xFFFFFFFFu}; // > 32 -> clamps to 32
+    const DwsCrcParams hi32 = {32, 0x04C11DB7u, 0xFFFFFFFFu, true, true, 0xFFFFFFFFu}; // width 32
+    TEST_ASSERT_EQUAL_HEX32(dws_crc(&hi32, CHECK_INPUT, sizeof(CHECK_INPUT)),
+                            dws_crc(&hi40, CHECK_INPUT, sizeof(CHECK_INPUT)));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -293,6 +308,7 @@ int main(void)
     RUN_TEST(test_leading_zeros_are_significant);
     RUN_TEST(test_empty_input_is_the_bare_init);
     RUN_TEST(test_width_is_respected);
+    RUN_TEST(test_out_of_range_width_is_clamped);
     RUN_TEST(test_engine_matches_the_hand_rolled_implementations);
     RUN_TEST(test_null_guards);
     return UNITY_END();

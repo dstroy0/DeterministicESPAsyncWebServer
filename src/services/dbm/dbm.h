@@ -80,7 +80,7 @@ long dws_dbm_get(DWSDbm *db, const char *key, uint16_t key_len, uint8_t *buf, si
 bool dws_dbm_del(DWSDbm *db, const char *key, uint16_t key_len);
 
 /** @brief @return true if @p key is live. */
-bool dws_dbm_contains(DWSDbm *db, const char *key, uint16_t key_len);
+bool dws_dbm_contains(const DWSDbm *db, const char *key, uint16_t key_len);
 
 /** @brief @return the number of live keys. */
 uint32_t dws_dbm_count(const DWSDbm *db);

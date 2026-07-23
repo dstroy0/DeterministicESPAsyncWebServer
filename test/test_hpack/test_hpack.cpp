@@ -414,6 +414,12 @@ void test_hpack_prim_edge_guards()
 
     const uint8_t pad[1] = {0xff}; // 8 unmatched bits -> more than a byte of padding
     TEST_ASSERT_FALSE(dws_hpack_huff_decode(pad, 1, out, sizeof out, &ol));
+
+    // A continuation that would push the accumulated shift past a 32-bit result: 0x1f opens a
+    // prefix-5 varint at max, then five 0x80 continuation bytes carry the shift m to 35 (> 28)
+    // while bytes remain, so decode_int's "m > 28" guard rejects it (line 135) rather than i >= len.
+    const uint8_t overlong[8] = {0x1f, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00};
+    TEST_ASSERT_FALSE(dws_hpack_decode_int(overlong, sizeof overlong, 5, &c, &v));
 }
 
 int main()

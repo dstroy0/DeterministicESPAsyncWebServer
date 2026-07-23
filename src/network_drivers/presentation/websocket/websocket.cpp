@@ -181,7 +181,13 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
             DeflateResult rc = deflate_raw(payload, len, cbuf, cap, &clen, scr, DEFLATE_SCRATCH_SIZE);
             // Only adopt it if it actually shrank the message; otherwise send it
             // uncompressed (the per-message RSV1 flag makes that legal).
-            if (rc == DeflateResult::DEFLATE_OK && clen < len)
+            // rc != DEFLATE_OK is unreachable here: deflate_raw returns non-OK only on
+            // ERR_SCRATCH (we always pass the full DEFLATE_SCRATCH_SIZE) or ERR_OVERFLOW,
+            // and cap = len + len/8 + 16 exactly bounds the fixed-Huffman worst case
+            // (all-9-bit literals = 1.125*len, matches only shrink, +16 covers the fixed
+            // header/EOB/stored-trailer/4-byte-marker overhead). The clen < len leg is
+            // exercised both ways in test; only the rc-error leg is the dead branch below.
+            if (rc == DeflateResult::DEFLATE_OK && clen < len) // GCOVR_EXCL_BR_LINE  dead rc-error leg (see above)
             {
                 payload = cbuf;
                 len = (uint16_t)clen;

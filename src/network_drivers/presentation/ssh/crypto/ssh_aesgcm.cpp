@@ -146,8 +146,8 @@ inline void inc32(uint8_t ctr[16])
     // The *whole-loop-exhausts* outcome (all 4 bytes carry, i.e. a full 0xffffffff -> 0 wrap of the
     // 32-bit counter) is the one still genuinely unreachable from a host test: it needs ~2^32 GCTR
     // blocks (~64 GiB) in a single seal()/open() call - infeasible to allocate/compute here.
-    for (int i = 15; i >= 12;
-         i--) // GCOVR_EXCL_BR_LINE  only the full-exhaustion (all 4 bytes carry) outcome is excluded; see above
+    for (int i = 15; i >= 12; // GCOVR_EXCL_BR_LINE  full 2^32 counter wrap (~64 GiB/call) unreachable; see above
+         i--)
         if (++ctr[i])
             break;
 }

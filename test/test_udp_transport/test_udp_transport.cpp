@@ -185,6 +185,19 @@ void test_multicast_join_finds_slot_past_an_unrelated_listener()
     TEST_ASSERT_EQUAL_STRING("239.255.255.250", dws_udp_joined_group(1900));
 }
 
+// A rejoin after a lower-slot listener has left leaves a hole below the target: the post-bind
+// lookup loop then scans an unused slot (used==false) before reaching the rebound one. Drives
+// line 540's short-circuit-on-unused arm, which lowest-free-first binding alone never reaches.
+void test_multicast_rejoin_scans_past_a_freed_lower_slot()
+{
+    TEST_ASSERT_TRUE(dws_udp_listen_multicast("224.0.0.251", 5353, on_datagram, nullptr));     // slot 0
+    TEST_ASSERT_TRUE(dws_udp_listen_multicast("239.255.255.250", 1900, on_datagram, nullptr)); // slot 1
+    TEST_ASSERT_TRUE(dws_udp_leave_multicast(5353));                                           // slot 0 -> hole
+    // Rebind port 1900 (reuses slot 1); post-bind lookup skips the now-unused slot 0 first.
+    TEST_ASSERT_TRUE(dws_udp_listen_multicast("239.255.255.250", 1900, on_datagram, nullptr));
+    TEST_ASSERT_EQUAL_STRING("239.255.255.250", dws_udp_joined_group(1900));
+}
+
 // A null peer token is reported, not dereferenced.
 void test_peer_addr_rejects_null_peer()
 {
@@ -312,6 +325,7 @@ int main(void)
     RUN_TEST(test_listen_evicts_slot_zero_when_pool_full);
     RUN_TEST(test_multicast_group_too_long_for_buffer_rejected);
     RUN_TEST(test_multicast_join_finds_slot_past_an_unrelated_listener);
+    RUN_TEST(test_multicast_rejoin_scans_past_a_freed_lower_slot);
     RUN_TEST(test_peer_addr_rejects_null_peer);
     RUN_TEST(test_peer_addr_copies_and_tolerates_null_outparams);
     RUN_TEST(test_send_paths_are_captured);

@@ -52,10 +52,10 @@ long dws_docstore_get(DWSDocStore *ds, const char *id, uint16_t id_len, uint8_t 
 bool dws_docstore_del(DWSDocStore *ds, const char *id, uint16_t id_len);
 
 /** @brief @return true if document @p id exists. */
-bool dws_docstore_contains(DWSDocStore *ds, const char *id, uint16_t id_len);
+bool dws_docstore_contains(const DWSDocStore *ds, const char *id, uint16_t id_len);
 
 /** @brief @return the number of documents. */
-uint32_t dws_docstore_count(DWSDocStore *ds);
+uint32_t dws_docstore_count(const DWSDocStore *ds);
 
 /** @brief Make all writes durable (checkpoints the WAL). @return false on I/O failure. */
 bool dws_docstore_sync(DWSDocStore *ds);

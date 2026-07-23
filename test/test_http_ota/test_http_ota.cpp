@@ -73,6 +73,50 @@ void test_large_body_streams_to_completion()
         TEST_ASSERT_EQUAL_UINT8('A' + (i % 26), g_capture[i]);
 }
 
+// A body whose length is not a whole multiple of BODY_BUF_SIZE leaves a partial tail in the flush
+// buffer at completion: the tail must be handed to the sink (line 482 body_len!=0 arm + the tail
+// flush at 483). N = 256 + 44 fills one whole chunk, then a 44-byte remainder.
+void test_partial_tail_chunk_is_flushed()
+{
+    http_parser_set_stream_hooks(begin_cb, data_cb);
+    HttpReq r;
+    r.slot_id = 0;
+    http_parser_reset(&r);
+
+    const size_t N = 300; // 256 (one full chunk) + 44 (tail) - not a multiple of BODY_BUF_SIZE
+    char hdr[128];
+    snprintf(hdr, sizeof(hdr), "POST /update HTTP/1.1\r\nHost: x\r\nContent-Length: %u\r\n\r\n", (unsigned)N);
+    feed(&r, hdr);
+    for (size_t i = 0; i < N; i++)
+        http_parser_feed(&r, (uint8_t)('A' + (i % 26)));
+
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, r.parse_state);
+    TEST_ASSERT_EQUAL_UINT(N, (unsigned)g_total); // whole chunk + tail both delivered
+    TEST_ASSERT_EQUAL_INT(2, g_chunks);           // one full flush + one tail flush
+}
+
+// A caller may install only the begin hook (null data sink): the streaming path must tolerate a
+// null s_hp.stream_data at both the mid-body flush (line 475) and the tail flush (line 482's
+// stream_data arm) without dispatching or crashing. N = 300 exercises both flush sites.
+void test_stream_begin_without_data_sink_tolerates_null()
+{
+    http_parser_set_stream_hooks(begin_cb, nullptr); // begin matches, but no data sink
+    HttpReq r;
+    r.slot_id = 0;
+    http_parser_reset(&r);
+
+    const size_t N = 300;
+    char hdr[128];
+    snprintf(hdr, sizeof(hdr), "POST /update HTTP/1.1\r\nHost: x\r\nContent-Length: %u\r\n\r\n", (unsigned)N);
+    feed(&r, hdr);
+    for (size_t i = 0; i < N; i++)
+        http_parser_feed(&r, (uint8_t)('A' + (i % 26)));
+
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, r.parse_state); // completes anyway
+    TEST_ASSERT_TRUE(r.body_streaming);
+    TEST_ASSERT_EQUAL_UINT(0, (unsigned)g_total); // sink was null - nothing dispatched
+}
+
 // Without hooks, a >BODY_BUF_SIZE body still yields 413 (default unchanged).
 void test_no_hooks_large_body_is_413()
 {
@@ -131,6 +175,8 @@ int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_large_body_streams_to_completion);
+    RUN_TEST(test_partial_tail_chunk_is_flushed);
+    RUN_TEST(test_stream_begin_without_data_sink_tolerates_null);
     RUN_TEST(test_no_hooks_large_body_is_413);
     RUN_TEST(test_nonmatching_path_not_streamed);
     RUN_TEST(test_xff_bracketed_ipv6_overflow);

@@ -245,27 +245,25 @@ for _i in "${!ENV_NAMES[@]}"; do
     format_output < "$_envout" | tee -a "$RAW_FILE"
     rm -f "$_envout"
 
-    if [[ $COVERAGE -eq 1 ]]; then
-        # gcovr this env right after it runs (one report per env; unioned after the loop). gcovr 8.x
-        # anchors --filter to the full relative path, so 'src/.*' (not bare 'src/') matches src/... and
-        # still excludes test/ + the Unity libdep. Same-source-different-flags cannot be merged in a
-        # single gcovr pass, hence per-env.
-        # A silently-missing per-env report is the worst failure mode here: the merge only ever
-        # UNIONS, so an env that stops contributing does not lower the number - it freezes that
-        # env's files at whatever the baseline last said, forever, with nothing in the log to say
-        # so. Record the failure and fail the run at the end instead of warning into the void.
-        # --json alongside --sonarqube: the SonarQube generic format carries only a per-line
-        # (branchesToCover, coveredBranches) aggregate, so two envs that each cover a DIFFERENT
-        # subset of one condition's branches cannot be combined - the merge can only keep the better
-        # env, and the line reads as partially covered forever. gcovr's JSON keeps the per-branch
-        # counts, and merge_coverage.py --json-reports unions those properly.
-        if ! gcovr --root . --filter 'src/.*' --gcov-ignore-parse-errors --sonarqube \
-            "coverage_reports/${_env}.xml" --json "coverage_reports/${_env}.json" \
-            "${PLATFORMIO_BUILD_DIR:-.pio_cov}/$_env" 2>/dev/null \
-            || [[ ! -s "coverage_reports/${_env}.xml" ]]; then
-            echo "ERROR: gcovr produced no coverage report for $_env"
-            COV_FAILED+=("$_env")
-        fi
+    # gcovr this env right after it runs (one report per env; unioned after the loop). gcovr 8.x
+    # anchors --filter to the full relative path, so 'src/.*' (not bare 'src/') matches src/... and
+    # still excludes test/ + the Unity libdep. Same-source-different-flags cannot be merged in a
+    # single gcovr pass, hence per-env.
+    # A silently-missing per-env report is the worst failure mode here: the merge only ever
+    # UNIONS, so an env that stops contributing does not lower the number - it freezes that
+    # env's files at whatever the baseline last said, forever, with nothing in the log to say
+    # so. Record the failure and fail the run at the end instead of warning into the void.
+    # --json alongside --sonarqube: the SonarQube generic format carries only a per-line
+    # (branchesToCover, coveredBranches) aggregate, so two envs that each cover a DIFFERENT
+    # subset of one condition's branches cannot be combined - the merge can only keep the better
+    # env, and the line reads as partially covered forever. gcovr's JSON keeps the per-branch
+    # counts, and merge_coverage.py --json-reports unions those properly.
+    if [[ $COVERAGE -eq 1 ]] && { ! gcovr --root . --filter 'src/.*' --gcov-ignore-parse-errors --sonarqube \
+        "coverage_reports/${_env}.xml" --json "coverage_reports/${_env}.json" \
+        "${PLATFORMIO_BUILD_DIR:-.pio_cov}/$_env" 2>/dev/null \
+        || [[ ! -s "coverage_reports/${_env}.xml" ]]; }; then
+        echo "ERROR: gcovr produced no coverage report for $_env" >&2
+        COV_FAILED+=("$_env")
     fi
 done
 WALL_SECS=$(( SECONDS - T0 ))
@@ -518,8 +516,8 @@ if [[ $COVERAGE -eq 1 ]]; then
     # affected-only run, --cov-baseline overlays the committed coverage so the report stays whole-project
     # (fresh per-file coverage for the changed sources, the baseline kept for everything not rerun).
     if [[ ${#COV_FAILED[@]} -gt 0 ]]; then
-        echo "ERROR: no coverage report from ${#COV_FAILED[@]} env(s): ${COV_FAILED[*]}"
-        echo "Refusing to merge - a partial merge would silently freeze those files' coverage."
+        echo "ERROR: no coverage report from ${#COV_FAILED[@]} env(s): ${COV_FAILED[*]}" >&2
+        echo "Refusing to merge - a partial merge would silently freeze those files' coverage." >&2
         rm -rf coverage_reports
         # Exit 3, distinct from a test failure (PIO_EXIT): the caller tolerates failing TESTS (the
         # report documents them) but must NOT commit a coverage.xml this run could not produce.

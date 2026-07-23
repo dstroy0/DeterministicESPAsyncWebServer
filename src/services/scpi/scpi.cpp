@@ -134,10 +134,11 @@ size_t dws_scpi_fmt_real(char *buf, size_t cap, double v)
 static int scan_digits(const char *s, size_t len, size_t *i, double *acc)
 {
     int n = 0;
-    for (; *i < len && is_digit(s[*i]); (*i)++)
+    while (*i < len && is_digit(s[*i]))
     {
         *acc = *acc * 10.0 + (s[*i] - '0');
         n++;
+        (*i)++;
     }
     return n;
 }
@@ -156,10 +157,11 @@ static bool scan_exponent(const char *s, size_t len, size_t *i, int *exp)
         (*i)++;
     }
     int digits = 0;
-    for (; *i < len && is_digit(s[*i]); (*i)++)
+    while (*i < len && is_digit(s[*i]))
     {
         *exp = *exp * 10 + (s[*i] - '0');
         digits++;
+        (*i)++;
     }
     if (digits == 0)
         return false;

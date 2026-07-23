@@ -84,6 +84,7 @@ void test_latency_stat_records_and_budgets()
     dws_set_micros_clock(fake_us, 1000000u); // 1 MHz -> microseconds == counter
     DWSLatencyStat s;
     dws_lat_reset(&s);
+    TEST_ASSERT_EQUAL_UINT32(0, dws_lat_avg_us(&s)); // no samples yet -> 0 (count==0 branch)
 
     g_fake_us = 1000;
     uint32_t t = dws_lat_begin();

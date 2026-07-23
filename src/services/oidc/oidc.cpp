@@ -175,12 +175,10 @@ bool aud_contains(const char *s, const char *e, const char *want)
         while (p < end) // GCOVR_EXCL_LINE  p < end cannot be false (see above)
         {
             const char *q = (const char *)memchr(p, '"', (size_t)(end - p));
-            if (!q)
+            const char *r = q ? (const char *)memchr(q + 1, '"', (size_t)(end - (q + 1))) : nullptr;
+            if (!q || !r)
                 break;
             q++;
-            const char *r = (const char *)memchr(q, '"', (size_t)(end - q));
-            if (!r)
-                break;
             if ((size_t)(r - q) == wl && memcmp(q, want, wl) == 0)
                 return true;
             p = r + 1;

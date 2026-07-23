@@ -115,6 +115,15 @@ void test_pcap_global_header_bounds()
     TEST_ASSERT_EQUAL_UINT(0, dws_pcap_global_header(tiny, sizeof(tiny), DWS_DLT_CAN_SOCKETCAN)); // too small
 }
 
+void test_pcap_record_header_bounds()
+{
+    uint8_t r[DWS_PCAP_REC_HDR_LEN];
+    TEST_ASSERT_EQUAL_UINT(DWS_PCAP_REC_HDR_LEN, dws_pcap_record_header(r, sizeof(r), 1, 2, 3, 4)); // valid
+    TEST_ASSERT_EQUAL_UINT(0, dws_pcap_record_header(nullptr, sizeof(r), 1, 2, 3, 4));              // null out
+    uint8_t tiny[8];
+    TEST_ASSERT_EQUAL_UINT(0, dws_pcap_record_header(tiny, sizeof(tiny), 1, 2, 3, 4)); // too small
+}
+
 static void bus_sink_noop(const CanFrame *)
 {
 }
@@ -144,6 +153,7 @@ int main()
     RUN_TEST(test_masks_and_bounds);
     RUN_TEST(test_pcap_can_linktype);
     RUN_TEST(test_pcap_global_header_bounds);
+    RUN_TEST(test_pcap_record_header_bounds);
     RUN_TEST(test_host_twai_stubs_fail_closed);
     RUN_TEST(test_host_can_stubs);
     return UNITY_END();

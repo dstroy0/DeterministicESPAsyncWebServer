@@ -144,6 +144,40 @@ void test_aesgcm_iv_counter_carries(void)
     ssh_aesgcm_wipe(&ctx);
 }
 
+// The GCTR keystream counter (inc32, low 32 bits of the block, NIST SP 800-38D sec 6.5) starts at
+// inc32(J0) = ...,0,0,0,2 and steps once per 16-byte block. Byte 15 wraps 0xff -> 0x00 (carrying into
+// byte 14) once 254 blocks (4064 B) pass through ONE seal(): that is the carry-continue arm of inc32's
+// loop that a short packet never takes. Seal 255 blocks so the carry fires, then open() the result and
+// byte-compare to prove the wrapped keystream is still self-consistent.
+void test_aesgcm_gctr_counter_byte_carry(void)
+{
+    SshAesGcmCtx enc, dec;
+    uint8_t key[32], iv[12];
+    for (int i = 0; i < 32; i++)
+        key[i] = (uint8_t)(i * 3 + 5);
+    for (int i = 0; i < 12; i++)
+        iv[i] = (uint8_t)(0x20 + i);
+    ssh_aesgcm_init(&enc, key, iv);
+    ssh_aesgcm_init(&dec, key, iv);
+
+    const size_t n = 255 * 16; // 4080 B > 254 blocks -> GCTR counter byte 15 carries mid-seal
+    uint8_t *pt = new uint8_t[n];
+    uint8_t *out = new uint8_t[n + 16];
+    uint8_t *rt = new uint8_t[n];
+    for (size_t i = 0; i < n; i++)
+        pt[i] = (uint8_t)(i * 31 + 7);
+
+    ssh_aesgcm_seal(&enc, NULL, 0, pt, n, out);
+    TEST_ASSERT_TRUE(ssh_aesgcm_open(&dec, NULL, 0, out, n, out + n, rt));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, n);
+
+    delete[] pt;
+    delete[] out;
+    delete[] rt;
+    ssh_aesgcm_wipe(&enc);
+    ssh_aesgcm_wipe(&dec);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -151,5 +185,6 @@ int main()
     RUN_TEST(test_aesgcm_nist_tc16_open);
     RUN_TEST(test_aesgcm_invocation_counter_advances);
     RUN_TEST(test_aesgcm_iv_counter_carries);
+    RUN_TEST(test_aesgcm_gctr_counter_byte_carry);
     return UNITY_END();
 }

@@ -481,6 +481,23 @@ uint8_t level_lp_type(int level)
     return level == QuicEnc::QUIC_ENC_INITIAL ? QuicLongPacket::QUIC_LP_INITIAL : QuicLongPacket::QUIC_LP_HANDSHAKE;
 }
 
+// Bytes a protected packet needs on top of its payload: AEAD tag + packet number, plus the header.
+size_t packet_overhead(const QuicConn *qc, bool is_long, uint8_t pn_len)
+{
+    size_t overhead = (size_t)QUIC_AEAD_TAG_LEN + pn_len;
+    if (is_long)
+    {
+        // type(1) + version(4) + dcid_len(1) + dcid + scid_len(1) + scid, then the Initial token
+        // varint and the Length varint (bounded generously - both are far smaller in practice).
+        overhead += 7u + qc->dcid_len + qc->scid_len + 1u + 4u;
+    }
+    else
+    {
+        overhead += 1u + qc->dcid_len; // short header: first byte + DCID, no length on the wire
+    }
+    return overhead;
+}
+
 // Build one protected packet for a level into out; returns its length (0 = nothing to send).
 size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
 {
@@ -503,17 +520,7 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
     // DWS_QUIC_MAX_DATAGRAM scratch while the packet needs header + pn + 16-byte tag on top of it,
     // so a stream with ~1326+ bytes pending, or a Handshake CRYPTO flight carrying a large
     // certificate, produced a payload the packet had no room for. Bound the payload instead.
-    size_t overhead = (size_t)QUIC_AEAD_TAG_LEN + pn_len;
-    if (is_long)
-    {
-        // type(1) + version(4) + dcid_len(1) + dcid + scid_len(1) + scid, then the Initial token
-        // varint and the Length varint (bounded generously - both are far smaller in practice).
-        overhead += 7u + qc->dcid_len + qc->scid_len + 1u + 4u;
-    }
-    else
-    {
-        overhead += 1u + qc->dcid_len; // short header: first byte + DCID, no length on the wire
-    }
+    size_t overhead = packet_overhead(qc, is_long, pn_len);
     if (cap <= overhead)
         return 0;
     size_t budget = cap - overhead;

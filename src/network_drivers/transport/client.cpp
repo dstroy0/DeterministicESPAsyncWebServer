@@ -343,6 +343,7 @@ size_t dws_client_read(int, uint8_t *, size_t)
 }
 void dws_client_close(int)
 {
+    // no-op: the native stub owns no socket to close
 }
 
 #endif // ARDUINO

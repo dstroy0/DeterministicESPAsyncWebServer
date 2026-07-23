@@ -75,7 +75,8 @@
 #define DWS_J519_THRESHOLDS 20
 
 /** @brief Exact octet length of each packet (the parsers require these). */
-enum : size_t
+enum : size_t // NOSONAR(cpp:S3642): anonymous table of exact wire lengths compared as bare size_t in the parsers; enum
+              // class would force a cast at every bound check
 {
     DWS_J519_LEN_START = 8,    ///< PC -> robot Start.
     DWS_J519_LEN_MOTION = 64,  ///< PC -> robot Motion Command.
@@ -133,7 +134,8 @@ enum class J519ThresholdType : uint32_t
 };
 
 /** @brief Robot Status `status` bit masks. */
-enum : uint8_t
+enum : uint8_t // NOSONAR(cpp:S3642): anonymous bitmask constants OR'd/AND'd against a status octet; enum class forbids
+               // the bitwise use
 {
     J519_STATUS_READY = 0x01,        ///< ready to accept motion commands.
     J519_STATUS_CMD_RECEIVED = 0x02, ///< a command was received.

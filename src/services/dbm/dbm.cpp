@@ -230,7 +230,7 @@ bool dws_dbm_del(DWSDbm *db, const char *key, uint16_t key_len)
     return true;
 }
 
-bool dws_dbm_contains(DWSDbm *db, const char *key, uint16_t key_len)
+bool dws_dbm_contains(const DWSDbm *db, const char *key, uint16_t key_len)
 {
     return find_live(db, key_hash(key, key_len), key, key_len) >= 0;
 }

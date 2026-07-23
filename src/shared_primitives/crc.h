@@ -63,6 +63,16 @@ inline uint32_t mask(uint8_t width)
     return (width >= 32) ? 0xFFFFFFFFu : ((1u << width) - 1u);
 }
 
+/** @brief Clamp a register width to the supported 8..32 range. */
+inline uint8_t clamp_width(uint8_t width)
+{
+    if (width < 8)
+        return 8;
+    if (width > 32)
+        return 32;
+    return width;
+}
+
 /** @brief Reverse the 8 bits of @p b. */
 inline uint8_t rev8(uint8_t b)
 {
@@ -106,7 +116,7 @@ inline uint32_t dws_crc_update(const DwsCrcParams *p, uint32_t crc, const uint8_
 {
     if (!p || (!data && len))
         return crc;
-    const uint8_t width = (p->width < 8) ? 8 : ((p->width > 32) ? 32 : p->width);
+    const uint8_t width = dws_crc_detail::clamp_width(p->width);
     const uint32_t m = dws_crc_detail::mask(width);
     const uint32_t top = 1u << (width - 1);
 
@@ -125,7 +135,7 @@ inline uint32_t dws_crc_final(const DwsCrcParams *p, uint32_t crc)
 {
     if (!p)
         return 0u;
-    const uint8_t width = (p->width < 8) ? 8 : ((p->width > 32) ? 32 : p->width);
+    const uint8_t width = dws_crc_detail::clamp_width(p->width);
     const uint32_t m = dws_crc_detail::mask(width);
     if (p->refout)
         crc = dws_crc_detail::revN(crc & m, width);

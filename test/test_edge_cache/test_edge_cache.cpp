@@ -423,6 +423,10 @@ void test_range_explicit_and_open_ended()
     TEST_ASSERT_EQUAL_INT(1, http_parse_byte_range("bytes=0-99", 100, &s, &e));
     TEST_ASSERT_EQUAL_UINT(0, s);
     TEST_ASSERT_EQUAL_UINT(99, e);
+    // leading whitespace after "bytes=" is skipped.
+    TEST_ASSERT_EQUAL_INT(1, http_parse_byte_range("bytes=  10-40", 100, &s, &e));
+    TEST_ASSERT_EQUAL_UINT(10, s);
+    TEST_ASSERT_EQUAL_UINT(40, e);
 }
 
 void test_range_suffix()
@@ -460,7 +464,12 @@ void test_range_ignored_forms()
     TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("bytes=0-10,20-30", 100, &s, &e)); // multi-range -> full 200
     TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("items=0-10", 100, &s, &e));       // wrong unit
     TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("bytes=10", 100, &s, &e));         // no dash -> malformed
-    TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("bytes=10-40x", 100, &s, &e));     // trailing garbage
+    TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("bytes=1a-5", 100, &s, &e)); // >'9' ends the start scan -> malformed
+    TEST_ASSERT_EQUAL_INT(
+        0, http_parse_byte_range("bytes=1-a", 100, &s, &e)); // >'9' where the end digit is expected -> trailing garbage
+    TEST_ASSERT_EQUAL_INT(
+        0, http_parse_byte_range("bytes=1-2a", 100, &s, &e)); // >'9' ends the end scan -> trailing garbage
+    TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("bytes=10-40x", 100, &s, &e)); // trailing garbage
 }
 
 // --- header field access: guards, overflow, odd line shapes --------------------------------------

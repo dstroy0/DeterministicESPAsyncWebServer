@@ -525,8 +525,10 @@ size_t dws_snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_writ
         // non_rep was clamped to nvb (itself capped at SNMP_MAX_VARBINDS by the decode loop), so
         // i < non_rep always fails first - the nout cap here is defense in depth, unlike the
         // repeater loops below where several varbinds are appended per repetition.
-        for (long i = 0; i < non_rep && nout < SNMP_MAX_VARBINDS; i++) // GCOVR_EXCL_LINE  nout cap unreachable
+        for (long i = 0; i < non_rep; i++)
         {
+            if (nout >= SNMP_MAX_VARBINDS) // GCOVR_EXCL_BR_LINE  nout cap unreachable (see above)
+                break;                     // GCOVR_EXCL_LINE
             const SnmpMibEntry *en = mib_find_next(s_agent, s_req.in[i].oid, s_req.in[i].oid_len);
             if (en)
             {

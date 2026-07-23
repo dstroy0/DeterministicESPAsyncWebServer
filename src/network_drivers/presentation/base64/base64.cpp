@@ -160,7 +160,10 @@ size_t dws_base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
     for (size_t q = 0; q < nquads; q++)
     {
         size_t i = q * 4;
-        uint32_t c0 = (uint8_t)src[i], c1 = (uint8_t)src[i + 1], c2 = (uint8_t)src[i + 2], c3 = (uint8_t)src[i + 3];
+        uint32_t c0 = (uint8_t)src[i];
+        uint32_t c1 = (uint8_t)src[i + 1];
+        uint32_t c2 = (uint8_t)src[i + 2];
+        uint32_t c3 = (uint8_t)src[i + 3];
         int is_last = (q + 1 == nquads);
         int p2 = is_last && (c2 == '=');
         int p3 = is_last && (c3 == '=');
@@ -172,7 +175,10 @@ size_t dws_base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
         uint32_t ok;
         uint32_t val = swar_quad(word, &ok);
         bad |= ~ok; // any invalid lane sets high bits here
-        uint32_t a = val & 0xFF, b = (val >> 8) & 0xFF, c = (val >> 16) & 0xFF, d = (val >> 24) & 0xFF;
+        uint32_t a = val & 0xFF;
+        uint32_t b = (val >> 8) & 0xFF;
+        uint32_t c = (val >> 16) & 0xFF;
+        uint32_t d = (val >> 24) & 0xFF;
         if (out >= dst_cap)
             return 0;
         dst[out++] = (uint8_t)((a << 2) | (b >> 4));

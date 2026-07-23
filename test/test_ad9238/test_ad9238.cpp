@@ -62,6 +62,7 @@ void test_build_write_transaction()
 
     TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_write(0x09, 0x01, nullptr, 3)); // null out
     TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_write(0x09, 0x01, out, 2));     // undersized cap
+    TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_write(0x2000, 0x01, out, 3));   // reg_addr past 13-bit field
 }
 
 void test_build_read_transaction()
@@ -73,6 +74,7 @@ void test_build_read_transaction()
 
     TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_read(0x01, nullptr, 2)); // null out
     TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_read(0x01, out, 1));     // undersized cap
+    TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_read(0x2000, out, 2));   // reg_addr past 13-bit field
 }
 
 void test_build_transfer_writes_device_update()

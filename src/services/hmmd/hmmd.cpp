@@ -180,7 +180,7 @@ size_t dws_hmmd_cmd_read_register(uint8_t *buf, size_t cap, const uint8_t *value
 
 bool dws_hmmd_parse_ack(const uint8_t *f, size_t len, HmmdAck *out)
 {
-    // header(4) + len(2) + word(2) + [data] + footer(4)
+    // layout: four header bytes, two length bytes, two command-word bytes, optional data, four footer bytes
     if (!f || !out || len < 12)
         return false;
     if (memcmp(f, CMD_HDR, 4) != 0)

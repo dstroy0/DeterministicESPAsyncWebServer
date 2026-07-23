@@ -58,6 +58,30 @@ void test_strtof()
     TEST_ASSERT_EQUAL_PTR(bad, e2); // no digits -> end == s
 }
 
+void test_numparse_branches()
+{
+    // dws_np_ws: exercise every whitespace operand (line 24) - a run of each
+    // recognized whitespace char, then a digit that fails them all.
+    const char *end = nullptr;
+    TEST_ASSERT_EQUAL_INT(42, dws_strtol("\t\n\r\f\v42", &end));
+
+    // dws_strtoul with a null endptr - the `if (end)` false arm (line 61).
+    TEST_ASSERT_EQUAL_UINT32(9, dws_strtoul("9", nullptr));
+
+    // dws_strtod main sign: explicit '+' (line 105 first-operand-true, line 106
+    // `== '-'` false). Negative and no-sign are covered by test_strtof.
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 3.14f, dws_strtof("+3.14", &end));
+
+    // dws_strtod_exp sign: explicit '+' exponent (line 84 first-operand-true,
+    // line 85 `== '-'` false). Negative exponent is covered by test_strtof.
+    TEST_ASSERT_FLOAT_WITHIN(1.0f, 1500.0f, dws_strtof("1.5e+3", &end));
+
+    // dws_strtod_exp clamp: a 4-digit exponent drives ex past 400 so the
+    // `ex < 400 ? ... : ex` else (clamp) arm fires (line 89). 10^500 -> inf.
+    float big = dws_strtof("1e5000", &end);
+    TEST_ASSERT_TRUE(big > 1e30f); // clamped/overflowed to a huge value
+}
+
 void test_utf8_valid()
 {
     TEST_ASSERT_TRUE(dws_utf8_valid((const uint8_t *)"hello", 5)); // ASCII
@@ -94,6 +118,7 @@ int main()
     RUN_TEST(test_strtol);
     RUN_TEST(test_strtoul);
     RUN_TEST(test_strtof);
+    RUN_TEST(test_numparse_branches);
     RUN_TEST(test_utf8_valid);
     RUN_TEST(test_utf8_invalid);
     return UNITY_END();

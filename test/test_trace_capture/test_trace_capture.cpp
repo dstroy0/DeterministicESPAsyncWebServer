@@ -156,6 +156,40 @@ void test_multiple_sequential_windows_increment_trace_id()
     TEST_ASSERT_EQUAL_UINT32(3, st.windows_completed);
 }
 
+void test_feed_null_samples_while_configured_drops()
+{
+    // line 76: configured is true, so `!s_tc.configured` is false and the OR
+    // evaluates `!samples` (true) - a null buffer is counted dropped, not read.
+    TEST_ASSERT_TRUE(begin(2, 2));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_tc_feed(nullptr, 5));
+    dws_tc_stats st;
+    dws_tc_get_stats(&st);
+    TEST_ASSERT_EQUAL_UINT32(5, st.samples_dropped);
+}
+
+void test_zero_posttrigger_never_completes()
+{
+    // line 85 second operand false: with posttrigger 0, after trigger the fill
+    // guard `post_count < posttrigger_samples` is 0 < 0 == false while capturing
+    // is still true, so no window is ever assembled from feed().
+    TEST_ASSERT_TRUE(begin(3, 0)); // pretrigger-only is accepted (only both-zero is rejected)
+    const uint16_t pre[] = {1, 2, 3};
+    dws_tc_feed(pre, 3);
+    TEST_ASSERT_TRUE(dws_tc_trigger());
+    TEST_ASSERT_TRUE(dws_tc_capturing());
+    const uint16_t more[] = {4, 5};
+    TEST_ASSERT_EQUAL_UINT16(2, dws_tc_feed(more, 2));
+    TEST_ASSERT_TRUE(dws_tc_capturing());          // still capturing, guard stayed false
+    TEST_ASSERT_EQUAL_size_t(0, g_windows.size()); // 0 post-samples -> never fires
+}
+
+void test_get_stats_null_and_capturing_when_unconfigured()
+{
+    dws_tc_get_stats(nullptr);             // line 125 `if (out)` false arm - just must not crash
+    dws_tc_end();                          // ensure not configured
+    TEST_ASSERT_FALSE(dws_tc_capturing()); // line 131: `configured` false short-circuits
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -165,5 +199,8 @@ int main()
     RUN_TEST(test_feed_before_begin_or_after_end_drops);
     RUN_TEST(test_zero_pretrigger_edge_case);
     RUN_TEST(test_multiple_sequential_windows_increment_trace_id);
+    RUN_TEST(test_feed_null_samples_while_configured_drops);
+    RUN_TEST(test_zero_posttrigger_never_completes);
+    RUN_TEST(test_get_stats_null_and_capturing_when_unconfigured);
     return UNITY_END();
 }

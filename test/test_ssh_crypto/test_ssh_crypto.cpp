@@ -1641,6 +1641,32 @@ void test_ghash_table_matches_bitwise()
     }
 }
 
+// ssh_keymat_wipe / ssh_dh_wipe guard the slot index against the pool bounds (i < MAX_SSH_CONNS)
+// before touching ssh_keys[i] / ssh_dh[i]. Production callers always pass a valid slot, so drive the
+// out-of-range arm directly: an index >= MAX_SSH_CONNS (and the UINT8_MAX extreme) must be a safe no-op
+// that leaves neighbouring slot 0 untouched.
+void test_keymat_wipe_out_of_range_is_noop(void)
+{
+    memset(&ssh_keys[0], 0xA5, sizeof(SshKeyMat));
+    memset(&ssh_dh[0], 0x5A, sizeof(SshDhState));
+
+    ssh_keymat_wipe(MAX_SSH_CONNS); // out of range -> guard rejects, no write
+    ssh_keymat_wipe(0xFF);
+    ssh_dh_wipe(MAX_SSH_CONNS);
+    ssh_dh_wipe(0xFF);
+
+    uint8_t km_ref[sizeof(SshKeyMat)];
+    uint8_t dh_ref[sizeof(SshDhState)];
+    memset(km_ref, 0xA5, sizeof(km_ref));
+    memset(dh_ref, 0x5A, sizeof(dh_ref));
+    TEST_ASSERT_EQUAL_MEMORY(km_ref, &ssh_keys[0], sizeof(km_ref));
+    TEST_ASSERT_EQUAL_MEMORY(dh_ref, &ssh_dh[0], sizeof(dh_ref));
+
+    // In-range wipe still zeroes the slot (the guard's true arm), leaving no state for later tests.
+    ssh_keymat_wipe(0);
+    ssh_dh_wipe(0);
+}
+
 // ============================================================================
 // main
 // ============================================================================
@@ -1720,6 +1746,7 @@ int main(void)
     RUN_TEST(test_pkt_eam_forged_rejects);
     RUN_TEST(test_ssh_kdf_canonical_mpint_k);
     RUN_TEST(test_ssh_kdf_extension_chain);
+    RUN_TEST(test_keymat_wipe_out_of_range_is_noop);
 
     return UNITY_END();
 }

@@ -337,6 +337,19 @@ void test_set_persist_free_unmatched_pointer_is_noop()
     uint8_t stray[8]; // not part of either region's backing buffer
     dws_arena_set_persist_free(&s, stray);
     TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_persist_used(&s));
+
+    // Exercise both address-compare arms of the routing test regardless of link layout: a pointer below
+    // every region (b >= base is false) and one past every region (b >= base true, b < base+size false).
+    // Neither claims the pointer, so both are safe no-ops.
+    uint8_t *b0 = s.region[0].base;
+    uint8_t *b1 = s.region[1].base;
+    uint8_t *below = (b0 < b1 ? b0 : b1) - 16;
+    uint8_t *e0 = b0 + s.region[0].size;
+    uint8_t *e1 = b1 + s.region[1].size;
+    uint8_t *above = (e0 > e1 ? e0 : e1) + 16;
+    dws_arena_set_persist_free(&s, below);
+    dws_arena_set_persist_free(&s, above);
+    TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_persist_used(&s));
 }
 
 void test_set_scratch_overflow_and_unwind()

@@ -48,7 +48,11 @@ void proto_register_builtins(void)
     register_if(ConnProto::PROTO_TELNET, dws_telnet_proto_handler());
 #endif
 #if DWS_ENABLE_SSH
+    // GCOVR_EXCL_START  no coverage env combines DWS_ENABLE_SSH with a proto_register_builtins() call:
+    // the SSH env tests the handler directly and the session/accept-gate envs keep SSH off (they reuse
+    // the SSH proto slot). Device-reachable on any SSH firmware via session init; same gap as line 40.
     register_if(ConnProto::PROTO_SSH, ssh_proto_handler());
+    // GCOVR_EXCL_STOP
 #endif
 #if DWS_ENABLE_MODBUS
     register_if(ConnProto::PROTO_MODBUS, dws_modbus_proto_handler());

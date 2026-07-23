@@ -266,8 +266,12 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
     for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
     {
         QuicSlot *s = &s_qpool.pool[i];
+        // scid_len is always DWS_QUIC_SCID_LEN (only this server sets it, at conn init above), so its
+        // != arm below is a defensive guard no host input can reach.
+        // GCOVR_EXCL_START
         if (s->used && s->qc.scid_len == DWS_QUIC_SCID_LEN && memcmp(dg + 1, s->qc.scid, DWS_QUIC_SCID_LEN) == 0)
             return s;
+        // GCOVR_EXCL_STOP
     }
     return nullptr;
 }

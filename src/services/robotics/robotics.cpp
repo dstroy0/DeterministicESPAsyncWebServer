@@ -24,7 +24,8 @@
 // ---------------------------------------------------------------------------
 namespace
 {
-enum : uint32_t
+enum : uint32_t // NOSONAR(cpp:S3642): anonymous table of OPC-UA node ids used as bare uint32_t (arithmetic + wire
+                // compares); enum class would force a cast at every use
 {
     MOTIONDEVICESYSTEM = 6000,
 
@@ -65,7 +66,8 @@ enum : uint32_t
 };
 
 // Axis variable sub-ids (offset from the Axis_k object id).
-enum : uint32_t
+enum : uint32_t // NOSONAR(cpp:S3642): anonymous table of OPC-UA sub-ids used as bare uint32_t offsets; enum class would
+                // force a cast at every use
 {
     AXVAR_POSITION = 1,
     AXVAR_SPEED = 2,
@@ -128,14 +130,6 @@ void set_str(OpcUaVariant *o, const char *s)
     o->str = s ? s : "";
     o->str_len = (int32_t)strnlen(o->str, 0xFFFF); // bound the scan: a model string is a caller-owned C string
 }
-// GCOVR_EXCL_START  no node in the MotionDeviceSystem model reads as a UInt32 (the counters and
-// enums are Int32/Double/Boolean/String), so this filler has no caller in the current node table.
-void set_u32(OpcUaVariant *o, uint32_t v)
-{
-    o->type = OpcUaVariantType::OPCUA_VAR_UINT32;
-    o->u32 = v;
-}
-// GCOVR_EXCL_STOP
 void set_i32(OpcUaVariant *o, int32_t v)
 {
     o->type = OpcUaVariantType::OPCUA_VAR_INT32;
@@ -204,7 +198,8 @@ bool dws_robotics_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVarian
         return false;
 
     // Axis variables (parametric): AXIS_BASE + k*10 + {1..4}.
-    uint32_t k = 0, sub = 0;
+    uint32_t k = 0;
+    uint32_t sub = 0;
     if (decode_axis(id, mds->device.axis_count, &k, &sub) && sub >= AXVAR_POSITION && sub <= AXVAR_PROFILE)
     {
         const RoboticsAxis *ax = &mds->device.axes[k - 1];
@@ -308,7 +303,8 @@ int32_t dws_robotics_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint3
         return -1;
 
     // An Axis_k object: browse its four variables (before the switch, since ids are parametric).
-    uint32_t k = 0, sub = 0;
+    uint32_t k = 0;
+    uint32_t sub = 0;
     if (decode_axis(id, mds->device.axis_count, &k, &sub) && sub == 0)
     {
         uint32_t base = AXIS_BASE + k * 10;

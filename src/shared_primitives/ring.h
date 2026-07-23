@@ -57,12 +57,16 @@ template <typename T> struct DWSAtomic
     }
     DWSAtomic &operator=(T x) noexcept
     {
-        v.store(x, std::memory_order_release);
+        v.store(x, std::memory_order_release); // GCOVR_EXCL_BR_LINE - the only branches here come from
+        // ThreadSanitizer's atomic-store instrumentation (fixed release memory-order dispatch);
+        // the residual arm is unreachable in a correct SPSC program - see test_spsc_ring_no_race.
         return *this;
     }
     operator T() const noexcept
     {
-        return v.load(std::memory_order_acquire);
+        return v.load(std::memory_order_acquire); // GCOVR_EXCL_BR_LINE - the only branches here come
+        // from ThreadSanitizer's atomic-load instrumentation (fixed acquire memory-order dispatch);
+        // the residual arm is unreachable in a correct SPSC program - see test_spsc_ring_no_race.
     }
 };
 

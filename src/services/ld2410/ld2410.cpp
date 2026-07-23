@@ -234,7 +234,8 @@ size_t dws_ld2410_cmd_set_bt_password(uint8_t *buf, size_t cap, const char passw
 // --- command-ACK decoding --------------------------------------------------
 bool dws_ld2410_parse_ack(const uint8_t *f, size_t len, Ld2410Ack *out)
 {
-    // header(4) + len(2) + word(2) + status(2) + [data] + footer(4)
+    // layout: four header bytes, two length bytes, two command-word bytes, two status bytes, optional data, four footer
+    // bytes
     if (!f || !out || len < 14)
         return false;
     for (int k = 0; k < 4; k++)
