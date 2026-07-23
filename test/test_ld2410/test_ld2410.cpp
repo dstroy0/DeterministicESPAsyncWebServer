@@ -319,6 +319,112 @@ void test_ld2410b_ack_rejects_malformed(void)
     TEST_ASSERT_FALSE(dws_ld2410_parse_ack(bad, 14, &ack));
 }
 
+// --- extra branch coverage --------------------------------------------------
+// The tests above already exercise the common paths; these fill in the remaining guard
+// branches that gcovr's baseline flagged as never taken: a null `out`, a data-type byte whose
+// declared length disagrees with LEN_BASIC/LEN_ENGINEERING, and a corrupt engineering-frame tail.
+
+void test_parse_report_more_branches(void)
+{
+    Ld2410Report r;
+
+    // out == nullptr on an otherwise well-formed frame must still fail closed.
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(BASIC, sizeof(BASIC), nullptr));
+
+    // type byte says "basic" (0x02) but the declared intra-frame length is not LEN_BASIC (13),
+    // while the length field still frames the buffer exactly and the footer is intact.
+    static const uint8_t bad_basic_len[24] = {
+        0xF4, 0xF3, 0xF2, 0xF1,                   // header
+        0x0E, 0x00,                               // length = 14 (!= LEN_BASIC)
+        0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // payload: type basic, ...
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ... (14 bytes total)
+        0xF8, 0xF7, 0xF6, 0xF5,                   // footer
+    };
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(bad_basic_len, sizeof(bad_basic_len), &r));
+
+    // type byte says "engineering" (0x01) but the declared length is not LEN_ENGINEERING (35).
+    static const uint8_t bad_eng_len[40] = {
+        0xF4, 0xF3, 0xF2, 0xF1,                                     // header
+        0x1E, 0x00,                                                 // length = 30 (!= LEN_ENGINEERING)
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // payload: type engineering,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ... zero-filled
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ... (30 bytes total)
+        0xF8, 0xF7, 0xF6, 0xF5,                                     // footer
+    };
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(bad_eng_len, sizeof(bad_eng_len), &r));
+
+    // A well-formed engineering frame with a corrupt tail marker (byte 33 of the payload).
+    uint8_t bad_eng_tail[sizeof(ENG)];
+    memcpy(bad_eng_tail, ENG, sizeof(ENG));
+    bad_eng_tail[39] = 0x00; // was 0x55
+    TEST_ASSERT_FALSE(dws_ld2410_parse_report(bad_eng_tail, sizeof(bad_eng_tail), &r));
+}
+
+void test_stream_header_partial_resync(void)
+{
+    Ld2410Stream s;
+    dws_ld2410_stream_reset(&s);
+    Ld2410Report r;
+    int reports = 0;
+
+    // F4 (matches [0]), F3 (matches [1]), then F4 again while [2]=F2 was expected: must resync
+    // to hdr_match=1 (the byte equals HDR[0] mid-resync), not drop back to 0.
+    const uint8_t partial[] = {0xF4, 0xF3, 0xF4};
+    for (unsigned i = 0; i < sizeof(partial); i++)
+        TEST_ASSERT_FALSE(dws_ld2410_stream_push(&s, partial[i], &r));
+
+    // Completing the header from that resynced position, then the rest of BASIC's bytes (from
+    // its length field onward), must still decode a full, correct report.
+    const uint8_t rest[] = {0xF3, 0xF2, 0xF1};
+    for (unsigned i = 0; i < sizeof(rest); i++)
+        TEST_ASSERT_FALSE(dws_ld2410_stream_push(&s, rest[i], &r));
+    for (unsigned i = 4; i < sizeof(BASIC); i++)
+        if (dws_ld2410_stream_push(&s, BASIC[i], &r))
+            reports++;
+    TEST_ASSERT_EQUAL_INT(1, reports);
+    TEST_ASSERT_EQUAL_UINT16(250, r.moving_cm);
+}
+
+void test_distance_cm_and_ack_extra_branches(void)
+{
+    // Null-report guard, and the state == BOTH arm (moving distance wins).
+    TEST_ASSERT_EQUAL_UINT16(0, dws_ld2410_distance_cm(nullptr));
+
+    Ld2410Report r;
+    TEST_ASSERT_TRUE(dws_ld2410_parse_report(ENG, sizeof(ENG), &r));
+    TEST_ASSERT_EQUAL_UINT8(Ld2410State::LD2410_STATE_BOTH, r.state);
+    TEST_ASSERT_EQUAL_UINT16(100, dws_ld2410_distance_cm(&r)); // BOTH -> moving distance
+
+    TEST_ASSERT_FALSE(dws_ld2410_ack_ok(nullptr));
+
+    // ack_mac guard branches a well-formed dws_ld2410_parse_ack() output never reaches: a null
+    // ack, a null mac, a non-zero status, a too-short payload, and payload_len satisfied but a
+    // null payload pointer (parse_ack always pairs payload_len==0 with a null payload, so the
+    // last case is built directly on a plain struct rather than via parse_ack).
+    uint8_t mac[6];
+    TEST_ASSERT_FALSE(dws_ld2410_ack_mac(nullptr, mac));
+
+    Ld2410Ack ack;
+    memset(&ack, 0, sizeof(ack));
+    ack.command = 0x01A5;
+    ack.status = 0;
+    static const uint8_t payload6[6] = {1, 2, 3, 4, 5, 6};
+    ack.payload = payload6;
+    ack.payload_len = 6;
+    TEST_ASSERT_FALSE(dws_ld2410_ack_mac(&ack, nullptr)); // mac == nullptr
+
+    ack.status = 1; // non-zero status
+    TEST_ASSERT_FALSE(dws_ld2410_ack_mac(&ack, mac));
+    ack.status = 0;
+
+    ack.payload_len = 5; // short payload
+    TEST_ASSERT_FALSE(dws_ld2410_ack_mac(&ack, mac));
+
+    ack.payload_len = 6;
+    ack.payload = nullptr; // payload_len satisfied but no payload pointer
+    TEST_ASSERT_FALSE(dws_ld2410_ack_mac(&ack, mac));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -333,5 +439,8 @@ int main()
     RUN_TEST(test_ld2410b_command_encoders);
     RUN_TEST(test_ld2410b_ack_decoding);
     RUN_TEST(test_ld2410b_ack_rejects_malformed);
+    RUN_TEST(test_parse_report_more_branches);
+    RUN_TEST(test_stream_header_partial_resync);
+    RUN_TEST(test_distance_cm_and_ack_extra_branches);
     return UNITY_END();
 }

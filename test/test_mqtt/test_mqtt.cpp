@@ -405,11 +405,58 @@ void test_host_transport_stubs()
     dws_mqtt_disconnect();
 }
 
+// Builders reject a null topic pointer even when the output buffer is valid
+// (the `!out || !topic || ...` guards need out valid / topic null to hit the
+// middle clause), and an empty-but-non-null field still round-trips through
+// put_field's zero-length branch (no memcpy of a zero-length payload).
+void test_build_null_topic_guards_and_empty_field()
+{
+    uint8_t out[64];
+    TEST_ASSERT_EQUAL_UINT(0, dws_mqtt_build_publish(out, sizeof(out), nullptr, nullptr, 0, 0, 0, false, false));
+    TEST_ASSERT_EQUAL_UINT(0, dws_mqtt_build_subscribe(out, sizeof(out), 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_UINT(0, dws_mqtt_build_unsubscribe(out, sizeof(out), 1, nullptr));
+
+    // Empty (non-null) topic: put_field writes just the 2-byte zero length, no memcpy.
+    size_t len = dws_mqtt_build_unsubscribe(out, sizeof(out), 1, "");
+    TEST_ASSERT_GREATER_THAN(0, len);
+    uint8_t type, flags;
+    uint32_t rl;
+    size_t hl;
+    TEST_ASSERT_TRUE(dws_mqtt_parse_fixed_header(out, len, &type, &flags, &rl, &hl));
+    TEST_ASSERT_EQUAL_UINT32(4, rl); // pid(2) + empty topic length prefix(2)
+}
+
+// Parsers reject a too-short remaining_len even with a non-null buffer, and
+// treat null optional out-params as "caller doesn't want this" rather than
+// crashing.
+void test_parse_short_len_and_null_outparam_guards()
+{
+    char topic[8];
+    size_t tl, pl;
+    const uint8_t *pay;
+    uint16_t pid;
+    uint8_t one[1] = {0x00};
+    TEST_ASSERT_FALSE(dws_mqtt_parse_publish(one, 1, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid));
+
+    uint8_t ack_one[1] = {0x00};
+    TEST_ASSERT_EQUAL_UINT16(0, dws_mqtt_parse_ack(ack_one, 1));
+
+    uint8_t ok[2] = {0x00, 0x00};
+    TEST_ASSERT_EQUAL_INT(-1, dws_mqtt_parse_connack(nullptr, 2, nullptr));
+    TEST_ASSERT_EQUAL_INT(0, dws_mqtt_parse_connack(ok, 2, nullptr)); // session_present output not requested
+
+    uint8_t sb[3] = {0x00, 0x0A, 0x01};
+    TEST_ASSERT_FALSE(dws_mqtt_parse_suback(nullptr, 3, &pid, nullptr));
+    TEST_ASSERT_TRUE(dws_mqtt_parse_suback(sb, 3, nullptr, nullptr)); // caller wants neither out-param
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_build_guards_and_overflow);
     RUN_TEST(test_parse_guards);
+    RUN_TEST(test_build_null_topic_guards_and_empty_field);
+    RUN_TEST(test_parse_short_len_and_null_outparam_guards);
     RUN_TEST(test_host_transport_stubs);
     RUN_TEST(test_remlen_boundaries);
     RUN_TEST(test_remlen_too_big);

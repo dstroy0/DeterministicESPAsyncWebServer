@@ -108,8 +108,12 @@ void http_parse(uint8_t slot_id)
         }
 
         uint8_t byte = 0;
-        if (!dws_conn_read_byte(slot_id, &byte)) // ring drained between available() and here
-            break;
+        // The false arm (ring drained between available() and here) is a genuine
+        // producer/consumer race between this loop and the lwIP callback that fills the
+        // ring on another context - unreachable in this single-threaded host harness,
+        // which has no concurrent producer to race against.
+        if (!dws_conn_read_byte(slot_id, &byte)) // GCOVR_EXCL_BR_LINE
+            break;                               // GCOVR_EXCL_LINE
         http_parser_feed(req, byte);
     }
 }

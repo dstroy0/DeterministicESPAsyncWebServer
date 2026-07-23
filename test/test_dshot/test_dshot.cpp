@@ -61,6 +61,14 @@ void test_decode_roundtrip_and_crc(void)
     TEST_ASSERT_EQUAL_UINT16(1046, val);
 }
 
+void test_decode_null_out_params(void)
+{
+    // A valid frame decodes successfully even when the caller doesn't want the value or telemetry bit
+    // back (both out-parameters null), exercising the false side of the "if (value11)" / "if (telemetry)"
+    // null-checks on a *successful* decode (the existing null-pointer cases all hit CRC failure first).
+    TEST_ASSERT_TRUE(dws_dshot_decode(0x82C6, nullptr, nullptr, false));
+}
+
 void test_bit_timing(void)
 {
     // 600 kbit: period 1667 ns; "1" ~3/4, "0" ~3/8.
@@ -103,6 +111,7 @@ int main(void)
     RUN_TEST(test_encode_bidirectional_inverts_crc);
     RUN_TEST(test_value_masked_to_11_bits);
     RUN_TEST(test_decode_roundtrip_and_crc);
+    RUN_TEST(test_decode_null_out_params);
     RUN_TEST(test_bit_timing);
     RUN_TEST(test_esc_pwm_mapping);
     RUN_TEST(test_bit_ns_all_rates);

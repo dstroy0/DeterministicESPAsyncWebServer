@@ -206,6 +206,130 @@ void test_quic_tp_more_paths()
     TEST_ASSERT_TRUE(dws_quic_tp_parse(mad, sizeof(mad), &out));
 }
 
+// Encode: the initial_source_connection_id and retry_source_connection_id put_param() calls each have
+// two arms exercised nowhere above: the call itself failing (cap overflow), and being skipped because
+// "ok" is already false from an earlier failed param (the && short-circuit).
+void test_encode_cid_ok_chain_gaps()
+{
+    QuicTransportParams tp;
+    uint8_t buf[256];
+
+    // All three connection-ID params present; cap = 0 fails original_dcid immediately, so both the
+    // initial_scid and retry_scid puts are skipped by the already-false "ok &&" (not even attempted).
+    dws_quic_tp_defaults(&tp);
+    tp.has_original_dcid = true;
+    tp.original_dcid_len = 8;
+    memset(tp.original_dcid, 0xAB, 8);
+    tp.has_initial_scid = true;
+    tp.initial_scid_len = 4;
+    memset(tp.initial_scid, 0xCD, 4);
+    tp.has_retry_scid = true;
+    tp.retry_scid_len = 4;
+    memset(tp.retry_scid, 0xEF, 4);
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, 0));
+
+    // initial_scid alone: cap enough for its ID + length varints but not its 4-octet value.
+    dws_quic_tp_defaults(&tp);
+    tp.has_initial_scid = true;
+    tp.initial_scid_len = 4;
+    memset(tp.initial_scid, 0xEE, 4);
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, 5));
+
+    // retry_scid alone: same cap-starved shape.
+    dws_quic_tp_defaults(&tp);
+    tp.has_retry_scid = true;
+    tp.retry_scid_len = 4;
+    memset(tp.retry_scid, 0xFF, 4);
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, 5));
+}
+
+// Encode: the put_varint_param() failure arm (value beyond the 62-bit varint range) for every
+// initial_max_* / stream-limit / timeout / payload-size field that test_quic_tp_more_paths only
+// exercised for initial_max_data.
+void test_encode_varint_param_overflow_gaps()
+{
+    QuicTransportParams tp;
+    uint8_t buf[256];
+
+    dws_quic_tp_defaults(&tp);
+    tp.initial_max_sd_bidi_local = 0xFFFFFFFFFFFFFFFFull;
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, sizeof(buf)));
+
+    dws_quic_tp_defaults(&tp);
+    tp.initial_max_sd_bidi_remote = 0xFFFFFFFFFFFFFFFFull;
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, sizeof(buf)));
+
+    dws_quic_tp_defaults(&tp);
+    tp.initial_max_sd_uni = 0xFFFFFFFFFFFFFFFFull;
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, sizeof(buf)));
+
+    dws_quic_tp_defaults(&tp);
+    tp.initial_max_streams_bidi = 0xFFFFFFFFFFFFFFFFull;
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, sizeof(buf)));
+
+    dws_quic_tp_defaults(&tp);
+    tp.initial_max_streams_uni = 0xFFFFFFFFFFFFFFFFull;
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, sizeof(buf)));
+
+    dws_quic_tp_defaults(&tp);
+    tp.max_idle_timeout = 0xFFFFFFFFFFFFFFFFull;
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, sizeof(buf)));
+
+    dws_quic_tp_defaults(&tp);
+    tp.max_udp_payload_size = 0xFFFFFFFFFFFFFFFFull;
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, sizeof(buf)));
+}
+
+// Encode: the disable_active_migration put_param() call's two remaining arms - skipped because ok is
+// already false (active_connection_id_limit failing first), and the call itself failing (cap runs out
+// exactly at the flag, after the 9 always-emitted params fill it).
+void test_encode_disable_migration_gaps()
+{
+    QuicTransportParams tp;
+    uint8_t buf[64];
+
+    dws_quic_tp_defaults(&tp);
+    tp.active_connection_id_limit = 0xFFFFFFFFFFFFFFFFull;
+    tp.disable_active_migration = true;
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, sizeof(buf)));
+
+    // The 9 always-emitted params take exactly 30 bytes with an all-default tp (7 zero-valued 1-byte
+    // varints at 3 bytes each, max_udp_payload_size's 4-byte varint at 6 bytes, active_connection_id_
+    // limit's 1-byte varint at 3 bytes): 7*3 + 6 + 3 = 30. cap=30 leaves no room for the flag's ID byte.
+    dws_quic_tp_defaults(&tp);
+    tp.disable_active_migration = true;
+    TEST_ASSERT_EQUAL_size_t(0, dws_quic_tp_encode(&tp, buf, 30));
+}
+
+// Parse: the ID-varint-decode failure itself (every other malformed-input test fails at a later step),
+// and a transport parameter ID >= 32, which falls outside the dup-guard bitmask entirely.
+void test_parse_id_decode_and_large_id()
+{
+    QuicTransportParams tp;
+
+    // Announces an 8-octet varint (top 2 bits = 11) with zero bytes available.
+    static const uint8_t bad_id[] = {0xC0};
+    TEST_ASSERT_FALSE(dws_quic_tp_parse(bad_id, sizeof(bad_id), &tp));
+
+    // id = 32 (>= 32, so the dup-guard bitmask is skipped), zero-length value; unknown -> skipped.
+    static const uint8_t big_id[] = {0x20, 0x00};
+    TEST_ASSERT_TRUE(dws_quic_tp_parse(big_id, sizeof(big_id), &tp));
+}
+
+// Parse: the "value_varint() itself fails" short-circuit arm of each remaining range-checked
+// parameter's "value_varint(...) && <range check>" (test_quic_tp_more_paths only covered this arm for
+// the range-check-free varint fields).
+void test_parse_range_check_value_decode_gaps()
+{
+    QuicTransportParams tp;
+    const uint8_t ids[] = {0x03, 0x0a, 0x0b, 0x0e};
+    for (unsigned i = 0; i < sizeof(ids); i++)
+    {
+        const uint8_t bad[4] = {ids[i], 0x02, 0x00, 0x00}; // 2-octet value, but the varint consumes 1
+        TEST_ASSERT_FALSE(dws_quic_tp_parse(bad, sizeof(bad), &tp));
+    }
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -217,5 +341,10 @@ int main(int, char **)
     RUN_TEST(test_reject_oversized_cid);
     RUN_TEST(test_reject_bad_values);
     RUN_TEST(test_quic_tp_more_paths);
+    RUN_TEST(test_encode_cid_ok_chain_gaps);
+    RUN_TEST(test_encode_varint_param_overflow_gaps);
+    RUN_TEST(test_encode_disable_migration_gaps);
+    RUN_TEST(test_parse_id_decode_and_large_id);
+    RUN_TEST(test_parse_range_check_value_decode_gaps);
     return UNITY_END();
 }

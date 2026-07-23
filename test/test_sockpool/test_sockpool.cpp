@@ -93,6 +93,75 @@ void test_null_guard_subconditions()
     TEST_ASSERT_EQUAL_size_t(0, dws_sockpool_in_use(nullptr)); // null pool -> 0
 }
 
+void test_acquire_null_pool_and_nonnull_slots_zero_n(void)
+{
+    // Null pool pointer -> FAIL (the acquire-specific null-pool branch; not exercised elsewhere).
+    TEST_ASSERT_EQUAL_INT(SockAcq::SOCK_ACQ_FAIL, dws_sockpool_acquire(nullptr, 1, 1, nullptr, nullptr));
+
+    // Non-null slots pointer but n == 0: exercises the `p->n == 0` branch reached only when
+    // p->slots is non-null (test_empty_pool_fails' pool has slots == nullptr, so it never gets here).
+    SockSlot dummy_slot[1];
+    SockPool zero_n_pool;
+    dws_sockpool_init(&zero_n_pool, dummy_slot, 0);
+    TEST_ASSERT_EQUAL_INT(SockAcq::SOCK_ACQ_FAIL, dws_sockpool_acquire(&zero_n_pool, 1, 1, nullptr, nullptr));
+}
+
+void test_acquire_recycle_with_null_evicted_id(void)
+{
+    // Fill the pool, then force a recycle while passing evicted_id == nullptr, exercising the
+    // false branch of `if (evicted_id)` (every other recycle test passes a non-null pointer).
+    dws_sockpool_acquire(&g_pool, 100, 10, nullptr, nullptr);
+    dws_sockpool_acquire(&g_pool, 101, 20, nullptr, nullptr);
+    dws_sockpool_acquire(&g_pool, 102, 30, nullptr, nullptr);
+    size_t idx = 99;
+    TEST_ASSERT_EQUAL_INT(SockAcq::SOCK_ACQ_RECYCLED, dws_sockpool_acquire(&g_pool, 103, 40, &idx, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, idx);
+    TEST_ASSERT_TRUE(dws_sockpool_find(&g_pool, 103, nullptr));
+}
+
+void test_touch_guard_subconditions(void)
+{
+    // Valid pool pointer but null slots array -> no-op (p->slots branch).
+    SockPool empty;
+    dws_sockpool_init(&empty, nullptr, 0);
+    dws_sockpool_touch(&empty, 0, 5);
+
+    // Valid pool/slots but idx out of range -> no-op (idx >= p->n branch).
+    dws_sockpool_touch(&g_pool, 99, 5);
+
+    // Valid idx, but that slot is not in_use -> no-op (the `in_use` false branch).
+    size_t idx = 99;
+    dws_sockpool_acquire(&g_pool, 100, 10, &idx, nullptr);
+    TEST_ASSERT_TRUE(dws_sockpool_release(&g_pool, idx));
+    dws_sockpool_touch(&g_pool, idx, 999); // slot idx is free; must not mark it used
+    TEST_ASSERT_EQUAL_size_t(0, dws_sockpool_in_use(&g_pool));
+}
+
+void test_release_guard_subconditions(void)
+{
+    // Null pool pointer -> false (release-specific null-pool branch; not exercised elsewhere).
+    TEST_ASSERT_FALSE(dws_sockpool_release(nullptr, 0));
+
+    // Valid pool pointer but null slots array -> false (p->slots branch).
+    SockPool empty;
+    dws_sockpool_init(&empty, nullptr, 0);
+    TEST_ASSERT_FALSE(dws_sockpool_release(&empty, 0));
+
+    // Valid pool/slots but idx out of range -> false (idx >= p->n branch).
+    TEST_ASSERT_FALSE(dws_sockpool_release(&g_pool, 99));
+}
+
+void test_find_and_in_use_with_null_slots(void)
+{
+    // Valid pool pointer but null slots array -> exercises the p->slots branch in both
+    // dws_sockpool_find and dws_sockpool_in_use (only the null-pool branch was tested before).
+    SockPool empty;
+    dws_sockpool_init(&empty, nullptr, 0);
+    size_t idx = 99;
+    TEST_ASSERT_FALSE(dws_sockpool_find(&empty, 1, &idx));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sockpool_in_use(&empty));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -102,5 +171,10 @@ int main(void)
     RUN_TEST(test_release_reopens_free);
     RUN_TEST(test_empty_pool_fails);
     RUN_TEST(test_null_guard_subconditions);
+    RUN_TEST(test_acquire_null_pool_and_nonnull_slots_zero_n);
+    RUN_TEST(test_acquire_recycle_with_null_evicted_id);
+    RUN_TEST(test_touch_guard_subconditions);
+    RUN_TEST(test_release_guard_subconditions);
+    RUN_TEST(test_find_and_in_use_with_null_slots);
     return UNITY_END();
 }

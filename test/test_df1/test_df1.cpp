@@ -180,6 +180,28 @@ void test_parse_edges_and_guards()
     TEST_ASSERT_FALSE(dws_df1_parse_frame(cbuf, cn, Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len));
 }
 
+// The leader check is a short-circuiting OR; a bad first octet (DLE) must reject on its own,
+// without ever looking at the second octet. And a successful parse with a null out_len
+// pointer (caller doesn't want the length back) must still return true, not dereference it.
+void test_parse_bad_leader_first_byte_and_null_outlen()
+{
+    const uint8_t data[] = {0x07, 0x19};
+    uint8_t buf[16];
+    size_t n = dws_df1_build_frame(buf, sizeof(buf), data, sizeof(data), Df1Check::DF1_CHECK_BCC);
+
+    uint8_t out[16];
+    size_t out_len;
+
+    // First octet is not DLE (second octet left untouched/valid).
+    uint8_t corrupt[16];
+    memcpy(corrupt, buf, n);
+    corrupt[0] = 0x55;
+    TEST_ASSERT_FALSE(dws_df1_parse_frame(corrupt, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len));
+
+    // A successful parse with a null out_len pointer.
+    TEST_ASSERT_TRUE(dws_df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -193,5 +215,6 @@ int main()
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_parse_edges_and_guards);
+    RUN_TEST(test_parse_bad_leader_first_byte_and_null_outlen);
     return UNITY_END();
 }

@@ -177,6 +177,62 @@ void test_writer_error_and_string_paths()
     TEST_ASSERT_FALSE(dws_sunspec_write_string(&sof, "abcd", 4)); // field 8 > cap 4
 }
 
+// dws_sunspec_check_marker's short-circuit arms (null regs, and a non-null buffer that's
+// too short for the marker) plus dws_sunspec_begin's null-offset guard.
+void test_check_marker_null_and_short_and_begin_null_offset()
+{
+    TEST_ASSERT_FALSE(dws_sunspec_check_marker(nullptr, 10)); // regs == nullptr short-circuits
+
+    const uint8_t shortbuf[4] = {0x53, 0x75, 0x6E, 0x53};     // "SunS", but len is reported short
+    TEST_ASSERT_FALSE(dws_sunspec_check_marker(shortbuf, 2)); // len < 4
+
+    const uint8_t marker[4] = {0x53, 0x75, 0x6E, 0x53};
+    size_t off;
+    TEST_ASSERT_FALSE(dws_sunspec_begin(marker, sizeof(marker), nullptr)); // offset == nullptr
+    (void)off;
+}
+
+// dws_sunspec_string's loop-exit conditions: ending because avail (nregs*2) is exhausted with
+// no NUL padding, and ending because out_cap truncates before avail or a NUL is reached.
+void test_string_loop_boundary_exits()
+{
+    // No NUL anywhere in the field; the loop runs until i == avail (out_cap is not the limit).
+    const uint8_t full[2] = {'A', 'B'};
+    char out1[8];
+    TEST_ASSERT_TRUE(dws_sunspec_string(full, 0, 1, out1, sizeof(out1)));
+    TEST_ASSERT_EQUAL_STRING("AB", out1);
+
+    // No NUL within the truncated window either; out_cap - 1 is smaller than avail, so the
+    // loop is cut short by the destination capacity, not by content or by avail.
+    const uint8_t longer[4] = {'W', 'X', 'Y', 'Z'};
+    char out2[3];
+    TEST_ASSERT_TRUE(dws_sunspec_string(longer, 0, 2, out2, sizeof(out2)));
+    TEST_ASSERT_EQUAL_STRING("WX", out2);
+}
+
+// The && short-circuit failure arms in dws_sunspec_write_model_header and
+// dws_sunspec_write_end_model: each one's *first* write_u16 failing (so the second is never
+// attempted), and write_end_model's *second* write_u16 failing after the first succeeded.
+void test_writer_two_step_short_circuit_failures()
+{
+    uint8_t one[1];
+    SunSpecWriter w1;
+    dws_sunspec_writer_init(&w1, one, sizeof(one)); // cap 1: even the first write_u16 can't fit
+    TEST_ASSERT_FALSE(dws_sunspec_write_model_header(&w1, 5, 5));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sunspec_writer_finish(&w1));
+
+    SunSpecWriter w2;
+    dws_sunspec_writer_init(&w2, one, sizeof(one)); // same: id write itself overflows
+    TEST_ASSERT_FALSE(dws_sunspec_write_end_model(&w2));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sunspec_writer_finish(&w2));
+
+    uint8_t three[3];
+    SunSpecWriter w3;
+    dws_sunspec_writer_init(&w3, three, sizeof(three)); // id write (2B) fits, length write (2B) doesn't
+    TEST_ASSERT_FALSE(dws_sunspec_write_end_model(&w3));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sunspec_writer_finish(&w3));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -187,5 +243,8 @@ int main()
     RUN_TEST(test_writer_overflow_fails_closed);
     RUN_TEST(test_reader_guards_and_i32);
     RUN_TEST(test_writer_error_and_string_paths);
+    RUN_TEST(test_check_marker_null_and_short_and_begin_null_offset);
+    RUN_TEST(test_string_loop_boundary_exits);
+    RUN_TEST(test_writer_two_step_short_circuit_failures);
     return UNITY_END();
 }

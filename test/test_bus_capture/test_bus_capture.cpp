@@ -97,6 +97,7 @@ void test_masks_and_bounds()
     uint8_t tiny[8];
     TEST_ASSERT_EQUAL_UINT(0, can_to_socketcan(&f, tiny, sizeof(tiny))); // too small
     TEST_ASSERT_EQUAL_UINT(0, can_to_socketcan(nullptr, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, can_to_socketcan(&f, nullptr, sizeof(out))); // null out buffer
 }
 
 void test_pcap_can_linktype()
@@ -104,6 +105,14 @@ void test_pcap_can_linktype()
     uint8_t g[DWS_PCAP_GLOBAL_HDR_LEN];
     TEST_ASSERT_EQUAL_UINT(DWS_PCAP_GLOBAL_HDR_LEN, dws_pcap_global_header(g, sizeof(g), DWS_DLT_CAN_SOCKETCAN));
     TEST_ASSERT_EQUAL_HEX8(227, g[20]); // DLT_CAN_SOCKETCAN
+}
+
+void test_pcap_global_header_bounds()
+{
+    uint8_t g[DWS_PCAP_GLOBAL_HDR_LEN];
+    TEST_ASSERT_EQUAL_UINT(0, dws_pcap_global_header(nullptr, sizeof(g), DWS_DLT_CAN_SOCKETCAN)); // null out
+    uint8_t tiny[8];
+    TEST_ASSERT_EQUAL_UINT(0, dws_pcap_global_header(tiny, sizeof(tiny), DWS_DLT_CAN_SOCKETCAN)); // too small
 }
 
 static void bus_sink_noop(const CanFrame *)
@@ -134,6 +143,7 @@ int main()
     RUN_TEST(test_rtr_flag_and_no_data);
     RUN_TEST(test_masks_and_bounds);
     RUN_TEST(test_pcap_can_linktype);
+    RUN_TEST(test_pcap_global_header_bounds);
     RUN_TEST(test_host_twai_stubs_fail_closed);
     RUN_TEST(test_host_can_stubs);
     return UNITY_END();

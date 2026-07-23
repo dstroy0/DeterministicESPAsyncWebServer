@@ -333,6 +333,24 @@ void test_spinel_value_round_trip()
     TEST_ASSERT_EQUAL_UINT16(n, r.off); // consumed exactly the whole value
 }
 
+void test_spinel_put_bool_false()
+{
+    // Every other test only exercises dws_spinel_put_bool(true); cover the v == false arm of
+    // its ternary here too, and confirm it round-trips through the reader as false.
+    uint8_t buf[4];
+    SpinelWriter w;
+    dws_spinel_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(dws_spinel_put_bool(&w, false));
+    TEST_ASSERT_EQUAL_UINT16(1, dws_spinel_writer_len(&w));
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[0]);
+
+    SpinelReader r;
+    dws_spinel_reader_init(&r, buf, 1);
+    bool b = true;
+    TEST_ASSERT_TRUE(dws_spinel_get_bool(&r, &b));
+    TEST_ASSERT_FALSE(b);
+}
+
 void test_spinel_le_wire_layout()
 {
     // Confirm the on-wire encoding is little-endian for the fixed-width integers.
@@ -870,6 +888,7 @@ int main()
     RUN_TEST(test_spinel_guards);
     RUN_TEST(test_thread_more_guards);
     RUN_TEST(test_spinel_value_round_trip);
+    RUN_TEST(test_spinel_put_bool_false);
     RUN_TEST(test_spinel_le_wire_layout);
     RUN_TEST(test_spinel_protocol_version_and_caps);
     RUN_TEST(test_spinel_data_wlen_and_utf8);

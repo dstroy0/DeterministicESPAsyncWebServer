@@ -156,6 +156,44 @@ void test_null_guards()
     TEST_ASSERT_TRUE(dws_ip_is_unspecified(&out)); // written, not left uninitialized
 }
 
+// dws_forwarded_trust_add() rejects a null network pointer outright.
+void test_add_rejects_null_network()
+{
+    TEST_ASSERT_FALSE(dws_forwarded_trust_add(nullptr, 8));
+}
+
+// dws_forwarded_trust_add() rejects an unrecognized address family (bits stays negative) and, on a
+// separate call, an in-family but over-long prefix - two distinct ways the guard can fire.
+void test_add_rejects_bad_family_and_over_long_prefix()
+{
+    DWSIp unset;
+    unset.family = DWSIpFamily::DWS_IP_NONE;
+    TEST_ASSERT_FALSE(dws_forwarded_trust_add(&unset, 0)); // family not V4/V6 -> bits stays negative
+
+    DWSIp v4addr = v4(10, 0, 0, 1);
+    TEST_ASSERT_FALSE(dws_forwarded_trust_add(&v4addr, 33)); // valid family, prefix past 32
+}
+
+// A CIDR string whose address portion overruns the bounded parse buffer is rejected before parsing.
+void test_add_cidr_rejects_overlong_address()
+{
+    // DWS_IP_STR_MAX is 46; this address text alone is well past that, with no slash reached first.
+    const char *too_long = "1111111111111111111111111111111111111111111111111111111111";
+    TEST_ASSERT_FALSE(dws_forwarded_trust_add_cidr(too_long));
+}
+
+// A prefix character below '0' (not just above '9') is also a non-digit and is rejected.
+void test_add_cidr_rejects_prefix_below_digit_range()
+{
+    TEST_ASSERT_FALSE(dws_forwarded_trust_add_cidr("10.0.0.0/.5"));
+}
+
+// dws_forwarded_trust_contains() rejects a null peer pointer outright.
+void test_contains_rejects_null_peer()
+{
+    TEST_ASSERT_FALSE(dws_forwarded_trust_contains(nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -169,5 +207,10 @@ int main()
     RUN_TEST(test_untrusted_peer_ignores_forwarded);
     RUN_TEST(test_trusted_peer_bad_token_falls_back);
     RUN_TEST(test_null_guards);
+    RUN_TEST(test_add_rejects_null_network);
+    RUN_TEST(test_add_rejects_bad_family_and_over_long_prefix);
+    RUN_TEST(test_add_cidr_rejects_overlong_address);
+    RUN_TEST(test_add_cidr_rejects_prefix_below_digit_range);
+    RUN_TEST(test_contains_rejects_null_peer);
     return UNITY_END();
 }

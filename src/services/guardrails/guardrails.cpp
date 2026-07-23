@@ -39,7 +39,9 @@ int dws_health_json(const DWSHealth *h, char *out, size_t cap)
     int w = snprintf(out, cap, "{\"free_heap\":%u,\"min_free_heap\":%u,\"largest_free_block\":%u,\"stack_free\":%u}",
                      (unsigned)h->free_heap, (unsigned)h->min_free_heap, (unsigned)h->largest_free_block,
                      (unsigned)h->stack_free);
-    if (w < 0 || (size_t)w >= cap)
+    // w < 0 is unreachable: this format is all %u (unsigned) with literal text, no
+    // multibyte/wide-character conversion, which is the only way snprintf goes negative.
+    if (w < 0 || (size_t)w >= cap) // GCOVR_EXCL_BR_LINE  w<0 half unreachable (see above)
     {
         out[0] = '\0';
         return 0;

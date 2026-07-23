@@ -6,6 +6,7 @@
 
 #include "network_drivers/presentation/http_parser/http_parser.h"
 #include "services/cloudevents/cloudevents.h"
+#include "shared_primitives/numparse.h"
 #include <string.h>
 #include <unity.h>
 
@@ -148,6 +149,132 @@ void test_guards_and_datacontenttype_only()
     TEST_ASSERT_FALSE(dws_cloudevents_from_headers(nullptr, &out)); // null request
 }
 
+// ce_present() must treat a non-null but empty string as absent, not just a null
+// pointer (the s[0] != '\0' branch, distinct from the s != nullptr branch).
+void test_present_empty_string_is_absent()
+{
+    CloudEvent ce = {};
+    ce.id = "1";
+    ce.source = "/s";
+    ce.type = "t";
+    ce.subject = ""; // present pointer, empty content -> must NOT be emitted
+    char buf[256];
+    size_t n = dws_cloudevents_build_json(buf, sizeof(buf), &ce);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_NULL(strstr(buf, "\"subject\""));
+}
+
+// data_json set to a non-null empty string is treated the same as "no data_json"
+// (falls through past the data_json branch to the data_str branch below it).
+void test_data_json_empty_string_falls_through()
+{
+    CloudEvent ce = {};
+    ce.id = "1";
+    ce.source = "/s";
+    ce.type = "t";
+    ce.data_json = ""; // non-null, empty
+    ce.data_str = "fallback";
+    char buf[256];
+    size_t n = dws_cloudevents_build_json(buf, sizeof(buf), &ce);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"data\":\"fallback\""));
+}
+
+// An explicit datacontenttype alongside data_json is emitted verbatim instead of the
+// "application/json" default.
+void test_data_json_explicit_datacontenttype()
+{
+    CloudEvent ce = {};
+    ce.id = "1";
+    ce.source = "/s";
+    ce.type = "t";
+    ce.data_json = "{\"x\":1}";
+    ce.datacontenttype = "application/cloudevents+json";
+    char buf[256];
+    size_t n = dws_cloudevents_build_json(buf, sizeof(buf), &ce);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"datacontenttype\":\"application/cloudevents+json\""));
+    TEST_ASSERT_NULL(strstr(buf, "\"datacontenttype\":\"application/json\""));
+}
+
+// data_str with no datacontenttype omits the datacontenttype key entirely.
+void test_data_str_without_datacontenttype()
+{
+    CloudEvent ce = {};
+    ce.id = "1";
+    ce.source = "/s";
+    ce.type = "t";
+    ce.data_str = "plain";
+    char buf[256];
+    size_t n = dws_cloudevents_build_json(buf, sizeof(buf), &ce);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"data\":\"plain\""));
+    TEST_ASSERT_NULL(strstr(buf, "\"datacontenttype\""));
+}
+
+// from_headers with a valid request but a null out pointer must fail closed.
+void test_from_headers_null_out()
+{
+    feed_request(0, "POST /events HTTP/1.1\r\nHost: x\r\nce-id: a\r\nce-source: /p\r\nce-type: t\r\n\r\n");
+    TEST_ASSERT_FALSE(dws_cloudevents_from_headers(&http_pool[0], nullptr));
+}
+
+// from_headers with id and (separately) source individually missing, exercising both
+// short-circuit legs of the trailing id && source && type check.
+void test_from_headers_missing_id_then_missing_source()
+{
+    feed_request(0, "POST /events HTTP/1.1\r\nHost: x\r\nce-source: /p\r\nce-type: t\r\n\r\n"); // no ce-id
+    CloudEvent a;
+    TEST_ASSERT_FALSE(dws_cloudevents_from_headers(&http_pool[0], &a));
+
+    feed_request(1, "POST /events HTTP/1.1\r\nHost: x\r\nce-id: i\r\nce-type: t\r\n\r\n"); // no ce-source
+    CloudEvent b;
+    TEST_ASSERT_FALSE(dws_cloudevents_from_headers(&http_pool[1], &b));
+}
+
+// dws_np_ws / dws_np_digit: every whitespace class plus a non-matching fallthrough,
+// and digits below/at/above the '0'-'9' range, direct-called for full branch coverage
+// of these no-stdlib strtol/strtoul/strtod helpers (numparse.h).
+void test_numparse_ws_digit_predicates()
+{
+    TEST_ASSERT_TRUE(dws_np_ws(' '));
+    TEST_ASSERT_TRUE(dws_np_ws('\t'));
+    TEST_ASSERT_TRUE(dws_np_ws('\n'));
+    TEST_ASSERT_TRUE(dws_np_ws('\r'));
+    TEST_ASSERT_TRUE(dws_np_ws('\f'));
+    TEST_ASSERT_TRUE(dws_np_ws('\v'));
+    TEST_ASSERT_FALSE(dws_np_ws('a')); // not whitespace: falls through every comparison
+
+    TEST_ASSERT_FALSE(dws_np_digit('/')); // just below '0'
+    TEST_ASSERT_TRUE(dws_np_digit('5'));
+    TEST_ASSERT_FALSE(dws_np_digit(':')); // just above '9'
+}
+
+// dws_strtol: leading whitespace, both signs and no sign, a no-digits ("no number")
+// input, and a null end pointer, covering every branch in the function body.
+void test_numparse_strtol()
+{
+    const char *end = nullptr;
+
+    long v = dws_strtol(" 42", &end);
+    TEST_ASSERT_EQUAL(42, v);
+    TEST_ASSERT_EQUAL_STRING("", end); // stopped at the terminating NUL
+
+    v = dws_strtol("-7", &end);
+    TEST_ASSERT_EQUAL(-7, v);
+
+    v = dws_strtol("+9", &end);
+    TEST_ASSERT_EQUAL(9, v);
+
+    const char *s = "abc"; // no digits at all -> "no number": *end == s, result 0
+    v = dws_strtol(s, &end);
+    TEST_ASSERT_EQUAL(0, v);
+    TEST_ASSERT_TRUE(end == s);
+
+    v = dws_strtol("123", nullptr); // null end pointer must not be dereferenced
+    TEST_ASSERT_EQUAL(123, v);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -159,5 +286,13 @@ int main()
     RUN_TEST(test_from_headers_binary_mode);
     RUN_TEST(test_from_headers_missing_required);
     RUN_TEST(test_guards_and_datacontenttype_only);
+    RUN_TEST(test_present_empty_string_is_absent);
+    RUN_TEST(test_data_json_empty_string_falls_through);
+    RUN_TEST(test_data_json_explicit_datacontenttype);
+    RUN_TEST(test_data_str_without_datacontenttype);
+    RUN_TEST(test_from_headers_null_out);
+    RUN_TEST(test_from_headers_missing_id_then_missing_source);
+    RUN_TEST(test_numparse_ws_digit_predicates);
+    RUN_TEST(test_numparse_strtol);
     return UNITY_END();
 }

@@ -180,6 +180,123 @@ void test_build_error_paths()
     TEST_ASSERT_FALSE(dws_j1939_build_tp_dt(&f, 0x21, 0xFF, 1, chunk, 9));   // chunk_len > 7
 }
 
+// Null-pointer guard branches whose non-null-argument paths are already exercised above.
+void test_null_guard_paths()
+{
+    TEST_ASSERT_FALSE(dws_j1939_encode_id(nullptr, 6, 0x00FEEE, 0x21, 0xFF)); // null id
+    const uint8_t chunk[7] = {1, 2, 3, 4, 5, 6, 7};
+    TEST_ASSERT_FALSE(dws_j1939_build_tp_dt(nullptr, 0x21, 0xFF, 1, chunk, 7)); // null out
+    dws_j1939_tp_reset(nullptr);                                                // null rx -> no-op, not a crash
+}
+
+// build_message's length edges: too long is rejected; zero-length (null data) still builds.
+void test_build_message_length_edges()
+{
+    const uint8_t data[3] = {1, 2, 3};
+    CanFrame f;
+    TEST_ASSERT_FALSE(dws_j1939_build_message(&f, 6, 0x00FEEE, 0x21, 0xFF, data, DWS_CAN_MAX_DLC + 1)); // too long
+
+    TEST_ASSERT_TRUE(dws_j1939_build_message(&f, 6, 0x00FEEE, 0x21, 0xFF, nullptr, 0)); // zero-length, no data needed
+    TEST_ASSERT_EQUAL_UINT8(0, f.dlc);
+}
+
+// build_name: the false side of the arbitrary-address-capable ternary.
+void test_build_name_not_arbitrary_capable()
+{
+    uint64_t name = dws_j1939_build_name(false, 2, 0, 5, 130, 0, 1, 0x1F2, 0x12345);
+    TEST_ASSERT_FALSE((name >> 63) & 1u);
+}
+
+// build_bam_cm: total_size above DWS_J1939_TP_MAX is rejected.
+void test_build_bam_cm_too_large()
+{
+    CanFrame f;
+    TEST_ASSERT_FALSE(dws_j1939_build_bam_cm(&f, 0x21, 0x00FECA, DWS_J1939_TP_MAX + 1));
+}
+
+// A TP.CM frame shorter than 8 octets is not a valid session start, even with a BAM PGN.
+void test_tp_feed_short_cm_frame_ignored()
+{
+    J1939TpRx rx;
+    dws_j1939_tp_reset(&rx);
+    CanFrame cm;
+    TEST_ASSERT_TRUE(dws_j1939_build_bam_cm(&cm, 0x21, 0x00FECA, 16));
+    cm.dlc = 4; // too short to be a real TP.CM frame
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, dws_j1939_tp_feed(&rx, &cm));
+    TEST_ASSERT_FALSE(rx.active);
+}
+
+// RTS (connection mode), like BAM, is a valid receiver-side session start.
+void test_tp_feed_rts_starts_session()
+{
+    J1939TpRx rx;
+    dws_j1939_tp_reset(&rx);
+    CanFrame cm;
+    TEST_ASSERT_TRUE(dws_j1939_build_bam_cm(&cm, 0x21, 0x00FECA, 16));
+    cm.data[0] = J1939_TP_CM_RTS;
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_STARTED, dws_j1939_tp_feed(&rx, &cm));
+    TEST_ASSERT_TRUE(rx.active);
+}
+
+// A TP.CM announcing a size outside 9..DWS_J1939_TP_MAX aborts with an error (bytes crafted
+// directly, since the builder itself refuses to construct such a frame).
+void test_tp_feed_cm_total_size_out_of_range()
+{
+    J1939TpRx rx;
+    dws_j1939_tp_reset(&rx);
+    CanFrame cm;
+    TEST_ASSERT_TRUE(dws_j1939_build_bam_cm(&cm, 0x21, 0x00FECA, 16));
+
+    CanFrame too_small = cm;
+    too_small.data[1] = 5; // total_size = 5, below the 9-octet minimum
+    too_small.data[2] = 0;
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_ERROR, dws_j1939_tp_feed(&rx, &too_small));
+    TEST_ASSERT_FALSE(rx.active);
+
+    CanFrame too_big = cm;
+    too_big.data[1] = (uint8_t)2000;
+    too_big.data[2] = (uint8_t)(2000 >> 8); // total_size = 2000, above DWS_J1939_TP_MAX
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_ERROR, dws_j1939_tp_feed(&rx, &too_big));
+    TEST_ASSERT_FALSE(rx.active);
+}
+
+// A zero-length TP.DT frame carries no sequence number and is ignored, leaving the session
+// untouched.
+void test_tp_feed_dt_short_frame_ignored()
+{
+    J1939TpRx rx;
+    dws_j1939_tp_reset(&rx);
+    CanFrame cm;
+    dws_j1939_build_bam_cm(&cm, 0x21, 0x00FECA, 16);
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_STARTED, dws_j1939_tp_feed(&rx, &cm));
+
+    uint8_t chunk[7] = {1, 2, 3, 4, 5, 6, 7};
+    CanFrame dt;
+    TEST_ASSERT_TRUE(dws_j1939_build_tp_dt(&dt, 0x21, J1939_ADDR_GLOBAL, 1, chunk, 7));
+    dt.dlc = 0;
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, dws_j1939_tp_feed(&rx, &dt));
+    TEST_ASSERT_TRUE(rx.active);
+    TEST_ASSERT_EQUAL_UINT8(1, rx.next_seq);
+}
+
+// A TP.DT from a source other than the active session's is ignored, leaving the session
+// untouched.
+void test_tp_feed_dt_wrong_source_ignored()
+{
+    J1939TpRx rx;
+    dws_j1939_tp_reset(&rx);
+    CanFrame cm;
+    dws_j1939_build_bam_cm(&cm, 0x21, 0x00FECA, 16);
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_STARTED, dws_j1939_tp_feed(&rx, &cm));
+
+    uint8_t chunk[7] = {1, 2, 3, 4, 5, 6, 7};
+    CanFrame dt;
+    TEST_ASSERT_TRUE(dws_j1939_build_tp_dt(&dt, 0x22, J1939_ADDR_GLOBAL, 1, chunk, 7)); // different source address
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, dws_j1939_tp_feed(&rx, &dt));
+    TEST_ASSERT_TRUE(rx.active);
+    TEST_ASSERT_EQUAL_UINT8(1, rx.next_seq);
+}
+
 // The transport-protocol reassembler's ignore/error branches.
 void test_tp_feed_error_paths()
 {
@@ -229,5 +346,14 @@ int main()
     RUN_TEST(test_tp_out_of_sequence_errors);
     RUN_TEST(test_build_error_paths);
     RUN_TEST(test_tp_feed_error_paths);
+    RUN_TEST(test_null_guard_paths);
+    RUN_TEST(test_build_message_length_edges);
+    RUN_TEST(test_build_name_not_arbitrary_capable);
+    RUN_TEST(test_build_bam_cm_too_large);
+    RUN_TEST(test_tp_feed_short_cm_frame_ignored);
+    RUN_TEST(test_tp_feed_rts_starts_session);
+    RUN_TEST(test_tp_feed_cm_total_size_out_of_range);
+    RUN_TEST(test_tp_feed_dt_short_frame_ignored);
+    RUN_TEST(test_tp_feed_dt_wrong_source_ignored);
     return UNITY_END();
 }

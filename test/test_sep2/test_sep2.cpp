@@ -63,6 +63,27 @@ void test_overflow(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_sep2_device_capability(900, "/edev", "/derp", buf, sizeof(buf)));
 }
 
+void test_device_capability_null_out_and_zero_cap(void)
+{
+    char buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, dws_sep2_device_capability(900, "/edev", "/derp", nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sep2_device_capability(900, "/edev", "/derp", buf, 0));
+}
+
+void test_end_device_null_out_and_zero_cap(void)
+{
+    char buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, dws_sep2_end_device(123456789ULL, "3E4F...A1", "/edev/0", nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sep2_end_device(123456789ULL, "3E4F...A1", "/edev/0", buf, 0));
+}
+
+void test_der_control_null_out_and_zero_cap(void)
+{
+    char buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, dws_sep2_der_control("A1B2", 1720000000u, 3600, -1500, nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sep2_der_control("A1B2", 1720000000u, 3600, -1500, buf, 0));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -71,5 +92,8 @@ int main(void)
     RUN_TEST(test_der_control_negative_setpoint);
     RUN_TEST(test_xml_escape_in_href);
     RUN_TEST(test_overflow);
+    RUN_TEST(test_device_capability_null_out_and_zero_cap);
+    RUN_TEST(test_end_device_null_out_and_zero_cap);
+    RUN_TEST(test_der_control_null_out_and_zero_cap);
     return UNITY_END();
 }

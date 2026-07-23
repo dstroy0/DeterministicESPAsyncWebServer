@@ -66,6 +66,56 @@ void test_data_parse_rejects(void)
     TEST_ASSERT_FALSE(dws_dnet_data_parse(bad, sizeof(bad), &d, &dl));
 }
 
+// Header fields with nibbles >= 10 exercise the 'A'..'F' branch of the private hex_digit()
+// helper (the existing header test only ever emits '0'..'9' digits).
+void test_header_hex_letters(void)
+{
+    uint8_t out[16];
+    size_t n = dws_dnet_header(0xAB, DnetByte::DNET_WRITE, 0xCDEF, 0xFA, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(12, n);
+    const uint8_t expect_body[] = {'A', 'B', DnetByte::DNET_WRITE, 'C', 'D', 'E', 'F', 'F', 'A', DnetByte::DNET_ETB};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_body, out + 1, sizeof(expect_body));
+    uint8_t lrc = dws_dnet_lrc(out + 1, 10);
+    TEST_ASSERT_EQUAL_HEX8(lrc, out[11]);
+}
+
+// A zero-length payload: covers the data_len==0 path through dws_dnet_data's guard/if(data_len)
+// branches, and the parser's etx_idx<=1 branch (no payload bytes between STX and ETX).
+void test_data_frame_empty_payload(void)
+{
+    uint8_t buf[8];
+    size_t n = dws_dnet_data(nullptr, 0, buf, sizeof(buf));
+    // STX + ETX + LRC = 3.
+    TEST_ASSERT_EQUAL_size_t(3, n);
+    TEST_ASSERT_EQUAL_HEX8(DnetByte::DNET_STX, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(DnetByte::DNET_ETX, buf[1]);
+    uint8_t lrc = dws_dnet_lrc(buf + 1, 1);
+    TEST_ASSERT_EQUAL_HEX8(lrc, buf[2]);
+
+    const uint8_t *d = (const uint8_t *)1; // sentinel, must become null
+    size_t dl = 123;
+    TEST_ASSERT_TRUE(dws_dnet_data_parse(buf, n, &d, &dl));
+    TEST_ASSERT_EQUAL_size_t(0, dl);
+    TEST_ASSERT_NULL(d);
+}
+
+// dws_dnet_data_parse's data/data_len out-params are each independently optional; cover the
+// "caller doesn't want this one" (null) branch for both.
+void test_data_parse_null_outputs(void)
+{
+    uint8_t payload[4] = {'A', 'B', 'C', 'D'};
+    uint8_t buf[16];
+    size_t n = dws_dnet_data(payload, 4, buf, sizeof(buf));
+
+    size_t dl = 0;
+    TEST_ASSERT_TRUE(dws_dnet_data_parse(buf, n, nullptr, &dl)); // data ptr not wanted
+    TEST_ASSERT_EQUAL_size_t(4, dl);
+
+    const uint8_t *d = nullptr;
+    TEST_ASSERT_TRUE(dws_dnet_data_parse(buf, n, &d, nullptr)); // data_len not wanted
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, d, 4);
+}
+
 // Null-buffer / too-small-buffer guards on the builders, and the parser's null/short
 // and missing-ETX rejects.
 void test_guards(void)
@@ -94,6 +144,9 @@ int main(void)
     RUN_TEST(test_header_frame);
     RUN_TEST(test_data_frame_roundtrip);
     RUN_TEST(test_data_parse_rejects);
+    RUN_TEST(test_header_hex_letters);
+    RUN_TEST(test_data_frame_empty_payload);
+    RUN_TEST(test_data_parse_null_outputs);
     RUN_TEST(test_guards);
     return UNITY_END();
 }

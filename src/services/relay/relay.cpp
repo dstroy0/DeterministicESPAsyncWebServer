@@ -68,7 +68,10 @@ static int pump(DWSRelayEnd *src, DWSRelayEnd *dst, uint8_t *buf, uint16_t *len,
     if (*src_eof && *off >= *len)
     {
         *dir_done = true;
-        if (dst->shutdown && !*dst_shut_sent)
+        // the !*dst_shut_sent false arm is unreachable: *dst_shut_sent is only ever set true right
+        // here, in the same statement that sets *dir_done true, and the guard at the top of this
+        // function (`if (*dir_done) return 0;`) prevents this block from running a second time.
+        if (dst->shutdown && !*dst_shut_sent) // GCOVR_EXCL_BR_LINE
         {
             dst->shutdown(dst->ctx); // propagate the half-close to the peer that stops receiving
             *dst_shut_sent = true;

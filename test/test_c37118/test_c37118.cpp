@@ -111,6 +111,90 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, dws_c37118_build_command(small, sizeof(small), 1, 0, 0, C37118_CMD_DATA_ON));
 }
 
+// dws_c37118_build_frame's guard clause: a null destination buffer, a null payload with a
+// non-zero payload_len, and (on the success side) a zero-length payload all fail closed / or
+// succeed correctly, exercising the full "!buf || (payload_len && !payload)" branch matrix.
+void test_build_frame_null_and_zero_payload()
+{
+    uint8_t buf[32];
+    // Null destination buffer.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_c37118_build_frame(NULL, sizeof(buf), C37118_TYPE_DATA, C37118_VERSION_2011, 1, 2, 3, NULL, 0));
+
+    // Non-zero payload_len but a null payload pointer.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_c37118_build_frame(buf, sizeof(buf), C37118_TYPE_DATA, C37118_VERSION_2011, 1, 2, 3, NULL, 5));
+
+    // Zero-length payload (a null payload pointer is fine here): header-only frame.
+    size_t n = dws_c37118_build_frame(buf, sizeof(buf), C37118_TYPE_HEADER, C37118_VERSION_2011, 9, 10, 11, NULL, 0);
+    TEST_ASSERT_EQUAL_size_t(C37118_MIN_FRAME, n);
+
+    C37118Frame f;
+    TEST_ASSERT_TRUE(dws_c37118_parse_frame(buf, n, &f));
+    TEST_ASSERT_EQUAL_UINT8(C37118_TYPE_HEADER, f.type);
+    TEST_ASSERT_EQUAL_size_t(0, f.data_len);
+}
+
+// A payload_len large enough to push the frame's total size past the 16-bit FRAMESIZE field
+// must fail closed, independent of the destination capacity.
+void test_build_frame_size_field_overflow()
+{
+    uint8_t buf[8];
+    uint8_t dummy_payload[1] = {0}; // never dereferenced: the size check rejects before any copy
+    TEST_ASSERT_EQUAL_size_t(0, dws_c37118_build_frame(buf, sizeof(buf), C37118_TYPE_DATA, C37118_VERSION_2011, 1, 2, 3,
+                                                       dummy_payload, 0xFFF0));
+}
+
+// dws_c37118_parse_frame's null-argument guards.
+void test_parse_frame_null_args()
+{
+    uint8_t buf[32];
+    size_t n = dws_c37118_build_command(buf, sizeof(buf), 7, 1, 2, C37118_CMD_DATA_ON);
+    C37118Frame f;
+
+    TEST_ASSERT_FALSE(dws_c37118_parse_frame(NULL, n, &f));
+    TEST_ASSERT_FALSE(dws_c37118_parse_frame(buf, n, NULL));
+}
+
+// A FRAMESIZE field that claims fewer octets than the minimum legal frame must be rejected,
+// even though the caller-supplied buffer length is itself long enough.
+void test_parse_frame_framesize_too_small()
+{
+    uint8_t buf[32];
+    size_t n = dws_c37118_build_command(buf, sizeof(buf), 7, 1, 2, C37118_CMD_DATA_ON);
+    // Spoof an under-sized FRAMESIZE field (big-endian, at octets 2-3).
+    buf[2] = 0x00;
+    buf[3] = (uint8_t)(C37118_MIN_FRAME - 1);
+
+    C37118Frame f;
+    TEST_ASSERT_FALSE(dws_c37118_parse_frame(buf, n, &f));
+}
+
+// dws_c37118_parse_command's remaining guards: a null frame pointer, a too-short DATA (parsed
+// from a genuine Command-type frame with only 1 payload octet), and a null cmd out-param on an
+// otherwise-valid Command frame (the command word is simply not written back).
+void test_parse_command_edge_cases()
+{
+    uint16_t cmd = 0xDEAD;
+    TEST_ASSERT_FALSE(dws_c37118_parse_command(NULL, &cmd));
+
+    uint8_t buf[32];
+    uint8_t short_payload[1] = {0x01};
+    size_t n = dws_c37118_build_frame(buf, sizeof(buf), C37118_TYPE_CMD, C37118_VERSION_2011, 1, 2, 3, short_payload,
+                                      sizeof(short_payload));
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    C37118Frame f;
+    TEST_ASSERT_TRUE(dws_c37118_parse_frame(buf, n, &f));
+    TEST_ASSERT_EQUAL_UINT8(C37118_TYPE_CMD, f.type);
+    TEST_ASSERT_EQUAL_size_t(1, f.data_len);
+    TEST_ASSERT_FALSE(dws_c37118_parse_command(&f, &cmd));
+
+    size_t n2 = dws_c37118_build_command(buf, sizeof(buf), 7, 1, 2, C37118_CMD_DATA_ON);
+    C37118Frame f2;
+    TEST_ASSERT_TRUE(dws_c37118_parse_frame(buf, n2, &f2));
+    TEST_ASSERT_TRUE(dws_c37118_parse_command(&f2, NULL)); // valid frame, caller doesn't want cmd
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -120,5 +204,10 @@ int main()
     RUN_TEST(test_data_frame_payload);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_build_frame_null_and_zero_payload);
+    RUN_TEST(test_build_frame_size_field_overflow);
+    RUN_TEST(test_parse_frame_null_args);
+    RUN_TEST(test_parse_frame_framesize_too_small);
+    RUN_TEST(test_parse_command_edge_cases);
     return UNITY_END();
 }

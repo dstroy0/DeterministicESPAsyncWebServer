@@ -75,6 +75,20 @@ void test_snp_build_guards(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_snp_build(0x10, data, 2, nullptr, sizeof(out))); // null out
     TEST_ASSERT_EQUAL_size_t(0, dws_snp_build(0x10, nullptr, 2, out, sizeof(out)));  // len but null data
     TEST_ASSERT_EQUAL_size_t(0, dws_snp_build(0x10, data, 2, out, 3));               // needs 5, cap 3
+    // data_len above 255 doesn't fit the one-byte length field; out/data are otherwise
+    // valid so the data_len > 255 arm itself is what's under test (the function returns
+    // before touching data, so a short backing array is fine).
+    TEST_ASSERT_EQUAL_size_t(0, dws_snp_build(0x10, data, 256, out, sizeof(out)));
+}
+
+// dws_snp_parse rejects a null frame and a null output pointer.
+void test_snp_parse_guards(void)
+{
+    uint8_t buf[8];
+    SnpFrame f;
+    size_t n = dws_snp_build(Snp::SNP_ENQ, nullptr, 0, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(dws_snp_parse(nullptr, n, &f));  // null frame
+    TEST_ASSERT_FALSE(dws_snp_parse(buf, n, nullptr)); // null out
 }
 
 int main(void)
@@ -85,5 +99,6 @@ int main(void)
     RUN_TEST(test_empty_data);
     RUN_TEST(test_parse_rejects);
     RUN_TEST(test_snp_build_guards);
+    RUN_TEST(test_snp_parse_guards);
     return UNITY_END();
 }

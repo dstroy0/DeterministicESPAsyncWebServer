@@ -85,6 +85,8 @@ void test_hartip_header(void)
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 8);
     // Too small a buffer -> 0.
     TEST_ASSERT_EQUAL_size_t(0, dws_hartip_build_header(0, 0, 0, 0, 0, out, 4));
+    // Big enough cap but null out pointer -> 0.
+    TEST_ASSERT_EQUAL_size_t(0, dws_hartip_build_header(0, 0, 0, 0, 0, nullptr, sizeof(out)));
 }
 
 void test_build_and_parse_guards()
@@ -95,10 +97,30 @@ void test_build_and_parse_guards()
     TEST_ASSERT_EQUAL_size_t(0, dws_hart_build(0x82, addr, 2, 0, data, sizeof(data), out, sizeof(out))); // bad addr_len
     TEST_ASSERT_EQUAL_size_t(0, dws_hart_build(0x82, nullptr, 5, 0, data, sizeof(data), out, sizeof(out))); // null addr
     TEST_ASSERT_EQUAL_size_t(0, dws_hart_build(0x82, addr, 5, 0, data, sizeof(data), out, 4)); // cap too small
+    // Valid addr, but data_len > 0 with a null data pointer -> 0.
+    TEST_ASSERT_EQUAL_size_t(0, dws_hart_build(0x82, addr, 1, 0, nullptr, 3, out, sizeof(out)));
+    // data_len exceeds the 1-byte byte-count field (> 0xFF), even though it would otherwise fit -> 0.
+    static uint8_t big_data[300] = {0};
+    static uint8_t big_out[400];
+    TEST_ASSERT_EQUAL_size_t(0, dws_hart_build(0x82, addr, 1, 0, big_data, sizeof(big_data), big_out, sizeof(big_out)));
+
     HartFrame hf;
     TEST_ASSERT_FALSE(dws_hart_parse(nullptr, 10, &hf)); // null frame
     uint8_t tiny[2] = {0x82, 0x00};
     TEST_ASSERT_FALSE(dws_hart_parse(tiny, sizeof(tiny), &hf)); // len < minimum
+
+    uint8_t addr1 = 0x80;
+    uint8_t valid_frame[16];
+    size_t vn =
+        dws_hart_build(HartDelim::HART_DELIM_STX, &addr1, 1, 0x00, nullptr, 0, valid_frame, sizeof(valid_frame));
+    TEST_ASSERT_FALSE(dws_hart_parse(valid_frame, vn, nullptr)); // valid frame, null out struct
+
+    // len >= min (header readable) but < the byte-count-derived expected length -> truncated-data rejection.
+    uint8_t data3[] = {0x01, 0x02, 0x03};
+    uint8_t frame_full[16];
+    size_t fn = dws_hart_build(HartDelim::HART_DELIM_STX, &addr1, 1, 0x00, data3, sizeof(data3), frame_full,
+                               sizeof(frame_full));
+    TEST_ASSERT_FALSE(dws_hart_parse(frame_full, fn - 1, &hf));
 }
 
 int main(void)

@@ -94,6 +94,62 @@ void test_persist_free_shrinks_boundary()
     TEST_ASSERT_EQUAL_size_t(0, dws_arena_persist_used(&a));
 }
 
+void test_persist_init_zero_size()
+{
+    // size == 0 must take the ternary's false arm (size > adj is false) rather than underflow.
+    DWSArena z;
+    dws_arena_init(&z, g_buf, 0);
+    TEST_ASSERT_EQUAL_size_t(0, z.size);
+    TEST_ASSERT_NULL(dws_arena_persist_alloc(&z, 16));
+    TEST_ASSERT_NULL(dws_arena_scratch_alloc(&z, 16));
+}
+
+void test_persist_first_fit_skips_too_small_free_block()
+{
+    // A free hole too small for the request must be skipped, not "reused" anyway.
+    void *A = dws_arena_persist_alloc(&a, 16);  // small block -> becomes an undersized hole
+    void *B = dws_arena_persist_alloc(&a, 500); // used block, sits right after A
+    (void)A;
+    dws_arena_persist_free(&a, A);
+    void *C = dws_arena_persist_alloc(&a, 100); // too big for A's hole; B is in use -> extends past B
+    TEST_ASSERT_NOT_NULL(C);
+    TEST_ASSERT_TRUE((uintptr_t)C > (uintptr_t)B);
+}
+
+void test_persist_alloc_overflow_guard()
+{
+    // First carve a block so persist_end > 239, then request a size so large that
+    // (AHDR + n) wraps size_t; persist_end + need must not wrap back into apparent success.
+    void *first = dws_arena_persist_alloc(&a, 250);
+    TEST_ASSERT_NOT_NULL(first);
+    size_t huge = (size_t)0 - 256; // SIZE_MAX-255: already 8-aligned, survives align_up unchanged
+    void *p = dws_arena_persist_alloc(&a, huge);
+    TEST_ASSERT_NULL(p); // overflow guard must fail closed, not wrap into a bogus success
+}
+
+void test_persist_double_free_and_empty_chain_free()
+{
+    // Freeing an already-free block (and freeing into an already-empty chain) must be a
+    // safe no-op, not a double-decrement or an out-of-bounds boundary scan.
+    void *p = dws_arena_persist_alloc(&a, 64);
+    TEST_ASSERT_NOT_NULL(p);
+    dws_arena_persist_free(&a, p); // block was the only one -> chain empties, persist_end -> 0
+    TEST_ASSERT_EQUAL_size_t(0, dws_arena_persist_used(&a));
+    dws_arena_persist_free(&a, p); // double free: b->used already false; persist_end already 0
+    TEST_ASSERT_EQUAL_size_t(0, dws_arena_persist_used(&a));
+}
+
+void test_free_bytes_when_exactly_full()
+{
+    // Consuming exactly the reported free middle brings persist_end up to meet scratch_top
+    // exactly (not past it); free_bytes() must then report 0 via its "no middle left" arm.
+    size_t free0 = dws_arena_free_bytes(&a);
+    TEST_ASSERT_TRUE(free0 > 0);
+    void *p = dws_arena_persist_alloc(&a, free0);
+    TEST_ASSERT_NOT_NULL(p);
+    TEST_ASSERT_EQUAL_size_t(0, dws_arena_free_bytes(&a));
+}
+
 // ---- scratch end ----------------------------------------------------------
 
 void test_scratch_bump_and_reset()
@@ -120,6 +176,29 @@ void test_scratch_mark_release()
     TEST_ASSERT_TRUE(dws_arena_scratch_used(&a) > used1);
     dws_arena_scratch_release(&a, mk); // frees everything after the mark
     TEST_ASSERT_EQUAL_size_t(used1, dws_arena_scratch_used(&a));
+}
+
+void test_scratch_high_water_mark_not_regressed()
+{
+    // A later, smaller allocation must not appear to raise usage past an earlier peak.
+    void *big = dws_arena_scratch_alloc(&a, 1000);
+    TEST_ASSERT_NOT_NULL(big);
+    dws_arena_scratch_reset(&a); // usage back to 0; the internal high-water mark stays at the peak
+    void *small = dws_arena_scratch_alloc(&a, 10);
+    TEST_ASSERT_NOT_NULL(small);
+    TEST_ASSERT_TRUE(dws_arena_scratch_used(&a) < 1000);
+}
+
+void test_scratch_release_rejects_invalid_marks()
+{
+    // A mark below the current top (would grow usage) or beyond the arena (a foreign/corrupt
+    // mark) must both be rejected, leaving scratch_top untouched.
+    dws_arena_scratch_alloc(&a, 200);
+    size_t used_before = dws_arena_scratch_used(&a);
+    dws_arena_scratch_release(&a, 0); // 0 < current scratch_top -> rejected
+    TEST_ASSERT_EQUAL_size_t(used_before, dws_arena_scratch_used(&a));
+    dws_arena_scratch_release(&a, a.size + 1000); // beyond the arena -> rejected
+    TEST_ASSERT_EQUAL_size_t(used_before, dws_arena_scratch_used(&a));
 }
 
 // ---- both ends / floating boundary ----------------------------------------
@@ -247,6 +326,19 @@ void test_set_persist_free_routes_by_address()
     dws_arena_set_persist_free(&s, nullptr); // no-op
 }
 
+void test_set_persist_free_unmatched_pointer_is_noop()
+{
+    // A pointer that belongs to neither region must let the routing loop run to completion
+    // (no region claims it) and simply return, rather than misroute or crash.
+    DWSArenaSet s;
+    dws_arena_set_init(&s);
+    dws_arena_set_add(&s, g_r0, sizeof(g_r0));
+    dws_arena_set_add(&s, g_r1, sizeof(g_r1));
+    uint8_t stray[8]; // not part of either region's backing buffer
+    dws_arena_set_persist_free(&s, stray);
+    TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_persist_used(&s));
+}
+
 void test_set_scratch_overflow_and_unwind()
 {
     DWSArenaSet s;
@@ -286,6 +378,22 @@ void test_persist_split_and_max_align()
     TEST_ASSERT_TRUE(((uintptr_t)p & 15u) == 0);
 }
 
+void test_set_scratch_release_partial_mark_count()
+{
+    // A mark captured with fewer regions than the set currently has (a region was added after
+    // the mark) must restore only the regions the mark actually covers (m->count < s->count).
+    DWSArenaSet s;
+    dws_arena_set_init(&s);
+    dws_arena_set_add(&s, g_r0, sizeof(g_r0)); // count == 1 when the mark is captured
+    DWSArenaMark mk = dws_arena_set_scratch_mark(&s);
+    dws_arena_set_add(&s, g_r1, sizeof(g_r1)); // count grows to 2 after the mark
+    void *p = dws_arena_set_scratch_alloc(&s, 100);
+    TEST_ASSERT_NOT_NULL(p);
+    TEST_ASSERT_TRUE(in_buf(p, g_r0, sizeof(g_r0))); // r0 is tried first and has room
+    dws_arena_set_scratch_release(&s, &mk);          // mk.count(1) < s.count(2)
+    TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_scratch_used(&s));
+}
+
 void test_set_exhaustion_and_free_bytes()
 {
     DWSArenaSet s;
@@ -311,8 +419,15 @@ int main()
     RUN_TEST(test_persist_first_fit_reuse);
     RUN_TEST(test_persist_coalesce);
     RUN_TEST(test_persist_free_shrinks_boundary);
+    RUN_TEST(test_persist_init_zero_size);
+    RUN_TEST(test_persist_first_fit_skips_too_small_free_block);
+    RUN_TEST(test_persist_alloc_overflow_guard);
+    RUN_TEST(test_persist_double_free_and_empty_chain_free);
+    RUN_TEST(test_free_bytes_when_exactly_full);
     RUN_TEST(test_scratch_bump_and_reset);
     RUN_TEST(test_scratch_mark_release);
+    RUN_TEST(test_scratch_high_water_mark_not_regressed);
+    RUN_TEST(test_scratch_release_rejects_invalid_marks);
     RUN_TEST(test_persist_and_scratch_no_overlap);
     RUN_TEST(test_boundary_collision_fail_closed);
     RUN_TEST(test_scratch_reset_frees_middle_for_persist);
@@ -322,7 +437,9 @@ int main()
     RUN_TEST(test_set_add_limits);
     RUN_TEST(test_set_persist_overflow_and_prefer);
     RUN_TEST(test_set_persist_free_routes_by_address);
+    RUN_TEST(test_set_persist_free_unmatched_pointer_is_noop);
     RUN_TEST(test_set_scratch_overflow_and_unwind);
+    RUN_TEST(test_set_scratch_release_partial_mark_count);
     RUN_TEST(test_persist_split_and_max_align);
     RUN_TEST(test_set_exhaustion_and_free_bytes);
     return UNITY_END();

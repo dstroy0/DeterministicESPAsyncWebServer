@@ -104,6 +104,19 @@ void test_read_rsp_and_build_guards(void)
     TEST_ASSERT_EQUAL_size_t(0, att_write_req(0x10, nullptr, 3, out, sizeof(out))); // handle_value: null value
     TEST_ASSERT_EQUAL_size_t(0, att_notify(0x10, val, 3, out, 5));                  // handle_value: cap < 3 + vlen
     TEST_ASSERT_EQUAL_size_t(0, att_error_rsp(AttOp::ATT_OP_READ_REQ, 0x10, 0x0A, out, 4)); // error_rsp: cap < 5
+
+    // Null-`out` branches on the leading guards (never hit above: those calls all pass a real buffer).
+    TEST_ASSERT_EQUAL_size_t(0, att_read_req(0x0025, nullptr, sizeof(out)));        // null out
+    TEST_ASSERT_EQUAL_size_t(0, att_write_req(0x10, val, 3, nullptr, sizeof(out))); // handle_value: null out
+    TEST_ASSERT_EQUAL_size_t(0, att_error_rsp(AttOp::ATT_OP_READ_REQ, 0x10, 0x0A, nullptr, 16)); // error_rsp: null out
+
+    // vlen == 0 paths: `vlen && !val` short-circuits false and the value copy is skipped.
+    n = att_read_rsp(nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(1, n);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_READ_RSP, out[0]);
+    n = att_write_req(0x10, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(3, n);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_WRITE_REQ, out[0]);
 }
 
 // att_parse guards (null / empty / truncated) and the remaining opcodes.
@@ -125,6 +138,21 @@ void test_parse_guards_and_opcodes(void)
     const uint8_t unk[2] = {0xFF, 0x01};
     TEST_ASSERT_TRUE(att_parse(unk, sizeof(unk), &p)); // unknown opcode: reported, no fields
     TEST_ASSERT_EQUAL_HEX8(0xFF, p.opcode);
+
+    TEST_ASSERT_FALSE(att_parse(rr, sizeof(rr), nullptr)); // null out
+
+    // READ_RSP with no value bytes: `len > 1` false branch, value stays null/0-length.
+    const uint8_t rrsp_empty[1] = {AttOp::ATT_OP_READ_RSP};
+    TEST_ASSERT_TRUE(att_parse(rrsp_empty, sizeof(rrsp_empty), &p));
+    TEST_ASSERT_NULL(p.value);
+    TEST_ASSERT_EQUAL_size_t(0, p.value_len);
+
+    // WRITE_REQ with no value bytes: `len > 3` false branch, value stays null/0-length.
+    const uint8_t wr_novalue[3] = {AttOp::ATT_OP_WRITE_REQ, 0x31, 0x00};
+    TEST_ASSERT_TRUE(att_parse(wr_novalue, sizeof(wr_novalue), &p));
+    TEST_ASSERT_EQUAL_HEX16(0x0031, p.handle);
+    TEST_ASSERT_NULL(p.value);
+    TEST_ASSERT_EQUAL_size_t(0, p.value_len);
 }
 
 // dws_gatt_char_json rejects a null output, a zero cap, and a null array with a nonzero count.

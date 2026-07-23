@@ -96,6 +96,43 @@ void test_compresses_json()
     TEST_ASSERT_TRUE(clen < n);
 }
 
+// A run of far more than MAX_CHAIN (64) positions sharing the same 3-byte hash
+// ("ABC"), each followed by a distinct 4th byte so every candidate match stops
+// at exactly MIN_MATCH (3) and never reaches max_len. That forces the
+// hash-chain walk to exhaust its MAX_CHAIN budget - loop exit via chain == 0 -
+// rather than stopping early on a length-based break or running off the end of
+// the chain (NONE sentinel).
+void test_hash_chain_exhaustion()
+{
+    uint8_t buf[480];
+    for (int k = 0; k < 120; k++)
+    {
+        buf[k * 4 + 0] = 'A';
+        buf[k * 4 + 1] = 'B';
+        buf[k * 4 + 2] = 'C';
+        buf[k * 4 + 3] = (uint8_t)k; // unique per block -> caps every match at length 3
+    }
+    roundtrip(buf, sizeof(buf));
+}
+
+// Two occurrences of a distinctive 3-byte tag more than WINDOW (512) bytes
+// apart, with nothing else in the buffer able to collide with that hash
+// bucket: the chain walk's first (and only) candidate for the second
+// occurrence is farther than the window, so it must be discarded via the
+// dist > WINDOW break rather than matched against.
+void test_match_distance_exceeds_window()
+{
+    uint8_t buf[600];
+    memset(buf, 0, sizeof(buf));
+    buf[0] = 'Q';
+    buf[1] = 'R';
+    buf[2] = 'S';
+    buf[520] = 'Q';
+    buf[521] = 'R';
+    buf[522] = 'S';
+    roundtrip(buf, sizeof(buf));
+}
+
 // Deterministic xorshift32 - same generator the pentest suite uses.
 static uint32_t s_rng = 0x1234abcdu;
 static uint32_t rng()
@@ -165,6 +202,8 @@ int main()
     RUN_TEST(test_roundtrip_all_byte_values);
     RUN_TEST(test_compresses_repetitive);
     RUN_TEST(test_compresses_json);
+    RUN_TEST(test_hash_chain_exhaustion);
+    RUN_TEST(test_match_distance_exceeds_window);
     RUN_TEST(test_fuzz_roundtrip);
     RUN_TEST(test_fuzz_low_entropy_roundtrip);
     RUN_TEST(test_output_overflow_fails_closed);

@@ -6,6 +6,7 @@
 // host tests - no sockets, no FreeRTOS (the owner-task tripwire is ESP32-only).
 
 #include "network_drivers/session/scratch.h"
+#include "network_drivers/session/worker.h"
 #include <stdint.h>
 #include <unity.h>
 
@@ -18,6 +19,16 @@ void tearDown()
 }
 
 // ---------------------------------------------------------------------------
+
+// Must run before any other test in this binary (see its RUN_TEST placement in
+// main()): scratch_high_water()'s internal peak starts BSS-zeroed and is never
+// reset by scratch_reset(), so this is the only point in the process where the
+// "not a new peak" branch of its per-slot loop (peak stays 0) can be observed -
+// every later test has already pushed a worker's high-water mark above zero.
+void test_high_water_starts_at_zero()
+{
+    TEST_ASSERT_EQUAL_size_t(0, scratch_high_water());
+}
 
 void test_alloc_returns_nonnull_and_advances_used()
 {
@@ -154,6 +165,32 @@ void test_sequential_scopes_do_not_accumulate()
     TEST_ASSERT_EQUAL_size_t(0, scratch_used());
 }
 
+// cur_worker() clamps an out-of-range worker id back to slot 0 (in this env
+// DWS_SCRATCH_SLOTS == DWS_WORKER_COUNT == 1, so 0 is the only valid id) so a
+// stray id can never index the arena out of bounds - exercise both the
+// negative and the too-large side of that clamp.
+void test_cur_worker_clamps_out_of_range_ids()
+{
+    scratch_reset();
+    void *base = scratch_alloc(8, 1); // record worker 0's base while self == 0
+    TEST_ASSERT_NOT_NULL(base);
+    scratch_reset();
+
+    dws_worker_set_self(-1); // w >= 0 half of the clamp condition fails
+    TEST_ASSERT_EQUAL_size_t(0, scratch_used());
+    void *neg = scratch_alloc(8, 1);
+    TEST_ASSERT_EQUAL_PTR(base, neg); // still resolves to arena 0
+    scratch_reset();
+
+    dws_worker_set_self(DWS_SCRATCH_SLOTS); // w < DWS_SCRATCH_SLOTS half fails
+    TEST_ASSERT_EQUAL_size_t(0, scratch_used());
+    void *big = scratch_alloc(8, 1);
+    TEST_ASSERT_EQUAL_PTR(base, big); // still resolves to arena 0
+
+    dws_worker_set_self(0); // restore identity for every later test
+    scratch_reset();
+}
+
 // align == 0 falls back to the default alignment.
 void test_zero_align_uses_default()
 {
@@ -166,6 +203,7 @@ void test_zero_align_uses_default()
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_high_water_starts_at_zero); // must run first - see comment above the test
     RUN_TEST(test_zero_align_uses_default);
     RUN_TEST(test_alloc_returns_nonnull_and_advances_used);
     RUN_TEST(test_sequential_allocs_are_distinct_and_ordered);
@@ -181,5 +219,6 @@ int main()
     RUN_TEST(test_scratch_scope_releases_on_scope_exit);
     RUN_TEST(test_nested_scopes_reclaim_lifo);
     RUN_TEST(test_sequential_scopes_do_not_accumulate);
+    RUN_TEST(test_cur_worker_clamps_out_of_range_ids);
     return UNITY_END();
 }

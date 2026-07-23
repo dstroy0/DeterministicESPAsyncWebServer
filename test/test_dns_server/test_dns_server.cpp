@@ -138,6 +138,7 @@ void test_malformed_guards()
     TEST_ASSERT_EQUAL_UINT(0, dws_dns_server_build_response(q, 11, 60, resolve_foo, out, sizeof(out))); // < header
     TEST_ASSERT_EQUAL_UINT(0, dws_dns_server_build_response(nullptr, qlen, 60, resolve_foo, out, sizeof(out)));
     TEST_ASSERT_EQUAL_UINT(0, dws_dns_server_build_response(q, qlen, 60, nullptr, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, dws_dns_server_build_response(q, qlen, 60, resolve_foo, nullptr, sizeof(out)));
     // A compression pointer inside the question is illegal.
     uint8_t bad[16] = {0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0xC0, 0x0C, 0, 1};
     TEST_ASSERT_EQUAL_UINT(0, dws_dns_server_build_response(bad, sizeof(bad), 60, resolve_foo, out, sizeof(out)));
@@ -153,6 +154,9 @@ void test_table_add_lookup_case_insensitive()
     TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, dws_dns_server_lookup("PRINTER.LAN"));
     TEST_ASSERT_EQUAL_HEX32(0xC0A8010Bu, dws_dns_server_lookup("clock.lan"));
     TEST_ASSERT_EQUAL_HEX32(0u, dws_dns_server_lookup("absent.lan"));
+    // "clock" is a strict prefix of the stored "clock.lan": the compare must run past the
+    // shorter probe's terminator while the stored name still has characters left.
+    TEST_ASSERT_EQUAL_HEX32(0u, dws_dns_server_lookup("clock"));
     dws_dns_server_clear();
     TEST_ASSERT_EQUAL_HEX32(0u, dws_dns_server_lookup("printer.lan"));
 }

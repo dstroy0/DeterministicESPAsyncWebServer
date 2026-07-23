@@ -15,9 +15,14 @@
 // Clamp a snprintf result: 0 on truncation / error, else the written length.
 static size_t finish(char *buf, size_t cap, int n)
 {
-    if (n < 0 || (size_t)n >= cap)
+    // The n < 0 half is unreachable: both callers format a fixed literal + a single %u into a
+    // caller-supplied buffer, and snprintf only goes negative on an encoding error those formats
+    // cannot raise.
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_BR_LINE  n < 0 half unreachable, see above
     {
-        if (cap)
+        // The false half is unreachable: both callers (dws_haas_mdc_build_q, dws_haas_mdc_build_var)
+        // already return early when cap == 0, so finish() only ever runs with cap > 0.
+        if (cap) // GCOVR_EXCL_BR_LINE  cap == 0 half unreachable, see above
             buf[0] = '\0';
         return 0;
     }
@@ -67,7 +72,9 @@ static bool parse_u32(const char *s, size_t len, uint32_t *out)
             return false;
         v = v * 10 + (uint32_t)(s[i] - '0');
     }
-    if (out)
+    // The false half is unreachable: parse_u32() is static and both call sites (dws_haas_mdc_parse_status,
+    // dws_haas_mdc_parse_macro) always pass the address of a local, never NULL.
+    if (out) // GCOVR_EXCL_BR_LINE  out == nullptr half unreachable, see above
         *out = v;
     return true;
 }

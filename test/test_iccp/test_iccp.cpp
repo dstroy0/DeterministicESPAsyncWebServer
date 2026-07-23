@@ -78,10 +78,23 @@ void test_state_and_real_q_guards()
 {
     uint8_t out[64];
     uint8_t t[4] = {0, 0, 0, 0};
-    TEST_ASSERT_EQUAL_size_t(0, dws_iccp_state_q(1, 0, t, nullptr, sizeof(out))); // null out
-    TEST_ASSERT_EQUAL_size_t(0, dws_iccp_state_q(1, 0, t, out, 2));               // overflow
-    TEST_ASSERT_EQUAL_size_t(0, dws_iccp_real_q(100, 0, t, out, 2));              // overflow
-    TEST_ASSERT_TRUE(dws_iccp_state_q(1, 0x40, t, out, sizeof(out)) > 0);         // valid (time-field tlv)
+    TEST_ASSERT_EQUAL_size_t(0, dws_iccp_state_q(1, 0, t, nullptr, sizeof(out)));  // null out
+    TEST_ASSERT_EQUAL_size_t(0, dws_iccp_state_q(1, 0, t, out, 2));                // overflow
+    TEST_ASSERT_EQUAL_size_t(0, dws_iccp_real_q(100, 0, t, out, 2));               // overflow
+    TEST_ASSERT_EQUAL_size_t(0, dws_iccp_real_q(100, 0, t, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_TRUE(dws_iccp_state_q(1, 0x40, t, out, sizeof(out)) > 0);          // valid (time-field tlv)
+}
+
+void test_real_q_positive_needs_pad_byte(void)
+{
+    // 128 = 0x80: its low byte alone has the sign bit set, so the minimal two's-complement
+    // encoding must keep a leading 0x00 pad byte to stay positive -> INTEGER 02 02 00 80.
+    // This exercises int_content()'s trim loop where tmp[start]==0x00 but the next byte's
+    // top bit is set, so trimming must stop one byte earlier than the all-zero case.
+    uint8_t out[24];
+    size_t n = dws_iccp_real_q(128, Iccp::ICCP_QUAL_VALID, nullptr, out, sizeof(out));
+    const uint8_t iv[] = {0x02, 0x02, 0x00, 0x80};
+    TEST_ASSERT_TRUE(find(out, n, iv, sizeof(iv)) >= 0);
 }
 
 int main(void)
@@ -92,5 +105,6 @@ int main(void)
     RUN_TEST(test_real_q);
     RUN_TEST(test_real_q_negative);
     RUN_TEST(test_state_and_real_q_guards);
+    RUN_TEST(test_real_q_positive_needs_pad_byte);
     return UNITY_END();
 }

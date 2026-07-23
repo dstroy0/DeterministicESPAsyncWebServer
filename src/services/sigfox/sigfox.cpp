@@ -26,8 +26,8 @@ bool contains(const char *hay, uint16_t len, const char *needle)
     uint16_t nlen = 0;
     while (needle[nlen])
         nlen++;
-    if (nlen == 0 || len < nlen)
-        return false;
+    if (nlen == 0 || len < nlen) // GCOVR_EXCL_LINE  nlen==0 is unreachable: contains() is only ever called
+        return false;            // (internally, both call sites below) with the literal non-empty needles "ERROR"/"OK"
     for (uint16_t i = 0; i + nlen <= len; i++)
     {
         uint16_t j = 0;

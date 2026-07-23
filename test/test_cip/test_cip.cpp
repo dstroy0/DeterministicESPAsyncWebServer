@@ -121,6 +121,18 @@ void test_cip_build_guards()
     TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_request(buf, sizeof(buf), 0x0E, nullptr, 4, nullptr, 0)); // null epath
     TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_request(buf, sizeof(buf), 0x0E, ep, 3, nullptr, 0)); // odd epath length
     TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_request(buf, sizeof(buf), 0x0E, ep, 4, nullptr, 5)); // data length w/o data
+    // epath word count overflows the 1-octet path-size field (512 / 2 = 256 > 0xFF); the guard
+    // short-circuits before epath is ever read, so a 4-byte backing array is fine here.
+    TEST_ASSERT_EQUAL_UINT(0, dws_cip_build_request(buf, sizeof(buf), 0x0E, ep, 512, nullptr, 0));
+}
+
+// dws_cip_parse_response fails closed on a null buffer or a null output pointer.
+void test_parse_response_null_guards()
+{
+    CipResponse r;
+    const uint8_t resp[] = {0x8E, 0x00, 0x00, 0x00};
+    TEST_ASSERT_FALSE(dws_cip_parse_response(nullptr, sizeof(resp), &r));   // null buffer
+    TEST_ASSERT_FALSE(dws_cip_parse_response(resp, sizeof(resp), nullptr)); // null output
 }
 
 int main()
@@ -134,6 +146,7 @@ int main()
     RUN_TEST(test_parse_response_ok);
     RUN_TEST(test_parse_response_additional_status);
     RUN_TEST(test_parse_response_error);
+    RUN_TEST(test_parse_response_null_guards);
     RUN_TEST(test_rejects_bad);
     return UNITY_END();
 }

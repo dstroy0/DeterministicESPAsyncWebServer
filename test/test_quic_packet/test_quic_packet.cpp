@@ -108,6 +108,32 @@ void test_pn_decode()
     TEST_ASSERT_TRUE(dws_quic_pn_decode(full - 1, trunc, (uint8_t)(n * 8)) == full);
 }
 
+// Appendix A.3's two window-wraparound branches: the reconstructed candidate lands far enough
+// from `expected` (more than half the pn window) that the true value must be one window ahead
+// or behind, not literally the naive high-bits-of-expected/low-bits-of-truncated candidate.
+void test_pn_decode_wraparound()
+{
+    // largest_pn=199 -> expected=200, pn_nbits=8 (window 256, half-window 128). Naive candidate
+    // from expected's high bits + truncated low bits is 3, which is <= expected - 128: the sender
+    // must actually have wrapped forward into the next window -> full pn = 3 + 256 = 259.
+    TEST_ASSERT_TRUE(dws_quic_pn_decode(199, 3, 8) == 259ull);
+
+    // largest_pn=299 -> expected=300. Naive candidate is 510, which is > expected + 128: this is
+    // an older, out-of-order packet number from the previous window -> full pn = 510 - 256 = 254.
+    TEST_ASSERT_TRUE(dws_quic_pn_decode(299, 254, 8) == 254ull);
+
+    // largest_pn=4 -> expected=5. Naive candidate is 200, which IS > expected + 128 (the first
+    // half of the backward-wrap test) but is NOT >= pn_win (256): the `candidate >= pn_win` guard
+    // suppresses the wrap, so the naive candidate is returned unchanged.
+    TEST_ASSERT_TRUE(dws_quic_pn_decode(4, 200, 8) == 200ull);
+
+    // Forward-wrap candidate sits right at the 2^62 ceiling: candidate <= expected - half-window
+    // holds, but the `candidate < (2^62 - pn_win)` overflow guard (Appendix A.3) does not, so the
+    // wrap is suppressed and the naive candidate is returned unchanged.
+    const uint64_t near_ceiling = (1ull << 62) + 199;
+    TEST_ASSERT_TRUE(dws_quic_pn_decode(near_ceiling, 0, 8) == (1ull << 62));
+}
+
 void test_reject()
 {
     QuicLongHeader h;
@@ -121,6 +147,9 @@ void test_reject()
     QuicShortHeader s;
     const uint8_t sbuf[2] = {0x41, 0x11};
     TEST_ASSERT_FALSE(dws_quic_parse_short_header(sbuf, sizeof sbuf, 4, &s));
+    // Long enough (>= 7 bytes) but the header-form bit (0x80) is clear: not a long header at all.
+    const uint8_t not_long_form[7] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00};
+    TEST_ASSERT_FALSE(dws_quic_parse_long_header(not_long_form, sizeof not_long_form, &h));
 }
 
 // Builder guards: bad packet-number length, oversize connection IDs, and buffer overflow.
@@ -138,7 +167,11 @@ void test_build_guards()
         0, (int)dws_quic_build_long_header(out, 6, QuicLongPacket::QUIC_LP_INITIAL, 1, cid, 2, cid, 2, 1)); // too small
     TEST_ASSERT_EQUAL_INT(0, (int)dws_quic_build_version_negotiation(out, 4, cid, 2, cid, 2, 0, 0));        // too small
     TEST_ASSERT_EQUAL_INT(
-        0, (int)dws_quic_build_version_negotiation(out, sizeof out, cid, 21, cid, 2, 0, 0)); // oversize CID
+        0, (int)dws_quic_build_version_negotiation(out, sizeof out, cid, 21, cid, 2, 0, 0)); // oversize DCID
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_quic_build_long_header(out, sizeof out, QuicLongPacket::QUIC_LP_INITIAL, 1, cid,
+                                                             2, cid, 21, 1)); // oversize SCID
+    TEST_ASSERT_EQUAL_INT(
+        0, (int)dws_quic_build_version_negotiation(out, sizeof out, cid, 2, cid, 21, 0, 0)); // oversize SCID
 
     // Packet-number encode into a buffer too small, and the 4-byte length ceiling.
     uint8_t pn[1];
@@ -159,6 +192,16 @@ void test_short_header_guards()
     QuicLongHeader lh;
     const uint8_t scid_trunc[8] = {0xC0, 0, 0, 0, 1, 0x00, 0x05, 0xAA}; // dcid_len 0, scid_len 5 but 1 byte
     TEST_ASSERT_FALSE(dws_quic_parse_long_header(scid_trunc, sizeof scid_trunc, &lh));
+
+    // Long-header parse where the Destination Connection ID itself claims more bytes than remain
+    // for it plus the trailing Source Connection ID length byte.
+    const uint8_t dcid_trunc[7] = {0xC0, 0,    0,   0,
+                                   1,    0x01, 0xAA}; // dcid_len 1 but only 1 byte left, no room for scid_len
+    TEST_ASSERT_FALSE(dws_quic_parse_long_header(dcid_trunc, sizeof dcid_trunc, &lh));
+
+    // Long-header parse where the Source Connection ID length itself exceeds the 20-byte maximum.
+    const uint8_t scid_oversize[7] = {0xC0, 0, 0, 0, 1, 0x00, 21}; // dcid_len 0, scid_len 21 (> 20)
+    TEST_ASSERT_FALSE(dws_quic_parse_long_header(scid_oversize, sizeof scid_oversize, &lh));
 }
 
 int main()
@@ -169,6 +212,7 @@ int main()
     RUN_TEST(test_short_header_parse);
     RUN_TEST(test_pn_encode);
     RUN_TEST(test_pn_decode);
+    RUN_TEST(test_pn_decode_wraparound);
     RUN_TEST(test_reject);
     RUN_TEST(test_build_guards);
     RUN_TEST(test_short_header_guards);

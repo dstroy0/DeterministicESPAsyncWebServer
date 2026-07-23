@@ -562,6 +562,102 @@ void test_scan_crc_mismatch_stops(void)
     TEST_ASSERT_EQUAL_UINT(0, dws_wal_store_scan(&s, scan_cb, nullptr, scratch, sizeof(scratch)));
 }
 
+// Two checkpoints in a row (with no tearing) leave copy A the newer generation; a plain mount right there
+// must pick A via the "genA >= genB" arm (both copies valid, unlike test_ab_superblock_fallback which only
+// exercises the A-torn fallback path).
+void test_mount_picks_newer_generation_a(void)
+{
+    RamDisk d = {g_disk, sizeof(g_disk), 0};
+    WalDev dev = make_dev(&d);
+    WalStore s;
+    TEST_ASSERT_TRUE(dws_wal_store_format(&s, &dev)); // gen 1 @ A
+    TEST_ASSERT_TRUE(dws_wal_store_append(&s, (const uint8_t *)"one", 3));
+    TEST_ASSERT_TRUE(dws_wal_store_checkpoint(&s)); // gen 2 @ B
+    TEST_ASSERT_TRUE(dws_wal_store_append(&s, (const uint8_t *)"two", 3));
+    TEST_ASSERT_TRUE(dws_wal_store_checkpoint(&s)); // gen 3 @ A
+    TEST_ASSERT_EQUAL_INT(0, s.ab);
+    uint64_t committed = 2 * (REC + 3);
+
+    WalStore m;
+    TEST_ASSERT_TRUE(dws_wal_store_mount(&m, &dev));
+    TEST_ASSERT_EQUAL_INT(0, m.ab); // both valid; A (gen 3) >= B (gen 2) wins outright
+    TEST_ASSERT_EQUAL_UINT64(committed, dws_wal_store_committed(&m));
+}
+
+// The tail-replay next_seq bump only fires when a record's seq is strictly newer than what is already known;
+// hand-craft two raw records (bypassing append's own monotonic counter) so the second is not newer than the
+// first, exercising the "if (seq + 1 > s->next_seq)" false arm.
+void test_replay_tail_seq_not_bumped_when_not_newer(void)
+{
+    RamDisk d = {g_disk, sizeof(g_disk), 0};
+    WalDev dev = make_dev(&d);
+    WalStore s;
+    TEST_ASSERT_TRUE(dws_wal_store_format(&s, &dev));
+
+    uint8_t buf[128];
+    size_t n0 = dws_wal_record_encode(buf, sizeof(buf), 5, (const uint8_t *)"one", 3);
+    size_t n1 = dws_wal_record_encode(buf + n0, sizeof(buf) - n0, 2, (const uint8_t *)"two", 3);
+    memcpy(g_disk + WAL_DATA_OFFSET, buf, n0 + n1);
+
+    WalStore m;
+    TEST_ASSERT_TRUE(dws_wal_store_mount(&m, &dev));
+    TEST_ASSERT_EQUAL_UINT64(n0 + n1, dws_wal_store_used(&m)); // both records are individually CRC-valid
+    TEST_ASSERT_EQUAL_UINT64(6, m.next_seq);                   // seq 5 -> next_seq=6; seq 2 is not newer, so it stays 6
+}
+
+// format fails when its own sync call (after copy A is written) fails.
+void test_format_sync_fails(void)
+{
+    FaultDisk fd = make_fault(g_disk, sizeof(g_disk));
+    WalDev dev = make_fault_dev(&fd);
+    fd.sync_fail_on = 1; // format's single sync call fails
+    WalStore s;
+    TEST_ASSERT_FALSE(dws_wal_store_format(&s, &dev));
+}
+
+// checkpoint fails when the *first* sync (the pre-superblock data barrier) fails, before write_super runs.
+void test_checkpoint_first_sync_fails(void)
+{
+    FaultDisk fd = make_fault(g_disk, sizeof(g_disk));
+    WalDev dev = make_fault_dev(&fd);
+    WalStore s;
+    TEST_ASSERT_TRUE(dws_wal_store_format(&s, &dev));
+    fd.sync_calls = 0;   // reset past format's own sync call
+    fd.sync_fail_on = 1; // checkpoint's data-sync barrier fails immediately
+    TEST_ASSERT_FALSE(dws_wal_store_checkpoint(&s));
+}
+
+// scan stops when a record's (corrupted) length claims more bytes than remain before the head - the
+// "off + total > s->head" arm, distinct from a CRC or magic failure.
+void test_scan_stops_on_length_overrun(void)
+{
+    RamDisk d = {g_disk, sizeof(g_disk), 0};
+    WalDev dev = make_dev(&d);
+    WalStore s;
+    TEST_ASSERT_TRUE(dws_wal_store_format(&s, &dev));
+    TEST_ASSERT_TRUE(dws_wal_store_append(&s, (const uint8_t *)"hi", 2));
+    memset(g_disk + WAL_DATA_OFFSET + 12, 0xFF, 4); // len field -> 0xFFFFFFFF
+    uint8_t scratch[128];
+    g_scan_count = 0;
+    TEST_ASSERT_EQUAL_UINT(0, dws_wal_store_scan(&s, scan_cb, nullptr, scratch, sizeof(scratch)));
+    TEST_ASSERT_EQUAL_INT(0, g_scan_count);
+}
+
+// scan stops on a legitimately-sized record that is simply too large for the caller's scratch buffer - the
+// "total > scratch_len" arm, distinct from scratch being too small to hold even a header.
+void test_scan_stops_when_record_exceeds_scratch(void)
+{
+    RamDisk d = {g_disk, sizeof(g_disk), 0};
+    WalDev dev = make_dev(&d);
+    WalStore s;
+    TEST_ASSERT_TRUE(dws_wal_store_format(&s, &dev));
+    TEST_ASSERT_TRUE(dws_wal_store_append(&s, (const uint8_t *)"hello world!", 12)); // total = REC + 12 = 32
+    uint8_t scratch[WAL_RECORD_HEADER + 4];                                          // 24: >= header, < total
+    g_scan_count = 0;
+    TEST_ASSERT_EQUAL_UINT(0, dws_wal_store_scan(&s, scan_cb, nullptr, scratch, sizeof(scratch)));
+    TEST_ASSERT_EQUAL_INT(0, g_scan_count);
+}
+
 // dws_wal_store_pread reads a record payload straight from the log, and rejects an out-of-range read.
 void test_pread_in_and_out_of_range(void)
 {
@@ -608,5 +704,11 @@ int main(void)
     RUN_TEST(test_scan_bad_magic_stops);
     RUN_TEST(test_scan_crc_mismatch_stops);
     RUN_TEST(test_pread_in_and_out_of_range);
+    RUN_TEST(test_mount_picks_newer_generation_a);
+    RUN_TEST(test_replay_tail_seq_not_bumped_when_not_newer);
+    RUN_TEST(test_format_sync_fails);
+    RUN_TEST(test_checkpoint_first_sync_fails);
+    RUN_TEST(test_scan_stops_on_length_overrun);
+    RUN_TEST(test_scan_stops_when_record_exceeds_scratch);
     return UNITY_END();
 }

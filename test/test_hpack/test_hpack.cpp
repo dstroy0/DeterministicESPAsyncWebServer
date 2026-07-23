@@ -285,6 +285,26 @@ void test_hpack_buffer_bounds()
     TEST_ASSERT_FALSE(dws_hpack_decode(&t, idxd, 1, tiny, sizeof tiny, collect, &c));
 }
 
+// A literal whose name comes from the dynamic table (name index 62), but the entry's name is
+// longer than the caller's scratch: resolve_name's dynamic branch must fail closed (distinct from
+// the "index not found" case above -- here the entry exists, it's just too big to copy out).
+void test_hpack_resolve_dynamic_name_too_big(void)
+{
+    HpackDynTable t;
+    dws_hpack_dyn_init(&t, 4096);
+    char scratch[64];
+    Collected c;
+    // insert (longname: v1); "longname" is 8 bytes
+    const uint8_t ins[] = {0x40, 0x08, 'l', 'o', 'n', 'g', 'n', 'a', 'm', 'e', 0x02, 'v', '1'};
+    TEST_ASSERT_TRUE(dws_hpack_decode(&t, ins, sizeof ins, scratch, sizeof scratch, collect, &c));
+    // literal (incremental), name index 62 ("longname"), value "v2" -- but scratch is only 4 bytes,
+    // too small for the 8-byte dynamic name.
+    char tiny[4];
+    Collected c2;
+    const uint8_t litname[] = {0x7e, 0x02, 'v', '2'};
+    TEST_ASSERT_FALSE(dws_hpack_decode(&t, litname, sizeof litname, tiny, sizeof tiny, collect, &c2));
+}
+
 // Encoder: the non-Huffman string path, output-overflow fail-closed, and the size clamp on init.
 void test_hpack_encode_paths()
 {
@@ -325,6 +345,47 @@ void test_hpack_more_errors()
     TEST_ASSERT_FALSE(dws_hpack_decode(&t, badhuff, sizeof badhuff, scratch, sizeof scratch, collect, &c));
 }
 
+// dws_hpack_dyn_init's max_bytes=0 sentinel means "default to the full table storage".
+void test_hpack_dyn_init_default_size(void)
+{
+    HpackDynTable t;
+    dws_hpack_dyn_init(&t, 0);
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)DWS_HPACK_TABLE_BYTES, t.max_size);
+}
+
+// Indexed Header Field (top bit set) whose prefix-7 integer itself is truncated: the decode_int
+// failure must be caught by dws_hpack_decode's own "!decode_int(...) || idx == 0" guard, not just
+// the idx==0 half of it.
+void test_hpack_indexed_field_truncated_int(void)
+{
+    HpackDynTable t;
+    dws_hpack_dyn_init(&t, 4096);
+    Collected c;
+    char scratch[128];
+    const uint8_t trunc[] = {0xff}; // prefix-7 all-ones (127) demands a continuation byte, none given
+    TEST_ASSERT_FALSE(dws_hpack_decode(&t, trunc, sizeof trunc, scratch, sizeof scratch, collect, &c));
+}
+
+// Encoder: a name that matches several static entries (":status" appears 7 times) but whose value
+// never fully matches any of them. The loop must keep the *first* name match (index 8) without
+// letting a later same-name entry overwrite it, and fall through to the literal-with-name-index path.
+void test_hpack_encode_repeated_static_name(void)
+{
+    uint8_t out[64];
+    size_t w = dws_hpack_encode_header(out, sizeof out, ":status", 7, "999", 3);
+    TEST_ASSERT_TRUE(w > 0);
+    TEST_ASSERT_EQUAL_HEX8(0x08, out[0]); // literal, name index 8 (the first ":status"), prefix 4
+
+    HpackDynTable t;
+    dws_hpack_dyn_init(&t, 4096);
+    Collected c;
+    char scratch[64];
+    TEST_ASSERT_TRUE(dws_hpack_decode(&t, out, w, scratch, sizeof scratch, collect, &c));
+    TEST_ASSERT_EQUAL_INT(1, (int)c.h.size());
+    TEST_ASSERT_EQUAL_STRING(":status", c.h[0].first.c_str());
+    TEST_ASSERT_EQUAL_STRING("999", c.h[0].second.c_str());
+}
+
 // Low-level dws_hpack_prim edge guards called directly: integer-encode buffer overflow (in the
 // continuation loop and on the final byte), decode of a zero-length input, Huffman encode
 // with no room for the trailing partial byte, a decoded EOS symbol, output overflow, and
@@ -358,6 +419,9 @@ void test_hpack_prim_edge_guards()
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_hpack_dyn_init_default_size);
+    RUN_TEST(test_hpack_indexed_field_truncated_int);
+    RUN_TEST(test_hpack_encode_repeated_static_name);
     RUN_TEST(test_hpack_prim_edge_guards);
     RUN_TEST(test_hpack_more_errors);
     RUN_TEST(test_dyn_size_update);
@@ -365,6 +429,7 @@ int main()
     RUN_TEST(test_dynamic_name_and_index);
     RUN_TEST(test_hpack_decode_errors);
     RUN_TEST(test_hpack_buffer_bounds);
+    RUN_TEST(test_hpack_resolve_dynamic_name_too_big);
     RUN_TEST(test_hpack_encode_paths);
     RUN_TEST(test_int_coding);
     RUN_TEST(test_huffman);

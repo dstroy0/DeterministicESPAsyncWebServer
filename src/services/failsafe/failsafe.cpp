@@ -157,7 +157,9 @@ int dws_failsafe_json_at(uint32_t now, char *out, size_t cap)
         fs_put(out, cap, &n, "}");
     }
     fs_put(out, cap, &n, "]}");
-    out[n < cap ? n : cap - 1] = '\0';
+    // The n >= cap arm is unreachable: fs_put/fs_put_u32 only ever advance n while n + 1 < cap, so n
+    // can never reach cap by the time we get here (cap > 0 was already established above).
+    out[n < cap ? n : cap - 1] = '\0'; // GCOVR_EXCL_BR_LINE
     return (int)n;
 }
 

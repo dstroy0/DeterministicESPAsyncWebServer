@@ -90,9 +90,10 @@ void test_build_init_guards()
     TEST_ASSERT_EQUAL_INT(38, (int)n);
     TEST_ASSERT_EQUAL_HEX8(0x81, seq[n - 1]);
 
-    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(seq, 10, 12, 12, 6));          // buffer too small
-    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(seq, sizeof(seq), 0, 12, 6));  // n = 0
-    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(seq, sizeof(seq), 13, 12, 6)); // n > 12
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(seq, 10, 12, 12, 6));           // buffer too small
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(seq, sizeof(seq), 0, 12, 6));   // n = 0
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(seq, sizeof(seq), 13, 12, 6));  // n > 12
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_mpr121_build_init(NULL, sizeof(seq), 12, 12, 6)); // null buf
 }
 
 void test_host_i2c_stubs()

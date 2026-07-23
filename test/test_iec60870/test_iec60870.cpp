@@ -232,6 +232,121 @@ void test_101_parse_rejects()
     TEST_ASSERT_FALSE(dws_iec101_parse(unknown, sizeof(unknown), &f, &c)); // neither 0x10 nor 0x68
 }
 
+// -104 parse rejects a null 'out' and a buffer shorter than 2 octets (both branches of the
+// guard's short-circuit chain, isolated from each other).
+void test_104_parse_null_out_and_too_short()
+{
+    Iec104Apci a;
+    uint8_t buf[6] = {IEC_START_104, 4, 0, 0, 0, 0};
+    size_t c;
+    TEST_ASSERT_FALSE(dws_iec104_parse(buf, sizeof(buf), nullptr, &c)); // null out
+    TEST_ASSERT_FALSE(dws_iec104_parse(buf, 1, &a, &c));                // len < 2
+}
+
+// -104 parse accepts a null 'consumed' output pointer.
+void test_104_parse_consumed_null()
+{
+    uint8_t buf[6];
+    size_t n = dws_iec104_build_s(buf, sizeof(buf), 5);
+    Iec104Apci a;
+    TEST_ASSERT_TRUE(dws_iec104_parse(buf, n, &a, nullptr));
+}
+
+// ASDU header build rejects a null header pointer, and both flag bits (sq / test / negative)
+// take their 'true' branch at least once.
+void test_asdu_header_build_null_h_and_flag_branches()
+{
+    uint8_t buf[8];
+    TEST_ASSERT_EQUAL_size_t(0, dws_iec_asdu_build_header(buf, sizeof(buf), nullptr)); // null h
+
+    IecAsduHeader h;
+    h.type_id = IEC_TYPE_C_SC_NA_1;
+    h.sq = true; // VSQ 'sq' true branch
+    h.count = 1;
+    h.test = true;     // COT 'test' true branch
+    h.negative = true; // COT 'negative' true branch
+    h.cot = IEC_COT_ACTIVATION;
+    h.orig_addr = 0;
+    h.common_addr = 1;
+    TEST_ASSERT_EQUAL_size_t(6, dws_iec_asdu_build_header(buf, sizeof(buf), &h));
+    TEST_ASSERT_EQUAL_HEX8(0x80 | 1, buf[1]);                         // sq set
+    TEST_ASSERT_EQUAL_HEX8(0x80 | 0x40 | IEC_COT_ACTIVATION, buf[2]); // test + negative set
+}
+
+// ASDU header parse rejects a null buf and a null out (isolated), and accepts a null consumed.
+void test_asdu_header_parse_null_args_and_consumed_null()
+{
+    uint8_t buf[6] = {0};
+    IecAsduHeader g;
+    size_t c;
+    TEST_ASSERT_FALSE(dws_iec_asdu_parse_header(nullptr, 6, &g, &c));  // null buf
+    TEST_ASSERT_FALSE(dws_iec_asdu_parse_header(buf, 6, nullptr, &c)); // null out
+    TEST_ASSERT_TRUE(dws_iec_asdu_parse_header(buf, 6, &g, nullptr));  // consumed == nullptr accepted
+}
+
+// -101 variable-frame build rejects a null buf, and a zero-length ASDU is a legal frame
+// carrying only control + address (round-tripped back through parse).
+void test_101_build_variable_null_buf_and_zero_len_roundtrip()
+{
+    uint8_t buf[16];
+    const uint8_t asdu[6] = {0};
+    TEST_ASSERT_EQUAL_size_t(0, dws_iec101_build_variable(nullptr, sizeof(buf), 0, 0, asdu, 6)); // null buf
+
+    size_t n = dws_iec101_build_variable(buf, sizeof(buf), IEC_FC_TEST_LINK, 0x07, nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(6 + 2, n);
+    TEST_ASSERT_EQUAL_HEX8(2, buf[1]); // L = 2 + 0
+
+    Iec101Frame f;
+    TEST_ASSERT_TRUE(dws_iec101_parse(buf, n, &f, nullptr)); // consumed == nullptr accepted
+    TEST_ASSERT_FALSE(f.fixed);
+    TEST_ASSERT_EQUAL_UINT8(0, f.asdu_len);
+    TEST_ASSERT_NULL(f.asdu);
+}
+
+// -101 parse rejects a null 'out'.
+void test_101_parse_null_out()
+{
+    uint8_t buf[5] = {IEC_START_FIXED, 0x49, 0x01, 0x4A, IEC_STOP};
+    size_t c;
+    TEST_ASSERT_FALSE(dws_iec101_parse(buf, sizeof(buf), nullptr, &c));
+}
+
+// A fixed frame shorter than 5 octets is rejected; a successful fixed-frame parse accepts a
+// null 'consumed'.
+void test_101_parse_fixed_too_short_and_consumed_null()
+{
+    uint8_t short_fixed[4] = {IEC_START_FIXED, 0, 0, 0};
+    Iec101Frame f;
+    size_t c;
+    TEST_ASSERT_FALSE(dws_iec101_parse(short_fixed, sizeof(short_fixed), &f, &c)); // len < 5
+
+    uint8_t buf[8];
+    size_t n = dws_iec101_build_fixed(buf, sizeof(buf), IEC_FC_TEST_LINK, 0x02);
+    TEST_ASSERT_TRUE(dws_iec101_parse(buf, n, &f, nullptr)); // consumed == nullptr accepted
+    TEST_ASSERT_TRUE(f.fixed);
+}
+
+// Variable-frame parse rejects a bad repeated start octet (buf[3]) and a buffer truncated
+// before the full frame (6 + L), and rejects a corrupted stop octet with an otherwise-valid
+// checksum.
+void test_101_parse_variable_bad_second_start_and_truncated_and_bad_stop()
+{
+    Iec101Frame f;
+    size_t c;
+
+    uint8_t bad_second_start[4] = {IEC_START_104, 2, 2, 0x00}; // buf[3] must repeat 0x68
+    TEST_ASSERT_FALSE(dws_iec101_parse(bad_second_start, sizeof(bad_second_start), &f, &c));
+
+    uint8_t truncated[6] = {IEC_START_104, 2, 2, IEC_START_104, 0x00, 0x00}; // len < 6 + L
+    TEST_ASSERT_FALSE(dws_iec101_parse(truncated, sizeof(truncated), &f, &c));
+
+    const uint8_t asdu[3] = {0x01, 0x02, 0x03};
+    uint8_t buf[32];
+    size_t n = dws_iec101_build_variable(buf, sizeof(buf), IEC_FC_USER_DATA_NOREPLY, 0x03, asdu, 3);
+    buf[n - 1] ^= 0xFF; // corrupt only the stop octet; checksum stays valid
+    TEST_ASSERT_FALSE(dws_iec101_parse(buf, n, &f, &c));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -248,5 +363,13 @@ int main()
     RUN_TEST(test_asdu_ioa_guards);
     RUN_TEST(test_101_build_guards);
     RUN_TEST(test_101_parse_rejects);
+    RUN_TEST(test_104_parse_null_out_and_too_short);
+    RUN_TEST(test_104_parse_consumed_null);
+    RUN_TEST(test_asdu_header_build_null_h_and_flag_branches);
+    RUN_TEST(test_asdu_header_parse_null_args_and_consumed_null);
+    RUN_TEST(test_101_build_variable_null_buf_and_zero_len_roundtrip);
+    RUN_TEST(test_101_parse_null_out);
+    RUN_TEST(test_101_parse_fixed_too_short_and_consumed_null);
+    RUN_TEST(test_101_parse_variable_bad_second_start_and_truncated_and_bad_stop);
     return UNITY_END();
 }

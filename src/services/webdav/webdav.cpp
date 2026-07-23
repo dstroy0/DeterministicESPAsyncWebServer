@@ -183,17 +183,21 @@ size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
     // The href block is at most 26 + esc(<=255) + 62 == 343 bytes, and adding the collection
     // marker + resourcetype close reaches <=376 - all well within tmp[512], so these three
     // atomic-append guards cannot fire (esc is capped by its own 256-byte buffer above).
-    if (!app(tmp, sizeof(tmp), &t, "  <D:response>\n    <D:href>") || !app(tmp, sizeof(tmp), &t, esc) ||
-        !app(tmp, sizeof(tmp), &t, "</D:href>\n    <D:propstat>\n      <D:prop>\n        <D:resourcetype>"))
+    if (!app(tmp, sizeof(tmp), &t, "  <D:response>\n    <D:href>") ||
+        !app(tmp, sizeof(tmp), &t, esc) || // GCOVR_EXCL_LINE unreachable: href block <=343 < tmp[512] (see above)
+        !app(tmp, sizeof(tmp), &t,
+             "</D:href>\n    <D:propstat>\n      <D:prop>\n        <D:resourcetype>")) // GCOVR_EXCL_LINE unreachable:
+                                                                                       // href block <=343 < tmp[512]
+                                                                                       // (see above)
         return len; // GCOVR_EXCL_LINE unreachable: href block <=343 < tmp[512] (see above)
 
     if (is_collection)
     {
-        if (!app(tmp, sizeof(tmp), &t, "<D:collection/>"))
-            return len; // GCOVR_EXCL_LINE unreachable: <=358 < tmp[512] (see above)
+        if (!app(tmp, sizeof(tmp), &t, "<D:collection/>")) // GCOVR_EXCL_LINE unreachable: <=358 < tmp[512] (see above)
+            return len;                                    // GCOVR_EXCL_LINE unreachable: <=358 < tmp[512] (see above)
     }
-    if (!app(tmp, sizeof(tmp), &t, "</D:resourcetype>\n"))
-        return len; // GCOVR_EXCL_LINE unreachable: <=376 < tmp[512] (see above)
+    if (!app(tmp, sizeof(tmp), &t, "</D:resourcetype>\n")) // GCOVR_EXCL_LINE unreachable: <=376 < tmp[512] (see above)
+        return len;                                        // GCOVR_EXCL_LINE unreachable: <=376 < tmp[512] (see above)
 
     if (!is_collection)
     {
@@ -211,9 +215,15 @@ size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
         while (rn > 0)
             num[ni++] = rev[--rn];
         num[ni] = '\0';
-        if (!app(tmp, sizeof(tmp), &t, "        <D:getcontentlength>") || !app(tmp, sizeof(tmp), &t, num) ||
-            !app(tmp, sizeof(tmp), &t, "</D:getcontentlength>\n"))
-            return len;
+        // The href block above tops out at <=381 bytes (<=343 plus the optional
+        // <D:collection/> + </D:resourcetype> close, though this branch only runs for
+        // !is_collection so it's really <=366); this fixed getcontentlength markup + a
+        // 10-digit uint32_t max add <=60 more, so the running total never nears tmp[512]
+        // and these atomic-append guards cannot fire.
+        if (!app(tmp, sizeof(tmp), &t, "        <D:getcontentlength>") ||
+            !app(tmp, sizeof(tmp), &t, num) ||                     // GCOVR_EXCL_LINE unreachable: see comment above
+            !app(tmp, sizeof(tmp), &t, "</D:getcontentlength>\n")) // GCOVR_EXCL_LINE unreachable: see comment above
+            return len;                                            // GCOVR_EXCL_LINE unreachable: see comment above
         if (content_type && content_type[0])
         {
             if (!app(tmp, sizeof(tmp), &t, "        <D:getcontenttype>") || !app(tmp, sizeof(tmp), &t, content_type) ||

@@ -649,10 +649,11 @@ static void test_ingest_addr_copy_edges(void)
 static void test_malformed_peer_addr(void)
 {
     const char *bad[] = {
-        "999.0.0.1", // octet > 255
-        "10..0.1",   // empty octet
-        "10.0.x.1",  // invalid character
-        "1.2.3",     // too few octets
+        "999.0.0.1",  // octet > 255
+        "10..0.1",    // empty octet
+        "10.0.x.1",   // invalid character
+        "1.2.3",      // too few octets
+        "0001.0.0.1", // digit count > 3 within an octet whose value stays <= 255 (leading zeros)
     };
     for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); i++)
     {
@@ -744,6 +745,124 @@ static void test_unknown_cid_dropped(void)
     TEST_ASSERT_EQUAL_UINT8(1, dws_coaps_server_active_conns()); // existing connection untouched
 }
 
+// server_send is a no-op when no output sink is configured (the host build's sink-unset branch): the
+// handshake still proceeds server-side, but nothing is captured.
+static void test_server_send_without_sink(void)
+{
+    dws_coaps_server_set_out_sink_cb(nullptr, nullptr);
+    ingest_real_client_hello("10.0.0.5", 40001);
+    dws_coaps_server_poll();
+    TEST_ASSERT_EQUAL_UINT8(1, dws_coaps_server_active_conns()); // handshake still opened the slot
+    OutDg dg;
+    TEST_ASSERT_FALSE(take_out_for("10.0.0.5", 40001, &dg)); // nothing captured: sink was unset
+}
+
+// slot_by_peer must find a connection by ip when another used slot shares its port but not its address
+// (the scan's port-matches/ip-differs step, not exercised when every peer in a test also differs by port).
+static void test_slot_lookup_same_port_different_ip(void)
+{
+    DtlsRecordKeys wA, rA, wB, rB;
+    client_handshake("10.0.2.5", 41000, &wA, &rA);
+    client_handshake("10.0.2.6", 41000, &wB, &rB); // same port, different ip
+    TEST_ASSERT_EQUAL_UINT8(2, dws_coaps_server_active_conns());
+
+    uint8_t recA[128], recB[128];
+    size_t nA = client_get_temp(&wA, 0, recA, sizeof(recA));
+    size_t nB = client_get_temp(&wB, 0, recB, sizeof(recB));
+    TEST_ASSERT_TRUE(dws_coaps_server_ingest(recA, nA, "10.0.2.5", 41000));
+    TEST_ASSERT_TRUE(dws_coaps_server_ingest(recB, nB, "10.0.2.6", 41000));
+    dws_coaps_server_poll();
+
+    OutDg dgA, dgB;
+    TEST_ASSERT_TRUE(take_out_for("10.0.2.5", 41000, &dgA));
+    TEST_ASSERT_TRUE(take_out_for("10.0.2.6", 41000, &dgB));
+    assert_coap_205(&rA, &dgA);
+    assert_coap_205(&rB, &dgB);
+}
+
+// slot_by_cid must skip a connection with no negotiated CID (sl == 0) while scanning for the one that
+// matches, and must reject a CID-tagged datagram too short to carry the negotiated length (sl > avail)
+// rather than matching it.
+static void test_slot_by_cid_skips_and_bounds(void)
+{
+    // A plain connection (no CID offered) occupies a slot whose local_cid_len is 0.
+    DtlsRecordKeys wPlain, rPlain;
+    client_handshake("10.0.3.1", 42001, &wPlain, &rPlain);
+
+    // A second connection negotiates a CID.
+    const uint8_t client_cid[3] = {0xA1, 0xA2, 0xA3};
+    uint8_t scid[DTLS_CID_MAX];
+    size_t scid_len = 0;
+    DtlsRecordKeys w, r;
+    client_handshake("10.0.3.2", 42002, &w, &r, client_cid, sizeof(client_cid), scid, &scid_len);
+    TEST_ASSERT_TRUE(scid_len > 0);
+    TEST_ASSERT_EQUAL_UINT8(2, dws_coaps_server_active_conns());
+
+    // A GET protected under the CID connection is routed by its cid, skipping the plain (sl == 0) slot.
+    uint8_t rec[128];
+    size_t n = client_get_temp(&w, 0, rec, sizeof(rec), scid, scid_len);
+    TEST_ASSERT_TRUE(dws_coaps_server_ingest(rec, n, "10.0.3.2", 42002));
+    dws_coaps_server_poll();
+    OutDg dg;
+    TEST_ASSERT_TRUE(take_out_for("10.0.3.2", 42002, &dg));
+    assert_coap_205(&r, &dg, client_cid, sizeof(client_cid));
+
+    // A CID-tagged datagram too short to carry any negotiated CID (avail < sl) is dropped, not matched.
+    uint8_t tiny[1] = {0x30}; // header byte only: (b0 & 0xE0) == 0x20 && (b0 & 0x10), 0 bytes of cid follow
+    out_reset();
+    TEST_ASSERT_TRUE(dws_coaps_server_ingest(tiny, sizeof(tiny), "10.9.9.8", 60000));
+    dws_coaps_server_poll();
+    OutDg none;
+    TEST_ASSERT_FALSE(take_out_for("10.9.9.8", 60000, &none));
+    TEST_ASSERT_EQUAL_UINT8(2, dws_coaps_server_active_conns()); // unchanged: dropped, no new slot opened
+}
+
+// A CID-tagged request from the address the connection already migrated to (or was established from)
+// takes the migration check's "no change" path: cid_rec is true but peer_port/peer_ip already match, so
+// neither is rewritten.
+static void test_cid_no_migration_when_address_unchanged(void)
+{
+    const uint8_t client_cid[3] = {0xB1, 0xB2, 0xB3};
+    uint8_t scid[DTLS_CID_MAX];
+    size_t scid_len = 0;
+    DtlsRecordKeys w, r;
+    client_handshake("10.0.4.1", 43001, &w, &r, client_cid, sizeof(client_cid), scid, &scid_len);
+    TEST_ASSERT_TRUE(scid_len > 0);
+
+    uint8_t rec1[128];
+    size_t n1 = client_get_temp(&w, 0, rec1, sizeof(rec1), scid, scid_len);
+    TEST_ASSERT_TRUE(dws_coaps_server_ingest(rec1, n1, "10.0.4.1", 43001)); // same address as the handshake
+    dws_coaps_server_poll();
+    OutDg dg1;
+    TEST_ASSERT_TRUE(take_out_for("10.0.4.1", 43001, &dg1));
+    assert_coap_205(&r, &dg1, client_cid, sizeof(client_cid));
+    TEST_ASSERT_EQUAL_UINT8(1, dws_coaps_server_active_conns());
+}
+
+// A partial migration - only the ip changes, the port stays the same - still updates peer_ip and routes
+// the reply to the new address (the migration check's ip-differs-but-port-matches path).
+static void test_cid_migration_same_port_different_ip(void)
+{
+    const uint8_t client_cid[3] = {0xD1, 0xD2, 0xD3};
+    uint8_t scid[DTLS_CID_MAX];
+    size_t scid_len = 0;
+    DtlsRecordKeys w, r;
+    client_handshake("10.0.5.1", 44001, &w, &r, client_cid, sizeof(client_cid), scid, &scid_len);
+    TEST_ASSERT_TRUE(scid_len > 0);
+
+    uint8_t rec[128];
+    size_t n = client_get_temp(&w, 0, rec, sizeof(rec), scid, scid_len);
+    TEST_ASSERT_TRUE(dws_coaps_server_ingest(rec, n, "10.0.5.2", 44001)); // same port, different ip
+    dws_coaps_server_poll();
+
+    OutDg dg;
+    TEST_ASSERT_TRUE(take_out_for("10.0.5.2", 44001, &dg));
+    OutDg stale;
+    TEST_ASSERT_FALSE(take_out_for("10.0.5.1", 44001, &stale));
+    assert_coap_205(&r, &dg, client_cid, sizeof(client_cid));
+    TEST_ASSERT_EQUAL_UINT8(1, dws_coaps_server_active_conns());
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -762,5 +881,10 @@ int main(int, char **)
     RUN_TEST(test_pool_full_rejects_new_peer);
     RUN_TEST(test_pto_ceiling_frees_slot);
     RUN_TEST(test_unknown_cid_dropped);
+    RUN_TEST(test_server_send_without_sink);
+    RUN_TEST(test_slot_lookup_same_port_different_ip);
+    RUN_TEST(test_slot_by_cid_skips_and_bounds);
+    RUN_TEST(test_cid_no_migration_when_address_unchanged);
+    RUN_TEST(test_cid_migration_same_port_different_ip);
     return UNITY_END();
 }

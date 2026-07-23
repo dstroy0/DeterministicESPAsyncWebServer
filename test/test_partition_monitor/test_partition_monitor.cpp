@@ -71,6 +71,43 @@ void test_partition_kind_data_subtypes()
     TEST_ASSERT_EQUAL_STRING("fat", dws_partition_kind(0x01, 0x81));
 }
 
+void test_json_null_out_and_zero_cap()
+{
+    DWSPartitionInfo p[1] = {{"nvs", 1, 0x02, 0x9000, 0x6000, false}};
+    // out == nullptr fails closed before touching the buffer.
+    TEST_ASSERT_EQUAL_INT(0, dws_partition_json(p, 1, nullptr, 16));
+    // cap == 0 also fails closed, independent of the out == nullptr check.
+    char buf[16];
+    TEST_ASSERT_EQUAL_INT(0, dws_partition_json(p, 1, buf, 0));
+}
+
+void test_json_null_parts()
+{
+    char buf[16] = "stale";
+    TEST_ASSERT_EQUAL_INT(0, dws_partition_json(nullptr, 1, buf, sizeof(buf)));
+    // out[0] is cleared before the parts == nullptr check runs.
+    TEST_ASSERT_EQUAL_STRING("", buf);
+}
+
+void test_json_entry_overflow_fails_closed()
+{
+    DWSPartitionInfo p[1] = {{"nvs", 1, 0x02, 0x9000, 0x6000, false}};
+    // 20 bytes fits the opening `{"partitions":[` (15 chars) but not the first
+    // entry, so the per-entry append fails and the call fails closed.
+    char buf[20];
+    TEST_ASSERT_EQUAL_INT(0, dws_partition_json(p, 1, buf, sizeof(buf)));
+}
+
+void test_json_closing_bracket_overflow_fails_closed()
+{
+    DWSPartitionInfo p[1] = {{"nvs", 1, 0x02, 0x9000, 0x6000, false}};
+    // 107 bytes fits the opening bracket + the one entry (106 bytes total) but
+    // not the closing `]}`, so that final append fails and the call fails
+    // closed.
+    char buf[107];
+    TEST_ASSERT_EQUAL_INT(0, dws_partition_json(p, 1, buf, sizeof(buf)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -80,5 +117,9 @@ int main()
     RUN_TEST(test_json_small_buffer_fails_closed);
     RUN_TEST(test_collect_host_stub);
     RUN_TEST(test_partition_kind_data_subtypes);
+    RUN_TEST(test_json_null_out_and_zero_cap);
+    RUN_TEST(test_json_null_parts);
+    RUN_TEST(test_json_entry_overflow_fails_closed);
+    RUN_TEST(test_json_closing_bracket_overflow_fails_closed);
     return UNITY_END();
 }

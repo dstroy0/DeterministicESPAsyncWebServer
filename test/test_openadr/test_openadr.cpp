@@ -76,6 +76,20 @@ void test_openadr_escape_and_overflow()
     TEST_ASSERT_EQUAL_size_t(0, dws_openadr_report("p", "e", "res", 1.0, 0, out, 8));             // overflow
 }
 
+void test_openadr_null_program_and_count_without_intervals(void)
+{
+    // NULL program_id/event_name exercise put_json_str's `s ? s : ""` defensive branch.
+    OpenAdrInterval iv = {0, 60, "SIMPLE", 1.0};
+    char buf[256];
+    size_t n = dws_openadr_event(nullptr, nullptr, &iv, 1, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(has(buf, "\"programID\":\"\""));
+    TEST_ASSERT_TRUE(has(buf, "\"eventName\":\"\""));
+
+    // count > 0 with a NULL intervals pointer must fail closed (never dereference).
+    TEST_ASSERT_EQUAL_size_t(0, dws_openadr_event("p", "e", nullptr, 3, buf, sizeof(buf)));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -84,5 +98,6 @@ int main(void)
     RUN_TEST(test_json_escape);
     RUN_TEST(test_overflow);
     RUN_TEST(test_openadr_escape_and_overflow);
+    RUN_TEST(test_openadr_null_program_and_count_without_intervals);
     return UNITY_END();
 }

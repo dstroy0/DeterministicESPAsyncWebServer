@@ -107,6 +107,47 @@ void test_pn_guards(void)
     TEST_ASSERT_FALSE(dws_pn_dcp_parse_header(shortf, sizeof(shortf), &h)); // len < header len
 }
 
+void test_block_zero_length_value(void)
+{
+    // value_len == 0 (value may be null) is legal: exercises the "value_len is falsy" path in
+    // dws_pn_dcp_block's guard/memcpy-skip, and the blen==0 (-> nullptr value) path in the walk callback.
+    uint8_t out[16];
+    size_t n = dws_pn_dcp_block(Pn::PN_DCP_OPT_DEVICE, Pn::PN_DCP_SUB_DEV_ID, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(4, n);
+    const uint8_t expect[] = {0x02, 0x03, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);
+
+    Seen s = {0, {0}, {0}, {0}};
+    TEST_ASSERT_TRUE(dws_pn_dcp_walk(out, n, collect, &s));
+    TEST_ASSERT_EQUAL_INT(1, s.count);
+    TEST_ASSERT_EQUAL_size_t(0, s.len[0]);
+}
+
+void test_block_value_len_too_large(void)
+{
+    // value_len > 0xFFFF cannot fit in the 16-bit blockLength field, regardless of cap.
+    uint8_t out[16];
+    uint8_t dummy = 0;
+    TEST_ASSERT_EQUAL_size_t(0, dws_pn_dcp_block(0, 0, &dummy, 0x10000, out, sizeof(out)));
+}
+
+void test_parse_header_null_out(void)
+{
+    // Valid frame/len but a null destination struct.
+    uint8_t frame[Pn::PN_DCP_HDR_LEN] = {0};
+    TEST_ASSERT_FALSE(dws_pn_dcp_parse_header(frame, sizeof(frame), nullptr));
+}
+
+void test_walk_null_callback(void)
+{
+    // cb == nullptr over a well-formed (non-truncated) block list: the walk still succeeds, it just
+    // skips invoking the callback for each block.
+    uint8_t buf[16];
+    size_t n =
+        dws_pn_dcp_block(Pn::PN_DCP_OPT_IP, Pn::PN_DCP_SUB_IP_PARAM, (const uint8_t *)"ABCD", 4, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(dws_pn_dcp_walk(buf, n, nullptr, nullptr));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -115,5 +156,9 @@ int main(void)
     RUN_TEST(test_walk_blocks);
     RUN_TEST(test_walk_rejects_truncated);
     RUN_TEST(test_pn_guards);
+    RUN_TEST(test_block_zero_length_value);
+    RUN_TEST(test_block_value_len_too_large);
+    RUN_TEST(test_parse_header_null_out);
+    RUN_TEST(test_walk_null_callback);
     return UNITY_END();
 }

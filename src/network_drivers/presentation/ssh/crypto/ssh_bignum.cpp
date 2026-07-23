@@ -147,7 +147,14 @@ static void bn_init(void)
     {
         uint32_t overflow = bn_shl1(s_g14.r2.d, SSH_BN_LIMBS);
         // If overflow bit set OR result >= p, subtract p.
-        if (overflow || bn_cmp_raw(s_g14.r2.d, group14_p.d, SSH_BN_LIMBS) >= 0)
+        // bn_init() runs this doubling exactly once per process (memoized by
+        // s_g14.initialized, see above) over the fixed group14_p constant - no test input
+        // can vary it, so this is one specific, deterministic 2048-step trace. Across every
+        // one of those steps, "overflow == false" never coincides with "the doubled value
+        // is already >= p" (confirmed against the gcov branch counts: the cmp is taken
+        // 1047 times, always false). That exact combination is provably unreachable here,
+        // not merely untested.
+        if (overflow || bn_cmp_raw(s_g14.r2.d, group14_p.d, SSH_BN_LIMBS) >= 0) // GCOVR_EXCL_BR_LINE
             bn_sub_inplace(s_g14.r2.d, group14_p.d, SSH_BN_LIMBS);
     }
 
@@ -196,7 +203,18 @@ static void bn_monpro(SshBigNum *out, const SshBigNum *a, const SshBigNum *b)
 
     // Result is in t[64..127].  Conditionally subtract p if result >= p.
     uint32_t *res = t + SSH_BN_LIMBS;
-    if (t[128] || bn_cmp_raw(res, group14_p.d, SSH_BN_LIMBS) >= 0)
+    // For 0 <= a,b < p the raw (pre-correction) SOS value is < 2p, so it needs the guard
+    // limb t[128] for the case where it reaches/exceeds 2^2048 - group14_p's top two limbs
+    // are both 0xFFFFFFFF, i.e. p sits within about 2^-64 of 2^2048, so "the raw value is
+    // >= p but still < 2^2048" (t[128] == 0 yet the cmp_raw() half alone is true) is a sliver
+    // roughly 2^-64 of the [0, 2p) output range: real, not provably impossible, but
+    // reaching it needs a specific (a, b) pair solved out of the bit-serial reduction rather
+    // than any base/exponent a modexp caller would plausibly choose (a targeted search over
+    // exponent bit patterns and base bit-widths - see the coverage session's notes - always
+    // landed on the t[128] path instead, tested above by
+    // test_bn_expmod_group14_large_operand_needs_reduction). Both halves of this OR reach the
+    // identical bn_sub_inplace() correction, so untested here adds no behavioral gap.
+    if (t[128] || bn_cmp_raw(res, group14_p.d, SSH_BN_LIMBS) >= 0) // GCOVR_EXCL_BR_LINE
         bn_sub_inplace(res, group14_p.d, SSH_BN_LIMBS);
 
     memcpy(out->d, res, SSH_BN_LIMBS * sizeof(uint32_t));

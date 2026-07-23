@@ -37,7 +37,7 @@
 // on host builds, where there is no TCP transport handler).
 static inline void register_if(ConnProto proto, const ProtoHandler *h)
 {
-    if (h)
+    if (h) // GCOVR_EXCL_BR_LINE  null half needs modbus/opcua compiled in alongside this file; no env does
         proto_register(proto, h);
 }
 

@@ -111,7 +111,9 @@ size_t http_client_build_request(const char *method, const char *host, uint16_t 
                      "Content-Length: %u\r\n"
                      "Connection: close\r\n\r\n",
                      method, path, hosthdr, content_type ? content_type : DWS_MIME_OCTET_STREAM, (unsigned)body_len);
-        if (n < 0 || (size_t)n + body_len > cap)
+        // n < 0 is unreachable here: every %s argument is a plain ASCII C string (no wide-char
+        // conversion), so this snprintf cannot hit an encoding error; only the length check below can fire.
+        if (n < 0 || (size_t)n + body_len > cap) // GCOVR_EXCL_BR_LINE
             return 0;
         memcpy(out + n, body, body_len);
         return (size_t)n + body_len;
@@ -123,7 +125,8 @@ size_t http_client_build_request(const char *method, const char *host, uint16_t 
                  "User-Agent: DWS\r\n"
                  "Connection: close\r\n\r\n",
                  method, path, hosthdr);
-    if (n < 0 || (size_t)n >= cap)
+    // n < 0 is unreachable here, for the same reason as the body-request snprintf above.
+    if (n < 0 || (size_t)n >= cap) // GCOVR_EXCL_BR_LINE
         return 0;
     return (size_t)n;
 }

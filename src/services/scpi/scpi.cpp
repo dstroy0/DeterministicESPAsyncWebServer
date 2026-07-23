@@ -115,9 +115,11 @@ size_t dws_scpi_fmt_real(char *buf, size_t cap, double v)
         return 0;
     // %g renders NR2 (fixed) or NR3 (scientific) and trims trailing zeros - exactly the SCPI forms.
     int n = snprintf(buf, cap, "%.10g", v);
-    if (n < 0 || (size_t)n >= cap)
+    if (n < 0 ||
+        (size_t)n >=
+            cap) // GCOVR_EXCL_BR_LINE  n<0 is unreachable: "%.10g" on a real double never hits a libc encoding error
     {
-        if (cap)
+        if (cap) // GCOVR_EXCL_BR_LINE  cap==0 already returned above (see the guard at function entry)
             buf[0] = '\0';
         return 0;
     }
@@ -386,7 +388,8 @@ void dws_scpi_event(ScpiStatus *s, uint8_t esr_bits)
 static uint8_t esr_bit_for(int16_t number)
 {
     if (number >= 0)
-        return number == 0 ? 0 : SCPI_ESR_DDE; // positive = device-specific
+        return number == 0 ? 0 : SCPI_ESR_DDE; // GCOVR_EXCL_BR_LINE  ==0 arm unreachable: dws_scpi_push_error (only
+                                               // caller) already returns on number==0 before calling this
     if (number > -200)
         return SCPI_ESR_CME;
     if (number > -300)
@@ -495,7 +498,10 @@ static bool match_node(const char *i, size_t ilen, const char *p, size_t plen)
     while (palpha < plen && is_alpha(p[palpha]))
         palpha++;
     size_t pshort = 0;
-    while (pshort < palpha && p[pshort] >= 'A' && p[pshort] <= 'Z')
+    while (pshort < palpha && p[pshort] >= 'A' &&
+           p[pshort] <=
+               'Z') // GCOVR_EXCL_BR_LINE  ">= 'A'" false is unreachable: every byte here already passed is_alpha() in
+                    // the palpha loop above, and both alpha ranges ('A'-'Z', 'a'-'z') satisfy >= 'A'
         pshort++;
     // input alpha length
     size_t ialpha = 0;

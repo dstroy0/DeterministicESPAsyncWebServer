@@ -234,7 +234,8 @@ int dws_audit_format(const DWSAuditEntry *e, char *out, size_t cap)
         return 0;
     int head = snprintf(out, cap, "{\"seq\":%lu,\"ts\":%lu,\"cat\":\"%s\",\"msg\":\"", (unsigned long)e->seq,
                         (unsigned long)e->ts, dws_audit_cat_name(e->category));
-    if (head < 0 || (size_t)head >= cap)
+    if (head < 0 || (size_t)head >= cap) // GCOVR_EXCL_BR_LINE  head<0 is unreachable: snprintf cannot
+                                         // return negative for this "%lu%lu%s..." format
         return 0;
     size_t pos = (size_t)head;
     pos = json_escape(out, pos, cap, e->msg);
@@ -272,7 +273,8 @@ int dws_audit_dump_json(char *out, size_t cap)
     else
         head = snprintf(out, cap, "{\"intact\":false,\"first_broken\":%lu,\"count\":%u,\"entries\":[",
                         (unsigned long)broken, (unsigned)s_audit.count);
-    if (head < 0 || (size_t)head >= cap)
+    if (head < 0 || (size_t)head >= cap) // GCOVR_EXCL_BR_LINE  head<0 is unreachable: snprintf cannot
+                                         // return negative for either "%s...:[" format above
         return 0;
     size_t pos = (size_t)head;
 
@@ -280,8 +282,13 @@ int dws_audit_dump_json(char *out, size_t cap)
     {
         if (i > 0)
         {
+            // GCOVR_EXCL_START  unreachable: reaching here means entry i-1 (or the header, for i==1)
+            // rendered successfully, and its own overflow check (dws_audit_format's or snprintf's)
+            // required strictly less than the cap it was given - so cap - pos is always >= 1 at this
+            // point, exactly the one byte this comma needs. The guard can never fire.
             if (pos + 1 > cap)
                 return 0;
+            // GCOVR_EXCL_STOP
             out[pos++] = ',';
         }
         int n = dws_audit_format(&s_audit.ring[idx(s_audit, i)], out + pos, cap - pos);

@@ -314,6 +314,17 @@ void test_parse_epsv_edges()
     TEST_ASSERT_EQUAL_UINT16(1050, port);
 }
 
+// dws_ftp_reply_class is public (static inline in the header) and callable directly with values
+// outside the valid 3-digit-reply range; exercise both edges of its `code >= 100 && code <= 599`
+// guard (below 100, and above 599) which no parsed-reply test happens to reach.
+void test_reply_class_out_of_range()
+{
+    TEST_ASSERT_EQUAL_INT(0, dws_ftp_reply_class(50));  // below 100: first half of && is false
+    TEST_ASSERT_EQUAL_INT(0, dws_ftp_reply_class(600)); // above 599: first half true, second half false
+    TEST_ASSERT_FALSE(dws_ftp_reply_ok(50));
+    TEST_ASSERT_FALSE(dws_ftp_reply_ok(600));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -338,5 +349,6 @@ int main()
     RUN_TEST(test_reply_multiline_samecode_dash);
     RUN_TEST(test_parse_pasv_edges);
     RUN_TEST(test_parse_epsv_edges);
+    RUN_TEST(test_reply_class_out_of_range);
     return UNITY_END();
 }

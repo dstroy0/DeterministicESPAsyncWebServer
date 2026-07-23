@@ -17,8 +17,22 @@
 // The CSPRNG seam (forward-declared in sntrup761.cpp): a deterministic test source so the round-trip
 // is reproducible. sntrup761 interop does not depend on how r/keys are drawn, only that they are valid.
 static uint32_t s_rng = 0xA5A5F00Du;
+
+// KeyGen's g-draw retry hook: while > 0, ssh_rng_fill returns bytes that make Small_random's ternary
+// map (see sntrup761.cpp) produce coefficient 0 rather than drawing from the LCG, and decrements by
+// one per call. Left at 0 for every other test, so it is a no-op there.
+static int s_force_zero_calls = 0;
 void ssh_rng_fill(uint8_t *b, size_t n)
 {
+    if (s_force_zero_calls > 0)
+    {
+        --s_force_zero_calls;
+        for (size_t i = 0; i < n; ++i)
+            b[i] = 0;
+        if (n >= 4)
+            b[3] = 0x20; // u & 0x3fffffff == 0x20000000 -> (u30*3)>>30 == 1 -> ternary coefficient 0
+        return;
+    }
     for (size_t i = 0; i < n; ++i)
     {
         s_rng = s_rng * 1103515245u + 12345u;
@@ -67,11 +81,28 @@ void test_sntrup761_implicit_reject()
     TEST_ASSERT_TRUE(memcmp(good, bad, DWS_SNTRUP761_SS_BYTES) != 0);
 }
 
+// KeyGen draws g and retries while it is non-invertible mod 3 (R3_recip != 0). The all-zero
+// polynomial is never invertible (0 has no multiplicative inverse in any ring), so forcing the first
+// draw to zero deterministically exercises the retry path; KeyGen then re-draws from the normal
+// stream and succeeds, producing a keypair that still round-trips correctly end to end.
+void test_sntrup761_keygen_retries_on_noninvertible_g()
+{
+    s_force_zero_calls = 761; // p = 761 (see sntrup761.h): forces every g coefficient to 0
+    uint8_t pk[DWS_SNTRUP761_PK_BYTES], sk[DWS_SNTRUP761_SK_BYTES];
+    uint8_t ct[DWS_SNTRUP761_CT_BYTES], ss1[DWS_SNTRUP761_SS_BYTES], ss2[DWS_SNTRUP761_SS_BYTES];
+    dws_sntrup761_keypair(pk, sk);
+    TEST_ASSERT_EQUAL_INT(0, s_force_zero_calls); // the forced draw was actually consumed
+    dws_sntrup761_enc(pk, ct, ss1);
+    dws_sntrup761_dec(sk, ct, ss2);
+    TEST_ASSERT_EQUAL_MEMORY(ss1, ss2, DWS_SNTRUP761_SS_BYTES);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_sntrup761_decaps_kat);
     RUN_TEST(test_sntrup761_roundtrip);
     RUN_TEST(test_sntrup761_implicit_reject);
+    RUN_TEST(test_sntrup761_keygen_retries_on_noninvertible_g);
     return UNITY_END();
 }

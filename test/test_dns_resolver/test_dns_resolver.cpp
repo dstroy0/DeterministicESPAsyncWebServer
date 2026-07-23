@@ -29,6 +29,14 @@ void test_classify()
     TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(8, 8, 8, 8)));
     // 172.32.x is OUTSIDE the 172.16/12 private block -> public.
     TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(172, 32, 0, 1)));
+    // 172.10.x is BELOW the 172.16/12 private block (b < 16) -> public.
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(172, 10, 0, 1)));
+    // 192.x (x != 168) is outside the 192.168/16 private block -> public.
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(192, 1, 1, 1)));
+    // 169.x (x != 254) is outside the 169.254/16 link-local block -> public.
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(169, 1, 1, 1)));
+    // 240.x is ABOVE the 224-239 multicast range -> public.
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(240, 0, 0, 1)));
 }
 
 void test_verify_rejects_suspicious()
@@ -70,6 +78,16 @@ void test_resolve_verified_paths()
     dws_dns_resolver_test_set_resolve(false, 0);                                 // reset the hook
 }
 
+void test_resolve_host_ok_null_out_ip()
+{
+    // Call dws_dns_resolver_resolve() (the host stub) directly - not via the _verified
+    // wrapper, which always passes a non-null local pointer - with a synthetic "ok" answer
+    // and a null out_ip, to cover the out_ip == nullptr branch inside the stub itself.
+    dws_dns_resolver_test_set_resolve(true, IPV4(8, 8, 8, 8));
+    TEST_ASSERT_TRUE(dws_dns_resolver_resolve("example.com", nullptr));
+    dws_dns_resolver_test_set_resolve(false, 0); // reset the hook
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -78,5 +96,6 @@ int main()
     RUN_TEST(test_verify_accepts_plausible);
     RUN_TEST(test_resolve_is_noop_on_host);
     RUN_TEST(test_resolve_verified_paths);
+    RUN_TEST(test_resolve_host_ok_null_out_ip);
     return UNITY_END();
 }

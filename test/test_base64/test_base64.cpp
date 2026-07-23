@@ -91,6 +91,16 @@ static void test_decode_capacity_guard()
     TEST_ASSERT_EQUAL_UINT(6, dws_base64_decode("Zm9vYmFy", exact, sizeof(exact)));
 }
 
+// Zero and one-byte capacities exercise the per-output-byte guard on the *first* and *second* byte of an
+// unpadded quad (the third-byte guard is already hit by test_decode_capacity_guard above).
+static void test_decode_capacity_guard_first_and_second_byte()
+{
+    uint8_t out0[1];
+    TEST_ASSERT_EQUAL_UINT(0, dws_base64_decode("Zm9v", out0, 0)); // dst_cap==0: fails before byte 0
+    uint8_t out1[1];
+    TEST_ASSERT_EQUAL_UINT(0, dws_base64_decode("Zm9v", out1, 1)); // dst_cap==1: fails before byte 1
+}
+
 // Round-trip fuzz: encode a pseudo-random byte string, decode it back, require an exact match. Cross-checks
 // the constant-time decoder against the (independent) encoder over every tail length (0/1/2 mod 3).
 static void test_roundtrip_fuzz()
@@ -125,6 +135,24 @@ static void test_roundtrip_fuzz()
     }
 }
 
+// base64url decode stops at an optional trailing '=' (RFC 4648 sec 5 carries no padding, but a caller
+// that hands in a padded string must still be handled: the scan stops there rather than misclassifying it).
+static void test_url_decode_stops_at_padding()
+{
+    uint8_t out[8];
+    size_t n = dws_base64url_decode("Zm9v=", 5, out, sizeof(out));
+    TEST_ASSERT_EQUAL_UINT(3, n);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY((const uint8_t *)"foo", out, 3);
+}
+
+// url decode's own per-output-byte capacity guard: dst_cap==0 must fail as soon as 8 bits have
+// accumulated (2 input characters), rather than overrun.
+static void test_url_decode_capacity_guard()
+{
+    uint8_t out[1];
+    TEST_ASSERT_EQUAL_UINT(0, dws_base64url_decode("Zm9v", 4, out, 0));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -132,6 +160,9 @@ int main()
     RUN_TEST(test_alphabets);
     RUN_TEST(test_decode_rejects_malformed);
     RUN_TEST(test_decode_capacity_guard);
+    RUN_TEST(test_decode_capacity_guard_first_and_second_byte);
+    RUN_TEST(test_url_decode_stops_at_padding);
+    RUN_TEST(test_url_decode_capacity_guard);
     RUN_TEST(test_roundtrip_fuzz);
     return UNITY_END();
 }

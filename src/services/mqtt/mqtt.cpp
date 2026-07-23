@@ -39,7 +39,10 @@ static size_t put_field(uint8_t *p, const uint8_t *data, size_t len)
 }
 static inline size_t put_str(uint8_t *p, const char *s)
 {
-    return put_field(p, (const uint8_t *)s, s ? strnlen(s, DWS_MQTT_BUF_SIZE) : 0);
+    return put_field(p, (const uint8_t *)s,
+                     s ? strnlen(s, DWS_MQTT_BUF_SIZE)
+                       : 0); // GCOVR_EXCL_BR_LINE  s is never null: every call site below passes the "MQTT" literal or
+                             // a pointer already guarded non-null by its caller
 }
 
 size_t dws_mqtt_encode_remlen(uint8_t *out, uint32_t len)
@@ -93,14 +96,16 @@ static size_t compose(uint8_t *out, size_t cap, uint8_t byte0, const uint8_t *bo
     // the 2^28 remaining-length limit and dws_mqtt_encode_remlen never rejects here; the len > 256MB reject
     // is covered directly on the public dws_mqtt_encode_remlen.
     size_t rln = dws_mqtt_encode_remlen(rl, (uint32_t)blen);
-    if (rln == 0)
+    if (rln == 0) // GCOVR_EXCL_BR_LINE  the true branch is unreachable: blen <= DWS_MQTT_BUF_SIZE << 2^28 via compose's
+                  // bounded callers
         return 0; // GCOVR_EXCL_LINE  unreachable: blen <= DWS_MQTT_BUF_SIZE << 2^28 via compose's bounded callers
     size_t total = 1 + rln + blen;
     if (total > cap)
         return 0;
     out[0] = byte0;
     memcpy(out + 1, rl, rln);
-    if (blen)
+    if (blen) // GCOVR_EXCL_BR_LINE  blen is never 0: every compose() caller
+              // (build_connect/publish/subscribe/unsubscribe) always writes at least a 2-byte length-prefixed field
         memcpy(out + 1 + rln, body, blen);
     return total;
 }

@@ -151,6 +151,42 @@ void test_dnp3_parse_guards()
     TEST_ASSERT_FALSE(dws_dnp3_parse_frame(bad_len, sizeof(bad_len), &f, user, sizeof(user), &ul));
 }
 
+// Build-side null guards not hit by the round-trip / overflow tests above: a null
+// destination buffer, and a null user_data pointer paired with a nonzero length.
+void test_build_frame_null_guards()
+{
+    const uint8_t data[] = {'a', 'b', 'c'};
+    uint8_t buf[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_frame(nullptr, sizeof(buf), 0x44, 1, 2, data, sizeof(data)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_frame(buf, sizeof(buf), 0x44, 1, 2, nullptr, sizeof(data)));
+}
+
+// Parse-side guards not hit above: a null Dnp3Frame* out, a bad start0 octet (start1 left
+// intact), a null out_user paired with nonzero user data, and a null out_user_len (which is
+// optional - parsing still succeeds without it).
+void test_parse_frame_null_guards()
+{
+    const uint8_t data[] = {'x', 'y', 'z'};
+    uint8_t buf[32];
+    size_t n = dws_dnp3_build_frame(buf, sizeof(buf), 0x44, 1, 2, data, sizeof(data));
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+
+    Dnp3Frame f;
+    uint8_t user[32];
+    size_t user_len;
+
+    TEST_ASSERT_FALSE(dws_dnp3_parse_frame(buf, n, nullptr, user, sizeof(user), &user_len));
+
+    uint8_t corrupt[32];
+    memcpy(corrupt, buf, n);
+    corrupt[0] = 0x00; // bad start0, start1 untouched
+    TEST_ASSERT_FALSE(dws_dnp3_parse_frame(corrupt, n, &f, user, sizeof(user), &user_len));
+
+    TEST_ASSERT_FALSE(dws_dnp3_parse_frame(buf, n, &f, nullptr, 0, &user_len));
+
+    TEST_ASSERT_TRUE(dws_dnp3_parse_frame(buf, n, &f, user, sizeof(user), nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -162,5 +198,7 @@ int main()
     RUN_TEST(test_header_only_frame);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_build_frame_null_guards);
+    RUN_TEST(test_parse_frame_null_guards);
     return UNITY_END();
 }

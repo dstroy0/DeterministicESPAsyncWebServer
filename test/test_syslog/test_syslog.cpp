@@ -126,6 +126,72 @@ void test_init_truncates_long_fields()
     TEST_ASSERT_EQUAL_UINT((size_t)(DWS_SYSLOG_FIELD_MAX - 1), hcount);
 }
 
+// An empty (non-null) server_ip hits copy_field()'s "src non-null but empty" branch (distinct from
+// the null-src branch already covered by test_log_not_ready_when_no_server) and leaves the client
+// not-ready, since server_ip[0] is '\0'.
+void test_init_empty_server_ip_not_ready()
+{
+    dws_udp_capture_enable();
+    dws_udp_capture_reset();
+    dws_syslog_init("", 514, "host", "app", SyslogFacility::SYSLOG_FAC_LOCAL0);
+    TEST_ASSERT_FALSE(dws_syslog_log(SyslogSeverity::SYSLOG_INFO, "x"));
+    TEST_ASSERT_EQUAL_UINT(0, dws_udp_captured_len());
+}
+
+// An empty (non-null) hostname and a null appname exercise the remaining branch of each field's
+// "(field && field[0]) ? field : \"-\"" ternary: test_nilvalue_for_empty_fields already covered
+// hostname==nullptr and appname=="" ; this covers hostname=="" and appname==nullptr.
+void test_format_hostname_empty_appname_null()
+{
+    char buf[64];
+    size_t n = dws_syslog_format(buf, sizeof(buf), SyslogFacility::SYSLOG_FAC_USER, SyslogSeverity::SYSLOG_WARNING, "",
+                                 nullptr, "msg2");
+    TEST_ASSERT_GREATER_THAN_UINT(0, n);
+    // user(1)*8 + warning(4) = 12; empty hostname + null appname -> both NILVALUE "-"
+    TEST_ASSERT_EQUAL_STRING("<12>1 - - - - - - msg2", buf);
+}
+
+// Every memcpy span in the sl_append() chain (PRI digits, ">1 - ", HOSTNAME, SP, APP-NAME,
+// " - - - ", MSG) is starved by exactly one byte in turn, so each append's own failure branch is
+// hit individually rather than only ever failing on whichever span the earlier overflow test
+// happens to reach first. facility USER(1)/severity EMERG(0) gives PRI=8, a single decimal digit,
+// so every byte offset below is exact. This also exercises pri<10 (the `if (pri >= 10)` false arm).
+void test_format_append_boundaries()
+{
+    char buf[32];
+    static const size_t fail_caps[] = {1, 2, 7, 8, 9, 10, 17, 18};
+    for (size_t i = 0; i < sizeof(fail_caps) / sizeof(fail_caps[0]); i++)
+    {
+        size_t n = dws_syslog_format(buf, fail_caps[i], SyslogFacility::SYSLOG_FAC_USER, SyslogSeverity::SYSLOG_EMERG,
+                                     "h", "a", "m");
+        TEST_ASSERT_EQUAL_UINT(0, n);
+    }
+    // One byte past the last boundary above: every span now fits exactly.
+    size_t n = dws_syslog_format(buf, 19, SyslogFacility::SYSLOG_FAC_USER, SyslogSeverity::SYSLOG_EMERG, "h", "a", "m");
+    TEST_ASSERT_GREATER_THAN_UINT(0, n);
+    TEST_ASSERT_EQUAL_STRING("<8>1 - h a - - - m", buf);
+}
+
+// With the client ready, a message long enough to overflow the DWS_SYSLOG_MSG_MAX scratch buffer
+// makes the internal dws_syslog_format() call return 0, so dws_syslog_log() must report false
+// (the `n == 0` true arm, never reached by test_init_and_log_captured's fitting message).
+void test_log_overflow_when_ready()
+{
+    dws_udp_capture_enable();
+    dws_udp_capture_reset();
+    char longname[DWS_SYSLOG_FIELD_MAX + 16];
+    memset(longname, 'H', sizeof(longname) - 1);
+    longname[sizeof(longname) - 1] = '\0';
+    dws_syslog_init("10.0.0.1", 514, longname, longname, SyslogFacility::SYSLOG_FAC_LOCAL0);
+    char longmsg[240];
+    memset(longmsg, 'M', sizeof(longmsg) - 1);
+    longmsg[sizeof(longmsg) - 1] = '\0';
+    // header (~1 + 3 + 5 + 31 + 1 + 31 + 7 = 79 bytes) + a 239-byte message overflows the 256-byte
+    // scratch buffer, so the format call inside dws_syslog_log() returns 0.
+    TEST_ASSERT_FALSE(dws_syslog_log(SyslogSeverity::SYSLOG_INFO, longmsg));
+    TEST_ASSERT_EQUAL_UINT(0, dws_udp_captured_len());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -139,5 +205,9 @@ int main()
     RUN_TEST(test_log_not_ready_when_no_server);
     RUN_TEST(test_format_null_and_pri_clamp);
     RUN_TEST(test_init_truncates_long_fields);
+    RUN_TEST(test_init_empty_server_ip_not_ready);
+    RUN_TEST(test_format_hostname_empty_appname_null);
+    RUN_TEST(test_format_append_boundaries);
+    RUN_TEST(test_log_overflow_when_ready);
     return UNITY_END();
 }

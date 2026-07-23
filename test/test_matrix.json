@@ -1815,6 +1815,11 @@
       "src": ["+<network_drivers/physical/physical.cpp>"],
       "tests": ["test_net_egress"]
     },
+    "native_client": {
+      "desc": "Outbound TCP client transport (network_drivers/transport/client.cpp), the pooled\nlayer-4 peer of tcp.cpp used by http_client / mqtt / ws_client / relay / smtp / ssh\nport-forward (DWS_NEED_DET_CLIENT). The tcpip_api_call-marshaled lwIP path is\nARDUINO-only; on native this file compiles to just the !NEED stub (fail-closed: no\nlwIP on the host, so every call reports no connection), host-tested here for its own sake\nsince no other env's build_src_filter pulls this file in at all.",
+      "src": ["+<network_drivers/transport/client.cpp>"],
+      "tests": ["test_client"]
+    },
     "native_partition": {
       "desc": "Flash partition-map monitor (services/partition_monitor core): the kind\nclassifier + JSON serializer host-test here; the esp_partition walk is ESP32-only.",
       "flags": ["-DDWS_ENABLE_PARTITION_MONITOR=1"],

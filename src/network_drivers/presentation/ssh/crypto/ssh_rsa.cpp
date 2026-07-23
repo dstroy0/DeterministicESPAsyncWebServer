@@ -311,7 +311,13 @@ static void bn_mul_full(const uint32_t a[SSH_BN_LIMBS], const uint32_t b[SSH_BN_
         }
         // Propagate the final carry into the upper half.
         int k = i + SSH_BN_LIMBS;
-        while (carry && k < 2 * SSH_BN_LIMBS)
+        // a and b are both SSH_BN_LIMBS (64) limbs, so their full product is bounded by
+        // 2*SSH_BN_LIMBS (128) limbs by construction (a 2048-bit x 2048-bit product cannot
+        // exceed 4096 bits) - carry propagation out of the top half can therefore never
+        // still be pending when k reaches 2*SSH_BN_LIMBS. The "k < 2*SSH_BN_LIMBS" half of
+        // this guard is defensive and provably unreachable for any a/b this function is
+        // ever called with, not merely untested.
+        while (carry && k < 2 * SSH_BN_LIMBS) // GCOVR_EXCL_BR_LINE
         {
             uint64_t cur = (uint64_t)p[k] + carry;
             p[k] = (uint32_t)cur;
@@ -437,7 +443,12 @@ static void bn_modexp_full(const SshBigNum *base, const SshBigNum *exp, const Ss
         return;
     }
     int top_bit = 31;
-    while (top_bit >= 0 && !((exp->d[top_limb] >> top_bit) & 1u))
+    // top_limb was chosen by the loop above specifically because exp->d[top_limb] != 0 (the
+    // top_limb < 0 case - exp entirely zero - already returned above), so it holds at least
+    // one set bit; this scan is therefore guaranteed to find one before top_bit passes 0.
+    // The "top_bit >= 0" half of this guard cannot go false here - it is defensive, not a
+    // reachable case, given the invariant just established.
+    while (top_bit >= 0 && !((exp->d[top_limb] >> top_bit) & 1u)) // GCOVR_EXCL_BR_LINE
         top_bit--;
 
     for (int limb = top_limb; limb >= 0; limb--)

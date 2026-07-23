@@ -80,6 +80,43 @@ void test_decode_rejects_corrupt()
     TEST_ASSERT_FALSE(dws_espnow_decode(frame, n + 1, &type, &p, &plen));
 }
 
+void test_encode_null_out_and_null_payload_nonzero_len()
+{
+    const uint8_t in[] = {1, 2, 3};
+    // null out buffer is rejected regardless of otherwise-valid arguments.
+    TEST_ASSERT_EQUAL_size_t(0, dws_espnow_encode(1, in, sizeof(in), nullptr, 64));
+
+    // Non-null out, positive length, but null payload: the memcpy is skipped
+    // (no data to copy from) while the header is still written and the full
+    // frame length is still returned.
+    uint8_t frame[16];
+    size_t n = dws_espnow_encode(5, nullptr, 3, frame, sizeof(frame));
+    TEST_ASSERT_EQUAL_size_t(3 + DWS_ESPNOW_HDR, n);
+    TEST_ASSERT_EQUAL_UINT8(DWS_ESPNOW_MAGIC, frame[0]);
+    TEST_ASSERT_EQUAL_UINT8(5, frame[1]);
+    TEST_ASSERT_EQUAL_UINT8(3, frame[2]);
+}
+
+void test_decode_null_buf_and_null_out_params()
+{
+    uint8_t type = 0;
+    const uint8_t *p = nullptr;
+    size_t plen = 0;
+    TEST_ASSERT_FALSE(dws_espnow_decode(nullptr, 5, &type, &p, &plen));
+
+    const uint8_t payload[] = {1, 2, 3};
+    uint8_t frame[16];
+    size_t n = dws_espnow_encode(9, payload, sizeof(payload), frame, sizeof(frame));
+    // All out-params null: decode still succeeds, just skips writing them back.
+    TEST_ASSERT_TRUE(dws_espnow_decode(frame, n, nullptr, nullptr, nullptr));
+}
+
+void test_peer_has_and_remove_reject_null_mac()
+{
+    TEST_ASSERT_FALSE(dws_espnow_peer_has(nullptr));
+    TEST_ASSERT_FALSE(dws_espnow_peer_remove(nullptr));
+}
+
 void test_peer_registry()
 {
     uint8_t a[6] = {0x01, 0, 0, 0, 0, 0xAA};
@@ -135,6 +172,9 @@ int main()
     RUN_TEST(test_encode_zero_length);
     RUN_TEST(test_encode_rejects_oversize_and_small_buffer);
     RUN_TEST(test_decode_rejects_corrupt);
+    RUN_TEST(test_encode_null_out_and_null_payload_nonzero_len);
+    RUN_TEST(test_decode_null_buf_and_null_out_params);
+    RUN_TEST(test_peer_has_and_remove_reject_null_mac);
     RUN_TEST(test_peer_registry);
     RUN_TEST(test_peer_table_full_fails_closed);
     RUN_TEST(test_broadcast_address);

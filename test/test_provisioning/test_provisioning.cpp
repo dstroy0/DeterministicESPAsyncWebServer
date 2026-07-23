@@ -52,6 +52,34 @@ void test_no_substring_match()
     TEST_ASSERT_EQUAL_STRING("right", v);
 }
 
+// The key can be a strict prefix of a longer field name at a valid start position
+// (start-of-body or just after '&'); the match must still fail because the char
+// right after the key isn't '=', so the parser keeps scanning to the real field.
+void test_no_prefix_match()
+{
+    char v[64];
+    TEST_ASSERT_TRUE(dws_prov_form_field("ssidx=wrong&ssid=right", "ssid", v, sizeof(v)));
+    TEST_ASSERT_EQUAL_STRING("right", v);
+}
+
+// A %XX escape with an invalid first hex digit is left as a literal '%' plus
+// the following characters (no decode, no extra advance).
+void test_invalid_hex_escape_first_digit()
+{
+    char v[64];
+    TEST_ASSERT_TRUE(dws_prov_form_field("ssid=a%zzb", "ssid", v, sizeof(v)));
+    TEST_ASSERT_EQUAL_STRING("a%zzb", v);
+}
+
+// A %XX escape with a valid first digit but an invalid second digit is likewise
+// left undecoded.
+void test_invalid_hex_escape_second_digit()
+{
+    char v[64];
+    TEST_ASSERT_TRUE(dws_prov_form_field("ssid=a%4zb", "ssid", v, sizeof(v)));
+    TEST_ASSERT_EQUAL_STRING("a%4zb", v);
+}
+
 // The output is bounded by cap and always null-terminated.
 void test_capacity_bound()
 {
@@ -81,6 +109,33 @@ void test_host_provisioning_stubs()
     dws_provisioning_clear(); // no-op, must not crash
 }
 
+// The ssid and psk guards in the host stub are independent; exercise both of their
+// false paths (null pointer, and a valid pointer paired with a zero capacity).
+void test_provisioning_load_partial_null_or_zero_cap()
+{
+    char psk[8] = "y";
+    TEST_ASSERT_FALSE(dws_provisioning_load(nullptr, 8, psk, 0));
+    TEST_ASSERT_EQUAL_STRING("y", psk); // psk_cap == 0 => psk left untouched
+
+    char ssid[8] = "z";
+    TEST_ASSERT_FALSE(dws_provisioning_load(ssid, 0, nullptr, 8));
+    TEST_ASSERT_EQUAL_STRING("z", ssid); // ssid_cap == 0 => ssid left untouched
+}
+
+// dws_provisioning_begin() on host is a stub that only (void)s both arguments;
+// call it to prove that. DWS is forward-declared in provisioning_service.h and
+// never given a full definition on this (non-Arduino) build, so a minimal local
+// stand-in is enough to bind the reference without ever being dereferenced.
+class DWS
+{
+};
+
+void test_provisioning_begin_stub()
+{
+    DWS server;
+    dws_provisioning_begin(server, "TestAP"); // must not crash, must not touch server
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -88,8 +143,13 @@ int main()
     RUN_TEST(test_url_decoding);
     RUN_TEST(test_missing_field);
     RUN_TEST(test_no_substring_match);
+    RUN_TEST(test_no_prefix_match);
+    RUN_TEST(test_invalid_hex_escape_first_digit);
+    RUN_TEST(test_invalid_hex_escape_second_digit);
     RUN_TEST(test_capacity_bound);
     RUN_TEST(test_form_field_null_guards);
     RUN_TEST(test_host_provisioning_stubs);
+    RUN_TEST(test_provisioning_load_partial_null_or_zero_cap);
+    RUN_TEST(test_provisioning_begin_stub);
     return UNITY_END();
 }

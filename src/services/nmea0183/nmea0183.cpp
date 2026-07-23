@@ -111,7 +111,9 @@ bool dws_nmea0183_parse(const char *s, size_t len, Nmea0183 *out)
     // Derive talker / type from the address field (field 0).
     memset(out->talker, 0, sizeof(out->talker));
     memset(out->type, 0, sizeof(out->type));
-    if (fc > 0)
+    if (fc > 0) // GCOVR_EXCL_BR_LINE  fc == 0 is unreachable: star (only set by the search loop,
+                // which starts at i = 1) is always >= 1 when found, so the split loop's i == star
+                // iteration always runs and captures at least one field.
     {
         uint8_t al = out->field_len[0];
         const char *a = out->fields[0];

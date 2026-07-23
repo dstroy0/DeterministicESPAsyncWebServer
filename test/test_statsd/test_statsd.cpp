@@ -143,6 +143,71 @@ void test_rate_clamp_and_stage_overflow()
     TEST_ASSERT_EQUAL_size_t(0, dws_statsd_format(out, 7, "m", "1", StatsdType::STATSD_COUNTER, 1.0f, "#tag:x"));
 }
 
+// ---- guard edges: null buffer, zero capacity ----
+
+void test_format_guard_null_out_and_zero_cap()
+{
+    char out[64];
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_statsd_format(nullptr, sizeof(out), "a", "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, dws_statsd_format(out, 0, "a", "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr));
+}
+
+// ---- every append-chain stage failing closed individually (name:value|type[|@rate][|#tags]) ----
+
+void test_format_append_chain_overflow_points()
+{
+    char out[64];
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_statsd_format(out, 2, "a", "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr)); // fails appending ":"
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_statsd_format(out, 3, "a", "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr)); // fails appending value
+    TEST_ASSERT_EQUAL_size_t(0, dws_statsd_format(out, 5, "a", "1", StatsdType::STATSD_COUNTER, 1.0f,
+                                                  nullptr)); // fails appending the type char
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_statsd_format(out, 6, "a", "1", StatsdType::STATSD_TIMING, 1.0f, nullptr)); // fails appending "ms"
+    TEST_ASSERT_EQUAL_size_t(0, dws_statsd_format(out, 8, "a", "1", StatsdType::STATSD_COUNTER, 0.5f,
+                                                  nullptr)); // "|@" fits, rate text doesn't
+    TEST_ASSERT_EQUAL_size_t(0, dws_statsd_format(out, 8, "a", "1", StatsdType::STATSD_COUNTER, 1.0f,
+                                                  "tg")); // "|#" fits, tag text doesn't
+}
+
+// ---- rate <= 0 (clamps like >= 1: no annotation); non-null but empty tags (treated as none) ----
+
+void test_format_rate_zero_and_empty_tags()
+{
+    char out[64];
+    dws_statsd_format(out, sizeof(out), "x", "1", StatsdType::STATSD_COUNTER, 0.0f, nullptr);
+    TEST_ASSERT_EQUAL_STRING("x:1|c", out);
+    dws_statsd_format(out, sizeof(out), "x", "1", StatsdType::STATSD_COUNTER, 1.0f, "");
+    TEST_ASSERT_EQUAL_STRING("x:1|c", out);
+}
+
+// ---- emit-side edges: an exact-zero value, a null set member, and a name so long the internal
+// line buffer can't hold it (format fails closed -> emit sends nothing) ----
+
+void test_emit_zero_value_and_set_null_member()
+{
+    dws_statsd_begin("h", 8125, nullptr);
+    dws_statsd_timing("db.zero", 0);
+    TEST_ASSERT_EQUAL_STRING("db.zero:0|ms", captured().c_str());
+    dws_udp_capture_reset();
+    dws_statsd_set("uniques", nullptr); // null member -> emitted as an empty value, not a crash
+    TEST_ASSERT_EQUAL_STRING("uniques:|s", captured().c_str());
+}
+
+void test_emit_overlong_name_is_noop()
+{
+    dws_statsd_begin("h", 8125, nullptr);
+    char longname[300];
+    for (size_t i = 0; i < sizeof(longname) - 1; i++)
+        longname[i] = 'a';
+    longname[sizeof(longname) - 1] = '\0';
+    dws_udp_capture_reset();
+    dws_statsd_count(longname, 1); // overflows DWS_STATSD_LINE_MAX -> format fails -> nothing sent
+    TEST_ASSERT_EQUAL_UINT(0, dws_udp_captured_len());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -156,5 +221,10 @@ int main()
     RUN_TEST(test_emit_global_tags);
     RUN_TEST(test_emit_noop_until_begin);
     RUN_TEST(test_rate_clamp_and_stage_overflow);
+    RUN_TEST(test_format_guard_null_out_and_zero_cap);
+    RUN_TEST(test_format_append_chain_overflow_points);
+    RUN_TEST(test_format_rate_zero_and_empty_tags);
+    RUN_TEST(test_emit_zero_value_and_set_null_member);
+    RUN_TEST(test_emit_overlong_name_is_noop);
     return UNITY_END();
 }

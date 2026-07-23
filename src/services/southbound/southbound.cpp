@@ -56,8 +56,11 @@ const SouthboundDriver *dws_southbound_find(const char *name)
 {
     if (!name)
         return nullptr;
+    // The null halves of the first two && arms below are unreachable: register() rejects a null
+    // drv/drv->name before ever storing it, and clear() nulls the array and resets count together,
+    // so for i < count, drivers[i] and drivers[i]->name are always non-null.
     for (size_t i = 0; i < s_sb.count; i++)
-        if (s_sb.drivers[i] && s_sb.drivers[i]->name && strcmp(s_sb.drivers[i]->name, name) == 0)
+        if (s_sb.drivers[i] && s_sb.drivers[i]->name && strcmp(s_sb.drivers[i]->name, name) == 0) // GCOVR_EXCL_BR_LINE
             return s_sb.drivers[i];
     return nullptr;
 }

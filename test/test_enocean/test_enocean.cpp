@@ -124,6 +124,21 @@ void test_esp3_parse_null_guard()
     TEST_ASSERT_EQUAL_INT(0, dws_esp3_parse(tiny, 0, &pkt)); // zero length
 }
 
+void test_parse_succeeds_with_null_out()
+{
+    // A fully valid telegram is still framed correctly when the caller doesn't want the
+    // parsed fields (out == nullptr) - exercises the false side of `if (out)`.
+    uint8_t buf[32];
+    uint16_t n = sample(buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_INT((int)n, dws_esp3_parse(buf, n, nullptr));
+}
+
+void test_build_rejects_null_out()
+{
+    const uint8_t data[4] = {0xD5, 0x08, 0x11, 0x22};
+    TEST_ASSERT_EQUAL_UINT16(0, dws_esp3_build(dws_esp3_type::ESP3_RADIO_ERP1, data, 4, nullptr, 0, nullptr, 32));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -137,5 +152,7 @@ int main()
     RUN_TEST(test_parse_resynchronises_after_junk);
     RUN_TEST(test_build_bounds);
     RUN_TEST(test_esp3_parse_null_guard);
+    RUN_TEST(test_parse_succeeds_with_null_out);
+    RUN_TEST(test_build_rejects_null_out);
     return UNITY_END();
 }

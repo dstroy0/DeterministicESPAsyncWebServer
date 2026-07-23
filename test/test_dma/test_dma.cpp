@@ -253,6 +253,14 @@ void test_channel_guard_subconditions()
     TEST_ASSERT_FALSE(dws_dma_sim_feed(0, b, sizeof(b)));        // channel not open
     TEST_ASSERT_EQUAL_UINT16(0, dws_dma_sim_capture(0, b, 4));   // channel not open
     TEST_ASSERT_EQUAL_UINT16(0, dws_dma_sim_capture(255, b, 4)); // bad channel
+
+    // the remaining guard subconditions on sim_feed / tx_submit / sim_capture, each not
+    // otherwise exercised: a bad channel id and a null pointer are independent reasons to
+    // fail closed, so both must be hit on their own (not only in combination).
+    TEST_ASSERT_FALSE(dws_dma_sim_feed(DWS_DMA_CHANNELS, b, sizeof(b)));  // bad channel
+    TEST_ASSERT_FALSE(dws_dma_sim_feed(0, nullptr, sizeof(b)));           // null bytes, valid channel
+    TEST_ASSERT_FALSE(dws_dma_tx_submit(DWS_DMA_CHANNELS, b, sizeof(b))); // bad channel
+    TEST_ASSERT_EQUAL_UINT16(0, dws_dma_sim_capture(0, nullptr, 4));      // null out, valid channel
 }
 
 int main()

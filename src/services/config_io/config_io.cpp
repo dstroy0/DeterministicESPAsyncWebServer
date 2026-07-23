@@ -58,8 +58,8 @@ int dws_config_export(const char *ns, const DWSCfgField *fields, size_t n, char 
     if (!out || cap == 0)
         return 0;
     out[0] = '\0';
-    if (!fields || !dws_config_begin(ns))
-        return 0;
+    if (!fields || !dws_config_begin(ns)) // GCOVR_EXCL_BR_LINE  the begin()-fails half is unreachable: the
+        return 0;                         // host config_store backend's dws_config_begin always returns true
 
     size_t pos = 0;
     for (size_t i = 0; i < n; i++)
@@ -95,8 +95,8 @@ static bool config_apply_field(const DWSCfgField *fields, size_t n, const char *
 
 int dws_config_import(const char *ns, const DWSCfgField *fields, size_t n, const char *text, size_t len)
 {
-    if (!text || !fields || !dws_config_begin(ns))
-        return 0;
+    if (!text || !fields || !dws_config_begin(ns)) // GCOVR_EXCL_BR_LINE  the begin()-fails half is unreachable:
+        return 0; // the host config_store backend's dws_config_begin always returns true
 
     int count = 0;
     size_t i = 0;

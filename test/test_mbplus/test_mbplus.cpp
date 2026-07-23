@@ -87,6 +87,31 @@ void test_build_parse_and_token_wrap()
     TEST_ASSERT_EQUAL_UINT8(1, dws_mbplus_next_token(8, 8));      // current == max -> wrap to 1
 }
 
+void test_mbplus_null_and_flag_edges(void)
+{
+    uint8_t payload[2] = {0x01, 0x02};
+    uint8_t buf[16];
+
+    // Null output buffer at build.
+    TEST_ASSERT_EQUAL_size_t(0, dws_mbplus_build(5, Mbplus::MBPLUS_CTRL_DATA, payload, 2, nullptr, 16));
+    // Non-zero payload_len with a null payload pointer.
+    TEST_ASSERT_EQUAL_size_t(0, dws_mbplus_build(5, Mbplus::MBPLUS_CTRL_DATA, nullptr, 2, buf, sizeof(buf)));
+
+    // Null frame / null out pointers at parse.
+    MbPlusFrame f;
+    uint8_t frame[8] = {0};
+    TEST_ASSERT_FALSE(dws_mbplus_parse(nullptr, 8, &f));
+    TEST_ASSERT_FALSE(dws_mbplus_parse(frame, 8, nullptr));
+
+    // Corrupted leading flag (trailing-flag corruption is covered by test_parse_rejects).
+    size_t n = dws_mbplus_build(4, Mbplus::MBPLUS_CTRL_DATA, payload, 2, buf, sizeof(buf));
+    buf[0] = 0x00;
+    TEST_ASSERT_FALSE(dws_mbplus_parse(buf, n, &f));
+
+    // max_station == 0 is degenerate input; the guard rail still returns a valid station.
+    TEST_ASSERT_EQUAL_UINT8(1, dws_mbplus_next_token(1, 0));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -96,5 +121,6 @@ int main(void)
     RUN_TEST(test_next_token_ring);
     RUN_TEST(test_parse_rejects);
     RUN_TEST(test_build_parse_and_token_wrap);
+    RUN_TEST(test_mbplus_null_and_flag_edges);
     return UNITY_END();
 }

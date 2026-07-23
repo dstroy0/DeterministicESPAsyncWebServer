@@ -107,6 +107,41 @@ void test_trigger_build_failures()
     TEST_ASSERT_EQUAL_INT(-1, dws_ifttt_trigger("e", "k", bigval, nullptr, nullptr)); // payload overflows body[256]
 }
 
+// Exact-capacity failures where the in-progress put() call itself returns false (as
+// opposed to test_payload_escape_overflow_fails_closed / test_overflow_fails_closed,
+// which fail earlier and leave later fields skipped by short-circuit). Each case sizes
+// cap so every field up to the target one fits exactly, and the target field's put()
+// call is the one that overruns by a single byte.
+void test_payload_write_fails_at_each_field(void)
+{
+    char buf[16];
+
+    // cap=2: "{" fits (pos=1); the opening '"' of value1 does not (1+1>=2).
+    TEST_ASSERT_EQUAL_INT(0, dws_ifttt_payload("z", nullptr, nullptr, buf, 2));
+
+    // cap=11: "{" + '"' + "value1" fit (pos=8); the "\":\"" separator does not (8+3>=11).
+    TEST_ASSERT_EQUAL_INT(0, dws_ifttt_payload("x", nullptr, nullptr, buf, 11));
+
+    // cap=13: everything through the escaped 1-char value fits (pos=12); the closing
+    // '"' does not (12+1>=13).
+    TEST_ASSERT_EQUAL_INT(0, dws_ifttt_payload("y", nullptr, nullptr, buf, 13));
+
+    // cap=14: the whole first (and only) value fits (pos=13); the final "}" does not
+    // (13+1>=14).
+    TEST_ASSERT_EQUAL_INT(0, dws_ifttt_payload("y", nullptr, nullptr, buf, 14));
+}
+
+// When the comma before a second value fails to fit, ok goes false mid-iteration and
+// every later put() call in that same dws_ifttt_payload() invocation is skipped by
+// short-circuit (never actually invoked) - distinct from one of those put() calls
+// failing on its own, which test_payload_write_fails_at_each_field covers above.
+void test_payload_comma_failure_skips_rest(void)
+{
+    char buf[16];
+    // "{\"value1\":\"a\"" is 13 chars (pos=13); the "," before value2 does not fit (13+1>=14).
+    TEST_ASSERT_EQUAL_INT(0, dws_ifttt_payload("a", "b", nullptr, buf, 14));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -119,5 +154,7 @@ int main()
     RUN_TEST(test_builder_arg_guards);
     RUN_TEST(test_payload_escape_overflow_fails_closed);
     RUN_TEST(test_trigger_build_failures);
+    RUN_TEST(test_payload_write_fails_at_each_field);
+    RUN_TEST(test_payload_comma_failure_skips_rest);
     return UNITY_END();
 }

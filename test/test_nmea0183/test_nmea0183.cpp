@@ -128,6 +128,83 @@ void test_nmea0183_error_paths()
     TEST_ASSERT_FALSE(dws_nmea0183_field_int(&m, 13, &v));     // empty field
 }
 
+// hex_val's low-end reject range (below '0') and lowercase-beyond-'f' reject range, plus the
+// checksum guard's "first digit invalid" short-circuit (hi < 0, so lo is never evaluated).
+void test_nmea0183_hex_val_edges()
+{
+    Nmea0183 m;
+    TEST_ASSERT_FALSE(dws_nmea0183_parse("$GPGGA,1*.4\r\n", 13, &m)); // '.' < '0': hi invalid
+    TEST_ASSERT_FALSE(dws_nmea0183_parse("$GPGGA,1*4z\r\n", 13, &m)); // 'z' > 'f': lo invalid
+}
+
+// Guard-clause branches in dws_nmea0183_parse: null s, null out, too-short len, and the '!'
+// (AIS-encapsulated) leading character as an alternative to '$'.
+void test_nmea0183_parse_guards()
+{
+    Nmea0183 m;
+    TEST_ASSERT_FALSE(dws_nmea0183_parse(nullptr, 10, &m));           // null s
+    TEST_ASSERT_FALSE(dws_nmea0183_parse(GGA, strlen(GGA), nullptr)); // null out
+    TEST_ASSERT_FALSE(dws_nmea0183_parse("ab", 2, &m));               // len < 4
+
+    char bang[96];
+    strcpy(bang, GGA);
+    bang[0] = '!'; // AIS-style leading char; checksum is unaffected (computed from s+1 onward).
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(bang, strlen(bang), &m));
+    TEST_ASSERT_EQUAL_STRING("GP", m.talker);
+}
+
+// The '*'-search loop's natural (non-break) exit at i == len, a bare '\n' with no preceding '\r'
+// as a stop character, and a '*' with only one trailing character (too few for two hex digits).
+void test_nmea0183_parse_scan_edges()
+{
+    Nmea0183 m;
+    TEST_ASSERT_FALSE(dws_nmea0183_parse("$GPGGA,123", 10, &m)); // no '*', no CR/LF: loop runs to len
+    TEST_ASSERT_FALSE(dws_nmea0183_parse("$GPGGA,1\n", 9, &m));  // bare '\n' stops the scan
+    TEST_ASSERT_FALSE(dws_nmea0183_parse("$GPGGA,1*4", 10, &m)); // '*' with only 1 trailing char
+}
+
+// The field-split loop's overflow guard (more comma-separated fields than
+// DWS_NMEA0183_MAX_FIELDS) and talker/type derivation when the address field is shorter than
+// either fixed-width copy, so the field-length check (not the index cap) ends each inner loop.
+void test_nmea0183_field_overflow_and_short_address()
+{
+    char body[80];
+    size_t bp = 0;
+    body[bp++] = 'G';
+    body[bp++] = 'P';
+    for (int i = 0; i < 40; i++)
+        body[bp++] = ',';
+    body[bp] = '\0';
+    char buf[160];
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), body);
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    TEST_ASSERT_EQUAL_UINT8(DWS_NMEA0183_MAX_FIELDS, m.field_count); // capped, extras dropped
+
+    char buf2[32];
+    size_t n2 = dws_nmea0183_build(buf2, sizeof(buf2), "G,1"); // 1-char address (< talker/type width)
+    TEST_ASSERT_TRUE(n2 > 0);
+    Nmea0183 m2;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf2, n2, &m2));
+    TEST_ASSERT_EQUAL_STRING("G", m2.talker);
+    TEST_ASSERT_EQUAL_STRING("", m2.type);
+}
+
+// Out-of-range idx and null out-pointer branches of the field-value helpers.
+void test_nmea0183_field_helpers_more_guards()
+{
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(GGA, strlen(GGA), &m));
+    float f;
+    TEST_ASSERT_FALSE(dws_nmea0183_field_float(nullptr, 0, &f));        // null message
+    TEST_ASSERT_FALSE(dws_nmea0183_field_float(&m, m.field_count, &f)); // idx out of range
+    TEST_ASSERT_FALSE(dws_nmea0183_field_float(&m, 0, nullptr));        // null out
+    long v;
+    TEST_ASSERT_FALSE(dws_nmea0183_field_int(&m, m.field_count, &v)); // idx out of range
+    TEST_ASSERT_FALSE(dws_nmea0183_field_int(&m, 0, nullptr));        // null out
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -139,5 +216,10 @@ int main()
     RUN_TEST(test_parse_rejects_no_dollar);
     RUN_TEST(test_build_then_parse);
     RUN_TEST(test_nmea0183_error_paths);
+    RUN_TEST(test_nmea0183_hex_val_edges);
+    RUN_TEST(test_nmea0183_parse_guards);
+    RUN_TEST(test_nmea0183_parse_scan_edges);
+    RUN_TEST(test_nmea0183_field_overflow_and_short_address);
+    RUN_TEST(test_nmea0183_field_helpers_more_guards);
     return UNITY_END();
 }

@@ -135,6 +135,83 @@ void test_parse_errors()
     TEST_ASSERT_TRUE(dws_h3_parse_settings(grease, 2, &s));
 }
 
+// The QPACK_BLOCKED_STREAMS setting id (the third recognized id) round-trips like the other two.
+void test_settings_blocked_streams()
+{
+    const uint64_t ids[1] = {H3Setting::H3_SETTINGS_QPACK_BLOCKED_STREAMS};
+    const uint64_t vals[1] = {9};
+    uint8_t b[8];
+    size_t n = dws_h3_build_settings(b, sizeof b, ids, vals, 1);
+    TEST_ASSERT_TRUE(n > 0);
+
+    H3Frame f;
+    TEST_ASSERT_TRUE(dws_h3_frame_parse(b, n, &f));
+    H3Settings s;
+    dws_h3_settings_defaults(&s);
+    TEST_ASSERT_TRUE(dws_h3_parse_settings(b + f.header_len, (size_t)f.length, &s));
+    TEST_ASSERT_TRUE(s.dws_qpack_blocked_streams == 9);
+    // The other two fields stay at their defaults.
+    TEST_ASSERT_TRUE(s.dws_qpack_max_table_capacity == 0);
+    TEST_ASSERT_TRUE(s.max_field_section_size == 0xFFFFFFFFFFFFFFFFULL);
+}
+
+// A malformed id varint (not just a malformed value varint) inside a SETTINGS payload is rejected.
+void test_parse_settings_id_decode_fails()
+{
+    H3Settings s;
+    dws_h3_settings_defaults(&s);
+    // 0xC0's top 2 bits select an 8-byte varint, but only 1 byte is present.
+    const uint8_t bad_id[1] = {0xC0};
+    TEST_ASSERT_FALSE(dws_h3_parse_settings(bad_id, 1, &s));
+}
+
+// dws_h3_build_data / dws_h3_build_headers: a zero-length payload skips the memcpy, and a cap too
+// small even for the header (hn == 0) short-circuits before the length check.
+void test_build_data_and_headers_edge_caps()
+{
+    uint8_t b[8];
+    const uint8_t block[1] = {0xAA};
+
+    // len == 0: header is written, memcpy is skipped.
+    size_t n = dws_h3_build_data(b, sizeof b, block, 0);
+    const uint8_t exp_data[2] = {0x00, 0x00};
+    TEST_ASSERT_EQUAL_INT(2, (int)n);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_data, b, 2);
+
+    n = dws_h3_build_headers(b, sizeof b, block, 0);
+    const uint8_t exp_headers[2] = {0x01, 0x00};
+    TEST_ASSERT_EQUAL_INT(2, (int)n);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_headers, b, 2);
+
+    // cap == 0: the header write itself fails (hn == 0), short-circuiting the length check.
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_h3_build_data(b, 0, block, 0));
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_h3_build_headers(b, 0, block, 0));
+}
+
+// dws_h3_build_settings: cap can be exactly enough for the header but run out mid-loop, either
+// while encoding the id (a == 0) or, one byte later, while encoding the value (b == 0).
+void test_build_settings_partial_overflow()
+{
+    const uint64_t ids[1] = {H3Setting::H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY}; // id 1, val 5: both 1-byte varints
+    const uint64_t vals[1] = {5};
+    uint8_t b[8];
+
+    // header (type 0x04 + length 0x02) consumes exactly 2 bytes; no room left for the id varint.
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_h3_build_settings(b, 2, ids, vals, 1));
+    // One more byte fits the id varint but leaves none for the value varint.
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_h3_build_settings(b, 3, ids, vals, 1));
+}
+
+// dws_h3_build_goaway: cap can be exactly enough for the header but too small for the stream id
+// varint itself (a == 0).
+void test_build_goaway_partial_overflow()
+{
+    uint8_t b[8];
+    // stream id 64 needs a 2-byte varint; header (type 0x07 + length 0x02) consumes exactly 2
+    // bytes, leaving none for it.
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_h3_build_goaway(b, 2, 64));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -145,5 +222,10 @@ int main()
     RUN_TEST(test_build_headers);
     RUN_TEST(test_builder_overflow);
     RUN_TEST(test_parse_errors);
+    RUN_TEST(test_settings_blocked_streams);
+    RUN_TEST(test_parse_settings_id_decode_fails);
+    RUN_TEST(test_build_data_and_headers_edge_caps);
+    RUN_TEST(test_build_settings_partial_overflow);
+    RUN_TEST(test_build_goaway_partial_overflow);
     return UNITY_END();
 }

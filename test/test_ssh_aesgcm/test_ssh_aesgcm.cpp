@@ -123,11 +123,33 @@ void test_aesgcm_invocation_counter_advances()
     ssh_aesgcm_wipe(&dec);
 }
 
+// RFC 5647 sec 7.1: the invocation counter is the low 8 bytes of the 12-byte nonce, incremented as one
+// big-endian integer. Pre-load those 8 bytes to their max value so a single seal() carries through
+// every byte (each ++iv[j] wraps 0xff -> 0x00 and falls through to the next byte down), exercising the
+// carry-propagation path that a non-wrapping counter never takes. The 4-byte fixed field is untouched.
+void test_aesgcm_iv_counter_carries(void)
+{
+    SshAesGcmCtx ctx;
+    const uint8_t key[32] = {0};
+    const uint8_t iv[12] = {0x01, 0x02, 0x03, 0x04, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    ssh_aesgcm_init(&ctx, key, iv);
+
+    const uint8_t pt[16] = {0};
+    uint8_t out[16 + 16];
+    ssh_aesgcm_seal(&ctx, NULL, 0, pt, sizeof(pt), out);
+
+    const uint8_t expected_iv[12] = {0x01, 0x02, 0x03, 0x04, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_iv, ctx.iv, 12);
+
+    ssh_aesgcm_wipe(&ctx);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_aesgcm_nist_tc16_seal);
     RUN_TEST(test_aesgcm_nist_tc16_open);
     RUN_TEST(test_aesgcm_invocation_counter_advances);
+    RUN_TEST(test_aesgcm_iv_counter_carries);
     return UNITY_END();
 }

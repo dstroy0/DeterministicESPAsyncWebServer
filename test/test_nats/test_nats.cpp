@@ -106,6 +106,25 @@ void test_parse_control_lines()
     TEST_ASSERT_TRUE(dws_nats_parse("INFO {\"server_id\":\"x\"}\r\n", 24, &m, &c));
     TEST_ASSERT_EQUAL(NatsMsgType::NATS_INFO, m.type);
     TEST_ASSERT_EQUAL_MEMORY("{\"server_id\":\"x\"}", m.arg, m.arg_len);
+
+    // -ERR with no argument text at all: the whitespace-skip loop exits because it hit
+    // end-of-line, not because it found a non-space byte.
+    TEST_ASSERT_TRUE(dws_nats_parse("-ERR\r\n", 6, &m, &c));
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_ERR, m.type);
+    TEST_ASSERT_EQUAL_size_t(0, m.arg_len);
+    // -ERR argument preceded by tabs (not spaces) exercises the tab arm of the skip loop.
+    TEST_ASSERT_TRUE(dws_nats_parse("-ERR\t\tX\r\n", 9, &m, &c));
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_ERR, m.type);
+    TEST_ASSERT_EQUAL_MEMORY("X", m.arg, m.arg_len);
+    TEST_ASSERT_EQUAL_size_t(1, m.arg_len);
+
+    // A verb terminated by a tab instead of a space still matches.
+    TEST_ASSERT_TRUE(dws_nats_parse("PING\t\r\n", 7, &m, &c));
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_PING, m.type);
+    // A line whose first 4 bytes match "PING" but isn't followed by a space, a tab, or
+    // end-of-line must not be recognized as the PING verb.
+    TEST_ASSERT_TRUE(dws_nats_parse("PINGZ\r\n", 7, &m, &c));
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_UNKNOWN, m.type);
 }
 
 void test_parse_incomplete()
@@ -116,6 +135,10 @@ void test_parse_incomplete()
     TEST_ASSERT_FALSE(dws_nats_parse("MSG foo 1 5\r\nhel", 16, &m, &c)); // payload short
     // A byte count near SIZE_MAX must fail closed, not wrap the bounds check (32-bit hardening).
     TEST_ASSERT_FALSE(dws_nats_parse("MSG foo 1 999999999999\r\nhi\r\n", 28, &m, &c));
+    // The control line's CRLF is the very end of the buffer: there isn't even room for a
+    // trailing CRLF after a zero-length payload, so the bounds check must fail closed via
+    // the "after_line + 2 > len" arm specifically (not the size-vs-remaining arm above).
+    TEST_ASSERT_FALSE(dws_nats_parse("MSG foo 1 5\r\n", 13, &m, &c));
 }
 
 void test_build_overflow_fails_closed()
@@ -131,6 +154,12 @@ void test_build_ping_pong()
     TEST_ASSERT_EQUAL_STRING("PING\r\n", buf);
     TEST_ASSERT_EQUAL_size_t(6, dws_nats_build_pong(buf, sizeof(buf)));
     TEST_ASSERT_EQUAL_STRING("PONG\r\n", buf);
+
+    // A buffer sized to exactly fit the output leaves no room for a trailing NUL;
+    // finish() must skip writing it (rather than overflow) and still return the length.
+    char exact[6];
+    TEST_ASSERT_EQUAL_size_t(6, dws_nats_build_ping(exact, sizeof(exact)));
+    TEST_ASSERT_EQUAL_MEMORY("PING\r\n", exact, 6);
 }
 
 void test_build_null_args()
@@ -178,6 +207,33 @@ void test_parse_edges()
     // An unrecognized verb parses as UNKNOWN (consumes the line).
     TEST_ASSERT_TRUE(dws_nats_parse("ZZZ whatever\r\n", 14, &m, &c));
     TEST_ASSERT_EQUAL(NatsMsgType::NATS_UNKNOWN, m.type);
+
+    // find_crlf must skip a lone '\r' not immediately followed by '\n' and keep scanning
+    // for the real terminator.
+    TEST_ASSERT_TRUE(dws_nats_parse("AB\rCD\r\n", 7, &m, &c));
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_UNKNOWN, m.type);
+
+    // A byte-count token with a character below '0' fails the digit check on its low side
+    // (as opposed to the already-covered high side, e.g. 'x').
+    TEST_ASSERT_FALSE(dws_nats_parse("MSG a b -5\r\n", 12, &m, &c));
+
+    // More than 4 whitespace-delimited tokens on a MSG line: the tokenizer stops once it
+    // has collected 4 (ntok cap reached) even though input remains.
+    TEST_ASSERT_TRUE(dws_nats_parse("MSG a b c 5 extra\r\nhello\r\n", 26, &m, &c));
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_MSG, m.type);
+    TEST_ASSERT_EQUAL_MEMORY("a", m.subject, m.subject_len);
+    TEST_ASSERT_EQUAL_MEMORY("b", m.sid, m.sid_len);
+    TEST_ASSERT_EQUAL_MEMORY("c", m.reply, m.reply_len);
+    TEST_ASSERT_EQUAL_MEMORY("hello", m.payload, 5);
+
+    // Tab-delimited MSG tokens exercise the tab arm of both the whitespace-skip loop and
+    // the token-scan loop.
+    TEST_ASSERT_TRUE(dws_nats_parse("MSG\ta\tb\t5\r\nhello\r\n", 18, &m, &c));
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_MSG, m.type);
+    TEST_ASSERT_EQUAL_MEMORY("a", m.subject, m.subject_len);
+    TEST_ASSERT_EQUAL_MEMORY("b", m.sid, m.sid_len);
+    TEST_ASSERT_EQUAL_size_t(0, m.reply_len);
+    TEST_ASSERT_EQUAL_MEMORY("hello", m.payload, 5);
 }
 
 int main()

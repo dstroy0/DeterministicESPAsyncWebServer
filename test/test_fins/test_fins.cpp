@@ -127,11 +127,29 @@ void test_overflow_and_truncation()
     FinsCommand c;
     const uint8_t short_buf[] = {0x80, 0x00, 0x02, 0x00}; // too short for header + MRC/SRC
     TEST_ASSERT_FALSE(dws_fins_parse_command(short_buf, sizeof(short_buf), &c));
+    // Null buffer / null output cover the other half of parse_command's guard.
+    TEST_ASSERT_FALSE(dws_fins_parse_command(nullptr, sizeof(short_buf), &c));
+    TEST_ASSERT_FALSE(dws_fins_parse_command(short_buf, sizeof(short_buf), nullptr));
 
     FinsResponse r;
     const uint8_t short_resp[] = {0xC0, 0x00, 0x02, 0x00, 0x02, 0x00,
                                   0x00, 0x01, 0x00, 0x2A, 0x01, 0x01}; // no end code
     TEST_ASSERT_FALSE(dws_fins_parse_response(short_resp, sizeof(short_resp), &r));
+    // Null buffer / null output cover the other half of parse_response's guard.
+    TEST_ASSERT_FALSE(dws_fins_parse_response(nullptr, sizeof(short_resp), &r));
+    TEST_ASSERT_FALSE(dws_fins_parse_response(short_resp, sizeof(short_resp), nullptr));
+}
+
+// A command with zero params (e.g. a no-argument service code) must still build cleanly and
+// skip the memcpy of the params block.
+void test_build_command_zero_params()
+{
+    FinsHeader h = make_header();
+    uint8_t buf[32];
+    size_t n = dws_fins_build_command(buf, sizeof(buf), &h, 0x05, 0x01, nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2, n);
+    TEST_ASSERT_EQUAL_HEX8(0x05, buf[10]); // MRC
+    TEST_ASSERT_EQUAL_HEX8(0x01, buf[11]); // SRC
 }
 
 int main()
@@ -143,5 +161,6 @@ int main()
     RUN_TEST(test_parse_response_ok);
     RUN_TEST(test_parse_response_error);
     RUN_TEST(test_overflow_and_truncation);
+    RUN_TEST(test_build_command_zero_params);
     return UNITY_END();
 }

@@ -299,6 +299,12 @@ void test_parse_ows_and_empty()
     const char *mixed = "max-age=5:"; // digit then ':' (> '9') ends the delta loop
     TEST_ASSERT_TRUE(cache_control_parse(mixed, strlen(mixed), &cc));
     TEST_ASSERT_EQUAL_INT32(5, cc.max_age);
+
+    // value is only quote chars: the leading-OWS-skip loop in cc_parse_delta consumes the whole
+    // value and exits because i reaches vlen (not because it hit a non-OWS char) - no digits found.
+    const char *quoted_empty = "max-age=\"\"";
+    TEST_ASSERT_TRUE(cache_control_parse(quoted_empty, strlen(quoted_empty), &cc));
+    TEST_ASSERT_EQUAL_INT32(-1, cc.max_age);
 }
 
 int main()

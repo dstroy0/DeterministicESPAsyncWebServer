@@ -128,6 +128,22 @@ void test_replay_empty_and_garbage(void)
     TEST_ASSERT_EQUAL_INT(0, c.n);
 }
 
+// A null `out` fails closed regardless of capacity (the "out == nullptr" arm of the encode guard).
+void test_encode_null_out_fails(void)
+{
+    TEST_ASSERT_EQUAL_size_t(0, dws_wal_record_encode(nullptr, 64, 1, (const uint8_t *)"x", 1));
+}
+
+// A null callback still walks every valid record and reports the durable length (the "if (cb)" false arm).
+void test_replay_null_callback(void)
+{
+    uint8_t log[128];
+    size_t r0 = dws_wal_record_encode(log, sizeof(log), 1, (const uint8_t *)"one", 3);
+    size_t r1 = dws_wal_record_encode(log + r0, sizeof(log) - r0, 2, (const uint8_t *)"two", 3);
+    size_t total = r0 + r1;
+    TEST_ASSERT_EQUAL_size_t(total, dws_wal_replay(log, total, nullptr, nullptr));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -137,5 +153,7 @@ int main(void)
     RUN_TEST(test_replay_stops_on_truncated_tail);
     RUN_TEST(test_encode_capacity_and_empty_payload);
     RUN_TEST(test_replay_empty_and_garbage);
+    RUN_TEST(test_encode_null_out_fails);
+    RUN_TEST(test_replay_null_callback);
     return UNITY_END();
 }

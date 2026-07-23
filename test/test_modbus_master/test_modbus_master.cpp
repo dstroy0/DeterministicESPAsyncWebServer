@@ -156,6 +156,18 @@ void test_parse_max_regs_and_null_out()
     TEST_ASSERT_EQUAL_INT(4, got2);
 }
 
+// parse accepts FC 0x04 (read input registers) as a valid non-exception response function.
+void test_parse_accepts_input_regs_function()
+{
+    uint16_t regs[4];
+    uint8_t ex = 0xFF;
+    uint8_t adu[11] = {0, 7, 0, 0, 0, 5, 1, 0x04, 2, 0x12, 0x34}; // FC 0x04, byte count 2, one reg
+    int got = dws_modbus_parse_response(adu, sizeof(adu), regs, 4, &ex);
+    TEST_ASSERT_EQUAL_INT(1, got);
+    TEST_ASSERT_EQUAL_UINT8(0, ex);
+    TEST_ASSERT_EQUAL_HEX16(0x1234, regs[0]);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -171,5 +183,6 @@ int main()
     RUN_TEST(test_parse_exception_null_out);
     RUN_TEST(test_parse_bad_byte_count);
     RUN_TEST(test_parse_max_regs_and_null_out);
+    RUN_TEST(test_parse_accepts_input_regs_function);
     return UNITY_END();
 }

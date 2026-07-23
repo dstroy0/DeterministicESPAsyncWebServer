@@ -312,6 +312,24 @@ void test_ws_alloc_pool_full_returns_null()
     TEST_ASSERT_NULL(ws_alloc(2)); // MAX_WS_CONNS = 2
 }
 
+// ws_active(): in-range + allocated -> true; unallocated and out-of-range -> false.
+void test_ws_active_reflects_pool_state()
+{
+    TEST_ASSERT_FALSE(ws_active(0)); // not yet allocated
+    ws_alloc(0);
+    TEST_ASSERT_TRUE(ws_active(0));
+    TEST_ASSERT_FALSE(ws_active((uint8_t)MAX_WS_CONNS)); // out of range
+}
+
+// ws_payload(): returns the slot's buf pointer when active, nullptr otherwise.
+void test_ws_payload_returns_buf_or_null()
+{
+    TEST_ASSERT_NULL(ws_payload(0)); // not yet allocated
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_EQUAL_PTR((const char *)ws->buf, ws_payload(0));
+    TEST_ASSERT_NULL(ws_payload((uint8_t)MAX_WS_CONNS)); // out of range
+}
+
 void test_ws_find_returns_correct_conn()
 {
     WsConn *allocated = ws_alloc(0);
@@ -366,6 +384,17 @@ void test_ws_free_nop_on_unallocated()
     TEST_ASSERT_FALSE(ws_pool[0].active);
     TEST_ASSERT_FALSE(ws_pool[1].active);
     TEST_PASS();
+}
+
+// With two active slots, freeing the second must skip past the first (active, but
+// wrong slot_id) rather than stopping on it.
+void test_ws_free_skips_active_slot_with_different_id()
+{
+    ws_alloc(0);
+    ws_alloc(1);
+    ws_free(1);
+    TEST_ASSERT_TRUE(ws_pool[0].active); // untouched
+    TEST_ASSERT_NULL(ws_find(1));
 }
 
 void test_ws_alloc_after_free_succeeds()
@@ -723,6 +752,30 @@ void test_ws_parse_stops_at_frame_ready()
     TEST_ASSERT_NOT_EQUAL(conn_pool[0].rx_head, conn_pool[0].rx_tail);
 }
 
+// A close frame followed by more buffered bytes: ws_parse must stop as soon as
+// parse_state flips to WS_CLOSED (checked at the top of the loop on the NEXT
+// iteration), leaving the trailing bytes untouched in the ring.
+void test_ws_parse_stops_after_close_leaves_ring_untouched()
+{
+    WsConn *ws = ws_alloc(0);
+    uint8_t close_frame[8] = {
+        0x88,                     // FIN=1, CLOSE
+        0x82,                     // MASK=1, len=2
+        0,    0, 0, 0, 0x03, 0xE8 // status code 1000
+    };
+    const uint8_t p[] = {'z'};
+    uint8_t next[8];
+    size_t nlen = build_frame(next, WsOpcode::WS_OP_TEXT, true, p, 1, true);
+
+    push_bytes(0, close_frame, sizeof(close_frame));
+    push_bytes(0, next, nlen);
+    ws_parse(ws);
+
+    TEST_ASSERT_EQUAL(WsParseState::WS_CLOSED, ws->parse_state);
+    // Trailing frame bytes were left in the ring (loop returned before reading them).
+    TEST_ASSERT_NOT_EQUAL(conn_pool[0].rx_head, conn_pool[0].rx_tail);
+}
+
 void test_ws_reset_frame_clears_fields()
 {
     WsConn *ws = ws_alloc(0);
@@ -744,6 +797,51 @@ void test_ws_reset_frame_clears_fields()
     TEST_ASSERT_FALSE(ws->masked);
     TEST_ASSERT_EQUAL(0, (int)ws->mask_key[0]);
     TEST_ASSERT_EQUAL('\0', (char)ws->buf[0]);
+}
+
+// ws_feed_byte()'s dispatch switch has no default case body of its own beyond a bare
+// break - an out-of-range parse_state (never produced by this module itself) must be a
+// silent no-op rather than touch any frame state.
+void test_ws_feed_byte_unknown_parse_state_is_nop()
+{
+    WsConn *ws = ws_alloc(0);
+    ws->parse_state = (WsParseState)99;
+    ws->payload_idx = 0;
+    ws_feed_byte(ws, 0x42);
+    TEST_ASSERT_EQUAL((WsParseState)99, ws->parse_state); // untouched
+    TEST_ASSERT_EQUAL(0, (int)ws->payload_idx);           // untouched
+}
+
+// Defensive capacity guard: WS_PAYLOAD for a control frame at ctl_buf's capacity must drop
+// the byte instead of writing past the buffer. Unreachable via the wire protocol (control
+// frames are capped at 125 bytes by the WS_HEADER2 guard, one below this limit), so the
+// state is driven directly - the same pattern as the HTTP body-length capacity guard test.
+void test_ws_payload_ctl_buf_capacity_guard_direct()
+{
+    WsConn *ws = ws_alloc(0);
+    ws->opcode = WsOpcode::WS_OP_PING;
+    ws->parse_state = WsParseState::WS_PAYLOAD;
+    ws->payload_len = 200; // defensive: the wire protocol never allows this for a control frame
+    ws->payload_idx = sizeof(ws->ctl_buf) - 1;
+    ws_feed_byte(ws, 'X');
+    TEST_ASSERT_EQUAL(sizeof(ws->ctl_buf), (size_t)ws->payload_idx);     // index still advances
+    TEST_ASSERT_EQUAL('\0', (char)ws->ctl_buf[sizeof(ws->ctl_buf) - 1]); // but no write occurred
+}
+
+// Same guard for the data-message buf: unreachable via the wire protocol (WS_HEADER2 /
+// WS_LEN16_LO both reject a frame whose msg_len + payload_len would exceed WS_FRAME_SIZE
+// before WS_PAYLOAD is ever entered), so drive the state directly.
+void test_ws_payload_data_buf_capacity_guard_direct()
+{
+    WsConn *ws = ws_alloc(0);
+    ws->opcode = WsOpcode::WS_OP_BINARY;
+    ws->parse_state = WsParseState::WS_PAYLOAD;
+    ws->msg_len = WS_FRAME_SIZE; // defensive: the wire protocol never allows this
+    ws->payload_len = 10;
+    ws->payload_idx = 0;
+    ws_feed_byte(ws, 'Y');
+    TEST_ASSERT_EQUAL(1, (int)ws->payload_idx);            // index still advances
+    TEST_ASSERT_EQUAL('\0', (char)ws->buf[WS_FRAME_SIZE]); // last valid slot untouched
 }
 
 void test_ws_parse_mask_applied_correctly()
@@ -1105,6 +1203,110 @@ void test_ws_send_frame_paths_and_parse_guard()
     conn_pool[0].state = ConnState::CONN_ACTIVE;
 }
 
+// ws_emit_one's header write failing must fail the whole send and stop before the payload.
+void test_ws_send_frame_header_write_failure()
+{
+    WsConn *ws = ws_alloc(0);
+    ws_set_frag_size(0);
+    tcp_capture_reset();
+    mock_send_fail_after() = 0; // the very first write (the header) fails
+    TEST_ASSERT_FALSE(ws_send_frame(ws, WsOpcode::WS_OP_TEXT, (const uint8_t *)"hi", 2));
+    mock_send_fail_after() = -1;
+    tcp_capture_disable();
+}
+
+// The header write can succeed while the payload write fails (a second, independent send).
+void test_ws_send_frame_payload_write_failure()
+{
+    WsConn *ws = ws_alloc(0);
+    ws_set_frag_size(0);
+    tcp_capture_reset();
+    mock_send_fail_after() = 1; // header write succeeds; the payload write fails
+    TEST_ASSERT_FALSE(ws_send_frame(ws, WsOpcode::WS_OP_TEXT, (const uint8_t *)"hi", 2));
+    mock_send_fail_after() = -1;
+    tcp_capture_disable();
+}
+
+// len==0 short-circuits past the payload write entirely (e.g. a zero-length control reply).
+void test_ws_send_frame_zero_length_payload()
+{
+    WsConn *ws = ws_alloc(0);
+    ws_set_frag_size(0);
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WsOpcode::WS_OP_PONG, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(2, tcp_captured_len()); // header only, no payload bytes
+    tcp_capture_disable();
+}
+
+// A non-zero length with a null payload pointer must not dereference it - the payload write
+// is skipped (header still goes out) rather than crashing.
+void test_ws_send_frame_null_payload_with_nonzero_length()
+{
+    WsConn *ws = ws_alloc(0);
+    ws_set_frag_size(0);
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WsOpcode::WS_OP_PING, nullptr, 5));
+    TEST_ASSERT_EQUAL_size_t(2, tcp_captured_len()); // header only; payload skipped (nullptr)
+    tcp_capture_disable();
+}
+
+// A non-zero fragment size that is still >= the message length takes the single-FIN-frame
+// path, not the fragmentation loop.
+void test_ws_send_frame_fits_within_frag_size_single_frame()
+{
+    WsConn *ws = ws_alloc(0);
+    ws_set_frag_size(100);
+    tcp_capture_reset();
+    const uint8_t msg[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WsOpcode::WS_OP_BINARY, msg, sizeof(msg)));
+    const uint8_t *s = (const uint8_t *)tcp_captured();
+    TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_BINARY, s[0]); // FIN set, single frame
+    TEST_ASSERT_EQUAL_UINT8(10, s[1]);
+    tcp_capture_disable();
+    ws_set_frag_size(0);
+}
+
+// A write failure partway through the fragmentation loop (second fragment) must abort the
+// whole send rather than silently dropping the remaining fragments.
+void test_ws_send_frame_fragmentation_mid_send_failure()
+{
+    WsConn *ws = ws_alloc(0);
+    ws_set_frag_size(4);
+    const uint8_t msg[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    tcp_capture_reset();
+    mock_send_fail_after() = 2; // frame 1's header+payload succeed; frame 2's header fails
+    TEST_ASSERT_FALSE(ws_send_frame(ws, WsOpcode::WS_OP_BINARY, msg, sizeof(msg)));
+    mock_send_fail_after() = -1;
+    tcp_capture_disable();
+    ws_set_frag_size(0);
+}
+
+// ws_close() on a slot whose transport connection is no longer active must still mark the
+// WS state closed, but must not try to flush a dead connection.
+void test_ws_close_when_conn_inactive_skips_flush()
+{
+    WsConn *ws = ws_alloc(0);
+    conn_pool[0].state = ConnState::CONN_CLOSING;
+    ws_close(ws, WsCloseCode::WS_CLOSE_NORMAL); // must not crash
+    TEST_ASSERT_EQUAL(WsParseState::WS_CLOSED, ws->parse_state);
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
+}
+
+// A PING that completes while the transport connection is no longer active: the auto-pong
+// reply is skipped (ws_send_frame fails closed) and the subsequent flush guard must also see
+// the connection inactive rather than flush a dead PCB. Feeds ws_feed_byte() directly (not
+// ws_parse(), which itself gates on conn activity) to isolate ws_finish_frame's own guard.
+void test_ws_ping_flush_skipped_when_conn_inactive()
+{
+    WsConn *ws = ws_alloc(0);
+    uint8_t frame[6] = {0x89, 0x80, 0, 0, 0, 0}; // FIN=1, PING, MASK=1, len=0
+    conn_pool[0].state = ConnState::CONN_CLOSING;
+    for (size_t i = 0; i < sizeof(frame); i++)
+        ws_feed_byte(ws, frame[i]);
+    TEST_ASSERT_EQUAL(WsParseState::WS_HEADER1, ws->parse_state); // control frame handled, resumed
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1137,6 +1339,8 @@ int main()
     RUN_TEST(test_ws_alloc_sets_slot_id);
     RUN_TEST(test_ws_alloc_sets_parse_state_header1);
     RUN_TEST(test_ws_alloc_pool_full_returns_null);
+    RUN_TEST(test_ws_active_reflects_pool_state);
+    RUN_TEST(test_ws_payload_returns_buf_or_null);
     RUN_TEST(test_ws_find_returns_correct_conn);
     RUN_TEST(test_ws_find_returns_null_when_empty);
     RUN_TEST(test_ws_find_returns_null_for_different_slot);
@@ -1145,6 +1349,7 @@ int main()
     RUN_TEST(test_ws_free_restores_ws_id);
     RUN_TEST(test_ws_free_makes_slot_findable_as_null);
     RUN_TEST(test_ws_free_nop_on_unallocated);
+    RUN_TEST(test_ws_free_skips_active_slot_with_different_id);
     RUN_TEST(test_ws_alloc_after_free_succeeds);
 
     // WS frame parser tests
@@ -1173,7 +1378,11 @@ int main()
     RUN_TEST(test_ws_parse_pong_silently_ignored);
     RUN_TEST(test_ws_parse_close_marks_ws_closed);
     RUN_TEST(test_ws_parse_stops_at_frame_ready);
+    RUN_TEST(test_ws_parse_stops_after_close_leaves_ring_untouched);
     RUN_TEST(test_ws_reset_frame_clears_fields);
+    RUN_TEST(test_ws_feed_byte_unknown_parse_state_is_nop);
+    RUN_TEST(test_ws_payload_ctl_buf_capacity_guard_direct);
+    RUN_TEST(test_ws_payload_data_buf_capacity_guard_direct);
     RUN_TEST(test_ws_parse_mask_applied_correctly);
     RUN_TEST(test_ws_text_invalid_utf8_rejected);
     RUN_TEST(test_ws_text_valid_utf8_accepted);
@@ -1196,5 +1405,13 @@ int main()
     RUN_TEST(stress_ws_parse_two_consecutive_frames);
 
     RUN_TEST(test_ws_send_frame_paths_and_parse_guard);
+    RUN_TEST(test_ws_send_frame_header_write_failure);
+    RUN_TEST(test_ws_send_frame_payload_write_failure);
+    RUN_TEST(test_ws_send_frame_zero_length_payload);
+    RUN_TEST(test_ws_send_frame_null_payload_with_nonzero_length);
+    RUN_TEST(test_ws_send_frame_fits_within_frag_size_single_frame);
+    RUN_TEST(test_ws_send_frame_fragmentation_mid_send_failure);
+    RUN_TEST(test_ws_close_when_conn_inactive_skips_flush);
+    RUN_TEST(test_ws_ping_flush_skipped_when_conn_inactive);
     return UNITY_END();
 }

@@ -245,6 +245,7 @@ void test_tls13_malformed_extensions()
         {{0x00, 0x00, 0x00, 0x01, 0x00}, 5},                   // server_name body < 2
         {{0x00, 0x00, 0x00, 0x03, 0x00, 0xFF, 0x00}, 7},       // server_name list len > body
         {{0x00, 0x00, 0x00, 0x02, 0x00, 0x00}, 6},             // server_name too short for an entry
+        {{0x00, 0x2c, 0x00, 0x01, 0x00}, 5},                   // cookie body < 2
     };
     uint8_t msg[128];
     Tls13ClientHello ch;
@@ -346,6 +347,7 @@ void test_tls13_extension_and_truncation_coverage()
         0x00, 0x33, 0x00, 0x01, 0x00,                               // key_share body < 2
         0x00, 0x33, 0x00, 0x06, 0x00, 0x04, 0x00, 0x1d, 0x00, 0x20, // key_share entry key length overruns
         0x00, 0x10, 0x00, 0x01, 0x00,                               // ALPN body < 2
+        0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h',  '2',        // ALPN "h2" (nl==2, 'h', but not '3')
         0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h',  '3',        // ALPN offering "h3"
         0x00, 0x39, 0x00, 0x03, 0x04, 0x01, 0x20,                   // dws_quic_transport_parameters
     };
@@ -496,6 +498,9 @@ void test_tls13_extension_body_guards()
         {{0x00, 0x0a, 0x00, 0x04, 0x00, 0xFF, 0x00, 0x1d}, 8},
         // key_share: an X25519 entry whose key_exchange is 4 bytes, not 32.
         {{0x00, 0x33, 0x00, 0x0a, 0x00, 0x08, 0x00, 0x1d, 0x00, 0x04, 0xAA, 0xBB, 0xCC, 0xDD}, 14},
+        // key_share: an entry for a group that is not X25519 (0x0017); the "group == X25519" check
+        // short-circuits false and its key length is never inspected.
+        {{0x00, 0x33, 0x00, 0x0a, 0x00, 0x08, 0x00, 0x17, 0x00, 0x04, 0xAA, 0xAA, 0xAA, 0xAA}, 14},
         // ALPN: a 3-byte name, then a 2-byte name that is not "h3".
         {{0x00, 0x10, 0x00, 0x09, 0x00, 0x07, 0x03, 'a', 'b', 'c', 0x02, 'x', '3'}, 13},
         // server_name: a name type that is not host_name(0).
@@ -616,6 +621,26 @@ void test_tls13_builder_overflow_guards()
     need = dws_tls13_build_encrypted_extensions(out, sizeof(out), tp, sizeof(tp));
     TEST_ASSERT_TRUE(need > 0);
     TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_encrypted_extensions(out, need - 1, tp, sizeof(tp)));
+
+    // Certificate: a buffer one byte short of what a small DER cert needs.
+    uint8_t der[8] = {0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02};
+    need = dws_tls13_build_certificate(out, sizeof(out), der, sizeof(der));
+    TEST_ASSERT_TRUE(need > 0);
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_certificate(out, need - 1, der, sizeof(der)));
+
+    // CertificateVerify: a buffer one byte short of what the Ed25519 signature needs.
+    uint8_t thash2[32], seed[32];
+    memset(thash2, 0x33, sizeof(thash2));
+    memset(seed, 0x44, sizeof(seed));
+    need = dws_tls13_build_cert_verify(out, sizeof(out), thash2, seed);
+    TEST_ASSERT_TRUE(need > 0);
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_cert_verify(out, need - 1, thash2, seed));
+
+    // Finished is exactly 36 bytes; 35 is not enough.
+    uint8_t verify[32];
+    memset(verify, 0x55, sizeof(verify));
+    TEST_ASSERT_EQUAL_UINT(36, dws_tls13_build_finished(out, 36, verify));
+    TEST_ASSERT_EQUAL_UINT(0, dws_tls13_build_finished(out, 35, verify));
 }
 
 // The CertificateVerify signed content uses the "client" context string when is_server is false
@@ -634,6 +659,25 @@ void test_tls13_cert_verify_client_context()
     TEST_ASSERT_TRUE(memcmp(server, client, sn) != 0); // the context word differs
 }
 
+// dws_tls13_build_server_hello with a non-NULL conn_id emits a trailing connection_id extension
+// (RFC 9146 / RFC 9147 sec 9); the default (NULL) call omits it entirely.
+void test_tls13_build_server_hello_conn_id()
+{
+    uint8_t random[32], pub[32];
+    memset(random, 0x11, sizeof(random));
+    memset(pub, 0x22, sizeof(pub));
+    const uint8_t conn_id[3] = {0xC1, 0xC2, 0xC3};
+
+    uint8_t out[128];
+    size_t without = dws_tls13_build_server_hello(out, sizeof(out), random, nullptr, 0, pub);
+    size_t with = dws_tls13_build_server_hello(out, sizeof(out), random, nullptr, 0, pub, 32, TLS_GROUP_X25519,
+                                               /*dtls=*/false, conn_id, sizeof(conn_id));
+    TEST_ASSERT_TRUE(with > without);
+    // connection_id ext: type 0036, ext body length 0004, cid length 03, then the CID bytes.
+    static const uint8_t tail[] = {0x00, 0x36, 0x00, 0x04, 0x03, 0xC1, 0xC2, 0xC3};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(tail, out + with - sizeof(tail), sizeof(tail));
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -649,6 +693,7 @@ int main(int, char **)
     RUN_TEST(test_tls13_builder_cap_guards);
     RUN_TEST(test_parse_client_hello);
     RUN_TEST(test_build_server_hello);
+    RUN_TEST(test_tls13_build_server_hello_conn_id);
     RUN_TEST(test_build_certificate);
     RUN_TEST(test_build_finished);
     RUN_TEST(test_encrypted_extensions);

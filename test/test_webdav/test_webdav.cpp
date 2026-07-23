@@ -380,6 +380,212 @@ void test_proppatch_ms_echo()
     TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(buf, 20, "/file.txt", body, strlen(body)));
 }
 
+// ---------------------------------------------------------------------------
+// Additional branch coverage: dest_path hex-digit combinations, ms_entry
+// element-buffer edges, and proppatch scaffold / scan-loop edges.
+// ---------------------------------------------------------------------------
+
+void test_dest_path_valid_first_hex_invalid_second()
+{
+    // First hex digit valid, second invalid: distinct from an invalid FIRST digit
+    // (the "%zz" cases above), which short-circuits before the second is checked.
+    char out[64];
+    TEST_ASSERT_FALSE(dws_webdav_dest_path("/dav/%2gfile", out, sizeof(out)));
+}
+
+void test_ms_entry_content_type_null_and_empty()
+{
+    char buf[1024];
+    // content_type == nullptr: the getcontenttype block is skipped entirely.
+    size_t r1 = dws_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, nullptr, nullptr);
+    TEST_ASSERT_TRUE(r1 > 0);
+    TEST_ASSERT_FALSE(contains(buf, "getcontenttype"));
+
+    // content_type == "" (non-null, empty): same effect as nullptr.
+    size_t r2 = dws_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, nullptr, "");
+    TEST_ASSERT_TRUE(r2 > 0);
+    TEST_ASSERT_FALSE(contains(buf, "getcontenttype"));
+}
+
+void test_ms_entry_getcontenttype_close_overflow()
+{
+    char buf[1024];
+    char ct[301];
+    for (int i = 0; i < 300; i++)
+        ct[i] = 'c';
+    ct[300] = '\0';
+    // The content_type itself fits the internal 512-byte element scratch, but the
+    // closing "</D:getcontenttype>" tag appended afterward then overflows it ->
+    // len unchanged. Distinct from the content_type-itself-overflowing case above.
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, nullptr, ct));
+}
+
+void test_ms_entry_mtime_prefix_and_close_overflow()
+{
+    char buf[1024];
+    // A large-but-fitting content_type leaves just enough of the internal 512-byte
+    // scratch used up that the (fixed, tiny) getlastmodified *prefix* itself overflows.
+    char ct[291];
+    for (int i = 0; i < 290; i++)
+        ct[i] = 'c';
+    ct[290] = '\0';
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, "x", ct));
+
+    // No content_type this time: the mtime prefix and the mtime content both fit,
+    // but the closing "</D:getlastmodified>" tag then overflows.
+    char mtime[301];
+    for (int i = 0; i < 300; i++)
+        mtime[i] = 'm';
+    mtime[300] = '\0';
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, mtime, nullptr));
+}
+
+void test_proppatch_zero_cap()
+{
+    char buf[1] = {'z'};
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(buf, 0, "/x", "", 0));
+}
+
+void test_proppatch_scaffold_esc_and_closer_overflow()
+{
+    // Preamble fits but the escaped href itself overflows the output buffer.
+    char href[151];
+    for (int i = 0; i < 150; i++)
+        href[i] = 'h';
+    href[150] = '\0';
+    char buf1[120];
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(buf1, sizeof(buf1), href, "", 0));
+
+    // Preamble and href fit, but the "</D:href>...<D:prop>" scaffold closer overflows.
+    char buf2[135];
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(buf2, sizeof(buf2), "/x", "", 0));
+}
+
+void test_proppatch_emitted_cap_stops_scan()
+{
+    // 20 self-closed properties, more than DWS_WEBDAV_MAX_PROPS (16): the scanner
+    // stops emitting once the cap is reached even though the body has more left.
+    const char *body = "<D:propertyupdate><D:set><D:prop>"
+                       "<a/><b/><c/><d/><e/><f/><g/><h/><i/><j/><k/><l/><m/><n/><o/><p/><q/><r/><s/><t/>"
+                       "</D:prop></D:set></D:propertyupdate>";
+    char buf[2048];
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<p/>"));  // the 16th property (a..p) is emitted
+    TEST_ASSERT_FALSE(contains(buf, "<q/>")); // the 17th onward is not: cap reached
+}
+
+void test_proppatch_tag_name_whitespace_terminators()
+{
+    // A tab, CR, and LF each directly terminate a property's local name (in addition
+    // to the already-covered space and '/').
+    const char *body = "<D:propertyupdate><D:set><D:prop><a\tb/><c\rd/><e\nf/></D:prop></D:set></D:propertyupdate>";
+    char buf[512];
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+}
+
+void test_proppatch_self_closed_prop_wrapper()
+{
+    // <D:prop/> as a fully self-closed, empty property set: is_prop is true but
+    // in_prop is never set (there is nothing inside to refuse).
+    const char *body = "<D:propertyupdate><D:set><D:prop/></D:set></D:propertyupdate>";
+    char buf[512];
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<D:prop>"));
+}
+
+void test_proppatch_trailing_whitespace_trim()
+{
+    // A property whose local name is followed by tab, CR, and LF (trimmed off,
+    // right-to-left) before the self-closing "/>".
+    const char *body = "<D:propertyupdate><D:set><D:prop><D:trailer\t\r\n/></D:prop></D:set></D:propertyupdate>";
+    char buf[512];
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<D:trailer/>"));
+}
+
+void test_proppatch_empty_after_trim()
+{
+    // A property whose entire span is whitespace (trimming walks all the way back
+    // to `start`): rejected outright (nothing echoed), not just truncated.
+    const char *body = "<D:propertyupdate><D:set><D:prop>< /></D:prop></D:set></D:propertyupdate>";
+    char buf[512];
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+}
+
+void test_proppatch_oversized_tag_name_skipped()
+{
+    // A property whose (trimmed) tag content is >= the internal 256-byte tag[]
+    // scratch: silently skipped (not echoed), rather than truncated or overflowed.
+    char body[512];
+    const char *prefix = "<D:propertyupdate><D:set><D:prop><";
+    const char *suffix = "/></D:prop></D:set></D:propertyupdate>";
+    size_t p = strlen(prefix);
+    memcpy(body, prefix, p);
+    for (int i = 0; i < 300; i++)
+        body[p + i] = 'x';
+    strcpy(body + p + 300, suffix);
+    char buf[2048];
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_FALSE(contains(buf, "xxxxxxxxxx"));
+}
+
+void test_proppatch_echo_append_boundary_failures()
+{
+    const char *body = "<D:propertyupdate><D:set><D:prop><a/></D:prop></D:set></D:propertyupdate>";
+    // The scaffold ("<?xml...<D:href>/x</D:href>...<D:prop>") fits exactly at 141
+    // bytes; each cap below stops the property echo at a different one of its
+    // three atomic appends ("        <", the tag itself, "/>\n").
+    char buf[256];
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(buf, 145, "/x", body, strlen(body))); // "        <" fails
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(buf, 151, "/x", body, strlen(body))); // tag content fails
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(buf, 153, "/x", body, strlen(body))); // "/>\n" fails
+}
+
+void test_proppatch_embedded_lt_in_value()
+{
+    // A property value containing a '<' that is NOT the start of its closing tag
+    // ("</..."); the value-skip loop must keep scanning past it instead of stopping.
+    const char *body = "<D:propertyupdate><D:set><D:prop>"
+                       "<D:getlastmodified>a<bc</D:getlastmodified>"
+                       "</D:prop></D:set></D:propertyupdate>";
+    char buf[512];
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<D:getlastmodified/>"));
+}
+
+void test_proppatch_truncated_closing_tag()
+{
+    // The property's value is never given a proper closing tag (no '>' appears
+    // anywhere after the "</" that starts it): the skip-to-'>' loop runs off the
+    // end of body_len instead of finding one, the outer scan then ends cleanly
+    // (i reaches body_len), and the 403 envelope is still completed normally.
+    const char *body = "<D:propertyupdate><D:set><D:prop><D:foo>value</D:fo";
+    char buf[512];
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<D:foo/>"));
+}
+
+void test_proppatch_value_scan_runs_to_body_end()
+{
+    // The property's value contains no "</" anywhere before body_len: the
+    // value-skip loop's own bounds check (j + 1 < body_len), not a "</" match,
+    // is what ends the scan. Distinct from test_proppatch_truncated_closing_tag
+    // above, whose value DOES contain a "</" (just no terminating '>').
+    const char *body = "<D:propertyupdate><D:set><D:prop><D:foo>plainvalue-with-no-closing-marker-at-all";
+    char buf[512];
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<D:foo/>"));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -408,5 +614,21 @@ int main()
     RUN_TEST(test_ms_entry_content_type_overflow);
     RUN_TEST(test_ms_entry_mtime_and_tiny_buf);
     RUN_TEST(test_proppatch_ms_echo);
+    RUN_TEST(test_dest_path_valid_first_hex_invalid_second);
+    RUN_TEST(test_ms_entry_content_type_null_and_empty);
+    RUN_TEST(test_ms_entry_getcontenttype_close_overflow);
+    RUN_TEST(test_ms_entry_mtime_prefix_and_close_overflow);
+    RUN_TEST(test_proppatch_zero_cap);
+    RUN_TEST(test_proppatch_scaffold_esc_and_closer_overflow);
+    RUN_TEST(test_proppatch_emitted_cap_stops_scan);
+    RUN_TEST(test_proppatch_tag_name_whitespace_terminators);
+    RUN_TEST(test_proppatch_self_closed_prop_wrapper);
+    RUN_TEST(test_proppatch_trailing_whitespace_trim);
+    RUN_TEST(test_proppatch_empty_after_trim);
+    RUN_TEST(test_proppatch_oversized_tag_name_skipped);
+    RUN_TEST(test_proppatch_echo_append_boundary_failures);
+    RUN_TEST(test_proppatch_embedded_lt_in_value);
+    RUN_TEST(test_proppatch_truncated_closing_tag);
+    RUN_TEST(test_proppatch_value_scan_runs_to_body_end);
     return UNITY_END();
 }

@@ -118,6 +118,32 @@ void test_reset_and_verify_guards()
     TEST_ASSERT_FALSE(dws_csrf_verify(nullptr));             // null token -> false
 }
 
+// A null secret pointer fails closed: secret_len is cleared, not just left alone.
+void test_set_secret_null_clears_len()
+{
+    char t[CSRF_TOKEN_BUF];
+    dws_csrf_set_secret(nullptr, 5);
+    TEST_ASSERT_EQUAL_INT(0, dws_csrf_issue(t, sizeof(t)));
+}
+
+// A null output buffer is rejected, not dereferenced.
+void test_issue_rejects_null_out()
+{
+    TEST_ASSERT_EQUAL_INT(0, dws_csrf_issue(nullptr, CSRF_TOKEN_BUF));
+}
+
+// Right-length nonce field that isn't valid hex fails the hex decode, not just the length check.
+void test_verify_rejects_non_hex_nonce()
+{
+    TEST_ASSERT_FALSE(dws_csrf_verify("zzzzzzzzzzzz.0102030405060708090a0b0c0d0e"));
+}
+
+// Valid hex nonce paired with a signature segment of the wrong length.
+void test_verify_rejects_wrong_length_sig()
+{
+    TEST_ASSERT_FALSE(dws_csrf_verify("0102030405ff.0102030405"));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -131,5 +157,9 @@ int main()
     RUN_TEST(test_issue_unique);
     RUN_TEST(test_issue_rejects_small_buffer);
     RUN_TEST(test_reset_and_verify_guards);
+    RUN_TEST(test_set_secret_null_clears_len);
+    RUN_TEST(test_issue_rejects_null_out);
+    RUN_TEST(test_verify_rejects_non_hex_nonce);
+    RUN_TEST(test_verify_rejects_wrong_length_sig);
     return UNITY_END();
 }

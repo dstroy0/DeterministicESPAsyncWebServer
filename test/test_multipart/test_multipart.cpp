@@ -603,6 +603,108 @@ void test_truncated_part_fails_closed()
     TEST_ASSERT_FALSE(dws_multipart_parse(r2, &mp)); // data without closing "\r\n--boundary"
 }
 
+// A boundary value that stops at a ';' (more Content-Type params follow) or a ' ' (unquoted,
+// trailing space) - not just at the quote/end-of-header cases the other tests already cover.
+void test_boundary_stops_at_semicolon_or_space()
+{
+    char bb[512];
+    Multipart mp;
+    const char *b1 = "--BND\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\nv1\r\n--BND--\r\n";
+    HttpReq *r1 = build_multipart_req(0, "BND;charset=utf-8", b1, bb, sizeof(bb));
+    TEST_ASSERT_TRUE(dws_multipart_parse(r1, &mp));
+    TEST_ASSERT_EQUAL_STRING("v1", mp.parts[0].data);
+
+    const char *b2 = "--BND\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\nv2\r\n--BND--\r\n";
+    HttpReq *r2 = build_multipart_req(0, "BND extra", b2, bb, sizeof(bb));
+    TEST_ASSERT_TRUE(dws_multipart_parse(r2, &mp));
+    TEST_ASSERT_EQUAL_STRING("v2", mp.parts[0].data);
+}
+
+// A body that is nothing but the terminating boundary (no parts at all) parses with
+// part_count == 0, so the overall result is false - the delimiter is found but nothing
+// followed by a CRLF ever runs (pos[0] is '-', not '\r', right after the opening delimiter).
+void test_empty_multipart_body_has_no_parts()
+{
+    char bb[64];
+    HttpReq *req = build_multipart_req(0, "BND", "--BND--\r\n", bb, sizeof(bb));
+    Multipart mp;
+    TEST_ASSERT_FALSE(dws_multipart_parse(req, &mp));
+    TEST_ASSERT_EQUAL_INT(0, mp.part_count);
+}
+
+// A lone '\r' right after the opening delimiter, not followed by '\n', fails closed instead of
+// being mistaken for the header/data blank-line separator.
+void test_lone_cr_after_delimiter_fails_closed()
+{
+    char bb[64];
+    HttpReq *req = build_multipart_req(0, "BND", "--BND\rzzz", bb, sizeof(bb));
+    Multipart mp;
+    TEST_ASSERT_FALSE(dws_multipart_parse(req, &mp));
+}
+
+// A per-part header line that matches neither Content-Disposition nor Content-Type is simply
+// ignored (not a parse error), leaving name/filename/type null; dws_multipart_get_field must
+// skip such a nameless part without crashing.
+void test_unrecognized_header_line_yields_null_name()
+{
+    char bb[128];
+    const char *body = "--BND\r\n-X\r\n\r\ndata\r\n--BND--\r\n";
+    HttpReq *req = build_multipart_req(0, "BND", body, bb, sizeof(bb));
+    Multipart mp;
+    TEST_ASSERT_TRUE(dws_multipart_parse(req, &mp));
+    TEST_ASSERT_EQUAL_INT(1, mp.part_count);
+    TEST_ASSERT_NULL(mp.parts[0].name);
+    TEST_ASSERT_EQUAL_STRING("data", mp.parts[0].data);
+    TEST_ASSERT_NULL(dws_multipart_get_field(&mp, "anything")); // skips the nameless part, no crash
+}
+
+// A part's data runs right up to the last byte of the buffer (the closing "\r\n--boundary" is
+// found, but nothing - not even "--" or a CRLF - follows it). Every length check guarding the
+// next iteration's lookahead must fail closed rather than reading past the buffer.
+void test_part_data_ends_exactly_at_buffer_end()
+{
+    char bb[128];
+    HttpReq *req = build_multipart_req(
+        0, "BND", "--BND\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\ndata\r\n--BND", bb, sizeof(bb));
+    Multipart mp;
+    TEST_ASSERT_FALSE(dws_multipart_parse(req, &mp));
+}
+
+// The body is exactly the opening delimiter with nothing after it at all (not even a CRLF) -
+// the lookahead that skips the delimiter's trailing CRLF must fail closed on a too-short
+// remainder instead of reading past the buffer.
+void test_delimiter_with_nothing_after_it()
+{
+    char bb[32];
+    HttpReq *req = build_multipart_req(0, "BND", "--BND", bb, sizeof(bb));
+    Multipart mp;
+    TEST_ASSERT_FALSE(dws_multipart_parse(req, &mp));
+}
+
+// After a part's data delimiter, a lone '\r' not followed by '\n' fails closed instead of being
+// mistaken for the trailing-CRLF skip ahead of the next part.
+void test_lone_cr_after_data_delimiter_fails_closed()
+{
+    char bb[128];
+    const char *body = "--BND\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\ndata\r\n--BND\rZ";
+    HttpReq *req = build_multipart_req(0, "BND", body, bb, sizeof(bb));
+    Multipart mp;
+    TEST_ASSERT_FALSE(dws_multipart_parse(req, &mp));
+}
+
+// A Content-Disposition header with no space after the colon still parses (the leading-space
+// skip loop simply does zero iterations instead of one).
+void test_content_disposition_no_space_after_colon()
+{
+    char bb[256];
+    const char *body = "--BND\r\nContent-Disposition:form-data; name=\"f\"\r\n\r\nval\r\n--BND--\r\n";
+    HttpReq *req = build_multipart_req(0, "BND", body, bb, sizeof(bb));
+    Multipart mp;
+    TEST_ASSERT_TRUE(dws_multipart_parse(req, &mp));
+    TEST_ASSERT_EQUAL_STRING("f", mp.parts[0].name);
+    TEST_ASSERT_EQUAL_STRING("val", mp.parts[0].data);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -632,6 +734,14 @@ int main()
     RUN_TEST(test_malformed_disposition_values);
     RUN_TEST(test_body_shorter_than_delimiter);
     RUN_TEST(test_truncated_part_fails_closed);
+    RUN_TEST(test_boundary_stops_at_semicolon_or_space);
+    RUN_TEST(test_empty_multipart_body_has_no_parts);
+    RUN_TEST(test_lone_cr_after_delimiter_fails_closed);
+    RUN_TEST(test_unrecognized_header_line_yields_null_name);
+    RUN_TEST(test_part_data_ends_exactly_at_buffer_end);
+    RUN_TEST(test_content_disposition_no_space_after_colon);
+    RUN_TEST(test_delimiter_with_nothing_after_it);
+    RUN_TEST(test_lone_cr_after_data_delimiter_fails_closed);
 
     return UNITY_END();
 }

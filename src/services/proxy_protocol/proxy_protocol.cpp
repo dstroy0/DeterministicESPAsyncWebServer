@@ -62,7 +62,9 @@ static bool parse_ipv4(const char *s, size_t n, uint32_t *out)
 
 static bool parse_u16(const char *s, size_t n, uint16_t *out)
 {
-    if (n == 0 || n > 5)
+    // n == 0 is never true here: both call sites (below, in parse_v1) pass a token produced by
+    // parse_v1's own space-delimited tokenizer, which only ever records tokens of length >= 1.
+    if (n == 0 || n > 5) // GCOVR_EXCL_BR_LINE
         return false;
     uint32_t v = 0;
     for (size_t i = 0; i < n; i++)
@@ -176,7 +178,9 @@ size_t proxy_v1_build(char *buf, size_t cap, uint32_t src_addr, uint32_t dst_add
                      (unsigned)(src_addr & 0xFF), (unsigned)((dst_addr >> 24) & 0xFF),
                      (unsigned)((dst_addr >> 16) & 0xFF), (unsigned)((dst_addr >> 8) & 0xFF),
                      (unsigned)(dst_addr & 0xFF), (unsigned)src_port, (unsigned)dst_port);
-    if (n < 0 || (size_t)n >= cap) // snprintf truncated (no room for the content + NUL)
+    // n < 0 is never true here: the format string uses only %u conversions (no wide/multibyte
+    // specifiers), so snprintf can't fail with an encoding error for this call.
+    if (n < 0 || (size_t)n >= cap) // snprintf truncated (no room for the content + NUL) GCOVR_EXCL_BR_LINE
         return 0;
     return (size_t)n;
 }

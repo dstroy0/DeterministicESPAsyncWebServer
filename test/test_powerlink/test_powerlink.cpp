@@ -64,6 +64,39 @@ void test_epl_build_guards()
     TEST_ASSERT_EQUAL_size_t(0, dws_epl_build(0x01, 0, 0, pdo, sizeof(pdo), out, 2));     // cap too small
 }
 
+void test_epl_build_null_out(void)
+{
+    // Null output buffer must be rejected on its own (independent of the payload_len/payload check).
+    TEST_ASSERT_EQUAL_size_t(0, dws_epl_build(Epl::EPL_MSG_SOC, 0, 0, nullptr, 0, nullptr, 64));
+}
+
+void test_parse_null_args(void)
+{
+    EplFrame f;
+    uint8_t frame[3] = {Epl::EPL_MSG_SOC, 0xFF, Epl::EPL_NODE_MN};
+    TEST_ASSERT_FALSE(dws_epl_parse(nullptr, 3, &f));    // null frame
+    TEST_ASSERT_FALSE(dws_epl_parse(frame, 3, nullptr)); // null out
+}
+
+void test_parse_all_message_types(void)
+{
+    EplFrame f;
+    // Exactly len == 3 (no payload): exercises the len>3 ternary's false arm too.
+    uint8_t soc[3] = {Epl::EPL_MSG_SOC, Epl::EPL_NODE_BROADCAST, Epl::EPL_NODE_MN};
+    TEST_ASSERT_TRUE(dws_epl_parse(soc, 3, &f));
+    TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_SOC, f.msg_type);
+    TEST_ASSERT_NULL(f.payload);
+    TEST_ASSERT_EQUAL_size_t(0, f.payload_len);
+
+    uint8_t soa[3] = {Epl::EPL_MSG_SOA, Epl::EPL_NODE_BROADCAST, Epl::EPL_NODE_MN};
+    TEST_ASSERT_TRUE(dws_epl_parse(soa, 3, &f));
+    TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_SOA, f.msg_type);
+
+    uint8_t asnd[3] = {Epl::EPL_MSG_ASND, 5, Epl::EPL_NODE_MN};
+    TEST_ASSERT_TRUE(dws_epl_parse(asnd, 3, &f));
+    TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_ASND, f.msg_type);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -71,5 +104,8 @@ int main(void)
     RUN_TEST(test_preq_pres_roundtrip);
     RUN_TEST(test_parse_rejects);
     RUN_TEST(test_epl_build_guards);
+    RUN_TEST(test_epl_build_null_out);
+    RUN_TEST(test_parse_null_args);
+    RUN_TEST(test_parse_all_message_types);
     return UNITY_END();
 }

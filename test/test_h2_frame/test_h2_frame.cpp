@@ -38,6 +38,9 @@ void test_header_roundtrip()
 
     // Length larger than 24 bits is refused.
     TEST_ASSERT_EQUAL_INT(0, (int)dws_h2_write_header(b, sizeof b, 0x1000000, H2FrameType::H2_DATA, 0, 1));
+
+    // A capacity smaller than the 9-byte header is refused directly (not just via a caller's guard).
+    TEST_ASSERT_EQUAL_INT(0, (int)dws_h2_write_header(b, 8, 0, H2FrameType::H2_DATA, 0, 1));
 }
 
 void test_settings_build_parse()
@@ -117,6 +120,21 @@ void test_headers_and_data()
     TEST_ASSERT_EQUAL_INT(11, (int)dws_h2_build_data(b, sizeof b, 1, (const uint8_t *)"hi", 2, true));
     const uint8_t dd[11] = {0, 0, 2, 0x00, 0x01, 0, 0, 0, 1, 'h', 'i'};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(dd, b, 11);
+
+    // HEADERS without end_stream -> flags END_HEADERS only = 0x04 (no END_STREAM).
+    TEST_ASSERT_EQUAL_INT(10, (int)dws_h2_build_headers(b, sizeof b, 1, block, 1, false));
+    const uint8_t hh2[10] = {0, 0, 1, 0x01, 0x04, 0, 0, 0, 1, 0x88};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(hh2, b, 10);
+
+    // DATA without end_stream -> flags 0x00 (no END_STREAM).
+    TEST_ASSERT_EQUAL_INT(11, (int)dws_h2_build_data(b, sizeof b, 1, (const uint8_t *)"hi", 2, false));
+    const uint8_t dd2[11] = {0, 0, 2, 0x00, 0x00, 0, 0, 0, 1, 'h', 'i'};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(dd2, b, 11);
+
+    // DATA with data_len 0 -> header only, memcpy skipped (data pointer not dereferenced).
+    TEST_ASSERT_EQUAL_INT(9, (int)dws_h2_build_data(b, sizeof b, 1, NULL, 0, true));
+    const uint8_t dd0[9] = {0, 0, 0, 0x00, 0x01, 0, 0, 0, 1};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(dd0, b, 9);
 }
 
 void test_preface()

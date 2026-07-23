@@ -102,18 +102,21 @@ void ring_read(const HpackDynTable *t, uint16_t pos, char *dst, size_t n)
 }
 
 // Descriptor for the k-th newest live entry (k = 1 is newest); null if out of range.
+// k<1 is dead: both callers pass idx-61 with idx>61 already established (idx<=61 takes the static
+// branch in resolve_name/emit_indexed), so k>=1 always holds here.
 const HpackEntry *dyn_entry(const HpackDynTable *t, uint32_t k)
 {
-    if (k < 1 || k > t->ecount)
+    if (k < 1 || k > t->ecount) // GCOVR_EXCL_BR_LINE
         return nullptr;
     uint16_t di = (uint16_t)((t->ehead + HPACK_ENTS - k) % HPACK_ENTS);
     return &t->ent[di];
 }
 
+// Unreachable: both call sites below only invoke this inside a `while (... && t->ecount > 0)` loop.
 void dyn_evict_oldest(HpackDynTable *t)
 {
-    if (t->ecount == 0)
-        return;
+    if (t->ecount == 0) // GCOVR_EXCL_LINE
+        return;         // GCOVR_EXCL_LINE
     uint16_t oi = (uint16_t)((t->ehead + HPACK_ENTS - t->ecount) % HPACK_ENTS);
     const HpackEntry *e = &t->ent[oi];
     uint16_t bytes = (uint16_t)(e->name_len + e->val_len);
@@ -128,7 +131,9 @@ void dyn_set_max(HpackDynTable *t, uint32_t new_max)
     if (new_max > HPACK_BYTES)
         new_max = HPACK_BYTES; // never exceed our advertised storage
     t->max_size = new_max;
-    while (t->used > t->max_size && t->ecount > 0)
+    // ecount>0 is dead here: ecount==0 implies used==0 (dyn_insert/dyn_evict_oldest keep that
+    // invariant), so used>max_size can't be true while ecount==0.
+    while (t->used > t->max_size && t->ecount > 0) // GCOVR_EXCL_BR_LINE
         dyn_evict_oldest(t);
 }
 
@@ -144,7 +149,11 @@ void dyn_insert(HpackDynTable *t, const char *name, size_t nlen, const char *val
         t->ehead = 0;
         return;
     }
-    while ((t->used + entry_size > t->max_size || t->ecount >= HPACK_ENTS) && t->ecount > 0)
+    // Both the entry-count half of the || and the trailing ecount>0 check are dead: entry_size <=
+    // t->max_size is already guaranteed above, and DWS_HPACK_TABLE_BYTES / 32 == DWS_HPACK_MAX_ENTRIES
+    // exactly, so the byte-budget half always trips at or before the entry-count half could, and
+    // ecount can't be 0 whenever either half of the || is true.
+    while ((t->used + entry_size > t->max_size || t->ecount >= HPACK_ENTS) && t->ecount > 0) // GCOVR_EXCL_BR_LINE
         dyn_evict_oldest(t);
     uint16_t rpos = (uint16_t)((t->rtail + t->rused) % HPACK_BYTES);
     HpackEntry *e = &t->ent[t->ehead];
@@ -160,9 +169,11 @@ void dyn_insert(HpackDynTable *t, const char *name, size_t nlen, const char *val
 }
 
 // Copy an indexed header's name (idx>=1) into out; false if idx invalid / too big.
+// idx>=1 is always true here: the only caller (decode_literal) routes name_idx==0 to the inline-name
+// path and never calls resolve_name with it.
 bool resolve_name(const HpackDynTable *t, uint32_t idx, char *out, size_t cap, size_t *out_len)
 {
-    if (idx >= 1 && idx <= 61)
+    if (idx >= 1 && idx <= 61) // GCOVR_EXCL_BR_LINE
     {
         size_t nl = strnlen(STATIC[idx][0], cap + 1);
         if (nl > cap)
@@ -180,11 +191,13 @@ bool resolve_name(const HpackDynTable *t, uint32_t idx, char *out, size_t cap, s
 }
 
 // Emit a fully-indexed field (idx resolves to name+value); copies both into scratch.
+// idx>=1 is always true here: the only caller (dws_hpack_decode's 6.1 Indexed Header Field case)
+// already rejects idx==0 before calling emit_indexed.
 bool emit_indexed(HpackDynTable *t, uint32_t idx, char *scratch, size_t cap, HpackEmitFn emit, void *ctx)
 {
     size_t nl;
     size_t vl;
-    if (idx >= 1 && idx <= 61)
+    if (idx >= 1 && idx <= 61) // GCOVR_EXCL_BR_LINE
     {
         nl = strnlen(STATIC[idx][0], cap + 1);
         vl = strnlen(STATIC[idx][1], cap + 1);

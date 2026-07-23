@@ -279,6 +279,103 @@ void test_float_bits_helper()
     TEST_ASSERT_EQUAL_FLOAT(3.5f, dws_pb_float_bits(bits));
 }
 
+// Once the sticky error flag is set (by an earlier overflow), dws_pb_write_varint
+// short-circuits at entry and leaves the writer state untouched - the "already in
+// error" path, distinct from the "this call is the one that overflows" path.
+void test_writer_error_is_sticky()
+{
+    PbWriter w;
+    uint8_t buf[4];
+    dws_pb_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(dws_pb_write_varint(&w, 0xFFFFFFFFull)); // overflow: sets w->error
+    TEST_ASSERT_TRUE(w.error);
+    size_t pos_before = w.pos;
+
+    TEST_ASSERT_FALSE(dws_pb_write_varint(&w, 1)); // short-circuits on the sticky flag
+    TEST_ASSERT_EQUAL_size_t(pos_before, w.pos);   // untouched: never reached the payload loop
+}
+
+// dws_pb_bool encodes true/false as the varint 1/0 (previously untested entirely).
+void test_bool_true_and_false()
+{
+    PbWriter w;
+    uint8_t buf[8];
+    dws_pb_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(dws_pb_bool(&w, 1, true));
+    TEST_ASSERT_TRUE(dws_pb_bool(&w, 2, false));
+    size_t n = dws_pb_writer_finish(&w);
+    const uint8_t expect[] = {0x08, 0x01, 0x10, 0x00};
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+}
+
+// dws_pb_uint64 (the `write_tag(...) && write_varint(...)` combinator) has two distinct
+// overflow points: the tag itself not fitting, versus the tag fitting but the value's
+// varint not fitting behind it.
+void test_uint64_tag_and_value_overflow()
+{
+    PbWriter w;
+
+    uint8_t zero_cap[1];
+    dws_pb_writer_init(&w, zero_cap, 0);
+    TEST_ASSERT_FALSE(dws_pb_uint64(&w, 1, 150)); // tag alone does not fit
+
+    uint8_t one_byte[1];
+    dws_pb_writer_init(&w, one_byte, sizeof(one_byte));
+    TEST_ASSERT_FALSE(dws_pb_uint64(&w, 1, 300)); // tag fits; the 2-byte varint value does not
+}
+
+// dws_pb_fixed32 / dws_pb_fixed64: the tag write itself can fail on a zero-capacity
+// buffer (not just the fixed-width payload behind it, already covered elsewhere).
+void test_fixed32_fixed64_tag_overflow()
+{
+    PbWriter w;
+
+    uint8_t zero_cap[1];
+    dws_pb_writer_init(&w, zero_cap, 0);
+    TEST_ASSERT_FALSE(dws_pb_fixed32(&w, 1, 0x11111111u));
+
+    dws_pb_writer_init(&w, zero_cap, 0);
+    TEST_ASSERT_FALSE(dws_pb_fixed64(&w, 1, 0x1122334455667788ULL));
+
+    uint8_t one_byte[1];
+    dws_pb_writer_init(&w, one_byte, sizeof(one_byte));
+    TEST_ASSERT_FALSE(dws_pb_fixed64(&w, 1, 0x1122334455667788ULL)); // tag fits, 8-byte payload does not
+}
+
+// dws_pb_bytes: the length varint can fail to fit even when the tag just did, and a
+// null data pointer with a non-zero length is rejected once the header wrote fine.
+void test_bytes_header_overflow_and_null_data()
+{
+    PbWriter w;
+
+    uint8_t one_byte[1];
+    dws_pb_writer_init(&w, one_byte, sizeof(one_byte));
+    TEST_ASSERT_FALSE(dws_pb_bytes(&w, 1, nullptr, 0)); // tag fits, the length varint does not
+
+    uint8_t buf[8];
+    dws_pb_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(dws_pb_bytes(&w, 1, nullptr, 5)); // header writes fine; null data is rejected
+    TEST_ASSERT_TRUE(w.error);
+}
+
+// Reader null-argument combinations not already exercised by test_reader_error_paths
+// (which only covers dws_pb_read_varint(nullptr, ...) and one dws_pb_read_field case).
+void test_reader_additional_null_arg_paths()
+{
+    uint8_t buf[4] = {0x08, 0x01, 0x00, 0x00};
+    size_t pos = 0;
+    uint64_t v;
+    PbField f;
+
+    TEST_ASSERT_FALSE(dws_pb_read_varint(buf, sizeof(buf), nullptr, &v));   // pos == nullptr
+    TEST_ASSERT_FALSE(dws_pb_read_varint(buf, sizeof(buf), &pos, nullptr)); // out == nullptr
+
+    TEST_ASSERT_FALSE(dws_pb_read_field(nullptr, sizeof(buf), &pos, &f));  // buf == nullptr
+    TEST_ASSERT_FALSE(dws_pb_read_field(buf, sizeof(buf), nullptr, &f));   // pos == nullptr
+    TEST_ASSERT_FALSE(dws_pb_read_field(buf, sizeof(buf), &pos, nullptr)); // out == nullptr
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -295,5 +392,11 @@ int main()
     RUN_TEST(test_malformed_reads);
     RUN_TEST(test_varint_width_boundary);
     RUN_TEST(test_empty_length_field);
+    RUN_TEST(test_writer_error_is_sticky);
+    RUN_TEST(test_bool_true_and_false);
+    RUN_TEST(test_uint64_tag_and_value_overflow);
+    RUN_TEST(test_fixed32_fixed64_tag_overflow);
+    RUN_TEST(test_bytes_header_overflow_and_null_data);
+    RUN_TEST(test_reader_additional_null_arg_paths);
     return UNITY_END();
 }

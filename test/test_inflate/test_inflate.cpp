@@ -80,6 +80,27 @@ static const uint8_t k_header_leftover_bits[] = {58, 113, 226, 196, 137, 19, 0};
 static const uint8_t k_dyn_decode_hole[] = {5, 224, 1, 5, 0, 0, 0, 0, 32, 252, 127, 157, 255, 63}; // code past MAXBITS
 static const uint8_t k_dyn_literal_len[] = {5, 224, 1, 4, 0, 0, 0, 0, 16, 4}; // literal code length then truncated
 
+// Hand-built (scratchpad/build_vectors.py, driven off a Python port of the decoder): each
+// wires a distinct branch of the dynamic-block table-construction guards that the
+// zlib-derived vectors above never happen to hit.
+// A dynamic block whose distance alphabet includes symbol 30 (ndist=31) with a code
+// actually assigned to it; codes() must reject it via the "symbol >= 30" arm specifically
+// (as opposed to decode() returning -1, which k_bad_distcode_30 already covers).
+static const uint8_t k_dyn_distcode_ge30[] = {13, 254, 1, 4, 0, 0, 0, 0, 16, 0,  0, 0, 0, 0, 0, 0,
+                                              0,  0,   0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0, 0, 0, 0,
+                                              0,  0,   0, 0, 0, 0, 0, 0, 0,  28, 0, 0, 0, 28};
+// A literal/length code with four length-1 codes (only two fit): construct() over-subscribed.
+static const uint8_t k_dyn_litlen_oversub[] = {5, 224, 1, 4, 0, 0, 0, 0, 16, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                               0, 0,   0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4};
+// A valid literal/length code but a distance code with four length-1 codes: over-subscribed.
+static const uint8_t k_dyn_distcode_oversub[] = {5, 227, 1, 4, 0, 0, 0, 0, 16, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0,   0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 124};
+// A distance code with exactly one length-1 code (ndist=1): construct() reports it
+// incomplete (left>0), but the "0/1 codes" exception applies (ndist==count[0]+count[1]),
+// so dynamic() must fall through to codes() rather than reject it outright.
+static const uint8_t k_dyn_dist_singlecode[] = {13, 224, 1, 4, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0,  0,   0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60};
+
 // ---------------------------------------------------------------------------
 
 static uint8_t g_scratch[INFLATE_SCRATCH_SIZE];
@@ -255,6 +276,10 @@ void test_malformed_deflate_blocks()
     BAD(k_header_leftover_bits);
     BAD(k_dyn_decode_hole);
     BAD(k_dyn_literal_len);
+    BAD(k_dyn_distcode_ge30);
+    BAD(k_dyn_litlen_oversub);
+    BAD(k_dyn_distcode_oversub);
+    BAD(k_dyn_dist_singlecode);
 #undef BAD
     // A back-reference whose copy length overflows the remaining output buffer -> OVERFLOW.
     TEST_ASSERT_EQUAL_INT(InflateResult::INFLATE_ERR_OVERFLOW, inflate_raw(k_repeat_in, sizeof(k_repeat_in), out, 4,

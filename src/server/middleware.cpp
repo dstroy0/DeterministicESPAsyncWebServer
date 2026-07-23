@@ -32,7 +32,10 @@ bool DWS::run_middleware(uint8_t slot_id, HttpReq *req)
 {
     for (uint8_t i = 0; i < _middleware_count; i++)
     {
-        if (_middleware[i] && _middleware[i](slot_id, req) == MwResult::MW_HALT)
+        // _middleware[i] is never null here: use() is the only writer, and it always stores a
+        // non-null entry together with the count increment that admits index i - a slot below
+        // _middleware_count can never regress to null.
+        if (_middleware[i] && _middleware[i](slot_id, req) == MwResult::MW_HALT) // GCOVR_EXCL_BR_LINE
             return true;
     }
     return false;
@@ -66,7 +69,10 @@ bool DWS::rate_limit_check(uint8_t slot_id)
 
     // Over budget: advertise how long until the window resets, then 429.
     uint32_t elapsed = (uint32_t)(now - _rl_window_start);
-    uint32_t remain_ms = (_rl_window_ms > elapsed) ? (_rl_window_ms - elapsed) : 0;
+    // The ":0" arm is unreachable: the check above either just reset _rl_window_start to `now`
+    // (elapsed == 0) or left it in place because elapsed was already < _rl_window_ms - either way
+    // elapsed < _rl_window_ms always holds here, so the ">" arm always taken.
+    uint32_t remain_ms = (_rl_window_ms > elapsed) ? (_rl_window_ms - elapsed) : 0; // GCOVR_EXCL_BR_LINE
     char secs[12];
     snprintf(secs, sizeof(secs), "%lu", (unsigned long)((remain_ms + 999) / 1000));
     add_response_header(slot_id, "Retry-After", secs);

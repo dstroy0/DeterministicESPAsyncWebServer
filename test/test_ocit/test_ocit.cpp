@@ -67,6 +67,73 @@ void test_parse_rejects_short(void)
     TEST_ASSERT_FALSE(dws_ocit_parse(tooshort, 5, &m));
 }
 
+void test_build_rejects_null_out(void)
+{
+    uint8_t value[2] = {0x00, 0x01};
+    size_t n =
+        dws_ocit_build(OcitMsgType::OCIT_MSG_SET, 0x0001, 0x0002, OcitType::OCIT_TYPE_UINT16, value, 2, nullptr, 16);
+    TEST_ASSERT_EQUAL_size_t(0, n);
+}
+
+void test_build_rejects_null_value_with_len(void)
+{
+    uint8_t out[16];
+    size_t n = dws_ocit_build(OcitMsgType::OCIT_MSG_SET, 0x0001, 0x0002, OcitType::OCIT_TYPE_UINT16, nullptr, 2, out,
+                              sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(0, n);
+}
+
+void test_build_rejects_overflow(void)
+{
+    uint8_t value[4] = {0x00, 0x00, 0x00, 0x01};
+    uint8_t out[8]; // cap (8) < required 6 + value_len(4) = 10.
+    size_t n = dws_ocit_build(OcitMsgType::OCIT_MSG_SET, 0x0001, 0x0002, OcitType::OCIT_TYPE_UINT32, value, 4, out,
+                              sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(0, n);
+}
+
+void test_parse_rejects_null_msg(void)
+{
+    OcitMsg m;
+    TEST_ASSERT_FALSE(dws_ocit_parse(nullptr, 6, &m));
+}
+
+void test_parse_rejects_null_out(void)
+{
+    uint8_t msg[6] = {0x01, 0x00, 0x01, 0x00, 0x02, 0x03};
+    TEST_ASSERT_FALSE(dws_ocit_parse(msg, sizeof(msg), nullptr));
+}
+
+void test_value_u16_rejects_null_msg(void)
+{
+    TEST_ASSERT_EQUAL_HEX16(0, dws_ocit_value_u16(nullptr));
+}
+
+void test_value_u16_rejects_wrong_type(void)
+{
+    uint8_t out[16];
+    uint8_t value[2] = {0x00, 0x01};
+    size_t n =
+        dws_ocit_build(OcitMsgType::OCIT_MSG_SET, 0x0001, 0x0002, OcitType::OCIT_TYPE_BYTE, value, 2, out, sizeof(out));
+    OcitMsg m;
+    TEST_ASSERT_TRUE(dws_ocit_parse(out, n, &m));
+    TEST_ASSERT_EQUAL_HEX16(0, dws_ocit_value_u16(&m));
+}
+
+void test_value_u16_rejects_null_value_ptr(void)
+{
+    // Hand-built OcitMsg (not reachable via dws_ocit_parse) exercising the !m->value guard
+    // with a data_type/value_len that would otherwise pass.
+    OcitMsg m;
+    m.msg_type = OcitMsgType::OCIT_MSG_SET;
+    m.object_type = 0x0001;
+    m.instance = 0x0002;
+    m.data_type = OcitType::OCIT_TYPE_UINT16;
+    m.value = nullptr;
+    m.value_len = 2;
+    TEST_ASSERT_EQUAL_HEX16(0, dws_ocit_value_u16(&m));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -74,5 +141,13 @@ int main(void)
     RUN_TEST(test_set_u16_helper);
     RUN_TEST(test_get_no_value);
     RUN_TEST(test_parse_rejects_short);
+    RUN_TEST(test_build_rejects_null_out);
+    RUN_TEST(test_build_rejects_null_value_with_len);
+    RUN_TEST(test_build_rejects_overflow);
+    RUN_TEST(test_parse_rejects_null_msg);
+    RUN_TEST(test_parse_rejects_null_out);
+    RUN_TEST(test_value_u16_rejects_null_msg);
+    RUN_TEST(test_value_u16_rejects_wrong_type);
+    RUN_TEST(test_value_u16_rejects_null_value_ptr);
     return UNITY_END();
 }

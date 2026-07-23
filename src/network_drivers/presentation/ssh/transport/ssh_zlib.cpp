@@ -131,8 +131,8 @@ void emit_match(DWSBitWriter *w, const SshDeflate *z, int len, int dist)
         dws_bitw_put(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
 
     int di = 0;
-    while (di < 29 && dist >= DIST_BASE[di + 1])
-        di++;
+    while (di < 29 && dist >= DIST_BASE[di + 1]) // GCOVR_EXCL_BR_LINE  di==29 exhaustion is unreachable:
+        di++; // zlib_chain_match caps dist to WINDOW (8192) < DIST_BASE[26] (8193), so di never passes 25
     dws_bitw_put(w, z->d_code[di], z->d_len[di]);
     if (DIST_EXTRA[di])
         dws_bitw_put(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);

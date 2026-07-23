@@ -166,6 +166,49 @@ void test_build_and_parse_guards()
     TEST_ASSERT_FALSE(dws_eip_parse_send_rr_data(over_item, sizeof(over_item), &cip, &clen));
 }
 
+// Remaining branch-coverage gaps not hit by the tests above:
+//  - dws_eip_build's `(data_len && !data)` true side, called directly (the convenience
+//    builders only ever pass data_len==0 with a null data pointer, never data_len>0 with one).
+//  - dws_eip_parse's null-buf and null-out guards, and its two output slice pointers (data,
+//    data_len) both being optional (nullptr).
+//  - dws_eip_build_send_rr_data's dws_cip_len==0 path (cip may be null), which is also the
+//    only case that takes the "skip memcpy" side of `if (dws_cip_len)`.
+//  - dws_eip_build_send_rr_data rejecting dws_cip_len > 0xFFFF outright, and separately
+//    rejecting a dws_cip_len that itself fits in 16 bits but whose CPF-wrapped data_len does
+//    not (a generously large `cap` proves the reject is on data_len's own merits, not the cap
+//    check; the function returns before writing anything, so `buf` need not really be that big).
+//  - dws_eip_parse_send_rr_data's two output pointers (cip, dws_cip_len) both being optional.
+void test_more_branch_coverage()
+{
+    EipHeader h;
+    memset(&h, 0, sizeof(h));
+    uint8_t buf[64];
+
+    TEST_ASSERT_EQUAL_size_t(0, dws_eip_build(buf, sizeof(buf), &h, nullptr, 5)); // data_len && !data
+
+    EipHeader p;
+    const uint8_t *d;
+    size_t dlen;
+    TEST_ASSERT_FALSE(dws_eip_parse(nullptr, sizeof(buf), &p, &d, &dlen));  // null buf
+    TEST_ASSERT_FALSE(dws_eip_parse(buf, sizeof(buf), nullptr, &d, &dlen)); // null out
+
+    size_t n = dws_eip_build_register_session(buf, sizeof(buf), nullptr);
+    TEST_ASSERT_TRUE(dws_eip_parse(buf, n, &p, nullptr, nullptr)); // both output slices optional
+
+    // dws_cip_len == 0 (cip may be null); also exercises the memcpy-skip side of `if (dws_cip_len)`.
+    size_t rr = dws_eip_build_send_rr_data(buf, sizeof(buf), 1, nullptr, 5, nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(EIP_HEADER_SIZE + 16, rr);
+
+    uint8_t dummy_cip[1] = {0};
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_eip_build_send_rr_data(buf, sizeof(buf), 1, nullptr, 5, dummy_cip, 0x10000)); // dws_cip_len > 0xFFFF
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_eip_build_send_rr_data(buf, 100000, 1, nullptr, 5, dummy_cip, 0xFFF0)); // data_len > 0xFFFF
+
+    const uint8_t item[] = {0, 0, 0, 0, 0, 0, 0x01, 0x00, 0xB2, 0x00, 0x02, 0x00, 0xAB, 0xCD};
+    TEST_ASSERT_TRUE(dws_eip_parse_send_rr_data(item, sizeof(item), nullptr, nullptr)); // both outputs optional
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -176,5 +219,6 @@ int main()
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_build_and_parse_guards);
+    RUN_TEST(test_more_branch_coverage);
     return UNITY_END();
 }

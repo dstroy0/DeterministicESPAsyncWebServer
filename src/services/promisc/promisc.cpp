@@ -62,13 +62,15 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
         out->src = a2;
         out->bssid = a3;
     }
-    else if (!out->to_ds && out->from_ds) // from the AP
+    // !to_ds && !from_ds is unreachable below: the `if` above already caught that combination.
+    else if (!out->to_ds && out->from_ds) // from the AP // GCOVR_EXCL_BR_LINE
     {
         out->dst = a1;
         out->bssid = a2;
         out->src = a3;
     }
-    else if (out->to_ds && !out->from_ds) // to the AP
+    // to_ds == false is unreachable below: ruled out by the two branches above.
+    else if (out->to_ds && !out->from_ds) // to the AP // GCOVR_EXCL_BR_LINE
     {
         out->bssid = a1;
         out->src = a2;

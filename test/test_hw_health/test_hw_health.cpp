@@ -135,10 +135,32 @@ void test_hwhealth_null_guards_and_init_clamps(void)
     TEST_ASSERT_EQUAL_UINT32(8000000, dws_hwhealth_spi_result(&above, false));
 }
 
+// Remaining branch gaps: trip=0 defaulting to 1, the hz<<1 overflow clamp in the SPI
+// backoff, and the tolerance-band underflow guard (band >= expected) in cap_leak.
+void test_hwhealth_trip_defaults_overflow_and_band_clamp(void)
+{
+    // fail_trip=0 / ok_trip=0 default to 1 (ternary false branch): trips on the very
+    // first sample instead of requiring a streak.
+    HwSpiBackoff s;
+    dws_hwhealth_spi_init(&s, 4000000, 1000000, 8000000, 0, 0);
+    TEST_ASSERT_EQUAL_UINT32(2000000, dws_hwhealth_spi_result(&s, false)); // fail_trip defaulted to 1
+    TEST_ASSERT_EQUAL_UINT32(4000000, dws_hwhealth_spi_result(&s, true));  // ok_trip defaulted to 1
+
+    // hz<<1 overflow: start near the top of the 32-bit range so doubling wraps below hz;
+    // the wrap must be detected and clamped to max_hz rather than left wrapped.
+    HwSpiBackoff ov;
+    dws_hwhealth_spi_init(&ov, 4026531840UL, 4026531840UL, 4294967295UL, 1, 1);
+    TEST_ASSERT_EQUAL_UINT32(4294967295UL, dws_hwhealth_spi_result(&ov, true));
+
+    // Tolerance band >= expected: lo clamps to 0 instead of underflowing.
+    TEST_ASSERT_EQUAL_INT(HwCapVerdict::HW_CAP_OK, dws_hwhealth_cap_leak(0, 50, 100)); // band(50) >= expected(50)
+}
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_hwhealth_null_guards_and_init_clamps);
+    RUN_TEST(test_hwhealth_trip_defaults_overflow_and_band_clamp);
     RUN_TEST(test_rail_monitor);
     RUN_TEST(test_spi_backoff);
     RUN_TEST(test_spi_backoff_clamps);

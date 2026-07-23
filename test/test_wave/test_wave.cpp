@@ -144,6 +144,37 @@ void test_1609dot2_wrap_guards(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, pl, 3, out, 4)); // needs 5
 }
 
+// wsmp_parse rejects a null output pointer even with an otherwise well-formed frame.
+void test_wsmp_parse_null_out(void)
+{
+    uint8_t frame[3] = {Wave::WSMP_VERSION, 0x20, 0x00};
+    TEST_ASSERT_FALSE(dws_wsmp_parse(frame, 3, nullptr));
+}
+
+// A zero-length WSM payload builds and parses cleanly: the payload-copy is skipped on build, and
+// parse leaves payload null / payload_len 0 rather than pointing past the frame.
+void test_wsmp_zero_length_payload(void)
+{
+    uint8_t out[8];
+    size_t n = dws_wsmp_build(Wave::WAVE_PSID_BSM, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(3, n); // version byte + 1-octet PSID + WSM length byte
+    WsmpFrame f;
+    TEST_ASSERT_TRUE(dws_wsmp_parse(out, n, &f));
+    TEST_ASSERT_EQUAL_UINT32(Wave::WAVE_PSID_BSM, f.psid);
+    TEST_ASSERT_EQUAL_size_t(0, f.payload_len);
+    TEST_ASSERT_NULL(f.payload);
+}
+
+// A zero-length 1609.2 payload wraps cleanly: the memcpy is skipped, only the 2-byte header is written.
+void test_1609dot2_wrap_zero_length(void)
+{
+    uint8_t out[8];
+    size_t n = dws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(2, n);
+    TEST_ASSERT_EQUAL_HEX8(Wave::WAVE_16092_VERSION, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(Wave::WAVE_16092_SIGNED, out[1]);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -153,6 +184,9 @@ int main(void)
     RUN_TEST(test_wsmp_build_guards);
     RUN_TEST(test_wsmp_parse_more_guards);
     RUN_TEST(test_1609dot2_wrap_guards);
+    RUN_TEST(test_wsmp_parse_null_out);
+    RUN_TEST(test_wsmp_zero_length_payload);
+    RUN_TEST(test_1609dot2_wrap_zero_length);
     RUN_TEST(test_wsmp_roundtrip);
     RUN_TEST(test_1609dot2_wrap);
     RUN_TEST(test_wsmp_parse_rejects);

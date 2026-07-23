@@ -28,10 +28,24 @@ void test_apply_is_noop_on_host()
     TEST_ASSERT_EQUAL_UINT8(DWSRadioPs::DWS_PS_NONE, dws_radio_ps_get());
 }
 
+void test_busy_hold_release_is_noop_on_host()
+{
+    // Bulk-transfer keep-awake refcount is ESP32-only; on host both calls are no-ops
+    // that must not crash and must not perturb the readback.
+    dws_radio_busy_hold();
+    TEST_ASSERT_EQUAL_UINT8(DWSRadioPs::DWS_PS_NONE, dws_radio_ps_get());
+    dws_radio_busy_release();
+    TEST_ASSERT_EQUAL_UINT8(DWSRadioPs::DWS_PS_NONE, dws_radio_ps_get());
+    // Unbalanced release (no matching hold) is still a no-op on host.
+    dws_radio_busy_release();
+    TEST_ASSERT_EQUAL_UINT8(DWSRadioPs::DWS_PS_NONE, dws_radio_ps_get());
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_ps_names);
     RUN_TEST(test_apply_is_noop_on_host);
+    RUN_TEST(test_busy_hold_release_is_noop_on_host);
     return UNITY_END();
 }

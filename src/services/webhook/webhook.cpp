@@ -62,7 +62,9 @@ int dws_ifttt_url(const char *event, const char *key, char *out, size_t cap)
         return 0;
     }
     int w = snprintf(out, cap, "https://maker.ifttt.com/trigger/%s/with/key/%s", event, key);
-    if (w < 0 || (size_t)w >= cap)
+    if (w < 0 || (size_t)w >= cap) // GCOVR_EXCL_BR_LINE  w < 0 is unreachable: this snprintf only
+                                   // substitutes %s from non-null C strings (guarded above), which
+                                   // cannot raise an encoding/output error on this host libc.
     {
         out[0] = '\0';
         return 0;
@@ -84,8 +86,10 @@ int dws_ifttt_payload(const char *v1, const char *v2, const char *v3, char *out,
     {
         if (!vals[i])
             continue;
+        // ok is always true on entry here: the loop condition (`&& ok`) was just re-checked to
+        // reach this iteration, and nothing between loop entry and this statement can clear it.
         if (!first)
-            ok = ok && put(out, cap, &pos, ",");
+            ok = ok && put(out, cap, &pos, ","); // GCOVR_EXCL_BR_LINE  ok-false half is unreachable (see above)
         first = false;
         ok = ok && put(out, cap, &pos, "\"");
         ok = ok && put(out, cap, &pos, names[i]);

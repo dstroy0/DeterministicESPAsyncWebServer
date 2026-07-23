@@ -63,6 +63,7 @@ void test_parse_ctrl_short(void)
     // Too short is rejected.
     TEST_ASSERT_FALSE(dws_wifi_parse(CTS, 9, &f));
     TEST_ASSERT_FALSE(dws_wifi_parse(nullptr, 24, &f));
+    TEST_ASSERT_FALSE(dws_wifi_parse(CTS, sizeof(CTS), nullptr)); // null out
 }
 
 void test_stats(void)
@@ -94,12 +95,17 @@ void test_roam(void)
 
 void test_stats_add_null_and_default_type()
 {
+    dws_wifi_stats_reset(nullptr);        // null guard
     dws_wifi_stats_add(nullptr, nullptr); // null guard
     WifiStats st = {};
     WifiFrame f = {};
     f.type = 3; // reserved/extension type -> default switch arm (other++)
     dws_wifi_stats_add(&st, &f);
     TEST_ASSERT_EQUAL_UINT32(1, st.other);
+
+    WifiStats st2 = {};
+    dws_wifi_stats_add(&st2, nullptr); // valid stats, null frame -> no-op
+    TEST_ASSERT_EQUAL_UINT32(0, st2.total);
 }
 
 // --- Channel-hop scan schedule ----------------------------------------------------------
@@ -252,6 +258,38 @@ void test_survey_feeds_roam_decision()
     TEST_ASSERT_FALSE(dws_wifi_should_roam(-55, cand_rssi, 8)); // only 5 dB -> stay
 }
 
+void test_survey_add_null_frame_and_short_naddr()
+{
+    WifiSurvey s;
+    dws_wifi_survey_reset(&s, 1, 6);
+
+    // Valid slot, null frame pointer -> tally counts but the bssid copy is skipped.
+    dws_wifi_survey_add(&s, 1, -50, nullptr);
+    const WifiChannelSurvey *c1 = dws_wifi_survey_get(&s, 1);
+    TEST_ASSERT_NOT_NULL(c1);
+    TEST_ASSERT_EQUAL_UINT32(1, c1->frames);
+    TEST_ASSERT_EQUAL_INT8(-50, c1->best_rssi);
+
+    // Non-null frame but naddr < 2 (addr2 never decoded) -> best_rssi still updates, bssid copy skipped.
+    WifiFrame f = make_frame(nullptr);
+    f.naddr = 1;
+    dws_wifi_survey_add(&s, 1, -40, &f); // stronger -> replaces best_rssi
+    const WifiChannelSurvey *c1b = dws_wifi_survey_get(&s, 1);
+    TEST_ASSERT_EQUAL_UINT32(2, c1b->frames);
+    TEST_ASSERT_EQUAL_INT8(-40, c1b->best_rssi);
+}
+
+void test_survey_best_null_out_params()
+{
+    // A caller that only wants the bool (does it need to roam at all?) may pass null outs.
+    WifiSurvey s;
+    dws_wifi_survey_reset(&s, 1, 11);
+    WifiFrame f = make_frame(nullptr);
+    dws_wifi_survey_add(&s, 6, -45, &f);
+
+    TEST_ASSERT_TRUE(dws_wifi_survey_best(&s, 0, nullptr, nullptr));
+}
+
 void test_survey_reset_clamps_count()
 {
     WifiSurvey s;
@@ -279,6 +317,8 @@ int main(void)
     RUN_TEST(test_survey_out_of_range_ignored);
     RUN_TEST(test_survey_best_picks_strongest_and_excludes);
     RUN_TEST(test_survey_feeds_roam_decision);
+    RUN_TEST(test_survey_add_null_frame_and_short_naddr);
+    RUN_TEST(test_survey_best_null_out_params);
     RUN_TEST(test_survey_reset_clamps_count);
     return UNITY_END();
 }

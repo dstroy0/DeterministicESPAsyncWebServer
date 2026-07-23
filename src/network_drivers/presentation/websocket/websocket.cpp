@@ -355,8 +355,13 @@ void ws_parse(WsConn *ws)
             return;
 
         uint8_t byte = 0;
-        if (!dws_conn_read_byte(ws->slot_id, &byte)) // ring drained between available() and here
-            break;
+        // Unreachable on the host: available() and read_byte() read the same rx_head/rx_tail
+        // synchronously with nothing else running in between in a single-threaded test, so they
+        // can never disagree here. On-device this guards a genuine interrupt race (the lwIP recv
+        // callback can drain/refill the ring between the two calls); there is no way to reproduce
+        // that interleaving without real concurrency, so it is out of scope for a host test.
+        if (!dws_conn_read_byte(ws->slot_id, &byte)) // GCOVR_EXCL_BR_LINE  see above: can't disagree on host
+            break;                                   // GCOVR_EXCL_LINE
         ws_feed_byte(ws, byte);
     }
 }

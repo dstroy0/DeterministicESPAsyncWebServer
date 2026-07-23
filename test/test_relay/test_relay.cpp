@@ -216,6 +216,136 @@ void test_note_eof_out_of_band()
     TEST_ASSERT_TRUE(b.shutdown_called);
 }
 
+// The origin never has data ready (0-length read, not EOF): pump_refill's "r > 0" branch must take
+// its false side without treating that as an error or as EOF - the relay just stays RUNNING and the
+// buffers are left untouched until real data (or an out-of-band EOF) arrives.
+void test_zero_length_read_no_progress()
+{
+    MockSock a, b;
+    sock_init(&a, nullptr, 0, false); // in_eof=false: recv keeps returning 0, never -1
+    sock_init(&b, nullptr, 0, false);
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
+
+    for (int i = 0; i < 5; i++)
+        TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_RUNNING, dws_relay_step(&r));
+    TEST_ASSERT_EQUAL_UINT32(0, r.bytes_a2b);
+    TEST_ASSERT_EQUAL_UINT32(0, r.bytes_b2a);
+    TEST_ASSERT_EQUAL_size_t(0, a.out_len);
+    TEST_ASSERT_EQUAL_size_t(0, b.out_len);
+
+    // now let both sides close out of band so the relay can still finish cleanly
+    dws_relay_note_eof(&r, false);
+    dws_relay_note_eof(&r, true);
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 8));
+}
+
+// A send that already carried a partial write (backpressure) fails on the *next* step's flush
+// attempt (pump()'s own send call, not pump_refill's) - distinct from test_send_error, which fails
+// on the very first refill.
+void test_flush_send_error()
+{
+    uint8_t data[50];
+    for (int i = 0; i < 50; i++)
+        data[i] = (uint8_t)(i + 1);
+    MockSock a, b;
+    sock_init(&a, data, sizeof(data), true);
+    sock_init(&b, nullptr, 0, true);
+    b.send_cap = 10; // first step only flushes part of the 50 bytes, leaving a backlog
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
+
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_RUNNING, dws_relay_step(&r));
+    TEST_ASSERT_TRUE(r.a2b_off < r.a2b_len); // confirms a backlog is pending for the next flush
+
+    b.fail_send = true; // now the origin errors on the flush of that pending backlog
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_ERROR, dws_relay_step(&r));
+}
+
+// test_send_error fails the a->b direction (the first pump() call in dws_relay_step); this mirrors
+// it for the b->a direction so the second pump() call's error path is exercised too.
+void test_send_error_reverse_direction()
+{
+    MockSock a, b;
+    sock_init(&a, nullptr, 0, true); // client has nothing to send: a->b finishes immediately, cleanly
+    sock_init(&b, "resp", 4, true);  // origin has data for the client
+    a.fail_send = true;              // the client's send (dst for b->a) errors
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
+
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_ERROR, dws_relay_step(&r));
+}
+
+// Null-argument guards: every entry point bails out safely instead of dereferencing.
+void test_null_argument_guards()
+{
+    MockSock a, b;
+    sock_init(&a, nullptr, 0, true);
+    sock_init(&b, nullptr, 0, true);
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+
+    dws_relay_init(nullptr, &ea, &eb); // no crash
+    dws_relay_init(&r, nullptr, &eb);  // no crash
+    dws_relay_init(&r, &ea, nullptr);  // no crash
+
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_ERROR, dws_relay_step(nullptr));
+
+    dws_relay_note_eof(nullptr, false); // no crash
+}
+
+// An end with no shutdown seam (shutdown == nullptr, allowed per relay.h) must not be called through
+// when its direction finishes; the flag it would have set stays false. The peer direction still has a
+// real shutdown seam, so that one still fires normally.
+void test_shutdown_null_seam()
+{
+    MockSock a, b;
+    sock_init(&a, "hi", 2, true);
+    sock_init(&b, nullptr, 0, true);
+    DWSRelayEnd ea = end_of(&a);
+    DWSRelayEnd eb = end_of(&b);
+    eb.shutdown = nullptr; // origin publishes no shutdown seam
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
+
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 16));
+    TEST_ASSERT_FALSE(r.b_shut_sent); // never latches: there is no seam to call
+    TEST_ASSERT_FALSE(b.shutdown_called);
+    TEST_ASSERT_TRUE(r.a_shut_sent); // the other direction's real seam still fired
+    TEST_ASSERT_TRUE(a.shutdown_called);
+}
+
+// An out-of-band EOF (dws_relay_note_eof) can land while a send backlog is still draining (unlike an
+// EOF discovered through recv(), which only ever happens once the buffer is already empty). The
+// direction must NOT finish until that backlog fully flushes on a later step.
+void test_note_eof_with_backlog_pending()
+{
+    uint8_t data[20];
+    for (int i = 0; i < 20; i++)
+        data[i] = (uint8_t)(i + 100);
+    MockSock a, b;
+    sock_init(&a, data, sizeof(data), false); // in_eof=false: only note_eof() signals EOF
+    sock_init(&b, nullptr, 0, true);          // b->a finishes immediately, out of the way
+    b.send_cap = 5;                           // a->b needs multiple flushes to drain 20 bytes
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
+
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_RUNNING, dws_relay_step(&r));
+    TEST_ASSERT_EQUAL_size_t(5, r.a2b_off);
+    TEST_ASSERT_EQUAL_size_t(20, r.a2b_len); // a backlog of 15 bytes is still pending
+
+    dws_relay_note_eof(&r, false); // client EOF arrives out of band while the backlog is pending
+    TEST_ASSERT_FALSE(r.a2b_done); // must not finish yet: bytes are still queued to flush
+
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 16));
+    TEST_ASSERT_EQUAL_size_t(20, b.out_len);
+    TEST_ASSERT_EQUAL_MEMORY(data, b.out, 20); // every byte still carried across, in order
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -225,5 +355,11 @@ int main()
     RUN_TEST(test_send_error);
     RUN_TEST(test_one_way_idle_then_close);
     RUN_TEST(test_note_eof_out_of_band);
+    RUN_TEST(test_zero_length_read_no_progress);
+    RUN_TEST(test_flush_send_error);
+    RUN_TEST(test_send_error_reverse_direction);
+    RUN_TEST(test_null_argument_guards);
+    RUN_TEST(test_shutdown_null_seam);
+    RUN_TEST(test_note_eof_with_backlog_pending);
     return UNITY_END();
 }

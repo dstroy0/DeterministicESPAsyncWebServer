@@ -365,6 +365,51 @@ void test_sse_format_zero_size_returns_zero()
     TEST_ASSERT_EQUAL(0, dws_sse_format(buf, 0, "data", nullptr, nullptr));
 }
 
+// The event block's own "event: " prefix append failing (distinct from the value append
+// failing, which test_sse_format_overflow_returns_zero already covers).
+void test_sse_format_event_prefix_itself_overflows()
+{
+    char buf[5];
+    TEST_ASSERT_EQUAL(0, dws_sse_format(buf, sizeof(buf), "y", "x", nullptr));
+}
+
+// The event block's trailing "\n" append failing: the prefix + value fit exactly, leaving
+// no room for the newline.
+void test_sse_format_event_newline_overflows()
+{
+    char buf[10]; // "event: " (7) + "ab" (2) == 9 == n-1; the '\n' has no room left
+    TEST_ASSERT_EQUAL(0, dws_sse_format(buf, sizeof(buf), "unused", "ab", nullptr));
+}
+
+// The id block's three internal appends ("id: " prefix, value, trailing "\n") each failing
+// in turn - none of these arms are exercised by any success-path test above.
+void test_sse_format_id_block_failure_arms()
+{
+    char a[4]; // "id: " (4) alone already exceeds n-1 (3) -> prefix append fails
+    TEST_ASSERT_EQUAL(0, dws_sse_format(a, sizeof(a), "d", nullptr, "z"));
+
+    char b[7]; // "id: " (4) fits, "XYZ" (3) does not (n-1 == 6)
+    TEST_ASSERT_EQUAL(0, dws_sse_format(b, sizeof(b), "d", nullptr, "XYZ"));
+
+    char c[7]; // "id: " (4) + "XY" (2) == 6 == n-1; the '\n' has no room left
+    TEST_ASSERT_EQUAL(0, dws_sse_format(c, sizeof(c), "d", nullptr, "XY"));
+}
+
+// The final data block's three internal appends ("data: " prefix, value, "\n\n" terminator)
+// each failing in turn - the event/id blocks are skipped (both null) so these are the first
+// appends attempted.
+void test_sse_format_data_block_failure_arms()
+{
+    char a[5]; // "data: " (6) alone already exceeds n-1 (4) -> prefix append fails
+    TEST_ASSERT_EQUAL(0, dws_sse_format(a, sizeof(a), "abcdef", nullptr, nullptr));
+
+    char b[10]; // "data: " (6) fits, "abcdef" (6) does not (n-1 == 9)
+    TEST_ASSERT_EQUAL(0, dws_sse_format(b, sizeof(b), "abcdef", nullptr, nullptr));
+
+    char c[9]; // "data: " (6) + "ab" (2) == 8 == n-1; the "\n\n" terminator has no room left
+    TEST_ASSERT_EQUAL(0, dws_sse_format(c, sizeof(c), "ab", nullptr, nullptr));
+}
+
 // ====================================================================
 // STRESS TESTS
 // ====================================================================
@@ -505,6 +550,10 @@ int main()
     RUN_TEST(test_sse_format_null_data_returns_zero);
     RUN_TEST(test_sse_format_overflow_returns_zero);
     RUN_TEST(test_sse_format_zero_size_returns_zero);
+    RUN_TEST(test_sse_format_event_prefix_itself_overflows);
+    RUN_TEST(test_sse_format_event_newline_overflows);
+    RUN_TEST(test_sse_format_id_block_failure_arms);
+    RUN_TEST(test_sse_format_data_block_failure_arms);
 
     // Stress
     RUN_TEST(stress_sse_alloc_free_100_cycles);

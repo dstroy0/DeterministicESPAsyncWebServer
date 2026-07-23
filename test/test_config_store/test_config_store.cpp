@@ -151,6 +151,67 @@ void test_setter_getter_null_guards()
     TEST_ASSERT_FALSE(dws_config_set_blob("k", nullptr, 4));                 // null data
 }
 
+void test_key_ok_rejects_null_and_empty_key()
+{
+    TEST_ASSERT_FALSE(dws_config_set_str(nullptr, "v")); // null key
+    char out[8];
+    size_t n = dws_config_get_str("", out, sizeof(out), nullptr); // empty key, no default
+    TEST_ASSERT_EQUAL_STRING("", out);
+    TEST_ASSERT_EQUAL_size_t(0, n);
+}
+
+void test_get_str_zero_capacity_with_nonnull_out()
+{
+    char out[8];
+    TEST_ASSERT_EQUAL_size_t(0, dws_config_get_str("ssid", out, 0, "def"));
+}
+
+void test_set_blob_rejects_len_over_capacity()
+{
+    uint8_t big[DWS_CONFIG_VAL_MAX + 1];
+    memset(big, 0xAA, sizeof(big));
+    TEST_ASSERT_FALSE(dws_config_set_blob("big", big, sizeof(big))); // len > DWS_CONFIG_VAL_MAX
+}
+
+void test_get_u32_short_entry_returns_default()
+{
+    dws_config_set_str("short", "ab"); // stored length (incl. terminator) is 3, < 4 bytes
+    TEST_ASSERT_EQUAL_UINT32(7u, dws_config_get_u32("short", 7u));
+}
+
+void test_get_u32_rejects_invalid_key()
+{
+    TEST_ASSERT_EQUAL_UINT32(5u, dws_config_get_u32(nullptr, 5u));
+}
+
+void test_get_blob_rejects_invalid_key()
+{
+    uint8_t out[4];
+    TEST_ASSERT_EQUAL_size_t(0, dws_config_get_blob(nullptr, out, sizeof(out)));
+}
+
+void test_get_blob_null_out_with_existing_key()
+{
+    uint8_t in[3] = {9, 8, 7};
+    dws_config_set_blob("bk", in, sizeof(in));
+    TEST_ASSERT_EQUAL_size_t(0, dws_config_get_blob("bk", nullptr, 8));
+}
+
+void test_get_blob_entry_shorter_than_capacity()
+{
+    uint8_t in[3] = {1, 2, 3};
+    dws_config_set_blob("bk2", in, sizeof(in));
+    uint8_t out[10] = {0};
+    size_t n = dws_config_get_blob("bk2", out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(3, n);
+    TEST_ASSERT_EQUAL_MEMORY(in, out, 3);
+}
+
+void test_erase_rejects_invalid_key()
+{
+    TEST_ASSERT_FALSE(dws_config_erase(nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -169,5 +230,14 @@ int main()
     RUN_TEST(test_existing_key_overwrites_even_when_full);
     RUN_TEST(test_key_too_long_rejected);
     RUN_TEST(test_setter_getter_null_guards);
+    RUN_TEST(test_key_ok_rejects_null_and_empty_key);
+    RUN_TEST(test_get_str_zero_capacity_with_nonnull_out);
+    RUN_TEST(test_set_blob_rejects_len_over_capacity);
+    RUN_TEST(test_get_u32_short_entry_returns_default);
+    RUN_TEST(test_get_u32_rejects_invalid_key);
+    RUN_TEST(test_get_blob_rejects_invalid_key);
+    RUN_TEST(test_get_blob_null_out_with_existing_key);
+    RUN_TEST(test_get_blob_entry_shorter_than_capacity);
+    RUN_TEST(test_erase_rejects_invalid_key);
     return UNITY_END();
 }

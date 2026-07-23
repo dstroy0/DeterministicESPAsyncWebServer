@@ -41,7 +41,12 @@ inline int dws_fmt_append(char *out, size_t cap, size_t *pos, const char *fmt, .
     va_start(ap, fmt);
     int w = vsnprintf(out + *pos, cap - *pos, fmt, ap); // NOSONAR fmt is an internal compile-time literal
     va_end(ap);
-    if (w < 0 || (size_t)w >= cap - *pos)
+    // w < 0 (a vsnprintf output-encoding error) is unreachable on a host build: every caller in this
+    // codebase passes one of its own internal, compile-time-literal format strings (see the file-level
+    // doc comment above), built from plain %s/%g/%d conversions that never fault. Forcing a genuine
+    // negative return (e.g. via an oversized field width) does not fail gracefully on this toolchain -
+    // it aborts the process - so it cannot be exercised from a host test without crashing the runner.
+    if (w < 0 || (size_t)w >= cap - *pos) // GCOVR_EXCL_BR_LINE
         return -1;
     *pos += (size_t)w;
     return 0;

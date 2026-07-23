@@ -135,6 +135,86 @@ void test_v1_malformed_addresses_fail_closed()
     TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 123456 2\r\n")); // port > 5 digits
     TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 8x 2\r\n"));     // non-digit in port
     TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 99999 2\r\n"));  // port > 65535
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 1.2.3. 10.0.0.1 1 2\r\n"));        // src missing its 4th octet
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 -1.2.3.4 10.0.0.1 1 2\r\n"));      // octet starts below '0'
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 1234.0.0.1 10.0.0.1 1 2\r\n"));    // more than 3 digits in an octet
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 1 10.0.0.1 1 2\r\n"));             // src has no dots at all
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 -1 2\r\n"));     // port starts below '0'
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10.0.0.1 x.0.0.1 1 2\r\n"));       // dst (not src) address malformed
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 1 8x\r\n"));     // dst (not src) port malformed
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP 1.2.3.4 5.6.7.8 1 2\r\n"));         // protocol token length != 4 ("TCP")
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP6 a b c d\r\n"));                    // protocol token length 4 but != "TCP4"
+}
+
+void test_v1_extra_tokens_ignored()
+{
+    // A 7th space-separated field after a complete 6-field header: the tokenizer stops
+    // recording at 6 tokens even though input remains before the CRLF (the tokenizing loop
+    // exits on the token-count cap, not on reaching the end of the line).
+    const char *raw = "PROXY TCP4 203.0.113.50 203.0.113.10 12345 80 EXTRA\r\n";
+    ProxyInfo info;
+    size_t consumed;
+    TEST_ASSERT_TRUE(proxy_parse((const uint8_t *)raw, strlen(raw), &info, &consumed));
+    TEST_ASSERT_TRUE(info.has_addr);
+    TEST_ASSERT_EQUAL_UINT16(12345, info.src_port);
+    TEST_ASSERT_EQUAL_UINT16(80, info.dst_port);
+    TEST_ASSERT_EQUAL_size_t(strlen(raw), consumed);
+}
+
+void test_v1_stray_cr_before_terminator()
+{
+    // A lone '\r' (not followed by '\n') before the real terminator: the CRLF scan must keep
+    // looking past it rather than mistaking it for the line end.
+    const char *raw = "PROXY UNKNOWN\rXTRA\r\n";
+    ProxyInfo info;
+    size_t consumed;
+    TEST_ASSERT_TRUE(proxy_parse((const uint8_t *)raw, strlen(raw), &info, &consumed));
+    TEST_ASSERT_EQUAL_UINT8(1, info.version);
+    TEST_ASSERT_FALSE(info.has_addr);
+    TEST_ASSERT_EQUAL_size_t(strlen(raw), consumed);
+}
+
+void test_v2_non_addr_variants()
+{
+    ProxyInfo info;
+    size_t consumed;
+
+    // version 2, LOCAL command (not PROXY): a valid v2 header that intentionally carries no
+    // address (e.g. a load balancer health check).
+    uint8_t local_cmd[16] = {0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51,
+                             0x55, 0x49, 0x54, 0x0A, 0x20, 0x11, 0x00, 0x00}; // ver_cmd 0x20 (LOCAL)
+    TEST_ASSERT_TRUE(proxy_parse(local_cmd, sizeof(local_cmd), &info, &consumed));
+    TEST_ASSERT_EQUAL_UINT8(2, info.version);
+    TEST_ASSERT_FALSE(info.has_addr);
+    TEST_ASSERT_EQUAL_size_t(16, consumed);
+
+    // version 2, PROXY command, but a non-TCP4 address family.
+    uint8_t bad_fam[16] = {0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51,
+                           0x55, 0x49, 0x54, 0x0A, 0x21, 0x12, 0x00, 0x00}; // fam 0x12, not TCP4
+    TEST_ASSERT_TRUE(proxy_parse(bad_fam, sizeof(bad_fam), &info, &consumed));
+    TEST_ASSERT_EQUAL_UINT8(2, info.version);
+    TEST_ASSERT_FALSE(info.has_addr);
+    TEST_ASSERT_EQUAL_size_t(16, consumed);
+
+    // version 2, PROXY command, TCP4 family, but an address-block length too short for a
+    // TCP4 tuple (12 octets).
+    uint8_t short_block[20] = {0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51,
+                               0x55, 0x49, 0x54, 0x0A, 0x21, 0x11, 0x00, 0x04, // addr_len 4 (< 12)
+                               0x00, 0x00, 0x00, 0x00};
+    TEST_ASSERT_TRUE(proxy_parse(short_block, sizeof(short_block), &info, &consumed));
+    TEST_ASSERT_EQUAL_UINT8(2, info.version);
+    TEST_ASSERT_FALSE(info.has_addr);
+    TEST_ASSERT_EQUAL_size_t(20, consumed);
+}
+
+void test_short_buffer_not_proxy_header()
+{
+    // Fewer octets than the v2 signature (12) and shorter than the v1 "PROXY " prefix (6):
+    // both length guards must reject it without reading past the buffer.
+    const uint8_t tiny[2] = {0x00, 0x01};
+    ProxyInfo info;
+    size_t consumed;
+    TEST_ASSERT_FALSE(proxy_parse(tiny, sizeof(tiny), &info, &consumed));
 }
 
 void test_parse_and_build_guards()
@@ -147,6 +227,7 @@ void test_parse_and_build_guards()
     TEST_ASSERT_FALSE(proxy_parse(any, 16, nullptr, &consumed));
     TEST_ASSERT_FALSE(proxy_parse(any, 16, &info, nullptr));
     TEST_ASSERT_EQUAL_size_t(0, proxy_v1_build(nullptr, 64, SRC, DST, 1, 2));
+    TEST_ASSERT_EQUAL_size_t(0, proxy_v2_build(nullptr, 64, SRC, DST, 1, 2));
 
     // v2: signature + full header, but the declared address block isn't fully buffered.
     uint8_t under[16] = {0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51,
@@ -176,6 +257,10 @@ int main()
     RUN_TEST(test_incomplete);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_v1_malformed_addresses_fail_closed);
+    RUN_TEST(test_v1_extra_tokens_ignored);
+    RUN_TEST(test_v1_stray_cr_before_terminator);
+    RUN_TEST(test_v2_non_addr_variants);
+    RUN_TEST(test_short_buffer_not_proxy_header);
     RUN_TEST(test_parse_and_build_guards);
     return UNITY_END();
 }

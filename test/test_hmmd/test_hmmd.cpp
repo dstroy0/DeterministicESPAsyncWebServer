@@ -155,6 +155,42 @@ void test_stream_absurd_length_drops()
     TEST_ASSERT_EQUAL_UINT16(42, r.distance_cm);
 }
 
+void test_stream_push_rejects_null_out()
+{
+    HmmdStream s;
+    dws_hmmd_stream_reset(&s);
+    // s is valid but out is null: must be refused before touching s->phase, not just when s itself
+    // is null (that half of the guard is covered by test_host_binding_stubs already).
+    TEST_ASSERT_FALSE(dws_hmmd_stream_push(&s, 0xF4, nullptr));
+}
+
+void test_stream_header_resync_on_repeated_lead_byte()
+{
+    HmmdStream s;
+    dws_hmmd_stream_reset(&s);
+    HmmdReport r;
+
+    // First 0xF4 starts a header match (hdr_match -> 1). A second 0xF4 is not the expected HDR[1]
+    // (0xF3), but it IS HDR[0] again, so the resync must restart the match at [1] (buf[0]
+    // re-primed) rather than dropping all the way back to [0].
+    TEST_ASSERT_FALSE(dws_hmmd_stream_push(&s, 0xF4, &r));
+    TEST_ASSERT_FALSE(dws_hmmd_stream_push(&s, 0xF4, &r));
+
+    // Complete the header from that restarted position and prove the resync was correct by
+    // decoding a whole valid frame afterward.
+    const uint8_t rest_hdr[3] = {0xF3, 0xF2, 0xF1};
+    for (unsigned i = 0; i < 3; i++)
+        TEST_ASSERT_FALSE(dws_hmmd_stream_push(&s, rest_hdr[i], &r));
+
+    build_report(0x01, 55, 20);
+    int reports = 0;
+    for (unsigned i = 4; i < DWS_HMMD_FRAME_MAX; i++)
+        if (dws_hmmd_stream_push(&s, REPORT[i], &r))
+            reports++;
+    TEST_ASSERT_EQUAL_INT(1, reports);
+    TEST_ASSERT_EQUAL_UINT16(55, r.distance_cm);
+}
+
 void test_command_encoders()
 {
     uint8_t f[32];
@@ -269,6 +305,8 @@ int main()
     RUN_TEST(test_reject_malformed_report);
     RUN_TEST(test_stream_resync_and_split);
     RUN_TEST(test_stream_absurd_length_drops);
+    RUN_TEST(test_stream_push_rejects_null_out);
+    RUN_TEST(test_stream_header_resync_on_repeated_lead_byte);
     RUN_TEST(test_command_encoders);
     RUN_TEST(test_command_encoder_guards);
     RUN_TEST(test_ack_decoding);

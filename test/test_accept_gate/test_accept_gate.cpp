@@ -16,8 +16,17 @@
 // Pure host tests.
 
 #include "network_drivers/network/ip.h"
+#include "network_drivers/session/proto_handler.h"
 #include "network_drivers/transport/listener.h"
+#include "services/clock.h"
 #include <unity.h>
+
+// A fake tick source for the dws_millis() override tests below.
+static uint32_t g_fake_ticks = 0;
+static uint32_t fake_ticks(void)
+{
+    return g_fake_ticks;
+}
 
 // Small builders so the tests read in terms of addresses, not byte plumbing.
 static DWSIp v4(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
@@ -224,6 +233,39 @@ void test_ip_allowlist_rejects_bad_and_full()
     TEST_ASSERT_FALSE(listener_ip_allow_add(&overflow, 32)); // table full
 }
 
+// proto_register_builtins() installs the always-present HTTP handler; this env compiles no
+// other protocol module (telnet/ssh/modbus/opcua are all off), so no handler is installed for
+// a protocol this build never registers.
+void test_proto_register_builtins_installs_http(void)
+{
+    proto_register_builtins();
+    TEST_ASSERT_NOT_NULL(proto_get(ConnProto::PROTO_HTTP));
+    TEST_ASSERT_NULL(proto_get(ConnProto::PROTO_TELNET));
+}
+
+// With no custom clock installed, dws_millis() falls through to the platform millis() mock.
+void test_clock_default_is_platform_millis(void)
+{
+    dws_set_clock(nullptr, 0); // ensure no override from a prior test
+    set_millis(4242);
+    TEST_ASSERT_EQUAL_UINT32(4242, dws_millis());
+}
+
+// A custom clock is divided down to the internal 1000 Hz, and (nullptr, 0) reverts to the
+// platform default.
+void test_clock_custom_and_revert(void)
+{
+    dws_set_clock(fake_ticks, 8000); // 8 kHz source -> divide by 8
+    g_fake_ticks = 8000;
+    TEST_ASSERT_EQUAL_UINT32(1000, dws_millis());
+    g_fake_ticks = 16000;
+    TEST_ASSERT_EQUAL_UINT32(2000, dws_millis());
+
+    dws_set_clock(nullptr, 0);
+    set_millis(777);
+    TEST_ASSERT_EQUAL_UINT32(777, dws_millis());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -240,5 +282,8 @@ int main()
     RUN_TEST(test_ip_allowlist_family_isolation);
     RUN_TEST(test_ip_allowlist_host_and_zero_prefix);
     RUN_TEST(test_ip_allowlist_rejects_bad_and_full);
+    RUN_TEST(test_proto_register_builtins_installs_http);
+    RUN_TEST(test_clock_default_is_platform_millis);
+    RUN_TEST(test_clock_custom_and_revert);
     return UNITY_END();
 }

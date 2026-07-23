@@ -80,7 +80,12 @@ int dws_csrf_issue(char *out, size_t cap)
     sign_nonce(s_csrf, nonce, CSRF_NONCE_BYTES, shex);
 
     int n = snprintf(out, cap, "%s.%s", nhex, shex);
-    return (n > 0 && (size_t)n < cap) ? n : 0;
+    // Both guard halves are unreachable given this function's own invariants: nhex/shex are
+    // fixed-length hex strings, so n is always exactly CSRF_NONCE_BYTES*2 + 1 + CSRF_SIG_BYTES*2
+    // (41) and snprintf cannot go negative on this encoding-error-free format; cap is already
+    // guaranteed >= CSRF_TOKEN_BUF (48) by the guard above, which exceeds 41. Kept as the one
+    // place that would otherwise return a bogus length or read out of bounds.
+    return (n > 0 && (size_t)n < cap) ? n : 0; // GCOVR_EXCL_BR_LINE
 }
 
 bool dws_csrf_verify(const char *token)

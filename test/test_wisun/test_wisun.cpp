@@ -193,6 +193,82 @@ void test_wisun_null_guards()
     TEST_ASSERT_EQUAL_size_t(0, dws_wisun_nodes_json(&fan, buf, 0));              // zero cap
 }
 
+void test_node_register_null_fan_and_addr(void)
+{
+    // Cover the individual OR-arms of dws_wisun_node_register's guard that the other tests
+    // don't reach: a null fan (short-circuits before ever touching fan->nodes), and a null
+    // addr against an otherwise-valid fan/nodes.
+    WisunNode storage[2];
+    WisunFan fan;
+    DWSIp br;
+    dws_ip_parse("fd00::1", &br);
+    dws_wisun_init(&fan, &br, storage, 2);
+    DWSIp a;
+    dws_ip_parse("fd00::a", &a);
+    TEST_ASSERT_EQUAL_INT(-1, dws_wisun_node_register(nullptr, &a, 1));   // null fan
+    TEST_ASSERT_EQUAL_INT(-1, dws_wisun_node_register(&fan, nullptr, 1)); // null addr
+}
+
+void test_node_find_partial_null_and_found_idx_null(void)
+{
+    // dws_wisun_node_find's guard is the same 3-arm OR; test_wisun_null_guards only covers a
+    // fully-null call, so the "fan valid but nodes null" and "fan/nodes valid but addr null"
+    // arms are exercised here. Also cover the found-but-caller-doesn't-want-the-index path
+    // (idx == nullptr) on a hit, which the other tests never trigger.
+    WisunNode storage[2];
+    WisunFan fan;
+    DWSIp br;
+    dws_ip_parse("fd00::1", &br);
+    dws_wisun_init(&fan, &br, storage, 2);
+    DWSIp a;
+    dws_ip_parse("fd00::a", &a);
+    TEST_ASSERT_EQUAL_INT(0, dws_wisun_node_register(&fan, &a, 1));
+
+    TEST_ASSERT_TRUE(dws_wisun_node_find(&fan, &a, nullptr)); // found, idx not requested
+
+    size_t idx = 99;
+    TEST_ASSERT_FALSE(dws_wisun_node_find(&fan, nullptr, &idx)); // null addr, valid fan/nodes
+
+    WisunFan bare_fan;
+    dws_wisun_init(&bare_fan, &br, nullptr, 0);
+    TEST_ASSERT_FALSE(dws_wisun_node_find(&bare_fan, &a, &idx)); // valid fan, null nodes
+}
+
+void test_joined_count_and_json_unjoined_and_null_nodes(void)
+{
+    // dws_wisun_joined_count's guard needs "fan valid, nodes null" (the other tests only cover
+    // a fully-null fan). The joined/unjoined ternary in both dws_wisun_joined_count's loop and
+    // dws_wisun_nodes_json's serializer only ever sees joined==true elsewhere, since
+    // dws_wisun_node_register always sets it; flip one entry directly through the caller-owned
+    // storage (a node "leaving" the mesh) to exercise the false side of both. Also cover
+    // dws_wisun_nodes_json's null-out arm against an otherwise-valid fan/cap.
+    WisunNode storage[2];
+    WisunFan fan;
+    DWSIp br;
+    dws_ip_parse("fd00::1", &br);
+    dws_wisun_init(&fan, &br, storage, 2);
+    DWSIp a, b;
+    dws_ip_parse("fd00::a", &a);
+    dws_ip_parse("fd00::b", &b);
+    TEST_ASSERT_EQUAL_INT(0, dws_wisun_node_register(&fan, &a, 1));
+    TEST_ASSERT_EQUAL_INT(1, dws_wisun_node_register(&fan, &b, 2));
+    storage[1].joined = false;
+
+    TEST_ASSERT_EQUAL_size_t(1, dws_wisun_joined_count(&fan));
+
+    char js[128];
+    size_t jn = dws_wisun_nodes_json(&fan, js, sizeof(js));
+    TEST_ASSERT_EQUAL_size_t(strlen(js), jn);
+    TEST_ASSERT_NOT_NULL(strstr(js, "\"joined\":true"));
+    TEST_ASSERT_NOT_NULL(strstr(js, "\"joined\":false"));
+
+    WisunFan bare_fan;
+    dws_wisun_init(&bare_fan, &br, nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_joined_count(&bare_fan)); // valid fan, null nodes
+
+    TEST_ASSERT_EQUAL_size_t(0, dws_wisun_nodes_json(&fan, nullptr, sizeof(js))); // null out
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -206,5 +282,8 @@ int main(void)
     RUN_TEST(test_coap_overflow_and_emit_fail);
     RUN_TEST(test_coap_arg_guards);
     RUN_TEST(test_wisun_null_guards);
+    RUN_TEST(test_node_register_null_fan_and_addr);
+    RUN_TEST(test_node_find_partial_null_and_found_idx_null);
+    RUN_TEST(test_joined_count_and_json_unjoined_and_null_nodes);
     return UNITY_END();
 }

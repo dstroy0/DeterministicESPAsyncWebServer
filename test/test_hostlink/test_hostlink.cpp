@@ -141,6 +141,108 @@ void test_guards_and_hex()
     TEST_ASSERT_FALSE(dws_hostlink_end_code(&g, &code)); // non-hex character
 }
 
+// hex_digit()'s '>= 10' branch (letter nibble): FCS of "@00RDX" is 0x0E, so the low
+// nibble renders as 'E'.
+void test_build_fcs_hex_letter()
+{
+    char buf[32];
+    size_t n = dws_hostlink_build(buf, sizeof(buf), 0, "RD", "X", 1);
+    TEST_ASSERT_EQUAL_STRING("@00RDX0E*\r", buf);
+    TEST_ASSERT_EQUAL_size_t(10, n);
+}
+
+// hex_val()'s lowercase branch: a character >= 'a' but > 'f' must fail the range check.
+void test_hex_val_lowercase_out_of_range()
+{
+    HostlinkFrame g;
+    g.text = "z0";
+    g.text_len = 2;
+    uint8_t code = 0;
+    TEST_ASSERT_FALSE(dws_hostlink_end_code(&g, &code));
+}
+
+// text_len == 0 is a valid, empty-text frame: exercises the guard's "text_len" atom
+// being false (short-circuiting away "!text") and the build's "if (text_len)" false path.
+void test_build_zero_length_text()
+{
+    char buf[32];
+    size_t n = dws_hostlink_build(buf, sizeof(buf), 0, "RD", nullptr, 0);
+    TEST_ASSERT_EQUAL_STRING("@00RD56*\r", buf);
+    TEST_ASSERT_EQUAL_size_t(9, n);
+}
+
+// An empty header code string (header_code[0] == '\0') is rejected.
+void test_build_empty_header_code()
+{
+    char buf[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build(buf, sizeof(buf), 0, "", "0", 1));
+}
+
+// dws_hostlink_parse() null-pointer guards for buf and out.
+void test_parse_null_pointers()
+{
+    HostlinkFrame f;
+    TEST_ASSERT_FALSE(dws_hostlink_parse(nullptr, 9, &f));
+    TEST_ASSERT_FALSE(dws_hostlink_parse("@00RDGG*\r", 9, nullptr));
+}
+
+// The byte before '\r' must be '*'; a well-formed '@'...'\r' frame with that byte
+// disturbed must still be rejected.
+void test_parse_bad_star_position()
+{
+    char buf[32];
+    size_t n = dws_hostlink_build(buf, sizeof(buf), 0, "RD", "00000010", 8);
+    char corrupt[32];
+    memcpy(corrupt, buf, n);
+    corrupt[n - 2] = 'Z'; // was '*'
+    HostlinkFrame f;
+    TEST_ASSERT_FALSE(dws_hostlink_parse(corrupt, n, &f));
+}
+
+// The buf[0] != '@' guard's true branch, at a length that clears the len < 9 floor
+// (the "hello" case in test_parse_rejects_bad is too short to reach this check at all).
+void test_parse_bad_start_char()
+{
+    HostlinkFrame f;
+    TEST_ASSERT_FALSE(dws_hostlink_parse("X00RDFF*\r", 9, &f));
+}
+
+// Node-field bounds checks: each digit position rejected on both the low and high side.
+void test_parse_node_field_bounds()
+{
+    HostlinkFrame f;
+    TEST_ASSERT_FALSE(dws_hostlink_parse("@/0RDFF*\r", 9, &f)); // buf[1] < '0'
+    TEST_ASSERT_FALSE(dws_hostlink_parse("@0/RDFF*\r", 9, &f)); // buf[2] < '0'
+    TEST_ASSERT_FALSE(dws_hostlink_parse("@0ARDFF*\r", 9, &f)); // buf[2] > '9'
+}
+
+// FCS validation: high nibble char is valid hex but the low nibble char is not.
+void test_parse_fcs_low_nibble_invalid()
+{
+    HostlinkFrame f;
+    TEST_ASSERT_FALSE(dws_hostlink_parse("@00RD0G*\r", 9, &f));
+}
+
+// dws_hostlink_end_code(): high nibble valid, low nibble invalid.
+void test_end_code_low_nibble_invalid()
+{
+    HostlinkFrame g;
+    g.text = "0G";
+    g.text_len = 2;
+    uint8_t code = 0;
+    TEST_ASSERT_FALSE(dws_hostlink_end_code(&g, &code));
+}
+
+// dws_hostlink_end_code() with a valid frame and a null `code` output pointer still
+// reports success without writing through the pointer.
+void test_end_code_null_code_output()
+{
+    HostlinkFrame g;
+    g.text = "AB";
+    g.text_len = 2;
+    TEST_ASSERT_TRUE(dws_hostlink_end_code(&g, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -152,5 +254,16 @@ int main()
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_guards_and_hex);
+    RUN_TEST(test_build_fcs_hex_letter);
+    RUN_TEST(test_hex_val_lowercase_out_of_range);
+    RUN_TEST(test_build_zero_length_text);
+    RUN_TEST(test_build_empty_header_code);
+    RUN_TEST(test_parse_null_pointers);
+    RUN_TEST(test_parse_bad_star_position);
+    RUN_TEST(test_parse_bad_start_char);
+    RUN_TEST(test_parse_node_field_bounds);
+    RUN_TEST(test_parse_fcs_low_nibble_invalid);
+    RUN_TEST(test_end_code_low_nibble_invalid);
+    RUN_TEST(test_end_code_null_code_output);
     return UNITY_END();
 }

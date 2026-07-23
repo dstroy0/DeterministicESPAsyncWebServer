@@ -60,6 +60,39 @@ void test_presleep(void)
     TEST_ASSERT_TRUE(dws_mdns_beacon_presleep_due(&b, 0, 0xFFFFFFF0u, 0xFFFFFFF0u));
 }
 
+void test_refresh_interval_overflow(void)
+{
+    // ttl_s large enough that ttl_s * 1000 / 2 overflows a uint32_t -> clamp to UINT32_MAX.
+    TEST_ASSERT_EQUAL_UINT32(0xFFFFFFFFu, dws_mdns_refresh_interval(0xFFFFFFFFu));
+}
+
+void test_beacon_init_clamps_and_defaults(void)
+{
+    MdnsBeacon b;
+    // max_ms below base_ms: the ceiling clamps up to the floor.
+    dws_mdns_beacon_init(&b, 1000, 500, 5);
+    TEST_ASSERT_EQUAL_UINT32(1000, b.max_ms);
+    // hi_thresh of 0 defaults to 1 (else nothing would ever count as "high contention").
+    MdnsBeacon b2;
+    dws_mdns_beacon_init(&b2, 1000, 5000, 0);
+    TEST_ASSERT_EQUAL_UINT16(1, b2.hi_thresh);
+}
+
+void test_beacon_adapt_overflow_clamps_to_ceiling(void)
+{
+    MdnsBeacon b;
+    // base_ms picked so doubling overflows a uint32_t (the shifted value wraps below cur_ms).
+    dws_mdns_beacon_init(&b, 0xC0000000u, 0xFFFFFFFFu, 1);
+    TEST_ASSERT_EQUAL_UINT32(0xFFFFFFFFu, dws_mdns_beacon_adapt(&b, 1));
+}
+
+void test_beacon_null_guards(void)
+{
+    TEST_ASSERT_EQUAL_UINT32(0, dws_mdns_beacon_adapt(nullptr, 5));
+    TEST_ASSERT_FALSE(dws_mdns_beacon_due(nullptr, 0, 1000));
+    TEST_ASSERT_FALSE(dws_mdns_beacon_presleep_due(nullptr, 0, 1000, 500));
+}
+
 void test_refresh_interval_and_beacon()
 {
     (void)dws_mdns_refresh_interval(0); // ttl 0 edge
@@ -187,6 +220,10 @@ int main(void)
     RUN_TEST(test_backoff_and_recover);
     RUN_TEST(test_due);
     RUN_TEST(test_presleep);
+    RUN_TEST(test_refresh_interval_overflow);
+    RUN_TEST(test_beacon_init_clamps_and_defaults);
+    RUN_TEST(test_beacon_adapt_overflow_clamps_to_ceiling);
+    RUN_TEST(test_beacon_null_guards);
     RUN_TEST(test_refresh_interval_and_beacon);
     RUN_TEST(test_contention_no_sample_before_the_window);
     RUN_TEST(test_contention_reports_the_window_delta);

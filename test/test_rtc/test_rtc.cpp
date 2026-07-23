@@ -118,6 +118,47 @@ void test_invalid_guards()
     TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(bad_sec, nullptr)); // null out
 }
 
+// The other half of the null guard: a null register pointer must also be rejected (not just a
+// null epoch out-pointer, which test_invalid_guards already covers).
+void test_null_regs_pointer()
+{
+    uint32_t e = 0;
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(nullptr, &e));
+}
+
+// The upper-bound half of each range guard: minutes > 59, day-of-month > 31, and month > 12.
+// test_invalid_guards already exercises the lower-bound / zero halves (sec, date, month, hour).
+void test_invalid_guards_upper_bounds()
+{
+    uint32_t e = 0;
+    uint8_t bad_min[7] = {0x00, 0x60, 0x00, 0x01, 0x01, 0x01, 0x24}; // 60 minutes (max 59)
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(bad_min, &e));
+    uint8_t bad_date[7] = {0x00, 0x00, 0x00, 0x01, 0x32, 0x01, 0x24}; // date 32 (max 31)
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(bad_date, &e));
+    uint8_t bad_month[7] = {0x00, 0x00, 0x00, 0x01, 0x01, 0x13, 0x24}; // month 13 (max 12)
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(bad_month, &e));
+}
+
+// 12-hour mode with an out-of-range h12 digit (0, or 13+) must be rejected before it is ever
+// folded into a 24-hour value.
+void test_12hour_invalid_h12()
+{
+    uint32_t e = 0;
+    uint8_t h12_zero[7] = {0x00, 0x00, 0x40, 0x01, 0x01, 0x06, 0x24}; // 12h mode, h12 = 0
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(h12_zero, &e));
+    uint8_t h12_thirteen[7] = {0x00, 0x00, 0x53, 0x01, 0x01, 0x06, 0x24}; // 12h mode, h12 = 13
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(h12_thirteen, &e));
+}
+
+// A year field that decodes past 2106 (the 32-bit Unix epoch rollover) must be rejected rather
+// than silently truncated - the registers themselves have no range check on the year byte.
+void test_epoch_overflow_rejected()
+{
+    uint8_t r[7] = {0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0xFF}; // year = 2000 + bcd2int(0xFF) = 2165
+    uint32_t e = 0;
+    TEST_ASSERT_FALSE(dws_rtc_regs_to_epoch(r, &e));
+}
+
 void test_host_i2c_stubs()
 {
     // Host build: no I2C bus. begin() reports ready, reads yield 0, set fails, time source is 0.
@@ -138,6 +179,10 @@ int main()
     RUN_TEST(test_leap_day);
     RUN_TEST(test_masks_ch_and_century);
     RUN_TEST(test_invalid_guards);
+    RUN_TEST(test_null_regs_pointer);
+    RUN_TEST(test_invalid_guards_upper_bounds);
+    RUN_TEST(test_12hour_invalid_h12);
+    RUN_TEST(test_epoch_overflow_rejected);
     RUN_TEST(test_host_i2c_stubs);
     return UNITY_END();
 }

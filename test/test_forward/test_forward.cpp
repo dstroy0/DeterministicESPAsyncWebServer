@@ -164,6 +164,37 @@ void test_unregistered_destination_is_inert()
     TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "x"));                  // nothing to forward to
 }
 
+void test_rule_with_mismatched_src_is_ignored()
+{
+    add_if(1);
+    add_if(2);
+    dws_forward_add_rule(9, 2, dws_fwd_action::DWS_FWD_ALLOW, 0); // registered but for a different src
+    TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "x"));                  // no applicable rule -> default deny
+    TEST_ASSERT_EQUAL_UINT32(0, stats().forwarded);
+}
+
+void test_duplicate_allow_rule_first_one_governs()
+{
+    add_if(1);
+    add_if(2);
+    dws_forward_add_rule(1, 2, dws_fwd_action::DWS_FWD_ALLOW, 0); // first ALLOW: unlimited, governs
+    dws_forward_add_rule(1, 2, dws_fwd_action::DWS_FWD_ALLOW, 1); // duplicate ALLOW for the same pair: ignored
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "a"));
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "b"));
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "c")); // would be capped at 1/sec if the duplicate rule governed
+    TEST_ASSERT_EQUAL_UINT32(0, stats().rate_dropped);
+}
+
+void test_get_stats_null_pointer_is_noop()
+{
+    add_if(1);
+    add_if(2);
+    dws_forward_add_rule(1, 2, dws_fwd_action::DWS_FWD_ALLOW, 0);
+    ingress(1, "x");
+    dws_forward_get_stats(nullptr);                 // must be a safe no-op
+    TEST_ASSERT_EQUAL_UINT32(1, stats().forwarded); // state unaffected
+}
+
 // --- Ingress ACL tests ----------------------------------------------------------------
 
 // Forward one byte array on interface 1 (bytes let us hit specific ACL patterns).
@@ -230,6 +261,20 @@ void test_acl_src_any_content_wildcard()
     TEST_ASSERT_EQUAL_UINT32(1, stats().acl_denied);
 }
 
+void test_acl_entry_src_mismatch_falls_through()
+{
+    add_if(1);
+    add_if(2);
+    dws_forward_add_rule(1, 2, dws_fwd_action::DWS_FWD_ALLOW, 0);
+    uint8_t pat[1] = {0xAA}, msk[1] = {0xFF};
+    dws_forward_acl_add(2, 0, pat, msk, 1, dws_fwd_action::DWS_FWD_DENY); // entry scoped to src 2 only
+
+    uint8_t frame[1] = {0xAA};
+    TEST_ASSERT_EQUAL_UINT8(1, in1(frame, 1)); // frame is from src 1 -> entry doesn't apply -> default allow
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
+    TEST_ASSERT_EQUAL_UINT32(0, stats().acl_denied);
+}
+
 void test_acl_short_frame_skips_entry()
 {
     add_if(1);
@@ -250,6 +295,13 @@ void test_acl_add_validation_and_table_full()
         TEST_ASSERT_TRUE(dws_forward_acl_add(DWS_FWD_IF_ANY, 0, nullptr, nullptr, 0, dws_fwd_action::DWS_FWD_ALLOW));
     TEST_ASSERT_FALSE(
         dws_forward_acl_add(DWS_FWD_IF_ANY, 0, nullptr, nullptr, 0, dws_fwd_action::DWS_FWD_ALLOW)); // full
+}
+
+void test_acl_add_null_pointer_validation()
+{
+    uint8_t pat[1] = {0x01}, msk[1] = {0xFF};
+    TEST_ASSERT_FALSE(dws_forward_acl_add(1, 0, nullptr, msk, 1, dws_fwd_action::DWS_FWD_DENY)); // null pattern
+    TEST_ASSERT_FALSE(dws_forward_acl_add(1, 0, pat, nullptr, 1, dws_fwd_action::DWS_FWD_DENY)); // null mask
 }
 
 // --- policy routes (route-by-tag to interface) ---
@@ -299,6 +351,35 @@ void test_route_unregistered_egress_fail_closed()
     TEST_ASSERT_EQUAL_UINT32(1, stats().send_fail);
 }
 
+void test_route_src_specific_filters_by_source()
+{
+    add_if(1);
+    add_if(2);
+    add_if(3);
+    TEST_ASSERT_TRUE(route_firstbyte(1, 'Y', 3, 0));              // route scoped to src 1 only
+    dws_forward_add_rule(2, 3, dws_fwd_action::DWS_FWD_ALLOW, 0); // normal fallback path for src 2
+
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(2, "Yes")); // route src doesn't match -> falls through to the rule
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[3].frames.size());
+    TEST_ASSERT_EQUAL_UINT32(0, stats().policy_routed);
+
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Yz")); // route src matches -> routed
+    TEST_ASSERT_EQUAL_size_t(2, g_cap[3].frames.size());
+    TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed);
+}
+
+void test_route_send_failure_counted()
+{
+    add_if(1);
+    add_if(2);
+    TEST_ASSERT_TRUE(route_firstbyte(DWS_FWD_IF_ANY, 'Z', 2, 0));
+    g_cap[2].accept = false; // egress interface refuses
+    TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Zzz"));
+    TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed);
+    TEST_ASSERT_EQUAL_UINT32(1, stats().send_fail);
+    TEST_ASSERT_EQUAL_UINT32(0, stats().forwarded);
+}
+
 void test_route_rate_cap()
 {
     add_if(1);
@@ -339,6 +420,7 @@ void test_route_add_validation_and_table_full()
     uint8_t pat[DWS_FWD_ACL_PATLEN + 1] = {0}, msk[DWS_FWD_ACL_PATLEN + 1] = {0};
     TEST_ASSERT_FALSE(dws_forward_route_add(DWS_FWD_IF_ANY, 0, pat, msk, DWS_FWD_ACL_PATLEN + 1, 2, 0)); // patlen big
     TEST_ASSERT_FALSE(dws_forward_route_add(DWS_FWD_IF_ANY, 0, nullptr, msk, 1, 2, 0)); // null pattern, patlen > 0
+    TEST_ASSERT_FALSE(dws_forward_route_add(DWS_FWD_IF_ANY, 0, pat, nullptr, 1, 2, 0)); // null mask, patlen > 0
     for (int i = 0; i < DWS_FWD_MAX_ROUTES; i++)
         TEST_ASSERT_TRUE(route_firstbyte(DWS_FWD_IF_ANY, 'A', 2, 0));
     TEST_ASSERT_FALSE(route_firstbyte(DWS_FWD_IF_ANY, 'A', 2, 0)); // table full
@@ -417,15 +499,22 @@ int main()
     RUN_TEST(test_add_if_validation_and_table_full);
     RUN_TEST(test_add_rule_table_full);
     RUN_TEST(test_unregistered_destination_is_inert);
+    RUN_TEST(test_rule_with_mismatched_src_is_ignored);
+    RUN_TEST(test_duplicate_allow_rule_first_one_governs);
+    RUN_TEST(test_get_stats_null_pointer_is_noop);
     RUN_TEST(test_acl_deny_by_byte_pattern);
     RUN_TEST(test_acl_allowlist_default_deny);
     RUN_TEST(test_acl_first_match_wins);
     RUN_TEST(test_acl_src_any_content_wildcard);
+    RUN_TEST(test_acl_entry_src_mismatch_falls_through);
     RUN_TEST(test_acl_short_frame_skips_entry);
     RUN_TEST(test_acl_add_validation_and_table_full);
+    RUN_TEST(test_acl_add_null_pointer_validation);
     RUN_TEST(test_route_selects_egress_and_falls_through);
     RUN_TEST(test_route_never_reflects_to_source);
     RUN_TEST(test_route_unregistered_egress_fail_closed);
+    RUN_TEST(test_route_src_specific_filters_by_source);
+    RUN_TEST(test_route_send_failure_counted);
     RUN_TEST(test_route_rate_cap);
     RUN_TEST(test_route_default_any_content);
     RUN_TEST(test_route_first_match_wins);
