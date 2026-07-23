@@ -18,6 +18,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`d4ffb16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4ffb16ae5306c0c7e8602ca4cc4114982e409f9))
+- update CHANGELOG.md [skip ci] ([`214c0aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/214c0aa53479a068ecac50ee90d844dbe04d57a3))
 - update CHANGELOG.md [skip ci] ([`9820f90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9820f9012eff258a71a9305cab5a268d81b3d09e))
 - update CHANGELOG.md [skip ci] ([`7173ae5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7173ae50d0080fd9be38ed24eeb5338e01dd1852))
 - update test report + coverage [skip ci] ([`eb21e0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb21e0e154f15c7bc18e3d018c20f4e72d084bad))
@@ -41,6 +43,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`16aa07c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16aa07c2d2693c4640d393e2a232d4645624af95))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`834323b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/834323b3d529d61798db282b1dc0b483ec4e1793))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`5f80cff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f80cff0787fabcf0c8aa1f88ab0be778b0a1d4e))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`305e155`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/305e15564fc67e2aee2ac83775a3c4848d36e591))
@@ -52,6 +55,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`6d4c479`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d4c4794d0ad7ad1eb0ad74d9f0aca2ffdd3f22d))
 - record the migration and stop describing the retired loops as current ([`43e45f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43e45f9f4256d5911c18532514872521f037129b))
 - update ESP32 build footprints [skip ci] ([`c134fdd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c134fdd2aa3421e33a21afe71a8f5642a1fce1cc))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`05be5e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05be5e1925ef09ee363a567d1e9abe2f02e95d86))
@@ -101,6 +105,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- raise line/branch coverage across native envs toward 100% ([`4da3fd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4da3fd3ce8ae29dd673bb8d9e7a6f928e34e4655))
 - 100% line + branch on snmp, smtp, oidc, senml, ntrip, dnc, dbm, sftp ([`88c861d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88c861d0ab7d56d25ab9126eeef353b1f47d748b))
 - 100% line + branch across the SSH transport, auth and connection layers ([`043e2e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/043e2e51a862f05f118de6e99c2293f6067ee8d2))
 - 100% line + branch on the edge cache tier ([`b967385`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b967385c45e93d6067aae5c1237fd353b100b6e2))
