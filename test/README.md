@@ -558,7 +558,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4908 test cases** across **284 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4932 test cases** across **284 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -827,6 +827,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, out[2]);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_write(0x09, 0x01, nullptr, 3)); // null out</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_write(0x09, 0x01, out, 2));     // undersized cap</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_write(0x2000, 0x01, out, 3));   // reg_addr past 13-bit field</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -839,6 +840,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, out[1]);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_read(0x01, nullptr, 2)); // null out</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_read(0x01, out, 1));     // undersized cap</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ad9238_build_read(0x2000, out, 2));   // reg_addr past 13-bit field</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3282,7 +3284,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_bus_capture (8 tests)</b></summary>
+<summary><b>test_bus_capture (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_standard_data_frame</b> &mdash; <i>can_id 0x00000123, big-endian, no flags.</i></summary>
@@ -3355,6 +3357,16 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal uint (0, dws_pcap_global_header(nullptr, sizeof(g), DWS_DLT_CAN_SOCKETCAN))</code>
       * <code>Assert equal uint (0, dws_pcap_global_header(tiny, sizeof(tiny), DWS_DLT_CAN_SOCKETCAN))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pcap_record_header_bounds</b> &mdash; <i>Pcap record header bounds</i></summary>
+
+    * **Objective**: Pcap record header bounds
+    * **Assertions**:
+      * <code>Assert equal uint (DWS_PCAP_REC_HDR_LEN, dws_pcap_record_header(r, sizeof(r), 1, 2, 3, 4))</code>
+      * <code>Assert equal uint (0, dws_pcap_record_header(nullptr, sizeof(r), 1, 2, 3, 4))</code>
+      * <code>Assert equal uint (0, dws_pcap_record_header(tiny, sizeof(tiny), 1, 2, 3, 4))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4992,6 +5004,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 
     * **Objective**: Latency stat records and budgets
     * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_lat_avg_us(&s)); // no samples yet -&gt; 0 (count==0 branch)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3, s.count);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(10, s.min_us);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(100, s.max_us);</code>
@@ -6694,7 +6707,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_crc (10 tests)</b></summary>
+<summary><b>test_crc (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_catalogue_check_values</b> &mdash; <i>Catalogue check values</i></summary>
@@ -6776,6 +6789,15 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX32(0u, check_of(DWS_CRC8_SMBUS) & ~0xFFu);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0u, check_of(DWS_CRC16_ARC) & ~0xFFFFu);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0u, check_of(DWS_CRC24_OPENPGP) & ~0xFFFFFFu);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_out_of_range_width_is_clamped</b> &mdash; <i>Out of range width is clamped</i></summary>
+
+    * **Objective**: Out of range width is clamped
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX32(dws_crc(&lo8, CHECK_INPUT, sizeof(CHECK_INPUT)),</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(dws_crc(&hi32, CHECK_INPUT, sizeof(CHECK_INPUT)),</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9972,6 +9994,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
     * **Objective**: A pointer that belongs to neither region must let the routing loop run to completion
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_persist_used(&s));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_persist_used(&s));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10231,7 +10254,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dws_primitives (5 tests)</b></summary>
+<summary><b>test_dws_primitives (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_strtol</b> &mdash; <i>Strtol</i></summary>
@@ -10267,6 +10290,18 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>Assert float within (0.0001f, 0.0125f, dws_strtof("1.25E-2", &end))</code>
       * <code>Assert float within (0.0001f, 0.0f, dws_strtof(bad, &e2))</code>
       * <code>Assert equal ptr (bad, e2)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_numparse_branches</b> &mdash; <i>dws_np_ws: exercise every whitespace operand (line 24) - a run of each</i></summary>
+
+    * **Objective**: dws_np_ws: exercise every whitespace operand (line 24) - a run of each
+    * **Assertions**:
+      * <code>Assert equal int (42, dws_strtol("\\t\\n\\r\\f\\v42", &end))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(9, dws_strtoul("9", nullptr));</code>
+      * <code>Assert float within (0.0001f, 3.14f, dws_strtof("+3.14", &end))</code>
+      * <code>Assert float within (1.0f, 1500.0f, dws_strtof("1.5e+3", &end))</code>
+      * <code>Assert true (big &gt; 1e30f)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10317,6 +10352,9 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>Assert equal int (1, http_parse_byte_range("bytes=0-99", 100, &s, &e))</code>
       * <code>Assert equal uint (0, s)</code>
       * <code>Assert equal uint (99, e)</code>
+      * <code>Assert equal int (1, http_parse_byte_range("bytes=  10-40", 100, &s, &e))</code>
+      * <code>Assert equal uint (10, s)</code>
+      * <code>Assert equal uint (40, e)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10354,6 +10392,9 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>Assert equal int (0, http_parse_byte_range("bytes=0-10,20-30", 100, &s, &e))</code>
       * <code>Assert equal int (0, http_parse_byte_range("items=0-10", 100, &s, &e))</code>
       * <code>Assert equal int (0, http_parse_byte_range("bytes=10", 100, &s, &e))</code>
+      * <code>Assert equal int (0, http_parse_byte_range("bytes=1a-5", 100, &s, &e))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal int (0, http_parse_byte_range("bytes=10-40x", 100, &s, &e))</code>
   </details>
 
@@ -15691,7 +15732,16 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_h3_server (1 tests)</b></summary>
+<summary><b>test_h3_server (3 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h3_begin_edges</b> &mdash; <i>No listeners, no HTTP/3 -> rejected (listener_count==0 && !_h3_enabled true side).</i></summary>
+
+    * **Objective**: No listeners, no HTTP/3 -> rejected (listener_count==0 && !_h3_enabled true side).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32((int32_t)DWSResult::DWS_ERR_NO_LISTENERS, s_begin_nolisten.begin());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32((int32_t)DWSResult::DWS_OK, s_begin_listen.begin(8080));</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_h3_request_served_by_route</b> &mdash; <i>Bring up an HTTP/3-only DWS with one route.</i></summary>
@@ -15709,6 +15759,18 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>Assert true (g_handler_ran)</code>
       * <code>Assert true (response_ok(&ap_s))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, conn_pool[DWS_H3_DISPATCH_SLOT].h3); // dispatch slot released</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_h3_dispatch_edges</b> &mdash; <i>dws_h3_cert argument validation: each bad arg returns false (covers the \|\| guard + return false).</i></summary>
+
+    * **Objective**: dws_h3_cert argument validation: each bad arg returns false (covers the \|\| guard + return false).
+    * **Assertions**:
+      * <code>Assert false (server.dws_h3_cert(nullptr, sizeof(CERT), SERVER_SEED, 443))</code>
+      * <code>Assert false (server.dws_h3_cert(CERT, 0, SERVER_SEED, 443))</code>
+      * <code>Assert false (server.dws_h3_cert(CERT, sizeof(CERT), nullptr, 443))</code>
+      * <code>Assert true (g_handler_ran)</code>
+      * <code>Assert true (g_empty_ran)</code>
   </details>
 
 </details>
@@ -17110,9 +17172,9 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_hpack_prim_edge_guards</b> &mdash; <i>Hpack prim edge guards</i></summary>
+    <summary><b>test_hpack_prim_edge_guards</b> &mdash; <i>A continuation that would push the accumulated shift past a 32-bit result: 0x1f opens a</i></summary>
 
-    * **Objective**: Hpack prim edge guards
+    * **Objective**: A continuation that would push the accumulated shift past a 32-bit result: 0x1f opens a
     * **Assertions**:
       * <code>Assert equal int (0, (int)dws_hpack_encode_int(b, 1, 7, 0, 20000))</code>
       * <code>Assert equal int (0, (int)dws_hpack_encode_int(b, 1, 7, 0, 200))</code>
@@ -17122,6 +17184,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>Assert true (el &gt; 0)</code>
       * <code>Assert false (dws_hpack_huff_decode(enc, el, out, 1, &ol))</code>
       * <code>Assert false (dws_hpack_huff_decode(pad, 1, out, sizeof out, &ol))</code>
+      * <code>Assert false (dws_hpack_decode_int(overlong, sizeof overlong, 5, &c, &v))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17652,7 +17715,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_http_ota (4 tests)</b></summary>
+<summary><b>test_http_ota (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_large_body_streams_to_completion</b> &mdash; <i>Large body streams to completion</i></summary>
@@ -17664,6 +17727,26 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>Assert equal uint (N, (unsigned)g_total)</code>
       * <code>Assert greater than (1, g_chunks)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8('A' + (i % 26), g_capture[i]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_partial_tail_chunk_is_flushed</b> &mdash; <i>Partial tail chunk is flushed</i></summary>
+
+    * **Objective**: Partial tail chunk is flushed
+    * **Assertions**:
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, r.parse_state)</code>
+      * <code>Assert equal uint (N, (unsigned)g_total)</code>
+      * <code>Assert equal int (2, g_chunks)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_begin_without_data_sink_tolerates_null</b> &mdash; <i>Stream begin without data sink tolerates null</i></summary>
+
+    * **Objective**: Stream begin without data sink tolerates null
+    * **Assertions**:
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, r.parse_state)</code>
+      * <code>Assert true (r.body_streaming)</code>
+      * <code>Assert equal uint (0, (unsigned)g_total)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29018,7 +29101,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_observability (22 tests)</b></summary>
+<summary><b>test_observability (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transition_fires_hook_with_args</b> &mdash; <i>Transition fires hook with args</i></summary>
@@ -29076,6 +29159,15 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal (0, g_calls)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().accepts); // counters still move</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_notice_without_hook_still_counts</b> &mdash; <i>Notice without hook still counts</i></summary>
+
+    * **Objective**: Notice without hook still counts
+    * **Assertions**:
+      * <code>Assert equal (0, g_calls)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().backpressure);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35777,7 +35869,17 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_qpack (11 tests)</b></summary>
+<summary><b>test_qpack (12 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_qpack_field_int_truncation</b> &mdash; <i>Indexed Field Line (T=1 static), prefix-6 integer 63 (all-ones) with no continuation byte:</i></summary>
+
+    * **Objective**: Indexed Field Line (T=1 static), prefix-6 integer 63 (all-ones) with no continuation byte:
+    * **Assertions**:
+      * <code>Assert false (decode_all(idx_trunc, 3, &s))</code>
+      * <code>Assert false (decode_all(nameref_trunc, 3, &s))</code>
+      * <code>Assert false (decode_all(nameref_badidx, 4, &s))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_appendix_b1_decode</b> &mdash; <i>Appendix b1 decode</i></summary>
@@ -46191,7 +46293,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_aesgcm (4 tests)</b></summary>
+<summary><b>test_ssh_aesgcm (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_aesgcm_nist_tc16_seal</b> &mdash; <i>Aesgcm nist tc16 seal</i></summary>
@@ -46234,6 +46336,15 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
     * **Objective**: Aesgcm iv counter carries
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_iv, ctx.iv, 12);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_aesgcm_gctr_counter_byte_carry</b> &mdash; <i>Aesgcm gctr counter byte carry</i></summary>
+
+    * **Objective**: Aesgcm gctr counter byte carry
+    * **Assertions**:
+      * <code>Assert true (ssh_aesgcm_open(&dec, NULL, 0, out, n, out + n, rt))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, n);</code>
   </details>
 
 </details>
@@ -47475,7 +47586,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_conn (24 tests)</b></summary>
+<summary><b>test_ssh_conn (26 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_conn_entrypoints_reject_unmapped_slot</b> &mdash; <i>Conn entrypoints reject unmapped slot</i></summary>
@@ -47705,10 +47816,67 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>Assert equal int (0, bn_cmp(&out, &base))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_all_switch_arms</b> &mdash; <i>KEXINIT -> server KEXINIT, phase DH_INIT.</i></summary>
+
+    * **Objective**: KEXINIT -> server KEXINIT, phase DH_INIT.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_KEXINIT, pkt, n))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_NEWKEYS, &nk, 1))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_SERVICE, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, pkt, n))</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pkt, n))</code>
+      * <code>Assert true (s-&gt;authed)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN, pkt, n))</code>
+      * <code>Assert true (ssh_chan[0][0].open)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_REQUEST, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_DATA, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_WINDOW_ADJUST, w, sizeof(w)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_EOF, eofm, sizeof(eofm)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_GLOBAL_REQUEST, pkt, n))</code>
+      * <code>Assert equal int (1, dsp_n)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN_CONFIRM, oc, sizeof(oc)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN_FAILURE, of, sizeof(of)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, cl, sizeof(cl)))</code>
+      * <code>Assert false (ssh_chan[0][0].open)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_IGNORE, &ign, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_EXT_INFO, &ext, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, 200, &unk, 1))</code>
+      * <code>Assert equal (SSH_MSG_UNIMPLEMENTED, dsp_type[0])</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_DISCONNECT, &disc, 1))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(MAX_SSH_CONNS, SSH_MSG_IGNORE, &ign, 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_guard_and_error_arms</b> &mdash; <i>KEXINIT with a payload too short to negotiate -> parse fails.</i></summary>
+
+    * **Objective**: KEXINIT with a payload too short to negotiate -> parse fails.
+    * **Assertions**:
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXINIT, badkex, sizeof(badkex)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, badkexdh, sizeof(badkexdh)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, badkexdh, sizeof(badkexdh)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, badsvc, sizeof(badsvc)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, badsvc, sizeof(badsvc)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, badua, sizeof(badua)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, badua, sizeof(badua)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pw, pn))</code>
+      * <code>Assert equal int (1, s-&gt;auth_failures)</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pw, pn))</code>
+      * <code>Assert equal (SSH_MSG_DISCONNECT, dsp_type[dsp_n - 1])</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, authed_arms[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, handler_arms[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_GLOBAL_REQUEST, gr, gn))</code>
+      * <code>Assert equal int (0, dsp_n)</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, 201, &unk, 1))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_ssh_crypto (1 tests)</b></summary>
+<summary><b>test_ssh_crypto (2 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ghash_table_matches_bitwise</b> &mdash; <i>Boundary operands: H = 0, H = 1<<127 (0x80 in byte 0), acc = all-ones.</i></summary>
@@ -47717,6 +47885,15 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(ref, acc, 16);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(r, a, 16);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_keymat_wipe_out_of_range_is_noop</b> &mdash; <i>In-range wipe still zeroes the slot (the guard's true arm), leaving no state for later tests.</i></summary>
+
+    * **Objective**: In-range wipe still zeroes the slot (the guard's true arm), leaving no state for later tests.
+    * **Assertions**:
+      * <code>Assert equal memory (km_ref, &ssh_keys[0], sizeof(km_ref))</code>
+      * <code>Assert equal memory (dh_ref, &ssh_dh[0], sizeof(dh_ref))</code>
   </details>
 
 </details>
@@ -51562,7 +51739,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_trace_capture (6 tests)</b></summary>
+<summary><b>test_trace_capture (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_begin_validates</b> &mdash; <i>Begin validates</i></summary>
@@ -51646,6 +51823,37 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(3, g_windows.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)i, g_windows[i].trace_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3, st.windows_completed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_feed_null_samples_while_configured_drops</b> &mdash; <i>line 76: configured is true, so `!s_tc.configured` is false and the OR</i></summary>
+
+    * **Objective**: line 76: configured is true, so `!s_tc.configured` is false and the OR
+    * **Assertions**:
+      * <code>Assert true (begin(2, 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_tc_feed(nullptr, 5));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, st.samples_dropped);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_posttrigger_never_completes</b> &mdash; <i>line 85 second operand false: with posttrigger 0, after trigger the fill</i></summary>
+
+    * **Objective**: line 85 second operand false: with posttrigger 0, after trigger the fill
+    * **Assertions**:
+      * <code>Assert true (begin(3, 0)); // pretrigger-only is accepted (only both-zero is rejected)</code>
+      * <code>Assert true (dws_tc_trigger())</code>
+      * <code>Assert true (dws_tc_capturing())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, dws_tc_feed(more, 2));</code>
+      * <code>Assert true (dws_tc_capturing())</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_windows.size()); // 0 post-samples -&gt; never fires</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_get_stats_null_and_capturing_when_unconfigured</b> &mdash; <i>Get stats null and capturing when unconfigured</i></summary>
+
+    * **Objective**: Get stats null and capturing when unconfigured
+    * **Assertions**:
+      * <code>Assert false (dws_tc_capturing())</code>
   </details>
 
 </details>
@@ -52595,7 +52803,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_udp_transport (20 tests)</b></summary>
+<summary><b>test_udp_transport (21 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_join_records_the_group</b> &mdash; <i>A port with no multicast listener has no group.</i></summary>
@@ -52730,6 +52938,18 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
     * **Objective**: Multicast join finds slot past an unrelated listener
     * **Assertions**:
       * <code>Assert true (dws_udp_listen(4000, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_listen_multicast("239.255.255.250", 1900, on_datagram, nullptr))</code>
+      * <code>Assert equal string ("239.255.255.250", dws_udp_joined_group(1900))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_multicast_rejoin_scans_past_a_freed_lower_slot</b> &mdash; <i>Rebind port 1900 (reuses slot 1); post-bind lookup skips the now-unused slot 0 first.</i></summary>
+
+    * **Objective**: Rebind port 1900 (reuses slot 1); post-bind lookup skips the now-unused slot 0 first.
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen_multicast("224.0.0.251", 5353, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_listen_multicast("239.255.255.250", 1900, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_leave_multicast(5353))</code>
       * <code>Assert true (dws_udp_listen_multicast("239.255.255.250", 1900, on_datagram, nullptr))</code>
       * <code>Assert equal string ("239.255.255.250", dws_udp_joined_group(1900))</code>
   </details>
@@ -55655,7 +55875,7 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_websocket (89 tests)</b></summary>
+<summary><b>test_websocket (96 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_sha1_empty_string</b> &mdash; <i>Sha1 empty string</i></summary>
@@ -56329,6 +56549,78 @@ A thorough directory of all **4908 test cases** across **284 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8('x', sent[2]);</code>
       * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_PONG, (const uint8_t *)"AAAAAAAAAAAAAAAA", 16))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_PONG, sent[0]); // RSV1 clear on control frames</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_permessage_deflate_inflate_overflow_closes</b> &mdash; <i>Ws permessage deflate inflate overflow closes</i></summary>
+
+    * **Objective**: Ws permessage deflate inflate overflow closes
+    * **Assertions**:
+      * <code>Assert not null (ws)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_permessage_deflate_scratch_exhausted_closes</b> &mdash; <i>Consume the whole arena so every scratch_alloc() in ws_finish_frame returns null.</i></summary>
+
+    * **Objective**: Consume the whole arena so every scratch_alloc() in ws_finish_frame returns null.
+    * **Assertions**:
+      * <code>Assert not null (ws)</code>
+      * <code>Assert not null (hog)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_permessage_deflate_partial_scratch_failures</b> &mdash; <i>Ws permessage deflate partial scratch failures</i></summary>
+
+    * **Objective**: Ws permessage deflate partial scratch failures
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_pmd_negotiated_uncompressed_frame_accepted</b> &mdash; <i>Ws pmd negotiated uncompressed frame accepted</i></summary>
+
+    * **Objective**: Ws pmd negotiated uncompressed frame accepted
+    * **Assertions**:
+      * <code>Assert not null (ws)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert false (ws-&gt;msg_compressed)</code>
+      * <code>Assert equal string ("plain", (const char *)ws-&gt;buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_outbound_binary_and_scratch_starved</b> &mdash; <i>BINARY, compressible: takes the opcode==BINARY leg and actually compresses.</i></summary>
+
+    * **Objective**: BINARY, compressible: takes the opcode==BINARY leg and actually compresses.
+    * **Assertions**:
+      * <code>Assert not null (ws)</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, bin, sizeof(bin)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | 0x40 | (uint8_t)WsOpcode::WS_OP_BINARY, s[0]); // RSV1 set</code>
+      * <code>Assert not null (hog)</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, bin, sizeof(bin)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_BINARY, s[0]); // no RSV1: not compressed</code>
+      * <code>Assert not null (hog)</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, bin, sizeof(bin)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_BINARY, s[0]); // no RSV1: cbuf borrow failed</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_outbound_pmd_zero_len_and_control</b> &mdash; <i>Ws outbound pmd zero len and control</i></summary>
+
+    * **Objective**: Ws outbound pmd zero len and control
+    * **Assertions**:
+      * <code>Assert not null (ws)</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_TEXT, nullptr, 0))</code>
+      * <code>TEST_ASSERT_TRUE(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_pmd_continuation_with_rsv1_rejected</b> &mdash; <i>Frame 1: TEXT, FIN=0 - opens a fragmented message.</i></summary>
+
+    * **Objective**: Frame 1: TEXT, FIN=0 - opens a fragmented message.
+    * **Assertions**:
+      * <code>Assert not null (ws)</code>
+      * <code>Assert true (ws-&gt;fragmenting)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
