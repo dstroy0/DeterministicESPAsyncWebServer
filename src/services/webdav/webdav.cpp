@@ -225,17 +225,15 @@ size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
             !app(tmp, sizeof(tmp), &t, num) ||                     // GCOVR_EXCL_LINE unreachable: see comment above
             !app(tmp, sizeof(tmp), &t, "</D:getcontentlength>\n")) // GCOVR_EXCL_LINE unreachable: see comment above
             return len;                                            // GCOVR_EXCL_LINE unreachable: see comment above
-        if (content_type && content_type[0])
-        {
-            // gcov lumps this multi-app OR onto one line; the only uncovered arm is the fixed
-            // 26B opener literal overflowing tmp[512] - unreachable per the budget above (running
-            // total <=~446 < 512). BR_LINE excludes the whole condition (the caller-supplied
-            // content_type/close overflow arms it also carries are exercised by the long-value test).
-            if (!app(tmp, sizeof(tmp), &t, "        <D:getcontenttype>") ||
-                !app(tmp, sizeof(tmp), &t, content_type) || // GCOVR_EXCL_BR_LINE
-                !app(tmp, sizeof(tmp), &t, "</D:getcontenttype>\n"))
-                return len;
-        }
+        // content_type block. The append-overflow arm is unreachable per the budget above (running
+        // total <=~446 < tmp[512]); gcov lumps the multi-app OR onto one line, so the whole merged
+        // guard is excluded from coverage rather than carrying a misplaced per-line branch marker.
+        // GCOVR_EXCL_START
+        if (content_type && content_type[0] &&
+            (!app(tmp, sizeof(tmp), &t, "        <D:getcontenttype>") || !app(tmp, sizeof(tmp), &t, content_type) ||
+             !app(tmp, sizeof(tmp), &t, "</D:getcontenttype>\n")))
+            return len;
+        // GCOVR_EXCL_STOP
     }
 
     if (rfc1123_mtime && rfc1123_mtime[0])

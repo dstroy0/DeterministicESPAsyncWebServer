@@ -5,12 +5,19 @@
 // single non-echoed "Password:" prompt and verifies the INFO_RESPONSE through the password callback.
 
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
-#include "network_drivers/presentation/ssh/connection/ssh_server.h" // the dispatcher's INFO_RESPONSE case
+#include "network_drivers/presentation/ssh/connection/ssh_channel.h" // full-switch dispatch coverage
+#include "network_drivers/presentation/ssh/connection/ssh_server.h"  // the dispatcher's INFO_RESPONSE case
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"         // host key for the KEXDH reply
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
+
+// Native RSA test fixture (defined in ssh_rsa.cpp native path).
+extern uint8_t _test_rsa_n[256];
+extern uint8_t _test_rsa_d[256];
+extern uint8_t _test_rsa_e[4];
 
 void setUp()
 {
@@ -298,9 +305,341 @@ void test_kbdint_dispatch_failures_hit_the_limit()
     TEST_ASSERT_FALSE(ssh_sess[0].authed);
 }
 
+// ---------------------------------------------------------------------------
+// Full dws_ssh_server_dispatch() switch coverage: every SSH_MSG_* arm of the
+// message dispatcher (ssh_server.cpp) driven once. Built with keyboard-interactive
+// on, this env compiles the SSH_MSG_USERAUTH_INFO_RESPONSE arm, so the whole switch
+// (all 19 arms incl. default) is reachable here.
+// ---------------------------------------------------------------------------
+
+static uint8_t dsp_type[32];
+static int dsp_n;
+static void dsp_emit(uint8_t slot, const uint8_t *p, size_t n)
+{
+    (void)slot;
+    if (dsp_n < 32 && n > 0)
+        dsp_type[dsp_n++] = p[0];
+}
+static void dsp_reset()
+{
+    dsp_n = 0;
+}
+static void dsp_load_rsa_hostkey()
+{
+    memset(_test_rsa_n, 0, 256);
+    _test_rsa_n[0] = 0xFF;
+    _test_rsa_n[255] = 0x01;
+    memset(_test_rsa_d, 0, 256);
+    _test_rsa_d[255] = 0x01;
+    _test_rsa_e[0] = 0x00;
+    _test_rsa_e[1] = 0x01;
+    _test_rsa_e[2] = 0x00;
+    _test_rsa_e[3] = 0x01;
+    dws_ssh_rsa_load_pubkey();
+}
+static size_t put_namelist(uint8_t *p, const char *s)
+{
+    return put_string(p, s); // a name-list is wire-identical to a string
+}
+static void wr_u32(uint8_t *p, uint32_t v)
+{
+    p[0] = (uint8_t)(v >> 24);
+    p[1] = (uint8_t)(v >> 16);
+    p[2] = (uint8_t)(v >> 8);
+    p[3] = (uint8_t)v;
+}
+static size_t put_mpint(uint8_t *p, const uint8_t *be, size_t len)
+{
+    size_t off = 0;
+    while (off < len && be[off] == 0)
+        off++;
+    bool pad = (off < len) && (be[off] & 0x80u);
+    size_t mlen = (len - off) + (pad ? 1 : 0);
+    wr_u32(p, (uint32_t)mlen);
+    size_t o = 4;
+    if (pad)
+        p[o++] = 0;
+    memcpy(p + o, be + off, len - off);
+    return o + (len - off);
+}
+static size_t build_kexinit_ext(uint8_t *out)
+{
+    size_t o = 0;
+    out[o++] = SSH_MSG_KEXINIT;
+    for (int j = 0; j < 16; j++)
+        out[o++] = (uint8_t)j;
+    o += put_namelist(out + o, "diffie-hellman-group14-sha256,ext-info-c");
+    o += put_namelist(out + o, "rsa-sha2-256");
+    o += put_namelist(out + o, "aes256-ctr");
+    o += put_namelist(out + o, "aes256-ctr");
+    o += put_namelist(out + o, "hmac-sha2-256");
+    o += put_namelist(out + o, "hmac-sha2-256");
+    o += put_namelist(out + o, "none");
+    o += put_namelist(out + o, "none");
+    o += put_namelist(out + o, "");
+    o += put_namelist(out + o, "");
+    out[o++] = 0;
+    for (int j = 0; j < 4; j++)
+        out[o++] = 0;
+    return o;
+}
+static bool dsp_pw_cb(const char *u, const char *p)
+{
+    return strcmp(u, "alice") == 0 && strcmp(p, "s3cret") == 0;
+}
+static void dsp_on_chan_data(uint8_t slot, uint32_t ch, const uint8_t *d, size_t n)
+{
+    (void)slot;
+    (void)ch;
+    (void)d;
+    (void)n;
+}
+
+// Drive the whole message switch through the dispatcher: a full handshake advances the phase so the
+// post-auth arms are reachable, then the remaining stateless arms are poked once each.
+void test_dispatch_all_switch_arms()
+{
+    dsp_load_rsa_hostkey();
+    ssh_transport_init(0);
+    dws_ssh_channel_init(0);
+    dws_ssh_auth_set_password_cb(dsp_pw_cb);
+    dws_ssh_channel_set_data_cb(dsp_on_chan_data);
+    dws_ssh_server_set_emit_cb(dsp_emit);
+
+    SshSession *s = &ssh_sess[0];
+    strcpy(s->v_c, "SSH-2.0-DispatchClient");
+    s->v_c_len = (uint16_t)strlen(s->v_c);
+    s->phase = SshPhase::SSH_PHASE_KEXINIT;
+
+    uint8_t pkt[2048];
+    size_t n = 0;
+
+    // KEXINIT -> server KEXINIT, phase DH_INIT.
+    n = build_kexinit_ext(pkt);
+    dsp_reset();
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_KEXINIT, pkt, n));
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_DH_INIT, s->phase);
+
+    // KEXDH_INIT (e = 2) -> KEXDH_REPLY + NEWKEYS.
+    uint8_t e_be[256];
+    memset(e_be, 0, sizeof(e_be));
+    e_be[255] = 0x02;
+    n = 0;
+    pkt[n++] = SSH_MSG_KEXDH_INIT;
+    n += put_mpint(pkt + n, e_be, 256);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, pkt, n));
+
+    // NEWKEYS -> encryption active, EXT_INFO emitted (ext-info-c advertised), SERVICE phase.
+    uint8_t nk = SSH_MSG_NEWKEYS;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_NEWKEYS, &nk, 1));
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_SERVICE, s->phase);
+
+    // SERVICE_REQUEST -> SERVICE_ACCEPT, AUTH phase.
+    n = 0;
+    pkt[n++] = SSH_MSG_SERVICE_REQUEST;
+    n += put_string(pkt + n, "ssh-userauth");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, pkt, n));
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_AUTH, s->phase);
+
+    // USERAUTH_INFO_RESPONSE arm (keyboard-interactive): valid phase but nothing armed -> handler fails.
+    uint8_t ir[5] = {SSH_MSG_USERAUTH_INFO_RESPONSE, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_INFO_RESPONSE, ir, sizeof(ir)));
+
+    // USERAUTH_REQUEST (password) -> SUCCESS, OPEN phase, authed.
+    n = 0;
+    pkt[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_string(pkt + n, "alice");
+    n += put_string(pkt + n, "ssh-connection");
+    n += put_string(pkt + n, "password");
+    pkt[n++] = 0;
+    n += put_string(pkt + n, "s3cret");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pkt, n));
+    TEST_ASSERT_TRUE(s->authed);
+
+    // CHANNEL_OPEN (session) -> CONFIRMATION.
+    n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(pkt + n, "session");
+    wr_u32(pkt + n, 11);
+    wr_u32(pkt + n + 4, 4096);
+    wr_u32(pkt + n + 8, 32768);
+    n += 12;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN, pkt, n));
+    TEST_ASSERT_TRUE(ssh_chan[0][0].open);
+
+    // CHANNEL_REQUEST (shell, want_reply) -> SUCCESS.
+    n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(pkt + n, 0);
+    n += 4;
+    n += put_string(pkt + n, "shell");
+    pkt[n++] = 1;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_REQUEST, pkt, n));
+
+    // CHANNEL_DATA -> delivered to the app callback.
+    n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_DATA;
+    wr_u32(pkt + n, 0);
+    n += 4;
+    n += put_string(pkt + n, "hi");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_DATA, pkt, n));
+
+    // CHANNEL_WINDOW_ADJUST -> accepted, no reply.
+    uint8_t w[9] = {SSH_MSG_CHANNEL_WINDOW_ADJUST, 0, 0, 0, 0, 0, 0, 0, 10};
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_WINDOW_ADJUST, w, sizeof(w)));
+
+    // CHANNEL_EOF -> accepted, no reply.
+    uint8_t eofm[5] = {SSH_MSG_CHANNEL_EOF, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_EOF, eofm, sizeof(eofm)));
+
+    // GLOBAL_REQUEST (tcpip-forward, want_reply) -> REQUEST_SUCCESS/FAILURE.
+    n = 0;
+    pkt[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(pkt + n, "tcpip-forward");
+    pkt[n++] = 1;
+    n += put_string(pkt + n, "0.0.0.0");
+    wr_u32(pkt + n, 8080);
+    n += 4;
+    dsp_reset();
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_GLOBAL_REQUEST, pkt, n));
+    TEST_ASSERT_EQUAL_INT(1, dsp_n);
+
+    // CHANNEL_OPEN_CONFIRM / CHANNEL_OPEN_FAILURE -> stray, accepted-and-ignored (authed).
+    uint8_t oc[9] = {SSH_MSG_CHANNEL_OPEN_CONFIRM, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN_CONFIRM, oc, sizeof(oc)));
+    uint8_t of[5] = {SSH_MSG_CHANNEL_OPEN_FAILURE, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_OPEN_FAILURE, of, sizeof(of)));
+
+    // CHANNEL_CLOSE -> EOF + CLOSE emitted, channel closed.
+    uint8_t cl[5];
+    cl[0] = SSH_MSG_CHANNEL_CLOSE;
+    wr_u32(cl + 1, 0);
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, cl, sizeof(cl)));
+    TEST_ASSERT_FALSE(ssh_chan[0][0].open);
+
+    // IGNORE -> no-op.
+    uint8_t ign = SSH_MSG_IGNORE;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_IGNORE, &ign, 1));
+
+    // EXT_INFO (inbound) -> ignored.
+    uint8_t ext = SSH_MSG_EXT_INFO;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_EXT_INFO, &ext, 1));
+
+    // default (unrecognized) -> UNIMPLEMENTED.
+    ssh_pkt[0].seq_no_recv = 3;
+    uint8_t unk = 200;
+    dsp_reset();
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, 200, &unk, 1));
+    TEST_ASSERT_EQUAL(SSH_MSG_UNIMPLEMENTED, dsp_type[0]);
+
+    // DISCONNECT -> peer closing.
+    uint8_t disc = SSH_MSG_DISCONNECT;
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_DISCONNECT, &disc, 1));
+
+    // Out-of-range slot -> rejected before the switch.
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(MAX_SSH_CONNS, SSH_MSG_IGNORE, &ign, 1));
+}
+
+// The rejection half of every guarded switch arm: wrong-phase, unauthenticated, and malformed-payload
+// inputs each return -1 (or drop silently), covering the guard branches the happy path does not.
+void test_dispatch_guard_and_error_arms()
+{
+    dsp_load_rsa_hostkey();
+    ssh_transport_init(0);
+    dws_ssh_channel_init(0);
+    dws_ssh_auth_set_password_cb(dsp_pw_cb);
+    dws_ssh_channel_set_data_cb(dsp_on_chan_data);
+    dws_ssh_server_set_emit_cb(dsp_emit);
+
+    SshSession *s = &ssh_sess[0];
+
+    // KEXINIT with a payload too short to negotiate -> parse fails.
+    s->phase = SshPhase::SSH_PHASE_KEXINIT;
+    uint8_t badkex[4] = {SSH_MSG_KEXINIT, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXINIT, badkex, sizeof(badkex)));
+
+    // KEXDH_INIT outside DH_INIT phase -> rejected; in phase but malformed -> handler fails.
+    s->phase = SshPhase::SSH_PHASE_KEXINIT;
+    uint8_t badkexdh[4] = {SSH_MSG_KEXDH_INIT, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, badkexdh, sizeof(badkexdh)));
+    s->phase = SshPhase::SSH_PHASE_DH_INIT;
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_KEXDH_INIT, badkexdh, sizeof(badkexdh)));
+
+    // SERVICE_REQUEST outside SERVICE phase -> rejected; in phase but truncated -> handler fails.
+    s->phase = SshPhase::SSH_PHASE_AUTH;
+    uint8_t badsvc[2] = {SSH_MSG_SERVICE_REQUEST, 0};
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, badsvc, sizeof(badsvc)));
+    s->phase = SshPhase::SSH_PHASE_SERVICE;
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_SERVICE_REQUEST, badsvc, sizeof(badsvc)));
+
+    // USERAUTH_REQUEST outside AUTH phase -> rejected; in phase but truncated -> handler fails.
+    s->phase = SshPhase::SSH_PHASE_SERVICE;
+    uint8_t badua[2] = {SSH_MSG_USERAUTH_REQUEST, 0};
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, badua, sizeof(badua)));
+    s->phase = SshPhase::SSH_PHASE_AUTH;
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, badua, sizeof(badua)));
+
+    // USERAUTH_INFO_RESPONSE outside AUTH phase -> rejected; in phase but nothing armed -> handler fails.
+    uint8_t badir[5] = {SSH_MSG_USERAUTH_INFO_RESPONSE, 0, 0, 0, 0};
+    s->phase = SshPhase::SSH_PHASE_SERVICE;
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_INFO_RESPONSE, badir, sizeof(badir)));
+    s->phase = SshPhase::SSH_PHASE_AUTH;
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_INFO_RESPONSE, badir, sizeof(badir)));
+
+    // A wrong password below the limit -> FAILURE, connection stays open (limit not tripped).
+    s->phase = SshPhase::SSH_PHASE_AUTH;
+    s->authed = false;
+    s->auth_failures = 0;
+    uint8_t pw[128];
+    size_t pn = 0;
+    pw[pn++] = SSH_MSG_USERAUTH_REQUEST;
+    pn += put_string(pw + pn, "alice");
+    pn += put_string(pw + pn, "ssh-connection");
+    pn += put_string(pw + pn, "password");
+    pw[pn++] = 0;
+    pn += put_string(pw + pn, "wrong");
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pw, pn));
+    TEST_ASSERT_EQUAL_INT(1, s->auth_failures);
+
+    // Repeated failures trip the brute-force limit: FAILURE then DISCONNECT, return -1.
+    s->auth_failures = SSH_MAX_AUTH_ATTEMPTS - 1;
+    dsp_reset();
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, SSH_MSG_USERAUTH_REQUEST, pw, pn));
+    TEST_ASSERT_EQUAL(SSH_MSG_DISCONNECT, dsp_type[dsp_n - 1]);
+
+    // Every post-auth connection message is rejected while unauthenticated.
+    s->authed = false;
+    const uint8_t authed_arms[] = {SSH_MSG_GLOBAL_REQUEST,       SSH_MSG_CHANNEL_OPEN,    SSH_MSG_CHANNEL_OPEN_CONFIRM,
+                                   SSH_MSG_CHANNEL_OPEN_FAILURE, SSH_MSG_CHANNEL_REQUEST, SSH_MSG_CHANNEL_DATA};
+    for (size_t j = 0; j < sizeof(authed_arms) / sizeof(authed_arms[0]); j++)
+    {
+        uint8_t p[8] = {authed_arms[j], 0, 0, 0, 0, 0, 0, 0};
+        TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, authed_arms[j], p, sizeof(p)));
+    }
+
+    // Authenticated but malformed -> the arm's handler fails.
+    s->authed = true;
+    const uint8_t handler_arms[] = {SSH_MSG_GLOBAL_REQUEST, SSH_MSG_CHANNEL_OPEN, SSH_MSG_CHANNEL_REQUEST,
+                                    SSH_MSG_CHANNEL_DATA};
+    for (size_t j = 0; j < sizeof(handler_arms) / sizeof(handler_arms[0]); j++)
+    {
+        uint8_t p[2] = {handler_arms[j], 0};
+        TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, handler_arms[j], p, sizeof(p)));
+    }
+
+    // With no emit callback wired, a reply-producing dispatch (UNIMPLEMENTED) drops the frame.
+    dws_ssh_server_set_emit_cb(nullptr);
+    ssh_pkt[0].seq_no_recv = 1;
+    uint8_t unk = 201;
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, 201, &unk, 1));
+    dws_ssh_server_set_emit_cb(dsp_emit);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_dispatch_all_switch_arms);
+    RUN_TEST(test_dispatch_guard_and_error_arms);
     RUN_TEST(test_kbdint_request_prompts);
     RUN_TEST(test_kbdint_correct_password_succeeds);
     RUN_TEST(test_kbdint_wrong_password_fails);
