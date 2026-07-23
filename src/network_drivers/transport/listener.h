@@ -69,6 +69,15 @@ struct Listener
 /** @brief Static pool of listener contexts.  Defined in listener.cpp. */
 extern Listener listener_pool[MAX_LISTENERS];
 
+/**
+ * @brief lwIP accept callback - single handler for all listener ports (defined in listener.cpp).
+ *
+ * Non-static so the host unit tests can call it directly with a fabricated newpcb, the same
+ * convention tcp.cpp uses for lowlevel_recv_cb / lowlevel_sent_cb / lowlevel_err_cb - production
+ * code never calls this directly, it is wired in via tcp_arg()+tcp_accept() in listener_add().
+ */
+err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err);
+
 // ---------------------------------------------------------------------------
 // Listener management API
 // ---------------------------------------------------------------------------

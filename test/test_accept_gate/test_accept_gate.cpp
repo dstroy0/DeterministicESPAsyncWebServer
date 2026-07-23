@@ -266,6 +266,70 @@ void test_clock_custom_and_revert(void)
     TEST_ASSERT_EQUAL_UINT32(777, dws_millis());
 }
 
+// ====================================================================
+// listener_accept_cb() integration: this env compiles DWS_ENABLE_ACCEPT_THROTTLE /
+// PER_IP_THROTTLE / IP_ALLOWLIST = 1, so the accept callback itself (non-static -
+// see listener.cpp) consults these gates before claiming a pool slot, not just the
+// standalone functions the tests above drive directly.
+// ====================================================================
+
+// Once the global accept-throttle budget for the window is spent, the accept callback
+// itself aborts the new pcb and reports ERR_ABRT - not just the standalone gate function.
+void test_accept_cb_global_throttle_rejects_over_budget()
+{
+    DeterministicAsyncTCP::pool_init();
+    listener_accept_throttle_reset();
+    listener_per_ip_throttle_reset();
+    listener_ip_allowlist_reset(); // empty: does not interfere with this test
+    set_millis(0);
+
+    for (int i = 0; i < DWS_ACCEPT_THROTTLE_MAX; i++)
+    {
+        struct tcp_pcb pcb = {};
+        TEST_ASSERT_EQUAL_INT(ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK));
+    }
+    struct tcp_pcb over_budget = {};
+    int before_aborts = mock_abort_call_count();
+    TEST_ASSERT_EQUAL_INT(ERR_ABRT, listener_accept_cb((void *)(uintptr_t)0, &over_budget, ERR_OK));
+    TEST_ASSERT_EQUAL_INT(before_aborts + 1, mock_abort_call_count());
+}
+
+// An empty allowlist (the default) allows every accept through the callback itself.
+void test_accept_cb_ip_allowlist_allows_when_empty()
+{
+    DeterministicAsyncTCP::pool_init();
+    listener_accept_throttle_reset();
+    listener_per_ip_throttle_reset();
+    listener_ip_allowlist_reset();
+    set_millis(0);
+
+    struct tcp_pcb pcb = {};
+    TEST_ASSERT_EQUAL_INT(ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK));
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
+}
+
+// Once any allowlist rule exists, the accept callback rejects every connection: a host
+// build has no real lwIP pcb to read the peer's address from, so the synthesized source
+// (DWSIpFamily::DWS_IP_NONE, "unspecified") never matches a real CIDR rule - the accept-time
+// firewall fails closed for a peer address this build cannot actually resolve.
+void test_accept_cb_ip_allowlist_rejects_once_a_rule_exists()
+{
+    DeterministicAsyncTCP::pool_init();
+    listener_accept_throttle_reset();
+    listener_per_ip_throttle_reset();
+    listener_ip_allowlist_reset();
+    set_millis(0);
+
+    DWSIp rule_net = v4(192, 168, 1, 0);
+    TEST_ASSERT_TRUE(listener_ip_allow_add(&rule_net, 24));
+
+    struct tcp_pcb pcb = {};
+    int before_aborts = mock_abort_call_count();
+    TEST_ASSERT_EQUAL_INT(ERR_ABRT, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK));
+    TEST_ASSERT_EQUAL_INT(before_aborts + 1, mock_abort_call_count());
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state); // no slot claimed
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -285,5 +349,8 @@ int main()
     RUN_TEST(test_proto_register_builtins_installs_http);
     RUN_TEST(test_clock_default_is_platform_millis);
     RUN_TEST(test_clock_custom_and_revert);
+    RUN_TEST(test_accept_cb_global_throttle_rejects_over_budget);
+    RUN_TEST(test_accept_cb_ip_allowlist_allows_when_empty);
+    RUN_TEST(test_accept_cb_ip_allowlist_rejects_once_a_rule_exists);
     return UNITY_END();
 }

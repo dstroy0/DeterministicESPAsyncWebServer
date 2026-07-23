@@ -519,21 +519,31 @@ bool dws_udp_listen_multicast(const char *group_ip, uint16_t port, DWSUdpHandler
     size_t glen = 0;
     if (!parse_mcast_group(group_ip, &glen))
         return false;
-    // A valid dotted quad is at most 15 chars so this always fits, but check before claiming a
-    // listener slot: a truncated group would be silently wrong, and failing here leaks nothing.
+    // A normal dotted quad is at most 15 chars, but parse_mcast_group() only bounds each octet's
+    // VALUE (<=255), not its digit count - a run of leading zeros ("224.000000000000000.0.0") keeps
+    // an octet at 0 indefinitely while still growing glen past this buffer (see
+    // test_multicast_group_too_long_for_buffer_rejected), so this check is genuinely reachable, not
+    // just defensive. Failing here before claiming a listener slot means a truncated group leaks
+    // nothing.
     if (glen >= sizeof(s_udp.lst[0].group))
         return false;
 
-    if (!dws_udp_listen(port, handler, ctx))
-        return false;
-    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
+    // dws_udp_listen()'s host stub (this file, #else branch above) always returns true - rebind,
+    // free-slot, or evict-slot-0 all succeed unconditionally, with no failure path of its own - so
+    // this guard, and the "not found" fallthrough below, only exist for the real ESP32
+    // implementation (which can fail: no free pcb, a bind conflict). Neither is reachable on native.
+    if (!dws_udp_listen(port, handler, ctx))        // GCOVR_EXCL_BR_LINE - dws_udp_listen() host stub never fails
+        return false;                               // GCOVR_EXCL_LINE - unreachable: see above
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++) // GCOVR_EXCL_BR_LINE - loop always finds the slot dws_udp_listen()
+                                                    // just claimed (lowest-free-first, so every lower index is
+                                                    // already used); natural exhaustion is unreachable
         if (s_udp.lst[i].used && s_udp.lst[i].port == port)
         {
             memcpy(s_udp.lst[i].group, group_ip, glen + 1); // + NUL; length bounded above
             s_udp.lst[i].mcast = true;
             return true;
         }
-    return false;
+    return false; // GCOVR_EXCL_LINE - unreachable: the loop above always finds the just-bound slot
 }
 
 bool dws_udp_leave_multicast(uint16_t port)

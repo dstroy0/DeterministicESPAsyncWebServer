@@ -9,6 +9,7 @@ typedef uint16_t u16_t;
 #define ERR_MEM ((err_t) - 1)
 #define ERR_VAL ((err_t) - 6)
 #define ERR_ABRT ((err_t) - 8)
+#define ERR_USE ((err_t) - 9)
 
 #define IPADDR_TYPE_ANY 0
 #define IP_ANY_TYPE nullptr
@@ -44,16 +45,49 @@ typedef err_t (*tcp_recv_fn)(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, er
 typedef err_t (*tcp_sent_fn)(void *arg, struct tcp_pcb *tpcb, u16_t len);
 typedef void (*tcp_err_fn)(void *arg, err_t err);
 
+// Test hooks: force the next call to report failure, modeling the real-lwIP cases
+// listener_add() guards against (out of PCBs / a port already bound / backlog alloc
+// failure). Each auto-clears after one use.
+inline bool &mock_new_pcb_fail_once()
+{
+    static bool v = false;
+    return v;
+}
+inline bool &mock_bind_fail_once()
+{
+    static bool v = false;
+    return v;
+}
+inline bool &mock_listen_fail_once()
+{
+    static bool v = false;
+    return v;
+}
 inline struct tcp_pcb *tcp_new_ip_type(int)
 {
+    if (mock_new_pcb_fail_once())
+    {
+        mock_new_pcb_fail_once() = false;
+        return nullptr;
+    }
     return &_mock_pcb;
 }
 inline err_t tcp_bind(struct tcp_pcb *, void *, uint16_t)
 {
+    if (mock_bind_fail_once())
+    {
+        mock_bind_fail_once() = false;
+        return ERR_USE; // port already bound
+    }
     return ERR_OK;
 }
 inline struct tcp_pcb *tcp_listen_with_backlog(struct tcp_pcb *p, uint8_t)
 {
+    if (mock_listen_fail_once())
+    {
+        mock_listen_fail_once() = false;
+        return nullptr;
+    }
     return p;
 }
 inline void tcp_arg(struct tcp_pcb *, void *)
@@ -74,8 +108,16 @@ inline void tcp_sent(struct tcp_pcb *, tcp_sent_fn)
 inline void tcp_err(struct tcp_pcb *, tcp_err_fn)
 {
 }
+// Call counter: lets a test prove tcp_abort() was (or was not) reached - e.g. the
+// tcp_close()-failed fallback path, which has no other observable side effect.
+inline int &mock_abort_call_count()
+{
+    static int v = 0;
+    return v;
+}
 inline void tcp_abort(struct tcp_pcb *)
 {
+    mock_abort_call_count()++;
 }
 // ---------------------------------------------------------------------------
 // Optional write capture - off by default; tests enable with tcp_capture_reset()
@@ -168,8 +210,21 @@ inline uint16_t tcp_sndbuf(struct tcp_pcb *)
 {
     return mock_sndbuf();
 }
+// Test hook: force the next tcp_close() call to report failure, modeling the rare real-lwIP case
+// where the graceful close cannot complete and the caller falls back to tcp_abort(). Auto-clears
+// after one use so a test cannot leave it armed for whatever runs after it.
+inline bool &mock_close_fail_once()
+{
+    static bool v = false;
+    return v;
+}
 inline err_t tcp_close(struct tcp_pcb *)
 {
+    if (mock_close_fail_once())
+    {
+        mock_close_fail_once() = false;
+        return ERR_MEM; // arbitrary non-OK; every caller only checks != ERR_OK
+    }
     return ERR_OK;
 }
 inline void tcp_recved(struct tcp_pcb *, uint16_t)
