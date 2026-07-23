@@ -558,10 +558,10 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4838 test cases** across **284 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4908 test cases** across **284 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
-<summary><b>test_accept_gate (16 tests)</b></summary>
+<summary><b>test_accept_gate (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_accept_throttle_window</b> &mdash; <i>A timestamp a full window later opens a fresh budget.</i></summary>
@@ -737,6 +737,36 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(1000, dws_millis());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2000, dws_millis());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(777, dws_millis());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_global_throttle_rejects_over_budget</b> &mdash; <i>Accept cb global throttle rejects over budget</i></summary>
+
+    * **Objective**: Accept cb global throttle rejects over budget
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK))</code>
+      * <code>Assert equal int (ERR_ABRT, listener_accept_cb((void *)(uintptr_t)0, &over_budget, ERR_OK))</code>
+      * <code>Assert equal int (before_aborts + 1, mock_abort_call_count())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_ip_allowlist_allows_when_empty</b> &mdash; <i>Accept cb ip allowlist allows when empty</i></summary>
+
+    * **Objective**: Accept cb ip allowlist allows when empty
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK))</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_ip_allowlist_rejects_once_a_rule_exists</b> &mdash; <i>Accept cb ip allowlist rejects once a rule exists</i></summary>
+
+    * **Objective**: Accept cb ip allowlist rejects once a rule exists
+    * **Assertions**:
+      * <code>Assert true (listener_ip_allow_add(&rule_net, 24))</code>
+      * <code>Assert equal int (ERR_ABRT, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK))</code>
+      * <code>Assert equal int (before_aborts + 1, mock_abort_call_count())</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
   </details>
 
 </details>
@@ -17622,7 +17652,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_http_ota (3 tests)</b></summary>
+<summary><b>test_http_ota (4 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_large_body_streams_to_completion</b> &mdash; <i>Large body streams to completion</i></summary>
@@ -17651,6 +17681,16 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal (ParseState::PARSE_ENTITY_TOO_LARGE, r.parse_state)</code>
       * <code>Assert equal uint (0, (unsigned)g_total)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_xff_bracketed_ipv6_overflow</b> &mdash; <i>Same call path, ordinary short bracketed IPv6: the guard's other arm (no overflow).</i></summary>
+
+    * **Objective**: Same call path, ordinary short bracketed IPv6: the guard's other arm (no overflow).
+    * **Assertions**:
+      * <code>Assert false (http_forwarded_client(&r, ip, sizeof(ip), nullptr))</code>
+      * <code>Assert true (http_forwarded_client(&r2, ip, sizeof(ip), nullptr))</code>
+      * <code>Assert equal string ("2001:db8::1", ip)</code>
   </details>
 
 </details>
@@ -27414,7 +27454,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_net_egress (6 tests)</b></summary>
+<summary><b>test_net_egress (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_classify_sta</b> &mdash; <i>Classify sta</i></summary>
@@ -27433,12 +27473,13 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_classify_eth</b> &mdash; <i>Classify eth</i></summary>
+    <summary><b>test_classify_eth</b> &mdash; <i>softAP is up (ap_ip != 0) but the egress IP matches neither WiFi IP -> still wired.</i></summary>
 
-    * **Objective**: Classify eth
+    * **Objective**: softAP is up (ap_ip != 0) but the egress IP matches neither WiFi IP -> still wired.
     * **Assertions**:
       * <code>Assert equal int (DWSIface::DETIFACE_ETH, dws_net_classify_ip(0xC0A80105u, 0x0A000005u, 0))</code>
       * <code>Assert equal int (DWSIface::DETIFACE_ETH, dws_net_classify_ip(0xC0A80105u, 0, 0))</code>
+      * <code>Assert equal int (DWSIface::DETIFACE_ETH, dws_net_classify_ip(0xC0A80105u, 0x0A000005u, 0xC0A80402u))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -27465,6 +27506,43 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (init_eth_physical())</code>
       * <code>Assert false (eth_ready())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_wifi_bringup_host_stub</b> &mdash; <i>Wifi bringup host stub</i></summary>
+
+    * **Objective**: Wifi bringup host stub
+    * **Assertions**:
+      * <code>Assert true (init_wifi_physical("ssid", "password"))</code>
+      * <code>Assert true (wifi_ready())</code>
+      * <code>Assert true (init_wifi_radio_physical(6))</code>
+      * <code>Assert true (init_wifi_ap_physical("ap-ssid", "ap-password"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ipv6_host_stub</b> &mdash; <i>Ipv6 host stub</i></summary>
+
+    * **Objective**: Ipv6 host stub
+    * **Assertions**:
+      * <code>Assert false (init_ipv6_physical())</code>
+      * <code>Assert false (net_global_ipv6(&addr))</code>
+      * <code>Assert false (dws_ipv6_ready())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_radio_readouts_host_stub</b> &mdash; <i>Both `if (out && cap)` subconditions, false side: null out, then zero cap.</i></summary>
+
+    * **Objective**: Both `if (out && cap)` subconditions, false side: null out, then zero cap.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_net_ap_ip());</code>
+      * <code>Assert equal int (0, dws_net_rssi())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_net_channel());</code>
+      * <code>Assert false (dws_net_mac(mac))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_net_ssid(ssid, sizeof(ssid)));</code>
+      * <code>Assert equal string ("", ssid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_net_ssid(nullptr, sizeof(ssid)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_net_ssid(untouched, 0));</code>
+      * <code>Assert equal string ("y", untouched)</code>
   </details>
 
 </details>
@@ -28940,7 +29018,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_observability (17 tests)</b></summary>
+<summary><b>test_observability (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transition_fires_hook_with_args</b> &mdash; <i>Transition fires hook with args</i></summary>
@@ -29121,6 +29199,59 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
       * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
       * <code>Assert equal (ERR_OK, rc)</code>
       * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stop_posts_abort_transition_for_each_live_slot</b> &mdash; <i>Stop posts abort transition for each live slot</i></summary>
+
+    * **Objective**: Stop posts abort transition for each live slot
+    * **Assertions**:
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_ABORT, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().closes_abort);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_err_cb_during_closing_counts_drained_not_error</b> &mdash; <i>Err cb during closing counts drained not error</i></summary>
+
+    * **Objective**: Err cb during closing counts drained not error
+    * **Assertions**:
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert null (conn_pool[0].pcb)</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_DRAINED, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c.closes_error); // not counted as an error close</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c.closing_gauge);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_enqueue_failure_from_recv_cb_counts_defer_drop</b> &mdash; <i>Enqueue failure from recv cb counts defer drop</i></summary>
+
+    * **Objective**: Enqueue failure from recv cb counts defer drop
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, lowlevel_recv_cb(&conn_pool[0], &pcb, &p, ERR_OK))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().defer_drops);</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_DEFER_DROP, g_reason)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_posts_accept_transition</b> &mdash; <i>Accept cb posts accept transition</i></summary>
+
+    * **Objective**: Accept cb posts accept transition
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK))</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_ACCEPT, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().accepts);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_enqueue_failure_posts_defer_drop</b> &mdash; <i>Accept cb enqueue failure posts defer drop</i></summary>
+
+    * **Objective**: Accept cb enqueue failure posts defer drop
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb, ERR_OK))</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_DEFER_DROP, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().defer_drops);</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
 </details>
@@ -44446,7 +44577,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_southbound (9 tests)</b></summary>
+<summary><b>test_southbound (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_register_and_find</b> &mdash; <i>Duplicate name rejected.</i></summary>
@@ -44538,6 +44669,15 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (Sb::SB_OK, dws_southbound_register(&wo))</code>
       * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_read("wo", 0, &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_find_skips_driver_mutated_name_null</b> &mdash; <i>dws_southbound_find() stores a *borrowed* pointer (const SouthboundDriver *), not a copy: the</i></summary>
+
+    * **Objective**: dws_southbound_find() stores a *borrowed* pointer (const SouthboundDriver *), not a copy: the
+    * **Assertions**:
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_register(&mutable_drv))</code>
+      * <code>Assert null (dws_southbound_find("mutable"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -46099,7 +46239,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_auth (28 tests)</b></summary>
+<summary><b>test_ssh_auth (29 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_service_request_errors</b> &mdash; <i>Service request errors</i></summary>
@@ -46417,6 +46557,15 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_aesgcm_gctr_counter_byte_carry</b> &mdash; <i>Aesgcm gctr counter byte carry</i></summary>
+
+    * **Objective**: Aesgcm gctr counter byte carry
+    * **Assertions**:
+      * <code>Assert true (ssh_aesgcm_open(&dec, aad, sizeof(aad), ct, sizeof(pt), ct + sizeof(pt), rt))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, sizeof(pt));</code>
   </details>
 
 </details>
@@ -47326,7 +47475,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_conn (23 tests)</b></summary>
+<summary><b>test_ssh_conn (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_conn_entrypoints_reject_unmapped_slot</b> &mdash; <i>Conn entrypoints reject unmapped slot</i></summary>
@@ -47547,6 +47696,15 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
       * <code>Assert equal (DWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_bn_expmod_group14_hits_correction_sliver_without_overflow_limb</b> &mdash; <i>Sanity: base must satisfy the documented bn_expmod_group14() precondition (RFC 4253 §8:</i></summary>
+
+    * **Objective**: Sanity: base must satisfy the documented bn_expmod_group14() precondition (RFC 4253 §8:
+    * **Assertions**:
+      * <code>Assert equal int (0, bn_dh_validate(&base))</code>
+      * <code>Assert equal int (0, bn_cmp(&out, &base))</code>
+  </details>
+
 </details>
 
 <details>
@@ -47704,7 +47862,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_hardening (2 tests)</b></summary>
+<summary><b>test_ssh_hardening (4 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_password_refused_even_with_correct_callback</b> &mdash; <i>Even a callback that accepts everything must not authenticate, because</i></summary>
@@ -47724,6 +47882,33 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
       * <code>Assert equal int (0, dws_ssh_auth_build_failure(out, &olen, sizeof(out), false))</code>
       * <code>Assert true (has_pk)</code>
       * <code>Assert false (has_pw)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ecdsa_direct_sign_verify_ecdh_roundtrip</b> &mdash; <i>Ecdsa direct sign verify ecdh roundtrip</i></summary>
+
+    * **Objective**: Ecdsa direct sign verify ecdh roundtrip
+    * **Assertions**:
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub_a, priv_a))</code>
+      * <code>Assert true (ssh_ecdsa_p256_sign(sig, msg, sizeof(msg) - 1, priv_a))</code>
+      * <code>Assert true (ssh_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig))</code>
+      * <code>Assert false (ssh_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig))</code>
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub_b, priv_b))</code>
+      * <code>Assert true (ssh_ecdsa_p256_ecdh(shared_ab, pub_b, priv_a))</code>
+      * <code>Assert true (ssh_ecdsa_p256_ecdh(shared_ba, pub_a, priv_b))</code>
+      * <code>Assert equal memory (shared_ab, shared_ba, 32)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ecdsa_publickey_auth_succeeds_when_password_disabled</b> &mdash; <i>A real client only has a signature to make once the first KEX has produced a session id.</i></summary>
+
+    * **Objective**: A real client only has a signature to make once the first KEX has produced a session id.
+    * **Assertions**:
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub, priv))</code>
+      * <code>Assert true (ssh_ecdsa_p256_sign(sig, signed_data, sd, priv))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
+      * <code>Assert true (ssh_sess[0].authed)</code>
   </details>
 
 </details>
@@ -51466,7 +51651,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_transport (46 tests)</b></summary>
+<summary><b>test_transport (83 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_pool_capacity_default_is_eight</b> &mdash; <i>The default connection pool is 8 (keep-alive/concurrency headroom; see ServerConfig.h).</i></summary>
@@ -51624,11 +51809,49 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_pool_init_applies_custom_config</b> &mdash; <i>Pool init applies custom config</i></summary>
+
+    * **Objective**: Pool init applies custom config
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(12345, DeterministicAsyncTCP::conn_timeout_ms);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_init_succeeds_on_native</b> &mdash; <i>Init succeeds on native</i></summary>
 
     * **Objective**: Init succeeds on native
     * **Assertions**:
       * <code>Assert equal (1, ok)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_listener_add_bounds_and_lwip_failure_paths</b> &mdash; <i>A normal call afterward still succeeds (the failure knobs auto-cleared).</i></summary>
+
+    * **Objective**: A normal call afterward still succeeds (the failure knobs auto-cleared).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, listener_add((uint8_t)MAX_LISTENERS, 80, ConnProto::PROTO_HTTP));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, listener_add(1, 81, ConnProto::PROTO_HTTP));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, listener_add(1, 81, ConnProto::PROTO_HTTP));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, listener_add(1, 81, ConnProto::PROTO_HTTP));</code>
+      * <code>Assert equal int (before + 1, mock_abort_call_count())</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, listener_add(1, 81, ConnProto::PROTO_HTTP));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, listener_add(1, 81, ConnProto::PROTO_HTTP));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_listener_stop_rejects_out_of_range_idx</b> &mdash; <i>Listener stop rejects out of range idx</i></summary>
+
+    * **Objective**: Listener stop rejects out of range idx
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_listener_stop_and_stop_dynamic_tolerate_a_missing_queue</b> &mdash; <i>Listener stop and stop dynamic tolerate a missing queue</i></summary>
+
+    * **Objective**: Listener stop and stop dynamic tolerate a missing queue
+    * **Assertions**:
+      * <code>Assert false (listener_pool[0].active)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, listener_add_dynamic(1, 5555, ConnProto::PROTO_HTTP));</code>
+      * <code>Assert false (listener_pool[1].active)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -51802,6 +52025,15 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_per_ip_throttle_scans_expired_and_lru_across_a_full_table</b> &mdash; <i>Per ip throttle scans expired and lru across a full table</i></summary>
+
+    * **Objective**: Per ip throttle scans expired and lru across a full table
+    * **Assertions**:
+      * <code>Assert true (listener_accept_allowed_ip(&ip, start))</code>
+      * <code>Assert true (listener_accept_allowed_ip(&fresh, now))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_ip_allowlist_empty_allows_all</b> &mdash; <i>Ip allowlist empty allows all</i></summary>
 
     * **Objective**: Ip allowlist empty allows all
@@ -51893,6 +52125,350 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (listener_ip_allow_add(&r, 32))</code>
       * <code>Assert false (listener_ip_allow_add(&overflow, 32))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ip_allowlist_rejects_null_args</b> &mdash; <i>Ip allowlist rejects null args</i></summary>
+
+    * **Objective**: Ip allowlist rejects null args
+    * **Assertions**:
+      * <code>Assert false (listener_ip_allow_add(nullptr, 24))</code>
+      * <code>Assert false (listener_ip_allow_add_cidr(nullptr))</code>
+      * <code>Assert false (listener_ip_allow_add(&none, 24))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ip_allowlist_rejects_overlong_address_text</b> &mdash; <i>Ip allowlist rejects overlong address text</i></summary>
+
+    * **Objective**: Ip allowlist rejects overlong address text
+    * **Assertions**:
+      * <code>Assert false (listener_ip_allow_add_cidr(too_long))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ip_allowlist_rejects_non_digit_prefix</b> &mdash; <i>Ip allowlist rejects non digit prefix</i></summary>
+
+    * **Objective**: Ip allowlist rejects non digit prefix
+    * **Assertions**:
+      * <code>Assert false (listener_ip_allow_add_cidr("10.0.0.0/2x"))</code>
+      * <code>Assert false (listener_ip_allow_add_cidr("10.0.0.0/-1"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_enqueue_rejects_out_of_range_listener_id</b> &mdash; <i>Enqueue rejects out of range listener id</i></summary>
+
+    * **Objective**: Enqueue rejects out of range listener id
+    * **Assertions**:
+      * <code>Assert false (listener_enqueue((uint8_t)MAX_LISTENERS, &evt))</code>
+      * <code>Assert false (listener_enqueue(0, &evt)); // listener 0 is active (setUp's listener_add)</code>
+      * <code>Assert false (listener_enqueue(0, &evt))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dynamic_listener_lifecycle</b> &mdash; <i>Re-adding on the same slot cleans up the prior instance first (idempotent create).</i></summary>
+
+    * **Objective**: Re-adding on the same slot cleans up the prior instance first (idempotent create).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, listener_add_dynamic((uint8_t)MAX_LISTENERS, 2222, ConnProto::PROTO_HTTP));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, listener_add_dynamic(1, 2222, ConnProto::PROTO_HTTP));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, listener_add_dynamic(1, 2222, ConnProto::PROTO_HTTP));</code>
+      * <code>Assert true (listener_pool[1].active)</code>
+      * <code>Assert false (listener_pool[1].tls)</code>
+      * <code>Assert not null (listener_pool[1].queue)</code>
+      * <code>Assert null (listener_pool[1].listen_pcb)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, listener_add_dynamic(1, 3333, ConnProto::PROTO_HTTP));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3333, listener_pool[1].port);</code>
+      * <code>Assert false (listener_pool[1].active)</code>
+      * <code>Assert null (listener_pool[1].queue)</code>
+      * <code>Assert false (listener_pool[1].active)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bounds_guards_reject_out_of_range_slots</b> &mdash; <i>Bounds guards reject out of range slots</i></summary>
+
+    * **Objective**: Bounds guards reject out of range slots
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(before, dws_conn_alloc_free());</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_pcb_slots_are_safe_no_ops</b> &mdash; <i>Null pcb slots are safe no ops</i></summary>
+
+    * **Objective**: Null pcb slots are safe no ops
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_conn_sndbuf(0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(MOCK_SNDBUF_DEFAULT, dws_conn_sndbuf(1));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ack_consumed_bounds_inactive_and_real_advance</b> &mdash; <i>Ack consumed bounds inactive and real advance</i></summary>
+
+    * **Objective**: Ack consumed bounds inactive and real advance
+    * **Assertions**:
+      * <code>Assert equal (0u, (size_t)conn_pool[0].rx_acked)</code>
+      * <code>Assert equal (5u, (size_t)conn_pool[0].rx_acked)</code>
+      * <code>Assert equal (5u, (size_t)conn_pool[0].rx_acked)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_flush_success_and_write_failure</b> &mdash; <i>Send flush success and write failure</i></summary>
+
+    * **Objective**: Send flush success and write failure
+    * **Assertions**:
+      * <code>Assert true (dws_conn_send_flush(0, "x", 1))</code>
+      * <code>Assert false (dws_conn_send_flush(0, "x", 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_raw_send_null_success_and_failure</b> &mdash; <i>Raw send null success and failure</i></summary>
+
+    * **Objective**: Raw send null success and failure
+    * **Assertions**:
+      * <code>Assert false (dws_conn_raw_send(nullptr, "x", 1))</code>
+      * <code>Assert true (dws_conn_raw_send(&fake, "hello", 5))</code>
+      * <code>Assert false (dws_conn_raw_send(&fake, "x", 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_falls_back_to_abort_on_tcp_close_failure</b> &mdash; <i>The ordinary (tcp_close succeeds) path does NOT call tcp_abort.</i></summary>
+
+    * **Objective**: The ordinary (tcp_close succeeds) path does NOT call tcp_abort.
+    * **Assertions**:
+      * <code>Assert equal int (before + 1, mock_abort_call_count())</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal int (before, mock_abort_call_count())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_begin_close_finalizes_immediately_with_and_without_a_pcb</b> &mdash; <i>No pcb: closing_finalize's `if (pcb)` false branch - no tcp_arg/tcp_close/tcp_abort at all.</i></summary>
+
+    * **Objective**: No pcb: closing_finalize's `if (pcb)` false branch - no tcp_arg/tcp_close/tcp_abort at all.
+    * **Assertions**:
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[2].state)</code>
+      * <code>Assert equal int (before, mock_abort_call_count())</code>
+      * <code>Assert equal int (before + 1, mock_abort_call_count())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_remote_addr_accessors_host_stub</b> &mdash; <i>Remote addr accessors host stub</i></summary>
+
+    * **Objective**: Remote addr accessors host stub
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_conn_remote_ip(0));</code>
+      * <code>Assert false (dws_conn_remote_addr(0, &out))</code>
+      * <code>Assert equal int ((int)DWSIpFamily::DWS_IP_NONE, (int)out.family)</code>
+      * <code>Assert false (dws_conn_remote_addr(0, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stop_aborts_live_slots_and_skips_the_rest</b> &mdash; <i>Stop aborts live slots and skips the rest</i></summary>
+
+    * **Objective**: Stop aborts live slots and skips the rest
+    * **Assertions**:
+      * <code>Assert equal int (before + 2, mock_abort_call_count())</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[i].state)</code>
+      * <code>Assert null (conn_pool[i].pcb)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_check_timeouts_reaps_stale_closing_slots</b> &mdash; <i>Check timeouts reaps stale closing slots</i></summary>
+
+    * **Objective**: Check timeouts reaps stale closing slots
+    * **Assertions**:
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert null (conn_pool[0].pcb)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert equal int (before + 1, mock_abort_call_count())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_check_timeouts_detaches_and_aborts_a_real_pcb</b> &mdash; <i>Check timeouts detaches and aborts a real pcb</i></summary>
+
+    * **Objective**: Check timeouts detaches and aborts a real pcb
+    * **Assertions**:
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert null (conn_pool[0].pcb)</code>
+      * <code>Assert equal int (before + 1, mock_abort_call_count())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_touch_active_bounds_and_state_guard</b> &mdash; <i>Touch active bounds and state guard</i></summary>
+
+    * **Objective**: Touch active bounds and state guard
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(111, conn_pool[0].last_activity_ms); // untouched: not ACTIVE</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_cb_null_arg_and_closing_drain</b> &mdash; <i>Recv cb null arg and closing drain</i></summary>
+
+    * **Objective**: Recv cb null arg and closing drain
+    * **Assertions**:
+      * <code>Assert equal int (ERR_VAL, lowlevel_recv_cb(nullptr, &fake, nullptr, ERR_OK))</code>
+      * <code>Assert equal int (ERR_OK, lowlevel_recv_cb(&conn_pool[0], &fake, &seg, ERR_OK))</code>
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal int (ERR_OK, lowlevel_recv_cb(&conn_pool[0], &fake, nullptr, ERR_OK))</code>
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_cb_fin_close_falls_back_to_abort_on_tcp_close_failure</b> &mdash; <i>Recv cb fin close falls back to abort on tcp close failure</i></summary>
+
+    * **Objective**: Recv cb fin close falls back to abort on tcp close failure
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, lowlevel_recv_cb(&conn_pool[0], &fake, nullptr, ERR_OK))</code>
+      * <code>Assert equal int (before + 1, mock_abort_call_count())</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert null (conn_pool[0].pcb)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_cb_fin_close_ordinary_path_does_not_abort</b> &mdash; <i>Recv cb fin close ordinary path does not abort</i></summary>
+
+    * **Objective**: Recv cb fin close ordinary path does not abort
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, lowlevel_recv_cb(&conn_pool[0], &fake, nullptr, ERR_OK))</code>
+      * <code>Assert equal int (before, mock_abort_call_count())</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_cb_rejects_non_active_slot</b> &mdash; <i>Recv cb rejects non active slot</i></summary>
+
+    * **Objective**: Recv cb rejects non active slot
+    * **Assertions**:
+      * <code>Assert equal int (ERR_VAL, lowlevel_recv_cb(&conn_pool[0], &fake, nullptr, ERR_OK))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_cb_refuses_a_segment_that_does_not_fit</b> &mdash; <i>Recv cb refuses a segment that does not fit</i></summary>
+
+    * **Objective**: Recv cb refuses a segment that does not fit
+    * **Assertions**:
+      * <code>Assert equal int (ERR_MEM, lowlevel_recv_cb(&conn_pool[0], &fake, &seg, ERR_OK))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, conn_pool[0].last_activity_ms); // NOT refreshed on refusal (see tcp.cpp comment)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_cb_accepts_and_copies_a_two_pbuf_segment</b> &mdash; <i>A second segment must NOT re-arm req_start_ms (only the first byte of a request does).</i></summary>
+
+    * **Objective**: A second segment must NOT re-arm req_start_ms (only the first byte of a request does).
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, lowlevel_recv_cb(&conn_pool[0], &fake, &seg1, ERR_OK))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4242, conn_pool[0].last_activity_ms);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4242, conn_pool[0].req_start_ms); // first byte of a new request arms the deadline</code>
+      * <code>Assert equal (5u, (size_t)conn_pool[0].rx_head)</code>
+      * <code>Assert equal int (0, memcmp("abcde", got, 5))</code>
+      * <code>Assert equal int (ERR_OK, lowlevel_recv_cb(&conn_pool[0], &fake, &seg3, ERR_OK))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4242, conn_pool[0].req_start_ms); // unchanged</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_cb_zero_clock_and_zero_length_segment_edge_cases</b> &mdash; <i>Recv cb zero clock and zero length segment edge cases</i></summary>
+
+    * **Objective**: Recv cb zero clock and zero length segment edge cases
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, lowlevel_recv_cb(&conn_pool[0], &fake, &seg, ERR_OK))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, conn_pool[0].req_start_ms); // rx_now==0 -&gt; armed to 1, not left "unarmed"</code>
+      * <code>Assert equal int (ERR_OK, lowlevel_recv_cb(&conn_pool[0], &fake, &empty_seg, ERR_OK))</code>
+      * <code>Assert equal (1u, (size_t)conn_pool[0].rx_head)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sent_cb_null_active_and_closing</b> &mdash; <i>Sent cb null active and closing</i></summary>
+
+    * **Objective**: Sent cb null active and closing
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, lowlevel_sent_cb(nullptr, nullptr, 0))</code>
+      * <code>Assert equal int (ERR_OK, lowlevel_sent_cb(&conn_pool[0], &fake, 10))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(777, conn_pool[0].last_activity_ms);</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal int (ERR_OK, lowlevel_sent_cb(&conn_pool[1], &fake, 0))</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state); // finalized (drained: snd_queuelen==0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_err_cb_null_active_and_closing</b> &mdash; <i>Err cb null active and closing</i></summary>
+
+    * **Objective**: Err cb null active and closing
+    * **Assertions**:
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert null (conn_pool[0].pcb)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert null (conn_pool[1].pcb)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_rejects_error_and_null_pcb</b> &mdash; <i>Accept cb rejects error and null pcb</i></summary>
+
+    * **Objective**: Accept cb rejects error and null pcb
+    * **Assertions**:
+      * <code>Assert equal int (ERR_VAL, listener_accept_cb((void *)(uintptr_t)0, &fake, ERR_ABRT))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(before, dws_conn_alloc_free()); // no slot claimed</code>
+      * <code>Assert equal int (ERR_VAL, listener_accept_cb((void *)(uintptr_t)0, nullptr, ERR_OK))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(before, dws_conn_alloc_free());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_rejects_out_of_range_listener_idx</b> &mdash; <i>Accept cb rejects out of range listener idx</i></summary>
+
+    * **Objective**: Accept cb rejects out of range listener idx
+    * **Assertions**:
+      * <code>Assert equal int (ERR_VAL, listener_accept_cb((void *)(uintptr_t)MAX_LISTENERS, &fake, ERR_OK))</code>
+      * <code>Assert equal int (before_aborts, mock_abort_call_count())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_rejects_when_pool_full</b> &mdash; <i>Accept cb rejects when pool full</i></summary>
+
+    * **Objective**: Accept cb rejects when pool full
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_conn_alloc_free());</code>
+      * <code>Assert equal int (ERR_ABRT, listener_accept_cb((void *)(uintptr_t)0, &fake, ERR_OK))</code>
+      * <code>Assert equal int (before_aborts + 1, mock_abort_call_count())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_claims_slot_and_wires_connection</b> &mdash; <i>Accept cb claims slot and wires connection</i></summary>
+
+    * **Objective**: Accept cb claims slot and wires connection
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &fake, ERR_OK))</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)c-&gt;state)</code>
+      * <code>Assert equal ptr (&fake, c-&gt;pcb)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(9001, c-&gt;last_activity_ms);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c-&gt;req_start_ms); // armed on the first RX byte, not at accept</code>
+      * <code>Assert equal (0u, (size_t)c-&gt;rx_head)</code>
+      * <code>Assert equal (0u, (size_t)c-&gt;rx_tail)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, c-&gt;listener_id);</code>
+      * <code>Assert equal int ((int)ConnProto::PROTO_HTTP, (int)c-&gt;proto);  // from listener_pool[0] (setUp's listener_add)</code>
+      * <code>Assert equal int ((int)DWSIface::DETIFACE_ANY, (int)c-&gt;iface)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, c-&gt;tls);                                // DWS_ENABLE_TLS is off on native</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_second_accept_claims_a_different_slot</b> &mdash; <i>Accept cb second accept claims a different slot</i></summary>
+
+    * **Objective**: Accept cb second accept claims a different slot
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &fake1, ERR_OK))</code>
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &fake2, ERR_OK))</code>
+      * <code>Assert equal ptr (&fake1, conn_pool[0].pcb)</code>
+      * <code>Assert equal ptr (&fake2, conn_pool[1].pcb)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_survives_a_failed_enqueue</b> &mdash; <i>Accept cb survives a failed enqueue</i></summary>
+
+    * **Objective**: Accept cb survives a failed enqueue
+    * **Assertions**:
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &fake, ERR_OK))</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal ptr (&fake, conn_pool[0].pcb)</code>
   </details>
 
 </details>
@@ -52019,7 +52595,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_udp_transport (8 tests)</b></summary>
+<summary><b>test_udp_transport (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_join_records_the_group</b> &mdash; <i>A port with no multicast listener has no group.</i></summary>
@@ -52112,6 +52688,138 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
       * <code>Assert true (dws_udp_listen(5353, on_datagram, nullptr))</code>
       * <code>Assert false (dws_udp_leave_multicast(5353))</code>
       * <code>Assert equal int (1, g_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_listen_rebinds_existing_port</b> &mdash; <i>Only one slot was consumed: a second, different port still gets its own slot</i></summary>
+
+    * **Objective**: Only one slot was consumed: a second, different port still gets its own slot
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen(5353, on_datagram, &marker1))</code>
+      * <code>Assert true (dws_udp_listen(5353, on_datagram, &marker2))</code>
+      * <code>Assert equal int (1, g_calls)</code>
+      * <code>Assert equal ptr (&marker2, g_ctx_seen)</code>
+      * <code>Assert true (dws_udp_listen(9999, on_datagram, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_listen_evicts_slot_zero_when_pool_full</b> &mdash; <i>The evicted port no longer delivers; the evicting port does.</i></summary>
+
+    * **Objective**: The evicted port no longer delivers; the evicting port does.
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen(1111, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_listen(2222, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_listen(3333, on_datagram, nullptr)); // evicts slot 0 (1111)</code>
+      * <code>Assert equal int (0, g_calls)</code>
+      * <code>Assert equal int (1, g_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_multicast_group_too_long_for_buffer_rejected</b> &mdash; <i>Multicast group too long for buffer rejected</i></summary>
+
+    * **Objective**: Multicast group too long for buffer rejected
+    * **Assertions**:
+      * <code>Assert true (n &gt;= 16)</code>
+      * <code>Assert false (dws_udp_listen_multicast(group, 5353, on_datagram, nullptr))</code>
+      * <code>Assert null (dws_udp_joined_group(5353))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_multicast_join_finds_slot_past_an_unrelated_listener</b> &mdash; <i>Multicast join finds slot past an unrelated listener</i></summary>
+
+    * **Objective**: Multicast join finds slot past an unrelated listener
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen(4000, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_listen_multicast("239.255.255.250", 1900, on_datagram, nullptr))</code>
+      * <code>Assert equal string ("239.255.255.250", dws_udp_joined_group(1900))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_peer_addr_rejects_null_peer</b> &mdash; <i>Peer addr rejects null peer</i></summary>
+
+    * **Objective**: Peer addr rejects null peer
+    * **Assertions**:
+      * <code>Assert false (dws_udp_peer_addr(nullptr, ip, sizeof(ip), &port))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_peer_addr_copies_and_tolerates_null_outparams</b> &mdash; <i>Peer addr copies and tolerates null outparams</i></summary>
+
+    * **Objective**: Peer addr copies and tolerates null outparams
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen(6000, on_datagram, &marker))</code>
+      * <code>Assert equal string ("203.0.113.9", g_src_ip)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4242, g_src_port);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_paths_are_captured</b> &mdash; <i>The test knob can force a listener-sourced send to fail (models an unreachable observer).</i></summary>
+
+    * **Objective**: The test knob can force a listener-sourced send to fail (models an unreachable observer).
+    * **Assertions**:
+      * <code>Assert true (dws_udp_send(nullptr, (const uint8_t *)"reply", 5))</code>
+      * <code>Assert equal uint (5, (unsigned)dws_udp_captured_len())</code>
+      * <code>Assert equal int (0, memcmp("reply", dws_udp_captured(), 5))</code>
+      * <code>Assert null (dws_udp_captured())</code>
+      * <code>Assert true (dws_udp_sendto("192.168.1.10", 514, (const uint8_t *)"syslog!", 7))</code>
+      * <code>Assert equal uint (7, (unsigned)dws_udp_captured_len())</code>
+      * <code>Assert true (dws_udp_listen(5683, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_listener_sendto(5683, "192.168.1.20", 5683, (const uint8_t *)"notify", 6))</code>
+      * <code>Assert equal uint (6, (unsigned)dws_udp_captured_len())</code>
+      * <code>Assert false (dws_udp_listener_sendto(5683, "192.168.1.20", 5683, (const uint8_t *)"x", 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_capture_rejects_null_zero_and_oversized_payload</b> &mdash; <i>Capture rejects null zero and oversized payload</i></summary>
+
+    * **Objective**: Capture rejects null zero and oversized payload
+    * **Assertions**:
+      * <code>Assert false (dws_udp_send(nullptr, nullptr, 5))</code>
+      * <code>Assert false (dws_udp_send(nullptr, (const uint8_t *)"x", 0))</code>
+      * <code>Assert false (dws_udp_send(nullptr, big, sizeof(big)))</code>
+      * <code>Assert null (dws_udp_captured())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inject_skips_a_listener_with_no_handler</b> &mdash; <i>Inject skips a listener with no handler</i></summary>
+
+    * **Objective**: Inject skips a listener with no handler
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen(7000, nullptr, nullptr))</code>
+      * <code>Assert equal int (0, g_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inject_null_src_ip_becomes_empty_string</b> &mdash; <i>Inject null src ip becomes empty string</i></summary>
+
+    * **Objective**: Inject null src ip becomes empty string
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen(7001, on_datagram, nullptr))</code>
+      * <code>Assert equal int (1, g_calls)</code>
+      * <code>Assert equal string ("", g_src_ip)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_multicast_lookup_skips_a_different_multicast_group</b> &mdash; <i>Multicast lookup skips a different multicast group</i></summary>
+
+    * **Objective**: Multicast lookup skips a different multicast group
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen_multicast("224.0.0.251", 5353, on_datagram, nullptr))</code>
+      * <code>Assert true (dws_udp_listen_multicast("239.255.255.250", 1900, on_datagram, nullptr))</code>
+      * <code>Assert equal string ("239.255.255.250", dws_udp_joined_group(1900))</code>
+      * <code>Assert true (dws_udp_leave_multicast(1900))</code>
+      * <code>Assert null (dws_udp_joined_group(1900))</code>
+      * <code>Assert equal string ("224.0.0.251", dws_udp_joined_group(5353))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_peer_addr_tolerates_null_ip_out_and_zero_cap_and_null_port_out</b> &mdash; <i>dws_udp_peer_addr() still returns true in every case above (peer non-null); the point is</i></summary>
+
+    * **Objective**: dws_udp_peer_addr() still returns true in every case above (peer non-null); the point is
+    * **Assertions**:
+      * <code>Assert true (dws_udp_listen(7002, on_datagram_edge_cases, nullptr))</code>
+      * <code>Assert true (g_edge_had_ip_out)</code>
+      * <code>Assert true (g_edge_had_port_out)</code>
   </details>
 
 </details>
@@ -56157,7 +56865,7 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_workers (6 tests)</b></summary>
+<summary><b>test_workers (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_worker_count_is_two</b> &mdash; <i>Worker count is two</i></summary>
@@ -56201,6 +56909,54 @@ A thorough directory of all **4838 test cases** across **284 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (dws_workers_running())</code>
       * <code>Assert false (dws_workers_running())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_listener_worker_queues_init_and_lookup</b> &mdash; <i>Listener worker queues init and lookup</i></summary>
+
+    * **Objective**: Listener worker queues init and lookup
+    * **Assertions**:
+      * <code>Assert not null (listener_worker_queue(0))</code>
+      * <code>Assert not null (listener_worker_queue(1))</code>
+      * <code>Assert null (listener_worker_queue(-1))</code>
+      * <code>Assert null (listener_worker_queue(DWS_WORKER_COUNT))</code>
+      * <code>Assert not null (listener_worker_queue(0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_enqueue_routes_by_slot_owner_and_rejects_bad_owner</b> &mdash; <i>Enqueue routes by slot owner and rejects bad owner</i></summary>
+
+    * **Objective**: Enqueue routes by slot owner and rejects bad owner
+    * **Assertions**:
+      * <code>Assert true (listener_enqueue(0, &evt))</code>
+      * <code>Assert false (listener_enqueue(0, &evt))</code>
+      * <code>Assert false (listener_enqueue(0, &evt))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_accept_cb_round_robins_slot_owner</b> &mdash; <i>WORKER_COUNT>1 branch</i></summary>
+
+    * **Objective**: WORKER_COUNT>1 branch
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(1, listener_add(0, 80, ConnProto::PROTO_HTTP)); // also exercises the</code>
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb1, ERR_OK))</code>
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb2, ERR_OK))</code>
+      * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &pcb3, ERR_OK))</code>
+      * <code>Assert true (conn_pool[0].owner &lt;= 1)</code>
+      * <code>Assert true (conn_pool[1].owner &lt;= 1)</code>
+      * <code>Assert true (conn_pool[2].owner &lt;= 1)</code>
+      * <code>Assert not equal (conn_pool[0].owner, conn_pool[1].owner)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(conn_pool[0].owner, conn_pool[2].owner); // wrapped back to the first owner</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dynamic_listener_creates_worker_queues</b> &mdash; <i>Dynamic listener creates worker queues</i></summary>
+
+    * **Objective**: Dynamic listener creates worker queues
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(1, listener_add_dynamic(2, 4444, ConnProto::PROTO_HTTP));</code>
+      * <code>Assert not null (listener_worker_queue(0))</code>
+      * <code>Assert not null (listener_worker_queue(1))</code>
   </details>
 
   <details style="margin-left: 20px;">
