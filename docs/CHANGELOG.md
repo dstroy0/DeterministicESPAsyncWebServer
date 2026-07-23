@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- resolve unit 0 to Serial0 under USB-CDC-on-boot ([`0e729d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e729d5cbf10ac42e748a089181cb7289b93f12e))
 - stop counting bytes as sent when the packet cannot hold them ([`9d48b1d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9d48b1df7095d2a63e274ee1be4ad6005ffe639d))
 - stack buffer overflow on a long bareword argument value ([`d5b5528`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5b55283d63ee7fc1aa4608d5db32a42bb129cd5))
 - fix(docs) README.md ([`e168e53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e168e5300c4a3c95ed7b726c766458509873c03d))
@@ -18,6 +19,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`f7ebe93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7ebe93485b1d3f30debe838dc472b4c18452676))
+- update CHANGELOG.md [skip ci] ([`22b5d3e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22b5d3e2a15dd9b4b4561df7501ffb00105a8dbe))
 - update test report + coverage [skip ci] ([`40f086f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/40f086f41f29df8b724722f762cb471a53be3ebb))
 - update CHANGELOG.md [skip ci] ([`9b20b65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b20b65b2dae7b69517166e777678db69d5b7d51))
 - update test report + coverage [skip ci] ([`546bbec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/546bbec066221df31699530f83aea0563b2b1a82))
@@ -81,6 +84,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- mirror src/ layout with per-feature CCOUNT + host benchmarks ([`d609454`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6094548c6cc11888728debc617183c1e6e86d7c))
 - rebuild the DAQ/SCA suite into a full teaching + research platform ([`2fc7d36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fc7d36270e457a04d32024cefd17bf5b353b601))
 - parameterized CRC engine ([`73f28fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73f28fc6895b69c0d4903877601de24d0a7f772c))
 - IEC 61784-3 black-channel Safety Communication Layer primitives ([`7964617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7964617a07205f7fcbf0fee6a3949cccf0ab754b))
