@@ -170,6 +170,22 @@ bool dws_n2k_decode_cog_sog_rapid(const uint8_t *payload, size_t len, N2kCogSogR
     return true;
 }
 
+bool dws_n2k_decode_engine_rapid(const uint8_t *payload, size_t len, N2kEngineRapid *out)
+{
+    if (!payload || !out || len < 6) // instance(1) + speed(2) + boost(2) + tilt(1)
+        return false;
+    out->instance = payload[0];
+    uint16_t rpm = rd_u16le(payload + 1); // 0.25 rpm per bit
+    out->speed_valid = (rpm != 0xFFFFu);
+    out->speed_rpm = (float)rpm * 0.25f;
+    uint16_t boost = rd_u16le(payload + 3); // 100 Pa per bit
+    out->boost_valid = (boost != 0xFFFFu);
+    out->boost_pa = (float)boost * 100.0f;
+    out->tilt_valid = (payload[5] != 0x7Fu); // 0x7F = not-available for a signed 1-octet field
+    out->tilt_pct = (int8_t)payload[5];
+    return true;
+}
+
 bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *out)
 {
     if (!payload || !out || len < 6)

@@ -90,6 +90,7 @@ bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t
 
 #define N2K_PGN_POSITION_RAPID 129025u ///< Position, Rapid Update: latitude + longitude
 #define N2K_PGN_COG_SOG_RAPID 129026u  ///< COG & SOG, Rapid Update: course + speed over ground
+#define N2K_PGN_ENGINE_RAPID 127488u   ///< Engine Parameters, Rapid Update: speed + boost + tilt/trim
 #define N2K_PGN_WIND_DATA 130306u      ///< Wind Data: speed + angle + reference
 #define N2K_PGN_WATER_DEPTH 128267u    ///< Water Depth: depth below transducer + offset
 #define N2K_PGN_VESSEL_HEADING 127250u ///< Vessel Heading: heading + deviation + variation
@@ -128,6 +129,18 @@ struct N2kCogSogRapid
     float cog_rad;   ///< course over ground (radians, 0.0001 rad per bit)
     bool sog_valid;  ///< false if the speed over ground is not-available
     float sog_mps;   ///< speed over ground (m/s, 0.01 m/s per bit)
+};
+
+/** @brief Decoded Engine Parameters, Rapid Update (PGN 127488). */
+struct N2kEngineRapid
+{
+    uint8_t instance; ///< engine instance (0 = single / port, 1 = starboard, ...)
+    bool speed_valid; ///< false if the engine speed is not-available
+    float speed_rpm;  ///< engine speed (rpm, 0.25 rpm per bit)
+    bool boost_valid; ///< false if the boost pressure is not-available
+    float boost_pa;   ///< engine boost pressure (Pa, 100 Pa per bit)
+    bool tilt_valid;  ///< false if the tilt/trim is not-available
+    int8_t tilt_pct;  ///< engine tilt / trim (percent, 1 %/bit, signed)
 };
 
 /** @brief Decoded Wind Data (PGN 130306). */
@@ -172,6 +185,12 @@ bool dws_n2k_decode_position_rapid(const uint8_t *payload, size_t len, N2kPositi
  * @return true iff @p len is at least 6 octets (SID + reference + COG + SOG); false otherwise.
  */
 bool dws_n2k_decode_cog_sog_rapid(const uint8_t *payload, size_t len, N2kCogSogRapid *out);
+
+/**
+ * @brief Decode an Engine Parameters Rapid Update (PGN 127488) payload into @p out.
+ * @return true iff @p len is at least 6 octets (instance + speed + boost + tilt); false otherwise.
+ */
+bool dws_n2k_decode_engine_rapid(const uint8_t *payload, size_t len, N2kEngineRapid *out);
 
 /**
  * @brief Decode a Wind Data (PGN 130306) payload into @p out.

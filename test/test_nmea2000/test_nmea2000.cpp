@@ -308,6 +308,33 @@ void test_decode_cog_sog_rapid()
     TEST_ASSERT_FALSE(dws_n2k_decode_cog_sog_rapid(nullptr, 8, &c));
 }
 
+void test_decode_engine_rapid()
+{
+    // instance 0, speed 2400 rpm (raw 9600), boost 150000 Pa (raw 1500), tilt +15 %.
+    const uint8_t er[8] = {0x00, 0x80, 0x25, 0xdc, 0x05, 0x0f, 0xff, 0xff};
+    N2kEngineRapid e;
+    TEST_ASSERT_TRUE(dws_n2k_decode_engine_rapid(er, sizeof(er), &e));
+    TEST_ASSERT_EQUAL_UINT8(0, e.instance);
+    TEST_ASSERT_TRUE(e.speed_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.1f, 2400.0f, e.speed_rpm);
+    TEST_ASSERT_TRUE(e.boost_valid);
+    TEST_ASSERT_FLOAT_WITHIN(1.0f, 150000.0f, e.boost_pa);
+    TEST_ASSERT_TRUE(e.tilt_valid);
+    TEST_ASSERT_EQUAL_INT8(15, e.tilt_pct);
+
+    // A 0xFFFF speed is not-available; a signed 0x7F tilt is not-available; a negative tilt decodes.
+    const uint8_t na[8] = {0x01, 0xff, 0xff, 0xdc, 0x05, 0xf6, 0xff, 0xff};
+    TEST_ASSERT_TRUE(dws_n2k_decode_engine_rapid(na, sizeof(na), &e));
+    TEST_ASSERT_EQUAL_UINT8(1, e.instance);
+    TEST_ASSERT_FALSE(e.speed_valid);
+    TEST_ASSERT_TRUE(e.boost_valid);
+    TEST_ASSERT_TRUE(e.tilt_valid);
+    TEST_ASSERT_EQUAL_INT8(-10, e.tilt_pct); // 0xF6 as int8
+    // Short payload + nulls are rejected.
+    TEST_ASSERT_FALSE(dws_n2k_decode_engine_rapid(er, 5, &e));
+    TEST_ASSERT_FALSE(dws_n2k_decode_engine_rapid(nullptr, 8, &e));
+}
+
 void test_decode_wind_data()
 {
     // sid 0x2A, speed 5.00 m/s (raw 500), angle 1.5708 rad (raw 15708), reference apparent.
@@ -387,6 +414,7 @@ int main()
     RUN_TEST(test_fastpacket_roundtrip_short_last_frame);
     RUN_TEST(test_decode_position_rapid);
     RUN_TEST(test_decode_cog_sog_rapid);
+    RUN_TEST(test_decode_engine_rapid);
     RUN_TEST(test_decode_wind_data);
     RUN_TEST(test_decode_water_depth);
     RUN_TEST(test_decode_vessel_heading);
