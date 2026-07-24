@@ -4,7 +4,7 @@
 
 # DeterministicESPAsyncWebServer (@dstroy0)
 
-![Version](https://img.shields.io/badge/version-v7.103.0-blue)
+![Version](https://img.shields.io/badge/version-v7.104.0-blue)
 
 A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1/2/and 3 over QUIC, HTTPS/TLS/DTLS, SSH (full OpenSSH interop), Telnet, SNMP, and post quantum crypto. This is designed for many use cases.
 
