@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5185 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5191 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -5455,7 +5455,7 @@ A thorough directory of all **5185 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_coap (60 tests)</b></summary>
+<summary><b>test_coap (66 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_response_option_capacity_stop</b> &mdash; <i>Response option capacity stop</i></summary>
@@ -6115,6 +6115,69 @@ A thorough directory of all **5185 test cases** across **292 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, d.code)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dedup_store_lookup_roundtrip</b> &mdash; <i>Dedup store lookup roundtrip</i></summary>
+
+    * **Objective**: Dedup store lookup roundtrip
+    * **Assertions**:
+      * <code>Assert true (dws_coap_dedup_lookup("192.168.1.10", 5683, 0x1234, &c, &cl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(r), cl);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(r, c, cl);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dedup_full_address_keying</b> &mdash; <i>Dedup full address keying</i></summary>
+
+    * **Objective**: Dedup full address keying
+    * **Assertions**:
+      * <code>Assert false (dws_coap_dedup_lookup("192.168.1.11", 5683, 0x1234, &c, &cl))</code>
+      * <code>Assert false (dws_coap_dedup_lookup("192.168.1.10", 5684, 0x1234, &c, &cl))</code>
+      * <code>Assert false (dws_coap_dedup_lookup("192.168.1.10", 5683, 0x1235, &c, &cl))</code>
+      * <code>Assert true (dws_coap_dedup_lookup("192.168.1.10", 5683, 0x1234, &c, &cl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dedup_expiry</b> &mdash; <i>Dedup expiry</i></summary>
+
+    * **Objective**: Dedup expiry
+    * **Assertions**:
+      * <code>Assert true (dws_coap_dedup_lookup("10.0.0.1", 5683, 0x0001, &c, &cl))</code>
+      * <code>Assert false (dws_coap_dedup_lookup("10.0.0.1", 5683, 0x0001, &c, &cl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dedup_too_large_not_cached</b> &mdash; <i>Dedup too large not cached</i></summary>
+
+    * **Objective**: Dedup too large not cached
+    * **Assertions**:
+      * <code>Assert false (dws_coap_dedup_lookup("10.0.0.2", 5683, 0x0002, &c, &cl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dedup_eviction_and_update</b> &mdash; <i>Storing an existing key updates its response rather than consuming another slot.</i></summary>
+
+    * **Objective**: Storing an existing key updates its response rather than consuming another slot.
+    * **Assertions**:
+      * <code>Assert false (dws_coap_dedup_lookup("10.0.1.0", 5683, 0x100, &c, &cl))</code>
+      * <code>Assert true (dws_coap_dedup_lookup("10.0.1.99", 5683, 0x999, &c, &cl))</code>
+      * <code>Assert true (dws_coap_dedup_lookup("10.0.1.99", 5683, 0x999, &c, &cl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(r2), cl);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(r2, c, cl);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dedup_handler_replays_without_rerunning</b> &mdash; <i>Dedup handler replays without rerunning</i></summary>
+
+    * **Objective**: Dedup handler replays without rerunning
+    * **Assertions**:
+      * <code>Assert true (g_called)</code>
+      * <code>Assert true (n1 &gt; 0)</code>
+      * <code>Assert false (g_called)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n1, dws_udp_captured_len());</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(saved, dws_udp_captured(), n1); // same cached response resent</code>
+      * <code>Assert true (g_called)</code>
   </details>
 
 </details>

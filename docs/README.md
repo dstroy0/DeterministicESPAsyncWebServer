@@ -1323,9 +1323,9 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,001 | 45,388 |
 | `core/Sysadmin` | `Foundation/Sysadmin` | 767,345 | 81,836 |
 | `OIDC` | `L7-Application/OidcAuth` | 767,349 | 99,876 |
-| `OPCUA+UMATI` | `L7-Application/Umati` | 768,445 | 92,252 |
-| `OPCUA+EUROMAP77` | `L7-Application/Euromap77` | 768,701 | 92,276 |
-| `OPCUA+ROBOTICS` | `L7-Application/Robotics` | 768,821 | 92,468 |
+| `OPCUA+UMATI` | `L7-Application/Umati` | 768,477 | 92,252 |
+| `OPCUA+EUROMAP77` | `L7-Application/Euromap77` | 768,733 | 92,276 |
+| `OPCUA+ROBOTICS` | `L7-Application/Robotics` | 768,853 | 92,468 |
 | `NTRIP_CASTER` | `L7-Application/NtripCaster` | 771,377 | 84,744 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Peripherals/CanCapture` | 771,997 | 45,568 |
 | `DASHBOARD` | `L7-Application/Dashboard` | 774,445 | 82,196 |
@@ -1345,7 +1345,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RANGE` | `L7-Application/Range` | 795,993 | 81,860 |
 | `VFS` | `L7-Application/Vfs` | 797,021 | 86,348 |
 | `WEBDAV` | `L7-Application/WebDav` | 821,069 | 105,352 |
-| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/WebDav` | 822,901 | 90,876 |
+| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/WebDav` | 824,681 | 92,348 |
 | `ETAG` | `L7-Application/ETag` | 829,713 | 83,124 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
 | `SSH` | `L5-Session/SSHHostKey` | 831,549 | 109,248 |
@@ -1723,6 +1723,9 @@ guards at compile time.
 | `DWS_CLOSING_TIMEOUT_MS` | `2000` | Upper bound (ms) a slot may dwell in ConnState::CONN_CLOSING after a graceful close before the idle sweep force-aborts it. |
 | `DWS_COAP_BLOCK1_MAX` | `1024` | Reassembly buffer for a block-wise (Block1) request upload, in bytes. |
 | `DWS_COAP_BLOCK_SZX_MAX` | `6` | Largest block-size exponent (SZX) the server will use: block size = 2^(SZX+4) bytes, SZX 0..6 (16..1024). |
+| `DWS_COAP_DEDUP_ENTRIES` | `4` | CoAP message de-duplication cache size (RFC 7252 sec 4.5). |
+| `DWS_COAP_DEDUP_LIFETIME_MS` | `247000u` | How long (ms) a dedup entry stays fresh - RFC 7252 EXCHANGE_LIFETIME (~247 s) by default, past which a repeat Message-ID is treated as a new exchange. |
+| `DWS_COAP_DEDUP_RESP_MAX` | `256` | Largest cached response the dedup cache retains per entry; a bigger response is not cached (a retransmission re-processes it, fine for the idempotent GET whose block-wise reply exceeds this). |
 | `DWS_COAP_MAX_OBSERVERS` | `4` | Maximum simultaneous CoAP observers (one slot per observed resource per client). |
 | `DWS_COAP_MAX_PATH` | `64` | Maximum reconstructed Uri-Path length, including separators and the leading '/'. |
 | `DWS_COAP_MAX_PAYLOAD` | `256` | Maximum CoAP request/response payload in bytes. |
