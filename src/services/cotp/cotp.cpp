@@ -66,7 +66,8 @@ size_t dws_cotp_build_cr(uint8_t *buf, size_t cap, uint16_t src_ref, uint8_t tpd
 {
     if (!buf || (extra_len && !extra_params))
         return 0;
-    // header after LI: code(1) dst-ref(2) src-ref(2) class(1) + tpdu-size param(3) + extras
+    // after the LI octet the header is the one-octet code, the two-octet destination and source references,
+    // the one-octet class, the three-octet TPDU-size parameter, then any extra parameters
     size_t after_li = 1 + 2 + 2 + 1 + 3 + extra_len;
     size_t total = 1 + after_li; // + the LI octet itself
     if (after_li > 0xFF || total > cap)
@@ -95,7 +96,8 @@ size_t dws_cotp_build_cc(uint8_t *buf, size_t cap, uint16_t dst_ref, uint16_t sr
 {
     if (!buf || (extra_len && !extra_params))
         return 0;
-    // header after LI: code(1) dst-ref(2) src-ref(2) class(1) + tpdu-size param(3) + extras
+    // after the LI octet the header is the one-octet code, the two-octet destination and source references,
+    // the one-octet class, the three-octet TPDU-size parameter, then any extra parameters
     size_t after_li = 1 + 2 + 2 + 1 + 3 + extra_len;
     size_t total = 1 + after_li; // + the LI octet itself
     if (after_li > 0xFF || total > cap)

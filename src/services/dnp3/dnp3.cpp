@@ -353,7 +353,9 @@ bool dws_dnp3_parse_object_header(const uint8_t *buf, size_t len, Dnp3ObjectHead
         return false;
     uint8_t range_code = (uint8_t)(buf[2] & DNP3_QUAL_RANGE_MASK);
     size_t p = 3;
-    uint32_t start = 0, stop = 0, count = 0;
+    uint32_t start = 0;
+    uint32_t stop = 0;
+    uint32_t count = 0;
     bool is_count = false;
     switch (range_code)
     {

@@ -387,7 +387,7 @@ size_t dws_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const ch
 // Copy src into dst[cap], NUL-terminated; false if it does not fit.
 static bool dav_lock_copy(char *dst, size_t cap, const char *src)
 {
-    size_t n = strlen(src);
+    size_t n = strnlen(src, cap);
     if (n + 1 > cap)
         return false;
     memcpy(dst, src, n + 1);
@@ -397,7 +397,7 @@ static bool dav_lock_copy(char *dst, size_t cap, const char *src)
 // Normalize a path into dst, stripping trailing '/' (but keeping a lone root "/"). false on overflow.
 static bool dav_lock_norm(char *dst, size_t cap, const char *path)
 {
-    size_t n = strlen(path);
+    size_t n = strnlen(path, cap);
     while (n > 1 && path[n - 1] == '/') // drop trailing slashes so "/a/" and "/a" are one resource
         n--;
     if (n + 1 > cap)
@@ -410,7 +410,7 @@ static bool dav_lock_norm(char *dst, size_t cap, const char *path)
 // True if `child` equals `parent` or lies (at a segment boundary) under it. Both trailing-slash-normalized.
 static bool dav_lock_same_or_under(const char *parent, const char *child)
 {
-    size_t pn = strlen(parent);
+    size_t pn = strnlen(parent, DWS_DAV_LOCK_PATH_MAX);
     if (strncmp(parent, child, pn) != 0)
         return false;
     if (child[pn] == 0) // exactly equal
@@ -456,7 +456,7 @@ const DavLock *dws_dav_lock_acquire(DavLockTable *t, const char *path, const cha
     char np[DWS_DAV_LOCK_PATH_MAX];
     if (!dav_lock_norm(np, sizeof(np), path))
         return nullptr;
-    if (strlen(token) + 1 > DWS_DAV_LOCK_TOKEN_MAX) // token would not fit
+    if (strnlen(token, DWS_DAV_LOCK_TOKEN_MAX) + 1 > DWS_DAV_LOCK_TOKEN_MAX) // token would not fit
         return nullptr;
 
     // Conflict: an exclusive request clashes with any overlapping lock; a shared one only with an

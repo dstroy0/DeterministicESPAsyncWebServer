@@ -142,10 +142,10 @@ int dws_sb_modbus_driver(SouthboundDriver *drv_out, const char *name, DwsSbModbu
     // written), so an input-register driver leaves write / write_block unbound (framework: SB_ERR_UNSUPPORTED).
     bool writable = (ctx->fc == ModbusFunction::MODBUS_FC_READ_HOLDING_REGS);
     drv_out->name = name;
-    drv_out->read = sb_modbus_read;
-    drv_out->write = writable ? sb_modbus_write : nullptr;
-    drv_out->read_block = sb_modbus_read_block;
-    drv_out->write_block = writable ? sb_modbus_write_block : nullptr;
+    drv_out->read = &sb_modbus_read;
+    drv_out->write = writable ? &sb_modbus_write : nullptr;
+    drv_out->read_block = &sb_modbus_read_block;
+    drv_out->write_block = writable ? &sb_modbus_write_block : nullptr;
     drv_out->ctx = ctx;
     return Sb::SB_OK;
 }

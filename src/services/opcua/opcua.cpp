@@ -378,8 +378,9 @@ size_t dws_opcua_build_error(uint32_t error_code, const char *reason, uint8_t *o
     if (!out)
         return 0;
     int32_t rlen = reason ? (int32_t)strnlen(reason, cap) : -1;
-    // ERR F <size> Error(u32) Reason(String = int32 len + bytes)
-    const uint32_t total = (uint32_t)(8 + 4 + 4 + (rlen > 0 ? (uint32_t)rlen : 0));
+    // the wire layout is the four type octets, the total-size UInt32, the error-code UInt32, then the reason
+    // string carried as an int32 length followed by its bytes
+    const uint32_t total = 8 + 4 + 4 + (rlen > 0 ? (uint32_t)rlen : 0);
     UaWriter w = {out, cap, 0, true};
     dws_ua_w_u8(&w, 'E');
     dws_ua_w_u8(&w, 'R');

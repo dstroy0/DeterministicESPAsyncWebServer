@@ -93,7 +93,7 @@ bool dws_ipsec_selector_from_ts(IpsecSelector *out, const IkeTrafficSelector *ts
         return false;
 
     memset(out, 0, sizeof(*out));
-    uint8_t len = ts_src->addr_len;
+    uint8_t len = (uint8_t)ts_src->addr_len; // addr_len is an IP address length (<= 16), fits a uint8_t
     out->addr_len = len;
     out->ip_protocol = ts_src->ip_protocol ? ts_src->ip_protocol : ts_dst->ip_protocol;
     memcpy(out->src_lo, ts_src->start_addr, len);

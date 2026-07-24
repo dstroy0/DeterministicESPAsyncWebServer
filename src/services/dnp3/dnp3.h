@@ -179,7 +179,10 @@ int dws_dnp3_transport_feed(Dnp3TransportRx *r, const uint8_t *user, size_t user
 struct Dnp3AppHeader
 {
     uint8_t app_control; ///< raw Application Control octet
-    bool fir, fin, con, uns;
+    bool fir;
+    bool fin;
+    bool con;
+    bool uns;
     uint8_t seq;            ///< 4-bit application sequence
     uint8_t fc;             ///< function code
     bool is_response;       ///< true for RESPONSE / UNSOLICITED_RESPONSE (the two IIN octets are present)
