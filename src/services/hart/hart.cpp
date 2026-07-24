@@ -94,4 +94,22 @@ size_t dws_hartip_build_header(uint8_t msg_type, uint8_t msg_id, uint8_t status,
     return HartIp::HARTIP_HEADER_LEN;
 }
 
+bool dws_hartip_parse_header(const uint8_t *buf, size_t len, HartIpHeader *out)
+{
+    if (!buf || !out || len < HartIp::HARTIP_HEADER_LEN)
+        return false;
+    uint16_t total = (uint16_t)((buf[6] << 8) | buf[7]);
+    if (total < HartIp::HARTIP_HEADER_LEN || total > len) // the byte count must include the header and be present
+        return false;
+    out->version = buf[0];
+    out->msg_type = buf[1];
+    out->msg_id = buf[2];
+    out->status = buf[3];
+    out->seq = (uint16_t)((buf[4] << 8) | buf[5]);
+    out->total_len = total;
+    out->payload_len = (size_t)(total - HartIp::HARTIP_HEADER_LEN);
+    out->payload = out->payload_len ? buf + HartIp::HARTIP_HEADER_LEN : nullptr;
+    return true;
+}
+
 #endif // DWS_ENABLE_HART

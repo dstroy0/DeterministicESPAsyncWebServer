@@ -89,6 +89,45 @@ void test_hartip_header(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_hartip_build_header(0, 0, 0, 0, 0, nullptr, sizeof(out)));
 }
 
+void test_hartip_parse(void)
+{
+    uint8_t msg[32];
+    // A HART-IP response carrying a 5-octet token PDU payload; total length = 8 + 5 = 13.
+    size_t hn = dws_hartip_build_header(HartIp::HARTIP_MSG_RESPONSE, HartIp::HARTIP_ID_TOKEN_PDU, 0x00, 0x0042, 13, msg,
+                                        sizeof(msg));
+    TEST_ASSERT_EQUAL_size_t(8, hn);
+    const uint8_t payload[5] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
+    memcpy(msg + 8, payload, sizeof(payload));
+
+    HartIpHeader h;
+    TEST_ASSERT_TRUE(dws_hartip_parse_header(msg, 13, &h));
+    TEST_ASSERT_EQUAL_UINT8(1, h.version);
+    TEST_ASSERT_EQUAL_UINT8(HartIp::HARTIP_MSG_RESPONSE, h.msg_type);
+    TEST_ASSERT_EQUAL_UINT8(HartIp::HARTIP_ID_TOKEN_PDU, h.msg_id);
+    TEST_ASSERT_EQUAL_UINT8(0, h.status);
+    TEST_ASSERT_EQUAL_UINT16(0x0042, h.seq);
+    TEST_ASSERT_EQUAL_UINT16(13, h.total_len);
+    TEST_ASSERT_EQUAL_size_t(5, h.payload_len);
+    TEST_ASSERT_NOT_NULL(h.payload);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, h.payload, 5);
+
+    // A header-only message (total_len 8) parses with a null payload.
+    dws_hartip_build_header(HartIp::HARTIP_MSG_REQUEST, HartIp::HARTIP_ID_KEEPALIVE, 0, 1, 8, msg, sizeof(msg));
+    TEST_ASSERT_TRUE(dws_hartip_parse_header(msg, 8, &h));
+    TEST_ASSERT_EQUAL_size_t(0, h.payload_len);
+    TEST_ASSERT_NULL(h.payload);
+
+    // Truncation (declared 13, only 10 present), a byte count below the header, a short buffer, and nulls.
+    dws_hartip_build_header(HartIp::HARTIP_MSG_RESPONSE, HartIp::HARTIP_ID_TOKEN_PDU, 0, 1, 13, msg, sizeof(msg));
+    TEST_ASSERT_FALSE(dws_hartip_parse_header(msg, 10, &h)); // total_len 13 > len 10
+    msg[6] = 0x00;
+    msg[7] = 0x05; // total_len 5 < header length 8
+    TEST_ASSERT_FALSE(dws_hartip_parse_header(msg, 8, &h));
+    TEST_ASSERT_FALSE(dws_hartip_parse_header(msg, 7, &h)); // short buffer
+    TEST_ASSERT_FALSE(dws_hartip_parse_header(nullptr, 8, &h));
+    TEST_ASSERT_FALSE(dws_hartip_parse_header(msg, 8, nullptr));
+}
+
 void test_build_and_parse_guards()
 {
     uint8_t out[32];
@@ -132,6 +171,7 @@ int main(void)
     RUN_TEST(test_build_long_address);
     RUN_TEST(test_parse_roundtrip_and_bad_checksum);
     RUN_TEST(test_hartip_header);
+    RUN_TEST(test_hartip_parse);
     RUN_TEST(test_build_and_parse_guards);
     return UNITY_END();
 }

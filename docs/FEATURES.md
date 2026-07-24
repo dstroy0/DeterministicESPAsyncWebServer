@@ -470,7 +470,7 @@ Opt-in safeties for removable storage that can vanish mid-write. Default off. An
 
 `DWS_ENABLE_HART`
 
-Opt-in HART / HART-IP process-instrument protocol codec. When set, services/hart provides the HART command-frame codec (build/parse with the longitudinal XOR checksum, short + long addressing) and the 8-octet HART-IP message header, so a device speaks HART over UDP/TCP 5094 (front-end-free) or, with a HART FSK modem, over the 4-20 mA loop. Pure, host-tested. Default off.
+Opt-in HART / HART-IP process-instrument protocol codec. When set, services/hart provides the HART command-frame codec (build/parse with the longitudinal XOR checksum, short + long addressing) and the 8-octet HART-IP message header (both directions: `dws_hartip_build_header` frames a request/response/publish, and `dws_hartip_parse_header` decodes a received message - version / type / id / status / sequence / byte-count - and exposes its payload slice, e.g. the token-passing PDU, rejecting a truncated message whose declared length exceeds the buffer), so a device speaks HART over UDP/TCP 5094 (front-end-free) or, with a HART FSK modem, over the 4-20 mA loop. Pure, host-tested. Default off.
 
 ## HiSLIP
 

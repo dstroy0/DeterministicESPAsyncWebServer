@@ -100,5 +100,25 @@ bool dws_hart_parse(const uint8_t *frame, size_t len, HartFrame *out);
 size_t dws_hartip_build_header(uint8_t msg_type, uint8_t msg_id, uint8_t status, uint16_t seq, uint16_t total_len,
                                uint8_t *out, size_t cap);
 
+/** @brief A parsed HART-IP message header + payload slice (the payload points into the input buffer). */
+struct HartIpHeader
+{
+    uint8_t version;        ///< HART-IP protocol version (1)
+    uint8_t msg_type;       ///< message type (HartIp::HARTIP_MSG_*)
+    uint8_t msg_id;         ///< message id (HartIp::HARTIP_ID_*)
+    uint8_t status;         ///< status / error byte (0 in a request)
+    uint16_t seq;           ///< sequence number
+    uint16_t total_len;     ///< total message length (header + payload) declared in the header
+    const uint8_t *payload; ///< the payload after the 8-octet header, or nullptr if none
+    size_t payload_len;     ///< payload length (total_len - 8)
+};
+
+/**
+ * @brief Parse an 8-octet HART-IP message header and expose its payload slice (e.g. the token-passing PDU).
+ * @return true iff @p len >= 8 and the declared total length is 8..len (the whole message is present); false
+ *         on a short buffer, a total length below the header, or a truncated message.
+ */
+bool dws_hartip_parse_header(const uint8_t *buf, size_t len, HartIpHeader *out);
+
 #endif // DWS_ENABLE_HART
 #endif // DETERMINISTICESPASYNCWEBSERVER_HART_H
