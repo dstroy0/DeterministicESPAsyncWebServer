@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5127 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5128 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29452,7 +29452,7 @@ A thorough directory of all **5127 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (22 tests)</b></summary>
+<summary><b>test_nmea0183 (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -29779,6 +29779,27 @@ A thorough directory of all **5127 test cases** across **291 suites**. Expand a 
       * <code>Assert false (w.valid)</code>
       * <code>Assert false (dws_nmea0183_parse_mwv(&m, &w))</code>
       * <code>Assert false (dws_nmea0183_parse_mwv(nullptr, &w))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_dpt</b> &mdash; <i>Depth 2.4 m relative to the transducer, offset +0.5 m (to waterline), range scale 200 m.</i></summary>
+
+    * **Objective**: Depth 2.4 m relative to the transducer, offset +0.5 m (to waterline), range scale 200 m.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_dpt(&m, &d))</code>
+      * <code>Assert float within (0.01f, 2.4f, d.depth_m)</code>
+      * <code>Assert float within (0.01f, 0.5f, d.offset_m)</code>
+      * <code>Assert true (d.has_range)</code>
+      * <code>Assert float within (0.01f, 200.0f, d.range_m)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_dpt(&m, &d))</code>
+      * <code>Assert float within (0.01f, 10.5f, d.depth_m)</code>
+      * <code>Assert float within (0.01f, -0.3f, d.offset_m)</code>
+      * <code>Assert false (d.has_range)</code>
+      * <code>Assert false (dws_nmea0183_parse_dpt(&m, &d))</code>
+      * <code>Assert false (dws_nmea0183_parse_dpt(nullptr, &d))</code>
   </details>
 
   <details style="margin-left: 20px;">
