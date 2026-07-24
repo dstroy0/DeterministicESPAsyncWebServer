@@ -187,4 +187,49 @@ size_t dws_rdm_build_disc_response(uint8_t *buf, size_t cap, uint64_t uid, uint8
     return p;
 }
 
+size_t dws_rdm_build_device_info(uint8_t *pdata, size_t cap, const RdmDeviceInfo *info)
+{
+    if (!pdata || !info || cap < DWS_RDM_DEVICE_INFO_PDL)
+        return 0;
+    pdata[0] = info->proto_major;
+    pdata[1] = info->proto_minor;
+    pdata[2] = (uint8_t)(info->device_model_id >> 8); // all multi-octet fields big-endian
+    pdata[3] = (uint8_t)info->device_model_id;
+    pdata[4] = (uint8_t)(info->product_category >> 8);
+    pdata[5] = (uint8_t)info->product_category;
+    pdata[6] = (uint8_t)(info->software_version_id >> 24);
+    pdata[7] = (uint8_t)(info->software_version_id >> 16);
+    pdata[8] = (uint8_t)(info->software_version_id >> 8);
+    pdata[9] = (uint8_t)info->software_version_id;
+    pdata[10] = (uint8_t)(info->dmx_footprint >> 8);
+    pdata[11] = (uint8_t)info->dmx_footprint;
+    pdata[12] = info->current_personality;
+    pdata[13] = info->personality_count;
+    pdata[14] = (uint8_t)(info->dmx_start_address >> 8);
+    pdata[15] = (uint8_t)info->dmx_start_address;
+    pdata[16] = (uint8_t)(info->sub_device_count >> 8);
+    pdata[17] = (uint8_t)info->sub_device_count;
+    pdata[18] = info->sensor_count;
+    return DWS_RDM_DEVICE_INFO_PDL;
+}
+
+bool dws_rdm_parse_device_info(const uint8_t *pdata, uint8_t pdl, RdmDeviceInfo *out)
+{
+    if (!pdata || !out || pdl < DWS_RDM_DEVICE_INFO_PDL)
+        return false;
+    out->proto_major = pdata[0];
+    out->proto_minor = pdata[1];
+    out->device_model_id = (uint16_t)((pdata[2] << 8) | pdata[3]);
+    out->product_category = (uint16_t)((pdata[4] << 8) | pdata[5]);
+    out->software_version_id =
+        ((uint32_t)pdata[6] << 24) | ((uint32_t)pdata[7] << 16) | ((uint32_t)pdata[8] << 8) | (uint32_t)pdata[9];
+    out->dmx_footprint = (uint16_t)((pdata[10] << 8) | pdata[11]);
+    out->current_personality = pdata[12];
+    out->personality_count = pdata[13];
+    out->dmx_start_address = (uint16_t)((pdata[14] << 8) | pdata[15]);
+    out->sub_device_count = (uint16_t)((pdata[16] << 8) | pdata[17]);
+    out->sensor_count = pdata[18];
+    return true;
+}
+
 #endif // DWS_ENABLE_DMX

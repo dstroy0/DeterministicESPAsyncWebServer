@@ -184,6 +184,70 @@ void test_rdm_set_with_data()
     TEST_ASSERT_EQUAL_MEMORY(addr, g.pdata, 2);
 }
 
+void test_rdm_device_info()
+{
+    RdmDeviceInfo in;
+    in.proto_major = 1;
+    in.proto_minor = 0;
+    in.device_model_id = 0x1234;
+    in.product_category = 0x0100;
+    in.software_version_id = 0x0A0B0C0Du;
+    in.dmx_footprint = 3;
+    in.current_personality = 1;
+    in.personality_count = 4;
+    in.dmx_start_address = 100;
+    in.sub_device_count = 0;
+    in.sensor_count = 2;
+
+    // Packs the 19-octet big-endian DEVICE_INFO block byte-exact (E1.20 Table A-15 field order).
+    uint8_t pd[24];
+    size_t n = dws_rdm_build_device_info(pd, sizeof(pd), &in);
+    TEST_ASSERT_EQUAL_size_t(DWS_RDM_DEVICE_INFO_PDL, n);
+    const uint8_t expect[] = {0x01, 0x00, 0x12, 0x34, 0x01, 0x00, 0x0A, 0x0B, 0x0C, 0x0D,
+                              0x00, 0x03, 0x01, 0x04, 0x00, 0x64, 0x00, 0x00, 0x02};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, pd, n);
+
+    // Round-trips back to the same fields.
+    RdmDeviceInfo out;
+    TEST_ASSERT_TRUE(dws_rdm_parse_device_info(pd, (uint8_t)n, &out));
+    TEST_ASSERT_EQUAL_UINT8(1, out.proto_major);
+    TEST_ASSERT_EQUAL_UINT8(0, out.proto_minor);
+    TEST_ASSERT_EQUAL_HEX16(0x1234, out.device_model_id);
+    TEST_ASSERT_EQUAL_HEX16(0x0100, out.product_category);
+    TEST_ASSERT_EQUAL_HEX32(0x0A0B0C0Du, out.software_version_id);
+    TEST_ASSERT_EQUAL_UINT16(3, out.dmx_footprint);
+    TEST_ASSERT_EQUAL_UINT8(1, out.current_personality);
+    TEST_ASSERT_EQUAL_UINT8(4, out.personality_count);
+    TEST_ASSERT_EQUAL_UINT16(100, out.dmx_start_address);
+    TEST_ASSERT_EQUAL_UINT16(0, out.sub_device_count);
+    TEST_ASSERT_EQUAL_UINT8(2, out.sensor_count);
+
+    // End-to-end: the block rides a real DEVICE_INFO GET-response packet and parses back out.
+    RdmPacket p;
+    memset(&p, 0, sizeof(p));
+    p.dest_uid = dws_rdm_uid(0x4444, 0x00000001);
+    p.src_uid = dws_rdm_uid(0x7A70, 0x000000AA);
+    p.cc = RDM_CC_GET_RESPONSE;
+    p.pid = RDM_PID_DEVICE_INFO;
+    uint8_t buf[64];
+    size_t pn = dws_rdm_build(buf, sizeof(buf), &p, pd, (uint8_t)n);
+    TEST_ASSERT_EQUAL_size_t(RDM_OVERHEAD + DWS_RDM_DEVICE_INFO_PDL, pn);
+    RdmPacket g;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_rdm_parse(buf, pn, &g, &c));
+    TEST_ASSERT_EQUAL_HEX16(RDM_PID_DEVICE_INFO, g.pid);
+    RdmDeviceInfo out2;
+    TEST_ASSERT_TRUE(dws_rdm_parse_device_info(g.pdata, g.pdl, &out2));
+    TEST_ASSERT_EQUAL_HEX16(0x1234, out2.device_model_id);
+    TEST_ASSERT_EQUAL_UINT16(100, out2.dmx_start_address);
+
+    // Guards: short cap / pdl and nulls fail closed.
+    TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_device_info(pd, 18, &in));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_device_info(nullptr, sizeof(pd), &in));
+    TEST_ASSERT_FALSE(dws_rdm_parse_device_info(pd, 18, &out));
+    TEST_ASSERT_FALSE(dws_rdm_parse_device_info(nullptr, 19, &out));
+}
+
 void test_rdm_parse_rejects_bad()
 {
     RdmPacket p;
@@ -300,6 +364,7 @@ int main()
     RUN_TEST(test_rdm_build_disc_response);
     RUN_TEST(test_rdm_get_roundtrip);
     RUN_TEST(test_rdm_set_with_data);
+    RUN_TEST(test_rdm_device_info);
     RUN_TEST(test_rdm_parse_rejects_bad);
     RUN_TEST(test_dmx_rdm_error_paths);
     RUN_TEST(test_dmx_build_get_channel_branches);

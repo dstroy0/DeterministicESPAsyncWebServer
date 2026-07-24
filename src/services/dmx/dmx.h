@@ -128,5 +128,40 @@ bool dws_rdm_decode_disc_response(const uint8_t *buf, size_t len, uint64_t *uid)
  */
 size_t dws_rdm_build_disc_response(uint8_t *buf, size_t cap, uint64_t uid, uint8_t preamble_len);
 
+#define DWS_RDM_DEVICE_INFO_PDL 19 ///< octets in a DEVICE_INFO (PID 0x0060) GET-response parameter block
+
+/** @brief Decoded DEVICE_INFO (PID 0x0060) parameter data - the descriptor every RDM responder must
+ *  answer, carrying the fields a controller needs to patch and identify the device. */
+struct RdmDeviceInfo
+{
+    uint8_t proto_major;          ///< RDM protocol version major (1 for E1.20)
+    uint8_t proto_minor;          ///< RDM protocol version minor
+    uint16_t device_model_id;     ///< manufacturer-specific device model id
+    uint16_t product_category;    ///< E1.20 product category code
+    uint32_t software_version_id; ///< manufacturer-specific software version id
+    uint16_t dmx_footprint;       ///< number of DMX512 slots the current personality occupies
+    uint8_t current_personality;  ///< current DMX personality (1-based)
+    uint8_t personality_count;    ///< total number of DMX personalities
+    uint16_t dmx_start_address;   ///< DMX512 start address (1-512; 0xFFFF if the device uses no DMX)
+    uint16_t sub_device_count;    ///< number of sub-devices (0 = none)
+    uint8_t sensor_count;         ///< number of sensors
+};
+
+/**
+ * @brief Pack a DEVICE_INFO (PID 0x0060) GET-response parameter block from @p info into @p pdata: the
+ *        19-octet big-endian descriptor (protocol version, device model, product category, software
+ *        version, DMX footprint / personality / start address, sub-device and sensor counts). Hand the
+ *        result to dws_rdm_build as the pdata of a GET-response with pid RDM_PID_DEVICE_INFO.
+ * @return DWS_RDM_DEVICE_INFO_PDL (19), or 0 on a null argument or @p cap < 19.
+ */
+size_t dws_rdm_build_device_info(uint8_t *pdata, size_t cap, const RdmDeviceInfo *info);
+
+/**
+ * @brief Decode a DEVICE_INFO (PID 0x0060) GET-response parameter block into @p out (the complement of
+ *        dws_rdm_build_device_info).
+ * @return true iff @p pdl is at least 19 octets; false on a null argument or a short block.
+ */
+bool dws_rdm_parse_device_info(const uint8_t *pdata, uint8_t pdl, RdmDeviceInfo *out);
+
 #endif // DWS_ENABLE_DMX
 #endif // DETERMINISTICESPASYNCWEBSERVER_DMX_H
