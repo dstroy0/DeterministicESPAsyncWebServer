@@ -427,6 +427,35 @@ void test_decode_mwv()
     TEST_ASSERT_FALSE(dws_nmea0183_parse_mwv(nullptr, &w));
 }
 
+void test_decode_dpt()
+{
+    char buf[96];
+    // Depth 2.4 m relative to the transducer, offset +0.5 m (to waterline), range scale 200 m.
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "SDDPT,2.4,0.5,200.0");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaDpt d;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_dpt(&m, &d));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 2.4f, d.depth_m);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.5f, d.offset_m);
+    TEST_ASSERT_TRUE(d.has_range);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 200.0f, d.range_m);
+
+    // A DPT without the optional range field, with a negative (to-keel) offset.
+    n = dws_nmea0183_build(buf, sizeof(buf), "SDDPT,10.5,-0.3");
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_dpt(&m, &d));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 10.5f, d.depth_m);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, -0.3f, d.offset_m);
+    TEST_ASSERT_FALSE(d.has_range);
+
+    // A GGA is not a DPT, and null args are rejected.
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_dpt(&m, &d));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_dpt(nullptr, &d));
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -465,6 +494,7 @@ int main()
     RUN_TEST(test_decode_vtg);
     RUN_TEST(test_decode_gsa);
     RUN_TEST(test_decode_mwv);
+    RUN_TEST(test_decode_dpt);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }

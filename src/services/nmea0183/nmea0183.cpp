@@ -346,4 +346,15 @@ bool dws_nmea0183_parse_mwv(const Nmea0183 *m, DwsNmeaMwv *out)
     return true;
 }
 
+bool dws_nmea0183_parse_dpt(const Nmea0183 *m, DwsNmeaDpt *out)
+{
+    if (!m || !out || strcmp(m->type, "DPT") != 0 || m->field_count < 3) // need depth (field 1) + offset (field 2)
+        return false;
+    memset(out, 0, sizeof(*out));
+    dws_nmea0183_field_float(m, 1, &out->depth_m); // stays 0 if empty (out was zeroed)
+    dws_nmea0183_field_float(m, 2, &out->offset_m);
+    out->has_range = dws_nmea0183_field_float(m, 3, &out->range_m); // the range scale is optional
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183

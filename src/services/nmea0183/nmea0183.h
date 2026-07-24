@@ -202,5 +202,20 @@ struct DwsNmeaMwv
  */
 bool dws_nmea0183_parse_mwv(const Nmea0183 *m, DwsNmeaMwv *out);
 
+/** @brief Decoded DPT (depth of water): depth relative to the transducer plus the transducer offset. */
+struct DwsNmeaDpt
+{
+    float depth_m;  ///< water depth relative to the transducer (meters)
+    float offset_m; ///< transducer offset (meters): + = transducer to waterline, - = transducer to keel
+    bool has_range; ///< true when the optional maximum-range-scale field is present
+    float range_m;  ///< maximum range scale in use (meters), valid only when @ref has_range
+};
+
+/**
+ * @brief Decode a parsed DPT sentence into @p out. @return true iff @p m is a DPT sentence with the depth
+ *        and offset fields; false otherwise. The optional range scale sets @ref DwsNmeaDpt::has_range.
+ */
+bool dws_nmea0183_parse_dpt(const Nmea0183 *m, DwsNmeaDpt *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H
