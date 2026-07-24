@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.66.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.66.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`129c559`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/129c559c0e8181087e11886471b1b8e799931e40))
+
+### Changes
+
+- Bump version: 7.65.0 → 7.66.0 ([`963a53a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/963a53a3d8024cc58f84243882a2034ebf8438d6))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`8946765`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/894676515ce863b4a56723e2e55e829a6904f130))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`32ae0d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32ae0d5ca003d69fbd9234240cfc38e09d23ae26))
+
+### Features
+
+- typed GGA + RMC decoders ([`2835bcb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2835bcb91336404e0bc4a6c156b22609082d344d))
+
+</details>
+
 ## [7.65.0] - 2026-07-24
 
 <details>
