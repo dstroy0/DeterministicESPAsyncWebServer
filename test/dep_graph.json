@@ -61,6 +61,7 @@
 "native_edge_mesh",
 "native_enip",
 "native_enocean",
+"native_esp",
 "native_espnow",
 "native_euromap77",
 "native_exc_decoder",
@@ -107,6 +108,7 @@
 "native_inflate",
 "native_interbus",
 "native_iolink",
+"native_ipsec_db",
 "native_j1939",
 "native_j2735",
 "native_jwt",
@@ -168,6 +170,7 @@
 "native_prov",
 "native_proxy_protocol",
 "native_psram_pool",
+"native_ptp",
 "native_qpack",
 "native_quic_conn",
 "native_quic_crypto",
@@ -185,11 +188,13 @@
 "native_rcwl0516",
 "native_redis",
 "native_relay",
+"native_roaming",
 "native_robotics",
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
 "native_safety_scl",
+"native_sb_modbus",
 "native_scp",
 "native_scpi",
 "native_scratch",
@@ -234,6 +239,7 @@
 "native_tls_policy",
 "native_totp",
 "native_trace_capture",
+"native_ubx",
 "native_udp_telemetry",
 "native_udp_transport",
 "native_umati",
@@ -320,6 +326,7 @@
 "native_edge_mesh",
 "native_enip",
 "native_enocean",
+"native_esp",
 "native_espnow",
 "native_euromap77",
 "native_exc_decoder",
@@ -366,6 +373,7 @@
 "native_inflate",
 "native_interbus",
 "native_iolink",
+"native_ipsec_db",
 "native_j1939",
 "native_j2735",
 "native_jwt",
@@ -427,6 +435,7 @@
 "native_prov",
 "native_proxy_protocol",
 "native_psram_pool",
+"native_ptp",
 "native_qpack",
 "native_quic_conn",
 "native_quic_crypto",
@@ -444,11 +453,13 @@
 "native_rcwl0516",
 "native_redis",
 "native_relay",
+"native_roaming",
 "native_robotics",
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
 "native_safety_scl",
+"native_sb_modbus",
 "native_scp",
 "native_scpi",
 "native_scratch",
@@ -493,6 +504,7 @@
 "native_tls_policy",
 "native_totp",
 "native_trace_capture",
+"native_ubx",
 "native_udp_telemetry",
 "native_udp_transport",
 "native_umati",
@@ -579,6 +591,7 @@
 "native_edge_mesh",
 "native_enip",
 "native_enocean",
+"native_esp",
 "native_espnow",
 "native_euromap77",
 "native_exc_decoder",
@@ -625,6 +638,7 @@
 "native_inflate",
 "native_interbus",
 "native_iolink",
+"native_ipsec_db",
 "native_j1939",
 "native_j2735",
 "native_jwt",
@@ -686,6 +700,7 @@
 "native_prov",
 "native_proxy_protocol",
 "native_psram_pool",
+"native_ptp",
 "native_qpack",
 "native_quic_conn",
 "native_quic_crypto",
@@ -703,11 +718,13 @@
 "native_rcwl0516",
 "native_redis",
 "native_relay",
+"native_roaming",
 "native_robotics",
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
 "native_safety_scl",
+"native_sb_modbus",
 "native_scp",
 "native_scpi",
 "native_scratch",
@@ -752,6 +769,7 @@
 "native_tls_policy",
 "native_totp",
 "native_trace_capture",
+"native_ubx",
 "native_udp_telemetry",
 "native_udp_transport",
 "native_umati",
@@ -838,6 +856,7 @@
 "native_edge_mesh",
 "native_enip",
 "native_enocean",
+"native_esp",
 "native_espnow",
 "native_euromap77",
 "native_exc_decoder",
@@ -884,6 +903,7 @@
 "native_inflate",
 "native_interbus",
 "native_iolink",
+"native_ipsec_db",
 "native_j1939",
 "native_j2735",
 "native_jwt",
@@ -945,6 +965,7 @@
 "native_prov",
 "native_proxy_protocol",
 "native_psram_pool",
+"native_ptp",
 "native_qpack",
 "native_quic_conn",
 "native_quic_crypto",
@@ -962,11 +983,13 @@
 "native_rcwl0516",
 "native_redis",
 "native_relay",
+"native_roaming",
 "native_robotics",
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
 "native_safety_scl",
+"native_sb_modbus",
 "native_scp",
 "native_scpi",
 "native_scratch",
@@ -1011,6 +1034,7 @@
 "native_tls_policy",
 "native_totp",
 "native_trace_capture",
+"native_ubx",
 "native_udp_telemetry",
 "native_udp_transport",
 "native_umati",
@@ -1738,6 +1762,7 @@
 "native_device_id",
 "native_diag",
 "native_h3_server",
+"native_ikev2",
 "native_keepalive",
 "native_pentest",
 "native_range",
@@ -1755,6 +1780,7 @@
 "native_device_id",
 "native_diag",
 "native_h3_server",
+"native_ikev2",
 "native_keepalive",
 "native_pentest",
 "native_range",
@@ -1857,6 +1883,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h": [
+"native_ikev2",
 "native_oidc",
 "native_ssh",
 "native_ssh_comp",
@@ -1866,6 +1893,9 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp": [
+"native_esp",
+"native_ikev2",
+"native_ipsec_db",
 "native_ssh",
 "native_ssh_aesgcm",
 "native_ssh_comp",
@@ -1875,6 +1905,9 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_aesgcm.h": [
+"native_esp",
+"native_ikev2",
+"native_ipsec_db",
 "native_oidc",
 "native_ssh",
 "native_ssh_aesgcm",
@@ -1885,6 +1918,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_bignum.cpp": [
+"native_ikev2",
 "native_oidc",
 "native_ssh",
 "native_ssh_comp",
@@ -1894,6 +1928,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_bignum.h": [
+"native_ikev2",
 "native_oidc",
 "native_ssh",
 "native_ssh_comp",
@@ -1932,6 +1967,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_chachapoly.h": [
+"native_ikev2",
 "native_oidc",
 "native_ssh",
 "native_ssh_chachapoly",
@@ -1950,6 +1986,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
@@ -1972,6 +2009,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
@@ -1986,6 +2024,7 @@
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp": [
+"native_ikev2",
 "native_ssh",
 "native_ssh_comp",
 "native_ssh_conn",
@@ -1995,6 +2034,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_ecdsa.h": [
+"native_ikev2",
 "native_ssh",
 "native_ssh_comp",
 "native_ssh_conn",
@@ -2056,6 +2096,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
 "native_quic_conn",
 "native_quic_server",
 "native_quic_tls",
@@ -2080,6 +2121,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
 "native_jwt",
 "native_pentest",
 "native_quic_conn",
@@ -2108,6 +2150,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
 "native_jwt",
 "native_pentest",
 "native_quic_conn",
@@ -2172,6 +2215,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_rsa.cpp": [
+"native_ikev2",
 "native_oidc",
 "native_ssh",
 "native_ssh_comp",
@@ -2181,6 +2225,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_rsa.h": [
+"native_ikev2",
 "native_oidc",
 "native_ssh",
 "native_ssh_comp",
@@ -2206,6 +2251,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
 "native_jwt",
 "native_keepalive",
 "native_oidc",
@@ -2245,6 +2291,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
 "native_jwt",
 "native_keepalive",
 "native_oidc",
@@ -2276,6 +2323,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
 "native_oidc",
 "native_pqc",
 "native_quic_conn",
@@ -2300,6 +2348,7 @@
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
 "native_oidc",
 "native_pqc",
 "native_quic_conn",
@@ -2346,6 +2395,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/transport/ssh_keymat.h": [
+"native_ikev2",
 "native_oidc",
 "native_ssh",
 "native_ssh_comp",
@@ -3170,6 +3220,20 @@
 "src/services/enocean/enocean.h": [
 "native_enocean"
 ],
+"src/services/esp/esp.cpp": [
+"native_esp",
+"native_ipsec_db"
+],
+"src/services/esp/esp.h": [
+"native_esp",
+"native_ipsec_db"
+],
+"src/services/esp/ipsec_db.cpp": [
+"native_ipsec_db"
+],
+"src/services/esp/ipsec_db.h": [
+"native_ipsec_db"
+],
 "src/services/espnow/espnow.cpp": [
 "native_espnow"
 ],
@@ -3408,6 +3472,13 @@
 "native_ikev2"
 ],
 "src/services/ikev2/ikev2.h": [
+"native_ikev2",
+"native_ipsec_db"
+],
+"src/services/ikev2/ikev2_natt.cpp": [
+"native_ikev2"
+],
+"src/services/ikev2/ikev2_natt.h": [
 "native_ikev2"
 ],
 "src/services/ina219/ina219.cpp": [
@@ -3537,20 +3608,24 @@
 "src/services/modbus/modbus.cpp": [
 "native_modbus",
 "native_modbus_master",
-"native_pentest"
+"native_pentest",
+"native_sb_modbus"
 ],
 "src/services/modbus/modbus.h": [
 "native_modbus",
 "native_modbus_master",
-"native_pentest"
+"native_pentest",
+"native_sb_modbus"
 ],
 "src/services/modbus/modbus_master.cpp": [
 "native_modbus_master",
-"native_pentest"
+"native_pentest",
+"native_sb_modbus"
 ],
 "src/services/modbus/modbus_master.h": [
 "native_modbus_master",
-"native_pentest"
+"native_pentest",
+"native_sb_modbus"
 ],
 "src/services/mpr121/mpr121.cpp": [
 "native_mpr121"
@@ -3780,6 +3855,12 @@
 "src/services/psram_pool/psram_pool.h": [
 "native_psram_pool"
 ],
+"src/services/ptp/ptp.cpp": [
+"native_ptp"
+],
+"src/services/ptp/ptp.h": [
+"native_ptp"
+],
 "src/services/radio_power/radio_power.cpp": [
 "native_radio_power"
 ],
@@ -3817,6 +3898,12 @@
 ],
 "src/services/relay/relay.h": [
 "native_relay"
+],
+"src/services/roaming/roaming.cpp": [
+"native_roaming"
+],
+"src/services/roaming/roaming.h": [
+"native_roaming"
 ],
 "src/services/robotics/robotics.cpp": [
 "native_robotics"
@@ -4020,10 +4107,18 @@
 "src/services/sockpool/sockpool.h": [
 "native_sockpool"
 ],
+"src/services/southbound/sb_modbus.cpp": [
+"native_sb_modbus"
+],
+"src/services/southbound/sb_modbus.h": [
+"native_sb_modbus"
+],
 "src/services/southbound/southbound.cpp": [
+"native_sb_modbus",
 "native_southbound"
 ],
 "src/services/southbound/southbound.h": [
+"native_sb_modbus",
 "native_southbound"
 ],
 "src/services/spa_router/spa_router.cpp": [
@@ -4109,6 +4204,12 @@
 ],
 "src/services/trace_capture/trace_capture.h": [
 "native_trace_capture"
+],
+"src/services/ubx/ubx.cpp": [
+"native_ubx"
+],
+"src/services/ubx/ubx.h": [
+"native_ubx"
 ],
 "src/services/udp_telemetry/udp_telemetry.cpp": [
 "native_udp_telemetry"
@@ -4207,6 +4308,7 @@
 "native_webdav_handler"
 ],
 "src/services/webdav/webdav.cpp": [
+"native_pentest",
 "native_webdav",
 "native_webdav_handler"
 ],
@@ -4215,6 +4317,7 @@
 "native_diag",
 "native_h3_server",
 "native_keepalive",
+"native_pentest",
 "native_range",
 "native_upload",
 "native_webdav",
@@ -4268,9 +4371,12 @@
 "native_crypto_kat",
 "native_dtls",
 "native_dtls_conn",
+"native_esp",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
+"native_ipsec_db",
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
@@ -4290,9 +4396,12 @@
 "native_crypto_kat",
 "native_dtls",
 "native_dtls_conn",
+"native_esp",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
+"native_ipsec_db",
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
@@ -4339,6 +4448,7 @@
 "native_nema_ts2",
 "native_pentest",
 "native_rawl2",
+"native_sb_modbus",
 "native_sdi12",
 "native_sht3x",
 "native_thread",
@@ -4370,6 +4480,7 @@
 "native_dbm",
 "native_device_id",
 "native_diag",
+"native_dnp3",
 "native_docstore",
 "native_dtls",
 "native_dtls_conn",
@@ -4384,6 +4495,7 @@
 "native_h3_e2e",
 "native_h3_server",
 "native_hislip",
+"native_ikev2",
 "native_jwt",
 "native_keepalive",
 "native_melsec",
@@ -4427,9 +4539,12 @@
 "native_crypto_kat",
 "native_dtls",
 "native_dtls_conn",
+"native_esp",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
+"native_ikev2",
+"native_ipsec_db",
 "native_oidc",
 "native_quic_conn",
 "native_quic_crypto",
@@ -4453,6 +4568,7 @@
 "native_h3_server",
 "native_keepalive",
 "native_oauth2",
+"native_pentest",
 "native_prov",
 "native_range",
 "native_upload",
