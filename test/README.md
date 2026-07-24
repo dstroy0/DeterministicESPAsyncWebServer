@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5083 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5086 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -3528,7 +3528,7 @@ A thorough directory of all **5083 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_canopen (23 tests)</b></summary>
+<summary><b>test_canopen (26 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_nmt_start_node</b> &mdash; <i>node 0 = all nodes is allowed; node 200 is out of range.</i></summary>
@@ -3854,6 +3854,64 @@ A thorough directory of all **5083 test cases** across **291 suites**. Expand a 
     * **Objective**: Parse sdo response extended
     * **Assertions**:
       * <code>Assert false (dws_canopen_parse_sdo_response(&f, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sdo_segmented_download_build</b> &mdash; <i>First segment: toggle 0, 7 octets, not last -> command 0x00.</i></summary>
+
+    * **Objective**: First segment: toggle 0, 7 octets, not last -> command 0x00.
+    * **Assertions**:
+      * <code>Assert true (dws_canopen_build_sdo_download_init(&f, 5, 0x2000, 1, 10))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(CANOPEN_COB_SDO_RX + 5, f.id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x21, f.data[0]); // download initiate, segmented, size indicated</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, f.data[1]); // index 0x2000 LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x20, f.data[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(1, f.data[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(10, f.data[4]); // total size LE</code>
+      * <code>Assert true (dws_canopen_build_sdo_download_segment(&f, 5, false, obj, 7, false))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, f.data[0]);</code>
+      * <code>Assert equal memory (obj, f.data + 1, 7)</code>
+      * <code>Assert true (dws_canopen_build_sdo_download_segment(&f, 5, true, obj + 7, 3, true))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x19, f.data[0]);</code>
+      * <code>Assert false (dws_canopen_build_sdo_download_segment(&f, 5, false, obj, 8, false))</code>
+      * <code>Assert false (dws_canopen_build_sdo_download_segment(&f, 0, false, obj, 3, false))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sdo_segmented_upload_roundtrip</b> &mdash; <i>Two server-response segments (same segment wire form), parsed + reassembled into the object.</i></summary>
+
+    * **Objective**: Two server-response segments (same segment wire form), parsed + reassembled into the object.
+    * **Assertions**:
+      * <code>Assert true (dws_canopen_build_sdo_upload_segment_req(&req, 5, false))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x60, req.data[0]);</code>
+      * <code>Assert true (dws_canopen_build_sdo_upload_segment_req(&req, 5, true))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x70, req.data[0]); // 0x60 | toggle bit</code>
+      * <code>Assert true (dws_canopen_parse_sdo_segment(&s1, &tg, data, &len, &last))</code>
+      * <code>Assert false (tg)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(7, len);</code>
+      * <code>Assert false (last)</code>
+      * <code>Assert true (dws_canopen_sdo_reasm_feed(&r, data, len, tg, last))</code>
+      * <code>Assert false (r.done)</code>
+      * <code>Assert true (dws_canopen_parse_sdo_segment(&s2, &tg, data, &len, &last))</code>
+      * <code>Assert true (tg)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, len);</code>
+      * <code>Assert true (last)</code>
+      * <code>Assert true (dws_canopen_sdo_reasm_feed(&r, data, len, tg, last))</code>
+      * <code>Assert true (r.done)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(10, r.len);</code>
+      * <code>Assert equal memory (obj, buf, 10)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sdo_segmented_guards</b> &mdash; <i>parse rejects an expedited response (command high bits non-zero) as not a segment.</i></summary>
+
+    * **Objective**: parse rejects an expedited response (command high bits non-zero) as not a segment.
+    * **Assertions**:
+      * <code>Assert false (dws_canopen_sdo_reasm_feed(&r, d, 7, true, false))</code>
+      * <code>Assert true (dws_canopen_sdo_reasm_feed(&r, d, 7, false, false))</code>
+      * <code>Assert false (dws_canopen_sdo_reasm_feed(&r, d, 7, false, false))</code>
+      * <code>Assert false (dws_canopen_sdo_reasm_feed(&r2, d, 7, false, false))</code>
+      * <code>Assert false (dws_canopen_parse_sdo_segment(&exp, &tg, data, &len, &last))</code>
   </details>
 
 </details>
