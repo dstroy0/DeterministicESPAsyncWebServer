@@ -238,6 +238,62 @@ void test_npdu_parse_null_buf_out_and_short()
     TEST_ASSERT_FALSE(dws_npdu_parse(frame, 1, &info));               // len < 2
 }
 
+void test_apdu_parse()
+{
+    BacnetApdu a;
+    // Confirmed-Request ReadProperty (service 12): type/flags, max octet, invoke id 1, service choice, data.
+    const uint8_t creq[] = {0x00, 0x05, 0x01, 0x0C, 0xDE, 0xAD};
+    TEST_ASSERT_TRUE(dws_apdu_parse(creq, sizeof(creq), &a));
+    TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_CONFIRMED_REQUEST, a.pdu_type);
+    TEST_ASSERT_FALSE(a.segmented);
+    TEST_ASSERT_EQUAL_UINT8(1, a.invoke_id);
+    TEST_ASSERT_EQUAL_UINT8(12, a.service_choice);
+    TEST_ASSERT_EQUAL_size_t(2, a.service_data_len);
+    TEST_ASSERT_EQUAL_HEX8(0xDE, a.service_data[0]);
+
+    // A segmented Confirmed-Request (SEG|SA) carries a sequence number + window before the service choice.
+    const uint8_t seg[] = {0x0A, 0x05, 0x02, 0x00, 0x04, 0x0C, 0x11};
+    TEST_ASSERT_TRUE(dws_apdu_parse(seg, sizeof(seg), &a));
+    TEST_ASSERT_TRUE(a.segmented);
+    TEST_ASSERT_TRUE(a.sa);
+    TEST_ASSERT_EQUAL_UINT8(2, a.invoke_id);
+    TEST_ASSERT_EQUAL_UINT8(12, a.service_choice);
+    TEST_ASSERT_EQUAL_size_t(1, a.service_data_len);
+
+    // Unconfirmed-Request I-Am (service 0), no invoke id.
+    const uint8_t ureq[] = {0x10, 0x00, 0xC4};
+    TEST_ASSERT_TRUE(dws_apdu_parse(ureq, sizeof(ureq), &a));
+    TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_UNCONFIRMED_REQUEST, a.pdu_type);
+    TEST_ASSERT_EQUAL_UINT8(0, a.service_choice);
+    TEST_ASSERT_EQUAL_size_t(1, a.service_data_len);
+
+    // Simple-ACK for WriteProperty (service 15): invoke id + service choice, no data.
+    const uint8_t sack[] = {0x20, 0x01, 0x0F};
+    TEST_ASSERT_TRUE(dws_apdu_parse(sack, sizeof(sack), &a));
+    TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_SIMPLE_ACK, a.pdu_type);
+    TEST_ASSERT_EQUAL_UINT8(1, a.invoke_id);
+    TEST_ASSERT_EQUAL_UINT8(15, a.service_choice);
+    TEST_ASSERT_NULL(a.service_data);
+
+    // Complex-ACK ReadProperty (service 12): invoke id + service choice + data.
+    const uint8_t cack[] = {0x30, 0x01, 0x0C, 0xBE};
+    TEST_ASSERT_TRUE(dws_apdu_parse(cack, sizeof(cack), &a));
+    TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_COMPLEX_ACK, a.pdu_type);
+    TEST_ASSERT_EQUAL_UINT8(1, a.invoke_id);
+    TEST_ASSERT_EQUAL_UINT8(12, a.service_choice);
+    TEST_ASSERT_EQUAL_size_t(1, a.service_data_len);
+
+    // Guards: an unsupported type (Error = 5), truncated headers, and nulls all fail closed.
+    const uint8_t err[] = {0x50, 0x01, 0x00};
+    TEST_ASSERT_FALSE(dws_apdu_parse(err, sizeof(err), &a));
+    TEST_ASSERT_FALSE(dws_apdu_parse(creq, 3, &a)); // confirmed request needs the service choice
+    TEST_ASSERT_FALSE(dws_apdu_parse(seg, 5, &a));  // segmented: needs seq/window + service choice
+    TEST_ASSERT_FALSE(dws_apdu_parse(sack, 2, &a)); // simple-ack needs the service choice
+    TEST_ASSERT_FALSE(dws_apdu_parse(nullptr, 4, &a));
+    TEST_ASSERT_FALSE(dws_apdu_parse(creq, sizeof(creq), nullptr));
+    TEST_ASSERT_FALSE(dws_apdu_parse(creq, 0, &a));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -254,5 +310,6 @@ int main()
     RUN_TEST(test_bvlc_parse_edge_branches);
     RUN_TEST(test_npdu_build_zero_apdu_and_null_dadr);
     RUN_TEST(test_npdu_parse_null_buf_out_and_short);
+    RUN_TEST(test_apdu_parse);
     return UNITY_END();
 }

@@ -93,6 +93,44 @@ struct NpduInfo
 /** @brief Parse + validate an NPDU (version, control, optional addressing) and slice the APDU. */
 bool dws_npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out);
 
+// --- APDU header (the application layer sliced out by dws_npdu_parse) ---
+
+// PDU types (the high nibble of the first APDU octet).
+#define BACNET_PDU_CONFIRMED_REQUEST 0
+#define BACNET_PDU_UNCONFIRMED_REQUEST 1
+#define BACNET_PDU_SIMPLE_ACK 2
+#define BACNET_PDU_COMPLEX_ACK 3
+#define BACNET_PDU_SEGMENT_ACK 4
+#define BACNET_PDU_ERROR 5
+#define BACNET_PDU_REJECT 6
+#define BACNET_PDU_ABORT 7
+
+// PDU flags (the low nibble of the first octet, on confirmed-request / complex-ack).
+#define BACNET_APDU_SEG 0x08 ///< the message is segmented
+#define BACNET_APDU_MOR 0x04 ///< more segments follow
+#define BACNET_APDU_SA 0x02  ///< the sender accepts a segmented response (confirmed-request only)
+
+/** @brief A decoded APDU header (from dws_apdu_parse). Service data points INTO the source buffer. */
+struct BacnetApdu
+{
+    uint8_t pdu_type;            ///< PDU type (BACNET_PDU_*)
+    bool segmented;              ///< SEG flag (confirmed-request / complex-ack)
+    bool more_follows;           ///< MOR flag
+    bool sa;                     ///< segmented-response-accepted flag (confirmed-request)
+    uint8_t invoke_id;           ///< invoke id (confirmed-request / simple-ack / complex-ack)
+    uint8_t service_choice;      ///< service choice
+    const uint8_t *service_data; ///< the service parameters after the header, or nullptr if none
+    size_t service_data_len;     ///< octets remaining after the header
+};
+
+/**
+ * @brief Decode an APDU header (PDU type, flags, invoke id, service choice) and slice the service data.
+ * @return true iff @p len covers the header for a supported PDU type (confirmed / unconfirmed request,
+ *         simple / complex ACK); false for a short buffer or an unsupported type (segment-ack / error /
+ *         reject / abort).
+ */
+bool dws_apdu_parse(const uint8_t *apdu, size_t len, BacnetApdu *out);
+
 #endif // DWS_ENABLE_BACNET
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_BACNET_H

@@ -129,4 +129,66 @@ bool dws_npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out)
     return true;
 }
 
+bool dws_apdu_parse(const uint8_t *apdu, size_t len, BacnetApdu *out)
+{
+    if (!apdu || !out || len < 1)
+        return false;
+    memset(out, 0, sizeof(*out));
+    out->pdu_type = (uint8_t)(apdu[0] >> 4);
+    size_t p = 1;
+    switch (out->pdu_type)
+    {
+    case BACNET_PDU_CONFIRMED_REQUEST:
+        out->segmented = (apdu[0] & BACNET_APDU_SEG) != 0;
+        out->more_follows = (apdu[0] & BACNET_APDU_MOR) != 0;
+        out->sa = (apdu[0] & BACNET_APDU_SA) != 0;
+        if (len < p + 2) // max-segs/max-apdu octet + invoke id
+            return false;
+        out->invoke_id = apdu[p + 1]; // apdu[1] is max segments / max APDU, apdu[2] is the invoke id
+        p += 2;
+        if (out->segmented) // a segmented request carries a sequence number + proposed window size
+        {
+            if (len < p + 2)
+                return false;
+            p += 2;
+        }
+        if (len < p + 1)
+            return false;
+        out->service_choice = apdu[p++];
+        break;
+    case BACNET_PDU_UNCONFIRMED_REQUEST:
+        if (len < p + 1)
+            return false;
+        out->service_choice = apdu[p++];
+        break;
+    case BACNET_PDU_SIMPLE_ACK:
+        if (len < p + 2) // invoke id + service-ACK choice
+            return false;
+        out->invoke_id = apdu[p++];
+        out->service_choice = apdu[p++];
+        break;
+    case BACNET_PDU_COMPLEX_ACK:
+        out->segmented = (apdu[0] & BACNET_APDU_SEG) != 0;
+        out->more_follows = (apdu[0] & BACNET_APDU_MOR) != 0;
+        if (len < p + 1) // invoke id
+            return false;
+        out->invoke_id = apdu[p++];
+        if (out->segmented)
+        {
+            if (len < p + 2)
+                return false;
+            p += 2;
+        }
+        if (len < p + 1)
+            return false;
+        out->service_choice = apdu[p++];
+        break;
+    default:
+        return false; // segment-ack / error / reject / abort are not decoded here
+    }
+    out->service_data = (p < len) ? apdu + p : nullptr;
+    out->service_data_len = len - p;
+    return true;
+}
+
 #endif // DWS_ENABLE_BACNET
