@@ -121,4 +121,83 @@ bool dws_dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_
     return true;
 }
 
+// --- transport function (IEEE 1815 §8.2) ---
+
+uint8_t dws_dnp3_transport_header(bool fir, bool fin, uint8_t seq)
+{
+    return (uint8_t)((fin ? DNP3_TR_FIN : 0u) | (fir ? DNP3_TR_FIR : 0u) | (seq & DNP3_TR_SEQ_MASK));
+}
+
+size_t dws_dnp3_build_transport_segment(uint8_t *out, size_t cap, bool fir, bool fin, uint8_t seq,
+                                        const uint8_t *app_data, size_t app_len)
+{
+    if (!out || (app_len && !app_data) || app_len > DNP3_TR_MAX_APP)
+        return 0;
+    if (cap < 1 + app_len)
+        return 0;
+    out[0] = dws_dnp3_transport_header(fir, fin, seq);
+    if (app_len)
+        memcpy(out + 1, app_data, app_len);
+    return 1 + app_len;
+}
+
+void dws_dnp3_transport_rx_init(Dnp3TransportRx *r, uint8_t *buf, size_t cap)
+{
+    if (!r)
+        return;
+    r->buf = buf;
+    r->cap = cap;
+    r->len = 0;
+    r->expect_seq = 0;
+    r->active = false;
+    r->done = false;
+}
+
+int dws_dnp3_transport_feed(Dnp3TransportRx *r, const uint8_t *user, size_t user_len)
+{
+    if (!r || !r->buf || !user || user_len < 1)
+        return DNP3_TR_IGNORED;
+    uint8_t hdr = user[0];
+    bool fir = (hdr & DNP3_TR_FIR) != 0;
+    bool fin = (hdr & DNP3_TR_FIN) != 0;
+    uint8_t seq = (uint8_t)(hdr & DNP3_TR_SEQ_MASK);
+    const uint8_t *app = user + 1;
+    size_t app_len = user_len - 1;
+
+    if (fir) // a first segment starts (or restarts) the fragment
+    {
+        r->len = 0;
+        r->active = true;
+        r->done = false;
+        r->expect_seq = seq;
+    }
+    else
+    {
+        if (!r->active) // a continuation with no fragment in progress
+            return DNP3_TR_IGNORED;
+        if (seq != r->expect_seq) // out of sequence: abandon and discard
+        {
+            r->active = false;
+            return DNP3_TR_IGNORED;
+        }
+    }
+
+    if (app_len > r->cap - r->len) // would overflow the fragment buffer
+    {
+        r->active = false;
+        return DNP3_TR_ERROR;
+    }
+    if (app_len)
+        memcpy(r->buf + r->len, app, app_len);
+    r->len += app_len;
+    r->expect_seq = (uint8_t)((r->expect_seq + 1) & DNP3_TR_SEQ_MASK);
+    if (fin)
+    {
+        r->active = false;
+        r->done = true;
+        return DNP3_TR_COMPLETE;
+    }
+    return DNP3_TR_PROGRESS;
+}
+
 #endif // DWS_ENABLE_DNP3

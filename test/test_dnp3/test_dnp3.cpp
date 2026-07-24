@@ -187,6 +187,79 @@ void test_parse_frame_null_guards()
     TEST_ASSERT_TRUE(dws_dnp3_parse_frame(buf, n, &f, user, sizeof(user), nullptr));
 }
 
+// --- transport function (IEEE 1815 §8.2) ---
+void test_transport_header_and_build()
+{
+    TEST_ASSERT_EQUAL_HEX8(0xC5, dws_dnp3_transport_header(true, true, 5)); // FIR+FIN+seq5
+    TEST_ASSERT_EQUAL_HEX8(0x40, dws_dnp3_transport_header(true, false, 0));
+    TEST_ASSERT_EQUAL_HEX8(0x80, dws_dnp3_transport_header(false, true, 0));
+
+    const uint8_t app[3] = {0xC1, 0x01, 0x3C}; // e.g. an app-layer READ request head
+    uint8_t seg[8];
+    size_t n = dws_dnp3_build_transport_segment(seg, sizeof(seg), true, true, 5, app, 3);
+    TEST_ASSERT_EQUAL_size_t(4, n);
+    TEST_ASSERT_EQUAL_HEX8(0xC5, seg[0]);
+    TEST_ASSERT_EQUAL_MEMORY(app, seg + 1, 3);
+    // Guards: buffer too small, and app data past the 249-octet segment limit.
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_transport_segment(seg, 2, true, true, 0, app, 3));
+    uint8_t big[300];
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_transport_segment(big, sizeof(big), true, true, 0, big, 250));
+}
+
+void test_transport_single_and_multi()
+{
+    uint8_t buf[512];
+    Dnp3TransportRx r;
+
+    // Single-frame fragment (FIR+FIN, seq 7).
+    dws_dnp3_transport_rx_init(&r, buf, sizeof(buf));
+    const uint8_t s0[4] = {0xC7, 0xAA, 0xBB, 0xCC};
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_COMPLETE, dws_dnp3_transport_feed(&r, s0, 4));
+    TEST_ASSERT_EQUAL_size_t(3, r.len);
+    TEST_ASSERT_TRUE(r.done);
+
+    // Three-segment fragment: FIR(seq3) + mid(seq4) + FIN(seq5).
+    dws_dnp3_transport_rx_init(&r, buf, sizeof(buf));
+    const uint8_t f1[3] = {0x43, 0x11, 0x22};
+    const uint8_t f2[3] = {0x04, 0x33, 0x44};
+    const uint8_t f3[2] = {0x85, 0x55};
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_PROGRESS, dws_dnp3_transport_feed(&r, f1, 3));
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_PROGRESS, dws_dnp3_transport_feed(&r, f2, 3));
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_COMPLETE, dws_dnp3_transport_feed(&r, f3, 2));
+    TEST_ASSERT_EQUAL_size_t(5, r.len);
+    const uint8_t expect[5] = {0x11, 0x22, 0x33, 0x44, 0x55};
+    TEST_ASSERT_EQUAL_MEMORY(expect, buf, 5);
+}
+
+void test_transport_errors()
+{
+    uint8_t buf[512];
+    Dnp3TransportRx r;
+    dws_dnp3_transport_rx_init(&r, buf, sizeof(buf));
+
+    // A continuation with no active fragment is ignored.
+    const uint8_t cont[2] = {0x01, 0x11};
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, cont, 2));
+
+    // Out of sequence: FIR seq0 then a segment with seq2 (expected 1) is discarded.
+    const uint8_t a[2] = {0x40, 0xAA};
+    const uint8_t bad[2] = {0x02, 0xBB};
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_PROGRESS, dws_dnp3_transport_feed(&r, a, 2));
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, bad, 2));
+
+    // Overflow: a 2-octet buffer cannot hold a 5-octet application chunk.
+    uint8_t tiny[2];
+    Dnp3TransportRx r2;
+    dws_dnp3_transport_rx_init(&r2, tiny, sizeof(tiny));
+    const uint8_t bigseg[6] = {0x40, 1, 2, 3, 4, 5};
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_ERROR, dws_dnp3_transport_feed(&r2, bigseg, 6));
+
+    // Null / empty guards.
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, nullptr, 5));
+    TEST_ASSERT_EQUAL_INT(DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, a, 0));
+    dws_dnp3_transport_rx_init(nullptr, buf, 512); // must not crash
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -200,5 +273,8 @@ int main()
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_build_frame_null_guards);
     RUN_TEST(test_parse_frame_null_guards);
+    RUN_TEST(test_transport_header_and_build);
+    RUN_TEST(test_transport_single_and_multi);
+    RUN_TEST(test_transport_errors);
     return UNITY_END();
 }

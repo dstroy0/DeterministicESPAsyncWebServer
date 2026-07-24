@@ -18,8 +18,9 @@
  *  - CRC is CRC-16/DNP (poly 0x3D65, init 0x0000, reflected in/out, final XOR 0xFFFF),
  *    transmitted low octet first.
  *
- * This is the data-link layer (framing + CRC). The transport-function reassembly and the
- * application layer (objects / function codes) are layered on the de-blocked user data.
+ * This is the data-link layer (framing + CRC) plus the transport function (IEEE 1815 §8.2:
+ * segment header + fragment reassembly). The application layer (objects / function codes) is layered
+ * on the reassembled fragment.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -79,6 +80,57 @@ struct Dnp3Frame
  */
 bool dws_dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *out_user, size_t out_cap,
                           size_t *out_user_len);
+
+// --- transport function (IEEE 1815 §8.2): reassemble application fragments from link user data ---
+//
+// Each data-link frame's user data begins with a 1-octet transport header - FIN (bit 7), FIR (bit 6), and
+// a 6-bit SEQUENCE - followed by up to 249 octets of the application fragment. A fragment starts with a
+// FIR segment, continues with sequence-incrementing segments, and ends with a FIN segment (a single-frame
+// fragment sets both). This layers on the de-blocked user data from dws_dnp3_parse_frame.
+
+#define DNP3_TR_FIN 0x80u      ///< transport header: final segment of the fragment
+#define DNP3_TR_FIR 0x40u      ///< transport header: first segment of the fragment
+#define DNP3_TR_SEQ_MASK 0x3Fu ///< transport header: 6-bit sequence number
+#define DNP3_TR_MAX_APP 249    ///< application octets per segment (250 user - 1 transport header)
+
+/** @brief Compose a transport header octet from the FIR / FIN flags and a 6-bit sequence. */
+uint8_t dws_dnp3_transport_header(bool fir, bool fin, uint8_t seq);
+
+/**
+ * @brief Build one transport segment (transport header + @p app_len application octets) into @p out.
+ * @return the segment length (1 + @p app_len), or 0 on a bad argument / overflow / @p app_len > 249.
+ */
+size_t dws_dnp3_build_transport_segment(uint8_t *out, size_t cap, bool fir, bool fin, uint8_t seq,
+                                        const uint8_t *app_data, size_t app_len);
+
+/** @brief Result of feeding a link frame's user data to the transport reassembler. */
+enum Dnp3TransportResult
+{
+    DNP3_TR_IGNORED = 0, ///< out-of-sequence / a continuation with no active fragment: discarded
+    DNP3_TR_PROGRESS,    ///< a segment was accepted, more expected
+    DNP3_TR_COMPLETE,    ///< the fragment is fully reassembled (see buf / len)
+    DNP3_TR_ERROR,       ///< a buffer overflow (the fragment is abandoned)
+};
+
+/** @brief Transport-function reassembly state (one in-flight application fragment). */
+struct Dnp3TransportRx
+{
+    uint8_t *buf;       ///< caller-provided accumulation buffer
+    size_t cap;         ///< its capacity
+    size_t len;         ///< application octets accumulated so far
+    uint8_t expect_seq; ///< the sequence the next segment must carry
+    bool active;        ///< a fragment is in progress (a FIR was seen)
+    bool done;          ///< the last segment (FIN) was accepted
+};
+
+/** @brief Begin transport reassembly with a caller-owned buffer. */
+void dws_dnp3_transport_rx_init(Dnp3TransportRx *r, uint8_t *buf, size_t cap);
+
+/**
+ * @brief Feed one link frame's de-blocked user data (transport header + application octets).
+ * @return a @ref Dnp3TransportResult. On DNP3_TR_COMPLETE the reassembled fragment is @c buf[0..len).
+ */
+int dws_dnp3_transport_feed(Dnp3TransportRx *r, const uint8_t *user, size_t user_len);
 
 #endif // DWS_ENABLE_DNP3
 
