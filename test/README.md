@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5166 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5167 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -37737,7 +37737,7 @@ A thorough directory of all **5166 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_profibus (10 tests)</b></summary>
+<summary><b>test_profibus (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fcs</b> &mdash; <i>Fcs</i></summary>
@@ -37760,6 +37760,27 @@ A thorough directory of all **5166 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x02, t.sa);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x49, t.fc);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, t.data_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sd3_roundtrip</b> &mdash; <i>FCS = (0x05 + 0x02 + 0x7C + sum(data)) mod 256 = 0xE7.</i></summary>
+
+    * **Objective**: FCS = (0x05 + 0x02 + 0x7C + sum(data)) mod 256 = 0xE7.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(14, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 14);</code>
+      * <code>Assert true (dws_pb_parse(out, n, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_SD3, t.sd);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x05, t.da);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, t.sa);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x7C, t.fc);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, t.data_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, t.data, 8);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd3(0x05, 0x02, 0x7C, data, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd3(0x05, 0x02, 0x7C, nullptr, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd3(0x05, 0x02, 0x7C, data, out, 13)); // needs 14</code>
+      * <code>Assert false (dws_pb_parse(out, n, &t))</code>
+      * <code>Assert false (dws_pb_parse(out, 13, &t))</code>
   </details>
 
   <details style="margin-left: 20px;">
