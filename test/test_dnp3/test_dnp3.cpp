@@ -323,6 +323,90 @@ void test_app_response_roundtrip()
     TEST_ASSERT_EQUAL_UINT(0, dws_dnp3_build_app_response(buf, 3, ac, DNP3_FC_RESPONSE, iin, obj, sizeof(obj)));
 }
 
+void test_object_header_forms()
+{
+    Dnp3ObjectHeader h;
+    // Start-stop, 1-octet indexes: group 1 var 2 (binary inputs), 0..9 -> count 10, then 2 object octets.
+    const uint8_t ss1[] = {0x01, 0x02, 0x00, 0x00, 0x09, 0xAA, 0xBB};
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(ss1, sizeof(ss1), &h));
+    TEST_ASSERT_EQUAL_UINT8(1, h.group);
+    TEST_ASSERT_EQUAL_UINT8(2, h.variation);
+    TEST_ASSERT_EQUAL_UINT8(0, h.prefix_code);
+    TEST_ASSERT_EQUAL_UINT8(DNP3_RANGE_START_STOP_1, h.range_code);
+    TEST_ASSERT_FALSE(h.is_count);
+    TEST_ASSERT_EQUAL_UINT32(0, h.start);
+    TEST_ASSERT_EQUAL_UINT32(9, h.stop);
+    TEST_ASSERT_EQUAL_UINT32(10, h.count);
+    TEST_ASSERT_EQUAL_size_t(2, h.objects_len);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, h.objects[0]);
+
+    // Start-stop, 2-octet indexes: group 30 var 1 (analog inputs), 100..200 -> count 101.
+    const uint8_t ss2[] = {0x1E, 0x01, 0x01, 0x64, 0x00, 0xC8, 0x00};
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(ss2, sizeof(ss2), &h));
+    TEST_ASSERT_EQUAL_UINT8(30, h.group);
+    TEST_ASSERT_EQUAL_UINT32(100, h.start);
+    TEST_ASSERT_EQUAL_UINT32(200, h.stop);
+    TEST_ASSERT_EQUAL_UINT32(101, h.count);
+    TEST_ASSERT_NULL(h.objects); // nothing after the range
+
+    // Start-stop, 4-octet indexes: 0..3 -> count 4.
+    const uint8_t ss4[] = {0x1E, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00};
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(ss4, sizeof(ss4), &h));
+    TEST_ASSERT_EQUAL_UINT32(0, h.start);
+    TEST_ASSERT_EQUAL_UINT32(3, h.stop);
+    TEST_ASSERT_EQUAL_UINT32(4, h.count);
+
+    // Count forms (1/2/4-octet): group 2 var 1 (binary input events).
+    const uint8_t c1[] = {0x02, 0x01, 0x07, 0x03, 0x11, 0x22, 0x33};
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(c1, sizeof(c1), &h));
+    TEST_ASSERT_EQUAL_UINT8(DNP3_RANGE_COUNT_1, h.range_code);
+    TEST_ASSERT_TRUE(h.is_count);
+    TEST_ASSERT_EQUAL_UINT32(3, h.count);
+    TEST_ASSERT_EQUAL_size_t(3, h.objects_len);
+    const uint8_t c2[] = {0x02, 0x01, 0x08, 0x05, 0x00};
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(c2, sizeof(c2), &h));
+    TEST_ASSERT_EQUAL_UINT32(5, h.count);
+    const uint8_t c4[] = {0x02, 0x01, 0x09, 0x0A, 0x00, 0x00, 0x00};
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(c4, sizeof(c4), &h));
+    TEST_ASSERT_EQUAL_UINT32(10, h.count);
+
+    // No-range: group 60 var 1 (class 0 data), qualifier 0x06 -> all objects, no range field.
+    const uint8_t allobj[] = {0x3C, 0x01, 0x06};
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(allobj, sizeof(allobj), &h));
+    TEST_ASSERT_EQUAL_UINT8(60, h.group);
+    TEST_ASSERT_EQUAL_UINT8(DNP3_RANGE_NO_RANGE, h.range_code);
+    TEST_ASSERT_EQUAL_UINT32(0, h.count);
+    TEST_ASSERT_NULL(h.objects);
+
+    // A qualifier prefix code (bits 6-4) is surfaced: 0x17 = prefix 1, count-1 range.
+    const uint8_t pref[] = {0x02, 0x01, 0x17, 0x02};
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(pref, sizeof(pref), &h));
+    TEST_ASSERT_EQUAL_UINT8(1, h.prefix_code);
+    TEST_ASSERT_EQUAL_UINT8(DNP3_RANGE_COUNT_1, h.range_code);
+    TEST_ASSERT_EQUAL_UINT32(2, h.count);
+}
+
+void test_object_header_rejects()
+{
+    Dnp3ObjectHeader h;
+    // Too short for even the 3-octet header.
+    const uint8_t two[] = {0x01, 0x02};
+    TEST_ASSERT_FALSE(dws_dnp3_parse_object_header(two, sizeof(two), &h));
+    // Truncated range fields: start-stop-1 (needs 2), start-stop-2 (needs 4), count-2 (needs 2).
+    const uint8_t t1[] = {0x01, 0x02, 0x00, 0x00};
+    TEST_ASSERT_FALSE(dws_dnp3_parse_object_header(t1, sizeof(t1), &h));
+    const uint8_t t2[] = {0x1E, 0x01, 0x01, 0x64, 0x00};
+    TEST_ASSERT_FALSE(dws_dnp3_parse_object_header(t2, sizeof(t2), &h));
+    const uint8_t t3[] = {0x02, 0x01, 0x08, 0x05};
+    TEST_ASSERT_FALSE(dws_dnp3_parse_object_header(t3, sizeof(t3), &h));
+    // An unsupported qualifier range form (0x0B, variable-format) is rejected.
+    const uint8_t badq[] = {0x02, 0x01, 0x0B, 0x01};
+    TEST_ASSERT_FALSE(dws_dnp3_parse_object_header(badq, sizeof(badq), &h));
+    // Null guards.
+    TEST_ASSERT_FALSE(dws_dnp3_parse_object_header(nullptr, 5, &h));
+    TEST_ASSERT_FALSE(dws_dnp3_parse_object_header(two, 5, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -341,5 +425,7 @@ int main()
     RUN_TEST(test_transport_errors);
     RUN_TEST(test_app_request_roundtrip);
     RUN_TEST(test_app_response_roundtrip);
+    RUN_TEST(test_object_header_forms);
+    RUN_TEST(test_object_header_rejects);
     return UNITY_END();
 }

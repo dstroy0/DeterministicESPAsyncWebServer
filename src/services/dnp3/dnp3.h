@@ -211,6 +211,46 @@ size_t dws_dnp3_build_app_response(uint8_t *out, size_t cap, uint8_t app_control
  */
 bool dws_dnp3_parse_app_header(const uint8_t *frag, size_t len, Dnp3AppHeader *out);
 
+// --- object header (IEEE 1815 §4.3): group + variation + qualifier + range, after the function code ---
+
+// Qualifier octet: the index-size / prefix code (bits 6-4) selects any per-object index prefix; the range
+// specifier code (bits 3-0) selects the range field form.
+#define DNP3_QUAL_PREFIX_MASK 0x70u
+#define DNP3_QUAL_PREFIX_SHIFT 4u
+#define DNP3_QUAL_RANGE_MASK 0x0Fu
+
+// Range specifier codes (qualifier low nibble), common forms.
+#define DNP3_RANGE_START_STOP_1 0x00u ///< 1-octet start + stop indexes
+#define DNP3_RANGE_START_STOP_2 0x01u ///< 2-octet start + stop (little-endian)
+#define DNP3_RANGE_START_STOP_4 0x02u ///< 4-octet start + stop (little-endian)
+#define DNP3_RANGE_NO_RANGE 0x06u     ///< all objects (no range field)
+#define DNP3_RANGE_COUNT_1 0x07u      ///< 1-octet object count
+#define DNP3_RANGE_COUNT_2 0x08u      ///< 2-octet object count (little-endian)
+#define DNP3_RANGE_COUNT_4 0x09u      ///< 4-octet object count (little-endian)
+
+/** @brief A decoded object header (from dws_dnp3_parse_object_header). */
+struct Dnp3ObjectHeader
+{
+    uint8_t group;          ///< object group
+    uint8_t variation;      ///< object variation
+    uint8_t qualifier;      ///< the raw qualifier octet
+    uint8_t prefix_code;    ///< index-size / prefix code (qualifier bits 6-4)
+    uint8_t range_code;     ///< range specifier code (qualifier bits 3-0)
+    bool is_count;          ///< true when the range field is an object count; false for a start/stop range
+    uint32_t start;         ///< range start index (start/stop forms; 0 otherwise)
+    uint32_t stop;          ///< range stop index (start/stop forms; 0 otherwise)
+    uint32_t count;         ///< object count (count forms, or stop-start+1 for a start/stop range)
+    const uint8_t *objects; ///< the object data following the header, or nullptr if none
+    size_t objects_len;     ///< octets remaining after the header
+};
+
+/**
+ * @brief Decode an object header (group + variation + qualifier + range) at the start of @p buf.
+ * @return true iff the header and its range field fit in @p len, and the qualifier is a supported form
+ *         (start-stop 0x00/0x01/0x02, no-range 0x06, or count 0x07/0x08/0x09); false otherwise.
+ */
+bool dws_dnp3_parse_object_header(const uint8_t *buf, size_t len, Dnp3ObjectHeader *out);
+
 #endif // DWS_ENABLE_DNP3
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNP3_H

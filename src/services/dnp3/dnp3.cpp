@@ -7,7 +7,8 @@
  */
 
 #include "services/dnp3/dnp3.h"
-#include "shared_primitives/crc.h" // DWS_CRC16_DNP
+#include "shared_primitives/crc.h"    // DWS_CRC16_DNP
+#include "shared_primitives/endian.h" // dws_rd16le / dws_rd32le
 
 #if DWS_ENABLE_DNP3
 
@@ -253,6 +254,80 @@ bool dws_dnp3_parse_app_header(const uint8_t *frag, size_t len, Dnp3AppHeader *o
     out->iin = is_response ? (uint16_t)(frag[2] | (frag[3] << 8)) : 0u;
     out->obj_len = len - hdr_len;
     out->objects = out->obj_len ? frag + hdr_len : nullptr;
+    return true;
+}
+
+bool dws_dnp3_parse_object_header(const uint8_t *buf, size_t len, Dnp3ObjectHeader *out)
+{
+    if (!buf || !out || len < 3) // group + variation + qualifier
+        return false;
+    uint8_t range_code = (uint8_t)(buf[2] & DNP3_QUAL_RANGE_MASK);
+    size_t p = 3;
+    uint32_t start = 0, stop = 0, count = 0;
+    bool is_count = false;
+    switch (range_code)
+    {
+    case DNP3_RANGE_START_STOP_1:
+        if (len < p + 2)
+            return false;
+        start = buf[p];
+        stop = buf[p + 1];
+        p += 2;
+        count = stop - start + 1;
+        break;
+    case DNP3_RANGE_START_STOP_2:
+        if (len < p + 4)
+            return false;
+        start = dws_rd16le(buf + p);
+        stop = dws_rd16le(buf + p + 2);
+        p += 4;
+        count = stop - start + 1;
+        break;
+    case DNP3_RANGE_START_STOP_4:
+        if (len < p + 8)
+            return false;
+        start = dws_rd32le(buf + p);
+        stop = dws_rd32le(buf + p + 4);
+        p += 8;
+        count = stop - start + 1;
+        break;
+    case DNP3_RANGE_NO_RANGE:
+        break; // all objects; no range field follows
+    case DNP3_RANGE_COUNT_1:
+        if (len < p + 1)
+            return false;
+        count = buf[p];
+        p += 1;
+        is_count = true;
+        break;
+    case DNP3_RANGE_COUNT_2:
+        if (len < p + 2)
+            return false;
+        count = dws_rd16le(buf + p);
+        p += 2;
+        is_count = true;
+        break;
+    case DNP3_RANGE_COUNT_4:
+        if (len < p + 4)
+            return false;
+        count = dws_rd32le(buf + p);
+        p += 4;
+        is_count = true;
+        break;
+    default:
+        return false; // an unsupported qualifier range form
+    }
+    out->group = buf[0];
+    out->variation = buf[1];
+    out->qualifier = buf[2];
+    out->prefix_code = (uint8_t)((buf[2] & DNP3_QUAL_PREFIX_MASK) >> DNP3_QUAL_PREFIX_SHIFT);
+    out->range_code = range_code;
+    out->is_count = is_count;
+    out->start = start;
+    out->stop = stop;
+    out->count = count;
+    out->objects = (p < len) ? buf + p : nullptr;
+    out->objects_len = len - p;
     return true;
 }
 
