@@ -372,4 +372,22 @@ bool dws_nmea0183_parse_hdg(const Nmea0183 *m, DwsNmeaHdg *out)
     return true;
 }
 
+bool dws_nmea0183_parse_gll(const Nmea0183 *m, DwsNmeaGll *out)
+{
+    if (!m || !out || strcmp(m->type, "GLL") != 0 || m->field_count < 7) // need through status (field 6)
+        return false;
+    memset(out, 0, sizeof(*out));
+    float lat = 0.0f, lon = 0.0f;
+    if (dws_nmea0183_field_float(m, 1, &lat) && m->field_len[2] >= 1)
+        out->lat_deg = nmea_coord(lat, m->fields[2][0]);
+    if (dws_nmea0183_field_float(m, 3, &lon) && m->field_len[4] >= 1)
+        out->lon_deg = nmea_coord(lon, m->fields[4][0]);
+    nmea_time(m, 5, &out->hour, &out->minute, &out->second);
+    out->valid = (m->field_len[6] >= 1 && (m->fields[6][0] == 'A' || m->fields[6][0] == 'a'));
+    // The FAA mode indicator (field 7) is NMEA 2.3+; older receivers omit it.
+    if (m->field_count > 7 && m->field_len[7] >= 1)
+        out->mode = m->fields[7][0];
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183

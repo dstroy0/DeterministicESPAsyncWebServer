@@ -232,5 +232,24 @@ struct DwsNmeaHdg
  */
 bool dws_nmea0183_parse_hdg(const Nmea0183 *m, DwsNmeaHdg *out);
 
+/** @brief Decoded GLL (geographic position - latitude / longitude): position + UTC time + validity. Where
+ *  GGA carries the full fix quality and RMC adds velocity, GLL is the minimal position report. */
+struct DwsNmeaGll
+{
+    double lat_deg;       ///< latitude in signed decimal degrees (+ N, - S); 0 if absent
+    double lon_deg;       ///< longitude in signed decimal degrees (+ E, - W); 0 if absent
+    uint8_t hour, minute; ///< UTC time of the position
+    float second;
+    bool valid; ///< true when the status field is 'A' (data valid), false for 'V' (warning)
+    char mode;  ///< FAA mode indicator (NMEA 2.3+), or '\0' if the field is absent
+};
+
+/**
+ * @brief Decode a parsed GLL sentence into @p out. @return true iff @p m is a GLL sentence through the
+ *        status field; false otherwise. @c valid reflects the A/V status (a 'V' sentence still decodes);
+ *        the FAA mode indicator is set only when the (optional, NMEA 2.3+) field is present.
+ */
+bool dws_nmea0183_parse_gll(const Nmea0183 *m, DwsNmeaGll *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

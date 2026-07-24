@@ -483,6 +483,42 @@ void test_decode_hdg()
     TEST_ASSERT_FALSE(dws_nmea0183_parse_hdg(nullptr, &h));
 }
 
+void test_decode_gll()
+{
+    char buf[96];
+    // Classic GLL (pre-NMEA-2.3, no mode field): position 4916.45N / 12311.12W, 22:54:44 UTC, valid.
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "GPGLL,4916.45,N,12311.12,W,225444,A");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaGll g;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_gll(&m, &g));
+    TEST_ASSERT_TRUE(g.valid); // status 'A'
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 49.27417f, (float)g.lat_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, -123.18533f, (float)g.lon_deg);
+    TEST_ASSERT_EQUAL_UINT8(22, g.hour);
+    TEST_ASSERT_EQUAL_UINT8(54, g.minute);
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, 44.0f, g.second);
+    TEST_ASSERT_EQUAL_HEX8('\0', g.mode); // no FAA mode field in the classic form
+
+    // NMEA 2.3+ form: a 'V' status and an FAA mode indicator; S/W flips the coordinate signs.
+    size_t n2 = dws_nmea0183_build(buf, sizeof(buf), "GPGLL,3345.678,S,15112.345,W,000000,V,N");
+    TEST_ASSERT_TRUE(n2 > 0);
+    Nmea0183 m2;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n2, &m2));
+    DwsNmeaGll g2;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_gll(&m2, &g2));
+    TEST_ASSERT_FALSE(g2.valid);        // status 'V'
+    TEST_ASSERT_TRUE(g2.lat_deg < 0.0); // S -> negative
+    TEST_ASSERT_TRUE(g2.lon_deg < 0.0); // W -> negative
+    TEST_ASSERT_EQUAL_HEX8('N', g2.mode);
+
+    // A GGA is not a GLL, and null args are rejected.
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_gll(&m, &g));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_gll(nullptr, &g));
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -523,6 +559,7 @@ int main()
     RUN_TEST(test_decode_mwv);
     RUN_TEST(test_decode_dpt);
     RUN_TEST(test_decode_hdg);
+    RUN_TEST(test_decode_gll);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }
