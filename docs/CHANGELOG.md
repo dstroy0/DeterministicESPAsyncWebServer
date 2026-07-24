@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.150.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.150.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`371c273`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/371c273f06289c74f9896401e5794d804f644520))
+
+### Changes
+
+- Bump version: 7.149.0 → 7.150.0 ([`4bacec7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4bacec74a4c60ea613aac15c71ae621b6490039f))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6b3f3b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6b3f3b1f75d8ddd4961aec68fd66d2ae912e2f51))
+
+### Features
+
+- build Analog Output Block g41 (setpoint control) ([`3615866`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36158665c980c31eac2d775509af766177fea10d))
+
+</details>
+
 ## [7.149.0] - 2026-07-24
 
 <details>
