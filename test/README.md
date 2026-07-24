@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5163 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5164 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -11332,7 +11332,7 @@ A thorough directory of all **5163 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_enocean (13 tests)</b></summary>
+<summary><b>test_enocean (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_crc8_known_answers</b> &mdash; <i>CRC-8 (poly 0x07, init 0, no reflection) check value for "123456789" is 0xF4.</i></summary>
@@ -11470,6 +11470,26 @@ A thorough directory of all **5163 test cases** across **291 suites**. Expand a 
       * <code>Assert false (dws_erp1_parse(rps, 5, &t))</code>
       * <code>Assert false (dws_erp1_parse(nullptr, 7, &t))</code>
       * <code>Assert false (dws_erp1_parse(rps, 7, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_erp1_build</b> &mdash; <i>Build the RPS telegram from test_erp1_parse and check it byte-for-byte.</i></summary>
+
+    * **Objective**: Build the RPS telegram from test_erp1_parse and check it byte-for-byte.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(rps), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(rps, buf, n);</code>
+      * <code>Assert true (dws_erp1_parse(buf, n, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_ERP_RORG_RPS, t.rorg);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x008B1234, t.sender_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x30, t.status);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(fbs), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(fbs, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(minimal), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(minimal, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_erp1_build(nullptr, sizeof(buf), DWS_ERP_RORG_RPS, rps_payload, 1, 0x1, 0x0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_erp1_build(buf, sizeof(buf), DWS_ERP_RORG_RPS, nullptr, 1, 0x1, 0x0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_erp1_build(buf, 5, DWS_ERP_RORG_RPS, rps_payload, 1, 0x1, 0x0)); // needs 7</code>
   </details>
 
 </details>
