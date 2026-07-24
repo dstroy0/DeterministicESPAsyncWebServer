@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.61.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.61.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`647cd3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/647cd3fc3466505695f064aab2ead31947f48e37))
+
+### Changes
+
+- Bump version: 7.60.0 → 7.61.0 ([`8b4e8df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b4e8df114149c27ed2f91529b695ba6ffa93e53))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`64fcb2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64fcb2fbf0105b3d897e3f37703943db638ecca7))
+
+### Features
+
+- P2P peer-delay mechanism (IEEE 1588-2008 s11.4) ([`44e3a0d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44e3a0dea266ecbdc6736e3b6e579cc0319a73fb))
+
+</details>
+
 ## [7.60.0] - 2026-07-24
 
 <details>
