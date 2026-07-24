@@ -14,8 +14,9 @@
  *  - The shared **ASDU** header (type id, variable structure qualifier, cause of transmission,
  *    common address) and the 3-octet Information Object Address used by both.
  *
- * Typed information objects for the common type ids are provided: single-point (M_SP_NA_1), short-float
- * measured value (M_ME_NC_1), and single command (C_SC_NA_1), each an IOA + value + quality descriptor.
+ * Typed information objects for the common type ids are provided: single-point (M_SP_NA_1), double-point
+ * (M_DP_NA_1), short-float measured value (M_ME_NC_1), single command (C_SC_NA_1), and double command
+ * (C_DC_NA_1), each an IOA + value + quality / qualifier descriptor.
  * The remaining per-type-id elements are the application's; this is the framing + ASDU layer with named
  * type-id / COT constants for the common ones. Pure and host-tested. Bridge an RTU / outstation onto Wi-Fi:
  * run -104 over the shipped TCP stack, or -101 over a UART through an RS-232/485 transceiver.
