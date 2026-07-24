@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.132.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.132.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ec0b8d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec0b8d00daf4091ebc9a90a68b8de901389e96b5))
+
+### Changes
+
+- Bump version: 7.131.0 → 7.132.0 ([`7a61a60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a61a6025a68eb62c807c4b198a78722515bd473))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`71f1acc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71f1acc6d259b50f790073882f5c25e310a4db1e))
+
+### Features
+
+- I-Am APDU builder (answer to Who-Is) ([`ae2845b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae2845ba241d7804dba4a63862e7d106c9389c77))
+
+</details>
+
 ## [7.131.0] - 2026-07-24
 
 <details>
