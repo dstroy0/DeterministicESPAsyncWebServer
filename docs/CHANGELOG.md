@@ -2,7 +2,33 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.103.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.103.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`2e84920`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e849200895b23fd720023e3a9dc4f7a20a24e85))
+
+### Changes
+
+- Bump version: 7.102.0 → 7.103.0 ([`99a7174`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99a717401d553075484983004a2b5083b8dd7c72))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ddbe829`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ddbe8294f8f14e1761d2e1962ec3290c24c19109))
+
+### Features
+
+- decode MWV wind speed & angle sentence ([`9e246a4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e246a4c495950f062c1cec614d5c72f1fbdc860))
+
+</details>
+
+## [7.102.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.102.0 - 2026-07-24</b></summary>
 
 ### CI / Build
 
@@ -19,6 +45,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - decode Speed water-referenced (PGN 128259) ([`2c1bbdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c1bbdcfa59fc0da4c8a651634bb95f90642f980))
+
+</details>
 
 ## [7.101.0] - 2026-07-24
 
