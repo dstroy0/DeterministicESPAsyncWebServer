@@ -1,0 +1,187 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Unit tests for the Modbus-master southbound driver adapter
+// (services/southbound/sb_modbus): register the driver, then read register points
+// by name through the southbound facade, driven end to end against the real slave
+// codec (dws_modbus_process_adu) via a mock transaction seam - no hardware needed.
+
+#include "services/modbus/modbus.h"
+#include "services/southbound/sb_modbus.h"
+#include "services/southbound/southbound.h"
+#include <unity.h>
+
+// A transaction seam that routes the master's request straight into the slave codec, so a read through
+// the southbound facade is a full master<->slave round trip against the shared (global) slave model.
+static int loopback_txn(void *io, const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap)
+{
+    (void)io;
+    size_t pn = dws_modbus_process_adu(req, req_len, resp, resp_cap);
+    return (pn == 0) ? -1 : (int)pn;
+}
+
+// A transaction seam that always fails at the transport layer (a distinct negative than any Modbus code).
+static int fail_txn(void *io, const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap)
+{
+    (void)io;
+    (void)req;
+    (void)req_len;
+    (void)resp;
+    (void)resp_cap;
+    return -42;
+}
+
+static DwsSbModbusCtx g_ctx;
+static SouthboundDriver g_drv;
+
+void setUp()
+{
+    dws_modbus_server_init();
+    dws_southbound_clear();
+}
+void tearDown()
+{
+}
+
+// Register a holding-register driver over the loopback seam and read one point through the facade.
+void test_read_single_holding()
+{
+    dws_modbus_set_holding_reg(10, 0xBEEF);
+    TEST_ASSERT_EQUAL_INT(
+        Sb::SB_OK, dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1));
+    TEST_ASSERT_EQUAL_INT(Sb::SB_OK, dws_sb_modbus_driver(&g_drv, "plc", &g_ctx));
+    TEST_ASSERT_EQUAL_INT(Sb::SB_OK, dws_southbound_register(&g_drv));
+
+    int32_t v = 0;
+    TEST_ASSERT_EQUAL_INT(Sb::SB_OK, dws_southbound_read("plc", 10, &v));
+    TEST_ASSERT_EQUAL_INT32(0xBEEF, v);
+}
+
+// The atomic register matrix: a block read of a contiguous span in one request.
+void test_read_block_matrix()
+{
+    for (uint16_t i = 0; i < 4; i++)
+        dws_modbus_set_holding_reg((uint16_t)(20 + i), (uint16_t)(0x1000 + i));
+    dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "plc", &g_ctx);
+    dws_southbound_register(&g_drv);
+
+    int32_t vals[4] = {0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(4, dws_southbound_read_block("plc", 20, vals, 4));
+    TEST_ASSERT_EQUAL_INT32(0x1000, vals[0]);
+    TEST_ASSERT_EQUAL_INT32(0x1001, vals[1]);
+    TEST_ASSERT_EQUAL_INT32(0x1002, vals[2]);
+    TEST_ASSERT_EQUAL_INT32(0x1003, vals[3]);
+}
+
+// Input registers (FC 0x04) are a valid function code too.
+void test_read_input_registers()
+{
+    dws_modbus_set_input_reg(5, 0x0777);
+    dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_INPUT_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "sensor", &g_ctx);
+    dws_southbound_register(&g_drv);
+
+    int32_t v = 0;
+    TEST_ASSERT_EQUAL_INT(Sb::SB_OK, dws_southbound_read("sensor", 5, &v));
+    TEST_ASSERT_EQUAL_INT32(0x0777, v);
+}
+
+// A Modbus exception reply (out-of-range address) surfaces as DWS_SB_MODBUS_EXCEPTION with the raw
+// exception code captured in the context - distinct from a transport error.
+void test_modbus_exception_surfaces()
+{
+    dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "plc", &g_ctx);
+    dws_southbound_register(&g_drv);
+
+    int32_t v = 123;
+    TEST_ASSERT_EQUAL_INT(DWS_SB_MODBUS_EXCEPTION, dws_southbound_read("plc", 60000, &v));
+    TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, g_ctx.last_exception);
+    TEST_ASSERT_EQUAL_INT32(123, v); // value_out untouched on failure
+}
+
+// A transport-layer failure is propagated unchanged (not confused with a Modbus exception).
+void test_transport_error_propagates()
+{
+    dws_sb_modbus_init(&g_ctx, fail_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "plc", &g_ctx);
+    dws_southbound_register(&g_drv);
+
+    int32_t v = 0;
+    TEST_ASSERT_EQUAL_INT(-42, dws_southbound_read("plc", 0, &v));
+    int32_t blk[2] = {0, 0};
+    TEST_ASSERT_EQUAL_INT(-42, dws_southbound_read_block("plc", 0, blk, 2));
+}
+
+// write / write_block are unbound (the codec is read-only): the framework reports SB_ERR_UNSUPPORTED.
+void test_write_unsupported()
+{
+    dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "plc", &g_ctx);
+    dws_southbound_register(&g_drv);
+
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_UNSUPPORTED, dws_southbound_write("plc", 0, 1));
+    int32_t in[2] = {1, 2};
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_UNSUPPORTED, dws_southbound_write_block("plc", 0, in, 2));
+    TEST_ASSERT_NULL(g_drv.write);
+    TEST_ASSERT_NULL(g_drv.write_block);
+}
+
+// init rejects a null seam and a function code that is not a read (only 0x03 / 0x04 are valid).
+void test_init_rejects_bad_args()
+{
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG,
+                          dws_sb_modbus_init(&g_ctx, nullptr, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1));
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr,
+                                                             ModbusFunction::MODBUS_FC_WRITE_SINGLE_REG, 1));
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_sb_modbus_init(nullptr, loopback_txn, nullptr,
+                                                             ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1));
+}
+
+// Bounds: a register address past 16 bits, a zero-length block, and a block wider than one Modbus
+// request (125) are all rejected before any transport call.
+void test_read_bounds()
+{
+    dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "plc", &g_ctx);
+    dws_southbound_register(&g_drv);
+
+    int32_t v = 0;
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_southbound_read("plc", 0x10000, &v)); // > 0xFFFF
+    int32_t blk[130];
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_southbound_read_block("plc", 0, blk, 126)); // > 125 regs/request
+    // A span that would run past the 16-bit address space.
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_southbound_read_block("plc", 0xFFFF, blk, 2));
+}
+
+// The transaction id rolls forward one per request (the caller's slave-correlation token).
+void test_txid_increments()
+{
+    dws_modbus_set_holding_reg(0, 0x0001);
+    dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "plc", &g_ctx);
+    dws_southbound_register(&g_drv);
+
+    int32_t v = 0;
+    TEST_ASSERT_EQUAL_UINT16(0, g_ctx.txid);
+    dws_southbound_read("plc", 0, &v);
+    TEST_ASSERT_EQUAL_UINT16(1, g_ctx.txid);
+    dws_southbound_read("plc", 0, &v);
+    TEST_ASSERT_EQUAL_UINT16(2, g_ctx.txid);
+}
+
+int main()
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_read_single_holding);
+    RUN_TEST(test_read_block_matrix);
+    RUN_TEST(test_read_input_registers);
+    RUN_TEST(test_modbus_exception_surfaces);
+    RUN_TEST(test_transport_error_propagates);
+    RUN_TEST(test_write_unsupported);
+    RUN_TEST(test_init_rejects_bad_args);
+    RUN_TEST(test_read_bounds);
+    RUN_TEST(test_txid_increments);
+    return UNITY_END();
+}

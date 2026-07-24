@@ -373,10 +373,21 @@ preempting queue, so sensing shares the real-time ingest path.
   any southbound device (Modbus slave, BACnet controller, raw SPI/I2C/UART sensor) through one facade -
   a bounded driver registry (`dws_southbound_register` / `_find` / `_count` / `_clear`) plus name-dispatched
   `dws_southbound_read` / `_write` / `_read_block` / `_write_block`, where the block calls are the atomic
-  multi-point (register-matrix) path. Each driver owns its transport (a read/write vtable + ctx); Modbus
-  master is the one such driver today. Pure registry + dispatch, host-tested (`native_southbound`).
-  _Remaining:_ a Modbus adapter binding dws_modbus_master into a SouthboundDriver + the concrete atomic
-  register matrix (M), both transport-gated.
+  multi-point (register-matrix) path. Each driver owns its transport (a read/write vtable + ctx). Pure
+  registry + dispatch, host-tested (`native_southbound`). **The Modbus adapter is shipped**
+  (`services/southbound/sb_modbus`, `DWS_ENABLE_SOUTHBOUND && DWS_ENABLE_MODBUS_MASTER`): it binds the
+  transport-agnostic Modbus TCP master codec into a `SouthboundDriver`, so an app reads register points
+  by driver name through the one facade - `dws_sb_modbus_init` (holding FC 0x03 / input FC 0x04, unit,
+  a rolling txid) + `dws_sb_modbus_driver` install `read` (one register) and `read_block` (the atomic
+  register matrix, a contiguous span up to 125 registers in one request) over an app-supplied
+  request/response transaction seam (`DwsSbModbusTxn`, bound to dws_client for Modbus TCP or a serial
+  gateway); a Modbus exception reply surfaces as `DWS_SB_MODBUS_EXCEPTION` with the raw code captured,
+  distinct from a propagated transport error. Host-tested end to end against the real slave codec
+  (`dws_modbus_process_adu`) over a loopback seam (`native_sb_modbus`, 9 cases: single + block read,
+  input registers, exception vs transport error, bounds, write unsupported, txid roll). _Remaining:_ the
+  master codec is read-only (a register scanner), so the matrix **write** path (write / write_block)
+  awaits a master write-request builder (FC 0x06 / 0x10); and an example driving a real Modbus TCP
+  server over `dws_client` (HW-verify).
 - [x] Webhooks + IFTTT _(shipped)_ - `DWS_ENABLE_WEBHOOK`: `services/webhook` builds an IFTTT Maker URL + value1/2/3 JSON payload (pure, host-tested with JSON escaping) and fires it - or any JSON to any URL (Slack/Discord/your API) - via the outbound http_client; HW-verified by a self-loopback POST (example Webhook).
 - [x] Email + SMS fallbacks (SMTP + gateway) (M) _(shipped, HW-verified)_ - **SMTP shipped** (`DWS_ENABLE_SMTP`): `services/smtp` runs a blocking RFC 5321 send over the shared `dws_client` transport (EHLO, optional AUTH LOGIN, MAIL/RCPT/DATA with dot-stuffing, QUIT), with implicit TLS (SMTPS, port 465) when the message sets `tls` and `DWS_ENABLE_TLS` is on; zero heap, fixed buffers. The dialogue engine (`smtp_run`) is split behind a send/recv seam and host-tested against a scripted mock server (`native_smtp`, 11 cases: happy path, AUTH, dot-stuffing, multi-line replies, every error). SMS needs no new code (email-to-SMS carrier gateway address). Example SmtpAlert ships a full beginner walkthrough that stands up a Postfix server. **STARTTLS is shipped** (`DWS_ENABLE_SMTP_TLS`, RFC 3207): `SmtpConfig.security` became a `SmtpSecurity` enum (PLAIN/TLS/STARTTLS), the engine upgrades in band after the first EHLO and reissues EHLO per sec 4.2, and it fails closed with `SMTP_ERR_NO_STARTTLS` if the server does not advertise it - a stripped capability cannot downgrade the exchange into sending AUTH in the clear (8 new host cases in `native_smtp`, 30 total). **The live over-the-wire send is done too**: the old blocker was reaching an _external_ relay past ISP port-25 filtering, which a LAN submission server sidesteps entirely - an ESP32-S3 delivered to a live aiosmtpd on the RPi with the server logging `DELIVERED ... bytes=183 tls=True`. That run fixed three latent bugs in a TLS path that had never once been compiled: a missing `<mbedtls/ssl.h>` include, SMTP missing from the `DWS_ENABLE_CLIENT_TLS` derivation (so the session API resolved to stubs that always fail), and BIO callbacks dereferencing a `ctx` that `dws_tls_client_session_begin()` never passes - which crashed on the first handshake flush.
 - [x] ESP-NOW peer messaging _(shipped)_ - `DWS_ENABLE_ESPNOW`: `services/espnow` adds a typed 3-byte envelope (demux by type + length check) over connectionless ESP-NOW, a bounded peer registry, and the esp_now radio binding (begin / add_peer / send / broadcast, decoded frames to a callback for bridging to WS/SSE) (example EspNow). Codec + registry host-tested; ESP-NOW<->MQTT auto-bridge remains open (M).
