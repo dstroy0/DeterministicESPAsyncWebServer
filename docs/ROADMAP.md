@@ -438,7 +438,12 @@ preempting queue, so sensing shares the real-time ingest path.
        `ssh_curve25519` (D-H group 31 = X25519, and MODP groups via `ssh_bignum`), `ssh_chachapoly`
        (ChaCha20-Poly1305 per RFC 7634), `ssh_sha256/512` (PRF/INTEG HMAC), AES-GCM (the `dws_quic_aead` core) -
        so the primitive surface is largely done; this is mostly framing + the key-derivation (SKEYSEED /
-       the SK_* chain).
+       the SK_* chain). **The key derivation is now shipped** (RFC 7296 §2.13-2.14): `dws_ike_prf_plus`
+       (prf+ over HMAC-SHA2-256, capped at 255 blocks) and `dws_ike_derive_keys` (SKEYSEED = prf(Ni|Nr,
+       g^ir), then the SK_d/ai/ar/ei/er/pi/pr split by caller-supplied per-algorithm lengths), zero-heap,
+       cross-checked against an independent Python HMAC reference incl. the >64-byte-key RFC 2104
+       pre-hash and an AES-GCM (key+salt) split length (`test_ikev2`, +5 KAT/guard cases). The AEAD
+       encrypt/decrypt of the SK payload is the remaining tier-2 crypto piece.
     2. **IKE SA handshake state machine** (L) - IKE_SA_INIT -> IKE_AUTH (PSK and/or certificate auth) ->
        CREATE_CHILD_SA / INFORMATIONAL, rekeying, DPD (dead-peer detection), and the fixed-BSS SA/SPI tables.
        Still host-testable against a reference peer (strongSwan / libreswan) with no datapath.

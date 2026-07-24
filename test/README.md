@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4981 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4986 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **4981 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (39 tests)</b></summary>
+<summary><b>test_ikev2 (44 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20442,6 +20442,67 @@ A thorough directory of all **4981 test cases** across **287 suites**. Expand a 
       * <code>Assert equal memory (s6, got.start_addr, 16)</code>
       * <code>Assert equal memory (e6, got.end_addr, 16)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(500, got.start_port);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_prf_plus_kat</b> &mdash; <i>Prf plus kat</i></summary>
+
+    * **Objective**: Prf plus kat
+    * **Assertions**:
+      * <code>Assert true (dws_ike_prf_plus(key, sizeof(key), seed, sizeof(seed), out, sizeof(out)))</code>
+      * <code>Assert equal memory (expect, out, sizeof(out)); // spans 3 HMAC blocks (32+32+6)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_prf_plus_guards</b> &mdash; <i>out_len over 255 blocks fails closed (the 1-byte prf+ counter caps the chain).</i></summary>
+
+    * **Objective**: out_len over 255 blocks fails closed (the 1-byte prf+ counter caps the chain).
+    * **Assertions**:
+      * <code>Assert false (dws_ike_prf_plus(nullptr, 1, out, 1, out, 1))</code>
+      * <code>Assert false (dws_ike_prf_plus(out, 1, out, 1, out, 0))</code>
+      * <code>Assert false (dws_ike_prf_plus(out, 1, out, 1, huge, sizeof(huge)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_derive_keys_kat_16b_nonces</b> &mdash; <i>Derive keys kat 16b nonces</i></summary>
+
+    * **Objective**: Derive keys kat 16b nonces
+    * **Assertions**:
+      * <code>Assert true (dws_ike_derive_keys(dh, sizeof(dh), ni, sizeof(ni), nr, sizeof(nr), spii, spir, &lens, &km))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, km.sk_d_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, km.sk_a_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, km.sk_e_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, km.sk_p_len);</code>
+      * <code>Assert equal memory (sk_d, km.sk_d, 32)</code>
+      * <code>Assert equal memory (sk_ai, km.sk_ai, 32)</code>
+      * <code>Assert equal memory (sk_ar, km.sk_ar, 32)</code>
+      * <code>Assert equal memory (sk_ei, km.sk_ei, 32)</code>
+      * <code>Assert equal memory (sk_er, km.sk_er, 32)</code>
+      * <code>Assert equal memory (sk_pi, km.sk_pi, 32)</code>
+      * <code>Assert equal memory (sk_pr, km.sk_pr, 32)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_derive_keys_kat_prehash_key</b> &mdash; <i>Derive keys kat prehash key</i></summary>
+
+    * **Objective**: Derive keys kat prehash key
+    * **Assertions**:
+      * <code>Assert true (dws_ike_derive_keys(dh, sizeof(dh), ni, sizeof(ni), nr, sizeof(nr), spii, spir, &lens, &km))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(36, km.sk_e_len);</code>
+      * <code>Assert equal memory (sk_d, km.sk_d, 32)</code>
+      * <code>Assert equal memory (sk_ei, km.sk_ei, 36)</code>
+      * <code>Assert equal memory (sk_pr, km.sk_pr, 32)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_derive_keys_guards</b> &mdash; <i>Derive keys guards</i></summary>
+
+    * **Objective**: Derive keys guards
+    * **Assertions**:
+      * <code>Assert false (dws_ike_derive_keys(nullptr, 32, buf, 16, buf, 16, spi, spi, &lens, &km))</code>
+      * <code>Assert false (dws_ike_derive_keys(buf, 32, buf, 0, buf, 16, spi, spi, &lens, &km))</code>
+      * <code>Assert false (dws_ike_derive_keys(buf, 32, buf, 16, buf, 16, spi, spi, &toobig, &km))</code>
+      * <code>Assert false (dws_ike_derive_keys(buf, 32, buf, 16, buf, 16, spi, spi, &zero, &km))</code>
   </details>
 
 </details>

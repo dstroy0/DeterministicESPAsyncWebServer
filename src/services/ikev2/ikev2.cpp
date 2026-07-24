@@ -10,7 +10,8 @@
 
 #if DWS_ENABLE_IKEV2
 
-#include <string.h> // memcpy / memset (framing is hand-rolled)
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // PRF = HMAC-SHA2-256
+#include <string.h>                                                  // memcpy / memset (framing is hand-rolled)
 
 // ── big-endian scalar helpers ─────────────────────────────────────────────────────────────────
 static inline void put16(uint8_t *p, uint16_t v)
@@ -648,6 +649,95 @@ bool dws_ike_ts_get(const uint8_t *body, size_t body_len, uint8_t index, IkeTraf
         off += sel_len;
     }
     return false; // GCOVR_EXCL_LINE  unreachable: the loop above always returns (see the note on the for)
+}
+
+// ── tier 2: SKEYSEED / SK_* key derivation (RFC 7296 §2.13-2.14) ───────────────────────────────
+
+bool dws_ike_prf_plus(const uint8_t *key, size_t key_len, const uint8_t *seed, size_t seed_len, uint8_t *out,
+                      size_t out_len)
+{
+    if (!key || !seed || !out || out_len == 0)
+        return false;
+    // prf+ chains at most 255 blocks: the counter i is a single octet 0x01..0xFF (RFC 7296 §2.13).
+    if (out_len > (size_t)255 * SSH_HMAC_SHA256_LEN)
+        return false;
+
+    uint8_t t[SSH_HMAC_SHA256_LEN];
+    size_t t_len = 0; // T0 is empty (omitted from the first block's input)
+    size_t produced = 0;
+    uint8_t counter = 0;
+    while (produced < out_len)
+    {
+        counter++; // 0x01 for T1, 0x02 for T2, ... (bounded by the out_len guard above)
+        SshHmacCtx ctx;
+        ssh_hmac_sha256_init(&ctx, key, key_len);
+        if (t_len)
+            ssh_hmac_sha256_update(&ctx, t, t_len); // Ti-1
+        ssh_hmac_sha256_update(&ctx, seed, seed_len);
+        ssh_hmac_sha256_update(&ctx, &counter, 1);
+        ssh_hmac_sha256_final(&ctx, t);
+        t_len = SSH_HMAC_SHA256_LEN;
+
+        size_t take = out_len - produced;
+        if (take > SSH_HMAC_SHA256_LEN)
+            take = SSH_HMAC_SHA256_LEN;
+        memcpy(out + produced, t, take);
+        produced += take;
+    }
+    return true;
+}
+
+bool dws_ike_derive_keys(const uint8_t *dh_secret, size_t dh_len, const uint8_t *ni, size_t ni_len, const uint8_t *nr,
+                         size_t nr_len, const uint8_t *spi_i, const uint8_t *spi_r, const IkeKeyLengths *lens,
+                         IkeKeyMaterial *out)
+{
+    if (!dh_secret || !ni || !nr || !spi_i || !spi_r || !lens || !out)
+        return false;
+    if (ni_len == 0 || ni_len > DWS_IKE_NONCE_MAX || nr_len == 0 || nr_len > DWS_IKE_NONCE_MAX)
+        return false;
+    if (lens->sk_d == 0 || lens->sk_d > DWS_IKE_SK_MAX || lens->sk_a == 0 || lens->sk_a > DWS_IKE_SK_MAX ||
+        lens->sk_e == 0 || lens->sk_e > DWS_IKE_SK_MAX || lens->sk_p == 0 || lens->sk_p > DWS_IKE_SK_MAX)
+        return false;
+
+    // Build S = Ni | Nr | SPIi | SPIr once. Its Ni|Nr prefix is also the SKEYSEED key, so a single buffer
+    // serves both the SKEYSEED HMAC key and the prf+ seed.
+    uint8_t s[2 * DWS_IKE_NONCE_MAX + 2 * DWS_IKE_SPI_LEN];
+    size_t nlen = ni_len + nr_len;
+    memcpy(s, ni, ni_len);
+    memcpy(s + ni_len, nr, nr_len);
+    memcpy(s + nlen, spi_i, DWS_IKE_SPI_LEN);
+    memcpy(s + nlen + DWS_IKE_SPI_LEN, spi_r, DWS_IKE_SPI_LEN);
+    size_t s_len = nlen + 2 * DWS_IKE_SPI_LEN;
+
+    // SKEYSEED = prf(Ni | Nr, g^ir). HMAC pre-hashes a key longer than the 64-byte block (RFC 2104).
+    uint8_t skeyseed[DWS_IKE_PRF_LEN];
+    ssh_hmac_sha256(s, nlen, dh_secret, dh_len, skeyseed);
+
+    // prf+(SKEYSEED, S) -> SK_d | SK_ai | SK_ar | SK_ei | SK_er | SK_pi | SK_pr, spliced in order.
+    size_t total = lens->sk_d + 2 * lens->sk_a + 2 * lens->sk_e + 2 * lens->sk_p;
+    uint8_t ks[7 * DWS_IKE_SK_MAX];
+    if (!dws_ike_prf_plus(skeyseed, sizeof(skeyseed), s, s_len, ks, total))
+        return false;
+
+    size_t o = 0;
+    memcpy(out->sk_d, ks + o, lens->sk_d);
+    o += lens->sk_d;
+    memcpy(out->sk_ai, ks + o, lens->sk_a);
+    o += lens->sk_a;
+    memcpy(out->sk_ar, ks + o, lens->sk_a);
+    o += lens->sk_a;
+    memcpy(out->sk_ei, ks + o, lens->sk_e);
+    o += lens->sk_e;
+    memcpy(out->sk_er, ks + o, lens->sk_e);
+    o += lens->sk_e;
+    memcpy(out->sk_pi, ks + o, lens->sk_p);
+    o += lens->sk_p;
+    memcpy(out->sk_pr, ks + o, lens->sk_p);
+    out->sk_d_len = lens->sk_d;
+    out->sk_a_len = lens->sk_a;
+    out->sk_e_len = lens->sk_e;
+    out->sk_p_len = lens->sk_p;
+    return true;
 }
 
 #endif // DWS_ENABLE_IKEV2

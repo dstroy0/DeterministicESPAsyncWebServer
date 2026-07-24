@@ -11,10 +11,11 @@
  * Scope (tier 1 of the IPsec roadmap item): the pure wire codec only - build / parse into caller
  * buffers, no sockets and no crypto. It frames the 28-octet IKE header and the generic payload chain
  * (SA -> proposals -> transforms, KE, Ni/Nr, IDi/IDr, CERT/CERTREQ, AUTH, N notify, D delete, TSi/TSr,
- * and the SK encrypted-payload envelope). The Diffie-Hellman math, the SKEYSEED / SK_* key derivation,
- * the AEAD encrypt/decrypt of the SK payload, and the IKE_SA_INIT -> IKE_AUTH state machine are the
- * later tiers (they reuse the crypto the library already ships); this file just lays out and reads the
- * bytes so those tiers have a tested framing seam.
+ * and the SK encrypted-payload envelope). Tier 2 begins here too: the SKEYSEED / SK_* key derivation
+ * (RFC 7296 §2.13-2.14, prf+ over HMAC-SHA2-256). The Diffie-Hellman math, the AEAD encrypt/decrypt of
+ * the SK payload, and the IKE_SA_INIT -> IKE_AUTH state machine are the remaining tiers (they reuse the
+ * crypto the library already ships); the codec here lays out and reads the bytes so those tiers have a
+ * tested framing seam.
  *
  * Wire framing (byte-exact, network byte order): the IKE header is 8-byte Initiator SPI, 8-byte
  * Responder SPI, 1-byte Next Payload, 1-byte Version (0x20 = MjVer 2 / MnVer 0), 1-byte Exchange Type,
@@ -376,6 +377,67 @@ uint8_t dws_ike_ts_count(const uint8_t *body, size_t body_len);
 
 /** @brief Decode selector @p index (0-based) from a TS payload body. */
 bool dws_ike_ts_get(const uint8_t *body, size_t body_len, uint8_t index, IkeTrafficSelector *out);
+
+// ── tier 2: SKEYSEED / SK_* key derivation (RFC 7296 §2.13-2.14) ───────────────────────────────
+//
+// The PRF is HMAC-SHA2-256 (transform id IKE_PRF_HMAC_SHA2_256), whose output/key length is 32 bytes.
+// prf+ (§2.13) expands (key, seed) into arbitrary keying material; dws_ike_derive_keys runs the §2.14
+// SKEYSEED + SK_* chain for an initial IKE SA. The AEAD that USES these keys is a later tier.
+
+/** @brief PRF (HMAC-SHA2-256) output / key length, in bytes. */
+#define DWS_IKE_PRF_LEN 32
+/** @brief Largest single SK_* key this build stores (an AES-256 key + a 4-byte AEAD salt, with margin). */
+#define DWS_IKE_SK_MAX 40
+/** @brief Largest IKEv2 nonce (RFC 7296 §2.10: 16..256 octets). */
+#define DWS_IKE_NONCE_MAX 256
+
+/** @brief Per-key lengths for the SK_* chain (algorithm-dependent; the caller sets them from the
+ *  negotiated transforms). Each is in bytes. */
+struct IkeKeyLengths
+{
+    size_t sk_d; ///< SK_d length = the PRF key length (32 for HMAC-SHA2-256).
+    size_t sk_a; ///< SK_ai / SK_ar length = the integrity key length (32 for HMAC-SHA2-256-128).
+    size_t sk_e; ///< SK_ei / SK_er length = the encryption key (+ any AEAD salt: 32, or 36 for AES-GCM).
+    size_t sk_p; ///< SK_pi / SK_pr length = the PRF key length (32).
+};
+
+/** @brief The seven derived keys (RFC 7296 §2.14). Each key's valid length is the matching field below. */
+struct IkeKeyMaterial
+{
+    uint8_t sk_d[DWS_IKE_SK_MAX];
+    uint8_t sk_ai[DWS_IKE_SK_MAX];
+    uint8_t sk_ar[DWS_IKE_SK_MAX];
+    uint8_t sk_ei[DWS_IKE_SK_MAX];
+    uint8_t sk_er[DWS_IKE_SK_MAX];
+    uint8_t sk_pi[DWS_IKE_SK_MAX];
+    uint8_t sk_pr[DWS_IKE_SK_MAX];
+    size_t sk_d_len; ///< valid bytes in sk_d
+    size_t sk_a_len; ///< valid bytes in sk_ai / sk_ar
+    size_t sk_e_len; ///< valid bytes in sk_ei / sk_er
+    size_t sk_p_len; ///< valid bytes in sk_pi / sk_pr
+};
+
+/**
+ * @brief prf+ (RFC 7296 §2.13) with HMAC-SHA2-256 as the PRF: expand (@p key, @p seed) into @p out_len
+ *        bytes as T1 | T2 | ... where Ti = prf(key, Ti-1 | seed | i), i a 1-byte counter from 0x01, and
+ *        T0 is empty.
+ * @return false on a null argument or if @p out_len would need more than 255 blocks (the §2.13 cap).
+ */
+bool dws_ike_prf_plus(const uint8_t *key, size_t key_len, const uint8_t *seed, size_t seed_len, uint8_t *out,
+                      size_t out_len);
+
+/**
+ * @brief Derive SKEYSEED and the seven SK_* keys (RFC 7296 §2.14) for an initial IKE SA:
+ *          SKEYSEED = prf(Ni | Nr, g^ir)
+ *          {SK_d | SK_ai | SK_ar | SK_ei | SK_er | SK_pi | SK_pr} = prf+(SKEYSEED, Ni | Nr | SPIi | SPIr)
+ *        The PRF is HMAC-SHA2-256; @p dh_secret is the raw shared Diffie-Hellman secret g^ir.
+ * @param spi_i / spi_r  the 8-byte initiator / responder IKE SPIs.
+ * @param lens           per-key lengths (each 1..DWS_IKE_SK_MAX; each nonce 1..DWS_IKE_NONCE_MAX).
+ * @return false on a null argument or an out-of-range length.
+ */
+bool dws_ike_derive_keys(const uint8_t *dh_secret, size_t dh_len, const uint8_t *ni, size_t ni_len, const uint8_t *nr,
+                         size_t nr_len, const uint8_t *spi_i, const uint8_t *spi_r, const IkeKeyLengths *lens,
+                         IkeKeyMaterial *out);
 
 #endif // DWS_ENABLE_IKEV2
 
