@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5000 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5002 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **5000 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (58 tests)</b></summary>
+<summary><b>test_ikev2 (60 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20691,6 +20691,43 @@ A thorough directory of all **5000 test cases** across **287 suites**. Expand a 
       * <code>Assert true (ssh_ecdsa_p256_pubkey(pub2, priv2))</code>
       * <code>Assert false (dws_ike_auth_verify_ecdsa_p256(pub2, sig, scratch, sizeof(scratch), real, sizeof(real)</code>
       * <code>Assert false (dws_ike_auth_sign_ecdsa_p256(sig, priv, scratch, 8, real, sizeof(real), nonce, sizeof(nonce)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_suite_keylengths</b> &mdash; <i>AEAD (AES-GCM-16, 256-bit): sk_a = 0 (no separate integrity), sk_e = 32 key + 4 salt.</i></summary>
+
+    * **Objective**: AEAD (AES-GCM-16, 256-bit): sk_a = 0 (no separate integrity), sk_e = 32 key + 4 salt.
+    * **Assertions**:
+      * <code>Assert true (dws_ike_suite_keylengths(&gcm, &L))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, L.sk_d);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, L.sk_a);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(36, L.sk_e);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, L.sk_p);</code>
+      * <code>Assert true (dws_ike_suite_keylengths(&cbc, &L))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, L.sk_a);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, L.sk_e);</code>
+      * <code>Assert false (dws_ike_suite_keylengths(&badprf, &L))</code>
+      * <code>Assert false (dws_ike_suite_keylengths(&badlen, &L))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sa_keys_from_init_agreement</b> &mdash; <i>The initiator holds Alice's D-H private and receives Bob's KE; the responder is the mirror.</i></summary>
+
+    * **Objective**: The initiator holds Alice's D-H private and receives Bob's KE; the responder is the mirror.
+    * **Assertions**:
+      * <code>Assert true (dws_ike_sa_keys_from_init(&ini, kat_alice_priv, 32, kat_bob_pub, 32, sa_ni, 16, sa_nr, 16))</code>
+      * <code>Assert true (dws_ike_sa_keys_from_init(&resp, kat_bob_priv, 32, kat_alice_pub, 32, sa_ni, 16, sa_nr, 16))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ini.keys.sk_a_len); // AEAD: no separate integrity keys</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(36, ini.keys.sk_e_len);</code>
+      * <code>Assert equal memory (ini.keys.sk_d, resp.keys.sk_d, 32)</code>
+      * <code>Assert equal memory (ini.keys.sk_ei, resp.keys.sk_ei, 36)</code>
+      * <code>Assert equal memory (ini.keys.sk_er, resp.keys.sk_er, 36)</code>
+      * <code>Assert equal memory (ini.keys.sk_pi, resp.keys.sk_pi, 32)</code>
+      * <code>Assert equal memory (ini.keys.sk_pr, resp.keys.sk_pr, 32)</code>
+      * <code>Assert equal memory (sa_sk_d, ini.keys.sk_d, 32)</code>
+      * <code>Assert equal memory (sa_sk_ei, ini.keys.sk_ei, 36)</code>
+      * <code>Assert equal memory (sa_sk_pr, ini.keys.sk_pr, 32)</code>
+      * <code>Assert false (dws_ike_sa_keys_from_init(&bad, kat_alice_priv, 32, kat_bob_pub, 32, sa_ni, 16, sa_nr, 16))</code>
   </details>
 
 </details>
