@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5145 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5146 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -12402,7 +12402,7 @@ A thorough directory of all **5145 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_fins (8 tests)</b></summary>
+<summary><b>test_fins (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_command_bytes</b> &mdash; <i>Build command bytes</i></summary>
@@ -12450,6 +12450,30 @@ A thorough directory of all **5145 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, sizeof(buf), &h, 0xB0, 100, 0, 2, nullptr, 4));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, 10, &h, 0xB0, 100, 0, 2, words, 4)); // hdr+prefix</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, 18, &h, 0xB0, 100, 0, 2, words, 4)); // data</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_run_and_stop</b> &mdash; <i>RUN into MONITOR mode.</i></summary>
+
+    * **Objective**: RUN into MONITOR mode.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 3, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(FINS_MRC_OPERATING_MODE, buf[10]); // MRC 0x04</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(FINS_SRC_RUN, buf[11]);            // SRC 0x01</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, buf[12]);                    // program number 0xFFFF</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, buf[13]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[14]); // MONITOR mode</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 3, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, buf[14]); // RUN mode</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(FINS_MRC_OPERATING_MODE, buf[10]); // MRC 0x04</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(FINS_SRC_STOP, buf[11]);           // SRC 0x02</code>
+      * <code>Assert true (dws_fins_parse_command(buf, n, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(FINS_MRC_OPERATING_MODE, c.mrc);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(FINS_SRC_STOP, c.src);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, c.params_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_run(buf, 11, &h, FinsRunMode::RUN));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_stop(buf, 11, &h));</code>
   </details>
 
   <details style="margin-left: 20px;">
