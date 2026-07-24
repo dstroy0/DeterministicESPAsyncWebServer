@@ -183,4 +183,45 @@ size_t dws_senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records
     return dws_cbor_ok(&w) ? dws_cbor_len(&w) : 0;
 }
 
+// --- resolution (RFC 8428 §4.6) ---
+
+size_t dws_senml_resolve(const SenmlRecord *in, size_t n, SenmlResolved *out, size_t max)
+{
+    if (!in || !out)
+        return 0;
+    const char *base_name = nullptr; // the active base name (bn), carried forward
+    bool base_time_set = false;
+    double base_time = 0.0; // the active base time (bt)
+
+    size_t count = n < max ? n : max;
+    for (size_t i = 0; i < count; i++)
+    {
+        const SenmlRecord *r = &in[i];
+        if (r->base_name) // a base field becomes active for this record and the ones after it
+            base_name = r->base_name;
+        if (r->has_base_time)
+        {
+            base_time = r->base_time;
+            base_time_set = true;
+        }
+
+        SenmlResolved *o = &out[i];
+        // Resolved name = active base name + record name (either part may be absent).
+        int w = snprintf(o->name, sizeof(o->name), "%s%s", base_name ? base_name : "", r->name ? r->name : "");
+        if (w < 0)
+            o->name[0] = '\0'; // GCOVR_EXCL_LINE  snprintf on "%s%s" cannot encode-error
+
+        // Resolved time = base time + record time (each defaults to 0); absent only if neither is present.
+        o->has_time = base_time_set || r->has_time;
+        o->time = (base_time_set ? base_time : 0.0) + (r->has_time ? r->time : 0.0);
+
+        o->unit = r->unit;
+        o->value_kind = r->value_kind;
+        o->value = r->value;
+        o->value_str = r->value_str;
+        o->value_bool = r->value_bool;
+    }
+    return count;
+}
+
 #endif // DWS_ENABLE_SENML

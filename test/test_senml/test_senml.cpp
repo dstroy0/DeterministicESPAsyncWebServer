@@ -300,6 +300,81 @@ void test_empty_pack_allows_null_records()
     TEST_ASSERT_EQUAL_size_t(0, arr);
 }
 
+// --- resolution (RFC 8428 §4.6) ---
+void test_resolve()
+{
+    SenmlRecord rec[3];
+    memset(rec, 0, sizeof(rec));
+    rec[0].base_name = "urn:dev:ow:10e2073a;";
+    rec[0].has_base_time = true;
+    rec[0].base_time = 1276020076;
+    rec[0].name = "temp";
+    rec[0].unit = "Cel";
+    rec[0].value_kind = SenmlValueKind::SENML_V_FLOAT;
+    rec[0].value = 23.5;
+    rec[1].name = "humidity"; // no base fields: the base name / time from rec[0] carry forward
+    rec[1].value_kind = SenmlValueKind::SENML_V_FLOAT;
+    rec[1].value = 40;
+    rec[1].has_time = true;
+    rec[1].time = 10;
+    rec[2].base_name = "urn:dev:ow:other;"; // overrides the base name; base time still carries
+    rec[2].name = "status";
+    rec[2].value_kind = SenmlValueKind::SENML_V_STRING;
+    rec[2].value_str = "ok";
+
+    SenmlResolved res[3];
+    size_t n = dws_senml_resolve(rec, 3, res, 3);
+    TEST_ASSERT_EQUAL_size_t(3, n);
+    TEST_ASSERT_EQUAL_STRING("urn:dev:ow:10e2073a;temp", res[0].name);
+    TEST_ASSERT_TRUE(res[0].has_time);
+    TEST_ASSERT_EQUAL_INT64(1276020076, (int64_t)res[0].time);
+    TEST_ASSERT_EQUAL_STRING("Cel", res[0].unit);
+
+    TEST_ASSERT_EQUAL_STRING("urn:dev:ow:10e2073a;humidity", res[1].name); // base name carried forward
+    TEST_ASSERT_TRUE(res[1].has_time);
+    TEST_ASSERT_EQUAL_INT64(1276020086, (int64_t)res[1].time); // base time + record time (10)
+
+    TEST_ASSERT_EQUAL_STRING("urn:dev:ow:other;status", res[2].name); // base name overridden
+    TEST_ASSERT_EQUAL_INT64(1276020076, (int64_t)res[2].time);        // still on the (unchanged) base time
+    TEST_ASSERT_EQUAL(SenmlValueKind::SENML_V_STRING, res[2].value_kind);
+    TEST_ASSERT_EQUAL_STRING("ok", res[2].value_str);
+}
+
+void test_resolve_edges()
+{
+    // A pack with no base time at all: a record with neither base time nor time has no resolved time.
+    SenmlRecord rec[2];
+    memset(rec, 0, sizeof(rec));
+    rec[0].name = "a";
+    rec[0].value_kind = SenmlValueKind::SENML_V_FLOAT;
+    rec[0].value = 1;
+    rec[1].name = "b";
+    rec[1].value_kind = SenmlValueKind::SENML_V_BOOL;
+    rec[1].value_bool = true;
+    SenmlResolved res[2];
+    TEST_ASSERT_EQUAL_size_t(2, dws_senml_resolve(rec, 2, res, 2));
+    TEST_ASSERT_FALSE(res[0].has_time);
+    TEST_ASSERT_EQUAL_STRING("a", res[0].name); // no base name -> just the record name
+    TEST_ASSERT_TRUE(res[1].value_bool);
+
+    // max caps the output; null arguments resolve nothing.
+    TEST_ASSERT_EQUAL_size_t(1, dws_senml_resolve(rec, 2, res, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_senml_resolve(nullptr, 2, res, 2));
+    TEST_ASSERT_EQUAL_size_t(0, dws_senml_resolve(rec, 2, nullptr, 2));
+
+    // A base name + name longer than the buffer truncates safely (no overflow).
+    SenmlRecord big[1];
+    memset(big, 0, sizeof(big));
+    static char longbn[128];
+    memset(longbn, 'x', sizeof(longbn) - 1);
+    longbn[sizeof(longbn) - 1] = '\0';
+    big[0].base_name = longbn;
+    big[0].name = "y";
+    SenmlResolved r1;
+    TEST_ASSERT_EQUAL_size_t(1, dws_senml_resolve(big, 1, &r1, 1));
+    TEST_ASSERT_TRUE(strlen(r1.name) < SENML_RESOLVED_NAME_MAX);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -315,5 +390,7 @@ int main()
     RUN_TEST(test_cbor_round_trip);
     RUN_TEST(test_cbor_base_name_key);
     RUN_TEST(test_overflow_fails_closed);
+    RUN_TEST(test_resolve);
+    RUN_TEST(test_resolve_edges);
     return UNITY_END();
 }

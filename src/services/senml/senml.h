@@ -18,7 +18,9 @@
  * integral are emitted as integers (so timestamps keep full precision); otherwise as floats.
  *
  * The caller fills a @ref SenmlRecord array and the builder emits the whole pack into a
- * caller buffer (fail-closed on overflow). Verified against the RFC 8428 example.
+ * caller buffer (fail-closed on overflow). Verified against the RFC 8428 example. A resolver
+ * (@ref dws_senml_resolve, RFC 8428 §4.6) folds the base name / base time into each record so a
+ * consumer gets standalone records with a full name and an absolute time.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -64,6 +66,34 @@ size_t dws_senml_json_build(char *buf, size_t cap, const SenmlRecord *records, s
 
 /** @brief Build a SenML-CBOR pack (a CBOR array of integer-keyed maps). Returns bytes, or 0. */
 size_t dws_senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records, size_t count);
+
+// --- resolution (RFC 8428 §4.6): apply the base fields to produce standalone records ---
+
+/** @brief Maximum resolved-name length (base name + name), including the NUL. */
+#define SENML_RESOLVED_NAME_MAX 96
+
+/** @brief A resolved SenML record: the base name / time folded in, so it stands alone. */
+struct SenmlResolved
+{
+    char name[SENML_RESOLVED_NAME_MAX]; ///< the base name concatenated with the record name
+    const char *unit;                   ///< u (borrowed from the input; may be null)
+    SenmlValueKind value_kind;
+    double value;
+    const char *value_str;
+    bool value_bool;
+    bool has_time;
+    double time; ///< the base time added to the record time (an absolute time)
+};
+
+/**
+ * @brief Resolve a SenML pack (RFC 8428 §4.6): carry the base name / base time forward across records so
+ *        each output record's name is the full base+name and its time is the absolute base+time.
+ *
+ * A record's base name / base time becomes active for that record and every record after it, until a later
+ * record overrides it. Each input record produces one resolved record (a base-only carrier resolves to a
+ * value-less record the caller can skip). @return the number of records resolved (min of @p n and @p max).
+ */
+size_t dws_senml_resolve(const SenmlRecord *in, size_t n, SenmlResolved *out, size_t max);
 
 #endif // DWS_ENABLE_SENML
 
