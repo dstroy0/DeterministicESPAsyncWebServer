@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5144 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5145 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29700,7 +29700,7 @@ A thorough directory of all **5144 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (24 tests)</b></summary>
+<summary><b>test_nmea0183 (25 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -30067,6 +30067,32 @@ A thorough directory of all **5144 test cases** across **291 suites**. Expand a 
       * <code>Assert float within (0.01f, 6.0f, h.variation_deg)</code>
       * <code>Assert false (dws_nmea0183_parse_hdg(&m, &h))</code>
       * <code>Assert false (dws_nmea0183_parse_hdg(nullptr, &h))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_gll</b> &mdash; <i>Classic GLL (pre-NMEA-2.3, no mode field): position 4916.45N / 12311.12W, 22:54:44 UTC, valid.</i></summary>
+
+    * **Objective**: Classic GLL (pre-NMEA-2.3, no mode field): position 4916.45N / 12311.12W, 22:54:44 UTC, valid.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_gll(&m, &g))</code>
+      * <code>Assert true (g.valid)</code>
+      * <code>Assert float within (0.0005f, 49.27417f, (float)g.lat_deg)</code>
+      * <code>Assert float within (0.0005f, -123.18533f, (float)g.lon_deg)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(22, g.hour);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(54, g.minute);</code>
+      * <code>Assert float within (0.05f, 44.0f, g.second)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('\\0', g.mode); // no FAA mode field in the classic form</code>
+      * <code>Assert true (n2 &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n2, &m2))</code>
+      * <code>Assert true (dws_nmea0183_parse_gll(&m2, &g2))</code>
+      * <code>Assert false (g2.valid)</code>
+      * <code>Assert true (g2.lat_deg &lt; 0.0)</code>
+      * <code>Assert true (g2.lon_deg &lt; 0.0)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('N', g2.mode);</code>
+      * <code>Assert false (dws_nmea0183_parse_gll(&m, &g))</code>
+      * <code>Assert false (dws_nmea0183_parse_gll(nullptr, &g))</code>
   </details>
 
   <details style="margin-left: 20px;">
