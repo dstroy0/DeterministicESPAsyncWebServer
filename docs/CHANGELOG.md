@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.117.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.117.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`63ad27e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/63ad27e71a0a205133c794aa6f8e01ba2f9c7114))
+
+### Changes
+
+- Bump version: 7.116.0 → 7.117.0 ([`306bbee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/306bbee52889210bae18ab4208b41424e7228d55))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e4bdddb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4bdddbc61603a15cb4acedf4282ba057ffe0056))
+
+### Features
+
+- extract grpc-message from a trailers frame ([`7b80458`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b80458dd2e90d16af8ecec4bed8100c8b251646))
+
+</details>
+
 ## [7.116.0] - 2026-07-24
 
 <details>
