@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.152.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.152.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`990d1b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/990d1b721944b298ac31a4184176f0d6c5bb6266))
+
+### Changes
+
+- Bump version: 7.151.1 → 7.152.0 ([`e45b10c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e45b10cd3ba5f7f95e78b3706fa44b741ed832fb))
+
+### Features
+
+- pack/parse RDM DEVICE_INFO (PID 0x0060) ([`d3082d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3082d149f4812ed6d96a514b9fd4ed90f4a9f77))
+
+</details>
+
 ## [7.151.1] - 2026-07-24
 
 <details>
