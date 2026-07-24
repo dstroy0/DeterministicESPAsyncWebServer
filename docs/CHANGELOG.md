@@ -2,17 +2,32 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.154.1] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.154.1 - 2026-07-24</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`fd094d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd094d0117f072205b14ad18ac37d046d0ca2a2f))
 - update CHANGELOG.md [skip ci] ([`ae6abe4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae6abe47dad127eb401c5b2c72800ebf146407b7))
+
+### Changes
+
+- Bump version: 7.154.0 → 7.154.1 ([`5eb3608`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5eb36088c8b7a4b67705480fad78157256072218))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a977832`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9778326b9423636817be682b9d1d2a935c687e9))
 - close SSH channel-mux partial (stale summary; X11 a non-goal) ([`fcb8968`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcb8968f644e4db641d8251a74a8875a8609535e))
 - update ESP32 build footprints [skip ci] ([`37d2423`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37d2423f6e786e5d00ee9bdfa86370eac0c91a67))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9a69818`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a698180a27c438315cd72810bcf4627e0133e8e))
+
+### Refactor
+
+- cut sparkplug metric-parse complexity; justify 2 data-struct sizes ([`2fc5d83`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fc5d8386f763cd108274c6b430ab6cce320ea62))
+
+</details>
 
 ## [7.154.0] - 2026-07-24
 
