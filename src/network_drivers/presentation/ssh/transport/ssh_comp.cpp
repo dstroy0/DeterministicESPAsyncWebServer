@@ -10,6 +10,7 @@
 
 #if DWS_ENABLE_SSH_ZLIB
 
+#include "network_drivers/presentation/ssh/transport/ssh_inflate.h"
 #include "network_drivers/presentation/ssh/transport/ssh_zlib.h"
 #include <string.h>
 
@@ -38,16 +39,20 @@
 // Per-connection compression state (large buffers -> PSRAM; the flags are trivial).
 struct SshCompState
 {
-    SshDeflate z;                      ///< streaming compressor (bound to the buffers below).
-    uint8_t work[SSH_ZLIB_WORK_SIZE];  ///< history + input work buffer.
-    uint16_t head[SSH_ZLIB_HASH_SIZE]; ///< hash bucket heads.
-    uint16_t prev[SSH_ZLIB_WORK_SIZE]; ///< hash chain (absolute-position indexed).
-    uint16_t ll_code[288];             ///< fixed lit/length Huffman codes.
-    uint8_t ll_len[288];               ///< their bit lengths.
-    uint16_t d_code[30];               ///< fixed distance Huffman codes.
-    uint8_t d_len[30];                 ///< their bit lengths.
-    SshCompAlg s2c_alg;                ///< negotiated compression algorithm.
-    bool s2c_active;                   ///< true once the stream has started.
+    SshDeflate z;                           ///< streaming compressor (bound to the buffers below).
+    uint8_t work[SSH_ZLIB_WORK_SIZE];       ///< history + input work buffer.
+    uint16_t head[SSH_ZLIB_HASH_SIZE];      ///< hash bucket heads.
+    uint16_t prev[SSH_ZLIB_WORK_SIZE];      ///< hash chain (absolute-position indexed).
+    uint16_t ll_code[288];                  ///< fixed lit/length Huffman codes.
+    uint8_t ll_len[288];                    ///< their bit lengths.
+    uint16_t d_code[30];                    ///< fixed distance Huffman codes.
+    uint8_t d_len[30];                      ///< their bit lengths.
+    SshInflate inf;                         ///< streaming decompressor (bound to inf_window below).
+    uint8_t inf_window[SSH_INFLATE_WINDOW]; ///< 32 KB context-takeover window for c2s inflate.
+    SshCompAlg s2c_alg;                     ///< negotiated server-to-client algorithm.
+    bool s2c_active;                        ///< true once the s2c (deflate) stream has started.
+    SshCompAlg c2s_alg;                     ///< negotiated client-to-server algorithm.
+    bool c2s_active;                        ///< true once the c2s (inflate) stream has started.
 };
 
 // All SSH compression state, owned by one instance (internal linkage): the per-connection
@@ -58,18 +63,27 @@ struct SshCompCtx
 };
 static DWS_SSH_COMP_ATTR SshCompCtx s_ssh_comp;
 
-static void start_stream(SshCompState *c)
+static void start_s2c(SshCompState *c)
 {
     ssh_deflate_init(&c->z, c->work, c->head, c->prev, c->ll_code, c->ll_len, c->d_code, c->d_len);
     c->s2c_active = true;
+}
+
+static void start_c2s(SshCompState *c)
+{
+    ssh_inflate_init(&c->inf, c->inf_window);
+    c->c2s_active = true;
 }
 
 void ssh_comp_reset(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
-    s_ssh_comp.comp[i].s2c_alg = SshCompAlg::SSH_COMP_NONE;
-    s_ssh_comp.comp[i].s2c_active = false;
+    SshCompState *c = &s_ssh_comp.comp[i];
+    c->s2c_alg = SshCompAlg::SSH_COMP_NONE;
+    c->s2c_active = false;
+    c->c2s_alg = SshCompAlg::SSH_COMP_NONE;
+    c->c2s_active = false;
 }
 
 void ssh_comp_set_s2c(uint8_t i, SshCompAlg alg)
@@ -79,13 +93,23 @@ void ssh_comp_set_s2c(uint8_t i, SshCompAlg alg)
     s_ssh_comp.comp[i].s2c_alg = alg;
 }
 
+void ssh_comp_set_c2s(uint8_t i, SshCompAlg alg)
+{
+    if (i >= MAX_SSH_CONNS)
+        return;
+    s_ssh_comp.comp[i].c2s_alg = alg;
+}
+
+// "zlib" (non-delayed) starts both directions at NEWKEYS; "zlib@openssh.com" waits for auth success.
 void ssh_comp_on_newkeys(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
     SshCompState *c = &s_ssh_comp.comp[i];
     if (c->s2c_alg == SshCompAlg::SSH_COMP_ZLIB && !c->s2c_active)
-        start_stream(c);
+        start_s2c(c);
+    if (c->c2s_alg == SshCompAlg::SSH_COMP_ZLIB && !c->c2s_active)
+        start_c2s(c);
 }
 
 void ssh_comp_on_auth_success(uint8_t i)
@@ -94,7 +118,9 @@ void ssh_comp_on_auth_success(uint8_t i)
         return;
     SshCompState *c = &s_ssh_comp.comp[i];
     if (c->s2c_alg == SshCompAlg::SSH_COMP_ZLIB_DELAYED && !c->s2c_active)
-        start_stream(c);
+        start_s2c(c);
+    if (c->c2s_alg == SshCompAlg::SSH_COMP_ZLIB_DELAYED && !c->c2s_active)
+        start_c2s(c);
 }
 
 bool ssh_comp_s2c_active(uint8_t i)
@@ -107,6 +133,18 @@ int ssh_comp_s2c(uint8_t i, const uint8_t *src, size_t src_len, uint8_t *dst, si
     if (i >= MAX_SSH_CONNS || !s_ssh_comp.comp[i].s2c_active)
         return -1;
     return ssh_deflate_packet(&s_ssh_comp.comp[i].z, src, src_len, dst, dst_cap, out_len);
+}
+
+bool ssh_comp_c2s_active(uint8_t i)
+{
+    return i < MAX_SSH_CONNS && s_ssh_comp.comp[i].c2s_active;
+}
+
+int ssh_comp_c2s(uint8_t i, const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len)
+{
+    if (i >= MAX_SSH_CONNS || !s_ssh_comp.comp[i].c2s_active)
+        return -1;
+    return ssh_inflate_packet(&s_ssh_comp.comp[i].inf, src, src_len, dst, dst_cap, out_len);
 }
 
 #endif // DWS_ENABLE_SSH_ZLIB

@@ -842,16 +842,20 @@ shipped work:
       clock, and the sequence-number-wrap close remains the last-resort fallback. So a long-lived /
       high-throughput session re-keys in place instead of being dropped.
 
-- [~] **Compression (RFC 4253 §6.2).** _(server->client done; client->server deferred)_
-      `DWS_ENABLE_SSH_ZLIB` adds `zlib@openssh.com` / `zlib` for the **s2c** direction: a
+- [~] **Compression (RFC 4253 §6.2).** _(both directions implemented; c2s HW interop pending)_
+      `DWS_ENABLE_SSH_ZLIB` adds `zlib@openssh.com` / `zlib` for **both** directions: a
       context-takeover DEFLATE stream (`ssh_zlib`, persistent sliding window + per-packet
-      sync-flush + zlib wrapper) owned by `ssh_comp`, negotiated per direction, started after
-      USERAUTH_SUCCESS (delayed) or NEWKEYS (plain). HW-verified against OpenSSH 10.3 (42 KB
-      byte-perfect). **c2s stays `none`:** OpenSSH compresses outbound with `Z_PARTIAL_FLUSH`,
-      whose deflate blocks straddle packet byte-boundaries, so decompressing it needs a
-      resumable inflate state machine (bit-state + mid-block decode carried across packets) -
-      a much larger engine for a direction (keystrokes / uploads to the device) that barely
-      benefits. Add the resumable inflate if a bulk c2s (SFTP-to-device) use case appears.
+      sync-flush + zlib wrapper) for **s2c**, and a resumable, context-takeover INFLATE
+      (`ssh_inflate`, 32 KB window) for **c2s** - both owned by `ssh_comp`, negotiated per
+      direction, started after USERAUTH_SUCCESS (delayed) or NEWKEYS (plain), and driven by the
+      packet layer (compress on send, decompress on receive). The c2s inflate handles OpenSSH's
+      `Z_PARTIAL_FLUSH` (blocks end mid-byte, spilling into the next packet) by carrying the bit
+      position + window across packets and committing only whole blocks (it retains the flush-block
+      tail and re-decodes it next packet - no mid-block state). s2c is HW-verified against OpenSSH
+      10.3 (42 KB byte-perfect); c2s is verified byte-exact against golden vectors from **real zlib**
+      (windowBits 15, `Z_PARTIAL_FLUSH`; `native_ssh_inflate` + `native_ssh_comp`,
+      tools/gen_ssh_inflate_vectors.py). _Only remainder:_ HW interop of the c2s path against a live
+      OpenSSH client (`ssh -o Compression=yes` + a c2s upload) on an ESP32-S3.
 
 </details>
 

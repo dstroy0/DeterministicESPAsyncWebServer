@@ -11,13 +11,12 @@
  * the WebSocket permessage-deflate codec (presentation/deflate), which is stateless per message
  * (`no_context_takeover`); the two cannot share an instance.
  *
- * Only the SERVER->CLIENT direction is implemented here. It emits a zlib stream (RFC 1950 2-byte
- * header once, then RFC 1951 fixed-Huffman blocks) with a Z_SYNC_FLUSH boundary after every packet:
- * the block is byte-aligned and the empty stored block `00 00 ff ff` is KEPT on the wire (unlike
- * permessage-deflate, which strips it). A standard zlib `inflate()` - as in OpenSSH - decodes it.
- * The client->server direction stays `none` (OpenSSH compresses outbound with Z_PARTIAL_FLUSH, whose
- * blocks straddle packet byte-boundaries and would need a resumable inflate state machine for a
- * direction - keystrokes / uploads to the device - that barely benefits).
+ * This file is the SERVER->CLIENT (deflate) half. It emits a zlib stream (RFC 1950 2-byte header once,
+ * then RFC 1951 fixed-Huffman blocks) with a Z_SYNC_FLUSH boundary after every packet: the block is
+ * byte-aligned and the empty stored block `00 00 ff ff` is KEPT on the wire (unlike permessage-deflate,
+ * which strips it). A standard zlib `inflate()` - as in OpenSSH - decodes it. The CLIENT->SERVER
+ * (inflate) half lives in ssh_inflate.h: OpenSSH compresses its outbound with Z_PARTIAL_FLUSH, so that
+ * side is a resumable, context-takeover inflate carrying bit state + the window across packets.
  *
  * All state and buffers are caller-supplied; the codec allocates nothing. See ssh_zlib.cpp for the
  * work-buffer / hash-table sizing helpers (SSH_ZLIB_* macros).

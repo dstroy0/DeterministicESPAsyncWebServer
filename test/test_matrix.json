@@ -1787,6 +1787,7 @@
         "+<network_drivers/presentation/ssh/transport/ssh_packet.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_comp.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_zlib.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_inflate.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>",

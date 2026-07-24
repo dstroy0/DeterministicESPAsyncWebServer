@@ -276,6 +276,31 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
 // Receive
 // ---------------------------------------------------------------------------
 
+// Dispatch one decrypted packet payload (message-type byte + data) to @p handler, first decompressing
+// it when the client-to-server compression stream is active (RFC 4253 sec 6.2). Compression only runs
+// after NEWKEYS / auth success, so the pre-auth plaintext path never enters the c2s branch.
+// @return 0 on success (handler invoked, or skipped for a flush-only packet), -1 on a malformed
+//         compressed stream / decompression overflow (the caller must wipe + disconnect).
+static int ssh_dispatch_payload(uint8_t i, const uint8_t *payload, size_t payload_len, ssh_msg_handler_t handler)
+{
+#if DWS_ENABLE_SSH_ZLIB
+    if (ssh_comp_c2s_active(i))
+    {
+        ScratchScope inflate_scope;
+        uint8_t *dbuf = (uint8_t *)scratch_alloc(SSH_PKT_BUF_SIZE, 16);
+        size_t dlen = 0;
+        if (!dbuf || ssh_comp_c2s(i, payload, payload_len, dbuf, SSH_PKT_BUF_SIZE, &dlen) != 0)
+            return -1; // malformed stream, or a payload that decompresses beyond the uncompressed limit
+        if (dlen == 0)
+            return 0; // the packet carried only flush bits (no message); consume it and move on
+        handler(i, dbuf[0], dbuf, dlen);
+        return 0;
+    }
+#endif
+    handler(i, payload[0], payload, payload_len);
+    return 0;
+}
+
 // Extract one packet from the head of the RX buffer and dispatch it to @p handler. Every cipher path
 // returns the same tri-state so ssh_pkt_recv's extract loop can stay flat: 1 = one packet consumed (keep
 // extracting), 0 = incomplete (need more bytes, stop), -1 = fatal (the buffer is already wiped on the paths
@@ -331,8 +356,11 @@ static int ssh_recv_chachapoly(uint8_t i, SshPacketState *s, const SshKeyMat *km
         return -1;
     }
     size_t payload_len = pkt_len - 1 - pad_len_byte;
-    uint8_t msg_type = scratch[5];
-    handler(i, msg_type, scratch + 5, payload_len);
+    if (ssh_dispatch_payload(i, scratch + 5, payload_len, handler) < 0)
+    {
+        ssh_wipe(scratch, scratch_sz);
+        return -1;
+    }
 
     size_t consumed = wire_need;
     memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
@@ -392,8 +420,11 @@ static int ssh_recv_aesgcm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_
         return -1;
     }
     size_t payload_len = pkt_len - 1 - pad_len_byte;
-    uint8_t msg_type = scratch[1];
-    handler(i, msg_type, scratch + 1, payload_len);
+    if (ssh_dispatch_payload(i, scratch + 1, payload_len, handler) < 0)
+    {
+        ssh_wipe(scratch, scratch_sz);
+        return -1;
+    }
 
     size_t consumed = wire_need;
     memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
@@ -455,8 +486,11 @@ static int ssh_recv_ctr_etm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg
         return -1;
     }
     size_t payload_len = pkt_len - 1 - pad_len_byte;
-    uint8_t msg_type = scratch[1];
-    handler(i, msg_type, scratch + 1, payload_len);
+    if (ssh_dispatch_payload(i, scratch + 1, payload_len, handler) < 0)
+    {
+        ssh_wipe(scratch, scratch_sz);
+        return -1;
+    }
 
     size_t consumed = wire_need;
     memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
@@ -566,8 +600,11 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
         return -1;
     }
     size_t payload_len = pkt_len - 1 - pad_len_byte;
-    uint8_t msg_type = scratch[5];
-    handler(i, msg_type, scratch + 5, payload_len);
+    if (ssh_dispatch_payload(i, scratch + 5, payload_len, handler) < 0)
+    {
+        ssh_wipe(scratch, scratch_sz);
+        return -1;
+    }
 
     // Consume from rx_buf.
     size_t consumed = wire_need;
@@ -600,8 +637,8 @@ static int ssh_recv_plain(uint8_t i, SshPacketState *s, const SshKeyMat *km, ssh
     if (pad_len_byte >= pkt_len)
         return -1;
     size_t payload_len = pkt_len - 1 - pad_len_byte;
-    uint8_t msg_type = s->rx_buf[5];
-    handler(i, msg_type, s->rx_buf + 5, payload_len);
+    if (ssh_dispatch_payload(i, s->rx_buf + 5, payload_len, handler) < 0)
+        return -1;
 
     size_t consumed = wire_need;
     memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);

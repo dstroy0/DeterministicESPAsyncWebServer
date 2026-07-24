@@ -112,6 +112,44 @@ void test_none_never_activates()
     TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
 }
 
+// c2s zlib (immediate) activates at NEWKEYS and decompresses a real-zlib Z_PARTIAL_FLUSH packet
+// byte-exact through the ssh_comp glue (the inflate engine itself is covered in native_ssh_inflate).
+void test_c2s_activation_and_decompress()
+{
+    ssh_comp_set_c2s(0, SshCompAlg::SSH_COMP_ZLIB);
+    TEST_ASSERT_FALSE(ssh_comp_c2s_active(0));
+    ssh_comp_on_newkeys(0);
+    TEST_ASSERT_TRUE(ssh_comp_c2s_active(0));
+
+    // First packet of a real-zlib stream (compressobj level 6, windowBits 15, Z_PARTIAL_FLUSH).
+    static const uint8_t comp0[42] = {120, 156, 114, 119, 13,  81,  208, 87,  240, 8,   9,   9,   208, 55,
+                                      212, 51,  228, 229, 242, 200, 47,  46,  177, 82,  72,  73,  45,  203,
+                                      76,  78,  213, 203, 201, 79,  78,  204, 225, 229, 226, 229, 2,   8};
+    static const uint8_t plain0[38] = {71, 69,  84, 32,  47,  32,  72,  84,  84, 80,  47,  49,  46,
+                                       49, 13,  10, 72,  111, 115, 116, 58,  32, 100, 101, 118, 105,
+                                       99, 101, 46, 108, 111, 99,  97,  108, 13, 10,  13,  10};
+    uint8_t out[128];
+    size_t out_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_comp_c2s(0, comp0, sizeof(comp0), out, sizeof(out), &out_len));
+    TEST_ASSERT_EQUAL_size_t(sizeof(plain0), out_len);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(plain0, out, sizeof(plain0));
+
+    // An inactive slot refuses to decompress.
+    ssh_comp_reset(0);
+    TEST_ASSERT_FALSE(ssh_comp_c2s_active(0));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_comp_c2s(0, comp0, sizeof(comp0), out, sizeof(out), &out_len));
+}
+
+// c2s zlib@openssh.com is delayed like s2c: not active until USERAUTH_SUCCESS.
+void test_c2s_delayed_activation()
+{
+    ssh_comp_set_c2s(0, SshCompAlg::SSH_COMP_ZLIB_DELAYED);
+    ssh_comp_on_newkeys(0);
+    TEST_ASSERT_FALSE(ssh_comp_c2s_active(0));
+    ssh_comp_on_auth_success(0);
+    TEST_ASSERT_TRUE(ssh_comp_c2s_active(0));
+}
+
 // The full path: activate, push a realistic terminal session, and prove the framed packets form one
 // valid context-takeover zlib stream that decodes back to the originals.
 void test_packet_layer_stream_roundtrip()
@@ -1018,6 +1056,8 @@ int main()
     RUN_TEST(test_delayed_activation);
     RUN_TEST(test_immediate_activation);
     RUN_TEST(test_none_never_activates);
+    RUN_TEST(test_c2s_activation_and_decompress);
+    RUN_TEST(test_c2s_delayed_activation);
     RUN_TEST(test_packet_layer_stream_roundtrip);
     RUN_TEST(test_packet_layer_window_slide);
     RUN_TEST(test_packet_compress_scratch_exhausted);

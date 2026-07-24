@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5183 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5185 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -51063,7 +51063,7 @@ A thorough directory of all **5183 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_comp (23 tests)</b></summary>
+<summary><b>test_ssh_comp (25 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dispatch_all_switch_arms</b> &mdash; <i>KEXINIT -> server KEXINIT, phase DH_INIT.</i></summary>
@@ -51145,6 +51145,29 @@ A thorough directory of all **5183 test cases** across **292 suites**. Expand a 
     * **Objective**: None never activates
     * **Assertions**:
       * <code>Assert false (ssh_comp_s2c_active(0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_c2s_activation_and_decompress</b> &mdash; <i>First packet of a real-zlib stream (compressobj level 6, windowBits 15, Z_PARTIAL_FLUSH).</i></summary>
+
+    * **Objective**: First packet of a real-zlib stream (compressobj level 6, windowBits 15, Z_PARTIAL_FLUSH).
+    * **Assertions**:
+      * <code>Assert false (ssh_comp_c2s_active(0))</code>
+      * <code>Assert true (ssh_comp_c2s_active(0))</code>
+      * <code>Assert equal int (0, ssh_comp_c2s(0, comp0, sizeof(comp0), out, sizeof(out), &out_len))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(plain0), out_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(plain0, out, sizeof(plain0));</code>
+      * <code>Assert false (ssh_comp_c2s_active(0))</code>
+      * <code>Assert equal int (-1, ssh_comp_c2s(0, comp0, sizeof(comp0), out, sizeof(out), &out_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_c2s_delayed_activation</b> &mdash; <i>C2s delayed activation</i></summary>
+
+    * **Objective**: C2s delayed activation
+    * **Assertions**:
+      * <code>Assert false (ssh_comp_c2s_active(0))</code>
+      * <code>Assert true (ssh_comp_c2s_active(0))</code>
   </details>
 
   <details style="margin-left: 20px;">

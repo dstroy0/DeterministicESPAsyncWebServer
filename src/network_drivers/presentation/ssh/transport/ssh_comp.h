@@ -56,5 +56,18 @@ bool ssh_comp_s2c_active(uint8_t i);
  */
 int ssh_comp_s2c(uint8_t i, const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len);
 
+/** @brief Record the client-to-server algorithm negotiated in KEXINIT (::SshCompAlg). */
+void ssh_comp_set_c2s(uint8_t i, SshCompAlg alg);
+
+/** @brief True once the c2s stream is active and inbound payloads must be decompressed. */
+bool ssh_comp_c2s_active(uint8_t i);
+
+/**
+ * @brief Decompress one inbound payload, continuing the session's client-to-server zlib stream. The
+ *        peer (OpenSSH) flushes with Z_PARTIAL_FLUSH, so this resumes a context-takeover inflate.
+ * @return 0 on success (*out_len set), -1 on a malformed stream / output overflow / inactive slot.
+ */
+int ssh_comp_c2s(uint8_t i, const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len);
+
 #endif // DWS_ENABLE_SSH_ZLIB
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_COMP_H

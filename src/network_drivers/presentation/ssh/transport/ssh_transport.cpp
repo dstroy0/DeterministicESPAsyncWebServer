@@ -64,11 +64,12 @@ static const char *const ALG_MAC_LIST = "hmac-sha2-256-etm@openssh.com,hmac-sha2
                                         "hmac-sha2-256,hmac-sha2-512";
 static const char *const ALG_COMP = "none";
 #if DWS_ENABLE_SSH_ZLIB
-// Server->client compression preference: zlib@openssh.com (delayed, OpenSSH's default) first, then
-// zlib (immediate), then none. Client->server stays "none" (ALG_COMP): see ssh_zlib.h.
-static const char *const ALG_COMP_S2C = "zlib@openssh.com,zlib,none";
+// Compression preference (both directions): zlib@openssh.com (delayed, OpenSSH's default) first, then
+// zlib (immediate), then none. s2c deflates (ssh_zlib); c2s inflates OpenSSH's Z_PARTIAL_FLUSH stream
+// (ssh_inflate). Advertised for c2s and s2c alike.
+static const char *const ALG_COMP_ZLIB = "zlib@openssh.com,zlib,none";
 #else
-static const char *const ALG_COMP_S2C = "none";
+static const char *const ALG_COMP_ZLIB = "none";
 #endif
 // RFC 8308 indicator a client sets in its kex_algorithms to request EXT_INFO.
 static const char *const EXT_INFO_C = "ext-info-c";
@@ -433,8 +434,8 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap)
     w_namelist(w, ALG_CIPHER_LIST); // encryption s2c
     w_namelist(w, ALG_MAC_LIST);    // mac c2s (used only with aes256-ctr; ignored for the AEAD cipher)
     w_namelist(w, ALG_MAC_LIST);    // mac s2c
-    w_namelist(w, ALG_COMP);        // compression c2s (always none)
-    w_namelist(w, ALG_COMP_S2C);    // compression s2c (zlib@openssh.com / zlib when built in)
+    w_namelist(w, ALG_COMP_ZLIB);   // compression c2s (zlib@openssh.com / zlib when built in, else none)
+    w_namelist(w, ALG_COMP_ZLIB);   // compression s2c (zlib@openssh.com / zlib when built in, else none)
     w_namelist(w, "");              // languages c2s
     w_namelist(w, "");              // languages s2c
     w_u8(w, 0);                     // first_kex_packet_follows = false
@@ -592,24 +593,26 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     if (need_mac && (!negotiate_alg(list, nlen, mc, 4, &m_s2c) || m_s2c != m_c2s))
         return -1;
     s->mac_alg = m_c2s;
-    // compression c2s: we only decompress "none" (client->server compression is not implemented).
-    if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_COMP))
-        return -1;
-    // compression s2c: negotiate zlib@openssh.com > zlib > none (server preference).
-    if (!read_namelist(payload, len, &off, &list, &nlen))
-        return -1;
+    // compression c2s + s2c: negotiate zlib@openssh.com > zlib > none per direction. c2s: the client
+    // compresses, we inflate (ssh_inflate); s2c: we compress, the client inflates (ssh_zlib).
 #if DWS_ENABLE_SSH_ZLIB
     {
         const AlgCand<SshCompAlg> compc[3] = {{"zlib@openssh.com", SshCompAlg::SSH_COMP_ZLIB_DELAYED, true},
                                               {"zlib", SshCompAlg::SSH_COMP_ZLIB, true},
                                               {"none", SshCompAlg::SSH_COMP_NONE, true}};
         SshCompAlg comp;
-        if (!negotiate_alg(list, nlen, compc, 3, &comp))
+        if (!read_namelist(payload, len, &off, &list, &nlen) || !negotiate_alg(list, nlen, compc, 3, &comp))
+            return -1;
+        ssh_comp_set_c2s(i, comp);
+        if (!read_namelist(payload, len, &off, &list, &nlen) || !negotiate_alg(list, nlen, compc, 3, &comp))
             return -1;
         ssh_comp_set_s2c(i, comp);
     }
 #else
-    if (!namelist_contains(list, nlen, ALG_COMP))
+    // Both directions must offer "none" (no compression built in).
+    if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_COMP))
+        return -1;
+    if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_COMP))
         return -1;
 #endif
 
