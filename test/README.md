@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5068 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5070 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29024,7 +29024,7 @@ A thorough directory of all **5068 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (14 tests)</b></summary>
+<summary><b>test_nmea2000 (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -29184,6 +29184,40 @@ A thorough directory of all **5068 test cases** across **290 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(19, rx.total_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(pgn, rx.pgn);</code>
       * <code>Assert equal memory (msg, rx.buf, 19)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_position_rapid</b> &mdash; <i>lat 37.3749, lon -122.0841 (1e-7 deg/bit), little-endian.</i></summary>
+
+    * **Objective**: lat 37.3749, lon -122.0841 (1e-7 deg/bit), little-endian.
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_position_rapid(pos, sizeof(pos), &p))</code>
+      * <code>Assert true (p.valid)</code>
+      * <code>Assert float within (0.0001f, 37.3749f, (float)p.lat_deg)</code>
+      * <code>Assert float within (0.0001f, -122.0841f, (float)p.lon_deg)</code>
+      * <code>Assert true (dws_n2k_decode_position_rapid(na, sizeof(na), &p))</code>
+      * <code>Assert false (p.valid)</code>
+      * <code>Assert false (dws_n2k_decode_position_rapid(pos, 7, &p))</code>
+      * <code>Assert false (dws_n2k_decode_position_rapid(nullptr, 8, &p))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_wind_data</b> &mdash; <i>sid 0x2A, speed 5.00 m/s (raw 500), angle 1.5708 rad (raw 15708), reference apparent.</i></summary>
+
+    * **Objective**: sid 0x2A, speed 5.00 m/s (raw 500), angle 1.5708 rad (raw 15708), reference apparent.
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_wind_data(wind, sizeof(wind), &w))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x2A, w.sid);</code>
+      * <code>Assert true (w.speed_valid)</code>
+      * <code>Assert float within (0.001f, 5.0f, w.speed_mps)</code>
+      * <code>Assert true (w.angle_valid)</code>
+      * <code>Assert float within (0.0005f, 1.5708f, w.angle_rad)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_WIND_REF_APPARENT, w.reference);</code>
+      * <code>Assert true (dws_n2k_decode_wind_data(na, sizeof(na), &w))</code>
+      * <code>Assert false (w.speed_valid)</code>
+      * <code>Assert true (w.angle_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_WIND_REF_TRUE_NORTH, w.reference);</code>
+      * <code>Assert false (dws_n2k_decode_wind_data(wind, 5, &w))</code>
   </details>
 
 </details>
