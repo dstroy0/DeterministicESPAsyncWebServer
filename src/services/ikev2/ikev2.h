@@ -717,6 +717,7 @@ enum class IkeState : uint8_t
     IKE_ST_SA_INIT_SENT, ///< IKE_SA_INIT request emitted, awaiting the response
     IKE_ST_SA_INIT_DONE, ///< response consumed, SA keys derived (ready for IKE_AUTH)
     IKE_ST_AUTH_SENT,    ///< IKE_AUTH request emitted, awaiting the response
+    IKE_ST_ESTABLISHED,  ///< responder's IKE_AUTH verified; the IKE SA is up
     IKE_ST_FAILED,       ///< a received message was rejected
 };
 
@@ -732,6 +733,8 @@ struct IkeHandshake
     uint16_t peer_nonce_len;
     uint8_t init_msg[DWS_IKE_MSG_MAX]; ///< our IKE_SA_INIT bytes = RealMessage1 (signed by the AUTH)
     uint16_t init_msg_len;
+    uint8_t resp_msg[DWS_IKE_MSG_MAX]; ///< the responder's IKE_SA_INIT = RealMessage2 (verifies its AUTH)
+    uint16_t resp_msg_len;
 };
 
 /**
@@ -769,6 +772,16 @@ bool dws_ike_initiator_on_sa_init(IkeHandshake *hs, const uint8_t *resp, size_t 
 size_t dws_ike_initiator_build_auth_psk(IkeHandshake *hs, IkeIdType idi_type, const uint8_t *idi_data, size_t idi_len,
                                         const uint8_t *psk, size_t psk_len, const uint8_t iv[DWS_IKE_GCM_IV_LEN],
                                         uint8_t *out, size_t out_cap);
+
+/**
+ * @brief Consume the responder's IKE_AUTH (PSK): decrypt SK{ IDr | AUTH } with SK_er, then verify the
+ *        responder's AUTH over ResponderSignedOctets = RealMessage2 | Ni | prf(SK_pr, IDr') in constant
+ *        time. Requires @p hs in IKE_ST_AUTH_SENT; advances to IKE_ST_ESTABLISHED, or IKE_ST_FAILED on a
+ *        decrypt / parse / verify failure.
+ * @return true iff the responder authenticated (the IKE SA is now up).
+ */
+bool dws_ike_initiator_on_auth_psk(IkeHandshake *hs, const uint8_t *resp, size_t resp_len, const uint8_t *psk,
+                                   size_t psk_len);
 
 #endif // DWS_ENABLE_IKEV2
 

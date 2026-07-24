@@ -1846,6 +1846,83 @@ void test_initiator_ike_auth_send()
                                                                  sizeof(psk), iv, authmsg, sizeof(authmsg)));
 }
 
+// ── the full initiator handshake: IKE_SA_INIT + IKE_AUTH -> ESTABLISHED ─────────────────────────
+static const uint8_t g_our_spi[8] = {0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21};
+static const uint8_t g_resp_spi[8] = {0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98};
+static const uint8_t g_our_nonce[16] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+                                        0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f};
+static const uint8_t g_resp_nonce[16] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
+                                         0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f};
+static const uint8_t g_psk[12] = {'s', 'e', 'c', 'r', 'e', 't', '-', 'k', 'e', 'y', '!', '!'};
+
+// Drive a fresh initiator to IKE_ST_AUTH_SENT (Alice's ephemeral); write RealMessage2 (the responder's
+// IKE_SA_INIT, built from Bob's KE) into `resp`. Returns RealMessage2's length.
+static size_t drive_to_auth_sent(IkeHandshake *hs, uint8_t *resp, size_t resp_cap)
+{
+    const IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+    uint8_t req[512];
+    dws_ike_initiator_start(hs, g_our_spi, kat_alice_priv, kat_alice_pub, g_our_nonce, 16, &gcm, g_hs_tf, 3, req,
+                            sizeof(req));
+    size_t rspn = dws_ike_sa_init_build(resp, resp_cap, g_our_spi, g_resp_spi, 0, true, 1, g_hs_tf, 3,
+                                        IKE_DH_CURVE25519, kat_bob_pub, 32, g_resp_nonce, 16);
+    dws_ike_initiator_on_sa_init(hs, resp, rspn);
+    const uint8_t iv[8] = {0, 0, 0, 0, 0, 0, 0, 1};
+    const uint8_t idi[6] = {'r', 'o', 'u', 't', 'e', 'r'};
+    uint8_t authmsg[512];
+    dws_ike_initiator_build_auth_psk(hs, IkeIdType::IKE_ID_FQDN, idi, sizeof(idi), g_psk, sizeof(g_psk), iv, authmsg,
+                                     sizeof(authmsg));
+    return rspn;
+}
+
+// Build the responder's IKE_AUTH SK{ IDr | AUTH } - AEAD keyed by SK_er, AUTH signed over
+// RealMessage2 | Ni | prf(SK_pr, IDr') with `auth_psk` (pass a wrong PSK to forge a bad AUTH).
+static size_t build_responder_auth(const IkeKeyMaterial *keys, const uint8_t *rm2, size_t rm2_len, const uint8_t *psk,
+                                   size_t psk_len, uint8_t *out, size_t out_cap)
+{
+    const uint8_t idr[9] = {'r', 'e', 's', 'p', 'o', 'n', 'd', 'e', 'r'};
+    uint8_t rinner[256];
+    size_t ridn =
+        dws_ike_id_build(rinner, sizeof(rinner), IkePayloadType::IKE_PL_AUTH, IkeIdType::IKE_ID_FQDN, idr, sizeof(idr));
+    uint8_t rauth[32];
+    dws_ike_auth_psk(psk, psk_len, rm2, rm2_len, g_our_nonce, 16, keys->sk_pr, keys->sk_p_len,
+                     rinner + DWS_IKE_PAYLOAD_HDR_LEN, ridn - DWS_IKE_PAYLOAD_HDR_LEN, rauth);
+    size_t ran = dws_ike_auth_build(rinner + ridn, sizeof(rinner) - ridn, IkePayloadType::IKE_PL_NONE,
+                                    IkeAuthMethod::IKE_AUTH_PSK, rauth, sizeof(rauth));
+    const uint8_t iv2[8] = {0, 0, 0, 0, 0, 0, 0, 2};
+    return dws_ike_auth_msg_build(out, out_cap, g_our_spi, g_resp_spi, 1, /*is_response=*/true,
+                                  IkePayloadType::IKE_PL_IDR, rinner, ridn + ran, keys->sk_er,
+                                  keys->sk_er + DWS_IKE_AEAD_KEY_LEN, iv2);
+}
+
+void test_initiator_full_handshake()
+{
+    // Happy path: a responder signing with the shared PSK is authenticated -> ESTABLISHED.
+    IkeHandshake a;
+    uint8_t resp[512];
+    size_t rspn = drive_to_auth_sent(&a, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_AUTH_SENT, (uint8_t)a.state);
+
+    uint8_t rmsg[512];
+    size_t rn = build_responder_auth(&a.sa.keys, resp, rspn, g_psk, sizeof(g_psk), rmsg, sizeof(rmsg));
+    TEST_ASSERT_TRUE(rn > 0);
+    TEST_ASSERT_TRUE(dws_ike_initiator_on_auth_psk(&a, rmsg, rn, g_psk, sizeof(g_psk)));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)a.state);
+
+    // Rejection: a responder that signs with the WRONG key fails the AUTH check (the SK AEAD still
+    // decrypts, since the SA keys are right) -> IKE_ST_FAILED.
+    IkeHandshake b;
+    size_t rspn2 = drive_to_auth_sent(&b, resp, sizeof(resp));
+    const uint8_t wrong_psk[12] = {'w', 'r', 'o', 'n', 'g', '-', 'k', 'e', 'y', '!', '!', '!'};
+    uint8_t rbad[512];
+    size_t bn = build_responder_auth(&b.sa.keys, resp, rspn2, wrong_psk, sizeof(wrong_psk), rbad, sizeof(rbad));
+    TEST_ASSERT_TRUE(bn > 0);
+    TEST_ASSERT_FALSE(dws_ike_initiator_on_auth_psk(&b, rbad, bn, g_psk, sizeof(g_psk)));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_FAILED, (uint8_t)b.state);
+
+    // on_auth in the wrong state is rejected (a is already ESTABLISHED).
+    TEST_ASSERT_FALSE(dws_ike_initiator_on_auth_psk(&a, rmsg, rn, g_psk, sizeof(g_psk)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1921,5 +1998,6 @@ int main()
     RUN_TEST(test_initiator_sa_init_handshake);
     RUN_TEST(test_initiator_handshake_guards);
     RUN_TEST(test_initiator_ike_auth_send);
+    RUN_TEST(test_initiator_full_handshake);
     return UNITY_END();
 }

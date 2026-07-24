@@ -492,9 +492,14 @@ preempting queue, so sensing shares the real-time ingest path.
           `dws_ike_initiator_build_auth_psk` emits SK{ IDi | AUTH } - it builds the IDi payload, computes the
           §2.15 PSK AUTH over the stored RealMessage1 + Nr + prf(SK_pi, IDi'), and wraps the pair in the SK
           envelope keyed by SK_ei (the context now also stores RealMessage1 + Nr for exactly this). Decrypting
-          the emitted message recovers IDi | AUTH and the AUTH matches an independent recomputation
-          (`test_ikev2` now 63). Remaining: consuming the responder's IKE_AUTH (verify the peer AUTH ->
-          ESTABLISHED, needs RealMessage2), the responder role (retransmit/rekey/DPD), and RSA signature-auth.
+          the emitted message recovers IDi | AUTH and the AUTH matches an independent recomputation. **The
+          initiator handshake is now COMPLETE**: `dws_ike_initiator_on_auth_psk` decrypts the responder's
+          SK{ IDr | AUTH } with SK_er and verifies its AUTH over RealMessage2 | Ni | prf(SK_pr, IDr') in
+          constant time, reaching `IKE_ST_ESTABLISHED` (the context stores RealMessage2 for this). A full
+          initiator<->responder handshake driven end to end (IKE_SA_INIT + IKE_AUTH) reaches ESTABLISHED
+          with mutual PSK auth, and a responder signing with the wrong key is rejected to IKE_ST_FAILED
+          (`test_ikev2` now 64). Remaining: the responder role (retransmit/rekey/DPD/CREATE_CHILD_SA) and
+          the RSA signature-auth option.
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with
