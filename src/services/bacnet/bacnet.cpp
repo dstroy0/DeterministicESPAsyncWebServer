@@ -129,10 +129,10 @@ bool dws_npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out)
     return true;
 }
 
-// Encode a context-tagged unsigned integer (BACnet tag octet = tag-number<<4 | context-class 0x08 | length),
-// using the minimal number of value octets (big-endian). @p value is a device instance (<= 22 bits, so <= 3
-// octets), which always fits the length field of the tag's low nibble.
-static size_t bacnet_put_context_uint(uint8_t *buf, uint8_t tag_number, uint32_t value)
+// Encode a BACnet tagged unsigned integer (tag octet = tag-number<<4 | class | length), using the minimal
+// number of value octets (big-endian). @p context selects the tag class: a context tag ORs 0x08 into the tag
+// octet, an application tag does not. Callers pass values that fit the 4-bit length field (<= 4 octets).
+static size_t bacnet_put_tagged_uint(uint8_t *buf, uint8_t tag_number, uint32_t value, bool context)
 {
     uint8_t v[4];
     size_t vlen = 0;
@@ -147,7 +147,7 @@ static size_t bacnet_put_context_uint(uint8_t *buf, uint8_t tag_number, uint32_t
             v[vlen++] = b;
         }
     size_t p = 0;
-    buf[p++] = (uint8_t)(((uint32_t)tag_number << 4) | 0x08u | (uint8_t)vlen); // context class + length
+    buf[p++] = (uint8_t)(((uint32_t)tag_number << 4) | (context ? 0x08u : 0x00u) | (uint8_t)vlen);
     for (size_t i = 0; i < vlen; i++)
         buf[p++] = v[i];
     return p;
@@ -165,9 +165,35 @@ size_t dws_apdu_build_who_is(uint8_t *buf, size_t cap, uint32_t low_limit, uint3
     {
         if (low_limit > BACNET_MAX_INSTANCE || high_limit > BACNET_MAX_INSTANCE || low_limit > high_limit)
             return 0;
-        p += bacnet_put_context_uint(tmp + p, 0, low_limit);
-        p += bacnet_put_context_uint(tmp + p, 1, high_limit);
+        p += bacnet_put_tagged_uint(tmp + p, 0, low_limit, true);
+        p += bacnet_put_tagged_uint(tmp + p, 1, high_limit, true);
     }
+    if (cap < p)
+        return 0;
+    memcpy(buf, tmp, p);
+    return p;
+}
+
+size_t dws_apdu_build_i_am(uint8_t *buf, size_t cap, uint32_t device_instance, uint32_t max_apdu, uint8_t segmentation,
+                           uint16_t vendor_id)
+{
+    if (!buf || device_instance > BACNET_MAX_INSTANCE || segmentation > 3)
+        return 0;
+    uint8_t tmp[24]; // worst case: 2 header + 5 oid + 5 max-apdu + 2 seg + 5 vendor = 19
+    size_t p = 0;
+    tmp[p++] = (uint8_t)(BACNET_PDU_UNCONFIRMED_REQUEST << 4); // 0x10, no flags
+    tmp[p++] = BACNET_SVC_UN_I_AM;                             // service choice 0
+    // I-Am device object identifier: application tag 12, a 4-octet (object-type << 22) | instance.
+    tmp[p++] = 0xC4; // application tag 12, length 4
+    uint32_t oid = ((uint32_t)BACNET_OBJ_DEVICE << 22) | device_instance;
+    tmp[p++] = (uint8_t)(oid >> 24);
+    tmp[p++] = (uint8_t)(oid >> 16);
+    tmp[p++] = (uint8_t)(oid >> 8);
+    tmp[p++] = (uint8_t)oid;
+    p += bacnet_put_tagged_uint(tmp + p, 2, max_apdu, false); // max APDU length accepted (unsigned)
+    tmp[p++] = 0x91; // segmentation supported: application tag 9 (enumerated), length 1
+    tmp[p++] = segmentation;
+    p += bacnet_put_tagged_uint(tmp + p, 2, vendor_id, false); // vendor id (unsigned)
     if (cap < p)
         return 0;
     memcpy(buf, tmp, p);

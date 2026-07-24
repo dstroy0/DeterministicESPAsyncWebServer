@@ -334,6 +334,34 @@ void test_apdu_build_who_is()
     TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(buf, 1, 0, 0, false)); // needs 2
 }
 
+void test_apdu_build_i_am()
+{
+    uint8_t buf[32];
+    BacnetApdu a;
+
+    // I-Am for Device 260, max APDU 1476, no-segmentation (3), vendor 42.
+    size_t n = dws_apdu_build_i_am(buf, sizeof(buf), 260, 1476, 3, 42);
+    const uint8_t expect[] = {
+        0x10, 0x00,                   // unconfirmed request, service choice 0 (I-Am)
+        0xC4, 0x02, 0x00, 0x01, 0x04, // device object id: app tag 12, (8<<22)|260 = 0x02000104
+        0x22, 0x05, 0xC4,             // max APDU 1476: app tag 2, 2 octets
+        0x91, 0x03,                   // segmentation supported: app tag 9 (enumerated), value 3
+        0x21, 0x2A                    // vendor id 42: app tag 2, 1 octet
+    };
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+    // It round-trips through the parser as an unconfirmed I-Am.
+    TEST_ASSERT_TRUE(dws_apdu_parse(buf, n, &a));
+    TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_UNCONFIRMED_REQUEST, a.pdu_type);
+    TEST_ASSERT_EQUAL_UINT8(BACNET_SVC_UN_I_AM, a.service_choice);
+
+    // Guards: an out-of-range instance, a bad segmentation enum, a null buffer, and a too-small buffer.
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(buf, sizeof(buf), 0x400000, 480, 3, 1)); // > BACNET_MAX_INSTANCE
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(buf, sizeof(buf), 1, 480, 4, 1));        // segmentation > 3
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(nullptr, sizeof(buf), 1, 480, 3, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(buf, 8, 260, 1476, 3, 42)); // does not fit
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -352,5 +380,6 @@ int main()
     RUN_TEST(test_npdu_parse_null_buf_out_and_short);
     RUN_TEST(test_apdu_parse);
     RUN_TEST(test_apdu_build_who_is);
+    RUN_TEST(test_apdu_build_i_am);
     return UNITY_END();
 }

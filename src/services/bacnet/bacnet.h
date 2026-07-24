@@ -115,6 +115,7 @@ bool dws_npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out);
 #define BACNET_SVC_UN_WHO_IS 8 ///< Who-Is
 
 #define BACNET_MAX_INSTANCE 0x3FFFFFu ///< maximum BACnet object / device instance (22-bit)
+#define BACNET_OBJ_DEVICE 8           ///< object type: Device (used in the I-Am object identifier)
 
 /** @brief A decoded APDU header (from dws_apdu_parse). Service data points INTO the source buffer. */
 struct BacnetApdu
@@ -144,6 +145,15 @@ bool dws_apdu_parse(const uint8_t *apdu, size_t len, BacnetApdu *out);
  * @return the APDU length, or 0 on overflow, a limit above BACNET_MAX_INSTANCE, or low > high.
  */
 size_t dws_apdu_build_who_is(uint8_t *buf, size_t cap, uint32_t low_limit, uint32_t high_limit, bool has_limits);
+
+/**
+ * @brief Build an I-Am unconfirmed-request APDU (service choice 0) - a device's answer to Who-Is. Carries the
+ *        device object identifier (@p device_instance, object type Device), the max APDU length accepted, the
+ *        segmentation-supported enumeration (0..3), and the vendor id, each as an application-tagged value.
+ * @return the APDU length, or 0 on overflow, @p device_instance above BACNET_MAX_INSTANCE, or @p segmentation > 3.
+ */
+size_t dws_apdu_build_i_am(uint8_t *buf, size_t cap, uint32_t device_instance, uint32_t max_apdu, uint8_t segmentation,
+                           uint16_t vendor_id);
 
 #endif // DWS_ENABLE_BACNET
 
