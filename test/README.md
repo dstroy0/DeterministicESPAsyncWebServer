@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5152 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5153 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -42427,7 +42427,7 @@ A thorough directory of all **5152 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_s7comm (13 tests)</b></summary>
+<summary><b>test_s7comm (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_setup</b> &mdash; <i>Build setup</i></summary>
@@ -42456,6 +42456,28 @@ A thorough directory of all **5152 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[n - 3]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[n - 2]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x50, buf[n - 1]); // 10 * 8 = 80</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write_request</b> &mdash; <i>The data section round-trips through the response data-item reader (identical structure).</i></summary>
+
+    * **Objective**: The data section round-trips through the response data-item reader (identical structure).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+      * <code>Assert true (dws_s7_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(S7_ROSCTR_JOB, h.rosctr);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(6, h.data_len);</code>
+      * <code>Assert true (dws_s7_read_next_item(h.data, h.data_len, &off, &di))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x04, di.transport_size);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, di.data_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(val, di.data, 2);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(nullptr, sizeof(buf), 1, &item, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, sizeof(buf), 1, nullptr, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, sizeof(buf), 1, &item, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, sizeof(buf), 1, &item, 0x100));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, sizeof(buf), 1, &bad, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, 20, 1, &item, 1)); // a 30-octet PDU needs &gt; 20</code>
   </details>
 
   <details style="margin-left: 20px;">
