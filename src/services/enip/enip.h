@@ -54,6 +54,7 @@
 #define EIP_CPF_CONNECTED_ADDRESS 0x00A1 ///< connected address item
 #define EIP_CPF_CONNECTED_DATA 0x00B1    ///< connected data item
 #define EIP_CPF_UNCONNECTED_DATA 0x00B2  ///< unconnected data item (carries the CIP message)
+#define EIP_CPF_LIST_IDENTITY 0x000C     ///< List Identity response item (device identity)
 
 /** @brief The 24-octet encapsulation header. */
 struct EipHeader
@@ -91,6 +92,37 @@ size_t dws_eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_han
 
 /** @brief From a SendRRData command-data block, extract the Unconnected Data item (the CIP reply). */
 bool dws_eip_parse_send_rr_data(const uint8_t *data, size_t data_len, const uint8_t **cip, size_t *dws_cip_len);
+
+/**
+ * @brief Build a ListIdentity request (command 0x0063, no command-specific data) - the broadcast an
+ *        originator sends to enumerate EtherNet/IP devices on a subnet. @p sender_context may be null (zeros).
+ */
+size_t dws_eip_build_list_identity(uint8_t *buf, size_t cap, const uint8_t sender_context[8]);
+
+/** @brief The device identity decoded from a ListIdentity response item. @ref product_name points INTO the
+ *  source buffer and is NOT NUL-terminated. The 16-octet CIP socket address is skipped (its sin_* fields are
+ *  network-order, unlike the little-endian encapsulation, so this codec does not reinterpret them). */
+struct EipIdentity
+{
+    uint16_t protocol_version; ///< encapsulation protocol version (1)
+    uint16_t vendor_id;
+    uint16_t device_type;
+    uint16_t product_code;
+    uint8_t revision_major;
+    uint8_t revision_minor;
+    uint16_t status;
+    uint32_t serial_number;
+    const char *product_name; ///< ASCII product name (into the buffer, not NUL-terminated)
+    uint8_t product_name_len;
+    uint8_t state; ///< device state
+};
+
+/**
+ * @brief Parse a ListIdentity response command-data block (the octets after the encapsulation header): walk
+ *        the CPF items for the List Identity item (0x000C) and decode its little-endian identity fields.
+ * @return true iff a well-formed List Identity item is present and its declared length covers all fields.
+ */
+bool dws_eip_parse_list_identity(const uint8_t *data, size_t data_len, EipIdentity *out);
 
 #endif // DWS_ENABLE_ENIP
 

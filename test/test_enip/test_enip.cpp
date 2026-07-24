@@ -128,6 +128,59 @@ void test_send_rr_data_round_trip()
     TEST_ASSERT_EQUAL_HEX8_ARRAY(cip, out_cip, sizeof(cip));
 }
 
+void test_list_identity()
+{
+    // Request: a header-only ListIdentity (command 0x0063, length 0).
+    uint8_t buf[32];
+    size_t n = dws_eip_build_list_identity(buf, sizeof(buf), nullptr);
+    TEST_ASSERT_EQUAL_size_t(EIP_HEADER_SIZE, n);
+    TEST_ASSERT_EQUAL_HEX8(0x63, buf[0]); // ListIdentity
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]); // length 0
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[3]);
+    TEST_ASSERT_EQUAL_size_t(0, dws_eip_build_list_identity(buf, 16, nullptr)); // needs 24
+
+    // Response command-data block: item count 1, one List Identity item (0x000C, length 0x27 = 39).
+    const uint8_t resp[] = {
+        0x01, 0x00,             // item count = 1
+        0x0C, 0x00, 0x27, 0x00, // item type 0x000C, length 39
+        0x01, 0x00,             // encapsulation protocol version 1
+        0x00, 0x02, 0xAF, 0x12, 0xC0, 0xA8, 0x01, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00,                        // 16-octet socket address (skipped)
+        0x1D, 0x00,                  // vendor id 0x001D
+        0x0C, 0x00,                  // device type 0x000C
+        0x36, 0x00,                  // product code 0x0036
+        0x14, 0x0B,                  // revision 20.11
+        0x30, 0x00,                  // status 0x0030
+        0x78, 0x56, 0x34, 0x12,      // serial 0x12345678
+        0x05,                        // product name length 5
+        'P',  'L',  'C',  '-',  '1', // "PLC-1"
+        0x03                         // state 3
+    };
+    EipIdentity id;
+    TEST_ASSERT_TRUE(dws_eip_parse_list_identity(resp, sizeof(resp), &id));
+    TEST_ASSERT_EQUAL_UINT16(1, id.protocol_version);
+    TEST_ASSERT_EQUAL_HEX16(0x001D, id.vendor_id);
+    TEST_ASSERT_EQUAL_HEX16(0x000C, id.device_type);
+    TEST_ASSERT_EQUAL_HEX16(0x0036, id.product_code);
+    TEST_ASSERT_EQUAL_UINT8(20, id.revision_major);
+    TEST_ASSERT_EQUAL_UINT8(11, id.revision_minor);
+    TEST_ASSERT_EQUAL_HEX16(0x0030, id.status);
+    TEST_ASSERT_EQUAL_HEX32(0x12345678u, id.serial_number);
+    TEST_ASSERT_EQUAL_UINT8(5, id.product_name_len);
+    TEST_ASSERT_EQUAL_MEMORY("PLC-1", id.product_name, 5);
+    TEST_ASSERT_EQUAL_UINT8(3, id.state);
+
+    // Guards: too short for the item count, a non-identity item, a truncated identity item, and null args.
+    EipIdentity id2;
+    TEST_ASSERT_FALSE(dws_eip_parse_list_identity(resp, 1, &id2)); // < 2 octets
+    const uint8_t other[] = {0x01, 0x00, 0xB2, 0x00, 0x00, 0x00};  // one unconnected-data item, not 0x000C
+    TEST_ASSERT_FALSE(dws_eip_parse_list_identity(other, sizeof(other), &id2));
+    const uint8_t trunc[] = {0x01, 0x00, 0x0C, 0x00, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00}; // item len 5 < 33
+    TEST_ASSERT_FALSE(dws_eip_parse_list_identity(trunc, sizeof(trunc), &id2));
+    TEST_ASSERT_FALSE(dws_eip_parse_list_identity(nullptr, 10, &id2));
+}
+
 void test_parse_rejects_bad()
 {
     EipHeader p;
@@ -245,6 +298,7 @@ int main()
     RUN_TEST(test_unregister_session);
     RUN_TEST(test_send_rr_data_bytes);
     RUN_TEST(test_send_rr_data_round_trip);
+    RUN_TEST(test_list_identity);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_build_and_parse_guards);
