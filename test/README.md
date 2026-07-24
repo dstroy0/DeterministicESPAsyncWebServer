@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5034 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5037 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19898,7 +19898,7 @@ A thorough directory of all **5034 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (74 tests)</b></summary>
+<summary><b>test_ikev2 (77 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -21066,6 +21066,55 @@ A thorough directory of all **5034 test cases** across **290 suites**. Expand a 
       * <code>Assert false (dws_ike_cp_attr_next(&it, &a))</code>
       * <code>Assert false (dws_ike_cp_attr_next(&it, &a))</code>
       * <code>Assert false (dws_ike_cp_parse(bad, 3, &ct, &area, &area_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_skf_build_parse</b> &mdash; <i>Fragment 2 of 3: body = 4 gen + 4 frag hdr + 8 iv + 12 ct + 16 icv = 44.</i></summary>
+
+    * **Objective**: Fragment 2 of 3: body = 4 gen + 4 frag hdr + 8 iv + 12 ct + 16 icv = 44.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(44, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, buf[0]);</code>
+      * <code>Assert true (dws_ike_skf_parse(buf + 4, n - 4, &fn, &tf, 8, 16, &piv, &pct, &pct_len, &picv))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, fn);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, tf);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(12, pct_len);</code>
+      * <code>Assert equal memory (iv, piv, 8)</code>
+      * <code>Assert equal memory (ct, pct, 12)</code>
+      * <code>Assert equal memory (icv, picv, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>Assert false (dws_ike_skf_parse(buf + 4, 27, &fn, &tf, 8, 16, &piv, &pct, &pct_len, &picv))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frag_reassembly</b> &mdash; <i>Fragments arrive out of order: 2 (bytes 10..21), then 1 (0..9), then 3 (22..29).</i></summary>
+
+    * **Objective**: Fragments arrive out of order: 2 (bytes 10..21), then 1 (0..9), then 3 (22..29).
+    * **Assertions**:
+      * <code>Assert true (dws_ike_frag_reasm_add(&r, 2, 3, original + 10, 12))</code>
+      * <code>Assert false (dws_ike_frag_reasm_complete(&r))</code>
+      * <code>Assert true (dws_ike_frag_reasm_add(&r, 1, 3, original, 10))</code>
+      * <code>Assert false (dws_ike_frag_reasm_complete(&r))</code>
+      * <code>Assert true (dws_ike_frag_reasm_add(&r, 3, 3, original + 22, 8))</code>
+      * <code>Assert true (dws_ike_frag_reasm_complete(&r))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(30, m);</code>
+      * <code>Assert equal memory (original, out, 30)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frag_guards</b> &mdash; <i>A Total beyond the tracked maximum is refused (fresh reassembler).</i></summary>
+
+    * **Objective**: A Total beyond the tracked maximum is refused (fresh reassembler).
+    * **Assertions**:
+      * <code>Assert false (dws_ike_frag_reasm_add(&r, 0, 2, d, 8))</code>
+      * <code>Assert false (dws_ike_frag_reasm_add(&r, 3, 2, d, 8))</code>
+      * <code>Assert true (dws_ike_frag_reasm_add(&r, 1, 2, d, 8))</code>
+      * <code>Assert false (dws_ike_frag_reasm_add(&r, 2, 3, d, 8))</code>
+      * <code>Assert false (dws_ike_frag_reasm_add(&r, 1, 2, d, 8))</code>
+      * <code>Assert false (dws_ike_frag_reasm_add(&r, 2, 2, d, 9)); // pool overflow (8 used + 9 &gt; 16)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_frag_reasm_assemble(&r, out, sizeof(out))); // still incomplete</code>
+      * <code>Assert false (dws_ike_frag_reasm_add(&r2, 1, DWS_IKE_FRAG_MAX + 1, d, 1))</code>
   </details>
 
 </details>
