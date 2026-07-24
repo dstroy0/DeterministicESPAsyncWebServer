@@ -139,6 +139,48 @@ void test_build_rejects_null_out()
     TEST_ASSERT_EQUAL_UINT16(0, dws_esp3_build(dws_esp3_type::ESP3_RADIO_ERP1, data, 4, nullptr, 0, nullptr, 32));
 }
 
+void test_erp1_parse()
+{
+    // A RPS (rocker switch) telegram: RORG 0xF6, 1 payload octet, sender 0x008B1234, status 0x30.
+    const uint8_t rps[7] = {0xF6, 0x50, 0x00, 0x8B, 0x12, 0x34, 0x30};
+    dws_erp1 t;
+    TEST_ASSERT_TRUE(dws_erp1_parse(rps, sizeof(rps), &t));
+    TEST_ASSERT_EQUAL_HEX8(DWS_ERP_RORG_RPS, t.rorg);
+    TEST_ASSERT_EQUAL_UINT8(1, t.payload_len);
+    TEST_ASSERT_EQUAL_HEX8(0x50, t.payload[0]);
+    TEST_ASSERT_EQUAL_HEX32(0x008B1234, t.sender_id);
+    TEST_ASSERT_EQUAL_HEX8(0x30, t.status);
+
+    // A 4BS sensor telegram: RORG 0xA5, 4 payload octets, sender 0xDEADBEEF.
+    const uint8_t fbs[10] = {0xA5, 0x01, 0x02, 0x03, 0x04, 0xDE, 0xAD, 0xBE, 0xEF, 0x00};
+    TEST_ASSERT_TRUE(dws_erp1_parse(fbs, sizeof(fbs), &t));
+    TEST_ASSERT_EQUAL_HEX8(DWS_ERP_RORG_4BS, t.rorg);
+    TEST_ASSERT_EQUAL_UINT8(4, t.payload_len);
+    TEST_ASSERT_EQUAL_HEX8(0x04, t.payload[3]);
+    TEST_ASSERT_EQUAL_HEX32(0xDEADBEEF, t.sender_id);
+
+    // A minimal 6-octet telegram (zero payload) parses with a null payload.
+    const uint8_t minimal[6] = {0xD5, 0x11, 0x22, 0x33, 0x44, 0x55};
+    TEST_ASSERT_TRUE(dws_erp1_parse(minimal, sizeof(minimal), &t));
+    TEST_ASSERT_EQUAL_UINT8(0, t.payload_len);
+    TEST_ASSERT_NULL(t.payload);
+    TEST_ASSERT_EQUAL_HEX32(0x11223344, t.sender_id);
+    TEST_ASSERT_EQUAL_HEX8(0x55, t.status);
+
+    // Integration: the ERP1 telegram is the data field of a RADIO_ERP1 ESP3 packet.
+    uint8_t buf[64];
+    uint16_t n = dws_esp3_build(dws_esp3_type::ESP3_RADIO_ERP1, rps, sizeof(rps), nullptr, 0, buf, sizeof(buf));
+    dws_esp3_packet p = {};
+    TEST_ASSERT_GREATER_THAN(0, dws_esp3_parse(buf, n, &p));
+    TEST_ASSERT_TRUE(dws_erp1_parse(p.data, p.data_len, &t));
+    TEST_ASSERT_EQUAL_HEX32(0x008B1234, t.sender_id);
+
+    // Too short (< 6) and null guards.
+    TEST_ASSERT_FALSE(dws_erp1_parse(rps, 5, &t));
+    TEST_ASSERT_FALSE(dws_erp1_parse(nullptr, 7, &t));
+    TEST_ASSERT_FALSE(dws_erp1_parse(rps, 7, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -154,5 +196,6 @@ int main()
     RUN_TEST(test_esp3_parse_null_guard);
     RUN_TEST(test_parse_succeeds_with_null_out);
     RUN_TEST(test_build_rejects_null_out);
+    RUN_TEST(test_erp1_parse);
     return UNITY_END();
 }

@@ -78,6 +78,37 @@ int dws_esp3_parse(const uint8_t *raw, uint16_t len, dws_esp3_packet *out);
 uint16_t dws_esp3_build(dws_esp3_type type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
                         uint8_t *out, uint16_t cap);
 
+// --- ERP1 radio telegram (the data field of a RADIO_ERP1 ESP3 packet) ---
+//
+// An ERP1 telegram is: a RORG (telegram-type) octet, a RORG-specific payload, the 4-octet sender id
+// (big-endian), and a status octet. The payload length is fixed per RORG (RPS / 1BS carry 1 octet, 4BS
+// carries 4) or variable (VLD); it is always (data length - 6), the 6 being RORG + sender id + status.
+
+// Common RORG (telegram-type) codes.
+#define DWS_ERP_RORG_RPS 0xF6 ///< Repeated Switch communication (rocker switches): 1 payload octet
+#define DWS_ERP_RORG_1BS 0xD5 ///< 1-byte communication (contacts): 1 payload octet
+#define DWS_ERP_RORG_4BS 0xA5 ///< 4-byte communication (sensors): 4 payload octets
+#define DWS_ERP_RORG_VLD 0xD2 ///< Variable-Length Data
+#define DWS_ERP_RORG_MSC 0xD1 ///< Manufacturer-Specific Communication
+#define DWS_ERP_RORG_ADT 0xA6 ///< Addressing Destination Telegram
+#define DWS_ERP_RORG_UTE 0xD4 ///< Universal Teach-in
+
+/** @brief A decoded ERP1 radio telegram (the payload aliases the caller's buffer). */
+struct dws_erp1
+{
+    uint8_t rorg;           ///< telegram type (DWS_ERP_RORG_*)
+    const uint8_t *payload; ///< RORG-specific data, or nullptr if none
+    uint8_t payload_len;    ///< payload octets (data length - 6)
+    uint32_t sender_id;     ///< 4-octet sender id (big-endian)
+    uint8_t status;         ///< status octet (repeater count + telegram-type bits)
+};
+
+/**
+ * @brief Decode an ERP1 radio telegram: RORG + payload + 4-octet sender id + status octet.
+ * @return true iff @p len is at least 6 octets (RORG + sender id + status); false otherwise.
+ */
+bool dws_erp1_parse(const uint8_t *data, uint16_t len, dws_erp1 *out);
+
 #endif // DWS_ENABLE_ENOCEAN
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_ENOCEAN_H

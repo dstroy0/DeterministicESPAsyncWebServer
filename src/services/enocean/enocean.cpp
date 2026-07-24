@@ -78,4 +78,18 @@ uint16_t dws_esp3_build(dws_esp3_type type, const uint8_t *data, uint16_t data_l
     return (uint16_t)total;
 }
 
+bool dws_erp1_parse(const uint8_t *data, uint16_t len, dws_erp1 *out)
+{
+    if (!data || !out || len < 6) // RORG(1) + sender id(4) + status(1)
+        return false;
+    out->rorg = data[0];
+    out->payload = (len > 6) ? data + 1 : nullptr;
+    out->payload_len = (uint8_t)(len - 6);
+    const uint8_t *id = data + len - 5; // the 4-octet sender id precedes the status octet
+    out->sender_id =
+        ((uint32_t)id[0] << 24) | ((uint32_t)id[1] << 16) | ((uint32_t)id[2] << 8) | (uint32_t)id[3]; // big-endian
+    out->status = data[len - 1];
+    return true;
+}
+
 #endif // DWS_ENABLE_ENOCEAN
