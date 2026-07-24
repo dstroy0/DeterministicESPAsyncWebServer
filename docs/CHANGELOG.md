@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.40.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.40.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`c3e204e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3e204e4557d6c659c28fbe366813cd45cf91b38))
+
+### Changes
+
+- Bump version: 7.39.0 → 7.40.0 ([`2712465`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/271246521bfa5fea650c0070dd28e3a2ad2eac43))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`5ad0967`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ad09671934bf8256a4946d9e8b1496c036b64f0))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2de9f4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2de9f4a938b39e6be7d17af659faefdea2de5f72))
+
+### Features
+
+- ECDSA-P256 certificate authentication (RFC 7296 s2.15, RFC 7427) ([`12c197a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12c197a3d822507538d3e6df58d65937fc44e6f3))
+
+</details>
+
 ## [7.39.0] - 2026-07-24
 
 <details>
