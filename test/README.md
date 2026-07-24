@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5005 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5006 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **5005 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (63 tests)</b></summary>
+<summary><b>test_ikev2 (64 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20784,6 +20784,21 @@ A thorough directory of all **5005 test cases** across **287 suites**. Expand a 
       * <code>Assert true (dws_ike_auth_psk(psk, sizeof(psk)</code>
       * <code>Assert equal memory (expect, authdata, 32)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_initiator_build_auth_psk(&hs, IkeIdType::IKE_ID_FQDN, idi, sizeof(idi), psk,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_initiator_full_handshake</b> &mdash; <i>Happy path: a responder signing with the shared PSK is authenticated -> ESTABLISHED.</i></summary>
+
+    * **Objective**: Happy path: a responder signing with the shared PSK is authenticated -> ESTABLISHED.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_AUTH_SENT, (uint8_t)a.state);</code>
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>Assert true (dws_ike_initiator_on_auth_psk(&a, rmsg, rn, g_psk, sizeof(g_psk)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)a.state);</code>
+      * <code>Assert true (bn &gt; 0)</code>
+      * <code>Assert false (dws_ike_initiator_on_auth_psk(&b, rbad, bn, g_psk, sizeof(g_psk)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_FAILED, (uint8_t)b.state);</code>
+      * <code>Assert false (dws_ike_initiator_on_auth_psk(&a, rmsg, rn, g_psk, sizeof(g_psk)))</code>
   </details>
 
 </details>
