@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.142.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.142.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1b9d140`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b9d1406fa3c0bd0eb0ab77935c9559464004ae8))
+
+### Changes
+
+- Bump version: 7.141.0 → 7.142.0 ([`b31f2a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b31f2a2c9077309356eccd20976d4f4fae9a54de))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`789279e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/789279ecee313b43c8d9508c9159943913a6cf4f))
+
+### Features
+
+- SD3 fixed-data telegram (build + parse) ([`fd816e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd816e6d4c5f27f06638d320cbb539d9b5c0139d))
+
+</details>
+
 ## [7.141.0] - 2026-07-24
 
 <details>
