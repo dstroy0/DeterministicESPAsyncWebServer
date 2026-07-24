@@ -361,4 +361,33 @@ bool dws_mbus_vif_decode(uint8_t vif, MbusUnit *unit, int8_t *exp10)
     return u != MbusUnit::MBUS_UNIT_UNKNOWN;
 }
 
+bool dws_mbus_parse_var_header(const uint8_t *body, size_t len, MbusVarHeader *out)
+{
+    if (!body || !out || len < MBUS_VAR_HEADER_LEN)
+        return false;
+    // Identification number: 4 octets of BCD, least-significant octet first.
+    uint32_t id = 0;
+    for (int i = 3; i >= 0; i--)
+    {
+        uint8_t hi = (uint8_t)(body[i] >> 4), lo = (uint8_t)(body[i] & 0x0Fu);
+        if (hi > 9 || lo > 9) // the identification number must be valid BCD
+            return false;
+        id = id * 100u + (uint32_t)(hi * 10u + lo);
+    }
+    out->id = id;
+    // Manufacturer: a 15-bit value packing three letters, each (n + 64) => 'A'..'Z' (EN 13757-3 §6.3.1).
+    uint16_t man = (uint16_t)(body[4] | (body[5] << 8));
+    out->manufacturer_raw = man;
+    out->manufacturer[0] = (char)(((man >> 10) & 0x1Fu) + 64u);
+    out->manufacturer[1] = (char)(((man >> 5) & 0x1Fu) + 64u);
+    out->manufacturer[2] = (char)((man & 0x1Fu) + 64u);
+    out->manufacturer[3] = '\0';
+    out->version = body[6];
+    out->medium = body[7];
+    out->access_no = body[8];
+    out->status = body[9];
+    out->signature = (uint16_t)(body[10] | (body[11] << 8));
+    return true;
+}
+
 #endif // DWS_ENABLE_MBUS

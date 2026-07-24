@@ -399,6 +399,33 @@ void test_vif_decode()
     TEST_ASSERT_EQUAL(MbusUnit::MBUS_UNIT_UNKNOWN, u);
 }
 
+void test_var_header()
+{
+    // A CI=0x72 fixed header: serial 12345678, manufacturer LUG (Landis+Gyr, 0x32A7),
+    // version 1, medium water, access 42, status 0, no signature.
+    const uint8_t hdr[12] = {0x78, 0x56, 0x34, 0x12, 0xA7, 0x32, 0x01, 0x07, 0x2A, 0x00, 0x00, 0x00};
+    MbusVarHeader h;
+    TEST_ASSERT_TRUE(dws_mbus_parse_var_header(hdr, sizeof(hdr), &h));
+    TEST_ASSERT_EQUAL_UINT32(12345678u, h.id);
+    TEST_ASSERT_EQUAL_STRING("LUG", h.manufacturer);
+    TEST_ASSERT_EQUAL_HEX16(0x32A7, h.manufacturer_raw);
+    TEST_ASSERT_EQUAL_UINT8(1, h.version);
+    TEST_ASSERT_EQUAL_UINT8(MBUS_MEDIUM_WATER, h.medium);
+    TEST_ASSERT_EQUAL_UINT8(42, h.access_no);
+    TEST_ASSERT_EQUAL_UINT8(0, h.status);
+    TEST_ASSERT_EQUAL_UINT16(0, h.signature);
+
+    // A non-BCD nibble in the identification number is rejected.
+    uint8_t bad[12];
+    memcpy(bad, hdr, sizeof(bad));
+    bad[0] = 0xAB; // 0xA and 0xB are not BCD digits
+    TEST_ASSERT_FALSE(dws_mbus_parse_var_header(bad, sizeof(bad), &h));
+    // A short body and null args are rejected.
+    TEST_ASSERT_FALSE(dws_mbus_parse_var_header(hdr, 11, &h));
+    TEST_ASSERT_FALSE(dws_mbus_parse_var_header(nullptr, 12, &h));
+    TEST_ASSERT_FALSE(dws_mbus_parse_var_header(hdr, 12, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -419,5 +446,6 @@ int main()
     RUN_TEST(test_value_int);
     RUN_TEST(test_value_real);
     RUN_TEST(test_vif_decode);
+    RUN_TEST(test_var_header);
     return UNITY_END();
 }

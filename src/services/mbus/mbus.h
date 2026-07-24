@@ -184,5 +184,47 @@ enum class MbusUnit : uint8_t
  */
 bool dws_mbus_vif_decode(uint8_t vif, MbusUnit *unit, int8_t *exp10);
 
+// --- variable-data-structure fixed header (EN 13757-3): the 12 octets before the data records ---
+//
+// A CI = MBUS_CI_RSP_VARIABLE (0x72) long-frame body opens with a fixed header identifying the meter -
+// its secondary-address serial, manufacturer, version, and medium - then the access / status / signature,
+// and only then the DIF/VIF data records that dws_mbus_record_next walks.
+
+#define MBUS_VAR_HEADER_LEN 12u ///< octets of the fixed header preceding the records in a CI=0x72 response
+
+// Common medium / device-type codes (EN 13757-3 §6.4).
+#define MBUS_MEDIUM_OTHER 0x00u
+#define MBUS_MEDIUM_OIL 0x01u
+#define MBUS_MEDIUM_ELECTRICITY 0x02u
+#define MBUS_MEDIUM_GAS 0x03u
+#define MBUS_MEDIUM_HEAT_OUTLET 0x04u
+#define MBUS_MEDIUM_STEAM 0x05u
+#define MBUS_MEDIUM_WARM_WATER 0x06u
+#define MBUS_MEDIUM_WATER 0x07u
+#define MBUS_MEDIUM_HEAT_COST 0x08u
+#define MBUS_MEDIUM_HEAT_INLET 0x0Cu
+#define MBUS_MEDIUM_HEAT_COOLING 0x0Du
+#define MBUS_MEDIUM_COLD_WATER 0x16u
+
+/** @brief The decoded EN 13757-3 variable-data-structure fixed header. */
+struct MbusVarHeader
+{
+    uint32_t id;               ///< identification number (secondary-address serial), decoded from the 4-octet BCD
+    char manufacturer[4];      ///< 3-letter manufacturer code + NUL (decoded from the 2-octet field)
+    uint16_t manufacturer_raw; ///< the raw 2-octet manufacturer value (FLAG code)
+    uint8_t version;           ///< device generation / version
+    uint8_t medium;            ///< medium / device type (MBUS_MEDIUM_*)
+    uint8_t access_no;         ///< access number (increments each readout)
+    uint8_t status;            ///< status octet (error / alarm bits)
+    uint16_t signature;        ///< signature word (usually 0)
+};
+
+/**
+ * @brief Decode the 12-octet variable-data-structure fixed header (the header that precedes the data records
+ *        in a CI = MBUS_CI_RSP_VARIABLE (0x72) long-frame body) into @p out.
+ * @return true iff @p len is at least 12 octets and the identification number is valid BCD; false otherwise.
+ */
+bool dws_mbus_parse_var_header(const uint8_t *body, size_t len, MbusVarHeader *out);
+
 #endif // DWS_ENABLE_MBUS
 #endif // DETERMINISTICESPASYNCWEBSERVER_MBUS_H
