@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5120 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5121 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -4885,7 +4885,7 @@ A thorough directory of all **5120 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_cip (10 tests)</b></summary>
+<summary><b>test_cip (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_cip_build_guards</b> &mdash; <i>epath word count overflows the 1-octet path-size field (512 / 2 = 256 > 0xFF); the guard</i></summary>
@@ -4929,6 +4929,17 @@ A thorough directory of all **5120 test cases** across **291 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_attr_single</b> &mdash; <i>A too-small buffer and a null value with a nonzero length both fail closed.</i></summary>
+
+    * **Objective**: A too-small buffer and a null value with a nonzero length both fail closed.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_cip_build_set_attr_single(small, sizeof(small), 1, 1, 7, value, sizeof(value)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_cip_build_set_attr_single(buf, sizeof(buf), 1, 1, 7, nullptr, 2));</code>
   </details>
 
   <details style="margin-left: 20px;">
