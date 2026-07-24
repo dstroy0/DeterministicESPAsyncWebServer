@@ -208,6 +208,38 @@ void test_readstb_and_destroy()
     TEST_ASSERT_EQUAL_INT32(0, err);
 }
 
+void test_device_clear_and_trigger()
+{
+    uint8_t buf[128];
+
+    // device_clear: proc 15, then Device_GenericParms (lid, flags, lock_timeout, io_timeout).
+    size_t n = dws_vxi11_build_device_clear(buf, sizeof(buf), 7, 0x0100, 0, 0, 5000);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_EQUAL_HEX8(15, buf[27]);   // proc = DEVICE_CLEAR (the proc word is bytes 24-27, big-endian)
+    TEST_ASSERT_EQUAL_HEX8(0x01, buf[46]); // lid 0x0100 (Device_GenericParms starts at byte 44)
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[47]);
+    TEST_ASSERT_EQUAL_HEX8(0x13, buf[58]); // io_timeout 5000 = 0x1388
+    TEST_ASSERT_EQUAL_HEX8(0x88, buf[59]);
+
+    // A Device_Error reply round-trips through parse_error_resp.
+    uint8_t b[48];
+    size_t o = reply_header(b, 7, 0);
+    o = put32(b, o, 0); // Device_Error.error
+    int32_t err = -1;
+    TEST_ASSERT_TRUE(dws_vxi11_parse_error_resp(b, o, &err));
+    TEST_ASSERT_EQUAL_INT32(0, err);
+
+    // device_trigger differs only in the proc number (14).
+    n = dws_vxi11_build_device_trigger(buf, sizeof(buf), 8, 0x0100, 0, 0, 5000);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_EQUAL_HEX8(14, buf[27]); // proc = DEVICE_TRIGGER
+
+    // Both fail closed on a too-small buffer.
+    uint8_t small[16];
+    TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_device_clear(small, sizeof(small), 7, 0x0100, 0, 0, 5000));
+    TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_device_trigger(small, sizeof(small), 8, 0x0100, 0, 0, 5000));
+}
+
 // ── reply rejection paths ───────────────────────────────────────────────────────────────────────
 
 void test_reply_rejects()
@@ -496,6 +528,7 @@ int main()
     RUN_TEST(test_device_write);
     RUN_TEST(test_device_read);
     RUN_TEST(test_readstb_and_destroy);
+    RUN_TEST(test_device_clear_and_trigger);
     RUN_TEST(test_reply_rejects);
     RUN_TEST(test_error_str);
     RUN_TEST(test_build_overflow);

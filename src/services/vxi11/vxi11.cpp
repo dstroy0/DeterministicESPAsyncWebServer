@@ -303,6 +303,28 @@ bool dws_vxi11_parse_readstb_resp(const uint8_t *rpc, size_t len, Vxi11ReadStbRe
     return r.ok;
 }
 
+size_t dws_vxi11_build_device_clear(uint8_t *buf, size_t cap, uint32_t xid, int32_t lid, uint32_t flags,
+                                    uint32_t lock_timeout, uint32_t io_timeout)
+{
+    XdrW w = begin_call(buf, cap, xid, DWS_VXI11_CORE_PROG, DWS_VXI11_CORE_VERS, (uint32_t)Vxi11Proc::DEVICE_CLEAR);
+    xw_u32(&w, (uint32_t)lid); // Device_GenericParms: lid, flags, lock_timeout, io_timeout
+    xw_u32(&w, flags);
+    xw_u32(&w, lock_timeout);
+    xw_u32(&w, io_timeout);
+    return finish_call(&w);
+}
+
+size_t dws_vxi11_build_device_trigger(uint8_t *buf, size_t cap, uint32_t xid, int32_t lid, uint32_t flags,
+                                      uint32_t lock_timeout, uint32_t io_timeout)
+{
+    XdrW w = begin_call(buf, cap, xid, DWS_VXI11_CORE_PROG, DWS_VXI11_CORE_VERS, (uint32_t)Vxi11Proc::DEVICE_TRIGGER);
+    xw_u32(&w, (uint32_t)lid); // Device_GenericParms: lid, flags, lock_timeout, io_timeout
+    xw_u32(&w, flags);
+    xw_u32(&w, lock_timeout);
+    xw_u32(&w, io_timeout);
+    return finish_call(&w);
+}
+
 size_t dws_vxi11_build_destroy_link(uint8_t *buf, size_t cap, uint32_t xid, int32_t lid)
 {
     XdrW w = begin_call(buf, cap, xid, DWS_VXI11_CORE_PROG, DWS_VXI11_CORE_VERS, (uint32_t)Vxi11Proc::DESTROY_LINK);

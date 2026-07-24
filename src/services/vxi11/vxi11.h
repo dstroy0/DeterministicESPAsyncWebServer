@@ -198,6 +198,21 @@ struct Vxi11ReadStbResp
 bool dws_vxi11_parse_readstb_resp(const uint8_t *rpc, size_t len, Vxi11ReadStbResp *out);
 
 /**
+ * @brief Build a device_clear call: clear link @p lid's device (the protocol-level Selected Device Clear -
+ *        it empties the instrument's input / output buffers). Carries the Device_GenericParms (lid + flags +
+ *        the lock / io timeouts), as device_readstb does. @return total bytes written, or 0 on overflow.
+ */
+size_t dws_vxi11_build_device_clear(uint8_t *buf, size_t cap, uint32_t xid, int32_t lid, uint32_t flags,
+                                    uint32_t lock_timeout, uint32_t io_timeout);
+
+/**
+ * @brief Build a device_trigger call: assert a trigger on link @p lid (the protocol-level Group Execute
+ *        Trigger, i.e. IEEE 488.2 `*TRG`). Same Device_GenericParms as device_clear. @return bytes, or 0.
+ */
+size_t dws_vxi11_build_device_trigger(uint8_t *buf, size_t cap, uint32_t xid, int32_t lid, uint32_t flags,
+                                      uint32_t lock_timeout, uint32_t io_timeout);
+
+/**
  * @brief Build a destroy_link call: close link @p lid.
  * @return total bytes written (incl. record mark), or 0 on overflow.
  */
