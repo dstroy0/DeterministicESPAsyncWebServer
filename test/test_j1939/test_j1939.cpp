@@ -413,6 +413,40 @@ void test_decode_lfe()
     TEST_ASSERT_FALSE(dws_j1939_decode_lfe(&eec1, &l));
 }
 
+void test_decode_amb()
+{
+    // baro 101.5 kPa (raw 203), cab 21.5 C (raw 9424), ambient 15.0 C (raw 9216),
+    // inlet 30 C (raw 70), road 12.0 C (raw 9120).
+    const uint8_t data[8] = {0xCB, 0xD0, 0x24, 0x00, 0x24, 0x46, 0xA0, 0x23};
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_j1939_build_message(&f, 6, J1939_PGN_AMB, 0x00, J1939_ADDR_GLOBAL, data, 8));
+
+    J1939Amb a;
+    TEST_ASSERT_TRUE(dws_j1939_decode_amb(&f, &a));
+    TEST_ASSERT_TRUE(a.baro_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 101.5f, a.baro_kpa);
+    TEST_ASSERT_TRUE(a.cab_temp_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 21.5f, a.cab_temp_c);
+    TEST_ASSERT_TRUE(a.ambient_temp_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 15.0f, a.ambient_temp_c);
+    TEST_ASSERT_TRUE(a.inlet_temp_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 30.0f, a.inlet_temp_c);
+    TEST_ASSERT_TRUE(a.road_temp_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 12.0f, a.road_temp_c);
+
+    // A not-available barometric pressure clears just that flag; the ambient temperature stays valid.
+    const uint8_t na[8] = {0xFF, 0xD0, 0x24, 0x00, 0x24, 0x46, 0xA0, 0x23};
+    CanFrame fna;
+    dws_j1939_build_message(&fna, 6, J1939_PGN_AMB, 0x00, J1939_ADDR_GLOBAL, na, 8);
+    dws_j1939_decode_amb(&fna, &a);
+    TEST_ASSERT_FALSE(a.baro_valid);
+    TEST_ASSERT_TRUE(a.ambient_temp_valid);
+    // A non-AMB frame (LFE) is rejected.
+    CanFrame lfe;
+    dws_j1939_build_message(&lfe, 6, J1939_PGN_LFE, 0x00, J1939_ADDR_GLOBAL, data, 8);
+    TEST_ASSERT_FALSE(dws_j1939_decode_amb(&lfe, &a));
+}
+
 void test_decode_pgn_mismatch_and_guards()
 {
     const uint8_t data[8] = {0};
@@ -457,6 +491,7 @@ int main()
     RUN_TEST(test_decode_eec1);
     RUN_TEST(test_decode_et1);
     RUN_TEST(test_decode_lfe);
+    RUN_TEST(test_decode_amb);
     RUN_TEST(test_decode_pgn_mismatch_and_guards);
     return UNITY_END();
 }

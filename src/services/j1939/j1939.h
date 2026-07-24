@@ -139,6 +139,7 @@ J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
 #define J1939_PGN_EEC1 0x00F004u ///< Electronic Engine Controller 1 (61444): engine speed + torque
 #define J1939_PGN_ET1 0x00FEEEu  ///< Engine Temperature 1 (65262): coolant / fuel / oil temperature
 #define J1939_PGN_LFE 0x00FEF2u  ///< Fuel Economy (65266): fuel rate + instantaneous / average economy
+#define J1939_PGN_AMB 0x00FEF5u  ///< Ambient Conditions (65269): barometric pressure + air / road temperatures
 
 /** @brief Decoded EEC1 (PGN 61444). Percent-torque fields are @ref J1939_TORQUE_NA when not available. */
 struct J1939Eec1
@@ -194,6 +195,29 @@ struct J1939Lfe
  * @return true iff @p f decodes to PGN 65266 and carries 8 data octets; false otherwise.
  */
 bool dws_j1939_decode_lfe(const CanFrame *f, J1939Lfe *out);
+
+/** @brief Decoded AMB (PGN 65269). Each measurement has its own validity flag (cleared for a
+ *  not-available raw). Barometric pressure is a 1-octet SPN; the temperatures are 2-octet except the
+ *  air inlet, which is a 1-octet SPN. */
+struct J1939Amb
+{
+    bool baro_valid;
+    float baro_kpa; ///< barometric pressure (kPa, 0.5 kPa/bit) - SPN 108
+    bool cab_temp_valid;
+    float cab_temp_c; ///< cab interior temperature (degC, 0.03125 degC/bit, -273 offset) - SPN 170
+    bool ambient_temp_valid;
+    float ambient_temp_c; ///< ambient air temperature (degC, 0.03125 degC/bit, -273 offset) - SPN 171
+    bool inlet_temp_valid;
+    float inlet_temp_c; ///< engine air inlet temperature (degC, 1 degC/bit, -40 offset) - SPN 172
+    bool road_temp_valid;
+    float road_temp_c; ///< road surface temperature (degC, 0.03125 degC/bit, -273 offset) - SPN 79
+};
+
+/**
+ * @brief Decode an AMB (PGN 65269) single frame into @p out.
+ * @return true iff @p f decodes to PGN 65269 and carries 8 data octets; false otherwise.
+ */
+bool dws_j1939_decode_amb(const CanFrame *f, J1939Amb *out);
 
 #endif // DWS_ENABLE_J1939
 #endif // DETERMINISTICESPASYNCWEBSERVER_J1939_H

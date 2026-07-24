@@ -282,4 +282,27 @@ bool dws_j1939_decode_lfe(const CanFrame *f, J1939Lfe *out)
     return true;
 }
 
+bool dws_j1939_decode_amb(const CanFrame *f, J1939Amb *out)
+{
+    if (!f || !out || f->dlc < 8)
+        return false;
+    J1939Id id;
+    if (!dws_j1939_decode_id(f->id, &id) || id.pgn != J1939_PGN_AMB)
+        return false;
+    out->baro_valid = (f->data[0] <= 0xFAu); // SPN 108, 0.5 kPa/bit
+    out->baro_kpa = (float)f->data[0] * 0.5f;
+    uint16_t cab = (uint16_t)(f->data[1] | ((uint16_t)f->data[2] << 8)); // SPN 170
+    out->cab_temp_valid = (cab <= 0xFAFFu);
+    out->cab_temp_c = (float)cab * 0.03125f - 273.0f;                    // 0.03125 degC/bit, -273 offset
+    uint16_t amb = (uint16_t)(f->data[3] | ((uint16_t)f->data[4] << 8)); // SPN 171
+    out->ambient_temp_valid = (amb <= 0xFAFFu);
+    out->ambient_temp_c = (float)amb * 0.03125f - 273.0f;
+    out->inlet_temp_valid = (f->data[5] <= 0xFAu); // SPN 172, 1 degC/bit, -40 offset
+    out->inlet_temp_c = (float)((int)f->data[5] - 40);
+    uint16_t road = (uint16_t)(f->data[6] | ((uint16_t)f->data[7] << 8)); // SPN 79
+    out->road_temp_valid = (road <= 0xFAFFu);
+    out->road_temp_c = (float)road * 0.03125f - 273.0f;
+    return true;
+}
+
 #endif // DWS_ENABLE_J1939
