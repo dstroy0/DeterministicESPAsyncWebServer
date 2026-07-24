@@ -611,6 +611,47 @@ bool dws_ike_auth_msg_open(uint8_t *msg, size_t len, const uint8_t key[DWS_IKE_A
                            const uint8_t salt[DWS_IKE_GCM_SALT_LEN], IkePayloadType *first_inner_type,
                            const uint8_t **inner_out, size_t *inner_len_out);
 
+// ── tier 2: IKE_AUTH ECDSA-P256 (certificate) authentication (RFC 7296 §2.15, RFC 7427) ─────────
+//
+// A digital-signature AUTH signs the SAME octets the PSK MAC covers - RealMessage | Nonce |
+// prf(SK_p, RestOfIDPayload) - with the identity's private key (here NIST P-256 / ECDSA-SHA256), and a
+// peer is authenticated by verifying that signature against the public key from its CERT. The octets are
+// assembled into a caller-provided scratch buffer (zero-heap) since the signer hashes them whole.
+
+/** @brief P-256 uncompressed public point length (0x04 || X || Y). */
+#define DWS_IKE_ECDSA_P256_PUB_LEN 65
+/** @brief P-256 private scalar length. */
+#define DWS_IKE_ECDSA_P256_PRIV_LEN 32
+/** @brief Raw ECDSA-P256 signature length (r || s). */
+#define DWS_IKE_ECDSA_P256_SIG_LEN 64
+
+/**
+ * @brief Assemble the RFC 7296 §2.15 signed octets = RealMessage | Nonce | prf(SK_p, id_body) into
+ *        @p scratch (needs @p real_len + @p nonce_len + 32 bytes).
+ * @return the octet length written, or 0 on overflow / a null argument.
+ */
+size_t dws_ike_signed_octets(uint8_t *scratch, size_t cap, const uint8_t *real, size_t real_len, const uint8_t *nonce,
+                             size_t nonce_len, const uint8_t *sk_p, size_t sk_p_len, const uint8_t *id_body,
+                             size_t id_body_len);
+
+/**
+ * @brief Produce an ECDSA-P256 (SHA-256) AUTH signature over the signed octets. @p scratch holds the
+ *        assembled octets (see dws_ike_signed_octets). @return true on success (@p sig filled).
+ */
+bool dws_ike_auth_sign_ecdsa_p256(uint8_t sig[DWS_IKE_ECDSA_P256_SIG_LEN],
+                                  const uint8_t priv[DWS_IKE_ECDSA_P256_PRIV_LEN], uint8_t *scratch, size_t scratch_cap,
+                                  const uint8_t *real, size_t real_len, const uint8_t *nonce, size_t nonce_len,
+                                  const uint8_t *sk_p, size_t sk_p_len, const uint8_t *id_body, size_t id_body_len);
+
+/**
+ * @brief Verify a peer's ECDSA-P256 (SHA-256) AUTH signature over the signed octets against its public
+ *        point @p pub. @return true iff the signature is valid (a forged AUTH / wrong key returns false).
+ */
+bool dws_ike_auth_verify_ecdsa_p256(const uint8_t pub[DWS_IKE_ECDSA_P256_PUB_LEN],
+                                    const uint8_t sig[DWS_IKE_ECDSA_P256_SIG_LEN], uint8_t *scratch, size_t scratch_cap,
+                                    const uint8_t *real, size_t real_len, const uint8_t *nonce, size_t nonce_len,
+                                    const uint8_t *sk_p, size_t sk_p_len, const uint8_t *id_body, size_t id_body_len);
+
 #endif // DWS_ENABLE_IKEV2
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IKEV2_H

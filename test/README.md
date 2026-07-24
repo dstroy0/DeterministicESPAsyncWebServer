@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4998 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5000 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **4998 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (56 tests)</b></summary>
+<summary><b>test_ikev2 (58 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20667,6 +20667,30 @@ A thorough directory of all **4998 test cases** across **287 suites**. Expand a 
       * <code>Assert false (dws_ike_auth_msg_open(w2, n, key, salt, &first, &got, &got_len))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_auth_msg_build(msg, 40, spi, spi, 1, false, IkePayloadType::IKE_PL_IDI, inner,</code>
       * <code>Assert false (dws_ike_auth_msg_open(w3, n, key, salt, &first, &got, &got_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_signed_octets_kat</b> &mdash; <i>A scratch too small to hold RealMessage \| Nonce \| 32 fails closed.</i></summary>
+
+    * **Objective**: A scratch too small to hold RealMessage \| Nonce \| 32 fails closed.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(98, n);</code>
+      * <code>Assert equal memory (so_expect, scratch, 98)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_signed_octets(scratch, 50, so_real, sizeof(so_real), so_nonce, sizeof(so_nonce),</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_auth_ecdsa_sign_verify</b> &mdash; <i>The peer verifies the same octets against the matching public key.</i></summary>
+
+    * **Objective**: The peer verifies the same octets against the matching public key.
+    * **Assertions**:
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub, priv))</code>
+      * <code>Assert true (dws_ike_auth_sign_ecdsa_p256(sig, priv, scratch, sizeof(scratch), real, sizeof(real)</code>
+      * <code>Assert true (dws_ike_auth_verify_ecdsa_p256(pub, sig, scratch, sizeof(scratch), real, sizeof(real)</code>
+      * <code>Assert false (dws_ike_auth_verify_ecdsa_p256(pub, sig, scratch, sizeof(scratch), real, sizeof(real)</code>
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub2, priv2))</code>
+      * <code>Assert false (dws_ike_auth_verify_ecdsa_p256(pub2, sig, scratch, sizeof(scratch), real, sizeof(real)</code>
+      * <code>Assert false (dws_ike_auth_sign_ecdsa_p256(sig, priv, scratch, 8, real, sizeof(real), nonce, sizeof(nonce)</code>
   </details>
 
 </details>

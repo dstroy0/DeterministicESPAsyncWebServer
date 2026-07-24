@@ -12,6 +12,7 @@
 
 #include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"      // SK-payload AEAD (AES-256-GCM-16)
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"  // D-H group 31 (X25519, RFC 7748)
+#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"       // ECDSA-P256 certificate AUTH
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // PRF = HMAC-SHA2-256
 #include <string.h>                                                  // memcpy / memset (framing is hand-rolled)
 
@@ -1020,6 +1021,51 @@ bool dws_ike_auth_msg_open(uint8_t *msg, size_t len, const uint8_t key[DWS_IKE_A
     *inner_out = ct;
     *inner_len_out = ct_len - 1 - pad_len;
     return true;
+}
+
+// ── tier 2: IKE_AUTH ECDSA-P256 (certificate) authentication (RFC 7296 §2.15, RFC 7427) ─────────
+
+size_t dws_ike_signed_octets(uint8_t *scratch, size_t cap, const uint8_t *real, size_t real_len, const uint8_t *nonce,
+                             size_t nonce_len, const uint8_t *sk_p, size_t sk_p_len, const uint8_t *id_body,
+                             size_t id_body_len)
+{
+    if (!scratch || !real || !nonce || !sk_p || !id_body)
+        return 0;
+    size_t total = real_len + nonce_len + DWS_IKE_AUTH_LEN; // RealMessage | Nonce | prf(SK_p, id)(=32)
+    if (total > cap)
+        return 0;
+    memcpy(scratch, real, real_len);
+    memcpy(scratch + real_len, nonce, nonce_len);
+    ssh_hmac_sha256(sk_p, sk_p_len, id_body, id_body_len, scratch + real_len + nonce_len); // MACedID
+    return total;
+}
+
+bool dws_ike_auth_sign_ecdsa_p256(uint8_t sig[DWS_IKE_ECDSA_P256_SIG_LEN],
+                                  const uint8_t priv[DWS_IKE_ECDSA_P256_PRIV_LEN], uint8_t *scratch, size_t scratch_cap,
+                                  const uint8_t *real, size_t real_len, const uint8_t *nonce, size_t nonce_len,
+                                  const uint8_t *sk_p, size_t sk_p_len, const uint8_t *id_body, size_t id_body_len)
+{
+    if (!sig || !priv)
+        return false;
+    size_t n = dws_ike_signed_octets(scratch, scratch_cap, real, real_len, nonce, nonce_len, sk_p, sk_p_len, id_body,
+                                     id_body_len);
+    if (n == 0)
+        return false;
+    return ssh_ecdsa_p256_sign(sig, scratch, n, priv); // hashes the octets with SHA-256 internally
+}
+
+bool dws_ike_auth_verify_ecdsa_p256(const uint8_t pub[DWS_IKE_ECDSA_P256_PUB_LEN],
+                                    const uint8_t sig[DWS_IKE_ECDSA_P256_SIG_LEN], uint8_t *scratch, size_t scratch_cap,
+                                    const uint8_t *real, size_t real_len, const uint8_t *nonce, size_t nonce_len,
+                                    const uint8_t *sk_p, size_t sk_p_len, const uint8_t *id_body, size_t id_body_len)
+{
+    if (!pub || !sig)
+        return false;
+    size_t n = dws_ike_signed_octets(scratch, scratch_cap, real, real_len, nonce, nonce_len, sk_p, sk_p_len, id_body,
+                                     id_body_len);
+    if (n == 0)
+        return false;
+    return ssh_ecdsa_p256_verify(pub, scratch, n, sig);
 }
 
 #endif // DWS_ENABLE_IKEV2
