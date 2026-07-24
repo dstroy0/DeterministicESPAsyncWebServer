@@ -72,6 +72,16 @@ size_t dws_cotp_build_dt(uint8_t *buf, size_t cap, const uint8_t *data, size_t d
 size_t dws_cotp_build_cr(uint8_t *buf, size_t cap, uint16_t src_ref, uint8_t tpdu_size_code,
                          const uint8_t *extra_params, size_t extra_len);
 
+/**
+ * @brief Build a COTP Connection Confirm (the server's response to a CR): `LI 0xD0 dst-ref src-ref
+ *        class(0)` + a TPDU-size parameter + any @p extra_params.
+ * @param dst_ref        the connecting peer's source reference, echoed back as the destination reference.
+ * @param src_ref        this end's source reference.
+ * @param tpdu_size_code the negotiated TPDU-size exponent (e.g. 0x0A = 1024).
+ */
+size_t dws_cotp_build_cc(uint8_t *buf, size_t cap, uint16_t dst_ref, uint16_t src_ref, uint8_t tpdu_size_code,
+                         const uint8_t *extra_params, size_t extra_len);
+
 /** @brief A parsed COTP header. For DT, @ref data is the user data; for CR/CC, the refs. */
 struct CotpHeader
 {

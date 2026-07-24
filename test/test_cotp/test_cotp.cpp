@@ -78,6 +78,40 @@ void test_cotp_cr_with_tsaps()
     TEST_ASSERT_EQUAL_HEX16(0x0002, h.src_ref);
 }
 
+// A Connection Confirm (the server's response to a CR), and the CR -> CC handshake.
+void test_cotp_cc_bytes()
+{
+    uint8_t buf[32];
+    // CC echoing a client src-ref 0x0001 as the destination reference, this end's src-ref 0x0042.
+    size_t n = dws_cotp_build_cc(buf, sizeof(buf), 0x0001, 0x0042, 0x0A, nullptr, 0);
+    const uint8_t expect[] = {0x09, 0xD0, 0x00, 0x01, 0x00, 0x42, 0x00, 0xC0, 0x01, 0x0A};
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+
+    CotpHeader h;
+    TEST_ASSERT_TRUE(dws_cotp_parse(buf, n, &h));
+    TEST_ASSERT_EQUAL_HEX8(COTP_CC, h.code);
+    TEST_ASSERT_EQUAL_HEX16(0x0001, h.dst_ref);
+    TEST_ASSERT_EQUAL_HEX16(0x0042, h.src_ref);
+
+    // The CR -> CC handshake: build a CR, parse it, then confirm by echoing its src-ref as the dst-ref.
+    uint8_t crbuf[32];
+    size_t crn = dws_cotp_build_cr(crbuf, sizeof(crbuf), 0x1234, 0x0A, nullptr, 0);
+    CotpHeader cr;
+    TEST_ASSERT_TRUE(dws_cotp_parse(crbuf, crn, &cr));
+    n = dws_cotp_build_cc(buf, sizeof(buf), cr.src_ref, 0x0055, 0x0A, nullptr, 0);
+    TEST_ASSERT_TRUE(dws_cotp_parse(buf, n, &h));
+    TEST_ASSERT_EQUAL_HEX16(0x1234, h.dst_ref); // the CR's src-ref echoed back
+
+    // TSAP params append after the header, and the guards fail closed.
+    const uint8_t tsaps[] = {0xC2, 0x02, 0x01, 0x02};
+    n = dws_cotp_build_cc(buf, sizeof(buf), 0x0001, 0x0042, 0x0A, tsaps, sizeof(tsaps));
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)(9 + sizeof(tsaps)), buf[0]); // LI grows by the extras
+    TEST_ASSERT_EQUAL_size_t(0, dws_cotp_build_cc(nullptr, sizeof(buf), 1, 2, 0x0A, nullptr, 0)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, dws_cotp_build_cc(buf, sizeof(buf), 1, 2, 0x0A, nullptr, 5));     // len but null params
+    TEST_ASSERT_EQUAL_size_t(0, dws_cotp_build_cc(buf, 8, 1, 2, 0x0A, nullptr, 0));               // total > cap
+}
+
 // The full stack: a TPKT carrying a COTP Data TPDU carrying an S7-ish payload.
 void test_full_stack()
 {
@@ -241,6 +275,7 @@ int main()
     RUN_TEST(test_cotp_dt_bytes);
     RUN_TEST(test_cotp_cr_bytes);
     RUN_TEST(test_cotp_cr_with_tsaps);
+    RUN_TEST(test_cotp_cc_bytes);
     RUN_TEST(test_full_stack);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_guards_and_types);

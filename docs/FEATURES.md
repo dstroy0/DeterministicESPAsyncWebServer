@@ -176,7 +176,7 @@ Cross-origin resource sharing with automatic preflight handling. Always on.
 
 `DWS_ENABLE_COTP`
 
-TPKT (RFC 1006) + COTP (ISO 8073 / X.224 class 0) frame codec - the "ISO transport on TCP" foundation under S7comm and IEC 61850 MMS. Default off. services/cotp provides `dws_tpkt_build` / `dws_tpkt_parse` for the 4-octet TPKT envelope (version 3 + 16-bit length), `dws_cotp_build_dt` for a Data TPDU (`LI 0xF0 EOT|NR` + user data), `dws_cotp_build_cr` for a Connection Request (destination/source refs, class 0, the TPDU-size parameter, plus caller TSAP parameters), and `dws_cotp_parse` which reports the TPDU type and the DT user data or the CR/CC refs. Layout verified against RFC 1006 / ISO 8073; pure and host-tested. See src/services/cotp/cotp.h.
+TPKT (RFC 1006) + COTP (ISO 8073 / X.224 class 0) frame codec - the "ISO transport on TCP" foundation under S7comm and IEC 61850 MMS. Default off. services/cotp provides `dws_tpkt_build` / `dws_tpkt_parse` for the 4-octet TPKT envelope (version 3 + 16-bit length), `dws_cotp_build_dt` for a Data TPDU (`LI 0xF0 EOT|NR` + user data), `dws_cotp_build_cr` for a Connection Request (destination/source refs, class 0, the TPDU-size parameter, plus caller TSAP parameters), `dws_cotp_build_cc` for the server-side Connection Confirm that answers a CR (echoing the peer's source reference as the destination reference), and `dws_cotp_parse` which reports the TPDU type and the DT user data or the CR/CC refs - so the device can accept an incoming COTP connection, not only initiate one. Layout verified against RFC 1006 / ISO 8073; pure and host-tested. See src/services/cotp/cotp.h.
 
 ## CSRF
 

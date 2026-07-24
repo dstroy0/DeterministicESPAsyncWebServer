@@ -90,6 +90,35 @@ size_t dws_cotp_build_cr(uint8_t *buf, size_t cap, uint16_t src_ref, uint8_t tpd
     return p;
 }
 
+size_t dws_cotp_build_cc(uint8_t *buf, size_t cap, uint16_t dst_ref, uint16_t src_ref, uint8_t tpdu_size_code,
+                         const uint8_t *extra_params, size_t extra_len)
+{
+    if (!buf || (extra_len && !extra_params))
+        return 0;
+    // header after LI: code(1) dst-ref(2) src-ref(2) class(1) + tpdu-size param(3) + extras
+    size_t after_li = 1 + 2 + 2 + 1 + 3 + extra_len;
+    size_t total = 1 + after_li; // + the LI octet itself
+    if (after_li > 0xFF || total > cap)
+        return 0;
+    size_t p = 0;
+    buf[p++] = (uint8_t)after_li; // LI
+    buf[p++] = COTP_CC;
+    buf[p++] = (uint8_t)(dst_ref >> 8); // dst-ref = the peer's src-ref, echoed
+    buf[p++] = (uint8_t)(dst_ref & 0xFF);
+    buf[p++] = (uint8_t)(src_ref >> 8);
+    buf[p++] = (uint8_t)(src_ref & 0xFF);
+    buf[p++] = 0x00; // class 0, no options
+    buf[p++] = COTP_PARAM_TPDU_SIZE;
+    buf[p++] = 0x01; // parameter length
+    buf[p++] = tpdu_size_code;
+    if (extra_len)
+    {
+        memcpy(buf + p, extra_params, extra_len);
+        p += extra_len;
+    }
+    return p;
+}
+
 bool dws_cotp_parse(const uint8_t *buf, size_t len, CotpHeader *out)
 {
     if (!buf || !out || len < 2)
