@@ -1491,7 +1491,8 @@
     "HMSG",
     "HPUB",
     "ccvs",
-    "internetwork"
+    "internetwork",
+    "paddlewheel"
   ],
   "ignorePaths": [
     "node_modules/**",

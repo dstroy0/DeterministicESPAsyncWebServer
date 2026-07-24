@@ -519,6 +519,27 @@ void test_decode_gll()
     TEST_ASSERT_FALSE(dws_nmea0183_parse_gll(nullptr, &g));
 }
 
+void test_decode_vhw()
+{
+    char buf[96];
+    // Water speed + heading: heading 10.0 true / 8.5 magnetic, 6.5 knots / 12.0 km/h through the water.
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "IIVHW,10.0,T,8.5,M,6.5,N,12.0,K");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaVhw v;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_vhw(&m, &v));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 10.0f, v.heading_true_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 8.5f, v.heading_mag_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 6.5f, v.speed_knots);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 12.0f, v.speed_kmh);
+
+    // A GGA is not a VHW, and null args are rejected.
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_vhw(&m, &v));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_vhw(nullptr, &v));
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -560,6 +581,7 @@ int main()
     RUN_TEST(test_decode_dpt);
     RUN_TEST(test_decode_hdg);
     RUN_TEST(test_decode_gll);
+    RUN_TEST(test_decode_vhw);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }

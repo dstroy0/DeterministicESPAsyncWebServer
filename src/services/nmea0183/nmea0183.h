@@ -251,5 +251,22 @@ struct DwsNmeaGll
  */
 bool dws_nmea0183_parse_gll(const Nmea0183 *m, DwsNmeaGll *out);
 
+/** @brief Decoded VHW (water speed + heading): the vessel's heading and its speed through the water. Where VTG
+ *  reports GPS course + speed over ground, VHW reports the heading the vessel points and its speed relative to
+ *  the water (from a paddlewheel / pitot log). */
+struct DwsNmeaVhw
+{
+    float heading_true_deg; ///< vessel heading, degrees true (0 if the field is absent)
+    float heading_mag_deg;  ///< vessel heading, degrees magnetic (0 if absent)
+    float speed_knots;      ///< speed through the water in knots (0 if absent)
+    float speed_kmh;        ///< speed through the water in km/h (0 if absent)
+};
+
+/**
+ * @brief Decode a parsed VHW sentence into @p out. @return true iff @p m is a VHW sentence with at least the
+ *        heading / speed fields (through the km/h value); false otherwise. Empty optional fields read back 0.
+ */
+bool dws_nmea0183_parse_vhw(const Nmea0183 *m, DwsNmeaVhw *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

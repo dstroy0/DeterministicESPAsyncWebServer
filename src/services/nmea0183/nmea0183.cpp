@@ -390,4 +390,16 @@ bool dws_nmea0183_parse_gll(const Nmea0183 *m, DwsNmeaGll *out)
     return true;
 }
 
+bool dws_nmea0183_parse_vhw(const Nmea0183 *m, DwsNmeaVhw *out)
+{
+    if (!m || !out || strcmp(m->type, "VHW") != 0 || m->field_count < 8) // need through speed km/h (field 7)
+        return false;
+    memset(out, 0, sizeof(*out));
+    dws_nmea0183_field_float(m, 1, &out->heading_true_deg); // heading true; stays 0 if empty (out was zeroed)
+    dws_nmea0183_field_float(m, 3, &out->heading_mag_deg);  // heading magnetic
+    dws_nmea0183_field_float(m, 5, &out->speed_knots);      // speed through water, knots
+    dws_nmea0183_field_float(m, 7, &out->speed_kmh);        // speed through water, km/h
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183
