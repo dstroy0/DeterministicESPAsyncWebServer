@@ -141,4 +141,43 @@ bool dws_hostlink_read_word(const HostlinkFrame *f, size_t index, uint16_t *out)
     return true;
 }
 
+size_t dws_hostlink_build_write(char *buf, size_t cap, uint8_t node, uint16_t address, const uint16_t *words,
+                                size_t word_count)
+{
+    if (!buf || node > 99 || address > 9999 || word_count == 0 || !words)
+        return 0;
+    if (word_count > cap / 4) // fail closed before word_count*4 could overflow / exceed the buffer
+        return 0;
+    // @ + UU + WR + addr(4) + word_count*4 hex + FCS(2) + *CR, plus a NUL terminator.
+    size_t total = 1 + 2 + 2 + 4 + word_count * 4 + 2 + 2;
+    if (total >= cap)
+        return 0;
+
+    size_t p = 0;
+    buf[p++] = '@';
+    buf[p++] = (char)('0' + node / 10);
+    buf[p++] = (char)('0' + node % 10);
+    buf[p++] = 'W';
+    buf[p++] = 'R';
+    buf[p++] = (char)('0' + (address / 1000) % 10);
+    buf[p++] = (char)('0' + (address / 100) % 10);
+    buf[p++] = (char)('0' + (address / 10) % 10);
+    buf[p++] = (char)('0' + address % 10);
+    for (size_t i = 0; i < word_count; i++)
+    {
+        uint16_t w = words[i];
+        buf[p++] = hex_digit((uint8_t)((w >> 12) & 0x0F));
+        buf[p++] = hex_digit((uint8_t)((w >> 8) & 0x0F));
+        buf[p++] = hex_digit((uint8_t)((w >> 4) & 0x0F));
+        buf[p++] = hex_digit((uint8_t)(w & 0x0F));
+    }
+    uint8_t f = dws_hostlink_fcs(buf, p); // XOR over '@' .. last data char
+    buf[p++] = hex_digit((uint8_t)(f >> 4));
+    buf[p++] = hex_digit((uint8_t)(f & 0x0F));
+    buf[p++] = '*';
+    buf[p++] = '\r';
+    buf[p] = '\0'; // NUL-terminate so callers may treat the ASCII frame as a string
+    return p;
+}
+
 #endif // DWS_ENABLE_HOSTLINK

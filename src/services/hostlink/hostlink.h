@@ -80,6 +80,16 @@ size_t dws_hostlink_build_read(char *buf, size_t cap, uint8_t node, uint16_t add
  */
 bool dws_hostlink_read_word(const HostlinkFrame *f, size_t index, uint16_t *out);
 
+/**
+ * @brief Build a WR (DM-area write) command: `@UU` + `WR` + a 4-digit beginning word address + one
+ *        4-hex-char value per word + FCS + `*` CR. The PLC's response text is only the 2-character end
+ *        code (read it with dws_hostlink_end_code).
+ * @return the frame length, or 0 on overflow, an address outside 0..9999, a zero @p word_count, or a
+ *         null @p words.
+ */
+size_t dws_hostlink_build_write(char *buf, size_t cap, uint8_t node, uint16_t address, const uint16_t *words,
+                                size_t word_count);
+
 #endif // DWS_ENABLE_HOSTLINK
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_HOSTLINK_H

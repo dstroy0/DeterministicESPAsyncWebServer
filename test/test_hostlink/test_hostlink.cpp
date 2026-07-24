@@ -75,6 +75,39 @@ void test_build_read_and_extract()
     TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, 4, 0, 100, 2));
 }
 
+// WR (DM-area write): node 0, DM word 100, two words 0x1234 / 0x5678.
+void test_build_write()
+{
+    char buf[64];
+    uint16_t words[2] = {0x1234, 0x5678};
+    size_t n = dws_hostlink_build_write(buf, sizeof(buf), 0, 100, words, 2);
+    TEST_ASSERT_EQUAL_STRING("@00WR0100123456784C*\r", buf);
+    TEST_ASSERT_EQUAL_size_t(21, n);
+
+    // Round-trips through the FCS-validating parser: header "WR", text = address + the two words.
+    HostlinkFrame f;
+    TEST_ASSERT_TRUE(dws_hostlink_parse(buf, n, &f));
+    TEST_ASSERT_EQUAL_STRING("WR", f.header_code);
+    TEST_ASSERT_EQUAL_size_t(12, f.text_len);
+    TEST_ASSERT_EQUAL_MEMORY("010012345678", f.text, 12);
+
+    // A simulated WR response carries only the 2-char end code (00 = normal).
+    char resp[32];
+    size_t rn = dws_hostlink_build(resp, sizeof(resp), 0, "WR", "00", 2);
+    HostlinkFrame rf;
+    TEST_ASSERT_TRUE(dws_hostlink_parse(resp, rn, &rf));
+    uint8_t ec = 0xFF;
+    TEST_ASSERT_TRUE(dws_hostlink_end_code(&rf, &ec));
+    TEST_ASSERT_EQUAL_UINT8(0, ec);
+
+    // Guards: out-of-range address, zero word_count, null words, node > 99, and a too-small buffer fail closed.
+    TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, sizeof(buf), 0, 10000, words, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, sizeof(buf), 0, 100, words, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, sizeof(buf), 0, 100, nullptr, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, sizeof(buf), 100, 100, words, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, 8, 0, 100, words, 2));
+}
+
 // The node number renders as two digits.
 void test_build_node_digits()
 {
@@ -290,6 +323,7 @@ int main()
     RUN_TEST(test_fcs_vector);
     RUN_TEST(test_build_dm_read);
     RUN_TEST(test_build_read_and_extract);
+    RUN_TEST(test_build_write);
     RUN_TEST(test_build_node_digits);
     RUN_TEST(test_round_trip);
     RUN_TEST(test_parse_response_end_code);
