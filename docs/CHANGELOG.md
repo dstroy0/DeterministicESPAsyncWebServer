@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.87.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.87.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`0790ee5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0790ee54d7166551f36490fbcd05e23f0e50d50f))
+
+### Changes
+
+- Bump version: 7.86.0 → 7.87.0 ([`b88a327`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b88a327cf1df579635ec618cee6a8a3478229336))
+
+### Documentation
+
+- list double-point + double command in the file header ([`b47b2c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b47b2c4c4acd314fe81325ea8c440dd6446d5240))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9df4218`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9df4218644faab0b4d3beee96603ea5f797f0500))
+
+### Features
+
+- double-point info + double command objects ([`6ab04d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ab04d7e825dd96ba1613c2b05ef15bbb3e05f8f))
+
+</details>
+
 ## [7.86.0] - 2026-07-24
 
 <details>
