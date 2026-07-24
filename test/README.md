@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5128 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5129 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -22116,7 +22116,7 @@ A thorough directory of all **5128 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_j1939 (26 tests)</b></summary>
+<summary><b>test_j1939 (27 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_id_pdu2_roundtrip</b> &mdash; <i>Id pdu2 roundtrip</i></summary>
@@ -22457,6 +22457,24 @@ A thorough directory of all **5128 test cases** across **291 suites**. Expand a 
       * <code>Assert false (c.boost_valid)</code>
       * <code>Assert true (c.intake_temp_valid)</code>
       * <code>Assert false (dws_j1939_decode_ic1(&amb, &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_vd</b> &mdash; <i>trip 1000.000 km (raw 8000 = 0x1F40), total 250000.000 km (raw 2,000,000 = 0x1E8480).</i></summary>
+
+    * **Objective**: trip 1000.000 km (raw 8000 = 0x1F40), total 250000.000 km (raw 2,000,000 = 0x1E8480).
+    * **Assertions**:
+      * <code>Assert true (dws_j1939_build_message(&f, 6, J1939_PGN_VD, 0x00, J1939_ADDR_GLOBAL, data, 8))</code>
+      * <code>Assert true (dws_j1939_decode_vd(&f, &v))</code>
+      * <code>Assert true (v.trip_valid)</code>
+      * <code>Assert float within (0.001f, 1000.0f, (float)v.trip_km)</code>
+      * <code>Assert true (v.total_valid)</code>
+      * <code>Assert float within (0.01f, 250000.0f, (float)v.total_km)</code>
+      * <code>Assert true (v.total_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0xFAFFFFFFu, (uint32_t)(v.total_km / 0.125 + 0.5)); // exact round-trip</code>
+      * <code>Assert false (v.trip_valid)</code>
+      * <code>Assert true (v.total_valid)</code>
+      * <code>Assert false (dws_j1939_decode_vd(&ic1, &v))</code>
   </details>
 
   <details style="margin-left: 20px;">
