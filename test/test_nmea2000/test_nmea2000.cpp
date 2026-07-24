@@ -305,6 +305,44 @@ void test_decode_wind_data()
     TEST_ASSERT_FALSE(dws_n2k_decode_wind_data(wind, 5, &w)); // too short
 }
 
+void test_decode_water_depth()
+{
+    // SID 1, depth 12.34 m (raw 1234), transducer offset 0.5 m (raw 500).
+    const uint8_t wd[8] = {0x01, 0xd2, 0x04, 0x00, 0x00, 0xf4, 0x01, 0x00};
+    N2kWaterDepth d;
+    TEST_ASSERT_TRUE(dws_n2k_decode_water_depth(wd, sizeof(wd), &d));
+    TEST_ASSERT_EQUAL_UINT8(1, d.sid);
+    TEST_ASSERT_TRUE(d.depth_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 12.34f, d.depth_m);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 0.5f, d.offset_m);
+
+    // A 0xFFFFFFFF depth is not-available; short / null payloads are rejected.
+    const uint8_t na[8] = {0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00};
+    TEST_ASSERT_TRUE(dws_n2k_decode_water_depth(na, sizeof(na), &d));
+    TEST_ASSERT_FALSE(d.depth_valid);
+    TEST_ASSERT_FALSE(dws_n2k_decode_water_depth(wd, 6, &d));
+    TEST_ASSERT_FALSE(dws_n2k_decode_water_depth(nullptr, 8, &d));
+}
+
+void test_decode_vessel_heading()
+{
+    // SID 2, heading 1.5708 rad (90 deg, raw 15708), deviation 0, variation -0.1 rad, reference magnetic.
+    const uint8_t vh[8] = {0x02, 0x5c, 0x3d, 0x00, 0x00, 0x18, 0xfc, 0x01};
+    N2kVesselHeading h;
+    TEST_ASSERT_TRUE(dws_n2k_decode_vessel_heading(vh, sizeof(vh), &h));
+    TEST_ASSERT_EQUAL_UINT8(2, h.sid);
+    TEST_ASSERT_TRUE(h.heading_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 1.5708f, h.heading_rad);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, -0.1f, h.variation_rad);
+    TEST_ASSERT_EQUAL_UINT8(N2K_HEADING_REF_MAGNETIC, h.reference);
+
+    // A 0xFFFF heading is not-available; a short payload is rejected.
+    const uint8_t na[8] = {0x02, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00};
+    TEST_ASSERT_TRUE(dws_n2k_decode_vessel_heading(na, sizeof(na), &h));
+    TEST_ASSERT_FALSE(h.heading_valid);
+    TEST_ASSERT_FALSE(dws_n2k_decode_vessel_heading(vh, 7, &h));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -324,5 +362,7 @@ int main()
     RUN_TEST(test_fastpacket_roundtrip_short_last_frame);
     RUN_TEST(test_decode_position_rapid);
     RUN_TEST(test_decode_wind_data);
+    RUN_TEST(test_decode_water_depth);
+    RUN_TEST(test_decode_vessel_heading);
     return UNITY_END();
 }

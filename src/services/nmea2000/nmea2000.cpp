@@ -133,6 +133,14 @@ int32_t rd_i32le(const uint8_t *p)
 {
     return (int32_t)((uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24));
 }
+uint32_t rd_u32le(const uint8_t *p)
+{
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+}
+int16_t rd_i16le(const uint8_t *p)
+{
+    return (int16_t)rd_u16le(p);
+}
 } // namespace
 
 bool dws_n2k_decode_position_rapid(const uint8_t *payload, size_t len, N2kPositionRapid *out)
@@ -159,6 +167,32 @@ bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *o
     out->angle_valid = (angle != 0xFFFFu);
     out->angle_rad = (float)angle * 0.0001f;
     out->reference = (uint8_t)(payload[5] & 0x07u);
+    return true;
+}
+
+bool dws_n2k_decode_water_depth(const uint8_t *payload, size_t len, N2kWaterDepth *out)
+{
+    if (!payload || !out || len < 7) // SID(1) + depth(4) + offset(2)
+        return false;
+    out->sid = payload[0];
+    uint32_t depth = rd_u32le(payload + 1); // 0.01 m per bit
+    out->depth_valid = (depth != 0xFFFFFFFFu);
+    out->depth_m = (float)depth * 0.01f;
+    out->offset_m = (float)rd_i16le(payload + 5) * 0.001f; // 0.001 m per bit
+    return true;
+}
+
+bool dws_n2k_decode_vessel_heading(const uint8_t *payload, size_t len, N2kVesselHeading *out)
+{
+    if (!payload || !out || len < 8)
+        return false;
+    out->sid = payload[0];
+    uint16_t heading = rd_u16le(payload + 1); // 0.0001 rad per bit
+    out->heading_valid = (heading != 0xFFFFu);
+    out->heading_rad = (float)heading * 0.0001f;
+    out->deviation_rad = (float)rd_i16le(payload + 3) * 0.0001f;
+    out->variation_rad = (float)rd_i16le(payload + 5) * 0.0001f;
+    out->reference = (uint8_t)(payload[7] & 0x03u);
     return true;
 }
 

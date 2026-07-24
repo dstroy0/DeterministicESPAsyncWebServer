@@ -90,6 +90,12 @@ bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t
 
 #define N2K_PGN_POSITION_RAPID 129025u ///< Position, Rapid Update: latitude + longitude
 #define N2K_PGN_WIND_DATA 130306u      ///< Wind Data: speed + angle + reference
+#define N2K_PGN_WATER_DEPTH 128267u    ///< Water Depth: depth below transducer + offset
+#define N2K_PGN_VESSEL_HEADING 127250u ///< Vessel Heading: heading + deviation + variation
+
+// Heading reference (PGN 127250 byte 7, low 2 bits).
+#define N2K_HEADING_REF_TRUE 0     ///< true heading
+#define N2K_HEADING_REF_MAGNETIC 1 ///< magnetic heading
 
 // Wind reference (PGN 130306 byte 5, low 3 bits).
 #define N2K_WIND_REF_TRUE_NORTH 0 ///< true, referenced to North
@@ -117,6 +123,26 @@ struct N2kWindData
     uint8_t reference; ///< wind reference (@ref N2K_WIND_REF_TRUE_NORTH etc.)
 };
 
+/** @brief Decoded Water Depth (PGN 128267). */
+struct N2kWaterDepth
+{
+    uint8_t sid;      ///< sequence id
+    bool depth_valid; ///< false if the depth is not-available
+    float depth_m;    ///< water depth below the transducer (metres, 0.01 m per bit)
+    float offset_m;   ///< transducer offset (m); positive = distance to waterline, negative = to keel
+};
+
+/** @brief Decoded Vessel Heading (PGN 127250). */
+struct N2kVesselHeading
+{
+    uint8_t sid;         ///< sequence id
+    bool heading_valid;  ///< false if the heading is not-available
+    float heading_rad;   ///< heading (radians, 0.0001 rad per bit)
+    float deviation_rad; ///< magnetic deviation (radians)
+    float variation_rad; ///< magnetic variation (radians)
+    uint8_t reference;   ///< heading reference (@ref N2K_HEADING_REF_TRUE / _MAGNETIC)
+};
+
 /**
  * @brief Decode a Position Rapid Update (PGN 129025) payload into @p out.
  * @return true iff @p len is at least 8 octets; false otherwise.
@@ -128,6 +154,18 @@ bool dws_n2k_decode_position_rapid(const uint8_t *payload, size_t len, N2kPositi
  * @return true iff @p len is at least 6 octets; false otherwise.
  */
 bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *out);
+
+/**
+ * @brief Decode a Water Depth (PGN 128267) payload into @p out.
+ * @return true iff @p len is at least 7 octets (SID + depth + offset); false otherwise.
+ */
+bool dws_n2k_decode_water_depth(const uint8_t *payload, size_t len, N2kWaterDepth *out);
+
+/**
+ * @brief Decode a Vessel Heading (PGN 127250) payload into @p out.
+ * @return true iff @p len is at least 8 octets; false otherwise.
+ */
+bool dws_n2k_decode_vessel_heading(const uint8_t *payload, size_t len, N2kVesselHeading *out);
 
 #endif // DWS_ENABLE_NMEA2000
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA2000_H
