@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4996 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4998 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **4996 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (54 tests)</b></summary>
+<summary><b>test_ikev2 (56 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20634,6 +20634,39 @@ A thorough directory of all **4996 test cases** across **287 suites**. Expand a 
       * <code>Assert false (dws_ike_sa_init_parse(buf, n - 1, &m))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
       * <code>Assert false (dws_ike_sa_init_parse(buf2, n, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_auth_msg_roundtrip</b> &mdash; <i>Build the inner chain IDi(next=AUTH) \| AUTH(next=NONE).</i></summary>
+
+    * **Objective**: Build the inner chain IDi(next=AUTH) \| AUTH(next=NONE).
+    * **Assertions**:
+      * <code>Assert true (idn &gt; 0 && an &gt; 0)</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(46, msg[16]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(35, msg[18]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(35, msg[28]);</code>
+      * <code>Assert true (dws_ike_auth_msg_open(work, n, key, salt, &first, &got, &got_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, (uint8_t)first);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(inner_len, got_len);</code>
+      * <code>Assert equal memory (inner, got, inner_len)</code>
+      * <code>Assert true (dws_ike_payload_next(&it, &pl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, (uint8_t)pl.type);</code>
+      * <code>Assert true (dws_ike_payload_next(&it, &pl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_AUTH, (uint8_t)pl.type);</code>
+      * <code>Assert false (dws_ike_payload_next(&it, &pl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_auth_msg_tamper_and_guards</b> &mdash; <i>A flipped ciphertext byte -> tag fails -> open returns false.</i></summary>
+
+    * **Objective**: A flipped ciphertext byte -> tag fails -> open returns false.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert false (dws_ike_auth_msg_open(w1, n, key, salt, &first, &got, &got_len))</code>
+      * <code>Assert false (dws_ike_auth_msg_open(w2, n, key, salt, &first, &got, &got_len))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_auth_msg_build(msg, 40, spi, spi, 1, false, IkePayloadType::IKE_PL_IDI, inner,</code>
+      * <code>Assert false (dws_ike_auth_msg_open(w3, n, key, salt, &first, &got, &got_len))</code>
   </details>
 
 </details>
