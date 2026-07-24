@@ -19,6 +19,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- exclude src/board_profiles from copy-paste detection ([`f7e1a1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7e1a1b7093c99168cdad6955751ac945fb8387e))
+- update CHANGELOG.md [skip ci] ([`d11e5bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d11e5bbbb9c842b6a6b8ea4839085626a53e76f5))
 - update test report + coverage [skip ci] ([`243887f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/243887f3c094ecba8316260fa9db4ec63a4d09ab))
 - update CHANGELOG.md [skip ci] ([`b7c0a44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7c0a444e287ef38e273e48ba2c89c7dbdc520aa))
 - update test report + coverage [skip ci] ([`2dd5df0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2dd5df071220624aafb847edcffebedbca36f54e))
@@ -73,6 +75,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- record live ptp4l interop (slave HW-verified over LAN) ([`c6d7006`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6d70063d54e4c152790a014fdee082be53ee7d4))
+- update ESP32 build footprints [skip ci] ([`5a15490`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a15490c012aab5411d62e3122b553f39f0bc013))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2318f7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2318f7eb47381e66215b7c22e7a194a50c423a74))
 - record SDMMC 4-bit throughput (20/40 MHz) on the SD board ([`e77937a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e77937a4ef0091164c5ee83b4e796cc443dd1e4d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a969352`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a96935295f8acb9ab1f180f32641885ca47a98af))
 - update ESP32 build footprints [skip ci] ([`f2b9826`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2b98267d236ee45cc8888fce86e8bdcb2b9535d))
