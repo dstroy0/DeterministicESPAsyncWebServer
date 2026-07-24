@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.153.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.153.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`96d45d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96d45d96fa7fc9b9d21d2367095aae5d2a6c6ef4))
+- update CHANGELOG.md [skip ci] ([`1bc6692`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1bc6692f46912a2cade28e41cdd4cb2d4858c6cb))
+
+### Changes
+
+- Bump version: 7.152.0 → 7.153.0 ([`79598cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79598cdde1085ff931d9776ed3d2371b9438dddd))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0931156`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0931156687a5977e3b8e2bd0f0b1799a27b6e427))
+
+### Features
+
+- wire client-to-server compression end to end ([`68b51c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68b51c0ac68fbebf416cb3c9c1f44520a6d94925))
+- resumable context-takeover INFLATE for c2s compression ([`3c942f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c942f18344defd5bb13f30cac8802c04e6fdf36))
+
+</details>
+
 ## [7.152.0] - 2026-07-24
 
 <details>
