@@ -382,4 +382,177 @@ size_t dws_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const ch
     return len;
 }
 
+// ── lock manager (RFC 4918 §6-7) ───────────────────────────────────────────────────────────────
+
+// Copy src into dst[cap], NUL-terminated; false if it does not fit.
+static bool dav_lock_copy(char *dst, size_t cap, const char *src)
+{
+    size_t n = strlen(src);
+    if (n + 1 > cap)
+        return false;
+    memcpy(dst, src, n + 1);
+    return true;
+}
+
+// Normalize a path into dst, stripping trailing '/' (but keeping a lone root "/"). false on overflow.
+static bool dav_lock_norm(char *dst, size_t cap, const char *path)
+{
+    size_t n = strlen(path);
+    while (n > 1 && path[n - 1] == '/') // drop trailing slashes so "/a/" and "/a" are one resource
+        n--;
+    if (n + 1 > cap)
+        return false;
+    memcpy(dst, path, n);
+    dst[n] = 0;
+    return true;
+}
+
+// True if `child` equals `parent` or lies (at a segment boundary) under it. Both trailing-slash-normalized.
+static bool dav_lock_same_or_under(const char *parent, const char *child)
+{
+    size_t pn = strlen(parent);
+    if (strncmp(parent, child, pn) != 0)
+        return false;
+    if (child[pn] == 0) // exactly equal
+        return true;
+    if (pn == 1 && parent[0] == '/') // root covers everything below it
+        return true;
+    return child[pn] == '/'; // only a real path-segment boundary, so "/a" does not cover "/ab"
+}
+
+// Do two lock scopes overlap? A Depth-infinity lock's scope is its whole subtree.
+static bool dav_lock_overlap(const char *pa, bool ia, const char *pb, bool ib)
+{
+    if (strcmp(pa, pb) == 0)
+        return true;
+    if (ia && dav_lock_same_or_under(pa, pb)) // pb sits under the infinity lock pa
+        return true;
+    if (ib && dav_lock_same_or_under(pb, pa)) // pa sits under the infinity lock pb
+        return true;
+    return false;
+}
+
+// Does an active lock's scope cover the normalized query path?
+static bool dav_lock_covers(const DavLock *l, const char *np)
+{
+    if (strcmp(l->path, np) == 0)
+        return true;
+    return l->depth_infinity && dav_lock_same_or_under(l->path, np);
+}
+
+void dws_dav_lock_init(DavLockTable *t)
+{
+    if (!t)
+        return;
+    for (size_t i = 0; i < DWS_DAV_LOCK_MAX; i++)
+        t->locks[i].active = false;
+}
+
+const DavLock *dws_dav_lock_acquire(DavLockTable *t, const char *path, const char *token, bool exclusive,
+                                    bool depth_infinity)
+{
+    if (!t || !path || !token)
+        return nullptr;
+    char np[DWS_DAV_LOCK_PATH_MAX];
+    if (!dav_lock_norm(np, sizeof(np), path))
+        return nullptr;
+    if (strlen(token) + 1 > DWS_DAV_LOCK_TOKEN_MAX) // token would not fit
+        return nullptr;
+
+    // Conflict: an exclusive request clashes with any overlapping lock; a shared one only with an
+    // overlapping exclusive lock (two shared locks may coexist).
+    for (size_t i = 0; i < DWS_DAV_LOCK_MAX; i++)
+    {
+        const DavLock *l = &t->locks[i];
+        if (l->active && dav_lock_overlap(l->path, l->depth_infinity, np, depth_infinity) &&
+            (exclusive || l->exclusive))
+            return nullptr;
+    }
+
+    for (size_t i = 0; i < DWS_DAV_LOCK_MAX; i++)
+    {
+        DavLock *l = &t->locks[i];
+        if (l->active)
+            continue;
+        (void)dav_lock_copy(l->path, sizeof(l->path), np); // np already fits (same cap)
+        (void)dav_lock_copy(l->token, sizeof(l->token), token);
+        l->exclusive = exclusive;
+        l->depth_infinity = depth_infinity;
+        l->active = true;
+        return l;
+    }
+    return nullptr; // table full
+}
+
+const DavLock *dws_dav_lock_find(const DavLockTable *t, const char *path)
+{
+    if (!t || !path)
+        return nullptr;
+    char np[DWS_DAV_LOCK_PATH_MAX];
+    if (!dav_lock_norm(np, sizeof(np), path))
+        return nullptr;
+    for (size_t i = 0; i < DWS_DAV_LOCK_MAX; i++)
+        if (t->locks[i].active && dav_lock_covers(&t->locks[i], np))
+            return &t->locks[i];
+    return nullptr;
+}
+
+bool dws_dav_lock_release(DavLockTable *t, const char *token)
+{
+    if (!t || !token)
+        return false;
+    for (size_t i = 0; i < DWS_DAV_LOCK_MAX; i++)
+        if (t->locks[i].active && strcmp(t->locks[i].token, token) == 0)
+        {
+            t->locks[i].active = false;
+            return true;
+        }
+    return false;
+}
+
+bool dws_dav_lock_can_write(const DavLockTable *t, const char *path, const char *presented_token)
+{
+    if (!t)
+        return true; // no table => nothing is locked
+    if (!path)
+        return false;
+    char np[DWS_DAV_LOCK_PATH_MAX];
+    if (!dav_lock_norm(np, sizeof(np), path))
+        return true; // an unparseable path is not something the lock table can guard
+    bool covered = false;
+    for (size_t i = 0; i < DWS_DAV_LOCK_MAX; i++)
+    {
+        const DavLock *l = &t->locks[i];
+        if (!l->active || !dav_lock_covers(l, np))
+            continue;
+        covered = true;
+        if (presented_token && strcmp(l->token, presented_token) == 0)
+            return true; // the request holds a covering lock's token
+    }
+    return !covered; // unlocked => allowed; locked with no / wrong token => denied
+}
+
+bool dws_dav_if_token(const char *if_header, char *out, size_t cap)
+{
+    if (!if_header || !out || cap == 0)
+        return false;
+    // The state tokens live inside a condition list "( ... )"; take the first Coded-URL "<...>" within it
+    // (which also skips the tagged-list resource URL that precedes the '(').
+    const char *lp = strchr(if_header, '(');
+    if (!lp)
+        return false;
+    const char *lt = strchr(lp, '<');
+    if (!lt)
+        return false;
+    const char *gt = strchr(lt, '>');
+    if (!gt)
+        return false;
+    size_t n = (size_t)(gt - lt - 1);
+    if (n + 1 > cap)
+        return false;
+    memcpy(out, lt + 1, n);
+    out[n] = 0;
+    return true;
+}
+
 #endif // DWS_ENABLE_WEBDAV

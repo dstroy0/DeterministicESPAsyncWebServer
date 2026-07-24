@@ -373,18 +373,83 @@ void test_put_stream_abort()
     TEST_ASSERT_TRUE(tree_has("/dav/ab.txt"));
 }
 
-// LOCK issues an advisory token (200 + Lock-Token); UNLOCK answers 204.
-void test_lock_unlock_advisory()
+// Feed a streamed PUT carrying an If header (for presenting a lock token).
+static void feed_put_if(uint8_t slot, const char *path, const char *if_hdr, const uint8_t *body, size_t n)
+{
+    char hdr[256];
+    snprintf(hdr, sizeof(hdr), "PUT %s HTTP/1.1\r\nHost: x\r\nIf: %s\r\nContent-Length: %u\r\n\r\n", path, if_hdr,
+             (unsigned)n);
+    push_str(slot, hdr);
+    http_parse(slot);
+    for (size_t off = 0; off < n;)
+    {
+        size_t chunk = n - off > 200 ? 200 : n - off;
+        push_bytes(slot, body + off, chunk);
+        http_parse(slot);
+        off += chunk;
+    }
+    server.handle();
+}
+
+// Pull the "opaquelocktoken:...-dws" out of a LOCK response's Lock-Token header.
+static bool extract_lock_token(const char *resp, char *out, size_t cap)
+{
+    const char *p = strstr(resp, "opaquelocktoken:");
+    if (!p)
+        return false;
+    const char *e = strchr(p, '>'); // the Lock-Token header wraps it in "<...>"
+    if (!e)
+        return false;
+    size_t len = (size_t)(e - p);
+    if (len + 1 > cap)
+        return false;
+    memcpy(out, p, len);
+    out[len] = 0;
+    return true;
+}
+
+// LOCK now enforces: a locked resource rejects a tokenless write with 423; the token unlocks it; UNLOCK
+// requires the matching token (RFC 4918 §6-7).
+void test_lock_enforcement()
 {
     populate_src();
     feed_and_handle(0, "LOCK /dav/src/a.txt HTTP/1.1\r\nHost: x\r\n\r\n");
-    const char *r = tcp_captured();
     TEST_ASSERT_TRUE(dws_resp_status(200));
-    TEST_ASSERT_NOT_NULL(strstr(r, "Lock-Token"));
+    char token[48];
+    TEST_ASSERT_TRUE(extract_lock_token(tcp_captured(), token, sizeof(token)));
+
+    // A PUT without the token is refused 423 and the file keeps its original content.
+    rearm();
+    feed_put(0, "/dav/src/a.txt", (const uint8_t *)"HACKED", 6);
+    TEST_ASSERT_TRUE(dws_resp_status(423));
+    TEST_ASSERT_TRUE(tree_content_eq("/dav/src/a.txt", "alpha"));
+
+    // UNLOCK with the wrong token is refused 409 (you cannot release another principal's lock).
+    rearm();
+    feed_and_handle(0, "UNLOCK /dav/src/a.txt HTTP/1.1\r\nHost: x\r\nLock-Token: <opaquelocktoken:nope>\r\n\r\n");
+    TEST_ASSERT_TRUE(dws_resp_status(409));
+
+    // A PUT presenting the token in its If header succeeds and updates the file.
+    rearm();
+    char if_hdr[64];
+    snprintf(if_hdr, sizeof(if_hdr), "(<%s>)", token);
+    feed_put_if(0, "/dav/src/a.txt", if_hdr, (const uint8_t *)"updated", 7);
+    TEST_ASSERT_TRUE(dws_resp_status(204));
+    TEST_ASSERT_TRUE(tree_content_eq("/dav/src/a.txt", "updated"));
+
+    // UNLOCK with the correct token releases it (204); afterward a tokenless PUT is allowed again.
+    rearm();
+    char ltok[64];
+    snprintf(ltok, sizeof(ltok), "<%s>", token);
+    char unlock[160];
+    snprintf(unlock, sizeof(unlock), "UNLOCK /dav/src/a.txt HTTP/1.1\r\nHost: x\r\nLock-Token: %s\r\n\r\n", ltok);
+    feed_and_handle(0, unlock);
+    TEST_ASSERT_TRUE(dws_resp_status(204));
 
     rearm();
-    feed_and_handle(0, "UNLOCK /dav/src/a.txt HTTP/1.1\r\nHost: x\r\nLock-Token: <urn:x>\r\n\r\n");
+    feed_put(0, "/dav/src/a.txt", (const uint8_t *)"free", 4);
     TEST_ASSERT_TRUE(dws_resp_status(204));
+    TEST_ASSERT_TRUE(tree_content_eq("/dav/src/a.txt", "free"));
 }
 
 // The WebDAV method error paths: bad/foreign/traversal destinations, missing sources, and a
@@ -1006,6 +1071,6 @@ int main()
     RUN_TEST(test_put_stream_traversal_403);
     RUN_TEST(test_put_stream_begin_declines);
     RUN_TEST(test_put_stream_abort);
-    RUN_TEST(test_lock_unlock_advisory);
+    RUN_TEST(test_lock_enforcement);
     return UNITY_END();
 }

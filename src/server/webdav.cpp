@@ -263,6 +263,7 @@ struct DavPut
     bool active;    ///< file opened for the current PUT.
     bool error;     ///< a write (or the open) failed.
     bool existed;   ///< target existed before this PUT (204 vs 201).
+    bool locked;    ///< a lock blocked this PUT: consume the body but write nothing, then answer 423.
     size_t written; ///< bytes written so far.
 };
 
@@ -275,6 +276,43 @@ struct DavPutCtx
     DavPut put[MAX_CONNS];
 };
 static DavPutCtx s_davput;
+
+// The server-global WebDAV lock table (RFC 4918 §6-7). Zero-initialized: every slot starts inactive, so
+// nothing is locked until a LOCK request stores a token.
+static DavLockTable s_dav_locks;
+
+// True if a write to the URL @p path is blocked by a lock the request does not present a token for. The
+// token, if any, comes from the request's If header (RFC 4918 §10.4 / §7).
+static bool dav_write_blocked(HttpReq *req, const char *path)
+{
+    const char *if_hdr = http_get_header(req, "If");
+    char tok[DWS_DAV_LOCK_TOKEN_MAX];
+    const char *presented = (if_hdr && dws_dav_if_token(if_hdr, tok, sizeof(tok))) ? tok : nullptr;
+    return !dws_dav_lock_can_write(&s_dav_locks, path, presented);
+}
+
+// True if the (always NUL-terminated) request body contains @p needle - used to spot a <shared> lockscope.
+static bool dav_body_has(HttpReq *req, const char *needle)
+{
+    return strstr((const char *)req->body, needle) != nullptr;
+}
+
+// Extract the token from a Lock-Token Coded-URL ("<opaquelocktoken:...>") into @p out; false if malformed.
+static bool dav_coded_url_token(const char *coded, char *out, size_t cap)
+{
+    const char *lt = strchr(coded, '<');
+    if (!lt)
+        return false;
+    const char *gt = strchr(lt, '>');
+    if (!gt)
+        return false;
+    size_t n = (size_t)(gt - lt - 1);
+    if (n + 1 > cap)
+        return false;
+    memcpy(out, lt + 1, n);
+    out[n] = 0;
+    return true;
+}
 
 // GCOVR_EXCL_BR_START  the null-stream_srv arm of all three trampolines is unreachable: the only
 // thing that installs them as the parser's stream hooks is dav(), which sets s_davput.stream_srv
@@ -337,7 +375,15 @@ bool DWS::dav_stream_put_begin(HttpReq *req)
         DavPut *d = &s_davput.put[slot];
         d->active = false;
         d->error = false;
+        d->locked = false;
         d->written = 0;
+        if (dav_write_blocked(req, req->path))
+        {
+            // Locked by another principal: consume the body but open no file, so the resource is not
+            // touched; the PUT handler answers 423 (RFC 4918 §7).
+            d->locked = true;
+            return true;
+        }
         d->existed = r->static_fs->exists(fs_path);
         d->file = r->static_fs->open(fs_path, "w");
         if (d->file)
@@ -500,6 +546,12 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         {
             // The body was written to this slot's file as it arrived (dav_stream_put_*).
             DavPut *d = &s_davput.put[slot_id];
+            if (d->locked)
+            {
+                d->locked = false;
+                dav_send_status(slot_id, 423, ""); // Locked: the body was consumed but nothing was written
+                return;
+            }
             if (d->active)
             {
                 d->file.close();
@@ -520,6 +572,11 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         }
 #endif
         // Buffered fallback (streaming disabled): body bounded by BODY_BUF_SIZE.
+        if (dav_write_blocked(req, req->path))
+        {
+            dav_send_status(slot_id, 423, ""); // Locked: no / wrong lock token in the If header
+            return;
+        }
         bool existed = fsys.exists(fs_path);
         fs::File f = fsys.open(fs_path, "w");
         if (!f)
@@ -542,6 +599,11 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
     }
 
     case WebDavMethod::DAV_M_DELETE: {
+        if (dav_write_blocked(req, req->path))
+        {
+            dav_send_status(slot_id, 423, "");
+            return;
+        }
         if (!fsys.exists(fs_path))
         {
             dav_send_status(slot_id, 404, "");
@@ -552,6 +614,11 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
     }
 
     case WebDavMethod::DAV_M_MKCOL:
+        if (dav_write_blocked(req, req->path))
+        {
+            dav_send_status(slot_id, 423, "");
+            return;
+        }
         if (fsys.exists(fs_path))
         {
             dav_send_status(slot_id, 405, ""); // already exists
@@ -579,6 +646,14 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         if (strstr(dest_sub, ".."))
         {
             dav_send_status(slot_id, 403, "");
+            return;
+        }
+        // Both COPY and MOVE write the destination; MOVE additionally removes the source. Each locked
+        // target needs the matching token in the If header (RFC 4918 §7).
+        bool is_move = dws_webdav_method(req->method) == WebDavMethod::DAV_M_MOVE;
+        if (dav_write_blocked(req, dest_url) || (is_move && dav_write_blocked(req, req->path)))
+        {
+            dav_send_status(slot_id, 423, "");
             return;
         }
         char dest_fs[256];
@@ -637,22 +712,31 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
     }
 
     case WebDavMethod::DAV_M_LOCK: {
-        // Advisory lock: issue a synthetic exclusive-write token (NOT enforced).
+        // Scope + depth from the request: a lockinfo body naming <shared> is a shared lock (else
+        // exclusive), and a LOCK defaults to Depth: infinity when the header is absent (RFC 4918 §9.10.3).
+        bool shared = req->body_len && dav_body_has(req, "shared");
+        bool depth_inf = dws_webdav_depth(http_get_header(req, "Depth"), DAV_DEPTH_INFINITY) != 0;
+
         unsigned long tok = (unsigned long)millis();
 #ifdef ARDUINO
         tok ^= (unsigned long)esp_random();
 #endif
-        char token[48];
+        char token[DWS_DAV_LOCK_TOKEN_MAX];
         snprintf(token, sizeof(token), "opaquelocktoken:%08lx-dws", tok);
+        if (!dws_dav_lock_acquire(&s_dav_locks, req->path, token, /*exclusive=*/!shared, depth_inf))
+        {
+            dav_send_status(slot_id, 423, ""); // a conflicting lock already holds this resource / subtree
+            return;
+        }
         snprintf(s_dav.buf, sizeof(s_dav.buf),
                  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
                  "<D:prop xmlns:D=\"DAV:\"><D:lockdiscovery><D:activelock>"
                  "<D:locktype><D:write/></D:locktype>"
-                 "<D:lockscope><D:exclusive/></D:lockscope>"
-                 "<D:depth>infinity</D:depth><D:timeout>Second-3600</D:timeout>"
+                 "<D:lockscope><D:%s/></D:lockscope>"
+                 "<D:depth>%s</D:depth><D:timeout>Second-3600</D:timeout>"
                  "<D:locktoken><D:href>%s</D:href></D:locktoken>"
                  "</D:activelock></D:lockdiscovery></D:prop>\n",
-                 token);
+                 shared ? "shared" : "exclusive", depth_inf ? "infinity" : "0", token);
         // RFC 4918 §10.5: Lock-Token uses a Coded-URL (angle-bracketed).
         char lt[64];
         snprintf(lt, sizeof(lt), "<%s>", token);
@@ -661,9 +745,18 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         return;
     }
 
-    case WebDavMethod::DAV_M_UNLOCK:
-        dav_send_status(slot_id, 204, ""); // advisory: nothing to release
+    case WebDavMethod::DAV_M_UNLOCK: {
+        // Release the lock named by the Lock-Token header (a Coded-URL: "<opaquelocktoken:...>").
+        const char *lt = http_get_header(req, "Lock-Token");
+        char token[DWS_DAV_LOCK_TOKEN_MAX];
+        if (!lt || !dav_coded_url_token(lt, token, sizeof(token)) || !dws_dav_lock_release(&s_dav_locks, token))
+        {
+            dav_send_status(slot_id, 409, ""); // no such lock to release (RFC 4918 §9.11.1)
+            return;
+        }
+        dav_send_status(slot_id, 204, "");
         return;
+    }
 
     case WebDavMethod::DAV_M_PROPFIND: {
         fs::File f = fsys.open(fs_path, "r");

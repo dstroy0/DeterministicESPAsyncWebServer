@@ -123,9 +123,12 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
 - **CoAP:** piggybacked responses only - no separate (deferred) responses, no CON
   retransmission / de-duplication. (`/.well-known/core` resource discovery, RFC 6690,
   is supported.)
-- **WebDAV:** `PROPPATCH` returns a 207 with every property refused (403); `LOCK`
-  is advisory (a token is issued but not enforced). `PUT` streams to the file as the
-  body arrives, and `COPY`/`MOVE` handle both files and collections (recursive).
+- **WebDAV:** `PROPPATCH` returns a 207 with every property refused (403). `LOCK` /
+  `UNLOCK` are enforced by a fixed lock table (`DWS_DAV_LOCK_MAX` concurrent locks): a
+  write to a locked resource without the matching token in its `If` header is refused
+  423, but the locks are not persisted across a reboot and there is no timeout sweep (a
+  lock is held until UNLOCK). `PUT` streams to the file as the body arrives, and
+  `COPY`/`MOVE` handle both files and collections (recursive).
 - **SNMP:** the v3 engine ID defaults to a placeholder enterprise OID; pass your own
   to `dws_snmp_v3_init()`. (Trap and the confirmed _inform_ are implemented for both v2c
   and v3; the caller drives inform retransmission until the receiver's Response arrives.)

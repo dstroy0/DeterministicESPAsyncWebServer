@@ -13,8 +13,9 @@
  * and runs only on a build with a real Arduino FS.
  *
  * Scope: class 1 (PROPFIND Depth 0/1, PROPPATCH, PUT, DELETE, MKCOL, COPY, MOVE)
- * plus OPTIONS and advisory LOCK/UNLOCK (a synthetic token is issued but not
- * enforced). PROPPATCH is answered 207 with every requested property refused 403
+ * plus OPTIONS and class 2 LOCK/UNLOCK, now enforced by a small lock table (see
+ * the lock manager below): a locked resource rejects a write that does not present
+ * the matching token in its If header (423 Locked). PROPPATCH is answered 207 with every requested property refused 403
  * (read-only live properties, no dead-property store). The filesystem-backed
  * handler streams a PUT body straight to the file (DWS's stream-body
  * hook), so uploads are not bounded by BODY_BUF_SIZE.
@@ -116,6 +117,74 @@ size_t dws_webdav_ms_end(char *buf, size_t cap, size_t len);
  * @return bytes written, or 0 if the document did not fit @p cap.
  */
 size_t dws_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len);
+
+// ── lock manager (RFC 4918 §6-7, class 2) ──────────────────────────────────────────────────────
+//
+// A small fixed lock table that makes LOCK/UNLOCK enforceable rather than advisory: a locked resource
+// rejects a write (PUT / DELETE / MKCOL / MOVE / PROPPATCH) unless the request presents the matching lock
+// token in its If header. This is the pure, host-testable core - the handler supplies the token (its own
+// RNG) and wires the checks into the mutating methods.
+
+/** @brief Maximum concurrent locks (fixed - a small structural bound, not a per-board tunable). */
+#define DWS_DAV_LOCK_MAX 8
+/** @brief Maximum locked-path length, including the NUL. */
+#define DWS_DAV_LOCK_PATH_MAX 128
+/** @brief Maximum lock-token length, including the NUL (e.g. "opaquelocktoken:xxxxxxxx-dws"). */
+#define DWS_DAV_LOCK_TOKEN_MAX 48
+
+/** @brief One active lock (RFC 4918 §6.4). */
+struct DavLock
+{
+    char path[DWS_DAV_LOCK_PATH_MAX];   ///< the locked resource path (trailing slash normalized off)
+    char token[DWS_DAV_LOCK_TOKEN_MAX]; ///< the lock token (an opaquelocktoken URI)
+    bool exclusive;                     ///< exclusive-write (true) or shared (false)
+    bool depth_infinity;                ///< the lock covers the whole subtree (Depth: infinity) vs just the resource
+    bool active;                        ///< false = free slot
+};
+
+/** @brief The server-global lock table (one instance, not per-connection). */
+struct DavLockTable
+{
+    DavLock locks[DWS_DAV_LOCK_MAX];
+};
+
+/** @brief Reset a lock table (no locks held). */
+void dws_dav_lock_init(DavLockTable *t);
+
+/**
+ * @brief Acquire a lock on @p path with the caller-supplied @p token (RFC 4918 §6-7).
+ *
+ * Fails when a conflicting lock already covers @p path or its subtree - an exclusive request conflicts
+ * with any overlapping lock, a shared request only with an overlapping exclusive one - or when the table
+ * is full / an argument is bad. @return the stored lock on success, nullptr on conflict / full.
+ */
+const DavLock *dws_dav_lock_acquire(DavLockTable *t, const char *path, const char *token, bool exclusive,
+                                    bool depth_infinity);
+
+/**
+ * @brief Find a lock covering @p path: one on @p path itself, or a Depth-infinity lock on an ancestor.
+ * @return the covering lock, or nullptr if @p path is unlocked.
+ */
+const DavLock *dws_dav_lock_find(const DavLockTable *t, const char *path);
+
+/** @brief Release the lock whose token equals @p token (UNLOCK). @return true if one was removed. */
+bool dws_dav_lock_release(DavLockTable *t, const char *token);
+
+/**
+ * @brief May a write to @p path proceed given the token the request presented (RFC 4918 §7)?
+ *
+ * Allowed when no lock covers @p path, or when @p presented_token (from the If header, may be nullptr)
+ * matches a covering lock. A locked resource with no / wrong token is denied (the handler answers 423).
+ */
+bool dws_dav_lock_can_write(const DavLockTable *t, const char *path, const char *presented_token);
+
+/**
+ * @brief Extract the first lock token from an If header value (RFC 4918 §10.4).
+ *
+ * Handles the tagged (`<res> (<token>)`) and untagged (`(<token>)`) list forms and a `Not` condition by
+ * taking the first Coded-URL inside the first condition list. @return true and fills @p out on success.
+ */
+bool dws_dav_if_token(const char *if_header, char *out, size_t cap);
 
 #endif // DWS_ENABLE_WEBDAV
 

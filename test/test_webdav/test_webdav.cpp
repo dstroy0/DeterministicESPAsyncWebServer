@@ -5,6 +5,7 @@
 // header parsing, XML escaping, and the 207 Multi-Status builder. No FS/sockets.
 
 #include "services/webdav/webdav.h"
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
@@ -586,6 +587,121 @@ void test_proppatch_value_scan_runs_to_body_end()
     TEST_ASSERT_TRUE(contains(buf, "<D:foo/>"));
 }
 
+// ── lock manager (RFC 4918 §6-7) ─────────────────────────────────────────────────────────────────
+void test_lock_acquire_and_write_gate()
+{
+    DavLockTable t;
+    dws_dav_lock_init(&t);
+    const char *tok = "opaquelocktoken:11111111-dws";
+
+    // An unlocked resource is writable by anyone.
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/a.txt", nullptr));
+
+    // Take an exclusive Depth-0 lock; now only the token holder may write.
+    const DavLock *l = dws_dav_lock_acquire(&t, "/a.txt", tok, /*exclusive=*/true, /*depth_infinity=*/false);
+    TEST_ASSERT_NOT_NULL(l);
+    TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/a.txt", nullptr));                 // no token
+    TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/a.txt", "opaquelocktoken:other")); // wrong token
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/a.txt", tok));                      // right token
+    // A sibling is unaffected by a Depth-0 lock.
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/b.txt", nullptr));
+
+    // UNLOCK by token frees it.
+    TEST_ASSERT_TRUE(dws_dav_lock_release(&t, tok));
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/a.txt", nullptr));
+    TEST_ASSERT_FALSE(dws_dav_lock_release(&t, tok)); // already gone
+}
+
+void test_lock_depth_infinity_covers_subtree()
+{
+    DavLockTable t;
+    dws_dav_lock_init(&t);
+    const char *tok = "opaquelocktoken:22222222-dws";
+    // A Depth-infinity lock on /dir covers the whole subtree, but not a same-prefix sibling like /dir2.
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/dir", tok, true, /*depth_infinity=*/true));
+    TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/dir", nullptr));
+    TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/dir/sub/file.txt", nullptr)); // deep descendant locked
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/dir/sub/file.txt", tok));      // token unlocks the subtree
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/dir2/file.txt", nullptr));     // "/dir2" is NOT under "/dir"
+
+    // dws_dav_lock_find reports the covering lock for a descendant, and a trailing slash is normalized.
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_find(&t, "/dir/sub"));
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_find(&t, "/dir/"));
+    TEST_ASSERT_NULL(dws_dav_lock_find(&t, "/dir2"));
+}
+
+void test_lock_conflicts_and_shared()
+{
+    DavLockTable t;
+    dws_dav_lock_init(&t);
+    // An exclusive infinity lock on /p blocks any overlapping lock (child, ancestor, or same).
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:a", true, true));
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/p/c", "opaquelocktoken:b", true, false)); // child conflicts
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:b", false, false));  // same resource
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/", "opaquelocktoken:b", true, true));     // ancestor (root) conflicts
+    // A disjoint path is fine.
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/q", "opaquelocktoken:c", true, false));
+
+    // Two shared locks on the same resource coexist; an exclusive one over them does not.
+    DavLockTable s;
+    dws_dav_lock_init(&s);
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s1", false, false));
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s2", false, false));
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:x", true, false));
+    // Either shared token authorizes a write.
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(&s, "/f", "opaquelocktoken:s2"));
+    TEST_ASSERT_FALSE(dws_dav_lock_can_write(&s, "/f", nullptr));
+}
+
+void test_lock_table_full_and_guards()
+{
+    DavLockTable t;
+    dws_dav_lock_init(&t);
+    char path[16], tok[40];
+    for (int i = 0; i < DWS_DAV_LOCK_MAX; i++)
+    {
+        snprintf(path, sizeof(path), "/f%d", i);
+        snprintf(tok, sizeof(tok), "opaquelocktoken:%d", i);
+        TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, path, tok, true, false));
+    }
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/overflow", "opaquelocktoken:z", true, false)); // table full
+
+    // A token that would not fit is rejected; null arguments fail closed.
+    DavLockTable t2;
+    dws_dav_lock_init(&t2);
+    char longtok[DWS_DAV_LOCK_TOKEN_MAX + 8];
+    memset(longtok, 'x', sizeof(longtok) - 1);
+    longtok[sizeof(longtok) - 1] = 0;
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t2, "/a", longtok, true, false));
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t2, nullptr, "opaquelocktoken:a", true, false));
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(nullptr, "/a", nullptr)); // no table => unlocked
+}
+
+void test_if_header_token_extraction()
+{
+    char out[48];
+    // Untagged condition list.
+    TEST_ASSERT_TRUE(dws_dav_if_token("(<opaquelocktoken:aaaa-dws>)", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("opaquelocktoken:aaaa-dws", out);
+    // Tagged list: the resource URL before the '(' must be skipped.
+    TEST_ASSERT_TRUE(dws_dav_if_token("</dir/file.txt> (<opaquelocktoken:bbbb-dws>)", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("opaquelocktoken:bbbb-dws", out);
+    // A "Not" condition still yields the first token.
+    TEST_ASSERT_TRUE(dws_dav_if_token("(Not <opaquelocktoken:cccc>)", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("opaquelocktoken:cccc", out);
+    // No parenthesized list, an unterminated token, and a null all fail.
+    TEST_ASSERT_FALSE(dws_dav_if_token("no-list-here", out, sizeof(out)));
+    TEST_ASSERT_FALSE(dws_dav_if_token("(<unterminated", out, sizeof(out)));
+    TEST_ASSERT_FALSE(dws_dav_if_token(nullptr, out, sizeof(out)));
+
+    // End-to-end: a write presenting the extracted token is allowed.
+    DavLockTable t;
+    dws_dav_lock_init(&t);
+    dws_dav_lock_acquire(&t, "/x", "opaquelocktoken:aaaa-dws", true, false);
+    TEST_ASSERT_TRUE(dws_dav_if_token("(<opaquelocktoken:aaaa-dws>)", out, sizeof(out)));
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/x", out));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -630,5 +746,10 @@ int main()
     RUN_TEST(test_proppatch_embedded_lt_in_value);
     RUN_TEST(test_proppatch_truncated_closing_tag);
     RUN_TEST(test_proppatch_value_scan_runs_to_body_end);
+    RUN_TEST(test_lock_acquire_and_write_gate);
+    RUN_TEST(test_lock_depth_infinity_covers_subtree);
+    RUN_TEST(test_lock_conflicts_and_shared);
+    RUN_TEST(test_lock_table_full_and_guards);
+    RUN_TEST(test_if_header_token_extraction);
     return UNITY_END();
 }
