@@ -422,6 +422,132 @@ size_t dws_ike_sk_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, c
     return total;
 }
 
+// ── message fragmentation (RFC 7383) ──────────────────────────────────────────────────────────
+
+size_t dws_ike_skf_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, uint16_t frag_num, uint16_t total,
+                         const uint8_t *iv, size_t iv_len, const uint8_t *ciphertext, size_t ct_len, const uint8_t *icv,
+                         size_t icv_len)
+{
+    if (!buf || (iv_len && !iv) || (ct_len && !ciphertext) || (icv_len && !icv))
+        return 0;
+    if (frag_num == 0 || total == 0 || frag_num > total) // RFC 7383 §2.5: 1 <= Fragment Number <= Total
+        return 0;
+    size_t body = DWS_IKE_PAYLOAD_HDR_LEN + 4 + iv_len + ct_len + icv_len; // + Frag Number(2) + Total(2)
+    if (!put_pl_hdr(buf, cap, next_payload, body))
+        return 0;
+    put16(buf + DWS_IKE_PAYLOAD_HDR_LEN, frag_num);
+    put16(buf + DWS_IKE_PAYLOAD_HDR_LEN + 2, total);
+    size_t off = DWS_IKE_PAYLOAD_HDR_LEN + 4;
+    if (iv_len)
+    {
+        memcpy(buf + off, iv, iv_len);
+        off += iv_len;
+    }
+    if (ct_len)
+    {
+        memcpy(buf + off, ciphertext, ct_len);
+        off += ct_len;
+    }
+    if (icv_len)
+        memcpy(buf + off, icv, icv_len);
+    return body;
+}
+
+bool dws_ike_skf_parse(const uint8_t *body, size_t body_len, uint16_t *frag_num, uint16_t *total, size_t iv_len,
+                       size_t icv_len, const uint8_t **iv, const uint8_t **ct, size_t *ct_len, const uint8_t **icv)
+{
+    if (frag_num)
+        *frag_num = 0;
+    if (total)
+        *total = 0;
+    if (iv)
+        *iv = nullptr;
+    if (ct)
+        *ct = nullptr;
+    if (ct_len)
+        *ct_len = 0;
+    if (icv)
+        *icv = nullptr;
+    // Body = Frag Number(2) | Total(2) | IV | ciphertext | ICV; the ciphertext must be non-negative.
+    if (!body || body_len < 4 + iv_len + icv_len)
+        return false;
+    uint16_t fn = get16(body);
+    uint16_t tf = get16(body + 2);
+    if (fn == 0 || tf == 0 || fn > tf) // a nonsensical fragment counter
+        return false;
+    if (frag_num)
+        *frag_num = fn;
+    if (total)
+        *total = tf;
+    if (iv)
+        *iv = body + 4;
+    if (ct)
+        *ct = body + 4 + iv_len;
+    if (ct_len)
+        *ct_len = body_len - 4 - iv_len - icv_len;
+    if (icv)
+        *icv = body + body_len - icv_len;
+    return true;
+}
+
+void dws_ike_frag_reasm_init(IkeFragReasm *r, uint8_t *pool, size_t pool_cap)
+{
+    if (!r)
+        return;
+    r->total = 0;
+    r->count = 0;
+    memset(r->present, 0, sizeof(r->present));
+    r->pool = pool;
+    r->pool_cap = pool_cap;
+    r->pool_used = 0;
+}
+
+bool dws_ike_frag_reasm_add(IkeFragReasm *r, uint16_t frag_num, uint16_t total, const uint8_t *chunk, size_t len)
+{
+    if (!r || !r->pool || (len && !chunk))
+        return false;
+    if (frag_num == 0 || total == 0 || frag_num > total || total > DWS_IKE_FRAG_MAX)
+        return false;
+    if (r->total == 0)
+        r->total = total;
+    else if (r->total != total) // every fragment must agree on Total
+        return false;
+    uint16_t idx = (uint16_t)(frag_num - 1);
+    if (r->present[idx]) // a duplicate fragment is rejected, not merged
+        return false;
+    if (len > r->pool_cap - r->pool_used) // pool overflow (also covers pool_used == cap)
+        return false;
+    if (len)
+        memcpy(r->pool + r->pool_used, chunk, len);
+    r->off[idx] = r->pool_used;
+    r->len[idx] = len;
+    r->present[idx] = true;
+    r->pool_used += len;
+    r->count++;
+    return true;
+}
+
+bool dws_ike_frag_reasm_complete(const IkeFragReasm *r)
+{
+    return r && r->total != 0 && r->count == r->total;
+}
+
+size_t dws_ike_frag_reasm_assemble(const IkeFragReasm *r, uint8_t *out, size_t out_cap)
+{
+    if (!dws_ike_frag_reasm_complete(r) || !out)
+        return 0;
+    size_t off = 0;
+    for (uint16_t i = 0; i < r->total; i++) // concatenate fragments 1..Total in order
+    {
+        if (off + r->len[i] > out_cap)
+            return 0;
+        if (r->len[i])
+            memcpy(out + off, r->pool + r->off[i], r->len[i]);
+        off += r->len[i];
+    }
+    return off;
+}
+
 // ── typed payload parsers ─────────────────────────────────────────────────────────────────────
 
 bool dws_ike_ke_parse(const uint8_t *body, size_t body_len, uint16_t *dh_group, const uint8_t **data, size_t *data_len)

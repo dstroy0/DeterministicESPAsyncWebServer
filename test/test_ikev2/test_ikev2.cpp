@@ -2370,6 +2370,86 @@ void test_cp_request_empty_and_guards()
     TEST_ASSERT_FALSE(dws_ike_cp_parse(bad, 3, &ct, &area, &area_len));
 }
 
+// ── message fragmentation (RFC 7383) ────────────────────────────────────────────────────────────
+void test_skf_build_parse()
+{
+    const uint8_t iv[8] = {0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7};
+    const uint8_t ct[12] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b};
+    const uint8_t icv[16] = {0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+                             0xc8, 0xc9, 0xca, 0xcb, 0xcc, 0xcd, 0xce, 0xcf};
+    uint8_t buf[64];
+    // Fragment 2 of 3: body = 4 gen + 4 frag hdr + 8 iv + 12 ct + 16 icv = 44.
+    size_t n = dws_ike_skf_build(buf, sizeof(buf), IkePayloadType::IKE_PL_IDI, 2, 3, iv, 8, ct, 12, icv, 16);
+    TEST_ASSERT_EQUAL_size_t(44, n);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, buf[0]);
+
+    uint16_t fn = 0, tf = 0;
+    const uint8_t *piv = nullptr, *pct = nullptr, *picv = nullptr;
+    size_t pct_len = 0;
+    TEST_ASSERT_TRUE(dws_ike_skf_parse(buf + 4, n - 4, &fn, &tf, 8, 16, &piv, &pct, &pct_len, &picv));
+    TEST_ASSERT_EQUAL_UINT16(2, fn);
+    TEST_ASSERT_EQUAL_UINT16(3, tf);
+    TEST_ASSERT_EQUAL_size_t(12, pct_len);
+    TEST_ASSERT_EQUAL_MEMORY(iv, piv, 8);
+    TEST_ASSERT_EQUAL_MEMORY(ct, pct, 12);
+    TEST_ASSERT_EQUAL_MEMORY(icv, picv, 16);
+
+    // Build guards: a fragment number of 0 or one past Total is rejected.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_ike_skf_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, 0, 3, iv, 8, ct, 12, icv, 16));
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_ike_skf_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, 4, 3, iv, 8, ct, 12, icv, 16));
+    // Parse guard: a body too short to hold the fixed IV + ICV fails.
+    TEST_ASSERT_FALSE(dws_ike_skf_parse(buf + 4, 27, &fn, &tf, 8, 16, &piv, &pct, &pct_len, &picv));
+}
+
+void test_frag_reassembly()
+{
+    uint8_t original[30];
+    for (int i = 0; i < 30; i++)
+        original[i] = (uint8_t)i;
+    uint8_t pool[64];
+    IkeFragReasm r;
+    dws_ike_frag_reasm_init(&r, pool, sizeof(pool));
+
+    // Fragments arrive out of order: 2 (bytes 10..21), then 1 (0..9), then 3 (22..29).
+    TEST_ASSERT_TRUE(dws_ike_frag_reasm_add(&r, 2, 3, original + 10, 12));
+    TEST_ASSERT_FALSE(dws_ike_frag_reasm_complete(&r));
+    TEST_ASSERT_TRUE(dws_ike_frag_reasm_add(&r, 1, 3, original, 10));
+    TEST_ASSERT_FALSE(dws_ike_frag_reasm_complete(&r));
+    TEST_ASSERT_TRUE(dws_ike_frag_reasm_add(&r, 3, 3, original + 22, 8));
+    TEST_ASSERT_TRUE(dws_ike_frag_reasm_complete(&r));
+
+    // Reassembly yields the original plaintext in fragment order regardless of arrival order.
+    uint8_t out[64];
+    size_t m = dws_ike_frag_reasm_assemble(&r, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(30, m);
+    TEST_ASSERT_EQUAL_MEMORY(original, out, 30);
+}
+
+void test_frag_guards()
+{
+    const uint8_t d[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    uint8_t pool[16];
+    IkeFragReasm r;
+    dws_ike_frag_reasm_init(&r, pool, sizeof(pool));
+
+    TEST_ASSERT_FALSE(dws_ike_frag_reasm_add(&r, 0, 2, d, 8)); // fragment 0
+    TEST_ASSERT_FALSE(dws_ike_frag_reasm_add(&r, 3, 2, d, 8)); // fragment > Total
+    TEST_ASSERT_TRUE(dws_ike_frag_reasm_add(&r, 1, 2, d, 8));
+    TEST_ASSERT_FALSE(dws_ike_frag_reasm_add(&r, 2, 3, d, 8)); // Total disagrees with fragment 1
+    TEST_ASSERT_FALSE(dws_ike_frag_reasm_add(&r, 1, 2, d, 8)); // duplicate
+    TEST_ASSERT_FALSE(dws_ike_frag_reasm_add(&r, 2, 2, d, 9)); // pool overflow (8 used + 9 > 16)
+
+    uint8_t out[32];
+    TEST_ASSERT_EQUAL_size_t(0, dws_ike_frag_reasm_assemble(&r, out, sizeof(out))); // still incomplete
+
+    // A Total beyond the tracked maximum is refused (fresh reassembler).
+    IkeFragReasm r2;
+    dws_ike_frag_reasm_init(&r2, pool, sizeof(pool));
+    TEST_ASSERT_FALSE(dws_ike_frag_reasm_add(&r2, 1, DWS_IKE_FRAG_MAX + 1, d, 1));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -2456,5 +2536,8 @@ int main()
     RUN_TEST(test_cp_build_golden);
     RUN_TEST(test_cp_parse_roundtrip);
     RUN_TEST(test_cp_request_empty_and_guards);
+    RUN_TEST(test_skf_build_parse);
+    RUN_TEST(test_frag_reassembly);
+    RUN_TEST(test_frag_guards);
     return UNITY_END();
 }

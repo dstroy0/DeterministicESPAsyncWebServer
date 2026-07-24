@@ -97,6 +97,7 @@ enum class IkePayloadType : uint8_t
     IKE_PL_SK = 46,      ///< Encrypted and Authenticated
     IKE_PL_CP = 47,      ///< Configuration
     IKE_PL_EAP = 48,     ///< Extensible Authentication
+    IKE_PL_SKF = 53,     ///< Encrypted and Authenticated Fragment (RFC 7383)
 };
 
 /** @brief Transform types (RFC 7296 3.3.2). */
@@ -384,6 +385,72 @@ size_t dws_ike_cp_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, I
  */
 size_t dws_ike_sk_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const uint8_t *iv, size_t iv_len,
                         const uint8_t *ciphertext, size_t ct_len, const uint8_t *icv, size_t icv_len);
+
+// ── message fragmentation (RFC 7383) ──────────────────────────────────────────────────────────
+//
+// A large encrypted message is split into Encrypted Fragment (SKF) payloads. Support is negotiated in
+// IKE_SA_INIT with the IKEV2_FRAGMENTATION_SUPPORTED notify; each fragment is its own AEAD (IV +
+// ciphertext + ICV) carrying a slice of the original inner-payload plaintext, numbered 1..Total.
+
+/** @brief IKEV2_FRAGMENTATION_SUPPORTED notify message type (RFC 7383 §2), zero-length data. */
+#define DWS_IKE_N_FRAGMENTATION_SUPPORTED 16430
+/** @brief Largest Total Fragments this reassembler tracks. */
+#define DWS_IKE_FRAG_MAX 32
+
+/**
+ * @brief Frame an SKF (Encrypted Fragment) payload envelope (RFC 7383 §2.5): the generic header, the
+ *        Fragment Number and Total Fragments (each 16-bit), then @p iv, @p ciphertext, and @p icv.
+ *
+ * Per §2.5 the generic header's Next Payload is the first inner payload type on fragment 1 and 0 on the
+ * rest; the caller passes it as @p next_payload. The AEAD is the caller's - this only lays out the bytes.
+ * @return total bytes written, or 0 on overflow / a bad argument (including @p frag_num 0 or > @p total).
+ */
+size_t dws_ike_skf_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, uint16_t frag_num, uint16_t total,
+                         const uint8_t *iv, size_t iv_len, const uint8_t *ciphertext, size_t ct_len, const uint8_t *icv,
+                         size_t icv_len);
+
+/**
+ * @brief Split an SKF payload body into its fragment counters and the IV / ciphertext / ICV slices.
+ * @param iv_len / @p icv_len  the negotiated transform's sizes, needed to carve the fixed IV and ICV out.
+ * @return false on a truncated body or a nonsensical fragment number (0, or > Total).
+ */
+bool dws_ike_skf_parse(const uint8_t *body, size_t body_len, uint16_t *frag_num, uint16_t *total, size_t iv_len,
+                       size_t icv_len, const uint8_t **iv, const uint8_t **ct, size_t *ct_len, const uint8_t **icv);
+
+/**
+ * @brief Reassembly state for one fragmented message (RFC 7383 §2.5.3). Decrypted plaintext chunks are
+ *        staged, in arrival order, into a caller-provided @c pool and concatenated 1..Total on completion.
+ */
+struct IkeFragReasm
+{
+    uint16_t total;                 ///< Total Fragments (0 until the first fragment sets it)
+    uint16_t count;                 ///< distinct fragments stored so far
+    bool present[DWS_IKE_FRAG_MAX]; ///< present[i] = fragment (i+1) stored
+    size_t off[DWS_IKE_FRAG_MAX];   ///< pool offset of fragment (i+1)'s chunk
+    size_t len[DWS_IKE_FRAG_MAX];   ///< fragment (i+1)'s chunk length
+    uint8_t *pool;                  ///< caller-provided staging buffer
+    size_t pool_cap;
+    size_t pool_used;
+};
+
+/** @brief Begin reassembly with a caller-owned staging buffer (must outlive the reassembler). */
+void dws_ike_frag_reasm_init(IkeFragReasm *r, uint8_t *pool, size_t pool_cap);
+
+/**
+ * @brief Stage one decrypted fragment plaintext chunk (RFC 7383 §2.5.3).
+ * @return false on a bad fragment number (0 / > Total / > @ref DWS_IKE_FRAG_MAX), a Total that disagrees
+ *         with an earlier fragment, a duplicate, or a pool overflow. A duplicate is rejected, not merged.
+ */
+bool dws_ike_frag_reasm_add(IkeFragReasm *r, uint16_t frag_num, uint16_t total, const uint8_t *chunk, size_t len);
+
+/** @brief True once every one of Total fragments has been staged. */
+bool dws_ike_frag_reasm_complete(const IkeFragReasm *r);
+
+/**
+ * @brief Concatenate the staged fragments in order into @p out (the reassembled inner-payload plaintext).
+ * @return the assembled length, or 0 if reassembly is incomplete or @p out_cap is too small.
+ */
+size_t dws_ike_frag_reasm_assemble(const IkeFragReasm *r, uint8_t *out, size_t out_cap);
 
 // ── typed payload parsers (each takes a payload BODY from dws_ike_payload_next) ────────────────
 

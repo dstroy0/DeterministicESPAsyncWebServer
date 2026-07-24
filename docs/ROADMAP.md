@@ -543,12 +543,19 @@ preempting queue, so sensing shares the real-time ingest path.
           INTERNAL_IP4_NETMASK, INTERNAL_IP4_DNS, INTERNAL_IP4_SUBNET, and the IPv6 forms) - the VPN
           address-assignment mechanism - with the 15-bit-type / length / value encoding and empty-value
           requests, byte-exact against a hand-computed golden and round-tripped through the attribute
-          iterator, including a truncated-attribute guard (`test_ikev2` now 74). **IKEv2 tiers 1-2 are
-          done**: the full wire codec, every exchange, all three auth methods, the initial / Child-SA /
-          rekey key schedules, NAT-T detection, and the Configuration payload. The only remaining IKEv2
-          work is **tier 3, the ESP datapath** (RFC 4303) - and its host-testable core
-          (packet transform + anti-replay + SAD/SPD) is now shipped, leaving only the lwIP IP-hook
-          (device-side, not host-unit-testable).
+          iterator, including a truncated-attribute guard (`test_ikev2` now 74). **Message fragmentation
+          is shipped too** (RFC 7383): the `IKEV2_FRAGMENTATION_SUPPORTED` notify, the SKF (Encrypted
+          Fragment, payload 53) envelope `dws_ike_skf_build` / `_parse` (generic header | Fragment Number |
+          Total Fragments | IV | ciphertext | ICV, with the 1..Total numbering enforced), and a
+          caller-buffer reassembler (`IkeFragReasm` + `dws_ike_frag_reasm_add` / `_complete` / `_assemble`)
+          that stages out-of-order fragment plaintexts and concatenates them 1..Total, rejecting a
+          duplicate, a disagreeing Total, an over-cap fragment count, and a pool overflow - host-tested for
+          SKF build/parse round-trip, out-of-order reassembly, and every guard (`test_ikev2` now 77).
+          **IKEv2 tiers 1-2 are done**: the full wire codec, every exchange, all three auth methods, the
+          initial / Child-SA / rekey key schedules, NAT-T detection, the Configuration payload, and
+          RFC 7383 fragmentation. The only remaining IKEv2 work is **tier 3, the ESP datapath**
+          (RFC 4303) - and its host-testable core (packet transform + anti-replay + SAD/SPD) is now
+          shipped, leaving only the lwIP IP-hook (device-side, not host-unit-testable).
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with
