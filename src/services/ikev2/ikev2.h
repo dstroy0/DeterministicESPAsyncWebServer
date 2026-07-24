@@ -452,6 +452,45 @@ bool dws_ike_frag_reasm_complete(const IkeFragReasm *r);
  */
 size_t dws_ike_frag_reasm_assemble(const IkeFragReasm *r, uint8_t *out, size_t out_cap);
 
+// ── anti-DoS COOKIE (RFC 7296 §2.6) ───────────────────────────────────────────────────────────
+//
+// Under an IKE_SA_INIT flood a responder can stay stateless: it replies with only a COOKIE notify and
+// creates no SA. A legitimate initiator retries with the cookie as its first payload, proving it can
+// receive at its claimed address before the responder spends any state or crypto. The cookie is a keyed
+// hash of the initiator's first-message material, so the responder recomputes and checks it with no
+// stored per-initiator state - only a small secret (versioned, rotated periodically).
+
+/** @brief COOKIE notify message type (RFC 7296 §3.10.1). */
+#define DWS_IKE_N_COOKIE 16390
+/** @brief COOKIE length: a 1-byte secret-version tag + a SHA-256 digest. */
+#define DWS_IKE_COOKIE_LEN 33
+
+/**
+ * @brief Compute an anti-DoS cookie: @p version | SHA-256( @p ni | @p ipi | @p spii | @p secret ).
+ *
+ * This is the RFC 7296 §2.6 stateless-cookie construction. @p ni is the initiator's nonce data, @p ipi
+ * its source IP octets, @p spii its 8-byte SPI, and @p secret the responder's current rotating secret;
+ * @p version tags which secret was used so a rotated secret can still verify in-flight cookies.
+ * @return @ref DWS_IKE_COOKIE_LEN on success, or 0 on a null argument / @p out_cap too small.
+ */
+size_t dws_ike_cookie_compute(uint8_t version, const uint8_t *secret, size_t secret_len, const uint8_t *ni,
+                              size_t ni_len, const uint8_t *ipi, size_t ipi_len, const uint8_t spii[DWS_IKE_SPI_LEN],
+                              uint8_t *out, size_t out_cap);
+
+/**
+ * @brief Verify a received cookie against a recomputation (RFC 7296 §2.6), in constant time.
+ *
+ * The version tag is taken from @p cookie itself, so the caller supplies the @p secret matching that
+ * version. @return true iff @p cookie is exactly @ref DWS_IKE_COOKIE_LEN bytes and matches.
+ */
+bool dws_ike_cookie_verify(const uint8_t *cookie, size_t cookie_len, const uint8_t *secret, size_t secret_len,
+                           const uint8_t *ni, size_t ni_len, const uint8_t *ipi, size_t ipi_len,
+                           const uint8_t spii[DWS_IKE_SPI_LEN]);
+
+/** @brief Build a COOKIE Notify payload carrying @p cookie (RFC 7296 §2.6). */
+size_t dws_ike_cookie_notify_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const uint8_t *cookie,
+                                   size_t cookie_len);
+
 // ── typed payload parsers (each takes a payload BODY from dws_ike_payload_next) ────────────────
 
 /** @brief Decode a KE body into DH group + key data. */

@@ -15,6 +15,7 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"       // ECDSA-P256 certificate AUTH
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // PRF = HMAC-SHA2-256
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"         // RSA-2048 certificate AUTH verify
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"      // anti-DoS COOKIE hash (RFC 7296 §2.6)
 #include <string.h>                                                  // memcpy / memset (framing is hand-rolled)
 
 // ── big-endian scalar helpers ─────────────────────────────────────────────────────────────────
@@ -546,6 +547,55 @@ size_t dws_ike_frag_reasm_assemble(const IkeFragReasm *r, uint8_t *out, size_t o
         off += r->len[i];
     }
     return off;
+}
+
+// ── anti-DoS COOKIE (RFC 7296 §2.6) ───────────────────────────────────────────────────────────
+
+size_t dws_ike_cookie_compute(uint8_t version, const uint8_t *secret, size_t secret_len, const uint8_t *ni,
+                              size_t ni_len, const uint8_t *ipi, size_t ipi_len, const uint8_t spii[DWS_IKE_SPI_LEN],
+                              uint8_t *out, size_t out_cap)
+{
+    if (!out || out_cap < DWS_IKE_COOKIE_LEN || !spii)
+        return 0;
+    if ((ni_len && !ni) || (ipi_len && !ipi) || (secret_len && !secret))
+        return 0;
+    // Cookie = version | SHA-256( Ni | IPi | SPIi | secret ).
+    SshSha256Ctx ctx;
+    ssh_sha256_init(&ctx);
+    if (ni_len)
+        ssh_sha256_update(&ctx, ni, ni_len);
+    if (ipi_len)
+        ssh_sha256_update(&ctx, ipi, ipi_len);
+    ssh_sha256_update(&ctx, spii, DWS_IKE_SPI_LEN);
+    if (secret_len)
+        ssh_sha256_update(&ctx, secret, secret_len);
+    out[0] = version;
+    ssh_sha256_final(&ctx, out + 1);
+    return DWS_IKE_COOKIE_LEN;
+}
+
+bool dws_ike_cookie_verify(const uint8_t *cookie, size_t cookie_len, const uint8_t *secret, size_t secret_len,
+                           const uint8_t *ni, size_t ni_len, const uint8_t *ipi, size_t ipi_len,
+                           const uint8_t spii[DWS_IKE_SPI_LEN])
+{
+    if (!cookie || cookie_len != DWS_IKE_COOKIE_LEN)
+        return false;
+    uint8_t expect[DWS_IKE_COOKIE_LEN];
+    if (dws_ike_cookie_compute(cookie[0], secret, secret_len, ni, ni_len, ipi, ipi_len, spii, expect, sizeof(expect)) !=
+        DWS_IKE_COOKIE_LEN)
+        return false;
+    // Constant-time compare over the whole cookie (version tag + digest); no early-out.
+    uint8_t diff = 0;
+    for (size_t i = 0; i < DWS_IKE_COOKIE_LEN; i++)
+        diff |= (uint8_t)(expect[i] ^ cookie[i]);
+    return diff == 0;
+}
+
+size_t dws_ike_cookie_notify_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const uint8_t *cookie,
+                                   size_t cookie_len)
+{
+    return dws_ike_notify_build(buf, cap, next_payload, IkeProtocol::IKE_PROTO_NONE, nullptr, 0, DWS_IKE_N_COOKIE,
+                                cookie, cookie_len);
 }
 
 // ── typed payload parsers ─────────────────────────────────────────────────────────────────────

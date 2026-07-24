@@ -2450,6 +2450,75 @@ void test_frag_guards()
     TEST_ASSERT_FALSE(dws_ike_frag_reasm_add(&r2, 1, DWS_IKE_FRAG_MAX + 1, d, 1));
 }
 
+// ── anti-DoS COOKIE (RFC 7296 §2.6) ─────────────────────────────────────────────────────────────
+static const uint8_t ck_secret[8] = {0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7};
+static const uint8_t ck_ni[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+static const uint8_t ck_ipi[4] = {192, 0, 2, 100};
+static const uint8_t ck_spii[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+// version 0x01 | SHA-256( Ni | IPi | SPIi | secret ), from a Python hashlib.sha256 reference.
+static const uint8_t ck_golden[33] = {0x01, 0xd0, 0x8e, 0x77, 0x8e, 0xe6, 0xc6, 0x0c, 0x22, 0x7b, 0x0a,
+                                      0xf6, 0x01, 0x70, 0x76, 0xe6, 0x19, 0xf2, 0x44, 0x29, 0x2d, 0x23,
+                                      0xba, 0x96, 0xed, 0x9b, 0xa1, 0x61, 0x4c, 0x3b, 0x4e, 0x40, 0x74};
+
+void test_cookie_compute_kat()
+{
+    uint8_t out[33];
+    size_t n = dws_ike_cookie_compute(0x01, ck_secret, sizeof(ck_secret), ck_ni, sizeof(ck_ni), ck_ipi, sizeof(ck_ipi),
+                                      ck_spii, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(DWS_IKE_COOKIE_LEN, n);
+    TEST_ASSERT_EQUAL_MEMORY(ck_golden, out, 33);
+
+    // A too-small buffer fails closed.
+    uint8_t small[16];
+    TEST_ASSERT_EQUAL_size_t(0, dws_ike_cookie_compute(0x01, ck_secret, sizeof(ck_secret), ck_ni, sizeof(ck_ni), ck_ipi,
+                                                       sizeof(ck_ipi), ck_spii, small, sizeof(small)));
+}
+
+void test_cookie_verify()
+{
+    // The genuine cookie verifies; the version tag is read from the cookie itself.
+    TEST_ASSERT_TRUE(dws_ike_cookie_verify(ck_golden, sizeof(ck_golden), ck_secret, sizeof(ck_secret), ck_ni,
+                                           sizeof(ck_ni), ck_ipi, sizeof(ck_ipi), ck_spii));
+
+    // Any changed input (secret, nonce, source IP, or SPI) fails verification - a spoofed initiator
+    // cannot forge a cookie for a different address.
+    const uint8_t other_secret[8] = {0, 0, 0, 0, 0, 0, 0, 1};
+    TEST_ASSERT_FALSE(dws_ike_cookie_verify(ck_golden, sizeof(ck_golden), other_secret, sizeof(other_secret), ck_ni,
+                                            sizeof(ck_ni), ck_ipi, sizeof(ck_ipi), ck_spii));
+    const uint8_t other_ip[4] = {198, 51, 100, 9};
+    TEST_ASSERT_FALSE(dws_ike_cookie_verify(ck_golden, sizeof(ck_golden), ck_secret, sizeof(ck_secret), ck_ni,
+                                            sizeof(ck_ni), other_ip, sizeof(other_ip), ck_spii));
+    const uint8_t other_spi[8] = {9, 9, 9, 9, 9, 9, 9, 9};
+    TEST_ASSERT_FALSE(dws_ike_cookie_verify(ck_golden, sizeof(ck_golden), ck_secret, sizeof(ck_secret), ck_ni,
+                                            sizeof(ck_ni), ck_ipi, sizeof(ck_ipi), other_spi));
+
+    // A tampered cookie byte and a wrong length are rejected.
+    uint8_t bad[33];
+    memcpy(bad, ck_golden, 33);
+    bad[10] ^= 0x01;
+    TEST_ASSERT_FALSE(dws_ike_cookie_verify(bad, sizeof(bad), ck_secret, sizeof(ck_secret), ck_ni, sizeof(ck_ni),
+                                            ck_ipi, sizeof(ck_ipi), ck_spii));
+    TEST_ASSERT_FALSE(dws_ike_cookie_verify(ck_golden, 32, ck_secret, sizeof(ck_secret), ck_ni, sizeof(ck_ni), ck_ipi,
+                                            sizeof(ck_ipi), ck_spii));
+}
+
+void test_cookie_notify_build()
+{
+    // The COOKIE notify carries the cookie and parses back with type 16390.
+    uint8_t buf[64];
+    size_t n = dws_ike_cookie_notify_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, ck_golden, sizeof(ck_golden));
+    TEST_ASSERT_TRUE(n > 4);
+    IkeProtocol proto = IkeProtocol::IKE_PROTO_IKE;
+    uint16_t ntype = 0;
+    const uint8_t *spi = nullptr, *data = nullptr;
+    uint8_t spi_size = 0xff;
+    size_t data_len = 0;
+    TEST_ASSERT_TRUE(dws_ike_notify_parse(buf + 4, n - 4, &proto, &ntype, &spi, &spi_size, &data, &data_len));
+    TEST_ASSERT_EQUAL_UINT16(DWS_IKE_N_COOKIE, ntype);
+    TEST_ASSERT_EQUAL_size_t(33, data_len);
+    TEST_ASSERT_EQUAL_MEMORY(ck_golden, data, 33);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -2539,5 +2608,8 @@ int main()
     RUN_TEST(test_skf_build_parse);
     RUN_TEST(test_frag_reassembly);
     RUN_TEST(test_frag_guards);
+    RUN_TEST(test_cookie_compute_kat);
+    RUN_TEST(test_cookie_verify);
+    RUN_TEST(test_cookie_notify_build);
     return UNITY_END();
 }

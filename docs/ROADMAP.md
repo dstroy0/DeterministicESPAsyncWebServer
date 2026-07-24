@@ -551,11 +551,18 @@ preempting queue, so sensing shares the real-time ingest path.
           that stages out-of-order fragment plaintexts and concatenates them 1..Total, rejecting a
           duplicate, a disagreeing Total, an over-cap fragment count, and a pool overflow - host-tested for
           SKF build/parse round-trip, out-of-order reassembly, and every guard (`test_ikev2` now 77).
-          **IKEv2 tiers 1-2 are done**: the full wire codec, every exchange, all three auth methods, the
-          initial / Child-SA / rekey key schedules, NAT-T detection, the Configuration payload, and
-          RFC 7383 fragmentation. The only remaining IKEv2 work is **tier 3, the ESP datapath**
-          (RFC 4303) - and its host-testable core (packet transform + anti-replay + SAD/SPD) is now
-          shipped, leaving only the lwIP IP-hook (device-side, not host-unit-testable).
+          **The anti-DoS COOKIE is shipped too** (RFC 7296 §2.6): the stateless-cookie construction
+          `version | SHA-256(Ni | IPi | SPIi | secret)` (`dws_ike_cookie_compute` / `_verify` +
+          `dws_ike_cookie_notify_build`) that lets a flooded responder stay stateless - it replies with
+          only a COOKIE notify and recomputes + constant-time-verifies the cookie on the retry with no
+          per-initiator state, so a spoofed source that cannot receive at its claimed address cannot forge
+          one; KAT'd against a Python SHA-256 vector with wrong-secret / wrong-IP / wrong-SPI / tamper /
+          bad-length rejection (`test_ikev2` now 80). **IKEv2 tiers 1-2 are done**: the full wire codec,
+          every exchange, all three auth methods, the initial / Child-SA / rekey key schedules, NAT-T
+          detection, the Configuration payload, RFC 7383 fragmentation, and the anti-DoS cookie. The only
+          remaining IKEv2 work is **tier 3, the ESP datapath** (RFC 4303) - and its host-testable core
+          (packet transform + anti-replay + SAD/SPD) is now shipped, leaving only the lwIP IP-hook
+          (device-side, not host-unit-testable).
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with
