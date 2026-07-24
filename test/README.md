@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5100 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5101 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29290,7 +29290,7 @@ A thorough directory of all **5100 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (18 tests)</b></summary>
+<summary><b>test_nmea2000 (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -29465,6 +29465,27 @@ A thorough directory of all **5100 test cases** across **291 suites**. Expand a 
       * <code>Assert false (p.valid)</code>
       * <code>Assert false (dws_n2k_decode_position_rapid(pos, 7, &p))</code>
       * <code>Assert false (dws_n2k_decode_position_rapid(nullptr, 8, &p))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_cog_sog_rapid</b> &mdash; <i>sid 0x11, ref magnetic, COG 1.5708 rad (raw 15708), SOG 6.17 m/s (raw 617).</i></summary>
+
+    * **Objective**: sid 0x11, ref magnetic, COG 1.5708 rad (raw 15708), SOG 6.17 m/s (raw 617).
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_cog_sog_rapid(cs, sizeof(cs), &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x11, c.sid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_COG_REF_MAGNETIC, c.cog_ref);</code>
+      * <code>Assert true (c.cog_valid)</code>
+      * <code>Assert float within (0.0005f, 1.5708f, c.cog_rad)</code>
+      * <code>Assert true (c.sog_valid)</code>
+      * <code>Assert float within (0.001f, 6.17f, c.sog_mps)</code>
+      * <code>Assert true (dws_n2k_decode_cog_sog_rapid(na, sizeof(na), &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_COG_REF_TRUE, c.cog_ref);</code>
+      * <code>Assert false (c.cog_valid)</code>
+      * <code>Assert true (c.sog_valid)</code>
+      * <code>Assert float within (0.001f, 6.17f, c.sog_mps)</code>
+      * <code>Assert false (dws_n2k_decode_cog_sog_rapid(cs, 5, &c))</code>
+      * <code>Assert false (dws_n2k_decode_cog_sog_rapid(nullptr, 8, &c))</code>
   </details>
 
   <details style="margin-left: 20px;">
