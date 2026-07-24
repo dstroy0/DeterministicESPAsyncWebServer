@@ -2015,6 +2015,84 @@ void test_full_bidirectional_handshake()
     TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_FAILED, (uint8_t)resp2.state);
 }
 
+// Establish an SA end to end, then run an INFORMATIONAL exchange (DPD keepalive + a Delete) over it.
+void test_informational_exchange()
+{
+    const IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+    const uint8_t idi[6] = {'r', 'o', 'u', 't', 'e', 'r'}, idr[9] = {'r', 'e', 's', 'p', 'o', 'n', 'd', 'e', 'r'};
+    const uint8_t iv1[8] = {0, 0, 0, 0, 0, 0, 0, 1}, iv2[8] = {0, 0, 0, 0, 0, 0, 0, 2};
+    IkeHandshake ini, resp;
+    uint8_t req[512], rsp[512], ai[512], ar[512];
+    size_t reqn = dws_ike_initiator_start(&ini, g_our_spi, kat_alice_priv, kat_alice_pub, g_our_nonce, 16, &gcm,
+                                          g_hs_tf, 3, req, sizeof(req));
+    size_t rspn = dws_ike_responder_on_sa_init(&resp, req, reqn, g_resp_spi, kat_bob_priv, kat_bob_pub, g_resp_nonce,
+                                               16, &gcm, g_hs_tf, 3, rsp, sizeof(rsp));
+    dws_ike_initiator_on_sa_init(&ini, rsp, rspn);
+    size_t ain = dws_ike_initiator_build_auth_psk(&ini, IkeIdType::IKE_ID_FQDN, idi, sizeof(idi), g_psk, sizeof(g_psk),
+                                                  iv1, ai, sizeof(ai));
+    size_t arn = dws_ike_responder_on_auth_psk(&resp, ai, ain, g_psk, sizeof(g_psk), IkeIdType::IKE_ID_FQDN, idr,
+                                               sizeof(idr), iv2, ar, sizeof(ar));
+    dws_ike_initiator_on_auth_psk(&ini, ar, arn, g_psk, sizeof(g_psk));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)ini.state);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)resp.state);
+
+    IkePayloadType first;
+    const uint8_t *inner;
+    size_t inner_len;
+
+    // DPD: the initiator sends an empty INFORMATIONAL; the responder decrypts it (empty inner).
+    const uint8_t iv3[8] = {0, 0, 0, 0, 0, 0, 0, 3};
+    uint8_t dpd[128], work[128];
+    size_t dn =
+        dws_ike_informational_build(&ini.sa, false, 2, IkePayloadType::IKE_PL_NONE, nullptr, 0, iv3, dpd, sizeof(dpd));
+    TEST_ASSERT_TRUE(dn > 0);
+    TEST_ASSERT_EQUAL_UINT8(37, dpd[18]); // exchange type = IKE_INFORMATIONAL
+    memcpy(work, dpd, dn);
+    TEST_ASSERT_TRUE(dws_ike_informational_open(&resp.sa, work, dn, &first, &inner, &inner_len));
+    TEST_ASSERT_EQUAL_size_t(0, inner_len);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_NONE, (uint8_t)first);
+
+    // The responder answers with an empty INFORMATIONAL response; the initiator decrypts it.
+    const uint8_t iv4[8] = {0, 0, 0, 0, 0, 0, 0, 4};
+    uint8_t dpdr[128], work2[128];
+    size_t drn = dws_ike_informational_build(&resp.sa, true, 2, IkePayloadType::IKE_PL_NONE, nullptr, 0, iv4, dpdr,
+                                             sizeof(dpdr));
+    TEST_ASSERT_TRUE(drn > 0);
+    memcpy(work2, dpdr, drn);
+    TEST_ASSERT_TRUE(dws_ike_informational_open(&ini.sa, work2, drn, &first, &inner, &inner_len));
+    TEST_ASSERT_EQUAL_size_t(0, inner_len);
+
+    // A Delete: the initiator sends an INFORMATIONAL carrying Delete(IKE); the responder recovers it.
+    uint8_t del_inner[64];
+    size_t deln = dws_ike_delete_build(del_inner, sizeof(del_inner), IkePayloadType::IKE_PL_NONE,
+                                       IkeProtocol::IKE_PROTO_IKE, 0, nullptr, 0);
+    TEST_ASSERT_TRUE(deln > 0);
+    const uint8_t iv5[8] = {0, 0, 0, 0, 0, 0, 0, 5};
+    uint8_t delmsg[128], work3[128];
+    size_t dmn = dws_ike_informational_build(&ini.sa, false, 3, IkePayloadType::IKE_PL_DELETE, del_inner, deln, iv5,
+                                             delmsg, sizeof(delmsg));
+    TEST_ASSERT_TRUE(dmn > 0);
+    memcpy(work3, delmsg, dmn);
+    TEST_ASSERT_TRUE(dws_ike_informational_open(&resp.sa, work3, dmn, &first, &inner, &inner_len));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_DELETE, (uint8_t)first);
+    IkePayloadIter it;
+    dws_ike_payload_iter_init(&it, first, inner, inner_len);
+    IkePayload pl;
+    TEST_ASSERT_TRUE(dws_ike_payload_next(&it, &pl));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_DELETE, (uint8_t)pl.type);
+    IkeProtocol proto;
+    uint8_t ss;
+    uint16_t nspis;
+    const uint8_t *spis;
+    TEST_ASSERT_TRUE(dws_ike_delete_parse(pl.body, pl.body_len, &proto, &ss, &nspis, &spis));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_IKE, (uint8_t)proto);
+
+    // Opening with the wrong direction key (the initiator opening its OWN message) fails the ICV.
+    uint8_t work4[128];
+    memcpy(work4, delmsg, dmn);
+    TEST_ASSERT_FALSE(dws_ike_informational_open(&ini.sa, work4, dmn, &first, &inner, &inner_len));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -2093,5 +2171,6 @@ int main()
     RUN_TEST(test_initiator_full_handshake);
     RUN_TEST(test_responder_sa_init_exchange);
     RUN_TEST(test_full_bidirectional_handshake);
+    RUN_TEST(test_informational_exchange);
     return UNITY_END();
 }

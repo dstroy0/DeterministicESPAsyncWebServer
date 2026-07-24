@@ -937,11 +937,12 @@ static const size_t IKE_SK_HDR_OFF = DWS_IKE_HDR_LEN;                          /
 static const size_t IKE_SK_IV_OFF = DWS_IKE_HDR_LEN + DWS_IKE_PAYLOAD_HDR_LEN; // 32 (also the AAD length)
 static const size_t IKE_SK_CT_OFF = IKE_SK_IV_OFF + DWS_IKE_GCM_IV_LEN;        // 40
 
-size_t dws_ike_auth_msg_build(uint8_t *buf, size_t cap, const uint8_t init_spi[DWS_IKE_SPI_LEN],
-                              const uint8_t resp_spi[DWS_IKE_SPI_LEN], uint32_t msg_id, bool is_response,
-                              IkePayloadType first_inner_type, const uint8_t *inner, size_t inner_len,
-                              const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t salt[DWS_IKE_GCM_SALT_LEN],
-                              const uint8_t iv[DWS_IKE_GCM_IV_LEN])
+// The generic SK-encrypted message builder: HDR(@p exchange, @p flags) | SK{ IV | AEAD(inner | Pad) | ICV }.
+// dws_ike_auth_msg_build and the INFORMATIONAL builder are thin wrappers that fix the exchange + flags.
+static size_t sk_message_build(uint8_t *buf, size_t cap, const uint8_t *init_spi, const uint8_t *resp_spi,
+                               uint32_t msg_id, IkeExchange exchange, uint8_t flags, IkePayloadType first_inner_type,
+                               const uint8_t *inner, size_t inner_len, const uint8_t *key, const uint8_t *salt,
+                               const uint8_t *iv)
 {
     if (!buf || !init_spi || !resp_spi || !key || !salt || !iv || (inner_len && !inner))
         return 0;
@@ -957,8 +958,8 @@ size_t dws_ike_auth_msg_build(uint8_t *buf, size_t cap, const uint8_t init_spi[D
     memcpy(h.resp_spi, resp_spi, DWS_IKE_SPI_LEN);
     h.next_payload = IkePayloadType::IKE_PL_SK;
     h.version = DWS_IKE_VERSION;
-    h.exchange = IkeExchange::IKE_AUTH;
-    h.flags = is_response ? DWS_IKE_FLAG_RESPONSE : DWS_IKE_FLAG_INITIATOR;
+    h.exchange = exchange;
+    h.flags = flags;
     h.message_id = msg_id;
     h.length = (uint32_t)total;
     if (dws_ike_hdr_build(buf, cap, &h) == 0)
@@ -978,6 +979,19 @@ size_t dws_ike_auth_msg_build(uint8_t *buf, size_t cap, const uint8_t init_spi[D
     // Encrypt in place: AAD = [0, 32), plaintext -> ciphertext || ICV at IKE_SK_CT_OFF.
     dws_ike_sk_aead_seal(key, salt, iv, buf, IKE_SK_IV_OFF, buf + IKE_SK_CT_OFF, pt_len, buf + IKE_SK_CT_OFF);
     return total;
+}
+
+size_t dws_ike_auth_msg_build(uint8_t *buf, size_t cap, const uint8_t init_spi[DWS_IKE_SPI_LEN],
+                              const uint8_t resp_spi[DWS_IKE_SPI_LEN], uint32_t msg_id, bool is_response,
+                              IkePayloadType first_inner_type, const uint8_t *inner, size_t inner_len,
+                              const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t salt[DWS_IKE_GCM_SALT_LEN],
+                              const uint8_t iv[DWS_IKE_GCM_IV_LEN])
+{
+    // In IKE_AUTH the initiator always sends the request and the responder the response, so the flag is
+    // exactly INITIATOR-for-request / RESPONSE-for-response.
+    uint8_t flags = is_response ? DWS_IKE_FLAG_RESPONSE : DWS_IKE_FLAG_INITIATOR;
+    return sk_message_build(buf, cap, init_spi, resp_spi, msg_id, IkeExchange::IKE_AUTH, flags, first_inner_type, inner,
+                            inner_len, key, salt, iv);
 }
 
 bool dws_ike_auth_msg_open(uint8_t *msg, size_t len, const uint8_t key[DWS_IKE_AEAD_KEY_LEN],
@@ -1487,6 +1501,33 @@ size_t dws_ike_responder_on_auth_psk(IkeHandshake *hs, const uint8_t *req, size_
     }
     hs->state = IkeState::IKE_ST_ESTABLISHED;
     return n;
+}
+
+// ── tier 2: INFORMATIONAL exchange (RFC 7296 §1.4) - DPD, Delete, Notify over an established SA ──
+
+size_t dws_ike_informational_build(const IkeSa *sa, bool is_response, uint32_t msg_id, IkePayloadType first_inner_type,
+                                   const uint8_t *inner, size_t inner_len, const uint8_t iv[DWS_IKE_GCM_IV_LEN],
+                                   uint8_t *out, size_t out_cap)
+{
+    if (!sa || !iv || !out)
+        return 0;
+    // Our egress direction: SK_ei when we are the original initiator, SK_er when we are the responder.
+    const uint8_t *key = sa->is_initiator ? sa->keys.sk_ei : sa->keys.sk_er;
+    // Flags carry BOTH bits independently: INITIATOR iff from the original initiator, RESPONSE iff a reply.
+    uint8_t flags =
+        (uint8_t)((sa->is_initiator ? DWS_IKE_FLAG_INITIATOR : 0) | (is_response ? DWS_IKE_FLAG_RESPONSE : 0));
+    return sk_message_build(out, out_cap, sa->init_spi, sa->resp_spi, msg_id, IkeExchange::IKE_INFORMATIONAL, flags,
+                            first_inner_type, inner, inner_len, key, key + DWS_IKE_AEAD_KEY_LEN, iv);
+}
+
+bool dws_ike_informational_open(const IkeSa *sa, uint8_t *msg, size_t len, IkePayloadType *first_inner_type,
+                                const uint8_t **inner_out, size_t *inner_len_out)
+{
+    if (!sa)
+        return false;
+    // Ingress direction is the peer's egress: SK_er if the peer is the responder (we are the initiator), else SK_ei.
+    const uint8_t *key = sa->is_initiator ? sa->keys.sk_er : sa->keys.sk_ei;
+    return dws_ike_auth_msg_open(msg, len, key, key + DWS_IKE_AEAD_KEY_LEN, first_inner_type, inner_out, inner_len_out);
 }
 
 #endif // DWS_ENABLE_IKEV2

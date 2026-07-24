@@ -508,9 +508,15 @@ preempting queue, so sensing shares the real-time ingest path.
           bidirectional handshake now runs end to end** - the initiator and responder drivers exchange
           IKE_SA_INIT + IKE_AUTH through buffers, both mutually authenticate by PSK and reach ESTABLISHED
           with identical keys, and a wrong-key peer is rejected on either side (`test_ikev2` now 66). The
-          IKE handshake state machine (item 2) is functionally complete for the PSK path. Remaining: the
-          maintenance exchanges (CREATE_CHILD_SA / INFORMATIONAL / rekey / DPD / retransmit) and the
-          RSA-signature auth option (the ECDSA-P256 sign/verify primitives already ship).
+          IKE handshake state machine (item 2) is functionally complete for the PSK path. **The
+          INFORMATIONAL exchange is shipped too** (RFC 7296 §1.4): `dws_ike_informational_build` /
+          `_open` wrap Dead-Peer-Detection (an empty request), Delete, or Notify payloads in an SK{}
+          message over an established SA, keyed by the sender's egress direction (SK_ei from the
+          initiator, SK_er from the responder) with the INITIATOR/RESPONSE flags set independently -
+          exercised end to end with a DPD keepalive both ways and a Delete(IKE) round-trip, and a
+          wrong-direction key is rejected (`test_ikev2` now 67; the SK message builder was generalized
+          to any exchange type). Remaining: CREATE_CHILD_SA + rekey + retransmit, and the RSA-signature
+          auth option (the ECDSA-P256 sign/verify primitives already ship).
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with

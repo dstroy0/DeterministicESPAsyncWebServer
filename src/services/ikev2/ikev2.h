@@ -819,6 +819,28 @@ size_t dws_ike_responder_on_auth_psk(IkeHandshake *hs, const uint8_t *req, size_
                                      size_t psk_len, IkeIdType idr_type, const uint8_t *idr_data, size_t idr_len,
                                      const uint8_t iv[DWS_IKE_GCM_IV_LEN], uint8_t *out, size_t out_cap);
 
+// ── tier 2: INFORMATIONAL exchange (RFC 7296 §1.4) over an established SA ───────────────────────
+//
+// Once an SA is IKE_ST_ESTABLISHED, either peer may run an INFORMATIONAL exchange: Dead-Peer Detection
+// (an empty request, @p first_inner_type = IKE_PL_NONE, @p inner_len = 0), a Delete, or a Notify. The
+// message is SK-encrypted keyed by our egress direction (SK_ei when we are the original initiator, else
+// SK_er) with the flags carrying INITIATOR/RESPONSE independently.
+
+/**
+ * @brief Build an SK-encrypted INFORMATIONAL message we are SENDING over @p sa (an empty inner is DPD).
+ * @return the message length, or 0 on a bad argument / overflow.
+ */
+size_t dws_ike_informational_build(const IkeSa *sa, bool is_response, uint32_t msg_id, IkePayloadType first_inner_type,
+                                   const uint8_t *inner, size_t inner_len, const uint8_t iv[DWS_IKE_GCM_IV_LEN],
+                                   uint8_t *out, size_t out_cap);
+
+/**
+ * @brief Verify + decrypt a received INFORMATIONAL @p msg in place (keyed by the peer's egress direction),
+ *        exposing the inner payload chain. @return true iff the ICV verifies.
+ */
+bool dws_ike_informational_open(const IkeSa *sa, uint8_t *msg, size_t len, IkePayloadType *first_inner_type,
+                                const uint8_t **inner_out, size_t *inner_len_out);
+
 #endif // DWS_ENABLE_IKEV2
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IKEV2_H
