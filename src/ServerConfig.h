@@ -1772,6 +1772,35 @@
 #endif
 
 /**
+ * @brief u-blox UBX binary GNSS protocol codec (`services/ubx`).
+ *
+ * The binary companion to NMEA 0183 that u-blox receivers speak on the same UART. `dws_ubx_build`
+ * frames a message (sync chars B5 62, class/id, little-endian length, payload, 8-bit Fletcher
+ * checksum), `dws_ubx_build_poll` emits a zero-length poll request, `dws_ubx_parse` validates one
+ * frame, and `dws_ubx_stream_feed` demultiplexes UBX frames out of a mixed NMEA+UBX byte stream
+ * (handing every non-UBX byte back for an NMEA line assembler). Pure and host-tested; pairs with
+ * services/nmea0183 for a full GNSS link (send config/poll as UBX, read fixes as either).
+ */
+#ifndef DWS_ENABLE_UBX
+#define DWS_ENABLE_UBX 0
+#endif
+
+/**
+ * @brief PTP / IEEE 1588-2008 (PTPv2) message codec + slave clock math (`services/ptp`).
+ *
+ * The Precision Time Protocol disciplines LAN clocks to sub-microsecond accuracy. `dws_ptp_build_*`
+ * / `dws_ptp_parse_*` frame and decode the PTPv2 wire format (34-octet common header, 10-octet
+ * 48-bit-seconds+32-bit-ns timestamp, and the Sync / Delay_Req / Follow_Up / Delay_Resp / Announce
+ * messages, all big-endian), and `dws_ptp_compute` derives an ordinary-clock slave's offset-from-
+ * master and mean-path-delay from the four transfer timestamps. Pure and host-tested; the UDP
+ * transport (event port 319, general port 320) and local timestamping are the application's. Example
+ * Ptp is an ordinary-clock slave.
+ */
+#ifndef DWS_ENABLE_PTP
+#define DWS_ENABLE_PTP 0
+#endif
+
+/**
  * @brief IO-Link (SDCI, IEC 61131-9) data-link message codec (`services/iolink`).
  *
  * Default off. The point-to-point smart-sensor link's data-link message layer: the M-sequence
@@ -6955,6 +6984,13 @@ static_assert((unsigned)ConnProto::PROTO_MESH < DWS_PROTO_MAX, "DWS_PROTO_MAX mu
 #define DWS_NMEA0183_MAX_FIELDS 26 ///< max comma-separated fields (incl. the address field)
 #endif
 #endif // DWS_ENABLE_NMEA0183
+
+#if DWS_ENABLE_UBX
+// -- UBX (services/ubx) --
+#ifndef DWS_UBX_MAX_PAYLOAD
+#define DWS_UBX_MAX_PAYLOAD 256 ///< max UBX payload the stream demux buffers (NAV-PVT is 92; longer frames are skipped)
+#endif
+#endif // DWS_ENABLE_UBX
 
 #if DWS_ENABLE_NMEA2000
 // -- NMEA 2000 (services/nmea2000) --

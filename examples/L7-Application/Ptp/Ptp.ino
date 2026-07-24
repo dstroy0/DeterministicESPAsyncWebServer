@@ -1,0 +1,275 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file Ptp.ino
+ * @brief PTP / IEEE 1588 ordinary clock - grandmaster OR slave (DWS_ENABLE_PTP).
+ *
+ * The Precision Time Protocol keeps a LAN's clocks in lock-step. Set PTP_MASTER below:
+ *
+ *  - **PTP_MASTER 1 (grandmaster):** the device *sources* time and hands it out. Each second it sends
+ *    Announce + Sync + Follow_Up (with its precise send time), and answers each slave's Delay_Req with
+ *    a Delay_Resp. Feed `master_time_ns()` from an accurate source - a GPS fix (see the UbloxGnss
+ *    example), a DS3231/PCF8523 RTC, `dws_ntp_epoch()`, or the Time Source feature - and every slave
+ *    on the LAN follows it. The Announce advertises clockClass 6 (locked to a primary reference) and
+ *    timeSource GPS.
+ *  - **PTP_MASTER 0 (slave):** the device follows a master, running the four-message exchange
+ *    (Sync/Follow_Up/Delay_Req/Delay_Resp) and reporting offset + path delay.
+ *
+ * Timestamps here are taken in software (in the UDP callback / send path) with `dws_micros()`, so the
+ * accuracy is millisecond-class over Wi-Fi. Sub-microsecond PTP needs MAC hardware timestamping, which
+ * this chip's Ethernet MAC supports but Wi-Fi does not - so on Ethernet this same code gets far tighter.
+ *
+ * Build flag (PlatformIO): `-DDWS_ENABLE_PTP=1`
+ */
+
+#define DWS_ENABLE_PTP 1
+#define PTP_MASTER 0 // 1 = grandmaster (source time from GPS/RTC/...), 0 = slave (follow a master)
+
+#include "dwserver.h"
+#include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/udp.h"
+#include "services/clock.h"
+#include "services/ptp/ptp.h"
+#include <string.h>
+
+static const char *SSID = "YOUR_SSID";
+static const char *PASSWORD = "YOUR_PASSWORD";
+static const char *PTP_GROUP = "224.0.1.129"; // PTP default (primary) domain multicast address
+
+// This clock's port identity (a locally-administered EUI-64 clockIdentity + port 1).
+static uint8_t my_clock_id[8] = {0x02, 0x00, 0x00, 0xFF, 0xFE, 0x00, 0x00, 0x01};
+static const uint16_t MY_PORT = 1;
+
+static int64_t now_ns()
+{
+    return (int64_t)dws_micros() * 1000;
+} // local monotonic software timestamp
+
+// ------- accurate time source (grandmaster) -------
+// Wire this to your reference: a GPS fix (UbloxGnss), a DS3231 RTC, dws_ntp_epoch(), or the Time
+// Source feature. Standalone, it advances a base epoch with the monotonic clock. Set s_base_ns from
+// your source (e.g. on each GPS fix: s_base_ns = gps_epoch_ns - now_ns();).
+static int64_t s_base_ns = 0;
+static int64_t master_time_ns()
+{
+    return s_base_ns + now_ns();
+}
+
+// %lld is not always available in newlib-nano; format int64 by hand.
+static char *i64(int64_t v, char *buf)
+{
+    char tmp[24];
+    int i = 0;
+    bool neg = v < 0;
+    uint64_t u = neg ? ~(uint64_t)v + 1u : (uint64_t)v;
+    if (u == 0)
+        tmp[i++] = '0';
+    while (u)
+    {
+        tmp[i++] = (char)('0' + (int)(u % 10));
+        u /= 10;
+    }
+    int j = 0;
+    if (neg)
+        buf[j++] = '-';
+    while (i)
+        buf[j++] = tmp[--i];
+    buf[j] = 0;
+    return buf;
+}
+
+#if PTP_MASTER
+
+static uint16_t m_seq = 0;
+
+static void master_tick()
+{
+    DwsPtpHeader h;
+    memset(&h, 0, sizeof(h));
+    memcpy(h.clock_identity, my_clock_id, 8);
+    h.port_number = MY_PORT;
+    h.sequence_id = m_seq;
+    uint8_t buf[80];
+
+    // Announce: advertise this grandmaster's quality + identity.
+    DwsPtpAnnounce a;
+    memset(&a, 0, sizeof(a));
+    a.utc_offset = 37;    // TAI - UTC as of 2017+
+    a.gm_priority1 = 128; // default selectable priority
+    a.gm_priority2 = 128;
+    a.gm_clock_class = 6;       // 6 = locked to a primary reference (GPS); 248 = free-running default
+    a.gm_clock_accuracy = 0x21; // within ~100 ns
+    a.gm_variance = 0xFFFF;
+    memcpy(a.gm_identity, my_clock_id, 8);
+    a.steps_removed = 0;
+    a.time_source = 0x20; // GPS
+    dws_ptp_ts_from_ns(master_time_ns(), &a.origin);
+    size_t n = dws_ptp_build_announce(buf, sizeof(buf), &h, &a);
+    dws_udp_listener_sendto(DWS_PTP_GENERAL_PORT, PTP_GROUP, DWS_PTP_GENERAL_PORT, buf, n);
+
+    // Sync (two-step: the precise time follows in Follow_Up).
+    h.flags = 0x0200; // twoStepFlag
+    DwsPtpTimestamp zero = {0, 0};
+    n = dws_ptp_build_sync(buf, sizeof(buf), &h, &zero);
+    int64_t t1 = master_time_ns(); // precise egress instant
+    dws_udp_listener_sendto(DWS_PTP_EVENT_PORT, PTP_GROUP, DWS_PTP_EVENT_PORT, buf, n);
+
+    // Follow_Up carries t1.
+    h.flags = 0;
+    DwsPtpTimestamp ts1;
+    dws_ptp_ts_from_ns(t1, &ts1);
+    n = dws_ptp_build_follow_up(buf, sizeof(buf), &h, &ts1);
+    dws_udp_listener_sendto(DWS_PTP_GENERAL_PORT, PTP_GROUP, DWS_PTP_GENERAL_PORT, buf, n);
+
+    m_seq++;
+}
+
+// Answer a slave's Delay_Req with a Delay_Resp (t4 = when we received it).
+static void master_on_delay_req(const DwsPtpHeader *req)
+{
+    int64_t t4 = master_time_ns();
+    DwsPtpHeader h;
+    memset(&h, 0, sizeof(h));
+    memcpy(h.clock_identity, my_clock_id, 8);
+    h.port_number = MY_PORT;
+    h.sequence_id = req->sequence_id; // echo the requester's sequenceId
+    DwsPtpTimestamp t4ts;
+    dws_ptp_ts_from_ns(t4, &t4ts);
+    uint8_t buf[64];
+    size_t n = dws_ptp_build_delay_resp(buf, sizeof(buf), &h, &t4ts, req->clock_identity, req->port_number);
+    dws_udp_listener_sendto(DWS_PTP_GENERAL_PORT, PTP_GROUP, DWS_PTP_GENERAL_PORT, buf, n);
+}
+
+static void on_event(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx)
+{
+    (void)peer;
+    (void)ctx;
+    DwsPtpHeader h;
+    if (dws_ptp_parse_header(data, len, &h) && h.message_type == DWS_PTP_DELAY_REQ)
+        master_on_delay_req(&h);
+}
+static void on_general(const uint8_t *, size_t, const struct DWSUdpPeer *, void *)
+{
+}
+
+#else // ---------------- slave ----------------
+
+static uint16_t dreq_seq = 0;
+static uint16_t sync_seq = 0;
+static int64_t t1 = 0, t2 = 0, t3 = 0, t4 = 0;
+static bool awaiting_t1 = false;
+
+static void send_delay_req()
+{
+    DwsPtpHeader h;
+    memset(&h, 0, sizeof(h));
+    memcpy(h.clock_identity, my_clock_id, 8);
+    h.port_number = MY_PORT;
+    h.sequence_id = ++dreq_seq;
+    h.log_interval = 0x7F;
+    DwsPtpTimestamp zero = {0, 0};
+    uint8_t buf[DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN];
+    size_t n = dws_ptp_build_delay_req(buf, sizeof(buf), &h, &zero);
+    t3 = now_ns();
+    dws_udp_listener_sendto(DWS_PTP_EVENT_PORT, PTP_GROUP, DWS_PTP_EVENT_PORT, buf, n);
+}
+
+static void on_event(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx)
+{
+    (void)peer;
+    (void)ctx;
+    DwsPtpHeader h;
+    if (!dws_ptp_parse_header(data, len, &h) || h.message_type != DWS_PTP_SYNC)
+        return;
+    t2 = now_ns();
+    sync_seq = h.sequence_id;
+    if (h.flags & 0x0200) // two-step: t1 arrives in Follow_Up
+    {
+        awaiting_t1 = true;
+    }
+    else
+    {
+        DwsPtpTimestamp ts;
+        if (dws_ptp_parse_timestamp_msg(data, len, &h, &ts))
+            t1 = dws_ptp_ts_to_ns(&ts);
+        awaiting_t1 = false;
+        send_delay_req();
+    }
+}
+
+static void on_general(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx)
+{
+    (void)peer;
+    (void)ctx;
+    DwsPtpHeader h;
+    if (!dws_ptp_parse_header(data, len, &h))
+        return;
+    if (h.message_type == DWS_PTP_FOLLOW_UP && awaiting_t1 && h.sequence_id == sync_seq)
+    {
+        DwsPtpTimestamp ts;
+        if (dws_ptp_parse_timestamp_msg(data, len, &h, &ts))
+        {
+            t1 = dws_ptp_ts_to_ns(&ts);
+            awaiting_t1 = false;
+            send_delay_req();
+        }
+    }
+    else if (h.message_type == DWS_PTP_DELAY_RESP)
+    {
+        DwsPtpDelayResp r;
+        if (dws_ptp_parse_delay_resp(data, len, &h, &r) && h.sequence_id == dreq_seq && r.req_port == MY_PORT &&
+            memcmp(r.req_clock_id, my_clock_id, 8) == 0)
+        {
+            t4 = dws_ptp_ts_to_ns(&r.receive);
+            DwsPtpSync s;
+            dws_ptp_compute(t1, t2, t3, t4, &s);
+            char a[24], b[24];
+            Serial.printf("PTP seq=%u  offset=%s ns  path_delay=%s ns\n", h.sequence_id, i64(s.offset_ns, a),
+                          i64(s.delay_ns, b));
+        }
+    }
+    else if (h.message_type == DWS_PTP_ANNOUNCE)
+    {
+        DwsPtpAnnounce an;
+        if (dws_ptp_parse_announce(data, len, &h, &an))
+            Serial.printf("PTP master: clockClass=%u priority1=%u stepsRemoved=%u utcOffset=%d\n", an.gm_clock_class,
+                          an.gm_priority1, an.steps_removed, an.utc_offset);
+    }
+}
+
+#endif // PTP_MASTER
+
+void setup()
+{
+    Serial.begin(115200);
+    delay(300);
+    Serial.printf("\n=== DWS PTP %s (IEEE 1588 ordinary clock) ===\n", PTP_MASTER ? "GRANDMASTER" : "slave");
+    init_wifi_physical(SSID, PASSWORD);
+    Serial.print("Connecting to WiFi");
+    while (!wifi_ready())
+    {
+        delay(250);
+        Serial.print('.');
+    }
+    uint32_t ip = dws_net_egress_ip();
+    Serial.printf("\nIP: %u.%u.%u.%u\n", (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF),
+                  (unsigned)((ip >> 16) & 0xFF), (unsigned)((ip >> 24) & 0xFF));
+
+    bool e = dws_udp_listen_multicast(PTP_GROUP, DWS_PTP_EVENT_PORT, on_event, nullptr);
+    bool g = dws_udp_listen_multicast(PTP_GROUP, DWS_PTP_GENERAL_PORT, on_general, nullptr);
+    Serial.printf("PTP on 319/320 (event=%d general=%d)\n", e, g);
+}
+
+void loop()
+{
+#if PTP_MASTER
+    static uint32_t last = 0;
+    if (dws_millis() - last >= 1000)
+    {
+        last = dws_millis();
+        master_tick(); // send Announce + Sync + Follow_Up once per second
+    }
+#endif
+    delay(10);
+}

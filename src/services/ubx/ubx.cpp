@@ -1,0 +1,230 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file ubx.cpp
+ * @brief u-blox UBX binary protocol codec (pure, host-tested).
+ */
+
+#include "services/ubx/ubx.h"
+
+#if DWS_ENABLE_UBX
+
+#include <string.h>
+
+void dws_ubx_checksum(const uint8_t *body, size_t len, uint8_t *ck_a, uint8_t *ck_b)
+{
+    uint8_t a = 0, b = 0;
+    for (size_t i = 0; i < len; i++)
+    {
+        a = (uint8_t)(a + body[i]);
+        b = (uint8_t)(b + a);
+    }
+    if (ck_a)
+        *ck_a = a;
+    if (ck_b)
+        *ck_b = b;
+}
+
+size_t dws_ubx_build(uint8_t *buf, size_t cap, uint8_t cls, uint8_t id, const uint8_t *payload, uint16_t len)
+{
+    if (!buf || (len && !payload))
+        return 0;
+    size_t total = 8u + (size_t)len; // 2 sync + cls + id + 2 len + payload + 2 checksum
+    if (cap < total)
+        return 0;
+    size_t p = 0;
+    buf[p++] = DWS_UBX_SYNC1;
+    buf[p++] = DWS_UBX_SYNC2;
+    buf[p++] = cls;
+    buf[p++] = id;
+    buf[p++] = (uint8_t)(len & 0xFFu);
+    buf[p++] = (uint8_t)(len >> 8);
+    for (uint16_t i = 0; i < len; i++)
+        buf[p++] = payload[i];
+    uint8_t a = 0, b = 0;
+    dws_ubx_checksum(buf + 2, (size_t)len + 4u, &a, &b); // class..payload end
+    buf[p++] = a;
+    buf[p++] = b;
+    return p;
+}
+
+size_t dws_ubx_build_poll(uint8_t *buf, size_t cap, uint8_t cls, uint8_t id)
+{
+    return dws_ubx_build(buf, cap, cls, id, nullptr, 0);
+}
+
+bool dws_ubx_parse(const uint8_t *s, size_t len, DwsUbx *out)
+{
+    if (!s || !out || len < 8)
+        return false;
+    if (s[0] != DWS_UBX_SYNC1 || s[1] != DWS_UBX_SYNC2)
+        return false;
+    uint16_t plen = (uint16_t)(s[4] | ((uint16_t)s[5] << 8));
+    if (len < 8u + (size_t)plen)
+        return false;
+    uint8_t a = 0, b = 0;
+    dws_ubx_checksum(s + 2, (size_t)plen + 4u, &a, &b);
+    if (a != s[6 + plen] || b != s[7 + plen])
+        return false;
+    out->cls = s[2];
+    out->id = s[3];
+    out->len = plen;
+    out->payload = s + 6;
+    return true;
+}
+
+int dws_ubx_ack(const DwsUbx *m, uint8_t *acked_cls, uint8_t *acked_id)
+{
+    if (!m || m->cls != 0x05u || m->len < 2 || !m->payload)
+        return -1;
+    if (m->id != 0x00u && m->id != 0x01u)
+        return -1;
+    if (acked_cls)
+        *acked_cls = m->payload[0];
+    if (acked_id)
+        *acked_id = m->payload[1];
+    return m->id == 0x01u ? 1 : 0; // ACK-ACK id 0x01, ACK-NAK id 0x00
+}
+
+uint16_t dws_ubx_u16(const uint8_t *p, size_t off)
+{
+    return (uint16_t)(p[off] | ((uint16_t)p[off + 1] << 8));
+}
+
+uint32_t dws_ubx_u32(const uint8_t *p, size_t off)
+{
+    return (uint32_t)p[off] | ((uint32_t)p[off + 1] << 8) | ((uint32_t)p[off + 2] << 16) | ((uint32_t)p[off + 3] << 24);
+}
+
+int32_t dws_ubx_i32(const uint8_t *p, size_t off)
+{
+    return (int32_t)dws_ubx_u32(p, off);
+}
+
+// -- streaming demultiplexer --
+
+enum
+{
+    S_SYNC1 = 0,
+    S_SYNC2,
+    S_CLASS,
+    S_ID,
+    S_LEN_LO,
+    S_LEN_HI,
+    S_PAYLOAD,
+    S_CK_A,
+    S_CK_B,
+    S_SKIP
+};
+
+void dws_ubx_stream_init(DwsUbxStream *st)
+{
+    if (st)
+        memset(st, 0, sizeof(*st)); // state = S_SYNC1
+}
+
+static void ck_add(DwsUbxStream *st, uint8_t b)
+{
+    st->ck_a = (uint8_t)(st->ck_a + b);
+    st->ck_b = (uint8_t)(st->ck_b + st->ck_a);
+}
+
+int dws_ubx_stream_feed(DwsUbxStream *st, uint8_t b, DwsUbx *out, uint8_t *passthrough)
+{
+    if (!st)
+        return DWS_UBX_NONE;
+    switch (st->state)
+    {
+    case S_SYNC1:
+        if (b == DWS_UBX_SYNC1)
+        {
+            st->state = S_SYNC2;
+            return DWS_UBX_NONE;
+        }
+        if (passthrough)
+            *passthrough = b;
+        return DWS_UBX_PASSTHROUGH;
+    case S_SYNC2:
+        if (b == DWS_UBX_SYNC2)
+        {
+            st->state = S_CLASS;
+            return DWS_UBX_NONE;
+        }
+        st->state = S_SYNC1;
+        if (b == DWS_UBX_SYNC1) // a fresh sync1; the previous one was a false start
+        {
+            st->state = S_SYNC2;
+            return DWS_UBX_NONE;
+        }
+        if (passthrough)
+            *passthrough = b;
+        return DWS_UBX_PASSTHROUGH;
+    case S_CLASS:
+        st->cls = b;
+        st->ck_a = b; // Fletcher seed: first byte of the checksummed span
+        st->ck_b = b;
+        st->state = S_ID;
+        return DWS_UBX_NONE;
+    case S_ID:
+        st->id = b;
+        ck_add(st, b);
+        st->state = S_LEN_LO;
+        return DWS_UBX_NONE;
+    case S_LEN_LO:
+        st->len = b;
+        ck_add(st, b);
+        st->state = S_LEN_HI;
+        return DWS_UBX_NONE;
+    case S_LEN_HI:
+        st->len = (uint16_t)(st->len | ((uint16_t)b << 8));
+        ck_add(st, b);
+        st->idx = 0;
+        if (st->len > DWS_UBX_MAX_PAYLOAD)
+        {
+            st->skip = (uint32_t)st->len + 2u; // payload + 2 checksum octets to discard
+            st->state = S_SKIP;
+            return DWS_UBX_NONE;
+        }
+        st->state = (st->len == 0) ? S_CK_A : S_PAYLOAD;
+        return DWS_UBX_NONE;
+    case S_PAYLOAD:
+        st->buf[st->idx++] = b;
+        ck_add(st, b);
+        if (st->idx >= st->len)
+            st->state = S_CK_A;
+        return DWS_UBX_NONE;
+    case S_CK_A:
+        st->rx_ck_a = b;
+        st->state = S_CK_B;
+        return DWS_UBX_NONE;
+    case S_CK_B:
+        st->state = S_SYNC1;
+        if (st->rx_ck_a == st->ck_a && b == st->ck_b)
+        {
+            if (out)
+            {
+                out->cls = st->cls;
+                out->id = st->id;
+                out->len = st->len;
+                out->payload = st->buf;
+            }
+            return DWS_UBX_FRAME;
+        }
+        return DWS_UBX_NONE; // bad checksum: discard, resume hunting for sync
+    case S_SKIP:
+        st->skip--;
+        if (st->skip == 0)
+        {
+            st->state = S_SYNC1;
+            return DWS_UBX_OVERFLOW;
+        }
+        return DWS_UBX_NONE;
+    default:                 // GCOVR_EXCL_START  state is always one of the enum above
+        st->state = S_SYNC1; //
+        return DWS_UBX_NONE; //
+        // GCOVR_EXCL_STOP
+    }
+}
+
+#endif // DWS_ENABLE_UBX

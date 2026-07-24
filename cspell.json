@@ -1468,7 +1468,9 @@
     "SCLK",
     "DBENCH",
     "eaws",
-    "starttransfer"
+    "starttransfer",
+    "demultiplexer",
+    "timestamping"
   ],
   "ignorePaths": [
     "node_modules/**",
