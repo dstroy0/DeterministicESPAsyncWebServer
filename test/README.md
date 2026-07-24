@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5117 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5118 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -16484,7 +16484,7 @@ A thorough directory of all **5117 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_hart (7 tests)</b></summary>
+<summary><b>test_hart (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum</b> &mdash; <i>XOR longitudinal parity.</i></summary>
@@ -16545,6 +16545,32 @@ A thorough directory of all **5117 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 8);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hartip_build_header(0, 0, 0, 0, 0, out, 4));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hartip_build_header(0, 0, 0, 0, 0, nullptr, sizeof(out)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hartip_parse</b> &mdash; <i>A HART-IP response carrying a 5-octet token PDU payload; total length = 8 + 5 = 13.</i></summary>
+
+    * **Objective**: A HART-IP response carrying a 5-octet token PDU payload; total length = 8 + 5 = 13.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(8, hn);</code>
+      * <code>Assert true (dws_hartip_parse_header(msg, 13, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, h.version);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(HartIp::HARTIP_MSG_RESPONSE, h.msg_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(HartIp::HARTIP_ID_TOKEN_PDU, h.msg_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, h.status);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x0042, h.seq);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(13, h.total_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(5, h.payload_len);</code>
+      * <code>Assert not null (h.payload)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, h.payload, 5);</code>
+      * <code>Assert true (dws_hartip_parse_header(msg, 8, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, h.payload_len);</code>
+      * <code>Assert null (h.payload)</code>
+      * <code>Assert false (dws_hartip_parse_header(msg, 10, &h))</code>
+      * <code>Assert false (dws_hartip_parse_header(msg, 8, &h))</code>
+      * <code>Assert false (dws_hartip_parse_header(msg, 7, &h))</code>
+      * <code>Assert false (dws_hartip_parse_header(nullptr, 8, &h))</code>
+      * <code>Assert false (dws_hartip_parse_header(msg, 8, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
