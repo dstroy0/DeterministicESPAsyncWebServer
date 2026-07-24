@@ -782,8 +782,8 @@ shipped work:
       counter) per RFC 4253 §11.4 - no handler-signature change needed. Tested by
       `test_unimplemented_reply_for_unknown_message`.
 
-- [~] **SSH channel multiplexing + port-forwarding.** _(channels + direct-tcpip
-      `ssh -L` done; forwarded-tcpip + X11 pending)_
+- [x] **SSH channel multiplexing + port-forwarding.** _(channels, direct-tcpip `ssh -L`,
+      and forwarded-tcpip `ssh -R` done + HW-verified; X11 a merit-justified non-goal)_
       `ssh_channel.cpp` is a per-connection channel table (`DWS_SSH_MAX_CHANNELS`,
       default 1 = the original single channel): up to N concurrent channels per
       connection, each with its own id / window / peer state, every inbound
@@ -819,8 +819,15 @@ shipped work:
       pumps; listeners + bridges are torn down on cancel and on SSH disconnect. Host-tested
       (`test_ssh_channel`: open/confirm/failure/inbound-routing) and **HW-verified end-to-end on
       an ESP32-S3** (`ssh -R 8080:localhost:9000` -> a connection to the device's :8080 tunnels
-      to the client's :9000 and back, both directions + close propagation). _Remaining:_
-      **X11 forwarding** (and a bind-port policy hook for remote forwards, currently any free port).
+      to the client's :9000 and back, both directions + close propagation).
+      _Not pursued (merit-justified non-goals):_ **X11 forwarding** - server-side X11 forwards TCP
+      connections that X11-*client* programs running ON the server open to the forwarded display, and
+      a headless embedded SSH server runs no such programs, so there is nothing to forward; the
+      `x11-req` channel request is conformantly refused (`CHANNEL_FAILURE`, covered by
+      `test_unknown_request_failure`). A per-request **bind-port policy** is already expressible through
+      `dws_ssh_channel_set_rforward_open_cb` (return the bound port, or < 0 to refuse a requested port).
+      If a real X11 use case ever appears, the opt-in-seam pattern used for direct-tcpip / forwarded-tcpip
+      is the extension path.
 
 - [x] **Per-direction NEWKEYS.** _(done)_ The single `ssh_pkt[i].encrypted` flag is
       split into `enc_out` (outbound) and `enc_in` (inbound), tracked independently per

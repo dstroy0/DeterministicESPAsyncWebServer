@@ -1494,7 +1494,8 @@
     "internetwork",
     "paddlewheel",
     "crob",
-    "asnd"
+    "asnd",
+    "conformantly"
   ],
   "ignorePaths": [
     "node_modules/**",
