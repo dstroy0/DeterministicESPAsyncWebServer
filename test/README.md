@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5009 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5011 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **5009 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (67 tests)</b></summary>
+<summary><b>test_ikev2 (69 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20865,6 +20865,33 @@ A thorough directory of all **5009 test cases** across **287 suites**. Expand a 
       * <code>Assert true (dws_ike_delete_parse(pl.body, pl.body_len, &proto, &ss, &nspis, &spis))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_IKE, (uint8_t)proto);</code>
       * <code>Assert false (dws_ike_informational_open(&ini.sa, work4, dmn, &first, &inner, &inner_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_child_keymat_kat</b> &mdash; <i>No PFS: KEYMAT = prf+(SK_d, Ni \| Nr).</i></summary>
+
+    * **Objective**: No PFS: KEYMAT = prf+(SK_d, Ni \| Nr).
+    * **Assertions**:
+      * <code>Assert true (dws_ike_child_keymat(ck_skd, 32, nullptr, 0, ck_ni, 16, ck_nr, 16, out, 72))</code>
+      * <code>Assert equal memory (ck_keymat, out, 72)</code>
+      * <code>Assert true (dws_ike_child_keymat(ck_skd, 32, ck_dh, 32, ck_ni, 16, ck_nr, 16, out, 72))</code>
+      * <code>Assert equal memory (ck_keymat_pfs, out, 72)</code>
+      * <code>Assert false (dws_ike_child_keymat(nullptr, 32, nullptr, 0, ck_ni, 16, ck_nr, 16, out, 72))</code>
+      * <code>Assert false (dws_ike_child_keymat(ck_skd, 32, nullptr, 0, ck_ni, 16, ck_nr, 16, out, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_create_child_sa_msg</b> &mdash; <i>Build a CREATE_CHILD_SA carrying an inner Nonce (a stand-in for the SA\|Ni\|Nr\|TSi\|TSr chain).</i></summary>
+
+    * **Objective**: Build a CREATE_CHILD_SA carrying an inner Nonce (a stand-in for the SA\|Ni\|Nr\|TSi\|TSr chain).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)ini.state);</code>
+      * <code>Assert true (mn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(36, msg[18]); // exchange type = IKE_CREATE_CHILD_SA</code>
+      * <code>Assert true (dws_ike_informational_open(&resp.sa, work, mn, &first, &got, &got_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_NONCE, (uint8_t)first);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(inl, got_len);</code>
+      * <code>Assert equal memory (inner, got, inl)</code>
   </details>
 
 </details>
