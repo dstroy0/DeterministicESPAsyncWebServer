@@ -186,6 +186,27 @@ bool dws_ubx_nav_sat_get(const DwsUbx *m, uint8_t index, DwsUbxSat *out)
     return true;
 }
 
+bool dws_ubx_parse_nav_timeutc(const DwsUbx *m, DwsUbxNavTimeUtc *out)
+{
+    if (!m || !out || !m->payload)
+        return false;
+    if (m->cls != DWS_UBX_CLASS_NAV || m->id != DWS_UBX_NAV_TIMEUTC || m->len < DWS_UBX_NAV_TIMEUTC_LEN)
+        return false;
+    const uint8_t *p = m->payload;
+    out->itow_ms = dws_ubx_u32(p, 0);
+    out->time_acc_ns = dws_ubx_u32(p, 4);
+    out->nano = dws_ubx_i32(p, 8);
+    out->year = dws_ubx_u16(p, 12);
+    out->month = p[14];
+    out->day = p[15];
+    out->hour = p[16];
+    out->minute = p[17];
+    out->second = p[18];
+    out->valid = p[19];
+    out->utc_valid = (p[19] & DWS_UBX_TIMEUTC_VALID_UTC) != 0;
+    return true;
+}
+
 size_t dws_ubx_build_cfg_msg(uint8_t *buf, size_t cap, uint8_t cls, uint8_t id, uint8_t rate)
 {
     const uint8_t pl[3] = {cls, id, rate}; // msgClass, msgID, rate (on the current port)

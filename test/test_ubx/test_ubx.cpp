@@ -485,6 +485,43 @@ void test_build_cfg_rate()
     TEST_ASSERT_EQUAL_size_t(0, dws_ubx_build_cfg_rate(buf, 8, 200, 1, DWS_UBX_TIME_REF_GPS)); // too small
 }
 
+// A UBX-NAV-TIMEUTC frame from a Python reference (2026-07-24 12:30:45 UTC, all time fields valid).
+static const uint8_t timeutc_frame[28] = {0xb5, 0x62, 0x01, 0x21, 0x14, 0x00, 0x15, 0xcd, 0x5b, 0x07,
+                                          0x14, 0x00, 0x00, 0x00, 0x20, 0xa1, 0x07, 0x00, 0xea, 0x07,
+                                          0x07, 0x18, 0x0c, 0x1e, 0x2d, 0x07, 0xc4, 0x7e};
+
+void test_nav_timeutc_decode()
+{
+    DwsUbx m;
+    TEST_ASSERT_TRUE(dws_ubx_parse(timeutc_frame, sizeof(timeutc_frame), &m));
+    DwsUbxNavTimeUtc t;
+    TEST_ASSERT_TRUE(dws_ubx_parse_nav_timeutc(&m, &t));
+    TEST_ASSERT_EQUAL_UINT32(123456789u, t.itow_ms);
+    TEST_ASSERT_EQUAL_UINT32(20, t.time_acc_ns);
+    TEST_ASSERT_EQUAL_INT32(500000, t.nano);
+    TEST_ASSERT_EQUAL_UINT16(2026, t.year);
+    TEST_ASSERT_EQUAL_UINT8(7, t.month);
+    TEST_ASSERT_EQUAL_UINT8(24, t.day);
+    TEST_ASSERT_EQUAL_UINT8(12, t.hour);
+    TEST_ASSERT_EQUAL_UINT8(30, t.minute);
+    TEST_ASSERT_EQUAL_UINT8(45, t.second);
+    TEST_ASSERT_TRUE(t.valid & DWS_UBX_TIMEUTC_VALID_TOW);
+    TEST_ASSERT_TRUE(t.valid & DWS_UBX_TIMEUTC_VALID_WKN);
+    TEST_ASSERT_TRUE(t.utc_valid); // leap seconds resolved
+
+    // Wrong class/id (a NAV-PVT frame), a short payload, and null args are rejected.
+    DwsUbx pvt;
+    dws_ubx_parse(navpvt_frame, sizeof(navpvt_frame), &pvt);
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_timeutc(&pvt, &t));
+    uint8_t shortpl[16] = {0};
+    uint8_t buf[64];
+    size_t sn = dws_ubx_build(buf, sizeof(buf), DWS_UBX_CLASS_NAV, DWS_UBX_NAV_TIMEUTC, shortpl, sizeof(shortpl));
+    DwsUbx sm;
+    dws_ubx_parse(buf, sn, &sm);
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_timeutc(&sm, &t));
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_timeutc(&m, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -508,5 +545,6 @@ int main()
     RUN_TEST(test_nav_sat_rejects);
     RUN_TEST(test_build_cfg_msg);
     RUN_TEST(test_build_cfg_rate);
+    RUN_TEST(test_nav_timeutc_decode);
     return UNITY_END();
 }

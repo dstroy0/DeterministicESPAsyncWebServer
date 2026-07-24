@@ -176,6 +176,36 @@ bool dws_ubx_parse_nav_sat(const DwsUbx *m, DwsUbxNavSatHdr *out);
  */
 bool dws_ubx_nav_sat_get(const DwsUbx *m, uint8_t index, DwsUbxSat *out);
 
+// -- NAV-TIMEUTC: the validated UTC time solution (for a GNSS time source) --
+
+#define DWS_UBX_NAV_TIMEUTC 0x21        ///< NAV-TIMEUTC message id (class NAV)
+#define DWS_UBX_NAV_TIMEUTC_LEN 20      ///< NAV-TIMEUTC payload length
+#define DWS_UBX_TIMEUTC_VALID_TOW 0x01u ///< valid flags bit 0: the time of week is valid
+#define DWS_UBX_TIMEUTC_VALID_WKN 0x02u ///< valid flags bit 1: the week number is valid
+#define DWS_UBX_TIMEUTC_VALID_UTC 0x04u ///< valid flags bit 2: the UTC time is valid (leap seconds known)
+
+/** @brief Decoded UBX-NAV-TIMEUTC payload. */
+struct DwsUbxNavTimeUtc
+{
+    uint32_t itow_ms;     ///< GPS time of week (ms)
+    uint32_t time_acc_ns; ///< time accuracy estimate (ns)
+    int32_t nano;         ///< fraction of second, -1e9..1e9 (ns)
+    uint16_t year;        ///< UTC year (1999..2099)
+    uint8_t month;        ///< UTC month (1..12)
+    uint8_t day;          ///< UTC day (1..31)
+    uint8_t hour;         ///< UTC hour (0..23)
+    uint8_t minute;       ///< UTC minute (0..59)
+    uint8_t second;       ///< UTC second (0..60)
+    uint8_t valid;        ///< validity flags (@ref DWS_UBX_TIMEUTC_VALID_TOW / _WKN / _UTC + utcStandard)
+    bool utc_valid;       ///< convenience: the UTC-valid bit is set (leap seconds resolved)
+};
+
+/**
+ * @brief Decode a UBX-NAV-TIMEUTC frame into @p out (the receiver's UTC time, for a GNSS time source).
+ * @return true iff @p m is a NAV-TIMEUTC frame (class 0x01 / id 0x21) of at least 20 octets; false otherwise.
+ */
+bool dws_ubx_parse_nav_timeutc(const DwsUbx *m, DwsUbxNavTimeUtc *out);
+
 // -- CFG: configure the receiver (which messages to emit, and how fast) --
 
 #define DWS_UBX_CLASS_CFG 0x06 ///< configuration-input message class

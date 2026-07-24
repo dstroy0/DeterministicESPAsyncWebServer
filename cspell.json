@@ -1481,7 +1481,8 @@
     "pseudorange",
     "ddmm",
     "HDOP",
-    "neighbour"
+    "neighbour",
+    "timeutc"
   ],
   "ignorePaths": [
     "node_modules/**",
