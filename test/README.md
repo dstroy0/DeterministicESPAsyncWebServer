@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5151 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5152 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -8930,7 +8930,7 @@ A thorough directory of all **5151 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dmx (9 tests)</b></summary>
+<summary><b>test_dmx (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dmx_build_and_get</b> &mdash; <i>512 channels is the max; 513 is rejected.</i></summary>
@@ -8969,6 +8969,21 @@ A thorough directory of all **5151 test cases** across **291 suites**. Expand a 
       * <code>Assert false (dws_rdm_decode_disc_response(resp, 10, &got))</code>
       * <code>Assert false (dws_rdm_decode_disc_response(nullptr, n, &got))</code>
       * <code>Assert false (dws_rdm_decode_disc_response(resp, n, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rdm_build_disc_response</b> &mdash; <i>The builder must match the test's independent reference encoder byte-for-byte, at every preamble length.</i></summary>
+
+    * **Objective**: The builder must match the test's independent reference encoder byte-for-byte, at every preamble length.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(rn, gn);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t((size_t)pre + 17, gn);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(ref, got, gn);</code>
+      * <code>Assert true (dws_rdm_decode_disc_response(got, n, &back))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(uid, back);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_disc_response(got, sizeof(got), uid, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_disc_response(nullptr, sizeof(got), uid, 7));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_disc_response(got, 16, uid, 7)); // a 7-preamble response needs 24</code>
   </details>
 
   <details style="margin-left: 20px;">
