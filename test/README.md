@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5065 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5068 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -21635,7 +21635,7 @@ A thorough directory of all **5065 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_j1939 (20 tests)</b></summary>
+<summary><b>test_j1939 (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_id_pdu2_roundtrip</b> &mdash; <i>Id pdu2 roundtrip</i></summary>
@@ -21874,6 +21874,52 @@ A thorough directory of all **5065 test cases** across **290 suites**. Expand a 
       * <code>Assert equal int (J1939TpResult::J1939_TP_IGNORED, dws_j1939_tp_feed(&rx, &dt))</code>
       * <code>Assert true (rx.active)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, rx.next_seq);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_eec1</b> &mdash; <i>1500 rpm (raw 12000 = 0x2EE0), driver's demand +100 % (raw 225), actual +80 % (raw 205), mode 3.</i></summary>
+
+    * **Objective**: 1500 rpm (raw 12000 = 0x2EE0), driver's demand +100 % (raw 225), actual +80 % (raw 205), mode 3.
+    * **Assertions**:
+      * <code>Assert true (dws_j1939_build_message(&f, 3, J1939_PGN_EEC1, 0x00, J1939_ADDR_GLOBAL, data, 8))</code>
+      * <code>Assert true (dws_j1939_decode_eec1(&f, &e))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, e.torque_mode);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(100, e.drivers_demand_torque_pct);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(80, e.actual_engine_torque_pct);</code>
+      * <code>Assert true (e.engine_speed_valid)</code>
+      * <code>Assert float within (0.01f, 1500.0f, e.engine_speed_rpm)</code>
+      * <code>Assert true (dws_j1939_decode_eec1(&fna, &e))</code>
+      * <code>Assert false (e.engine_speed_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(J1939_TORQUE_NA, e.drivers_demand_torque_pct);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_et1</b> &mdash; <i>coolant 90 C (raw 130), fuel 60 C (raw 100), oil 100 C (raw (100+273)/0.03125 = 11936 = 0x2EA0).</i></summary>
+
+    * **Objective**: coolant 90 C (raw 130), fuel 60 C (raw 100), oil 100 C (raw (100+273)/0.03125 = 11936 = 0x2EA0).
+    * **Assertions**:
+      * <code>Assert true (dws_j1939_build_message(&f, 6, J1939_PGN_ET1, 0x00, J1939_ADDR_GLOBAL, data, 8))</code>
+      * <code>Assert true (dws_j1939_decode_et1(&f, &t))</code>
+      * <code>Assert true (t.coolant_valid)</code>
+      * <code>Assert float within (0.01f, 90.0f, t.coolant_temp_c)</code>
+      * <code>Assert true (t.fuel_valid)</code>
+      * <code>Assert float within (0.01f, 60.0f, t.fuel_temp_c)</code>
+      * <code>Assert true (t.oil_valid)</code>
+      * <code>Assert float within (0.01f, 100.0f, t.oil_temp_c)</code>
+      * <code>Assert true (t.coolant_valid)</code>
+      * <code>Assert false (t.oil_valid)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_pgn_mismatch_and_guards</b> &mdash; <i>Short DLC + null guards.</i></summary>
+
+    * **Objective**: Short DLC + null guards.
+    * **Assertions**:
+      * <code>Assert false (dws_j1939_decode_eec1(&et1, &e))</code>
+      * <code>Assert false (dws_j1939_decode_et1(&eec1, &t))</code>
+      * <code>Assert false (dws_j1939_decode_eec1(&eec1, &e))</code>
+      * <code>Assert false (dws_j1939_decode_eec1(nullptr, &e))</code>
+      * <code>Assert false (dws_j1939_decode_et1(&et1, nullptr))</code>
   </details>
 
 </details>
