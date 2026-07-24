@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.134.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.134.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`7850fed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7850fed00a4b37bd642d14481c1e278f9742a70d))
+
+### Changes
+
+- Bump version: 7.133.0 → 7.134.0 ([`4491cdb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4491cdb4d26b8ef1590743902159daa93d8936a2))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`265a167`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/265a16766b06963befca121c558a49b0a4a7278c))
+
+### Features
+
+- Control Relay Output Block (g12v1) encoder ([`73411fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73411fece8fa6df77067b5886721c5a7ec15385d))
+
+</details>
+
 ## [7.133.0] - 2026-07-24
 
 <details>
