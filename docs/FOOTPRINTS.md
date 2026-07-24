@@ -53,7 +53,7 @@ from each example's `pio ci` size report and aggregated into
 | `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/Webhook               | 746.1 KB (58.3%) | 99.2 KB (31.0%)  |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE`                                                                        | L7-Application/HttpDelivery          | 823.6 KB (64.3%) | 80.8 KB (25.2%)  |
 | `IFACE_BRIDGE`                                                                                            | L7-Application/InterfaceBridge       | 763.2 KB (59.6%) | 80.7 KB (25.2%)  |
-| `IKEV2`                                                                                                   | L5-Session/IKEv2                     | 708.9 KB (55.4%) | 42.9 KB (13.4%)  |
+| `IKEV2`                                                                                                   | L5-Session/IKEv2                     | 709.2 KB (55.4%) | 42.9 KB (13.4%)  |
 | `INA219`                                                                                                  | Drivers/Ina219                       | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `IPV6`                                                                                                    | Foundation/IPv6                      | 738.3 KB (57.7%) | 79.9 KB (25.0%)  |
 | `IP_ALLOWLIST`                                                                                            | L4-Transport/IpAllowlist             | 737.1 KB (57.6%) | 79.9 KB (25.0%)  |
