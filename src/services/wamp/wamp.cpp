@@ -103,6 +103,19 @@ size_t dws_wamp_build_unsubscribe(char *buf, size_t cap, uint64_t request, uint6
     return finish(w);
 }
 
+size_t dws_wamp_build_unregister(char *buf, size_t cap, uint64_t request, uint64_t registration_id)
+{
+    if (!buf)
+        return 0;
+    JsonWriter w(buf, cap);
+    w.begin_array();
+    w.integer(WAMP_UNREGISTER);
+    emit_uint(w, request);
+    emit_uint(w, registration_id);
+    w.end_array();
+    return finish(w);
+}
+
 size_t dws_wamp_build_publish(char *buf, size_t cap, uint64_t request, const char *topic, const char *options_json,
                               const char *args_json, const char *kwargs_json)
 {

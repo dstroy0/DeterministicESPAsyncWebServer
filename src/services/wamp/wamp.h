@@ -83,6 +83,9 @@ size_t dws_wamp_build_call(char *buf, size_t cap, uint64_t request, const char *
 size_t dws_wamp_build_register(char *buf, size_t cap, uint64_t request, const char *procedure,
                                const char *options_json);
 
+/** @brief UNREGISTER: `[66, Request, RegistrationId]` (the RPC-side sibling of UNSUBSCRIBE). */
+size_t dws_wamp_build_unregister(char *buf, size_t cap, uint64_t request, uint64_t registration_id);
+
 /** @brief YIELD: `[70, Request, Options(, Arguments(, ArgumentsKw))]` (replies to an INVOCATION). */
 size_t dws_wamp_build_yield(char *buf, size_t cap, uint64_t request, const char *options_json, const char *args_json,
                             const char *kwargs_json);

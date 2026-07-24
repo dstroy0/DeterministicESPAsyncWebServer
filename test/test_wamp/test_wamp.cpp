@@ -72,6 +72,15 @@ void test_build_unsubscribe_and_goodbye()
     TEST_ASSERT_EQUAL_STRING("[6,{\"message\":\"bye\"},\"wamp.close.goodbye_and_out\"]", buf);
 }
 
+void test_build_unregister()
+{
+    char buf[128];
+    // The canonical WAMP UNREGISTER example: [66, 788923562, 2103333224].
+    TEST_ASSERT_GREATER_THAN(0, (int)dws_wamp_build_unregister(buf, sizeof(buf), 788923562, 2103333224ULL));
+    TEST_ASSERT_EQUAL_STRING("[66,788923562,2103333224]", buf);
+    TEST_ASSERT_EQUAL_size_t(0, dws_wamp_build_unregister(nullptr, sizeof(buf), 1, 2)); // null buffer fails closed
+}
+
 void test_build_overflow_fails_closed()
 {
     char buf[8];
@@ -354,6 +363,7 @@ int main()
     RUN_TEST(test_build_publish_kwargs_only);
     RUN_TEST(test_build_call_and_register_and_yield);
     RUN_TEST(test_build_unsubscribe_and_goodbye);
+    RUN_TEST(test_build_unregister);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_parse_type_and_id);
     RUN_TEST(test_parse_event_positions);
