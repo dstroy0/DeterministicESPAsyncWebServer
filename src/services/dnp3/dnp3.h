@@ -251,6 +251,21 @@ struct Dnp3ObjectHeader
  */
 bool dws_dnp3_parse_object_header(const uint8_t *buf, size_t len, Dnp3ObjectHeader *out);
 
+/**
+ * @brief Build an object header addressing a contiguous index range [@p start, @p stop]: group + variation +
+ *        a start-stop qualifier, picking the smallest of the 1 / 2 / 4-octet range forms (0x00 / 0x01 / 0x02)
+ *        that holds @p stop. The per-object index-prefix code is 0 (no prefix). @return octets written (5, 7,
+ *        or 11), or 0 on @p stop < @p start, a null buffer, or overflow.
+ */
+size_t dws_dnp3_build_object_header_range(uint8_t *buf, size_t cap, uint8_t group, uint8_t variation, uint32_t start,
+                                          uint32_t stop);
+
+/**
+ * @brief Build an all-objects object header (qualifier 0x06, no range field): group + variation + 0x06 - the
+ *        common "read every object of this group" form (e.g. a Class-data poll of group 60). @return 3, or 0.
+ */
+size_t dws_dnp3_build_object_header_all(uint8_t *buf, size_t cap, uint8_t group, uint8_t variation);
+
 #endif // DWS_ENABLE_DNP3
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNP3_H

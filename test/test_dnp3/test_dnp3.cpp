@@ -407,6 +407,54 @@ void test_object_header_rejects()
     TEST_ASSERT_FALSE(dws_dnp3_parse_object_header(two, 5, nullptr));
 }
 
+void test_build_object_header()
+{
+    uint8_t buf[16];
+    Dnp3ObjectHeader h;
+
+    // 1-octet start-stop: group 1 var 2 (binary inputs), 0..9.
+    size_t n = dws_dnp3_build_object_header_range(buf, sizeof(buf), 1, 2, 0, 9);
+    TEST_ASSERT_EQUAL_size_t(5, n);
+    const uint8_t exp1[] = {0x01, 0x02, 0x00, 0x00, 0x09};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(exp1, buf, 5);
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT8(DNP3_RANGE_START_STOP_1, h.range_code);
+    TEST_ASSERT_EQUAL_UINT32(0, h.start);
+    TEST_ASSERT_EQUAL_UINT32(9, h.stop);
+
+    // Promotes to the 2-octet form when stop exceeds 255: group 30 var 1, 100..300.
+    n = dws_dnp3_build_object_header_range(buf, sizeof(buf), 30, 1, 100, 300);
+    TEST_ASSERT_EQUAL_size_t(7, n);
+    const uint8_t exp2[] = {0x1E, 0x01, 0x01, 0x64, 0x00, 0x2C, 0x01};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(exp2, buf, 7);
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT32(100, h.start);
+    TEST_ASSERT_EQUAL_UINT32(300, h.stop);
+    TEST_ASSERT_EQUAL_UINT32(201, h.count);
+
+    // Promotes to the 4-octet form when stop exceeds 65535: 0..70000.
+    n = dws_dnp3_build_object_header_range(buf, sizeof(buf), 30, 1, 0, 70000);
+    TEST_ASSERT_EQUAL_size_t(11, n);
+    TEST_ASSERT_EQUAL_HEX8(DNP3_RANGE_START_STOP_4, buf[2]);
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT32(0, h.start);
+    TEST_ASSERT_EQUAL_UINT32(70000, h.stop);
+
+    // All-objects (qualifier 0x06): group 60 var 1 (Class-0 poll).
+    n = dws_dnp3_build_object_header_all(buf, sizeof(buf), 60, 1);
+    TEST_ASSERT_EQUAL_size_t(3, n);
+    const uint8_t expall[] = {0x3C, 0x01, 0x06};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expall, buf, 3);
+    TEST_ASSERT_TRUE(dws_dnp3_parse_object_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT8(DNP3_RANGE_NO_RANGE, h.range_code);
+
+    // Guards: stop < start, a null buffer, and too-small buffers all fail closed.
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_range(buf, sizeof(buf), 1, 2, 9, 0)); // stop < start
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_range(nullptr, sizeof(buf), 1, 2, 0, 9));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_range(buf, 4, 1, 2, 0, 9)); // needs 5
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_all(buf, 2, 60, 1));        // needs 3
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -427,5 +475,6 @@ int main()
     RUN_TEST(test_app_response_roundtrip);
     RUN_TEST(test_object_header_forms);
     RUN_TEST(test_object_header_rejects);
+    RUN_TEST(test_build_object_header);
     return UNITY_END();
 }

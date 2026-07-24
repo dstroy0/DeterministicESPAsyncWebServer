@@ -257,6 +257,62 @@ bool dws_dnp3_parse_app_header(const uint8_t *frag, size_t len, Dnp3AppHeader *o
     return true;
 }
 
+size_t dws_dnp3_build_object_header_range(uint8_t *buf, size_t cap, uint8_t group, uint8_t variation, uint32_t start,
+                                          uint32_t stop)
+{
+    if (!buf || stop < start)
+        return 0;
+    uint8_t range_code = 0;
+    size_t range_len = 0;
+    if (stop <= 0xFFu) // stop is the larger index, so it decides the width
+    {
+        range_code = DNP3_RANGE_START_STOP_1;
+        range_len = 2;
+    }
+    else if (stop <= 0xFFFFu)
+    {
+        range_code = DNP3_RANGE_START_STOP_2;
+        range_len = 4;
+    }
+    else
+    {
+        range_code = DNP3_RANGE_START_STOP_4;
+        range_len = 8;
+    }
+    size_t total = 3 + range_len;
+    if (cap < total)
+        return 0;
+    buf[0] = group;
+    buf[1] = variation;
+    buf[2] = range_code; // prefix code 0 (no per-object index prefix) | range specifier
+    if (range_code == DNP3_RANGE_START_STOP_1)
+    {
+        buf[3] = (uint8_t)start;
+        buf[4] = (uint8_t)stop;
+    }
+    else if (range_code == DNP3_RANGE_START_STOP_2)
+    {
+        dws_wr16le(buf + 3, (uint16_t)start);
+        dws_wr16le(buf + 5, (uint16_t)stop);
+    }
+    else
+    {
+        dws_wr32le(buf + 3, start);
+        dws_wr32le(buf + 7, stop);
+    }
+    return total;
+}
+
+size_t dws_dnp3_build_object_header_all(uint8_t *buf, size_t cap, uint8_t group, uint8_t variation)
+{
+    if (!buf || cap < 3)
+        return 0;
+    buf[0] = group;
+    buf[1] = variation;
+    buf[2] = DNP3_RANGE_NO_RANGE; // qualifier 0x06: all objects, no range field
+    return 3;
+}
+
 bool dws_dnp3_parse_object_header(const uint8_t *buf, size_t len, Dnp3ObjectHeader *out)
 {
     if (!buf || !out || len < 3) // group + variation + qualifier
