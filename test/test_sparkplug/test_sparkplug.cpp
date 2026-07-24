@@ -254,10 +254,74 @@ void test_spb_more_branch_coverage()
     TEST_ASSERT_FALSE(dws_pb_read_field(pbuf, pn, &pp, &pf)); // no metrics field
 }
 
+// Build a two-metric payload, then decode it back with the subscriber-side parser.
+void test_decode_payload_and_metrics()
+{
+    SpbMetric m[2] = {};
+    m[0].name = "temperature";
+    m[0].has_timestamp = true;
+    m[0].timestamp = 12345;
+    m[0].datatype = SPB_DT_DOUBLE;
+    m[0].kind = SpbMetricKind::SPB_M_DOUBLE;
+    m[0].double_value = 23.5;
+    m[1].name = "status";
+    m[1].has_alias = true;
+    m[1].alias = 7;
+    m[1].datatype = SPB_DT_STRING;
+    m[1].kind = SpbMetricKind::SPB_M_STRING;
+    m[1].string_value = "OK";
+    uint8_t buf[256];
+    size_t n = dws_spb_build_payload(buf, sizeof(buf), 1000, 5, m, 2);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+
+    SpbPayloadHeader hdr;
+    TEST_ASSERT_TRUE(dws_spb_parse_payload(buf, n, &hdr));
+    TEST_ASSERT_TRUE(hdr.has_timestamp);
+    TEST_ASSERT_EQUAL_UINT64(1000, hdr.timestamp);
+    TEST_ASSERT_TRUE(hdr.has_seq);
+    TEST_ASSERT_EQUAL_UINT64(5, hdr.seq);
+
+    size_t pos = 0;
+    const uint8_t *mb;
+    size_t mlen;
+    SpbMetricDecoded d;
+
+    // First metric: double "temperature".
+    TEST_ASSERT_TRUE(dws_spb_payload_next_metric(buf, n, &pos, &mb, &mlen));
+    TEST_ASSERT_TRUE(dws_spb_parse_metric(mb, mlen, &d));
+    TEST_ASSERT_EQUAL_size_t(11, d.name_len);
+    TEST_ASSERT_EQUAL_MEMORY("temperature", d.name, 11);
+    TEST_ASSERT_TRUE(d.has_timestamp);
+    TEST_ASSERT_EQUAL_UINT64(12345, d.timestamp);
+    TEST_ASSERT_EQUAL_UINT32(SPB_DT_DOUBLE, d.datatype);
+    TEST_ASSERT_TRUE(d.has_value);
+    TEST_ASSERT_EQUAL_INT((int)SpbMetricKind::SPB_M_DOUBLE, (int)d.kind);
+    TEST_ASSERT_TRUE(d.double_value == 23.5);
+
+    // Second metric: string "status" addressed by alias 7.
+    TEST_ASSERT_TRUE(dws_spb_payload_next_metric(buf, n, &pos, &mb, &mlen));
+    TEST_ASSERT_TRUE(dws_spb_parse_metric(mb, mlen, &d));
+    TEST_ASSERT_EQUAL_MEMORY("status", d.name, 6);
+    TEST_ASSERT_TRUE(d.has_alias);
+    TEST_ASSERT_EQUAL_UINT64(7, d.alias);
+    TEST_ASSERT_EQUAL_INT((int)SpbMetricKind::SPB_M_STRING, (int)d.kind);
+    TEST_ASSERT_EQUAL_size_t(2, d.string_value_len);
+    TEST_ASSERT_EQUAL_MEMORY("OK", d.string_value, 2);
+
+    // No third metric.
+    TEST_ASSERT_FALSE(dws_spb_payload_next_metric(buf, n, &pos, &mb, &mlen));
+
+    // Null-argument guards.
+    TEST_ASSERT_FALSE(dws_spb_parse_payload(nullptr, n, &hdr));
+    TEST_ASSERT_FALSE(dws_spb_parse_metric(nullptr, mlen, &d));
+    TEST_ASSERT_FALSE(dws_spb_payload_next_metric(nullptr, n, &pos, &mb, &mlen));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_spb_error_and_kind_paths);
+    RUN_TEST(test_decode_payload_and_metrics);
     RUN_TEST(test_topic);
     RUN_TEST(test_metric_bytes);
     RUN_TEST(test_payload_round_trip);

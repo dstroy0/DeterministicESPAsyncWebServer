@@ -85,6 +85,60 @@ size_t dws_spb_build_metric(uint8_t *buf, size_t cap, const SpbMetric *m);
 size_t dws_spb_build_payload(uint8_t *buf, size_t cap, uint64_t timestamp, uint64_t seq, const SpbMetric *metrics,
                              size_t n);
 
+// ---- decoding (the subscriber side, built on the protobuf reader) ----
+
+/** @brief The top-level fields of a decoded Sparkplug B Payload; metrics are iterated separately. */
+struct SpbPayloadHeader
+{
+    bool has_timestamp;
+    uint64_t timestamp;
+    bool has_seq;
+    uint64_t seq; ///< Sparkplug sequence number
+};
+
+/**
+ * @brief Parse a Sparkplug B Payload's top-level fields: the timestamp (field 1) and sequence number
+ *        (field 3). The repeated metrics (field 2) are read with dws_spb_payload_next_metric.
+ * @return true iff the protobuf parses without truncation; false otherwise.
+ */
+bool dws_spb_parse_payload(const uint8_t *buf, size_t len, SpbPayloadHeader *out);
+
+/**
+ * @brief Iterate the metric sub-messages (field 2) of a Payload. Start @p pos at 0; each call points
+ *        @p metric / @p metric_len at the next metric's protobuf bytes and advances @p pos.
+ * @return true while a metric remains; false at the end of the payload / on a malformed field.
+ */
+bool dws_spb_payload_next_metric(const uint8_t *buf, size_t len, size_t *pos, const uint8_t **metric,
+                                 size_t *metric_len);
+
+/** @brief A decoded Sparkplug B Metric. The name / string_value point INTO the buffer (NOT NUL-terminated). */
+struct SpbMetricDecoded
+{
+    const char *name; ///< metric name, or nullptr if omitted (a DATA metric addressed by alias)
+    size_t name_len;
+    bool has_alias;
+    uint64_t alias;
+    bool has_timestamp;
+    uint64_t timestamp;
+    uint32_t datatype;  ///< SPB_DT_*
+    bool has_value;     ///< false if no value oneof field was present
+    SpbMetricKind kind; ///< which value member is set (valid when @ref has_value)
+    uint32_t int_value;
+    uint64_t long_value;
+    float float_value;
+    double double_value;
+    bool bool_value;
+    const char *string_value; ///< string_value bytes (NOT NUL-terminated), or nullptr
+    size_t string_value_len;
+};
+
+/**
+ * @brief Decode a Metric message (a slice from dws_spb_payload_next_metric) into @p out: the name, alias,
+ *        timestamp, datatype, and the value oneof (int / long / float / double / boolean / string).
+ * @return true iff the protobuf parses without truncation; false otherwise.
+ */
+bool dws_spb_parse_metric(const uint8_t *buf, size_t len, SpbMetricDecoded *out);
+
 #endif // DWS_ENABLE_SPARKPLUG
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SPARKPLUG_H

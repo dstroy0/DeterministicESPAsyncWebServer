@@ -128,4 +128,144 @@ size_t dws_spb_build_payload(uint8_t *buf, size_t cap, uint64_t timestamp, uint6
     return dws_pb_writer_finish(&w);
 }
 
+bool dws_spb_parse_payload(const uint8_t *buf, size_t len, SpbPayloadHeader *out)
+{
+    if (!buf || !out)
+        return false;
+    memset(out, 0, sizeof(*out));
+    size_t pos = 0;
+    PbField f;
+    while (pos < len)
+    {
+        if (!dws_pb_read_field(buf, len, &pos, &f))
+            return false;
+        if (f.field_number == SPB_PL_TIMESTAMP && f.wire_type == PB_WT_VARINT)
+        {
+            out->has_timestamp = true;
+            out->timestamp = f.value;
+        }
+        else if (f.field_number == SPB_PL_SEQ && f.wire_type == PB_WT_VARINT)
+        {
+            out->has_seq = true;
+            out->seq = f.value;
+        }
+        // metrics (field 2), uuid, body are skipped here
+    }
+    return true;
+}
+
+bool dws_spb_payload_next_metric(const uint8_t *buf, size_t len, size_t *pos, const uint8_t **metric,
+                                 size_t *metric_len)
+{
+    if (!buf || !pos || !metric || !metric_len)
+        return false;
+    PbField f;
+    while (*pos < len)
+    {
+        if (!dws_pb_read_field(buf, len, pos, &f))
+            return false;
+        if (f.field_number == SPB_PL_METRICS && f.wire_type == PB_WT_LEN)
+        {
+            *metric = f.data;
+            *metric_len = f.len;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool dws_spb_parse_metric(const uint8_t *buf, size_t len, SpbMetricDecoded *out)
+{
+    if (!buf || !out)
+        return false;
+    memset(out, 0, sizeof(*out));
+    size_t pos = 0;
+    PbField f;
+    while (pos < len)
+    {
+        if (!dws_pb_read_field(buf, len, &pos, &f))
+            return false;
+        switch (f.field_number)
+        {
+        case SPB_MET_NAME:
+            if (f.wire_type == PB_WT_LEN)
+            {
+                out->name = (const char *)f.data;
+                out->name_len = f.len;
+            }
+            break;
+        case SPB_MET_ALIAS:
+            if (f.wire_type == PB_WT_VARINT)
+            {
+                out->has_alias = true;
+                out->alias = f.value;
+            }
+            break;
+        case SPB_MET_TIMESTAMP:
+            if (f.wire_type == PB_WT_VARINT)
+            {
+                out->has_timestamp = true;
+                out->timestamp = f.value;
+            }
+            break;
+        case SPB_MET_DATATYPE:
+            if (f.wire_type == PB_WT_VARINT)
+                out->datatype = (uint32_t)f.value;
+            break;
+        case SPB_MET_INT:
+            if (f.wire_type == PB_WT_VARINT)
+            {
+                out->has_value = true;
+                out->kind = SpbMetricKind::SPB_M_INT;
+                out->int_value = (uint32_t)f.value;
+            }
+            break;
+        case SPB_MET_LONG:
+            if (f.wire_type == PB_WT_VARINT)
+            {
+                out->has_value = true;
+                out->kind = SpbMetricKind::SPB_M_LONG;
+                out->long_value = f.value;
+            }
+            break;
+        case SPB_MET_FLOAT:
+            if (f.wire_type == PB_WT_I32)
+            {
+                out->has_value = true;
+                out->kind = SpbMetricKind::SPB_M_FLOAT;
+                out->float_value = dws_pb_float_bits((uint32_t)f.value);
+            }
+            break;
+        case SPB_MET_DOUBLE:
+            if (f.wire_type == PB_WT_I64)
+            {
+                out->has_value = true;
+                out->kind = SpbMetricKind::SPB_M_DOUBLE;
+                out->double_value = dws_pb_double_bits(f.value);
+            }
+            break;
+        case SPB_MET_BOOL:
+            if (f.wire_type == PB_WT_VARINT)
+            {
+                out->has_value = true;
+                out->kind = SpbMetricKind::SPB_M_BOOL;
+                out->bool_value = f.value != 0;
+            }
+            break;
+        case SPB_MET_STRING:
+            if (f.wire_type == PB_WT_LEN)
+            {
+                out->has_value = true;
+                out->kind = SpbMetricKind::SPB_M_STRING;
+                out->string_value = (const char *)f.data;
+                out->string_value_len = f.len;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    return true;
+}
+
 #endif // DWS_ENABLE_SPARKPLUG
