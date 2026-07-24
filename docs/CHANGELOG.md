@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.96.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.96.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`86a0988`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86a098875db48fd67d4f9d06d5383d5094dbc0c5))
+
+### Changes
+
+- Bump version: 7.95.0 → 7.96.0 ([`bd42a7b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd42a7b8eb5b9af86e07132b6adfca0a6e95b647))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0ababb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ababb83142d93e98d5e94cdcd700ff382c51b7e))
+
+### Features
+
+- build the Memory Area Write command (0102) ([`6a6945e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a6945e5cc8cfc66a995dca146e63e545b856911))
+
+</details>
+
 ## [7.95.0] - 2026-07-24
 
 <details>
