@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.95.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.95.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ad5c8db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad5c8dbc63a480b6f2d0ddb67a6e1bbaee175d6c))
+
+### Changes
+
+- Bump version: 7.94.0 → 7.95.0 ([`25a3087`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25a3087fcdc7554d057e2c220aaa80454500e208))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5b3a427`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b3a427f3f44f3947bd0b8506fad389b79e711c5))
+
+### Features
+
+- parse the HART-IP message header (receive side) ([`13bf6f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13bf6f0642391c8d5a9498252f15b2232aa9e403))
+
+</details>
+
 ## [7.94.0] - 2026-07-24
 
 <details>
