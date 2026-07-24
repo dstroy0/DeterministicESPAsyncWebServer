@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.79.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.79.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e48c0ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e48c0ab670663f47a7aeeca0e294c00484e92e2f))
+
+### Changes
+
+- Bump version: 7.78.0 → 7.79.0 ([`515e2dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/515e2dc1f4cd87c1a3d948e516cce350515ff36c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cc68f14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc68f14a954433e1b5e6f7185d85e3c429ba2b22))
+
+### Features
+
+- Water Depth + Vessel Heading PGN decoders ([`6e25b9b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e25b9b5b7fc3a12e3629fc2dea8f8bb4462e5de))
+
+</details>
+
 ## [7.78.0] - 2026-07-24
 
 <details>
