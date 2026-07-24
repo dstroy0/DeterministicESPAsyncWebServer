@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4992 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4994 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **4992 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (50 tests)</b></summary>
+<summary><b>test_ikev2 (52 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20573,6 +20573,27 @@ A thorough directory of all **4992 test cases** across **287 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_dh_compute(IKE_DH_CURVE25519, kat_alice_priv, 31, kat_bob_pub, 32, out, 32));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_dh_compute(IKE_DH_CURVE25519, kat_alice_priv, 32, kat_bob_pub, 32, out, 31));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_dh_public(IKE_DH_CURVE25519, nullptr, 32, out, 32));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_auth_psk_kat</b> &mdash; <i>Peer-verify semantics: recomputing with the same inputs matches (equal-compare against received);</i></summary>
+
+    * **Objective**: Peer-verify semantics: recomputing with the same inputs matches (equal-compare against received);
+    * **Assertions**:
+      * <code>Assert true (dws_ike_auth_psk(psk, sizeof(psk), real, sizeof(real), pnonce, sizeof(pnonce), skp, sizeof(skp)</code>
+      * <code>Assert equal memory (expect, out, DWS_IKE_AUTH_LEN)</code>
+      * <code>Assert true (dws_ike_auth_psk(wrong_psk, sizeof(wrong_psk), real, sizeof(real), pnonce, sizeof(pnonce)</code>
+      * <code>Assert not equal (0, memcmp(expect, out2, DWS_IKE_AUTH_LEN))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_auth_psk_guards</b> &mdash; <i>Auth psk guards</i></summary>
+
+    * **Objective**: Auth psk guards
+    * **Assertions**:
+      * <code>Assert false (dws_ike_auth_psk(nullptr, 1, b, 8, b, 8, b, 8, b, 8, out))</code>
+      * <code>Assert false (dws_ike_auth_psk(b, 8, b, 8, b, 8, b, 8, b, 8, nullptr))</code>
+      * <code>Assert false (dws_ike_auth_psk(b, 8, nullptr, 8, b, 8, b, 8, b, 8, out))</code>
   </details>
 
 </details>
