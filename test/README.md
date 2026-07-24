@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5031 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5034 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19898,7 +19898,7 @@ A thorough directory of all **5031 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (71 tests)</b></summary>
+<summary><b>test_ikev2 (74 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -21020,6 +21020,52 @@ A thorough directory of all **5031 test cases** across **290 suites**. Expand a 
       * <code>Assert not equal (0, memcmp(km.sk_d, km_init.sk_d, 32))</code>
       * <code>TEST_ASSERT_FALSE(</code>
       * <code>TEST_ASSERT_FALSE(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cp_build_golden</b> &mdash; <i>A too-small buffer overflows to 0.</i></summary>
+
+    * **Objective**: A too-small buffer overflows to 0.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(24, n);</code>
+      * <code>Assert equal memory (cp_golden, buf, 24)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cp_parse_roundtrip</b> &mdash; <i>Parse the golden body (after the 4-byte generic header) and walk its attributes.</i></summary>
+
+    * **Objective**: Parse the golden body (after the 4-byte generic header) and walk its attributes.
+    * **Assertions**:
+      * <code>Assert true (dws_ike_cp_parse(cp_golden + 4, sizeof(cp_golden) - 4, &ct, &area, &area_len))</code>
+      * <code>Assert equal (IkeCfgType::IKE_CFG_REPLY, ct)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(16, area_len); // two 8-byte attributes</code>
+      * <code>Assert true (dws_ike_cp_attr_next(&it, &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_IKE_CFG_INTERNAL_IP4_ADDRESS, a.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, a.value_len);</code>
+      * <code>Assert equal memory (ip, a.value, 4)</code>
+      * <code>Assert true (dws_ike_cp_attr_next(&it, &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_IKE_CFG_INTERNAL_IP4_DNS, a.type);</code>
+      * <code>Assert equal memory (dns, a.value, 4)</code>
+      * <code>Assert false (dws_ike_cp_attr_next(&it, &a))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cp_request_empty_and_guards</b> &mdash; <i>A CFG_REQUEST asks for an address with an empty (zero-length) attribute.</i></summary>
+
+    * **Objective**: A CFG_REQUEST asks for an address with an empty (zero-length) attribute.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(12, n); // 4 gen + 4 cfg + 4 attr header, no value</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_SA, buf[0]);</code>
+      * <code>Assert true (dws_ike_cp_parse(buf + 4, n - 4, &ct, &area, &area_len))</code>
+      * <code>Assert equal (IkeCfgType::IKE_CFG_REQUEST, ct)</code>
+      * <code>Assert true (dws_ike_cp_attr_next(&it, &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_IKE_CFG_INTERNAL_IP4_ADDRESS, a.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, a.value_len);</code>
+      * <code>Assert null (a.value)</code>
+      * <code>Assert false (dws_ike_cp_attr_next(&it, &a))</code>
+      * <code>Assert false (dws_ike_cp_attr_next(&it, &a))</code>
+      * <code>Assert false (dws_ike_cp_parse(bad, 3, &ct, &area, &area_len))</code>
   </details>
 
 </details>
