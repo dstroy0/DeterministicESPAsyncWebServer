@@ -36,7 +36,7 @@ TI ADS1115 4-channel 16-bit ADC with programmable gain (I2C). Default off. servi
 
 `DWS_ENABLE_AMQP`
 
-AMQP 0-9-1 frame codec - the RabbitMQ wire protocol. Default off. services/amqp lets a device be an AMQP client over the outbound client transport: `dws_amqp_protocol_header` writes the `"AMQP" 0 0 9 1` preamble, `dws_amqp_build_frame` / `dws_amqp_parse_frame` build and validate a frame (type + channel + 4-octet size + payload + the mandatory 0xCE frame-end), `dws_amqp_build_method` / `dws_amqp_parse_method` handle a METHOD frame's class-id / method-id / arguments, and `dws_amqp_build_heartbeat` emits a keep-alive. Pure and host-tested; the method-argument field encoding and the connection state are the application's. See src/services/amqp/amqp.h.
+AMQP 0-9-1 frame codec - the RabbitMQ wire protocol. Default off. services/amqp lets a device be an AMQP client over the outbound client transport: `dws_amqp_protocol_header` writes the `"AMQP" 0 0 9 1` preamble, `dws_amqp_build_frame` / `dws_amqp_parse_frame` build and validate a frame (type + channel + 4-octet size + payload + the mandatory 0xCE frame-end), `dws_amqp_build_method` / `dws_amqp_parse_method` handle a METHOD frame's class-id / method-id / arguments, `dws_amqp_build_content_header` frames the content HEADER frame that follows a Basic.Publish (class-id + weight + the 8-octet body size + property flags + an optional property list) so a device can publish a message body, and `dws_amqp_build_heartbeat` emits a keep-alive. Pure and host-tested; the method-argument field encoding and the connection state are the application's. See src/services/amqp/amqp.h.
 
 ## ATC
 

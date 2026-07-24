@@ -53,6 +53,16 @@ size_t dws_amqp_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint16_t cha
 size_t dws_amqp_build_method(uint8_t *buf, size_t cap, uint16_t channel, uint16_t class_id, uint16_t method_id,
                              const uint8_t *args, size_t args_len);
 
+/**
+ * @brief Build a content HEADER frame (type 2) - the frame that follows a Basic.Publish method and precedes
+ *        the BODY frame(s). Its payload is `class-id(2) weight(2)=0 body-size(8, big-endian) property-flags(2,
+ *        big-endian)` then @p properties (the encoded property list for the set flags; pass none for a plain
+ *        publish). @p body_size is the total octet count of the message body across all BODY frames.
+ * @return total octets, or 0 on a null @p properties with a nonzero length, or an overflow.
+ */
+size_t dws_amqp_build_content_header(uint8_t *buf, size_t cap, uint16_t channel, uint16_t class_id, uint64_t body_size,
+                                     uint16_t property_flags, const uint8_t *properties, size_t properties_len);
+
 /** @brief Build a heartbeat frame (type 8, channel 0, empty payload). Returns 8, or 0. */
 size_t dws_amqp_build_heartbeat(uint8_t *buf, size_t cap);
 

@@ -73,6 +73,29 @@ size_t dws_amqp_build_method(uint8_t *buf, size_t cap, uint16_t channel, uint16_
     return p;
 }
 
+size_t dws_amqp_build_content_header(uint8_t *buf, size_t cap, uint16_t channel, uint16_t class_id, uint64_t body_size,
+                                     uint16_t property_flags, const uint8_t *properties, size_t properties_len)
+{
+    if (!buf || (properties_len && !properties))
+        return 0;
+    size_t payload_len = 2 + 2 + 8 + 2 + properties_len; // class-id + weight + body-size + property-flags + props
+    size_t total = AMQP_FRAME_OVERHEAD + payload_len;
+    if (total > cap)
+        return 0;
+    size_t p = write_frame_header(buf, AMQP_FRAME_HEADER, channel, (uint32_t)payload_len);
+    p += dws_wr16be(buf + p, class_id);
+    p += dws_wr16be(buf + p, 0); // weight (deprecated, always 0)
+    p += dws_wr64be(buf + p, body_size);
+    p += dws_wr16be(buf + p, property_flags);
+    if (properties_len)
+    {
+        memcpy(buf + p, properties, properties_len);
+        p += properties_len;
+    }
+    buf[p++] = AMQP_FRAME_END;
+    return p;
+}
+
 size_t dws_amqp_build_heartbeat(uint8_t *buf, size_t cap)
 {
     return dws_amqp_build_frame(buf, cap, AMQP_FRAME_HEARTBEAT, 0, nullptr, 0);

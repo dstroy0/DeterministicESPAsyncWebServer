@@ -80,6 +80,44 @@ void test_heartbeat()
     TEST_ASSERT_EQUAL_size_t(0, f.payload_len);
 }
 
+void test_content_header()
+{
+    uint8_t buf[32];
+    // Content header for a Basic (class 60) publish of a 5-octet body, no properties.
+    size_t n = dws_amqp_build_content_header(buf, sizeof(buf), 7, 60, 5, 0, nullptr, 0);
+    const uint8_t expect[] = {
+        0x02, 0x00, 0x07,                               // type HEADER, channel 7
+        0x00, 0x00, 0x00, 0x0E,                         // payload size 14
+        0x00, 0x3C,                                     // class-id 60 (Basic)
+        0x00, 0x00,                                     // weight 0
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, // body-size 5 (8 octets, big-endian)
+        0x00, 0x00,                                     // property flags 0
+        0xCE                                            // frame end
+    };
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+
+    // It parses back as a HEADER frame whose payload is the 14-octet content header.
+    AmqpFrame f;
+    size_t consumed;
+    TEST_ASSERT_TRUE(dws_amqp_parse_frame(buf, n, &f, &consumed));
+    TEST_ASSERT_EQUAL_HEX8(AMQP_FRAME_HEADER, f.type);
+    TEST_ASSERT_EQUAL_size_t(14, f.payload_len);
+    TEST_ASSERT_EQUAL_size_t(n, consumed);
+
+    // A property list is appended after the flags.
+    const uint8_t props[] = {0xAB, 0xCD};
+    n = dws_amqp_build_content_header(buf, sizeof(buf), 1, 60, 100, 0x8000, props, sizeof(props));
+    TEST_ASSERT_EQUAL_size_t(8 + 14 + 2, n);
+    TEST_ASSERT_EQUAL_HEX8(0xAB, buf[n - 3]); // the property octets precede the 0xCE end
+    TEST_ASSERT_EQUAL_HEX8(0xCD, buf[n - 2]);
+
+    // Guards: a null properties pointer with a nonzero length, a null buffer, and a too-small buffer.
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_content_header(buf, sizeof(buf), 1, 60, 5, 0x8000, nullptr, 2));
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_content_header(nullptr, sizeof(buf), 1, 60, 5, 0, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_content_header(buf, 16, 1, 60, 5, 0, nullptr, 0)); // needs 22
+}
+
 // A stream of two frames parses one at a time via the consumed cursor.
 void test_parse_stream()
 {
@@ -218,6 +256,7 @@ int main()
     RUN_TEST(test_build_method_bytes);
     RUN_TEST(test_method_round_trip);
     RUN_TEST(test_heartbeat);
+    RUN_TEST(test_content_header);
     RUN_TEST(test_parse_stream);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
