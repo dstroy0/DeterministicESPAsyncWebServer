@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5129 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5130 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -3011,7 +3011,7 @@ A thorough directory of all **5129 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_bacnet (13 tests)</b></summary>
+<summary><b>test_bacnet (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_bacnet_guards_and_truncations</b> &mdash; <i>Bacnet guards and truncations</i></summary>
@@ -3165,6 +3165,47 @@ A thorough directory of all **5129 test cases** across **291 suites**. Expand a 
       * <code>Assert false (dws_npdu_parse(nullptr, sizeof(frame), &info))</code>
       * <code>Assert false (dws_npdu_parse(frame, sizeof(frame), nullptr))</code>
       * <code>Assert false (dws_npdu_parse(frame, 1, &info))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_apdu_parse</b> &mdash; <i>Confirmed-Request ReadProperty (service 12): type/flags, max octet, invoke id 1, service choice, data.</i></summary>
+
+    * **Objective**: Confirmed-Request ReadProperty (service 12): type/flags, max octet, invoke id 1, service choice, data.
+    * **Assertions**:
+      * <code>Assert true (dws_apdu_parse(creq, sizeof(creq), &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_CONFIRMED_REQUEST, a.pdu_type);</code>
+      * <code>Assert false (a.segmented)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, a.invoke_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, a.service_choice);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, a.service_data_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xDE, a.service_data[0]);</code>
+      * <code>Assert true (dws_apdu_parse(seg, sizeof(seg), &a))</code>
+      * <code>Assert true (a.segmented)</code>
+      * <code>Assert true (a.sa)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, a.invoke_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, a.service_choice);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, a.service_data_len);</code>
+      * <code>Assert true (dws_apdu_parse(ureq, sizeof(ureq), &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_UNCONFIRMED_REQUEST, a.pdu_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, a.service_choice);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, a.service_data_len);</code>
+      * <code>Assert true (dws_apdu_parse(sack, sizeof(sack), &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_SIMPLE_ACK, a.pdu_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, a.invoke_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(15, a.service_choice);</code>
+      * <code>Assert null (a.service_data)</code>
+      * <code>Assert true (dws_apdu_parse(cack, sizeof(cack), &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_COMPLEX_ACK, a.pdu_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, a.invoke_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, a.service_choice);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, a.service_data_len);</code>
+      * <code>Assert false (dws_apdu_parse(err, sizeof(err), &a))</code>
+      * <code>Assert false (dws_apdu_parse(creq, 3, &a))</code>
+      * <code>Assert false (dws_apdu_parse(seg, 5, &a))</code>
+      * <code>Assert false (dws_apdu_parse(sack, 2, &a))</code>
+      * <code>Assert false (dws_apdu_parse(nullptr, 4, &a))</code>
+      * <code>Assert false (dws_apdu_parse(creq, sizeof(creq), nullptr))</code>
+      * <code>Assert false (dws_apdu_parse(creq, 0, &a))</code>
   </details>
 
 </details>
