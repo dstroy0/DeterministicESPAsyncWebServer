@@ -327,6 +327,26 @@ size_t dws_dnp3_build_crob(uint8_t *buf, size_t cap, uint8_t op_type, uint8_t tc
     return DNP3_CROB_LEN;
 }
 
+size_t dws_dnp3_build_aob32(uint8_t *buf, size_t cap, int32_t value)
+{
+    if (!buf || cap < DNP3_AOB_LEN)
+        return 0;
+    dws_wr32le(buf, (uint32_t)value); // 32-bit signed setpoint, little-endian (two's complement)
+    buf[4] = 0x00;                    // control status: 0 in a request (the outstation reports the result)
+    return DNP3_AOB_LEN;
+}
+
+size_t dws_dnp3_build_aob_float(uint8_t *buf, size_t cap, float value)
+{
+    if (!buf || cap < DNP3_AOB_LEN)
+        return 0;
+    uint32_t bits;
+    memcpy(&bits, &value, 4); // the IEEE-754 bit pattern, written little-endian (endian-safe)
+    dws_wr32le(buf, bits);
+    buf[4] = 0x00; // control status: 0 in a request
+    return DNP3_AOB_LEN;
+}
+
 bool dws_dnp3_parse_object_header(const uint8_t *buf, size_t len, Dnp3ObjectHeader *out)
 {
     if (!buf || !out || len < 3) // group + variation + qualifier

@@ -293,6 +293,27 @@ size_t dws_dnp3_build_object_header_all(uint8_t *buf, size_t cap, uint8_t group,
 size_t dws_dnp3_build_crob(uint8_t *buf, size_t cap, uint8_t op_type, uint8_t tcc, bool clear, uint8_t count,
                            uint32_t on_time_ms, uint32_t off_time_ms);
 
+// --- Analog Output Block (group 41): the analog counterpart to the CROB - the setpoint object a SELECT /
+// OPERATE carries to command an analog output. Variation 1 is a 32-bit signed integer, variation 3 a 32-bit
+// float; each carries the value (little-endian) followed by a 1-octet control status (0 in a request). ---
+
+#define DNP3_AOB_LEN 5 ///< octets in a g41v1 (32-bit int) or g41v3 (32-bit float) Analog Output Block object
+
+/**
+ * @brief Build a 32-bit Analog Output Block (g41v1) object: a signed 32-bit setpoint value (little-endian,
+ *        two's complement) followed by a status octet (0 in a request). Wrap it with an object header + index
+ *        prefix inside a SELECT / OPERATE request; the outstation reports the result status in its response.
+ * @return DNP3_AOB_LEN (5), or 0 on a null buffer or an overflow.
+ */
+size_t dws_dnp3_build_aob32(uint8_t *buf, size_t cap, int32_t value);
+
+/**
+ * @brief Build a 32-bit floating-point Analog Output Block (g41v3) object: an IEEE-754 single-precision
+ *        setpoint value (little-endian) followed by a status octet (0 in a request).
+ * @return DNP3_AOB_LEN (5), or 0 on a null buffer or an overflow.
+ */
+size_t dws_dnp3_build_aob_float(uint8_t *buf, size_t cap, float value);
+
 #endif // DWS_ENABLE_DNP3
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNP3_H

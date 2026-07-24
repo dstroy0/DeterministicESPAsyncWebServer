@@ -481,6 +481,33 @@ void test_build_crob()
     TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(buf, 10, 1, 1, false, 1, 0, 0)); // needs 11
 }
 
+void test_build_aob()
+{
+    uint8_t buf[16];
+
+    // g41v1: a 32-bit signed setpoint 12345 (0x3039) little-endian + a status octet (0 in a request).
+    size_t n = dws_dnp3_build_aob32(buf, sizeof(buf), 12345);
+    TEST_ASSERT_EQUAL_size_t(DNP3_AOB_LEN, n);
+    const uint8_t v1[] = {0x39, 0x30, 0x00, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(v1, buf, n);
+
+    // A negative setpoint rides the two's-complement bytes: -12345 = 0xFFFFCFC7.
+    n = dws_dnp3_build_aob32(buf, sizeof(buf), -12345);
+    const uint8_t v1neg[] = {0xC7, 0xCF, 0xFF, 0xFF, 0x00};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(v1neg, buf, n);
+
+    // g41v3: a 32-bit float setpoint 1.5 (IEEE-754 0x3FC00000) little-endian + status.
+    n = dws_dnp3_build_aob_float(buf, sizeof(buf), 1.5f);
+    TEST_ASSERT_EQUAL_size_t(DNP3_AOB_LEN, n);
+    const uint8_t v3[] = {0x00, 0x00, 0xC0, 0x3F, 0x00};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(v3, buf, n);
+
+    // Guards: a null buffer and a too-small buffer (both variations need 5 octets).
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_aob32(nullptr, sizeof(buf), 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_aob32(buf, 4, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_aob_float(buf, 4, 1.0f));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -503,5 +530,6 @@ int main()
     RUN_TEST(test_object_header_rejects);
     RUN_TEST(test_build_object_header);
     RUN_TEST(test_build_crob);
+    RUN_TEST(test_build_aob);
     return UNITY_END();
 }
