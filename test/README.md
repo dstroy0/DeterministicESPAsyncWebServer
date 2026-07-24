@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5111 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5112 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29195,7 +29195,7 @@ A thorough directory of all **5111 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (20 tests)</b></summary>
+<summary><b>test_nmea0183 (21 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -29475,6 +29475,31 @@ A thorough directory of all **5111 test cases** across **291 suites**. Expand a 
       * <code>Assert equal char ('\\0', v.mode)</code>
       * <code>Assert false (dws_nmea0183_parse_vtg(&m, &v))</code>
       * <code>Assert false (dws_nmea0183_parse_vtg(nullptr, &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_gsa</b> &mdash; <i>3D auto fix on 5 satellites (blank PRN slots between them), PDOP 2.5 / HDOP 1.3 / VDOP 2.1.</i></summary>
+
+    * **Objective**: 3D auto fix on 5 satellites (blank PRN slots between them), PDOP 2.5 / HDOP 1.3 / VDOP 2.1.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_gsa(&m, &g))</code>
+      * <code>Assert equal char ('A', g.mode)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, g.fix_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, g.sat_count); // 04,05,09,12,24 - blanks skipped</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, g.sats[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(9, g.sats[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(24, g.sats[4]);</code>
+      * <code>Assert float within (0.01f, 2.5f, g.pdop)</code>
+      * <code>Assert float within (0.01f, 1.3f, g.hdop)</code>
+      * <code>Assert float within (0.01f, 2.1f, g.vdop)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_gsa(&m, &g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g.fix_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g.sat_count);</code>
+      * <code>Assert false (dws_nmea0183_parse_gsa(&m, &g))</code>
+      * <code>Assert false (dws_nmea0183_parse_gsa(nullptr, &g))</code>
   </details>
 
   <details style="margin-left: 20px;">
