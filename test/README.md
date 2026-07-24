@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5125 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5126 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29773,7 +29773,7 @@ A thorough directory of all **5125 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (22 tests)</b></summary>
+<summary><b>test_nmea2000 (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -30053,6 +30053,26 @@ A thorough directory of all **5125 test cases** across **291 suites**. Expand a 
       * <code>Assert true (w.angle_valid)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(N2K_WIND_REF_TRUE_NORTH, w.reference);</code>
       * <code>Assert false (dws_n2k_decode_wind_data(wind, 5, &w))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_speed</b> &mdash; <i>sid 5, water speed 5.14 m/s (raw 514), ground speed 5.50 m/s (raw 550), paddle-wheel sensor.</i></summary>
+
+    * **Objective**: sid 5, water speed 5.14 m/s (raw 514), ground speed 5.50 m/s (raw 550), paddle-wheel sensor.
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_speed(s, sizeof(s), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, d.sid);</code>
+      * <code>Assert true (d.water_valid)</code>
+      * <code>Assert float within (0.01f, 5.14f, d.water_mps)</code>
+      * <code>Assert true (d.ground_valid)</code>
+      * <code>Assert float within (0.01f, 5.50f, d.ground_mps)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_SPEED_TYPE_PADDLE_WHEEL, d.water_ref_type);</code>
+      * <code>Assert true (dws_n2k_decode_speed(na, sizeof(na), &d))</code>
+      * <code>Assert true (d.water_valid)</code>
+      * <code>Assert false (d.ground_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_SPEED_TYPE_DOPPLER, d.water_ref_type);</code>
+      * <code>Assert false (dws_n2k_decode_speed(s, 5, &d))</code>
+      * <code>Assert false (dws_n2k_decode_speed(nullptr, 8, &d))</code>
   </details>
 
   <details style="margin-left: 20px;">
