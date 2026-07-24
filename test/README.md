@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5059 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5062 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -26394,7 +26394,7 @@ A thorough directory of all **5059 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_modbus_master (24 tests)</b></summary>
+<summary><b>test_modbus_master (27 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_read_bytes</b> &mdash; <i>Build read bytes</i></summary>
@@ -26667,6 +26667,53 @@ A thorough directory of all **5059 test cases** across **290 suites**. Expand a 
       * <code>Assert equal int (-1, dws_modbus_parse_read_bits_response(resp, 11, 4, out, sizeof(out), &ex))</code>
       * <code>Assert equal int (0, dws_modbus_parse_read_bits_response(exc, sizeof(exc), 4, out, sizeof(out), &ex))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x02, ex);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_round_trip_mask_write</b> &mdash; <i>reg = (0x1234 & 0xF0FF) \| (0x0500 & ~0xF0FF) = 0x1034 \| 0x0500 = 0x1534.</i></summary>
+
+    * **Objective**: reg = (0x1234 & 0xF0FF) \| (0x0500 & ~0xF0FF) = 0x1034 \| 0x0500 = 0x1534.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(14, rn); // MBAP(7) + FC + addr(2) + and(2) + or(2)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x16, req[7]);</code>
+      * <code>Assert equal int (1, r)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ex);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(10, addr);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xF0FF, andm);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0500, orm);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x1534, dws_modbus_get_holding_reg(10)); // the mask took effect</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_round_trip_read_write_multiple</b> &mdash; <i>Write 0xAAAA/0xBBBB to 20,21 and read the same span back: the write is applied first (§6.17), so the</i></summary>
+
+    * **Objective**: Write 0xAAAA/0xBBBB to 20,21 and read the same span back: the write is applied first (§6.17), so the
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(7 + 10 + 4, rn); // MBAP + 10-byte fixed PDU head + 2*2 write data</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x17, req[7]);</code>
+      * <code>Assert equal int (2, got)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ex);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xAAAA, regs[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xBBBB, regs[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xBBBB, dws_modbus_get_holding_reg(21)); // and the write persisted</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_fc16_17_guards</b> &mdash; <i>Mask-write build guards.</i></summary>
+
+    * **Objective**: Mask-write build guards.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_mask_write(1, 1, 0, 0, 0, nullptr, 16));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_mask_write(1, 1, 0, 0, 0, adu, 8)); // too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_read_write_multiple(1, 1, 0, 2, 0, nullptr, 2, adu, sizeof(adu)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>Assert equal int (0, dws_modbus_parse_mask_write_response(resp, pn, nullptr, nullptr, nullptr, &ex))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, ex);</code>
+      * <code>TEST_ASSERT_EQUAL_INT(-1,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(-1,</code>
   </details>
 
 </details>
