@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.94.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.94.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`546bc2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/546bc2faa0b3f3b8169a95427082fbf39cd7e9ec))
+
+### Changes
+
+- Bump version: 7.93.0 → 7.94.0 ([`9ef7a56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ef7a564e503a9831cee74ff5055b600b109f4bc))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c89392d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c89392d2c451a5fdee4bee0d2296dd3acec836a1))
+
+### Features
+
+- add the GOOSE subscriber (frame parser) ([`34eb593`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34eb5938150da45960d729c47d365c530baf76b5))
+
+</details>
+
 ## [7.93.0] - 2026-07-24
 
 <details>
