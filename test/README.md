@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5053 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5055 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -54216,7 +54216,7 @@ A thorough directory of all **5053 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ubx (14 tests)</b></summary>
+<summary><b>test_ubx (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -54375,6 +54375,57 @@ A thorough directory of all **5053 test cases** across **290 suites**. Expand a 
     * **Objective**: Stream null safe
     * **Assertions**:
       * <code>Assert equal int (DWS_UBX_NONE, dws_ubx_stream_feed(nullptr, 0x00, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_nav_pvt_decode</b> &mdash; <i>Nav pvt decode</i></summary>
+
+    * **Objective**: Nav pvt decode
+    * **Assertions**:
+      * <code>Assert true (dws_ubx_parse(navpvt_frame, sizeof(navpvt_frame), &m))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CLASS_NAV, m.cls);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_UBX_NAV_PVT, m.id);</code>
+      * <code>Assert true (dws_ubx_parse_nav_pvt(&m, &pvt))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(123456789u, pvt.itow_ms);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2026, pvt.year);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(7, pvt.month);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(24, pvt.day);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, pvt.hour);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(30, pvt.minute);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(45, pvt.second);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x07, pvt.valid);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(500000, pvt.nano);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(25, pvt.time_acc_ns);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_UBX_FIX_3D, pvt.fix_type);</code>
+      * <code>Assert true (pvt.flags & DWS_UBX_PVT_FIX_OK)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(9, pvt.num_sv);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1220841000, pvt.lon_1e7); // -122.0841 deg</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(373749000, pvt.lat_1e7);   // 37.3749 deg</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(30500, pvt.height_mm);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(28000, pvt.hmsl_mm);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1200, pvt.h_acc_mm);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1800, pvt.v_acc_mm);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(100, pvt.vel_n_mm_s);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-50, pvt.vel_e_mm_s);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(5, pvt.vel_d_mm_s);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(112, pvt.gspeed_mm_s);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(4500000, pvt.head_mot_1e5);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(30, pvt.s_acc_mm_s);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000000, pvt.head_acc_1e5);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(180, pvt.pdop_1e2);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_nav_pvt_rejects</b> &mdash; <i>Wrong class/id: an ACK-ACK frame is not a NAV-PVT.</i></summary>
+
+    * **Objective**: Wrong class/id: an ACK-ACK frame is not a NAV-PVT.
+    * **Assertions**:
+      * <code>Assert true (dws_ubx_parse(ackbuf, an, &ack))</code>
+      * <code>Assert false (dws_ubx_parse_nav_pvt(&ack, &pvt))</code>
+      * <code>Assert true (dws_ubx_parse(sbuf, sn, &sm))</code>
+      * <code>Assert false (dws_ubx_parse_nav_pvt(&sm, &pvt))</code>
+      * <code>Assert false (dws_ubx_parse_nav_pvt(nullptr, &pvt))</code>
+      * <code>Assert false (dws_ubx_parse_nav_pvt(&m, nullptr))</code>
   </details>
 
 </details>
