@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.50.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.50.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ae2592a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae2592abf641b141dd25466e59581bd94dac6786))
+
+### Changes
+
+- Bump version: 7.49.0 → 7.50.0 ([`9a35449`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a354493f3e227f57303fa6a2d90204eddda456a))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`04f9f6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04f9f6f299d1ab93655965a667a88d22fe07c2b1))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e3193ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3193ee5b8e4616ed4012cb5927e12d0067e1998))
+
+### Features
+
+- IKE-SA rekey key schedule (RFC 7296 s2.18) - tiers 1-2 complete ([`720cf62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/720cf62e9d37436604068178a029025514f086de))
+
+</details>
+
 ## [7.49.0] - 2026-07-24
 
 <details>
