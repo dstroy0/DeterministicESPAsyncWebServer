@@ -1173,8 +1173,6 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
-│   │   ├── __pycache__/
-│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1217,7 +1215,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `LD2410` | `Drivers/Ld2410` | 270,685 | 21,576 |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/InterfaceForward` | 270,849 | 29,096 |
 | `THREAD+GATEWAY` | `Drivers/ThreadGateway` | 271,889 | 22,616 |
-| `NMEA0183+UBX` | `Drivers/UbloxGnss` | 273,769 | 22,432 |
+| `NMEA0183+UBX` | `Drivers/UbloxGnss` | 273,773 | 22,432 |
 | `PREEMPT_QUEUE` | `Foundation/PreemptQueue` | 274,069 | 23,968 |
 | `NRF24+GATEWAY` | `Drivers/Nrf24Gateway` | 276,105 | 21,680 |
 | `LORA+GATEWAY` | `Drivers/LoRaGateway` | 276,329 | 21,688 |

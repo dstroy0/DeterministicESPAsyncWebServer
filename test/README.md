@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5057 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5059 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -54216,7 +54216,7 @@ A thorough directory of all **5057 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ubx (18 tests)</b></summary>
+<summary><b>test_ubx (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -54470,6 +54470,38 @@ A thorough directory of all **5057 test cases** across **290 suites**. Expand a 
       * <code>Assert false (dws_ubx_parse_nav_sat(nullptr, &hdr))</code>
       * <code>Assert false (dws_ubx_parse_nav_sat(&m, nullptr))</code>
       * <code>Assert false (dws_ubx_nav_sat_get(&m, 0, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_cfg_msg</b> &mdash; <i>Round-trips through the parser: it is a CFG-MSG whose payload names the message + rate.</i></summary>
+
+    * **Objective**: Round-trips through the parser: it is a CFG-MSG whose payload names the message + rate.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(cfgmsg_frame), n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(cfgmsg_frame, buf, n);</code>
+      * <code>Assert true (dws_ubx_parse(buf, n, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CLASS_CFG, m.cls);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CFG_MSG, m.id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, m.len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CLASS_NAV, m.payload[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_UBX_NAV_PVT, m.payload[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(1, m.payload[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ubx_build_cfg_msg(small, sizeof(small), DWS_UBX_CLASS_NAV, DWS_UBX_NAV_PVT, 1));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_cfg_rate</b> &mdash; <i>Build cfg rate</i></summary>
+
+    * **Objective**: Build cfg rate
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(cfgrate_frame), n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(cfgrate_frame, buf, n);</code>
+      * <code>Assert true (dws_ubx_parse(buf, n, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CFG_RATE, m.id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(200, dws_ubx_u16(m.payload, 0)); // measRate ms</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, dws_ubx_u16(m.payload, 2));   // navRate</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_UBX_TIME_REF_GPS, dws_ubx_u16(m.payload, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ubx_build_cfg_rate(buf, 8, 200, 1, DWS_UBX_TIME_REF_GPS)); // too small</code>
   </details>
 
 </details>
