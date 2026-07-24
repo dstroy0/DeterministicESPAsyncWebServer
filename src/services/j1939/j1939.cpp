@@ -349,6 +349,22 @@ bool dws_j1939_decode_vd(const CanFrame *f, J1939Vd *out)
     return true;
 }
 
+bool dws_j1939_decode_ccvs(const CanFrame *f, J1939Ccvs *out)
+{
+    if (!f || !out || f->dlc < 8)
+        return false;
+    J1939Id id;
+    if (!dws_j1939_decode_id(f->id, &id) || id.pgn != J1939_PGN_CCVS)
+        return false;
+    // SPN 84 Wheel-Based Vehicle Speed: bytes 2-3, little-endian, 1/256 km/h per bit, 0 offset.
+    uint16_t ws = (uint16_t)(f->data[1] | ((uint16_t)f->data[2] << 8));
+    out->speed_valid = (ws <= 0xFAFFu); // >= 0xFB00 is error / not-available
+    out->wheel_speed_kmh = (float)ws * (1.0f / 256.0f);
+    // SPN 595 Cruise Control Active: byte 4, bits 1-2 (the low 2 bits) - a 2-bit state.
+    out->cruise_active = (uint8_t)(f->data[3] & 0x03u);
+    return true;
+}
+
 bool dws_j1939_decode_dm1(const uint8_t *body, size_t len, J1939Dm1 *out, J1939Dtc *out_dtcs, size_t max)
 {
     if (!body || !out || len < 2) // the lamp-status + flash-status octets

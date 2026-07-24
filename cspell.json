@@ -1489,7 +1489,8 @@
     "DDATA",
     "NDATA",
     "HMSG",
-    "HPUB"
+    "HPUB",
+    "ccvs"
   ],
   "ignorePaths": [
     "node_modules/**",

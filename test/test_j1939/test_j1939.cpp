@@ -520,6 +520,34 @@ void test_decode_vd()
     TEST_ASSERT_FALSE(dws_j1939_decode_vd(&ic1, &v));
 }
 
+void test_decode_ccvs()
+{
+    // Wheel-based vehicle speed 65.5 km/h (raw 65.5*256 = 16768 = 0x4180, LE bytes 80 41); cruise-active = 1
+    // in byte 4 bits 1-2 (data[3] low 2 bits) - the upper bits of data[3] are set to prove the mask.
+    const uint8_t data[8] = {0xFF, 0x80, 0x41, 0xF5, 0xFF, 0xFF, 0xFF, 0xFF};
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_j1939_build_message(&f, 6, J1939_PGN_CCVS, 0x00, J1939_ADDR_GLOBAL, data, 8));
+
+    J1939Ccvs c;
+    TEST_ASSERT_TRUE(dws_j1939_decode_ccvs(&f, &c));
+    TEST_ASSERT_TRUE(c.speed_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 65.5f, c.wheel_speed_kmh);
+    TEST_ASSERT_EQUAL_UINT8(1, c.cruise_active); // low 2 bits of 0xF5
+
+    // A not-available wheel speed (0xFFFF) clears the validity flag; data[3]=0 gives cruise_active 0.
+    const uint8_t na[8] = {0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0xFF};
+    CanFrame fna;
+    dws_j1939_build_message(&fna, 6, J1939_PGN_CCVS, 0x00, J1939_ADDR_GLOBAL, na, 8);
+    TEST_ASSERT_TRUE(dws_j1939_decode_ccvs(&fna, &c));
+    TEST_ASSERT_FALSE(c.speed_valid);
+    TEST_ASSERT_EQUAL_UINT8(0, c.cruise_active);
+
+    // A non-CCVS frame (ET1) is rejected.
+    CanFrame et1;
+    dws_j1939_build_message(&et1, 6, J1939_PGN_ET1, 0x00, J1939_ADDR_GLOBAL, data, 8);
+    TEST_ASSERT_FALSE(dws_j1939_decode_ccvs(&et1, &c));
+}
+
 void test_decode_dm1()
 {
     J1939Dm1 dm;
@@ -611,6 +639,7 @@ int main()
     RUN_TEST(test_decode_amb);
     RUN_TEST(test_decode_ic1);
     RUN_TEST(test_decode_vd);
+    RUN_TEST(test_decode_ccvs);
     RUN_TEST(test_decode_dm1);
     RUN_TEST(test_decode_pgn_mismatch_and_guards);
     return UNITY_END();

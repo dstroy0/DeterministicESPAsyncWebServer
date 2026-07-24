@@ -142,6 +142,7 @@ J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
 #define J1939_PGN_AMB 0x00FEF5u  ///< Ambient Conditions (65269): barometric pressure + air / road temperatures
 #define J1939_PGN_IC1 0x00FEF6u  ///< Inlet/Exhaust Conditions 1 (65270): boost + intake / exhaust + filter pressures
 #define J1939_PGN_VD 0x00FEE0u   ///< Vehicle Distance (65248): trip + total vehicle distance
+#define J1939_PGN_CCVS 0x00FEF1u ///< Cruise Control/Vehicle Speed (65265): wheel-based vehicle speed + cruise state
 #define J1939_PGN_DM1 0x00FECAu  ///< Active Diagnostic Trouble Codes (65226): lamp status + DTC list
 
 /** @brief Decoded EEC1 (PGN 61444). Percent-torque fields are @ref J1939_TORQUE_NA when not available. */
@@ -263,6 +264,23 @@ struct J1939Vd
  * @return true iff @p f decodes to PGN 65248 and carries 8 data octets; false otherwise.
  */
 bool dws_j1939_decode_vd(const CanFrame *f, J1939Vd *out);
+
+/** @brief Decoded CCVS (PGN 65265): the wheel-based vehicle speed plus the cruise-control-active state.
+ *  Only the two signals with cross-source-verified positions are decoded; the many discrete switches in
+ *  this PGN are left to the caller (their bit positions vary between vendor definitions). */
+struct J1939Ccvs
+{
+    bool speed_valid;      ///< false when the raw wheel-based speed is in the not-available range
+    float wheel_speed_kmh; ///< wheel-based vehicle speed (km/h, 1/256 km/h per bit) - SPN 84
+    uint8_t
+        cruise_active; ///< cruise control active state, a 2-bit value (0 off / 1 active / 2 error / 3 n/a) - SPN 595
+};
+
+/**
+ * @brief Decode a CCVS (PGN 65265) single frame into @p out.
+ * @return true iff @p f decodes to PGN 65265 and carries 8 data octets; false otherwise.
+ */
+bool dws_j1939_decode_ccvs(const CanFrame *f, J1939Ccvs *out);
 
 /** @brief One decoded Diagnostic Trouble Code (J1939-73 SPN conversion method 4). */
 struct J1939Dtc
