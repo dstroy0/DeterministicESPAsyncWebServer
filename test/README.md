@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5136 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5137 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29610,7 +29610,7 @@ A thorough directory of all **5136 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (23 tests)</b></summary>
+<summary><b>test_nmea0183 (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -29958,6 +29958,25 @@ A thorough directory of all **5136 test cases** across **291 suites**. Expand a 
       * <code>Assert false (d.has_range)</code>
       * <code>Assert false (dws_nmea0183_parse_dpt(&m, &d))</code>
       * <code>Assert false (dws_nmea0183_parse_dpt(nullptr, &d))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_hdg</b> &mdash; <i>Magnetic heading 98.3 deg, deviation 0.0 E, variation 12.6 W (-> -12.6 signed).</i></summary>
+
+    * **Objective**: Magnetic heading 98.3 deg, deviation 0.0 E, variation 12.6 W (-> -12.6 signed).
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_hdg(&m, &h))</code>
+      * <code>Assert float within (0.01f, 98.3f, h.heading_deg)</code>
+      * <code>Assert float within (0.01f, 0.0f, h.deviation_deg)</code>
+      * <code>Assert float within (0.01f, -12.6f, h.variation_deg)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_hdg(&m, &h))</code>
+      * <code>Assert float within (0.01f, -1.5f, h.deviation_deg)</code>
+      * <code>Assert float within (0.01f, 6.0f, h.variation_deg)</code>
+      * <code>Assert false (dws_nmea0183_parse_hdg(&m, &h))</code>
+      * <code>Assert false (dws_nmea0183_parse_hdg(nullptr, &h))</code>
   </details>
 
   <details style="margin-left: 20px;">
