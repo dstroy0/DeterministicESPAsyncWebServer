@@ -114,6 +114,51 @@ void test_esp_empty_payload()
     TEST_ASSERT_EQUAL_UINT8(59, nh);
 }
 
+// ── ESP anti-replay window (RFC 4303 §3.4.3) ───────────────────────────────────────────────────
+void test_esp_replay_window()
+{
+    EspReplay r;
+    dws_esp_replay_init(&r);
+
+    // Sequence 0 is invalid; in-order packets are accepted once each; a duplicate is a replay.
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 0));
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 1));
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 2));
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 3));
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 2)); // replay
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 3)); // replay (the current highest)
+
+    // Out-of-order but inside the window is accepted; re-delivery is rejected.
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 5));  // new highest (gap at 4)
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 4));  // fills the gap, inside the window
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 4)); // replay
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 1)); // replay of an old one still in the window
+
+    // A jump forward slides the window; packets now left of it are too old.
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 100));                               // new highest
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 100));                              // replay
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 99));                                // inside (offset 1)
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 100 - (DWS_ESP_REPLAY_WINDOW - 1))); // the left edge, inside
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 100 - DWS_ESP_REPLAY_WINDOW));      // one past the edge -> too old
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 5));                                // far left -> too old
+}
+
+void test_esp_replay_large_jump()
+{
+    // A jump larger than the window clears the bitmap: previously-seen numbers in the old window are now
+    // "too old" (outside the new window), and the new highest is the only accepted entry.
+    EspReplay r;
+    dws_esp_replay_init(&r);
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 10));
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 11));
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 1000));  // jump >> window
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 1000)); // replay
+    TEST_ASSERT_TRUE(dws_esp_replay_check(&r, 999));   // inside the new window
+    TEST_ASSERT_FALSE(dws_esp_replay_check(&r, 11));   // now far too old
+    // Null guard.
+    TEST_ASSERT_FALSE(dws_esp_replay_check(nullptr, 1));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -122,5 +167,7 @@ int main()
     RUN_TEST(test_esp_decapsulate_golden);
     RUN_TEST(test_esp_tamper_and_guards);
     RUN_TEST(test_esp_empty_payload);
+    RUN_TEST(test_esp_replay_window);
+    RUN_TEST(test_esp_replay_large_jump);
     return UNITY_END();
 }

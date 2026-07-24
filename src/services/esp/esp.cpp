@@ -114,4 +114,48 @@ bool dws_esp_gcm_decapsulate(const uint8_t key[DWS_ESP_KEY_LEN], const uint8_t s
     return true;
 }
 
+// ── ESP anti-replay window (RFC 4303 §3.4.3) ───────────────────────────────────────────────────
+
+void dws_esp_replay_init(EspReplay *r)
+{
+    if (!r)
+        return;
+    r->highest = 0;
+    r->bitmap = 0;
+    r->seen_any = false;
+}
+
+bool dws_esp_replay_check(EspReplay *r, uint32_t seq)
+{
+    if (!r || seq == 0) // sequence 0 is never valid (ESP counts from 1)
+        return false;
+
+    if (!r->seen_any)
+    {
+        r->highest = seq;
+        r->bitmap = 1; // bit 0 = this (the new highest)
+        r->seen_any = true;
+        return true;
+    }
+
+    if (seq > r->highest)
+    {
+        // A new highest: slide the window up, then mark the new top bit. A jump >= the window clears it.
+        uint32_t shift = seq - r->highest;
+        r->bitmap = (shift >= DWS_ESP_REPLAY_WINDOW) ? 0u : (r->bitmap << shift);
+        r->bitmap |= 1u;
+        r->highest = seq;
+        return true;
+    }
+
+    uint32_t offset = r->highest - seq;
+    if (offset >= DWS_ESP_REPLAY_WINDOW) // left of the window -> too old
+        return false;
+    uint64_t mask = (uint64_t)1 << offset;
+    if (r->bitmap & mask) // already accepted -> replay
+        return false;
+    r->bitmap |= mask;
+    return true;
+}
+
 #endif // DWS_ENABLE_IKEV2

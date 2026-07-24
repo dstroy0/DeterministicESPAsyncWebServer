@@ -71,5 +71,34 @@ bool dws_esp_gcm_decapsulate(const uint8_t key[DWS_ESP_KEY_LEN], const uint8_t s
                              size_t len, uint32_t *spi_out, uint32_t *seq_out, uint8_t *next_header_out,
                              const uint8_t **payload_out, size_t *payload_len_out);
 
+// ── ESP anti-replay window (RFC 4303 §3.4.3) ───────────────────────────────────────────────────
+//
+// One receiver-side sliding window per inbound SA rejects replayed or too-old sequence numbers. This is
+// the 32-bit-sequence (non-ESN) window; the bitmap is a single 64-bit word, so the window is 64 packets.
+
+/** @brief ESP anti-replay window size (fixed by the 64-bit bitmap). */
+#define DWS_ESP_REPLAY_WINDOW 64
+
+/** @brief Anti-replay sliding-window state for one inbound SA (zero-heap). */
+struct EspReplay
+{
+    uint32_t highest; ///< highest accepted sequence number so far
+    uint64_t bitmap;  ///< bit i set = (highest - i) already accepted (bit 0 = highest itself)
+    bool seen_any;    ///< false until the first packet is accepted
+};
+
+/** @brief Reset an anti-replay window (no packets seen yet). */
+void dws_esp_replay_init(EspReplay *r);
+
+/**
+ * @brief Anti-replay check + record for a received sequence number @p seq (RFC 4303 §3.4.3).
+ *
+ * Accepts and records a fresh @p seq (advancing the window when it is the new highest); rejects a
+ * duplicate already inside the window (a replay) or one that falls left of the window (too old).
+ * Sequence number 0 is invalid (ESP counts from 1) and is rejected.
+ * @return true to accept the packet, false to drop it.
+ */
+bool dws_esp_replay_check(EspReplay *r, uint32_t seq);
+
 #endif // DWS_ENABLE_IKEV2
 #endif // DETERMINISTICESPASYNCWEBSERVER_ESP_H

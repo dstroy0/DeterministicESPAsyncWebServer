@@ -542,10 +542,15 @@ preempting queue, so sensing shares the real-time ingest path.
        (RFC 4106) - `SPI | Seq | IV | AES-GCM(payload | pad | PadLen | NextHeader) | ICV`, the SPI|Seq AAD,
        the salt||IV nonce, and RFC 4303 §2.4 padding - cross-checked against a Python AES-256-GCM reference
        with encapsulate/decapsulate round-trips, a golden packet, tamper (ciphertext + AAD) rejection, and
-       an empty-payload case (`native_esp`, 5 cases). _Remaining (the real weight):_ the lwIP IP
-       input/output hook + the SAD/SPD + the anti-replay window (a device-side track, not host-unit-testable);
-       tunnel mode first (whole-packet, simplest SPD). Refs: RFC 7296 (IKEv2), 4303 (ESP), 4106 (AES-GCM in
-       ESP), 7634 (ChaCha20-Poly1305 for IKEv2/ESP), 8247 (algorithm requirements).
+       an empty-payload case. **The anti-replay window is shipped too** (RFC 4303 §3.4.3): a zero-heap
+       64-packet sliding window (`EspReplay` + `dws_esp_replay_init` / `_check`) accepts a fresh sequence
+       number, rejects a duplicate inside the window (replay) or one left of it (too old), and slides on a
+       new highest - host-tested for in-order / out-of-order / replay / window-slide / large-jump / seq-0
+       (`native_esp`, 7 cases). The **entire host-testable ESP core is done** (packet transform +
+       anti-replay). _Remaining (the real weight, device-side / not host-unit-testable):_ the lwIP IP
+       input/output hook + the SAD/SPD wiring; tunnel mode first (whole-packet, simplest SPD). Refs: RFC
+       7296 (IKEv2), 4303 (ESP), 4106 (AES-GCM in ESP), 7634 (ChaCha20-Poly1305 for IKEv2/ESP), 8247
+       (algorithm requirements).
 - [x] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming _(shipped)_ -
       `DWS_ENABLE_WIFI_SNIFFER` (`services/wifi_sniffer`): `dws_wifi_parse` decodes an 802.11 MAC header
       (frame-control type/subtype + flags and the addresses whose roles depend on the ToDS/FromDS bits),
