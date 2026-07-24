@@ -866,6 +866,19 @@ bool dws_ike_child_keymat(const uint8_t *sk_d, size_t sk_d_len, const uint8_t *d
                           const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len, uint8_t *out,
                           size_t out_len);
 
+/**
+ * @brief Verify a peer's RSA-2048 (PKCS#1 v1.5, SHA-256) AUTH signature over the signed octets against
+ *        its public key (@p n_be = 256-byte modulus, @p e_be4 = 4-byte exponent, from its CERT).
+ *
+ * The device signs with its own ECDSA-P256 key (dws_ike_auth_sign_ecdsa_p256); this covers the common
+ * case of authenticating a PEER whose certificate is RSA. @p scratch holds the assembled signed octets.
+ * @return true iff the signature is valid.
+ */
+bool dws_ike_auth_verify_rsa_sha256(const uint8_t *n_be, const uint8_t *e_be4, const uint8_t *sig, size_t sig_len,
+                                    uint8_t *scratch, size_t scratch_cap, const uint8_t *real, size_t real_len,
+                                    const uint8_t *nonce, size_t nonce_len, const uint8_t *sk_p, size_t sk_p_len,
+                                    const uint8_t *id_body, size_t id_body_len);
+
 #endif // DWS_ENABLE_IKEV2
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IKEV2_H

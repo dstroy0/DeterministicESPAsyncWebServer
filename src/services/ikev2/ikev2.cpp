@@ -14,6 +14,7 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"  // D-H group 31 (X25519, RFC 7748)
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"       // ECDSA-P256 certificate AUTH
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // PRF = HMAC-SHA2-256
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"         // RSA-2048 certificate AUTH verify
 #include <string.h>                                                  // memcpy / memset (framing is hand-rolled)
 
 // ── big-endian scalar helpers ─────────────────────────────────────────────────────────────────
@@ -1568,6 +1569,23 @@ bool dws_ike_informational_open(const IkeSa *sa, uint8_t *msg, size_t len, IkePa
     // Ingress direction is the peer's egress: SK_er if the peer is the responder (we are the initiator), else SK_ei.
     const uint8_t *key = sa->is_initiator ? sa->keys.sk_er : sa->keys.sk_ei;
     return dws_ike_auth_msg_open(msg, len, key, key + DWS_IKE_AEAD_KEY_LEN, first_inner_type, inner_out, inner_len_out);
+}
+
+// ── tier 2: IKE_AUTH RSA-2048 (certificate) verify (RFC 7296 §2.15, RFC 7427) ───────────────────
+
+bool dws_ike_auth_verify_rsa_sha256(const uint8_t *n_be, const uint8_t *e_be4, const uint8_t *sig, size_t sig_len,
+                                    uint8_t *scratch, size_t scratch_cap, const uint8_t *real, size_t real_len,
+                                    const uint8_t *nonce, size_t nonce_len, const uint8_t *sk_p, size_t sk_p_len,
+                                    const uint8_t *id_body, size_t id_body_len)
+{
+    if (!n_be || !e_be4 || !sig)
+        return false;
+    size_t n = dws_ike_signed_octets(scratch, scratch_cap, real, real_len, nonce, nonce_len, sk_p, sk_p_len, id_body,
+                                     id_body_len);
+    if (n == 0)
+        return false;
+    // The device signs with its own ECDSA key; this verifies a PEER whose CERT is RSA-2048 (SHA-256).
+    return ssh_rsa_verify(n_be, e_be4, scratch, n, sig, sig_len, SshRsaHash::SHA256) == 0;
 }
 
 #endif // DWS_ENABLE_IKEV2

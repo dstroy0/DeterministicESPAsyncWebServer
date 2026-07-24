@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5011 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5012 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **5011 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (69 tests)</b></summary>
+<summary><b>test_ikev2 (70 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20892,6 +20892,17 @@ A thorough directory of all **5011 test cases** across **287 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_NONCE, (uint8_t)first);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(inl, got_len);</code>
       * <code>Assert equal memory (inner, got, inl)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_auth_verify_rsa</b> &mdash; <i>A valid RSA-SHA256 signature over the signed octets verifies.</i></summary>
+
+    * **Objective**: A valid RSA-SHA256 signature over the signed octets verifies.
+    * **Assertions**:
+      * <code>Assert true (dws_ike_auth_verify_rsa_sha256(rsa_n, rsa_e, rsa_sig, 256, scratch, sizeof(scratch)</code>
+      * <code>Assert false (dws_ike_auth_verify_rsa_sha256(rsa_n, rsa_e, rsa_sig, 256, scratch, sizeof(scratch)</code>
+      * <code>Assert false (dws_ike_auth_verify_rsa_sha256(rsa_n, rsa_e, bad_sig, 256, scratch, sizeof(scratch)</code>
+      * <code>Assert false (dws_ike_auth_verify_rsa_sha256(nullptr, rsa_e, rsa_sig, 256, scratch, sizeof(scratch)</code>
   </details>
 
 </details>

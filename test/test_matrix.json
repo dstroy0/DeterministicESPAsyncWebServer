@@ -1002,7 +1002,9 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>"
+        "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_rsa.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>"
       ],
       "tests": ["test_ikev2"]
     },
