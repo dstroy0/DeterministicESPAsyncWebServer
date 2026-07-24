@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5008 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5009 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **5008 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (66 tests)</b></summary>
+<summary><b>test_ikev2 (67 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20839,6 +20839,32 @@ A thorough directory of all **5008 test cases** across **287 suites**. Expand a 
       * <code>Assert true (badn &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_responder_on_auth_psk(&resp2, bad, badn, g_psk, sizeof(g_psk),</code>
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_FAILED, (uint8_t)resp2.state);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_informational_exchange</b> &mdash; <i>DPD: the initiator sends an empty INFORMATIONAL; the responder decrypts it (empty inner).</i></summary>
+
+    * **Objective**: DPD: the initiator sends an empty INFORMATIONAL; the responder decrypts it (empty inner).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)ini.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)resp.state);</code>
+      * <code>Assert true (dn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(37, dpd[18]); // exchange type = IKE_INFORMATIONAL</code>
+      * <code>Assert true (dws_ike_informational_open(&resp.sa, work, dn, &first, &inner, &inner_len))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, inner_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_NONE, (uint8_t)first);</code>
+      * <code>Assert true (drn &gt; 0)</code>
+      * <code>Assert true (dws_ike_informational_open(&ini.sa, work2, drn, &first, &inner, &inner_len))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, inner_len);</code>
+      * <code>Assert true (deln &gt; 0)</code>
+      * <code>Assert true (dmn &gt; 0)</code>
+      * <code>Assert true (dws_ike_informational_open(&resp.sa, work3, dmn, &first, &inner, &inner_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_DELETE, (uint8_t)first);</code>
+      * <code>Assert true (dws_ike_payload_next(&it, &pl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_DELETE, (uint8_t)pl.type);</code>
+      * <code>Assert true (dws_ike_delete_parse(pl.body, pl.body_len, &proto, &ss, &nspis, &spis))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_IKE, (uint8_t)proto);</code>
+      * <code>Assert false (dws_ike_informational_open(&ini.sa, work4, dmn, &first, &inner, &inner_len))</code>
   </details>
 
 </details>
