@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5109 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5110 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -25626,7 +25626,7 @@ A thorough directory of all **5109 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mbus (17 tests)</b></summary>
+<summary><b>test_mbus (18 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ack</b> &mdash; <i>Ack</i></summary>
@@ -25891,6 +25891,26 @@ A thorough directory of all **5109 test cases** across **291 suites**. Expand a 
       * <code>Assert equal (MbusUnit::MBUS_UNIT_M3, u)</code>
       * <code>Assert false (dws_mbus_vif_decode(0x78, &u, &e))</code>
       * <code>Assert equal (MbusUnit::MBUS_UNIT_UNKNOWN, u)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_var_header</b> &mdash; <i>A CI=0x72 fixed header: serial 12345678, manufacturer LUG (Landis+Gyr, 0x32A7),</i></summary>
+
+    * **Objective**: A CI=0x72 fixed header: serial 12345678, manufacturer LUG (Landis+Gyr, 0x32A7),
+    * **Assertions**:
+      * <code>Assert true (dws_mbus_parse_var_header(hdr, sizeof(hdr), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(12345678u, h.id);</code>
+      * <code>Assert equal string ("LUG", h.manufacturer)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x32A7, h.manufacturer_raw);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, h.version);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(MBUS_MEDIUM_WATER, h.medium);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(42, h.access_no);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, h.status);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, h.signature);</code>
+      * <code>Assert false (dws_mbus_parse_var_header(bad, sizeof(bad), &h))</code>
+      * <code>Assert false (dws_mbus_parse_var_header(hdr, 11, &h))</code>
+      * <code>Assert false (dws_mbus_parse_var_header(nullptr, 12, &h))</code>
+      * <code>Assert false (dws_mbus_parse_var_header(hdr, 12, nullptr))</code>
   </details>
 
 </details>
