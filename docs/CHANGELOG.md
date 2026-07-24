@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.105.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.105.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`80c3158`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80c31584a5f58212a44519cb4fb9dff8ff15252b))
+
+### Changes
+
+- Bump version: 7.104.0 → 7.105.0 ([`0f955eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f955eb3e81596da3d26551876c33638005e36cf))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ee34bd4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee34bd4c816197b7921f21d6b70ba4a233d61a45))
+
+### Features
+
+- decode VD vehicle distance (PGN 65248) ([`347fbf5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/347fbf5c4abfe67f298c0261ed61152332f482d3))
+
+</details>
+
 ## [7.104.0] - 2026-07-24
 
 <details>
