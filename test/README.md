@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5130 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5131 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -6710,7 +6710,7 @@ A thorough directory of all **5130 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_cotp (13 tests)</b></summary>
+<summary><b>test_cotp (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_tpkt_bytes</b> &mdash; <i>Tpkt bytes</i></summary>
@@ -6761,6 +6761,26 @@ A thorough directory of all **5130 test cases** across **291 suites**. Expand a 
       * <code>Assert true (dws_cotp_parse(buf, n, &h))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(COTP_CR, h.code);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x0002, h.src_ref);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cotp_cc_bytes</b> &mdash; <i>CC echoing a client src-ref 0x0001 as the destination reference, this end's src-ref 0x0042.</i></summary>
+
+    * **Objective**: CC echoing a client src-ref 0x0001 as the destination reference, this end's src-ref 0x0042.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+      * <code>Assert true (dws_cotp_parse(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(COTP_CC, h.code);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0001, h.dst_ref);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0042, h.src_ref);</code>
+      * <code>Assert true (dws_cotp_parse(crbuf, crn, &cr))</code>
+      * <code>Assert true (dws_cotp_parse(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x1234, h.dst_ref); // the CR's src-ref echoed back</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)(9 + sizeof(tsaps)), buf[0]); // LI grows by the extras</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_cotp_build_cc(nullptr, sizeof(buf), 1, 2, 0x0A, nullptr, 0)); // null buf</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_cotp_build_cc(buf, sizeof(buf), 1, 2, 0x0A, nullptr, 5));     // len but null params</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_cotp_build_cc(buf, 8, 1, 2, 0x0A, nullptr, 0));               // total &gt; cap</code>
   </details>
 
   <details style="margin-left: 20px;">
