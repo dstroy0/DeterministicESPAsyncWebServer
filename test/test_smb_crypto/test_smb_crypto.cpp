@@ -95,6 +95,54 @@ void test_hmac_md5_vectors()
     TEST_ASSERT_EQUAL_STRING("6b1ab7fe4bd7bf8f0b62e6ce61b9d0cd", hex); // RFC 2202 case 6
 }
 
+// SHA-256 known-answer vectors (FIPS 180-4), including a two-block message.
+void test_sha256_vectors()
+{
+    uint8_t d[32];
+    dws_sha256((const uint8_t *)"", 0, d);
+    const uint8_t empty[32] = {0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14, 0x9a, 0xfb, 0xf4,
+                               0xc8, 0x99, 0x6f, 0xb9, 0x24, 0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b,
+                               0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(empty, d, 32);
+
+    dws_sha256((const uint8_t *)"abc", 3, d);
+    const uint8_t abc[32] = {0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40,
+                             0xde, 0x5d, 0xae, 0x22, 0x23, 0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17,
+                             0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(abc, d, 32);
+
+    // 56-byte message: crosses the padding boundary into a second block (FIPS 180-4 two-block example).
+    const char *two = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+    dws_sha256((const uint8_t *)two, 56, d);
+    const uint8_t twob[32] = {0x24, 0x8d, 0x6a, 0x61, 0xd2, 0x06, 0x38, 0xb8, 0xe5, 0xc0, 0x26,
+                              0x93, 0x0c, 0x3e, 0x60, 0x39, 0xa3, 0x3c, 0xe4, 0x59, 0x64, 0xff,
+                              0x21, 0x67, 0xf6, 0xec, 0xed, 0xd4, 0x19, 0xdb, 0x06, 0xc1};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(twob, d, 32);
+}
+
+// HMAC-SHA256 known-answer vectors (RFC 4231), including an over-block-size key (hashed down first).
+void test_hmac_sha256_vectors()
+{
+    uint8_t d[32];
+
+    uint8_t k1[20];
+    memset(k1, 0x0b, sizeof(k1));
+    dws_hmac_sha256(k1, sizeof(k1), (const uint8_t *)"Hi There", 8, d);
+    const uint8_t tc1[32] = {0xb0, 0x34, 0x4c, 0x61, 0xd8, 0xdb, 0x38, 0x53, 0x5c, 0xa8, 0xaf,
+                             0xce, 0xaf, 0x0b, 0xf1, 0x2b, 0x88, 0x1d, 0xc2, 0x00, 0xc9, 0x83,
+                             0x3d, 0xa7, 0x26, 0xe9, 0x37, 0x6c, 0x2e, 0x32, 0xcf, 0xf7};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(tc1, d, 32); // RFC 4231 test case 1
+
+    // A key longer than the 64-byte block is hashed to 32 octets first (RFC 4231 test case 6).
+    uint8_t k6[131];
+    memset(k6, 0xaa, sizeof(k6));
+    dws_hmac_sha256(k6, sizeof(k6), (const uint8_t *)"Test Using Larger Than Block-Size Key - Hash Key First", 54, d);
+    const uint8_t tc6[32] = {0x60, 0xe4, 0x31, 0x59, 0x1e, 0xe0, 0xb6, 0x7f, 0x0d, 0x8a, 0x26,
+                             0xaa, 0xcb, 0xf5, 0xb7, 0x7f, 0x8e, 0x0b, 0xc6, 0x21, 0x37, 0x28,
+                             0xc5, 0x14, 0x05, 0x46, 0x04, 0x0f, 0x0e, 0xe3, 0x7f, 0x54};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(tc6, d, 32);
+}
+
 // The streaming API (chunked update) must equal the one-shot.
 void test_streaming_equals_oneshot()
 {
@@ -134,6 +182,8 @@ int main()
     RUN_TEST(test_md5_vectors);
     RUN_TEST(test_md4_vectors);
     RUN_TEST(test_hmac_md5_vectors);
+    RUN_TEST(test_sha256_vectors);
+    RUN_TEST(test_hmac_sha256_vectors);
     RUN_TEST(test_streaming_equals_oneshot);
     RUN_TEST(test_nt_hash);
     return UNITY_END();
