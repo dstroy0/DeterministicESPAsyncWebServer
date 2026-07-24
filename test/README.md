@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5132 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5133 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29915,7 +29915,7 @@ A thorough directory of all **5132 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (23 tests)</b></summary>
+<summary><b>test_nmea2000 (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -30176,6 +30176,27 @@ A thorough directory of all **5132 test cases** across **291 suites**. Expand a 
       * <code>Assert true (at.roll_valid)</code>
       * <code>Assert false (dws_n2k_decode_attitude(a, 6, &at))</code>
       * <code>Assert false (dws_n2k_decode_attitude(nullptr, 8, &at))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_rudder</b> &mdash; <i>instance 0, move-to-starboard order, angle order 0.1745 rad (raw 1745), position 0.1571 rad (raw 1571).</i></summary>
+
+    * **Objective**: instance 0, move-to-starboard order, angle order 0.1745 rad (raw 1745), position 0.1571 rad (raw 1571).
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_rudder(r, sizeof(r), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, d.instance);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_RUDDER_MOVE_TO_STARBOARD, d.direction_order);</code>
+      * <code>Assert true (d.angle_order_valid)</code>
+      * <code>Assert float within (0.0005f, 0.1745f, d.angle_order_rad)</code>
+      * <code>Assert true (d.position_valid)</code>
+      * <code>Assert float within (0.0005f, 0.1571f, d.position_rad)</code>
+      * <code>Assert true (dws_n2k_decode_rudder(na, sizeof(na), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_RUDDER_NO_ORDER, d.direction_order);</code>
+      * <code>Assert false (d.angle_order_valid)</code>
+      * <code>Assert true (d.position_valid)</code>
+      * <code>Assert float within (0.0005f, -0.2f, d.position_rad)</code>
+      * <code>Assert false (dws_n2k_decode_rudder(r, 5, &d))</code>
+      * <code>Assert false (dws_n2k_decode_rudder(nullptr, 8, &d))</code>
   </details>
 
   <details style="margin-left: 20px;">
