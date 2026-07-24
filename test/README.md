@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5079 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5081 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -40643,7 +40643,7 @@ A thorough directory of all **5079 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_roaming (6 tests)</b></summary>
+<summary><b>test_roaming (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_stay_when_link_strong</b> &mdash; <i>Strong current link (-50); even a stronger candidate does not trigger a roam below the threshold.</i></summary>
@@ -40705,6 +40705,32 @@ A thorough directory of all **5079 test cases** across **291 suites**. Expand a 
       * <code>Assert true (d.roam)</code>
       * <code>Assert equal (DWS_ROAM_LOW_RSSI, d.reason)</code>
       * <code>Assert false (d.roam)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_neighbor_report</b> &mdash; <i>A non-neighbor element (id 7, len 3) between the two must be skipped.</i></summary>
+
+    * **Objective**: A non-neighbor element (id 7, len 3) between the two must be skipped.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, count);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, nb[0].bssid, 6);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, nb[0].channel);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(DWS_ROAM_RSSI_UNKNOWN, nb[0].rssi_dbm); // RSSI not in the report</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_B, nb[1].bssid, 6);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(11, nb[1].channel);</code>
+      * <code>Assert true (d.roam)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, d.target_bssid, 6);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_roam_parse_neighbor_report(buf, p, nb, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_roam_parse_neighbor_report(nullptr, p, nb, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_neighbor_report_edges</b> &mdash; <i>A neighbor element shorter than the 13-octet body is skipped (not decoded).</i></summary>
+
+    * **Objective**: A neighbor element shorter than the 13-octet body is skipped (not decoded).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_roam_parse_neighbor_report(shortelem, sizeof(shortelem), nb, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_roam_parse_neighbor_report(trunc, sizeof(trunc), nb, 4));</code>
   </details>
 
 </details>
