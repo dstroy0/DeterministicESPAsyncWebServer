@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5134 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5135 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29948,7 +29948,7 @@ A thorough directory of all **5134 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (24 tests)</b></summary>
+<summary><b>test_nmea2000 (25 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -30167,6 +30167,43 @@ A thorough directory of all **5134 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT8(-10, e.tilt_pct); // 0xF6 as int8</code>
       * <code>Assert false (dws_n2k_decode_engine_rapid(er, 5, &e))</code>
       * <code>Assert false (dws_n2k_decode_engine_rapid(nullptr, 8, &e))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_engine_dynamic</b> &mdash; <i>A reassembled 26-octet engine record: oil 3.0 bar (raw 3000), oil 90.05 C (raw 3632), coolant 90.0 C</i></summary>
+
+    * **Objective**: A reassembled 26-octet engine record: oil 3.0 bar (raw 3000), oil 90.05 C (raw 3632), coolant 90.0 C
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_engine_dynamic(e, sizeof(e), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, d.instance);</code>
+      * <code>Assert true (d.oil_pressure_valid)</code>
+      * <code>Assert float within (1.0f, 300000.0f, d.oil_pressure_pa)</code>
+      * <code>Assert true (d.oil_temp_valid)</code>
+      * <code>Assert float within (0.06f, 90.05f, d.oil_temp_c)</code>
+      * <code>Assert true (d.coolant_temp_valid)</code>
+      * <code>Assert float within (0.02f, 90.0f, d.coolant_temp_c)</code>
+      * <code>Assert true (d.alt_voltage_valid)</code>
+      * <code>Assert float within (0.01f, 14.0f, d.alt_voltage_v)</code>
+      * <code>Assert true (d.fuel_rate_valid)</code>
+      * <code>Assert float within (0.05f, 25.0f, d.fuel_rate_lph)</code>
+      * <code>Assert true (d.engine_hours_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(360000u, d.engine_hours_s); // 100 hours</code>
+      * <code>Assert true (d.coolant_pressure_valid)</code>
+      * <code>Assert float within (1.0f, 100000.0f, d.coolant_pressure_pa)</code>
+      * <code>Assert true (d.fuel_pressure_valid)</code>
+      * <code>Assert float within (1.0f, 300000.0f, d.fuel_pressure_pa)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0001, d.discrete_status_1);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0000, d.discrete_status_2);</code>
+      * <code>Assert true (d.load_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(75, d.load_pct);</code>
+      * <code>Assert true (d.torque_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-10, d.torque_pct); // signed</code>
+      * <code>Assert true (dws_n2k_decode_engine_dynamic(na, sizeof(na), &d))</code>
+      * <code>Assert false (d.oil_pressure_valid)</code>
+      * <code>Assert true (d.oil_temp_valid)</code>
+      * <code>Assert false (d.torque_valid)</code>
+      * <code>Assert false (dws_n2k_decode_engine_dynamic(e, 25, &d))</code>
+      * <code>Assert false (dws_n2k_decode_engine_dynamic(nullptr, 26, &d))</code>
   </details>
 
   <details style="margin-left: 20px;">
