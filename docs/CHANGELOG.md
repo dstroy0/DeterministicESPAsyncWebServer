@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.35.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.35.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`46bba63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46bba63942b1baa468def863052916d11bfe73e4))
+
+### Changes
+
+- Bump version: 7.34.0 → 7.35.0 ([`0439f71`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0439f715cb755108fbe9e149f5e3f18b3ea0e496))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`75faafe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75faafe597bc0b43fbd92914315e3672dd9cd682))
+
+### Features
+
+- SK-payload AEAD (AES-256-GCM-16, RFC 5282) ([`bf3732c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf3732c8d4de1242f8c352ffb71891c08085b75f))
+
+</details>
+
 ## [7.34.0] - 2026-07-24
 
 <details>
