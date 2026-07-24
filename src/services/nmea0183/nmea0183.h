@@ -217,5 +217,20 @@ struct DwsNmeaDpt
  */
 bool dws_nmea0183_parse_dpt(const Nmea0183 *m, DwsNmeaDpt *out);
 
+/** @brief Decoded HDG (magnetic heading + deviation + variation): the compass sentence. The deviation and
+ *  variation are signed with East positive / West negative, so true heading = heading + deviation + variation. */
+struct DwsNmeaHdg
+{
+    float heading_deg;   ///< magnetic sensor heading (degrees)
+    float deviation_deg; ///< magnetic deviation (degrees), + East / - West; 0 if absent
+    float variation_deg; ///< magnetic variation (degrees), + East / - West; 0 if absent
+};
+
+/**
+ * @brief Decode a parsed HDG sentence into @p out. @return true iff @p m is an HDG sentence with the heading
+ *        / deviation / variation fields; false otherwise. The E/W direction fields are folded into the sign.
+ */
+bool dws_nmea0183_parse_hdg(const Nmea0183 *m, DwsNmeaHdg *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

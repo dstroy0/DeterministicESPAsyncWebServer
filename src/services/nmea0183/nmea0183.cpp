@@ -357,4 +357,19 @@ bool dws_nmea0183_parse_dpt(const Nmea0183 *m, DwsNmeaDpt *out)
     return true;
 }
 
+bool dws_nmea0183_parse_hdg(const Nmea0183 *m, DwsNmeaHdg *out)
+{
+    if (!m || !out || strcmp(m->type, "HDG") != 0 || m->field_count < 6) // heading + dev + dir + var + dir
+        return false;
+    memset(out, 0, sizeof(*out));
+    dws_nmea0183_field_float(m, 1, &out->heading_deg);
+    float dev = 0.0f;
+    if (dws_nmea0183_field_float(m, 2, &dev)) // field 3 is the E/W direction (West -> negative)
+        out->deviation_deg = (m->field_len[3] >= 1 && (m->fields[3][0] == 'W' || m->fields[3][0] == 'w')) ? -dev : dev;
+    float var = 0.0f;
+    if (dws_nmea0183_field_float(m, 4, &var)) // field 5 is the E/W direction
+        out->variation_deg = (m->field_len[5] >= 1 && (m->fields[5][0] == 'W' || m->fields[5][0] == 'w')) ? -var : var;
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183

@@ -456,6 +456,33 @@ void test_decode_dpt()
     TEST_ASSERT_FALSE(dws_nmea0183_parse_dpt(nullptr, &d));
 }
 
+void test_decode_hdg()
+{
+    char buf[96];
+    // Magnetic heading 98.3 deg, deviation 0.0 E, variation 12.6 W (-> -12.6 signed).
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "HCHDG,98.3,0.0,E,12.6,W");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaHdg h;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_hdg(&m, &h));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 98.3f, h.heading_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, h.deviation_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, -12.6f, h.variation_deg); // West -> negative
+
+    // An easterly variation and a westerly deviation flip the signs the other way.
+    n = dws_nmea0183_build(buf, sizeof(buf), "HCHDG,45.0,1.5,W,6.0,E");
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_hdg(&m, &h));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, -1.5f, h.deviation_deg); // West deviation -> negative
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 6.0f, h.variation_deg);  // East variation -> positive
+
+    // A GGA is not an HDG, and null args are rejected.
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_hdg(&m, &h));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_hdg(nullptr, &h));
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -495,6 +522,7 @@ int main()
     RUN_TEST(test_decode_gsa);
     RUN_TEST(test_decode_mwv);
     RUN_TEST(test_decode_dpt);
+    RUN_TEST(test_decode_hdg);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }
