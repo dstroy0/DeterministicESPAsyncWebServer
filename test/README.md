@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5081 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5083 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -40643,7 +40643,7 @@ A thorough directory of all **5081 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_roaming (8 tests)</b></summary>
+<summary><b>test_roaming (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_stay_when_link_strong</b> &mdash; <i>Strong current link (-50); even a stronger candidate does not trigger a roam below the threshold.</i></summary>
@@ -40731,6 +40731,38 @@ A thorough directory of all **5081 test cases** across **291 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_roam_parse_neighbor_report(shortelem, sizeof(shortelem), nb, 4));</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_roam_parse_neighbor_report(trunc, sizeof(trunc), nb, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_btm_request</b> &mdash; <i>BTM Request: preferred-list (bit 0) + disassoc-imminent (bit 2) = 0x05, one candidate (AP_A).</i></summary>
+
+    * **Objective**: BTM Request: preferred-list (bit 0) + disassoc-imminent (bit 2) = 0x05, one candidate (AP_A).
+    * **Assertions**:
+      * <code>Assert true (dws_roam_parse_btm_request(f, p, &btm))</code>
+      * <code>Assert true (btm.present)</code>
+      * <code>Assert true (btm.disassoc_imminent)</code>
+      * <code>Assert true (btm.has_preferred)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, btm.preferred_bssid, 6);</code>
+      * <code>Assert true (d.roam)</code>
+      * <code>Assert equal (DWS_ROAM_BTM_IMMINENT, d.reason)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, d.target_bssid, 6);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_btm_request_optional_fields_and_guards</b> &mdash; <i>Request mode with BSS-Termination-Included (bit 3) + preferred list (bit 0) = 0x09: the candidate</i></summary>
+
+    * **Objective**: Request mode with BSS-Termination-Included (bit 3) + preferred list (bit 0) = 0x09: the candidate
+    * **Assertions**:
+      * <code>Assert true (dws_roam_parse_btm_request(f, p, &btm))</code>
+      * <code>Assert true (btm.has_preferred)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_B, btm.preferred_bssid, 6); // decoded past the termination field</code>
+      * <code>Assert false (btm.disassoc_imminent)</code>
+      * <code>Assert true (dws_roam_parse_btm_request(plain, sizeof(plain), &btm))</code>
+      * <code>Assert true (btm.disassoc_imminent)</code>
+      * <code>Assert false (btm.has_preferred)</code>
+      * <code>Assert false (dws_roam_parse_btm_request(wrong, sizeof(wrong), &btm))</code>
+      * <code>Assert false (dws_roam_parse_btm_request(f, 5, &btm))</code>
+      * <code>Assert false (dws_roam_parse_btm_request(nullptr, 7, &btm))</code>
   </details>
 
 </details>
