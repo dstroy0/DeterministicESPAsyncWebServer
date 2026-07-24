@@ -70,6 +70,7 @@ from each example's `pio ci` size report and aggregated into
 | `MPR121`                                                                                                  | Drivers/Mpr121                       | 281.0 KB (21.9%) | 21.3 KB (6.7%)   |
 | `MQTT`                                                                                                    | L7-Application/MqttClient            | 719.2 KB (56.2%) | 63.8 KB (19.9%)  |
 | `MSGPACK`                                                                                                 | L6-Presentation/MsgPack              | 739.4 KB (57.8%) | 80.0 KB (25.0%)  |
+| `NMEA0183+UBX`                                                                                            | Drivers/UbloxGnss                    | 267.4 KB (20.9%) | 21.9 KB (6.8%)   |
 | `NRF24+GATEWAY`                                                                                           | Drivers/Nrf24Gateway                 | 269.6 KB (21.1%) | 21.2 KB (6.6%)   |
 | `NTP`                                                                                                     | L7-Application/SNTP                  | 761.1 KB (59.5%) | 82.4 KB (25.7%)  |
 | `NTP+TIME_SOURCE`                                                                                         | L7-Application/TimeSourceFallback    | 756.7 KB (59.1%) | 81.5 KB (25.5%)  |
@@ -93,6 +94,7 @@ from each example's `pio ci` size report and aggregated into
 | `PREEMPT_QUEUE`                                                                                           | Foundation/PreemptQueue              | 267.6 KB (20.9%) | 23.4 KB (7.3%)   |
 | `PROMISC+FORWARD+ETHERNET`                                                                                | Peripherals/WifiCapture              | 748.1 KB (58.4%) | 46.5 KB (14.5%)  |
 | `PROVISIONING`                                                                                            | L7-Application/Provisioning          | 743.8 KB (58.1%) | 81.5 KB (25.5%)  |
+| `PTP`                                                                                                     | L7-Application/Ptp                   | 711.3 KB (55.6%) | 44.0 KB (13.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`                                                                               | L7-Application/RadioPower            | 735.8 KB (57.5%) | 79.9 KB (25.0%)  |
 | `RANGE`                                                                                                   | L7-Application/Range                 | 777.3 KB (60.7%) | 79.9 KB (25.0%)  |
 | `RELAY`                                                                                                   | L7-Application/PortForward           | 745.4 KB (58.2%) | 113.7 KB (35.5%) |

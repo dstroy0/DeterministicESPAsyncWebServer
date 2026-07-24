@@ -433,6 +433,13 @@
     "flash_bytes": 757181,
     "ram_bytes": 81900
   },
+  "NMEA0183+UBX": {
+    "example": "Drivers/UbloxGnss",
+    "flags": "-DDWS_ENABLE_NMEA0183=1 -DDWS_ENABLE_UBX=1",
+    "board": "esp32dev",
+    "flash_bytes": 273773,
+    "ram_bytes": 22432
+  },
   "NRF24+GATEWAY": {
     "example": "Drivers/Nrf24Gateway",
     "flags": "-DDWS_ENABLE_NRF24=1 -DDWS_ENABLE_GATEWAY=1",
@@ -593,6 +600,13 @@
     "board": "esp32dev",
     "flash_bytes": 761701,
     "ram_bytes": 83456
+  },
+  "PTP": {
+    "example": "L7-Application/Ptp",
+    "flags": "-DDWS_ENABLE_PTP=1",
+    "board": "esp32dev",
+    "flash_bytes": 728321,
+    "ram_bytes": 45020
   },
   "RADIO_POWER+RADIO_WIFI_PS": {
     "example": "L7-Application/RadioPower",
