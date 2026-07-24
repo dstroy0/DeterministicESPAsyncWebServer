@@ -19,6 +19,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`b94eded`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b94eded86b8d970bc74477cdc678b326c2a7d15b))
 - exclude src/board_profiles from copy-paste detection ([`f7e1a1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7e1a1b7093c99168cdad6955751ac945fb8387e))
 - update CHANGELOG.md [skip ci] ([`d11e5bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d11e5bbbb9c842b6a6b8ea4839085626a53e76f5))
 - update test report + coverage [skip ci] ([`243887f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/243887f3c094ecba8316260fa9db4ec63a4d09ab))
@@ -75,6 +76,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`30848b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/30848b432cd07c60ec985264b31754b282a0429e))
 - record live ptp4l interop (slave HW-verified over LAN) ([`c6d7006`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6d70063d54e4c152790a014fdee082be53ee7d4))
 - update ESP32 build footprints [skip ci] ([`5a15490`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a15490c012aab5411d62e3122b553f39f0bc013))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2318f7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2318f7eb47381e66215b7c22e7a194a50c423a74))
@@ -136,6 +138,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- fuzz the WebDAV core parsers (RFC 4918) ([`e130eef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e130eef5fca1d84f1e25b97dca0545d6757ec13f))
 - close ssh_server switch branch gap + merge webdav content-type guard [full ci] ([`ecbe237`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ecbe23736378356c7b5eda9cfa101d015a364f87))
 - raise line+branch coverage to 100% and remediate SonarCloud smells [full ci] ([`870c98b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/870c98be6828681e8b39c39b5e5356f7c1097689))
 - close remaining transport/physical coverage gaps for real ([`f41211d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f41211d80debdb14f7f3bd60a9f0e9d999f7e646))
