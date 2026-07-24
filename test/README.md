@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5176 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5177 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -9037,7 +9037,7 @@ A thorough directory of all **5176 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dmx (10 tests)</b></summary>
+<summary><b>test_dmx (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dmx_build_and_get</b> &mdash; <i>512 channels is the max; 513 is rejected.</i></summary>
@@ -9124,6 +9124,37 @@ A thorough directory of all **5176 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX16(RDM_PID_DMX_START_ADDRESS, g.pid);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(2, g.pdl);</code>
       * <code>Assert equal memory (addr, g.pdata, 2)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rdm_device_info</b> &mdash; <i>Packs the 19-octet big-endian DEVICE_INFO block byte-exact (E1.20 Table A-15 field order).</i></summary>
+
+    * **Objective**: Packs the 19-octet big-endian DEVICE_INFO block byte-exact (E1.20 Table A-15 field order).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_RDM_DEVICE_INFO_PDL, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, pd, n);</code>
+      * <code>Assert true (dws_rdm_parse_device_info(pd, (uint8_t)n, &out))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, out.proto_major);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, out.proto_minor);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x1234, out.device_model_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0100, out.product_category);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x0A0B0C0Du, out.software_version_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, out.dmx_footprint);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, out.current_personality);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, out.personality_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(100, out.dmx_start_address);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, out.sub_device_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, out.sensor_count);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(RDM_OVERHEAD + DWS_RDM_DEVICE_INFO_PDL, pn);</code>
+      * <code>Assert true (dws_rdm_parse(buf, pn, &g, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(RDM_PID_DEVICE_INFO, g.pid);</code>
+      * <code>Assert true (dws_rdm_parse_device_info(g.pdata, g.pdl, &out2))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x1234, out2.device_model_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(100, out2.dmx_start_address);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_device_info(pd, 18, &in));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_device_info(nullptr, sizeof(pd), &in));</code>
+      * <code>Assert false (dws_rdm_parse_device_info(pd, 18, &out))</code>
+      * <code>Assert false (dws_rdm_parse_device_info(nullptr, 19, &out))</code>
   </details>
 
   <details style="margin-left: 20px;">
