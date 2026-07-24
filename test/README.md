@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5102 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5103 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -21788,7 +21788,7 @@ A thorough directory of all **5102 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_j1939 (24 tests)</b></summary>
+<summary><b>test_j1939 (25 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_id_pdu2_roundtrip</b> &mdash; <i>Id pdu2 roundtrip</i></summary>
@@ -22081,6 +22081,28 @@ A thorough directory of all **5102 test cases** across **291 suites**. Expand a 
       * <code>Assert false (l.fuel_rate_valid)</code>
       * <code>Assert true (l.instant_econ_valid)</code>
       * <code>Assert false (dws_j1939_decode_lfe(&eec1, &l))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_amb</b> &mdash; <i>baro 101.5 kPa (raw 203), cab 21.5 C (raw 9424), ambient 15.0 C (raw 9216),</i></summary>
+
+    * **Objective**: baro 101.5 kPa (raw 203), cab 21.5 C (raw 9424), ambient 15.0 C (raw 9216),
+    * **Assertions**:
+      * <code>Assert true (dws_j1939_build_message(&f, 6, J1939_PGN_AMB, 0x00, J1939_ADDR_GLOBAL, data, 8))</code>
+      * <code>Assert true (dws_j1939_decode_amb(&f, &a))</code>
+      * <code>Assert true (a.baro_valid)</code>
+      * <code>Assert float within (0.01f, 101.5f, a.baro_kpa)</code>
+      * <code>Assert true (a.cab_temp_valid)</code>
+      * <code>Assert float within (0.01f, 21.5f, a.cab_temp_c)</code>
+      * <code>Assert true (a.ambient_temp_valid)</code>
+      * <code>Assert float within (0.01f, 15.0f, a.ambient_temp_c)</code>
+      * <code>Assert true (a.inlet_temp_valid)</code>
+      * <code>Assert float within (0.01f, 30.0f, a.inlet_temp_c)</code>
+      * <code>Assert true (a.road_temp_valid)</code>
+      * <code>Assert float within (0.01f, 12.0f, a.road_temp_c)</code>
+      * <code>Assert false (a.baro_valid)</code>
+      * <code>Assert true (a.ambient_temp_valid)</code>
+      * <code>Assert false (dws_j1939_decode_amb(&lfe, &a))</code>
   </details>
 
   <details style="margin-left: 20px;">
