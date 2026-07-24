@@ -998,7 +998,8 @@
       "src": [
         "+<services/ikev2/ikev2.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>"
       ],
       "tests": ["test_ikev2"]
     },

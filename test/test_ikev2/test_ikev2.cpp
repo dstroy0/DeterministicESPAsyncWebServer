@@ -1175,6 +1175,80 @@ void test_derive_keys_guards()
     TEST_ASSERT_FALSE(dws_ike_derive_keys(buf, 32, buf, 16, buf, 16, spi, spi, &zero, &km)); // zero length
 }
 
+// ── tier 2: SK-payload AEAD (AES-256-GCM-16, RFC 5282) ─────────────────────────────────────────
+// Golden ciphertext + tag from an INDEPENDENT AES-256-GCM reference (Python cryptography AESGCM), so
+// this is a cross-impl KAT of the nonce (salt||IV) construction + the AEAD, not a self-consistency check.
+
+static const uint8_t kat_aead_key[32] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+                                         0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
+                                         0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f};
+static const uint8_t kat_aead_salt[4] = {0xde, 0xad, 0xbe, 0xef};
+static const uint8_t kat_aead_iv[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+static const uint8_t kat_aead_aad[28] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+                                         0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13,
+                                         0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b};
+static const uint8_t kat_aead_pt[40] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+                                        0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13,
+                                        0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d,
+                                        0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27};
+static const uint8_t kat_aead_ct[40] = {0xb4, 0xca, 0x1c, 0x59, 0x78, 0xce, 0xd0, 0x01, 0xce, 0x53,
+                                        0x80, 0x01, 0xe2, 0xf1, 0x48, 0x4b, 0x48, 0xc0, 0x4e, 0x47,
+                                        0xb2, 0x5c, 0x37, 0xfc, 0xea, 0xc8, 0x34, 0x37, 0x72, 0xc4,
+                                        0xad, 0x12, 0x4c, 0xfa, 0x45, 0x79, 0xc7, 0x36, 0x91, 0xdb};
+static const uint8_t kat_aead_tag[16] = {0x0f, 0xa0, 0x34, 0x92, 0xee, 0x63, 0x60, 0x55,
+                                         0x32, 0x6b, 0xf1, 0x18, 0xc8, 0xc1, 0x7c, 0x01};
+
+void test_sk_aead_seal_kat()
+{
+    uint8_t out[sizeof(kat_aead_pt) + DWS_IKE_AEAD_ICV_LEN];
+    TEST_ASSERT_TRUE(dws_ike_sk_aead_seal(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad),
+                                          kat_aead_pt, sizeof(kat_aead_pt), out));
+    TEST_ASSERT_EQUAL_MEMORY(kat_aead_ct, out, sizeof(kat_aead_ct));                         // ciphertext matches
+    TEST_ASSERT_EQUAL_MEMORY(kat_aead_tag, out + sizeof(kat_aead_ct), DWS_IKE_AEAD_ICV_LEN); // tag matches
+}
+
+void test_sk_aead_open_roundtrip()
+{
+    // open the golden ct+tag -> the plaintext.
+    uint8_t pt[sizeof(kat_aead_ct)];
+    TEST_ASSERT_TRUE(dws_ike_sk_aead_open(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad),
+                                          kat_aead_ct, sizeof(kat_aead_ct), kat_aead_tag, pt));
+    TEST_ASSERT_EQUAL_MEMORY(kat_aead_pt, pt, sizeof(kat_aead_pt));
+
+    // A flipped tag byte fails and writes no plaintext.
+    uint8_t bad_tag[16];
+    memcpy(bad_tag, kat_aead_tag, 16);
+    bad_tag[0] ^= 0x01;
+    uint8_t pt2[sizeof(kat_aead_ct)];
+    TEST_ASSERT_FALSE(dws_ike_sk_aead_open(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad),
+                                           kat_aead_ct, sizeof(kat_aead_ct), bad_tag, pt2));
+    // Tampered AAD (one byte) also fails: the AAD is authenticated.
+    uint8_t bad_aad[sizeof(kat_aead_aad)];
+    memcpy(bad_aad, kat_aead_aad, sizeof(bad_aad));
+    bad_aad[0] ^= 0x80;
+    TEST_ASSERT_FALSE(dws_ike_sk_aead_open(kat_aead_key, kat_aead_salt, kat_aead_iv, bad_aad, sizeof(bad_aad),
+                                           kat_aead_ct, sizeof(kat_aead_ct), kat_aead_tag, pt2));
+}
+
+void test_sk_aead_inplace_and_guards()
+{
+    // In-place seal then open (out aliases the plaintext buffer) round-trips.
+    uint8_t buf[sizeof(kat_aead_pt) + DWS_IKE_AEAD_ICV_LEN];
+    memcpy(buf, kat_aead_pt, sizeof(kat_aead_pt));
+    TEST_ASSERT_TRUE(dws_ike_sk_aead_seal(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad),
+                                          buf, sizeof(kat_aead_pt), buf));
+    TEST_ASSERT_EQUAL_MEMORY(kat_aead_ct, buf, sizeof(kat_aead_ct));
+    TEST_ASSERT_TRUE(dws_ike_sk_aead_open(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad),
+                                          buf, sizeof(kat_aead_ct), buf + sizeof(kat_aead_ct), buf));
+    TEST_ASSERT_EQUAL_MEMORY(kat_aead_pt, buf, sizeof(kat_aead_pt));
+
+    // Null-argument guards.
+    uint8_t o[16];
+    TEST_ASSERT_FALSE(dws_ike_sk_aead_seal(nullptr, kat_aead_salt, kat_aead_iv, nullptr, 0, nullptr, 0, o));
+    TEST_ASSERT_FALSE(
+        dws_ike_sk_aead_open(kat_aead_key, kat_aead_salt, kat_aead_iv, nullptr, 0, nullptr, 0, nullptr, o));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1223,5 +1297,9 @@ int main()
     RUN_TEST(test_derive_keys_kat_16b_nonces);
     RUN_TEST(test_derive_keys_kat_prehash_key);
     RUN_TEST(test_derive_keys_guards);
+    // tier 2: SK-payload AEAD (AES-256-GCM-16, RFC 5282)
+    RUN_TEST(test_sk_aead_seal_kat);
+    RUN_TEST(test_sk_aead_open_roundtrip);
+    RUN_TEST(test_sk_aead_inplace_and_guards);
     return UNITY_END();
 }

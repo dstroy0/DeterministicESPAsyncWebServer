@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4986 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4989 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **4986 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (44 tests)</b></summary>
+<summary><b>test_ikev2 (47 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20503,6 +20503,40 @@ A thorough directory of all **4986 test cases** across **287 suites**. Expand a 
       * <code>Assert false (dws_ike_derive_keys(buf, 32, buf, 0, buf, 16, spi, spi, &lens, &km))</code>
       * <code>Assert false (dws_ike_derive_keys(buf, 32, buf, 16, buf, 16, spi, spi, &toobig, &km))</code>
       * <code>Assert false (dws_ike_derive_keys(buf, 32, buf, 16, buf, 16, spi, spi, &zero, &km))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sk_aead_seal_kat</b> &mdash; <i>Sk aead seal kat</i></summary>
+
+    * **Objective**: Sk aead seal kat
+    * **Assertions**:
+      * <code>Assert true (dws_ike_sk_aead_seal(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad)</code>
+      * <code>Assert equal memory (kat_aead_ct, out, sizeof(kat_aead_ct))</code>
+      * <code>Assert equal memory (kat_aead_tag, out + sizeof(kat_aead_ct), DWS_IKE_AEAD_ICV_LEN)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sk_aead_open_roundtrip</b> &mdash; <i>open the golden ct+tag -> the plaintext.</i></summary>
+
+    * **Objective**: open the golden ct+tag -> the plaintext.
+    * **Assertions**:
+      * <code>Assert true (dws_ike_sk_aead_open(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad)</code>
+      * <code>Assert equal memory (kat_aead_pt, pt, sizeof(kat_aead_pt))</code>
+      * <code>Assert false (dws_ike_sk_aead_open(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad)</code>
+      * <code>Assert false (dws_ike_sk_aead_open(kat_aead_key, kat_aead_salt, kat_aead_iv, bad_aad, sizeof(bad_aad)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sk_aead_inplace_and_guards</b> &mdash; <i>In-place seal then open (out aliases the plaintext buffer) round-trips.</i></summary>
+
+    * **Objective**: In-place seal then open (out aliases the plaintext buffer) round-trips.
+    * **Assertions**:
+      * <code>Assert true (dws_ike_sk_aead_seal(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad)</code>
+      * <code>Assert equal memory (kat_aead_ct, buf, sizeof(kat_aead_ct))</code>
+      * <code>Assert true (dws_ike_sk_aead_open(kat_aead_key, kat_aead_salt, kat_aead_iv, kat_aead_aad, sizeof(kat_aead_aad)</code>
+      * <code>Assert equal memory (kat_aead_pt, buf, sizeof(kat_aead_pt))</code>
+      * <code>Assert false (dws_ike_sk_aead_seal(nullptr, kat_aead_salt, kat_aead_iv, nullptr, 0, nullptr, 0, o))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
   </details>
 
 </details>

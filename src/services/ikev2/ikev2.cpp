@@ -10,6 +10,7 @@
 
 #if DWS_ENABLE_IKEV2
 
+#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"      // SK-payload AEAD (AES-256-GCM-16)
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // PRF = HMAC-SHA2-256
 #include <string.h>                                                  // memcpy / memset (framing is hand-rolled)
 
@@ -738,6 +739,47 @@ bool dws_ike_derive_keys(const uint8_t *dh_secret, size_t dh_len, const uint8_t 
     out->sk_e_len = lens->sk_e;
     out->sk_p_len = lens->sk_p;
     return true;
+}
+
+// ── tier 2: SK-payload AEAD (AES-256-GCM-16, RFC 5282) ─────────────────────────────────────────
+
+// Build the 12-byte GCM nonce = salt(4) || explicit IV(8) (RFC 5282 §4).
+static void ike_gcm_nonce(uint8_t nonce[SSH_AESGCM_IV_LEN], const uint8_t *salt, const uint8_t *iv)
+{
+    memcpy(nonce, salt, DWS_IKE_GCM_SALT_LEN);
+    memcpy(nonce + DWS_IKE_GCM_SALT_LEN, iv, DWS_IKE_GCM_IV_LEN);
+}
+
+bool dws_ike_sk_aead_seal(const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t salt[DWS_IKE_GCM_SALT_LEN],
+                          const uint8_t iv[DWS_IKE_GCM_IV_LEN], const uint8_t *aad, size_t aad_len, const uint8_t *pt,
+                          size_t pt_len, uint8_t *out)
+{
+    if (!key || !salt || !iv || !out || (pt_len && !pt) || (aad_len && !aad))
+        return false;
+    uint8_t nonce[SSH_AESGCM_IV_LEN];
+    ike_gcm_nonce(nonce, salt, iv);
+    // IKEv2 chooses a fresh explicit IV per message, so the GCM context is single-use here (the SSH
+    // invocation-counter model does not apply): init, seal once, wipe.
+    SshAesGcmCtx ctx;
+    ssh_aesgcm_init(&ctx, key, nonce);
+    ssh_aesgcm_seal(&ctx, aad, aad_len, pt, pt_len, out); // out = ciphertext || 16-byte tag
+    ssh_aesgcm_wipe(&ctx);
+    return true;
+}
+
+bool dws_ike_sk_aead_open(const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t salt[DWS_IKE_GCM_SALT_LEN],
+                          const uint8_t iv[DWS_IKE_GCM_IV_LEN], const uint8_t *aad, size_t aad_len, const uint8_t *ct,
+                          size_t ct_len, const uint8_t tag[DWS_IKE_AEAD_ICV_LEN], uint8_t *out)
+{
+    if (!key || !salt || !iv || !tag || !out || (ct_len && !ct) || (aad_len && !aad))
+        return false;
+    uint8_t nonce[SSH_AESGCM_IV_LEN];
+    ike_gcm_nonce(nonce, salt, iv);
+    SshAesGcmCtx ctx;
+    ssh_aesgcm_init(&ctx, key, nonce);
+    bool ok = ssh_aesgcm_open(&ctx, aad, aad_len, ct, ct_len, tag, out);
+    ssh_aesgcm_wipe(&ctx);
+    return ok;
 }
 
 #endif // DWS_ENABLE_IKEV2

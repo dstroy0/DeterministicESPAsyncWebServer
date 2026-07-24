@@ -442,8 +442,14 @@ preempting queue, so sensing shares the real-time ingest path.
        (prf+ over HMAC-SHA2-256, capped at 255 blocks) and `dws_ike_derive_keys` (SKEYSEED = prf(Ni|Nr,
        g^ir), then the SK_d/ai/ar/ei/er/pi/pr split by caller-supplied per-algorithm lengths), zero-heap,
        cross-checked against an independent Python HMAC reference incl. the >64-byte-key RFC 2104
-       pre-hash and an AES-GCM (key+salt) split length (`test_ikev2`, +5 KAT/guard cases). The AEAD
-       encrypt/decrypt of the SK payload is the remaining tier-2 crypto piece.
+       pre-hash and an AES-GCM (key+salt) split length (`test_ikev2`, +5 KAT/guard cases). **The
+       SK-payload AEAD is shipped too** (RFC 5282 AES-256-GCM-16): `dws_ike_sk_aead_seal` /
+       `dws_ike_sk_aead_open` wrap the library's AES-256-GCM under the RFC 5282 nonce (4-byte salt from
+       SK_ei/er || the 8-byte explicit IV), authenticating the header-through-SK-generic-header AAD and
+       producing/consuming the `IV | ciphertext | ICV` body, cross-checked against Python cryptography's
+       AES-256-GCM incl. tamper (tag + AAD) rejection and in-place operation (+3 cases). The remaining
+       tier-2 crypto is the Diffie-Hellman shared-secret step; then the IKE_SA_INIT -> IKE_AUTH state
+       machine (item 2).
     2. **IKE SA handshake state machine** (L) - IKE_SA_INIT -> IKE_AUTH (PSK and/or certificate auth) ->
        CREATE_CHILD_SA / INFORMATIONAL, rekeying, DPD (dead-peer detection), and the fixed-BSS SA/SPI tables.
        Still host-testable against a reference peer (strongSwan / libreswan) with no datapath.

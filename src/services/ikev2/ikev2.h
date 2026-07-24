@@ -11,11 +11,11 @@
  * Scope (tier 1 of the IPsec roadmap item): the pure wire codec only - build / parse into caller
  * buffers, no sockets and no crypto. It frames the 28-octet IKE header and the generic payload chain
  * (SA -> proposals -> transforms, KE, Ni/Nr, IDi/IDr, CERT/CERTREQ, AUTH, N notify, D delete, TSi/TSr,
- * and the SK encrypted-payload envelope). Tier 2 begins here too: the SKEYSEED / SK_* key derivation
- * (RFC 7296 §2.13-2.14, prf+ over HMAC-SHA2-256). The Diffie-Hellman math, the AEAD encrypt/decrypt of
- * the SK payload, and the IKE_SA_INIT -> IKE_AUTH state machine are the remaining tiers (they reuse the
- * crypto the library already ships); the codec here lays out and reads the bytes so those tiers have a
- * tested framing seam.
+ * and the SK encrypted-payload envelope). Tier 2 lives here too: the SKEYSEED / SK_* key derivation
+ * (RFC 7296 §2.13-2.14, prf+ over HMAC-SHA2-256) and the SK-payload AEAD (RFC 5282 AES-256-GCM-16). The
+ * Diffie-Hellman shared-secret step and the IKE_SA_INIT -> IKE_AUTH state machine are the remaining
+ * tiers (they reuse the crypto the library already ships); the codec here lays out and reads the bytes
+ * so those tiers have a tested framing seam.
  *
  * Wire framing (byte-exact, network byte order): the IKE header is 8-byte Initiator SPI, 8-byte
  * Responder SPI, 1-byte Next Payload, 1-byte Version (0x20 = MjVer 2 / MnVer 0), 1-byte Exchange Type,
@@ -438,6 +438,43 @@ bool dws_ike_prf_plus(const uint8_t *key, size_t key_len, const uint8_t *seed, s
 bool dws_ike_derive_keys(const uint8_t *dh_secret, size_t dh_len, const uint8_t *ni, size_t ni_len, const uint8_t *nr,
                          size_t nr_len, const uint8_t *spi_i, const uint8_t *spi_r, const IkeKeyLengths *lens,
                          IkeKeyMaterial *out);
+
+// ── tier 2: SK-payload AEAD (AES-256-GCM-16, RFC 5282 in RFC 7296 §3.14) ────────────────────────
+//
+// The SK payload body is `IV | ciphertext | ICV`. For AES-GCM (RFC 5282) the 12-byte GCM nonce is a
+// 4-byte salt (the tail of SK_ei / SK_er, kept out of the 32-byte AES key) concatenated with the 8-byte
+// explicit IV the sender writes into the body; the AAD is the message from the IKE header through the SK
+// payload's 4-byte generic header (everything not encrypted). The plaintext framing (inner payloads +
+// padding + pad-length) is the caller's; these functions are the crypto core.
+
+/** @brief AES-256 key length for AES-GCM-16 (SK_ei / SK_er, salt excluded). */
+#define DWS_IKE_AEAD_KEY_LEN 32
+/** @brief AEAD salt length: the 4-byte tail of SK_ei / SK_er (RFC 5282). */
+#define DWS_IKE_GCM_SALT_LEN 4
+/** @brief Explicit IV length carried in the SK body for AES-GCM (RFC 5282). */
+#define DWS_IKE_GCM_IV_LEN 8
+/** @brief AEAD tag / ICV length (AES-GCM-16). */
+#define DWS_IKE_AEAD_ICV_LEN 16
+
+/**
+ * @brief Seal an SK payload with AES-256-GCM: authenticate @p aad and encrypt @p pt, writing @p pt_len
+ *        ciphertext bytes then the 16-byte ICV into @p out (which must hold @p pt_len + DWS_IKE_AEAD_ICV_LEN;
+ *        @p out may alias @p pt). The GCM nonce is @p salt || @p iv (RFC 5282).
+ * @param key  32-byte AES-256 key = SK_ei (initiator->responder) or SK_er (responder->initiator).
+ * @return false only on a null argument.
+ */
+bool dws_ike_sk_aead_seal(const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t salt[DWS_IKE_GCM_SALT_LEN],
+                          const uint8_t iv[DWS_IKE_GCM_IV_LEN], const uint8_t *aad, size_t aad_len, const uint8_t *pt,
+                          size_t pt_len, uint8_t *out);
+
+/**
+ * @brief Open an AES-256-GCM SK payload: verify @p tag over @p aad || @p ct in constant time and, only on
+ *        success, decrypt @p ct into @p out (@p out may alias @p ct). The nonce is @p salt || @p iv.
+ * @return true iff the tag is valid (a forged / tampered message returns false and writes no plaintext).
+ */
+bool dws_ike_sk_aead_open(const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t salt[DWS_IKE_GCM_SALT_LEN],
+                          const uint8_t iv[DWS_IKE_GCM_IV_LEN], const uint8_t *aad, size_t aad_len, const uint8_t *ct,
+                          size_t ct_len, const uint8_t tag[DWS_IKE_AEAD_ICV_LEN], uint8_t *out);
 
 #endif // DWS_ENABLE_IKEV2
 
