@@ -338,7 +338,7 @@ Wired Ethernet bring-up. Default off (the ETH library is not linked). When set, 
 
 `DWS_ENABLE_ENIP`
 
-EtherNet/IP encapsulation codec - the ODVA EtherNet/IP transport (TCP/UDP 44818) that carries CIP. Default off. services/enip provides `dws_eip_build` / `dws_eip_parse` for the 24-octet encapsulation header (little-endian command / length / session handle / status / sender context / options), `dws_eip_build_register_session` to open a session, and `dws_eip_build_send_rr_data` / `dws_eip_parse_send_rr_data` to wrap + unwrap a CIP message as an unconnected message via the Common Packet Format (a Null Address item plus an Unconnected Data item). Commands and CPF item types verified against the Wireshark ENIP dissector; pure and host-tested. The CIP object model inside the Unconnected Data item layers on top. See src/services/enip/enip.h.
+EtherNet/IP encapsulation codec - the ODVA EtherNet/IP transport (TCP/UDP 44818) that carries CIP. Default off. services/enip provides `dws_eip_build` / `dws_eip_parse` for the 24-octet encapsulation header (little-endian command / length / session handle / status / sender context / options), `dws_eip_build_register_session` to open a session and `dws_eip_build_unregister_session` to close it (the session handle in the header, no command data), and `dws_eip_build_send_rr_data` / `dws_eip_parse_send_rr_data` to wrap + unwrap a CIP message as an unconnected message via the Common Packet Format (a Null Address item plus an Unconnected Data item). Commands and CPF item types verified against the Wireshark ENIP dissector; pure and host-tested. The CIP object model inside the Unconnected Data item layers on top. See src/services/enip/enip.h.
 
 ## Exception Decoder
 

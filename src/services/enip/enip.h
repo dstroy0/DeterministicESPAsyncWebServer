@@ -76,6 +76,13 @@ bool dws_eip_parse(const uint8_t *buf, size_t len, EipHeader *out, const uint8_t
 size_t dws_eip_build_register_session(uint8_t *buf, size_t cap, const uint8_t sender_context[8]);
 
 /**
+ * @brief Build an UnRegisterSession request that closes @p session_handle (no command-specific data).
+ * @p sender_context may be null (zeros).
+ */
+size_t dws_eip_build_unregister_session(uint8_t *buf, size_t cap, uint32_t session_handle,
+                                        const uint8_t sender_context[8]);
+
+/**
  * @brief Build a SendRRData request wrapping @p cip as an unconnected message (Null Address
  *        item + Unconnected Data item).
  */

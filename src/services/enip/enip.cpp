@@ -94,6 +94,18 @@ size_t dws_eip_build_register_session(uint8_t *buf, size_t cap, const uint8_t se
     return dws_eip_build(buf, cap, &h, data, sizeof(data));
 }
 
+size_t dws_eip_build_unregister_session(uint8_t *buf, size_t cap, uint32_t session_handle,
+                                        const uint8_t sender_context[8])
+{
+    EipHeader h;
+    memset(&h, 0, sizeof(h));
+    h.command = EIP_CMD_UNREGISTER_SESSION;
+    h.session_handle = session_handle; // the session to close
+    if (sender_context)
+        memcpy(h.sender_context, sender_context, 8);
+    return dws_eip_build(buf, cap, &h, nullptr, 0); // no command-specific data
+}
+
 size_t dws_eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_handle, const uint8_t sender_context[8],
                                   uint16_t timeout, const uint8_t *cip, size_t dws_cip_len)
 {

@@ -61,6 +61,34 @@ void test_register_session()
     TEST_ASSERT_EQUAL_HEX8(0x00, buf[27]);
 }
 
+void test_unregister_session()
+{
+    uint8_t buf[32];
+    const uint8_t ctx[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    size_t n = dws_eip_build_unregister_session(buf, sizeof(buf), 0x12345678u, ctx);
+    TEST_ASSERT_EQUAL_size_t(EIP_HEADER_SIZE, n); // header only, no command-specific data
+    TEST_ASSERT_EQUAL_HEX8(0x66, buf[0]);         // UnRegisterSession (LE)
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]); // length 0
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[3]);
+
+    EipHeader h;
+    const uint8_t *data;
+    size_t dlen;
+    TEST_ASSERT_TRUE(dws_eip_parse(buf, n, &h, &data, &dlen));
+    TEST_ASSERT_EQUAL_HEX16(EIP_CMD_UNREGISTER_SESSION, h.command);
+    TEST_ASSERT_EQUAL_HEX32(0x12345678u, h.session_handle);
+    TEST_ASSERT_EQUAL_size_t(0, dlen);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(ctx, h.sender_context, 8);
+
+    // A null sender_context zeros the field; a too-small buffer fails closed.
+    n = dws_eip_build_unregister_session(buf, sizeof(buf), 0x1u, nullptr);
+    TEST_ASSERT_TRUE(dws_eip_parse(buf, n, &h, &data, &dlen));
+    const uint8_t zero[8] = {0};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(zero, h.sender_context, 8);
+    TEST_ASSERT_EQUAL_size_t(0, dws_eip_build_unregister_session(buf, 16, 0x1u, nullptr)); // needs 24
+}
+
 void test_send_rr_data_bytes()
 {
     const uint8_t cip[] = {0x4C, 0x02}; // a (stub) CIP request
@@ -214,6 +242,7 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_header_round_trip);
     RUN_TEST(test_register_session);
+    RUN_TEST(test_unregister_session);
     RUN_TEST(test_send_rr_data_bytes);
     RUN_TEST(test_send_rr_data_round_trip);
     RUN_TEST(test_parse_rejects_bad);
