@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.47.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.47.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`fa5c575`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa5c5753af8b2ed151739a6ae562f4c2e70dd0ea))
+
+### Changes
+
+- Bump version: 7.46.0 → 7.47.0 ([`29ee5f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/29ee5f9cad55d5afba7b0b22f6186d12aaaa063f))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`3bf967e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3bf967e0b45ca0502449d143a90f881ead67a221))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`888cc9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/888cc9cbce20e7e685a94f49f05b42fdf41020fc))
+
+### Features
+
+- INFORMATIONAL exchange (RFC 7296 s1.4) - DPD / Delete / Notify ([`79cf4ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79cf4ff73267b8164ace6376d8d5f326bcbc2a2c))
+
+</details>
+
 ## [7.46.0] - 2026-07-24
 
 <details>
