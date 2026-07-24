@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5170 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5171 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -30428,7 +30428,7 @@ A thorough directory of all **5170 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (26 tests)</b></summary>
+<summary><b>test_nmea2000 (27 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -30727,6 +30727,27 @@ A thorough directory of all **5170 test cases** across **291 suites**. Expand a 
       * <code>Assert float within (0.01f, -10.0f, d.current_a)</code>
       * <code>Assert false (dws_n2k_decode_battery_status(b, 7, &d))</code>
       * <code>Assert false (dws_n2k_decode_battery_status(nullptr, 8, &d))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_fluid_level</b> &mdash; <i>instance 2, fuel (type 0) -> byte0 0x02; level 75% (raw 18750 = 0x493E); capacity 200 L (raw 2000 = 0x07D0).</i></summary>
+
+    * **Objective**: instance 2, fuel (type 0) -> byte0 0x02; level 75% (raw 18750 = 0x493E); capacity 200 L (raw 2000 = 0x07D0).
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_fluid_level(b, sizeof(b), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, d.instance);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_N2K_FLUID_FUEL, d.fluid_type);</code>
+      * <code>Assert true (d.level_valid)</code>
+      * <code>Assert float within (0.01f, 75.0f, d.level_pct)</code>
+      * <code>Assert true (d.capacity_valid)</code>
+      * <code>Assert float within (0.1f, 200.0f, d.capacity_l)</code>
+      * <code>Assert true (dws_n2k_decode_fluid_level(w, sizeof(w), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, d.instance);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_N2K_FLUID_WATER, d.fluid_type);</code>
+      * <code>Assert false (d.level_valid)</code>
+      * <code>Assert false (d.capacity_valid)</code>
+      * <code>Assert false (dws_n2k_decode_fluid_level(b, 6, &d))</code>
+      * <code>Assert false (dws_n2k_decode_fluid_level(nullptr, 8, &d))</code>
   </details>
 
   <details style="margin-left: 20px;">
