@@ -574,6 +574,43 @@ size_t dws_ike_sa_init_build(uint8_t *buf, size_t cap, const uint8_t init_spi[DW
  */
 bool dws_ike_sa_init_parse(const uint8_t *msg, size_t len, IkeSaInitMsg *out);
 
+// ── tier 2: IKE_AUTH encrypted-message assembly (RFC 7296 §3.14, RFC 5282) ─────────────────────
+//
+// The IKE_AUTH (and any post-IKE_SA_INIT) message is HDR | SK{ inner payloads }. The SK payload body is
+// IV | ciphertext | ICV; the plaintext is the inner payload chain followed by RFC 7296 §3.14 padding +
+// a 1-byte Pad Length (this build uses zero padding, so a single 0x00). The AEAD (AES-256-GCM-16) is
+// keyed by SK_ei / SK_er with the RFC 5282 salt||IV nonce, and authenticates the AAD = the IKE header
+// through the SK payload's 4-byte generic header (everything before the IV). The inner chain is the
+// caller's (build IDi | AUTH | SAi2 | TSi | TSr with the tier-1 payload builders, correctly chained).
+
+/** @brief Fixed overhead the SK envelope adds around @p inner_len bytes: SK generic hdr + IV + pad-len + ICV. */
+#define DWS_IKE_SK_OVERHEAD (DWS_IKE_PAYLOAD_HDR_LEN + DWS_IKE_GCM_IV_LEN + 1 + DWS_IKE_AEAD_ICV_LEN)
+
+/**
+ * @brief Build a complete SK-encrypted message (HDR | SK{ @p inner }) with AES-256-GCM.
+ * @param first_inner_type  the type of the first inner payload (the SK payload's Next Payload), e.g. IKE_PL_IDI.
+ * @param inner / inner_len the pre-built, chained inner payloads (their own Next Payload fields set).
+ * @param key / salt / iv   SK_ei/SK_er (32 B), the 4-byte salt, and the 8-byte explicit IV (written into the body).
+ * @return total message length, or 0 on overflow / a bad argument.
+ */
+size_t dws_ike_auth_msg_build(uint8_t *buf, size_t cap, const uint8_t init_spi[DWS_IKE_SPI_LEN],
+                              const uint8_t resp_spi[DWS_IKE_SPI_LEN], uint32_t msg_id, bool is_response,
+                              IkePayloadType first_inner_type, const uint8_t *inner, size_t inner_len,
+                              const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t salt[DWS_IKE_GCM_SALT_LEN],
+                              const uint8_t iv[DWS_IKE_GCM_IV_LEN]);
+
+/**
+ * @brief Verify + decrypt an SK-encrypted message in place, exposing the inner payload chain.
+ *
+ * Parses HDR | SK, verifies the ICV over the AAD in constant time, decrypts the ciphertext in place, and
+ * strips the RFC 7296 §3.14 padding + Pad Length. On success @p inner_out points at the decrypted inner
+ * chain inside @p msg and @p first_inner_type is its first payload's type.
+ * @return true iff the header is SK-framed and the tag verifies (a forged message returns false).
+ */
+bool dws_ike_auth_msg_open(uint8_t *msg, size_t len, const uint8_t key[DWS_IKE_AEAD_KEY_LEN],
+                           const uint8_t salt[DWS_IKE_GCM_SALT_LEN], IkePayloadType *first_inner_type,
+                           const uint8_t **inner_out, size_t *inner_len_out);
+
 #endif // DWS_ENABLE_IKEV2
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IKEV2_H

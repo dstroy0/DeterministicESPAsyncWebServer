@@ -465,9 +465,15 @@ preempting queue, so sensing shares the real-time ingest path.
        too** (RFC 7296 §1.2): `dws_ike_sa_init_build` composes the tier-1 codec into a whole
        HDR | SA | KE | Nonce message with the Next-Payload chain + header Length set correctly, and
        `dws_ike_sa_init_parse` reads it back into an `IkeSaInitMsg` (SPIs, first proposal, KE group +
-       data, nonce) - the raw chain bytes are asserted against the RFC values and every field round-trips
-       (`test_ikev2` now 54). Remaining: the stateful exchange sequencing + SA/SPI tables, the IKE_AUTH
-       SK-message assembly, and certificate (RSA/ECDSA) auth.
+       data, nonce) - the raw chain bytes are asserted against the RFC values and every field round-trips.
+       **The IKE_AUTH encrypted-message assembly is shipped too** (RFC 7296 §3.14 / RFC 5282):
+       `dws_ike_auth_msg_build` wraps a caller-built inner chain (IDi | AUTH | SAi2 | TSi | TSr) in the SK
+       envelope - HDR | SK{ IV | AES-256-GCM(inner | Pad Length) | ICV } with the RFC 5282 salt||IV nonce
+       and the AAD = header-through-SK-generic-header - and `dws_ike_auth_msg_open` verifies the ICV in
+       constant time, decrypts in place, and strips the pad trailer, round-tripping an IDi|AUTH chain
+       byte-exact with ciphertext + AAD tamper both rejected (`test_ikev2` now 56). **The handshake's
+       message layer is complete.** Remaining: the stateful exchange sequencing + SA/SPI tables, and
+       certificate (RSA/ECDSA) auth.
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with

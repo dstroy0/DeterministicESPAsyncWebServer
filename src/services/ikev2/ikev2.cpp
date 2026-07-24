@@ -926,4 +926,100 @@ bool dws_ike_sa_init_parse(const uint8_t *msg, size_t len, IkeSaInitMsg *out)
     return have_sa && have_ke && have_nonce;
 }
 
+// ── tier 2: IKE_AUTH encrypted-message assembly (RFC 7296 §3.14, RFC 5282) ─────────────────────
+
+// Byte layout of an SK message: [0,28) IKE header | [28,32) SK generic header | [32,40) IV |
+// [40, 40+ct) ciphertext | [.., +16) ICV.  The AAD is [0,32) (header through the SK generic header).
+static const size_t IKE_SK_HDR_OFF = DWS_IKE_HDR_LEN;                          // 28
+static const size_t IKE_SK_IV_OFF = DWS_IKE_HDR_LEN + DWS_IKE_PAYLOAD_HDR_LEN; // 32 (also the AAD length)
+static const size_t IKE_SK_CT_OFF = IKE_SK_IV_OFF + DWS_IKE_GCM_IV_LEN;        // 40
+
+size_t dws_ike_auth_msg_build(uint8_t *buf, size_t cap, const uint8_t init_spi[DWS_IKE_SPI_LEN],
+                              const uint8_t resp_spi[DWS_IKE_SPI_LEN], uint32_t msg_id, bool is_response,
+                              IkePayloadType first_inner_type, const uint8_t *inner, size_t inner_len,
+                              const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t salt[DWS_IKE_GCM_SALT_LEN],
+                              const uint8_t iv[DWS_IKE_GCM_IV_LEN])
+{
+    if (!buf || !init_spi || !resp_spi || !key || !salt || !iv || (inner_len && !inner))
+        return 0;
+
+    size_t pt_len = inner_len + 1; // inner payloads + a 1-byte Pad Length (zero padding)
+    size_t sk_len = DWS_IKE_PAYLOAD_HDR_LEN + DWS_IKE_GCM_IV_LEN + pt_len + DWS_IKE_AEAD_ICV_LEN; // SK payload
+    size_t total = DWS_IKE_HDR_LEN + sk_len;
+    if (total > 0xFFFF || cap < total)
+        return 0;
+
+    IkeHeader h;
+    memcpy(h.init_spi, init_spi, DWS_IKE_SPI_LEN);
+    memcpy(h.resp_spi, resp_spi, DWS_IKE_SPI_LEN);
+    h.next_payload = IkePayloadType::IKE_PL_SK;
+    h.version = DWS_IKE_VERSION;
+    h.exchange = IkeExchange::IKE_AUTH;
+    h.flags = is_response ? DWS_IKE_FLAG_RESPONSE : DWS_IKE_FLAG_INITIATOR;
+    h.message_id = msg_id;
+    h.length = (uint32_t)total;
+    if (dws_ike_hdr_build(buf, cap, &h) == 0)
+        return 0;
+
+    // SK generic header (next = first inner payload type).
+    buf[IKE_SK_HDR_OFF + 0] = (uint8_t)first_inner_type;
+    buf[IKE_SK_HDR_OFF + 1] = 0;
+    put16(buf + IKE_SK_HDR_OFF + 2, (uint16_t)sk_len);
+
+    // IV, then the plaintext (inner | Pad Length = 0) built in place at the ciphertext offset.
+    memcpy(buf + IKE_SK_IV_OFF, iv, DWS_IKE_GCM_IV_LEN);
+    if (inner_len)
+        memcpy(buf + IKE_SK_CT_OFF, inner, inner_len);
+    buf[IKE_SK_CT_OFF + inner_len] = 0x00; // Pad Length (0 padding bytes)
+
+    // Encrypt in place: AAD = [0, 32), plaintext -> ciphertext || ICV at IKE_SK_CT_OFF.
+    dws_ike_sk_aead_seal(key, salt, iv, buf, IKE_SK_IV_OFF, buf + IKE_SK_CT_OFF, pt_len, buf + IKE_SK_CT_OFF);
+    return total;
+}
+
+bool dws_ike_auth_msg_open(uint8_t *msg, size_t len, const uint8_t key[DWS_IKE_AEAD_KEY_LEN],
+                           const uint8_t salt[DWS_IKE_GCM_SALT_LEN], IkePayloadType *first_inner_type,
+                           const uint8_t **inner_out, size_t *inner_len_out)
+{
+    if (!msg || !key || !salt || !inner_out || !inner_len_out)
+        return false;
+    if (first_inner_type)
+        *first_inner_type = IkePayloadType::IKE_PL_NONE;
+    *inner_out = nullptr;
+    *inner_len_out = 0;
+
+    IkeHeader h;
+    if (!dws_ike_hdr_parse(msg, len, &h))
+        return false;
+    if (h.next_payload != IkePayloadType::IKE_PL_SK) // this helper handles the all-encrypted (IKE_AUTH) shape
+        return false;
+    if (h.length < IKE_SK_CT_OFF || h.length > len)
+        return false;
+
+    // SK payload starts right after the header; its own length bounds the body.
+    size_t sk_len = ((size_t)msg[IKE_SK_HDR_OFF + 2] << 8) | msg[IKE_SK_HDR_OFF + 3];
+    if (sk_len < DWS_IKE_PAYLOAD_HDR_LEN + DWS_IKE_GCM_IV_LEN + 1 + DWS_IKE_AEAD_ICV_LEN ||
+        IKE_SK_HDR_OFF + sk_len > h.length)
+        return false;
+
+    const uint8_t *ivp = msg + IKE_SK_IV_OFF;
+    uint8_t *ct = msg + IKE_SK_CT_OFF;
+    size_t ct_len = sk_len - DWS_IKE_PAYLOAD_HDR_LEN - DWS_IKE_GCM_IV_LEN - DWS_IKE_AEAD_ICV_LEN;
+    const uint8_t *tag = ct + ct_len;
+
+    // Verify + decrypt in place (AAD = header through the SK generic header).
+    if (!dws_ike_sk_aead_open(key, salt, ivp, msg, IKE_SK_IV_OFF, ct, ct_len, tag, ct))
+        return false;
+
+    // Strip the RFC 7296 §3.14 trailer: last plaintext byte is Pad Length, preceded by that many pad bytes.
+    uint8_t pad_len = ct[ct_len - 1];
+    if ((size_t)pad_len + 1 > ct_len) // padding + the pad-length byte cannot exceed the plaintext
+        return false;
+    if (first_inner_type)
+        *first_inner_type = (IkePayloadType)msg[IKE_SK_HDR_OFF];
+    *inner_out = ct;
+    *inner_len_out = ct_len - 1 - pad_len;
+    return true;
+}
+
 #endif // DWS_ENABLE_IKEV2

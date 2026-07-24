@@ -1449,6 +1449,95 @@ void test_sa_init_parse_guards()
     TEST_ASSERT_FALSE(dws_ike_sa_init_parse(buf2, n, &m));
 }
 
+// ── tier 2: IKE_AUTH encrypted-message assembly (RFC 7296 §3.14, RFC 5282) ─────────────────────
+// Wrap a real inner payload chain (IDi | AUTH) in the SK envelope, then verify + decrypt it back and
+// confirm the inner chain is byte-exact - exercising the SK framing, the salt||IV nonce, the AAD span,
+// and the pad-length trailer together.
+
+void test_auth_msg_roundtrip()
+{
+    // Build the inner chain IDi(next=AUTH) | AUTH(next=NONE).
+    uint8_t inner[128];
+    const char *fqdn = "gw.example";
+    uint8_t authdata[32];
+    for (int i = 0; i < 32; i++)
+        authdata[i] = (uint8_t)(0xC0 + i);
+    size_t idn = dws_ike_id_build(inner, sizeof(inner), IkePayloadType::IKE_PL_AUTH, IkeIdType::IKE_ID_FQDN,
+                                  (const uint8_t *)fqdn, 10);
+    size_t an = dws_ike_auth_build(inner + idn, sizeof(inner) - idn, IkePayloadType::IKE_PL_NONE,
+                                   IkeAuthMethod::IKE_AUTH_PSK, authdata, sizeof(authdata));
+    size_t inner_len = idn + an;
+    TEST_ASSERT_TRUE(idn > 0 && an > 0);
+
+    const uint8_t ispi[8] = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8};
+    const uint8_t rspi[8] = {0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8};
+    uint8_t key[32], salt[4] = {0xDE, 0xAD, 0xBE, 0xEF}, iv[8] = {0, 0, 0, 0, 0, 0, 0, 1};
+    for (int i = 0; i < 32; i++)
+        key[i] = (uint8_t)i;
+
+    uint8_t msg[256];
+    size_t n = dws_ike_auth_msg_build(msg, sizeof(msg), ispi, rspi, 1, /*is_response=*/false,
+                                      IkePayloadType::IKE_PL_IDI, inner, inner_len, key, salt, iv);
+    TEST_ASSERT_TRUE(n > 0);
+    // Raw framing: header Next Payload = SK(46), exchange = IKE_AUTH(35), SK Next Payload = IDi(35).
+    TEST_ASSERT_EQUAL_UINT8(46, msg[16]);
+    TEST_ASSERT_EQUAL_UINT8(35, msg[18]);
+    TEST_ASSERT_EQUAL_UINT8(35, msg[28]);
+
+    // Decrypt a copy in place (open mutates the buffer) and recover the inner chain byte-exact.
+    uint8_t work[256];
+    memcpy(work, msg, n);
+    IkePayloadType first = IkePayloadType::IKE_PL_NONE;
+    const uint8_t *got = nullptr;
+    size_t got_len = 0;
+    TEST_ASSERT_TRUE(dws_ike_auth_msg_open(work, n, key, salt, &first, &got, &got_len));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, (uint8_t)first);
+    TEST_ASSERT_EQUAL_size_t(inner_len, got_len);
+    TEST_ASSERT_EQUAL_MEMORY(inner, got, inner_len);
+
+    // The recovered inner chain walks cleanly: IDi(next=AUTH) then AUTH(next=NONE).
+    IkePayloadIter it;
+    dws_ike_payload_iter_init(&it, first, got, got_len);
+    IkePayload pl;
+    TEST_ASSERT_TRUE(dws_ike_payload_next(&it, &pl));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, (uint8_t)pl.type);
+    TEST_ASSERT_TRUE(dws_ike_payload_next(&it, &pl));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_AUTH, (uint8_t)pl.type);
+    TEST_ASSERT_FALSE(dws_ike_payload_next(&it, &pl)); // end of chain
+}
+
+void test_auth_msg_tamper_and_guards()
+{
+    uint8_t inner[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    const uint8_t spi[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint8_t key[32] = {0}, salt[4] = {1, 2, 3, 4}, iv[8] = {9, 9, 9, 9, 9, 9, 9, 9};
+    uint8_t msg[128];
+    size_t n = dws_ike_auth_msg_build(msg, sizeof(msg), spi, spi, 1, false, IkePayloadType::IKE_PL_IDI, inner,
+                                      sizeof(inner), key, salt, iv);
+    TEST_ASSERT_TRUE(n > 0);
+
+    IkePayloadType first;
+    const uint8_t *got;
+    size_t got_len;
+    // A flipped ciphertext byte -> tag fails -> open returns false.
+    uint8_t w1[128];
+    memcpy(w1, msg, n);
+    w1[45] ^= 0x01; // a byte inside the ciphertext region (past IV at offset 40)
+    TEST_ASSERT_FALSE(dws_ike_auth_msg_open(w1, n, key, salt, &first, &got, &got_len));
+    // A flipped AAD byte (an SPI in the header) -> tag fails.
+    uint8_t w2[128];
+    memcpy(w2, msg, n);
+    w2[4] ^= 0x80;
+    TEST_ASSERT_FALSE(dws_ike_auth_msg_open(w2, n, key, salt, &first, &got, &got_len));
+    // A too-small build buffer returns 0; open on a non-SK header returns false.
+    TEST_ASSERT_EQUAL_size_t(0, dws_ike_auth_msg_build(msg, 40, spi, spi, 1, false, IkePayloadType::IKE_PL_IDI, inner,
+                                                       sizeof(inner), key, salt, iv));
+    uint8_t w3[128];
+    memcpy(w3, msg, n);
+    w3[16] = (uint8_t)IkePayloadType::IKE_PL_SA; // header Next Payload no longer SK
+    TEST_ASSERT_FALSE(dws_ike_auth_msg_open(w3, n, key, salt, &first, &got, &got_len));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1511,5 +1600,8 @@ int main()
     // tier 2: IKE_SA_INIT message assembly (RFC 7296 §1.2)
     RUN_TEST(test_sa_init_build_parse);
     RUN_TEST(test_sa_init_parse_guards);
+    // tier 2: IKE_AUTH encrypted-message assembly (RFC 7296 §3.14, RFC 5282)
+    RUN_TEST(test_auth_msg_roundtrip);
+    RUN_TEST(test_auth_msg_tamper_and_guards);
     return UNITY_END();
 }
