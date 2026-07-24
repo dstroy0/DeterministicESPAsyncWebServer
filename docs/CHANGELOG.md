@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.53.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.53.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`00f7461`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00f7461b1850eaddeac9eb02c5772958c00aa3d9))
+
+### Changes
+
+- Bump version: 7.52.0 → 7.53.0 ([`2e73fe6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e73fe6a9216b9919b4b6e66c01e20fc6e341c45))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`209a979`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/209a9791b17d2b1dbde9712d66154b8b85b04bbe))
+
+### Features
+
+- IPsec SPD + SAD (RFC 4301) ([`cda051e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cda051e203dae4c241051719b70a73bc564f55f0))
+
+</details>
+
 ## [7.52.0] - 2026-07-24
 
 <details>
