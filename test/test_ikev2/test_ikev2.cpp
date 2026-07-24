@@ -1363,6 +1363,92 @@ void test_auth_psk_guards()
     TEST_ASSERT_FALSE(dws_ike_auth_psk(b, 8, nullptr, 8, b, 8, b, 8, b, 8, out)); // null real_msg
 }
 
+// ── tier 2: IKE_SA_INIT message assembly (RFC 7296 §1.2) ───────────────────────────────────────
+// Composes the tier-1 payload codec (already scapy-verified per-payload) into a whole message; the raw
+// Next-Payload chain bytes are asserted against the RFC values, then the message round-trips through the
+// parser with every field recovered.
+
+void test_sa_init_build_parse()
+{
+    const IkeTransform tf[4] = {
+        {IkeTransformType::IKE_TRANSFORM_ENCR, IKE_ENCR_AES_CBC, 256},
+        {IkeTransformType::IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1},
+        {IkeTransformType::IKE_TRANSFORM_INTEG, IKE_INTEG_HMAC_SHA2_256_128, -1},
+        {IkeTransformType::IKE_TRANSFORM_DH, IKE_DH_CURVE25519, -1},
+    };
+    const uint8_t ispi[8] = {0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18};
+    const uint8_t rspi[8] = {0}; // an initiator's first message carries no responder SPI yet
+    uint8_t ke[32], ni[32];
+    for (int i = 0; i < 32; i++)
+    {
+        ke[i] = (uint8_t)i;
+        ni[i] = (uint8_t)(0x40 + i);
+    }
+    uint8_t buf[512];
+    size_t n = dws_ike_sa_init_build(buf, sizeof(buf), ispi, rspi, 0, /*is_response=*/false, 1, tf, 4,
+                                     IKE_DH_CURVE25519, ke, sizeof(ke), ni, sizeof(ni));
+    TEST_ASSERT_TRUE(n > DWS_IKE_HDR_LEN);
+
+    // Raw header bytes: Next Payload = SA(33), version 0x20, exchange = IKE_SA_INIT(34), INITIATOR flag.
+    TEST_ASSERT_EQUAL_UINT8(33, buf[16]);
+    TEST_ASSERT_EQUAL_UINT8(DWS_IKE_VERSION, buf[17]);
+    TEST_ASSERT_EQUAL_UINT8(34, buf[18]);
+    TEST_ASSERT_EQUAL_UINT8(DWS_IKE_FLAG_INITIATOR, buf[19]);
+    // Raw chain: the SA payload (at offset 28) declares Next Payload = KE(34); walk by its own length to
+    // the KE payload, which declares Nonce(40); the Nonce payload declares end-of-chain (0).
+    TEST_ASSERT_EQUAL_UINT8(34, buf[28]); // SA.next = KE
+    size_t sa_len = ((size_t)buf[30] << 8) | buf[31];
+    size_t ke_off = 28 + sa_len;
+    TEST_ASSERT_EQUAL_UINT8(40, buf[ke_off]); // KE.next = Nonce
+    size_t ke_plen = ((size_t)buf[ke_off + 2] << 8) | buf[ke_off + 3];
+    size_t no_off = ke_off + ke_plen;
+    TEST_ASSERT_EQUAL_UINT8(0, buf[no_off]); // Nonce.next = end
+
+    // Round-trip: every field is recovered.
+    IkeSaInitMsg m;
+    TEST_ASSERT_TRUE(dws_ike_sa_init_parse(buf, n, &m));
+    TEST_ASSERT_FALSE(m.is_response);
+    TEST_ASSERT_EQUAL_MEMORY(ispi, m.init_spi, 8);
+    TEST_ASSERT_EQUAL_MEMORY(rspi, m.resp_spi, 8);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_IKE, (uint8_t)m.proposal.protocol_id);
+    TEST_ASSERT_EQUAL_UINT8(4, m.proposal.num_transforms);
+    TEST_ASSERT_EQUAL_UINT16(IKE_DH_CURVE25519, m.dh_group);
+    TEST_ASSERT_EQUAL_size_t(32, m.ke_len);
+    TEST_ASSERT_EQUAL_MEMORY(ke, m.ke_data, 32);
+    TEST_ASSERT_EQUAL_size_t(32, m.nonce_len);
+    TEST_ASSERT_EQUAL_MEMORY(ni, m.nonce, 32);
+
+    // The parsed proposal's transforms match what was built.
+    IkeTransformIter tit;
+    dws_ike_transform_iter_init(&tit, &m.proposal);
+    IkeTransformRef tr;
+    TEST_ASSERT_TRUE(dws_ike_transform_next(&tit, &tr));
+    TEST_ASSERT_EQUAL_UINT16(IKE_ENCR_AES_CBC, tr.id);
+    TEST_ASSERT_EQUAL_INT32(256, tr.key_length);
+}
+
+void test_sa_init_parse_guards()
+{
+    const IkeTransform tf[1] = {{IkeTransformType::IKE_TRANSFORM_DH, IKE_DH_CURVE25519, -1}};
+    const uint8_t spi[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint8_t n32[32] = {0};
+    uint8_t buf[256];
+    size_t n =
+        dws_ike_sa_init_build(buf, sizeof(buf), spi, spi, 0, false, 1, tf, 1, IKE_DH_CURVE25519, n32, 32, n32, 32);
+    TEST_ASSERT_TRUE(n > 0);
+    IkeSaInitMsg m;
+    // A truncated message (Length says more than is present) fails closed.
+    TEST_ASSERT_FALSE(dws_ike_sa_init_parse(buf, n - 1, &m));
+    // A too-small build buffer returns 0.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_ike_sa_init_build(buf, 30, spi, spi, 0, false, 1, tf, 1, IKE_DH_CURVE25519, n32, 32, n32, 32));
+    // Wrong exchange type: flip the exchange byte to IKE_AUTH -> parse rejects it.
+    uint8_t buf2[256];
+    memcpy(buf2, buf, n);
+    buf2[18] = (uint8_t)IkeExchange::IKE_AUTH;
+    TEST_ASSERT_FALSE(dws_ike_sa_init_parse(buf2, n, &m));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1422,5 +1508,8 @@ int main()
     // tier 2: IKE_AUTH pre-shared-key authentication (RFC 7296 §2.15)
     RUN_TEST(test_auth_psk_kat);
     RUN_TEST(test_auth_psk_guards);
+    // tier 2: IKE_SA_INIT message assembly (RFC 7296 §1.2)
+    RUN_TEST(test_sa_init_build_parse);
+    RUN_TEST(test_sa_init_parse_guards);
     return UNITY_END();
 }

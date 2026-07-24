@@ -531,6 +531,49 @@ bool dws_ike_auth_psk(const uint8_t *psk, size_t psk_len, const uint8_t *real_ms
                       const uint8_t *peer_nonce, size_t nonce_len, const uint8_t *sk_p, size_t sk_p_len,
                       const uint8_t *id_body, size_t id_body_len, uint8_t out[DWS_IKE_AUTH_LEN]);
 
+// ── tier 2: IKE_SA_INIT message assembly (RFC 7296 §1.2) ───────────────────────────────────────
+//
+// The IKE_SA_INIT exchange's message is HDR | SA | KE | Nonce. These compose the tier-1 payload codec
+// into the whole message (correct Next Payload chain + header Length) and read it back, so the state
+// machine works in messages, not loose payloads. One proposal per SA (the common client shape).
+
+/** @brief The salient parsed contents of an IKE_SA_INIT message; slices point into the message buffer. */
+struct IkeSaInitMsg
+{
+    uint8_t init_spi[DWS_IKE_SPI_LEN];
+    uint8_t resp_spi[DWS_IKE_SPI_LEN];
+    bool is_response;        ///< true if the RESPONSE flag was set
+    IkeProposalRef proposal; ///< the first proposal of SAi1 / SAr1
+    uint16_t dh_group;       ///< the KE payload's D-H group
+    const uint8_t *ke_data;  ///< KE key-exchange data
+    size_t ke_len;           ///< KE data length
+    const uint8_t *nonce;    ///< Ni / Nr data
+    size_t nonce_len;        ///< nonce length
+};
+
+/**
+ * @brief Build a complete IKE_SA_INIT message: HDR | SA(one proposal) | KE | Nonce, with the payload
+ *        chain's Next Payload fields and the header Length all set correctly.
+ * @param is_response      false for a request (sets the INITIATOR flag), true for a response.
+ * @param proposal_num     the SA proposal number (usually 1).
+ * @param transforms       the proposal's transforms (ENCR / PRF / INTEG / DH ...).
+ * @param dh_group         the KE payload's D-H group id.
+ * @param ke_data          the KE key-exchange data (our public value).
+ * @param nonce            the Ni / Nr nonce data.
+ * @return total message length written, or 0 on overflow / a bad argument.
+ */
+size_t dws_ike_sa_init_build(uint8_t *buf, size_t cap, const uint8_t init_spi[DWS_IKE_SPI_LEN],
+                             const uint8_t resp_spi[DWS_IKE_SPI_LEN], uint32_t msg_id, bool is_response,
+                             uint8_t proposal_num, const IkeTransform *transforms, uint8_t num_transforms,
+                             uint16_t dh_group, const uint8_t *ke_data, size_t ke_len, const uint8_t *nonce,
+                             size_t nonce_len);
+
+/**
+ * @brief Parse an IKE_SA_INIT message into @p out (SPIs, first proposal, KE group + data, nonce).
+ * @return true iff the header is IKE_SA_INIT and the SA, KE, and Nonce payloads are all present + valid.
+ */
+bool dws_ike_sa_init_parse(const uint8_t *msg, size_t len, IkeSaInitMsg *out);
+
 #endif // DWS_ENABLE_IKEV2
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IKEV2_H

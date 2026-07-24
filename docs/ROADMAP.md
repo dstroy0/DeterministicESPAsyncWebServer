@@ -461,8 +461,13 @@ preempting queue, so sensing shares the real-time ingest path.
        PSK authentication computation is shipped** (RFC 7296 §2.15): `dws_ike_auth_psk` computes
        AUTH = prf(prf(PSK, "Key Pad for IKEv2"), RealMessage | Nonce | prf(SK_p, RestOfIDPayload)) over
        the streamed HMAC-SHA2-256 (RealMessage never re-buffered), cross-checked against an independent
-       Python HMAC reference incl. wrong-key divergence (`test_ikev2` +2, now 52). Remaining: the
-       stateful exchange sequencing + SA/SPI tables, and certificate (RSA/ECDSA) auth.
+       Python HMAC reference incl. wrong-key divergence. **The IKE_SA_INIT message assembly is shipped
+       too** (RFC 7296 §1.2): `dws_ike_sa_init_build` composes the tier-1 codec into a whole
+       HDR | SA | KE | Nonce message with the Next-Payload chain + header Length set correctly, and
+       `dws_ike_sa_init_parse` reads it back into an `IkeSaInitMsg` (SPIs, first proposal, KE group +
+       data, nonce) - the raw chain bytes are asserted against the RFC values and every field round-trips
+       (`test_ikev2` now 54). Remaining: the stateful exchange sequencing + SA/SPI tables, the IKE_AUTH
+       SK-message assembly, and certificate (RSA/ECDSA) auth.
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with

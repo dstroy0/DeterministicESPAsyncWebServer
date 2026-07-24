@@ -842,4 +842,88 @@ bool dws_ike_auth_psk(const uint8_t *psk, size_t psk_len, const uint8_t *real_ms
     return true;
 }
 
+// ── tier 2: IKE_SA_INIT message assembly (RFC 7296 §1.2) ───────────────────────────────────────
+
+size_t dws_ike_sa_init_build(uint8_t *buf, size_t cap, const uint8_t init_spi[DWS_IKE_SPI_LEN],
+                             const uint8_t resp_spi[DWS_IKE_SPI_LEN], uint32_t msg_id, bool is_response,
+                             uint8_t proposal_num, const IkeTransform *transforms, uint8_t num_transforms,
+                             uint16_t dh_group, const uint8_t *ke_data, size_t ke_len, const uint8_t *nonce,
+                             size_t nonce_len)
+{
+    if (!buf || !init_spi || !resp_spi || !transforms || num_transforms == 0 || (ke_len && !ke_data) ||
+        (nonce_len && !nonce))
+        return 0;
+
+    IkeHeader h;
+    memcpy(h.init_spi, init_spi, DWS_IKE_SPI_LEN);
+    memcpy(h.resp_spi, resp_spi, DWS_IKE_SPI_LEN);
+    h.next_payload = IkePayloadType::IKE_PL_SA;
+    h.version = DWS_IKE_VERSION;
+    h.exchange = IkeExchange::IKE_SA_INIT;
+    h.flags = is_response ? DWS_IKE_FLAG_RESPONSE : DWS_IKE_FLAG_INITIATOR;
+    h.message_id = msg_id;
+    h.length = 0; // patched below
+
+    size_t off = dws_ike_hdr_build(buf, cap, &h);
+    if (off == 0)
+        return 0;
+    // SA -> KE.  One proposal, IKE protocol, no SPI in an IKE_SA_INIT SA payload.
+    size_t n = dws_ike_sa_build(buf + off, cap - off, IkePayloadType::IKE_PL_KE, proposal_num,
+                                IkeProtocol::IKE_PROTO_IKE, nullptr, 0, transforms, num_transforms);
+    if (n == 0)
+        return 0;
+    off += n;
+    // KE -> Nonce.
+    n = dws_ike_ke_build(buf + off, cap - off, IkePayloadType::IKE_PL_NONCE, dh_group, ke_data, ke_len);
+    if (n == 0)
+        return 0;
+    off += n;
+    // Nonce -> end of chain.
+    n = dws_ike_nonce_build(buf + off, cap - off, IkePayloadType::IKE_PL_NONE, nonce, nonce_len);
+    if (n == 0)
+        return 0;
+    off += n;
+
+    dws_ike_set_length(buf, cap, (uint32_t)off);
+    return off;
+}
+
+bool dws_ike_sa_init_parse(const uint8_t *msg, size_t len, IkeSaInitMsg *out)
+{
+    if (!out)
+        return false;
+    memset(out, 0, sizeof(*out));
+
+    IkeHeader h;
+    if (!dws_ike_hdr_parse(msg, len, &h))
+        return false;
+    if (h.exchange != IkeExchange::IKE_SA_INIT)
+        return false;
+    if (h.length < DWS_IKE_HDR_LEN || h.length > len) // a truncated / lying Length fails closed
+        return false;
+
+    memcpy(out->init_spi, h.init_spi, DWS_IKE_SPI_LEN);
+    memcpy(out->resp_spi, h.resp_spi, DWS_IKE_SPI_LEN);
+    out->is_response = (h.flags & DWS_IKE_FLAG_RESPONSE) != 0;
+
+    IkePayloadIter it;
+    dws_ike_payload_iter_init(&it, h.next_payload, msg + DWS_IKE_HDR_LEN, h.length - DWS_IKE_HDR_LEN);
+    IkePayload pl;
+    bool have_sa = false, have_ke = false, have_nonce = false;
+    while (dws_ike_payload_next(&it, &pl))
+    {
+        if (pl.type == IkePayloadType::IKE_PL_SA && !have_sa)
+            have_sa = dws_ike_sa_first_proposal(pl.body, pl.body_len, &out->proposal);
+        else if (pl.type == IkePayloadType::IKE_PL_KE && !have_ke)
+            have_ke = dws_ike_ke_parse(pl.body, pl.body_len, &out->dh_group, &out->ke_data, &out->ke_len);
+        else if (pl.type == IkePayloadType::IKE_PL_NONCE && !have_nonce)
+        {
+            out->nonce = pl.body; // a Nonce payload body is the raw nonce data
+            out->nonce_len = pl.body_len;
+            have_nonce = true;
+        }
+    }
+    return have_sa && have_ke && have_nonce;
+}
+
 #endif // DWS_ENABLE_IKEV2
