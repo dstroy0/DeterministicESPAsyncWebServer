@@ -199,6 +199,31 @@ bool dws_iec_io_parse_float(const uint8_t *buf, size_t len, uint32_t *ioa, float
     return true;
 }
 
+size_t dws_iec_io_build_scaled(uint8_t *buf, size_t cap, uint32_t ioa, int16_t value, uint8_t qds)
+{
+    if (!buf || cap < 6)
+        return 0;
+    dws_iec_put_ioa(buf, cap, ioa);
+    uint16_t u = (uint16_t)value; // two's-complement wire form, little-endian
+    buf[3] = (uint8_t)u;
+    buf[4] = (uint8_t)(u >> 8);
+    buf[5] = qds;
+    return 6;
+}
+
+bool dws_iec_io_parse_scaled(const uint8_t *buf, size_t len, uint32_t *ioa, int16_t *value, uint8_t *qds)
+{
+    if (!buf || len < 6)
+        return false;
+    if (ioa)
+        *ioa = dws_iec_get_ioa(buf);
+    if (value)
+        *value = (int16_t)((uint16_t)buf[3] | ((uint16_t)buf[4] << 8));
+    if (qds)
+        *qds = buf[5];
+    return true;
+}
+
 size_t dws_iec_io_build_sc(uint8_t *buf, size_t cap, uint32_t ioa, bool on, bool select)
 {
     if (!buf || cap < 4)

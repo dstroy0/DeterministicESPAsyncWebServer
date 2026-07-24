@@ -183,6 +183,16 @@ size_t dws_iec_io_build_float(uint8_t *buf, size_t cap, uint32_t ioa, float valu
 bool dws_iec_io_parse_float(const uint8_t *buf, size_t len, uint32_t *ioa, float *value, uint8_t *qds);
 
 /**
+ * @brief Build a scaled measured-value object (M_ME_NB_1, type 11): IOA(3) + SVA(2, signed 16-bit LE) + QDS(1).
+ *        The scaled value is a raw signed integer the receiver rescales by its engineering range.
+ * @return 6 on success, 0 on overflow / a null buffer.
+ */
+size_t dws_iec_io_build_scaled(uint8_t *buf, size_t cap, uint32_t ioa, int16_t value, uint8_t qds);
+
+/** @brief Parse a scaled measured-value object into its IOA, signed value, and quality byte. False if < 6 octets. */
+bool dws_iec_io_parse_scaled(const uint8_t *buf, size_t len, uint32_t *ioa, int16_t *value, uint8_t *qds);
+
+/**
  * @brief Build a single command object (C_SC_NA_1, type 45): IOA(3) + SCO(1).
  * @param on      the commanded state (SCS bit).
  * @param select  true for a select, false for an execute (S/E bit).

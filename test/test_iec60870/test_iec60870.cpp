@@ -389,6 +389,29 @@ void test_io_measured_float()
     TEST_ASSERT_FALSE(dws_iec_io_parse_float(buf, 7, &ioa, &v, &qds));
 }
 
+void test_io_measured_scaled()
+{
+    uint8_t buf[16];
+    // M_ME_NB_1: IOA(3) + signed 16-bit SVA (LE) + QDS(1); 12345 = 0x3039 -> bytes 39 30.
+    size_t n = dws_iec_io_build_scaled(buf, sizeof(buf), 200, 12345, IEC_QUAL_NT);
+    TEST_ASSERT_EQUAL_size_t(6, n);
+    TEST_ASSERT_EQUAL_HEX8(0x39, buf[3]); // SVA low
+    TEST_ASSERT_EQUAL_HEX8(0x30, buf[4]); // SVA high
+    uint32_t ioa;
+    int16_t v;
+    uint8_t qds;
+    TEST_ASSERT_TRUE(dws_iec_io_parse_scaled(buf, n, &ioa, &v, &qds));
+    TEST_ASSERT_EQUAL_UINT32(200, ioa);
+    TEST_ASSERT_EQUAL_INT16(12345, v);
+    TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_NT, qds);
+    // A negative value round-trips through the two's-complement bytes.
+    dws_iec_io_build_scaled(buf, sizeof(buf), 200, -1000, 0);
+    TEST_ASSERT_TRUE(dws_iec_io_parse_scaled(buf, 6, nullptr, &v, nullptr));
+    TEST_ASSERT_EQUAL_INT16(-1000, v);
+    TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_scaled(buf, 5, 0, 1, 0)); // too small
+    TEST_ASSERT_FALSE(dws_iec_io_parse_scaled(buf, 5, &ioa, &v, &qds));
+}
+
 void test_io_single_command_in_asdu()
 {
     // Assemble a C_SC_NA_1 ASDU: the 6-octet header + one single-command object (select, ON).
@@ -516,6 +539,7 @@ int main()
     RUN_TEST(test_101_parse_variable_bad_second_start_and_truncated_and_bad_stop);
     RUN_TEST(test_io_single_point);
     RUN_TEST(test_io_measured_float);
+    RUN_TEST(test_io_measured_scaled);
     RUN_TEST(test_io_single_command_in_asdu);
     RUN_TEST(test_io_double_point);
     RUN_TEST(test_io_double_command_in_asdu);
