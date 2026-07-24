@@ -204,7 +204,8 @@ struct N2kTemperature
 
 /** @brief Decoded Engine Parameters, Dynamic (PGN 127489): the full engine-monitoring picture. Each measured
  *  field clears its validity flag for a not-available raw; the two discrete-status words are raw bitfields. */
-struct N2kEngineDynamic
+struct N2kEngineDynamic // NOSONAR(cpp:S1820): one decoded PGN is one logical message; the field count mirrors the
+                        // protocol's signals, so splitting the struct would be artificial, not clearer
 {
     uint8_t instance; ///< engine instance
     bool oil_pressure_valid;

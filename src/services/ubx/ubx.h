@@ -97,7 +97,8 @@ enum DwsUbxFixType
 };
 
 /** @brief Decoded UBX-NAV-PVT payload (the fields an application usually needs; native integer scales). */
-struct DwsUbxNavPvt
+struct DwsUbxNavPvt // NOSONAR(cpp:S1820): UBX-NAV-PVT is one fixed protocol message; its ~30 fields mirror the
+                    // wire layout, so splitting the struct would be artificial, not clearer
 {
     uint32_t itow_ms;      ///< GPS time of week of the solution (ms)
     uint16_t year;         ///< UTC year
