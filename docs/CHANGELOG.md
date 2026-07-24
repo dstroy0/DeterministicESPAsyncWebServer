@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.42.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.42.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e8138a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e8138a5188c150be9030a9ef8236fd8949ef1245))
+
+### Changes
+
+- Bump version: 7.41.0 → 7.42.0 ([`3156ae2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3156ae22726d8361ada3051b480ec51c207b602f))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`4cee7d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cee7d0d83bd37a325b8c87f75aac3fe2bdc59e7))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2daa1e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2daa1e80cb0edd6f5406db9580a729db72309745))
+
+### Features
+
+- initiator IKE_SA_INIT handshake driver (RFC 7296 s1.2) ([`6c5fb42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c5fb4292f3d85b4eeb238dcd6c8c2a6c0abbd24))
+
+</details>
+
 ## [7.41.0] - 2026-07-24
 
 <details>
