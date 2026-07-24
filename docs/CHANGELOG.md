@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.64.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.64.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`f6e5456`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6e5456b09743f29d137c41c20be9e20a438810b))
+
+### Changes
+
+- Bump version: 7.63.0 → 7.64.0 ([`3823753`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38237537ec2c141f76b10f920cbe6e46d8ce87b1))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`75d6697`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75d669789d05e79a8ecd9d26f1abb0fe4def61c4))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`462c987`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/462c987273614070443c7adcf165294e89ba1ea3))
+
+### Features
+
+- CFG-MSG + CFG-RATE builders ([`d6e1007`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6e10072d53f55a07c36f5579f6f8f580644ab6a))
+
+</details>
+
 ## [7.63.0] - 2026-07-24
 
 <details>
