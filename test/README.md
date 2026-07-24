@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5175 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5176 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -3030,7 +3030,7 @@ A thorough directory of all **5175 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_bacnet (16 tests)</b></summary>
+<summary><b>test_bacnet (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_bacnet_guards_and_truncations</b> &mdash; <i>Bacnet guards and truncations</i></summary>
@@ -3263,6 +3263,25 @@ A thorough directory of all **5175 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(buf, sizeof(buf), 1, 480, 4, 1));        // segmentation &gt; 3</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(nullptr, sizeof(buf), 1, 480, 3, 1));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(buf, 8, 260, 1476, 3, 42)); // does not fit</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_apdu_build_read_property</b> &mdash; <i>ReadProperty: invoke 1, max-resp 0x05, Analog Input 5, present-value (85).</i></summary>
+
+    * **Objective**: ReadProperty: invoke 1, max-resp 0x05, Analog Input 5, present-value (85).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+      * <code>Assert true (dws_apdu_parse(buf, n, &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_CONFIRMED_REQUEST, a.pdu_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, a.invoke_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_SVC_CONF_READ_PROPERTY, a.service_choice);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect2), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect2, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_read_property(buf, sizeof(buf), 1, 5, 0, 0x400000, 85)); // instance</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_read_property(buf, sizeof(buf), 1, 5, 0x400, 1, 85));    // obj type</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_read_property(nullptr, sizeof(buf), 1, 5, 0, 1, 85));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_read_property(buf, 8, 0, 5, 0, 5, 85)); // does not fit</code>
   </details>
 
 </details>
