@@ -108,6 +108,28 @@ bool dws_devicenet_build_explicit(CanFrame *out, DeviceNetGroup group, uint8_t m
     return true;
 }
 
+bool dws_devicenet_build_fragment(CanFrame *out, DeviceNetGroup group, uint8_t msg_id, uint8_t mac_id, bool xid,
+                                  uint8_t frag_type, uint8_t frag_count, const uint8_t *data, uint8_t data_len)
+{
+    // 1 header octet + 1 fragmentation octet + up to 6 data octets fill the 8-octet CAN frame.
+    if (!out || data_len > 6 || (data_len && !data) || (frag_type & (uint8_t)~DEVICENET_FRAG_TYPE_MASK) ||
+        (frag_count & (uint8_t)~DEVICENET_FRAG_COUNT_MASK))
+        return false;
+    uint32_t id;
+    if (!dws_devicenet_encode_id(&id, group, msg_id, mac_id))
+        return false;
+    out->id = id;
+    out->extended = false;
+    out->rtr = false;
+    out->dlc = (uint8_t)(2 + data_len);
+    memset(out->data, 0, sizeof(out->data));
+    out->data[0] = dws_devicenet_msg_header(true, xid, mac_id); // FRAG set
+    out->data[1] = dws_devicenet_frag_octet(frag_type, frag_count);
+    if (data_len)
+        memcpy(out->data + 2, data, data_len);
+    return true;
+}
+
 void dws_devicenet_frag_reset(DeviceNetFragRx *rx)
 {
     if (rx)

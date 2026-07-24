@@ -126,6 +126,42 @@ void test_frag_reassembly_roundtrip()
     TEST_ASSERT_EQUAL_MEMORY(expect, rx.buf, 14);
 }
 
+// The fragment builder is the sender complement of the reassembler: a built 2-fragment message reassembles.
+void test_build_fragment_roundtrip()
+{
+    CanFrame f0, f1;
+    const uint8_t part0[6] = {1, 2, 3, 4, 5, 6};
+    const uint8_t part1[2] = {7, 8};
+    TEST_ASSERT_TRUE(dws_devicenet_build_fragment(&f0, DeviceNetGroup::DEVICENET_GROUP_2, 0x00, 0x21, false,
+                                                  DEVICENET_FRAG_FIRST, 0, part0, 6));
+    TEST_ASSERT_TRUE(dws_devicenet_build_fragment(&f1, DeviceNetGroup::DEVICENET_GROUP_2, 0x00, 0x21, false,
+                                                  DEVICENET_FRAG_LAST, 1, part1, 2));
+
+    // The frame body is the fragmented header + the fragmentation octet + the data.
+    TEST_ASSERT_EQUAL_UINT8(8, f0.dlc); // header + frag octet + 6 data
+    TEST_ASSERT_EQUAL_HEX8(0x80 | 0x21, f0.data[0]);
+    TEST_ASSERT_EQUAL_HEX8(dws_devicenet_frag_octet(DEVICENET_FRAG_FIRST, 0), f0.data[1]);
+    TEST_ASSERT_EQUAL_HEX8(1, f0.data[2]);
+
+    DeviceNetFragRx rx;
+    dws_devicenet_frag_reset(&rx);
+    TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_STARTED, dws_devicenet_frag_feed(&rx, f0.data, f0.dlc));
+    TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_COMPLETE, dws_devicenet_frag_feed(&rx, f1.data, f1.dlc));
+    const uint8_t expect[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    TEST_ASSERT_EQUAL_UINT16(8, rx.len);
+    TEST_ASSERT_EQUAL_MEMORY(expect, rx.buf, 8);
+
+    // Guards: data too long (> 6), a null data with a nonzero length, a frag count > 63, and a null out.
+    TEST_ASSERT_FALSE(dws_devicenet_build_fragment(&f0, DeviceNetGroup::DEVICENET_GROUP_2, 0, 0x21, false,
+                                                   DEVICENET_FRAG_FIRST, 0, part0, 7));
+    TEST_ASSERT_FALSE(dws_devicenet_build_fragment(&f0, DeviceNetGroup::DEVICENET_GROUP_2, 0, 0x21, false,
+                                                   DEVICENET_FRAG_FIRST, 0, nullptr, 3));
+    TEST_ASSERT_FALSE(dws_devicenet_build_fragment(&f0, DeviceNetGroup::DEVICENET_GROUP_2, 0, 0x21, false,
+                                                   DEVICENET_FRAG_FIRST, 64, part1, 2));
+    TEST_ASSERT_FALSE(dws_devicenet_build_fragment(nullptr, DeviceNetGroup::DEVICENET_GROUP_2, 0, 0x21, false,
+                                                   DEVICENET_FRAG_FIRST, 0, part1, 2));
+}
+
 void test_frag_out_of_order_errors()
 {
     DeviceNetFragRx rx;
@@ -292,6 +328,7 @@ int main()
     RUN_TEST(test_build_explicit_single_frame);
     RUN_TEST(test_frag_non_fragmented);
     RUN_TEST(test_frag_reassembly_roundtrip);
+    RUN_TEST(test_build_fragment_roundtrip);
     RUN_TEST(test_frag_out_of_order_errors);
     RUN_TEST(test_id_error_paths);
     RUN_TEST(test_frag_reject_paths);

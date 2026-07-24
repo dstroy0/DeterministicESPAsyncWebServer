@@ -127,6 +127,20 @@ uint8_t dws_devicenet_frag_octet(uint8_t type, uint8_t count);
 bool dws_devicenet_build_explicit(CanFrame *out, DeviceNetGroup group, uint8_t msg_id, uint8_t mac_id,
                                   const uint8_t *body, uint8_t body_len);
 
+// --- fragmentation (messages longer than one frame) ---
+
+/**
+ * @brief Build one fragment of a fragmented explicit message (the sender complement of the reassembler):
+ *        `[header octet(FRAG set, @p xid, @p mac_id)][fragmentation octet(@p frag_type | @p frag_count)][data]`
+ *        at the @p group / @p msg_id CAN id. Split a long body into a DEVICENET_FRAG_FIRST fragment, zero or
+ *        more DEVICENET_FRAG_MIDDLE fragments (the modulo-64 count incrementing each time), and a
+ *        DEVICENET_FRAG_LAST fragment.
+ * @return true on success; false on a null @p out, @p data_len > 6, a null @p data with a nonzero length, a
+ *         @p frag_type outside its 2-bit field, a @p frag_count > 63, or a bad group / mac id.
+ */
+bool dws_devicenet_build_fragment(CanFrame *out, DeviceNetGroup group, uint8_t msg_id, uint8_t mac_id, bool xid,
+                                  uint8_t frag_type, uint8_t frag_count, const uint8_t *data, uint8_t data_len);
+
 // --- fragmentation reassembly (messages longer than one frame) ---
 
 /** @brief Reset a reassembly context to idle. */
