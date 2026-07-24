@@ -66,6 +66,20 @@ bool dws_hostlink_parse(const char *buf, size_t len, HostlinkFrame *out);
 /** @brief Read a response's 2-char end code (the first two text characters) as a byte. */
 bool dws_hostlink_end_code(const HostlinkFrame *f, uint8_t *code);
 
+/**
+ * @brief Build an RD (DM-area read) command: `@UU` + `RD` + a 4-digit beginning word address + a 4-digit
+ *        word count + FCS + `*` CR.
+ * @return the frame length, or 0 on overflow, an address or count outside 0..9999, or a zero count.
+ */
+size_t dws_hostlink_build_read(char *buf, size_t cap, uint8_t node, uint16_t address, uint16_t count);
+
+/**
+ * @brief Extract word @p index (0-based) from an RD response's text: a 4-hex-char value that follows the
+ *        2-character end code.
+ * @return true iff the response text holds that word and it is valid hex; false otherwise.
+ */
+bool dws_hostlink_read_word(const HostlinkFrame *f, size_t index, uint16_t *out);
+
 #endif // DWS_ENABLE_HOSTLINK
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_HOSTLINK_H

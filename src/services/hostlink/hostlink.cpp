@@ -109,4 +109,36 @@ bool dws_hostlink_end_code(const HostlinkFrame *f, uint8_t *code)
     return true;
 }
 
+size_t dws_hostlink_build_read(char *buf, size_t cap, uint8_t node, uint16_t address, uint16_t count)
+{
+    if (address > 9999 || count > 9999 || count == 0)
+        return 0;
+    char text[8]; // 4-digit beginning word address + 4-digit word count, zero-padded decimal
+    text[0] = (char)('0' + (address / 1000) % 10);
+    text[1] = (char)('0' + (address / 100) % 10);
+    text[2] = (char)('0' + (address / 10) % 10);
+    text[3] = (char)('0' + address % 10);
+    text[4] = (char)('0' + (count / 1000) % 10);
+    text[5] = (char)('0' + (count / 100) % 10);
+    text[6] = (char)('0' + (count / 10) % 10);
+    text[7] = (char)('0' + count % 10);
+    return dws_hostlink_build(buf, cap, node, "RD", text, sizeof(text));
+}
+
+bool dws_hostlink_read_word(const HostlinkFrame *f, size_t index, uint16_t *out)
+{
+    if (!f || !out)
+        return false;
+    // A read response's text is the 2-char end code followed by 4-hex-char word values.
+    size_t pos = 2 + index * 4;
+    if (f->text_len < pos + 4)
+        return false;
+    int a = hex_val(f->text[pos]), b = hex_val(f->text[pos + 1]);
+    int c = hex_val(f->text[pos + 2]), d = hex_val(f->text[pos + 3]);
+    if (a < 0 || b < 0 || c < 0 || d < 0)
+        return false;
+    *out = (uint16_t)((a << 12) | (b << 8) | (c << 4) | d);
+    return true;
+}
+
 #endif // DWS_ENABLE_HOSTLINK

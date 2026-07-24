@@ -488,7 +488,7 @@ Waveshare HMMD 24 GHz mmWave human micro-motion radar (UART). Default off. The H
 
 `DWS_ENABLE_HOSTLINK`
 
-Omron Host Link (C-mode) frame codec. Default off. services/hostlink is a zero-heap ASCII command/response codec for Omron's serial host-link protocol (the RS-232/485 sibling of FINS): `dws_hostlink_build` emits `@UU` + 2-char header code + text + FCS + `*`CR, and `dws_hostlink_parse` FCS-validates and splits a frame (`dws_hostlink_end_code` reads a response's end code). The FCS is the 8-bit XOR from `@` through the text, rendered as two hex digits (verified against the `@00RD00000010` -> `57` example). Pure and host-tested; the UART transport is the application's. See src/services/hostlink/hostlink.h.
+Omron Host Link (C-mode) frame codec. Default off. services/hostlink is a zero-heap ASCII command/response codec for Omron's serial host-link protocol (the RS-232/485 sibling of FINS): `dws_hostlink_build` emits `@UU` + 2-char header code + text + FCS + `*`CR, and `dws_hostlink_parse` FCS-validates and splits a frame (`dws_hostlink_end_code` reads a response's end code). For the most common operation, `dws_hostlink_build_read` frames an RD (DM-area read) command from a beginning word address + word count (formatting the two 4-digit decimal fields), and `dws_hostlink_read_word` extracts a word value (4 hex digits after the end code) from the RD response - so an app reads a PLC register without hand-formatting the ASCII. The FCS is the 8-bit XOR from `@` through the text, rendered as two hex digits (verified against the `@00RD00000010` -> `57` example). Pure and host-tested; the UART transport is the application's. See src/services/hostlink/hostlink.h.
 
 ## HTTP Cache
 

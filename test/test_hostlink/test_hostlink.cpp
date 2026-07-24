@@ -34,6 +34,47 @@ void test_build_dm_read()
     TEST_ASSERT_EQUAL_size_t(17, n);
 }
 
+void test_build_read_and_extract()
+{
+    char buf[64];
+    // RD command: node 0, DM word 100 (-> "0100"), read 2 words (-> "0002").
+    size_t n = dws_hostlink_build_read(buf, sizeof(buf), 0, 100, 2);
+    TEST_ASSERT_TRUE(n > 0);
+    HostlinkFrame f;
+    TEST_ASSERT_TRUE(dws_hostlink_parse(buf, n, &f));
+    TEST_ASSERT_EQUAL_STRING("RD", f.header_code);
+    TEST_ASSERT_EQUAL_size_t(8, f.text_len);
+    TEST_ASSERT_EQUAL_MEMORY("01000002", f.text, 8);
+
+    // A simulated RD response: end code 00 (normal) + two word values 0x1234, 0x5678.
+    char resp[64];
+    size_t rn = dws_hostlink_build(resp, sizeof(resp), 0, "RD", "0012345678", 10);
+    HostlinkFrame rf;
+    TEST_ASSERT_TRUE(dws_hostlink_parse(resp, rn, &rf));
+    uint8_t ec;
+    TEST_ASSERT_TRUE(dws_hostlink_end_code(&rf, &ec));
+    TEST_ASSERT_EQUAL_UINT8(0, ec);
+    uint16_t w;
+    TEST_ASSERT_TRUE(dws_hostlink_read_word(&rf, 0, &w));
+    TEST_ASSERT_EQUAL_HEX16(0x1234, w);
+    TEST_ASSERT_TRUE(dws_hostlink_read_word(&rf, 1, &w));
+    TEST_ASSERT_EQUAL_HEX16(0x5678, w);
+    TEST_ASSERT_FALSE(dws_hostlink_read_word(&rf, 2, &w));     // past the last word
+    TEST_ASSERT_FALSE(dws_hostlink_read_word(nullptr, 0, &w)); // null frame
+
+    // A non-hex value character is rejected.
+    char bad[64];
+    size_t bn = dws_hostlink_build(bad, sizeof(bad), 0, "RD", "00123G", 6);
+    HostlinkFrame bf;
+    TEST_ASSERT_TRUE(dws_hostlink_parse(bad, bn, &bf));
+    TEST_ASSERT_FALSE(dws_hostlink_read_word(&bf, 0, &w));
+
+    // Builder guards: an out-of-range address / count, a zero count, and a too-small buffer fail closed.
+    TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, sizeof(buf), 0, 10000, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, sizeof(buf), 0, 100, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, 4, 0, 100, 2));
+}
+
 // The node number renders as two digits.
 void test_build_node_digits()
 {
@@ -248,6 +289,7 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_fcs_vector);
     RUN_TEST(test_build_dm_read);
+    RUN_TEST(test_build_read_and_extract);
     RUN_TEST(test_build_node_digits);
     RUN_TEST(test_round_trip);
     RUN_TEST(test_parse_response_end_code);
