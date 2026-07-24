@@ -41,6 +41,60 @@ void test_rdm_uid()
     TEST_ASSERT_EQUAL_HEX64(0x444412345678ULL, uid);
 }
 
+// Encode a UID into a DISC_UNIQUE_BRANCH response (preamble + separator + euid + ecs), then decode it.
+static size_t encode_disc_response(uint64_t uid, uint8_t preamble, uint8_t *out)
+{
+    size_t p = 0;
+    for (uint8_t i = 0; i < preamble; i++)
+        out[p++] = 0xFE;
+    out[p++] = 0xAA; // preamble separator
+    size_t euid_start = p;
+    for (int i = 0; i < 6; i++)
+    {
+        uint8_t b = (uint8_t)(uid >> (8 * (5 - i))); // MSB first
+        out[p++] = (uint8_t)(b | 0xAA);
+        out[p++] = (uint8_t)(b | 0x55);
+    }
+    uint16_t sum = 0;
+    for (int i = 0; i < 12; i++)
+        sum = (uint16_t)(sum + out[euid_start + i]);
+    out[p++] = (uint8_t)((sum >> 8) | 0xAA);
+    out[p++] = (uint8_t)((sum >> 8) | 0x55);
+    out[p++] = (uint8_t)((sum & 0xFF) | 0xAA);
+    out[p++] = (uint8_t)((sum & 0xFF) | 0x55);
+    return p;
+}
+
+void test_rdm_decode_disc_response()
+{
+    uint64_t want = dws_rdm_uid(0x1234, 0x56789ABC);
+    uint8_t resp[32];
+    size_t n = encode_disc_response(want, 7, resp); // 7-octet preamble (the common case)
+
+    uint64_t got = 0;
+    TEST_ASSERT_TRUE(dws_rdm_decode_disc_response(resp, n, &got));
+    TEST_ASSERT_EQUAL_HEX64(want, got);
+
+    // Zero preamble (separator only) also decodes.
+    n = encode_disc_response(want, 0, resp);
+    got = 0;
+    TEST_ASSERT_TRUE(dws_rdm_decode_disc_response(resp, n, &got));
+    TEST_ASSERT_EQUAL_HEX64(want, got);
+
+    // A corrupted encoded octet fails the checksum (flip a 0xAA-region bit so the sum changes).
+    uint8_t bad[32];
+    size_t bn = encode_disc_response(want, 2, bad);
+    bad[3] ^= 0x10; // euid[0] follows a 2-octet preamble + separator (index 3)
+    TEST_ASSERT_FALSE(dws_rdm_decode_disc_response(bad, bn, &got));
+
+    // A missing separator, a truncated response, and null args are rejected.
+    uint8_t nosep[8] = {0xFE, 0xFE, 0xFE, 0x00};
+    TEST_ASSERT_FALSE(dws_rdm_decode_disc_response(nosep, sizeof(nosep), &got));
+    TEST_ASSERT_FALSE(dws_rdm_decode_disc_response(resp, 10, &got)); // fewer than 16 encoded octets
+    TEST_ASSERT_FALSE(dws_rdm_decode_disc_response(nullptr, n, &got));
+    TEST_ASSERT_FALSE(dws_rdm_decode_disc_response(resp, n, nullptr));
+}
+
 // Build a GET DEVICE_INFO (no parameter data), parse it back, verify the checksum holds.
 void test_rdm_get_roundtrip()
 {
@@ -214,6 +268,7 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_dmx_build_and_get);
     RUN_TEST(test_rdm_uid);
+    RUN_TEST(test_rdm_decode_disc_response);
     RUN_TEST(test_rdm_get_roundtrip);
     RUN_TEST(test_rdm_set_with_data);
     RUN_TEST(test_rdm_parse_rejects_bad);

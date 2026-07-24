@@ -109,5 +109,15 @@ size_t dws_rdm_build(uint8_t *buf, size_t cap, const RdmPacket *p, const uint8_t
  */
 bool dws_rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consumed);
 
+/**
+ * @brief Decode a DISC_UNIQUE_BRANCH discovery response into the responder's 48-bit UID. This reply is not a
+ *        normal RDM packet: it is an optional 0xFE preamble (0..7 octets) + a 0xAA separator, then the 6 UID
+ *        octets each sent as two copies OR'd with 0xAA / 0x55, then a 2-octet checksum sent the same way.
+ *        Each original octet is recovered as the AND of its two encoded copies, and the checksum (the 16-bit
+ *        additive sum of the 12 encoded UID octets) is verified.
+ * @return true iff the separator is present, the 16 encoded octets fit, and the checksum matches.
+ */
+bool dws_rdm_decode_disc_response(const uint8_t *buf, size_t len, uint64_t *uid);
+
 #endif // DWS_ENABLE_DMX
 #endif // DETERMINISTICESPASYNCWEBSERVER_DMX_H

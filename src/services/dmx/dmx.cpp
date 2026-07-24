@@ -126,4 +126,34 @@ bool dws_rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consu
     return true;
 }
 
+bool dws_rdm_decode_disc_response(const uint8_t *buf, size_t len, uint64_t *uid)
+{
+    if (!buf || !uid)
+        return false;
+    // Skip the optional preamble (up to 7 octets of 0xFE), then require the 0xAA separator.
+    size_t p = 0;
+    while (p < len && p < 7 && buf[p] == 0xFE)
+        p++;
+    if (p >= len || buf[p] != 0xAA)
+        return false;
+    p++;
+    if (len - p < 16) // 12 encoded UID octets + 4 encoded checksum octets
+        return false;
+    const uint8_t *euid = buf + p;
+    // The checksum is the 16-bit additive sum of the 12 encoded UID octets.
+    uint16_t sum = 0;
+    for (int i = 0; i < 12; i++)
+        sum = (uint16_t)(sum + euid[i]);
+    uint8_t csum_hi = (uint8_t)(euid[12] & euid[13]); // AND the two encoded copies to recover the octet
+    uint8_t csum_lo = (uint8_t)(euid[14] & euid[15]);
+    if ((uint16_t)(((uint16_t)csum_hi << 8) | csum_lo) != sum)
+        return false;
+    // Recover the 6 UID octets (MSB first); each is the AND of its 0xAA / 0x55 encoded copies.
+    uint64_t u = 0;
+    for (int i = 0; i < 6; i++)
+        u = (u << 8) | (uint8_t)(euid[i * 2] & euid[i * 2 + 1]);
+    *uid = u;
+    return true;
+}
+
 #endif // DWS_ENABLE_DMX
