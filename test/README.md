@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5173 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5174 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -20205,7 +20205,7 @@ A thorough directory of all **5173 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_iec60870 (28 tests)</b></summary>
+<summary><b>test_iec60870 (29 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_104_i_format_roundtrip</b> &mdash; <i>104 i format roundtrip</i></summary>
@@ -20532,6 +20532,32 @@ A thorough directory of all **5173 test cases** across **291 suites**. Expand a 
       * <code>Assert true (v &gt; 0.999f)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_normalized(buf, 5, 0, 0.5f, 0)); // too small</code>
       * <code>Assert false (dws_iec_io_parse_normalized(buf, 5, &ioa, &v, &qds))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_io_integrated_totals</b> &mdash; <i>M_IT_NA_1: IOA(3) + BCR = signed 32-bit counter (LE) + sequence-notation octet.</i></summary>
+
+    * **Objective**: M_IT_NA_1: IOA(3) + BCR = signed 32-bit counter (LE) + sequence-notation octet.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x78, buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x56, buf[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x34, buf[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x12, buf[6]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x25, buf[7]);</code>
+      * <code>Assert true (dws_iec_io_parse_counter(buf, n, &ioa, &v, &seq))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(300, ioa);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x12345678, v);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, seq & IEC_BCR_SQ_MASK);</code>
+      * <code>Assert true ((seq & IEC_BCR_CY) != 0)</code>
+      * <code>Assert true ((seq & IEC_BCR_CA) == 0)</code>
+      * <code>Assert true ((seq & IEC_BCR_IV) == 0)</code>
+      * <code>Assert true (dws_iec_io_parse_counter(buf, 8, nullptr, &v, &seq))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-2000000000, v);</code>
+      * <code>Assert true ((seq & IEC_BCR_IV) != 0)</code>
+      * <code>Assert true ((seq & IEC_BCR_CA) != 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_counter(buf, 7, 0, 1, 0)); // too small</code>
+      * <code>Assert false (dws_iec_io_parse_counter(buf, 7, &ioa, &v, &seq))</code>
   </details>
 
   <details style="margin-left: 20px;">
