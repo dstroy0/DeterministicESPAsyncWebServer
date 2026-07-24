@@ -16,10 +16,10 @@ from each example's `pio ci` size report and aggregated into
 | `AUTH_LOCKOUT+FORWARDED_TRUST`                                                                            | L6-Presentation/ForwardedTrust       | 739.9 KB (57.8%) | 80.5 KB (25.2%)  |
 | `BUS_CAPTURE+FORWARD+ETHERNET`                                                                            | Peripherals/CanCapture               | 753.9 KB (58.9%) | 44.5 KB (13.9%)  |
 | `CBOR`                                                                                                    | L6-Presentation/Cbor                 | 738.1 KB (57.7%) | 80.0 KB (25.0%)  |
-| `COAP`                                                                                                    | L7-Application/CoAP                  | 741.6 KB (57.9%) | 82.4 KB (25.8%)  |
-| `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`                                                                        | L7-Application/CoapBlock             | 710.5 KB (55.5%) | 47.3 KB (14.8%)  |
-| `COAP+COAP_OBSERVE`                                                                                       | L7-Application/CoapObserve           | 712.6 KB (55.7%) | 45.1 KB (14.1%)  |
-| `COAP+DTLS`                                                                                               | L7-Application/CoapSecure            | 763.5 KB (59.6%) | 100.6 KB (31.4%) |
+| `COAP`                                                                                                    | L7-Application/CoAP                  | 743.0 KB (58.0%) | 83.5 KB (26.1%)  |
+| `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`                                                                        | L7-Application/CoapBlock             | 712.0 KB (55.6%) | 48.4 KB (15.1%)  |
+| `COAP+COAP_OBSERVE`                                                                                       | L7-Application/CoapObserve           | 713.3 KB (55.7%) | 46.2 KB (14.4%)  |
+| `COAP+DTLS`                                                                                               | L7-Application/CoapSecure            | 763.6 KB (59.7%) | 101.7 KB (31.8%) |
 | `CONFIG_STORE+CONFIG_IO`                                                                                  | L7-Application/ConfigExport          | 740.6 KB (57.9%) | 80.0 KB (25.0%)  |
 | `CONTROL`                                                                                                 | L7-Application/PidTuning             | 737.8 KB (57.6%) | 87.8 KB (27.4%)  |
 | `CSRF`                                                                                                    | L7-Application/Csrf                  | 737.4 KB (57.6%) | 80.0 KB (25.0%)  |

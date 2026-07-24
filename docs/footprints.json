@@ -59,29 +59,29 @@
     "example": "L7-Application/CoAP",
     "flags": "-DDWS_ENABLE_COAP=1",
     "board": "esp32dev",
-    "flash_bytes": 759353,
-    "ram_bytes": 84388
+    "flash_bytes": 760857,
+    "ram_bytes": 85540
   },
   "COAP+COAP_BLOCK+COAP_MAX_PAYLOAD": {
     "example": "L7-Application/CoapBlock",
     "flags": "-DDWS_ENABLE_COAP=1 -DDWS_ENABLE_COAP_BLOCK=1 -DDWS_COAP_MAX_PAYLOAD=1024",
     "board": "esp32dev",
-    "flash_bytes": 727597,
-    "ram_bytes": 48420
+    "flash_bytes": 729137,
+    "ram_bytes": 49572
   },
   "COAP+COAP_OBSERVE": {
     "example": "L7-Application/CoapObserve",
     "flags": "-DDWS_ENABLE_COAP=1 -DDWS_ENABLE_COAP_OBSERVE=1",
     "board": "esp32dev",
-    "flash_bytes": 729669,
-    "ram_bytes": 46172
+    "flash_bytes": 730405,
+    "ram_bytes": 47324
   },
   "COAP+DTLS": {
     "example": "L7-Application/CoapSecure",
     "flags": "-DDWS_ENABLE_COAP=1 -DDWS_ENABLE_DTLS=1",
     "board": "esp32dev",
-    "flash_bytes": 781801,
-    "ram_bytes": 102964
+    "flash_bytes": 781909,
+    "ram_bytes": 104116
   },
   "CONFIG_STORE+CONFIG_IO": {
     "example": "L7-Application/ConfigExport",
