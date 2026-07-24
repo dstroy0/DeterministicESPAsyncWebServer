@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- move the lock table into an owned Ctx ([`c75b613`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c75b61314e36afc3a051456144e8f7283c2e1343))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`bad4ee1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad4ee1721ba1299c2eb730e106f331e24535967))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`fa65bb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa65bb8eae48e6727e76d151275ac733a5f1962e))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`14a6eec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14a6eecd67b5554540531d6291c2fd60d864af2f))
+
 ## [7.61.0] - 2026-07-24
 
 <details>
