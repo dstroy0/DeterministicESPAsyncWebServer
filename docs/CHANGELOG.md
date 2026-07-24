@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.81.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.81.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`fc17334`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc1733425d4bcd31b54e9c5baaa82da5d13720de))
+
+### Changes
+
+- Bump version: 7.80.0 → 7.81.0 ([`939e48a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/939e48a49a5c626186b3c85bafb04c95389321de))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`0bc171d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0bc171ddde6bc4c96180f5ecd8dceab90cb1e4d3))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`577848f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/577848f99772c9982919e40f51a887f9c4fac73d))
+
+### Features
+
+- decode COG & SOG Rapid Update (PGN 129026) ([`670e902`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/670e9020309702002e874bba2c333df284174908))
+
+</details>
+
 ## [7.80.0] - 2026-07-24
 
 <details>
