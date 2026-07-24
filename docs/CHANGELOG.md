@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.58.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.58.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`3e0cef6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e0cef67ed1bba72c001d8177c3647059b9775a1))
+
+### Changes
+
+- Bump version: 7.57.0 → 7.58.0 ([`d6e92f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6e92f196287ed7a9442ee25ae248e0de2c9e6a2))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`e39769f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e39769f83316d79d1030cb4319ab7a5bc00ea3ef))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`50d8bdb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50d8bdbd03975be557f64fef705421d12f6fe229))
+
+### Features
+
+- master bit-access function codes (FC 0x01/0x02/0x05/0x0F) ([`81a858a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81a858af3c9748c63c1d63b95a5717944662129f))
+
+</details>
+
 ## [7.57.0] - 2026-07-24
 
 <details>
