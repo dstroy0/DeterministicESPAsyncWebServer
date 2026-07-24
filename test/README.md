@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5143 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5144 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -17194,7 +17194,7 @@ A thorough directory of all **5143 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_hostlink (20 tests)</b></summary>
+<summary><b>test_hostlink (21 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fcs_vector</b> &mdash; <i>Fcs vector</i></summary>
@@ -17237,6 +17237,27 @@ A thorough directory of all **5143 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, sizeof(buf), 0, 10000, 1));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, sizeof(buf), 0, 100, 0));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, 4, 0, 100, 2));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write</b> &mdash; <i>Round-trips through the FCS-validating parser: header "WR", text = address + the two words.</i></summary>
+
+    * **Objective**: Round-trips through the FCS-validating parser: header "WR", text = address + the two words.
+    * **Assertions**:
+      * <code>Assert equal string ("@00WR0100123456784C*\\r", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(21, n);</code>
+      * <code>Assert true (dws_hostlink_parse(buf, n, &f))</code>
+      * <code>Assert equal string ("WR", f.header_code)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(12, f.text_len);</code>
+      * <code>Assert equal memory ("010012345678", f.text, 12)</code>
+      * <code>Assert true (dws_hostlink_parse(resp, rn, &rf))</code>
+      * <code>Assert true (dws_hostlink_end_code(&rf, &ec))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ec);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, sizeof(buf), 0, 10000, words, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, sizeof(buf), 0, 100, words, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, sizeof(buf), 0, 100, nullptr, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, sizeof(buf), 100, 100, words, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_write(buf, 8, 0, 100, words, 2));</code>
   </details>
 
   <details style="margin-left: 20px;">
