@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5133 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5134 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -22197,7 +22197,7 @@ A thorough directory of all **5133 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_j1939 (27 tests)</b></summary>
+<summary><b>test_j1939 (28 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_id_pdu2_roundtrip</b> &mdash; <i>Id pdu2 roundtrip</i></summary>
@@ -22556,6 +22556,39 @@ A thorough directory of all **5133 test cases** across **291 suites**. Expand a 
       * <code>Assert false (v.trip_valid)</code>
       * <code>Assert true (v.total_valid)</code>
       * <code>Assert false (dws_j1939_decode_vd(&ic1, &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_dm1</b> &mdash; <i>Single-frame DM1: amber warning on, one DTC (SPN 100 oil pressure, FMI 1, OC 5), 0xFF padding.</i></summary>
+
+    * **Objective**: Single-frame DM1: amber warning on, one DTC (SPN 100 oil pressure, FMI 1, OC 5), 0xFF padding.
+    * **Assertions**:
+      * <code>Assert true (dws_j1939_decode_dm1(single, sizeof(single), &dm, dtcs, 4))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dm.protect);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dm.amber_warning);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dm.red_stop);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dm.mil);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dm.dtc_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(100, dtcs[0].spn);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dtcs[0].fmi);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dtcs[0].cm);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, dtcs[0].oc);</code>
+      * <code>Assert true (dws_j1939_decode_dm1(multi, sizeof(multi), &dm, dtcs, 4))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dm.amber_warning);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dm.red_stop);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, dm.dtc_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(190, dtcs[1].spn); // SPN 190 engine speed, FMI 0, OC 2</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dtcs[1].fmi);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, dtcs[1].oc);</code>
+      * <code>Assert true (dws_j1939_decode_dm1(multi, sizeof(multi), &dm, dtcs, 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dm.dtc_count);</code>
+      * <code>Assert true (dws_j1939_decode_dm1(none, sizeof(none), &dm, dtcs, 4))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dm.dtc_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dm.amber_warning);</code>
+      * <code>Assert true (dws_j1939_decode_dm1(single, sizeof(single), &dm, nullptr, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dm.amber_warning);</code>
+      * <code>Assert false (dws_j1939_decode_dm1(single, 1, &dm, dtcs, 4))</code>
+      * <code>Assert false (dws_j1939_decode_dm1(nullptr, 8, &dm, dtcs, 4))</code>
   </details>
 
   <details style="margin-left: 20px;">
