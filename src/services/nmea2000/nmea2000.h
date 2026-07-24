@@ -95,6 +95,7 @@ bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t
 #define N2K_PGN_SPEED 128259u          ///< Speed: water-referenced + ground-referenced speed
 #define N2K_PGN_WATER_DEPTH 128267u    ///< Water Depth: depth below transducer + offset
 #define N2K_PGN_VESSEL_HEADING 127250u ///< Vessel Heading: heading + deviation + variation
+#define N2K_PGN_RUDDER 127245u         ///< Rudder: direction order + angle order + position
 #define N2K_PGN_ATTITUDE 127257u       ///< Attitude: yaw + pitch + roll
 #define N2K_PGN_TEMPERATURE 130312u    ///< Temperature: instance + source + actual / set temperature
 
@@ -157,6 +158,22 @@ struct N2kEngineRapid
     float boost_pa;   ///< engine boost pressure (Pa, 100 Pa per bit)
     bool tilt_valid;  ///< false if the tilt/trim is not-available
     int8_t tilt_pct;  ///< engine tilt / trim (percent, 1 %/bit, signed)
+};
+
+// Rudder direction order (PGN 127245 byte 1, low 3 bits).
+#define N2K_RUDDER_NO_ORDER 0
+#define N2K_RUDDER_MOVE_TO_STARBOARD 1
+#define N2K_RUDDER_MOVE_TO_PORT 2
+
+/** @brief Decoded Rudder (PGN 127245): the commanded and actual rudder state. */
+struct N2kRudder
+{
+    uint8_t instance;        ///< rudder instance
+    uint8_t direction_order; ///< commanded direction (@ref N2K_RUDDER_NO_ORDER etc.)
+    bool angle_order_valid;  ///< false if the angle order is not-available
+    float angle_order_rad;   ///< commanded rudder angle (radians, 0.0001 rad per bit)
+    bool position_valid;     ///< false if the position is not-available
+    float position_rad;      ///< actual rudder position (radians, 0.0001 rad per bit)
 };
 
 /** @brief Decoded Attitude (PGN 127257): the vessel's orientation. Each angle is signed at 0.0001 rad/bit. */
@@ -250,6 +267,12 @@ bool dws_n2k_decode_cog_sog_rapid(const uint8_t *payload, size_t len, N2kCogSogR
  * @return true iff @p len is at least 6 octets (instance + speed + boost + tilt); false otherwise.
  */
 bool dws_n2k_decode_engine_rapid(const uint8_t *payload, size_t len, N2kEngineRapid *out);
+
+/**
+ * @brief Decode a Rudder (PGN 127245) payload into @p out.
+ * @return true iff @p len is at least 6 octets (instance + direction + angle order + position); false otherwise.
+ */
+bool dws_n2k_decode_rudder(const uint8_t *payload, size_t len, N2kRudder *out);
 
 /**
  * @brief Decode an Attitude (PGN 127257) payload into @p out.

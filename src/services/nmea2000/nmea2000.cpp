@@ -202,6 +202,21 @@ bool dws_n2k_decode_temperature(const uint8_t *payload, size_t len, N2kTemperatu
     return true;
 }
 
+bool dws_n2k_decode_rudder(const uint8_t *payload, size_t len, N2kRudder *out)
+{
+    if (!payload || !out || len < 6) // instance(1) + direction(1) + angle order(2) + position(2)
+        return false;
+    out->instance = payload[0];
+    out->direction_order = (uint8_t)(payload[1] & 0x07u); // low 3 bits
+    int16_t angle = rd_i16le(payload + 2);                // 0.0001 rad per bit, signed
+    out->angle_order_valid = ((uint16_t)angle != 0x7FFFu);
+    out->angle_order_rad = (float)angle * 0.0001f;
+    int16_t pos = rd_i16le(payload + 4);
+    out->position_valid = ((uint16_t)pos != 0x7FFFu);
+    out->position_rad = (float)pos * 0.0001f;
+    return true;
+}
+
 bool dws_n2k_decode_attitude(const uint8_t *payload, size_t len, N2kAttitude *out)
 {
     if (!payload || !out || len < 7) // sid(1) + yaw(2) + pitch(2) + roll(2)

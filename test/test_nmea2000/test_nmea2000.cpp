@@ -385,6 +385,31 @@ void test_decode_attitude()
     TEST_ASSERT_FALSE(dws_n2k_decode_attitude(nullptr, 8, &at));
 }
 
+void test_decode_rudder()
+{
+    // instance 0, move-to-starboard order, angle order 0.1745 rad (raw 1745), position 0.1571 rad (raw 1571).
+    const uint8_t r[8] = {0x00, 0x01, 0xd1, 0x06, 0x23, 0x06, 0xff, 0xff};
+    N2kRudder d;
+    TEST_ASSERT_TRUE(dws_n2k_decode_rudder(r, sizeof(r), &d));
+    TEST_ASSERT_EQUAL_UINT8(0, d.instance);
+    TEST_ASSERT_EQUAL_UINT8(N2K_RUDDER_MOVE_TO_STARBOARD, d.direction_order);
+    TEST_ASSERT_TRUE(d.angle_order_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 0.1745f, d.angle_order_rad);
+    TEST_ASSERT_TRUE(d.position_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 0.1571f, d.position_rad);
+
+    // A negative position (port), a 0x7FFF not-available angle order, and the no-order direction.
+    const uint8_t na[8] = {0x00, 0x00, 0xff, 0x7f, 0x30, 0xf8, 0xff, 0xff};
+    TEST_ASSERT_TRUE(dws_n2k_decode_rudder(na, sizeof(na), &d));
+    TEST_ASSERT_EQUAL_UINT8(N2K_RUDDER_NO_ORDER, d.direction_order);
+    TEST_ASSERT_FALSE(d.angle_order_valid);
+    TEST_ASSERT_TRUE(d.position_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, -0.2f, d.position_rad); // raw -2000 = 0xF830
+    // Short payload + nulls are rejected.
+    TEST_ASSERT_FALSE(dws_n2k_decode_rudder(r, 5, &d));
+    TEST_ASSERT_FALSE(dws_n2k_decode_rudder(nullptr, 8, &d));
+}
+
 void test_decode_wind_data()
 {
     // sid 0x2A, speed 5.00 m/s (raw 500), angle 1.5708 rad (raw 15708), reference apparent.
@@ -491,6 +516,7 @@ int main()
     RUN_TEST(test_decode_engine_rapid);
     RUN_TEST(test_decode_temperature);
     RUN_TEST(test_decode_attitude);
+    RUN_TEST(test_decode_rudder);
     RUN_TEST(test_decode_wind_data);
     RUN_TEST(test_decode_speed);
     RUN_TEST(test_decode_water_depth);
