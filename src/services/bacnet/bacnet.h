@@ -110,6 +110,12 @@ bool dws_npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out);
 #define BACNET_APDU_MOR 0x04 ///< more segments follow
 #define BACNET_APDU_SA 0x02  ///< the sender accepts a segmented response (confirmed-request only)
 
+// Unconfirmed-request service choices (ASHRAE 135 §21).
+#define BACNET_SVC_UN_I_AM 0   ///< I-Am
+#define BACNET_SVC_UN_WHO_IS 8 ///< Who-Is
+
+#define BACNET_MAX_INSTANCE 0x3FFFFFu ///< maximum BACnet object / device instance (22-bit)
+
 /** @brief A decoded APDU header (from dws_apdu_parse). Service data points INTO the source buffer. */
 struct BacnetApdu
 {
@@ -130,6 +136,14 @@ struct BacnetApdu
  *         reject / abort).
  */
 bool dws_apdu_parse(const uint8_t *apdu, size_t len, BacnetApdu *out);
+
+/**
+ * @brief Build a Who-Is unconfirmed-request APDU (service choice 8). With @p has_limits, the device-instance
+ *        search range is appended as context-tagged unsigned ints (tag 0 = low limit, tag 1 = high limit, each
+ *        encoded minimal-length); without it, the APDU is the 2-octet unbounded form that every device answers.
+ * @return the APDU length, or 0 on overflow, a limit above BACNET_MAX_INSTANCE, or low > high.
+ */
+size_t dws_apdu_build_who_is(uint8_t *buf, size_t cap, uint32_t low_limit, uint32_t high_limit, bool has_limits);
 
 #endif // DWS_ENABLE_BACNET
 

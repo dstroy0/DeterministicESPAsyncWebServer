@@ -294,6 +294,46 @@ void test_apdu_parse()
     TEST_ASSERT_FALSE(dws_apdu_parse(creq, 0, &a));
 }
 
+void test_apdu_build_who_is()
+{
+    uint8_t buf[16];
+    BacnetApdu a;
+
+    // Unbounded Who-Is (no limits): the 2-octet form every device answers.
+    size_t n = dws_apdu_build_who_is(buf, sizeof(buf), 0, 0, false);
+    const uint8_t unbounded[] = {0x10, 0x08};
+    TEST_ASSERT_EQUAL_size_t(sizeof(unbounded), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(unbounded, buf, n);
+    // It round-trips through the parser as an unconfirmed Who-Is.
+    TEST_ASSERT_TRUE(dws_apdu_parse(buf, n, &a));
+    TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_UNCONFIRMED_REQUEST, a.pdu_type);
+    TEST_ASSERT_EQUAL_UINT8(BACNET_SVC_UN_WHO_IS, a.service_choice);
+
+    // Bounded 100..200: 1-octet limits behind context tags 0 and 1.
+    n = dws_apdu_build_who_is(buf, sizeof(buf), 100, 200, true);
+    const uint8_t small_range[] = {0x10, 0x08, 0x09, 0x64, 0x19, 0xC8};
+    TEST_ASSERT_EQUAL_size_t(sizeof(small_range), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(small_range, buf, n);
+
+    // Bounded 300..4000000: a 2-octet low limit and a 3-octet high limit (minimal length each).
+    n = dws_apdu_build_who_is(buf, sizeof(buf), 300, 4000000, true);
+    const uint8_t big_range[] = {0x10, 0x08, 0x0A, 0x01, 0x2C, 0x1B, 0x3D, 0x09, 0x00};
+    TEST_ASSERT_EQUAL_size_t(sizeof(big_range), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(big_range, buf, n);
+
+    // A zero limit encodes as a single 0x00 value octet.
+    n = dws_apdu_build_who_is(buf, sizeof(buf), 0, 0, true);
+    const uint8_t zero_range[] = {0x10, 0x08, 0x09, 0x00, 0x19, 0x00};
+    TEST_ASSERT_EQUAL_size_t(sizeof(zero_range), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(zero_range, buf, n);
+
+    // Guards: low > high, a limit beyond the 22-bit instance range, a null buffer, and a too-small buffer.
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(buf, sizeof(buf), 200, 100, true));    // low > high
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(buf, sizeof(buf), 0, 0x400000, true)); // > BACNET_MAX_INSTANCE
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(nullptr, sizeof(buf), 0, 0, false));
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(buf, 1, 0, 0, false)); // needs 2
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -311,5 +351,6 @@ int main()
     RUN_TEST(test_npdu_build_zero_apdu_and_null_dadr);
     RUN_TEST(test_npdu_parse_null_buf_out_and_short);
     RUN_TEST(test_apdu_parse);
+    RUN_TEST(test_apdu_build_who_is);
     return UNITY_END();
 }

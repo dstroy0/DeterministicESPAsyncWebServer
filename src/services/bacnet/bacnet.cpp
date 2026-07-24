@@ -129,6 +129,51 @@ bool dws_npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out)
     return true;
 }
 
+// Encode a context-tagged unsigned integer (BACnet tag octet = tag-number<<4 | context-class 0x08 | length),
+// using the minimal number of value octets (big-endian). @p value is a device instance (<= 22 bits, so <= 3
+// octets), which always fits the length field of the tag's low nibble.
+static size_t bacnet_put_context_uint(uint8_t *buf, uint8_t tag_number, uint32_t value)
+{
+    uint8_t v[4];
+    size_t vlen = 0;
+    if (value == 0)
+        v[vlen++] = 0;
+    else
+        for (int shift = 24; shift >= 0; shift -= 8) // big-endian, dropping the leading zero octets
+        {
+            uint8_t b = (uint8_t)(value >> shift);
+            if (vlen == 0 && b == 0)
+                continue;
+            v[vlen++] = b;
+        }
+    size_t p = 0;
+    buf[p++] = (uint8_t)(((uint32_t)tag_number << 4) | 0x08u | (uint8_t)vlen); // context class + length
+    for (size_t i = 0; i < vlen; i++)
+        buf[p++] = v[i];
+    return p;
+}
+
+size_t dws_apdu_build_who_is(uint8_t *buf, size_t cap, uint32_t low_limit, uint32_t high_limit, bool has_limits)
+{
+    if (!buf)
+        return 0;
+    uint8_t tmp[16]; // worst case: 2 header + 2 * (1 tag + 3 value) = 10
+    size_t p = 0;
+    tmp[p++] = (uint8_t)(BACNET_PDU_UNCONFIRMED_REQUEST << 4); // 0x10, no flags
+    tmp[p++] = BACNET_SVC_UN_WHO_IS;                           // service choice 8
+    if (has_limits)
+    {
+        if (low_limit > BACNET_MAX_INSTANCE || high_limit > BACNET_MAX_INSTANCE || low_limit > high_limit)
+            return 0;
+        p += bacnet_put_context_uint(tmp + p, 0, low_limit);
+        p += bacnet_put_context_uint(tmp + p, 1, high_limit);
+    }
+    if (cap < p)
+        return 0;
+    memcpy(buf, tmp, p);
+    return p;
+}
+
 bool dws_apdu_parse(const uint8_t *apdu, size_t len, BacnetApdu *out)
 {
     if (!apdu || !out || len < 1)
