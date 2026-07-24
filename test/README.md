@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5115 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5117 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -13937,7 +13937,7 @@ A thorough directory of all **5115 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_goose (7 tests)</b></summary>
+<summary><b>test_goose (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_pdu_structure</b> &mdash; <i>Content is 42 octets (see goose.cpp field sizes); PDU = 61 2A <42> = 44.</i></summary>
@@ -14022,6 +14022,44 @@ A thorough directory of all **5115 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, nullptr, 0x1234, &g, out, sizeof(out)));  // null src</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, nullptr, out, sizeof(out))); // null g</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g, nullptr, sizeof(out)));  // null out</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_roundtrip</b> &mdash; <i>Parse roundtrip</i></summary>
+
+    * **Objective**: Parse roundtrip
+    * **Assertions**:
+      * <code>Assert true (n &gt; 22)</code>
+      * <code>Assert true (dws_goose_parse_frame(frame, n, &rx))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x3001, rx.appid);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen("GE1/LLN0$GO$gcb"), rx.gocb_ref_len);</code>
+      * <code>Assert equal memory ("GE1/LLN0$GO$gcb", rx.gocb_ref, rx.gocb_ref_len)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000, rx.time_allowed_to_live);</code>
+      * <code>Assert equal memory ("GE1/LLN0$DS", rx.dat_set, rx.dat_set_len)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(5, rx.go_id_len);</code>
+      * <code>Assert equal memory ("TRIP1", rx.go_id, rx.go_id_len)</code>
+      * <code>Assert not null (rx.t)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(tbuf, rx.t, 8);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(200, rx.st_num);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x012345, rx.sq_num);</code>
+      * <code>Assert true (rx.simulation)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(7, rx.conf_rev);</code>
+      * <code>Assert true (rx.nds_com)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, rx.num_entries);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(adata), rx.all_data_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(adata, rx.all_data, sizeof(adata));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_rejects</b> &mdash; <i>A non-GOOSE ethertype is rejected.</i></summary>
+
+    * **Objective**: A non-GOOSE ethertype is rejected.
+    * **Assertions**:
+      * <code>Assert false (dws_goose_parse_frame(bad, n, &rx))</code>
+      * <code>Assert false (dws_goose_parse_frame(frame, 25, &rx))</code>
+      * <code>Assert false (dws_goose_parse_frame(frame, 23, &rx))</code>
+      * <code>Assert false (dws_goose_parse_frame(nullptr, n, &rx))</code>
+      * <code>Assert false (dws_goose_parse_frame(frame, n, nullptr))</code>
   </details>
 
 </details>
