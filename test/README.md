@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5118 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5119 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -12205,7 +12205,7 @@ A thorough directory of all **5118 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_fins (7 tests)</b></summary>
+<summary><b>test_fins (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_command_bytes</b> &mdash; <i>Build command bytes</i></summary>
@@ -12230,6 +12230,29 @@ A thorough directory of all **5118 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[15]); // bit</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[16]); // count hi</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x0A, buf[17]); // count lo (10)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_memory_area_write</b> &mdash; <i>area 0xB0 (DM), word 100 = 0x0064, bit 0, write 2 words.</i></summary>
+
+    * **Objective**: area 0xB0 (DM), word 100 = 0x0064, bit 0, write 2 words.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 6 + 4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[10]);                       // MRC</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(FINS_SRC_MEMORY_AREA_WRITE, buf[11]); // SRC 0x02</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xB0, buf[12]);                       // area</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x64, buf[14]);                       // addr lo (100)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[17]);                       // count lo (2)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(words, buf + 18, 4);            // the write data</code>
+      * <code>Assert true (dws_fins_parse_command(buf, n, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(FINS_MRC_MEMORY_AREA, c.mrc);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(FINS_SRC_MEMORY_AREA_WRITE, c.src);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(10, c.params_len); // 6 prefix + 4 data</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(words, c.params + 6, 4);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 6, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, sizeof(buf), &h, 0xB0, 100, 0, 2, nullptr, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, 10, &h, 0xB0, 100, 0, 2, words, 4)); // hdr+prefix</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, 18, &h, 0xB0, 100, 0, 2, words, 4)); // data</code>
   </details>
 
   <details style="margin-left: 20px;">
