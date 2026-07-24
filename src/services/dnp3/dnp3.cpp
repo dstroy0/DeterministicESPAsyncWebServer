@@ -313,6 +313,20 @@ size_t dws_dnp3_build_object_header_all(uint8_t *buf, size_t cap, uint8_t group,
     return 3;
 }
 
+size_t dws_dnp3_build_crob(uint8_t *buf, size_t cap, uint8_t op_type, uint8_t tcc, bool clear, uint8_t count,
+                           uint32_t on_time_ms, uint32_t off_time_ms)
+{
+    if (!buf || op_type > 0x0Fu || tcc > 0x03u || cap < DNP3_CROB_LEN)
+        return 0;
+    // Control code: op-type (bits 0-3) | clear (bit 5) | trip-close (bits 6-7). The queue bit (0x10) is obsolete.
+    buf[0] = (uint8_t)((op_type & 0x0Fu) | (clear ? 0x20u : 0x00u) | (uint8_t)((tcc & 0x03u) << 6));
+    buf[1] = count;
+    dws_wr32le(buf + 2, on_time_ms);
+    dws_wr32le(buf + 6, off_time_ms);
+    buf[10] = 0x00; // status: 0 in a request (the outstation reports the result in its response)
+    return DNP3_CROB_LEN;
+}
+
 bool dws_dnp3_parse_object_header(const uint8_t *buf, size_t len, Dnp3ObjectHeader *out)
 {
     if (!buf || !out || len < 3) // group + variation + qualifier

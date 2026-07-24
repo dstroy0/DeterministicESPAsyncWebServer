@@ -455,6 +455,32 @@ void test_build_object_header()
     TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_all(buf, 2, 60, 1));        // needs 3
 }
 
+void test_build_crob()
+{
+    uint8_t buf[16];
+
+    // LATCH_ON, no trip/close, count 1, on/off time 0: control code = 0x03.
+    size_t n = dws_dnp3_build_crob(buf, sizeof(buf), DNP3_CROB_OP_LATCH_ON, DNP3_CROB_TCC_NUL, false, 1, 0, 0);
+    TEST_ASSERT_EQUAL_size_t(DNP3_CROB_LEN, n);
+    const uint8_t latch[] = {0x03, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(latch, buf, n);
+
+    // PULSE_ON + CLOSE, count 2, on-time 100 ms (0x64), off-time 500 ms (0x1F4): control = 0x01 | (1<<6) = 0x41.
+    n = dws_dnp3_build_crob(buf, sizeof(buf), DNP3_CROB_OP_PULSE_ON, DNP3_CROB_TCC_CLOSE, false, 2, 100, 500);
+    const uint8_t pulse[] = {0x41, 0x02, 0x64, 0x00, 0x00, 0x00, 0xF4, 0x01, 0x00, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(pulse, buf, n);
+
+    // The clear bit sets 0x20; a TRIP with LATCH_OFF gives op 4 | clear | (2<<6) = 0x04 | 0x20 | 0x80 = 0xA4.
+    n = dws_dnp3_build_crob(buf, sizeof(buf), DNP3_CROB_OP_LATCH_OFF, DNP3_CROB_TCC_TRIP, true, 1, 0, 0);
+    TEST_ASSERT_EQUAL_HEX8(0xA4, buf[0]);
+
+    // Guards: an op type / trip-close code beyond their fields, a null buffer, and a too-small buffer.
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(buf, sizeof(buf), 0x10, 0, false, 1, 0, 0)); // op > 0x0F
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(buf, sizeof(buf), 1, 0x04, false, 1, 0, 0)); // tcc > 3
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(nullptr, sizeof(buf), 1, 1, false, 1, 0, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(buf, 10, 1, 1, false, 1, 0, 0)); // needs 11
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -476,5 +502,6 @@ int main()
     RUN_TEST(test_object_header_forms);
     RUN_TEST(test_object_header_rejects);
     RUN_TEST(test_build_object_header);
+    RUN_TEST(test_build_crob);
     return UNITY_END();
 }

@@ -266,6 +266,33 @@ size_t dws_dnp3_build_object_header_range(uint8_t *buf, size_t cap, uint8_t grou
  */
 size_t dws_dnp3_build_object_header_all(uint8_t *buf, size_t cap, uint8_t group, uint8_t variation);
 
+// --- Control Relay Output Block (group 12 variation 1, IEEE 1815 Table): the 11-octet control object a
+// SELECT / OPERATE carries to command a binary output (relay). ---
+
+#define DNP3_CROB_LEN 11 ///< octets in a g12v1 CROB object
+
+// Control-code operation type (the low nibble of the control-code octet).
+#define DNP3_CROB_OP_NUL 0x00u       ///< no operation
+#define DNP3_CROB_OP_PULSE_ON 0x01u  ///< energize for on-time, then de-energize
+#define DNP3_CROB_OP_PULSE_OFF 0x02u ///< de-energize for off-time, then energize
+#define DNP3_CROB_OP_LATCH_ON 0x03u  ///< energize and hold
+#define DNP3_CROB_OP_LATCH_OFF 0x04u ///< de-energize and hold
+
+// Control-code trip/close code (bits 6-7 of the control-code octet).
+#define DNP3_CROB_TCC_NUL 0x00u
+#define DNP3_CROB_TCC_CLOSE 0x01u
+#define DNP3_CROB_TCC_TRIP 0x02u
+
+/**
+ * @brief Build a Control Relay Output Block (g12v1) object: control code (@p op_type in the low nibble, the
+ *        @p clear bit, and @p tcc in bits 6-7), @p count, the on / off time in milliseconds (each a 4-octet
+ *        little-endian field), and a status octet (0 in a request). This is the control object itself; wrap it
+ *        with an object header + index prefix inside a SELECT / OPERATE request.
+ * @return DNP3_CROB_LEN (11), or 0 on a null buffer, an @p op_type > 0x0F, a @p tcc > 3, or an overflow.
+ */
+size_t dws_dnp3_build_crob(uint8_t *buf, size_t cap, uint8_t op_type, uint8_t tcc, bool clear, uint8_t count,
+                           uint32_t on_time_ms, uint32_t off_time_ms);
+
 #endif // DWS_ENABLE_DNP3
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNP3_H
