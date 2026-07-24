@@ -347,6 +347,81 @@ void test_101_parse_variable_bad_second_start_and_truncated_and_bad_stop()
     TEST_ASSERT_FALSE(dws_iec101_parse(buf, n, &f, &c));
 }
 
+// --- typed information objects ---
+void test_io_single_point()
+{
+    uint8_t buf[8];
+    size_t n = dws_iec_io_build_sp(buf, sizeof(buf), 0x001234, true, IEC_QUAL_IV);
+    TEST_ASSERT_EQUAL_size_t(4, n);
+    TEST_ASSERT_EQUAL_HEX8(0x34, buf[0]); // IOA little-endian
+    TEST_ASSERT_EQUAL_HEX8(0x12, buf[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x81, buf[3]); // SPI (0x01) | IV (0x80)
+
+    uint32_t ioa;
+    bool on;
+    uint8_t q;
+    TEST_ASSERT_TRUE(dws_iec_io_parse_sp(buf, n, &ioa, &on, &q));
+    TEST_ASSERT_EQUAL_HEX32(0x1234, ioa);
+    TEST_ASSERT_TRUE(on);
+    TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_IV, q);
+    TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_sp(buf, 3, 0, false, 0)); // too small
+    TEST_ASSERT_FALSE(dws_iec_io_parse_sp(buf, 3, &ioa, &on, &q));
+}
+
+void test_io_measured_float()
+{
+    uint8_t buf[16];
+    size_t n = dws_iec_io_build_float(buf, sizeof(buf), 100, 23.5f, IEC_QUAL_NT);
+    TEST_ASSERT_EQUAL_size_t(8, n);
+    uint32_t ioa;
+    float v;
+    uint8_t qds;
+    TEST_ASSERT_TRUE(dws_iec_io_parse_float(buf, n, &ioa, &v, &qds));
+    TEST_ASSERT_EQUAL_UINT32(100, ioa);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 23.5f, v);
+    TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_NT, qds);
+    // A negative value round-trips through the IEEE-754 bytes.
+    dws_iec_io_build_float(buf, sizeof(buf), 100, -0.125f, 0);
+    TEST_ASSERT_TRUE(dws_iec_io_parse_float(buf, 8, nullptr, &v, nullptr));
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, -0.125f, v);
+    TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_float(buf, 7, 0, 1.0f, 0)); // too small
+    TEST_ASSERT_FALSE(dws_iec_io_parse_float(buf, 7, &ioa, &v, &qds));
+}
+
+void test_io_single_command_in_asdu()
+{
+    // Assemble a C_SC_NA_1 ASDU: the 6-octet header + one single-command object (select, ON).
+    IecAsduHeader h;
+    memset(&h, 0, sizeof(h));
+    h.type_id = IEC_TYPE_C_SC_NA_1;
+    h.count = 1;
+    h.cot = 6; // activation
+    h.common_addr = 1;
+    uint8_t buf[32];
+    size_t p = dws_iec_asdu_build_header(buf, sizeof(buf), &h);
+    TEST_ASSERT_TRUE(p > 0);
+    size_t io = dws_iec_io_build_sc(buf + p, sizeof(buf) - p, 0x00000A, true, true);
+    TEST_ASSERT_EQUAL_size_t(4, io);
+    p += io;
+
+    IecAsduHeader g;
+    size_t consumed = 0;
+    TEST_ASSERT_TRUE(dws_iec_asdu_parse_header(buf, p, &g, &consumed));
+    TEST_ASSERT_EQUAL_UINT8(IEC_TYPE_C_SC_NA_1, g.type_id);
+    uint32_t ioa;
+    bool on, sel;
+    TEST_ASSERT_TRUE(dws_iec_io_parse_sc(buf + consumed, p - consumed, &ioa, &on, &sel));
+    TEST_ASSERT_EQUAL_HEX32(0x0A, ioa);
+    TEST_ASSERT_TRUE(on);
+    TEST_ASSERT_TRUE(sel);
+    // An execute (not select) with OFF clears both flags.
+    dws_iec_io_build_sc(buf, sizeof(buf), 0x0A, false, false);
+    dws_iec_io_parse_sc(buf, 4, &ioa, &on, &sel);
+    TEST_ASSERT_FALSE(on);
+    TEST_ASSERT_FALSE(sel);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -371,5 +446,8 @@ int main()
     RUN_TEST(test_101_parse_null_out);
     RUN_TEST(test_101_parse_fixed_too_short_and_consumed_null);
     RUN_TEST(test_101_parse_variable_bad_second_start_and_truncated_and_bad_stop);
+    RUN_TEST(test_io_single_point);
+    RUN_TEST(test_io_measured_float);
+    RUN_TEST(test_io_single_command_in_asdu);
     return UNITY_END();
 }

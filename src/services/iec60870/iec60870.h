@@ -14,9 +14,10 @@
  *  - The shared **ASDU** header (type id, variable structure qualifier, cause of transmission,
  *    common address) and the 3-octet Information Object Address used by both.
  *
- * The per-type-id information elements (single/double point, measured values, commands) are
- * the application's; this is the framing + ASDU-header layer, with named type-id / COT
- * constants for the common ones. Pure and host-tested. Bridge an RTU / outstation onto Wi-Fi:
+ * Typed information objects for the common type ids are provided: single-point (M_SP_NA_1), short-float
+ * measured value (M_ME_NC_1), and single command (C_SC_NA_1), each an IOA + value + quality descriptor.
+ * The remaining per-type-id elements are the application's; this is the framing + ASDU layer with named
+ * type-id / COT constants for the common ones. Pure and host-tested. Bridge an RTU / outstation onto Wi-Fi:
  * run -104 over the shipped TCP stack, or -101 over a UART through an RS-232/485 transceiver.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -135,6 +136,51 @@ size_t dws_iec_put_ioa(uint8_t *buf, size_t cap, uint32_t ioa);
 
 /** @brief Read a 3-octet Information Object Address (little-endian). */
 uint32_t dws_iec_get_ioa(const uint8_t *p);
+
+// --- typed information objects (the value(s) inside an ASDU, without a time tag) ---
+//
+// Each object is an IOA(3) followed by the type-specific value + a quality descriptor. The quality bits
+// are shared: the low bit is value-specific (SPI for a single point, OV overflow for a measured value),
+// and bits 4..7 are BL (blocked) / SB (substituted) / NT (not topical) / IV (invalid).
+
+#define IEC_QUAL_OV 0x01u ///< measured-value overflow (QDS bit 0)
+#define IEC_QUAL_BL 0x10u ///< blocked
+#define IEC_QUAL_SB 0x20u ///< substituted
+#define IEC_QUAL_NT 0x40u ///< not topical
+#define IEC_QUAL_IV 0x80u ///< invalid
+#define IEC_SCO_ON 0x01u  ///< single command: command state ON (SCS)
+#define IEC_SCO_SE 0x80u  ///< single command: select (1) vs execute (0)
+
+/**
+ * @brief Build a single-point information object (M_SP_NA_1, type 1): IOA(3) + SIQ(1).
+ * @param on       the single-point value (SPI bit).
+ * @param quality  the quality flags (IEC_QUAL_BL / _SB / _NT / _IV; the low bits are ignored).
+ * @return 4 on success, 0 on overflow / a null buffer.
+ */
+size_t dws_iec_io_build_sp(uint8_t *buf, size_t cap, uint32_t ioa, bool on, uint8_t quality);
+
+/** @brief Parse a single-point information object into its IOA, value, and quality flags. False if < 4 octets. */
+bool dws_iec_io_parse_sp(const uint8_t *buf, size_t len, uint32_t *ioa, bool *on, uint8_t *quality);
+
+/**
+ * @brief Build a short-float measured-value object (M_ME_NC_1, type 13): IOA(3) + IEEE-754 float(4, LE) + QDS(1).
+ * @return 8 on success, 0 on overflow / a null buffer.
+ */
+size_t dws_iec_io_build_float(uint8_t *buf, size_t cap, uint32_t ioa, float value, uint8_t qds);
+
+/** @brief Parse a short-float measured-value object into its IOA, value, and quality byte. False if < 8 octets. */
+bool dws_iec_io_parse_float(const uint8_t *buf, size_t len, uint32_t *ioa, float *value, uint8_t *qds);
+
+/**
+ * @brief Build a single command object (C_SC_NA_1, type 45): IOA(3) + SCO(1).
+ * @param on      the commanded state (SCS bit).
+ * @param select  true for a select, false for an execute (S/E bit).
+ * @return 4 on success, 0 on overflow / a null buffer.
+ */
+size_t dws_iec_io_build_sc(uint8_t *buf, size_t cap, uint32_t ioa, bool on, bool select);
+
+/** @brief Parse a single command object into its IOA, commanded state, and select/execute flag. False if < 4. */
+bool dws_iec_io_parse_sc(const uint8_t *buf, size_t len, uint32_t *ioa, bool *on, bool *select);
 
 // --- IEC 60870-5-101 FT1.2 link frames (over serial) ---
 

@@ -143,6 +143,84 @@ uint32_t dws_iec_get_ioa(const uint8_t *p)
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
 }
 
+// --- typed information objects ---
+
+size_t dws_iec_io_build_sp(uint8_t *buf, size_t cap, uint32_t ioa, bool on, uint8_t quality)
+{
+    if (!buf || cap < 4)
+        return 0;
+    dws_iec_put_ioa(buf, cap, ioa);
+    buf[3] = (uint8_t)((on ? 0x01u : 0u) | (quality & 0xF0u)); // SIQ: SPI (bit 0) + quality (bits 4..7)
+    return 4;
+}
+
+bool dws_iec_io_parse_sp(const uint8_t *buf, size_t len, uint32_t *ioa, bool *on, uint8_t *quality)
+{
+    if (!buf || len < 4)
+        return false;
+    if (ioa)
+        *ioa = dws_iec_get_ioa(buf);
+    if (on)
+        *on = (buf[3] & 0x01u) != 0;
+    if (quality)
+        *quality = (uint8_t)(buf[3] & 0xF0u);
+    return true;
+}
+
+size_t dws_iec_io_build_float(uint8_t *buf, size_t cap, uint32_t ioa, float value, uint8_t qds)
+{
+    if (!buf || cap < 8)
+        return 0;
+    dws_iec_put_ioa(buf, cap, ioa);
+    uint32_t bits;
+    memcpy(&bits, &value, 4); // the IEEE-754 bit pattern, written little-endian (endian-safe)
+    buf[3] = (uint8_t)bits;
+    buf[4] = (uint8_t)(bits >> 8);
+    buf[5] = (uint8_t)(bits >> 16);
+    buf[6] = (uint8_t)(bits >> 24);
+    buf[7] = qds;
+    return 8;
+}
+
+bool dws_iec_io_parse_float(const uint8_t *buf, size_t len, uint32_t *ioa, float *value, uint8_t *qds)
+{
+    if (!buf || len < 8)
+        return false;
+    if (ioa)
+        *ioa = dws_iec_get_ioa(buf);
+    if (value)
+    {
+        uint32_t bits =
+            (uint32_t)buf[3] | ((uint32_t)buf[4] << 8) | ((uint32_t)buf[5] << 16) | ((uint32_t)buf[6] << 24);
+        memcpy(value, &bits, 4);
+    }
+    if (qds)
+        *qds = buf[7];
+    return true;
+}
+
+size_t dws_iec_io_build_sc(uint8_t *buf, size_t cap, uint32_t ioa, bool on, bool select)
+{
+    if (!buf || cap < 4)
+        return 0;
+    dws_iec_put_ioa(buf, cap, ioa);
+    buf[3] = (uint8_t)((on ? IEC_SCO_ON : 0u) | (select ? IEC_SCO_SE : 0u)); // SCO: SCS (bit 0) + S/E (bit 7)
+    return 4;
+}
+
+bool dws_iec_io_parse_sc(const uint8_t *buf, size_t len, uint32_t *ioa, bool *on, bool *select)
+{
+    if (!buf || len < 4)
+        return false;
+    if (ioa)
+        *ioa = dws_iec_get_ioa(buf);
+    if (on)
+        *on = (buf[3] & IEC_SCO_ON) != 0;
+    if (select)
+        *select = (buf[3] & IEC_SCO_SE) != 0;
+    return true;
+}
+
 // --- -101 FT1.2 link frames ---
 
 static uint8_t sum8(const uint8_t *p, size_t n)
