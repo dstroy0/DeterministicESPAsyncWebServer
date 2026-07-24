@@ -69,6 +69,13 @@ size_t dws_cip_build_get_attr_single(uint8_t *buf, size_t cap, uint16_t class_id
                                      uint16_t attribute_id);
 
 /**
+ * @brief Build a Get_Attributes_All request for class/instance: service 0x01 over a class/instance EPATH with
+ *        no attribute segment and no service data - reads every attribute of the object at once (e.g. the
+ *        whole Identity object). @return the request length, or 0 on overflow.
+ */
+size_t dws_cip_build_get_attr_all(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id);
+
+/**
  * @brief Build a Set_Attribute_Single request for class/instance/attribute carrying @p value_len octets of
  *        attribute data (the value to write).
  * @return the request length, or 0 on a null value with a nonzero length, or an overflow.

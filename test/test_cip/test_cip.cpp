@@ -50,6 +50,23 @@ void test_get_attr_single()
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
 }
 
+void test_get_attr_all()
+{
+    uint8_t buf[16];
+    size_t n = dws_cip_build_get_attr_all(buf, sizeof(buf), 0x01, 0x01);
+    const uint8_t expect[] = {
+        0x01,                  // Get_Attributes_All
+        0x02,                  // path size = 2 words
+        0x20, 0x01, 0x24, 0x01 // EPATH class 1 / instance 1 (no attribute segment)
+    };
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+
+    // A too-small buffer fails closed.
+    uint8_t small[4];
+    TEST_ASSERT_EQUAL_size_t(0, dws_cip_build_get_attr_all(small, sizeof(small), 1, 1)); // needs 6
+}
+
 void test_set_attr_single()
 {
     uint8_t buf[16];
@@ -162,6 +179,7 @@ int main()
     RUN_TEST(test_epath_8bit);
     RUN_TEST(test_epath_16bit);
     RUN_TEST(test_get_attr_single);
+    RUN_TEST(test_get_attr_all);
     RUN_TEST(test_set_attr_single);
     RUN_TEST(test_build_request_with_data);
     RUN_TEST(test_parse_response_ok);
