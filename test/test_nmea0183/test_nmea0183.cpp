@@ -256,6 +256,51 @@ void test_decode_rmc()
     TEST_ASSERT_TRUE(r2.lon_deg < 0.0); // W -> negative
 }
 
+void test_decode_gsv()
+{
+    // Classic GSV: 3 sentences, this is #1, 11 satellites in view, 4 satellite records.
+    const char *gsv = "$GPGSV,3,1,11,03,03,111,00,04,15,270,00,06,01,010,00,13,06,292,00*74\r\n";
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(gsv, strlen(gsv), &m));
+    DwsNmeaGsv g;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_gsv(&m, &g));
+    TEST_ASSERT_EQUAL_UINT8(3, g.total_msgs);
+    TEST_ASSERT_EQUAL_UINT8(1, g.msg_num);
+    TEST_ASSERT_EQUAL_UINT8(11, g.sats_in_view);
+    TEST_ASSERT_EQUAL_UINT8(4, g.sat_count);
+    TEST_ASSERT_EQUAL_UINT8(3, g.sats[0].prn);
+    TEST_ASSERT_EQUAL_INT16(3, g.sats[0].elev_deg);
+    TEST_ASSERT_EQUAL_INT16(111, g.sats[0].azim_deg);
+    TEST_ASSERT_TRUE(g.sats[0].snr_valid);
+    TEST_ASSERT_EQUAL_UINT8(0, g.sats[0].snr_db);
+    TEST_ASSERT_EQUAL_UINT8(13, g.sats[3].prn);
+    TEST_ASSERT_EQUAL_INT16(292, g.sats[3].azim_deg);
+}
+
+void test_decode_gsv_blank_snr_and_partial()
+{
+    char buf[96];
+    // A single-satellite GSV whose SNR field is blank (in view, not tracked).
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "GPGSV,1,1,01,03,03,111,");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaGsv g;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_gsv(&m, &g));
+    TEST_ASSERT_EQUAL_UINT8(1, g.sat_count);
+    TEST_ASSERT_EQUAL_UINT8(3, g.sats[0].prn);
+    TEST_ASSERT_FALSE(g.sats[0].snr_valid); // blank SNR
+
+    // A last sentence carrying only three satellites decodes sat_count 3.
+    n = dws_nmea0183_build(buf, sizeof(buf), "GPGSV,3,3,11,22,42,067,42,24,14,311,43,32,29,059,36");
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_gsv(&m, &g));
+    TEST_ASSERT_EQUAL_UINT8(3, g.sat_count);
+    TEST_ASSERT_EQUAL_UINT8(32, g.sats[2].prn);
+    TEST_ASSERT_TRUE(g.sats[2].snr_valid);
+    TEST_ASSERT_EQUAL_UINT8(36, g.sats[2].snr_db);
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -288,6 +333,8 @@ int main()
     RUN_TEST(test_nmea0183_field_helpers_more_guards);
     RUN_TEST(test_decode_gga);
     RUN_TEST(test_decode_rmc);
+    RUN_TEST(test_decode_gsv);
+    RUN_TEST(test_decode_gsv_blank_snr_and_partial);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }

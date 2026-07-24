@@ -105,5 +105,32 @@ bool dws_nmea0183_parse_gga(const Nmea0183 *m, DwsNmeaGga *out);
  */
 bool dws_nmea0183_parse_rmc(const Nmea0183 *m, DwsNmeaRmc *out);
 
+/** @brief One satellite record from a GSV sentence. */
+struct DwsNmeaGsvSat
+{
+    uint8_t prn;      ///< satellite PRN / id
+    int16_t elev_deg; ///< elevation (degrees, 0..90)
+    int16_t azim_deg; ///< azimuth (degrees true, 0..359)
+    uint8_t snr_db;   ///< signal-to-noise ratio (dB-Hz), valid only when @ref snr_valid
+    bool snr_valid;   ///< false when the SNR field is blank (the satellite is not being tracked)
+};
+
+/** @brief Decoded GSV (satellites in view). One sentence carries up to four satellite records; a full sky
+ *  view spans @ref total_msgs sentences. */
+struct DwsNmeaGsv
+{
+    uint8_t total_msgs;   ///< total GSV sentences in this cycle
+    uint8_t msg_num;      ///< this sentence's number (1-based)
+    uint8_t sats_in_view; ///< total satellites in view across the cycle
+    uint8_t sat_count;    ///< satellite records present in THIS sentence (0..4)
+    DwsNmeaGsvSat sats[4];
+};
+
+/**
+ * @brief Decode a parsed GSV sentence into @p out. @return true iff @p m is a GSV sentence with at least
+ *        the 3-field header; the per-satellite records present in this sentence are filled (0..4).
+ */
+bool dws_nmea0183_parse_gsv(const Nmea0183 *m, DwsNmeaGsv *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

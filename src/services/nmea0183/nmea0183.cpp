@@ -235,4 +235,40 @@ bool dws_nmea0183_parse_rmc(const Nmea0183 *m, DwsNmeaRmc *out)
     return true;
 }
 
+bool dws_nmea0183_parse_gsv(const Nmea0183 *m, DwsNmeaGsv *out)
+{
+    if (!m || !out || strcmp(m->type, "GSV") != 0 || m->field_count < 4) // header: totalMsgs, msgNum, satsInView
+        return false;
+    memset(out, 0, sizeof(*out));
+    long v = 0;
+    if (dws_nmea0183_field_int(m, 1, &v))
+        out->total_msgs = (uint8_t)v;
+    if (dws_nmea0183_field_int(m, 2, &v))
+        out->msg_num = (uint8_t)v;
+    if (dws_nmea0183_field_int(m, 3, &v))
+        out->sats_in_view = (uint8_t)v;
+
+    // Satellite records begin at field 4, four fields each (PRN, elevation, azimuth, SNR).
+    uint8_t records = (uint8_t)((m->field_count - 4) / 4);
+    if (records > 4)
+        records = 4;
+    out->sat_count = records;
+    for (uint8_t i = 0; i < records; i++)
+    {
+        uint8_t base = (uint8_t)(4 + i * 4);
+        DwsNmeaGsvSat *s = &out->sats[i];
+        if (dws_nmea0183_field_int(m, base, &v))
+            s->prn = (uint8_t)v;
+        if (dws_nmea0183_field_int(m, (uint8_t)(base + 1), &v))
+            s->elev_deg = (int16_t)v;
+        if (dws_nmea0183_field_int(m, (uint8_t)(base + 2), &v))
+            s->azim_deg = (int16_t)v;
+        // SNR is blank for a satellite in view but not tracked.
+        s->snr_valid = dws_nmea0183_field_int(m, (uint8_t)(base + 3), &v);
+        if (s->snr_valid)
+            s->snr_db = (uint8_t)v;
+    }
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183
