@@ -200,6 +200,32 @@ size_t dws_apdu_build_i_am(uint8_t *buf, size_t cap, uint32_t device_instance, u
     return p;
 }
 
+size_t dws_apdu_build_read_property(uint8_t *buf, size_t cap, uint8_t invoke_id, uint8_t max_resp, uint16_t object_type,
+                                    uint32_t object_instance, uint32_t property_id)
+{
+    if (!buf || object_instance > BACNET_MAX_INSTANCE || object_type > 0x3FFu) // object type is 10 bits
+        return 0;
+    uint8_t tmp[16]; // 4 header + 5 object-id (tag + 4) + 5 property (tag + <= 4) = 14 worst case
+    size_t p = 0;
+    tmp[p++] = (uint8_t)(BACNET_PDU_CONFIRMED_REQUEST << 4); // 0x00, unsegmented
+    tmp[p++] = max_resp;                                     // max segments accepted / max APDU length accepted
+    tmp[p++] = invoke_id;
+    tmp[p++] = BACNET_SVC_CONF_READ_PROPERTY; // service choice 12
+    // Object identifier: context tag 0, a 4-octet (object-type << 22) | instance.
+    tmp[p++] = 0x0C; // context tag 0, length 4
+    uint32_t oid = ((uint32_t)object_type << 22) | object_instance;
+    tmp[p++] = (uint8_t)(oid >> 24);
+    tmp[p++] = (uint8_t)(oid >> 16);
+    tmp[p++] = (uint8_t)(oid >> 8);
+    tmp[p++] = (uint8_t)oid;
+    // Property identifier: context tag 1 (enumerated), minimal-length.
+    p += bacnet_put_tagged_uint(tmp + p, 1, property_id, true);
+    if (cap < p)
+        return 0;
+    memcpy(buf, tmp, p);
+    return p;
+}
+
 bool dws_apdu_parse(const uint8_t *apdu, size_t len, BacnetApdu *out)
 {
     if (!apdu || !out || len < 1)

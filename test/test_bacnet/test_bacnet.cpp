@@ -362,6 +362,40 @@ void test_apdu_build_i_am()
     TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(buf, 8, 260, 1476, 3, 42)); // does not fit
 }
 
+void test_apdu_build_read_property()
+{
+    uint8_t buf[32];
+    BacnetApdu a;
+
+    // ReadProperty: invoke 1, max-resp 0x05, Analog Input 5, present-value (85).
+    size_t n =
+        dws_apdu_build_read_property(buf, sizeof(buf), 1, 0x05, BACNET_OBJ_ANALOG_INPUT, 5, BACNET_PROP_PRESENT_VALUE);
+    const uint8_t expect[] = {
+        0x00, 0x05, 0x01, 0x0C,       // confirmed request, max-resp 0x05, invoke 1, service choice 12
+        0x0C, 0x00, 0x00, 0x00, 0x05, // object id: context tag 0, (0<<22)|5
+        0x19, 0x55                    // property id: context tag 1, present-value (85 = 0x55)
+    };
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+    // It round-trips through the parser as a confirmed ReadProperty request.
+    TEST_ASSERT_TRUE(dws_apdu_parse(buf, n, &a));
+    TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_CONFIRMED_REQUEST, a.pdu_type);
+    TEST_ASSERT_EQUAL_UINT8(1, a.invoke_id);
+    TEST_ASSERT_EQUAL_UINT8(BACNET_SVC_CONF_READ_PROPERTY, a.service_choice);
+
+    // A Device object (type 8, instance 260 = oid 0x02000104) reading object-name (77 = 0x4D).
+    n = dws_apdu_build_read_property(buf, sizeof(buf), 2, 0x05, BACNET_OBJ_DEVICE, 260, BACNET_PROP_OBJECT_NAME);
+    const uint8_t expect2[] = {0x00, 0x05, 0x02, 0x0C, 0x0C, 0x02, 0x00, 0x01, 0x04, 0x19, 0x4D};
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect2), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect2, buf, n);
+
+    // Guards: an out-of-range instance, an out-of-range object type, a null buffer, and a too-small buffer.
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_read_property(buf, sizeof(buf), 1, 5, 0, 0x400000, 85)); // instance
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_read_property(buf, sizeof(buf), 1, 5, 0x400, 1, 85));    // obj type
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_read_property(nullptr, sizeof(buf), 1, 5, 0, 1, 85));
+    TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_read_property(buf, 8, 0, 5, 0, 5, 85)); // does not fit
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -381,5 +415,6 @@ int main()
     RUN_TEST(test_apdu_parse);
     RUN_TEST(test_apdu_build_who_is);
     RUN_TEST(test_apdu_build_i_am);
+    RUN_TEST(test_apdu_build_read_property);
     return UNITY_END();
 }

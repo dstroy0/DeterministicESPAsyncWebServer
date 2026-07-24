@@ -114,8 +114,23 @@ bool dws_npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out);
 #define BACNET_SVC_UN_I_AM 0   ///< I-Am
 #define BACNET_SVC_UN_WHO_IS 8 ///< Who-Is
 
+// Confirmed-request service choices (ASHRAE 135 §15).
+#define BACNET_SVC_CONF_READ_PROPERTY 12 ///< ReadProperty
+
 #define BACNET_MAX_INSTANCE 0x3FFFFFu ///< maximum BACnet object / device instance (22-bit)
-#define BACNET_OBJ_DEVICE 8           ///< object type: Device (used in the I-Am object identifier)
+
+// Object types (the 10-bit high field of a BACnetObjectIdentifier).
+#define BACNET_OBJ_ANALOG_INPUT 0  ///< object type: Analog Input
+#define BACNET_OBJ_ANALOG_OUTPUT 1 ///< object type: Analog Output
+#define BACNET_OBJ_ANALOG_VALUE 2  ///< object type: Analog Value
+#define BACNET_OBJ_BINARY_INPUT 3  ///< object type: Binary Input
+#define BACNET_OBJ_BINARY_OUTPUT 4 ///< object type: Binary Output
+#define BACNET_OBJ_BINARY_VALUE 5  ///< object type: Binary Value
+#define BACNET_OBJ_DEVICE 8        ///< object type: Device (used in the I-Am object identifier)
+
+// Common property identifiers (ASHRAE 135 §12).
+#define BACNET_PROP_OBJECT_NAME 77   ///< object-name property
+#define BACNET_PROP_PRESENT_VALUE 85 ///< present-value property
 
 /** @brief A decoded APDU header (from dws_apdu_parse). Service data points INTO the source buffer. */
 struct BacnetApdu
@@ -154,6 +169,18 @@ size_t dws_apdu_build_who_is(uint8_t *buf, size_t cap, uint32_t low_limit, uint3
  */
 size_t dws_apdu_build_i_am(uint8_t *buf, size_t cap, uint32_t device_instance, uint32_t max_apdu, uint8_t segmentation,
                            uint16_t vendor_id);
+
+/**
+ * @brief Build a ReadProperty confirmed-request APDU (service choice 12) - the BACnet workhorse a client sends to
+ *        read one property of one object. Frames the confirmed-request header (unsegmented; @p invoke_id and the
+ *        @p max_resp octet - the max-segments-accepted / max-APDU-length-accepted field the peer echoes limits
+ *        against), then the object identifier as context tag 0 ((@p object_type << 22) | @p object_instance, a
+ *        4-octet field) and the property identifier as context tag 1 (an enumerated value, minimal-length). The
+ *        optional property-array-index (context tag 2) is not emitted - it applies only to array-typed properties.
+ * @return the APDU length, or 0 on overflow, @p object_instance above BACNET_MAX_INSTANCE, or @p object_type > 0x3FF.
+ */
+size_t dws_apdu_build_read_property(uint8_t *buf, size_t cap, uint8_t invoke_id, uint8_t max_resp, uint16_t object_type,
+                                    uint32_t object_instance, uint32_t property_id);
 
 #endif // DWS_ENABLE_BACNET
 
