@@ -558,7 +558,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4960 test cases** across **286 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4963 test cases** across **286 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -32612,7 +32612,7 @@ A thorough directory of all **4960 test cases** across **286 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_pentest (75 tests)</b></summary>
+<summary><b>test_pentest (78 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_http_oversized_path</b> &mdash; <i>Http oversized path</i></summary>
@@ -32951,6 +32951,21 @@ A thorough directory of all **4960 test cases** across **286 suites**. Expand a 
       * <code>Assert true (t-&gt;ecount &lt;= DWS_HPACK_MAX_ENTRIES)</code>
       * <code>Assert true (t-&gt;rused &lt;= DWS_HPACK_TABLE_BYTES)</code>
       * <code>Assert true (name_len + value_len &lt;= sizeof(g_qpack_scratch))</code>
+      * <code>Assert true (ret &lt;= cap)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xAA, buf[i]); // never wrote past the cap</code>
+      * <code>Assert true (terminated)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xAA, (uint8_t)out[i]); // never wrote past the cap (pass or fail)</code>
+      * <code>Assert true (term)</code>
+      * <code>Assert true (o &lt; ecap)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8('\\0', esc[o]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xAA, (uint8_t)esc[i]);</code>
+      * <code>Assert true (len &lt;= dcap)</code>
+      * <code>Assert true (len &gt;= prev)</code>
+      * <code>Assert true (len &lt;= dcap)</code>
+      * <code>Assert true (len &lt;= dcap)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xAA, (uint8_t)doc[i]);</code>
+      * <code>Assert true (m &lt;= WebDavMethod::DAV_M_UNSUPPORTED)</code>
+      * <code>Assert true (d == 0 || d == 1 || d == DAV_DEPTH_INFINITY || d == -7)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33437,6 +33452,38 @@ A thorough directory of all **4960 test cases** across **286 suites**. Expand a 
     <summary><b>test_dds_rtps_fuzz</b> &mdash; <i>Dds rtps fuzz</i></summary>
 
     * **Objective**: Dds rtps fuzz
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_proppatch_fuzz</b> &mdash; <i>Vary the cap across the fail-closed (tiny) and comfortable ranges.</i></summary>
+
+    * **Objective**: Vary the cap across the fail-closed (tiny) and comfortable ranges.
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_dest_path_fuzz</b> &mdash; <i>Webdav dest path fuzz</i></summary>
+
+    * **Objective**: Webdav dest path fuzz
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xAA, (uint8_t)out[i]); // never wrote past the cap (pass or fail)</code>
+      * <code>Assert true (term)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_builder_fuzz</b> &mdash; <i>xml-escape: a random source into a capped destination is always NUL-terminated</i></summary>
+
+    * **Objective**: xml-escape: a random source into a capped destination is always NUL-terminated
+    * **Assertions**:
+      * <code>Assert true (o &lt; ecap)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8('\\0', esc[o]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xAA, (uint8_t)esc[i]);</code>
+      * <code>Assert true (len &lt;= dcap)</code>
+      * <code>Assert true (len &gt;= prev)</code>
+      * <code>Assert true (len &lt;= dcap)</code>
+      * <code>Assert true (len &lt;= dcap)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xAA, (uint8_t)doc[i]);</code>
+      * <code>Assert true (m &lt;= WebDavMethod::DAV_M_UNSUPPORTED)</code>
+      * <code>Assert true (d == 0 || d == 1 || d == DAV_DEPTH_INFINITY || d == -7)</code>
   </details>
 
   <details style="margin-left: 20px;">
