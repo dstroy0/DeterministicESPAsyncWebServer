@@ -263,6 +263,48 @@ void test_fastpacket_roundtrip_short_last_frame()
     TEST_ASSERT_EQUAL_MEMORY(msg, rx.buf, 19);
 }
 
+// --- typed PGN decoders ---
+void test_decode_position_rapid()
+{
+    // lat 37.3749, lon -122.0841 (1e-7 deg/bit), little-endian.
+    const uint8_t pos[8] = {0x08, 0xf5, 0x46, 0x16, 0xd8, 0x71, 0x3b, 0xb7};
+    N2kPositionRapid p;
+    TEST_ASSERT_TRUE(dws_n2k_decode_position_rapid(pos, sizeof(pos), &p));
+    TEST_ASSERT_TRUE(p.valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 37.3749f, (float)p.lat_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, -122.0841f, (float)p.lon_deg);
+
+    // 0x7FFFFFFF in either coordinate is not-available.
+    const uint8_t na[8] = {0xFF, 0xFF, 0xFF, 0x7F, 0xd8, 0x71, 0x3b, 0xb7};
+    TEST_ASSERT_TRUE(dws_n2k_decode_position_rapid(na, sizeof(na), &p));
+    TEST_ASSERT_FALSE(p.valid);
+    // Short payload + nulls are rejected.
+    TEST_ASSERT_FALSE(dws_n2k_decode_position_rapid(pos, 7, &p));
+    TEST_ASSERT_FALSE(dws_n2k_decode_position_rapid(nullptr, 8, &p));
+}
+
+void test_decode_wind_data()
+{
+    // sid 0x2A, speed 5.00 m/s (raw 500), angle 1.5708 rad (raw 15708), reference apparent.
+    const uint8_t wind[8] = {0x2a, 0xf4, 0x01, 0x5c, 0x3d, 0x02, 0xff, 0xff};
+    N2kWindData w;
+    TEST_ASSERT_TRUE(dws_n2k_decode_wind_data(wind, sizeof(wind), &w));
+    TEST_ASSERT_EQUAL_UINT8(0x2A, w.sid);
+    TEST_ASSERT_TRUE(w.speed_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 5.0f, w.speed_mps);
+    TEST_ASSERT_TRUE(w.angle_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 1.5708f, w.angle_rad);
+    TEST_ASSERT_EQUAL_UINT8(N2K_WIND_REF_APPARENT, w.reference);
+
+    // A 0xFFFF speed is not-available; the angle stays valid.
+    const uint8_t na[8] = {0x2a, 0xff, 0xff, 0x5c, 0x3d, 0x00, 0xff, 0xff};
+    TEST_ASSERT_TRUE(dws_n2k_decode_wind_data(na, sizeof(na), &w));
+    TEST_ASSERT_FALSE(w.speed_valid);
+    TEST_ASSERT_TRUE(w.angle_valid);
+    TEST_ASSERT_EQUAL_UINT8(N2K_WIND_REF_TRUE_NORTH, w.reference);
+    TEST_ASSERT_FALSE(dws_n2k_decode_wind_data(wind, 5, &w)); // too short
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -280,5 +322,7 @@ int main()
     RUN_TEST(test_fastpacket_continuation_wrong_source_ignored);
     RUN_TEST(test_fastpacket_continuation_wrong_pgn_ignored);
     RUN_TEST(test_fastpacket_roundtrip_short_last_frame);
+    RUN_TEST(test_decode_position_rapid);
+    RUN_TEST(test_decode_wind_data);
     return UNITY_END();
 }

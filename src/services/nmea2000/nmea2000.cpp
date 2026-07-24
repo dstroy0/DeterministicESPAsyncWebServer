@@ -121,4 +121,45 @@ bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t
     return dws_j1939_build_message(out, priority, pgn, sa, da, data, len);
 }
 
+// --- typed PGN decoders ---
+
+namespace
+{
+uint16_t rd_u16le(const uint8_t *p)
+{
+    return (uint16_t)(p[0] | ((uint16_t)p[1] << 8));
+}
+int32_t rd_i32le(const uint8_t *p)
+{
+    return (int32_t)((uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24));
+}
+} // namespace
+
+bool dws_n2k_decode_position_rapid(const uint8_t *payload, size_t len, N2kPositionRapid *out)
+{
+    if (!payload || !out || len < 8)
+        return false;
+    int32_t lat = rd_i32le(payload); // 1e-7 deg/bit
+    int32_t lon = rd_i32le(payload + 4);
+    out->valid = (lat != (int32_t)0x7FFFFFFF && lon != (int32_t)0x7FFFFFFF); // 0x7FFFFFFF = not available
+    out->lat_deg = (double)lat * 1e-7;
+    out->lon_deg = (double)lon * 1e-7;
+    return true;
+}
+
+bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *out)
+{
+    if (!payload || !out || len < 6)
+        return false;
+    out->sid = payload[0];
+    uint16_t speed = rd_u16le(payload + 1); // 0.01 m/s per bit
+    uint16_t angle = rd_u16le(payload + 3); // 0.0001 rad per bit
+    out->speed_valid = (speed != 0xFFFFu);
+    out->speed_mps = (float)speed * 0.01f;
+    out->angle_valid = (angle != 0xFFFFu);
+    out->angle_rad = (float)angle * 0.0001f;
+    out->reference = (uint8_t)(payload[5] & 0x07u);
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA2000

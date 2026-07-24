@@ -81,5 +81,53 @@ N2kFpResult dws_n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f);
 bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
                           uint8_t len);
 
+// --- typed decoders for common single-frame PGNs ---
+//
+// These decode a raw PGN payload (a single frame's data[] or a reassembled Fast Packet buffer) into
+// engineering units. The caller matches the PGN off the CAN id first, then calls the matching decoder.
+// NMEA 2000 marks a field "not available" with an all-ones raw (0xFFFF for a U2, 0x7FFFFFFF for the
+// signed lat/lon), which clears the field's validity flag.
+
+#define N2K_PGN_POSITION_RAPID 129025u ///< Position, Rapid Update: latitude + longitude
+#define N2K_PGN_WIND_DATA 130306u      ///< Wind Data: speed + angle + reference
+
+// Wind reference (PGN 130306 byte 5, low 3 bits).
+#define N2K_WIND_REF_TRUE_NORTH 0 ///< true, referenced to North
+#define N2K_WIND_REF_MAGNETIC 1   ///< magnetic, referenced to North
+#define N2K_WIND_REF_APPARENT 2   ///< apparent
+#define N2K_WIND_REF_TRUE_BOAT 3  ///< true, referenced to the vessel (boat)
+#define N2K_WIND_REF_TRUE_WATER 4 ///< true, referenced to the water
+
+/** @brief Decoded Position Rapid Update (PGN 129025). */
+struct N2kPositionRapid
+{
+    bool valid;     ///< false if either coordinate is not-available
+    double lat_deg; ///< latitude in decimal degrees (1e-7 deg/bit)
+    double lon_deg; ///< longitude in decimal degrees
+};
+
+/** @brief Decoded Wind Data (PGN 130306). */
+struct N2kWindData
+{
+    uint8_t sid;       ///< sequence id
+    bool speed_valid;  ///< false if the wind speed is not-available
+    float speed_mps;   ///< wind speed (m/s, 0.01 m/s per bit)
+    bool angle_valid;  ///< false if the wind angle is not-available
+    float angle_rad;   ///< wind angle (radians, 0.0001 rad per bit)
+    uint8_t reference; ///< wind reference (@ref N2K_WIND_REF_TRUE_NORTH etc.)
+};
+
+/**
+ * @brief Decode a Position Rapid Update (PGN 129025) payload into @p out.
+ * @return true iff @p len is at least 8 octets; false otherwise.
+ */
+bool dws_n2k_decode_position_rapid(const uint8_t *payload, size_t len, N2kPositionRapid *out);
+
+/**
+ * @brief Decode a Wind Data (PGN 130306) payload into @p out.
+ * @return true iff @p len is at least 6 octets; false otherwise.
+ */
+bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *out);
+
 #endif // DWS_ENABLE_NMEA2000
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA2000_H
