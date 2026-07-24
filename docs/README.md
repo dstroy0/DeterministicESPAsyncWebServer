@@ -903,6 +903,7 @@ src/
 │   │   └── edge_mesh.h
 │   ├── enip/  (enip.h, enip.cpp)
 │   ├── enocean/  (enocean.h, enocean.cpp)
+│   ├── esp/  (esp.h, esp.cpp)
 │   ├── espnow/  (espnow.h, espnow.cpp)
 │   ├── euromap77/  (euromap77.h, euromap77.cpp)
 │   ├── exc_decoder/
@@ -1230,7 +1231,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `PTP` | `L7-Application/Ptp` | 728,321 | 45,020 |
 | `SNMP+SNMP_TRAP` | `L7-Application/SnmpTrap` | 728,421 | 44,988 |
 | `STATSD` | `L7-Application/StatsdMetrics` | 728,453 | 45,148 |
-| `IKEV2` | `L5-Session/IKEv2` | 728,757 | 43,948 |
+| `IKEV2` | `L5-Session/IKEv2` | 728,801 | 43,948 |
 | `COAP+COAP_OBSERVE` | `L7-Application/CoapObserve` | 729,669 | 46,172 |
 | `ESPNOW` | `L7-Application/EspNow` | 731,525 | 43,580 |
 | `DNC` | `L7-Application/EthernetDnc` | 733,861 | 61,124 |
