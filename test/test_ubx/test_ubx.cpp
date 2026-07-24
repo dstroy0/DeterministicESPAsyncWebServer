@@ -377,6 +377,74 @@ void test_nav_pvt_rejects()
     TEST_ASSERT_FALSE(dws_ubx_parse_nav_pvt(&m, nullptr));
 }
 
+// A UBX-NAV-SAT frame (2 satellites: a used GPS SV and an unused GLONASS SV) from a Python reference.
+static const uint8_t navsat_frame[40] = {0xb5, 0x62, 0x01, 0x35, 0x20, 0x00, 0x15, 0xcd, 0x5b, 0x07,
+                                         0x01, 0x02, 0x00, 0x00, 0x00, 0x05, 0x2a, 0x2d, 0xb4, 0x00,
+                                         0xfd, 0xff, 0x0c, 0x00, 0x00, 0x00, 0x06, 0x0c, 0x1e, 0xa6,
+                                         0x0e, 0x01, 0x0f, 0x00, 0x07, 0x00, 0x00, 0x00, 0xb0, 0xe1};
+
+void test_nav_sat_decode()
+{
+    DwsUbx m;
+    TEST_ASSERT_TRUE(dws_ubx_parse(navsat_frame, sizeof(navsat_frame), &m));
+    DwsUbxNavSatHdr hdr;
+    TEST_ASSERT_TRUE(dws_ubx_parse_nav_sat(&m, &hdr));
+    TEST_ASSERT_EQUAL_UINT32(123456789u, hdr.itow_ms);
+    TEST_ASSERT_EQUAL_UINT8(1, hdr.version);
+    TEST_ASSERT_EQUAL_UINT8(2, hdr.num_svs);
+
+    DwsUbxSat s0;
+    TEST_ASSERT_TRUE(dws_ubx_nav_sat_get(&m, 0, &s0));
+    TEST_ASSERT_EQUAL_UINT8(0, s0.gnss_id); // GPS
+    TEST_ASSERT_EQUAL_UINT8(5, s0.sv_id);
+    TEST_ASSERT_EQUAL_UINT8(42, s0.cno_dbhz);
+    TEST_ASSERT_EQUAL_INT8(45, s0.elev_deg);
+    TEST_ASSERT_EQUAL_INT16(180, s0.azim_deg);
+    TEST_ASSERT_EQUAL_INT16(-3, s0.pr_res_01m);
+    TEST_ASSERT_TRUE(s0.flags & DWS_UBX_SAT_USED); // used in the solution
+    TEST_ASSERT_EQUAL_UINT32(4, s0.flags & DWS_UBX_SAT_QUALITY_MASK);
+
+    DwsUbxSat s1;
+    TEST_ASSERT_TRUE(dws_ubx_nav_sat_get(&m, 1, &s1));
+    TEST_ASSERT_EQUAL_UINT8(6, s1.gnss_id); // GLONASS
+    TEST_ASSERT_EQUAL_UINT8(12, s1.sv_id);
+    TEST_ASSERT_EQUAL_INT8(-90, s1.elev_deg);
+    TEST_ASSERT_EQUAL_INT16(270, s1.azim_deg);
+    TEST_ASSERT_EQUAL_INT16(15, s1.pr_res_01m);
+    TEST_ASSERT_FALSE(s1.flags & DWS_UBX_SAT_USED); // not used
+    TEST_ASSERT_EQUAL_UINT32(7, s1.flags & DWS_UBX_SAT_QUALITY_MASK);
+
+    DwsUbxSat s2;
+    TEST_ASSERT_FALSE(dws_ubx_nav_sat_get(&m, 2, &s2)); // index out of range
+}
+
+void test_nav_sat_rejects()
+{
+    DwsUbxNavSatHdr hdr;
+    DwsUbxSat sat;
+    // Wrong class/id (a NAV-PVT frame is not NAV-SAT).
+    DwsUbx pvt;
+    dws_ubx_parse(navpvt_frame, sizeof(navpvt_frame), &pvt);
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_sat(&pvt, &hdr));
+
+    // A NAV-SAT header that claims 2 satellites but whose payload only holds one block is rejected.
+    uint8_t pl[DWS_UBX_NAV_SAT_HDR_LEN + DWS_UBX_NAV_SAT_ENTRY_LEN] = {0};
+    pl[5] = 2; // numSvs = 2, but only room for 1
+    uint8_t buf[64];
+    size_t n = dws_ubx_build(buf, sizeof(buf), DWS_UBX_CLASS_NAV, DWS_UBX_NAV_SAT, pl, sizeof(pl));
+    DwsUbx sm;
+    TEST_ASSERT_TRUE(dws_ubx_parse(buf, n, &sm));
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_sat(&sm, &hdr));
+    TEST_ASSERT_FALSE(dws_ubx_nav_sat_get(&sm, 0, &sat));
+
+    // Null guards.
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_sat(nullptr, &hdr));
+    DwsUbx m;
+    dws_ubx_parse(navsat_frame, sizeof(navsat_frame), &m);
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_sat(&m, nullptr));
+    TEST_ASSERT_FALSE(dws_ubx_nav_sat_get(&m, 0, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -396,5 +464,7 @@ int main()
     RUN_TEST(test_stream_null_safe);
     RUN_TEST(test_nav_pvt_decode);
     RUN_TEST(test_nav_pvt_rejects);
+    RUN_TEST(test_nav_sat_decode);
+    RUN_TEST(test_nav_sat_rejects);
     return UNITY_END();
 }

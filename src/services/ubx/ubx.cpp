@@ -97,6 +97,11 @@ uint32_t dws_ubx_u32(const uint8_t *p, size_t off)
     return (uint32_t)p[off] | ((uint32_t)p[off + 1] << 8) | ((uint32_t)p[off + 2] << 16) | ((uint32_t)p[off + 3] << 24);
 }
 
+int16_t dws_ubx_i16(const uint8_t *p, size_t off)
+{
+    return (int16_t)dws_ubx_u16(p, off);
+}
+
 int32_t dws_ubx_i32(const uint8_t *p, size_t off)
 {
     return (int32_t)dws_ubx_u32(p, off);
@@ -136,6 +141,48 @@ bool dws_ubx_parse_nav_pvt(const DwsUbx *m, DwsUbxNavPvt *out)
     out->s_acc_mm_s = dws_ubx_u32(p, 68);
     out->head_acc_1e5 = dws_ubx_u32(p, 72);
     out->pdop_1e2 = dws_ubx_u16(p, 76);
+    return true;
+}
+
+// True iff m is a NAV-SAT frame whose declared length holds the fixed header + numSvs blocks.
+static bool ubx_nav_sat_ok(const DwsUbx *m, uint8_t *num_svs_out)
+{
+    if (!m || !m->payload || m->cls != DWS_UBX_CLASS_NAV || m->id != DWS_UBX_NAV_SAT)
+        return false;
+    if (m->len < DWS_UBX_NAV_SAT_HDR_LEN)
+        return false;
+    uint8_t num = m->payload[5]; // numSvs
+    if ((size_t)m->len < (size_t)DWS_UBX_NAV_SAT_HDR_LEN + (size_t)num * DWS_UBX_NAV_SAT_ENTRY_LEN)
+        return false;
+    if (num_svs_out)
+        *num_svs_out = num;
+    return true;
+}
+
+bool dws_ubx_parse_nav_sat(const DwsUbx *m, DwsUbxNavSatHdr *out)
+{
+    uint8_t num = 0;
+    if (!out || !ubx_nav_sat_ok(m, &num))
+        return false;
+    out->itow_ms = dws_ubx_u32(m->payload, 0);
+    out->version = m->payload[4];
+    out->num_svs = num;
+    return true;
+}
+
+bool dws_ubx_nav_sat_get(const DwsUbx *m, uint8_t index, DwsUbxSat *out)
+{
+    uint8_t num = 0;
+    if (!out || !ubx_nav_sat_ok(m, &num) || index >= num)
+        return false;
+    const uint8_t *p = m->payload + DWS_UBX_NAV_SAT_HDR_LEN + (size_t)index * DWS_UBX_NAV_SAT_ENTRY_LEN;
+    out->gnss_id = p[0];
+    out->sv_id = p[1];
+    out->cno_dbhz = p[2];
+    out->elev_deg = (int8_t)p[3];
+    out->azim_deg = dws_ubx_i16(p, 4);
+    out->pr_res_01m = dws_ubx_i16(p, 6);
+    out->flags = dws_ubx_u32(p, 8);
     return true;
 }
 

@@ -1477,7 +1477,8 @@
     "natt",
     "plaintexts",
     "reasm",
-    "pdelay"
+    "pdelay",
+    "pseudorange"
   ],
   "ignorePaths": [
     "node_modules/**",

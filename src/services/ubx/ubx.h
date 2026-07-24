@@ -75,6 +75,7 @@ int dws_ubx_ack(const DwsUbx *m, uint8_t *acked_cls, uint8_t *acked_id);
 /** @brief Little-endian readers for a payload at byte offset @p off (caller bounds-checks @p off). */
 uint16_t dws_ubx_u16(const uint8_t *p, size_t off);
 uint32_t dws_ubx_u32(const uint8_t *p, size_t off);
+int16_t dws_ubx_i16(const uint8_t *p, size_t off);
 int32_t dws_ubx_i32(const uint8_t *p, size_t off);
 
 // -- NAV-PVT: the u-blox all-in-one navigation solution (position / velocity / time) --
@@ -133,6 +134,47 @@ struct DwsUbxNavPvt
  *         octets; false (and @p out untouched) otherwise.
  */
 bool dws_ubx_parse_nav_pvt(const DwsUbx *m, DwsUbxNavPvt *out);
+
+// -- NAV-SAT: per-satellite signal + usage info (variable length) --
+
+#define DWS_UBX_NAV_SAT 0x35           ///< NAV-SAT message id (class NAV)
+#define DWS_UBX_NAV_SAT_HDR_LEN 8      ///< NAV-SAT fixed header (iTOW + version + numSvs + reserved)
+#define DWS_UBX_NAV_SAT_ENTRY_LEN 12   ///< NAV-SAT per-satellite block length
+#define DWS_UBX_SAT_QUALITY_MASK 0x07u ///< flags bits 0..2: signal quality indicator
+#define DWS_UBX_SAT_USED 0x08u         ///< flags bit 3: this satellite is used in the navigation solution
+
+/** @brief NAV-SAT fixed header. */
+struct DwsUbxNavSatHdr
+{
+    uint32_t itow_ms; ///< GPS time of week (ms)
+    uint8_t version;  ///< message version (1)
+    uint8_t num_svs;  ///< number of satellite blocks that follow
+};
+
+/** @brief One NAV-SAT satellite block. */
+struct DwsUbxSat
+{
+    uint8_t gnss_id;    ///< GNSS identifier (0 GPS, 2 Galileo, 3 BeiDou, 5 QZSS, 6 GLONASS, ...)
+    uint8_t sv_id;      ///< satellite identifier within the GNSS
+    uint8_t cno_dbhz;   ///< carrier-to-noise density ratio (dB-Hz)
+    int8_t elev_deg;    ///< elevation (deg, -90..90; out of range if unknown)
+    int16_t azim_deg;   ///< azimuth (deg, 0..360)
+    int16_t pr_res_01m; ///< pseudorange residual (0.1 m)
+    uint32_t flags;     ///< bitfield: quality (@ref DWS_UBX_SAT_QUALITY_MASK), used (@ref DWS_UBX_SAT_USED), ...
+};
+
+/**
+ * @brief Decode a UBX-NAV-SAT frame's fixed header (per the u-blox interface description).
+ * @return true iff @p m is a NAV-SAT frame (class 0x01 / id 0x35) whose declared length holds the header
+ *         plus its @c num_svs blocks; false otherwise. Walk the blocks with @ref dws_ubx_nav_sat_get.
+ */
+bool dws_ubx_parse_nav_sat(const DwsUbx *m, DwsUbxNavSatHdr *out);
+
+/**
+ * @brief Decode satellite block @p index (0-based) from a NAV-SAT frame into @p out.
+ * @return true on success, false if @p index is out of range or @p m is not a valid NAV-SAT frame.
+ */
+bool dws_ubx_nav_sat_get(const DwsUbx *m, uint8_t index, DwsUbxSat *out);
 
 /** @brief Result of feeding one byte to the streaming demultiplexer. */
 enum DwsUbxFeed
