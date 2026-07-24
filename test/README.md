@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5007 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5008 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **5007 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (65 tests)</b></summary>
+<summary><b>test_ikev2 (66 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20819,6 +20819,26 @@ A thorough directory of all **5007 test cases** across **287 suites**. Expand a 
       * <code>Assert equal memory (ini.sa.keys.sk_pi, resp.sa.keys.sk_pi, 32)</code>
       * <code>Assert equal memory (ini.sa.keys.sk_pr, resp.sa.keys.sk_pr, 32)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_responder_on_sa_init(&r2, rsp, rspn, g_resp_spi, kat_bob_priv, kat_bob_pub,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_full_bidirectional_handshake</b> &mdash; <i>IKE_SA_INIT: initiator -> responder -> initiator.</i></summary>
+
+    * **Objective**: IKE_SA_INIT: initiator -> responder -> initiator.
+    * **Assertions**:
+      * <code>Assert true (rspn &gt; 0)</code>
+      * <code>Assert true (dws_ike_initiator_on_sa_init(&ini, rsp, rspn))</code>
+      * <code>Assert true (authin &gt; 0)</code>
+      * <code>Assert true (authrn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)resp.state);</code>
+      * <code>Assert true (dws_ike_initiator_on_auth_psk(&ini, authr, authrn, g_psk, sizeof(g_psk)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)ini.state);</code>
+      * <code>Assert equal memory (ini.sa.keys.sk_ei, resp.sa.keys.sk_ei, 36)</code>
+      * <code>Assert equal memory (ini.sa.keys.sk_pr, resp.sa.keys.sk_pr, 32)</code>
+      * <code>Assert true (dws_ike_initiator_on_sa_init(&ini2, rsp, rspn2))</code>
+      * <code>Assert true (badn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_responder_on_auth_psk(&resp2, bad, badn, g_psk, sizeof(g_psk),</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_FAILED, (uint8_t)resp2.state);</code>
   </details>
 
 </details>
