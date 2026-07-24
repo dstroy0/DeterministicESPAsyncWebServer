@@ -605,7 +605,7 @@
     "example": "L7-Application/Ptp",
     "flags": "-DDWS_ENABLE_PTP=1",
     "board": "esp32dev",
-    "flash_bytes": 728321,
+    "flash_bytes": 728325,
     "ram_bytes": 45020
   },
   "RADIO_POWER+RADIO_WIFI_PS": {
