@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.37.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.37.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`4c25b04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c25b04ccf71f35b8d5238870599205bd34ae5b5))
+
+### Changes
+
+- Bump version: 7.36.0 → 7.37.0 ([`f0b3aab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0b3aab447cce9c8697b190e186d13f0b70fca33))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`8546d15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8546d15d66dd1713e6dd07aaca4c16f94249bda5))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`54bb1a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/54bb1a702380c4dc4c7629243dbb89855fd37b51))
+
+### Features
+
+- pre-shared-key AUTH computation (RFC 7296 s2.15) ([`7acb011`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7acb0117508efae3e18f83fe181c9122e95645e7))
+
+</details>
+
 ## [7.36.0] - 2026-07-24
 
 <details>
