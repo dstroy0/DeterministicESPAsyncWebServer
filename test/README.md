@@ -558,7 +558,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4936 test cases** across **284 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4960 test cases** across **286 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -35869,6 +35869,174 @@ A thorough directory of all **4936 test cases** across **284 suites**. Expand a 
 </details>
 
 <details>
+<summary><b>test_ptp (10 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_timestamp_roundtrip</b> &mdash; <i>48-bit seconds are big-endian in the first 6 octets.</i></summary>
+
+    * **Objective**: 48-bit seconds are big-endian in the first 6 octets.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x11, b[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x66, b[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(ts.seconds, got.seconds);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(ts.nanoseconds, got.nanoseconds);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_timestamp_ns_conversion</b> &mdash; <i>negative clamps to zero (on-wire timestamps are unsigned).</i></summary>
+
+    * **Objective**: negative clamps to zero (on-wire timestamps are unsigned).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT64(5250000000LL, dws_ptp_ts_to_ns(&ts));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(5u, back.seconds);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(250000000u, back.nanoseconds);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0u, back.seconds);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0u, back.nanoseconds);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_header_roundtrip</b> &mdash; <i>messageLength = header + body.</i></summary>
+
+    * **Objective**: messageLength = header + body.
+    * **Assertions**:
+      * <code>Assert equal uint (DWS_PTP_HEADER_LEN, dws_ptp_build_header(buf, sizeof(buf), &h, 10))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(44, buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x10, buf[0]);</code>
+      * <code>Assert true (dws_ptp_parse_header(buf, sizeof(buf), &g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_SYNC, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x1, g.transport_specific);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, g.version);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(44, g.message_length);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, g.domain);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0200, g.flags);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x0001020304050607LL, g.correction);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(CID, g.clock_identity, 8);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, g.port_number);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x1234, g.sequence_id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-3, g.log_interval);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_header_rejects</b> &mdash; <i>Header rejects</i></summary>
+
+    * **Objective**: Header rejects
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_ptp_build_header(nullptr, sizeof(buf), &h, 0))</code>
+      * <code>Assert equal uint (0, dws_ptp_build_header(buf, 33, &h, 0))</code>
+      * <code>Assert false (dws_ptp_parse_header(buf, 33, &h))</code>
+      * <code>Assert false (dws_ptp_parse_header(nullptr, 34, &h))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sync_delay_req_follow_up</b> &mdash; <i>version left 0 -> build must default it to 2.</i></summary>
+
+    * **Objective**: version left 0 -> build must default it to 2.
+    * **Assertions**:
+      * <code>Assert equal uint (DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN, n)</code>
+      * <code>Assert true (dws_ptp_parse_timestamp_msg(buf, n, &g, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_SYNC, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, g.version); // defaulted</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[32]); // control Sync = 0</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1000u, got.seconds);</code>
+      * <code>Assert true (dws_ptp_parse_timestamp_msg(buf, n, &g, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_DELAY_REQ, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[32]); // control Delay_Req = 1</code>
+      * <code>Assert true (dws_ptp_parse_timestamp_msg(buf, n, &g, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_FOLLOW_UP, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[32]); // control Follow_Up = 2</code>
+      * <code>Assert true (dws_ptp_parse_timestamp_msg(buf, n, &g, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, g.version);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_timestamp_msg_rejects</b> &mdash; <i>bad args to build</i></summary>
+
+    * **Objective**: bad args to build
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_ptp_build_sync(nullptr, sizeof(buf), &h, &ts))</code>
+      * <code>Assert equal uint (0, dws_ptp_build_sync(buf, 10, &h, &ts))</code>
+      * <code>Assert false (dws_ptp_parse_timestamp_msg(buf, n, &h, &got))</code>
+      * <code>Assert false (dws_ptp_parse_timestamp_msg(buf, DWS_PTP_HEADER_LEN + 5, &h, &got))</code>
+      * <code>Assert false (dws_ptp_parse_timestamp_msg(buf, n, &h, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_delay_resp</b> &mdash; <i>rejects: bad args, wrong type, short, null</i></summary>
+
+    * **Objective**: rejects: bad args, wrong type, short, null
+    * **Assertions**:
+      * <code>Assert equal uint (DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN + 10, n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x03, buf[32]); // control Delay_Resp = 3</code>
+      * <code>Assert true (dws_ptp_parse_delay_resp(buf, n, &g, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_DELAY_RESP, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(2000u, r.receive.seconds);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(900u, r.receive.nanoseconds);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(reqid, r.req_clock_id, 8);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(7, r.req_port);</code>
+      * <code>Assert equal uint (0, dws_ptp_build_delay_resp(buf, 20, &h, &t4, reqid, 7))</code>
+      * <code>Assert equal uint (0, dws_ptp_build_delay_resp(buf, sizeof(buf), &h, &t4, nullptr, 7))</code>
+      * <code>Assert false (dws_ptp_parse_delay_resp(sync, sn, &g, &r))</code>
+      * <code>Assert false (dws_ptp_parse_delay_resp(buf, DWS_PTP_HEADER_LEN + 12, &g, &r))</code>
+      * <code>Assert false (dws_ptp_parse_delay_resp(buf, n, &g, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_announce</b> &mdash; <i>rejects: wrong type, short, null</i></summary>
+
+    * **Objective**: rejects: wrong type, short, null
+    * **Assertions**:
+      * <code>Assert true (dws_ptp_parse_announce(buf, DWS_PTP_HEADER_LEN + 30, &g, &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_ANNOUNCE, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0x0000AABBCCDDULL, a.origin.seconds);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(37, a.utc_offset);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(128, a.gm_priority1);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, a.gm_clock_class);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x21, a.gm_clock_accuracy);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x4321, a.gm_variance);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(128, a.gm_priority2);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(gmid, a.gm_identity, 8);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(5, a.steps_removed);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x20, a.time_source);</code>
+      * <code>Assert false (dws_ptp_parse_announce(sync, sn, &g, &a))</code>
+      * <code>Assert false (dws_ptp_parse_announce(buf, DWS_PTP_HEADER_LEN + 20, &g, &a))</code>
+      * <code>Assert false (dws_ptp_parse_announce(buf, DWS_PTP_HEADER_LEN + 30, &g, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_announce</b> &mdash; <i>Build announce</i></summary>
+
+    * **Objective**: Build announce
+    * **Assertions**:
+      * <code>Assert equal uint (DWS_PTP_HEADER_LEN + 30, n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x05, buf[32]); // control Announce = 5</code>
+      * <code>Assert true (dws_ptp_parse_announce(buf, n, &g, &b))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_ANNOUNCE, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(a.origin.seconds, b.origin.seconds);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(37, b.utc_offset);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, b.gm_clock_class);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x4321, b.gm_variance);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(gmid, b.gm_identity, 8);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(5, b.steps_removed);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x20, b.time_source);</code>
+      * <code>Assert equal uint (0, dws_ptp_build_announce(buf, 20, &h, &a))</code>
+      * <code>Assert equal uint (0, dws_ptp_build_announce(buf, sizeof(buf), &h, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_compute_symmetric</b> &mdash; <i>Symmetric path delay d = 50 ns, true offset o = 25 ns:</i></summary>
+
+    * **Objective**: Symmetric path delay d = 50 ns, true offset o = 25 ns:
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT64(25, s.offset_ns);</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(50, s.delay_ns);</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-10, s.offset_ns);</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(50, s.delay_ns);</code>
+  </details>
+
+</details>
+
+<details>
 <summary><b>test_qpack (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
@@ -52790,6 +52958,170 @@ A thorough directory of all **4936 test cases** across **284 suites**. Expand a 
       * <code>Assert equal int (ERR_OK, listener_accept_cb((void *)(uintptr_t)0, &fake, ERR_OK))</code>
       * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert equal ptr (&fake, conn_pool[0].pcb)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ubx (14 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
+
+    * **Objective**: Checksum known vector
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0E, a);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x34, b);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_poll_mon_ver</b> &mdash; <i>Build poll mon ver</i></summary>
+
+    * **Objective**: Build poll mon ver
+    * **Assertions**:
+      * <code>Assert equal uint (sizeof(want), n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, buf, sizeof(want));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_poll_cfg_prt</b> &mdash; <i>Build poll cfg prt</i></summary>
+
+    * **Objective**: Build poll cfg prt
+    * **Assertions**:
+      * <code>Assert equal uint (sizeof(want), n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, buf, sizeof(want));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_with_payload</b> &mdash; <i>UBX-CFG-MSG set-rate: enable UBX-NAV-PVT (01 07) at rate 1.</i></summary>
+
+    * **Objective**: UBX-CFG-MSG set-rate: enable UBX-NAV-PVT (01 07) at rate 1.
+    * **Assertions**:
+      * <code>Assert equal uint (8u + sizeof(pay), n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xB5, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x62, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x06, buf[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)sizeof(pay), buf[4]); // len LE low</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[5]);                 // len LE high</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(a, buf[n - 2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(b, buf[n - 1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_rejects_bad_args</b> &mdash; <i>Build rejects bad args</i></summary>
+
+    * **Objective**: Build rejects bad args
+    * **Assertions**:
+      * <code>Assert equal uint (0, dws_ubx_build(nullptr, sizeof(buf), 0, 0, nullptr, 0))</code>
+      * <code>Assert equal uint (0, dws_ubx_build(buf, 4, 0, 0, nullptr, 0))</code>
+      * <code>Assert equal uint (0, dws_ubx_build(buf, sizeof(buf), 0, 0, nullptr, 1))</code>
+      * <code>Assert equal uint (0, dws_ubx_build(buf, sizeof(buf), 0, 0, p, 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_roundtrip</b> &mdash; <i>Parse roundtrip</i></summary>
+
+    * **Objective**: Parse roundtrip
+    * **Assertions**:
+      * <code>Assert true (dws_ubx_parse(buf, n, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, m.cls);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x07, m.id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(pay), m.len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(pay, m.payload, sizeof(pay));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_rejects</b> &mdash; <i>Declared length longer than the buffer.</i></summary>
+
+    * **Objective**: Declared length longer than the buffer.
+    * **Assertions**:
+      * <code>Assert false (dws_ubx_parse(buf, 7, &m))</code>
+      * <code>Assert false (dws_ubx_parse(nullptr, n, &m))</code>
+      * <code>Assert false (dws_ubx_parse(bad_sync, 8, &m))</code>
+      * <code>Assert false (dws_ubx_parse(bad_ck, 8, &m))</code>
+      * <code>Assert false (dws_ubx_parse(long_len, 8, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ack</b> &mdash; <i>ACK-ACK (05 01)</i></summary>
+
+    * **Objective**: ACK-ACK (05 01)
+    * **Assertions**:
+      * <code>Assert true (dws_ubx_parse(buf, n, &m))</code>
+      * <code>Assert equal int (1, dws_ubx_ack(&m, &ac, &ai))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x06, ac);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, ai);</code>
+      * <code>Assert true (dws_ubx_parse(buf, n, &m))</code>
+      * <code>Assert equal int (0, dws_ubx_ack(&m, nullptr, nullptr))</code>
+      * <code>Assert true (dws_ubx_parse(buf, n, &m))</code>
+      * <code>Assert equal int (-1, dws_ubx_ack(&m, nullptr, nullptr))</code>
+      * <code>Assert true (dws_ubx_parse(buf, n, &m))</code>
+      * <code>Assert equal int (-1, dws_ubx_ack(&m, nullptr, nullptr))</code>
+      * <code>Assert equal int (-1, dws_ubx_ack(nullptr, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_le_readers</b> &mdash; <i>Le readers</i></summary>
+
+    * **Objective**: Le readers
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x5678, dws_ubx_u16(p, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x12345678u, dws_ubx_u32(p, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_ubx_i32(neg, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_demux_mixed</b> &mdash; <i>ASCII NMEA, then a UBX frame, then more ASCII.</i></summary>
+
+    * **Objective**: ASCII NMEA, then a UBX frame, then more ASCII.
+    * **Assertions**:
+      * <code>Assert equal int (1, frames)</code>
+      * <code>Assert equal int (0, ov)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x05, last.cls);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, last.id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, last.len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(acked, last.payload, 2);</code>
+      * <code>Assert equal string (want, pass)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_bad_checksum_resyncs</b> &mdash; <i>After the bad frame the demux must still accept a good one.</i></summary>
+
+    * **Objective**: After the bad frame the demux must still accept a good one.
+    * **Assertions**:
+      * <code>Assert equal int (0, frames)</code>
+      * <code>Assert equal int (0, ov)</code>
+      * <code>Assert equal int (1, frames)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_overflow_skips</b> &mdash; <i>Hand-craft a frame declaring a payload length above DWS_UBX_MAX_PAYLOAD.</i></summary>
+
+    * **Objective**: Hand-craft a frame declaring a payload length above DWS_UBX_MAX_PAYLOAD.
+    * **Assertions**:
+      * <code>Assert equal int (0, frames)</code>
+      * <code>Assert equal int (1, ov)</code>
+      * <code>Assert equal int (1, frames)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_false_and_double_sync</b> &mdash; <i>0xB5 followed by a non-0x62 => the stray byte passes through; no frame.</i></summary>
+
+    * **Objective**: 0xB5 followed by a non-0x62 => the stray byte passes through; no frame.
+    * **Assertions**:
+      * <code>Assert equal int (0, frames)</code>
+      * <code>Assert equal string ("A", pass)</code>
+      * <code>Assert equal int (1, frames)</code>
+      * <code>Assert equal int (0, (int)pn)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_null_safe</b> &mdash; <i>Stream null safe</i></summary>
+
+    * **Objective**: Stream null safe
+    * **Assertions**:
+      * <code>Assert equal int (DWS_UBX_NONE, dws_ubx_stream_feed(nullptr, 0x00, nullptr, nullptr))</code>
   </details>
 
 </details>

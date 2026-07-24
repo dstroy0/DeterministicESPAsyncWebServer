@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 150 runnable examples under `examples/`, grouped by
+The library ships 152 runnable examples under `examples/`, grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -79,6 +79,7 @@ External chip drivers over I2C / SPI / UART - sensors, ADC / PWM / current monit
 [Sht3x](../examples/Drivers/Sht3x/README.md) ·
 [SigfoxUplink](../examples/Drivers/SigfoxUplink/README.md) ·
 [ThreadGateway](../examples/Drivers/ThreadGateway/README.md) ·
+[UbloxGnss](../examples/Drivers/UbloxGnss/README.md) ·
 [ZigbeeGateway](../examples/Drivers/ZigbeeGateway/README.md) ·
 [ZWaveGateway](../examples/Drivers/ZWaveGateway/README.md)
 
@@ -192,6 +193,7 @@ Routing, protocols, services, and clients:
 [PowerGovernor](../examples/L7-Application/PowerGovernor/README.md) ·
 [PrometheusMetrics](../examples/L7-Application/PrometheusMetrics/README.md) ·
 [Provisioning](../examples/L7-Application/Provisioning/README.md) ·
+[Ptp](../examples/L7-Application/Ptp/README.md) ·
 [RadioPower](../examples/L7-Application/RadioPower/README.md) ·
 [Range](../examples/L7-Application/Range/README.md) ·
 [RegexRoutes](../examples/L7-Application/RegexRoutes/README.md) ·
