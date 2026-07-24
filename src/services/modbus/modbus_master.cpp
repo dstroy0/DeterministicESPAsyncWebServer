@@ -72,4 +72,94 @@ int dws_modbus_parse_response(const uint8_t *adu, size_t len, uint16_t *regs_out
     return copied;
 }
 
+size_t dws_modbus_build_write_single(uint16_t txid, uint8_t unit, uint16_t addr, uint16_t value, uint8_t *out,
+                                     size_t cap)
+{
+    if (!out || cap < 12)
+        return 0;
+
+    // MBAP header
+    out[0] = (uint8_t)(txid >> 8);
+    out[1] = (uint8_t)(txid & 0xFF);
+    out[2] = 0; // protocol id (Modbus) = 0
+    out[3] = 0;
+    out[4] = 0; // length = unit(1) + PDU(5) = 6
+    out[5] = 6;
+    out[6] = unit;
+    // PDU (FC 0x06: address + value)
+    out[7] = 0x06;
+    out[8] = (uint8_t)(addr >> 8);
+    out[9] = (uint8_t)(addr & 0xFF);
+    out[10] = (uint8_t)(value >> 8);
+    out[11] = (uint8_t)(value & 0xFF);
+    return 12;
+}
+
+size_t dws_modbus_build_write_multiple(uint16_t txid, uint8_t unit, uint16_t start, const uint16_t *values,
+                                       uint16_t count, uint8_t *out, size_t cap)
+{
+    if (!out || !values)
+        return 0;
+    if (count < 1 || count > 123) // FC 0x10 caps at 123 registers (PDU fits 253 bytes)
+        return 0;
+
+    uint8_t byte_count = (uint8_t)(count * 2);
+    size_t pdu_len = 6u + (size_t)byte_count; // fc(1) + start(2) + count(2) + byte_count(1) + data
+    size_t total = 7u + pdu_len;              // MBAP(7) + PDU
+    if (cap < total)
+        return 0;
+
+    // MBAP header
+    uint16_t mbap_len = (uint16_t)(1u + pdu_len); // unit + PDU
+    out[0] = (uint8_t)(txid >> 8);
+    out[1] = (uint8_t)(txid & 0xFF);
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = (uint8_t)(mbap_len >> 8);
+    out[5] = (uint8_t)(mbap_len & 0xFF);
+    out[6] = unit;
+    // PDU (FC 0x10: start + count + byte count + data)
+    out[7] = 0x10;
+    out[8] = (uint8_t)(start >> 8);
+    out[9] = (uint8_t)(start & 0xFF);
+    out[10] = (uint8_t)(count >> 8);
+    out[11] = (uint8_t)(count & 0xFF);
+    out[12] = byte_count;
+    for (uint16_t i = 0; i < count; i++)
+    {
+        out[13 + i * 2] = (uint8_t)(values[i] >> 8);
+        out[13 + i * 2 + 1] = (uint8_t)(values[i] & 0xFF);
+    }
+    return total;
+}
+
+int dws_modbus_parse_write_response(const uint8_t *adu, size_t len, uint16_t *addr_out, uint8_t *exception_out)
+{
+    if (exception_out)
+        *exception_out = 0;
+    if (addr_out)
+        *addr_out = 0;
+    if (!adu || len < 9) // MBAP(7) + FC(1) + at least one more byte
+        return -1;
+    if (adu[2] != 0 || adu[3] != 0) // protocol id must be 0
+        return -1;
+
+    uint8_t fc = adu[7];
+    if (fc & 0x80) // exception response: FC | 0x80, then the exception code
+    {
+        if (exception_out)
+            *exception_out = adu[8];
+        return 0;
+    }
+    if (fc != 0x06 && fc != 0x10)
+        return -1;
+    if (len < 12) // both replies are MBAP(7) + FC(1) + addr(2) + value-or-count(2) = 12 bytes
+        return -1;
+
+    if (addr_out)
+        *addr_out = (uint16_t)((adu[8] << 8) | adu[9]);
+    uint16_t tail = (uint16_t)((adu[10] << 8) | adu[11]); // value (0x06) or quantity (0x10)
+    return (fc == 0x06) ? 1 : (int)tail;
+}
+
 #endif // DWS_ENABLE_MODBUS_MASTER

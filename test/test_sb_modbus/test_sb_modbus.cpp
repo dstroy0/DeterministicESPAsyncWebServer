@@ -114,18 +114,67 @@ void test_transport_error_propagates()
     TEST_ASSERT_EQUAL_INT(-42, dws_southbound_read_block("plc", 0, blk, 2));
 }
 
-// write / write_block are unbound (the codec is read-only): the framework reports SB_ERR_UNSUPPORTED.
-void test_write_unsupported()
+// A holding-register driver writes a single point (FC 0x06) through the facade; the slave stores it and
+// a read-back returns the written value.
+void test_write_single_round_trip()
 {
     dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1);
     dws_sb_modbus_driver(&g_drv, "plc", &g_ctx);
     dws_southbound_register(&g_drv);
 
-    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_UNSUPPORTED, dws_southbound_write("plc", 0, 1));
-    int32_t in[2] = {1, 2};
-    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_UNSUPPORTED, dws_southbound_write_block("plc", 0, in, 2));
+    TEST_ASSERT_EQUAL_INT(Sb::SB_OK, dws_southbound_write("plc", 8, 0x4242));
+    TEST_ASSERT_EQUAL_HEX16(0x4242, dws_modbus_get_holding_reg(8)); // stored on the slave
+    int32_t v = 0;
+    TEST_ASSERT_EQUAL_INT(Sb::SB_OK, dws_southbound_read("plc", 8, &v)); // and reads back through the facade
+    TEST_ASSERT_EQUAL_INT32(0x4242, v);
+}
+
+// The atomic register matrix write: a contiguous span written in one request (FC 0x10).
+void test_write_block_round_trip()
+{
+    dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "plc", &g_ctx);
+    dws_southbound_register(&g_drv);
+
+    int32_t in[3] = {0x0A0A, 0x0B0B, 0x0C0C};
+    TEST_ASSERT_EQUAL_INT(3, dws_southbound_write_block("plc", 40, in, 3)); // count written
+    int32_t back[3] = {0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(3, dws_southbound_read_block("plc", 40, back, 3));
+    TEST_ASSERT_EQUAL_INT32(0x0A0A, back[0]);
+    TEST_ASSERT_EQUAL_INT32(0x0B0B, back[1]);
+    TEST_ASSERT_EQUAL_INT32(0x0C0C, back[2]);
+}
+
+// An input-register driver is read-only (a Modbus input register cannot be written): write / write_block
+// are unbound and the framework reports SB_ERR_UNSUPPORTED.
+void test_input_registers_read_only()
+{
+    dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_INPUT_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "sensor", &g_ctx);
+    dws_southbound_register(&g_drv);
+
     TEST_ASSERT_NULL(g_drv.write);
     TEST_ASSERT_NULL(g_drv.write_block);
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_UNSUPPORTED, dws_southbound_write("sensor", 0, 1));
+    int32_t in[2] = {1, 2};
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_UNSUPPORTED, dws_southbound_write_block("sensor", 0, in, 2));
+}
+
+// Write bounds: a value outside a 16-bit register, and a block wider than one FC 0x10 request (123).
+void test_write_bounds()
+{
+    dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr, ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1);
+    dws_sb_modbus_driver(&g_drv, "plc", &g_ctx);
+    dws_southbound_register(&g_drv);
+
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_southbound_write("plc", 0, 0x10000)); // > 16-bit value
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_southbound_write("plc", 0, -1));      // negative value
+    int32_t big[124];
+    for (int i = 0; i < 124; i++)
+        big[i] = 1;
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_southbound_write_block("plc", 0, big, 124)); // > 123 regs/request
+    int32_t bad[2] = {0, 0x10000};
+    TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_southbound_write_block("plc", 0, bad, 2)); // out-of-range value
 }
 
 // init rejects a null seam and a function code that is not a read (only 0x03 / 0x04 are valid).
@@ -179,7 +228,10 @@ int main()
     RUN_TEST(test_read_input_registers);
     RUN_TEST(test_modbus_exception_surfaces);
     RUN_TEST(test_transport_error_propagates);
-    RUN_TEST(test_write_unsupported);
+    RUN_TEST(test_write_single_round_trip);
+    RUN_TEST(test_write_block_round_trip);
+    RUN_TEST(test_input_registers_read_only);
+    RUN_TEST(test_write_bounds);
     RUN_TEST(test_init_rejects_bad_args);
     RUN_TEST(test_read_bounds);
     RUN_TEST(test_txid_increments);

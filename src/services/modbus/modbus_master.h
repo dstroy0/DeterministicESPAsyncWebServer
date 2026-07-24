@@ -56,5 +56,48 @@ size_t dws_modbus_build_read(uint8_t fc, uint16_t txid, uint8_t unit, uint16_t s
 int dws_modbus_parse_response(const uint8_t *adu, size_t len, uint16_t *regs_out, size_t max_regs,
                               uint8_t *exception_out);
 
+/**
+ * @brief Build a Write Single Register request ADU (FC 0x06).
+ *
+ * @param txid   transaction id echoed by the slave.
+ * @param unit   unit / slave id.
+ * @param addr   register address.
+ * @param value  16-bit value to write.
+ * @param out    destination buffer.
+ * @param cap    destination capacity (>= 12).
+ * @return bytes written (12), or 0 on a null / too-small buffer.
+ */
+size_t dws_modbus_build_write_single(uint16_t txid, uint8_t unit, uint16_t addr, uint16_t value, uint8_t *out,
+                                     size_t cap);
+
+/**
+ * @brief Build a Write Multiple Registers request ADU (FC 0x10).
+ *
+ * @param txid    transaction id echoed by the slave.
+ * @param unit    unit / slave id.
+ * @param start   first register address.
+ * @param values  the @p count register values.
+ * @param count   number of registers (1..123).
+ * @param out     destination buffer.
+ * @param cap     destination capacity (>= 13 + 2*count).
+ * @return bytes written (13 + 2*count), or 0 on a bad argument / too-small buffer.
+ */
+size_t dws_modbus_build_write_multiple(uint16_t txid, uint8_t unit, uint16_t start, const uint16_t *values,
+                                       uint16_t count, uint8_t *out, size_t cap);
+
+/**
+ * @brief Parse a write-response ADU (FC 0x06 or 0x10).
+ *
+ * A normal reply echoes the address and the written value (0x06) or the start address and the register
+ * count (0x10).
+ * @param adu       response bytes (MBAP + PDU).
+ * @param len       response length.
+ * @param addr_out  set to the echoed address / start (nullable).
+ * @param exception_out  set to the Modbus exception code if the slave returned one (then 0 is returned).
+ * @return number of registers written (1 for 0x06, the count for 0x10), 0 on an exception, or -1 on a
+ *         malformed / short frame.
+ */
+int dws_modbus_parse_write_response(const uint8_t *adu, size_t len, uint16_t *addr_out, uint8_t *exception_out);
+
 #endif // DWS_ENABLE_MODBUS_MASTER
 #endif // DETERMINISTICESPASYNCWEBSERVER_MODBUS_MASTER_H

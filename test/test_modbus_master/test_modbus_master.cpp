@@ -168,6 +168,99 @@ void test_parse_accepts_input_regs_function()
     TEST_ASSERT_EQUAL_HEX16(0x1234, regs[0]);
 }
 
+// --- Write requests (FC 0x06 / 0x10) ---
+
+void test_build_write_single_bytes()
+{
+    uint8_t adu[16];
+    size_t n = dws_modbus_build_write_single(0x0102, 1, 0x0013, 0xABCD, adu, sizeof(adu));
+    TEST_ASSERT_EQUAL_size_t(12, n);
+    const uint8_t expect[12] = {0x01, 0x02, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x13, 0xAB, 0xCD};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expect, adu, 12);
+}
+
+void test_round_trip_write_single()
+{
+    uint8_t req[16];
+    size_t rn = dws_modbus_build_write_single(3, 1, 7, 0x5A5A, req, sizeof(req));
+    uint8_t resp[MODBUS_ADU_MAX];
+    size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp)); // the slave applies + echoes
+    TEST_ASSERT_TRUE(pn > 0);
+
+    uint16_t addr = 0;
+    uint8_t ex = 0xFF;
+    int w = dws_modbus_parse_write_response(resp, pn, &addr, &ex);
+    TEST_ASSERT_EQUAL_INT(1, w);
+    TEST_ASSERT_EQUAL_UINT8(0, ex);
+    TEST_ASSERT_EQUAL_HEX16(7, addr);
+    TEST_ASSERT_EQUAL_HEX16(0x5A5A, dws_modbus_get_holding_reg(7)); // the slave actually stored it
+}
+
+void test_build_write_multiple_bytes()
+{
+    uint8_t adu[32];
+    const uint16_t vals[2] = {0x1111, 0x2222};
+    size_t n = dws_modbus_build_write_multiple(0x0102, 1, 0x0000, vals, 2, adu, sizeof(adu));
+    TEST_ASSERT_EQUAL_size_t(17, n); // 13 + 2*2
+    // MBAP length = unit(1) + PDU(6 + 4) = 11; byte count = 4.
+    const uint8_t expect[17] = {0x01, 0x02, 0x00, 0x00, 0x00, 0x0B, 0x01, 0x10, 0x00,
+                                0x00, 0x00, 0x02, 0x04, 0x11, 0x11, 0x22, 0x22};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expect, adu, 17);
+}
+
+void test_round_trip_write_multiple()
+{
+    const uint16_t vals[3] = {0xDEAD, 0xBEEF, 0xF00D};
+    uint8_t req[32];
+    size_t rn = dws_modbus_build_write_multiple(5, 1, 30, vals, 3, req, sizeof(req));
+    uint8_t resp[MODBUS_ADU_MAX];
+    size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(pn > 0);
+
+    uint16_t start = 0;
+    uint8_t ex = 0xFF;
+    int w = dws_modbus_parse_write_response(resp, pn, &start, &ex);
+    TEST_ASSERT_EQUAL_INT(3, w); // three registers written
+    TEST_ASSERT_EQUAL_UINT8(0, ex);
+    TEST_ASSERT_EQUAL_HEX16(30, start);
+    TEST_ASSERT_EQUAL_HEX16(0xDEAD, dws_modbus_get_holding_reg(30));
+    TEST_ASSERT_EQUAL_HEX16(0xBEEF, dws_modbus_get_holding_reg(31));
+    TEST_ASSERT_EQUAL_HEX16(0xF00D, dws_modbus_get_holding_reg(32));
+}
+
+void test_build_write_rejects_bad_args()
+{
+    uint8_t adu[300];
+    const uint16_t vals[2] = {1, 2};
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single(1, 1, 0, 5, nullptr, 16));         // null out
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single(1, 1, 0, 5, adu, 4));              // buffer too small
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 2, nullptr, 32)); // null out
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, nullptr, 2, adu, 32));  // null values
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 0, adu, 32));     // count 0
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 124, adu, 300));  // count > 123
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 2, adu, 16));     // buffer too small
+}
+
+void test_parse_write_response_edges()
+{
+    uint16_t addr = 0xFFFF;
+    uint8_t ex = 0;
+    // Exception reply (FC 0x06 | 0x80, code 2) -> 0 written, exception set.
+    uint8_t exc[9] = {0, 3, 0, 0, 0, 3, 1, 0x86, 0x02};
+    TEST_ASSERT_EQUAL_INT(0, dws_modbus_parse_write_response(exc, sizeof(exc), &addr, &ex));
+    TEST_ASSERT_EQUAL_UINT8(0x02, ex);
+    TEST_ASSERT_EQUAL_HEX16(0, addr); // addr_out zeroed on the exception path
+    // A short frame and a non-write function code both fail closed.
+    uint8_t shortf[11] = {0, 3, 0, 0, 0, 5, 1, 0x06, 0, 7, 0}; // only 11 bytes, needs 12
+    TEST_ASSERT_EQUAL_INT(-1, dws_modbus_parse_write_response(shortf, sizeof(shortf), &addr, &ex));
+    uint8_t badfc[12] = {0, 3, 0, 0, 0, 6, 1, 0x03, 0, 7, 0, 1}; // FC 0x03 is a read, not a write
+    TEST_ASSERT_EQUAL_INT(-1, dws_modbus_parse_write_response(badfc, sizeof(badfc), &addr, &ex));
+    // A bad protocol id fails closed.
+    uint8_t badproto[12] = {0, 3, 0, 1, 0, 6, 1, 0x06, 0, 7, 0xAB, 0xCD};
+    TEST_ASSERT_EQUAL_INT(-1, dws_modbus_parse_write_response(badproto, sizeof(badproto), &addr, &ex));
+    TEST_ASSERT_EQUAL_INT(-1, dws_modbus_parse_write_response(nullptr, 12, &addr, &ex)); // null adu
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -184,5 +277,11 @@ int main()
     RUN_TEST(test_parse_bad_byte_count);
     RUN_TEST(test_parse_max_regs_and_null_out);
     RUN_TEST(test_parse_accepts_input_regs_function);
+    RUN_TEST(test_build_write_single_bytes);
+    RUN_TEST(test_round_trip_write_single);
+    RUN_TEST(test_build_write_multiple_bytes);
+    RUN_TEST(test_round_trip_write_multiple);
+    RUN_TEST(test_build_write_rejects_bad_args);
+    RUN_TEST(test_parse_write_response_edges);
     return UNITY_END();
 }

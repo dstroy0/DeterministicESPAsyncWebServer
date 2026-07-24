@@ -7,14 +7,14 @@
  *
  * Binds the transport-agnostic Modbus TCP master codec (services/modbus/modbus_master) into the
  * southbound driver framework (services/southbound), so an app addresses a Modbus slave the same way
- * as any other field device: register the driver, then read *points* (register addresses) by name
+ * as any other field device: register the driver, then read/write *points* (register addresses) by name
  * through the one facade. A point id is a register address; the block (matrix) path is the atomic
- * multi-register read a single Modbus request can satisfy (up to 125 registers).
+ * multi-register transfer a single Modbus request satisfies (read up to 125, write up to 123 registers).
  *
- * The shipped master codec is read-only (a register scanner: build a read request, parse the reply),
- * so this adapter binds @ref SouthboundDriver::read and @ref SouthboundDriver::read_block; write /
- * write_block stay unbound (the framework reports Sb::SB_ERR_UNSUPPORTED). A future master write
- * builder (FC 0x06 / 0x10) would complete the matrix write path.
+ * A holding-register driver (FC 0x03) is read/write: read / read_block use FC 0x03/0x04, write /
+ * write_block use Write Single (FC 0x06) / Write Multiple (FC 0x10). An input-register driver (FC 0x04)
+ * is read-only - a Modbus input register cannot be written - so its write / write_block stay unbound
+ * (the framework reports Sb::SB_ERR_UNSUPPORTED).
  *
  * The app owns the transport: it supplies a @ref DwsSbModbusTxn seam that sends a request ADU and
  * receives the reply (over dws_client for Modbus TCP, or a serial gateway). Pure otherwise - no heap,
@@ -75,7 +75,10 @@ struct DwsSbModbusCtx
 int dws_sb_modbus_init(DwsSbModbusCtx *ctx, DwsSbModbusTxn txn, void *io, ModbusFunction fc, uint8_t unit);
 
 /**
- * @brief Fill @p drv_out with a SouthboundDriver bound to @p ctx (read + read_block only).
+ * @brief Fill @p drv_out with a SouthboundDriver bound to @p ctx.
+ *
+ * A holding-register context binds read + read_block + write + write_block; an input-register context
+ * binds read + read_block only (input registers are read-only).
  * @param drv_out  the driver vtable to fill (borrowed by the registry; must outlive it, as must @p ctx).
  * @param name     the driver's unique registry name (borrowed).
  * @param ctx      an initialized context (see dws_sb_modbus_init).

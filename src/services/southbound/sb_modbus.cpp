@@ -61,6 +61,62 @@ int sb_modbus_read_block(void *vctx, uint32_t first, int32_t *out, size_t n)
 {
     return sb_modbus_read_span((DwsSbModbusCtx *)vctx, first, out, n);
 }
+
+// Run one write request through the transport seam and interpret the reply. Shared by the single-point
+// and block writes: `req`/`req_len` is the built request. Returns the register count written (>= 0), a
+// propagated transport error, DWS_SB_MODBUS_EXCEPTION on a Modbus exception reply, or Sb::SB_ERR_ARG on
+// a malformed reply.
+int sb_modbus_write_txn(DwsSbModbusCtx *c, const uint8_t *req, size_t req_len)
+{
+    uint8_t resp[MODBUS_ADU_MAX];
+    int pn = c->txn(c->io, req, req_len, resp, sizeof(resp));
+    if (pn < 0)
+        return pn; // transport error, propagated unchanged
+    uint8_t ex = 0;
+    int w = dws_modbus_parse_write_response(resp, (size_t)pn, nullptr, &ex);
+    if (w < 0)
+        return Sb::SB_ERR_ARG; // malformed / short frame
+    c->last_exception = ex;
+    if (ex)
+        return DWS_SB_MODBUS_EXCEPTION;
+    return w;
+}
+
+int sb_modbus_write(void *vctx, uint32_t point, int32_t value)
+{
+    DwsSbModbusCtx *c = (DwsSbModbusCtx *)vctx;
+    if (point > 0xFFFFu || value < 0 || value > 0xFFFF) // a Modbus register is a 16-bit address / value
+        return Sb::SB_ERR_ARG;
+    uint8_t req[12];
+    size_t rn = dws_modbus_build_write_single(c->txid++, c->unit, (uint16_t)point, (uint16_t)value, req, sizeof(req));
+    if (rn == 0)
+        return Sb::SB_ERR_ARG;
+    int w = sb_modbus_write_txn(c, req, rn);
+    if (w < 0)
+        return w;
+    return (w == 1) ? Sb::SB_OK : Sb::SB_ERR_ARG; // a valid reply echoes the one register
+}
+
+int sb_modbus_write_block(void *vctx, uint32_t first, const int32_t *in, size_t n)
+{
+    DwsSbModbusCtx *c = (DwsSbModbusCtx *)vctx;
+    // FC 0x10 writes at most 123 registers per request; the span must stay in the 16-bit address space.
+    if (n == 0 || n > 123 || first > 0xFFFFu || first + n > 0x10000u)
+        return Sb::SB_ERR_ARG;
+    uint16_t vals[123];
+    for (size_t i = 0; i < n; i++)
+    {
+        if (in[i] < 0 || in[i] > 0xFFFF)
+            return Sb::SB_ERR_ARG;
+        vals[i] = (uint16_t)in[i];
+    }
+    uint8_t req[13 + 2 * 123];
+    size_t rn =
+        dws_modbus_build_write_multiple(c->txid++, c->unit, (uint16_t)first, vals, (uint16_t)n, req, sizeof(req));
+    if (rn == 0)
+        return Sb::SB_ERR_ARG;
+    return sb_modbus_write_txn(c, req, rn); // count written (>= 0) / negative code
+}
 } // namespace
 
 int dws_sb_modbus_init(DwsSbModbusCtx *ctx, DwsSbModbusTxn txn, void *io, ModbusFunction fc, uint8_t unit)
@@ -82,11 +138,14 @@ int dws_sb_modbus_driver(SouthboundDriver *drv_out, const char *name, DwsSbModbu
 {
     if (!drv_out || !name || !ctx || !ctx->txn)
         return Sb::SB_ERR_ARG;
+    // Holding registers are read/write; input registers are read-only (a Modbus input register cannot be
+    // written), so an input-register driver leaves write / write_block unbound (framework: SB_ERR_UNSUPPORTED).
+    bool writable = (ctx->fc == ModbusFunction::MODBUS_FC_READ_HOLDING_REGS);
     drv_out->name = name;
     drv_out->read = sb_modbus_read;
-    drv_out->write = nullptr; // the master codec is read-only (a register scanner)
+    drv_out->write = writable ? sb_modbus_write : nullptr;
     drv_out->read_block = sb_modbus_read_block;
-    drv_out->write_block = nullptr;
+    drv_out->write_block = writable ? sb_modbus_write_block : nullptr;
     drv_out->ctx = ctx;
     return Sb::SB_OK;
 }
