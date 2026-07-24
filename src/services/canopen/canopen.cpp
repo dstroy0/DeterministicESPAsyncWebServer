@@ -45,6 +45,21 @@ bool dws_canopen_build_sync(CanFrame *out)
     return true;
 }
 
+bool dws_canopen_build_time(CanFrame *out, uint32_t ms_since_midnight, uint16_t days_since_1984)
+{
+    if (!out)
+        return false;
+    std_frame(out, CANOPEN_COB_TIME, CANOPEN_TIME_LEN);
+    uint32_t ms = ms_since_midnight & CANOPEN_TIME_MS_MASK; // 28-bit ms after midnight, top 4 bits reserved
+    out->data[0] = (uint8_t)ms;                             // little-endian
+    out->data[1] = (uint8_t)(ms >> 8);
+    out->data[2] = (uint8_t)(ms >> 16);
+    out->data[3] = (uint8_t)(ms >> 24);
+    out->data[4] = (uint8_t)days_since_1984; // days since 1984-01-01, little-endian
+    out->data[5] = (uint8_t)(days_since_1984 >> 8);
+    return true;
+}
+
 bool dws_canopen_build_heartbeat(CanFrame *out, uint8_t node_id, uint8_t state)
 {
     if (!out || !valid_node(node_id))
@@ -261,6 +276,19 @@ bool dws_canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *s
         *node_id = node;
     if (state)
         *state = (uint8_t)(f->data[0] & 0x7Fu); // bit 7 is the boot toggle in some stacks
+    return true;
+}
+
+bool dws_canopen_parse_time(const CanFrame *f, CanopenTime *out)
+{
+    if (!f || !out || f->extended || f->dlc < CANOPEN_TIME_LEN)
+        return false;
+    if ((f->id & DWS_CAN_STD_ID_MASK) != CANOPEN_COB_TIME)
+        return false;
+    uint32_t ms = (uint32_t)f->data[0] | ((uint32_t)f->data[1] << 8) | ((uint32_t)f->data[2] << 16) |
+                  ((uint32_t)f->data[3] << 24);
+    out->ms_since_midnight = ms & CANOPEN_TIME_MS_MASK; // discard the reserved top 4 bits
+    out->days_since_1984 = (uint16_t)(f->data[4] | (f->data[5] << 8));
     return true;
 }
 

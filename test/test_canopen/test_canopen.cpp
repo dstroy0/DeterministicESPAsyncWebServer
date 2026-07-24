@@ -64,6 +64,38 @@ void test_heartbeat_roundtrip()
     TEST_ASSERT_EQUAL_HEX8(CANOPEN_STATE_OPERATIONAL, state);
 }
 
+void test_time_roundtrip()
+{
+    CanFrame f;
+    // 12:34:56.789 -> 45296789 ms after midnight; day 15545 since 1984-01-01.
+    TEST_ASSERT_TRUE(dws_canopen_build_time(&f, 45296789u, 15545));
+    TEST_ASSERT_EQUAL_UINT32(0x100, f.id); // TIME COB, broadcast
+    TEST_ASSERT_EQUAL_UINT8(6, f.dlc);
+
+    CanopenMsg m;
+    TEST_ASSERT_TRUE(dws_canopen_parse(&f, &m));
+    TEST_ASSERT_EQUAL_INT(CanopenType::CANOPEN_T_TIME, m.type);
+
+    CanopenTime t;
+    TEST_ASSERT_TRUE(dws_canopen_parse_time(&f, &t));
+    TEST_ASSERT_EQUAL_UINT32(45296789u, t.ms_since_midnight);
+    TEST_ASSERT_EQUAL_UINT16(15545, t.days_since_1984);
+
+    // The reserved top 4 bits of the ms field are ignored by both build (masked) and parse.
+    f.data[3] |= 0xF0u; // set the reserved nibble on the wire
+    TEST_ASSERT_TRUE(dws_canopen_parse_time(&f, &t));
+    TEST_ASSERT_EQUAL_UINT32(45296789u, t.ms_since_midnight); // still masked cleanly
+
+    // A non-TIME COB (SYNC), a short frame, and null args are rejected.
+    CanFrame sync;
+    dws_canopen_build_sync(&sync);
+    TEST_ASSERT_FALSE(dws_canopen_parse_time(&sync, &t));
+    f.dlc = 5;
+    TEST_ASSERT_FALSE(dws_canopen_parse_time(&f, &t));
+    TEST_ASSERT_FALSE(dws_canopen_parse_time(nullptr, &t));
+    TEST_ASSERT_FALSE(dws_canopen_parse_time(&f, nullptr));
+}
+
 void test_emcy_roundtrip()
 {
     const uint8_t msef[5] = {0xDE, 0xAD, 0xBE, 0xEF, 0x42};
@@ -557,6 +589,7 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_nmt_start_node);
     RUN_TEST(test_sync);
+    RUN_TEST(test_time_roundtrip);
     RUN_TEST(test_heartbeat_roundtrip);
     RUN_TEST(test_emcy_roundtrip);
     RUN_TEST(test_pdo_roundtrip);

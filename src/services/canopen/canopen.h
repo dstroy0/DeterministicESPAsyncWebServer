@@ -118,6 +118,19 @@ struct CanopenSdoResponse
     uint8_t len;         ///< expedited payload length 0..4
 };
 
+/** @brief Octets in a TIME message (CiA 301 TIME_OF_DAY: 4-octet ms + 2-octet days). */
+#define CANOPEN_TIME_LEN 6
+/** @brief The ms-after-midnight field is 28 bits; the top 4 bits of the U32 are reserved. */
+#define CANOPEN_TIME_MS_MASK 0x0FFFFFFFu
+
+/** @brief Decoded CANopen TIME_OF_DAY (the TIME message payload, CiA 301 §7.2.6). The CANopen epoch is
+ *  January 1, 1984, so @c days_since_1984 plus @c ms_since_midnight locate an absolute instant. */
+struct CanopenTime
+{
+    uint32_t ms_since_midnight; ///< milliseconds after midnight (28-bit; 0..86'399'999)
+    uint16_t days_since_1984;   ///< days since January 1, 1984
+};
+
 // --- builders: fill *out and return true; false on a bad argument ---
 
 /** @brief NMT node-control frame. @p node_id 0 addresses all nodes. */
@@ -125,6 +138,10 @@ bool dws_canopen_build_nmt(CanFrame *out, uint8_t command, uint8_t node_id);
 
 /** @brief SYNC frame (zero-length, broadcast). */
 bool dws_canopen_build_sync(CanFrame *out);
+
+/** @brief TIME frame (broadcast): the TIME_OF_DAY (@p ms_since_midnight masked to 28 bits, days since
+ *  1984). */
+bool dws_canopen_build_time(CanFrame *out, uint32_t ms_since_midnight, uint16_t days_since_1984);
 
 /** @brief Heartbeat / boot-up frame for @p node_id reporting @p state. */
 bool dws_canopen_build_heartbeat(CanFrame *out, uint8_t node_id, uint8_t state);
@@ -161,6 +178,10 @@ bool dws_canopen_parse_emcy(const CanFrame *f, uint8_t *node_id, uint16_t *error
 
 /** @brief Decode a heartbeat frame (0x700+node, 1 octet). */
 bool dws_canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *state);
+
+/** @brief Decode a TIME frame (0x100, 6 octets) into @p out. @return true iff @p f is the TIME COB with at
+ *  least 6 data octets; the reserved top 4 bits of the ms field are masked off. */
+bool dws_canopen_parse_time(const CanFrame *f, CanopenTime *out);
 
 /** @brief Decode an SDO server response (0x580+node): upload data, download ack, or abort. */
 bool dws_canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out);
