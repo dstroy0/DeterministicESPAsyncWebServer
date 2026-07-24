@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5037 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5040 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19898,7 +19898,7 @@ A thorough directory of all **5037 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (77 tests)</b></summary>
+<summary><b>test_ikev2 (80 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -21115,6 +21115,41 @@ A thorough directory of all **5037 test cases** across **290 suites**. Expand a 
       * <code>Assert false (dws_ike_frag_reasm_add(&r, 2, 2, d, 9)); // pool overflow (8 used + 9 &gt; 16)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_frag_reasm_assemble(&r, out, sizeof(out))); // still incomplete</code>
       * <code>Assert false (dws_ike_frag_reasm_add(&r2, 1, DWS_IKE_FRAG_MAX + 1, d, 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cookie_compute_kat</b> &mdash; <i>A too-small buffer fails closed.</i></summary>
+
+    * **Objective**: A too-small buffer fails closed.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_IKE_COOKIE_LEN, n);</code>
+      * <code>Assert equal memory (ck_golden, out, 33)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_cookie_compute(0x01, ck_secret, sizeof(ck_secret), ck_ni, sizeof(ck_ni), ck_ipi,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cookie_verify</b> &mdash; <i>The genuine cookie verifies; the version tag is read from the cookie itself.</i></summary>
+
+    * **Objective**: The genuine cookie verifies; the version tag is read from the cookie itself.
+    * **Assertions**:
+      * <code>Assert true (dws_ike_cookie_verify(ck_golden, sizeof(ck_golden), ck_secret, sizeof(ck_secret)</code>
+      * <code>Assert false (dws_ike_cookie_verify(ck_golden, sizeof(ck_golden), other_secret, sizeof(other_secret)</code>
+      * <code>Assert false (dws_ike_cookie_verify(ck_golden, sizeof(ck_golden), ck_secret, sizeof(ck_secret)</code>
+      * <code>Assert false (dws_ike_cookie_verify(ck_golden, sizeof(ck_golden), ck_secret, sizeof(ck_secret)</code>
+      * <code>Assert false (dws_ike_cookie_verify(bad, sizeof(bad), ck_secret, sizeof(ck_secret), ck_ni, sizeof(ck_ni)</code>
+      * <code>Assert false (dws_ike_cookie_verify(ck_golden, 32, ck_secret, sizeof(ck_secret), ck_ni, sizeof(ck_ni)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_cookie_notify_build</b> &mdash; <i>The COOKIE notify carries the cookie and parses back with type 16390.</i></summary>
+
+    * **Objective**: The COOKIE notify carries the cookie and parses back with type 16390.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 4)</code>
+      * <code>Assert true (dws_ike_notify_parse(buf + 4, n - 4, &proto, &ntype, &spi, &spi_size, &data, &data_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_IKE_N_COOKIE, ntype);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(33, data_len);</code>
+      * <code>Assert equal memory (ck_golden, data, 33)</code>
   </details>
 
 </details>
