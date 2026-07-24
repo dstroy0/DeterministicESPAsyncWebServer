@@ -43,6 +43,16 @@ size_t dws_epl_pres(uint8_t source_cn, const uint8_t *pdo, size_t pdo_len, uint8
     return dws_epl_build(Epl::EPL_MSG_PRES, Epl::EPL_NODE_BROADCAST, source_cn, pdo, pdo_len, out, cap);
 }
 
+size_t dws_epl_soa(uint8_t source, const uint8_t *payload, size_t payload_len, uint8_t *out, size_t cap)
+{
+    return dws_epl_build(Epl::EPL_MSG_SOA, Epl::EPL_NODE_BROADCAST, source, payload, payload_len, out, cap);
+}
+
+size_t dws_epl_asnd(uint8_t dest, uint8_t source, const uint8_t *payload, size_t payload_len, uint8_t *out, size_t cap)
+{
+    return dws_epl_build(Epl::EPL_MSG_ASND, dest, source, payload, payload_len, out, cap);
+}
+
 bool dws_epl_parse(const uint8_t *frame, size_t len, EplFrame *out)
 {
     if (!frame || !out || len < 3)

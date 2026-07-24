@@ -1493,7 +1493,8 @@
     "ccvs",
     "internetwork",
     "paddlewheel",
-    "crob"
+    "crob",
+    "asnd"
   ],
   "ignorePaths": [
     "node_modules/**",

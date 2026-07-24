@@ -57,6 +57,14 @@ size_t dws_epl_preq(uint8_t dest_cn, uint8_t source, const uint8_t *pdo, size_t 
 /** @brief Convenience: build a PRes from a CN carrying its input process image (multicast). */
 size_t dws_epl_pres(uint8_t source_cn, const uint8_t *pdo, size_t pdo_len, uint8_t *out, size_t cap);
 
+/** @brief Convenience: build an SoA (MN -> broadcast) that opens the asynchronous phase. @p payload is the
+ *  SoA field block (NMT status, requested service id / target, EPL version), or null for a bare invite. */
+size_t dws_epl_soa(uint8_t source, const uint8_t *payload, size_t payload_len, uint8_t *out, size_t cap);
+
+/** @brief Convenience: build an ASnd (asynchronous send) from @p source to @p dest. @p payload is the ASnd
+ *  service block (service id + service data). ASnd may be unicast to a node or broadcast (0xFF). */
+size_t dws_epl_asnd(uint8_t dest, uint8_t source, const uint8_t *payload, size_t payload_len, uint8_t *out, size_t cap);
+
 /** @brief A parsed EPL basic frame (payload points into the input). */
 struct EplFrame
 {

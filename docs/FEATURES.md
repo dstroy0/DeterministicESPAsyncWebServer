@@ -962,7 +962,7 @@ PN532 NFC frame codec (v5 gateway plugin). Default off. services/pn532 is the co
 
 `DWS_ENABLE_POWERLINK`
 
-Opt-in Ethernet POWERLINK (EPSG) basic frame codec. When set, services/powerlink builds/parses the EPL basic frames ([messageType][dest][source][payload]) of the isochronous managed-node cycle - SoC (start of cycle), PReq (poll request), PRes (poll response with process data), SoA (start of async) - over raw L2 (ethertype 0x88AB, on the shipped services/rawl2). Pure codec (the raw-L2 transmit + isochronous timing are the device step). Default off.
+Opt-in Ethernet POWERLINK (EPSG) basic frame codec. When set, services/powerlink builds/parses the EPL basic frames ([messageType][dest][source][payload]) of the isochronous managed-node cycle - SoC (start of cycle), PReq (poll request), PRes (poll response with process data), SoA (start of async, `dws_epl_soa`), and ASnd (asynchronous send, `dws_epl_asnd`, unicast or broadcast) - over raw L2 (ethertype 0x88AB, on the shipped services/rawl2). Pure codec (the raw-L2 transmit + isochronous timing are the device step). Default off.
 
 ## Post-Quantum Hybrid KEX
 

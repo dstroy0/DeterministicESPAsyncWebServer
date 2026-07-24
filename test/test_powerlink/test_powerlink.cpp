@@ -46,6 +46,41 @@ void test_preq_pres_roundtrip(void)
     TEST_ASSERT_EQUAL_HEX8(5, f.source);
 }
 
+void test_soa_asnd(void)
+{
+    uint8_t out[16];
+
+    // SoA: MN -> broadcast, opening the async phase, carrying the SoA field block.
+    const uint8_t soa_fields[4] = {0x00, 0x05, 0x05, 0x20};
+    size_t n = dws_epl_soa(Epl::EPL_NODE_MN, soa_fields, 4, out, sizeof(out));
+    const uint8_t soa_expect[7] = {Epl::EPL_MSG_SOA, Epl::EPL_NODE_BROADCAST, Epl::EPL_NODE_MN, 0x00, 0x05, 0x05, 0x20};
+    TEST_ASSERT_EQUAL_size_t(7, n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(soa_expect, out, 7);
+    EplFrame f;
+    TEST_ASSERT_TRUE(dws_epl_parse(out, n, &f));
+    TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_SOA, f.msg_type);
+    TEST_ASSERT_EQUAL_HEX8(Epl::EPL_NODE_BROADCAST, f.dest);
+    TEST_ASSERT_EQUAL_HEX8(Epl::EPL_NODE_MN, f.source);
+
+    // ASnd: source MN -> CN 5, carrying a service block (service id + data).
+    const uint8_t asnd_svc[3] = {0x01, 0xAA, 0xBB};
+    n = dws_epl_asnd(5, Epl::EPL_NODE_MN, asnd_svc, 3, out, sizeof(out));
+    const uint8_t asnd_expect[6] = {Epl::EPL_MSG_ASND, 5, Epl::EPL_NODE_MN, 0x01, 0xAA, 0xBB};
+    TEST_ASSERT_EQUAL_size_t(6, n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(asnd_expect, out, 6);
+    TEST_ASSERT_TRUE(dws_epl_parse(out, n, &f));
+    TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_ASND, f.msg_type);
+    TEST_ASSERT_EQUAL_HEX8(5, f.dest);
+    TEST_ASSERT_EQUAL_size_t(3, f.payload_len);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(asnd_svc, f.payload, 3);
+
+    // A bare SoA (no payload) is just the 3-octet header, and both fail closed on a small buffer.
+    n = dws_epl_soa(Epl::EPL_NODE_MN, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(3, n);
+    TEST_ASSERT_EQUAL_size_t(0, dws_epl_soa(Epl::EPL_NODE_MN, soa_fields, 4, out, 2));
+    TEST_ASSERT_EQUAL_size_t(0, dws_epl_asnd(5, Epl::EPL_NODE_MN, asnd_svc, 3, out, 2));
+}
+
 void test_parse_rejects(void)
 {
     EplFrame f;
@@ -102,6 +137,7 @@ int main(void)
     UNITY_BEGIN();
     RUN_TEST(test_soc);
     RUN_TEST(test_preq_pres_roundtrip);
+    RUN_TEST(test_soa_asnd);
     RUN_TEST(test_parse_rejects);
     RUN_TEST(test_epl_build_guards);
     RUN_TEST(test_epl_build_null_out);
