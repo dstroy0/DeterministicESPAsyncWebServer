@@ -119,11 +119,11 @@
     "ram_bytes": 81860
   },
   "DIAG": {
-    "example": "Foundation/Configuration",
+    "example": "L7-Application/Diagnostics",
     "flags": "-DDWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 755581,
-    "ram_bytes": 77580
+    "flash_bytes": 754005,
+    "ram_bytes": 81820
   },
   "DIFFSERV": {
     "example": "L4-Transport/DiffServ",
