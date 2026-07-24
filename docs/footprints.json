@@ -437,7 +437,7 @@
     "example": "Drivers/UbloxGnss",
     "flags": "-DDWS_ENABLE_NMEA0183=1 -DDWS_ENABLE_UBX=1",
     "board": "esp32dev",
-    "flash_bytes": 273773,
+    "flash_bytes": 273769,
     "ram_bytes": 22432
   },
   "NRF24+GATEWAY": {
