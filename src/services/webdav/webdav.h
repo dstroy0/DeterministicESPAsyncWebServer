@@ -140,6 +140,7 @@ struct DavLock
     bool exclusive;                     ///< exclusive-write (true) or shared (false)
     bool depth_infinity;                ///< the lock covers the whole subtree (Depth: infinity) vs just the resource
     bool active;                        ///< false = free slot
+    uint32_t expiry_s;                  ///< monotonic second the lock expires (0 = no timeout); swept by _sweep
 };
 
 /** @brief The server-global lock table (one instance, not per-connection). */
@@ -156,10 +157,28 @@ void dws_dav_lock_init(DavLockTable *t);
  *
  * Fails when a conflicting lock already covers @p path or its subtree - an exclusive request conflicts
  * with any overlapping lock, a shared request only with an overlapping exclusive one - or when the table
- * is full / an argument is bad. @return the stored lock on success, nullptr on conflict / full.
+ * is full / an argument is bad.
+ * @param expiry_s  the monotonic second the lock expires (0 = no timeout); @ref dws_dav_lock_sweep drops
+ *                  a lock once now reaches it. The clock stays out of this pure core - the caller passes
+ *                  its own now + timeout.
+ * @return the stored lock on success, nullptr on conflict / full.
  */
 const DavLock *dws_dav_lock_acquire(DavLockTable *t, const char *path, const char *token, bool exclusive,
-                                    bool depth_infinity);
+                                    bool depth_infinity, uint32_t expiry_s);
+
+/**
+ * @brief Expire and drop every lock whose timeout has passed (RFC 4918 §6.6). Call before a lock query so
+ *        stale locks never gate a write. A lock with @c expiry_s == 0 never expires.
+ * @param now_s  the caller's current monotonic second.
+ * @return the number of locks dropped.
+ */
+size_t dws_dav_lock_sweep(DavLockTable *t, uint32_t now_s);
+
+/**
+ * @brief Refresh a held lock's timeout to @p new_expiry_s, keyed by @p token (a LOCK refresh, RFC 4918
+ *        §9.10.2). @return the refreshed lock, or nullptr if no live lock has that token.
+ */
+const DavLock *dws_dav_lock_refresh(DavLockTable *t, const char *token, uint32_t new_expiry_s);
 
 /**
  * @brief Find a lock covering @p path: one on @p path itself, or a Depth-infinity lock on an ancestor.

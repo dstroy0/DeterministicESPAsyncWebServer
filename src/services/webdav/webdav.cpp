@@ -449,7 +449,7 @@ void dws_dav_lock_init(DavLockTable *t)
 }
 
 const DavLock *dws_dav_lock_acquire(DavLockTable *t, const char *path, const char *token, bool exclusive,
-                                    bool depth_infinity)
+                                    bool depth_infinity, uint32_t expiry_s)
 {
     if (!t || !path || !token)
         return nullptr;
@@ -478,10 +478,44 @@ const DavLock *dws_dav_lock_acquire(DavLockTable *t, const char *path, const cha
         (void)dav_lock_copy(l->token, sizeof(l->token), token);
         l->exclusive = exclusive;
         l->depth_infinity = depth_infinity;
+        l->expiry_s = expiry_s;
         l->active = true;
         return l;
     }
     return nullptr; // table full
+}
+
+size_t dws_dav_lock_sweep(DavLockTable *t, uint32_t now_s)
+{
+    if (!t)
+        return 0;
+    size_t dropped = 0;
+    for (size_t i = 0; i < DWS_DAV_LOCK_MAX; i++)
+    {
+        DavLock *l = &t->locks[i];
+        if (l->active && l->expiry_s != 0 && l->expiry_s <= now_s) // 0 = never expires
+        {
+            l->active = false;
+            dropped++;
+        }
+    }
+    return dropped;
+}
+
+const DavLock *dws_dav_lock_refresh(DavLockTable *t, const char *token, uint32_t new_expiry_s)
+{
+    if (!t || !token)
+        return nullptr;
+    for (size_t i = 0; i < DWS_DAV_LOCK_MAX; i++)
+    {
+        DavLock *l = &t->locks[i];
+        if (l->active && strcmp(l->token, token) == 0)
+        {
+            l->expiry_s = new_expiry_s;
+            return l;
+        }
+    }
+    return nullptr;
 }
 
 const DavLock *dws_dav_lock_find(const DavLockTable *t, const char *path)

@@ -17,6 +17,7 @@
 #include "dwserver.h"
 #include "network_drivers/transport/tcp.h" // conn_pool
 #include "server/dwserver_internal.h"
+#include "services/clock.h" // dws_millis() for lock timeouts
 #include "shared_primitives/mime.h"
 #include <string.h>
 
@@ -510,6 +511,11 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         plen--;
     const char *root = r->static_root ? r->static_root : "";
 
+    // Expire any timed-out locks (RFC 4918 §6.6) before this request consults the table, so a stale lock
+    // never gates a write. The clock is dws_millis() (pluggable); seconds are enough for lock lifetimes.
+    uint32_t dav_now_s = (uint32_t)(dws_millis() / 1000u);
+    dws_dav_lock_sweep(&s_dav_locks, dav_now_s);
+
     switch (dws_webdav_method(req->method))
     {
     case WebDavMethod::DAV_M_OPTIONS:
@@ -712,31 +718,51 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
     }
 
     case WebDavMethod::DAV_M_LOCK: {
-        // Scope + depth from the request: a lockinfo body naming <shared> is a shared lock (else
-        // exclusive), and a LOCK defaults to Depth: infinity when the header is absent (RFC 4918 §9.10.3).
-        bool shared = req->body_len && dav_body_has(req, "shared");
-        bool depth_inf = dws_webdav_depth(http_get_header(req, "Depth"), DAV_DEPTH_INFINITY) != 0;
+        const uint32_t timeout_s = 3600; // the lock lifetime advertised in <D:timeout> below
+        uint32_t expiry_s = dav_now_s + timeout_s;
 
-        unsigned long tok = (unsigned long)millis();
-#ifdef ARDUINO
-        tok ^= (unsigned long)esp_random();
-#endif
+        // A LOCK carrying the token in its If header is a refresh (RFC 4918 §9.10.2): extend the held
+        // lock's timeout rather than taking a new one.
+        const char *if_hdr = http_get_header(req, "If");
+        char iftok[DWS_DAV_LOCK_TOKEN_MAX];
+        const DavLock *lk = nullptr;
+        if (if_hdr && dws_dav_if_token(if_hdr, iftok, sizeof(iftok)))
+            lk = dws_dav_lock_refresh(&s_dav_locks, iftok, expiry_s);
+
         char token[DWS_DAV_LOCK_TOKEN_MAX];
-        snprintf(token, sizeof(token), "opaquelocktoken:%08lx-dws", tok);
-        if (!dws_dav_lock_acquire(&s_dav_locks, req->path, token, /*exclusive=*/!shared, depth_inf))
+        bool shared, depth_inf;
+        if (lk) // refreshed an existing lock: echo its stored scope / depth / token
         {
-            dav_send_status(slot_id, 423, ""); // a conflicting lock already holds this resource / subtree
-            return;
+            snprintf(token, sizeof(token), "%s", lk->token);
+            shared = !lk->exclusive;
+            depth_inf = lk->depth_infinity;
+        }
+        else
+        {
+            // New lock: a lockinfo body naming <shared> is a shared lock (else exclusive); a LOCK defaults
+            // to Depth: infinity when the header is absent (RFC 4918 §9.10.3).
+            shared = req->body_len && dav_body_has(req, "shared");
+            depth_inf = dws_webdav_depth(http_get_header(req, "Depth"), DAV_DEPTH_INFINITY) != 0;
+            unsigned long tok = (unsigned long)millis();
+#ifdef ARDUINO
+            tok ^= (unsigned long)esp_random();
+#endif
+            snprintf(token, sizeof(token), "opaquelocktoken:%08lx-dws", tok);
+            if (!dws_dav_lock_acquire(&s_dav_locks, req->path, token, /*exclusive=*/!shared, depth_inf, expiry_s))
+            {
+                dav_send_status(slot_id, 423, ""); // a conflicting lock already holds this resource / subtree
+                return;
+            }
         }
         snprintf(s_dav.buf, sizeof(s_dav.buf),
                  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
                  "<D:prop xmlns:D=\"DAV:\"><D:lockdiscovery><D:activelock>"
                  "<D:locktype><D:write/></D:locktype>"
                  "<D:lockscope><D:%s/></D:lockscope>"
-                 "<D:depth>%s</D:depth><D:timeout>Second-3600</D:timeout>"
+                 "<D:depth>%s</D:depth><D:timeout>Second-%lu</D:timeout>"
                  "<D:locktoken><D:href>%s</D:href></D:locktoken>"
                  "</D:activelock></D:lockdiscovery></D:prop>\n",
-                 shared ? "shared" : "exclusive", depth_inf ? "infinity" : "0", token);
+                 shared ? "shared" : "exclusive", depth_inf ? "infinity" : "0", (unsigned long)timeout_s, token);
         // RFC 4918 §10.5: Lock-Token uses a Coded-URL (angle-bracketed).
         char lt[64];
         snprintf(lt, sizeof(lt), "<%s>", token);

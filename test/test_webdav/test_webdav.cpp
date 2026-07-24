@@ -598,7 +598,7 @@ void test_lock_acquire_and_write_gate()
     TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/a.txt", nullptr));
 
     // Take an exclusive Depth-0 lock; now only the token holder may write.
-    const DavLock *l = dws_dav_lock_acquire(&t, "/a.txt", tok, /*exclusive=*/true, /*depth_infinity=*/false);
+    const DavLock *l = dws_dav_lock_acquire(&t, "/a.txt", tok, /*exclusive=*/true, /*depth_infinity=*/false, 0);
     TEST_ASSERT_NOT_NULL(l);
     TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/a.txt", nullptr));                 // no token
     TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/a.txt", "opaquelocktoken:other")); // wrong token
@@ -618,7 +618,7 @@ void test_lock_depth_infinity_covers_subtree()
     dws_dav_lock_init(&t);
     const char *tok = "opaquelocktoken:22222222-dws";
     // A Depth-infinity lock on /dir covers the whole subtree, but not a same-prefix sibling like /dir2.
-    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/dir", tok, true, /*depth_infinity=*/true));
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/dir", tok, true, /*depth_infinity=*/true, 0));
     TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/dir", nullptr));
     TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/dir/sub/file.txt", nullptr)); // deep descendant locked
     TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/dir/sub/file.txt", tok));      // token unlocks the subtree
@@ -635,19 +635,19 @@ void test_lock_conflicts_and_shared()
     DavLockTable t;
     dws_dav_lock_init(&t);
     // An exclusive infinity lock on /p blocks any overlapping lock (child, ancestor, or same).
-    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:a", true, true));
-    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/p/c", "opaquelocktoken:b", true, false)); // child conflicts
-    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:b", false, false));  // same resource
-    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/", "opaquelocktoken:b", true, true));     // ancestor (root) conflicts
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:a", true, true, 0));
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/p/c", "opaquelocktoken:b", true, false, 0)); // child conflicts
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:b", false, false, 0));  // same resource
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/", "opaquelocktoken:b", true, true, 0)); // ancestor (root) conflicts
     // A disjoint path is fine.
-    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/q", "opaquelocktoken:c", true, false));
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/q", "opaquelocktoken:c", true, false, 0));
 
     // Two shared locks on the same resource coexist; an exclusive one over them does not.
     DavLockTable s;
     dws_dav_lock_init(&s);
-    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s1", false, false));
-    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s2", false, false));
-    TEST_ASSERT_NULL(dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:x", true, false));
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s1", false, false, 0));
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s2", false, false, 0));
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:x", true, false, 0));
     // Either shared token authorizes a write.
     TEST_ASSERT_TRUE(dws_dav_lock_can_write(&s, "/f", "opaquelocktoken:s2"));
     TEST_ASSERT_FALSE(dws_dav_lock_can_write(&s, "/f", nullptr));
@@ -662,9 +662,9 @@ void test_lock_table_full_and_guards()
     {
         snprintf(path, sizeof(path), "/f%d", i);
         snprintf(tok, sizeof(tok), "opaquelocktoken:%d", i);
-        TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, path, tok, true, false));
+        TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, path, tok, true, false, 0));
     }
-    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/overflow", "opaquelocktoken:z", true, false)); // table full
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t, "/overflow", "opaquelocktoken:z", true, false, 0)); // table full
 
     // A token that would not fit is rejected; null arguments fail closed.
     DavLockTable t2;
@@ -672,8 +672,8 @@ void test_lock_table_full_and_guards()
     char longtok[DWS_DAV_LOCK_TOKEN_MAX + 8];
     memset(longtok, 'x', sizeof(longtok) - 1);
     longtok[sizeof(longtok) - 1] = 0;
-    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t2, "/a", longtok, true, false));
-    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t2, nullptr, "opaquelocktoken:a", true, false));
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t2, "/a", longtok, true, false, 0));
+    TEST_ASSERT_NULL(dws_dav_lock_acquire(&t2, nullptr, "opaquelocktoken:a", true, false, 0));
     TEST_ASSERT_TRUE(dws_dav_lock_can_write(nullptr, "/a", nullptr)); // no table => unlocked
 }
 
@@ -697,9 +697,37 @@ void test_if_header_token_extraction()
     // End-to-end: a write presenting the extracted token is allowed.
     DavLockTable t;
     dws_dav_lock_init(&t);
-    dws_dav_lock_acquire(&t, "/x", "opaquelocktoken:aaaa-dws", true, false);
+    dws_dav_lock_acquire(&t, "/x", "opaquelocktoken:aaaa-dws", true, false, 0);
     TEST_ASSERT_TRUE(dws_dav_if_token("(<opaquelocktoken:aaaa-dws>)", out, sizeof(out)));
     TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/x", out));
+}
+
+void test_lock_timeout_sweep()
+{
+    DavLockTable t;
+    dws_dav_lock_init(&t);
+
+    // A timed lock gates writes until a sweep reaches its expiry second (expiry_s <= now drops it).
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/timed", "opaquelocktoken:t", true, false, /*expiry_s=*/100));
+    TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/timed", nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dav_lock_sweep(&t, 99)); // not yet expired
+    TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/timed", nullptr));
+    TEST_ASSERT_EQUAL_size_t(1, dws_dav_lock_sweep(&t, 100)); // expired -> dropped
+    TEST_ASSERT_TRUE(dws_dav_lock_can_write(&t, "/timed", nullptr));
+    TEST_ASSERT_NULL(dws_dav_lock_find(&t, "/timed"));
+
+    // A never-expiring lock (expiry_s == 0) survives any sweep.
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/perm", "opaquelocktoken:p", true, false, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dav_lock_sweep(&t, 0xFFFFFFFFu));
+    TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/perm", nullptr));
+
+    // Refresh extends a lock's timeout; an unknown token refreshes nothing.
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_acquire(&t, "/r", "opaquelocktoken:r", true, false, 50));
+    TEST_ASSERT_NOT_NULL(dws_dav_lock_refresh(&t, "opaquelocktoken:r", 200));
+    TEST_ASSERT_EQUAL_size_t(0, dws_dav_lock_sweep(&t, 100)); // was 50, now 200 -> survives
+    TEST_ASSERT_FALSE(dws_dav_lock_can_write(&t, "/r", nullptr));
+    TEST_ASSERT_NULL(dws_dav_lock_refresh(&t, "opaquelocktoken:unknown", 300));
+    TEST_ASSERT_EQUAL_size_t(1, dws_dav_lock_sweep(&t, 200)); // /r now expires (/perm never does)
 }
 
 int main()
@@ -751,5 +779,6 @@ int main()
     RUN_TEST(test_lock_conflicts_and_shared);
     RUN_TEST(test_lock_table_full_and_guards);
     RUN_TEST(test_if_header_token_extraction);
+    RUN_TEST(test_lock_timeout_sweep);
     return UNITY_END();
 }
