@@ -1923,6 +1923,46 @@ void test_initiator_full_handshake()
     TEST_ASSERT_FALSE(dws_ike_initiator_on_auth_psk(&a, rmsg, rn, g_psk, sizeof(g_psk)));
 }
 
+// ── responder IKE_SA_INIT: a real two-driver exchange with mutual key agreement ─────────────────
+void test_responder_sa_init_exchange()
+{
+    const IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+
+    // The initiator (Alice) starts.
+    IkeHandshake ini;
+    uint8_t req[512];
+    size_t reqn = dws_ike_initiator_start(&ini, g_our_spi, kat_alice_priv, kat_alice_pub, g_our_nonce, 16, &gcm,
+                                          g_hs_tf, 3, req, sizeof(req));
+    TEST_ASSERT_TRUE(reqn > 0);
+
+    // The responder (Bob) consumes the request and answers, deriving keys.
+    IkeHandshake resp;
+    uint8_t rsp[512];
+    size_t rspn = dws_ike_responder_on_sa_init(&resp, req, reqn, g_resp_spi, kat_bob_priv, kat_bob_pub, g_resp_nonce,
+                                               16, &gcm, g_hs_tf, 3, rsp, sizeof(rsp));
+    TEST_ASSERT_TRUE(rspn > 0);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_SA_INIT_DONE, (uint8_t)resp.state);
+    TEST_ASSERT_FALSE(resp.sa.is_initiator);
+    TEST_ASSERT_EQUAL_MEMORY(g_our_spi, resp.sa.init_spi, 8);  // echoed initiator SPI
+    TEST_ASSERT_EQUAL_MEMORY(g_resp_spi, resp.sa.resp_spi, 8); // our responder SPI
+
+    // The initiator consumes the responder's answer and derives keys.
+    TEST_ASSERT_TRUE(dws_ike_initiator_on_sa_init(&ini, rsp, rspn));
+
+    // Both sides derived identical SA keys from the real exchange.
+    TEST_ASSERT_EQUAL_MEMORY(ini.sa.keys.sk_d, resp.sa.keys.sk_d, 32);
+    TEST_ASSERT_EQUAL_MEMORY(ini.sa.keys.sk_ei, resp.sa.keys.sk_ei, 36);
+    TEST_ASSERT_EQUAL_MEMORY(ini.sa.keys.sk_er, resp.sa.keys.sk_er, 36);
+    TEST_ASSERT_EQUAL_MEMORY(ini.sa.keys.sk_pi, resp.sa.keys.sk_pi, 32);
+    TEST_ASSERT_EQUAL_MEMORY(ini.sa.keys.sk_pr, resp.sa.keys.sk_pr, 32);
+
+    // Guard: feeding a RESPONSE (not a request) to the responder is rejected.
+    IkeHandshake r2;
+    uint8_t out2[512];
+    TEST_ASSERT_EQUAL_size_t(0, dws_ike_responder_on_sa_init(&r2, rsp, rspn, g_resp_spi, kat_bob_priv, kat_bob_pub,
+                                                             g_resp_nonce, 16, &gcm, g_hs_tf, 3, out2, sizeof(out2)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1999,5 +2039,6 @@ int main()
     RUN_TEST(test_initiator_handshake_guards);
     RUN_TEST(test_initiator_ike_auth_send);
     RUN_TEST(test_initiator_full_handshake);
+    RUN_TEST(test_responder_sa_init_exchange);
     return UNITY_END();
 }

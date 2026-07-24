@@ -498,8 +498,13 @@ preempting queue, so sensing shares the real-time ingest path.
           constant time, reaching `IKE_ST_ESTABLISHED` (the context stores RealMessage2 for this). A full
           initiator<->responder handshake driven end to end (IKE_SA_INIT + IKE_AUTH) reaches ESTABLISHED
           with mutual PSK auth, and a responder signing with the wrong key is rejected to IKE_ST_FAILED
-          (`test_ikev2` now 64). Remaining: the responder role (retransmit/rekey/DPD/CREATE_CHILD_SA) and
-          the RSA signature-auth option.
+          with mutual PSK auth, and a responder signing with the wrong key is rejected to IKE_ST_FAILED.
+          **The responder IKE_SA_INIT is shipped too**: `dws_ike_responder_on_sa_init` consumes the
+          initiator's request, emits the IKE_SA_INIT response, and derives keys - a real two-driver
+          exchange (both the initiator and responder drivers) reaches identical SK_\* on both sides
+          (`test_ikev2` now 65). Remaining: the responder IKE_AUTH (verify IDi/AUTH, emit the responder
+          IKE_AUTH), the maintenance exchanges (retransmit/rekey/DPD/CREATE_CHILD_SA), and RSA
+          signature-auth.
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with

@@ -1314,4 +1314,61 @@ bool dws_ike_initiator_on_auth_psk(IkeHandshake *hs, const uint8_t *resp, size_t
     return true;
 }
 
+// ── responder IKE_SA_INIT handshake driver ─────────────────────────────────────────────────────
+
+size_t dws_ike_responder_on_sa_init(IkeHandshake *hs, const uint8_t *req, size_t req_len,
+                                    const uint8_t our_spi[DWS_IKE_SPI_LEN],
+                                    const uint8_t our_dh_priv[DWS_IKE_X25519_LEN],
+                                    const uint8_t our_dh_pub[DWS_IKE_X25519_LEN], const uint8_t *our_nonce,
+                                    size_t nonce_len, const IkeSuite *suite, const IkeTransform *transforms,
+                                    uint8_t num_transforms, uint8_t *out, size_t out_cap)
+{
+    if (!hs || !req || !our_spi || !our_dh_priv || !our_dh_pub || !our_nonce || !suite || !transforms ||
+        num_transforms == 0)
+        return 0;
+    if (nonce_len == 0 || nonce_len > DWS_IKE_NONCE_MAX || req_len > DWS_IKE_MSG_MAX)
+        return 0;
+
+    IkeSaInitMsg m;
+    if (!dws_ike_sa_init_parse(req, req_len, &m))
+        return 0;
+    // Must be a REQUEST (not a response) offering the group we accept; the nonce must fit our store.
+    if (m.is_response || m.dh_group != suite->dh || m.nonce_len == 0 || m.nonce_len > DWS_IKE_NONCE_MAX)
+        return 0;
+
+    memset(hs, 0, sizeof(*hs));
+    hs->sa.is_initiator = false;
+    hs->sa.suite = *suite;
+    memcpy(hs->sa.init_spi, m.init_spi, DWS_IKE_SPI_LEN); // the initiator's SPI, echoed
+    memcpy(hs->sa.resp_spi, our_spi, DWS_IKE_SPI_LEN);    // our chosen responder SPI
+    memcpy(hs->our_dh_priv, our_dh_priv, DWS_IKE_X25519_LEN);
+    memcpy(hs->our_nonce, our_nonce, nonce_len); // Nr
+    hs->our_nonce_len = (uint16_t)nonce_len;
+    memcpy(hs->peer_nonce, m.nonce, m.nonce_len); // Ni
+    hs->peer_nonce_len = (uint16_t)m.nonce_len;
+    memcpy(hs->init_msg, req, req_len); // RealMessage1 = the request
+    hs->init_msg_len = (uint16_t)req_len;
+
+    // Emit the IKE_SA_INIT response (echo the initiator SPI, add ours, our KE + nonce).
+    size_t n = dws_ike_sa_init_build(out, out_cap, m.init_spi, our_spi, 0, /*is_response=*/true, 1, transforms,
+                                     num_transforms, suite->dh, our_dh_pub, DWS_IKE_X25519_LEN, our_nonce, nonce_len);
+    if (n == 0 || n > DWS_IKE_MSG_MAX)
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return 0;
+    }
+    memcpy(hs->resp_msg, out, n); // RealMessage2 = our response
+    hs->resp_msg_len = (uint16_t)n;
+
+    // Derive the SA keys: Ni = the initiator's nonce (peer), Nr = ours.
+    if (!dws_ike_sa_keys_from_init(&hs->sa, our_dh_priv, DWS_IKE_X25519_LEN, m.ke_data, m.ke_len, hs->peer_nonce,
+                                   hs->peer_nonce_len, hs->our_nonce, hs->our_nonce_len))
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return 0;
+    }
+    hs->state = IkeState::IKE_ST_SA_INIT_DONE;
+    return n;
+}
+
 #endif // DWS_ENABLE_IKEV2

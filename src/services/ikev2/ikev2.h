@@ -783,6 +783,29 @@ size_t dws_ike_initiator_build_auth_psk(IkeHandshake *hs, IkeIdType idi_type, co
 bool dws_ike_initiator_on_auth_psk(IkeHandshake *hs, const uint8_t *resp, size_t resp_len, const uint8_t *psk,
                                    size_t psk_len);
 
+// ── tier 2: responder IKE_SA_INIT handshake driver (RFC 7296 §1.2) ─────────────────────────────
+//
+// The responder mirror of dws_ike_initiator_start / _on_sa_init: consume the initiator's IKE_SA_INIT,
+// emit the IKE_SA_INIT response, and derive the SA keys - after which both peers hold identical SK_*.
+// The IkeHandshake fields keep their role-neutral meaning: init_msg = RealMessage1 (the request),
+// resp_msg = RealMessage2 (our response), our_nonce = our nonce, peer_nonce = the peer's.
+
+/**
+ * @brief Consume an initiator's IKE_SA_INIT and emit the response into @p out, deriving the SA keys.
+ *
+ * @p our_spi is the responder's fresh SPI; @p our_dh_priv / @p our_dh_pub the ephemeral X25519 key pair;
+ * @p our_nonce the responder nonce (Nr); @p suite the accepted cipher suite (its group must match the
+ * request's KE); @p transforms the echoed accepted proposal. Sets @p hs (role = responder) to
+ * IKE_ST_SA_INIT_DONE.
+ * @return the response message length written to @p out, or 0 on a malformed / mismatched request or overflow.
+ */
+size_t dws_ike_responder_on_sa_init(IkeHandshake *hs, const uint8_t *req, size_t req_len,
+                                    const uint8_t our_spi[DWS_IKE_SPI_LEN],
+                                    const uint8_t our_dh_priv[DWS_IKE_X25519_LEN],
+                                    const uint8_t our_dh_pub[DWS_IKE_X25519_LEN], const uint8_t *our_nonce,
+                                    size_t nonce_len, const IkeSuite *suite, const IkeTransform *transforms,
+                                    uint8_t num_transforms, uint8_t *out, size_t out_cap);
+
 #endif // DWS_ENABLE_IKEV2
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IKEV2_H
