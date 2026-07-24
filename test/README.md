@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5141 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5143 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29212,7 +29212,7 @@ A thorough directory of all **5141 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nats (14 tests)</b></summary>
+<summary><b>test_nats (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_connect</b> &mdash; <i>Build connect</i></summary>
@@ -29361,6 +29361,42 @@ A thorough directory of all **5141 test cases** across **291 suites**. Expand a 
       * <code>Assert equal (NatsMsgType::NATS_MSG, m.type)</code>
       * <code>Assert equal memory ("_INBOX.7", m.reply, m.reply_len)</code>
       * <code>Assert equal memory ("hello", m.payload, 5)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_hpub</b> &mdash; <i>Guards: null headers and a zero header length fail closed.</i></summary>
+
+    * **Objective**: Guards: null headers and a zero header length fail closed.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(expect), n);</code>
+      * <code>Assert equal memory (expect, buf, n)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nats_build_hpub(buf, sizeof(buf), "foo", nullptr, hdrs, 0, nullptr, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_hmsg</b> &mdash; <i>With a reply-to token.</i></summary>
+
+    * **Objective**: With a reply-to token.
+    * **Assertions**:
+      * <code>Assert true (dws_nats_parse(raw, strlen(raw), &m, &c))</code>
+      * <code>Assert equal (NatsMsgType::NATS_MSG, m.type)</code>
+      * <code>Assert equal memory ("foo", m.subject, m.subject_len)</code>
+      * <code>Assert equal memory ("9", m.sid, m.sid_len)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(18, m.headers_len);</code>
+      * <code>Assert equal memory ("NATS/1.0\\r\\nX: 1\\r\\n\\r\\n", m.headers, 18)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, m.payload_len);</code>
+      * <code>Assert equal memory ("hi", m.payload, 2)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(raw), c);</code>
+      * <code>Assert true (dws_nats_parse(raw2, strlen(raw2), &m, &c))</code>
+      * <code>Assert equal memory ("_INBOX.3", m.reply, m.reply_len)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(18, m.headers_len);</code>
+      * <code>Assert equal memory ("hi", m.payload, 2)</code>
+      * <code>Assert false (dws_nats_parse("HMSG foo 9 30 20\\r\\n\\r\\n", 19, &m, &c))</code>
+      * <code>Assert false (dws_nats_parse("HMSG foo 9 18 20\\r\\nNATS", 22, &m, &c))</code>
+      * <code>Assert true (dws_nats_parse("MSG foo 1 2\\r\\nhi\\r\\n", 17, &m, &c))</code>
+      * <code>Assert null (m.headers)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, m.headers_len);</code>
   </details>
 
   <details style="margin-left: 20px;">
