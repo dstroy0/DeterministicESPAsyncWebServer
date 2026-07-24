@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5114 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5115 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -3394,7 +3394,7 @@ A thorough directory of all **5114 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_c37118 (11 tests)</b></summary>
+<summary><b>test_c37118 (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_crc_check_value</b> &mdash; <i>Crc check value</i></summary>
@@ -3451,6 +3451,35 @@ A thorough directory of all **5114 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(payload), f.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, f.data, sizeof(payload));</code>
       * <code>Assert false (dws_c37118_parse_command(&f, &cmd))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_stat</b> &mdash; <i>A data frame whose STAT word 0xFB63 exercises a mix of flags:</i></summary>
+
+    * **Objective**: A data frame whose STAT word 0xFB63 exercises a mix of flags:
+    * **Assertions**:
+      * <code>Assert true (dws_c37118_parse_frame(buf, n, &f))</code>
+      * <code>Assert true (dws_c37118_decode_stat(&f, &st))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xFB63, st.raw);</code>
+      * <code>Assert false (st.data_valid)</code>
+      * <code>Assert true (st.pmu_error)</code>
+      * <code>Assert false (st.in_sync)</code>
+      * <code>Assert true (st.sorted_by_arrival)</code>
+      * <code>Assert true (st.trigger)</code>
+      * <code>Assert false (st.config_change)</code>
+      * <code>Assert true (st.data_modified)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, st.time_quality);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(C37118_UNLOCKED_100_1000S, st.unlocked_time);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(C37118_TRIGGER_PHASE_ANGLE, st.trigger_reason);</code>
+      * <code>Assert true (dws_c37118_parse_frame(buf, n, &f))</code>
+      * <code>Assert true (dws_c37118_decode_stat(&f, &st))</code>
+      * <code>Assert true (st.data_valid)</code>
+      * <code>Assert true (st.in_sync)</code>
+      * <code>Assert false (st.trigger)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(C37118_TRIGGER_MANUAL, st.trigger_reason);</code>
+      * <code>Assert false (dws_c37118_decode_stat(&cf, &st))</code>
+      * <code>Assert false (dws_c37118_decode_stat(nullptr, &st))</code>
+      * <code>Assert false (dws_c37118_decode_stat(&f, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
