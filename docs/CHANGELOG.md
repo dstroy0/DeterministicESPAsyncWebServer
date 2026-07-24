@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.144.1] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.144.1 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ea22483`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ea224834e15af09f4776402c82fe1d0e7a8c56a2))
+
+### Changes
+
+- Bump version: 7.144.0 → 7.144.1 ([`4ed3772`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ed377241b072139669bbe880930e53d67e97b7b))
+
+### Documentation
+
+- group PTP with the network-time features ([`fbc2e93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fbc2e931dda751c54cd31e35f24e752a1414de24))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`efa79a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/efa79a6fd52e95bdf234ca9017aa5dcc81b7b7ff))
+
+</details>
+
 ## [7.144.0] - 2026-07-24
 
 <details>
