@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5154 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5155 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -11096,7 +11096,7 @@ A thorough directory of all **5154 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_enip (9 tests)</b></summary>
+<summary><b>test_enip (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_header_round_trip</b> &mdash; <i>command + length, little-endian.</i></summary>
@@ -11172,6 +11172,35 @@ A thorough directory of all **5154 test cases** across **291 suites**. Expand a 
       * <code>Assert true (dws_eip_parse_send_rr_data(d, dlen, &out_cip, &out_len))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(cip), out_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(cip, out_cip, sizeof(cip));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_list_identity</b> &mdash; <i>Request: a header-only ListIdentity (command 0x0063, length 0).</i></summary>
+
+    * **Objective**: Request: a header-only ListIdentity (command 0x0063, length 0).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(EIP_HEADER_SIZE, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x63, buf[0]); // ListIdentity</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]); // length 0</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_eip_build_list_identity(buf, 16, nullptr)); // needs 24</code>
+      * <code>Assert true (dws_eip_parse_list_identity(resp, sizeof(resp), &id))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, id.protocol_version);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x001D, id.vendor_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x000C, id.device_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0036, id.product_code);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(20, id.revision_major);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(11, id.revision_minor);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0030, id.status);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x12345678u, id.serial_number);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, id.product_name_len);</code>
+      * <code>Assert equal memory ("PLC-1", id.product_name, 5)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, id.state);</code>
+      * <code>Assert false (dws_eip_parse_list_identity(resp, 1, &id2))</code>
+      * <code>Assert false (dws_eip_parse_list_identity(other, sizeof(other), &id2))</code>
+      * <code>Assert false (dws_eip_parse_list_identity(trunc, sizeof(trunc), &id2))</code>
+      * <code>Assert false (dws_eip_parse_list_identity(nullptr, 10, &id2))</code>
   </details>
 
   <details style="margin-left: 20px;">
