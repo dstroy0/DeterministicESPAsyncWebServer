@@ -360,6 +360,31 @@ void test_decode_temperature()
     TEST_ASSERT_FALSE(dws_n2k_decode_temperature(nullptr, 8, &d));
 }
 
+void test_decode_attitude()
+{
+    // sid 5, yaw 0.5236 rad (raw 5236), pitch 0.1 rad (raw 1000), roll -0.2 rad (raw -2000).
+    const uint8_t a[8] = {0x05, 0x74, 0x14, 0xe8, 0x03, 0x30, 0xf8, 0xff};
+    N2kAttitude at;
+    TEST_ASSERT_TRUE(dws_n2k_decode_attitude(a, sizeof(a), &at));
+    TEST_ASSERT_EQUAL_UINT8(5, at.sid);
+    TEST_ASSERT_TRUE(at.yaw_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 0.5236f, at.yaw_rad);
+    TEST_ASSERT_TRUE(at.pitch_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 0.1f, at.pitch_rad);
+    TEST_ASSERT_TRUE(at.roll_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, -0.2f, at.roll_rad); // signed roll decodes negative
+
+    // A 0x7FFF yaw is not-available; pitch and roll stay valid.
+    const uint8_t na[8] = {0x05, 0xff, 0x7f, 0xe8, 0x03, 0x30, 0xf8, 0xff};
+    TEST_ASSERT_TRUE(dws_n2k_decode_attitude(na, sizeof(na), &at));
+    TEST_ASSERT_FALSE(at.yaw_valid);
+    TEST_ASSERT_TRUE(at.pitch_valid);
+    TEST_ASSERT_TRUE(at.roll_valid);
+    // Short payload + nulls are rejected.
+    TEST_ASSERT_FALSE(dws_n2k_decode_attitude(a, 6, &at));
+    TEST_ASSERT_FALSE(dws_n2k_decode_attitude(nullptr, 8, &at));
+}
+
 void test_decode_wind_data()
 {
     // sid 0x2A, speed 5.00 m/s (raw 500), angle 1.5708 rad (raw 15708), reference apparent.
@@ -441,6 +466,7 @@ int main()
     RUN_TEST(test_decode_cog_sog_rapid);
     RUN_TEST(test_decode_engine_rapid);
     RUN_TEST(test_decode_temperature);
+    RUN_TEST(test_decode_attitude);
     RUN_TEST(test_decode_wind_data);
     RUN_TEST(test_decode_water_depth);
     RUN_TEST(test_decode_vessel_heading);

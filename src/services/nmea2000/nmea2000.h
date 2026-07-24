@@ -94,6 +94,7 @@ bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t
 #define N2K_PGN_WIND_DATA 130306u      ///< Wind Data: speed + angle + reference
 #define N2K_PGN_WATER_DEPTH 128267u    ///< Water Depth: depth below transducer + offset
 #define N2K_PGN_VESSEL_HEADING 127250u ///< Vessel Heading: heading + deviation + variation
+#define N2K_PGN_ATTITUDE 127257u       ///< Attitude: yaw + pitch + roll
 #define N2K_PGN_TEMPERATURE 130312u    ///< Temperature: instance + source + actual / set temperature
 
 // Temperature source (PGN 130312 byte 2).
@@ -157,6 +158,18 @@ struct N2kEngineRapid
     int8_t tilt_pct;  ///< engine tilt / trim (percent, 1 %/bit, signed)
 };
 
+/** @brief Decoded Attitude (PGN 127257): the vessel's orientation. Each angle is signed at 0.0001 rad/bit. */
+struct N2kAttitude
+{
+    uint8_t sid;      ///< sequence id
+    bool yaw_valid;   ///< false if yaw is not-available
+    float yaw_rad;    ///< yaw (radians); + = bow rotating to starboard
+    bool pitch_valid; ///< false if pitch is not-available
+    float pitch_rad;  ///< pitch (radians); + = bow up
+    bool roll_valid;  ///< false if roll is not-available
+    float roll_rad;   ///< roll (radians); + = starboard side down
+};
+
 /** @brief Decoded Temperature (PGN 130312). Temperatures are carried in Kelvin (0.01 K/bit) on the wire and
  *  exposed here in Celsius. */
 struct N2kTemperature
@@ -218,6 +231,12 @@ bool dws_n2k_decode_cog_sog_rapid(const uint8_t *payload, size_t len, N2kCogSogR
  * @return true iff @p len is at least 6 octets (instance + speed + boost + tilt); false otherwise.
  */
 bool dws_n2k_decode_engine_rapid(const uint8_t *payload, size_t len, N2kEngineRapid *out);
+
+/**
+ * @brief Decode an Attitude (PGN 127257) payload into @p out.
+ * @return true iff @p len is at least 7 octets (SID + yaw + pitch + roll); false otherwise.
+ */
+bool dws_n2k_decode_attitude(const uint8_t *payload, size_t len, N2kAttitude *out);
 
 /**
  * @brief Decode a Temperature (PGN 130312) payload into @p out.

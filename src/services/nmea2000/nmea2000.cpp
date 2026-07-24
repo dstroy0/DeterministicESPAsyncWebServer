@@ -202,6 +202,23 @@ bool dws_n2k_decode_temperature(const uint8_t *payload, size_t len, N2kTemperatu
     return true;
 }
 
+bool dws_n2k_decode_attitude(const uint8_t *payload, size_t len, N2kAttitude *out)
+{
+    if (!payload || !out || len < 7) // sid(1) + yaw(2) + pitch(2) + roll(2)
+        return false;
+    out->sid = payload[0];
+    int16_t yaw = rd_i16le(payload + 1); // 0.0001 rad per bit, signed
+    out->yaw_valid = ((uint16_t)yaw != 0x7FFFu);
+    out->yaw_rad = (float)yaw * 0.0001f;
+    int16_t pitch = rd_i16le(payload + 3);
+    out->pitch_valid = ((uint16_t)pitch != 0x7FFFu);
+    out->pitch_rad = (float)pitch * 0.0001f;
+    int16_t roll = rd_i16le(payload + 5);
+    out->roll_valid = ((uint16_t)roll != 0x7FFFu);
+    out->roll_rad = (float)roll * 0.0001f;
+    return true;
+}
+
 bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *out)
 {
     if (!payload || !out || len < 6)
