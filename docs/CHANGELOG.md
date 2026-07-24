@@ -2,19 +2,35 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.154.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.154.0 - 2026-07-24</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a0e2cca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0e2cca24eada8d22a3ec29dd48d7b5f88d0f199))
 - update CHANGELOG.md [skip ci] ([`94ca445`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/94ca44576c434c0123b7091544eac9d5f7f2a732))
 - update CHANGELOG.md [skip ci] ([`b8fe787`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8fe7873a462ed9bc343812f6d53a4bb12f40c9d))
 
+### Changes
+
+- Bump version: 7.153.0 → 7.154.0 ([`89fadd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89fadd3458f12bac021727ed0f621562c2cae3e3))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`76e7184`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76e718450e03dfb1c629ff263054a9c8623c3a77))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1c627ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c627bad5d52cafce0e3f722e9a24f1dfa49a028))
 - record SSH c2s compression build-verified on ESP32-S3 ([`95807ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95807aebe6beb568bb39cf881530272dcf938d96))
 - update ESP32 build footprints [skip ci] ([`9c57566`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9c57566801c9f28dfcf3a7cb2c37bc440f15279c))
 - correct SSH_ZLIB DRAM guard for the c2s inflate window (~80 KB) ([`0c3a3cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c3a3cd1f92260bc636d7fb47773257de429a139))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cdd3f53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdd3f53edb7555b0a32e18e8d759f3a87f1f250e))
+
+### Features
+
+- message de-duplication (RFC 7252 sec 4.5) ([`da47108`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da471085919eeffd7838fadd7acb6293006885fd))
+
+</details>
 
 ## [7.153.0] - 2026-07-24
 
