@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5104 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5105 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -3528,7 +3528,7 @@ A thorough directory of all **5104 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_canopen (26 tests)</b></summary>
+<summary><b>test_canopen (27 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_nmt_start_node</b> &mdash; <i>node 0 = all nodes is allowed; node 200 is out of range.</i></summary>
@@ -3556,6 +3556,27 @@ A thorough directory of all **5104 test cases** across **291 suites**. Expand a 
       * <code>Assert true (dws_canopen_parse(&f, &m))</code>
       * <code>Assert equal int (CanopenType::CANOPEN_T_SYNC, m.type)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, m.node_id);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_time_roundtrip</b> &mdash; <i>12:34:56.789 -> 45296789 ms after midnight; day 15545 since 1984-01-01.</i></summary>
+
+    * **Objective**: 12:34:56.789 -> 45296789 ms after midnight; day 15545 since 1984-01-01.
+    * **Assertions**:
+      * <code>Assert true (dws_canopen_build_time(&f, 45296789u, 15545))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x100, f.id); // TIME COB, broadcast</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, f.dlc);</code>
+      * <code>Assert true (dws_canopen_parse(&f, &m))</code>
+      * <code>Assert equal int (CanopenType::CANOPEN_T_TIME, m.type)</code>
+      * <code>Assert true (dws_canopen_parse_time(&f, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(45296789u, t.ms_since_midnight);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(15545, t.days_since_1984);</code>
+      * <code>Assert true (dws_canopen_parse_time(&f, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(45296789u, t.ms_since_midnight); // still masked cleanly</code>
+      * <code>Assert false (dws_canopen_parse_time(&sync, &t))</code>
+      * <code>Assert false (dws_canopen_parse_time(&f, &t))</code>
+      * <code>Assert false (dws_canopen_parse_time(nullptr, &t))</code>
+      * <code>Assert false (dws_canopen_parse_time(&f, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
