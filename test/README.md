@@ -558,7 +558,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4963 test cases** across **286 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4972 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -39977,6 +39977,104 @@ A thorough directory of all **4963 test cases** across **286 suites**. Expand a 
       * <code>Assert false (dws_scl_ok(nullptr))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclFault::NONE, (uint8_t)dws_scl_fault(nullptr));</code>
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)SclState::FAILSAFE, (uint8_t)dws_scl_state(nullptr));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_sb_modbus (9 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_single_holding</b> &mdash; <i>Read single holding</i></summary>
+
+    * **Objective**: Read single holding
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_sb_modbus_driver(&g_drv, "plc", &g_ctx))</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_register(&g_drv))</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_read("plc", 10, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0xBEEF, v);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_block_matrix</b> &mdash; <i>Read block matrix</i></summary>
+
+    * **Objective**: Read block matrix
+    * **Assertions**:
+      * <code>Assert equal int (4, dws_southbound_read_block("plc", 20, vals, 4))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x1000, vals[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x1001, vals[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x1002, vals[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x1003, vals[3]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_input_registers</b> &mdash; <i>Read input registers</i></summary>
+
+    * **Objective**: Read input registers
+    * **Assertions**:
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_read("sensor", 5, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x0777, v);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_modbus_exception_surfaces</b> &mdash; <i>Modbus exception surfaces</i></summary>
+
+    * **Objective**: Modbus exception surfaces
+    * **Assertions**:
+      * <code>Assert equal int (DWS_SB_MODBUS_EXCEPTION, dws_southbound_read("plc", 60000, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, g_ctx.last_exception);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(123, v); // value_out untouched on failure</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_transport_error_propagates</b> &mdash; <i>Transport error propagates</i></summary>
+
+    * **Objective**: Transport error propagates
+    * **Assertions**:
+      * <code>Assert equal int (-42, dws_southbound_read("plc", 0, &v))</code>
+      * <code>Assert equal int (-42, dws_southbound_read_block("plc", 0, blk, 2))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_unsupported</b> &mdash; <i>Write unsupported</i></summary>
+
+    * **Objective**: Write unsupported
+    * **Assertions**:
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_write("plc", 0, 1))</code>
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_write_block("plc", 0, in, 2))</code>
+      * <code>Assert null (g_drv.write)</code>
+      * <code>Assert null (g_drv.write_block)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_init_rejects_bad_args</b> &mdash; <i>Init rejects bad args</i></summary>
+
+    * **Objective**: Init rejects bad args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_sb_modbus_init(&g_ctx, loopback_txn, nullptr,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(Sb::SB_ERR_ARG, dws_sb_modbus_init(nullptr, loopback_txn, nullptr,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_bounds</b> &mdash; <i>A span that would run past the 16-bit address space.</i></summary>
+
+    * **Objective**: A span that would run past the 16-bit address space.
+    * **Assertions**:
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_read("plc", 0x10000, &v))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_read_block("plc", 0, blk, 126))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_read_block("plc", 0xFFFF, blk, 2))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_txid_increments</b> &mdash; <i>Txid increments</i></summary>
+
+    * **Objective**: Txid increments
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, g_ctx.txid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, g_ctx.txid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, g_ctx.txid);</code>
   </details>
 
 </details>
