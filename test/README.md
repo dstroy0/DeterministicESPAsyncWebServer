@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5150 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5151 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -9393,7 +9393,7 @@ A thorough directory of all **5150 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dnp3 (17 tests)</b></summary>
+<summary><b>test_dnp3 (18 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dnp3_parse_guards</b> &mdash; <i>Dnp3 parse guards</i></summary>
@@ -9659,6 +9659,38 @@ A thorough directory of all **5150 test cases** across **291 suites**. Expand a 
       * <code>Assert false (dws_dnp3_parse_object_header(badq, sizeof(badq), &h))</code>
       * <code>Assert false (dws_dnp3_parse_object_header(nullptr, 5, &h))</code>
       * <code>Assert false (dws_dnp3_parse_object_header(two, 5, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_object_header</b> &mdash; <i>1-octet start-stop: group 1 var 2 (binary inputs), 0..9.</i></summary>
+
+    * **Objective**: 1-octet start-stop: group 1 var 2 (binary inputs), 0..9.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(exp1, buf, 5);</code>
+      * <code>Assert true (dws_dnp3_parse_object_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DNP3_RANGE_START_STOP_1, h.range_code);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, h.start);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(9, h.stop);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(exp2, buf, 7);</code>
+      * <code>Assert true (dws_dnp3_parse_object_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(100, h.start);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(300, h.stop);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(201, h.count);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(11, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DNP3_RANGE_START_STOP_4, buf[2]);</code>
+      * <code>Assert true (dws_dnp3_parse_object_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, h.start);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(70000, h.stop);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expall, buf, 3);</code>
+      * <code>Assert true (dws_dnp3_parse_object_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DNP3_RANGE_NO_RANGE, h.range_code);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_range(buf, sizeof(buf), 1, 2, 9, 0)); // stop &lt; start</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_range(nullptr, sizeof(buf), 1, 2, 0, 9));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_range(buf, 4, 1, 2, 0, 9)); // needs 5</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_all(buf, 2, 60, 1));        // needs 3</code>
   </details>
 
 </details>
