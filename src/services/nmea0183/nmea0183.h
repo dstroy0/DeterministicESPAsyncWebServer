@@ -186,5 +186,21 @@ struct DwsNmeaGsa
  */
 bool dws_nmea0183_parse_gsa(const Nmea0183 *m, DwsNmeaGsa *out);
 
+/** @brief Decoded MWV (wind speed + angle): the standard wind-instrument sentence. */
+struct DwsNmeaMwv
+{
+    float wind_angle_deg; ///< wind angle (0..359 degrees)
+    char reference;       ///< 'R' relative (apparent) or 'T' true, or '\0' if the field is absent
+    float wind_speed;     ///< wind speed, in the units given by @ref speed_units
+    char speed_units;     ///< 'K' km/h, 'M' m/s, 'N' knots, or '\0' if absent
+    bool valid;           ///< status field: true for 'A' (valid), false for 'V'
+};
+
+/**
+ * @brief Decode a parsed MWV sentence into @p out. @return true iff @p m is an MWV sentence with the angle /
+ *        reference / speed / units / status fields; false otherwise.
+ */
+bool dws_nmea0183_parse_mwv(const Nmea0183 *m, DwsNmeaMwv *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

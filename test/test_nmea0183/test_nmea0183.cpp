@@ -397,6 +397,36 @@ void test_decode_gsa()
     TEST_ASSERT_FALSE(dws_nmea0183_parse_gsa(nullptr, &g));
 }
 
+void test_decode_mwv()
+{
+    char buf[96];
+    // Apparent wind at 214.8 deg relative, 10.5 knots, valid.
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "WIMWV,214.8,R,10.5,N,A");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaMwv w;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_mwv(&m, &w));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 214.8f, w.wind_angle_deg);
+    TEST_ASSERT_EQUAL_CHAR('R', w.reference);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 10.5f, w.wind_speed);
+    TEST_ASSERT_EQUAL_CHAR('N', w.speed_units);
+    TEST_ASSERT_TRUE(w.valid);
+
+    // A true-wind, m/s, invalid-status variant decodes the other field values.
+    n = dws_nmea0183_build(buf, sizeof(buf), "WIMWV,45.0,T,3.2,M,V");
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_mwv(&m, &w));
+    TEST_ASSERT_EQUAL_CHAR('T', w.reference);
+    TEST_ASSERT_EQUAL_CHAR('M', w.speed_units);
+    TEST_ASSERT_FALSE(w.valid);
+
+    // A GGA is not an MWV, and null args are rejected.
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_mwv(&m, &w));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_mwv(nullptr, &w));
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -434,6 +464,7 @@ int main()
     RUN_TEST(test_decode_zda);
     RUN_TEST(test_decode_vtg);
     RUN_TEST(test_decode_gsa);
+    RUN_TEST(test_decode_mwv);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }

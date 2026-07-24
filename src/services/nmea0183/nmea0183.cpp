@@ -331,4 +331,19 @@ bool dws_nmea0183_parse_gsa(const Nmea0183 *m, DwsNmeaGsa *out)
     return true;
 }
 
+bool dws_nmea0183_parse_mwv(const Nmea0183 *m, DwsNmeaMwv *out)
+{
+    if (!m || !out || strcmp(m->type, "MWV") != 0 || m->field_count < 6) // need through status (field 5)
+        return false;
+    memset(out, 0, sizeof(*out));
+    dws_nmea0183_field_float(m, 1, &out->wind_angle_deg); // stays 0 if empty (out was zeroed)
+    if (m->field_len[2] >= 1)
+        out->reference = m->fields[2][0];
+    dws_nmea0183_field_float(m, 3, &out->wind_speed);
+    if (m->field_len[4] >= 1)
+        out->speed_units = m->fields[4][0];
+    out->valid = (m->field_len[5] >= 1 && (m->fields[5][0] == 'A' || m->fields[5][0] == 'a'));
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183
