@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`b8fe787`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8fe7873a462ed9bc343812f6d53a4bb12f40c9d))
+
+### Documentation
+
+- correct SSH_ZLIB DRAM guard for the c2s inflate window (~80 KB) ([`0c3a3cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c3a3cd1f92260bc636d7fb47773257de429a139))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cdd3f53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdd3f53edb7555b0a32e18e8d759f3a87f1f250e))
+
 ## [7.153.0] - 2026-07-24
 
 <details>
