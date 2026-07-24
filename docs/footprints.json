@@ -402,14 +402,14 @@
     "example": "L7-Application/ModbusTcp",
     "flags": "-DDWS_ENABLE_MODBUS=1",
     "board": "esp32dev",
-    "flash_bytes": 755125,
+    "flash_bytes": 755533,
     "ram_bytes": 82108
   },
   "MODBUS+MODBUS_MASTER": {
     "example": "L7-Application/ModbusScan",
     "flags": "-DDWS_ENABLE_MODBUS=1 -DDWS_ENABLE_MODBUS_MASTER=1",
     "board": "esp32dev",
-    "flash_bytes": 755589,
+    "flash_bytes": 756001,
     "ram_bytes": 82100
   },
   "MPR121": {

@@ -65,8 +65,8 @@ from each example's `pio ci` size report and aggregated into
 | `LSV2`                                                                                                    | L7-Application/HeidenhainLsv2        | 708.3 KB (55.3%) | 43.0 KB (13.4%)  |
 | `MDNS`                                                                                                    | L7-Application/mDNS                  | 760.7 KB (59.4%) | 81.8 KB (25.6%)  |
 | `MDNS+PROMISC+WIFI_SNIFFER+MDNS_ADAPTIVE`                                                                 | L7-Application/MdnsAdaptive          | 762.7 KB (59.6%) | 81.9 KB (25.6%)  |
-| `MODBUS`                                                                                                  | L7-Application/ModbusTcp             | 737.4 KB (57.6%) | 80.2 KB (25.1%)  |
-| `MODBUS+MODBUS_MASTER`                                                                                    | L7-Application/ModbusScan            | 737.9 KB (57.6%) | 80.2 KB (25.1%)  |
+| `MODBUS`                                                                                                  | L7-Application/ModbusTcp             | 737.8 KB (57.6%) | 80.2 KB (25.1%)  |
+| `MODBUS+MODBUS_MASTER`                                                                                    | L7-Application/ModbusScan            | 738.3 KB (57.7%) | 80.2 KB (25.1%)  |
 | `MPR121`                                                                                                  | Drivers/Mpr121                       | 281.0 KB (21.9%) | 21.3 KB (6.7%)   |
 | `MQTT`                                                                                                    | L7-Application/MqttClient            | 719.2 KB (56.2%) | 63.8 KB (19.9%)  |
 | `MSGPACK`                                                                                                 | L6-Presentation/MsgPack              | 739.4 KB (57.8%) | 80.0 KB (25.0%)  |
