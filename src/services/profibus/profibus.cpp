@@ -63,10 +63,40 @@ size_t dws_pb_build_sd2(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *data,
     return i;
 }
 
+size_t dws_pb_build_sd3(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *data, uint8_t *out, size_t cap)
+{
+    if (!out || !data || cap < 14) // SD3 DA SA FC data[8] FCS ED
+        return 0;
+    out[0] = Profibus::PB_SD3;
+    out[1] = da;
+    out[2] = sa;
+    out[3] = fc;
+    memcpy(out + 4, data, 8);
+    out[12] = dws_pb_fcs(out + 1, 11); // FCS over DA+SA+FC+data(8)
+    out[13] = Profibus::PB_ED;
+    return 14;
+}
+
 bool dws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
 {
     if (!frame || !out || len < 6)
         return false;
+
+    if (frame[0] == Profibus::PB_SD3)
+    {
+        // SD3 DA SA FC data[8] FCS ED (14 octets, fixed)
+        if (len < 14)
+            return false;
+        if (dws_pb_fcs(frame + 1, 11) != frame[12] || frame[13] != Profibus::PB_ED)
+            return false;
+        out->sd = Profibus::PB_SD3;
+        out->da = frame[1];
+        out->sa = frame[2];
+        out->fc = frame[3];
+        out->data = frame + 4;
+        out->data_len = 8;
+        return true;
+    }
 
     if (frame[0] == Profibus::PB_SD1)
     {

@@ -59,6 +59,37 @@ void test_sd2_roundtrip(void)
     TEST_ASSERT_EQUAL_HEX8_ARRAY(data, t.data, 3);
 }
 
+void test_sd3_roundtrip(void)
+{
+    const uint8_t data[8] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    uint8_t out[16];
+    size_t n = dws_pb_build_sd3(0x05, 0x02, 0x7C, data, out, sizeof(out));
+    // FCS = (0x05 + 0x02 + 0x7C + sum(data)) mod 256 = 0xE7.
+    const uint8_t expect[14] = {0xA2, 0x05, 0x02, 0x7C, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xE7, 0x16};
+    TEST_ASSERT_EQUAL_size_t(14, n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 14);
+
+    PbTelegram t;
+    TEST_ASSERT_TRUE(dws_pb_parse(out, n, &t));
+    TEST_ASSERT_EQUAL_HEX8(Profibus::PB_SD3, t.sd);
+    TEST_ASSERT_EQUAL_HEX8(0x05, t.da);
+    TEST_ASSERT_EQUAL_HEX8(0x02, t.sa);
+    TEST_ASSERT_EQUAL_HEX8(0x7C, t.fc);
+    TEST_ASSERT_EQUAL_size_t(8, t.data_len);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(data, t.data, 8);
+
+    // Guards: a null buffer, a null data, and a too-small buffer.
+    TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd3(0x05, 0x02, 0x7C, data, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd3(0x05, 0x02, 0x7C, nullptr, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd3(0x05, 0x02, 0x7C, data, out, 13)); // needs 14
+
+    // A corrupt FCS is rejected; a truncated SD3 (< 14) is rejected.
+    out[12] ^= 0xFF;
+    TEST_ASSERT_FALSE(dws_pb_parse(out, n, &t));
+    out[12] ^= 0xFF;                              // restore
+    TEST_ASSERT_FALSE(dws_pb_parse(out, 13, &t)); // truncated
+}
+
 void test_parse_rejects(void)
 {
     uint8_t data[2] = {0x11, 0x22};
@@ -175,6 +206,7 @@ int main(void)
     UNITY_BEGIN();
     RUN_TEST(test_fcs);
     RUN_TEST(test_sd1);
+    RUN_TEST(test_sd3_roundtrip);
     RUN_TEST(test_sd2_roundtrip);
     RUN_TEST(test_parse_rejects);
     RUN_TEST(test_build_and_parse_guard_subconditions);

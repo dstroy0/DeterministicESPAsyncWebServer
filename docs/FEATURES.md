@@ -990,7 +990,7 @@ Opt-in real-time ingest primitive (v5 milestone). Default off. Fixed-capacity qu
 
 `DWS_ENABLE_PROFIBUS`
 
-Opt-in PROFIBUS-DP FDL telegram codec. When set, services/profibus builds/validates the PROFIBUS-DP FDL telegrams - SD1 (no-data: SD1 DA SA FC FCS ED) and SD2 (variable-data: SD2 LE LEr SD2 DA SA FC data FCS ED, arithmetic-sum FCS) - a Siemens DP master exchanges with slaves over RS-485 (the DP-V0 cyclic I/O exchange). Pure codec (the RS-485 timing + DP state machine are the device step). Default off.
+Opt-in PROFIBUS-DP FDL telegram codec. When set, services/profibus builds/validates the PROFIBUS-DP FDL telegrams - SD1 (no-data: SD1 DA SA FC FCS ED), SD2 (variable-data: SD2 LE LEr SD2 DA SA FC data FCS ED, arithmetic-sum FCS), and SD3 (fixed 8-octet data: SD3 DA SA FC data[8] FCS ED) - a Siemens DP master exchanges with slaves over RS-485 (the DP-V0 cyclic I/O exchange). Pure codec (the RS-485 timing + DP state machine are the device step). Default off.
 
 ## PROFINET
 

@@ -59,10 +59,17 @@ size_t dws_pb_build_sd1(uint8_t da, uint8_t sa, uint8_t fc, uint8_t *out, size_t
 size_t dws_pb_build_sd2(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *data, size_t data_len, uint8_t *out,
                         size_t cap);
 
+/**
+ * @brief Build an SD3 (fixed 8-octet data) telegram: SD3 DA SA FC data[8] FCS ED. The data length is always
+ *        exactly 8 (the fixed-length data telegram), so @p data must point to 8 octets.
+ * @return 14 (the telegram length), or 0 on a null buffer / null data / overflow.
+ */
+size_t dws_pb_build_sd3(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *data, uint8_t *out, size_t cap);
+
 /** @brief A parsed PROFIBUS telegram (data points into the input, null for SD1). */
 struct PbTelegram
 {
-    uint8_t sd; ///< the start delimiter (PB_SD1 / PB_SD2).
+    uint8_t sd; ///< the start delimiter (PB_SD1 / PB_SD2 / PB_SD3).
     uint8_t da;
     uint8_t sa;
     uint8_t fc;
@@ -70,7 +77,7 @@ struct PbTelegram
     size_t data_len;
 };
 
-/** @brief Validate + parse an SD1 or SD2 telegram (FCS + ED checked). @return true if well-formed. */
+/** @brief Validate + parse an SD1 / SD2 / SD3 telegram (FCS + ED checked). @return true if well-formed. */
 bool dws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out);
 
 #endif // DWS_ENABLE_PROFIBUS
