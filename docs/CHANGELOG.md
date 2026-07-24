@@ -2,7 +2,35 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.63.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.63.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`f9dd8d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f9dd8d85818ecf2165ef6b0ef945141eadf673d4))
+
+### Changes
+
+- Bump version: 7.62.0 → 7.63.0 ([`fd2cc33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd2cc332010e44d3fc4a7b6cd5099ef85f637ff3))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`8ec4530`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8ec453087e3bb2cc5c84477395fe425a88b903af))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`78de8d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78de8d15be5f6b7b49f5a6e149c24eb2e3dfafbc))
+- update ESP32 build footprints [skip ci] ([`e02c63b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e02c63b215f941e4547733c8c6642725818b0348))
+
+### Features
+
+- decode UBX-NAV-SAT per-satellite info ([`6de390a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6de390ad85575ec46f480887c282fda18aa1c971))
+
+</details>
+
+## [7.62.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.62.0 - 2026-07-24</b></summary>
 
 ### Bug Fixes
 
@@ -12,10 +40,21 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - update CHANGELOG.md [skip ci] ([`bad4ee1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad4ee1721ba1299c2eb730e106f331e24535967))
 
+### Changes
+
+- Bump version: 7.61.0 → 7.62.0 ([`dd7bb73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd7bb7326d1b595a7972032397c919439f2d4f5d))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`763dee7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/763dee79095e46acdce7a0ab376a8bfa60a3055f))
 - update ESP32 build footprints [skip ci] ([`fa65bb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa65bb8eae48e6727e76d151275ac733a5f1962e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`14a6eec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14a6eecd67b5554540531d6291c2fd60d864af2f))
+
+### Features
+
+- decode UBX-NAV-PVT navigation solution ([`bda6477`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bda647707205d8708f63fe0405d5f9f5631f42d4))
+
+</details>
 
 ## [7.61.0] - 2026-07-24
 
