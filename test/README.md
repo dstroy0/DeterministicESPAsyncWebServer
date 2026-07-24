@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **273 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **274 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -269,6 +269,7 @@ The native test matrix has **273 environments**, one per feature, generated from
 | `native_rcwl0516` | `WS_ENABLE_RCWL0516=1` | `test_rcwl0516` | RCWL-0516 Doppler presence sensor + the shared one-GPIO presence facade (services/rcwl0516): the debounce that swallows comparator chatter, the hold that bridges the module's ~2s retrigger gaps into o... |
 | `native_redis` | `WS_ENABLE_REDIS=1` | `test_redis_resp` | Redis RESP2/RESP3 codec (services/redis_resp): the zero-heap command encoder + the cursor reply parser (RESP2 simple/error/integer/bulk/array/nil plus RESP3 null/boolean/double/big number/bulk error/v... |
 | `native_relay` | `WS_ENABLE_RELAY=1` | `test_relay` | TCP relay / DNAT byte pump (services/relay): the bidirectional relay engine that publishes an internal host:port through the server. |
+| `native_roaming` | `WS_ENABLE_ROAMING=1` | `test_roaming` | Wi-Fi roaming decision layer (services/roaming): the pure policy that fuses the current RSSI, a candidate neighbour list, and an optional 802.11v BTM hint into a roam/stay decision (target BSSID + cha... |
 | `native_robotics` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_ROBOTICS=1` | `test_robotics` | OPC UA for Robotics (OPC 40010-1) MotionDeviceSystem model (services/robotics) - the Browse hierarchy + the Read resolver over a bound RoboticsMotionDeviceSystem, including the parametric Axes, are ho... |
 | `native_rtc` | `WS_ENABLE_RTC=1` | `test_rtc` | DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in 24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation, and a round-trip over the 2000... |
 | `native_rtcm3` | `WS_ENABLE_NTRIP_CASTER=1` | `test_rtcm3` | RTCM 3.x framing + station-reference codec (services/gnss/rtcm3), the pure core of the GNSS RTK base / NTRIP caster: the transport frame (0xD3 preamble, 10-bit length, CRC-24Q), MSB-first bit I/O, and... |
@@ -563,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5073 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5079 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -40637,6 +40638,73 @@ A thorough directory of all **5073 test cases** across **290 suites**. Expand a 
     * **Assertions**:
       * <code>Assert null (strstr(tcp_captured(), "X-Big"))</code>
       * <code>Assert not null (strstr(tcp_captured(), "X-Small: ok\\r\\n"))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_roaming (6 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stay_when_link_strong</b> &mdash; <i>Strong current link (-50); even a stronger candidate does not trigger a roam below the threshold.</i></summary>
+
+    * **Objective**: Strong current link (-50); even a stronger candidate does not trigger a roam below the threshold.
+    * **Assertions**:
+      * <code>Assert false (d.roam)</code>
+      * <code>Assert equal (DWS_ROAM_NONE, d.reason)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_roam_on_low_rssi_to_strongest</b> &mdash; <i>Weak current link (-78) and AP_A is clearly stronger (-55): roam to AP_A.</i></summary>
+
+    * **Objective**: Weak current link (-78) and AP_A is clearly stronger (-55): roam to AP_A.
+    * **Assertions**:
+      * <code>Assert true (d.roam)</code>
+      * <code>Assert equal (DWS_ROAM_LOW_RSSI, d.reason)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, d.target_bssid, 6);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, d.target_channel);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hysteresis_blocks_marginal_roam</b> &mdash; <i>Weak link (-78) but the best candidate is only 4 dB better (< 8 dB hysteresis): stay.</i></summary>
+
+    * **Objective**: Weak link (-78) but the best candidate is only 4 dB better (< 8 dB hysteresis): stay.
+    * **Assertions**:
+      * <code>Assert false (d.roam)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_btm_imminent_forces_roam</b> &mdash; <i>A strong current link (-45) would normally stay, but disassoc-imminent forces the roam to the</i></summary>
+
+    * **Objective**: A strong current link (-45) would normally stay, but disassoc-imminent forces the roam to the
+    * **Assertions**:
+      * <code>Assert true (d.roam)</code>
+      * <code>Assert equal (DWS_ROAM_BTM_IMMINENT, d.reason)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, d.target_bssid, 6);</code>
+      * <code>Assert true (d.roam)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_B, d.target_bssid, 6);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_btm_suggested_honoured_only_if_not_weaker</b> &mdash; <i>Current link -50 (strong), suggested AP_B is -55 (weaker): do NOT chase into a worse AP.</i></summary>
+
+    * **Objective**: Current link -50 (strong), suggested AP_B is -55 (weaker): do NOT chase into a worse AP.
+    * **Assertions**:
+      * <code>Assert false (d.roam)</code>
+      * <code>Assert true (d.roam)</code>
+      * <code>Assert equal (DWS_ROAM_BTM_SUGGESTED, d.reason)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_B, d.target_bssid, 6);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_never_targets_current_and_guards</b> &mdash; <i>The neighbour list contains only the current BSSID -> nothing to roam to even on a weak link.</i></summary>
+
+    * **Objective**: The neighbour list contains only the current BSSID -> nothing to roam to even on a weak link.
+    * **Assertions**:
+      * <code>Assert false (d.roam)</code>
+      * <code>Assert true (d.roam)</code>
+      * <code>Assert equal (DWS_ROAM_LOW_RSSI, d.reason)</code>
+      * <code>Assert false (d.roam)</code>
   </details>
 
 </details>

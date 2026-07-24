@@ -244,6 +244,12 @@
       "src": ["+<services/ptp/ptp.cpp>"],
       "tests": ["test_ptp"]
     },
+    "native_roaming": {
+      "desc": "Wi-Fi roaming decision layer (services/roaming): the pure policy that fuses the current RSSI, a\ncandidate neighbour list, and an optional 802.11v BTM hint into a roam/stay decision (target BSSID +\nchannel + reason), with a hysteresis margin and a disassoc-imminent override. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_ROAMING=1"],
+      "src": ["+<services/roaming/roaming.cpp>"],
+      "tests": ["test_roaming"]
+    },
     "native_iolink": {
       "desc": "IO-Link (SDCI) data-link message codec (services/iolink): the MC / CKT / CKS control\noctets and the SDCI checksum (seed 0x52 + the 8->6 compression of IO-Link spec A.1.6), with a\nhand-computed known-answer vector. Pure host tests.",
       "flags": ["-DDWS_ENABLE_IOLINK=1"],

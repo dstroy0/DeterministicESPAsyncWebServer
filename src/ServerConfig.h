@@ -1772,6 +1772,21 @@
 #endif
 
 /**
+ * @brief Wi-Fi roaming decision layer (`services/roaming`).
+ *
+ * The pure policy that decides whether and where to roam to a better access point, given the current
+ * link RSSI, a candidate neighbour list (from an 802.11k neighbour report or a scan), and an optional
+ * 802.11v BSS-Transition-Management hint from the network. `dws_roam_decide` fuses those into a
+ * roam/stay decision with a target BSSID + channel and a reason (a disassociation-imminent BTM, a
+ * network-suggested BTM, or a weak link with a clearly stronger candidate past a hysteresis margin).
+ * Pure, stateless, host-tested; the actual scan / neighbour-report request and the 802.11r fast
+ * transition that executes the decision live in the Wi-Fi supplicant.
+ */
+#ifndef DWS_ENABLE_ROAMING
+#define DWS_ENABLE_ROAMING 0
+#endif
+
+/**
  * @brief u-blox UBX binary GNSS protocol codec (`services/ubx`).
  *
  * The binary companion to NMEA 0183 that u-blox receivers speak on the same UART. `dws_ubx_build`

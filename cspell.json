@@ -1480,7 +1480,8 @@
     "pdelay",
     "pseudorange",
     "ddmm",
-    "HDOP"
+    "HDOP",
+    "neighbour"
   ],
   "ignorePaths": [
     "node_modules/**",

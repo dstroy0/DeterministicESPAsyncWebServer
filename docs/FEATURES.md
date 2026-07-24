@@ -1456,6 +1456,12 @@ WebSocket support (RFC 6455 framing + SHA-1/base64 handshake).
 
 Passive 802.11 promiscuous (monitor) capture. Default off. `dws_promisc_begin(channel, sink)` puts the radio in promiscuous mode (`esp_wifi_set_promiscuous`) and delivers every frame - with RSSI and channel - to a sink; capture is strictly passive (no injection). Wire the sink into the forwarding plane (`DWS_ENABLE_FORWARD`) to bridge captured Wi-Fi frames to another interface - e.g. stream them to a wired collector over Ethernet ("capture on Wi-Fi, forward to Ethernet"). Ships a pure 802.11 MAC-header parser (`wifi_frame_parse`: type/subtype, the to/from-DS src/dst/bssid layout, QoS, WDS 4-address, sequence number) and libpcap framing (`DLT_IEEE802_11`) so a forwarded frame is a valid PCAP a wired Wireshark / tcpdump reads. The parser and PCAP framing are pure and host-tested (`native_promisc`); the radio bring-up is ESP32-only. Example WifiCapture.
 
+## Wi-Fi Roaming
+
+`DWS_ENABLE_ROAMING`
+
+Wi-Fi roaming decision layer. Default off. services/roaming is the pure, stateless policy that decides whether and where to roam to a better access point, fusing three inputs into one decision: the current link's RSSI, a candidate neighbour list (from an 802.11k neighbour report or a scan), and an optional 802.11v BSS-Transition-Management hint from the network. `dws_roam_decide` returns a roam/stay decision with a target BSSID + channel and a reason, in priority order: a disassociation-imminent BTM forces a roam (to the network's preferred candidate if listed, else the strongest); a non-imminent BTM steering hint is honoured only when its preferred AP is not weaker than the current link; otherwise, when the current RSSI is at/below the caller's threshold and the strongest candidate beats it by at least the hysteresis margin, it roams to that candidate (the current AP is never chosen). This is the fusion layer above the simpler two-AP RSSI-hysteresis helper (`dws_wifi_should_roam`) in the sniffer: it adds the 802.11v steering path, the candidate-list selection, and the reason codes. Pure and host-tested (`native_roaming`); the scan / neighbour-report request and the 802.11r fast transition that executes the decision live in the Wi-Fi supplicant. See src/services/roaming/roaming.h.
+
 ## Wi-Fi Sniffer
 
 `DWS_ENABLE_WIFI_SNIFFER`

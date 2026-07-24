@@ -1,0 +1,90 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file roaming.h
+ * @brief Wi-Fi roaming decision layer (DWS_ENABLE_ROAMING) - the policy that picks a roam target.
+ *
+ * The three 802.11 roaming primitives are supplicant / hardware territory: 802.11k surfaces a neighbour
+ * report (candidate APs), 802.11v delivers a BSS-Transition-Management hint from the network, and 802.11r
+ * does the fast transition. This module is the piece between them: the pure, deterministic policy that
+ * fuses the current link's RSSI, a candidate neighbour list, and an optional BTM hint into a decision -
+ * roam or stay, and to which AP and why. It holds no state and touches no radio, so it is fully
+ * host-testable with synthetic inputs; the caller feeds it real data and executes the transition.
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_ROAMING_H
+#define DETERMINISTICESPASYNCWEBSERVER_ROAMING_H
+
+#include "ServerConfig.h"
+
+#if DWS_ENABLE_ROAMING
+
+#include <stddef.h>
+#include <stdint.h>
+
+/** @brief A candidate access point (from an 802.11k neighbour report or a scan). */
+struct DwsRoamNeighbor
+{
+    uint8_t bssid[6]; ///< the AP's BSSID
+    uint8_t channel;  ///< operating channel
+    int8_t rssi_dbm;  ///< measured signal strength (dBm; more negative is weaker)
+};
+
+/** @brief An 802.11v BSS-Transition-Management hint from the network. */
+struct DwsRoamBtm
+{
+    bool present;           ///< a BTM request was received this cycle
+    bool disassoc_imminent; ///< the AP will disassociate us shortly (we must leave)
+    bool has_preferred;     ///< @ref preferred_bssid names a specific target
+    uint8_t preferred_bssid[6];
+};
+
+/** @brief Roaming policy thresholds (caller-supplied, so no global tuning knob). */
+struct DwsRoamPolicy
+{
+    int8_t roam_rssi_threshold_dbm; ///< only consider an RSSI-driven roam when the link is at/below this
+    uint8_t hysteresis_db;          ///< a candidate must beat the current link by this margin to be worth it
+};
+
+/** @brief Why the decision was made. */
+enum DwsRoamReason
+{
+    DWS_ROAM_NONE = 0,      ///< stay on the current AP
+    DWS_ROAM_BTM_IMMINENT,  ///< forced off by a disassociation-imminent BTM request
+    DWS_ROAM_BTM_SUGGESTED, ///< the network steered us (BTM) to a preferred, no-weaker AP
+    DWS_ROAM_LOW_RSSI,      ///< the link is weak and a candidate is clearly stronger
+};
+
+/** @brief The roaming decision. */
+struct DwsRoamDecision
+{
+    bool roam;               ///< true to transition to @ref target_bssid
+    uint8_t target_bssid[6]; ///< the AP to roam to (valid only when @ref roam)
+    uint8_t target_channel;  ///< that AP's channel
+    DwsRoamReason reason;    ///< why (see @ref DwsRoamReason)
+};
+
+/**
+ * @brief Decide whether and where to roam (pure, stateless).
+ *
+ * Priority order: a disassociation-imminent BTM forces a roam (to the preferred candidate if it is in the
+ * list, else the strongest); a non-imminent BTM with a preferred, no-weaker candidate is honoured next;
+ * otherwise, when the current RSSI is at/below the policy threshold and the strongest candidate beats it
+ * by at least the hysteresis margin, roam to that candidate. The current AP is never chosen as a target.
+ *
+ * @param current_bssid    the BSSID we are associated with (excluded from the candidates).
+ * @param current_rssi_dbm the current link's RSSI.
+ * @param neighbors        candidate APs (@p n of them).
+ * @param btm              an optional BTM hint (may be null).
+ * @param policy           the thresholds (may be null -> a conservative default is used).
+ * @param out              receives the decision (never null).
+ */
+void dws_roam_decide(const uint8_t current_bssid[6], int8_t current_rssi_dbm, const DwsRoamNeighbor *neighbors,
+                     uint8_t n, const DwsRoamBtm *btm, const DwsRoamPolicy *policy, DwsRoamDecision *out);
+
+#endif // DWS_ENABLE_ROAMING
+#endif // DETERMINISTICESPASYNCWEBSERVER_ROAMING_H
