@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5138 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5139 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -8930,7 +8930,7 @@ A thorough directory of all **5138 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dmx (8 tests)</b></summary>
+<summary><b>test_dmx (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dmx_build_and_get</b> &mdash; <i>512 channels is the max; 513 is rejected.</i></summary>
@@ -8953,6 +8953,22 @@ A thorough directory of all **5138 test cases** across **291 suites**. Expand a 
     * **Objective**: Rdm uid
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_HEX64(0x444412345678ULL, uid);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rdm_decode_disc_response</b> &mdash; <i>Zero preamble (separator only) also decodes.</i></summary>
+
+    * **Objective**: Zero preamble (separator only) also decodes.
+    * **Assertions**:
+      * <code>Assert true (dws_rdm_decode_disc_response(resp, n, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(want, got);</code>
+      * <code>Assert true (dws_rdm_decode_disc_response(resp, n, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(want, got);</code>
+      * <code>Assert false (dws_rdm_decode_disc_response(bad, bn, &got))</code>
+      * <code>Assert false (dws_rdm_decode_disc_response(nosep, sizeof(nosep), &got))</code>
+      * <code>Assert false (dws_rdm_decode_disc_response(resp, 10, &got))</code>
+      * <code>Assert false (dws_rdm_decode_disc_response(nullptr, n, &got))</code>
+      * <code>Assert false (dws_rdm_decode_disc_response(resp, n, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
