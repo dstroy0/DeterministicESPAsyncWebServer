@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4994 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4996 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **4994 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (52 tests)</b></summary>
+<summary><b>test_ikev2 (54 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20594,6 +20594,46 @@ A thorough directory of all **4994 test cases** across **287 suites**. Expand a 
       * <code>Assert false (dws_ike_auth_psk(nullptr, 1, b, 8, b, 8, b, 8, b, 8, out))</code>
       * <code>Assert false (dws_ike_auth_psk(b, 8, b, 8, b, 8, b, 8, b, 8, nullptr))</code>
       * <code>Assert false (dws_ike_auth_psk(b, 8, nullptr, 8, b, 8, b, 8, b, 8, out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sa_init_build_parse</b> &mdash; <i>Raw header bytes: Next Payload = SA(33), version 0x20, exchange = IKE_SA_INIT(34), INITIATOR flag.</i></summary>
+
+    * **Objective**: Raw header bytes: Next Payload = SA(33), version 0x20, exchange = IKE_SA_INIT(34), INITIATOR flag.
+    * **Assertions**:
+      * <code>Assert true (n &gt; DWS_IKE_HDR_LEN)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(33, buf[16]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_IKE_VERSION, buf[17]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(34, buf[18]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_IKE_FLAG_INITIATOR, buf[19]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(34, buf[28]); // SA.next = KE</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(40, buf[ke_off]); // KE.next = Nonce</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, buf[no_off]); // Nonce.next = end</code>
+      * <code>Assert true (dws_ike_sa_init_parse(buf, n, &m))</code>
+      * <code>Assert false (m.is_response)</code>
+      * <code>Assert equal memory (ispi, m.init_spi, 8)</code>
+      * <code>Assert equal memory (rspi, m.resp_spi, 8)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeProtocol::IKE_PROTO_IKE, (uint8_t)m.proposal.protocol_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, m.proposal.num_transforms);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(IKE_DH_CURVE25519, m.dh_group);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, m.ke_len);</code>
+      * <code>Assert equal memory (ke, m.ke_data, 32)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, m.nonce_len);</code>
+      * <code>Assert equal memory (ni, m.nonce, 32)</code>
+      * <code>Assert true (dws_ike_transform_next(&tit, &tr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(IKE_ENCR_AES_CBC, tr.id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(256, tr.key_length);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sa_init_parse_guards</b> &mdash; <i>A truncated message (Length says more than is present) fails closed.</i></summary>
+
+    * **Objective**: A truncated message (Length says more than is present) fails closed.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert false (dws_ike_sa_init_parse(buf, n - 1, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>Assert false (dws_ike_sa_init_parse(buf2, n, &m))</code>
   </details>
 
 </details>
