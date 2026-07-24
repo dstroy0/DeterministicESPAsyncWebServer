@@ -292,4 +292,19 @@ bool dws_nmea0183_parse_zda(const Nmea0183 *m, DwsNmeaZda *out)
     return true;
 }
 
+bool dws_nmea0183_parse_vtg(const Nmea0183 *m, DwsNmeaVtg *out)
+{
+    if (!m || !out || strcmp(m->type, "VTG") != 0 || m->field_count < 9) // need through the km/h unit (field 8)
+        return false;
+    memset(out, 0, sizeof(*out));
+    dws_nmea0183_field_float(m, 1, &out->course_true_deg); // stays 0 if empty (out was zeroed)
+    dws_nmea0183_field_float(m, 3, &out->course_mag_deg);
+    dws_nmea0183_field_float(m, 5, &out->speed_knots);
+    dws_nmea0183_field_float(m, 7, &out->speed_kmh);
+    // The mode indicator (field 9) is NMEA 2.3+; older receivers omit it.
+    if (m->field_count > 9 && m->field_len[9] >= 1)
+        out->mode = m->fields[9][0];
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183

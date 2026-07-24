@@ -335,6 +335,35 @@ void test_decode_zda()
     TEST_ASSERT_FALSE(dws_nmea0183_parse_zda(nullptr, &z));
 }
 
+void test_decode_vtg()
+{
+    char buf[96];
+    // Course 54.7 T / 34.4 M, speed 5.5 kn / 10.2 km/h, autonomous mode.
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "GPVTG,054.7,T,034.4,M,005.5,N,010.2,K,A");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaVtg v;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_vtg(&m, &v));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 54.7f, v.course_true_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 34.4f, v.course_mag_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 5.5f, v.speed_knots);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 10.2f, v.speed_kmh);
+    TEST_ASSERT_EQUAL_CHAR('A', v.mode);
+
+    // A pre-2.3 VTG without the mode field still decodes; mode reads back '\0'.
+    n = dws_nmea0183_build(buf, sizeof(buf), "GPVTG,054.7,T,034.4,M,005.5,N,010.2,K");
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_vtg(&m, &v));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 5.5f, v.speed_knots);
+    TEST_ASSERT_EQUAL_CHAR('\0', v.mode);
+
+    // A GGA is not a VTG, and null args are rejected.
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_vtg(&m, &v));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_vtg(nullptr, &v));
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -370,6 +399,7 @@ int main()
     RUN_TEST(test_decode_gsv);
     RUN_TEST(test_decode_gsv_blank_snr_and_partial);
     RUN_TEST(test_decode_zda);
+    RUN_TEST(test_decode_vtg);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }

@@ -150,5 +150,22 @@ struct DwsNmeaZda
  */
 bool dws_nmea0183_parse_zda(const Nmea0183 *m, DwsNmeaZda *out);
 
+/** @brief Decoded VTG (course over ground + ground speed). The course-over-ground vector complements the
+ *  RMC/GGA position - it is the sentence to read for heading and speed. */
+struct DwsNmeaVtg
+{
+    float course_true_deg; ///< course over ground, degrees true (0 if the field is absent)
+    float course_mag_deg;  ///< course over ground, degrees magnetic (0 if absent)
+    float speed_knots;     ///< speed over ground in knots (0 if absent)
+    float speed_kmh;       ///< speed over ground in km/h (0 if absent)
+    char mode;             ///< NMEA 2.3+ mode indicator ('A'/'D'/'E'/'N'), or '\0' when the field is absent
+};
+
+/**
+ * @brief Decode a parsed VTG sentence into @p out. @return true iff @p m is a VTG sentence with at least the
+ *        course / speed fields (through the km/h unit); false otherwise. The mode reads back '\0' when absent.
+ */
+bool dws_nmea0183_parse_vtg(const Nmea0183 *m, DwsNmeaVtg *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H
