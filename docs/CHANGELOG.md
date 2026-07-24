@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.120.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.120.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`d1d7885`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1d788543c59d4edcd733de88f2228725887604e))
+
+### Changes
+
+- Bump version: 7.119.0 → 7.120.0 ([`44dd257`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44dd257fbcd309a650a0d877b799099461dcf2f6))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c0c9788`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0c97888f3eaaa148cd96b79e9c748330082c216))
+
+### Features
+
+- GLL (geographic position) sentence decoder ([`367a4d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/367a4d17d3a375cf05d61e2b8d4200b4625e2083))
+
+</details>
+
 ## [7.119.0] - 2026-07-24
 
 <details>
