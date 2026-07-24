@@ -57,6 +57,57 @@ int dws_modbus_parse_response(const uint8_t *adu, size_t len, uint16_t *regs_out
                               uint8_t *exception_out);
 
 /**
+ * @brief Build a read-bits request ADU (FC 0x01 coils or 0x02 discrete inputs).
+ *
+ * @param fc     ModbusFunction::MODBUS_FC_READ_COILS (0x01) or ::MODBUS_FC_READ_DISCRETE_INPUTS (0x02).
+ * @param txid   transaction id echoed by the slave.
+ * @param unit   unit / slave id.
+ * @param start  first bit address.
+ * @param count  number of bits (1..2000).
+ * @param out    destination buffer.
+ * @param cap    destination capacity (>= 12).
+ * @return bytes written (12), or 0 on a bad argument / too-small buffer.
+ */
+size_t dws_modbus_build_read_bits(uint8_t fc, uint16_t txid, uint8_t unit, uint16_t start, uint16_t count, uint8_t *out,
+                                  size_t cap);
+
+/**
+ * @brief Parse a read-bits response ADU (FC 0x01 / 0x02) into one byte (0/1) per bit.
+ *
+ * The response carries only a byte count, so the caller passes the @p count it requested; the byte count
+ * must equal ceil(count/8). Each requested bit is unpacked LSB-first into @p bits_out as 0 or 1.
+ * @param count      the number of bits requested (1..2000).
+ * @param bits_out   destination for @p count unpacked bits (nullable to just validate).
+ * @param max_bits   capacity of @p bits_out.
+ * @param exception_out  set to the Modbus exception code if the slave returned one (then 0 is returned).
+ * @return the number of bits unpacked (@p count, capped by @p max_bits), 0 on an exception, or -1 on a
+ *         malformed / short frame or a byte count that disagrees with @p count.
+ */
+int dws_modbus_parse_read_bits_response(const uint8_t *adu, size_t len, uint16_t count, uint8_t *bits_out,
+                                        size_t max_bits, uint8_t *exception_out);
+
+/**
+ * @brief Build a Write Single Coil request ADU (FC 0x05).
+ *
+ * @param on   the coil value; encoded on the wire as 0xFF00 (on) or 0x0000 (off) per the Modbus spec.
+ * @param cap  destination capacity (>= 12).
+ * @return bytes written (12), or 0 on a null / too-small buffer.
+ */
+size_t dws_modbus_build_write_single_coil(uint16_t txid, uint8_t unit, uint16_t addr, bool on, uint8_t *out,
+                                          size_t cap);
+
+/**
+ * @brief Build a Write Multiple Coils request ADU (FC 0x0F).
+ *
+ * @param bits   one byte (0/1) per coil to write; packed LSB-first into the wire bytes.
+ * @param count  number of coils (1..1968).
+ * @param cap    destination capacity (>= 14 + ceil(count/8)).
+ * @return bytes written, or 0 on a bad argument / too-small buffer.
+ */
+size_t dws_modbus_build_write_multiple_coils(uint16_t txid, uint8_t unit, uint16_t start, const uint8_t *bits,
+                                             uint16_t count, uint8_t *out, size_t cap);
+
+/**
  * @brief Build a Write Single Register request ADU (FC 0x06).
  *
  * @param txid   transaction id echoed by the slave.
@@ -86,16 +137,16 @@ size_t dws_modbus_build_write_multiple(uint16_t txid, uint8_t unit, uint16_t sta
                                        uint16_t count, uint8_t *out, size_t cap);
 
 /**
- * @brief Parse a write-response ADU (FC 0x06 or 0x10).
+ * @brief Parse a write-response ADU (FC 0x05, 0x06, 0x0F, or 0x10).
  *
- * A normal reply echoes the address and the written value (0x06) or the start address and the register
- * count (0x10).
+ * A normal reply echoes the address and the written value (single: 0x05 / 0x06) or the start address and
+ * the quantity written (multiple: 0x0F / 0x10) - the coil and register replies share a wire format.
  * @param adu       response bytes (MBAP + PDU).
  * @param len       response length.
  * @param addr_out  set to the echoed address / start (nullable).
  * @param exception_out  set to the Modbus exception code if the slave returned one (then 0 is returned).
- * @return number of registers written (1 for 0x06, the count for 0x10), 0 on an exception, or -1 on a
- *         malformed / short frame.
+ * @return number written (1 for a single 0x05 / 0x06, the count for a multiple 0x0F / 0x10), 0 on an
+ *         exception, or -1 on a malformed / short frame.
  */
 int dws_modbus_parse_write_response(const uint8_t *adu, size_t len, uint16_t *addr_out, uint8_t *exception_out);
 

@@ -261,6 +261,130 @@ void test_parse_write_response_edges()
     TEST_ASSERT_EQUAL_INT(-1, dws_modbus_parse_write_response(nullptr, 12, &addr, &ex)); // null adu
 }
 
+// ── bit access: coils (FC 0x01 / 0x05 / 0x0F) and discrete inputs (FC 0x02) ──────────────────────
+void test_round_trip_read_coils()
+{
+    dws_modbus_set_coil(0, true);
+    dws_modbus_set_coil(1, false);
+    dws_modbus_set_coil(2, true);
+    dws_modbus_set_coil(9, true); // spans a byte boundary within the 10-bit read
+
+    uint8_t req[16];
+    size_t rn =
+        dws_modbus_build_read_bits((uint8_t)ModbusFunction::MODBUS_FC_READ_COILS, 7, 1, 0, 10, req, sizeof(req));
+    TEST_ASSERT_EQUAL_size_t(12, rn);
+    TEST_ASSERT_EQUAL_HEX8(0x01, req[7]);
+
+    uint8_t resp[MODBUS_ADU_MAX];
+    size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp)); // the slave answers
+    TEST_ASSERT_TRUE(pn > 0);
+
+    uint8_t bits[10];
+    uint8_t ex = 0xFF;
+    int got = dws_modbus_parse_read_bits_response(resp, pn, 10, bits, sizeof(bits), &ex);
+    TEST_ASSERT_EQUAL_INT(10, got);
+    TEST_ASSERT_EQUAL_UINT8(0, ex);
+    TEST_ASSERT_EQUAL_UINT8(1, bits[0]);
+    TEST_ASSERT_EQUAL_UINT8(0, bits[1]);
+    TEST_ASSERT_EQUAL_UINT8(1, bits[2]);
+    TEST_ASSERT_EQUAL_UINT8(1, bits[9]);
+    TEST_ASSERT_EQUAL_UINT8(0, bits[8]);
+}
+
+void test_round_trip_read_discrete_inputs()
+{
+    dws_modbus_set_discrete_input(3, true);
+    dws_modbus_set_discrete_input(4, true);
+
+    uint8_t req[16];
+    size_t rn = dws_modbus_build_read_bits((uint8_t)ModbusFunction::MODBUS_FC_READ_DISCRETE_INPUTS, 8, 1, 0, 6, req,
+                                           sizeof(req));
+    TEST_ASSERT_EQUAL_HEX8(0x02, req[7]);
+    uint8_t resp[MODBUS_ADU_MAX];
+    size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp));
+    uint8_t bits[6];
+    uint8_t ex = 0xFF;
+    int got = dws_modbus_parse_read_bits_response(resp, pn, 6, bits, sizeof(bits), &ex);
+    TEST_ASSERT_EQUAL_INT(6, got);
+    TEST_ASSERT_EQUAL_UINT8(1, bits[3]);
+    TEST_ASSERT_EQUAL_UINT8(1, bits[4]);
+    TEST_ASSERT_EQUAL_UINT8(0, bits[5]);
+}
+
+void test_round_trip_write_single_coil()
+{
+    dws_modbus_set_coil(5, false);
+    uint8_t req[16];
+    size_t rn = dws_modbus_build_write_single_coil(11, 1, 5, true, req, sizeof(req));
+    TEST_ASSERT_EQUAL_size_t(12, rn);
+    TEST_ASSERT_EQUAL_HEX8(0x05, req[7]);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, req[10]); // on encodes as 0xFF00
+    TEST_ASSERT_EQUAL_HEX8(0x00, req[11]);
+
+    uint8_t resp[MODBUS_ADU_MAX];
+    size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp)); // slave applies + echoes
+    uint16_t addr = 0xFFFF;
+    uint8_t ex = 0xFF;
+    int wrote = dws_modbus_parse_write_response(resp, pn, &addr, &ex);
+    TEST_ASSERT_EQUAL_INT(1, wrote);
+    TEST_ASSERT_EQUAL_UINT8(0, ex);
+    TEST_ASSERT_EQUAL_HEX16(5, addr);
+    TEST_ASSERT_TRUE(dws_modbus_get_coil(5)); // the write actually took effect
+}
+
+void test_round_trip_write_multiple_coils()
+{
+    // Clear then write an alternating pattern across a byte boundary.
+    for (uint16_t a = 0; a < 12; a++)
+        dws_modbus_set_coil(a, false);
+    const uint8_t pattern[12] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1};
+
+    uint8_t req[24];
+    size_t rn = dws_modbus_build_write_multiple_coils(12, 1, 0, pattern, 12, req, sizeof(req));
+    TEST_ASSERT_EQUAL_size_t(7 + 6 + 2, rn); // MBAP + fc/start/count/bytecount + ceil(12/8)=2 data bytes
+    TEST_ASSERT_EQUAL_HEX8(0x0F, req[7]);
+    TEST_ASSERT_EQUAL_HEX8(2, req[12]);    // byte count
+    TEST_ASSERT_EQUAL_HEX8(0x55, req[13]); // bits 0..7 = 1,0,1,0,1,0,1,0 -> 0x55 LSB-first
+    TEST_ASSERT_EQUAL_HEX8(0x0B, req[14]); // bits 8..11 = 1,1,0,1 -> 0x0B
+
+    uint8_t resp[MODBUS_ADU_MAX];
+    size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp));
+    uint16_t addr = 0xFFFF;
+    uint8_t ex = 0xFF;
+    int wrote = dws_modbus_parse_write_response(resp, pn, &addr, &ex);
+    TEST_ASSERT_EQUAL_INT(12, wrote); // the quantity written is echoed
+    TEST_ASSERT_EQUAL_HEX16(0, addr);
+    for (uint16_t a = 0; a < 12; a++)
+        TEST_ASSERT_EQUAL_UINT8(pattern[a], dws_modbus_get_coil(a) ? 1 : 0);
+}
+
+void test_bit_build_and_parse_guards()
+{
+    uint8_t adu[16];
+    // build_read_bits rejects a non-bit FC, an out-of-range count, and a null buffer.
+    TEST_ASSERT_EQUAL_size_t(0,
+                             dws_modbus_build_read_bits(0x03, 1, 1, 0, 8, adu, sizeof(adu))); // FC 0x03 is a read reg
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_read_bits(0x01, 1, 1, 0, 0, adu, sizeof(adu)));    // count 0
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_read_bits(0x01, 1, 1, 0, 2001, adu, sizeof(adu))); // count > 2000
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_read_bits(0x01, 1, 1, 0, 8, nullptr, 16));
+    // write coil builders reject bad args.
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single_coil(1, 1, 0, true, nullptr, 16));
+    const uint8_t bits[4] = {1, 0, 1, 1};
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple_coils(1, 1, 0, nullptr, 4, adu, sizeof(adu)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple_coils(1, 1, 0, bits, 0, adu, sizeof(adu))); // count 0
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple_coils(1, 1, 0, bits, 1969, adu, sizeof(adu))); // > 1968
+
+    // parse_read_bits_response: a byte count that disagrees with the requested count fails closed.
+    uint8_t resp[16] = {0, 7, 0, 0, 0, 4, 1, 0x01, 2, 0x05, 0x00}; // byte count 2 but only 4 bits requested (needs 1)
+    uint8_t out[8];
+    uint8_t ex = 0;
+    TEST_ASSERT_EQUAL_INT(-1, dws_modbus_parse_read_bits_response(resp, 11, 4, out, sizeof(out), &ex));
+    // An exception response sets the code and returns 0.
+    uint8_t exc[9] = {0, 7, 0, 0, 0, 3, 1, 0x81, 0x02};
+    TEST_ASSERT_EQUAL_INT(0, dws_modbus_parse_read_bits_response(exc, sizeof(exc), 4, out, sizeof(out), &ex));
+    TEST_ASSERT_EQUAL_UINT8(0x02, ex);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -283,5 +407,10 @@ int main()
     RUN_TEST(test_round_trip_write_multiple);
     RUN_TEST(test_build_write_rejects_bad_args);
     RUN_TEST(test_parse_write_response_edges);
+    RUN_TEST(test_round_trip_read_coils);
+    RUN_TEST(test_round_trip_read_discrete_inputs);
+    RUN_TEST(test_round_trip_write_single_coil);
+    RUN_TEST(test_round_trip_write_multiple_coils);
+    RUN_TEST(test_bit_build_and_parse_guards);
     return UNITY_END();
 }
