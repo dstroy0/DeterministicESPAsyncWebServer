@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5140 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5141 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -15203,7 +15203,7 @@ A thorough directory of all **5140 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_grpcweb (19 tests)</b></summary>
+<summary><b>test_grpcweb (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_frame_message_bytes</b> &mdash; <i>Frame message bytes</i></summary>
@@ -15233,6 +15233,23 @@ A thorough directory of all **5140 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(GRPCWEB_PREFIX_LEN + blen, n);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(blen, len);</code>
       * <code>Assert equal memory (body, buf + GRPCWEB_PREFIX_LEN, blen)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_trailer_message</b> &mdash; <i>A non-zero status (13 = INTERNAL) carrying a human-readable message.</i></summary>
+
+    * **Objective**: A non-zero status (13 = INTERNAL) carrying a human-readable message.
+    * **Assertions**:
+      * <code>Assert true (dws_grpcweb_parse(buf, n, &f, &c))</code>
+      * <code>Assert true (f.trailer)</code>
+      * <code>Assert true (dws_grpcweb_trailer_status(f.body, f.body_len, &status))</code>
+      * <code>Assert equal int (13, status)</code>
+      * <code>Assert true (dws_grpcweb_trailer_message(f.body, f.body_len, &msg, &mlen))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, mlen);</code>
+      * <code>Assert equal memory ("boom", msg, 4)</code>
+      * <code>Assert true (dws_grpcweb_parse(buf, n, &f, &c))</code>
+      * <code>Assert false (dws_grpcweb_trailer_message(f.body, f.body_len, &msg, &mlen))</code>
+      * <code>Assert false (dws_grpcweb_trailer_message(nullptr, 10, &msg, &mlen))</code>
   </details>
 
   <details style="margin-left: 20px;">
