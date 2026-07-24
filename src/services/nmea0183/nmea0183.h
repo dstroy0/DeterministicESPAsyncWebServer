@@ -132,5 +132,23 @@ struct DwsNmeaGsv
  */
 bool dws_nmea0183_parse_gsv(const Nmea0183 *m, DwsNmeaGsv *out);
 
+/** @brief Decoded ZDA (UTC time + calendar date + local zone offset). Unlike RMC this carries the full
+ *  4-digit year, so it is the sentence to read for wall-clock time sync. */
+struct DwsNmeaZda
+{
+    uint8_t hour, minute; ///< UTC time
+    float second;
+    uint8_t day, month;   ///< UTC date
+    uint16_t year;        ///< UTC year (4-digit)
+    int8_t zone_hours;    ///< local zone offset hours (-13..+13); 0 if the field is absent
+    uint8_t zone_minutes; ///< local zone offset minutes (0..59); 0 if the field is absent
+};
+
+/**
+ * @brief Decode a parsed ZDA sentence into @p out. @return true iff @p m is a ZDA sentence with at least
+ *        the time / day / month / year fields; false otherwise. The zone offset reads back 0 when absent.
+ */
+bool dws_nmea0183_parse_zda(const Nmea0183 *m, DwsNmeaZda *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

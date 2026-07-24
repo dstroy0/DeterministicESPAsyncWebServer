@@ -271,4 +271,25 @@ bool dws_nmea0183_parse_gsv(const Nmea0183 *m, DwsNmeaGsv *out)
     return true;
 }
 
+bool dws_nmea0183_parse_zda(const Nmea0183 *m, DwsNmeaZda *out)
+{
+    if (!m || !out || strcmp(m->type, "ZDA") != 0 || m->field_count < 5) // need through year (field 4)
+        return false;
+    memset(out, 0, sizeof(*out));
+    nmea_time(m, 1, &out->hour, &out->minute, &out->second);
+    long v = 0;
+    if (dws_nmea0183_field_int(m, 2, &v))
+        out->day = (uint8_t)v;
+    if (dws_nmea0183_field_int(m, 3, &v))
+        out->month = (uint8_t)v;
+    if (dws_nmea0183_field_int(m, 4, &v))
+        out->year = (uint16_t)v;
+    // The local-zone offset is optional; a receiver commonly leaves both fields blank.
+    if (dws_nmea0183_field_int(m, 5, &v))
+        out->zone_hours = (int8_t)v;
+    if (dws_nmea0183_field_int(m, 6, &v))
+        out->zone_minutes = (uint8_t)v;
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183

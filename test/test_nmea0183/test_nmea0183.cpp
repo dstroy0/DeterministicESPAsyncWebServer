@@ -301,6 +301,40 @@ void test_decode_gsv_blank_snr_and_partial()
     TEST_ASSERT_EQUAL_UINT8(36, g.sats[2].snr_db);
 }
 
+void test_decode_zda()
+{
+    char buf[96];
+    // Full ZDA: 20:15:30.50 UTC on 2026-07-04, local zone -05:30.
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "GPZDA,201530.50,04,07,2026,-05,30");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaZda z;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_zda(&m, &z));
+    TEST_ASSERT_EQUAL_UINT8(20, z.hour);
+    TEST_ASSERT_EQUAL_UINT8(15, z.minute);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 30.50f, z.second);
+    TEST_ASSERT_EQUAL_UINT8(4, z.day);
+    TEST_ASSERT_EQUAL_UINT8(7, z.month);
+    TEST_ASSERT_EQUAL_UINT16(2026, z.year); // full 4-digit year, unlike RMC
+    TEST_ASSERT_EQUAL_INT8(-5, z.zone_hours);
+    TEST_ASSERT_EQUAL_UINT8(30, z.zone_minutes);
+
+    // A ZDA with the optional zone fields blank still decodes; the zone reads back 0.
+    n = dws_nmea0183_build(buf, sizeof(buf), "GPZDA,083045.00,24,12,2025,,");
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_zda(&m, &z));
+    TEST_ASSERT_EQUAL_UINT16(2025, z.year);
+    TEST_ASSERT_EQUAL_UINT8(24, z.day);
+    TEST_ASSERT_EQUAL_INT8(0, z.zone_hours);
+    TEST_ASSERT_EQUAL_UINT8(0, z.zone_minutes);
+
+    // A GGA is not a ZDA, and null args are rejected.
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_zda(&m, &z));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_zda(nullptr, &z));
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -335,6 +369,7 @@ int main()
     RUN_TEST(test_decode_rmc);
     RUN_TEST(test_decode_gsv);
     RUN_TEST(test_decode_gsv_blank_snr_and_partial);
+    RUN_TEST(test_decode_zda);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }
