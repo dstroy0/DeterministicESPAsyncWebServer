@@ -232,6 +232,18 @@
       "src": ["+<services/nmea0183/nmea0183.cpp>"],
       "tests": ["test_nmea0183"]
     },
+    "native_ubx": {
+      "desc": "UBX (u-blox binary GNSS protocol) codec (services/ubx): B5 62 framing, 8-bit Fletcher checksum,\nbuild/poll/parse, and the streaming NMEA+UBX demultiplexer. KATs are the published MON-VER /\nCFG-PRT poll frames. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_UBX=1"],
+      "src": ["+<services/ubx/ubx.cpp>"],
+      "tests": ["test_ubx"]
+    },
+    "native_ptp": {
+      "desc": "PTP / IEEE 1588-2008 (PTPv2) message codec + slave clock math (services/ptp): the 34-octet common\nheader, 10-octet timestamp, Sync/Delay_Req/Follow_Up/Delay_Resp/Announce build+parse, and the\noffset/mean-path-delay calculation from t1..t4. Pure host tests.",
+      "flags": ["-DDWS_ENABLE_PTP=1"],
+      "src": ["+<services/ptp/ptp.cpp>"],
+      "tests": ["test_ptp"]
+    },
     "native_iolink": {
       "desc": "IO-Link (SDCI) data-link message codec (services/iolink): the MC / CKT / CKS control\noctets and the SDCI checksum (seed 0x52 + the 8->6 compression of IO-Link spec A.1.6), with a\nhand-computed known-answer vector. Pure host tests.",
       "flags": ["-DDWS_ENABLE_IOLINK=1"],
@@ -1266,7 +1278,7 @@
       "tests": ["test_euromap77"]
     },
     "native_pentest": {
-      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32, the SQLite\non-disk file-format reader, the Redis RESP reply decoder, the OPC UA Binary\nmessage parsers, the SMB2 client response parsers + the SPNEGO DER walker +\nNTLMSSP CHALLENGE, the DNC block decoder, the FTP client reply parsers, and the\nindustrial client response parsers FINS / MELSEC / CIP / EtherNet-IP / DF1, the\nBACnet/IP + ISO-transport TPKT/COTP frame parsers, the IEEE C37.118\nsynchrophasor + FINS command parsers, the JWT HS256 token verifier, the\nDirectNET / CC-Link / AMQP / MMS frame parsers, the DDS/RTPS UDP submessage\nwalker, and the HPACK HTTP/2 + QPACK HTTP/3 header-block decoders) with malformed/oversized/partial/random/mutated input and asserts bounded\nbuffers + fail-closed + termination (no crash, no over-read, no hang). Pairs with\nthe live driver pentesting/dws_pentest.py. See docs/PENTEST.md.",
+      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32, the SQLite\non-disk file-format reader, the Redis RESP reply decoder, the OPC UA Binary\nmessage parsers, the SMB2 client response parsers + the SPNEGO DER walker +\nNTLMSSP CHALLENGE, the DNC block decoder, the FTP client reply parsers, and the\nindustrial client response parsers FINS / MELSEC / CIP / EtherNet-IP / DF1, the\nBACnet/IP + ISO-transport TPKT/COTP frame parsers, the IEEE C37.118\nsynchrophasor + FINS command parsers, the JWT HS256 token verifier, the\nDirectNET / CC-Link / AMQP / MMS frame parsers, the DDS/RTPS UDP submessage\nwalker, the WebDAV (RFC 4918) PROPPATCH body walker + Destination-header\npercent-decoder, and the HPACK HTTP/2 + QPACK HTTP/3 header-block decoders) with malformed/oversized/partial/random/mutated input and asserts bounded\nbuffers + fail-closed + termination (no crash, no over-read, no hang). Pairs with\nthe live driver pentesting/dws_pentest.py. See docs/PENTEST.md.",
       "flags": [
         "-DDWS_ENABLE_MODBUS=1",
         "-DDWS_ENABLE_MODBUS_MASTER=1",
@@ -1303,6 +1315,7 @@
         "-DDWS_ENABLE_AMQP=1",
         "-DDWS_ENABLE_MMS=1",
         "-DDWS_ENABLE_DDS=1",
+        "-DDWS_ENABLE_WEBDAV=1",
         "-DDWS_ENABLE_HTTP2=1",
         "-DDWS_ENABLE_HTTP3=1"
       ],
@@ -1354,7 +1367,8 @@
         "+<services/cclink/cclink.cpp>",
         "+<services/amqp/amqp.cpp>",
         "+<services/mms/mms.cpp>",
-        "+<services/dds/dds.cpp>"
+        "+<services/dds/dds.cpp>",
+        "+<services/webdav/webdav.cpp>"
       ],
       "tests": ["test_pentest"]
     },
@@ -2101,6 +2115,21 @@
       "flags": ["-DDWS_ENABLE_SOUTHBOUND=1"],
       "src": ["+<services/southbound/southbound.cpp>"],
       "tests": ["test_southbound"]
+    },
+    "native_sb_modbus": {
+      "desc": "Modbus-master southbound driver adapter (services/southbound/sb_modbus): binds the\ntransport-agnostic Modbus TCP master codec into the southbound driver framework, so an app\nreads/writes register points by driver name through the one facade. Host-tested end to end\nagainst the real slave codec (dws_modbus_process_adu) over a mock transaction seam.",
+      "flags": [
+        "-DDWS_ENABLE_SOUTHBOUND=1",
+        "-DDWS_ENABLE_MODBUS=1",
+        "-DDWS_ENABLE_MODBUS_MASTER=1"
+      ],
+      "src": [
+        "+<services/southbound/southbound.cpp>",
+        "+<services/southbound/sb_modbus.cpp>",
+        "+<services/modbus/modbus.cpp>",
+        "+<services/modbus/modbus_master.cpp>"
+      ],
+      "tests": ["test_sb_modbus"]
     },
     "native_exc_decoder": {
       "desc": "ESP32 panic / exception decoder (services/exc_decoder): parse a captured Guru Meditation\ndump (cause, register PC + EXCVADDR, backtrace PC:SP frames) into a structured ExcInfo and serialize it\nas JSON for a live /exception panel; tolerates missing fields + a trailing corruption marker. Pure host tests.",

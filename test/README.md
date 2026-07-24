@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **268 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **271 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -236,7 +236,7 @@ The native test matrix has **268 environments**, one per feature, generated from
 | `native_packml` | `WS_ENABLE_PACKML=1` | `test_packml` | PackML / OMAC packaging-machine state model (services/packml), ISA-TR88.00.02: the pure 17-state transition engine (command / state-complete / execute-complete + command validity) and the owned PackTa... |
 | `native_partition` | `WS_ENABLE_PARTITION_MONITOR=1` | `test_partition_monitor` | Flash partition-map monitor (services/partition_monitor core): the kind classifier + JSON serializer host-test here; the esp_partition walk is ESP32-only. |
 | `native_pca9685` | `WS_ENABLE_PCA9685=1` | `test_pca9685` | PCA9685 PWM/servo codec (services/pca9685): the PRESCALE computation from a PWM frequency (with clamping), the per-channel register address, the servo pulse-width -> 12-bit count conversion (with clam... |
-| `native_pentest` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_MASTER=1`, `WS_ENABLE_TOTP=1`, `WS_ENABLE_MULTIPART=1`, `WS_ENABLE_CBOR=1`, `WS_ENABLE_MSGPACK=1`, `WS_ENABLE_COAP=1`, `WS_ENABLE_COAP_BLOCK=1`, `WS_COAP_BLOCK_SZX_MAX=2`, `WS_COAP_BLOCK1_MAX=128`, `WS_ENABLE_SNMP=1`, `WS_ENABLE_SQLITE=1`, `WS_ENABLE_REDIS=1`, `WS_ENABLE_OPCUA=1`, `WS_ENABLE_GRAPHQL=1`, `WS_ENABLE_DNS_SERVER=1`, `WS_ENABLE_DNP3=1`, `WS_ENABLE_STOMP=1`, `WS_ENABLE_SMB=1`, `WS_ENABLE_DNC=1`, `WS_ENABLE_FTP=1`, `WS_ENABLE_FINS=1`, `WS_ENABLE_MELSEC=1`, `WS_ENABLE_CIP=1`, `WS_ENABLE_ENIP=1`, `WS_ENABLE_DF1=1`, `WS_ENABLE_BACNET=1`, `WS_ENABLE_COTP=1`, `WS_ENABLE_C37118=1`, `WS_ENABLE_JWT=1`, `WS_ENABLE_DIRECTNET=1`, `WS_ENABLE_CCLINK=1`, `WS_ENABLE_AMQP=1`, `WS_ENABLE_MMS=1`, `WS_ENABLE_DDS=1`, `WS_ENABLE_HTTP2=1`, `WS_ENABLE_HTTP3=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
+| `native_pentest` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_MASTER=1`, `WS_ENABLE_TOTP=1`, `WS_ENABLE_MULTIPART=1`, `WS_ENABLE_CBOR=1`, `WS_ENABLE_MSGPACK=1`, `WS_ENABLE_COAP=1`, `WS_ENABLE_COAP_BLOCK=1`, `WS_COAP_BLOCK_SZX_MAX=2`, `WS_COAP_BLOCK1_MAX=128`, `WS_ENABLE_SNMP=1`, `WS_ENABLE_SQLITE=1`, `WS_ENABLE_REDIS=1`, `WS_ENABLE_OPCUA=1`, `WS_ENABLE_GRAPHQL=1`, `WS_ENABLE_DNS_SERVER=1`, `WS_ENABLE_DNP3=1`, `WS_ENABLE_STOMP=1`, `WS_ENABLE_SMB=1`, `WS_ENABLE_DNC=1`, `WS_ENABLE_FTP=1`, `WS_ENABLE_FINS=1`, `WS_ENABLE_MELSEC=1`, `WS_ENABLE_CIP=1`, `WS_ENABLE_ENIP=1`, `WS_ENABLE_DF1=1`, `WS_ENABLE_BACNET=1`, `WS_ENABLE_COTP=1`, `WS_ENABLE_C37118=1`, `WS_ENABLE_JWT=1`, `WS_ENABLE_DIRECTNET=1`, `WS_ENABLE_CCLINK=1`, `WS_ENABLE_AMQP=1`, `WS_ENABLE_MMS=1`, `WS_ENABLE_DDS=1`, `WS_ENABLE_WEBDAV=1`, `WS_ENABLE_HTTP2=1`, `WS_ENABLE_HTTP3=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
 | `native_pn532` | `WS_ENABLE_PN532=1`, `WS_PN532_MAX_DATA=8` | `test_pn532` | PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame build/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS + DCS checksums), a round... |
 | `native_power_mgmt` | `WS_ENABLE_POWER_MGMT=1` | `test_power_mgmt` | SoC power governor (services/power_mgmt): the pure clock decision from load, die temperature and reset reason - load-based scaling, the thermal hysteresis that stops a part parked at the limit from os... |
 | `native_powerlink` | `WS_ENABLE_POWERLINK=1` | `test_powerlink` | Ethernet POWERLINK basic frame codec (services/powerlink): the EPL cyclic frames ([messageType][dest][source][payload]) - SoC/PReq/PRes/SoA - build + parse, over raw L2 (0x88AB). |
@@ -249,6 +249,7 @@ The native test matrix has **268 environments**, one per feature, generated from
 | `native_prov` | default | `test_provisioning` | Provisioning form-field parser - the only host-testable part of the captive portal (softAP / lwIP UDP / NVS are ESP32-only and compiled out here). |
 | `native_proxy_protocol` | `WS_ENABLE_PROXY_PROTOCOL=1` | `test_proxy_protocol` | HAProxy PROXY protocol codec (services/proxy_protocol): the v1 (text) + v2 (binary) TCP/IPv4 header builders and the unified parser (recover the real client IP behind a load balancer). |
 | `native_psram_pool` | `WS_ENABLE_PSRAM_POOL=1` | `test_psram_pool` | Buffer placement policy + DMA ping-pong (services/psram_pool): dws_psram_place picks DRAM vs PSRAM by size / DMA requirement / free-heap headroom (large-cold to PSRAM, small-hot + DMA to DRAM, leaving... |
+| `native_ptp` | `WS_ENABLE_PTP=1` | `test_ptp` | PTP / IEEE 1588-2008 (PTPv2) message codec + slave clock math (services/ptp): the 34-octet common header, 10-octet timestamp, Sync/Delay_Req/Follow_Up/Delay_Resp/Announce build+parse, and the offset/m... |
 | `native_qpack` | `WS_ENABLE_HTTP3=1` | `test_qpack` | QPACK field-section compression for HTTP/3 (network_drivers/presentation/http3/qpack, RFC 9204): the Appendix B.1 worked example (literal field line with a static name reference), the encoder's exact ... |
 | `native_quic_conn` | `WS_ENABLE_HTTP3=1` | `test_quic_conn` | QUIC v1 server connection engine (network_drivers/presentation/http3/quic_conn, RFC 9000 / RFC 9001): the test acts as a QUIC client - builds real Initial / Handshake / 1-RTT packets and drives a serv... |
 | `native_quic_crypto` | `WS_ENABLE_HTTP3=1` | `test_quic_crypto` | QUIC Initial packet crypto (network_drivers/presentation/http3/quic_hkdf + quic_aead + quic_crypto, RFC 9001): HKDF-Expand-Label key derivation, AEAD_AES_128_GCM (software AES-128 + GHASH) and header ... |
@@ -271,6 +272,7 @@ The native test matrix has **268 environments**, one per feature, generated from
 | `native_rtcm3` | `WS_ENABLE_NTRIP_CASTER=1` | `test_rtcm3` | RTCM 3.x framing + station-reference codec (services/gnss/rtcm3), the pure core of the GNSS RTK base / NTRIP caster: the transport frame (0xD3 preamble, 10-bit length, CRC-24Q), MSB-first bit I/O, and... |
 | `native_s7comm` | `WS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
 | `native_safety_scl` | `WS_ENABLE_SAFETY_SCL=1` | `test_safety_scl` | IEC 61784-3 black-channel Safety Communication Layer primitives (services/safety_scl): the monitoring-counter state machine, the receive watchdog, and the fail-safe latch the four safety profiles comp... |
+| `native_sb_modbus` | `WS_ENABLE_SOUTHBOUND=1`, `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_MASTER=1` | `test_sb_modbus` | Modbus-master southbound driver adapter (services/southbound/sb_modbus): binds the transport-agnostic Modbus TCP master codec into the southbound driver framework, so an app reads/writes register poin... |
 | `native_scp` | `WS_ENABLE_SSH=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_SSH_SCP=1` | `test_scp` | SCP (RCP) protocol wire codec (services/scp): parse an `scp -t/-f <path>` exec command into its sink/source role + target, parse + build the `C<mode> <size> <name>` control line (octal mode, decimal s... |
 | `native_scpi` | `WS_ENABLE_SCPI=1`, `UNITY_INCLUDE_DOUBLE` | `test_scpi` | SCPI / IEEE 488.2 instrument-control codec (services/scpi): the command builder (:-hierarchy header + params + terminator), the response parsers (numeric NR1/NR2/NR3, boolean, quoted string, definite/... |
 | `native_scratch` | default | `test_scratch` | Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset semantics, alignment, and fail-closed exhaustion. |
@@ -320,6 +322,7 @@ The native test matrix has **268 environments**, one per feature, generated from
 | `native_totp` | `WS_ENABLE_TOTP=1` | `test_totp` | TOTP two-factor (services/totp): HMAC-SHA1 HOTP/TOTP + base32, host-tested against the RFC 6238 vectors (builds on the software SHA-1). |
 | `native_trace_capture` | `WS_ENABLE_TRACE_CAPTURE=1`, `WS_TC_MAX_WINDOW_SAMPLES=32` | `test_trace_capture` | Pre/post-trigger sample-window assembler (services/trace_capture), v5 high-rate acquisition: a continuously-running pre-trigger ring, trigger() freezing it as the window's pre-trigger half, feed() fil... |
 | `native_tsan` | `g`, `O1`, `fsanitize=thread`, `pthread` | `test_concurrency` | Same harness under ThreadSanitizer: proves ZERO data races on the slot fields (the DWSAtomic acquire/release happens-before lets the plain rx_buffer[] writes be read on the other core safely). |
+| `native_ubx` | `WS_ENABLE_UBX=1` | `test_ubx` | UBX (u-blox binary GNSS protocol) codec (services/ubx): B5 62 framing, 8-bit Fletcher checksum, build/poll/parse, and the streaming NMEA+UBX demultiplexer. |
 | `native_udp_telemetry` | `WS_ENABLE_UDP_TELEMETRY=1` | `test_udp_telemetry` | UDP telemetry line builder (services/udp_telemetry): InfluxDB line-protocol formatting, host-tested. |
 | `native_udp_transport` | default | `test_udp_transport` | UDP transport multicast receive (network_drivers/transport/udp.cpp): joining an IPv4 multicast group by dotted-quad, rejecting a non-multicast or malformed group, delivering a group datagram to the re... |
 | `native_umati` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_UMATI=1` | `test_umati` | umati / OPC UA for Machine Tools (OPC 40501-1) MachineTool model (services/umati) - the Browse hierarchy + the Read resolver over a bound UmatiMachineTool are host-tested here. |
@@ -558,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4972 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4981 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -25511,7 +25514,7 @@ A thorough directory of all **4972 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_modbus_master (13 tests)</b></summary>
+<summary><b>test_modbus_master (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_read_bytes</b> &mdash; <i>Build read bytes</i></summary>
@@ -25635,6 +25638,78 @@ A thorough directory of all **4972 test cases** across **287 suites**. Expand a 
       * <code>Assert equal int (1, got)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, ex);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x1234, regs[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write_single_bytes</b> &mdash; <i>Build write single bytes</i></summary>
+
+    * **Objective**: Build write single bytes
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(12, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(expect, adu, 12);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_round_trip_write_single</b> &mdash; <i>Round trip write single</i></summary>
+
+    * **Objective**: Round trip write single
+    * **Assertions**:
+      * <code>Assert true (pn &gt; 0)</code>
+      * <code>Assert equal int (1, w)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ex);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(7, addr);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x5A5A, dws_modbus_get_holding_reg(7)); // the slave actually stored it</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write_multiple_bytes</b> &mdash; <i>MBAP length = unit(1) + PDU(6 + 4) = 11; byte count = 4.</i></summary>
+
+    * **Objective**: MBAP length = unit(1) + PDU(6 + 4) = 11; byte count = 4.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(17, n); // 13 + 2*2</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(expect, adu, 17);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_round_trip_write_multiple</b> &mdash; <i>Round trip write multiple</i></summary>
+
+    * **Objective**: Round trip write multiple
+    * **Assertions**:
+      * <code>Assert true (pn &gt; 0)</code>
+      * <code>Assert equal int (3, w)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ex);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(30, start);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xDEAD, dws_modbus_get_holding_reg(30));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xBEEF, dws_modbus_get_holding_reg(31));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xF00D, dws_modbus_get_holding_reg(32));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write_rejects_bad_args</b> &mdash; <i>Build write rejects bad args</i></summary>
+
+    * **Objective**: Build write rejects bad args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single(1, 1, 0, 5, nullptr, 16)); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single(1, 1, 0, 5, adu, 4));      // buffer too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 2, nullptr, 32)); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, nullptr, 2, adu, 32));  // null values</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 0, adu, 32));     // count 0</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 124, adu, 300));  // count &gt; 123</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 2, adu, 16));     // buffer too small</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_write_response_edges</b> &mdash; <i>Exception reply (FC 0x06 \| 0x80, code 2) -> 0 written, exception set.</i></summary>
+
+    * **Objective**: Exception reply (FC 0x06 \| 0x80, code 2) -> 0 written, exception set.
+    * **Assertions**:
+      * <code>Assert equal int (0, dws_modbus_parse_write_response(exc, sizeof(exc), &addr, &ex))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x02, ex);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0, addr); // addr_out zeroed on the exception path</code>
+      * <code>Assert equal int (-1, dws_modbus_parse_write_response(shortf, sizeof(shortf), &addr, &ex))</code>
+      * <code>Assert equal int (-1, dws_modbus_parse_write_response(badfc, sizeof(badfc), &addr, &ex))</code>
+      * <code>Assert equal int (-1, dws_modbus_parse_write_response(badproto, sizeof(badproto), &addr, &ex))</code>
+      * <code>Assert equal int (-1, dws_modbus_parse_write_response(nullptr, 12, &addr, &ex))</code>
   </details>
 
 </details>
@@ -39982,7 +40057,7 @@ A thorough directory of all **4972 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sb_modbus (9 tests)</b></summary>
+<summary><b>test_sb_modbus (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_read_single_holding</b> &mdash; <i>Read single holding</i></summary>
@@ -40037,14 +40112,48 @@ A thorough directory of all **4972 test cases** across **287 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_write_unsupported</b> &mdash; <i>Write unsupported</i></summary>
+    <summary><b>test_write_single_round_trip</b> &mdash; <i>Write single round trip</i></summary>
 
-    * **Objective**: Write unsupported
+    * **Objective**: Write single round trip
     * **Assertions**:
-      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_write("plc", 0, 1))</code>
-      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_write_block("plc", 0, in, 2))</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_write("plc", 8, 0x4242))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x4242, dws_modbus_get_holding_reg(8)); // stored on the slave</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_read("plc", 8, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x4242, v);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_block_round_trip</b> &mdash; <i>Write block round trip</i></summary>
+
+    * **Objective**: Write block round trip
+    * **Assertions**:
+      * <code>Assert equal int (3, dws_southbound_write_block("plc", 40, in, 3))</code>
+      * <code>Assert equal int (3, dws_southbound_read_block("plc", 40, back, 3))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x0A0A, back[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x0B0B, back[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0x0C0C, back[2]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_input_registers_read_only</b> &mdash; <i>Input registers read only</i></summary>
+
+    * **Objective**: Input registers read only
+    * **Assertions**:
       * <code>Assert null (g_drv.write)</code>
       * <code>Assert null (g_drv.write_block)</code>
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_write("sensor", 0, 1))</code>
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_write_block("sensor", 0, in, 2))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_bounds</b> &mdash; <i>Write bounds</i></summary>
+
+    * **Objective**: Write bounds
+    * **Assertions**:
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_write("plc", 0, 0x10000))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_write("plc", 0, -1))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_write_block("plc", 0, big, 124))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_write_block("plc", 0, bad, 2))</code>
   </details>
 
   <details style="margin-left: 20px;">
