@@ -61,6 +61,26 @@ above 20 MHz the SD **card / filesystem is the bottleneck, not the SPI bus**. So
 efficient operating point; 40 MHz buys almost nothing and only raises EMI / wiring sensitivity.
 Sustained is flat (a 139 MB run held ~1.4-1.5 MB/s with no SLC-cache knee).
 
+### SDMMC 4-bit (native SDIO) - the same card ~4x faster
+
+The SPI numbers above are the card's slow path. Re-run in **native SDMMC 4-bit mode** on the S3 SD
+board now wired for SDIO (CLK 39, CMD 40, D0-D3 = 41/42/2/1, card-detect IO4), same **~32 GB SDHC** /
+FAT32 card, 32 KiB sequential transfers, at the 40 MHz high-speed clock:
+
+| SDMMC 4-bit @ 40 MHz | Seq write MB/s | Seq read MB/s | Elapsed (write / read) |
+| -------------------- | -------------: | ------------: | ---------------------- |
+| 4 MB                 |           5.06 |          5.97 | 790 ms / 670 ms        |
+| 8 MB                 |       **8.00** |          5.95 | 1000 ms / 1344 ms      |
+| 16 MB                |           5.28 |          5.94 | 3029 ms / 2693 ms      |
+
+**~4x the SPI-mode throughput** (5-8 MB/s write, ~6 MB/s read vs ~1.5 / ~1.4) - confirming the
+"SDMMC would be several times faster" note above. **Read is dead flat at ~5.95 MB/s** at every size and
+_identical_ at the 20 MHz default clock, so - exactly like SPI - above ~20 MHz the **card / FAT layer is
+the bottleneck, not the SDMMC bus** (40 MHz buys nothing on read). Write is noisier (5-8 MB/s, SLC-cache
+/ card-GC dependent). So the atomic-layer sizing conclusions below hold in SDMMC mode too; only the
+sequential ceiling rises ~4x. Measured 2026-07-23, `Serial` on UART0, run from internal DRAM (these
+N16R8 boards' 8 MB PSRAM is unused here).
+
 ### Random I/O (durable = flush per op, at 40 MHz)
 
 | Pattern     |      IOPS | Avg latency | Max latency |      MB/s |
