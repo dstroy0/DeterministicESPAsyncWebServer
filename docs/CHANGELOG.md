@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.34.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.34.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`83aea86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83aea8663a1c9296cdbc14b4b5753adc9fc3440e))
+
+### Changes
+
+- Bump version: 7.33.0 → 7.34.0 ([`601c82d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/601c82dbe9415495934c8baa951c85a6f72be3c1))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`afedb8f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/afedb8f99833e82ae8ac1c20da02954fbfa97852))
+
+### Features
+
+- SKEYSEED / SK_* key derivation (RFC 7296 s2.13-2.14) ([`75d0632`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75d0632e9b19002144afd0d588cb90edc4325f83))
+
+</details>
+
 ## [7.33.0] - 2026-07-24
 
 <details>
