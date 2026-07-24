@@ -282,13 +282,17 @@ Let the device act as a caching edge / content-distribution node, not just an or
       the NodesToRead/Write/Browse counts stay clamped), the **number parsers** (`dws_strtol`/`_strtoul`/
       `_strtof` on huge integer + exponent strings), the **GraphQL query parser** (huge int / exponent
       literals), the **DNS server** query parse (QNAME over-read + response-builder out_cap), the **DNP3**
-      data-link frame, and the **STOMP** frame parser (slice-bounds) - **38/38** cases pass plain and clean under
+      data-link frame, the **STOMP** frame parser (slice-bounds), and the **WebDAV** core (RFC 4918) - the
+      PROPPATCH request-body XML walker (`dws_webdav_proppatch_ms`, which echoes property tags straight out
+      of an attacker-chosen body: 20k iterations of XML-token/random-byte splices), the Destination-header
+      percent-decoder (`dws_webdav_dest_path`), and the 207 Multi-Status builder / xml-escape helper, each
+      canary-checked so no write ever crosses the caller's cap - **78/78** cases pass plain and clean under
       ASan+UBSan (run the built `program` directly; the
       PIO runner mishandles the sanitizer binary's signals). Running the binary under `-fno-sanitize-recover=all`
       **found and fixed a whole class of signed-overflow UB + `10^exponent` DoS** in the hand-rolled number
       parsers (SNMP BER, `dws_strtol`, RESP, `dws_strtof`, GraphQL, JWT, exc_decoder - see docs/BUGS.md; sweep
       now complete). _Next candidates:_ the WebSocket frame reassembler (`ws_feed_byte` - needs the
-      transport/session mocks wired into the env since it dispatches on frame-ready), and the WebDAV binary decoder.
+      transport/session mocks wired into the env since it dispatches on frame-ready).
 
 ### Docs
 
