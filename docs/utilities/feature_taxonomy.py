@@ -286,6 +286,7 @@ CATEGORY_MEMBERS = {
         "NTP",
         "NTP Server",
         "NTS",
+        "PTP",
     },
     "Observability & Telemetry": {
         "Diag",
