@@ -258,6 +258,49 @@ static size_t dws_modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t
         return 5;
     }
 
+    // FC22: mask-write one holding register: reg = (reg AND And_Mask) OR (Or_Mask AND NOT And_Mask). Echo.
+    case ModbusFunction::MODBUS_FC_MASK_WRITE_REG: {
+        if (pdu_len < 7)
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+        uint16_t addr = rd16(pdu + 1), and_mask = rd16(pdu + 3), or_mask = rd16(pdu + 5);
+        if (addr >= DWS_MODBUS_HOLDING_REGS)
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
+        uint16_t cur = s_modbus.holding[addr];
+        s_modbus.holding[addr] = (uint16_t)((cur & and_mask) | (or_mask & (uint16_t)~and_mask));
+        if (s_modbus.write_cb)
+            s_modbus.write_cb((uint8_t)fc, addr, 1);
+        if (out_cap < 7)
+            return 0;
+        memcpy(out, pdu, 7); // echo request (address + both masks)
+        return 7;
+    }
+
+    // FC23: read/write multiple holding registers in one transaction - the write is applied first, then
+    // the read reflects it (a contiguous read span + a contiguous write span). Reply is the read data.
+    case ModbusFunction::MODBUS_FC_READ_WRITE_MULTIPLE_REGS: {
+        if (pdu_len < 10)
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+        uint16_t r_start = rd16(pdu + 1), r_qty = rd16(pdu + 3), w_start = rd16(pdu + 5), w_qty = rd16(pdu + 7);
+        uint8_t w_bc = pdu[9];
+        if (r_qty < 1 || r_qty > 125 || w_qty < 1 || w_qty > 121 || w_bc != (uint8_t)(w_qty * 2) ||
+            pdu_len < (size_t)10 + w_bc)
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+        if ((uint32_t)r_start + r_qty > DWS_MODBUS_HOLDING_REGS || (uint32_t)w_start + w_qty > DWS_MODBUS_HOLDING_REGS)
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
+        for (uint16_t i = 0; i < w_qty; i++) // write first (§6.17)
+            s_modbus.holding[w_start + i] = rd16(pdu + 10 + i * 2);
+        if (s_modbus.write_cb)
+            s_modbus.write_cb((uint8_t)fc, w_start, w_qty);
+        uint8_t r_bytes = (uint8_t)(r_qty * 2);
+        if ((size_t)2 + r_bytes > out_cap)
+            return 0;
+        out[0] = (uint8_t)fc;
+        out[1] = r_bytes;
+        for (uint16_t i = 0; i < r_qty; i++)
+            wr16(out + 2 + i * 2, s_modbus.holding[r_start + i]);
+        return (size_t)2 + r_bytes;
+    }
+
     // Any unsupported function code: reply with the ILLEGAL FUNCTION exception.
     default:
         return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_FUNCTION, out);

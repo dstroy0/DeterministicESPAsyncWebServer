@@ -54,7 +54,7 @@ int dws_modbus_parse_response(const uint8_t *adu, size_t len, uint16_t *regs_out
             *exception_out = adu[8];
         return 0;
     }
-    if (fc != 0x03 && fc != 0x04)
+    if (fc != 0x03 && fc != 0x04 && fc != 0x17) // read holding / input / read-write-multiple all reply the same
         return -1;
 
     uint8_t byte_count = adu[8];
@@ -283,6 +283,99 @@ int dws_modbus_parse_write_response(const uint8_t *adu, size_t len, uint16_t *ad
     uint16_t tail = (uint16_t)((adu[10] << 8) | adu[11]); // value (0x05/0x06) or quantity (0x0F/0x10)
     bool single = (fc == 0x05 || fc == 0x06);             // single-write echoes a value; multi echoes a count
     return single ? 1 : (int)tail;
+}
+
+size_t dws_modbus_build_mask_write(uint16_t txid, uint8_t unit, uint16_t addr, uint16_t and_mask, uint16_t or_mask,
+                                   uint8_t *out, size_t cap)
+{
+    if (!out || cap < 14) // MBAP(7) + FC(1) + addr(2) + And_Mask(2) + Or_Mask(2)
+        return 0;
+    // MBAP header: length = unit(1) + PDU(7) = 8.
+    out[0] = (uint8_t)(txid >> 8);
+    out[1] = (uint8_t)(txid & 0xFF);
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 0;
+    out[5] = 8;
+    out[6] = unit;
+    // PDU (FC 0x16: address + And_Mask + Or_Mask)
+    out[7] = 0x16;
+    out[8] = (uint8_t)(addr >> 8);
+    out[9] = (uint8_t)(addr & 0xFF);
+    out[10] = (uint8_t)(and_mask >> 8);
+    out[11] = (uint8_t)(and_mask & 0xFF);
+    out[12] = (uint8_t)(or_mask >> 8);
+    out[13] = (uint8_t)(or_mask & 0xFF);
+    return 14;
+}
+
+size_t dws_modbus_build_read_write_multiple(uint16_t txid, uint8_t unit, uint16_t read_start, uint16_t read_count,
+                                            uint16_t write_start, const uint16_t *values, uint16_t write_count,
+                                            uint8_t *out, size_t cap)
+{
+    if (!out || !values)
+        return 0;
+    if (read_count < 1 || read_count > 125 || write_count < 1 || write_count > 121)
+        return 0;
+
+    uint8_t byte_count = (uint8_t)(write_count * 2);
+    size_t pdu_len = 10u + (size_t)byte_count; // fc + rStart(2) + rQty(2) + wStart(2) + wQty(2) + wBC(1) + data
+    size_t total = 7u + pdu_len;               // MBAP(7) + PDU
+    if (cap < total)
+        return 0;
+
+    uint16_t mbap_len = (uint16_t)(1u + pdu_len); // unit + PDU
+    out[0] = (uint8_t)(txid >> 8);
+    out[1] = (uint8_t)(txid & 0xFF);
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = (uint8_t)(mbap_len >> 8);
+    out[5] = (uint8_t)(mbap_len & 0xFF);
+    out[6] = unit;
+    // PDU (FC 0x17: read span, write span, then the write data)
+    out[7] = 0x17;
+    out[8] = (uint8_t)(read_start >> 8);
+    out[9] = (uint8_t)(read_start & 0xFF);
+    out[10] = (uint8_t)(read_count >> 8);
+    out[11] = (uint8_t)(read_count & 0xFF);
+    out[12] = (uint8_t)(write_start >> 8);
+    out[13] = (uint8_t)(write_start & 0xFF);
+    out[14] = (uint8_t)(write_count >> 8);
+    out[15] = (uint8_t)(write_count & 0xFF);
+    out[16] = byte_count;
+    for (uint16_t i = 0; i < write_count; i++)
+    {
+        out[17 + i * 2] = (uint8_t)(values[i] >> 8);
+        out[17 + i * 2 + 1] = (uint8_t)(values[i] & 0xFF);
+    }
+    return total;
+}
+
+int dws_modbus_parse_mask_write_response(const uint8_t *adu, size_t len, uint16_t *addr_out, uint16_t *and_out,
+                                         uint16_t *or_out, uint8_t *exception_out)
+{
+    if (exception_out)
+        *exception_out = 0;
+    if (!adu || len < 9)
+        return -1;
+    if (adu[2] != 0 || adu[3] != 0) // protocol id must be 0
+        return -1;
+    uint8_t fc = adu[7];
+    if (fc & 0x80)
+    {
+        if (exception_out)
+            *exception_out = adu[8];
+        return 0;
+    }
+    if (fc != 0x16 || len < 14) // MBAP(7) + FC(1) + addr(2) + And_Mask(2) + Or_Mask(2)
+        return -1;
+    if (addr_out)
+        *addr_out = (uint16_t)((adu[8] << 8) | adu[9]);
+    if (and_out)
+        *and_out = (uint16_t)((adu[10] << 8) | adu[11]);
+    if (or_out)
+        *or_out = (uint16_t)((adu[12] << 8) | adu[13]);
+    return 1;
 }
 
 #endif // DWS_ENABLE_MODBUS_MASTER

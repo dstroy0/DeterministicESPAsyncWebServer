@@ -150,5 +150,37 @@ size_t dws_modbus_build_write_multiple(uint16_t txid, uint8_t unit, uint16_t sta
  */
 int dws_modbus_parse_write_response(const uint8_t *adu, size_t len, uint16_t *addr_out, uint8_t *exception_out);
 
+/**
+ * @brief Build a Mask Write Register request ADU (FC 0x16).
+ *
+ * The slave computes reg = (reg AND @p and_mask) OR (@p or_mask AND NOT @p and_mask), so a client can set
+ * or clear individual bits of a register without a read-modify-write race.
+ * @param cap  destination capacity (>= 14).
+ * @return bytes written (14), or 0 on a null / too-small buffer.
+ */
+size_t dws_modbus_build_mask_write(uint16_t txid, uint8_t unit, uint16_t addr, uint16_t and_mask, uint16_t or_mask,
+                                   uint8_t *out, size_t cap);
+
+/**
+ * @brief Build a Read/Write Multiple Registers request ADU (FC 0x17): write a span, then read a span, in
+ *        one transaction (the write is applied before the read).
+ * @param read_start / @p read_count   the registers to read back (1..125).
+ * @param write_start / @p write_count the registers to write (1..121); @p values holds @p write_count words.
+ * @param cap  destination capacity (>= 17 + 2*write_count).
+ * @return bytes written, or 0 on a bad argument / too-small buffer.
+ */
+size_t dws_modbus_build_read_write_multiple(uint16_t txid, uint8_t unit, uint16_t read_start, uint16_t read_count,
+                                            uint16_t write_start, const uint16_t *values, uint16_t write_count,
+                                            uint8_t *out, size_t cap);
+
+/**
+ * @brief Parse a Mask Write Register response (FC 0x16), which echoes the address and both masks.
+ * @param addr_out / @p and_out / @p or_out  receive the echoed fields (each nullable).
+ * @param exception_out  set to the Modbus exception code if the slave returned one.
+ * @return 1 on a normal echo, 0 on an exception, or -1 on a malformed / short frame.
+ */
+int dws_modbus_parse_mask_write_response(const uint8_t *adu, size_t len, uint16_t *addr_out, uint16_t *and_out,
+                                         uint16_t *or_out, uint8_t *exception_out);
+
 #endif // DWS_ENABLE_MODBUS_MASTER
 #endif // DETERMINISTICESPASYNCWEBSERVER_MODBUS_MASTER_H

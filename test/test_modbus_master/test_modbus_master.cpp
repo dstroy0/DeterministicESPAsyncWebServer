@@ -385,6 +385,88 @@ void test_bit_build_and_parse_guards()
     TEST_ASSERT_EQUAL_UINT8(0x02, ex);
 }
 
+// ── FC 0x16 Mask Write Register, FC 0x17 Read/Write Multiple Registers ───────────────────────────
+void test_round_trip_mask_write()
+{
+    dws_modbus_set_holding_reg(10, 0x1234);
+    // reg = (0x1234 & 0xF0FF) | (0x0500 & ~0xF0FF) = 0x1034 | 0x0500 = 0x1534.
+    uint8_t req[16];
+    size_t rn = dws_modbus_build_mask_write(5, 1, 10, 0xF0FF, 0x0500, req, sizeof(req));
+    TEST_ASSERT_EQUAL_size_t(14, rn); // MBAP(7) + FC + addr(2) + and(2) + or(2)
+    TEST_ASSERT_EQUAL_HEX8(0x16, req[7]);
+
+    uint8_t resp[MODBUS_ADU_MAX];
+    size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp));
+    uint16_t addr = 0, andm = 0, orm = 0;
+    uint8_t ex = 0xFF;
+    int r = dws_modbus_parse_mask_write_response(resp, pn, &addr, &andm, &orm, &ex);
+    TEST_ASSERT_EQUAL_INT(1, r);
+    TEST_ASSERT_EQUAL_UINT8(0, ex);
+    TEST_ASSERT_EQUAL_HEX16(10, addr);
+    TEST_ASSERT_EQUAL_HEX16(0xF0FF, andm);
+    TEST_ASSERT_EQUAL_HEX16(0x0500, orm);
+    TEST_ASSERT_EQUAL_HEX16(0x1534, dws_modbus_get_holding_reg(10)); // the mask took effect
+}
+
+void test_round_trip_read_write_multiple()
+{
+    dws_modbus_set_holding_reg(20, 0x1111);
+    dws_modbus_set_holding_reg(21, 0x2222);
+    // Write 0xAAAA/0xBBBB to 20,21 and read the same span back: the write is applied first (§6.17), so the
+    // read reflects the new values.
+    const uint16_t wvals[2] = {0xAAAA, 0xBBBB};
+    uint8_t req[32];
+    size_t rn = dws_modbus_build_read_write_multiple(9, 1, /*read*/ 20, 2, /*write*/ 20, wvals, 2, req, sizeof(req));
+    TEST_ASSERT_EQUAL_size_t(7 + 10 + 4, rn); // MBAP + 10-byte fixed PDU head + 2*2 write data
+    TEST_ASSERT_EQUAL_HEX8(0x17, req[7]);
+
+    uint8_t resp[MODBUS_ADU_MAX];
+    size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp));
+    uint16_t regs[2];
+    uint8_t ex = 0xFF;
+    int got = dws_modbus_parse_response(resp, pn, regs, 2, &ex);
+    TEST_ASSERT_EQUAL_INT(2, got);
+    TEST_ASSERT_EQUAL_UINT8(0, ex);
+    TEST_ASSERT_EQUAL_HEX16(0xAAAA, regs[0]);
+    TEST_ASSERT_EQUAL_HEX16(0xBBBB, regs[1]);
+    TEST_ASSERT_EQUAL_HEX16(0xBBBB, dws_modbus_get_holding_reg(21)); // and the write persisted
+}
+
+void test_fc16_17_guards()
+{
+    uint8_t adu[32];
+    const uint16_t vals[2] = {1, 2};
+    // Mask-write build guards.
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_mask_write(1, 1, 0, 0, 0, nullptr, 16));
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_mask_write(1, 1, 0, 0, 0, adu, 8)); // too small
+    // Read/write build guards.
+    TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_read_write_multiple(1, 1, 0, 2, 0, nullptr, 2, adu, sizeof(adu)));
+    TEST_ASSERT_EQUAL_size_t(0,
+                             dws_modbus_build_read_write_multiple(1, 1, 0, 0, 0, vals, 2, adu, sizeof(adu))); // read 0
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_modbus_build_read_write_multiple(1, 1, 0, 126, 0, vals, 2, adu, sizeof(adu))); // read>125
+    TEST_ASSERT_EQUAL_size_t(0,
+                             dws_modbus_build_read_write_multiple(1, 1, 0, 2, 0, vals, 0, adu, sizeof(adu))); // write 0
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_modbus_build_read_write_multiple(1, 1, 0, 2, 0, vals, 122, adu, sizeof(adu))); // write>121
+
+    // An out-of-range mask-write address surfaces as an exception.
+    uint8_t req[16];
+    size_t rn = dws_modbus_build_mask_write(1, 1, 60000, 0xFFFF, 0, req, sizeof(req));
+    uint8_t resp[MODBUS_ADU_MAX];
+    size_t pn = dws_modbus_process_adu(req, rn, resp, sizeof(resp));
+    uint8_t ex = 0;
+    TEST_ASSERT_EQUAL_INT(0, dws_modbus_parse_mask_write_response(resp, pn, nullptr, nullptr, nullptr, &ex));
+    TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, ex);
+    // parse_mask_write_response rejects a normal (non-exception) frame that is too short, and a wrong FC.
+    uint8_t shortf[10] = {0, 1, 0, 0, 0, 8, 1, 0x16, 0, 0}; // FC 0x16 but only 10 bytes, needs 14
+    TEST_ASSERT_EQUAL_INT(-1,
+                          dws_modbus_parse_mask_write_response(shortf, sizeof(shortf), nullptr, nullptr, nullptr, &ex));
+    uint8_t badfc[14] = {0, 1, 0, 0, 0, 8, 1, 0x06, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(-1,
+                          dws_modbus_parse_mask_write_response(badfc, sizeof(badfc), nullptr, nullptr, nullptr, &ex));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -412,5 +494,8 @@ int main()
     RUN_TEST(test_round_trip_write_single_coil);
     RUN_TEST(test_round_trip_write_multiple_coils);
     RUN_TEST(test_bit_build_and_parse_guards);
+    RUN_TEST(test_round_trip_mask_write);
+    RUN_TEST(test_round_trip_read_write_multiple);
+    RUN_TEST(test_fc16_17_guards);
     return UNITY_END();
 }

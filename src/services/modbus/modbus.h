@@ -49,6 +49,8 @@ enum class ModbusFunction : uint8_t
     MODBUS_FC_WRITE_SINGLE_REG = 0x06,
     MODBUS_FC_WRITE_MULTIPLE_COILS = 0x0F,
     MODBUS_FC_WRITE_MULTIPLE_REGS = 0x10,
+    MODBUS_FC_MASK_WRITE_REG = 0x16,
+    MODBUS_FC_READ_WRITE_MULTIPLE_REGS = 0x17,
 };
 
 /** @brief Modbus exception codes (Modbus Application Protocol §7). */
