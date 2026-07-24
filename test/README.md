@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5004 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5005 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **5004 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (62 tests)</b></summary>
+<summary><b>test_ikev2 (63 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20760,6 +20760,30 @@ A thorough directory of all **5004 test cases** across **287 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_FAILED, (uint8_t)hs.state);</code>
       * <code>Assert false (dws_ike_initiator_on_sa_init(&hs, rgood, gn))</code>
       * <code>Assert false (dws_ike_initiator_on_sa_init(&hs2, notresp, nn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_initiator_ike_auth_send</b> &mdash; <i>build_auth_psk before SA_INIT_DONE would fail; here the state is right.</i></summary>
+
+    * **Objective**: build_auth_psk before SA_INIT_DONE would fail; here the state is right.
+    * **Assertions**:
+      * <code>Assert true (reqn &gt; 0)</code>
+      * <code>Assert true (dws_ike_initiator_on_sa_init(&hs, resp, rspn))</code>
+      * <code>Assert true (an &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_AUTH_SENT, (uint8_t)hs.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(46, authmsg[16]); // header Next Payload = SK</code>
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, (uint8_t)first);</code>
+      * <code>Assert true (dws_ike_payload_next(&it, &pl_idi))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, (uint8_t)pl_idi.type);</code>
+      * <code>Assert true (dws_ike_payload_next(&it, &pl_auth))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_AUTH, (uint8_t)pl_auth.type);</code>
+      * <code>Assert true (dws_ike_auth_parse(pl_auth.body, pl_auth.body_len, &method, &authdata, &authdata_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeAuthMethod::IKE_AUTH_PSK, (uint8_t)method);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, authdata_len);</code>
+      * <code>Assert true (dws_ike_auth_psk(psk, sizeof(psk)</code>
+      * <code>Assert equal memory (expect, authdata, 32)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_initiator_build_auth_psk(&hs, IkeIdType::IKE_ID_FQDN, idi, sizeof(idi), psk,</code>
   </details>
 
 </details>
