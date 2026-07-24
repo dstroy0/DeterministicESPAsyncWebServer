@@ -258,10 +258,12 @@ static bool mbus_decode_bcd(const uint8_t *d, uint8_t n, int64_t *out)
     if (n == 0 || n > 6)
         return false;
     bool neg = (uint8_t)(d[n - 1] >> 4) == 0x0Fu; // a 0xF top nibble marks a negative value
-    int64_t v = 0, mult = 1;
+    int64_t v = 0;
+    int64_t mult = 1;
     for (uint8_t i = 0; i < n; i++)
     {
-        uint8_t lo = (uint8_t)(d[i] & 0x0Fu), hi = (uint8_t)(d[i] >> 4);
+        uint8_t lo = (uint8_t)(d[i] & 0x0Fu);
+        uint8_t hi = (uint8_t)(d[i] >> 4);
         if (i == (uint8_t)(n - 1) && neg)
             hi = 0;
         if (lo > 9 || hi > 9) // an invalid BCD nibble
@@ -381,7 +383,8 @@ bool dws_mbus_parse_var_header(const uint8_t *body, size_t len, MbusVarHeader *o
     uint32_t id = 0;
     for (int i = 3; i >= 0; i--)
     {
-        uint8_t hi = (uint8_t)(body[i] >> 4), lo = (uint8_t)(body[i] & 0x0Fu);
+        uint8_t hi = (uint8_t)(body[i] >> 4);
+        uint8_t lo = (uint8_t)(body[i] & 0x0Fu);
         if (hi > 9 || lo > 9) // the identification number must be valid BCD
             return false;
         id = id * 100u + (uint32_t)(hi * 10u + lo);

@@ -377,8 +377,10 @@ bool dws_j1939_decode_dm1(const uint8_t *body, size_t len, J1939Dm1 *out, J1939D
     // body[1] is the flash status (same 2-bit layout); not decoded here.
     size_t ndtc = (len - 2) / 4; // whole 4-octet DTC blocks after the two status octets
     uint8_t stored = 0;
-    for (size_t i = 0; i < ndtc && stored < max; i++)
+    for (size_t i = 0; i < ndtc; i++)
     {
+        if (stored >= max) // the output buffer is full; stop scanning further DTC blocks
+            break;
         const uint8_t *d = body + 2 + i * 4;
         uint32_t spn = (uint32_t)d[0] | ((uint32_t)d[1] << 8) | (((uint32_t)d[2] >> 5) << 16);
         uint8_t fmi = (uint8_t)(d[2] & 0x1Fu);

@@ -262,7 +262,9 @@ static size_t dws_modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t
     case ModbusFunction::MODBUS_FC_MASK_WRITE_REG: {
         if (pdu_len < 7)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
-        uint16_t addr = rd16(pdu + 1), and_mask = rd16(pdu + 3), or_mask = rd16(pdu + 5);
+        uint16_t addr = rd16(pdu + 1);
+        uint16_t and_mask = rd16(pdu + 3);
+        uint16_t or_mask = rd16(pdu + 5);
         if (addr >= DWS_MODBUS_HOLDING_REGS)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         uint16_t cur = s_modbus.holding[addr];
@@ -280,7 +282,10 @@ static size_t dws_modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t
     case ModbusFunction::MODBUS_FC_READ_WRITE_MULTIPLE_REGS: {
         if (pdu_len < 10)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
-        uint16_t r_start = rd16(pdu + 1), r_qty = rd16(pdu + 3), w_start = rd16(pdu + 5), w_qty = rd16(pdu + 7);
+        uint16_t r_start = rd16(pdu + 1);
+        uint16_t r_qty = rd16(pdu + 3);
+        uint16_t w_start = rd16(pdu + 5);
+        uint16_t w_qty = rd16(pdu + 7);
         uint8_t w_bc = pdu[9];
         if (r_qty < 1 || r_qty > 125 || w_qty < 1 || w_qty > 121 || w_bc != (uint8_t)(w_qty * 2) ||
             pdu_len < (size_t)10 + w_bc)
