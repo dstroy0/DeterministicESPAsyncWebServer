@@ -72,6 +72,15 @@ size_t dws_fins_build_command(uint8_t *buf, size_t cap, const FinsHeader *h, uin
 size_t dws_fins_build_memory_area_read(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t area, uint16_t address,
                                        uint8_t bit, uint16_t count);
 
+/**
+ * @brief Build a Memory Area Write command (0102): the same area / word address + bit / item-count
+ *        parameters as the read, followed by @p data_len octets of write data (word areas carry two octets
+ *        per item, big-endian). @p count is the number of items (big-endian).
+ * @return total octets written, or 0 on a null data pointer with a nonzero length, or an overflow.
+ */
+size_t dws_fins_build_memory_area_write(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t area, uint16_t address,
+                                        uint8_t bit, uint16_t count, const uint8_t *data, size_t data_len);
+
 /** @brief A parsed command (request side). @ref params points INTO the source buffer. */
 struct FinsCommand
 {

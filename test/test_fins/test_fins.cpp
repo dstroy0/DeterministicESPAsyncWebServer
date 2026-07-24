@@ -62,6 +62,39 @@ void test_memory_area_read()
     TEST_ASSERT_EQUAL_HEX8(0x0A, buf[17]); // count lo (10)
 }
 
+// Memory Area Write (0102): the read's 6-octet prefix followed by the data words.
+void test_memory_area_write()
+{
+    FinsHeader h = make_header();
+    uint8_t buf[32];
+    const uint8_t words[4] = {0x11, 0x22, 0x33, 0x44}; // two DM words
+    // area 0xB0 (DM), word 100 = 0x0064, bit 0, write 2 words.
+    size_t n = dws_fins_build_memory_area_write(buf, sizeof(buf), &h, 0xB0, 100, 0, 2, words, sizeof(words));
+    TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 6 + 4, n);
+    TEST_ASSERT_EQUAL_HEX8(0x01, buf[10]);                       // MRC
+    TEST_ASSERT_EQUAL_HEX8(FINS_SRC_MEMORY_AREA_WRITE, buf[11]); // SRC 0x02
+    TEST_ASSERT_EQUAL_HEX8(0xB0, buf[12]);                       // area
+    TEST_ASSERT_EQUAL_HEX8(0x64, buf[14]);                       // addr lo (100)
+    TEST_ASSERT_EQUAL_HEX8(0x02, buf[17]);                       // count lo (2)
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(words, buf + 18, 4);            // the write data
+
+    // Round-trip through the command parser: the params are the 6-octet prefix + the 4 data octets.
+    FinsCommand c;
+    TEST_ASSERT_TRUE(dws_fins_parse_command(buf, n, &c));
+    TEST_ASSERT_EQUAL_HEX8(FINS_MRC_MEMORY_AREA, c.mrc);
+    TEST_ASSERT_EQUAL_HEX8(FINS_SRC_MEMORY_AREA_WRITE, c.src);
+    TEST_ASSERT_EQUAL_size_t(10, c.params_len); // 6 prefix + 4 data
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(words, c.params + 6, 4);
+
+    // A zero-length write (just the prefix) is valid.
+    n = dws_fins_build_memory_area_write(buf, sizeof(buf), &h, 0xB0, 100, 0, 0, nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 6, n);
+    // A null data pointer with a nonzero length, and both overflow paths, all return 0.
+    TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, sizeof(buf), &h, 0xB0, 100, 0, 2, nullptr, 4));
+    TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, 10, &h, 0xB0, 100, 0, 2, words, 4)); // hdr+prefix
+    TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, 18, &h, 0xB0, 100, 0, 2, words, 4)); // data
+}
+
 void test_parse_command()
 {
     FinsHeader h = make_header();
@@ -157,6 +190,7 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_build_command_bytes);
     RUN_TEST(test_memory_area_read);
+    RUN_TEST(test_memory_area_write);
     RUN_TEST(test_parse_command);
     RUN_TEST(test_parse_response_ok);
     RUN_TEST(test_parse_response_error);

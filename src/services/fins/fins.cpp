@@ -73,6 +73,32 @@ size_t dws_fins_build_memory_area_read(uint8_t *buf, size_t cap, const FinsHeade
     return dws_fins_build_command(buf, cap, h, FINS_MRC_MEMORY_AREA, FINS_SRC_MEMORY_AREA_READ, params, sizeof(params));
 }
 
+size_t dws_fins_build_memory_area_write(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t area, uint16_t address,
+                                        uint8_t bit, uint16_t count, const uint8_t *data, size_t data_len)
+{
+    if (data_len && !data)
+        return 0;
+    uint8_t prefix[6];
+    prefix[0] = area;
+    prefix[1] = (uint8_t)(address >> 8);
+    prefix[2] = (uint8_t)(address & 0xFF);
+    prefix[3] = bit;
+    prefix[4] = (uint8_t)(count >> 8);
+    prefix[5] = (uint8_t)(count & 0xFF);
+    // The command builder lays down header + MRC + SRC + the 6-octet prefix; the write data follows it.
+    size_t n =
+        dws_fins_build_command(buf, cap, h, FINS_MRC_MEMORY_AREA, FINS_SRC_MEMORY_AREA_WRITE, prefix, sizeof(prefix));
+    if (!n)
+        return 0; // header + prefix did not fit
+    if (data_len)
+    {
+        if (n + data_len > cap)
+            return 0; // the write data does not fit
+        memcpy(buf + n, data, data_len);
+    }
+    return n + data_len;
+}
+
 bool dws_fins_parse_command(const uint8_t *buf, size_t len, FinsCommand *out)
 {
     if (!buf || !out || len < FINS_HEADER_SIZE + 2)
