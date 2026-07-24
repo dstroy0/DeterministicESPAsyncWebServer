@@ -11,11 +11,11 @@
  * Scope (tier 1 of the IPsec roadmap item): the pure wire codec only - build / parse into caller
  * buffers, no sockets and no crypto. It frames the 28-octet IKE header and the generic payload chain
  * (SA -> proposals -> transforms, KE, Ni/Nr, IDi/IDr, CERT/CERTREQ, AUTH, N notify, D delete, TSi/TSr,
- * and the SK encrypted-payload envelope). Tier 2 lives here too: the SKEYSEED / SK_* key derivation
- * (RFC 7296 §2.13-2.14, prf+ over HMAC-SHA2-256) and the SK-payload AEAD (RFC 5282 AES-256-GCM-16). The
- * Diffie-Hellman shared-secret step and the IKE_SA_INIT -> IKE_AUTH state machine are the remaining
- * tiers (they reuse the crypto the library already ships); the codec here lays out and reads the bytes
- * so those tiers have a tested framing seam.
+ * and the SK encrypted-payload envelope). Tier 2's crypto lives here too: the SKEYSEED / SK_* key
+ * derivation (RFC 7296 §2.13-2.14, prf+ over HMAC-SHA2-256), the SK-payload AEAD (RFC 5282
+ * AES-256-GCM-16), and the Diffie-Hellman shared secret (RFC 7296 §2.7, group 31 = X25519). The
+ * IKE_SA_INIT -> IKE_AUTH state machine is the remaining tier (it reuses the crypto the library already
+ * ships); the codec here lays out and reads the bytes so that tier has a tested framing seam.
  *
  * Wire framing (byte-exact, network byte order): the IKE header is 8-byte Initiator SPI, 8-byte
  * Responder SPI, 1-byte Next Payload, 1-byte Version (0x20 = MjVer 2 / MnVer 0), 1-byte Exchange Type,
@@ -475,6 +475,29 @@ bool dws_ike_sk_aead_seal(const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t
 bool dws_ike_sk_aead_open(const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t salt[DWS_IKE_GCM_SALT_LEN],
                           const uint8_t iv[DWS_IKE_GCM_IV_LEN], const uint8_t *aad, size_t aad_len, const uint8_t *ct,
                           size_t ct_len, const uint8_t tag[DWS_IKE_AEAD_ICV_LEN], uint8_t *out);
+
+// ── tier 2: Diffie-Hellman shared secret (the KE payload's g^ir, RFC 7296 §2.7) ─────────────────
+//
+// Group 31 (curve25519, RFC 7748 X25519) is supported today; groups 19 (NIST P-256) and 14 (MODP-2048)
+// are a later increment. The ephemeral private key is the caller's (32 random bytes for X25519); these
+// derive our KE public value and the shared secret that feeds dws_ike_derive_keys.
+
+/** @brief X25519 private / public / shared-secret length (bytes). */
+#define DWS_IKE_X25519_LEN 32
+
+/**
+ * @brief Compute our KE public value for a negotiated D-H @p group (group 31: X25519(@p our_priv, base)).
+ * @return the public-value length written to @p out, or 0 on an unsupported group / bad length / small cap.
+ */
+size_t dws_ike_dh_public(uint16_t group, const uint8_t *our_priv, size_t priv_len, uint8_t *out, size_t out_cap);
+
+/**
+ * @brief Compute the D-H shared secret g^ir for a negotiated @p group (group 31: X25519(@p our_priv,
+ *        @p peer_pub)). The result feeds SKEYSEED in dws_ike_derive_keys.
+ * @return the shared-secret length written to @p out, or 0 on an unsupported group / bad length / small cap.
+ */
+size_t dws_ike_dh_compute(uint16_t group, const uint8_t *our_priv, size_t priv_len, const uint8_t *peer_pub,
+                          size_t pub_len, uint8_t *out, size_t out_cap);
 
 #endif // DWS_ENABLE_IKEV2
 

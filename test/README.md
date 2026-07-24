@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **4989 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **4992 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **4989 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (47 tests)</b></summary>
+<summary><b>test_ikev2 (50 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20537,6 +20537,42 @@ A thorough directory of all **4989 test cases** across **287 suites**. Expand a 
       * <code>Assert equal memory (kat_aead_pt, buf, sizeof(kat_aead_pt))</code>
       * <code>Assert false (dws_ike_sk_aead_seal(nullptr, kat_aead_salt, kat_aead_iv, nullptr, 0, nullptr, 0, o))</code>
       * <code>TEST_ASSERT_FALSE(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dh_x25519_raw_kat</b> &mdash; <i>dws_ike_dh_compute is X25519(scalar, u) for group 31 - RFC 7748 §5.2 vector 1.</i></summary>
+
+    * **Objective**: dws_ike_dh_compute is X25519(scalar, u) for group 31 - RFC 7748 §5.2 vector 1.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(32,</code>
+      * <code>Assert equal memory (kat_x_out, out, 32)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dh_x25519_agreement</b> &mdash; <i>RFC 7748 §6.1: each side's public = X25519(priv, base), and both shared secrets agree.</i></summary>
+
+    * **Objective**: RFC 7748 §6.1: each side's public = X25519(priv, base), and both shared secrets agree.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(32, dws_ike_dh_public(IKE_DH_CURVE25519, kat_alice_priv, 32, apub, sizeof(apub)));</code>
+      * <code>Assert equal memory (kat_alice_pub, apub, 32)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(32, dws_ike_dh_public(IKE_DH_CURVE25519, kat_bob_priv, 32, bpub, sizeof(bpub)));</code>
+      * <code>Assert equal memory (kat_bob_pub, bpub, 32)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>Assert equal memory (kat_shared, s_ab, 32)</code>
+      * <code>Assert equal memory (s_ab, s_ba, 32)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dh_guards</b> &mdash; <i>Unsupported group (19 = P-256, not yet implemented) -> 0.</i></summary>
+
+    * **Objective**: Unsupported group (19 = P-256, not yet implemented) -> 0.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_dh_compute(IKE_DH_ECP256, kat_alice_priv, 32, kat_bob_pub, 32, out, 32));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_dh_public(IKE_DH_ECP256, kat_alice_priv, 32, out, 32));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_dh_compute(IKE_DH_CURVE25519, kat_alice_priv, 31, kat_bob_pub, 32, out, 32));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_dh_compute(IKE_DH_CURVE25519, kat_alice_priv, 32, kat_bob_pub, 32, out, 31));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_dh_public(IKE_DH_CURVE25519, nullptr, 32, out, 32));</code>
   </details>
 
 </details>

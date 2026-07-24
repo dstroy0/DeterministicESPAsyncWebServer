@@ -11,6 +11,7 @@
 #if DWS_ENABLE_IKEV2
 
 #include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"      // SK-payload AEAD (AES-256-GCM-16)
+#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"  // D-H group 31 (X25519, RFC 7748)
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // PRF = HMAC-SHA2-256
 #include <string.h>                                                  // memcpy / memset (framing is hand-rolled)
 
@@ -780,6 +781,37 @@ bool dws_ike_sk_aead_open(const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t
     bool ok = ssh_aesgcm_open(&ctx, aad, aad_len, ct, ct_len, tag, out);
     ssh_aesgcm_wipe(&ctx);
     return ok;
+}
+
+// ── tier 2: Diffie-Hellman shared secret (RFC 7296 §2.7) ───────────────────────────────────────
+
+size_t dws_ike_dh_public(uint16_t group, const uint8_t *our_priv, size_t priv_len, uint8_t *out, size_t out_cap)
+{
+    if (!our_priv || !out)
+        return 0;
+    if (group == IKE_DH_CURVE25519) // RFC 7748 X25519
+    {
+        if (priv_len != DWS_IKE_X25519_LEN || out_cap < DWS_IKE_X25519_LEN)
+            return 0;
+        ssh_x25519_base(out, our_priv); // out = our_priv * G
+        return DWS_IKE_X25519_LEN;
+    }
+    return 0; // groups 19 (P-256) / 14 (MODP-2048) are a later increment
+}
+
+size_t dws_ike_dh_compute(uint16_t group, const uint8_t *our_priv, size_t priv_len, const uint8_t *peer_pub,
+                          size_t pub_len, uint8_t *out, size_t out_cap)
+{
+    if (!our_priv || !peer_pub || !out)
+        return 0;
+    if (group == IKE_DH_CURVE25519)
+    {
+        if (priv_len != DWS_IKE_X25519_LEN || pub_len != DWS_IKE_X25519_LEN || out_cap < DWS_IKE_X25519_LEN)
+            return 0;
+        ssh_x25519(out, our_priv, peer_pub); // out = our_priv * peer_pub
+        return DWS_IKE_X25519_LEN;
+    }
+    return 0;
 }
 
 #endif // DWS_ENABLE_IKEV2
