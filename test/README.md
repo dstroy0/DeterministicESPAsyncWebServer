@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5072 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5073 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -21635,7 +21635,7 @@ A thorough directory of all **5072 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_j1939 (23 tests)</b></summary>
+<summary><b>test_j1939 (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_id_pdu2_roundtrip</b> &mdash; <i>Id pdu2 roundtrip</i></summary>
@@ -21908,6 +21908,26 @@ A thorough directory of all **5072 test cases** across **290 suites**. Expand a 
       * <code>Assert float within (0.01f, 100.0f, t.oil_temp_c)</code>
       * <code>Assert true (t.coolant_valid)</code>
       * <code>Assert false (t.oil_valid)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_lfe</b> &mdash; <i>fuel rate 20.0 L/h (raw 400), instant econ 5.0 km/L (raw 2560), avg 4.5 (raw 2304), throttle 40 % (raw 100).</i></summary>
+
+    * **Objective**: fuel rate 20.0 L/h (raw 400), instant econ 5.0 km/L (raw 2560), avg 4.5 (raw 2304), throttle 40 % (raw 100).
+    * **Assertions**:
+      * <code>Assert true (dws_j1939_build_message(&f, 6, J1939_PGN_LFE, 0x00, J1939_ADDR_GLOBAL, data, 8))</code>
+      * <code>Assert true (dws_j1939_decode_lfe(&f, &l))</code>
+      * <code>Assert true (l.fuel_rate_valid)</code>
+      * <code>Assert float within (0.01f, 20.0f, l.fuel_rate_lph)</code>
+      * <code>Assert true (l.instant_econ_valid)</code>
+      * <code>Assert float within (0.01f, 5.0f, l.instant_econ_kmpl)</code>
+      * <code>Assert true (l.avg_econ_valid)</code>
+      * <code>Assert float within (0.01f, 4.5f, l.avg_econ_kmpl)</code>
+      * <code>Assert true (l.throttle_valid)</code>
+      * <code>Assert float within (0.01f, 40.0f, l.throttle_pct)</code>
+      * <code>Assert false (l.fuel_rate_valid)</code>
+      * <code>Assert true (l.instant_econ_valid)</code>
+      * <code>Assert false (dws_j1939_decode_lfe(&eec1, &l))</code>
   </details>
 
   <details style="margin-left: 20px;">
