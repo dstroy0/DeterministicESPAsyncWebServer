@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5193 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5194 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -45548,7 +45548,7 @@ A thorough directory of all **5193 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (36 tests)</b></summary>
+<summary><b>test_smb2 (37 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -46023,6 +46023,20 @@ A thorough directory of all **5193 test cases** across **292 suites**. Expand a 
       * <code>Assert false (dws_smb2_parse_write_response(m, 64 + 16, nullptr))</code>
       * <code>Assert false (dws_smb2_parse_write_response(bad, 64 + 16, &r))</code>
       * <code>Assert false (dws_smb2_parse_write_response(bad, 64 + 16, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_smb2_signing</b> &mdash; <i>The Signature matches the reference HMAC-SHA256(key, message)[:16] (Python hashlib/hmac).</i></summary>
+
+    * **Objective**: The Signature matches the reference HMAC-SHA256(key, message)[:16] (Python hashlib/hmac).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x08, msg[16]); // SMB2_FLAGS_SIGNED now set</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, msg + 48, 16);</code>
+      * <code>Assert true (dws_smb2_verify(key, msg, sizeof(msg)))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(before, msg, sizeof(msg));</code>
+      * <code>Assert false (dws_smb2_verify(key, msg, sizeof(msg)))</code>
+      * <code>Assert false (dws_smb2_verify(wrong, msg, sizeof(msg)))</code>
+      * <code>Assert false (dws_smb2_verify(key, msg, 63))</code>
   </details>
 
 </details>
