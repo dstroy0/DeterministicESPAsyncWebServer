@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5137 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5138 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -43284,7 +43284,7 @@ A thorough directory of all **5137 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sdi12 (13 tests)</b></summary>
+<summary><b>test_sdi12 (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_command_builders</b> &mdash; <i>Command builders</i></summary>
@@ -43312,6 +43312,28 @@ A thorough directory of all **5137 test cases** across **291 suites**. Expand a 
       * <code>Assert equal char ('0', addr)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(12, ready);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(2, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_identify</b> &mdash; <i>aI! response: addr 0, SDI-12 v1.4, vendor "ACMEINC " (space-padded to 8), model "SNS100", version "1.0".</i></summary>
+
+    * **Objective**: aI! response: addr 0, SDI-12 v1.4, vendor "ACMEINC " (space-padded to 8), model "SNS100", version "1.0".
+    * **Assertions**:
+      * <code>Assert true (dws_sdi12_parse_identify(resp, strlen(resp), &id))</code>
+      * <code>Assert equal char ('0', id.addr)</code>
+      * <code>Assert equal string ("14", id.sdi_version)</code>
+      * <code>Assert equal string ("ACMEINC ", id.vendor)</code>
+      * <code>Assert equal string ("SNS100", id.model)</code>
+      * <code>Assert equal string ("1.0", id.sensor_version)</code>
+      * <code>Assert true (dws_sdi12_parse_identify(resp2, strlen(resp2), &id))</code>
+      * <code>Assert equal char ('1', id.addr)</code>
+      * <code>Assert equal string ("13", id.sdi_version)</code>
+      * <code>Assert equal string ("MYVENDOR", id.vendor)</code>
+      * <code>Assert equal string ("MODEL9", id.model)</code>
+      * <code>Assert equal string ("2.5", id.sensor_version)</code>
+      * <code>Assert false (dws_sdi12_parse_identify(resp, 19, &id))</code>
+      * <code>Assert false (dws_sdi12_parse_identify(nullptr, 20, &id))</code>
+      * <code>Assert false (dws_sdi12_parse_identify(resp, strlen(resp), nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
