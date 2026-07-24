@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5103 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5104 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29338,7 +29338,7 @@ A thorough directory of all **5103 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (19 tests)</b></summary>
+<summary><b>test_nmea2000 (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -29534,6 +29534,29 @@ A thorough directory of all **5103 test cases** across **291 suites**. Expand a 
       * <code>Assert float within (0.001f, 6.17f, c.sog_mps)</code>
       * <code>Assert false (dws_n2k_decode_cog_sog_rapid(cs, 5, &c))</code>
       * <code>Assert false (dws_n2k_decode_cog_sog_rapid(nullptr, 8, &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_engine_rapid</b> &mdash; <i>instance 0, speed 2400 rpm (raw 9600), boost 150000 Pa (raw 1500), tilt +15 %.</i></summary>
+
+    * **Objective**: instance 0, speed 2400 rpm (raw 9600), boost 150000 Pa (raw 1500), tilt +15 %.
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_engine_rapid(er, sizeof(er), &e))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, e.instance);</code>
+      * <code>Assert true (e.speed_valid)</code>
+      * <code>Assert float within (0.1f, 2400.0f, e.speed_rpm)</code>
+      * <code>Assert true (e.boost_valid)</code>
+      * <code>Assert float within (1.0f, 150000.0f, e.boost_pa)</code>
+      * <code>Assert true (e.tilt_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(15, e.tilt_pct);</code>
+      * <code>Assert true (dws_n2k_decode_engine_rapid(na, sizeof(na), &e))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, e.instance);</code>
+      * <code>Assert false (e.speed_valid)</code>
+      * <code>Assert true (e.boost_valid)</code>
+      * <code>Assert true (e.tilt_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-10, e.tilt_pct); // 0xF6 as int8</code>
+      * <code>Assert false (dws_n2k_decode_engine_rapid(er, 5, &e))</code>
+      * <code>Assert false (dws_n2k_decode_engine_rapid(nullptr, 8, &e))</code>
   </details>
 
   <details style="margin-left: 20px;">
