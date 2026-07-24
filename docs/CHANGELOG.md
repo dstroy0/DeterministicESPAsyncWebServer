@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.65.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.65.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`bb0bd69`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb0bd69a1d372b53c663a64ccb3b7a7c2e1890d9))
+
+### Changes
+
+- Bump version: 7.64.0 → 7.65.0 ([`4a705f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a705f065181db80866249411d71600b5783d045))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a947df6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a947df614599b7316a53ce47678caea1f3223dce))
+
+### Features
+
+- Mask Write (FC 0x16) + Read/Write Multiple (FC 0x17) ([`4573f29`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4573f29fd28e1412d866d922d32ef37e9971afdb))
+
+</details>
+
 ## [7.64.0] - 2026-07-24
 
 <details>
