@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5095 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5097 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -42629,7 +42629,7 @@ A thorough directory of all **5095 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_senml (12 tests)</b></summary>
+<summary><b>test_senml (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_json_non_integral_magnitudes</b> &mdash; <i>Json non integral magnitudes</i></summary>
@@ -42801,6 +42801,41 @@ A thorough directory of all **5095 test cases** across **291 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_senml_json_build(small, sizeof(small), &r, 1));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_senml_cbor_build(csmall, sizeof(csmall), &r, 1));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_resolve</b> &mdash; <i>Resolve</i></summary>
+
+    * **Objective**: Resolve
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(3, n);</code>
+      * <code>Assert equal string ("urn:dev:ow:10e2073a;temp", res[0].name)</code>
+      * <code>Assert true (res[0].has_time)</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(1276020076, (int64_t)res[0].time);</code>
+      * <code>Assert equal string ("Cel", res[0].unit)</code>
+      * <code>Assert equal string ("urn:dev:ow:10e2073a;humidity", res[1].name)</code>
+      * <code>Assert true (res[1].has_time)</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(1276020086, (int64_t)res[1].time); // base time + record time (10)</code>
+      * <code>Assert equal string ("urn:dev:ow:other;status", res[2].name)</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(1276020076, (int64_t)res[2].time);        // still on the (unchanged) base time</code>
+      * <code>Assert equal (SenmlValueKind::SENML_V_STRING, res[2].value_kind)</code>
+      * <code>Assert equal string ("ok", res[2].value_str)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_resolve_edges</b> &mdash; <i>A pack with no base time at all: a record with neither base time nor time has no resolved time.</i></summary>
+
+    * **Objective**: A pack with no base time at all: a record with neither base time nor time has no resolved time.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_senml_resolve(rec, 2, res, 2));</code>
+      * <code>Assert false (res[0].has_time)</code>
+      * <code>Assert equal string ("a", res[0].name)</code>
+      * <code>Assert true (res[1].value_bool)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_senml_resolve(rec, 2, res, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_senml_resolve(nullptr, 2, res, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_senml_resolve(rec, 2, nullptr, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_senml_resolve(big, 1, &r1, 1));</code>
+      * <code>Assert true (strlen(r1.name) &lt; SENML_RESOLVED_NAME_MAX)</code>
   </details>
 
 </details>
