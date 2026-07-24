@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.154.2] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.154.2 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1a48292`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a48292932affd5fc2a677895fc9b37e071d5625))
+
+### Changes
+
+- Bump version: 7.154.1 → 7.154.2 ([`683689c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/683689c00c0df9ab37aa68e2f8c52ea4b7e09118))
+
+### Refactor
+
+- cut cognitive complexity in 4 parsers; merge dup mbus branch ([`f899a19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f899a19503d53a229b4675355c9c3c4113f37be7))
+
+</details>
+
 ## [7.154.1] - 2026-07-24
 
 <details>
