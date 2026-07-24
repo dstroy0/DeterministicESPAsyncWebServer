@@ -1017,6 +1017,16 @@
       ],
       "tests": ["test_esp"]
     },
+    "native_ipsec_db": {
+      "desc": "IPsec Security Policy Database + Security Association Database (RFC 4301, services/esp/ipsec_db):\nordered first-match-wins SPD policy lookup over source/destination/protocol/port selector ranges,\nan SPD selector built from an IKEv2-negotiated TSi/TSr pair, and SPI-keyed SAD add/find/remove with\nper-SA outbound sequence allocation + inbound anti-replay window. Pure host-testable datapath logic.",
+      "flags": ["-DDWS_ENABLE_IKEV2=1"],
+      "src": [
+        "+<services/esp/ipsec_db.cpp>",
+        "+<services/esp/esp.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>"
+      ],
+      "tests": ["test_ipsec_db"]
+    },
     "native_senml": {
       "desc": "SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the\nJSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral\nnumbers emitted as integers. Pure host tests.",
       "flags": ["-DDWS_ENABLE_SENML=1"],

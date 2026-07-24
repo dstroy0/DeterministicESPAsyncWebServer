@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **272 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **273 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -189,6 +189,7 @@ The native test matrix has **272 environments**, one per feature, generated from
 | `native_inflate` | `WS_ENABLE_WS_DEFLATE=1` | `test_inflate` | RFC 1951 INFLATE core (the WebSocket permessage-deflate decompressor). |
 | `native_interbus` | `WS_ENABLE_INTERBUS=1` | `test_interbus` | INTERBUS summation-frame codec (services/interbus): the summation frame (loopback + per-device 16-bit slices + CRC-16/CCITT FCS) assemble + disassemble. |
 | `native_iolink` | `WS_ENABLE_IOLINK=1` | `test_iolink` | IO-Link (SDCI) data-link message codec (services/iolink): the MC / CKT / CKS control octets and the SDCI checksum (seed 0x52 + the 8->6 compression of IO-Link spec A.1.6), with a hand-computed known-a... |
+| `native_ipsec_db` | `WS_ENABLE_IKEV2=1` | `test_ipsec_db` | IPsec Security Policy Database + Security Association Database (RFC 4301, services/esp/ipsec_db): ordered first-match-wins SPD policy lookup over source/destination/protocol/port selector ranges, an S... |
 | `native_j1939` | `WS_ENABLE_J1939=1` | `test_j1939` | SAE J1939 codec (services/j1939): 29-bit id encode/decode (PDU1 + PDU2), single-frame messages, Request PGN, Address Claimed + NAME, and the Transport Protocol (BAM + TP.DT) reassembler, over the shar... |
 | `native_j2735` | `WS_ENABLE_J2735=1` | `test_j2735` | SAE J2735 V2X codec (services/j2735): the ASN.1 UPER bit primitive layer (constrained INTEGER / BOOLEAN / bit fields) and the BSMcore block encode/decode. |
 | `native_jwt` | `WS_ENABLE_JWT=1` | `test_jwt` | JWT (HS256) bearer-auth verification. |
@@ -562,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5020 test cases** across **288 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5027 test cases** across **289 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -21327,6 +21328,114 @@ A thorough directory of all **5020 test cases** across **288 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_iol_finalize(msg, 4, 4));     // check_idx &gt;= len</code>
       * <code>Assert false (dws_iol_verify(nullptr, 4, 3))</code>
       * <code>Assert false (dws_iol_verify(msg, 4, 4))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ipsec_db (7 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_selector_match_basics</b> &mdash; <i>Wrong protocol, wrong port, and out-of-range addresses each miss.</i></summary>
+
+    * **Objective**: Wrong protocol, wrong port, and out-of-range addresses each miss.
+    * **Assertions**:
+      * <code>Assert true (dws_ipsec_selector_match(&sel, &in))</code>
+      * <code>Assert false (dws_ipsec_selector_match(&sel, &wrong_proto))</code>
+      * <code>Assert false (dws_ipsec_selector_match(&sel, &wrong_port))</code>
+      * <code>Assert false (dws_ipsec_selector_match(&sel, &src_out))</code>
+      * <code>Assert false (dws_ipsec_selector_match(&sel, &dst_out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_selector_range_edges_and_any</b> &mdash; <i>Both address range edges are inclusive.</i></summary>
+
+    * **Objective**: Both address range edges are inclusive.
+    * **Assertions**:
+      * <code>Assert true (dws_ipsec_selector_match(&any, &lo_edge))</code>
+      * <code>Assert true (dws_ipsec_selector_match(&any, &hi_edge))</code>
+      * <code>Assert false (dws_ipsec_selector_match(&any, &below))</code>
+      * <code>Assert false (dws_ipsec_selector_match(&any, &v6))</code>
+      * <code>Assert false (dws_ipsec_selector_match(nullptr, &lo_edge))</code>
+      * <code>Assert false (dws_ipsec_selector_match(&any, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spd_first_match_wins</b> &mdash; <i>Policy order: a specific PROTECT for TCP/443, then a broad BYPASS. First match wins.</i></summary>
+
+    * **Objective**: Policy order: a specific PROTECT for TCP/443, then a broad BYPASS. First match wins.
+    * **Assertions**:
+      * <code>Assert true (dws_ipsec_spd_add(&spd, &https, IpsecAction::PROTECT, 0xABCD))</code>
+      * <code>Assert true (dws_ipsec_spd_add(&spd, &all, IpsecAction::BYPASS, 0))</code>
+      * <code>Assert not null (p)</code>
+      * <code>Assert equal (IpsecAction::PROTECT, p-&gt;action)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xABCD, p-&gt;sa_spi);</code>
+      * <code>Assert not null (p)</code>
+      * <code>Assert equal (IpsecAction::BYPASS, p-&gt;action)</code>
+      * <code>Assert null (dws_ipsec_spd_lookup(&spd, &far))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spd_order_matters_and_bounds</b> &mdash; <i>Reversed order: the broad BYPASS first shadows the specific PROTECT.</i></summary>
+
+    * **Objective**: Reversed order: the broad BYPASS first shadows the specific PROTECT.
+    * **Assertions**:
+      * <code>Assert not null (p)</code>
+      * <code>Assert equal (IpsecAction::BYPASS, p-&gt;action)</code>
+      * <code>Assert true (dws_ipsec_spd_add(&spd, &all, IpsecAction::DISCARD, 0))</code>
+      * <code>Assert false (dws_ipsec_spd_add(&spd, &all, IpsecAction::DISCARD, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0, spd.entries[0].sa_spi);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_selector_from_ts</b> &mdash; <i>Build an SPD selector from an IKEv2 TSi (local) / TSr (peer) pair, then match a flow through it.</i></summary>
+
+    * **Objective**: Build an SPD selector from an IKEv2 TSi (local) / TSr (peer) pair, then match a flow through it.
+    * **Assertions**:
+      * <code>Assert true (dws_ipsec_selector_from_ts(&sel, &tsi, &tsr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, sel.addr_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, sel.ip_protocol);</code>
+      * <code>Assert equal memory (tsi_lo, sel.src_lo, 4)</code>
+      * <code>Assert equal memory (tsr_hi, sel.dst_hi, 4)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(443, sel.dst_port_lo);</code>
+      * <code>Assert true (dws_ipsec_selector_match(&sel, &f))</code>
+      * <code>Assert false (dws_ipsec_selector_from_ts(&sel, &tsi, &tsr_v6))</code>
+      * <code>Assert false (dws_ipsec_selector_from_ts(&sel, nullptr, &tsr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sad_add_find_remove</b> &mdash; <i>Demux by SPI returns the right SA; an unknown SPI is null.</i></summary>
+
+    * **Objective**: Demux by SPI returns the right SA; an unknown SPI is null.
+    * **Assertions**:
+      * <code>Assert not null (out_sa)</code>
+      * <code>Assert not null (in_sa)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, sad.count);</code>
+      * <code>Assert equal ptr (out_sa, dws_ipsec_sad_find(&sad, 0x1000))</code>
+      * <code>Assert equal ptr (in_sa, dws_ipsec_sad_find(&sad, 0x2000))</code>
+      * <code>Assert null (dws_ipsec_sad_find(&sad, 0x9999))</code>
+      * <code>Assert null (dws_ipsec_sad_add(&sad, 0x1000, dst, 4, esp_key, esp_salt, false))</code>
+      * <code>Assert true (dws_esp_replay_check(&in_sa-&gt;replay, 1))</code>
+      * <code>Assert false (dws_esp_replay_check(&in_sa-&gt;replay, 1))</code>
+      * <code>Assert true (dws_ipsec_sad_remove(&sad, 0x1000))</code>
+      * <code>Assert null (dws_ipsec_sad_find(&sad, 0x1000))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, sad.count);</code>
+      * <code>Assert false (dws_ipsec_sad_remove(&sad, 0x1000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sad_full_and_seq</b> &mdash; <i>Outbound sequence numbers pre-increment from 1 and stay monotonic.</i></summary>
+
+    * **Objective**: Outbound sequence numbers pre-increment from 1 and stay monotonic.
+    * **Assertions**:
+      * <code>Assert not null (dws_ipsec_sad_add(&sad, 0x100 + i, dst, 4, esp_key, esp_salt, false))</code>
+      * <code>Assert null (dws_ipsec_sad_add(&sad, 0x999, dst, 4, esp_key, esp_salt, false))</code>
+      * <code>Assert true (dws_ipsec_sad_next_seq(sa, &seq))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, seq);</code>
+      * <code>Assert true (dws_ipsec_sad_next_seq(sa, &seq))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, seq);</code>
+      * <code>Assert false (dws_ipsec_sad_next_seq(sa, &seq))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0xFFFFFFFFu, sa-&gt;seq); // left unchanged</code>
   </details>
 
 </details>

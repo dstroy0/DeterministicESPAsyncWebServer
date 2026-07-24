@@ -546,10 +546,20 @@ preempting queue, so sensing shares the real-time ingest path.
        64-packet sliding window (`EspReplay` + `dws_esp_replay_init` / `_check`) accepts a fresh sequence
        number, rejects a duplicate inside the window (replay) or one left of it (too old), and slides on a
        new highest - host-tested for in-order / out-of-order / replay / window-slide / large-jump / seq-0
-       (`native_esp`, 7 cases). The **entire host-testable ESP core is done** (packet transform +
-       anti-replay). _Remaining (the real weight, device-side / not host-unit-testable):_ the lwIP IP
-       input/output hook + the SAD/SPD wiring; tunnel mode first (whole-packet, simplest SPD). Refs: RFC
-       7296 (IKEv2), 4303 (ESP), 4106 (AES-GCM in ESP), 7634 (ChaCha20-Poly1305 for IKEv2/ESP), 8247
+       (`native_esp`, 7 cases). **The SAD + SPD are shipped too** (RFC 4301, `services/esp/ipsec_db`,
+       gated on `DWS_ENABLE_IKEV2`) - the security-decision core the datapath consults per packet, all pure
+       host-testable data structures: an ordered Security Policy Database with first-match-wins lookup over
+       source / destination / protocol / port selector ranges (`dws_ipsec_spd_lookup`, PROTECT / BYPASS /
+       DISCARD, default-deny on no match), an SPD selector built straight from an IKEv2-negotiated TSi/TSr
+       pair (`dws_ipsec_selector_from_ts`, RFC 4301 §4.4.1), and an SPI-keyed Security Association Database
+       (`dws_ipsec_sad_add` / `_find` / `_remove`) with per-SA outbound sequence allocation
+       (`dws_ipsec_sad_next_seq`, pre-increment from 1, refuses to wrap) and a bound inbound anti-replay
+       window - host-tested for selector edges, policy ordering, TS bridging, SPI demux, duplicate / full /
+       remove, and sequence exhaustion (`native_ipsec_db`, 7 cases). The **entire host-testable ESP datapath
+       is now done** (packet transform + anti-replay + SAD/SPD). _Remaining (the last piece, device-side /
+       not host-unit-testable):_ the lwIP IP input/output hook that walks packets through these lookups;
+       tunnel mode first (whole-packet, simplest SPD). Refs: RFC 7296 (IKEv2), 4301 (security architecture /
+       SAD / SPD), 4303 (ESP), 4106 (AES-GCM in ESP), 7634 (ChaCha20-Poly1305 for IKEv2/ESP), 8247
        (algorithm requirements).
 - [x] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming _(shipped)_ -
       `DWS_ENABLE_WIFI_SNIFFER` (`services/wifi_sniffer`): `dws_wifi_parse` decodes an 802.11 MAC header
