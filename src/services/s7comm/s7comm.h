@@ -96,6 +96,28 @@ struct S7ReadItem
 /** @brief Build a Read Var job for @p n items. Returns the PDU length, or 0 on overflow. */
 size_t dws_s7_build_read_request(uint8_t *buf, size_t cap, uint16_t pdu_ref, const S7ReadItem *items, size_t n);
 
+/** @brief One Write Var item: an S7-ANY pointer (as for a read) plus the value bytes to write. */
+struct S7WriteItem
+{
+    uint8_t area;                ///< S7_AREA_*
+    uint16_t db_number;          ///< DB number (0 for non-DB areas)
+    uint32_t byte_address;       ///< starting byte address
+    uint8_t transport_size;      ///< S7_TS_* (parameter-spec element type)
+    uint16_t count;              ///< number of elements (parameter spec)
+    uint8_t data_transport_size; ///< S7_DTS_* (data item; sets the bit/byte length rule)
+    const uint8_t *data;         ///< value bytes to write
+    uint16_t data_len;           ///< value length in BYTES
+};
+
+/**
+ * @brief Build a Write Var job (function 0x05) for @p n items. Mirrors the read request's parameter (the same
+ *        12-octet S7-ANY item specs) and appends a data section: per item a return code (0x00) + data
+ *        transport size + a 2-octet length + the value bytes, each item padded to an even length except the
+ *        last. The length field is in BITS for the bit/byte/int data transport sizes (3/4/5) and in BYTES
+ *        otherwise, matching dws_s7_read_next_item. @return the PDU length, or 0 on overflow / bad input.
+ */
+size_t dws_s7_build_write_request(uint8_t *buf, size_t cap, uint16_t pdu_ref, const S7WriteItem *items, size_t n);
+
 /** @brief A parsed S7comm header. @ref param / @ref data point INTO the source buffer. */
 struct S7Header
 {

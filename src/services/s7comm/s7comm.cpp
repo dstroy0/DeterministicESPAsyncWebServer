@@ -84,6 +84,72 @@ size_t dws_s7_build_read_request(uint8_t *buf, size_t cap, uint16_t pdu_ref, con
     return p;
 }
 
+// The 2-octet data-item length is expressed in bits for the bit/byte/int data transport sizes, else in bytes
+// (the inverse of dws_s7_read_next_item's decode).
+static uint16_t s7_data_wire_len(uint8_t data_transport_size, uint16_t data_len)
+{
+    if (data_transport_size == S7_DTS_BIT || data_transport_size == S7_DTS_BYTE || data_transport_size == S7_DTS_INT)
+        return (uint16_t)(data_len * 8);
+    return data_len;
+}
+
+size_t dws_s7_build_write_request(uint8_t *buf, size_t cap, uint16_t pdu_ref, const S7WriteItem *items, size_t n)
+{
+    if (!buf || !items || n == 0 || n > 0xFF)
+        return 0;
+    uint16_t param_len = (uint16_t)(2 + 12 * n); // func + count + item specs (same 12-octet spec as a read)
+    // Sum the data section: each item is a 4-octet data header + the value bytes, even-padded except the last.
+    size_t data_len = 0;
+    for (size_t i = 0; i < n; i++)
+    {
+        if (items[i].data_len && !items[i].data)
+            return 0;
+        size_t item_bytes = 4 + items[i].data_len;
+        if (i + 1 < n && (items[i].data_len & 1)) // pad every item but the last to an even length
+            item_bytes++;
+        data_len += item_bytes;
+    }
+    if (data_len > 0xFFFF)
+        return 0;
+    size_t total = 10 + param_len + data_len;
+    if (total > cap)
+        return 0;
+
+    size_t p = write_job_header(buf, pdu_ref, param_len, (uint16_t)data_len);
+    buf[p++] = S7_FUNC_WRITE_VAR;
+    buf[p++] = (uint8_t)n;
+    for (size_t i = 0; i < n; i++) // parameter: one S7-ANY item spec per item (identical layout to a read)
+    {
+        const S7WriteItem &it = items[i];
+        buf[p++] = 0x12;
+        buf[p++] = 0x0A;
+        buf[p++] = S7_SYNTAX_S7ANY;
+        buf[p++] = it.transport_size;
+        p += put16(buf + p, it.count);
+        p += put16(buf + p, it.db_number);
+        buf[p++] = it.area;
+        uint32_t addr = it.byte_address << 3; // bit address = byte * 8 (bit offset 0)
+        buf[p++] = (uint8_t)(addr >> 16);
+        buf[p++] = (uint8_t)(addr >> 8);
+        buf[p++] = (uint8_t)(addr & 0xFF);
+    }
+    for (size_t i = 0; i < n; i++) // data: one data item per item
+    {
+        const S7WriteItem &it = items[i];
+        buf[p++] = 0x00; // return code (reserved in a request)
+        buf[p++] = it.data_transport_size;
+        p += put16(buf + p, s7_data_wire_len(it.data_transport_size, it.data_len));
+        if (it.data_len)
+        {
+            memcpy(buf + p, it.data, it.data_len);
+            p += it.data_len;
+        }
+        if (i + 1 < n && (it.data_len & 1)) // even-pad all but the last
+            buf[p++] = 0x00;
+    }
+    return p;
+}
+
 bool dws_s7_parse_header(const uint8_t *buf, size_t len, S7Header *out)
 {
     if (!buf || !out || len < 10)

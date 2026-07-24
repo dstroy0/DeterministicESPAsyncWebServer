@@ -66,6 +66,55 @@ void test_read_request_bit_address()
     TEST_ASSERT_EQUAL_HEX8(0x50, buf[n - 1]); // 10 * 8 = 80
 }
 
+// Write Var (0x05): the read's parameter plus a data section carrying the value bytes.
+void test_build_write_request()
+{
+    S7WriteItem item;
+    item.area = S7_AREA_DB;
+    item.db_number = 1;
+    item.byte_address = 0;
+    item.transport_size = S7_TS_BYTE;
+    item.count = 2;
+    item.data_transport_size = S7_DTS_BYTE;
+    static const uint8_t val[2] = {0xAA, 0xBB};
+    item.data = val;
+    item.data_len = 2;
+
+    uint8_t buf[64];
+    size_t n = dws_s7_build_write_request(buf, sizeof(buf), 0x0100, &item, 1);
+    const uint8_t expect[] = {
+        0x32, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x0E, 0x00, 0x06, // header (param-len 0x0E, data-len 0x06)
+        0x05, 0x01,                                                 // write var, 1 item
+        0x12, 0x0A, 0x10, 0x02, 0x00, 0x02, 0x00, 0x01, 0x84, 0x00, 0x00, 0x00, // S7-ANY item spec
+        0x00, 0x04, 0x00, 0x10, 0xAA, 0xBB // data item: return OK-reserved, BYTE, 16 bits, AA BB
+    };
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+
+    // The data section round-trips through the response data-item reader (identical structure).
+    S7Header h;
+    TEST_ASSERT_TRUE(dws_s7_parse_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT8(S7_ROSCTR_JOB, h.rosctr);
+    TEST_ASSERT_EQUAL_UINT16(6, h.data_len);
+    size_t off = 0;
+    S7DataItem di;
+    TEST_ASSERT_TRUE(dws_s7_read_next_item(h.data, h.data_len, &off, &di));
+    TEST_ASSERT_EQUAL_UINT8(0x04, di.transport_size);
+    TEST_ASSERT_EQUAL_size_t(2, di.data_len);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(val, di.data, 2);
+
+    // Guards: null buf / items, n == 0, n > 0xFF, a null data pointer with a nonzero length, and overflow.
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(nullptr, sizeof(buf), 1, &item, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, sizeof(buf), 1, nullptr, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, sizeof(buf), 1, &item, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, sizeof(buf), 1, &item, 0x100));
+    S7WriteItem bad = item;
+    bad.data = nullptr;
+    bad.data_len = 2;
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, sizeof(buf), 1, &bad, 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_s7_build_write_request(buf, 20, 1, &item, 1)); // a 30-octet PDU needs > 20
+}
+
 // A single-item Ack_Data read response: return OK, byte transport (length in bits).
 void test_parse_response_single()
 {
@@ -236,6 +285,7 @@ int main()
     RUN_TEST(test_build_setup);
     RUN_TEST(test_build_read_request);
     RUN_TEST(test_read_request_bit_address);
+    RUN_TEST(test_build_write_request);
     RUN_TEST(test_parse_response_single);
     RUN_TEST(test_parse_response_padding);
     RUN_TEST(test_parse_octet_and_error);
