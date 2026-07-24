@@ -49,6 +49,25 @@ size_t dws_sdi12_build_concurrent(char *buf, size_t cap, char addr, bool with_cr
     return dws_sdi12_build(buf, cap, addr, with_crc ? "CC" : "C");
 }
 
+size_t dws_sdi12_build_continuous(char *buf, size_t cap, char addr, uint8_t r_index, bool with_crc)
+{
+    if (r_index > 9)
+        return 0;
+    char body[4];
+    size_t b = 0;
+    body[b++] = 'R';
+    if (with_crc)
+        body[b++] = 'C';
+    body[b++] = (char)('0' + r_index);
+    body[b] = '\0';
+    return dws_sdi12_build(buf, cap, addr, body);
+}
+
+size_t dws_sdi12_build_verify(char *buf, size_t cap, char addr)
+{
+    return dws_sdi12_build(buf, cap, addr, "V");
+}
+
 size_t dws_sdi12_build_data(char *buf, size_t cap, char addr, uint8_t d_index)
 {
     if (d_index > 9)

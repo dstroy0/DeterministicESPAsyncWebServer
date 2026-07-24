@@ -51,6 +51,15 @@ size_t dws_sdi12_build_measure(char *buf, size_t cap, char addr, bool with_crc);
 /** @brief Concurrent-measurement command `aC!` (or `aCC!` when @p with_crc). */
 size_t dws_sdi12_build_concurrent(char *buf, size_t cap, char addr, bool with_crc);
 
+/**
+ * @brief Continuous-measurement command `aR<n>!` (or `aRC<n>!` when @p with_crc), @p r_index 0..9. Unlike
+ *        `aM!`, a continuous-measurement sensor returns its values immediately (no service-request delay).
+ */
+size_t dws_sdi12_build_continuous(char *buf, size_t cap, char addr, uint8_t r_index, bool with_crc);
+
+/** @brief Start-verification command `aV!`; the response uses the same `atttn` timing form as `aM!`. */
+size_t dws_sdi12_build_verify(char *buf, size_t cap, char addr);
+
 /** @brief Send-data command `aD<n>!` (@p d_index 0..9). */
 size_t dws_sdi12_build_data(char *buf, size_t cap, char addr, uint8_t d_index);
 

@@ -37,6 +37,22 @@ void test_command_builders()
     TEST_ASSERT_EQUAL_STRING("?!", buf);
 }
 
+// Continuous-measurement (aR<n>! / aRC<n>!) and verification (aV!) builders.
+void test_build_continuous_and_verify()
+{
+    char buf[16];
+    TEST_ASSERT_EQUAL_size_t(4, dws_sdi12_build_continuous(buf, sizeof(buf), '0', 0, false));
+    TEST_ASSERT_EQUAL_STRING("0R0!", buf);
+    dws_sdi12_build_continuous(buf, sizeof(buf), '2', 5, false);
+    TEST_ASSERT_EQUAL_STRING("2R5!", buf);
+    dws_sdi12_build_continuous(buf, sizeof(buf), '1', 3, true); // CRC variant inserts the 'C'
+    TEST_ASSERT_EQUAL_STRING("1RC3!", buf);
+    TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_continuous(buf, sizeof(buf), '0', 10, false)); // index > 9
+
+    dws_sdi12_build_verify(buf, sizeof(buf), '7');
+    TEST_ASSERT_EQUAL_STRING("7V!", buf);
+}
+
 void test_parse_measure_m()
 {
     // aM! response "0" + "012" (12 s) + "2" (2 values).
@@ -251,6 +267,7 @@ int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_command_builders);
+    RUN_TEST(test_build_continuous_and_verify);
     RUN_TEST(test_parse_measure_m);
     RUN_TEST(test_parse_identify);
     RUN_TEST(test_parse_measure_concurrent_two_digit_count);
