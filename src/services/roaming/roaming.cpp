@@ -135,4 +135,36 @@ uint8_t dws_roam_parse_neighbor_report(const uint8_t *elems, size_t len, DwsRoam
     return count;
 }
 
+bool dws_roam_parse_btm_request(const uint8_t *frame, size_t len, DwsRoamBtm *out)
+{
+    if (!out)
+        return false;
+    memset(out, 0, sizeof(*out));
+    // Fixed fields: Category | Action | Dialog Token | Request Mode | Disassoc Timer(2) | Validity(1) = 7.
+    if (!frame || len < 7 || frame[0] != DWS_ROAM_WNM_CATEGORY || frame[1] != DWS_ROAM_BTM_REQ_ACTION)
+        return false;
+    uint8_t mode = frame[3];
+    out->present = true;
+    out->disassoc_imminent = (mode & DWS_ROAM_BTM_DISASSOC) != 0;
+
+    // Walk past the optional fields to reach the candidate list.
+    size_t off = 7;
+    if (mode & DWS_ROAM_BTM_TERM_INCL) // BSS Termination Duration is 12 octets
+        off += 12;
+    if (mode & DWS_ROAM_BTM_ESS_DISASSOC) // Session Information URL: 1-octet length + URL
+    {
+        if (off >= len)
+            return true; // truncated optional tail; the flags above are still valid
+        off += (size_t)1 + frame[off];
+    }
+    // Preferred candidate list: the first Neighbor Report element (id 52) is the top-preference target.
+    if ((mode & DWS_ROAM_BTM_PREF_LIST) && off + 2 + 6 <= len && frame[off] == DWS_ROAM_NR_ELEM_ID &&
+        frame[off + 1] >= 13)
+    {
+        memcpy(out->preferred_bssid, frame + off + 2, 6);
+        out->has_preferred = true;
+    }
+    return true;
+}
+
 #endif // DWS_ENABLE_ROAMING

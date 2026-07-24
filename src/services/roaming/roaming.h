@@ -104,5 +104,25 @@ void dws_roam_decide(const uint8_t current_bssid[6], int8_t current_rssi_dbm, co
  */
 uint8_t dws_roam_parse_neighbor_report(const uint8_t *elems, size_t len, DwsRoamNeighbor *out, uint8_t max);
 
+// 802.11v BSS Transition Management Request (WNM action frame).
+#define DWS_ROAM_WNM_CATEGORY 0x0A     ///< WNM action category
+#define DWS_ROAM_BTM_REQ_ACTION 0x07   ///< BSS Transition Management Request action code
+#define DWS_ROAM_BTM_PREF_LIST 0x01u   ///< Request Mode bit 0: a preferred candidate list is included
+#define DWS_ROAM_BTM_DISASSOC 0x04u    ///< Request Mode bit 2: disassociation imminent
+#define DWS_ROAM_BTM_TERM_INCL 0x08u   ///< Request Mode bit 3: BSS Termination Duration is included
+#define DWS_ROAM_BTM_ESS_DISASSOC 0x10 ///< Request Mode bit 4: an ESS-disassoc Session Info URL is included
+
+/**
+ * @brief Parse an 802.11v BSS Transition Management Request action frame into a @ref DwsRoamBtm hint.
+ *
+ * @p frame starts at the action-frame Category octet (WNM category 0x0A, BTM-Request action 0x07). The
+ * Request Mode flags set @c disassoc_imminent (bit 2); when the preferred-candidate-list bit (bit 0) is
+ * set, the highest-preference candidate's BSSID (the first Neighbor Report element in the list, decoded
+ * past the optional BSS Termination Duration and Session Information URL) becomes @c preferred_bssid. The
+ * result feeds @ref dws_roam_decide.
+ * @return true iff @p frame is a well-formed BTM Request; false otherwise (@p out is cleared).
+ */
+bool dws_roam_parse_btm_request(const uint8_t *frame, size_t len, DwsRoamBtm *out);
+
 #endif // DWS_ENABLE_ROAMING
 #endif // DETERMINISTICESPASYNCWEBSERVER_ROAMING_H

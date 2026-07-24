@@ -191,6 +191,73 @@ void test_parse_neighbor_report_edges()
     TEST_ASSERT_EQUAL_UINT8(0, dws_roam_parse_neighbor_report(trunc, sizeof(trunc), nb, 4));
 }
 
+void test_parse_btm_request()
+{
+    // BTM Request: preferred-list (bit 0) + disassoc-imminent (bit 2) = 0x05, one candidate (AP_A).
+    uint8_t f[64];
+    size_t p = 0;
+    f[p++] = 0x0A; // WNM category
+    f[p++] = 0x07; // BTM Request action
+    f[p++] = 0x01; // dialog token
+    f[p++] = 0x05; // request mode
+    f[p++] = 0x00; // disassoc timer
+    f[p++] = 0x00;
+    f[p++] = 0x0A;              // validity interval
+    p = nr_elem(f, p, AP_A, 6); // candidate list
+
+    DwsRoamBtm btm;
+    TEST_ASSERT_TRUE(dws_roam_parse_btm_request(f, p, &btm));
+    TEST_ASSERT_TRUE(btm.present);
+    TEST_ASSERT_TRUE(btm.disassoc_imminent);
+    TEST_ASSERT_TRUE(btm.has_preferred);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, btm.preferred_bssid, 6);
+
+    // Feed the parsed hint to the decision layer: even a strong link roams to the preferred AP.
+    DwsRoamNeighbor nb[1] = {{{0}, 6, -60}};
+    memcpy(nb[0].bssid, AP_A, 6);
+    DwsRoamDecision d;
+    dws_roam_decide(CUR, -45, nb, 1, &btm, &POLICY, &d);
+    TEST_ASSERT_TRUE(d.roam);
+    TEST_ASSERT_EQUAL(DWS_ROAM_BTM_IMMINENT, d.reason);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, d.target_bssid, 6);
+}
+
+void test_parse_btm_request_optional_fields_and_guards()
+{
+    // Request mode with BSS-Termination-Included (bit 3) + preferred list (bit 0) = 0x09: the candidate
+    // list sits 12 octets further along, past the BSS Termination Duration.
+    uint8_t f[80];
+    size_t p = 0;
+    f[p++] = 0x0A;
+    f[p++] = 0x07;
+    f[p++] = 0x01;
+    f[p++] = 0x09; // mode: pref list + BSS termination included
+    f[p++] = 0x00;
+    f[p++] = 0x00;
+    f[p++] = 0x0A;
+    for (int i = 0; i < 12; i++) // BSS Termination Duration (12 octets)
+        f[p++] = 0x00;
+    p = nr_elem(f, p, AP_B, 11);
+
+    DwsRoamBtm btm;
+    TEST_ASSERT_TRUE(dws_roam_parse_btm_request(f, p, &btm));
+    TEST_ASSERT_TRUE(btm.has_preferred);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_B, btm.preferred_bssid, 6); // decoded past the termination field
+    TEST_ASSERT_FALSE(btm.disassoc_imminent);                   // bit 2 not set
+
+    // A request without the preferred-list bit yields no preferred target.
+    uint8_t plain[7] = {0x0A, 0x07, 0x01, 0x04, 0x00, 0x00, 0x0A}; // disassoc only
+    TEST_ASSERT_TRUE(dws_roam_parse_btm_request(plain, sizeof(plain), &btm));
+    TEST_ASSERT_TRUE(btm.disassoc_imminent);
+    TEST_ASSERT_FALSE(btm.has_preferred);
+
+    // A non-BTM frame (wrong category/action) and a truncated frame are rejected.
+    uint8_t wrong[7] = {0x05, 0x07, 0x01, 0x05, 0, 0, 0}; // category 5, not WNM
+    TEST_ASSERT_FALSE(dws_roam_parse_btm_request(wrong, sizeof(wrong), &btm));
+    TEST_ASSERT_FALSE(dws_roam_parse_btm_request(f, 5, &btm)); // too short
+    TEST_ASSERT_FALSE(dws_roam_parse_btm_request(nullptr, 7, &btm));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -202,5 +269,7 @@ int main()
     RUN_TEST(test_never_targets_current_and_guards);
     RUN_TEST(test_parse_neighbor_report);
     RUN_TEST(test_parse_neighbor_report_edges);
+    RUN_TEST(test_parse_btm_request);
+    RUN_TEST(test_parse_btm_request_optional_fields_and_guards);
     return UNITY_END();
 }
