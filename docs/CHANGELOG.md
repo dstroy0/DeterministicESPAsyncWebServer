@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.107.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.107.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`dbd09dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dbd09dda29bf5db5534518a3e4b135328c473a2f))
+
+### Changes
+
+- Bump version: 7.106.0 → 7.107.0 ([`96dd4ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96dd4bae564f77ce417c7acd7d6b87ecd13ee0ae))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a0e5d94`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0e5d94fa342a1926592c89a2adfa507d376701f))
+
+### Features
+
+- build the Connection Confirm TPDU (CC) ([`17f0251`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17f02513b313728ca9345b4c26c2c6db4d829f9b))
+
+</details>
+
 ## [7.106.0] - 2026-07-24
 
 <details>
