@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5171 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5172 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -33244,7 +33244,7 @@ A thorough directory of all **5171 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua (70 tests)</b></summary>
+<summary><b>test_opcua (71 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_w_string_positive_len_null_pointer</b> &mdash; <i>W string positive len null pointer</i></summary>
@@ -33791,6 +33791,27 @@ A thorough directory of all **5171 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(8192, dws_ua_r_u32(&r)); // send = min(client recv 65535, server 8192)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(8192, dws_ua_r_u32(&r)); // max msg (client 0 -&gt; server)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_ua_r_u32(&r));    // max chunk</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_error</b> &mdash; <i>A null reason encodes a null String (length -1); the message is 16 octets.</i></summary>
+
+    * **Objective**: A null reason encodes a null String (length -1); the message is 16 octets.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(24, n); // 8 header + 4 error + 4 length + 8 reason</code>
+      * <code>Assert true (dws_opcua_parse_header(buf, n, &h))</code>
+      * <code>Assert equal memory ("ERR", h.type, 3)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(24, h.size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BAD_TCP_MESSAGE_TYPE_INVALID, dws_ua_r_u32(&r));</code>
+      * <code>Assert true (dws_ua_r_string(&r, reason, sizeof(reason), &rlen))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(8, rlen);</code>
+      * <code>Assert equal string ("Bad type", reason)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(16, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BAD_TCP_INTERNAL_ERROR, dws_ua_r_u32(&r2));</code>
+      * <code>Assert true (dws_ua_r_string(&r2, reason, sizeof(reason), &rlen))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, rlen); // null string</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_opcua_build_error(DWS_OPCUA_BAD_TCP_INTERNAL_ERROR, "x", nullptr, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_opcua_build_error(DWS_OPCUA_BAD_TCP_INTERNAL_ERROR, "reason", buf, 8));</code>
   </details>
 
   <details style="margin-left: 20px;">
