@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5113 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5114 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29516,7 +29516,7 @@ A thorough directory of all **5113 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (21 tests)</b></summary>
+<summary><b>test_nmea2000 (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -29756,6 +29756,27 @@ A thorough directory of all **5113 test cases** across **291 suites**. Expand a 
       * <code>Assert false (d.set_valid)</code>
       * <code>Assert false (dws_n2k_decode_temperature(t, 6, &d))</code>
       * <code>Assert false (dws_n2k_decode_temperature(nullptr, 8, &d))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_attitude</b> &mdash; <i>sid 5, yaw 0.5236 rad (raw 5236), pitch 0.1 rad (raw 1000), roll -0.2 rad (raw -2000).</i></summary>
+
+    * **Objective**: sid 5, yaw 0.5236 rad (raw 5236), pitch 0.1 rad (raw 1000), roll -0.2 rad (raw -2000).
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_attitude(a, sizeof(a), &at))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, at.sid);</code>
+      * <code>Assert true (at.yaw_valid)</code>
+      * <code>Assert float within (0.0005f, 0.5236f, at.yaw_rad)</code>
+      * <code>Assert true (at.pitch_valid)</code>
+      * <code>Assert float within (0.0005f, 0.1f, at.pitch_rad)</code>
+      * <code>Assert true (at.roll_valid)</code>
+      * <code>Assert float within (0.0005f, -0.2f, at.roll_rad)</code>
+      * <code>Assert true (dws_n2k_decode_attitude(na, sizeof(na), &at))</code>
+      * <code>Assert false (at.yaw_valid)</code>
+      * <code>Assert true (at.pitch_valid)</code>
+      * <code>Assert true (at.roll_valid)</code>
+      * <code>Assert false (dws_n2k_decode_attitude(a, 6, &at))</code>
+      * <code>Assert false (dws_n2k_decode_attitude(nullptr, 8, &at))</code>
   </details>
 
   <details style="margin-left: 20px;">
