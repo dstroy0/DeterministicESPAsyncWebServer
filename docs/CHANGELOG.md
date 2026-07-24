@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.75.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.75.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e079579`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e079579c4253c7d178cb184982e227a4ad7952d8))
+
+### Changes
+
+- Bump version: 7.74.0 → 7.75.0 ([`a91f06e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a91f06ec7c05a1871543c4fb547eb23d982c0c67))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`50c5f3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50c5f3f9067612c4ff727f363f0f810d9260b992))
+
+### Features
+
+- transport function - fragment reassembly (IEEE 1815 s8.2) ([`45df73c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45df73c33d77964ac86388c29bcf5956c46e1f16))
+
+</details>
+
 ## [7.74.0] - 2026-07-24
 
 <details>
