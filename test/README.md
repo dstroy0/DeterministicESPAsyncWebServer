@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5040 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5045 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -26394,7 +26394,7 @@ A thorough directory of all **5040 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_modbus_master (19 tests)</b></summary>
+<summary><b>test_modbus_master (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_read_bytes</b> &mdash; <i>Build read bytes</i></summary>
@@ -26590,6 +26590,83 @@ A thorough directory of all **5040 test cases** across **290 suites**. Expand a 
       * <code>Assert equal int (-1, dws_modbus_parse_write_response(badfc, sizeof(badfc), &addr, &ex))</code>
       * <code>Assert equal int (-1, dws_modbus_parse_write_response(badproto, sizeof(badproto), &addr, &ex))</code>
       * <code>Assert equal int (-1, dws_modbus_parse_write_response(nullptr, 12, &addr, &ex))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_round_trip_read_coils</b> &mdash; <i>Round trip read coils</i></summary>
+
+    * **Objective**: Round trip read coils
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(12, rn);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, req[7]);</code>
+      * <code>Assert true (pn &gt; 0)</code>
+      * <code>Assert equal int (10, got)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ex);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, bits[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, bits[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, bits[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, bits[9]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, bits[8]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_round_trip_read_discrete_inputs</b> &mdash; <i>Round trip read discrete inputs</i></summary>
+
+    * **Objective**: Round trip read discrete inputs
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, req[7]);</code>
+      * <code>Assert equal int (6, got)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, bits[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, bits[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, bits[5]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_round_trip_write_single_coil</b> &mdash; <i>Round trip write single coil</i></summary>
+
+    * **Objective**: Round trip write single coil
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(12, rn);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x05, req[7]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, req[10]); // on encodes as 0xFF00</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, req[11]);</code>
+      * <code>Assert equal int (1, wrote)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ex);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(5, addr);</code>
+      * <code>Assert true (dws_modbus_get_coil(5))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_round_trip_write_multiple_coils</b> &mdash; <i>Clear then write an alternating pattern across a byte boundary.</i></summary>
+
+    * **Objective**: Clear then write an alternating pattern across a byte boundary.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(7 + 6 + 2, rn); // MBAP + fc/start/count/bytecount + ceil(12/8)=2 data bytes</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0F, req[7]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(2, req[12]);    // byte count</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x55, req[13]); // bits 0..7 = 1,0,1,0,1,0,1,0 -&gt; 0x55 LSB-first</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0B, req[14]); // bits 8..11 = 1,1,0,1 -&gt; 0x0B</code>
+      * <code>Assert equal int (12, wrote)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0, addr);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(pattern[a], dws_modbus_get_coil(a) ? 1 : 0);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bit_build_and_parse_guards</b> &mdash; <i>build_read_bits rejects a non-bit FC, an out-of-range count, and a null buffer.</i></summary>
+
+    * **Objective**: build_read_bits rejects a non-bit FC, an out-of-range count, and a null buffer.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_read_bits(0x01, 1, 1, 0, 0, adu, sizeof(adu)));    // count 0</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_read_bits(0x01, 1, 1, 0, 2001, adu, sizeof(adu))); // count &gt; 2000</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_read_bits(0x01, 1, 1, 0, 8, nullptr, 16));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single_coil(1, 1, 0, true, nullptr, 16));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple_coils(1, 1, 0, nullptr, 4, adu, sizeof(adu)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple_coils(1, 1, 0, bits, 0, adu, sizeof(adu))); // count 0</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple_coils(1, 1, 0, bits, 1969, adu, sizeof(adu))); // &gt; 1968</code>
+      * <code>Assert equal int (-1, dws_modbus_parse_read_bits_response(resp, 11, 4, out, sizeof(out), &ex))</code>
+      * <code>Assert equal int (0, dws_modbus_parse_read_bits_response(exc, sizeof(exc), 4, out, sizeof(out), &ex))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x02, ex);</code>
   </details>
 
 </details>
