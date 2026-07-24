@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5126 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5127 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29452,7 +29452,7 @@ A thorough directory of all **5126 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (21 tests)</b></summary>
+<summary><b>test_nmea0183 (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -29757,6 +29757,28 @@ A thorough directory of all **5126 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(0, g.sat_count);</code>
       * <code>Assert false (dws_nmea0183_parse_gsa(&m, &g))</code>
       * <code>Assert false (dws_nmea0183_parse_gsa(nullptr, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_mwv</b> &mdash; <i>Apparent wind at 214.8 deg relative, 10.5 knots, valid.</i></summary>
+
+    * **Objective**: Apparent wind at 214.8 deg relative, 10.5 knots, valid.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_mwv(&m, &w))</code>
+      * <code>Assert float within (0.01f, 214.8f, w.wind_angle_deg)</code>
+      * <code>Assert equal char ('R', w.reference)</code>
+      * <code>Assert float within (0.01f, 10.5f, w.wind_speed)</code>
+      * <code>Assert equal char ('N', w.speed_units)</code>
+      * <code>Assert true (w.valid)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_mwv(&m, &w))</code>
+      * <code>Assert equal char ('T', w.reference)</code>
+      * <code>Assert equal char ('M', w.speed_units)</code>
+      * <code>Assert false (w.valid)</code>
+      * <code>Assert false (dws_nmea0183_parse_mwv(&m, &w))</code>
+      * <code>Assert false (dws_nmea0183_parse_mwv(nullptr, &w))</code>
   </details>
 
   <details style="margin-left: 20px;">
