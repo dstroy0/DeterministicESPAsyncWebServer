@@ -155,6 +155,21 @@ bool dws_n2k_decode_position_rapid(const uint8_t *payload, size_t len, N2kPositi
     return true;
 }
 
+bool dws_n2k_decode_cog_sog_rapid(const uint8_t *payload, size_t len, N2kCogSogRapid *out)
+{
+    if (!payload || !out || len < 6) // SID(1) + ref(1) + COG(2) + SOG(2)
+        return false;
+    out->sid = payload[0];
+    out->cog_ref = (uint8_t)(payload[1] & 0x03u);
+    uint16_t cog = rd_u16le(payload + 2); // 0.0001 rad per bit
+    uint16_t sog = rd_u16le(payload + 4); // 0.01 m/s per bit
+    out->cog_valid = (cog != 0xFFFFu);
+    out->cog_rad = (float)cog * 0.0001f;
+    out->sog_valid = (sog != 0xFFFFu);
+    out->sog_mps = (float)sog * 0.01f;
+    return true;
+}
+
 bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *out)
 {
     if (!payload || !out || len < 6)

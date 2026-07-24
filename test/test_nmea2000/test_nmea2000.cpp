@@ -283,6 +283,31 @@ void test_decode_position_rapid()
     TEST_ASSERT_FALSE(dws_n2k_decode_position_rapid(nullptr, 8, &p));
 }
 
+void test_decode_cog_sog_rapid()
+{
+    // sid 0x11, ref magnetic, COG 1.5708 rad (raw 15708), SOG 6.17 m/s (raw 617).
+    const uint8_t cs[8] = {0x11, 0xfd, 0x5c, 0x3d, 0x69, 0x02, 0xff, 0xff};
+    N2kCogSogRapid c;
+    TEST_ASSERT_TRUE(dws_n2k_decode_cog_sog_rapid(cs, sizeof(cs), &c));
+    TEST_ASSERT_EQUAL_UINT8(0x11, c.sid);
+    TEST_ASSERT_EQUAL_UINT8(N2K_COG_REF_MAGNETIC, c.cog_ref);
+    TEST_ASSERT_TRUE(c.cog_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 1.5708f, c.cog_rad);
+    TEST_ASSERT_TRUE(c.sog_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 6.17f, c.sog_mps);
+
+    // A 0xFFFF COG is not-available; the SOG stays valid, reference True.
+    const uint8_t na[8] = {0x11, 0xfc, 0xff, 0xff, 0x69, 0x02, 0xff, 0xff};
+    TEST_ASSERT_TRUE(dws_n2k_decode_cog_sog_rapid(na, sizeof(na), &c));
+    TEST_ASSERT_EQUAL_UINT8(N2K_COG_REF_TRUE, c.cog_ref);
+    TEST_ASSERT_FALSE(c.cog_valid);
+    TEST_ASSERT_TRUE(c.sog_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 6.17f, c.sog_mps);
+    // Short payload + nulls are rejected.
+    TEST_ASSERT_FALSE(dws_n2k_decode_cog_sog_rapid(cs, 5, &c));
+    TEST_ASSERT_FALSE(dws_n2k_decode_cog_sog_rapid(nullptr, 8, &c));
+}
+
 void test_decode_wind_data()
 {
     // sid 0x2A, speed 5.00 m/s (raw 500), angle 1.5708 rad (raw 15708), reference apparent.
@@ -361,6 +386,7 @@ int main()
     RUN_TEST(test_fastpacket_continuation_wrong_pgn_ignored);
     RUN_TEST(test_fastpacket_roundtrip_short_last_frame);
     RUN_TEST(test_decode_position_rapid);
+    RUN_TEST(test_decode_cog_sog_rapid);
     RUN_TEST(test_decode_wind_data);
     RUN_TEST(test_decode_water_depth);
     RUN_TEST(test_decode_vessel_heading);

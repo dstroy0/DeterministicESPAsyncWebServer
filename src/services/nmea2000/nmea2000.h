@@ -89,9 +89,16 @@ bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t
 // signed lat/lon), which clears the field's validity flag.
 
 #define N2K_PGN_POSITION_RAPID 129025u ///< Position, Rapid Update: latitude + longitude
+#define N2K_PGN_COG_SOG_RAPID 129026u  ///< COG & SOG, Rapid Update: course + speed over ground
 #define N2K_PGN_WIND_DATA 130306u      ///< Wind Data: speed + angle + reference
 #define N2K_PGN_WATER_DEPTH 128267u    ///< Water Depth: depth below transducer + offset
 #define N2K_PGN_VESSEL_HEADING 127250u ///< Vessel Heading: heading + deviation + variation
+
+// COG reference (PGN 129026 byte 1, low 2 bits).
+#define N2K_COG_REF_TRUE 0     ///< course over ground referenced to True North
+#define N2K_COG_REF_MAGNETIC 1 ///< course over ground referenced to Magnetic North
+#define N2K_COG_REF_ERROR 2    ///< reference in error
+#define N2K_COG_REF_NULL 3     ///< reference not available / null
 
 // Heading reference (PGN 127250 byte 7, low 2 bits).
 #define N2K_HEADING_REF_TRUE 0     ///< true heading
@@ -110,6 +117,17 @@ struct N2kPositionRapid
     bool valid;     ///< false if either coordinate is not-available
     double lat_deg; ///< latitude in decimal degrees (1e-7 deg/bit)
     double lon_deg; ///< longitude in decimal degrees
+};
+
+/** @brief Decoded COG & SOG Rapid Update (PGN 129026). */
+struct N2kCogSogRapid
+{
+    uint8_t sid;     ///< sequence id
+    uint8_t cog_ref; ///< course reference (@ref N2K_COG_REF_TRUE / _MAGNETIC)
+    bool cog_valid;  ///< false if the course over ground is not-available
+    float cog_rad;   ///< course over ground (radians, 0.0001 rad per bit)
+    bool sog_valid;  ///< false if the speed over ground is not-available
+    float sog_mps;   ///< speed over ground (m/s, 0.01 m/s per bit)
 };
 
 /** @brief Decoded Wind Data (PGN 130306). */
@@ -148,6 +166,12 @@ struct N2kVesselHeading
  * @return true iff @p len is at least 8 octets; false otherwise.
  */
 bool dws_n2k_decode_position_rapid(const uint8_t *payload, size_t len, N2kPositionRapid *out);
+
+/**
+ * @brief Decode a COG & SOG Rapid Update (PGN 129026) payload into @p out.
+ * @return true iff @p len is at least 6 octets (SID + reference + COG + SOG); false otherwise.
+ */
+bool dws_n2k_decode_cog_sog_rapid(const uint8_t *payload, size_t len, N2kCogSogRapid *out);
 
 /**
  * @brief Decode a Wind Data (PGN 130306) payload into @p out.
