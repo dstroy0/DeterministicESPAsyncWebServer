@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.51.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.51.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a38b4f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a38b4f580766bdab47825e4edd5beebe27bdcf78))
+
+### Changes
+
+- Bump version: 7.50.0 → 7.51.0 ([`511e7c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/511e7c0177071923b066b69fad52d4061f727891))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`66f5c98`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/66f5c98ab343a4eb1a70199ce28b648763161bd1))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`eecc3d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eecc3d8aed98765ea0004eb4c8767858ac790a2a))
+
+### Features
+
+- RFC 4303 ESP packet transform (AES-256-GCM, RFC 4106) ([`29e83ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/29e83add293c9fb8457d02ab3faf175261568166))
+
+</details>
+
 ## [7.50.0] - 2026-07-24
 
 <details>
