@@ -317,6 +317,76 @@ void test_compute_symmetric()
     dws_ptp_compute(0, 0, 0, 0, nullptr); // null-safe
 }
 
+// -- P2P peer-delay mechanism (IEEE 1588-2008 §11.4) --
+
+void test_pdelay_mechanism()
+{
+    DwsPtpHeader h;
+    memset(&h, 0, sizeof(h));
+    memcpy(h.clock_identity, CID, 8);
+    h.port_number = 1;
+    const uint8_t reqid[8] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x11, 0x22, 0x33};
+    uint8_t buf[64];
+
+    // Pdelay_Req: originTimestamp + a zeroed 10-octet reserved tail (54 octets total).
+    DwsPtpTimestamp t1 = {100u, 5u};
+    size_t n = dws_ptp_build_pdelay_req(buf, sizeof(buf), &h, &t1);
+    TEST_ASSERT_EQUAL_UINT(DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN + 10, n);
+    TEST_ASSERT_EQUAL_HEX8(0x02, buf[0] & 0x0F); // messageType Pdelay_Req = 0x2
+    TEST_ASSERT_EQUAL_HEX8(0x05, buf[32]);       // control = "all others" = 5
+    for (size_t i = DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN; i < n; i++)
+        TEST_ASSERT_EQUAL_HEX8(0x00, buf[i]); // reserved tail is zero
+    DwsPtpHeader g;
+    DwsPtpTimestamp got;
+    TEST_ASSERT_TRUE(dws_ptp_parse_pdelay_req(buf, n, &g, &got));
+    TEST_ASSERT_EQUAL_UINT8(DWS_PTP_PDELAY_REQ, g.message_type);
+    TEST_ASSERT_EQUAL_UINT64(100u, got.seconds);
+    TEST_ASSERT_EQUAL_UINT32(5u, got.nanoseconds);
+
+    // Pdelay_Resp carries t2 (requestReceiptTimestamp) + the requesting port identity.
+    DwsPtpTimestamp t2 = {100u, 205u};
+    n = dws_ptp_build_pdelay_resp(buf, sizeof(buf), &h, &t2, reqid, 7);
+    TEST_ASSERT_EQUAL_UINT(DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN + 10, n);
+    TEST_ASSERT_EQUAL_HEX8(0x03, buf[0] & 0x0F); // Pdelay_Resp = 0x3
+    DwsPtpPdelayResp r;
+    TEST_ASSERT_TRUE(dws_ptp_parse_pdelay_resp(buf, n, &g, &r));
+    TEST_ASSERT_EQUAL_UINT8(DWS_PTP_PDELAY_RESP, g.message_type);
+    TEST_ASSERT_EQUAL_UINT64(100u, r.timestamp.seconds);
+    TEST_ASSERT_EQUAL_UINT32(205u, r.timestamp.nanoseconds);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(reqid, r.req_clock_id, 8);
+    TEST_ASSERT_EQUAL_UINT16(7, r.req_port);
+
+    // Pdelay_Resp_Follow_Up carries t3 (responseOriginTimestamp) + the requesting port identity.
+    DwsPtpTimestamp t3 = {100u, 305u};
+    n = dws_ptp_build_pdelay_resp_follow_up(buf, sizeof(buf), &h, &t3, reqid, 7);
+    TEST_ASSERT_EQUAL_HEX8(0x0A, buf[0] & 0x0F); // Pdelay_Resp_Follow_Up = 0xA
+    TEST_ASSERT_TRUE(dws_ptp_parse_pdelay_resp_follow_up(buf, n, &g, &r));
+    TEST_ASSERT_EQUAL_UINT8(DWS_PTP_PDELAY_RESP_FOLLOW_UP, g.message_type);
+    TEST_ASSERT_EQUAL_UINT32(305u, r.timestamp.nanoseconds);
+
+    // Parsers reject the wrong message type and each other's frames.
+    TEST_ASSERT_FALSE(dws_ptp_parse_pdelay_resp(buf, n, &g, &r)); // buf holds a Follow_Up now
+    uint8_t req[64];
+    size_t rn = dws_ptp_build_pdelay_req(req, sizeof(req), &h, &t1);
+    TEST_ASSERT_FALSE(dws_ptp_parse_pdelay_resp(req, rn, &g, &r));
+    TEST_ASSERT_FALSE(dws_ptp_parse_pdelay_req(buf, n, &g, &got)); // Follow_Up is not a Pdelay_Req
+    // Build guards: tiny buffer, null identity.
+    TEST_ASSERT_EQUAL_UINT(0, dws_ptp_build_pdelay_req(buf, 20, &h, &t1));
+    TEST_ASSERT_EQUAL_UINT(0, dws_ptp_build_pdelay_resp(buf, sizeof(buf), &h, &t2, nullptr, 7));
+}
+
+void test_pdelay_link_delay()
+{
+    // t1 = req egress, t2 = req ingress at peer, t3 = resp egress, t4 = resp ingress.
+    // Symmetric link delay d = 50 ns, peer turnaround (t3 - t2) = 100 ns:
+    //   t1=100, t2=100+50=150, t3=150+100=250, t4=250+50=300 -> D = ((300-100)-(250-150))/2 = 50.
+    TEST_ASSERT_EQUAL_INT64(50, dws_ptp_compute_link_delay(100, 150, 250, 300));
+    // A different link: d=200, turnaround=1000. t1=0,t2=200,t3=1200,t4=1400 -> ((1400)-(1000))/2=200.
+    TEST_ASSERT_EQUAL_INT64(200, dws_ptp_compute_link_delay(0, 200, 1200, 1400));
+    // Zero delay, immediate turnaround.
+    TEST_ASSERT_EQUAL_INT64(0, dws_ptp_compute_link_delay(500, 500, 500, 500));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -330,5 +400,7 @@ int main()
     RUN_TEST(test_announce);
     RUN_TEST(test_build_announce);
     RUN_TEST(test_compute_symmetric);
+    RUN_TEST(test_pdelay_mechanism);
+    RUN_TEST(test_pdelay_link_delay);
     return UNITY_END();
 }

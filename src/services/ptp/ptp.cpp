@@ -179,6 +179,59 @@ size_t dws_ptp_build_delay_resp(uint8_t *buf, size_t cap, const DwsPtpHeader *h,
     return DWS_PTP_HEADER_LEN + body;
 }
 
+size_t dws_ptp_build_pdelay_req(uint8_t *buf, size_t cap, const DwsPtpHeader *h, const DwsPtpTimestamp *origin)
+{
+    const size_t body = DWS_PTP_TS_LEN + 10; // originTimestamp + 10-octet reserved (pads to Pdelay_Resp length)
+    if (!buf || !h || !origin || cap < DWS_PTP_HEADER_LEN + body)
+        return 0;
+    DwsPtpHeader hh = *h;
+    hh.message_type = DWS_PTP_PDELAY_REQ;
+    hh.control = 0x05; // "all others" (IEEE 1588-2008 Table 23)
+    if (hh.version == 0)
+        hh.version = 2;
+    dws_ptp_build_header(buf, cap, &hh, (uint16_t)body);
+    uint8_t *p = buf + DWS_PTP_HEADER_LEN;
+    dws_ptp_ts_write(p, origin);
+    memset(p + DWS_PTP_TS_LEN, 0, 10); // reserved
+    return DWS_PTP_HEADER_LEN + body;
+}
+
+// Pdelay_Resp and Pdelay_Resp_Follow_Up share a body layout (a timestamp + the requesting port identity);
+// only the messageType and which timestamp it carries differ.
+static size_t build_pdelay_resp_msg(uint8_t *buf, size_t cap, const DwsPtpHeader *h, const DwsPtpTimestamp *ts,
+                                    const uint8_t *req_clock_id, uint16_t req_port, uint8_t mtype)
+{
+    const size_t body = DWS_PTP_TS_LEN + 10; // timestamp + requestingPortIdentity(10)
+    if (!buf || !h || !ts || !req_clock_id || cap < DWS_PTP_HEADER_LEN + body)
+        return 0;
+    DwsPtpHeader hh = *h;
+    hh.message_type = mtype;
+    hh.control = 0x05;
+    if (hh.version == 0)
+        hh.version = 2;
+    dws_ptp_build_header(buf, cap, &hh, (uint16_t)body);
+    uint8_t *p = buf + DWS_PTP_HEADER_LEN;
+    dws_ptp_ts_write(p, ts);
+    p += DWS_PTP_TS_LEN;
+    memcpy(p, req_clock_id, 8);
+    p += 8;
+    put_u16(p, req_port);
+    return DWS_PTP_HEADER_LEN + body;
+}
+
+size_t dws_ptp_build_pdelay_resp(uint8_t *buf, size_t cap, const DwsPtpHeader *h, const DwsPtpTimestamp *recv,
+                                 const uint8_t *req_clock_id, uint16_t req_port)
+{
+    return build_pdelay_resp_msg(buf, cap, h, recv, req_clock_id, req_port, DWS_PTP_PDELAY_RESP);
+}
+
+size_t dws_ptp_build_pdelay_resp_follow_up(uint8_t *buf, size_t cap, const DwsPtpHeader *h,
+                                           const DwsPtpTimestamp *origin, const uint8_t *req_clock_id,
+                                           uint16_t req_port)
+{
+    return build_pdelay_resp_msg(buf, cap, h, origin, req_clock_id, req_port, DWS_PTP_PDELAY_RESP_FOLLOW_UP);
+}
+
 size_t dws_ptp_build_announce(uint8_t *buf, size_t cap, const DwsPtpHeader *h, const DwsPtpAnnounce *a)
 {
     const size_t body = 30; // originTimestamp(10)+utc(2)+rsv(1)+p1(1)+quality(4)+p2(1)+id(8)+steps(2)+src(1)
@@ -239,6 +292,46 @@ bool dws_ptp_parse_delay_resp(const uint8_t *s, size_t len, DwsPtpHeader *h, Dws
     return true;
 }
 
+bool dws_ptp_parse_pdelay_req(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpTimestamp *ts)
+{
+    if (!ts || !dws_ptp_parse_header(s, len, h))
+        return false;
+    if (h->message_type != DWS_PTP_PDELAY_REQ)
+        return false;
+    if (len < DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN) // the originTimestamp (the reserved tail is ignored)
+        return false;
+    dws_ptp_ts_read(s + DWS_PTP_HEADER_LEN, ts);
+    return true;
+}
+
+// Pdelay_Resp and its Follow_Up share the body layout; only the messageType differs.
+static bool parse_pdelay_resp_msg(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpPdelayResp *out, uint8_t mtype)
+{
+    if (!out || !dws_ptp_parse_header(s, len, h))
+        return false;
+    if (h->message_type != mtype)
+        return false;
+    if (len < DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN + 10)
+        return false;
+    const uint8_t *p = s + DWS_PTP_HEADER_LEN;
+    dws_ptp_ts_read(p, &out->timestamp);
+    p += DWS_PTP_TS_LEN;
+    memcpy(out->req_clock_id, p, 8);
+    p += 8;
+    out->req_port = get_u16(p);
+    return true;
+}
+
+bool dws_ptp_parse_pdelay_resp(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpPdelayResp *out)
+{
+    return parse_pdelay_resp_msg(s, len, h, out, DWS_PTP_PDELAY_RESP);
+}
+
+bool dws_ptp_parse_pdelay_resp_follow_up(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpPdelayResp *out)
+{
+    return parse_pdelay_resp_msg(s, len, h, out, DWS_PTP_PDELAY_RESP_FOLLOW_UP);
+}
+
 bool dws_ptp_parse_announce(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpAnnounce *out)
 {
     if (!out || !dws_ptp_parse_header(s, len, h))
@@ -277,6 +370,12 @@ void dws_ptp_compute(int64_t t1, int64_t t2, int64_t t3, int64_t t4, DwsPtpSync 
     int64_t sm = t4 - t3; // slave -> master transit (- offset)
     out->offset_ns = (ms - sm) / 2;
     out->delay_ns = (ms + sm) / 2;
+}
+
+int64_t dws_ptp_compute_link_delay(int64_t t1, int64_t t2, int64_t t3, int64_t t4)
+{
+    // meanLinkDelay = ((t4 - t1) - (t3 - t2)) / 2: the round trip minus the peer's turnaround, halved.
+    return ((t4 - t1) - (t3 - t2)) / 2;
 }
 
 #endif // DWS_ENABLE_PTP

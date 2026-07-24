@@ -7,9 +7,11 @@
  *
  * The Precision Time Protocol synchronizes clocks across a LAN to sub-microsecond accuracy by
  * exchanging timestamped messages. This codec builds and parses the PTPv2 wire format - the 34-octet
- * common header, the 10-octet (48-bit seconds + 32-bit nanoseconds) timestamp, and the Sync /
- * Delay_Req / Follow_Up / Delay_Resp / Announce messages - and computes an ordinary-clock **slave**'s
- * offset-from-master and mean-path-delay from the four transfer timestamps (t1..t4). All multi-octet
+ * common header, the 10-octet (48-bit seconds + 32-bit nanoseconds) timestamp, the E2E Sync /
+ * Delay_Req / Follow_Up / Delay_Resp / Announce messages, and the P2P peer-delay messages (Pdelay_Req /
+ * Pdelay_Resp / Pdelay_Resp_Follow_Up, IEEE 1588-2008 §11.4) - and computes an ordinary-clock **slave**'s
+ * offset-from-master and mean-path-delay from the four transfer timestamps (t1..t4), plus the P2P
+ * meanLinkDelay. All multi-octet
  * fields are big-endian (network order), per IEEE 1588-2008 clause 13. Pure and host-tested; the UDP
  * transport (event port 319, general port 320, multicast 224.0.1.129) and the local timestamping are
  * the application's - see the Ptp example for the ordinary-clock slave that drives this codec.
@@ -32,9 +34,12 @@
 enum DwsPtpMsgType
 {
     DWS_PTP_SYNC = 0x0,
+    DWS_PTP_PDELAY_REQ = 0x2,  ///< peer-delay request (P2P mechanism)
+    DWS_PTP_PDELAY_RESP = 0x3, ///< peer-delay response (P2P mechanism)
     DWS_PTP_DELAY_REQ = 0x1,
     DWS_PTP_FOLLOW_UP = 0x8,
     DWS_PTP_DELAY_RESP = 0x9,
+    DWS_PTP_PDELAY_RESP_FOLLOW_UP = 0xA, ///< peer-delay response follow-up (two-step P2P)
     DWS_PTP_ANNOUNCE = 0xB
 };
 
@@ -73,6 +78,14 @@ struct DwsPtpDelayResp
     DwsPtpTimestamp receive; ///< receiveTimestamp (t4, when the master got our Delay_Req)
     uint8_t req_clock_id[8]; ///< requestingPortIdentity clockIdentity (echoes our clock id)
     uint16_t req_port;       ///< requestingPortIdentity portNumber
+};
+
+/** @brief Parsed Pdelay_Resp / Pdelay_Resp_Follow_Up body (P2P peer-delay mechanism). */
+struct DwsPtpPdelayResp
+{
+    DwsPtpTimestamp timestamp; ///< Pdelay_Resp: requestReceiptTimestamp (t2); Follow_Up: responseOriginTimestamp (t3)
+    uint8_t req_clock_id[8];   ///< requestingPortIdentity clockIdentity (echoes the Pdelay_Req sender)
+    uint16_t req_port;         ///< requestingPortIdentity portNumber
 };
 
 /** @brief Parsed Announce body (the master's quality, for best-master selection / display). */
@@ -132,6 +145,20 @@ size_t dws_ptp_build_delay_resp(uint8_t *buf, size_t cap, const DwsPtpHeader *h,
 /** @brief Build an Announce from @p a - master mode: advertise this clock's quality + origin time. */
 size_t dws_ptp_build_announce(uint8_t *buf, size_t cap, const DwsPtpHeader *h, const DwsPtpAnnounce *a);
 
+// -- P2P peer-delay mechanism (IEEE 1588-2008 §11.4 / clause 13.9-13.11) --
+
+/** @brief Build a Pdelay_Req (@p origin is the originTimestamp, usually 0; the 10-octet reserved tail that
+ *  pads it to the Pdelay_Resp length is zeroed). */
+size_t dws_ptp_build_pdelay_req(uint8_t *buf, size_t cap, const DwsPtpHeader *h, const DwsPtpTimestamp *origin);
+/** @brief Build a Pdelay_Resp carrying t2 @p recv (requestReceiptTimestamp) + the requester's port identity. */
+size_t dws_ptp_build_pdelay_resp(uint8_t *buf, size_t cap, const DwsPtpHeader *h, const DwsPtpTimestamp *recv,
+                                 const uint8_t *req_clock_id, uint16_t req_port);
+/** @brief Build a Pdelay_Resp_Follow_Up carrying t3 @p origin (responseOriginTimestamp) + the requester's
+ *  port identity (two-step P2P). */
+size_t dws_ptp_build_pdelay_resp_follow_up(uint8_t *buf, size_t cap, const DwsPtpHeader *h,
+                                           const DwsPtpTimestamp *origin, const uint8_t *req_clock_id,
+                                           uint16_t req_port);
+
 /**
  * @brief Parse a Sync / Delay_Req / Follow_Up message: fills @p h and its single timestamp @p ts.
  * Returns false on a short frame or a non-timestamp message type.
@@ -141,6 +168,12 @@ bool dws_ptp_parse_timestamp_msg(const uint8_t *s, size_t len, DwsPtpHeader *h, 
 bool dws_ptp_parse_delay_resp(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpDelayResp *out);
 /** @brief Parse an Announce into @p h + @p out. Returns false on a short / wrong-type frame. */
 bool dws_ptp_parse_announce(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpAnnounce *out);
+/** @brief Parse a Pdelay_Req into @p h + its originTimestamp @p ts. False on a short / wrong-type frame. */
+bool dws_ptp_parse_pdelay_req(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpTimestamp *ts);
+/** @brief Parse a Pdelay_Resp into @p h + @p out (@c timestamp is t2). False on a short / wrong-type frame. */
+bool dws_ptp_parse_pdelay_resp(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpPdelayResp *out);
+/** @brief Parse a Pdelay_Resp_Follow_Up into @p h + @p out (@c timestamp is t3). False on short / wrong type. */
+bool dws_ptp_parse_pdelay_resp_follow_up(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPtpPdelayResp *out);
 
 // -- slave clock math --
 
@@ -151,6 +184,14 @@ bool dws_ptp_parse_announce(const uint8_t *s, size_t len, DwsPtpHeader *h, DwsPt
  * Fold any correctionField into t1..t4 before calling.
  */
 void dws_ptp_compute(int64_t t1, int64_t t2, int64_t t3, int64_t t4, DwsPtpSync *out);
+
+/**
+ * @brief Compute the meanLinkDelay for the P2P mechanism (IEEE 1588-2008 §11.4.3), in nanoseconds:
+ * D = ((t4 - t1) - (t3 - t2)) / 2, where t1 = Pdelay_Req egress, t2 = Pdelay_Req ingress at the peer,
+ * t3 = Pdelay_Resp egress at the peer, t4 = Pdelay_Resp ingress. Fold the correctionFields into t1..t4
+ * before calling. Unlike the E2E delay this is a per-link measurement, independent of master/slave offset.
+ */
+int64_t dws_ptp_compute_link_delay(int64_t t1, int64_t t2, int64_t t3, int64_t t4);
 
 #endif // DWS_ENABLE_PTP
 #endif // DETERMINISTICESPASYNCWEBSERVER_PTP_H
