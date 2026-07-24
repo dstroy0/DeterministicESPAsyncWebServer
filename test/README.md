@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5062 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5065 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -28768,7 +28768,7 @@ A thorough directory of all **5062 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (13 tests)</b></summary>
+<summary><b>test_nmea0183 (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -28919,6 +28919,60 @@ A thorough directory of all **5062 test cases** across **290 suites**. Expand a 
       * <code>Assert false (dws_nmea0183_field_float(&m, 0, nullptr))</code>
       * <code>Assert false (dws_nmea0183_field_int(&m, m.field_count, &v))</code>
       * <code>Assert false (dws_nmea0183_field_int(&m, 0, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_gga</b> &mdash; <i>Decode gga</i></summary>
+
+    * **Objective**: Decode gga
+    * **Assertions**:
+      * <code>Assert true (dws_nmea0183_parse(GGA, strlen(GGA), &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_gga(&m, &g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, g.hour);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(35, g.minute);</code>
+      * <code>Assert float within (0.01f, 19.0f, g.second)</code>
+      * <code>Assert float within (0.0005f, 48.1173f, (float)g.lat_deg)</code>
+      * <code>Assert float within (0.0005f, 11.516667f, (float)g.lon_deg)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g.fix_quality);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(8, g.num_sats);</code>
+      * <code>Assert float within (0.01f, 0.9f, g.hdop)</code>
+      * <code>Assert float within (0.1f, 545.4f, g.alt_m)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_rmc</b> &mdash; <i>A southern/western hemisphere sentence flips the coordinate signs, and a 'V' status is decoded as</i></summary>
+
+    * **Objective**: A southern/western hemisphere sentence flips the coordinate signs, and a 'V' status is decoded as
+    * **Assertions**:
+      * <code>Assert true (dws_nmea0183_parse(RMC, strlen(RMC), &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_rmc(&m, &r))</code>
+      * <code>Assert true (r.valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, r.hour);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(35, r.minute);</code>
+      * <code>Assert float within (0.0005f, 48.1173f, (float)r.lat_deg)</code>
+      * <code>Assert float within (0.0005f, 11.516667f, (float)r.lon_deg)</code>
+      * <code>Assert float within (0.05f, 22.4f, r.speed_knots)</code>
+      * <code>Assert float within (0.05f, 84.4f, r.course_deg)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(23, r.day);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, r.month);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(94, r.year);</code>
+      * <code>Assert true (bn &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, bn, &m2))</code>
+      * <code>Assert true (dws_nmea0183_parse_rmc(&m2, &r2))</code>
+      * <code>Assert false (r2.valid)</code>
+      * <code>Assert true (r2.lat_deg &lt; 0.0)</code>
+      * <code>Assert true (r2.lon_deg &lt; 0.0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_type_mismatch</b> &mdash; <i>Null guards.</i></summary>
+
+    * **Objective**: Null guards.
+    * **Assertions**:
+      * <code>Assert false (dws_nmea0183_parse_rmc(&m, &r))</code>
+      * <code>Assert false (dws_nmea0183_parse_gga(&m, &g))</code>
+      * <code>Assert false (dws_nmea0183_parse_gga(nullptr, &g))</code>
+      * <code>Assert false (dws_nmea0183_parse_gga(&m, nullptr))</code>
   </details>
 
 </details>

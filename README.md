@@ -791,14 +791,14 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `GPIO_MAP`          |             4.9 KB |          15.3 KB |
 | L7    | `SYSLOG`            |             4.5 KB |          17.1 KB |
 | L7    | `METRICS`           |             4.4 KB |          15.4 KB |
+| L7    | `MODBUS_MASTER`     |             3.1 KB |          15.5 KB |
 | L7    | `PACKML`            |             2.9 KB |          15.3 KB |
 | L7    | `AUDIT_LOG`         |             2.9 KB |          18.2 KB |
-| L7    | `MODBUS_MASTER`     |             2.7 KB |          15.5 KB |
+| L7    | `MODBUS`            |             2.6 KB |          15.5 KB |
 | L7    | `SIMATIC`           |             2.6 KB |          16.7 KB |
 | L7    | `CONTROL`           |             2.6 KB |          23.1 KB |
 | L7    | `STATS`             |             2.4 KB |          15.4 KB |
 | L7    | `SPA_ROUTER`        |             2.3 KB |          15.3 KB |
-| L7    | `MODBUS`            |             2.2 KB |          15.5 KB |
 | L7    | `CSRF`              |             2.2 KB |          15.3 KB |
 | L7    | `LOGBUF`            |             1.8 KB |          18.3 KB |
 | L7    | `TOTP`              |             1.7 KB |          15.3 KB |

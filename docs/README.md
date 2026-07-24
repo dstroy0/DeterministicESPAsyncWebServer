@@ -1173,8 +1173,6 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
-│   │   ├── __pycache__/
-│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1281,19 +1279,19 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/InterfaceFilter` | `L7-Application/InterfaceFilter` | 755,009 | 81,820 |
 | `CSRF` | `L7-Application/Csrf` | 755,069 | 81,876 |
 | `core/Templating` | `L7-Application/Templating` | 755,069 | 81,868 |
-| `MODBUS` | `L7-Application/ModbusTcp` | 755,125 | 82,108 |
 | `SPA_ROUTER` | `L7-Application/SpaFallback` | 755,161 | 81,820 |
 | `STATS` | `L7-Application/Stats` | 755,293 | 81,924 |
 | `CONTROL` | `L7-Application/PidTuning` | 755,465 | 89,900 |
 | `SIMATIC` | `L7-Application/SimaticSerial` | 755,513 | 83,292 |
+| `MODBUS` | `L7-Application/ModbusTcp` | 755,533 | 82,108 |
 | `core/Basic` | `Foundation/Basic` | 755,533 | 81,836 |
 | `DIAG` | `Foundation/Configuration` | 755,581 | 77,580 |
-| `MODBUS+MODBUS_MASTER` | `L7-Application/ModbusScan` | 755,589 | 82,100 |
 | `JWT` | `L6-Presentation/JWTAuth` | 755,649 | 82,972 |
 | `TELNET` | `L5-Session/Telnet` | 755,737 | 82,364 |
 | `CBOR` | `L6-Presentation/Cbor` | 755,797 | 81,900 |
 | `AUDIT_LOG` | `L7-Application/AuditLog` | 755,801 | 84,812 |
 | `PACKML` | `L7-Application/PackML` | 755,841 | 81,868 |
+| `MODBUS+MODBUS_MASTER` | `L7-Application/ModbusScan` | 756,001 | 82,100 |
 | `IPV6` | `Foundation/IPv6` | 756,041 | 81,820 |
 | `core/Expert` | `Foundation/Expert` | 756,241 | 81,844 |
 | `MSGPACK` | `L6-Presentation/MsgPack` | 757,181 | 81,900 |
