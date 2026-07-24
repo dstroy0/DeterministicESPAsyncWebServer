@@ -469,6 +469,89 @@ void test_parse_sdo_response_extended()
     TEST_ASSERT_FALSE(dws_canopen_parse_sdo_response(&f, &r));
 }
 
+// --- segmented SDO (CiA 301 §7.2.4.3) ---
+void test_sdo_segmented_download_build()
+{
+    const uint8_t obj[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_canopen_build_sdo_download_init(&f, 5, 0x2000, 1, 10));
+    TEST_ASSERT_EQUAL_HEX32(CANOPEN_COB_SDO_RX + 5, f.id);
+    TEST_ASSERT_EQUAL_HEX8(0x21, f.data[0]); // download initiate, segmented, size indicated
+    TEST_ASSERT_EQUAL_HEX8(0x00, f.data[1]); // index 0x2000 LE
+    TEST_ASSERT_EQUAL_HEX8(0x20, f.data[2]);
+    TEST_ASSERT_EQUAL_HEX8(1, f.data[3]);
+    TEST_ASSERT_EQUAL_HEX8(10, f.data[4]); // total size LE
+
+    // First segment: toggle 0, 7 octets, not last -> command 0x00.
+    TEST_ASSERT_TRUE(dws_canopen_build_sdo_download_segment(&f, 5, false, obj, 7, false));
+    TEST_ASSERT_EQUAL_HEX8(0x00, f.data[0]);
+    TEST_ASSERT_EQUAL_MEMORY(obj, f.data + 1, 7);
+    // Last segment: toggle 1, 3 octets -> command 0x10 | ((7-3)<<1) | 1 = 0x19.
+    TEST_ASSERT_TRUE(dws_canopen_build_sdo_download_segment(&f, 5, true, obj + 7, 3, true));
+    TEST_ASSERT_EQUAL_HEX8(0x19, f.data[0]);
+    // Guards.
+    TEST_ASSERT_FALSE(dws_canopen_build_sdo_download_segment(&f, 5, false, obj, 8, false)); // len > 7
+    TEST_ASSERT_FALSE(dws_canopen_build_sdo_download_segment(&f, 0, false, obj, 3, false)); // bad node
+}
+
+void test_sdo_segmented_upload_roundtrip()
+{
+    const uint8_t obj[10] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    CanFrame req;
+    TEST_ASSERT_TRUE(dws_canopen_build_sdo_upload_segment_req(&req, 5, false));
+    TEST_ASSERT_EQUAL_HEX8(0x60, req.data[0]);
+    TEST_ASSERT_TRUE(dws_canopen_build_sdo_upload_segment_req(&req, 5, true));
+    TEST_ASSERT_EQUAL_HEX8(0x70, req.data[0]); // 0x60 | toggle bit
+
+    // Two server-response segments (same segment wire form), parsed + reassembled into the object.
+    CanFrame s1, s2;
+    dws_canopen_build_sdo_download_segment(&s1, 5, false, obj, 7, false);
+    dws_canopen_build_sdo_download_segment(&s2, 5, true, obj + 7, 3, true);
+
+    uint8_t buf[16];
+    CanopenSdoReasm r;
+    dws_canopen_sdo_reasm_init(&r, buf, sizeof(buf));
+    bool tg = true, last = true;
+    uint8_t data[7], len = 0;
+    TEST_ASSERT_TRUE(dws_canopen_parse_sdo_segment(&s1, &tg, data, &len, &last));
+    TEST_ASSERT_FALSE(tg);
+    TEST_ASSERT_EQUAL_UINT8(7, len);
+    TEST_ASSERT_FALSE(last);
+    TEST_ASSERT_TRUE(dws_canopen_sdo_reasm_feed(&r, data, len, tg, last));
+    TEST_ASSERT_FALSE(r.done);
+    TEST_ASSERT_TRUE(dws_canopen_parse_sdo_segment(&s2, &tg, data, &len, &last));
+    TEST_ASSERT_TRUE(tg);
+    TEST_ASSERT_EQUAL_UINT8(3, len);
+    TEST_ASSERT_TRUE(last);
+    TEST_ASSERT_TRUE(dws_canopen_sdo_reasm_feed(&r, data, len, tg, last));
+    TEST_ASSERT_TRUE(r.done);
+    TEST_ASSERT_EQUAL_size_t(10, r.len);
+    TEST_ASSERT_EQUAL_MEMORY(obj, buf, 10);
+}
+
+void test_sdo_segmented_guards()
+{
+    uint8_t buf[16];
+    CanopenSdoReasm r;
+    dws_canopen_sdo_reasm_init(&r, buf, sizeof(buf));
+    uint8_t d[7] = {0};
+    TEST_ASSERT_FALSE(dws_canopen_sdo_reasm_feed(&r, d, 7, true, false)); // first segment must be toggle 0
+    TEST_ASSERT_TRUE(dws_canopen_sdo_reasm_feed(&r, d, 7, false, false));
+    TEST_ASSERT_FALSE(dws_canopen_sdo_reasm_feed(&r, d, 7, false, false)); // toggle must have flipped
+
+    uint8_t tiny[4];
+    CanopenSdoReasm r2;
+    dws_canopen_sdo_reasm_init(&r2, tiny, sizeof(tiny));
+    TEST_ASSERT_FALSE(dws_canopen_sdo_reasm_feed(&r2, d, 7, false, false)); // overflow
+
+    // parse rejects an expedited response (command high bits non-zero) as not a segment.
+    CanFrame exp;
+    dws_canopen_build_sdo_read(&exp, 5, 0x1000, 0); // 0x40 (ccs=2)
+    bool tg, last;
+    uint8_t data[7], len;
+    TEST_ASSERT_FALSE(dws_canopen_parse_sdo_segment(&exp, &tg, data, &len, &last));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -495,5 +578,8 @@ int main()
     RUN_TEST(test_parse_emcy_extended_and_null_outputs);
     RUN_TEST(test_parse_heartbeat_extended_null_and_node_zero);
     RUN_TEST(test_parse_sdo_response_extended);
+    RUN_TEST(test_sdo_segmented_download_build);
+    RUN_TEST(test_sdo_segmented_upload_roundtrip);
+    RUN_TEST(test_sdo_segmented_guards);
     return UNITY_END();
 }

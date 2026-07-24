@@ -308,4 +308,90 @@ bool dws_canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out)
     return false; // not a recognised server command specifier
 }
 
+// --- segmented SDO (CiA 301 §7.2.4.3) ---
+
+bool dws_canopen_build_sdo_download_init(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub,
+                                         uint32_t total_size)
+{
+    if (!out || !valid_node(node_id))
+        return false;
+    std_frame(out, CANOPEN_COB_SDO_RX + node_id, 8);
+    // download initiate, segmented (e=0), size indicated (s=1) -> command 0x21; size in data[4..7] LE.
+    out->data[0] = (uint8_t)((CANOPEN_SDO_CCS_DOWNLOAD << 5) | 0x01u);
+    sdo_set_object(out, index, sub);
+    out->data[4] = (uint8_t)total_size;
+    out->data[5] = (uint8_t)(total_size >> 8);
+    out->data[6] = (uint8_t)(total_size >> 16);
+    out->data[7] = (uint8_t)(total_size >> 24);
+    return true;
+}
+
+bool dws_canopen_build_sdo_download_segment(CanFrame *out, uint8_t node_id, bool toggle, const uint8_t *data,
+                                            uint8_t len, bool last)
+{
+    if (!out || !valid_node(node_id) || !data || len < 1 || len > CANOPEN_SDO_SEG_DATA)
+        return false;
+    std_frame(out, CANOPEN_COB_SDO_RX + node_id, 8);
+    // segment: ccs=0, t=toggle (bit 4), n=unused octets (bits 1..3), c=last (bit 0).
+    uint8_t n = (uint8_t)(CANOPEN_SDO_SEG_DATA - len);
+    out->data[0] = (uint8_t)((toggle ? 0x10u : 0u) | ((n & 0x07u) << 1) | (last ? 0x01u : 0u));
+    memcpy(out->data + 1, data, len);
+    return true;
+}
+
+bool dws_canopen_build_sdo_upload_segment_req(CanFrame *out, uint8_t node_id, bool toggle)
+{
+    if (!out || !valid_node(node_id))
+        return false;
+    std_frame(out, CANOPEN_COB_SDO_RX + node_id, 8);
+    // upload segment request: ccs=3, t=toggle (bit 4).
+    out->data[0] = (uint8_t)((3u << 5) | (toggle ? 0x10u : 0u));
+    return true;
+}
+
+bool dws_canopen_parse_sdo_segment(const CanFrame *f, bool *toggle, uint8_t *data, uint8_t *len, bool *last)
+{
+    if (!f || f->dlc < 8 || (f->data[0] & 0xE0u) != 0u) // segment form: command specifier (high 3 bits) is 0
+        return false;
+    uint8_t n = (uint8_t)((f->data[0] >> 1) & 0x07u);
+    uint8_t seg_len = (uint8_t)(CANOPEN_SDO_SEG_DATA - n);
+    if (toggle)
+        *toggle = (f->data[0] & 0x10u) != 0u;
+    if (last)
+        *last = (f->data[0] & 0x01u) != 0u;
+    if (len)
+        *len = seg_len;
+    if (data)
+        memcpy(data, f->data + 1, seg_len);
+    return true;
+}
+
+void dws_canopen_sdo_reasm_init(CanopenSdoReasm *r, uint8_t *buf, size_t cap)
+{
+    if (!r)
+        return;
+    r->buf = buf;
+    r->cap = cap;
+    r->len = 0;
+    r->expect_toggle = false; // the first segment carries toggle 0
+    r->done = false;
+}
+
+bool dws_canopen_sdo_reasm_feed(CanopenSdoReasm *r, const uint8_t *data, uint8_t len, bool toggle, bool last)
+{
+    if (!r || !r->buf || r->done || (len && !data))
+        return false;
+    if (toggle != r->expect_toggle) // toggles must alternate 0,1,0,1
+        return false;
+    if (len > r->cap - r->len) // would overflow the buffer
+        return false;
+    if (len)
+        memcpy(r->buf + r->len, data, len);
+    r->len += len;
+    r->expect_toggle = !r->expect_toggle;
+    if (last)
+        r->done = true;
+    return true;
+}
+
 #endif // DWS_ENABLE_CANOPEN

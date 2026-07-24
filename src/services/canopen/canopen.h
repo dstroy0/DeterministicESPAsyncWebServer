@@ -13,7 +13,8 @@
  * parser classifies a received frame back to its function + node.
  *
  * Scope: the CANopen object dictionary itself is the application's; this is the wire codec.
- * SDO transfers are expedited only (<= 4 octets); segmented / block SDO is not yet covered.
+ * SDO transfers cover expedited (<= 4 octets) and segmented (CiA 301 §7.2.4.3, larger objects via a
+ * toggling run of 7-octet segments); block SDO is not covered.
  *
  * Bridging: pair with the ESP32's TWAI peripheral (or an MCP2515 over SPI) to bridge a
  * CANopen field bus onto Wi-Fi - expose node state / PDOs over HTTP, MQTT, or a WebSocket.
@@ -163,6 +164,58 @@ bool dws_canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *s
 
 /** @brief Decode an SDO server response (0x580+node): upload data, download ack, or abort. */
 bool dws_canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out);
+
+// --- segmented SDO (CiA 301 §7.2.4.3): transfers larger than the 4-octet expedited limit ---
+//
+// A segmented transfer is: an initiate frame carrying the object + total size, then a run of segment
+// frames each carrying up to 7 octets with a toggle bit that alternates 0,1,0,1 and a last-segment flag.
+
+/** @brief Octets of object data a single SDO segment carries. */
+#define CANOPEN_SDO_SEG_DATA 7
+
+/**
+ * @brief Build a segmented SDO download (write) initiate: names the object and the total byte count that
+ *        the following segments will carry (client -> server, 0x600+node).
+ */
+bool dws_canopen_build_sdo_download_init(CanFrame *out, uint8_t node_id, uint16_t index, uint8_t sub,
+                                         uint32_t total_size);
+
+/**
+ * @brief Build a segmented SDO download segment carrying @p len (1..7) octets of object data.
+ * @param toggle the toggle bit for this segment (0 for the first, then alternating).
+ * @param last   true on the final segment.
+ */
+bool dws_canopen_build_sdo_download_segment(CanFrame *out, uint8_t node_id, bool toggle, const uint8_t *data,
+                                            uint8_t len, bool last);
+
+/** @brief Build a segmented SDO upload segment request (client asks the server for the next segment). */
+bool dws_canopen_build_sdo_upload_segment_req(CanFrame *out, uint8_t node_id, bool toggle);
+
+/**
+ * @brief Decode an SDO segment frame (either direction) into its toggle, data, length, and last flag.
+ * @return true iff @p f is an 8-octet frame whose command specifier is the segment form (high 3 bits 0).
+ */
+bool dws_canopen_parse_sdo_segment(const CanFrame *f, bool *toggle, uint8_t *data, uint8_t *len, bool *last);
+
+/** @brief Segmented-upload reassembly state (accumulates segment data into a caller buffer). */
+struct CanopenSdoReasm
+{
+    uint8_t *buf;       ///< caller-provided accumulation buffer
+    size_t cap;         ///< its capacity
+    size_t len;         ///< octets accumulated so far
+    bool expect_toggle; ///< the toggle the next segment must carry (starts false)
+    bool done;          ///< set once the last segment is accepted
+};
+
+/** @brief Begin a segmented-upload reassembly with a caller-owned buffer. */
+void dws_canopen_sdo_reasm_init(CanopenSdoReasm *r, uint8_t *buf, size_t cap);
+
+/**
+ * @brief Feed one decoded upload segment into the reassembler (append @p len octets).
+ * @return true on success (sets @c done on the last segment); false on a toggle mismatch or a buffer
+ *         overflow.
+ */
+bool dws_canopen_sdo_reasm_feed(CanopenSdoReasm *r, const uint8_t *data, uint8_t len, bool toggle, bool last);
 
 #endif // DWS_ENABLE_CANOPEN
 #endif // DETERMINISTICESPASYNCWEBSERVER_CANOPEN_H
