@@ -74,6 +74,11 @@ size_t dws_mbus_build_req_ud2(uint8_t *buf, size_t cap, uint8_t a, bool fcb)
     return dws_mbus_build_short(buf, cap, (uint8_t)(fcb ? 0x7Bu : MBUS_C_REQ_UD2), a);
 }
 
+size_t dws_mbus_build_req_ud1(uint8_t *buf, size_t cap, uint8_t a, bool fcb)
+{
+    return dws_mbus_build_short(buf, cap, (uint8_t)(fcb ? 0x7Au : MBUS_C_REQ_UD1), a);
+}
+
 bool dws_mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed)
 {
     if (!buf || !out || len < 1)

@@ -125,6 +125,10 @@ size_t dws_mbus_build_snd_nke(uint8_t *buf, size_t cap, uint8_t a);
 /** @brief Convenience: a REQ_UD2 short frame to address @p a (@p fcb toggles the FCB bit). */
 size_t dws_mbus_build_req_ud2(uint8_t *buf, size_t cap, uint8_t a, bool fcb);
 
+/** @brief Convenience: a REQ_UD1 (class-1 / alarm data request) short frame to address @p a (@p fcb toggles
+ *  the FCB bit). Where REQ_UD2 fetches routine class-2 data, REQ_UD1 fetches class-1 (alarm) data. */
+size_t dws_mbus_build_req_ud1(uint8_t *buf, size_t cap, uint8_t a, bool fcb);
+
 // --- parser ---
 
 /**

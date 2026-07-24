@@ -55,6 +55,24 @@ void test_req_ud2_fcb()
     TEST_ASSERT_EQUAL_HEX8(0x7B, buf[1]); // FCB set
 }
 
+void test_req_ud1_fcb()
+{
+    uint8_t buf[8];
+    // REQ_UD1 (class-1 / alarm data): C = 0x5A, or 0x7A with the FCB bit set.
+    size_t n = dws_mbus_build_req_ud1(buf, sizeof(buf), 0x01, false);
+    TEST_ASSERT_EQUAL_size_t(5, n);
+    const uint8_t expect[] = {0x10, 0x5A, 0x01, 0x5B, 0x16}; // CS = 0x5A + 0x01
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, 5);
+    MbusFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_mbus_parse(buf, n, &f, &c));
+    TEST_ASSERT_EQUAL_HEX8(MBUS_C_REQ_UD1, f.c);
+    TEST_ASSERT_EQUAL_HEX8(0x01, f.a);
+
+    dws_mbus_build_req_ud1(buf, sizeof(buf), 0x01, true);
+    TEST_ASSERT_EQUAL_HEX8(0x7A, buf[1]); // FCB set
+}
+
 void test_long_frame_roundtrip()
 {
     const uint8_t data[4] = {0x2A, 0x00, 0x00, 0x00};
@@ -432,6 +450,7 @@ int main()
     RUN_TEST(test_ack);
     RUN_TEST(test_short_frame_roundtrip);
     RUN_TEST(test_req_ud2_fcb);
+    RUN_TEST(test_req_ud1_fcb);
     RUN_TEST(test_long_frame_roundtrip);
     RUN_TEST(test_parse_rejects_corruption);
     RUN_TEST(test_dif_data_len);
