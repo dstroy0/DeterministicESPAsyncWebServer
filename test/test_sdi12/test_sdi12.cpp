@@ -50,6 +50,33 @@ void test_parse_measure_m()
     TEST_ASSERT_EQUAL_UINT8(2, n);
 }
 
+void test_parse_identify()
+{
+    // aI! response: addr 0, SDI-12 v1.4, vendor "ACMEINC " (space-padded to 8), model "SNS100", version "1.0".
+    const char *resp = "014ACMEINC SNS1001.0";
+    Sdi12Identity id;
+    TEST_ASSERT_TRUE(dws_sdi12_parse_identify(resp, strlen(resp), &id));
+    TEST_ASSERT_EQUAL_CHAR('0', id.addr);
+    TEST_ASSERT_EQUAL_STRING("14", id.sdi_version);
+    TEST_ASSERT_EQUAL_STRING("ACMEINC ", id.vendor);
+    TEST_ASSERT_EQUAL_STRING("SNS100", id.model);
+    TEST_ASSERT_EQUAL_STRING("1.0", id.sensor_version);
+
+    // A response carrying an optional field after the 20 fixed octets still parses the fixed fields.
+    const char *resp2 = "113MYVENDORMODEL92.5OPTIONAL";
+    TEST_ASSERT_TRUE(dws_sdi12_parse_identify(resp2, strlen(resp2), &id));
+    TEST_ASSERT_EQUAL_CHAR('1', id.addr);
+    TEST_ASSERT_EQUAL_STRING("13", id.sdi_version);
+    TEST_ASSERT_EQUAL_STRING("MYVENDOR", id.vendor);
+    TEST_ASSERT_EQUAL_STRING("MODEL9", id.model);
+    TEST_ASSERT_EQUAL_STRING("2.5", id.sensor_version);
+
+    // A too-short response and null args are rejected.
+    TEST_ASSERT_FALSE(dws_sdi12_parse_identify(resp, 19, &id));
+    TEST_ASSERT_FALSE(dws_sdi12_parse_identify(nullptr, 20, &id));
+    TEST_ASSERT_FALSE(dws_sdi12_parse_identify(resp, strlen(resp), nullptr));
+}
+
 void test_parse_measure_concurrent_two_digit_count()
 {
     // aC! response "0" + "013" (13 s) + "10" (10 values).
@@ -225,6 +252,7 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_command_builders);
     RUN_TEST(test_parse_measure_m);
+    RUN_TEST(test_parse_identify);
     RUN_TEST(test_parse_measure_concurrent_two_digit_count);
     RUN_TEST(test_parse_values);
     RUN_TEST(test_crc_roundtrip);

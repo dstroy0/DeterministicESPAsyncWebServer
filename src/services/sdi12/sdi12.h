@@ -76,6 +76,24 @@ bool dws_sdi12_parse_measure(const char *resp, size_t len, char *addr, uint16_t 
  */
 bool dws_sdi12_parse_values(const char *resp, size_t len, float *out, size_t max, size_t *n);
 
+/** @brief A decoded identify (aI!) response. Each field is fixed-width per the SDI-12 spec and
+ *  NUL-terminated (the spec pads short values with spaces, which are left in place). */
+struct Sdi12Identity
+{
+    char addr;              ///< sensor address
+    char sdi_version[3];    ///< SDI-12 version "ll" (e.g. "14" = version 1.4) + NUL
+    char vendor[9];         ///< 8-character vendor identification + NUL
+    char model[7];          ///< 6-character sensor model number + NUL
+    char sensor_version[4]; ///< 3-character sensor version + NUL
+};
+
+/**
+ * @brief Parse an identify (aI!) response: address + 2-char SDI-12 version + 8-char vendor + 6-char model +
+ *        3-char sensor version (any optional field and the CRC / CR-LF that follow are ignored).
+ * @return true iff @p len covers the 20 fixed octets; false otherwise.
+ */
+bool dws_sdi12_parse_identify(const char *resp, size_t len, Sdi12Identity *out);
+
 // --- CRC (RFC-free SDI-12 16-bit CRC) ---
 
 /** @brief Compute the SDI-12 CRC-16 over @p data. */

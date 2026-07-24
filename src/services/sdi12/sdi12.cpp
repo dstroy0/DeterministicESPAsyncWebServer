@@ -124,6 +124,22 @@ bool dws_sdi12_parse_values(const char *resp, size_t len, float *out, size_t max
     return true;
 }
 
+bool dws_sdi12_parse_identify(const char *resp, size_t len, Sdi12Identity *out)
+{
+    if (!resp || !out || len < 20) // addr(1) + version(2) + vendor(8) + model(6) + sensor version(3)
+        return false;
+    out->addr = resp[0];
+    memcpy(out->sdi_version, resp + 1, 2);
+    out->sdi_version[2] = '\0';
+    memcpy(out->vendor, resp + 3, 8);
+    out->vendor[8] = '\0';
+    memcpy(out->model, resp + 11, 6);
+    out->model[6] = '\0';
+    memcpy(out->sensor_version, resp + 17, 3);
+    out->sensor_version[3] = '\0';
+    return true;
+}
+
 uint16_t dws_sdi12_crc16(const uint8_t *data, size_t len)
 {
     // SDI-12 v1.3 uses the reflected CRC-16 (SDI12_CRC_POLY = 0xA001 = reflect(0x8005), init 0, no
