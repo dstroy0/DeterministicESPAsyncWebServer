@@ -92,6 +92,7 @@ bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t
 #define N2K_PGN_COG_SOG_RAPID 129026u  ///< COG & SOG, Rapid Update: course + speed over ground
 #define N2K_PGN_ENGINE_RAPID 127488u   ///< Engine Parameters, Rapid Update: speed + boost + tilt/trim
 #define N2K_PGN_WIND_DATA 130306u      ///< Wind Data: speed + angle + reference
+#define N2K_PGN_SPEED 128259u          ///< Speed: water-referenced + ground-referenced speed
 #define N2K_PGN_WATER_DEPTH 128267u    ///< Water Depth: depth below transducer + offset
 #define N2K_PGN_VESSEL_HEADING 127250u ///< Vessel Heading: heading + deviation + variation
 #define N2K_PGN_ATTITUDE 127257u       ///< Attitude: yaw + pitch + roll
@@ -194,6 +195,24 @@ struct N2kWindData
     uint8_t reference; ///< wind reference (@ref N2K_WIND_REF_TRUE_NORTH etc.)
 };
 
+// Speed water-referenced sensor type (PGN 128259 byte 5).
+#define N2K_SPEED_TYPE_PADDLE_WHEEL 0
+#define N2K_SPEED_TYPE_PITOT_TUBE 1
+#define N2K_SPEED_TYPE_DOPPLER 2
+#define N2K_SPEED_TYPE_CORRELATION 3     ///< correlation / ultrasound
+#define N2K_SPEED_TYPE_ELECTROMAGNETIC 4 ///< electromagnetic
+
+/** @brief Decoded Speed (PGN 128259): through-water and over-ground speed. */
+struct N2kSpeed
+{
+    uint8_t sid;            ///< sequence id
+    bool water_valid;       ///< false if the water-referenced speed is not-available
+    float water_mps;        ///< speed through water (m/s, 0.01 m/s per bit)
+    bool ground_valid;      ///< false if the ground-referenced speed is not-available
+    float ground_mps;       ///< speed over ground (m/s, 0.01 m/s per bit)
+    uint8_t water_ref_type; ///< water-speed sensor type (@ref N2K_SPEED_TYPE_PADDLE_WHEEL etc.)
+};
+
 /** @brief Decoded Water Depth (PGN 128267). */
 struct N2kWaterDepth
 {
@@ -249,6 +268,12 @@ bool dws_n2k_decode_temperature(const uint8_t *payload, size_t len, N2kTemperatu
  * @return true iff @p len is at least 6 octets; false otherwise.
  */
 bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *out);
+
+/**
+ * @brief Decode a Speed (PGN 128259) payload into @p out.
+ * @return true iff @p len is at least 6 octets (SID + water speed + ground speed + type); false otherwise.
+ */
+bool dws_n2k_decode_speed(const uint8_t *payload, size_t len, N2kSpeed *out);
 
 /**
  * @brief Decode a Water Depth (PGN 128267) payload into @p out.

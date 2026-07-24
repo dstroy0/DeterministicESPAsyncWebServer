@@ -234,6 +234,21 @@ bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *o
     return true;
 }
 
+bool dws_n2k_decode_speed(const uint8_t *payload, size_t len, N2kSpeed *out)
+{
+    if (!payload || !out || len < 6) // sid(1) + water(2) + ground(2) + type(1)
+        return false;
+    out->sid = payload[0];
+    uint16_t w = rd_u16le(payload + 1); // 0.01 m/s per bit
+    out->water_valid = (w != 0xFFFFu);
+    out->water_mps = (float)w * 0.01f;
+    uint16_t g = rd_u16le(payload + 3);
+    out->ground_valid = (g != 0xFFFFu);
+    out->ground_mps = (float)g * 0.01f;
+    out->water_ref_type = payload[5];
+    return true;
+}
+
 bool dws_n2k_decode_water_depth(const uint8_t *payload, size_t len, N2kWaterDepth *out)
 {
     if (!payload || !out || len < 7) // SID(1) + depth(4) + offset(2)

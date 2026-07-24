@@ -407,6 +407,30 @@ void test_decode_wind_data()
     TEST_ASSERT_FALSE(dws_n2k_decode_wind_data(wind, 5, &w)); // too short
 }
 
+void test_decode_speed()
+{
+    // sid 5, water speed 5.14 m/s (raw 514), ground speed 5.50 m/s (raw 550), paddle-wheel sensor.
+    const uint8_t s[8] = {0x05, 0x02, 0x02, 0x26, 0x02, 0x00, 0xff, 0xff};
+    N2kSpeed d;
+    TEST_ASSERT_TRUE(dws_n2k_decode_speed(s, sizeof(s), &d));
+    TEST_ASSERT_EQUAL_UINT8(5, d.sid);
+    TEST_ASSERT_TRUE(d.water_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 5.14f, d.water_mps);
+    TEST_ASSERT_TRUE(d.ground_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 5.50f, d.ground_mps);
+    TEST_ASSERT_EQUAL_UINT8(N2K_SPEED_TYPE_PADDLE_WHEEL, d.water_ref_type);
+
+    // A 0xFFFF ground speed is not-available; the water speed stays valid; a Doppler sensor.
+    const uint8_t na[8] = {0x05, 0x02, 0x02, 0xff, 0xff, 0x02, 0xff, 0xff};
+    TEST_ASSERT_TRUE(dws_n2k_decode_speed(na, sizeof(na), &d));
+    TEST_ASSERT_TRUE(d.water_valid);
+    TEST_ASSERT_FALSE(d.ground_valid);
+    TEST_ASSERT_EQUAL_UINT8(N2K_SPEED_TYPE_DOPPLER, d.water_ref_type);
+    // Short payload + nulls are rejected.
+    TEST_ASSERT_FALSE(dws_n2k_decode_speed(s, 5, &d));
+    TEST_ASSERT_FALSE(dws_n2k_decode_speed(nullptr, 8, &d));
+}
+
 void test_decode_water_depth()
 {
     // SID 1, depth 12.34 m (raw 1234), transducer offset 0.5 m (raw 500).
@@ -468,6 +492,7 @@ int main()
     RUN_TEST(test_decode_temperature);
     RUN_TEST(test_decode_attitude);
     RUN_TEST(test_decode_wind_data);
+    RUN_TEST(test_decode_speed);
     RUN_TEST(test_decode_water_depth);
     RUN_TEST(test_decode_vessel_heading);
     return UNITY_END();
