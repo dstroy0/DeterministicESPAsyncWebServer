@@ -528,11 +528,20 @@ preempting queue, so sensing shares the real-time ingest path.
           ECDSA + RSA auth. **The IKE-SA rekey key schedule is shipped too** (RFC 7296 §2.18):
           `dws_ike_rekey_derive_keys` derives the new SA's SK_\* from SKEYSEED = prf(SK_d(old), g^ir(new)
           | Ni | Nr) then prf+ over the new SPIs - distinct from the initial schedule (the old SK_d is the
-          PRF key), cross-checked against a Python reference (`test_ikev2` now 71). **IKEv2 tiers 1-2 are
-          done**: the full wire codec, every exchange, all three auth methods, and the initial / Child-SA /
-          rekey key schedules. The only remaining IKEv2 work is **tier 3, the ESP datapath** (RFC 4303) -
-          the separate, architecturally-invasive network-layer transform that hooks lwIP (a device-side
-          track, not host-unit-testable).
+          PRF key), cross-checked against a Python reference (`test_ikev2` now 71). **NAT traversal
+          detection is shipped too** (RFC 7296 §2.23 / RFC 3947, `services/ikev2/ikev2_natt`): the
+          NAT-detection hash `SHA-1(SPIi | SPIr | IP | Port)` (`dws_ike_natd_hash`, cross-checked against a
+          Python `hashlib.sha1` vector for IPv4 and IPv6), the `NAT_DETECTION_SOURCE_IP` /
+          `NAT_DETECTION_DESTINATION_IP` Notify builders over the tier-1 notify codec (round-tripped through
+          `dws_ike_notify_parse`), the detection logic (`dws_ike_natd_peer_behind_nat` /
+          `_self_behind_nat` recompute the hash over the observed vs. local address and flag a translated
+          source / destination), and the RFC 3948 UDP-4500 demux (`dws_natt_is_keepalive` for the single
+          0xFF keepalive, `dws_natt_is_ike` for the 4-octet Non-ESP Marker that separates IKE from ESP) -
+          `test_ikev2_natt`, 4 cases. **IKEv2 tiers 1-2 are done**: the full wire codec, every exchange, all
+          three auth methods, the initial / Child-SA / rekey key schedules, and NAT-T detection. The only
+          remaining IKEv2 work is **tier 3, the ESP datapath** (RFC 4303) - and its host-testable core
+          (packet transform + anti-replay + SAD/SPD) is now shipped, leaving only the lwIP IP-hook
+          (device-side, not host-unit-testable).
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with

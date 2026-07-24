@@ -997,6 +997,8 @@
       "flags": ["-DDWS_ENABLE_IKEV2=1"],
       "src": [
         "+<services/ikev2/ikev2.cpp>",
+        "+<services/ikev2/ikev2_natt.cpp>",
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
@@ -1006,7 +1008,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_rsa.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>"
       ],
-      "tests": ["test_ikev2"]
+      "tests": ["test_ikev2", "test_ikev2_natt"]
     },
     "native_esp": {
       "desc": "ESP (RFC 4303) packet transform with AES-256-GCM (RFC 4106) - the IPsec datapath crypto core\n(services/esp): encapsulate a payload into SPI|Seq|IV|AES-GCM(payload|pad|padlen|nexthdr)|ICV and\nverify + decapsulate it, with the SPI|Seq AAD + salt||IV nonce. Gated on the IKEv2 feature. Pure host\ntests cross-checked against a Python AES-256-GCM reference.",

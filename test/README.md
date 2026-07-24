@@ -184,7 +184,7 @@ The native test matrix has **273 environments**, one per feature, generated from
 | `native_iccp` | `WS_ENABLE_ICCP=1` | `test_iccp` | ICCP / TASE.2 (IEC 60870-6) Data_Value codec (services/iccp): the StateQ (state + quality) and RealQ (scaled INTEGER + quality) indication-point BER structures with optional timestamp. |
 | `native_iec60870` | `WS_ENABLE_IEC60870=1` | `test_iec60870` | IEC 60870-5-101/-104 codec (services/iec60870): the -104 APCI (I/S/U), the ASDU header + 3-octet IOA, and the -101 FT1.2 fixed/variable link frames (sum checksum). |
 | `native_iface_bridge` | `WS_ENABLE_IFACE_BRIDGE=1` | `test_iface_bridge` | Interface bridge pure core (services/iface_bridge): the user-defined address:port -> bus rule table (register / find / dedup / capacity, keyed by port+proto with the full DWSIp bind address preserved)... |
-| `native_ikev2` | `WS_ENABLE_IKEV2=1` | `test_ikev2` | IKEv2 (RFC 7296) message + payload codec (services/ikev2): the 28-octet IKE header, the generic payload chain walker, the SA -> proposal -> transform tree (incl. |
+| `native_ikev2` | `WS_ENABLE_IKEV2=1` | `test_ikev2`, `test_ikev2_natt` | IKEv2 (RFC 7296) message + payload codec (services/ikev2): the 28-octet IKE header, the generic payload chain walker, the SA -> proposal -> transform tree (incl. |
 | `native_ina219` | `WS_ENABLE_INA219=1` | `test_ina219` | INA219 current/power codec (services/ina219): decoding the bus-voltage register (bits [15:3], LSB 4 mV, status bits ignored) and the shunt-voltage register (signed, LSB 10 uV), computing the calibrati... |
 | `native_inflate` | `WS_ENABLE_WS_DEFLATE=1` | `test_inflate` | RFC 1951 INFLATE core (the WebSocket permessage-deflate decompressor). |
 | `native_interbus` | `WS_ENABLE_INTERBUS=1` | `test_interbus` | INTERBUS summation-frame codec (services/interbus): the summation frame (loopback + per-device 16-bit slices + CRC-16/CCITT FCS) assemble + disassemble. |
@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5027 test cases** across **289 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5031 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -21020,6 +21020,70 @@ A thorough directory of all **5027 test cases** across **289 suites**. Expand a 
       * <code>Assert not equal (0, memcmp(km.sk_d, km_init.sk_d, 32))</code>
       * <code>TEST_ASSERT_FALSE(</code>
       * <code>TEST_ASSERT_FALSE(</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ikev2_natt (4 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_natd_hash_kat</b> &mdash; <i>A different port yields a different hash (the port is bound into the digest).</i></summary>
+
+    * **Objective**: A different port yields a different hash (the port is bound into the digest).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(20, dws_ike_natd_hash(init_spi, resp_spi, ip4, 4, 500, out));</code>
+      * <code>Assert equal memory (kat_hash4, out, 20)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(20, dws_ike_natd_hash(init_spi, resp_spi, ip6, 16, 4500, out));</code>
+      * <code>Assert equal memory (kat_hash6, out, 20)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(20, dws_ike_natd_hash(init_spi, resp_spi, ip4, 4, 501, out));</code>
+      * <code>Assert false (memcmp(kat_hash4, out, 20) == 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_natd_hash(init_spi, resp_spi, ip4, 6, 500, out));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_natd_hash(init_spi, resp_spi, ip4, 4, 500, nullptr));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_natd_notify_build_parse</b> &mdash; <i>A NAT_DETECTION_SOURCE_IP notify carries the 20-byte hash and parses back with the right type.</i></summary>
+
+    * **Objective**: A NAT_DETECTION_SOURCE_IP notify carries the 20-byte hash and parses back with the right type.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 4)</code>
+      * <code>Assert true (dws_ike_notify_parse(buf + 4, n - 4, &proto, &ntype, &spi, &spi_size, &data, &data_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_IKE_N_NAT_DETECTION_SOURCE_IP, ntype);</code>
+      * <code>Assert equal (IkeProtocol::IKE_PROTO_NONE, proto)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, spi_size);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(20, data_len);</code>
+      * <code>Assert equal memory (kat_hash4, data, 20)</code>
+      * <code>Assert true (dws_ike_notify_parse(buf + 4, n - 4, &proto, &ntype, &spi, &spi_size, &data, &data_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_IKE_N_NAT_DETECTION_DESTINATION_IP, ntype);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ike_natd_source_build(small, sizeof(small), IkePayloadType::IKE_PL_NONE, init_spi,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_natd_detection</b> &mdash; <i>The peer sends NAT_DETECTION_SOURCE_IP over what it believes its own address is (203.0.113.5:500).</i></summary>
+
+    * **Objective**: The peer sends NAT_DETECTION_SOURCE_IP over what it believes its own address is (203.0.113.5:500).
+    * **Assertions**:
+      * <code>Assert false (dws_ike_natd_peer_behind_nat(init_spi, resp_spi, ip4, 4, 500, src_hash))</code>
+      * <code>Assert true (dws_ike_natd_peer_behind_nat(init_spi, resp_spi, natted, 4, 33000, src_hash))</code>
+      * <code>Assert true (dws_ike_natd_peer_behind_nat(init_spi, resp_spi, ip4, 4, 33000, src_hash))</code>
+      * <code>Assert false (dws_ike_natd_self_behind_nat(init_spi, resp_spi, our_public, 4, 4500, dst_hash))</code>
+      * <code>Assert true (dws_ike_natd_self_behind_nat(init_spi, resp_spi, our_private, 4, 4500, dst_hash))</code>
+      * <code>Assert true (dws_ike_natd_peer_behind_nat(init_spi, resp_spi, ip4, 4, 500, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_natt_udp_demux</b> &mdash; <i>A NAT-keepalive is exactly one 0xFF octet.</i></summary>
+
+    * **Objective**: A NAT-keepalive is exactly one 0xFF octet.
+    * **Assertions**:
+      * <code>Assert true (dws_natt_is_keepalive(keep, 1))</code>
+      * <code>Assert false (dws_natt_is_keepalive(not_keep, 2))</code>
+      * <code>Assert false (dws_natt_is_keepalive(wrong, 1))</code>
+      * <code>Assert false (dws_natt_is_keepalive(nullptr, 1))</code>
+      * <code>Assert true (dws_natt_is_ike(ike_msg, sizeof(ike_msg)))</code>
+      * <code>Assert false (dws_natt_is_ike(esp_pkt, sizeof(esp_pkt)))</code>
+      * <code>Assert false (dws_natt_is_ike(too_short, sizeof(too_short)))</code>
   </details>
 
 </details>

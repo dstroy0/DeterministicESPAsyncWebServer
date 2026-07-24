@@ -1472,7 +1472,9 @@
     "demultiplexer",
     "timestamping",
     "linuxptp",
-    "keylengths"
+    "keylengths",
+    "natd",
+    "natt"
   ],
   "ignorePaths": [
     "node_modules/**",
