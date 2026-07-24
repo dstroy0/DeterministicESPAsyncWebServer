@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5167 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5168 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -36666,7 +36666,7 @@ A thorough directory of all **5167 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_powerlink (7 tests)</b></summary>
+<summary><b>test_powerlink (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_soc</b> &mdash; <i>Soc</i></summary>
@@ -36693,6 +36693,29 @@ A thorough directory of all **5167 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_PRES, f.msg_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_NODE_BROADCAST, f.dest);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, f.source);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_soa_asnd</b> &mdash; <i>SoA: MN -> broadcast, opening the async phase, carrying the SoA field block.</i></summary>
+
+    * **Objective**: SoA: MN -> broadcast, opening the async phase, carrying the SoA field block.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(7, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(soa_expect, out, 7);</code>
+      * <code>Assert true (dws_epl_parse(out, n, &f))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_SOA, f.msg_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_NODE_BROADCAST, f.dest);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_NODE_MN, f.source);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(asnd_expect, out, 6);</code>
+      * <code>Assert true (dws_epl_parse(out, n, &f))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_ASND, f.msg_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(5, f.dest);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, f.payload_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(asnd_svc, f.payload, 3);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_epl_soa(Epl::EPL_NODE_MN, soa_fields, 4, out, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_epl_asnd(5, Epl::EPL_NODE_MN, asnd_svc, 3, out, 2));</code>
   </details>
 
   <details style="margin-left: 20px;">
