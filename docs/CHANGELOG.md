@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.89.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.89.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`68f9f63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68f9f63ecd22042b24610dd29bf5a0cd888efba9))
+
+### Changes
+
+- Bump version: 7.88.0 → 7.89.0 ([`bb7d803`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb7d803b35f2ce396cabda971f0a1e909e099745))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d287c3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d287c3c50c15fc1a437a1adb1a605526c59f94a6))
+
+### Features
+
+- decode VTG track + ground speed sentence ([`e7ca178`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7ca178404041b8f81bfbe9de0de71a1634de5e6))
+
+</details>
+
 ## [7.88.0] - 2026-07-24
 
 <details>
