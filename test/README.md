@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5092 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5095 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -25492,7 +25492,7 @@ A thorough directory of all **5092 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mbus (14 tests)</b></summary>
+<summary><b>test_mbus (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ack</b> &mdash; <i>Ack</i></summary>
@@ -25703,6 +25703,60 @@ A thorough directory of all **5092 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x93, r.vif);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, r.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x42, r.data[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_value_int</b> &mdash; <i>An invalid BCD nibble is rejected; a REAL coding is not an integer.</i></summary>
+
+    * **Objective**: An invalid BCD nibble is rejected; a REAL coding is not an integer.
+    * **Assertions**:
+      * <code>Assert true (dws_mbus_record_value_int(&r, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(1234567, v);</code>
+      * <code>Assert true (dws_mbus_record_value_int(&r, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-1, v);</code>
+      * <code>Assert true (dws_mbus_record_value_int(&r, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-32768, v);</code>
+      * <code>Assert true (dws_mbus_record_value_int(&r, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(12345678, v);</code>
+      * <code>Assert true (dws_mbus_record_value_int(&r, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-99, v);</code>
+      * <code>Assert false (dws_mbus_record_value_int(&r, &v))</code>
+      * <code>Assert false (dws_mbus_record_value_int(&r, &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_value_real</b> &mdash; <i>An integer coding is not a real.</i></summary>
+
+    * **Objective**: An integer coding is not a real.
+    * **Assertions**:
+      * <code>Assert true (dws_mbus_record_value_real(&r, &f))</code>
+      * <code>Assert float within (0.0001f, 1.5f, f)</code>
+      * <code>Assert false (dws_mbus_record_value_real(&r, &f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_vif_decode</b> &mdash; <i>The extension bit is ignored (0x93 decodes like 0x13).</i></summary>
+
+    * **Objective**: The extension bit is ignored (0x93 decodes like 0x13).
+    * **Assertions**:
+      * <code>Assert true (dws_mbus_vif_decode(0x13, &u, &e)); // volume 0.001 m3 (litres)</code>
+      * <code>Assert equal (MbusUnit::MBUS_UNIT_M3, u)</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-3, e);</code>
+      * <code>Assert true (dws_mbus_vif_decode(0x06, &u, &e)); // energy 10^3 Wh (kWh)</code>
+      * <code>Assert equal (MbusUnit::MBUS_UNIT_WH, u)</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(3, e);</code>
+      * <code>Assert true (dws_mbus_vif_decode(0x2E, &u, &e)); // power 10^3 W (kW)</code>
+      * <code>Assert equal (MbusUnit::MBUS_UNIT_W, u)</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(3, e);</code>
+      * <code>Assert true (dws_mbus_vif_decode(0x5A, &u, &e))</code>
+      * <code>Assert equal (MbusUnit::MBUS_UNIT_CELSIUS, u)</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-1, e);</code>
+      * <code>Assert true (dws_mbus_vif_decode(0x68, &u, &e))</code>
+      * <code>Assert equal (MbusUnit::MBUS_UNIT_BAR, u)</code>
+      * <code>Assert true (dws_mbus_vif_decode(0x93, &u, &e))</code>
+      * <code>Assert equal (MbusUnit::MBUS_UNIT_M3, u)</code>
+      * <code>Assert false (dws_mbus_vif_decode(0x78, &u, &e))</code>
+      * <code>Assert equal (MbusUnit::MBUS_UNIT_UNKNOWN, u)</code>
   </details>
 
 </details>
