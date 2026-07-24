@@ -242,6 +242,44 @@ struct IkeTrafficSelector
     size_t addr_len; ///< 4 or 16
 };
 
+/** @brief Configuration payload CFG Type (RFC 7296 3.15.1) - the exchange role of a CP payload. */
+enum class IkeCfgType : uint8_t
+{
+    IKE_CFG_REQUEST = 1, ///< a request for configuration (e.g. an internal address)
+    IKE_CFG_REPLY = 2,   ///< the reply granting it
+    IKE_CFG_SET = 3,     ///< an unsolicited push of configuration
+    IKE_CFG_ACK = 4,     ///< acknowledgement of a SET
+};
+
+// Common Configuration Attribute types (RFC 7296 3.15.1).
+#define DWS_IKE_CFG_INTERNAL_IP4_ADDRESS 1
+#define DWS_IKE_CFG_INTERNAL_IP4_NETMASK 2
+#define DWS_IKE_CFG_INTERNAL_IP4_DNS 3
+#define DWS_IKE_CFG_INTERNAL_IP4_NBNS 4
+#define DWS_IKE_CFG_INTERNAL_IP4_DHCP 6
+#define DWS_IKE_CFG_APPLICATION_VERSION 7
+#define DWS_IKE_CFG_INTERNAL_IP6_ADDRESS 8
+#define DWS_IKE_CFG_INTERNAL_IP6_DNS 10
+#define DWS_IKE_CFG_INTERNAL_IP6_DHCP 12
+#define DWS_IKE_CFG_INTERNAL_IP4_SUBNET 13
+#define DWS_IKE_CFG_INTERNAL_IP6_SUBNET 15
+
+/** @brief One Configuration Attribute (RFC 7296 3.15.1): a 15-bit type and its value. */
+struct IkeCfgAttr
+{
+    uint16_t type;        ///< attribute type (the reserved high bit is masked off)
+    const uint8_t *value; ///< value bytes, or nullptr when @ref value_len is 0 (e.g. an empty request)
+    uint16_t value_len;
+};
+
+/** @brief Iterates the attributes within a Configuration payload's attribute area. */
+struct IkeCfgAttrIter
+{
+    const uint8_t *area;
+    size_t len;
+    size_t off;
+};
+
 // ── IKE header ──────────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -329,6 +367,16 @@ size_t dws_ike_ts_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, c
                         uint8_t num);
 
 /**
+ * @brief Build a Configuration payload (CP): a CFG Type then @p num_attrs attributes (RFC 7296 3.15).
+ *
+ * Each attribute is written as its 15-bit type (the reserved high bit clear), a 2-byte value length, and
+ * the value; a zero-length attribute (an empty request, e.g. INTERNAL_IP4_ADDRESS in a CFG_REQUEST) is
+ * fine. @return the payload length written, or 0 on overflow / a bad argument.
+ */
+size_t dws_ike_cp_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeCfgType cfg_type,
+                        const IkeCfgAttr *attrs, uint8_t num_attrs);
+
+/**
  * @brief Frame an SK (encrypted) payload envelope: the generic header then @p iv, @p ciphertext, and
  *        @p icv laid end to end. The AEAD that produces @p ciphertext + @p icv is the caller's (a later
  *        tier) - this only lays out the bytes.
@@ -382,6 +430,21 @@ uint8_t dws_ike_ts_count(const uint8_t *body, size_t body_len);
 
 /** @brief Decode selector @p index (0-based) from a TS payload body. */
 bool dws_ike_ts_get(const uint8_t *body, size_t body_len, uint8_t index, IkeTrafficSelector *out);
+
+/**
+ * @brief Decode a Configuration payload body into its CFG Type and its attribute area (RFC 7296 3.15).
+ * @param attrs / @p attrs_len receive a pointer into @p body and the length of the attribute region;
+ *        walk them with @ref dws_ike_cp_attr_iter_init + @ref dws_ike_cp_attr_next.
+ * @return false on a truncated body.
+ */
+bool dws_ike_cp_parse(const uint8_t *body, size_t body_len, IkeCfgType *cfg_type, const uint8_t **attrs,
+                      size_t *attrs_len);
+
+/** @brief Begin iterating the attributes returned by @ref dws_ike_cp_parse. */
+void dws_ike_cp_attr_iter_init(IkeCfgAttrIter *it, const uint8_t *attrs, size_t attrs_len);
+
+/** @brief Decode the next Configuration Attribute; false at the end or on a truncated attribute. */
+bool dws_ike_cp_attr_next(IkeCfgAttrIter *it, IkeCfgAttr *out);
 
 // ── tier 2: SKEYSEED / SK_* key derivation (RFC 7296 §2.13-2.14) ───────────────────────────────
 //

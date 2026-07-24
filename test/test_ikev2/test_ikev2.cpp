@@ -2289,6 +2289,87 @@ void test_rekey_derive_keys()
         dws_ike_rekey_derive_keys(rk_skd, 32, rk_dh, 0, rk_ni, 16, rk_nr, 16, rk_spii, rk_spir, &lens, &km));
 }
 
+// ── Configuration payload (RFC 7296 §3.15) ──────────────────────────────────────────────────────
+// A CFG_REPLY granting INTERNAL_IP4_ADDRESS 10.1.2.3 and INTERNAL_IP4_DNS 8.8.8.8 (hand-computed from
+// the RFC 7296 §3.15 wire format: generic hdr | CFG Type(1) | reserved(3) | attrs).
+static const uint8_t cp_golden[24] = {0x00, 0x00, 0x00, 0x18, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x04,
+                                      0x0a, 0x01, 0x02, 0x03, 0x00, 0x03, 0x00, 0x04, 0x08, 0x08, 0x08, 0x08};
+
+void test_cp_build_golden()
+{
+    const uint8_t ip[4] = {10, 1, 2, 3};
+    const uint8_t dns[4] = {8, 8, 8, 8};
+    IkeCfgAttr attrs[2] = {
+        {DWS_IKE_CFG_INTERNAL_IP4_ADDRESS, ip, 4},
+        {DWS_IKE_CFG_INTERNAL_IP4_DNS, dns, 4},
+    };
+    uint8_t buf[64];
+    size_t n = dws_ike_cp_build(buf, sizeof(buf), IkePayloadType::IKE_PL_NONE, IkeCfgType::IKE_CFG_REPLY, attrs, 2);
+    TEST_ASSERT_EQUAL_size_t(24, n);
+    TEST_ASSERT_EQUAL_MEMORY(cp_golden, buf, 24);
+
+    // A too-small buffer overflows to 0.
+    uint8_t small[10];
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_ike_cp_build(small, sizeof(small), IkePayloadType::IKE_PL_NONE, IkeCfgType::IKE_CFG_REPLY, attrs, 2));
+}
+
+void test_cp_parse_roundtrip()
+{
+    // Parse the golden body (after the 4-byte generic header) and walk its attributes.
+    IkeCfgType ct = IkeCfgType::IKE_CFG_REQUEST;
+    const uint8_t *area = nullptr;
+    size_t area_len = 0;
+    TEST_ASSERT_TRUE(dws_ike_cp_parse(cp_golden + 4, sizeof(cp_golden) - 4, &ct, &area, &area_len));
+    TEST_ASSERT_EQUAL(IkeCfgType::IKE_CFG_REPLY, ct);
+    TEST_ASSERT_EQUAL_size_t(16, area_len); // two 8-byte attributes
+
+    IkeCfgAttrIter it;
+    IkeCfgAttr a;
+    dws_ike_cp_attr_iter_init(&it, area, area_len);
+    TEST_ASSERT_TRUE(dws_ike_cp_attr_next(&it, &a));
+    TEST_ASSERT_EQUAL_UINT16(DWS_IKE_CFG_INTERNAL_IP4_ADDRESS, a.type);
+    TEST_ASSERT_EQUAL_UINT16(4, a.value_len);
+    const uint8_t ip[4] = {10, 1, 2, 3};
+    TEST_ASSERT_EQUAL_MEMORY(ip, a.value, 4);
+    TEST_ASSERT_TRUE(dws_ike_cp_attr_next(&it, &a));
+    TEST_ASSERT_EQUAL_UINT16(DWS_IKE_CFG_INTERNAL_IP4_DNS, a.type);
+    const uint8_t dns[4] = {8, 8, 8, 8};
+    TEST_ASSERT_EQUAL_MEMORY(dns, a.value, 4);
+    TEST_ASSERT_FALSE(dws_ike_cp_attr_next(&it, &a)); // end of attributes
+}
+
+void test_cp_request_empty_and_guards()
+{
+    // A CFG_REQUEST asks for an address with an empty (zero-length) attribute.
+    IkeCfgAttr req = {DWS_IKE_CFG_INTERNAL_IP4_ADDRESS, nullptr, 0};
+    uint8_t buf[32];
+    size_t n = dws_ike_cp_build(buf, sizeof(buf), IkePayloadType::IKE_PL_SA, IkeCfgType::IKE_CFG_REQUEST, &req, 1);
+    TEST_ASSERT_EQUAL_size_t(12, n); // 4 gen + 4 cfg + 4 attr header, no value
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_SA, buf[0]);
+
+    IkeCfgType ct = IkeCfgType::IKE_CFG_REPLY;
+    const uint8_t *area = nullptr;
+    size_t area_len = 0;
+    TEST_ASSERT_TRUE(dws_ike_cp_parse(buf + 4, n - 4, &ct, &area, &area_len));
+    TEST_ASSERT_EQUAL(IkeCfgType::IKE_CFG_REQUEST, ct);
+    IkeCfgAttrIter it;
+    IkeCfgAttr a;
+    dws_ike_cp_attr_iter_init(&it, area, area_len);
+    TEST_ASSERT_TRUE(dws_ike_cp_attr_next(&it, &a));
+    TEST_ASSERT_EQUAL_UINT16(DWS_IKE_CFG_INTERNAL_IP4_ADDRESS, a.type);
+    TEST_ASSERT_EQUAL_UINT16(0, a.value_len);
+    TEST_ASSERT_NULL(a.value);
+    TEST_ASSERT_FALSE(dws_ike_cp_attr_next(&it, &a));
+
+    // A truncated attribute (claims a 4-byte value but only 2 remain) is rejected by the iterator.
+    const uint8_t bad[6] = {0x00, 0x01, 0x00, 0x04, 0xAA, 0xBB};
+    dws_ike_cp_attr_iter_init(&it, bad, sizeof(bad));
+    TEST_ASSERT_FALSE(dws_ike_cp_attr_next(&it, &a));
+    // A truncated CP body (< 4) fails to parse.
+    TEST_ASSERT_FALSE(dws_ike_cp_parse(bad, 3, &ct, &area, &area_len));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -2372,5 +2453,8 @@ int main()
     RUN_TEST(test_create_child_sa_msg);
     RUN_TEST(test_auth_verify_rsa);
     RUN_TEST(test_rekey_derive_keys);
+    RUN_TEST(test_cp_build_golden);
+    RUN_TEST(test_cp_parse_roundtrip);
+    RUN_TEST(test_cp_request_empty_and_guards);
     return UNITY_END();
 }

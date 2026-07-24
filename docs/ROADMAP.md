@@ -537,9 +537,16 @@ preempting queue, so sensing shares the real-time ingest path.
           `_self_behind_nat` recompute the hash over the observed vs. local address and flag a translated
           source / destination), and the RFC 3948 UDP-4500 demux (`dws_natt_is_keepalive` for the single
           0xFF keepalive, `dws_natt_is_ike` for the 4-octet Non-ESP Marker that separates IKE from ESP) -
-          `test_ikev2_natt`, 4 cases. **IKEv2 tiers 1-2 are done**: the full wire codec, every exchange, all
-          three auth methods, the initial / Child-SA / rekey key schedules, and NAT-T detection. The only
-          remaining IKEv2 work is **tier 3, the ESP datapath** (RFC 4303) - and its host-testable core
+          `test_ikev2_natt`, 4 cases. **The Configuration payload is shipped too** (RFC 7296 §3.15,
+          `dws_ike_cp_build` / `_parse` + the `IkeCfgAttrIter` attribute walker): a CFG_REQUEST /
+          CFG_REPLY / CFG_SET / CFG_ACK payload carrying Configuration Attributes (INTERNAL_IP4_ADDRESS,
+          INTERNAL_IP4_NETMASK, INTERNAL_IP4_DNS, INTERNAL_IP4_SUBNET, and the IPv6 forms) - the VPN
+          address-assignment mechanism - with the 15-bit-type / length / value encoding and empty-value
+          requests, byte-exact against a hand-computed golden and round-tripped through the attribute
+          iterator, including a truncated-attribute guard (`test_ikev2` now 74). **IKEv2 tiers 1-2 are
+          done**: the full wire codec, every exchange, all three auth methods, the initial / Child-SA /
+          rekey key schedules, NAT-T detection, and the Configuration payload. The only remaining IKEv2
+          work is **tier 3, the ESP datapath** (RFC 4303) - and its host-testable core
           (packet transform + anti-replay + SAD/SPD) is now shipped, leaving only the lwIP IP-hook
           (device-side, not host-unit-testable).
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet

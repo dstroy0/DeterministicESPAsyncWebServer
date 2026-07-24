@@ -364,6 +364,40 @@ size_t dws_ike_ts_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, c
     return off;
 }
 
+size_t dws_ike_cp_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, IkeCfgType cfg_type,
+                        const IkeCfgAttr *attrs, uint8_t num_attrs)
+{
+    if (!buf || (num_attrs && !attrs))
+        return 0;
+    size_t attrs_len = 0;
+    for (uint8_t i = 0; i < num_attrs; i++)
+    {
+        if (attrs[i].value_len && !attrs[i].value)
+            return 0;
+        attrs_len += 4 + attrs[i].value_len; // type(2) + length(2) + value
+    }
+    size_t total = DWS_IKE_PAYLOAD_HDR_LEN + 4 + attrs_len; // generic hdr + CFG Type(1) + reserved(3)
+    if (!put_pl_hdr(buf, cap, next_payload, total))
+        return 0;
+    buf[4] = (uint8_t)cfg_type;
+    buf[5] = 0;
+    buf[6] = 0;
+    buf[7] = 0;
+    size_t off = 8;
+    for (uint8_t i = 0; i < num_attrs; i++)
+    {
+        put16(buf + off, (uint16_t)(attrs[i].type & 0x7FFF)); // reserved high bit clear
+        put16(buf + off + 2, attrs[i].value_len);
+        off += 4;
+        if (attrs[i].value_len)
+        {
+            memcpy(buf + off, attrs[i].value, attrs[i].value_len);
+            off += attrs[i].value_len;
+        }
+    }
+    return total;
+}
+
 size_t dws_ike_sk_build(uint8_t *buf, size_t cap, IkePayloadType next_payload, const uint8_t *iv, size_t iv_len,
                         const uint8_t *ciphertext, size_t ct_len, const uint8_t *icv, size_t icv_len)
 {
@@ -653,6 +687,52 @@ bool dws_ike_ts_get(const uint8_t *body, size_t body_len, uint8_t index, IkeTraf
         off += sel_len;
     }
     return false; // GCOVR_EXCL_LINE  unreachable: the loop above always returns (see the note on the for)
+}
+
+bool dws_ike_cp_parse(const uint8_t *body, size_t body_len, IkeCfgType *cfg_type, const uint8_t **attrs,
+                      size_t *attrs_len)
+{
+    if (cfg_type)
+        *cfg_type = IkeCfgType::IKE_CFG_REQUEST;
+    if (attrs)
+        *attrs = nullptr;
+    if (attrs_len)
+        *attrs_len = 0;
+    if (!body || body_len < 4) // CFG Type(1) + reserved(3)
+        return false;
+    if (cfg_type)
+        *cfg_type = (IkeCfgType)body[0];
+    if (attrs)
+        *attrs = body + 4;
+    if (attrs_len)
+        *attrs_len = body_len - 4;
+    return true;
+}
+
+void dws_ike_cp_attr_iter_init(IkeCfgAttrIter *it, const uint8_t *attrs, size_t attrs_len)
+{
+    if (!it)
+        return;
+    it->area = attrs;
+    it->len = attrs_len;
+    it->off = 0;
+}
+
+bool dws_ike_cp_attr_next(IkeCfgAttrIter *it, IkeCfgAttr *out)
+{
+    if (!it || !out || !it->area)
+        return false;
+    if (it->off + 4 > it->len) // no room for another attribute header
+        return false;
+    const uint8_t *p = it->area + it->off;
+    uint16_t vlen = get16(p + 2);
+    if (it->off + 4 + vlen > it->len) // truncated value
+        return false;
+    out->type = get16(p) & 0x7FFF; // mask off the reserved high bit
+    out->value_len = vlen;
+    out->value = vlen ? (p + 4) : nullptr;
+    it->off += 4 + vlen;
+    return true;
 }
 
 // ── tier 2: SKEYSEED / SK_* key derivation (RFC 7296 §2.13-2.14) ───────────────────────────────
