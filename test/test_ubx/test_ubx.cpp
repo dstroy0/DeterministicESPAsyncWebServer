@@ -445,6 +445,46 @@ void test_nav_sat_rejects()
     TEST_ASSERT_FALSE(dws_ubx_nav_sat_get(&m, 0, nullptr));
 }
 
+// Golden CFG frames from a Python reference: enable NAV-PVT at rate 1; set a 5 Hz nav rate (GPS time).
+static const uint8_t cfgmsg_frame[11] = {0xb5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x07, 0x01, 0x13, 0x51};
+static const uint8_t cfgrate_frame[14] = {0xb5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xc8,
+                                          0x00, 0x01, 0x00, 0x01, 0x00, 0xde, 0x6a};
+
+void test_build_cfg_msg()
+{
+    uint8_t buf[32];
+    size_t n = dws_ubx_build_cfg_msg(buf, sizeof(buf), DWS_UBX_CLASS_NAV, DWS_UBX_NAV_PVT, 1);
+    TEST_ASSERT_EQUAL_size_t(sizeof(cfgmsg_frame), n);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(cfgmsg_frame, buf, n);
+    // Round-trips through the parser: it is a CFG-MSG whose payload names the message + rate.
+    DwsUbx m;
+    TEST_ASSERT_TRUE(dws_ubx_parse(buf, n, &m));
+    TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CLASS_CFG, m.cls);
+    TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CFG_MSG, m.id);
+    TEST_ASSERT_EQUAL_UINT16(3, m.len);
+    TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CLASS_NAV, m.payload[0]);
+    TEST_ASSERT_EQUAL_HEX8(DWS_UBX_NAV_PVT, m.payload[1]);
+    TEST_ASSERT_EQUAL_HEX8(1, m.payload[2]);
+    // A too-small buffer fails closed.
+    uint8_t small[4];
+    TEST_ASSERT_EQUAL_size_t(0, dws_ubx_build_cfg_msg(small, sizeof(small), DWS_UBX_CLASS_NAV, DWS_UBX_NAV_PVT, 1));
+}
+
+void test_build_cfg_rate()
+{
+    uint8_t buf[32];
+    size_t n = dws_ubx_build_cfg_rate(buf, sizeof(buf), 200, 1, DWS_UBX_TIME_REF_GPS); // 5 Hz
+    TEST_ASSERT_EQUAL_size_t(sizeof(cfgrate_frame), n);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(cfgrate_frame, buf, n);
+    DwsUbx m;
+    TEST_ASSERT_TRUE(dws_ubx_parse(buf, n, &m));
+    TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CFG_RATE, m.id);
+    TEST_ASSERT_EQUAL_UINT16(200, dws_ubx_u16(m.payload, 0)); // measRate ms
+    TEST_ASSERT_EQUAL_UINT16(1, dws_ubx_u16(m.payload, 2));   // navRate
+    TEST_ASSERT_EQUAL_UINT16(DWS_UBX_TIME_REF_GPS, dws_ubx_u16(m.payload, 4));
+    TEST_ASSERT_EQUAL_size_t(0, dws_ubx_build_cfg_rate(buf, 8, 200, 1, DWS_UBX_TIME_REF_GPS)); // too small
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -466,5 +506,7 @@ int main()
     RUN_TEST(test_nav_pvt_rejects);
     RUN_TEST(test_nav_sat_decode);
     RUN_TEST(test_nav_sat_rejects);
+    RUN_TEST(test_build_cfg_msg);
+    RUN_TEST(test_build_cfg_rate);
     return UNITY_END();
 }

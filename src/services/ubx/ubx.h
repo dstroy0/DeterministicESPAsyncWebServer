@@ -176,6 +176,32 @@ bool dws_ubx_parse_nav_sat(const DwsUbx *m, DwsUbxNavSatHdr *out);
  */
 bool dws_ubx_nav_sat_get(const DwsUbx *m, uint8_t index, DwsUbxSat *out);
 
+// -- CFG: configure the receiver (which messages to emit, and how fast) --
+
+#define DWS_UBX_CLASS_CFG 0x06 ///< configuration-input message class
+#define DWS_UBX_CFG_MSG 0x01   ///< CFG-MSG: set a message's output rate
+#define DWS_UBX_CFG_RATE 0x08  ///< CFG-RATE: set the measurement / navigation rate
+#define DWS_UBX_TIME_REF_UTC 0 ///< CFG-RATE timeRef: align measurements to UTC
+#define DWS_UBX_TIME_REF_GPS 1 ///< CFG-RATE timeRef: align measurements to GPS time
+
+/**
+ * @brief Build a CFG-MSG that sets how often (@p cls, @p id) is emitted on the current port.
+ *
+ * @p rate is in navigation solutions: 0 disables the message, 1 emits it every solution, N every Nth.
+ * This is the short (3-octet) form that targets the port the command arrives on.
+ * @return the frame length (11) or 0 on overflow / a null buffer.
+ */
+size_t dws_ubx_build_cfg_msg(uint8_t *buf, size_t cap, uint8_t cls, uint8_t id, uint8_t rate);
+
+/**
+ * @brief Build a CFG-RATE that sets the measurement + navigation rate.
+ * @param meas_rate_ms  the measurement period in ms (e.g. 200 for 5 Hz).
+ * @param nav_rate      navigation solutions per measurement cycle (usually 1).
+ * @param time_ref      the reference the measurements align to (@ref DWS_UBX_TIME_REF_UTC / _GPS).
+ * @return the frame length (14) or 0 on overflow / a null buffer.
+ */
+size_t dws_ubx_build_cfg_rate(uint8_t *buf, size_t cap, uint16_t meas_rate_ms, uint16_t nav_rate, uint16_t time_ref);
+
 /** @brief Result of feeding one byte to the streaming demultiplexer. */
 enum DwsUbxFeed
 {

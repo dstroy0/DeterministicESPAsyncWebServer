@@ -186,6 +186,21 @@ bool dws_ubx_nav_sat_get(const DwsUbx *m, uint8_t index, DwsUbxSat *out)
     return true;
 }
 
+size_t dws_ubx_build_cfg_msg(uint8_t *buf, size_t cap, uint8_t cls, uint8_t id, uint8_t rate)
+{
+    const uint8_t pl[3] = {cls, id, rate}; // msgClass, msgID, rate (on the current port)
+    return dws_ubx_build(buf, cap, DWS_UBX_CLASS_CFG, DWS_UBX_CFG_MSG, pl, sizeof(pl));
+}
+
+size_t dws_ubx_build_cfg_rate(uint8_t *buf, size_t cap, uint16_t meas_rate_ms, uint16_t nav_rate, uint16_t time_ref)
+{
+    // measRate(U2) | navRate(U2) | timeRef(U2), all little-endian.
+    const uint8_t pl[6] = {(uint8_t)meas_rate_ms, (uint8_t)(meas_rate_ms >> 8),
+                           (uint8_t)nav_rate,     (uint8_t)(nav_rate >> 8),
+                           (uint8_t)time_ref,     (uint8_t)(time_ref >> 8)};
+    return dws_ubx_build(buf, cap, DWS_UBX_CLASS_CFG, DWS_UBX_CFG_RATE, pl, sizeof(pl));
+}
+
 // -- streaming demultiplexer --
 
 enum
