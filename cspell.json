@@ -1470,7 +1470,8 @@
     "eaws",
     "starttransfer",
     "demultiplexer",
-    "timestamping"
+    "timestamping",
+    "linuxptp"
   ],
   "ignorePaths": [
     "node_modules/**",
