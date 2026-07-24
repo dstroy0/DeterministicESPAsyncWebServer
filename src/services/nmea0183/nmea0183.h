@@ -167,5 +167,24 @@ struct DwsNmeaVtg
  */
 bool dws_nmea0183_parse_vtg(const Nmea0183 *m, DwsNmeaVtg *out);
 
+/** @brief Decoded GSA (GPS DOP + the satellites active in the fix). Where GSV lists satellites in view and
+ *  GGA gives the fix quality, GSA gives the 2D/3D fix mode, which satellites were used, and all three DOPs. */
+struct DwsNmeaGsa
+{
+    char mode;         ///< selection mode: 'M' manual, 'A' automatic 2D/3D
+    uint8_t fix_type;  ///< 1 = no fix, 2 = 2D, 3 = 3D
+    uint8_t sat_count; ///< number of satellite PRNs present (0..12)
+    uint8_t sats[12];  ///< PRNs of the satellites used in the fix
+    float pdop;        ///< position (3D) dilution of precision
+    float hdop;        ///< horizontal dilution of precision
+    float vdop;        ///< vertical dilution of precision
+};
+
+/**
+ * @brief Decode a parsed GSA sentence into @p out. @return true iff @p m is a GSA sentence with the full
+ *        field set (through VDOP); false otherwise. Empty PRN slots are skipped (not counted).
+ */
+bool dws_nmea0183_parse_gsa(const Nmea0183 *m, DwsNmeaGsa *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

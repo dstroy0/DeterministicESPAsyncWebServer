@@ -1482,7 +1482,9 @@
     "ddmm",
     "HDOP",
     "neighbour",
-    "timeutc"
+    "timeutc",
+    "PDOP",
+    "VDOP"
   ],
   "ignorePaths": [
     "node_modules/**",

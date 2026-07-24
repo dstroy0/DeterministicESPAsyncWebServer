@@ -364,6 +364,39 @@ void test_decode_vtg()
     TEST_ASSERT_FALSE(dws_nmea0183_parse_vtg(nullptr, &v));
 }
 
+void test_decode_gsa()
+{
+    char buf[96];
+    // 3D auto fix on 5 satellites (blank PRN slots between them), PDOP 2.5 / HDOP 1.3 / VDOP 2.1.
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "GPGSA,A,3,04,05,,09,12,,,24,,,,,2.5,1.3,2.1");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaGsa g;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_gsa(&m, &g));
+    TEST_ASSERT_EQUAL_CHAR('A', g.mode);
+    TEST_ASSERT_EQUAL_UINT8(3, g.fix_type);
+    TEST_ASSERT_EQUAL_UINT8(5, g.sat_count); // 04,05,09,12,24 - blanks skipped
+    TEST_ASSERT_EQUAL_UINT8(4, g.sats[0]);
+    TEST_ASSERT_EQUAL_UINT8(9, g.sats[2]);
+    TEST_ASSERT_EQUAL_UINT8(24, g.sats[4]);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 2.5f, g.pdop);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.3f, g.hdop);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 2.1f, g.vdop);
+
+    // A no-fix GSA (all PRN slots blank) decodes with sat_count 0.
+    n = dws_nmea0183_build(buf, sizeof(buf), "GPGSA,A,1,,,,,,,,,,,,,99.9,99.9,99.9");
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_gsa(&m, &g));
+    TEST_ASSERT_EQUAL_UINT8(1, g.fix_type);
+    TEST_ASSERT_EQUAL_UINT8(0, g.sat_count);
+
+    // A GGA is not a GSA, and null args are rejected.
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_gsa(&m, &g));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_gsa(nullptr, &g));
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -400,6 +433,7 @@ int main()
     RUN_TEST(test_decode_gsv_blank_snr_and_partial);
     RUN_TEST(test_decode_zda);
     RUN_TEST(test_decode_vtg);
+    RUN_TEST(test_decode_gsa);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }

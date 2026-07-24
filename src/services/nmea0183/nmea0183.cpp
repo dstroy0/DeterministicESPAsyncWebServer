@@ -307,4 +307,28 @@ bool dws_nmea0183_parse_vtg(const Nmea0183 *m, DwsNmeaVtg *out)
     return true;
 }
 
+bool dws_nmea0183_parse_gsa(const Nmea0183 *m, DwsNmeaGsa *out)
+{
+    if (!m || !out || strcmp(m->type, "GSA") != 0 || m->field_count < 18) // need through VDOP (field 17)
+        return false;
+    memset(out, 0, sizeof(*out));
+    if (m->field_len[1] >= 1)
+        out->mode = m->fields[1][0];
+    long v = 0;
+    if (dws_nmea0183_field_int(m, 2, &v))
+        out->fix_type = (uint8_t)v;
+    // Fields 3..14 are the (up to 12) PRNs used; unused slots are blank and skipped.
+    uint8_t cnt = 0;
+    for (uint8_t f = 3; f <= 14; f++)
+    {
+        if (dws_nmea0183_field_int(m, f, &v))
+            out->sats[cnt++] = (uint8_t)v;
+    }
+    out->sat_count = cnt;
+    dws_nmea0183_field_float(m, 15, &out->pdop);
+    dws_nmea0183_field_float(m, 16, &out->hdop);
+    dws_nmea0183_field_float(m, 17, &out->vdop);
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183
