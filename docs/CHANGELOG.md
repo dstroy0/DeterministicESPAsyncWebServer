@@ -2,6 +2,33 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.33.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.33.0 - 2026-07-24</b></summary>
+
+### Bug Fixes
+
+- reconcile test_matrix.json with the generated env region ([`65013e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65013e8fd906c33f1dd6b8f7fdf8fd100c83863d))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ea01d5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ea01d5cdf9b349a6a9618212c3b00a28a293a80c))
+
+### Changes
+
+- Bump version: 7.32.0 → 7.33.0 ([`be64afb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be64afbd027a4936499fb6c0b685f9ace7535869))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8d63b28`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d63b28e89d93f7510325c5c8138c7dca5e8360c))
+
+### Features
+
+- master write codec + southbound register-matrix write path ([`c7501ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7501ffca37af4e52ebf2605455936172b446a6b))
+
+</details>
+
 ## [7.32.0] - 2026-07-24
 
 <details>
