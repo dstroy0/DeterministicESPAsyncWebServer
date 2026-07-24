@@ -536,10 +536,16 @@ preempting queue, so sensing shares the real-time ingest path.
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with
-       the SAD/SPD. This is the real weight and the open architectural question (lwIP has no native IPsec);
-       tunnel mode first (whole-packet, simplest SPD). Gate behind its own flag; the codec + handshake tiers
-       ship and test independently first. Refs: RFC 7296 (IKEv2), 4303 (ESP), 7634 (ChaCha20-Poly1305 for
-       IKEv2/ESP), 8247 (algorithm requirements).
+       the SAD/SPD. **The ESP PACKET TRANSFORM is shipped** (`services/esp`, gated on `DWS_ENABLE_IKEV2`) -
+       the pure, host-testable crypto core, separated from the device-side lwIP integration:
+       `dws_esp_gcm_encapsulate` / `_decapsulate` build + verify an RFC 4303 ESP packet with AES-256-GCM
+       (RFC 4106) - `SPI | Seq | IV | AES-GCM(payload | pad | PadLen | NextHeader) | ICV`, the SPI|Seq AAD,
+       the salt||IV nonce, and RFC 4303 §2.4 padding - cross-checked against a Python AES-256-GCM reference
+       with encapsulate/decapsulate round-trips, a golden packet, tamper (ciphertext + AAD) rejection, and
+       an empty-payload case (`native_esp`, 5 cases). _Remaining (the real weight):_ the lwIP IP
+       input/output hook + the SAD/SPD + the anti-replay window (a device-side track, not host-unit-testable);
+       tunnel mode first (whole-packet, simplest SPD). Refs: RFC 7296 (IKEv2), 4303 (ESP), 4106 (AES-GCM in
+       ESP), 7634 (ChaCha20-Poly1305 for IKEv2/ESP), 8247 (algorithm requirements).
 - [x] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming _(shipped)_ -
       `DWS_ENABLE_WIFI_SNIFFER` (`services/wifi_sniffer`): `dws_wifi_parse` decodes an 802.11 MAC header
       (frame-control type/subtype + flags and the addresses whose roles depend on the ToDS/FromDS bits),

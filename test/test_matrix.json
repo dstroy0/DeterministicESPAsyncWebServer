@@ -1008,6 +1008,15 @@
       ],
       "tests": ["test_ikev2"]
     },
+    "native_esp": {
+      "desc": "ESP (RFC 4303) packet transform with AES-256-GCM (RFC 4106) - the IPsec datapath crypto core\n(services/esp): encapsulate a payload into SPI|Seq|IV|AES-GCM(payload|pad|padlen|nexthdr)|ICV and\nverify + decapsulate it, with the SPI|Seq AAD + salt||IV nonce. Gated on the IKEv2 feature. Pure host\ntests cross-checked against a Python AES-256-GCM reference.",
+      "flags": ["-DDWS_ENABLE_IKEV2=1"],
+      "src": [
+        "+<services/esp/esp.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>"
+      ],
+      "tests": ["test_esp"]
+    },
     "native_senml": {
       "desc": "SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the\nJSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral\nnumbers emitted as integers. Pure host tests.",
       "flags": ["-DDWS_ENABLE_SENML=1"],

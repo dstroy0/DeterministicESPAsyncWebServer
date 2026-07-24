@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **271 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **272 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -142,6 +142,7 @@ The native test matrix has **271 environments**, one per feature, generated from
 | `native_edge_mesh` | `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1`, `WS_ENABLE_EDGE_MESH=1` | `test_edge_mesh` | CDN edge-cache mesh sibling-cache codec (services/edge_cache/edge_mesh): the request/response wire frames (build + tri-state accumulating parse over partial reads, magic/version/opcode validation), th... |
 | `native_enip` | `WS_ENABLE_ENIP=1` | `test_enip` | EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession + SendRRData builders (Common Packet Format), and the SendRRData reply extractor. |
 | `native_enocean` | `WS_ENABLE_ENOCEAN=1`, `WS_ENOCEAN_MAX_DATA=16` | `test_enocean` | EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07) against known answers, a build -> parse round trip, malformed framing (bad sync / header CRC / data CRC), incomplet... |
+| `native_esp` | `WS_ENABLE_IKEV2=1` | `test_esp` | ESP (RFC 4303) packet transform with AES-256-GCM (RFC 4106) - the IPsec datapath crypto core (services/esp): encapsulate a payload into SPI\|Seq\|IV\|AES-GCM(payload\|pad\|padlen\|nexthdr)\|ICV and ve... |
 | `native_espnow` | `WS_ENABLE_ESPNOW=1` | `test_espnow` | ESP-NOW peer messaging (services/espnow) - the envelope codec + peer registry are host-tested here; the esp_now radio binding is ESP32-only. |
 | `native_euromap77` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_EUROMAP77=1` | `test_euromap77` | EUROMAP 77 (OPC 40077) IMM_MES_Interface model (services/euromap77) - OPC UA for injection moulding machines. |
 | `native_exc_decoder` | `WS_ENABLE_EXC_DECODER=1` | `test_exc_decoder` | ESP32 panic / exception decoder (services/exc_decoder): parse a captured Guru Meditation dump (cause, register PC + EXCVADDR, backtrace PC:SP frames) into a structured ExcInfo and serialize it as JSON... |
@@ -561,7 +562,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5013 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5018 test cases** across **288 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -10913,6 +10914,69 @@ A thorough directory of all **5013 test cases** across **287 suites**. Expand a 
     * **Objective**: Build rejects null out
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_esp3_build(dws_esp3_type::ESP3_RADIO_ERP1, data, 4, nullptr, 0, nullptr, 32));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_esp (5 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_esp_encapsulate_kat</b> &mdash; <i>Esp encapsulate kat</i></summary>
+
+    * **Objective**: Esp encapsulate kat
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(56, n); // 8 hdr + 8 IV + 24 ct (20 payload + 2 pad + padlen + nexthdr) + 16 ICV</code>
+      * <code>Assert equal memory (esp_packet, out, 56)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_esp_roundtrip</b> &mdash; <i>Esp roundtrip</i></summary>
+
+    * **Objective**: Esp roundtrip
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_esp_gcm_decapsulate(esp_key, esp_salt, pkt, n, &spi, &seq, &nh, &pl, &pl_len))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xAABBCCDD, spi);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(42, seq);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(41, nh);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(esp_payload), pl_len);</code>
+      * <code>Assert equal memory (esp_payload, pl, sizeof(esp_payload))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_esp_decapsulate_golden</b> &mdash; <i>Esp decapsulate golden</i></summary>
+
+    * **Objective**: Esp decapsulate golden
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x12345678, spi);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, seq);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, nh);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(20, pl_len);</code>
+      * <code>Assert equal memory (esp_payload, pl, 20)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_esp_tamper_and_guards</b> &mdash; <i>A flipped ciphertext byte -> ICV fails.</i></summary>
+
+    * **Objective**: A flipped ciphertext byte -> ICV fails.
+    * **Assertions**:
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>Assert false (dws_esp_gcm_decapsulate(esp_key, esp_salt, work, 20, &spi, &seq, &nh, &pl, &pl_len))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_esp_gcm_encapsulate(1, 1, esp_key, esp_salt, esp_iv, 4, esp_payload,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_esp_empty_payload</b> &mdash; <i>Esp empty payload</i></summary>
+
+    * **Objective**: Esp empty payload
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_esp_gcm_decapsulate(esp_key, esp_salt, pkt, n, &spi, &seq, &nh, &pl, &pl_len))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, pl_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(59, nh);</code>
   </details>
 
 </details>
