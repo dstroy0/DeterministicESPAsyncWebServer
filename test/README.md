@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5162 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5163 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -57305,7 +57305,7 @@ A thorough directory of all **5162 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_vxi11 (23 tests)</b></summary>
+<summary><b>test_vxi11 (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_record_mark</b> &mdash; <i>a non-final fragment</i></summary>
@@ -57394,6 +57394,25 @@ A thorough directory of all **5162 test cases** across **291 suites**. Expand a 
       * <code>Assert greater than (0, (int)dws_vxi11_build_destroy_link(buf, sizeof(buf), 5, 0x0100))</code>
       * <code>Assert true (dws_vxi11_parse_error_resp(b, o, &err))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(0, err);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_device_clear_and_trigger</b> &mdash; <i>device_clear: proc 15, then Device_GenericParms (lid, flags, lock_timeout, io_timeout).</i></summary>
+
+    * **Objective**: device_clear: proc 15, then Device_GenericParms (lid, flags, lock_timeout, io_timeout).
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(15, buf[27]);   // proc = DEVICE_CLEAR (the proc word is bytes 24-27, big-endian)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[46]); // lid 0x0100 (Device_GenericParms starts at byte 44)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[47]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x13, buf[58]); // io_timeout 5000 = 0x1388</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x88, buf[59]);</code>
+      * <code>Assert true (dws_vxi11_parse_error_resp(b, o, &err))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, err);</code>
+      * <code>Assert greater than (0, (int)n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(14, buf[27]); // proc = DEVICE_TRIGGER</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_device_clear(small, sizeof(small), 7, 0x0100, 0, 0, 5000));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_vxi11_build_device_trigger(small, sizeof(small), 8, 0x0100, 0, 0, 5000));</code>
   </details>
 
   <details style="margin-left: 20px;">
