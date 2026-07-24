@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.54.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.54.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`8f3c7c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f3c7c5100d254acec55c3f081b69072765c9218))
+
+### Changes
+
+- Bump version: 7.53.0 → 7.54.0 ([`c673567`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6735675cb7a9b3c203b6a4ee30bade33c0c4dc4))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`40a82fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/40a82fcd7d284c32583e274bfba22ca86d5672ca))
+
+### Features
+
+- NAT traversal detection (RFC 7296 s2.23 / RFC 3947) ([`d6dbe72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6dbe72113867a18362015d3aa6e9eb6147ca929))
+
+</details>
+
 ## [7.53.0] - 2026-07-24
 
 <details>
