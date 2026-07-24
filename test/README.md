@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5112 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5113 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29516,7 +29516,7 @@ A thorough directory of all **5112 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (20 tests)</b></summary>
+<summary><b>test_nmea2000 (21 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -29735,6 +29735,27 @@ A thorough directory of all **5112 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT8(-10, e.tilt_pct); // 0xF6 as int8</code>
       * <code>Assert false (dws_n2k_decode_engine_rapid(er, 5, &e))</code>
       * <code>Assert false (dws_n2k_decode_engine_rapid(nullptr, 8, &e))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_temperature</b> &mdash; <i>sid 5, instance 0, source inside, actual 25.0 C (raw 29815 = 298.15 K), set 20.0 C (raw 29315).</i></summary>
+
+    * **Objective**: sid 5, instance 0, source inside, actual 25.0 C (raw 29815 = 298.15 K), set 20.0 C (raw 29315).
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_temperature(t, sizeof(t), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, d.sid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, d.instance);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_TEMP_SRC_INSIDE, d.source);</code>
+      * <code>Assert true (d.actual_valid)</code>
+      * <code>Assert float within (0.01f, 25.0f, d.actual_c)</code>
+      * <code>Assert true (d.set_valid)</code>
+      * <code>Assert float within (0.01f, 20.0f, d.set_c)</code>
+      * <code>Assert true (dws_n2k_decode_temperature(na, sizeof(na), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_TEMP_SRC_SEA, d.source);</code>
+      * <code>Assert true (d.actual_valid)</code>
+      * <code>Assert false (d.set_valid)</code>
+      * <code>Assert false (dws_n2k_decode_temperature(t, 6, &d))</code>
+      * <code>Assert false (dws_n2k_decode_temperature(nullptr, 8, &d))</code>
   </details>
 
   <details style="margin-left: 20px;">
