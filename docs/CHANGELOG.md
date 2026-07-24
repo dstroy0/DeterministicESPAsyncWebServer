@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.91.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.91.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`31815f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31815f60fb04e096e139a2fba0dc15f726cfe49a))
+
+### Changes
+
+- Bump version: 7.90.0 → 7.91.0 ([`b66f654`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b66f65439f3b4e43de5daca259a738a34008da0b))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8d064e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d064e0654f8eef9ee524571b876419e83411e7e))
+
+### Features
+
+- decode Temperature (PGN 130312) ([`824b5d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/824b5d771c3c570a02665354ed918ebf76adfbbc))
+
+</details>
+
 ## [7.90.0] - 2026-07-24
 
 <details>
