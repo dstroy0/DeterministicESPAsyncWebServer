@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5135 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5136 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -17161,7 +17161,7 @@ A thorough directory of all **5135 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_hostlink (19 tests)</b></summary>
+<summary><b>test_hostlink (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fcs_vector</b> &mdash; <i>Fcs vector</i></summary>
@@ -17178,6 +17178,32 @@ A thorough directory of all **5135 test cases** across **291 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_STRING("@00RD00000010"</code>
       * <code>TEST_ASSERT_EQUAL_size_t(17, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_read_and_extract</b> &mdash; <i>RD command: node 0, DM word 100 (-> "0100"), read 2 words (-> "0002").</i></summary>
+
+    * **Objective**: RD command: node 0, DM word 100 (-> "0100"), read 2 words (-> "0002").
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_hostlink_parse(buf, n, &f))</code>
+      * <code>Assert equal string ("RD", f.header_code)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, f.text_len);</code>
+      * <code>Assert equal memory ("01000002", f.text, 8)</code>
+      * <code>Assert true (dws_hostlink_parse(resp, rn, &rf))</code>
+      * <code>Assert true (dws_hostlink_end_code(&rf, &ec))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ec);</code>
+      * <code>Assert true (dws_hostlink_read_word(&rf, 0, &w))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x1234, w);</code>
+      * <code>Assert true (dws_hostlink_read_word(&rf, 1, &w))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x5678, w);</code>
+      * <code>Assert false (dws_hostlink_read_word(&rf, 2, &w))</code>
+      * <code>Assert false (dws_hostlink_read_word(nullptr, 0, &w))</code>
+      * <code>Assert true (dws_hostlink_parse(bad, bn, &bf))</code>
+      * <code>Assert false (dws_hostlink_read_word(&bf, 0, &w))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, sizeof(buf), 0, 10000, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, sizeof(buf), 0, 100, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hostlink_build_read(buf, 4, 0, 100, 2));</code>
   </details>
 
   <details style="margin-left: 20px;">
