@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5097 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5099 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29290,7 +29290,7 @@ A thorough directory of all **5097 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (16 tests)</b></summary>
+<summary><b>test_nmea2000 (18 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -29484,6 +29484,38 @@ A thorough directory of all **5097 test cases** across **291 suites**. Expand a 
       * <code>Assert true (w.angle_valid)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(N2K_WIND_REF_TRUE_NORTH, w.reference);</code>
       * <code>Assert false (dws_n2k_decode_wind_data(wind, 5, &w))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_water_depth</b> &mdash; <i>SID 1, depth 12.34 m (raw 1234), transducer offset 0.5 m (raw 500).</i></summary>
+
+    * **Objective**: SID 1, depth 12.34 m (raw 1234), transducer offset 0.5 m (raw 500).
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_water_depth(wd, sizeof(wd), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, d.sid);</code>
+      * <code>Assert true (d.depth_valid)</code>
+      * <code>Assert float within (0.001f, 12.34f, d.depth_m)</code>
+      * <code>Assert float within (0.0001f, 0.5f, d.offset_m)</code>
+      * <code>Assert true (dws_n2k_decode_water_depth(na, sizeof(na), &d))</code>
+      * <code>Assert false (d.depth_valid)</code>
+      * <code>Assert false (dws_n2k_decode_water_depth(wd, 6, &d))</code>
+      * <code>Assert false (dws_n2k_decode_water_depth(nullptr, 8, &d))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_vessel_heading</b> &mdash; <i>SID 2, heading 1.5708 rad (90 deg, raw 15708), deviation 0, variation -0.1 rad, reference magnetic.</i></summary>
+
+    * **Objective**: SID 2, heading 1.5708 rad (90 deg, raw 15708), deviation 0, variation -0.1 rad, reference magnetic.
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_vessel_heading(vh, sizeof(vh), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, h.sid);</code>
+      * <code>Assert true (h.heading_valid)</code>
+      * <code>Assert float within (0.0005f, 1.5708f, h.heading_rad)</code>
+      * <code>Assert float within (0.0005f, -0.1f, h.variation_rad)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(N2K_HEADING_REF_MAGNETIC, h.reference);</code>
+      * <code>Assert true (dws_n2k_decode_vessel_heading(na, sizeof(na), &h))</code>
+      * <code>Assert false (h.heading_valid)</code>
+      * <code>Assert false (dws_n2k_decode_vessel_heading(vh, 7, &h))</code>
   </details>
 
 </details>
