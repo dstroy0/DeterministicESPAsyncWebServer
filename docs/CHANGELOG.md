@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.74.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.74.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`b1c9b9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1c9b9f4dfebbc34cb583aabe16df94b0ad9079c))
+
+### Changes
+
+- Bump version: 7.73.0 → 7.74.0 ([`4b8e5d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b8e5d0a71d362240c30f227c0d5ea67665a993c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`31c1eb0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31c1eb066fe71fc79c6051a49b63600fc3cf83bc))
+
+### Features
+
+- segmented SDO transfer (CiA 301 s7.2.4.3) ([`d53b103`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d53b103408c5d052f410a73ca4d88087d7a6460d))
+
+</details>
+
 ## [7.73.0] - 2026-07-24
 
 <details>
