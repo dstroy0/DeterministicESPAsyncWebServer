@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5169 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5170 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -20205,7 +20205,7 @@ A thorough directory of all **5169 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_iec60870 (27 tests)</b></summary>
+<summary><b>test_iec60870 (28 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_104_i_format_roundtrip</b> &mdash; <i>104 i format roundtrip</i></summary>
@@ -20513,6 +20513,25 @@ A thorough directory of all **5169 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT16(-1000, v);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_scaled(buf, 5, 0, 1, 0)); // too small</code>
       * <code>Assert false (dws_iec_io_parse_scaled(buf, 5, &ioa, &v, &qds))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_io_measured_normalized</b> &mdash; <i>M_ME_NA_1: IOA(3) + signed 16-bit NVA (LE) + QDS(1); 0.5 -> 0.5*32768 = 16384 = 0x4000 -> bytes 00 40.</i></summary>
+
+    * **Objective**: M_ME_NA_1: IOA(3) + signed 16-bit NVA (LE) + QDS(1); 0.5 -> 0.5*32768 = 16384 = 0x4000 -> bytes 00 40.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[3]); // NVA low</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x40, buf[4]); // NVA high</code>
+      * <code>Assert true (dws_iec_io_parse_normalized(buf, n, &ioa, &v, &qds))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(200, ioa);</code>
+      * <code>Assert float within (0.0001f, 0.5f, v)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_NT, qds);</code>
+      * <code>Assert true (dws_iec_io_parse_normalized(buf, 6, nullptr, &v, nullptr))</code>
+      * <code>Assert float within (0.0001f, -0.5f, v)</code>
+      * <code>Assert true (v &gt; 0.999f)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_normalized(buf, 5, 0, 0.5f, 0)); // too small</code>
+      * <code>Assert false (dws_iec_io_parse_normalized(buf, 5, &ioa, &v, &qds))</code>
   </details>
 
   <details style="margin-left: 20px;">
