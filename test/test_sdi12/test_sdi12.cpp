@@ -53,6 +53,29 @@ void test_build_continuous_and_verify()
     TEST_ASSERT_EQUAL_STRING("7V!", buf);
 }
 
+// Additional-measurement (aM<n>! / aMC<n>!) and additional-concurrent (aC<n>! / aCC<n>!) builders.
+void test_build_additional_measurements()
+{
+    char buf[16];
+    TEST_ASSERT_EQUAL_size_t(4, dws_sdi12_build_measure_additional(buf, sizeof(buf), '0', 1, false));
+    TEST_ASSERT_EQUAL_STRING("0M1!", buf);
+    dws_sdi12_build_measure_additional(buf, sizeof(buf), '3', 9, false);
+    TEST_ASSERT_EQUAL_STRING("3M9!", buf);
+    dws_sdi12_build_measure_additional(buf, sizeof(buf), '1', 2, true); // CRC variant inserts the 'C'
+    TEST_ASSERT_EQUAL_STRING("1MC2!", buf);
+
+    dws_sdi12_build_concurrent_additional(buf, sizeof(buf), '0', 1, false);
+    TEST_ASSERT_EQUAL_STRING("0C1!", buf);
+    dws_sdi12_build_concurrent_additional(buf, sizeof(buf), '2', 4, true);
+    TEST_ASSERT_EQUAL_STRING("2CC4!", buf);
+
+    // The index must be 1..9 (0 is the primary aM! / aC!, handled by the base builders).
+    TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_measure_additional(buf, sizeof(buf), '0', 0, false));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_measure_additional(buf, sizeof(buf), '0', 10, false));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_concurrent_additional(buf, sizeof(buf), '0', 0, false));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_concurrent_additional(buf, sizeof(buf), '0', 10, false));
+}
+
 void test_parse_measure_m()
 {
     // aM! response "0" + "012" (12 s) + "2" (2 values).
@@ -268,6 +291,7 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_command_builders);
     RUN_TEST(test_build_continuous_and_verify);
+    RUN_TEST(test_build_additional_measurements);
     RUN_TEST(test_parse_measure_m);
     RUN_TEST(test_parse_identify);
     RUN_TEST(test_parse_measure_concurrent_two_digit_count);

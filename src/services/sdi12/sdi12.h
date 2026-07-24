@@ -52,6 +52,19 @@ size_t dws_sdi12_build_measure(char *buf, size_t cap, char addr, bool with_crc);
 size_t dws_sdi12_build_concurrent(char *buf, size_t cap, char addr, bool with_crc);
 
 /**
+ * @brief Additional-measurement command `aM<n>!` (or `aMC<n>!` when @p with_crc), @p m_index 1..9 - the
+ *        secondary measurement sets a multi-parameter sensor exposes beyond the primary `aM!`. @return 0 for
+ *        an @p m_index outside 1..9.
+ */
+size_t dws_sdi12_build_measure_additional(char *buf, size_t cap, char addr, uint8_t m_index, bool with_crc);
+
+/**
+ * @brief Additional-concurrent command `aC<n>!` (or `aCC<n>!` when @p with_crc), @p c_index 1..9 - the
+ *        concurrent-mode counterpart of the additional measurement. @return 0 for a @p c_index outside 1..9.
+ */
+size_t dws_sdi12_build_concurrent_additional(char *buf, size_t cap, char addr, uint8_t c_index, bool with_crc);
+
+/**
  * @brief Continuous-measurement command `aR<n>!` (or `aRC<n>!` when @p with_crc), @p r_index 0..9. Unlike
  *        `aM!`, a continuous-measurement sensor returns its values immediately (no service-request delay).
  */
