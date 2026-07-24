@@ -20,7 +20,9 @@
  * Shipped: the NEGOTIATE exchange; the NTLM crypto (smb_md / ntlm / ntlmssp); the SPNEGO wrapping
  * (spnego); the SESSION_SETUP request/response framing that carries those tokens; and the
  * TREE_CONNECT / CREATE / CLOSE / READ / WRITE file commands - the full read/write-a-file-on-a-share
- * client. Roadmap (later options): SMB 3.1.1 negotiate contexts + preauth integrity, SMB2 signing.
+ * client; and **SMB 2.x message signing** (dws_smb2_sign / dws_smb2_verify, HMAC-SHA256). Roadmap
+ * (later options): SMB 3.1.1 negotiate contexts + preauth integrity + AES-CMAC signing, and wiring the
+ * signer into the client's send/receive path (SigningRequired negotiation).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -78,6 +80,7 @@ struct Smb2SecurityMode
 struct Smb2HeaderFlags
 {
     static constexpr uint32_t SMB2_FLAGS_SERVER_TO_REDIR = 0x00000001; ///< set on a response (server -> client)
+    static constexpr uint32_t SMB2_FLAGS_SIGNED = 0x00000008;          ///< the message carries an HMAC signature
 };
 
 /** @brief SESSION_SETUP response SessionFlags (MS-SMB2 §2.2.6). */
@@ -360,6 +363,28 @@ struct Smb2WriteResp
  * @return true on a well-formed response.
  */
 bool dws_smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *out);
+
+// ---------------------------------------------------------------------------
+// Message signing (MS-SMB2 §3.1.4.1 / §3.1.5.1) - SMB 2.x: HMAC-SHA256
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Sign an SMB2 message in place (MS-SMB2 §3.1.4.1, SMB 2.x). Sets SMB2_FLAGS_SIGNED in the Flags
+ *        field, zeroes the 16-byte Signature, HMAC-SHA256s the whole message under the 16-byte session
+ *        signing @p key, and writes the MAC's first 16 octets into the Signature field.
+ * @param key      the session signing key (16 octets; the NTLMv2 session key for SMB 2.x).
+ * @param msg      the full message (header + body), modified in place; must be at least a 64-byte header.
+ * @param msg_len  total message length. A message shorter than the header is left untouched.
+ */
+void dws_smb2_sign(const uint8_t key[16], uint8_t *msg, size_t msg_len);
+
+/**
+ * @brief Verify an SMB2 message's signature (MS-SMB2 §3.1.5.1). Recomputes the HMAC-SHA256 over @p msg
+ *        with the Signature field zeroed and constant-time-compares the first 16 octets to the received
+ *        Signature. @p msg is restored unchanged before returning.
+ * @return true iff the signature matches; false on a mismatch or a message shorter than the header.
+ */
+bool dws_smb2_verify(const uint8_t key[16], uint8_t *msg, size_t msg_len);
 
 #endif // DWS_ENABLE_SMB
 

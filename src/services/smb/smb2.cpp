@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "shared_primitives/endian.h"
+#include "smb_md.h" // dws_hmac_sha256 for message signing
 
 static const uint8_t SMB2_PROTOCOL_ID[4] = {0xFE, 'S', 'M', 'B'};
 
@@ -410,6 +411,41 @@ bool dws_smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp
         return false;
     out->count = dws_rd32le(b + 4); // Count (bytes written)
     return true;
+}
+
+// --- Message signing (MS-SMB2 §3.1.4.1 / §3.1.5.1) -------------------------
+// The SMB2 sync header places the Flags field at offset 16 (LE u32) and the 16-byte Signature at
+// offset 48. The MAC covers the whole message with the Signature zeroed; SMB 2.x uses HMAC-SHA256 and
+// the on-wire Signature is its first 16 octets.
+static constexpr size_t SMB2_FLAGS_OFF = 16;
+static constexpr size_t SMB2_SIGNATURE_OFF = 48;
+static constexpr size_t SMB2_SIGNATURE_LEN = 16;
+
+void dws_smb2_sign(const uint8_t key[16], uint8_t *msg, size_t msg_len)
+{
+    if (!key || !msg || msg_len < SMB2_HEADER_SIZE)
+        return;
+    dws_wr32le(msg + SMB2_FLAGS_OFF, dws_rd32le(msg + SMB2_FLAGS_OFF) | Smb2HeaderFlags::SMB2_FLAGS_SIGNED);
+    memset(msg + SMB2_SIGNATURE_OFF, 0, SMB2_SIGNATURE_LEN); // zero the Signature before hashing
+    uint8_t mac[32];
+    dws_hmac_sha256(key, 16, msg, msg_len, mac);
+    memcpy(msg + SMB2_SIGNATURE_OFF, mac, SMB2_SIGNATURE_LEN); // Signature = first 16 octets of the MAC
+}
+
+bool dws_smb2_verify(const uint8_t key[16], uint8_t *msg, size_t msg_len)
+{
+    if (!key || !msg || msg_len < SMB2_HEADER_SIZE)
+        return false;
+    uint8_t received[SMB2_SIGNATURE_LEN];
+    memcpy(received, msg + SMB2_SIGNATURE_OFF, SMB2_SIGNATURE_LEN);
+    memset(msg + SMB2_SIGNATURE_OFF, 0, SMB2_SIGNATURE_LEN);
+    uint8_t mac[32];
+    dws_hmac_sha256(key, 16, msg, msg_len, mac);
+    memcpy(msg + SMB2_SIGNATURE_OFF, received, SMB2_SIGNATURE_LEN); // restore; the message is unchanged
+    uint8_t diff = 0;
+    for (size_t i = 0; i < SMB2_SIGNATURE_LEN; i++)
+        diff |= (uint8_t)(mac[i] ^ received[i]); // constant-time compare (no early exit)
+    return diff == 0;
 }
 
 #endif // DWS_ENABLE_SMB

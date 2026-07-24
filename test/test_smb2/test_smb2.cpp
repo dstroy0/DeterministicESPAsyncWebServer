@@ -861,6 +861,62 @@ void test_parse_write_null_and_command()
     TEST_ASSERT_FALSE(dws_smb2_parse_write_response(bad, 64 + 16, &r));
 }
 
+// SMB2 message signing (MS-SMB2 §3.1.4.1 / §3.1.5.1): sign sets the SIGNED flag + writes the HMAC-SHA256
+// signature; the signature matches a Python-computed reference; verify accepts it, leaves the message
+// unchanged, and rejects tampering / a wrong key / a short message.
+void test_smb2_signing()
+{
+    uint8_t msg[72];
+    memset(msg, 0, sizeof(msg));
+    msg[0] = 0xFE;
+    msg[1] = 'S';
+    msg[2] = 'M';
+    msg[3] = 'B';   // ProtocolId
+    msg[4] = 64;    // StructureSize (LE)
+    msg[12] = 5;    // Command (LE)
+    msg[14] = 1;    // CreditRequest (LE)
+    msg[24] = 1;    // MessageId (LE)
+    msg[36] = 5;    // TreeId (LE)
+    msg[40] = 7;    // SessionId (LE)
+    msg[64] = 0xDE; // body
+    msg[65] = 0xAD;
+    msg[66] = 0xBE;
+    msg[67] = 0xEF;
+    msg[68] = 0x01;
+    msg[69] = 0x02;
+    msg[70] = 0x03;
+    msg[71] = 0x04;
+
+    uint8_t key[16];
+    for (int i = 0; i < 16; i++)
+        key[i] = (uint8_t)(i + 1); // 01..10
+
+    dws_smb2_sign(key, msg, sizeof(msg));
+    TEST_ASSERT_EQUAL_HEX8(0x08, msg[16]); // SMB2_FLAGS_SIGNED now set
+
+    // The Signature matches the reference HMAC-SHA256(key, message)[:16] (Python hashlib/hmac).
+    const uint8_t expect[16] = {0xf7, 0xc0, 0xb1, 0x28, 0x7f, 0x6f, 0x6c, 0xd2,
+                                0xaa, 0xbf, 0x30, 0x48, 0xa3, 0x1d, 0x16, 0xa7};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, msg + 48, 16);
+
+    // Verify accepts the freshly-signed message and restores it unchanged.
+    uint8_t before[72];
+    memcpy(before, msg, sizeof(msg));
+    TEST_ASSERT_TRUE(dws_smb2_verify(key, msg, sizeof(msg)));
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(before, msg, sizeof(msg));
+
+    // A tampered body byte, a wrong key, and a too-short message all fail closed.
+    msg[70] ^= 0x01;
+    TEST_ASSERT_FALSE(dws_smb2_verify(key, msg, sizeof(msg)));
+    msg[70] ^= 0x01;
+    uint8_t wrong[16];
+    memcpy(wrong, key, 16);
+    wrong[0] ^= 0xFF;
+    TEST_ASSERT_FALSE(dws_smb2_verify(wrong, msg, sizeof(msg)));
+    TEST_ASSERT_FALSE(dws_smb2_verify(key, msg, 63));
+    dws_smb2_sign(key, msg, 63); // too short: a no-op, must not corrupt memory
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -900,5 +956,6 @@ int main()
     RUN_TEST(test_parse_read_null_command_and_low_offset);
     RUN_TEST(test_build_write_null_args);
     RUN_TEST(test_parse_write_null_and_command);
+    RUN_TEST(test_smb2_signing);
     return UNITY_END();
 }
