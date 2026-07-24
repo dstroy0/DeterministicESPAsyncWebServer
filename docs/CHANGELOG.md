@@ -2,6 +2,24 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e15fb87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e15fb8761035a2e726583ae289fd525e2d11a069))
+
+### Changes
+
+- Bump version: 7.101.0 → 7.102.0 ([`f7dfbcd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7dfbcd858daa0fb9ad4b56cd5e24cc24d5ca5bf))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e0d0ed5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0d0ed5d0500b8bdecbea3a0ce9db67c9560f3ae))
+
+### Features
+
+- decode Speed water-referenced (PGN 128259) ([`2c1bbdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c1bbdcfa59fc0da4c8a651634bb95f90642f980))
+
 ## [7.101.0] - 2026-07-24
 
 <details>
