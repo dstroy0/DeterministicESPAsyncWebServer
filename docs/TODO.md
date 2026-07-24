@@ -508,14 +508,21 @@ Open follow-ups discovered during the above:
       delivery. Host-tested via a new opt-in UDP capture seam (`test_snmp_v3`
       `test_inform_v3_builds_informrequest`: a v3 message carrying the InformRequest PDU
       + request-id).
-- [~] **CoAP server scope** - `/.well-known/core` resource discovery (RFC 6690) is
-      now served: GET returns the registered resources in Link Format
+- [x] **CoAP server scope.** `/.well-known/core` resource discovery (RFC 6690) is
+      served: GET returns the registered resources in Link Format
       (`application/link-format`, CF 40), paged with Block2 if large; non-GET -> 4.05.
-      Host-tested (`test_coap` `test_well_known_core_discovery` /
-      `_rejects_post`) and HW-verified against `aiocoap` (interop `coap` peer).
-      Still out of scope (add only if needed): separate (deferred) responses, and CON
-      retransmission + message de-duplication - the model stays piggybacked-only
-      (CON -> piggybacked ACK, NON -> NON).
+      Host-tested (`test_coap` `test_well_known_core_discovery` / `_rejects_post`) and
+      HW-verified against `aiocoap` (interop `coap` peer). **Message de-duplication
+      (RFC 7252 §4.5, the one REQUIRED reliability behavior) is now implemented**: a
+      retransmitted CON is re-answered from a small (source endpoint, Message-ID)-keyed
+      cache - the FULL address, never a hash - without re-running its handler, so a
+      client's retransmission cannot execute a non-idempotent request twice
+      (`DWS_COAP_DEDUP_*`; `native_coap` covers store/lookup, full-address keying,
+      expiry, eviction, and an end-to-end handler replay proving the handler runs once).
+      The remaining two are **non-goals by design, justified on merit** (not punts):
+      separate (deferred) responses contradict the synchronous in-line server (a request
+      is answered before its handler returns), and there is no CON retransmission because
+      the server never sends a Confirmable message - notifications go out Non-confirmable.
 - [~] **Concurrent TLS** (`MAX_TLS_CONNS` > 1). _(library side landed; a `MAX_TLS_CONNS=2`
       PSRAM build was HW-verified to link, boot, and run on an ESP32-S3 - the only unproven
       piece is a live 2-clients-at-once soak, blocked by the lab network, not the code.)_ The whole mbedTLS

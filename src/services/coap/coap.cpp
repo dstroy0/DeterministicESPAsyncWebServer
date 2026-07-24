@@ -12,8 +12,8 @@
 
 #include "network_drivers/transport/udp.h"
 #include <string.h>
-#if DWS_ENABLE_COAP_OBSERVE
-#include "services/clock.h" // dws_millis() for Observe notification message IDs / sequencing
+#if DWS_ENABLE_COAP_OBSERVE || DWS_COAP_DEDUP_ENTRIES > 0
+#include "services/clock.h" // dws_millis(): Observe notification sequencing + dedup entry freshness
 #endif
 
 // CoAP option numbers we understand (RFC 7252 §5.10, RFC 7959). Others are skipped. Wire values
@@ -42,6 +42,24 @@ struct CoapResource
     CoapHandler handler;
 };
 
+#if DWS_COAP_DEDUP_ENTRIES > 0
+// A cached response for message de-duplication (RFC 7252 §4.5). Keyed by the FULL source endpoint
+// (address string + port) and the Message-ID - never a hash, so two peers cannot collide onto one
+// entry and be handed each other's cached response. A retransmitted Confirmable request that hits a
+// fresh entry is re-answered from `resp` without re-running its handler, so a client's CON retransmit
+// cannot execute a non-idempotent request twice.
+struct CoapDedupEntry
+{
+    bool valid;
+    char ip[16];
+    uint16_t port;
+    uint16_t mid;
+    uint32_t stamp_ms; // dws_millis() at store; the entry expires after DWS_COAP_DEDUP_LIFETIME_MS
+    uint16_t len;      // cached response length
+    uint8_t resp[DWS_COAP_DEDUP_RESP_MAX];
+};
+#endif
+
 #if DWS_ENABLE_COAP_OBSERVE
 // An Observe registration (RFC 7641): a client awaiting notifications on a resource.
 struct CoapObserver
@@ -68,6 +86,10 @@ struct CoapCtx
     char query[DWS_COAP_MAX_QUERY];    // scratch: reconstructed Uri-Query
     uint8_t pl[DWS_COAP_MAX_PAYLOAD];  // scratch: handler response body
     uint8_t tx[DWS_COAP_MSG_BUF_SIZE]; // scratch: outbound response (request buffer is transport-owned)
+
+#if DWS_COAP_DEDUP_ENTRIES > 0
+    CoapDedupEntry dedup[DWS_COAP_DEDUP_ENTRIES]; // message de-duplication cache (RFC 7252 §4.5)
+#endif
 
 #if DWS_ENABLE_COAP_OBSERVE
     uint16_t port = DWS_COAP_OBSERVE_PORT; // UDP port the observe transport notifies from
@@ -96,6 +118,10 @@ void dws_coap_server_reset()
 #if DWS_ENABLE_COAP_BLOCK
     s_coap.b1_len = 0;
     s_coap.b1_szx = 0;
+#endif
+#if DWS_COAP_DEDUP_ENTRIES > 0
+    for (size_t i = 0; i < DWS_COAP_DEDUP_ENTRIES; i++)
+        s_coap.dedup[i].valid = false;
 #endif
 }
 
@@ -620,9 +646,104 @@ size_t dws_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp
     return dws_coap_server_process_ex(req, req_len, resp, dws_resp_cap, -1); // no Observe option
 }
 
+#if DWS_COAP_DEDUP_ENTRIES > 0
+// ---------------------------------------------------------------------------
+// Message de-duplication cache (RFC 7252 §4.5) - host-testable core
+// ---------------------------------------------------------------------------
+
+bool dws_coap_dedup_lookup(const char *src_ip, uint16_t src_port, uint16_t mid, const uint8_t **out, size_t *out_len)
+{
+    if (!src_ip)
+        return false;
+    uint32_t now = dws_millis();
+    for (size_t i = 0; i < DWS_COAP_DEDUP_ENTRIES; i++)
+    {
+        const CoapDedupEntry &e = s_coap.dedup[i];
+        if (e.valid && e.mid == mid && e.port == src_port && (now - e.stamp_ms) < DWS_COAP_DEDUP_LIFETIME_MS &&
+            strncmp(e.ip, src_ip, sizeof(e.ip)) == 0)
+        {
+            if (out)
+                *out = e.resp;
+            if (out_len)
+                *out_len = e.len;
+            return true;
+        }
+    }
+    return false;
+}
+
+void dws_coap_dedup_store(const char *src_ip, uint16_t src_port, uint16_t mid, const uint8_t *resp, size_t len)
+{
+    if (!src_ip || !resp || len == 0 || len > DWS_COAP_DEDUP_RESP_MAX)
+        return; // an over-large response is not cached - a retransmission simply re-processes it
+    uint32_t now = dws_millis();
+    // Prefer the entry already holding this key, then a free / expired slot, else evict the oldest.
+    size_t victim = 0;
+    uint32_t oldest = 0;
+    for (size_t i = 0; i < DWS_COAP_DEDUP_ENTRIES; i++)
+    {
+        const CoapDedupEntry &e = s_coap.dedup[i];
+        if (e.valid && e.mid == mid && e.port == src_port && strncmp(e.ip, src_ip, sizeof(e.ip)) == 0)
+        {
+            victim = i;
+            break;
+        }
+        if (!e.valid || (now - e.stamp_ms) >= DWS_COAP_DEDUP_LIFETIME_MS)
+        {
+            victim = i;
+            break;
+        }
+        uint32_t age = now - e.stamp_ms;
+        if (age >= oldest)
+        {
+            oldest = age;
+            victim = i;
+        }
+    }
+    CoapDedupEntry &e = s_coap.dedup[victim];
+    size_t iplen = strnlen(src_ip, sizeof(e.ip) - 1);
+    memcpy(e.ip, src_ip, iplen);
+    e.ip[iplen] = 0;
+    e.port = src_port;
+    e.mid = mid;
+    e.stamp_ms = now;
+    e.len = (uint16_t)len;
+    memcpy(e.resp, resp, len);
+    e.valid = true;
+}
+#endif // DWS_COAP_DEDUP_ENTRIES > 0
+
 // ---------------------------------------------------------------------------
 // UDP transport (dws_udp_listen is a host stub on non-Arduino builds)
 // ---------------------------------------------------------------------------
+
+#if DWS_COAP_DEDUP_ENTRIES > 0
+// If @p data is a Confirmable request already answered for this peer (RFC 7252 §4.5), resend the cached
+// response and return true so the caller stops (the handler is not re-run). Else return false.
+static bool coap_dedup_replay(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, const char *ip,
+                              uint16_t port, bool have_peer)
+{
+    if (!have_peer || len < 4 || ((data[0] >> 4) & 0x03) != (uint8_t)CoapType::COAP_TYPE_CON)
+        return false;
+    uint16_t mid = (uint16_t)((data[2] << 8) | data[3]);
+    const uint8_t *cached = nullptr;
+    size_t clen = 0;
+    if (!dws_coap_dedup_lookup(ip, port, mid, &cached, &clen))
+        return false;
+    dws_udp_send(peer, cached, clen);
+    return true;
+}
+
+// Cache the response just sent for a Confirmable request so its retransmission is deduplicated.
+static void coap_dedup_remember(const uint8_t *data, size_t len, const char *ip, uint16_t port, bool have_peer,
+                                const uint8_t *resp, size_t resp_len)
+{
+    if (!have_peer || len < 4 || ((data[0] >> 4) & 0x03) != (uint8_t)CoapType::COAP_TYPE_CON)
+        return;
+    uint16_t mid = (uint16_t)((data[2] << 8) | data[3]);
+    dws_coap_dedup_store(ip, port, mid, resp, resp_len);
+}
+#endif // DWS_COAP_DEDUP_ENTRIES > 0
 
 #if DWS_ENABLE_COAP_OBSERVE
 // ---------------------------------------------------------------------------
@@ -735,6 +856,12 @@ static void coap_udp_handler(const uint8_t *data, size_t len, const struct DWSUd
         return;
     }
 
+#if DWS_COAP_DEDUP_ENTRIES > 0
+    // A retransmitted CON we already answered is re-answered from the cache without re-dispatching.
+    if (coap_dedup_replay(data, len, peer, ip, pport, have_peer))
+        return;
+#endif
+
     size_t rn = dws_coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), -1);
     if (!rn)
         return;
@@ -765,6 +892,9 @@ static void coap_udp_handler(const uint8_t *data, size_t len, const struct DWSUd
         obs_remove(ip, pport, s_coap.last_token, s_coap.last_tkl);
     }
 
+#if DWS_COAP_DEDUP_ENTRIES > 0
+    coap_dedup_remember(data, len, ip, pport, have_peer, s_coap.tx, rn); // cache for a future retransmission
+#endif
     dws_udp_send(peer, s_coap.tx, rn);
 }
 
@@ -781,9 +911,21 @@ void dws_coap_server_begin(uint16_t port)
 static void coap_udp_handler(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
+#if DWS_COAP_DEDUP_ENTRIES > 0
+    char ip[16];
+    uint16_t pport = 0;
+    bool have_peer = dws_udp_peer_addr(peer, ip, sizeof(ip), &pport);
+    if (coap_dedup_replay(data, len, peer, ip, pport, have_peer))
+        return;
+#endif
     size_t rn = dws_coap_server_process(data, len, s_coap.tx, sizeof(s_coap.tx));
     if (rn)
+    {
+#if DWS_COAP_DEDUP_ENTRIES > 0
+        coap_dedup_remember(data, len, ip, pport, have_peer, s_coap.tx, rn);
+#endif
         dws_udp_send(peer, s_coap.tx, rn);
+    }
 }
 
 void dws_coap_server_begin(uint16_t port)

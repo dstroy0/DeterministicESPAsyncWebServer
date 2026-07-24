@@ -136,7 +136,7 @@ CloudEvents v1.0 (CNCF) event envelope. Default off. services/cloudevents makes 
 
 `DWS_ENABLE_COAP`
 
-CoAP server (RFC 7252) over UDP/5683. A zero-heap Constrained Application Protocol endpoint: a fixed resource table dispatched against the request's Uri-Path, with a pure host-testable message codec (parse/build) and an ESP32 UDP binding via the transport-layer UDP service. Default off; the codec is otherwise unit-tested standalone (env:native_coap).
+CoAP server (RFC 7252) over UDP/5683. A zero-heap Constrained Application Protocol endpoint: a fixed resource table dispatched against the request's Uri-Path, with a pure host-testable message codec (parse/build) and an ESP32 UDP binding via the transport-layer UDP service. **Message de-duplication (RFC 7252 sec 4.5)** is built in: a retransmitted Confirmable request is re-answered from a small cache keyed on the full (source endpoint, Message-ID) - never a hash, so two peers cannot collide - _without_ re-running its handler, so a client's CON retransmission cannot execute a non-idempotent request (POST/PUT/DELETE) twice (`DWS_COAP_DEDUP_ENTRIES`, default 4, freshness `DWS_COAP_DEDUP_LIFETIME_MS` = EXCHANGE_LIFETIME; set entries 0 to compile it out). Separate (deferred) responses and CON retransmission are non-goals by design: the server answers in-line (a request is served before its handler returns) and sends notifications Non-confirmable, so it never emits a Confirmable message to retransmit. Default off; the codec is otherwise unit-tested standalone (env:native_coap).
 
 ## CoAP Block
 

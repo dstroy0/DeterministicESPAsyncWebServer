@@ -14,13 +14,17 @@
  *  - dws_coap_server_begin() binds the transport-layer UDP service on :5683
  *    (Arduino only) and feeds received datagrams through dws_coap_server_process().
  *
- * Only the message layer's piggybacked-response model is implemented: a CON
- * request is answered with a piggybacked ACK, a NON request with a NON response.
- * Separate responses and retransmission/deduplication are out of scope (a
- * deterministic, constrained server typically replies in-line); the
- * /.well-known/core resource-discovery listing (RFC 6690) is served. The codec
- * understands the Uri-Path, Uri-Query and
- * Content-Format options; other options are skipped. Block-wise transfer
+ * The message layer uses the piggybacked-response model: a CON request is answered
+ * with a piggybacked ACK, a NON request with a NON response. Message de-duplication
+ * (RFC 7252 sec 4.5) is implemented - a retransmitted CON is re-answered from a small
+ * cache keyed on (source endpoint, Message-ID) WITHOUT re-running its handler, so a
+ * client's retransmission cannot execute a non-idempotent request twice (see
+ * DWS_COAP_DEDUP_*). Separate (deferred) responses are a deliberate non-goal (this is
+ * a synchronous, in-line server: a request is answered before the handler returns),
+ * and there is no CON retransmission because the server never sends a Confirmable
+ * message - notifications go out Non-confirmable. The /.well-known/core resource-
+ * discovery listing (RFC 6690) is served. The codec understands the Uri-Path,
+ * Uri-Query and Content-Format options; other options are skipped. Block-wise transfer
  * (RFC 7959, the Block1/Block2 options) is available under DWS_ENABLE_COAP_BLOCK;
  * resource observation (RFC 7641) under DWS_ENABLE_COAP_OBSERVE.
  *
@@ -184,6 +188,22 @@ size_t dws_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp
  */
 size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t dws_resp_cap,
                                   int32_t observe_seq);
+
+#if DWS_COAP_DEDUP_ENTRIES > 0
+/**
+ * @brief Message de-duplication lookup (RFC 7252 sec 4.5). If a Confirmable request from @p src_ip :
+ *        @p src_port with Message-ID @p mid was answered within DWS_COAP_DEDUP_LIFETIME_MS, report its
+ *        cached response so the transport can resend it without re-running the handler.
+ * @return true and (on non-null out params) the cached response bytes + length; false on a miss.
+ */
+bool dws_coap_dedup_lookup(const char *src_ip, uint16_t src_port, uint16_t mid, const uint8_t **out, size_t *out_len);
+
+/**
+ * @brief Record the response sent for a Confirmable (@p src_ip : @p src_port, @p mid) exchange so a later
+ *        retransmission is deduplicated. A response longer than DWS_COAP_DEDUP_RESP_MAX is not cached.
+ */
+void dws_coap_dedup_store(const char *src_ip, uint16_t src_port, uint16_t mid, const uint8_t *resp, size_t len);
+#endif
 
 // ---------------------------------------------------------------------------
 // UDP transport (binds via the transport-layer UDP service; no-op on host)

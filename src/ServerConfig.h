@@ -2500,6 +2500,28 @@
 #endif
 
 /**
+ * @brief CoAP message de-duplication cache size (RFC 7252 sec 4.5). A Confirmable request the server has
+ *        already answered is recognized by its (source endpoint, Message-ID) and re-answered with the
+ *        cached response WITHOUT re-running the handler - so a client's CON retransmission cannot execute
+ *        a non-idempotent request (POST/PUT/DELETE) twice. Set to 0 to compile the dedup cache out.
+ */
+#ifndef DWS_COAP_DEDUP_ENTRIES
+#define DWS_COAP_DEDUP_ENTRIES 4
+#endif
+
+/** @brief Largest cached response the dedup cache retains per entry; a bigger response is not cached (a
+ *  retransmission re-processes it, fine for the idempotent GET whose block-wise reply exceeds this). */
+#ifndef DWS_COAP_DEDUP_RESP_MAX
+#define DWS_COAP_DEDUP_RESP_MAX 256
+#endif
+
+/** @brief How long (ms) a dedup entry stays fresh - RFC 7252 EXCHANGE_LIFETIME (~247 s) by default, past
+ *  which a repeat Message-ID is treated as a new exchange. */
+#ifndef DWS_COAP_DEDUP_LIFETIME_MS
+#define DWS_COAP_DEDUP_LIFETIME_MS 247000u
+#endif
+
+/**
  * @brief CoAP block-wise transfer - RFC 7959 (requires DWS_ENABLE_COAP).
  *
  * Default off. When set, the server understands the Block2 (descriptive,

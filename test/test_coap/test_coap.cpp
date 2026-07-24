@@ -6,6 +6,7 @@
 // response - no sockets, no heap.
 
 #include "network_drivers/transport/udp.h" // dws_udp_inject / capture (host UDP mock)
+#include "services/clock.h"                // dws_set_clock() to drive dedup freshness in tests
 #include "services/coap/coap.h"
 #include <string.h>
 #include <string> // std::string (test code may use the full STL; only src/ is constrained)
@@ -1619,6 +1620,150 @@ void test_coap_udp_edge_datagrams()
 }
 #endif // DWS_ENABLE_COAP_OBSERVE
 
+#if DWS_COAP_DEDUP_ENTRIES > 0
+// ---------------------------------------------------------------------------
+// Message de-duplication (RFC 7252 §4.5)
+// ---------------------------------------------------------------------------
+static uint32_t g_now_ms = 0;
+static uint32_t mock_clock()
+{
+    return g_now_ms;
+}
+
+// store then lookup returns the cached response byte-exact.
+void test_dedup_store_lookup_roundtrip()
+{
+    dws_set_clock(mock_clock, 1000);
+    g_now_ms = 1000;
+    dws_coap_server_reset();
+    const uint8_t r[] = {0x62, 0x45, 0x12, 0x34, 0xAB, 0xCD};
+    dws_coap_dedup_store("192.168.1.10", 5683, 0x1234, r, sizeof(r));
+    const uint8_t *c = nullptr;
+    size_t cl = 0;
+    TEST_ASSERT_TRUE(dws_coap_dedup_lookup("192.168.1.10", 5683, 0x1234, &c, &cl));
+    TEST_ASSERT_EQUAL_size_t(sizeof(r), cl);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(r, c, cl);
+    dws_set_clock(nullptr, 1000);
+}
+
+// The full source address keys the entry: a different ip / port / mid never false-hits.
+void test_dedup_full_address_keying()
+{
+    dws_set_clock(mock_clock, 1000);
+    g_now_ms = 1000;
+    dws_coap_server_reset();
+    const uint8_t r[] = {1, 2, 3};
+    dws_coap_dedup_store("192.168.1.10", 5683, 0x1234, r, sizeof(r));
+    const uint8_t *c = nullptr;
+    size_t cl = 0;
+    TEST_ASSERT_FALSE(dws_coap_dedup_lookup("192.168.1.11", 5683, 0x1234, &c, &cl)); // other ip
+    TEST_ASSERT_FALSE(dws_coap_dedup_lookup("192.168.1.10", 5684, 0x1234, &c, &cl)); // other port
+    TEST_ASSERT_FALSE(dws_coap_dedup_lookup("192.168.1.10", 5683, 0x1235, &c, &cl)); // other mid
+    TEST_ASSERT_TRUE(dws_coap_dedup_lookup("192.168.1.10", 5683, 0x1234, &c, &cl));  // exact match
+    dws_set_clock(nullptr, 1000);
+}
+
+// An entry older than DWS_COAP_DEDUP_LIFETIME_MS is treated as a new exchange.
+void test_dedup_expiry()
+{
+    dws_set_clock(mock_clock, 1000);
+    g_now_ms = 1000;
+    dws_coap_server_reset();
+    const uint8_t r[] = {1, 2, 3};
+    dws_coap_dedup_store("10.0.0.1", 5683, 0x0001, r, sizeof(r));
+    const uint8_t *c = nullptr;
+    size_t cl = 0;
+    g_now_ms = 1000 + DWS_COAP_DEDUP_LIFETIME_MS - 1;
+    TEST_ASSERT_TRUE(dws_coap_dedup_lookup("10.0.0.1", 5683, 0x0001, &c, &cl)); // still fresh
+    g_now_ms = 1000 + DWS_COAP_DEDUP_LIFETIME_MS;
+    TEST_ASSERT_FALSE(dws_coap_dedup_lookup("10.0.0.1", 5683, 0x0001, &c, &cl)); // expired
+    dws_set_clock(nullptr, 1000);
+}
+
+// A response larger than DWS_COAP_DEDUP_RESP_MAX is not cached (a retransmit re-processes it).
+void test_dedup_too_large_not_cached()
+{
+    dws_set_clock(mock_clock, 1000);
+    g_now_ms = 1000;
+    dws_coap_server_reset();
+    static uint8_t big[DWS_COAP_DEDUP_RESP_MAX + 1];
+    memset(big, 0xAA, sizeof(big));
+    dws_coap_dedup_store("10.0.0.2", 5683, 0x0002, big, sizeof(big));
+    const uint8_t *c = nullptr;
+    size_t cl = 0;
+    TEST_ASSERT_FALSE(dws_coap_dedup_lookup("10.0.0.2", 5683, 0x0002, &c, &cl));
+    dws_set_clock(nullptr, 1000);
+}
+
+// When the cache is full, the oldest entry is evicted; storing the same key updates in place.
+void test_dedup_eviction_and_update()
+{
+    dws_set_clock(mock_clock, 1000);
+    dws_coap_server_reset();
+    const uint8_t r[] = {9};
+    for (int i = 0; i < DWS_COAP_DEDUP_ENTRIES; i++)
+    {
+        g_now_ms = 1000 + (uint32_t)i;
+        char ip[16];
+        snprintf(ip, sizeof(ip), "10.0.1.%d", i);
+        dws_coap_dedup_store(ip, 5683, (uint16_t)(0x100 + i), r, sizeof(r));
+    }
+    g_now_ms = 2000;
+    dws_coap_dedup_store("10.0.1.99", 5683, 0x999, r, sizeof(r)); // evicts the oldest (entry 0)
+    const uint8_t *c = nullptr;
+    size_t cl = 0;
+    TEST_ASSERT_FALSE(dws_coap_dedup_lookup("10.0.1.0", 5683, 0x100, &c, &cl)); // evicted
+    TEST_ASSERT_TRUE(dws_coap_dedup_lookup("10.0.1.99", 5683, 0x999, &c, &cl)); // newest present
+
+    // Storing an existing key updates its response rather than consuming another slot.
+    const uint8_t r2[] = {7, 7, 7, 7};
+    dws_coap_dedup_store("10.0.1.99", 5683, 0x999, r2, sizeof(r2));
+    TEST_ASSERT_TRUE(dws_coap_dedup_lookup("10.0.1.99", 5683, 0x999, &c, &cl));
+    TEST_ASSERT_EQUAL_size_t(sizeof(r2), cl);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(r2, c, cl);
+    dws_set_clock(nullptr, 1000);
+}
+
+// End-to-end through the UDP handler: a retransmitted CON is answered from the cache and its handler
+// does NOT run a second time, but a different source with the same Message-ID is a new exchange.
+void test_dedup_handler_replays_without_rerunning()
+{
+    dws_set_clock(mock_clock, 1000);
+    g_now_ms = 5000;
+    dws_udp_reset_listeners();
+    dws_coap_server_begin(5683);
+    dws_udp_capture_enable();
+
+    const char *paths[] = {"temp"};
+    uint8_t req[64];
+    size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x4242, paths,
+                      1, nullptr, 0, -1, nullptr, 0);
+
+    g_called = false;
+    dws_udp_capture_reset();
+    dws_udp_inject(5683, "10.0.0.9", 5555, req, rl);
+    TEST_ASSERT_TRUE(g_called); // handler ran
+    size_t n1 = dws_udp_captured_len();
+    TEST_ASSERT_TRUE(n1 > 0);
+    uint8_t saved[64];
+    memcpy(saved, dws_udp_captured(), n1);
+
+    g_called = false;
+    dws_udp_capture_reset();
+    dws_udp_inject(5683, "10.0.0.9", 5555, req, rl); // duplicate CON (same mid + source)
+    TEST_ASSERT_FALSE(g_called);                     // deduplicated: handler skipped
+    TEST_ASSERT_EQUAL_size_t(n1, dws_udp_captured_len());
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(saved, dws_udp_captured(), n1); // same cached response resent
+
+    g_called = false;
+    dws_udp_capture_reset();
+    dws_udp_inject(5683, "10.0.0.10", 5555, req, rl); // different source, same mid -> new exchange
+    TEST_ASSERT_TRUE(g_called);
+
+    dws_set_clock(nullptr, 1000);
+}
+#endif // DWS_COAP_DEDUP_ENTRIES > 0
+
 int main()
 {
     UNITY_BEGIN();
@@ -1684,5 +1829,13 @@ int main()
     RUN_TEST(test_unknown_critical_option_bad_option);
     RUN_TEST(test_well_known_core_discovery);
     RUN_TEST(test_well_known_core_rejects_post);
+#if DWS_COAP_DEDUP_ENTRIES > 0
+    RUN_TEST(test_dedup_store_lookup_roundtrip);
+    RUN_TEST(test_dedup_full_address_keying);
+    RUN_TEST(test_dedup_expiry);
+    RUN_TEST(test_dedup_too_large_not_cached);
+    RUN_TEST(test_dedup_eviction_and_update);
+    RUN_TEST(test_dedup_handler_replays_without_rerunning);
+#endif
     return UNITY_END();
 }
