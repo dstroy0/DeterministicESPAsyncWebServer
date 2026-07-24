@@ -11,6 +11,14 @@ Hard rules for library code. If a change violates one of these, it is wrong - no
   library's own transport, never `WiFiClient` / `WiFiUDP`.
 - **`test/`** - anything goes (any C++ / STL / stdlib). Do **not** apply these rules to tests.
 
+**Enforcement.** `tools/check_src_banned.py` is the mechanical gate for the machine-detectable bans
+(#1 `strlen`, #2 `<stdlib.h>` / heap / parse functions, #3 `auto`, #4 `delay()`, #8 the non-reentrant
+`gmtime` family, #7 em-dashes). The pre-commit hook runs it on the staged `src/` sources and **refuses
+the commit** on any hit; the `Banned-constructs guard` CI step runs it over the whole tree
+(`--all`). Comments and string literals are exempt, so only real code trips it. Bans that need
+human or diff-aware judgment (#5 bare `millis()` "for new timing", #6 networking, #9-#17) stay review
+items with the `rg` recipes below. Run it yourself with `python tools/check_src_banned.py --all`.
+
 ## The bans
 
 | #   | Banned                                                                                                                                                  | Why                                                                   | Use instead                                                                                                                                                                                                                                                                                              | Catch it                                                  |
