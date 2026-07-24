@@ -6729,13 +6729,14 @@ enum class DWSIface : uint8_t
 #if DWS_SSH_ZLIB_MAX_IN < SSH_PKT_BUF_SIZE
 #error "DeterministicESPAsyncWebServer: DWS_SSH_ZLIB_MAX_IN must be >= SSH_PKT_BUF_SIZE"
 #endif
-// The per-connection compressor (window work buffer + hash chain) is ~48 KB. On ARDUINO pick a path:
-// offload it to PSRAM (DWS_SSH_ZLIB_IN_PSRAM, a PSRAM board built with the BSS-in-PSRAM core), or
-// acknowledge the internal-DRAM cost (DWS_SSH_ZLIB_ACK_DRAM, fine for MAX_SSH_CONNS=1 without TLS on
-// a roomy S3 / P4). Fail fast with guidance instead of a raw linker overflow.
+// The per-connection compression pool is ~80 KB: the s2c deflate work buffer + hash chain (~48 KB)
+// plus the c2s 32 KB context-takeover inflate window. On ARDUINO pick a path: offload it to PSRAM
+// (DWS_SSH_ZLIB_IN_PSRAM, a PSRAM board built with the BSS-in-PSRAM core), or acknowledge the
+// internal-DRAM cost (DWS_SSH_ZLIB_ACK_DRAM, fine for MAX_SSH_CONNS=1 without TLS on a roomy S3 / P4).
+// Fail fast with guidance instead of a raw linker overflow.
 #if defined(ARDUINO) && !DWS_SSH_ZLIB_IN_PSRAM && !DWS_SSH_ZLIB_ACK_DRAM
 #error                                                                                                                 \
-    "DeterministicESPAsyncWebServer: DWS_ENABLE_SSH_ZLIB - the per-connection compressor is ~48 KB. Set DWS_SSH_ZLIB_IN_PSRAM=1 on a PSRAM board (S3 / P4 / WROVER, core built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, tools/psram/README.md), OR set DWS_SSH_ZLIB_ACK_DRAM=1 to accept the internal-DRAM cost (fits MAX_SSH_CONNS=1 without TLS on a roomy chip)."
+    "DeterministicESPAsyncWebServer: DWS_ENABLE_SSH_ZLIB - the per-connection compression pool is ~80 KB (s2c deflate ~48 KB + the c2s 32 KB inflate window). Set DWS_SSH_ZLIB_IN_PSRAM=1 on a PSRAM board (S3 / P4 / WROVER, core built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, tools/psram/README.md), OR set DWS_SSH_ZLIB_ACK_DRAM=1 to accept the internal-DRAM cost (fits MAX_SSH_CONNS=1 without TLS on a roomy chip)."
 #endif
 #endif
 
