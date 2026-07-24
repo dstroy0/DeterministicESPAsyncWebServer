@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.100.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.100.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`f94fd20`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f94fd20a9151caebc9227ccaeba15ac30acaa48d))
+
+### Changes
+
+- Bump version: 7.99.0 → 7.100.0 ([`5346540`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5346540d8d54bc94ab4d3c8f62ca93e4a4fd914e))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f5db769`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5db7699be4e63a5d109360c3f4dc8e0da47233b))
+
+### Features
+
+- decode the ERP1 radio telegram (RORG/sender/status) ([`cb7cecd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb7cecd847145d4ba11fca94f2d46a77d14b0b20))
+
+</details>
+
 ## [7.99.0] - 2026-07-24
 
 <details>
