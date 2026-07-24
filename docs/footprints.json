@@ -500,7 +500,7 @@
     "example": "L7-Application/Euromap77",
     "flags": "-DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_EUROMAP77=1",
     "board": "esp32dev",
-    "flash_bytes": 768701,
+    "flash_bytes": 768733,
     "ram_bytes": 92276
   },
   "OPCUA+OPCUA_CLIENT": {
@@ -514,14 +514,14 @@
     "example": "L7-Application/Robotics",
     "flags": "-DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_ROBOTICS=1",
     "board": "esp32dev",
-    "flash_bytes": 768821,
+    "flash_bytes": 768853,
     "ram_bytes": 92468
   },
   "OPCUA+UMATI": {
     "example": "L7-Application/Umati",
     "flags": "-DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_UMATI=1",
     "board": "esp32dev",
-    "flash_bytes": 768445,
+    "flash_bytes": 768477,
     "ram_bytes": 92252
   },
   "OTA": {
@@ -864,8 +864,8 @@
     "example": "L7-Application/WebDav",
     "flags": "-DDWS_ENABLE_WEBDAV=1 -DMAX_CONNS=3 -DMAX_WS_CONNS=1 -DMAX_SSE_CONNS=1 -DMAX_ROUTES=8 -DDWS_WEBDAV_MAX_ENTRIES=8 -DDWS_WEBDAV_BUF_SIZE=1024",
     "board": "esp32dev",
-    "flash_bytes": 822901,
-    "ram_bytes": 90876
+    "flash_bytes": 824681,
+    "ram_bytes": 92348
   },
   "WEB_TERMINAL": {
     "example": "L6-Presentation/WebTerminal",

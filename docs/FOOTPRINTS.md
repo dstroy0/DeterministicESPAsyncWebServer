@@ -82,7 +82,7 @@ from each example's `pio ci` size report and aggregated into
 | `OPCUA+EUROMAP77`                                                                                         | L7-Application/Euromap77             | 750.7 KB (58.6%) | 90.1 KB (28.2%)  |
 | `OPCUA+OPCUA_CLIENT`                                                                                      | L7-Application/OpcUaClient           | 748.4 KB (58.5%) | 92.5 KB (28.9%)  |
 | `OPCUA+ROBOTICS`                                                                                          | L7-Application/Robotics              | 750.8 KB (58.7%) | 90.3 KB (28.2%)  |
-| `OPCUA+UMATI`                                                                                             | L7-Application/Umati                 | 750.4 KB (58.6%) | 90.1 KB (28.2%)  |
+| `OPCUA+UMATI`                                                                                             | L7-Application/Umati                 | 750.5 KB (58.6%) | 90.1 KB (28.2%)  |
 | `OTA`                                                                                                     | L7-Application/OTA                   | 741.1 KB (57.9%) | 99.8 KB (31.2%)  |
 | `OTA_ROLLBACK`                                                                                            | L7-Application/OtaRollback           | 736.7 KB (57.6%) | 79.9 KB (25.0%)  |
 | `PACKML`                                                                                                  | L7-Application/PackML                | 738.1 KB (57.7%) | 79.9 KB (25.0%)  |
@@ -131,7 +131,7 @@ from each example's `pio ci` size report and aggregated into
 | `VFS`                                                                                                     | L7-Application/Vfs                   | 778.3 KB (60.8%) | 84.3 KB (26.4%)  |
 | `VXI11`                                                                                                   | L7-Application/Vxi11                 | 709.2 KB (55.4%) | 43.2 KB (13.5%)  |
 | `WEBDAV`                                                                                                  | L7-Application/WebDav                | 801.8 KB (62.6%) | 102.9 KB (32.2%) |
-| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE`                                                               | L7-Application/WebDav                | 803.6 KB (62.8%) | 88.7 KB (27.7%)  |
+| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE`                                                               | L7-Application/WebDav                | 805.4 KB (62.9%) | 90.2 KB (28.2%)  |
 | `WEB_TERMINAL`                                                                                            | L6-Presentation/WebTerminal          | 740.4 KB (57.8%) | 80.0 KB (25.0%)  |
 | `WIFI_SNIFFER+PROMISC`                                                                                    | Peripherals/WifiSniffer              | 709.0 KB (55.4%) | 42.6 KB (13.3%)  |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS`                                                                             | L7-Application/WebSocketClient       | 811.8 KB (63.4%) | 117.7 KB (36.8%) |
