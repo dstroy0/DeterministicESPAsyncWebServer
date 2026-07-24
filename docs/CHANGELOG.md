@@ -19,6 +19,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`243887f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/243887f3c094ecba8316260fa9db4ec63a4d09ab))
+- update CHANGELOG.md [skip ci] ([`b7c0a44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7c0a444e287ef38e273e48ba2c89c7dbdc520aa))
 - update test report + coverage [skip ci] ([`2dd5df0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2dd5df071220624aafb847edcffebedbca36f54e))
 - update CHANGELOG.md [skip ci] ([`096d88f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/096d88fee42fdb0e9835ad01b75fc4cdc186cfb0))
 - update test report + coverage [skip ci] ([`dbb22f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dbb22f8170f4e14544e000b42048e5e83d956a7c))
@@ -71,6 +73,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- record SDMMC 4-bit throughput (20/40 MHz) on the SD board ([`e77937a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e77937a4ef0091164c5ee83b4e796cc443dd1e4d))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a969352`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a96935295f8acb9ab1f180f32641885ca47a98af))
 - update ESP32 build footprints [skip ci] ([`f2b9826`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2b98267d236ee45cc8888fce86e8bdcb2b9535d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dcb433b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dcb433b5ce064cfa641c3525c679e93c14a42374))
 - de-noise build configurator, rebuild flag graph, uniform feature tables ([`5545732`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55457325c2b2f0483b79928df6239e63aa365435))
@@ -95,6 +99,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- UBX (u-blox binary) and PTP (IEEE 1588) protocol codecs ([`42b78e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42b78e9c4748638178123b6cb37e40559830a584))
 - mirror src/ layout with per-feature CCOUNT + host benchmarks ([`ebcc8fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebcc8fcd967538b173fc3a488d4e72c317a397cc))
 - rebuild the DAQ/SCA suite into a full teaching + research platform ([`10592b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10592b07f22841479a60c655625d669e6e4f5337))
 - parameterized CRC engine ([`f461851`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f461851f2bcbd007e061b46712c9d9e852597243))
