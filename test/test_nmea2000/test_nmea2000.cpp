@@ -414,6 +414,38 @@ void test_decode_fluid_level()
     TEST_ASSERT_FALSE(dws_n2k_decode_fluid_level(nullptr, 8, &d));
 }
 
+void test_decode_actual_pressure()
+{
+    // sid 7, instance 0, atmospheric source, 101325 Pa (raw 1013250 = 0x000F7602 at 0.1 Pa/bit).
+    const uint8_t p[8] = {0x07, 0x00, DWS_N2K_PRESSURE_ATMOSPHERIC, 0x02, 0x76, 0x0F, 0x00, 0xFF};
+    N2kActualPressure d;
+    TEST_ASSERT_TRUE(dws_n2k_decode_actual_pressure(p, sizeof(p), &d));
+    TEST_ASSERT_EQUAL_UINT8(7, d.sid);
+    TEST_ASSERT_EQUAL_UINT8(0, d.instance);
+    TEST_ASSERT_EQUAL_UINT8(DWS_N2K_PRESSURE_ATMOSPHERIC, d.source);
+    TEST_ASSERT_TRUE(d.pressure_valid);
+    TEST_ASSERT_FLOAT_WITHIN(1.0f, 101325.0f, d.pressure_pa);
+
+    // instance 1, oil source, 250000 Pa (raw 2500000 = 0x002625A0).
+    const uint8_t o[8] = {0x03, 0x01, DWS_N2K_PRESSURE_OIL, 0xA0, 0x25, 0x26, 0x00, 0xFF};
+    TEST_ASSERT_TRUE(dws_n2k_decode_actual_pressure(o, sizeof(o), &d));
+    TEST_ASSERT_EQUAL_UINT8(1, d.instance);
+    TEST_ASSERT_EQUAL_UINT8(DWS_N2K_PRESSURE_OIL, d.source);
+    TEST_ASSERT_TRUE(d.pressure_valid);
+    TEST_ASSERT_FLOAT_WITHIN(1.0f, 250000.0f, d.pressure_pa);
+
+    // A 0x7FFFFFFF pressure is not-available; the source still decodes.
+    const uint8_t na[8] = {0x07, 0x00, DWS_N2K_PRESSURE_WATER, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF};
+    TEST_ASSERT_TRUE(dws_n2k_decode_actual_pressure(na, sizeof(na), &d));
+    TEST_ASSERT_EQUAL_UINT8(DWS_N2K_PRESSURE_WATER, d.source);
+    TEST_ASSERT_FALSE(d.pressure_valid);
+
+    // The trailing reserved octet is optional (7 suffice); a shorter payload + nulls are rejected.
+    TEST_ASSERT_TRUE(dws_n2k_decode_actual_pressure(p, 7, &d));
+    TEST_ASSERT_FALSE(dws_n2k_decode_actual_pressure(p, 6, &d));
+    TEST_ASSERT_FALSE(dws_n2k_decode_actual_pressure(nullptr, 8, &d));
+}
+
 void test_decode_attitude()
 {
     // sid 5, yaw 0.5236 rad (raw 5236), pitch 0.1 rad (raw 1000), roll -0.2 rad (raw -2000).
@@ -620,6 +652,7 @@ int main()
     RUN_TEST(test_decode_temperature);
     RUN_TEST(test_decode_battery_status);
     RUN_TEST(test_decode_fluid_level);
+    RUN_TEST(test_decode_actual_pressure);
     RUN_TEST(test_decode_attitude);
     RUN_TEST(test_decode_rudder);
     RUN_TEST(test_decode_wind_data);

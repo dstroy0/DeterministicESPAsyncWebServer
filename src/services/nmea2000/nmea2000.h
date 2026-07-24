@@ -370,6 +370,34 @@ struct N2kFluidLevel
  */
 bool dws_n2k_decode_fluid_level(const uint8_t *payload, size_t len, N2kFluidLevel *out);
 
+// Pressure source (PGN 130314 byte 2).
+#define DWS_N2K_PRESSURE_ATMOSPHERIC 0
+#define DWS_N2K_PRESSURE_WATER 1
+#define DWS_N2K_PRESSURE_STEAM 2
+#define DWS_N2K_PRESSURE_COMPRESSED_AIR 3
+#define DWS_N2K_PRESSURE_HYDRAULIC 4
+#define DWS_N2K_PRESSURE_FILTER 5
+#define DWS_N2K_PRESSURE_ALTIMETER_SETTING 6
+#define DWS_N2K_PRESSURE_OIL 7
+#define DWS_N2K_PRESSURE_FUEL 8
+
+/** @brief Decoded Actual Pressure (PGN 130314): a measured pressure from one of several sources. */
+struct N2kActualPressure
+{
+    uint8_t sid;         ///< sequence id (correlates related messages)
+    uint8_t instance;    ///< pressure instance
+    uint8_t source;      ///< pressure source (DWS_N2K_PRESSURE_*)
+    bool pressure_valid; ///< false when the raw pressure is in the not-available range
+    float pressure_pa;   ///< measured pressure (Pa, 0.1 Pa/bit, signed)
+};
+
+/**
+ * @brief Decode an Actual Pressure (PGN 130314) payload into @p out: SID + instance + source + pressure
+ *        (4, signed, 0.1 Pa/bit). The trailing reserved octet is not required.
+ * @return true iff @p len is at least 7 octets (SID + instance + source + pressure); false otherwise.
+ */
+bool dws_n2k_decode_actual_pressure(const uint8_t *payload, size_t len, N2kActualPressure *out);
+
 /**
  * @brief Decode a Wind Data (PGN 130306) payload into @p out.
  * @return true iff @p len is at least 6 octets; false otherwise.

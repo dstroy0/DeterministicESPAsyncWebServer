@@ -235,6 +235,19 @@ bool dws_n2k_decode_fluid_level(const uint8_t *payload, size_t len, N2kFluidLeve
     return true;
 }
 
+bool dws_n2k_decode_actual_pressure(const uint8_t *payload, size_t len, N2kActualPressure *out)
+{
+    if (!payload || !out || len < 7) // sid(1) + instance(1) + source(1) + pressure(4)
+        return false;
+    out->sid = payload[0];
+    out->instance = payload[1];
+    out->source = payload[2];
+    int32_t p = rd_i32le(payload + 3); // 0.1 Pa per bit, signed (0x7FFFFFFF = not available)
+    out->pressure_valid = (p != (int32_t)0x7FFFFFFF);
+    out->pressure_pa = (float)p * 0.1f;
+    return true;
+}
+
 bool dws_n2k_decode_rudder(const uint8_t *payload, size_t len, N2kRudder *out)
 {
     if (!payload || !out || len < 6) // instance(1) + direction(1) + angle order(2) + position(2)
