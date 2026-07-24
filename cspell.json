@@ -1484,7 +1484,8 @@
     "neighbour",
     "timeutc",
     "PDOP",
-    "VDOP"
+    "VDOP",
+    "bitfields"
   ],
   "ignorePaths": [
     "node_modules/**",

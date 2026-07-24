@@ -234,6 +234,45 @@ bool dws_n2k_decode_attitude(const uint8_t *payload, size_t len, N2kAttitude *ou
     return true;
 }
 
+bool dws_n2k_decode_engine_dynamic(const uint8_t *payload, size_t len, N2kEngineDynamic *out)
+{
+    if (!payload || !out || len < 26)
+        return false;
+    out->instance = payload[0];
+    uint16_t oilp = rd_u16le(payload + 1); // 100 Pa per bit
+    out->oil_pressure_valid = (oilp != 0xFFFFu);
+    out->oil_pressure_pa = (float)oilp * 100.0f;
+    uint16_t oilt = rd_u16le(payload + 3); // 0.1 K per bit
+    out->oil_temp_valid = (oilt != 0xFFFFu);
+    out->oil_temp_c = (float)oilt * 0.1f - 273.15f;
+    uint16_t clt = rd_u16le(payload + 5); // 0.01 K per bit
+    out->coolant_temp_valid = (clt != 0xFFFFu);
+    out->coolant_temp_c = (float)clt * 0.01f - 273.15f;
+    int16_t alt = rd_i16le(payload + 7); // 0.01 V per bit, signed
+    out->alt_voltage_valid = ((uint16_t)alt != 0x7FFFu);
+    out->alt_voltage_v = (float)alt * 0.01f;
+    int16_t fr = rd_i16le(payload + 9); // 0.1 L/h per bit, signed
+    out->fuel_rate_valid = ((uint16_t)fr != 0x7FFFu);
+    out->fuel_rate_lph = (float)fr * 0.1f;
+    uint32_t hrs = rd_u32le(payload + 11); // 1 s per bit
+    out->engine_hours_valid = (hrs != 0xFFFFFFFFu);
+    out->engine_hours_s = hrs;
+    uint16_t clp = rd_u16le(payload + 15); // 100 Pa per bit
+    out->coolant_pressure_valid = (clp != 0xFFFFu);
+    out->coolant_pressure_pa = (float)clp * 100.0f;
+    uint16_t fp = rd_u16le(payload + 17); // 1000 Pa per bit
+    out->fuel_pressure_valid = (fp != 0xFFFFu);
+    out->fuel_pressure_pa = (float)fp * 1000.0f;
+    // payload[19] is reserved
+    out->discrete_status_1 = rd_u16le(payload + 20);
+    out->discrete_status_2 = rd_u16le(payload + 22);
+    out->load_valid = (payload[24] != 0x7Fu); // signed 1-octet, 0x7F = not-available
+    out->load_pct = (int8_t)payload[24];
+    out->torque_valid = (payload[25] != 0x7Fu);
+    out->torque_pct = (int8_t)payload[25];
+    return true;
+}
+
 bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *out)
 {
     if (!payload || !out || len < 6)

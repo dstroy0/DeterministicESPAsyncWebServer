@@ -410,6 +410,54 @@ void test_decode_rudder()
     TEST_ASSERT_FALSE(dws_n2k_decode_rudder(nullptr, 8, &d));
 }
 
+void test_decode_engine_dynamic()
+{
+    // A reassembled 26-octet engine record: oil 3.0 bar (raw 3000), oil 90.05 C (raw 3632), coolant 90.0 C
+    // (raw 36315), alternator 14.0 V (raw 1400), fuel 25.0 L/h (raw 250), 100 h (raw 360000 s), coolant 1.0
+    // bar (raw 1000), fuel 3.0 bar (raw 300), discrete 1 = 0x0001, load 75 %, torque -10 %.
+    const uint8_t e[26] = {0x00, 0xB8, 0x0B, 0x30, 0x0E, 0xDB, 0x8D, 0x78, 0x05, 0xFA, 0x00, 0x40, 0x7E,
+                           0x05, 0x00, 0xE8, 0x03, 0x2C, 0x01, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x4B, 0xF6};
+    N2kEngineDynamic d;
+    TEST_ASSERT_TRUE(dws_n2k_decode_engine_dynamic(e, sizeof(e), &d));
+    TEST_ASSERT_EQUAL_UINT8(0, d.instance);
+    TEST_ASSERT_TRUE(d.oil_pressure_valid);
+    TEST_ASSERT_FLOAT_WITHIN(1.0f, 300000.0f, d.oil_pressure_pa);
+    TEST_ASSERT_TRUE(d.oil_temp_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.06f, 90.05f, d.oil_temp_c);
+    TEST_ASSERT_TRUE(d.coolant_temp_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.02f, 90.0f, d.coolant_temp_c);
+    TEST_ASSERT_TRUE(d.alt_voltage_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 14.0f, d.alt_voltage_v);
+    TEST_ASSERT_TRUE(d.fuel_rate_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, 25.0f, d.fuel_rate_lph);
+    TEST_ASSERT_TRUE(d.engine_hours_valid);
+    TEST_ASSERT_EQUAL_UINT32(360000u, d.engine_hours_s); // 100 hours
+    TEST_ASSERT_TRUE(d.coolant_pressure_valid);
+    TEST_ASSERT_FLOAT_WITHIN(1.0f, 100000.0f, d.coolant_pressure_pa);
+    TEST_ASSERT_TRUE(d.fuel_pressure_valid);
+    TEST_ASSERT_FLOAT_WITHIN(1.0f, 300000.0f, d.fuel_pressure_pa);
+    TEST_ASSERT_EQUAL_HEX16(0x0001, d.discrete_status_1);
+    TEST_ASSERT_EQUAL_HEX16(0x0000, d.discrete_status_2);
+    TEST_ASSERT_TRUE(d.load_valid);
+    TEST_ASSERT_EQUAL_INT8(75, d.load_pct);
+    TEST_ASSERT_TRUE(d.torque_valid);
+    TEST_ASSERT_EQUAL_INT8(-10, d.torque_pct); // signed
+
+    // A not-available oil pressure clears just that flag; a 0x7F torque is not-available.
+    uint8_t na[26];
+    memcpy(na, e, sizeof(na));
+    na[1] = 0xFF;
+    na[2] = 0xFF;  // oil pressure not-available
+    na[25] = 0x7F; // torque not-available
+    TEST_ASSERT_TRUE(dws_n2k_decode_engine_dynamic(na, sizeof(na), &d));
+    TEST_ASSERT_FALSE(d.oil_pressure_valid);
+    TEST_ASSERT_TRUE(d.oil_temp_valid);
+    TEST_ASSERT_FALSE(d.torque_valid);
+    // Short payload + nulls are rejected (this is a Fast Packet PGN; the body must be complete).
+    TEST_ASSERT_FALSE(dws_n2k_decode_engine_dynamic(e, 25, &d));
+    TEST_ASSERT_FALSE(dws_n2k_decode_engine_dynamic(nullptr, 26, &d));
+}
+
 void test_decode_wind_data()
 {
     // sid 0x2A, speed 5.00 m/s (raw 500), angle 1.5708 rad (raw 15708), reference apparent.
@@ -514,6 +562,7 @@ int main()
     RUN_TEST(test_decode_position_rapid);
     RUN_TEST(test_decode_cog_sog_rapid);
     RUN_TEST(test_decode_engine_rapid);
+    RUN_TEST(test_decode_engine_dynamic);
     RUN_TEST(test_decode_temperature);
     RUN_TEST(test_decode_attitude);
     RUN_TEST(test_decode_rudder);

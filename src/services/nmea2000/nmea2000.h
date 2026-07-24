@@ -91,6 +91,7 @@ bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t
 #define N2K_PGN_POSITION_RAPID 129025u ///< Position, Rapid Update: latitude + longitude
 #define N2K_PGN_COG_SOG_RAPID 129026u  ///< COG & SOG, Rapid Update: course + speed over ground
 #define N2K_PGN_ENGINE_RAPID 127488u   ///< Engine Parameters, Rapid Update: speed + boost + tilt/trim
+#define N2K_PGN_ENGINE_DYNAMIC 127489u ///< Engine Parameters, Dynamic: oil / coolant / hours / load / ...
 #define N2K_PGN_WIND_DATA 130306u      ///< Wind Data: speed + angle + reference
 #define N2K_PGN_SPEED 128259u          ///< Speed: water-referenced + ground-referenced speed
 #define N2K_PGN_WATER_DEPTH 128267u    ///< Water Depth: depth below transducer + offset
@@ -201,6 +202,35 @@ struct N2kTemperature
     float set_c;       ///< set / target temperature (degrees Celsius)
 };
 
+/** @brief Decoded Engine Parameters, Dynamic (PGN 127489): the full engine-monitoring picture. Each measured
+ *  field clears its validity flag for a not-available raw; the two discrete-status words are raw bitfields. */
+struct N2kEngineDynamic
+{
+    uint8_t instance; ///< engine instance
+    bool oil_pressure_valid;
+    float oil_pressure_pa; ///< engine oil pressure (Pa, 100 Pa per bit)
+    bool oil_temp_valid;
+    float oil_temp_c; ///< engine oil temperature (degrees Celsius; 0.1 K/bit on the wire)
+    bool coolant_temp_valid;
+    float coolant_temp_c; ///< engine coolant temperature (degrees Celsius; 0.01 K/bit on the wire)
+    bool alt_voltage_valid;
+    float alt_voltage_v; ///< alternator potential (V, 0.01 V per bit, signed)
+    bool fuel_rate_valid;
+    float fuel_rate_lph; ///< fuel rate (L/h, 0.1 L/h per bit, signed)
+    bool engine_hours_valid;
+    uint32_t engine_hours_s; ///< total engine hours (seconds, 1 s per bit)
+    bool coolant_pressure_valid;
+    float coolant_pressure_pa; ///< coolant pressure (Pa, 100 Pa per bit)
+    bool fuel_pressure_valid;
+    float fuel_pressure_pa;     ///< fuel pressure (Pa, 1000 Pa per bit)
+    uint16_t discrete_status_1; ///< discrete status 1 (raw bitfield)
+    uint16_t discrete_status_2; ///< discrete status 2 (raw bitfield)
+    bool load_valid;
+    int8_t load_pct; ///< percent engine load (%, 1 %/bit, signed)
+    bool torque_valid;
+    int8_t torque_pct; ///< percent engine torque (%, 1 %/bit, signed)
+};
+
 /** @brief Decoded Wind Data (PGN 130306). */
 struct N2kWindData
 {
@@ -267,6 +297,13 @@ bool dws_n2k_decode_cog_sog_rapid(const uint8_t *payload, size_t len, N2kCogSogR
  * @return true iff @p len is at least 6 octets (instance + speed + boost + tilt); false otherwise.
  */
 bool dws_n2k_decode_engine_rapid(const uint8_t *payload, size_t len, N2kEngineRapid *out);
+
+/**
+ * @brief Decode an Engine Parameters Dynamic (PGN 127489) payload into @p out. This is a Fast Packet PGN, so
+ *        @p payload is the reassembled message body.
+ * @return true iff @p len is at least 26 octets (the full engine-parameters record); false otherwise.
+ */
+bool dws_n2k_decode_engine_dynamic(const uint8_t *payload, size_t len, N2kEngineDynamic *out);
 
 /**
  * @brief Decode a Rudder (PGN 127245) payload into @p out.
