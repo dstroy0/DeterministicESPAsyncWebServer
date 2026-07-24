@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5161 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5162 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -58050,7 +58050,7 @@ A thorough directory of all **5161 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_wamp (22 tests)</b></summary>
+<summary><b>test_wamp (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_hello</b> &mdash; <i>Build hello</i></summary>
@@ -58109,6 +58109,16 @@ A thorough directory of all **5161 test cases** across **291 suites**. Expand a 
       * <code>Assert equal string ("[34,85346237,5512315355]", buf)</code>
       * <code>TEST_ASSERT_GREATER_THAN(</code>
       * <code>Assert equal string ("[6,{\\"message\\":\\"bye\\"},\\"wamp.close.goodbye_and_out\\"]", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_unregister</b> &mdash; <i>The canonical WAMP UNREGISTER example: [66, 788923562, 2103333224].</i></summary>
+
+    * **Objective**: The canonical WAMP UNREGISTER example: [66, 788923562, 2103333224].
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)dws_wamp_build_unregister(buf, sizeof(buf), 788923562, 2103333224ULL))</code>
+      * <code>Assert equal string ("[66,788923562,2103333224]", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wamp_build_unregister(nullptr, sizeof(buf), 1, 2)); // null buffer fails closed</code>
   </details>
 
   <details style="margin-left: 20px;">
