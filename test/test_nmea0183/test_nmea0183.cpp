@@ -205,6 +205,71 @@ void test_nmea0183_field_helpers_more_guards()
     TEST_ASSERT_FALSE(dws_nmea0183_field_int(&m, 0, nullptr));        // null out
 }
 
+// The classic textbook RMC (23 Mar 1994, 22.4 kn, course 84.4).
+static const char *RMC = "$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A\r\n";
+
+void test_decode_gga()
+{
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(GGA, strlen(GGA), &m));
+    DwsNmeaGga g;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_gga(&m, &g));
+    TEST_ASSERT_EQUAL_UINT8(12, g.hour);
+    TEST_ASSERT_EQUAL_UINT8(35, g.minute);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 19.0f, g.second);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 48.1173f, (float)g.lat_deg);   // 4807.038 N
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 11.516667f, (float)g.lon_deg); // 01131.000 E
+    TEST_ASSERT_EQUAL_UINT8(1, g.fix_quality);
+    TEST_ASSERT_EQUAL_UINT8(8, g.num_sats);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.9f, g.hdop);
+    TEST_ASSERT_FLOAT_WITHIN(0.1f, 545.4f, g.alt_m);
+}
+
+void test_decode_rmc()
+{
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(RMC, strlen(RMC), &m));
+    DwsNmeaRmc r;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_rmc(&m, &r));
+    TEST_ASSERT_TRUE(r.valid); // status 'A'
+    TEST_ASSERT_EQUAL_UINT8(12, r.hour);
+    TEST_ASSERT_EQUAL_UINT8(35, r.minute);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 48.1173f, (float)r.lat_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.0005f, 11.516667f, (float)r.lon_deg);
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, 22.4f, r.speed_knots);
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, 84.4f, r.course_deg);
+    TEST_ASSERT_EQUAL_UINT8(23, r.day);
+    TEST_ASSERT_EQUAL_UINT8(3, r.month);
+    TEST_ASSERT_EQUAL_UINT8(94, r.year);
+
+    // A southern/western hemisphere sentence flips the coordinate signs, and a 'V' status is decoded as
+    // invalid (but still parses). Build it so the checksum is correct.
+    char buf[96];
+    size_t bn = dws_nmea0183_build(buf, sizeof(buf), "GPRMC,000000,V,3345.678,S,15112.345,W,000.0,000.0,010100,,");
+    TEST_ASSERT_TRUE(bn > 0);
+    Nmea0183 m2;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, bn, &m2));
+    DwsNmeaRmc r2;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_rmc(&m2, &r2));
+    TEST_ASSERT_FALSE(r2.valid);
+    TEST_ASSERT_TRUE(r2.lat_deg < 0.0); // S -> negative
+    TEST_ASSERT_TRUE(r2.lon_deg < 0.0); // W -> negative
+}
+
+void test_decode_type_mismatch()
+{
+    Nmea0183 m;
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    DwsNmeaRmc r;
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_rmc(&m, &r)); // a GGA is not an RMC
+    DwsNmeaGga g;
+    dws_nmea0183_parse(RMC, strlen(RMC), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_gga(&m, &g)); // an RMC is not a GGA
+    // Null guards.
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_gga(nullptr, &g));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_gga(&m, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -221,5 +286,8 @@ int main()
     RUN_TEST(test_nmea0183_parse_scan_edges);
     RUN_TEST(test_nmea0183_field_overflow_and_short_address);
     RUN_TEST(test_nmea0183_field_helpers_more_guards);
+    RUN_TEST(test_decode_gga);
+    RUN_TEST(test_decode_rmc);
+    RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }

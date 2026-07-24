@@ -61,5 +61,49 @@ bool dws_nmea0183_field_float(const Nmea0183 *m, uint8_t idx, float *out);
 /** @brief Decode field @p idx as a long integer (false if absent / empty / non-numeric). */
 bool dws_nmea0183_field_int(const Nmea0183 *m, uint8_t idx, long *out);
 
+// -- typed decoders for the two common GPS position sentences --
+//
+// These lift a parsed sentence (dws_nmea0183_parse) into a position struct: the ddmm.mmmm coordinates
+// become signed decimal degrees (hemisphere-adjusted), and the hhmmss.ss / ddmmyy fields split into their
+// components. Coordinates are read through the float field helper, so their precision is float's (~1 m).
+
+/** @brief Decoded GGA (fix data). */
+struct DwsNmeaGga
+{
+    uint8_t hour, minute; ///< UTC time of the fix
+    float second;
+    double lat_deg;      ///< latitude in signed decimal degrees (+ N, - S); 0 if absent
+    double lon_deg;      ///< longitude in signed decimal degrees (+ E, - W); 0 if absent
+    uint8_t fix_quality; ///< 0 = no fix, 1 = GPS, 2 = DGPS, ... (field 6)
+    uint8_t num_sats;    ///< satellites used in the fix
+    float hdop;          ///< horizontal dilution of precision
+    float alt_m;         ///< altitude above mean sea level (metres)
+};
+
+/** @brief Decoded RMC (recommended minimum: position + velocity + date). */
+struct DwsNmeaRmc
+{
+    bool valid;           ///< true when the status field is 'A' (data valid), false for 'V' (warning)
+    uint8_t hour, minute; ///< UTC time
+    float second;
+    uint8_t day, month, year; ///< UTC date (year is the 2-digit field value, 0..99)
+    double lat_deg;           ///< latitude in signed decimal degrees
+    double lon_deg;           ///< longitude in signed decimal degrees
+    float speed_knots;        ///< speed over ground (knots)
+    float course_deg;         ///< course over ground (degrees true)
+};
+
+/**
+ * @brief Decode a parsed GGA sentence into @p out. @return true iff @p m is a GGA sentence with enough
+ *        fields; false (and @p out untouched) otherwise. Empty optional fields read back as 0.
+ */
+bool dws_nmea0183_parse_gga(const Nmea0183 *m, DwsNmeaGga *out);
+
+/**
+ * @brief Decode a parsed RMC sentence into @p out. @return true iff @p m is an RMC sentence with enough
+ *        fields; false otherwise. @c valid reflects the A/V status field (a 'V' sentence still decodes).
+ */
+bool dws_nmea0183_parse_rmc(const Nmea0183 *m, DwsNmeaRmc *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

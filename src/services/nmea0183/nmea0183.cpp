@@ -156,4 +156,83 @@ bool dws_nmea0183_field_int(const Nmea0183 *m, uint8_t idx, long *out)
     return true;
 }
 
+// ddmm.mmmm + a hemisphere char -> signed decimal degrees (float precision on the raw field).
+static double nmea_coord(float ddmm, char hemi)
+{
+    int deg = (int)(ddmm / 100.0f);
+    double dec = (double)deg + ((double)ddmm - (double)deg * 100.0) / 60.0;
+    if (hemi == 'S' || hemi == 's' || hemi == 'W' || hemi == 'w')
+        dec = -dec;
+    return dec;
+}
+
+// Split an hhmmss.ss time field into hour / minute / second (all 0 on a too-short field).
+static void nmea_time(const Nmea0183 *m, uint8_t idx, uint8_t *h, uint8_t *mi, float *s)
+{
+    *h = 0;
+    *mi = 0;
+    *s = 0.0f;
+    if (idx >= m->field_count || m->field_len[idx] < 6)
+        return;
+    const char *f = m->fields[idx];
+    *h = (uint8_t)((f[0] - '0') * 10 + (f[1] - '0'));
+    *mi = (uint8_t)((f[2] - '0') * 10 + (f[3] - '0'));
+    const char *end = f + 4;
+    *s = dws_strtof(f + 4, &end); // ss.ss, stopped at the ',' / '*' delimiter
+}
+
+// Split a ddmmyy date field into day / month / (2-digit) year.
+static void nmea_date(const Nmea0183 *m, uint8_t idx, uint8_t *d, uint8_t *mo, uint8_t *y)
+{
+    *d = 0;
+    *mo = 0;
+    *y = 0;
+    if (idx >= m->field_count || m->field_len[idx] < 6)
+        return;
+    const char *f = m->fields[idx];
+    *d = (uint8_t)((f[0] - '0') * 10 + (f[1] - '0'));
+    *mo = (uint8_t)((f[2] - '0') * 10 + (f[3] - '0'));
+    *y = (uint8_t)((f[4] - '0') * 10 + (f[5] - '0'));
+}
+
+bool dws_nmea0183_parse_gga(const Nmea0183 *m, DwsNmeaGga *out)
+{
+    if (!m || !out || strcmp(m->type, "GGA") != 0 || m->field_count < 10) // need through altitude (field 9)
+        return false;
+    memset(out, 0, sizeof(*out));
+    nmea_time(m, 1, &out->hour, &out->minute, &out->second);
+    float lat = 0.0f, lon = 0.0f;
+    if (dws_nmea0183_field_float(m, 2, &lat) && m->field_len[3] >= 1)
+        out->lat_deg = nmea_coord(lat, m->fields[3][0]);
+    if (dws_nmea0183_field_float(m, 4, &lon) && m->field_len[5] >= 1)
+        out->lon_deg = nmea_coord(lon, m->fields[5][0]);
+    long q = 0;
+    if (dws_nmea0183_field_int(m, 6, &q))
+        out->fix_quality = (uint8_t)q;
+    long ns = 0;
+    if (dws_nmea0183_field_int(m, 7, &ns))
+        out->num_sats = (uint8_t)ns;
+    dws_nmea0183_field_float(m, 8, &out->hdop);  // stays 0 if empty (out was zeroed)
+    dws_nmea0183_field_float(m, 9, &out->alt_m); // altitude MSL, field 10 is the 'M' unit
+    return true;
+}
+
+bool dws_nmea0183_parse_rmc(const Nmea0183 *m, DwsNmeaRmc *out)
+{
+    if (!m || !out || strcmp(m->type, "RMC") != 0 || m->field_count < 10) // need through date (field 9)
+        return false;
+    memset(out, 0, sizeof(*out));
+    nmea_time(m, 1, &out->hour, &out->minute, &out->second);
+    out->valid = (m->field_len[2] >= 1 && (m->fields[2][0] == 'A' || m->fields[2][0] == 'a'));
+    float lat = 0.0f, lon = 0.0f;
+    if (dws_nmea0183_field_float(m, 3, &lat) && m->field_len[4] >= 1)
+        out->lat_deg = nmea_coord(lat, m->fields[4][0]);
+    if (dws_nmea0183_field_float(m, 5, &lon) && m->field_len[6] >= 1)
+        out->lon_deg = nmea_coord(lon, m->fields[6][0]);
+    dws_nmea0183_field_float(m, 7, &out->speed_knots);
+    dws_nmea0183_field_float(m, 8, &out->course_deg);
+    nmea_date(m, 9, &out->day, &out->month, &out->year);
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183

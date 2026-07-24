@@ -1478,7 +1478,9 @@
     "plaintexts",
     "reasm",
     "pdelay",
-    "pseudorange"
+    "pseudorange",
+    "ddmm",
+    "HDOP"
   ],
   "ignorePaths": [
     "node_modules/**",
