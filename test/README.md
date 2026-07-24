@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5070 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5072 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -28814,7 +28814,7 @@ A thorough directory of all **5070 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (16 tests)</b></summary>
+<summary><b>test_nmea0183 (18 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -29008,6 +29008,45 @@ A thorough directory of all **5070 test cases** across **290 suites**. Expand a 
       * <code>Assert false (r2.valid)</code>
       * <code>Assert true (r2.lat_deg &lt; 0.0)</code>
       * <code>Assert true (r2.lon_deg &lt; 0.0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_gsv</b> &mdash; <i>Classic GSV: 3 sentences, this is #1, 11 satellites in view, 4 satellite records.</i></summary>
+
+    * **Objective**: Classic GSV: 3 sentences, this is #1, 11 satellites in view, 4 satellite records.
+    * **Assertions**:
+      * <code>Assert true (dws_nmea0183_parse(gsv, strlen(gsv), &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_gsv(&m, &g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, g.total_msgs);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g.msg_num);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(11, g.sats_in_view);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, g.sat_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, g.sats[0].prn);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(3, g.sats[0].elev_deg);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(111, g.sats[0].azim_deg);</code>
+      * <code>Assert true (g.sats[0].snr_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, g.sats[0].snr_db);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(13, g.sats[3].prn);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(292, g.sats[3].azim_deg);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_gsv_blank_snr_and_partial</b> &mdash; <i>A single-satellite GSV whose SNR field is blank (in view, not tracked).</i></summary>
+
+    * **Objective**: A single-satellite GSV whose SNR field is blank (in view, not tracked).
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_gsv(&m, &g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, g.sat_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, g.sats[0].prn);</code>
+      * <code>Assert false (g.sats[0].snr_valid)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_gsv(&m, &g))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, g.sat_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(32, g.sats[2].prn);</code>
+      * <code>Assert true (g.sats[2].snr_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(36, g.sats[2].snr_db);</code>
   </details>
 
   <details style="margin-left: 20px;">
