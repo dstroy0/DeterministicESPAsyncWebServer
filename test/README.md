@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5156 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5157 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -3011,7 +3011,7 @@ A thorough directory of all **5156 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_bacnet (15 tests)</b></summary>
+<summary><b>test_bacnet (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_bacnet_guards_and_truncations</b> &mdash; <i>Bacnet guards and truncations</i></summary>
@@ -3228,6 +3228,22 @@ A thorough directory of all **5156 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(buf, sizeof(buf), 0, 0x400000, true)); // &gt; BACNET_MAX_INSTANCE</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(nullptr, sizeof(buf), 0, 0, false));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(buf, 1, 0, 0, false)); // needs 2</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_apdu_build_i_am</b> &mdash; <i>I-Am for Device 260, max APDU 1476, no-segmentation (3), vendor 42.</i></summary>
+
+    * **Objective**: I-Am for Device 260, max APDU 1476, no-segmentation (3), vendor 42.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+      * <code>Assert true (dws_apdu_parse(buf, n, &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_UNCONFIRMED_REQUEST, a.pdu_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_SVC_UN_I_AM, a.service_choice);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(buf, sizeof(buf), 0x400000, 480, 3, 1)); // &gt; BACNET_MAX_INSTANCE</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(buf, sizeof(buf), 1, 480, 4, 1));        // segmentation &gt; 3</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(nullptr, sizeof(buf), 1, 480, 3, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_i_am(buf, 8, 260, 1476, 3, 42)); // does not fit</code>
   </details>
 
 </details>
