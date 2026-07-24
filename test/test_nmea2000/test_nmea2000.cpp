@@ -388,6 +388,32 @@ void test_decode_battery_status()
     TEST_ASSERT_FALSE(dws_n2k_decode_battery_status(nullptr, 8, &d));
 }
 
+void test_decode_fluid_level()
+{
+    // instance 2, fuel (type 0) -> byte0 0x02; level 75% (raw 18750 = 0x493E); capacity 200 L (raw 2000 = 0x07D0).
+    const uint8_t b[8] = {0x02, 0x3E, 0x49, 0xD0, 0x07, 0x00, 0x00, 0xFF};
+    N2kFluidLevel d;
+    TEST_ASSERT_TRUE(dws_n2k_decode_fluid_level(b, sizeof(b), &d));
+    TEST_ASSERT_EQUAL_UINT8(2, d.instance);
+    TEST_ASSERT_EQUAL_UINT8(DWS_N2K_FLUID_FUEL, d.fluid_type);
+    TEST_ASSERT_TRUE(d.level_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 75.0f, d.level_pct);
+    TEST_ASSERT_TRUE(d.capacity_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.1f, 200.0f, d.capacity_l);
+
+    // The fluid type rides the high nibble: instance 3, water (type 1) -> byte0 0x13.
+    const uint8_t w[8] = {0x13, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // level 0x7FFF n/a, capacity 0xFFFFFFFF n/a
+    TEST_ASSERT_TRUE(dws_n2k_decode_fluid_level(w, sizeof(w), &d));
+    TEST_ASSERT_EQUAL_UINT8(3, d.instance);
+    TEST_ASSERT_EQUAL_UINT8(DWS_N2K_FLUID_WATER, d.fluid_type);
+    TEST_ASSERT_FALSE(d.level_valid);
+    TEST_ASSERT_FALSE(d.capacity_valid);
+
+    // Short payload + nulls are rejected.
+    TEST_ASSERT_FALSE(dws_n2k_decode_fluid_level(b, 6, &d));
+    TEST_ASSERT_FALSE(dws_n2k_decode_fluid_level(nullptr, 8, &d));
+}
+
 void test_decode_attitude()
 {
     // sid 5, yaw 0.5236 rad (raw 5236), pitch 0.1 rad (raw 1000), roll -0.2 rad (raw -2000).
@@ -593,6 +619,7 @@ int main()
     RUN_TEST(test_decode_engine_dynamic);
     RUN_TEST(test_decode_temperature);
     RUN_TEST(test_decode_battery_status);
+    RUN_TEST(test_decode_fluid_level);
     RUN_TEST(test_decode_attitude);
     RUN_TEST(test_decode_rudder);
     RUN_TEST(test_decode_wind_data);

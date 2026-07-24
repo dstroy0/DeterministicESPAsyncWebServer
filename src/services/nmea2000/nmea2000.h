@@ -344,6 +344,32 @@ struct N2kBatteryStatus
  */
 bool dws_n2k_decode_battery_status(const uint8_t *payload, size_t len, N2kBatteryStatus *out);
 
+// Fluid / tank type (PGN 127505 byte 0, high nibble).
+#define DWS_N2K_FLUID_FUEL 0
+#define DWS_N2K_FLUID_WATER 1
+#define DWS_N2K_FLUID_GRAY_WATER 2
+#define DWS_N2K_FLUID_LIVE_WELL 3
+#define DWS_N2K_FLUID_OIL 4
+#define DWS_N2K_FLUID_BLACK_WATER 5
+
+/** @brief Decoded Fluid Level (PGN 127505): a tank's fill level and total capacity. */
+struct N2kFluidLevel
+{
+    uint8_t instance;   ///< tank instance (0..15)
+    uint8_t fluid_type; ///< fluid / tank type (DWS_N2K_FLUID_*)
+    bool level_valid;   ///< false when the raw level is in the not-available range
+    float level_pct;    ///< tank level as a percentage full (0.004 %/bit)
+    bool capacity_valid;
+    float capacity_l; ///< total tank capacity (litres, 0.1 L/bit)
+};
+
+/**
+ * @brief Decode a Fluid Level (PGN 127505) payload into @p out: the instance + fluid type (packed in byte 0),
+ *        the level (2, signed, 0.004 %) and the total capacity (4, unsigned, 0.1 L).
+ * @return true iff @p len is at least 7 octets; false otherwise.
+ */
+bool dws_n2k_decode_fluid_level(const uint8_t *payload, size_t len, N2kFluidLevel *out);
+
 /**
  * @brief Decode a Wind Data (PGN 130306) payload into @p out.
  * @return true iff @p len is at least 6 octets; false otherwise.

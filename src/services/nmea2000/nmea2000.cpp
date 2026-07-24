@@ -220,6 +220,21 @@ bool dws_n2k_decode_battery_status(const uint8_t *payload, size_t len, N2kBatter
     return true;
 }
 
+bool dws_n2k_decode_fluid_level(const uint8_t *payload, size_t len, N2kFluidLevel *out)
+{
+    if (!payload || !out || len < 7) // instance/type(1) + level(2) + capacity(4)
+        return false;
+    out->instance = (uint8_t)(payload[0] & 0x0F);          // instance in the low nibble
+    out->fluid_type = (uint8_t)((payload[0] >> 4) & 0x0F); // fluid type in the high nibble
+    int16_t lv = rd_i16le(payload + 1);                    // 0.004 % per bit, signed (0x7FFF = not available)
+    out->level_valid = (lv != (int16_t)0x7FFF);
+    out->level_pct = (float)lv * 0.004f;
+    uint32_t cap = rd_u32le(payload + 3); // 0.1 L per bit, unsigned (0xFFFFFFFF = not available)
+    out->capacity_valid = (cap != 0xFFFFFFFFu);
+    out->capacity_l = (float)cap * 0.1f;
+    return true;
+}
+
 bool dws_n2k_decode_rudder(const uint8_t *payload, size_t len, N2kRudder *out)
 {
     if (!payload || !out || len < 6) // instance(1) + direction(1) + angle order(2) + position(2)
