@@ -775,12 +775,12 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `NTRIP_CASTER`      |            18.1 KB |          18.1 KB |
 | L7    | `OIDC`              |            14.2 KB |          32.9 KB |
 | L7    | `OAUTH2`            |            13.2 KB |          37.5 KB |
-| L7    | `OPCUA_CLIENT`      |        6.8-13.1 KB |     10.0-27.9 KB |
+| L7    | `OPCUA_CLIENT`      |        6.8-13.2 KB |     10.0-27.9 KB |
 | L7    | `WEBHOOK`           |            10.9 KB |          34.6 KB |
 | L7    | `RELAY`             |            10.2 KB |          49.1 KB |
 | L7    | `SNMP`              |             9.6 KB |          27.4 KB |
 | L7    | `TELEMETRY`         |             9.3 KB |          15.6 KB |
-| L7    | `OPCUA`             |         6.8-8.8 KB |     10.0-25.3 KB |
+| L7    | `OPCUA`             |         6.8-8.9 KB |     10.0-25.3 KB |
 | L7    | `PROVISIONING`      |             8.6 KB |          16.9 KB |
 | L7    | `DNS_RESOLVER`      |             6.5 KB |          16.5 KB |
 | L7    | `COAP`              |             6.4 KB |          17.8 KB |

@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5172 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5173 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -30428,7 +30428,7 @@ A thorough directory of all **5172 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (27 tests)</b></summary>
+<summary><b>test_nmea2000 (28 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -30748,6 +30748,30 @@ A thorough directory of all **5172 test cases** across **291 suites**. Expand a 
       * <code>Assert false (d.capacity_valid)</code>
       * <code>Assert false (dws_n2k_decode_fluid_level(b, 6, &d))</code>
       * <code>Assert false (dws_n2k_decode_fluid_level(nullptr, 8, &d))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_actual_pressure</b> &mdash; <i>sid 7, instance 0, atmospheric source, 101325 Pa (raw 1013250 = 0x000F7602 at 0.1 Pa/bit).</i></summary>
+
+    * **Objective**: sid 7, instance 0, atmospheric source, 101325 Pa (raw 1013250 = 0x000F7602 at 0.1 Pa/bit).
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_actual_pressure(p, sizeof(p), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(7, d.sid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, d.instance);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_N2K_PRESSURE_ATMOSPHERIC, d.source);</code>
+      * <code>Assert true (d.pressure_valid)</code>
+      * <code>Assert float within (1.0f, 101325.0f, d.pressure_pa)</code>
+      * <code>Assert true (dws_n2k_decode_actual_pressure(o, sizeof(o), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, d.instance);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_N2K_PRESSURE_OIL, d.source);</code>
+      * <code>Assert true (d.pressure_valid)</code>
+      * <code>Assert float within (1.0f, 250000.0f, d.pressure_pa)</code>
+      * <code>Assert true (dws_n2k_decode_actual_pressure(na, sizeof(na), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_N2K_PRESSURE_WATER, d.source);</code>
+      * <code>Assert false (d.pressure_valid)</code>
+      * <code>Assert true (dws_n2k_decode_actual_pressure(p, 7, &d))</code>
+      * <code>Assert false (dws_n2k_decode_actual_pressure(p, 6, &d))</code>
+      * <code>Assert false (dws_n2k_decode_actual_pressure(nullptr, 8, &d))</code>
   </details>
 
   <details style="margin-left: 20px;">
