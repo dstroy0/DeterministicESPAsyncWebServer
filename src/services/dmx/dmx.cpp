@@ -156,4 +156,35 @@ bool dws_rdm_decode_disc_response(const uint8_t *buf, size_t len, uint64_t *uid)
     return true;
 }
 
+size_t dws_rdm_build_disc_response(uint8_t *buf, size_t cap, uint64_t uid, uint8_t preamble_len)
+{
+    if (!buf || preamble_len > 7) // E1.20 allows 0..7 preamble octets
+        return 0;
+    size_t total = (size_t)preamble_len + 1 + 16; // preamble + 0xAA separator + 12 UID + 4 checksum octets
+    if (cap < total)
+        return 0;
+    size_t p = 0;
+    for (uint8_t i = 0; i < preamble_len; i++)
+        buf[p++] = 0xFE;
+    buf[p++] = 0xAA;
+    // Encode the 6 UID octets (MSB first): each byte b -> (b | 0xAA), (b | 0x55); sum the encoded octets.
+    uint16_t sum = 0;
+    for (int i = 0; i < 6; i++)
+    {
+        uint8_t b = (uint8_t)(uid >> (8 * (5 - i)));
+        uint8_t e0 = (uint8_t)(b | 0xAA);
+        uint8_t e1 = (uint8_t)(b | 0x55);
+        buf[p++] = e0;
+        buf[p++] = e1;
+        sum = (uint16_t)(sum + e0 + e1);
+    }
+    uint8_t csum_hi = (uint8_t)(sum >> 8);
+    uint8_t csum_lo = (uint8_t)(sum & 0xFF);
+    buf[p++] = (uint8_t)(csum_hi | 0xAA);
+    buf[p++] = (uint8_t)(csum_hi | 0x55);
+    buf[p++] = (uint8_t)(csum_lo | 0xAA);
+    buf[p++] = (uint8_t)(csum_lo | 0x55);
+    return p;
+}
+
 #endif // DWS_ENABLE_DMX

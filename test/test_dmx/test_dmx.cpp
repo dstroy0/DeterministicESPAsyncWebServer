@@ -95,6 +95,34 @@ void test_rdm_decode_disc_response()
     TEST_ASSERT_FALSE(dws_rdm_decode_disc_response(resp, n, nullptr));
 }
 
+void test_rdm_build_disc_response()
+{
+    uint64_t uid = dws_rdm_uid(0x1234, 0x56789ABC);
+    uint8_t got[32];
+    uint8_t ref[32];
+
+    // The builder must match the test's independent reference encoder byte-for-byte, at every preamble length.
+    for (uint8_t pre = 0; pre <= 7; pre++)
+    {
+        size_t rn = encode_disc_response(uid, pre, ref);
+        size_t gn = dws_rdm_build_disc_response(got, sizeof(got), uid, pre);
+        TEST_ASSERT_EQUAL_size_t(rn, gn);
+        TEST_ASSERT_EQUAL_size_t((size_t)pre + 17, gn);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(ref, got, gn);
+    }
+
+    // And it round-trips through the decoder.
+    size_t n = dws_rdm_build_disc_response(got, sizeof(got), uid, 7);
+    uint64_t back = 0;
+    TEST_ASSERT_TRUE(dws_rdm_decode_disc_response(got, n, &back));
+    TEST_ASSERT_EQUAL_HEX64(uid, back);
+
+    // Guards: preamble > 7, a null buffer, and a too-small buffer fail closed.
+    TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_disc_response(got, sizeof(got), uid, 8));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_disc_response(nullptr, sizeof(got), uid, 7));
+    TEST_ASSERT_EQUAL_size_t(0, dws_rdm_build_disc_response(got, 16, uid, 7)); // a 7-preamble response needs 24
+}
+
 // Build a GET DEVICE_INFO (no parameter data), parse it back, verify the checksum holds.
 void test_rdm_get_roundtrip()
 {
@@ -269,6 +297,7 @@ int main()
     RUN_TEST(test_dmx_build_and_get);
     RUN_TEST(test_rdm_uid);
     RUN_TEST(test_rdm_decode_disc_response);
+    RUN_TEST(test_rdm_build_disc_response);
     RUN_TEST(test_rdm_get_roundtrip);
     RUN_TEST(test_rdm_set_with_data);
     RUN_TEST(test_rdm_parse_rejects_bad);

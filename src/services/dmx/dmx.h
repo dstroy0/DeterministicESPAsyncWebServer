@@ -119,5 +119,14 @@ bool dws_rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consu
  */
 bool dws_rdm_decode_disc_response(const uint8_t *buf, size_t len, uint64_t *uid);
 
+/**
+ * @brief Build the DISC_UNIQUE_BRANCH discovery response a responder sends for its 48-bit @p uid (the
+ *        complement of dws_rdm_decode_disc_response): @p preamble_len octets of 0xFE (0..7) + the 0xAA
+ *        separator + the 6 UID octets each as two copies OR'd with 0xAA / 0x55 + the 2-octet checksum (the
+ *        16-bit additive sum of the 12 encoded UID octets) sent the same way.
+ * @return octets written (@p preamble_len + 17), or 0 on a null buffer, @p preamble_len > 7, or overflow.
+ */
+size_t dws_rdm_build_disc_response(uint8_t *buf, size_t cap, uint64_t uid, uint8_t preamble_len);
+
 #endif // DWS_ENABLE_DMX
 #endif // DETERMINISTICESPASYNCWEBSERVER_DMX_H
