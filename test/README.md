@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5149 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5150 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -20006,7 +20006,7 @@ A thorough directory of all **5149 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_iec60870 (26 tests)</b></summary>
+<summary><b>test_iec60870 (27 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_104_i_format_roundtrip</b> &mdash; <i>104 i format roundtrip</i></summary>
@@ -20296,6 +20296,24 @@ A thorough directory of all **5149 test cases** across **291 suites**. Expand a 
       * <code>Assert float within (0.0001f, -0.125f, v)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_float(buf, 7, 0, 1.0f, 0)); // too small</code>
       * <code>Assert false (dws_iec_io_parse_float(buf, 7, &ioa, &v, &qds))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_io_measured_scaled</b> &mdash; <i>M_ME_NB_1: IOA(3) + signed 16-bit SVA (LE) + QDS(1); 12345 = 0x3039 -> bytes 39 30.</i></summary>
+
+    * **Objective**: M_ME_NB_1: IOA(3) + signed 16-bit SVA (LE) + QDS(1); 12345 = 0x3039 -> bytes 39 30.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x39, buf[3]); // SVA low</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x30, buf[4]); // SVA high</code>
+      * <code>Assert true (dws_iec_io_parse_scaled(buf, n, &ioa, &v, &qds))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(200, ioa);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(12345, v);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_NT, qds);</code>
+      * <code>Assert true (dws_iec_io_parse_scaled(buf, 6, nullptr, &v, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(-1000, v);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_scaled(buf, 5, 0, 1, 0)); // too small</code>
+      * <code>Assert false (dws_iec_io_parse_scaled(buf, 5, &ioa, &v, &qds))</code>
   </details>
 
   <details style="margin-left: 20px;">
