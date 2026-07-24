@@ -91,6 +91,16 @@
 size_t dws_melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t head_device, uint16_t points,
                              uint16_t monitoring_timer);
 
+/**
+ * @brief Build a binary 3E batch-write (word units) request: the same device / head / points parameters as
+ *        the read (command 0x1401), followed by @p data_len octets of write data (two little-endian octets
+ *        per word point).
+ * @return total octets written (21 + @p data_len), or 0 on a null data pointer with a nonzero length, an
+ *         over-large data length, or an overflow.
+ */
+size_t dws_melsec_build_write(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t head_device, uint16_t points,
+                              uint16_t monitoring_timer, const uint8_t *data, size_t data_len);
+
 /** @brief A parsed 3E response. @ref data points INTO the source buffer (LE word values). */
 struct MelsecResponse
 {

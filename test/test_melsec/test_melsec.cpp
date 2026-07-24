@@ -40,6 +40,41 @@ void test_build_read_bytes()
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
 }
 
+void test_build_write_bytes()
+{
+    uint8_t buf[32];
+    const uint8_t words[4] = {0x34, 0x12, 0x78, 0x56}; // two D words: 0x1234, 0x5678 (LE)
+    size_t n = dws_melsec_build_write(buf, sizeof(buf), MELSEC_DEV_D, 100, 2, 0x0010, words, sizeof(words));
+    const uint8_t expect[] = {
+        0x50, 0x00,            // subheader (request)
+        0x00,                  // network
+        0xFF,                  // PC
+        0xFF, 0x03,            // dest module I/O (0x03FF, LE)
+        0x00,                  // multidrop
+        0x10, 0x00,            // request data length = 16 (12 + 4 data, LE)
+        0x10, 0x00,            // monitoring timer (LE)
+        0x01, 0x14,            // command 0x1401 batch write (LE)
+        0x00, 0x00,            // subcommand 0x0000 word (LE)
+        0x64, 0x00, 0x00,      // head device 100 (24-bit LE)
+        0xA8,                  // device code D
+        0x02, 0x00,            // 2 points (LE)
+        0x34, 0x12, 0x78, 0x56 // write data (two words)
+    };
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_size_t(25, n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+
+    // A zero-length write is a valid 21-octet frame with request data length 12.
+    n = dws_melsec_build_write(buf, sizeof(buf), MELSEC_DEV_D, 100, 0, 0, nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(21, n);
+    TEST_ASSERT_EQUAL_HEX8(0x0C, buf[7]); // request data length 12
+
+    // Guards: null data with a nonzero length, a too-small buffer, and a null out buffer all fail closed.
+    TEST_ASSERT_EQUAL_size_t(0, dws_melsec_build_write(buf, sizeof(buf), MELSEC_DEV_D, 100, 2, 0, nullptr, 4));
+    TEST_ASSERT_EQUAL_size_t(0, dws_melsec_build_write(buf, 24, MELSEC_DEV_D, 100, 2, 0, words, 4)); // needs 25
+    TEST_ASSERT_EQUAL_size_t(0, dws_melsec_build_write(nullptr, 32, MELSEC_DEV_D, 100, 2, 0, words, 4));
+}
+
 // The head device number occupies 3 little-endian octets.
 void test_head_device_24bit()
 {
@@ -129,6 +164,7 @@ int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_build_read_bytes);
+    RUN_TEST(test_build_write_bytes);
     RUN_TEST(test_head_device_24bit);
     RUN_TEST(test_parse_response_ok);
     RUN_TEST(test_parse_response_error);
