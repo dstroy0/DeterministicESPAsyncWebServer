@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.32.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.32.0 - 2026-07-24</b></summary>
 
 ### Bug Fixes
 
@@ -19,6 +22,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`8b4e680`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b4e680957f06d5d7d2922bb63a09b6ebd204a3b))
 - update CHANGELOG.md [skip ci] ([`b94eded`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b94eded86b8d970bc74477cdc678b326c2a7d15b))
 - exclude src/board_profiles from copy-paste detection ([`f7e1a1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7e1a1b7093c99168cdad6955751ac945fb8387e))
 - update CHANGELOG.md [skip ci] ([`d11e5bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d11e5bbbb9c842b6a6b8ea4839085626a53e76f5))
@@ -61,6 +65,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 7.31.0 → 7.32.0 ([`9e8ee36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e8ee365d11dac0d99bfb7af159a963712486258))
 - Merge pull request #18 from dstroy0/docs/configurator-and-diagram-redesign ([`8df84a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8df84a6f2d05ed4ce1b0273e9b7d28cdfbc39d0b))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`d128e61`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d128e610f865fa360ff65605beb421b9201ed59b))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`250a361`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/250a3614c6ec0666a5951564e0efc7aa00f6d49d))
@@ -76,6 +81,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b106298`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b10629866b4d70677f69a3bb9025b87dac27664c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`30848b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/30848b432cd07c60ec985264b31754b282a0429e))
 - record live ptp4l interop (slave HW-verified over LAN) ([`c6d7006`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6d70063d54e4c152790a014fdee082be53ee7d4))
 - update ESP32 build footprints [skip ci] ([`5a15490`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a15490c012aab5411d62e3122b553f39f0bc013))
@@ -106,6 +112,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- bind the Modbus master codec into a SouthboundDriver ([`4edf6ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4edf6ed2a25022c7a7167307f54fae70f194dcc4))
 - UBX (u-blox binary) and PTP (IEEE 1588) protocol codecs ([`42b78e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42b78e9c4748638178123b6cb37e40559830a584))
 - mirror src/ layout with per-feature CCOUNT + host benchmarks ([`ebcc8fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebcc8fcd967538b173fc3a488d4e72c317a397cc))
 - rebuild the DAQ/SCA suite into a full teaching + research platform ([`10592b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10592b07f22841479a60c655625d669e6e4f5337))
@@ -149,6 +156,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - 100% line + branch on the edge cache tier ([`9179394`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/917939439f0a55758ea13fa90638744118fa20be))
 - raise branch coverage toward 100% (control, wamp, ikev2, smb, opcua) ([`1ca7ce5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ca7ce59390c8070d1ce6ca4e279e2c3cedcbd6e))
 - raise branch coverage across 18 native suites ([`f11ebc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f11ebc692db8ec03bb20e9dc2a94136fb275fb83))
+
+</details>
 
 ## [7.31.0] - 2026-07-21
 
