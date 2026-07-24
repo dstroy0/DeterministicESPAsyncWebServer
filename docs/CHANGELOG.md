@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.48.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.48.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`6ec5b9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ec5b9ffad91c676cf59dd5b5081290857af6648))
+
+### Changes
+
+- Bump version: 7.47.0 → 7.48.0 ([`0d9b20a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d9b20ab7ed4000454e7287d8dc9355e221c9527))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`c808d91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c808d913450604ed140b389afbfd21308d90febf))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f1431b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1431b789695bd19119fce4800ce4329328fb98e))
+
+### Features
+
+- CREATE_CHILD_SA exchange + Child-SA key schedule (RFC 7296 s1.3/s2.17) ([`996c5b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/996c5b0c71245693da47c5a7d626cb1a7e7e5c44))
+
+</details>
+
 ## [7.47.0] - 2026-07-24
 
 <details>
