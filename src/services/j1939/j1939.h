@@ -142,6 +142,7 @@ J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
 #define J1939_PGN_AMB 0x00FEF5u  ///< Ambient Conditions (65269): barometric pressure + air / road temperatures
 #define J1939_PGN_IC1 0x00FEF6u  ///< Inlet/Exhaust Conditions 1 (65270): boost + intake / exhaust + filter pressures
 #define J1939_PGN_VD 0x00FEE0u   ///< Vehicle Distance (65248): trip + total vehicle distance
+#define J1939_PGN_DM1 0x00FECAu  ///< Active Diagnostic Trouble Codes (65226): lamp status + DTC list
 
 /** @brief Decoded EEC1 (PGN 61444). Percent-torque fields are @ref J1939_TORQUE_NA when not available. */
 struct J1939Eec1
@@ -262,6 +263,34 @@ struct J1939Vd
  * @return true iff @p f decodes to PGN 65248 and carries 8 data octets; false otherwise.
  */
 bool dws_j1939_decode_vd(const CanFrame *f, J1939Vd *out);
+
+/** @brief One decoded Diagnostic Trouble Code (J1939-73 SPN conversion method 4). */
+struct J1939Dtc
+{
+    uint32_t spn; ///< suspect parameter number (19-bit)
+    uint8_t fmi;  ///< failure mode identifier (5-bit)
+    uint8_t cm;   ///< SPN conversion method (1-bit)
+    uint8_t oc;   ///< occurrence count (7-bit)
+};
+
+/** @brief Decoded DM1 lamp status (each field 0 = off, 1 = on; 2/3 reserved / not available). */
+struct J1939Dm1
+{
+    uint8_t mil;           ///< malfunction indicator lamp
+    uint8_t red_stop;      ///< red stop lamp
+    uint8_t amber_warning; ///< amber warning lamp
+    uint8_t protect;       ///< protect lamp
+    uint8_t dtc_count;     ///< number of active DTCs decoded into the caller's array
+};
+
+/**
+ * @brief Decode a DM1 (PGN 65226) body: the lamp-status octet, the flash-status octet, then 4-octet DTCs.
+ *        DM1 may arrive single-frame or reassembled over the Transport Protocol, so this takes the raw body
+ *        (a frame's data[] or a TP buffer). An all-zero DTC (the "no active fault" placeholder) is skipped.
+ * @param out_dtcs  caller array receiving up to @p max decoded DTCs (may be null to only read the lamps).
+ * @return true iff @p len is at least 2 octets (the two status octets); false otherwise.
+ */
+bool dws_j1939_decode_dm1(const uint8_t *body, size_t len, J1939Dm1 *out, J1939Dtc *out_dtcs, size_t max);
 
 #endif // DWS_ENABLE_J1939
 #endif // DETERMINISTICESPASYNCWEBSERVER_J1939_H

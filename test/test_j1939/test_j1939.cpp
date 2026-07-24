@@ -520,6 +520,50 @@ void test_decode_vd()
     TEST_ASSERT_FALSE(dws_j1939_decode_vd(&ic1, &v));
 }
 
+void test_decode_dm1()
+{
+    J1939Dm1 dm;
+    J1939Dtc dtcs[4];
+    // Single-frame DM1: amber warning on, one DTC (SPN 100 oil pressure, FMI 1, OC 5), 0xFF padding.
+    const uint8_t single[8] = {0x04, 0x00, 0x64, 0x00, 0x01, 0x05, 0xFF, 0xFF};
+    TEST_ASSERT_TRUE(dws_j1939_decode_dm1(single, sizeof(single), &dm, dtcs, 4));
+    TEST_ASSERT_EQUAL_UINT8(0, dm.protect);
+    TEST_ASSERT_EQUAL_UINT8(1, dm.amber_warning);
+    TEST_ASSERT_EQUAL_UINT8(0, dm.red_stop);
+    TEST_ASSERT_EQUAL_UINT8(0, dm.mil);
+    TEST_ASSERT_EQUAL_UINT8(1, dm.dtc_count);
+    TEST_ASSERT_EQUAL_UINT32(100, dtcs[0].spn);
+    TEST_ASSERT_EQUAL_UINT8(1, dtcs[0].fmi);
+    TEST_ASSERT_EQUAL_UINT8(0, dtcs[0].cm);
+    TEST_ASSERT_EQUAL_UINT8(5, dtcs[0].oc);
+
+    // A multi-DTC DM1 (as reassembled over TP): amber + red on, two DTCs.
+    const uint8_t multi[10] = {0x14, 0x00, 0x64, 0x00, 0x01, 0x05, 0xBE, 0x00, 0x00, 0x02};
+    TEST_ASSERT_TRUE(dws_j1939_decode_dm1(multi, sizeof(multi), &dm, dtcs, 4));
+    TEST_ASSERT_EQUAL_UINT8(1, dm.amber_warning);
+    TEST_ASSERT_EQUAL_UINT8(1, dm.red_stop);
+    TEST_ASSERT_EQUAL_UINT8(2, dm.dtc_count);
+    TEST_ASSERT_EQUAL_UINT32(190, dtcs[1].spn); // SPN 190 engine speed, FMI 0, OC 2
+    TEST_ASSERT_EQUAL_UINT8(0, dtcs[1].fmi);
+    TEST_ASSERT_EQUAL_UINT8(2, dtcs[1].oc);
+
+    // The DTC array is clamped to @p max.
+    TEST_ASSERT_TRUE(dws_j1939_decode_dm1(multi, sizeof(multi), &dm, dtcs, 1));
+    TEST_ASSERT_EQUAL_UINT8(1, dm.dtc_count);
+
+    // A "no active fault" DM1 is the all-zero placeholder DTC -> lamps off, zero DTCs.
+    const uint8_t none[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    TEST_ASSERT_TRUE(dws_j1939_decode_dm1(none, sizeof(none), &dm, dtcs, 4));
+    TEST_ASSERT_EQUAL_UINT8(0, dm.dtc_count);
+    TEST_ASSERT_EQUAL_UINT8(0, dm.amber_warning);
+
+    // A null DTC array reads just the lamps (dtc_count still counts). Short/null bodies fail closed.
+    TEST_ASSERT_TRUE(dws_j1939_decode_dm1(single, sizeof(single), &dm, nullptr, 0));
+    TEST_ASSERT_EQUAL_UINT8(1, dm.amber_warning);
+    TEST_ASSERT_FALSE(dws_j1939_decode_dm1(single, 1, &dm, dtcs, 4));
+    TEST_ASSERT_FALSE(dws_j1939_decode_dm1(nullptr, 8, &dm, dtcs, 4));
+}
+
 void test_decode_pgn_mismatch_and_guards()
 {
     const uint8_t data[8] = {0};
@@ -567,6 +611,7 @@ int main()
     RUN_TEST(test_decode_amb);
     RUN_TEST(test_decode_ic1);
     RUN_TEST(test_decode_vd);
+    RUN_TEST(test_decode_dm1);
     RUN_TEST(test_decode_pgn_mismatch_and_guards);
     return UNITY_END();
 }

@@ -349,4 +349,36 @@ bool dws_j1939_decode_vd(const CanFrame *f, J1939Vd *out)
     return true;
 }
 
+bool dws_j1939_decode_dm1(const uint8_t *body, size_t len, J1939Dm1 *out, J1939Dtc *out_dtcs, size_t max)
+{
+    if (!body || !out || len < 2) // the lamp-status + flash-status octets
+        return false;
+    // Lamp status (J1939-73): 2 bits each, protect (0-1) / amber (2-3) / red-stop (4-5) / MIL (6-7).
+    out->protect = (uint8_t)(body[0] & 0x03u);
+    out->amber_warning = (uint8_t)((body[0] >> 2) & 0x03u);
+    out->red_stop = (uint8_t)((body[0] >> 4) & 0x03u);
+    out->mil = (uint8_t)((body[0] >> 6) & 0x03u);
+    // body[1] is the flash status (same 2-bit layout); not decoded here.
+    size_t ndtc = (len - 2) / 4; // whole 4-octet DTC blocks after the two status octets
+    uint8_t stored = 0;
+    for (size_t i = 0; i < ndtc && stored < max; i++)
+    {
+        const uint8_t *d = body + 2 + i * 4;
+        uint32_t spn = (uint32_t)d[0] | ((uint32_t)d[1] << 8) | (((uint32_t)d[2] >> 5) << 16);
+        uint8_t fmi = (uint8_t)(d[2] & 0x1Fu);
+        if (spn == 0 && fmi == 0) // the "no active DTC" placeholder
+            continue;
+        if (out_dtcs)
+        {
+            out_dtcs[stored].spn = spn;
+            out_dtcs[stored].fmi = fmi;
+            out_dtcs[stored].cm = (uint8_t)((d[3] >> 7) & 0x01u);
+            out_dtcs[stored].oc = (uint8_t)(d[3] & 0x7Fu);
+        }
+        stored++;
+    }
+    out->dtc_count = stored;
+    return true;
+}
+
 #endif // DWS_ENABLE_J1939
