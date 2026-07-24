@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5051 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5053 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -36948,7 +36948,7 @@ A thorough directory of all **5051 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ptp (10 tests)</b></summary>
+<summary><b>test_ptp (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_timestamp_roundtrip</b> &mdash; <i>48-bit seconds are big-endian in the first 6 octets.</i></summary>
@@ -37111,6 +37111,48 @@ A thorough directory of all **5051 test cases** across **290 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT64(50, s.delay_ns);</code>
       * <code>TEST_ASSERT_EQUAL_INT64(-10, s.offset_ns);</code>
       * <code>TEST_ASSERT_EQUAL_INT64(50, s.delay_ns);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pdelay_mechanism</b> &mdash; <i>Pdelay_Req: originTimestamp + a zeroed 10-octet reserved tail (54 octets total).</i></summary>
+
+    * **Objective**: Pdelay_Req: originTimestamp + a zeroed 10-octet reserved tail (54 octets total).
+    * **Assertions**:
+      * <code>Assert equal uint (DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN + 10, n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[0] & 0x0F); // messageType Pdelay_Req = 0x2</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x05, buf[32]);       // control = "all others" = 5</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[i]); // reserved tail is zero</code>
+      * <code>Assert true (dws_ptp_parse_pdelay_req(buf, n, &g, &got))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_PDELAY_REQ, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(100u, got.seconds);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5u, got.nanoseconds);</code>
+      * <code>Assert equal uint (DWS_PTP_HEADER_LEN + DWS_PTP_TS_LEN + 10, n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x03, buf[0] & 0x0F); // Pdelay_Resp = 0x3</code>
+      * <code>Assert true (dws_ptp_parse_pdelay_resp(buf, n, &g, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_PDELAY_RESP, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(100u, r.timestamp.seconds);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(205u, r.timestamp.nanoseconds);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(reqid, r.req_clock_id, 8);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(7, r.req_port);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0A, buf[0] & 0x0F); // Pdelay_Resp_Follow_Up = 0xA</code>
+      * <code>Assert true (dws_ptp_parse_pdelay_resp_follow_up(buf, n, &g, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_PTP_PDELAY_RESP_FOLLOW_UP, g.message_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(305u, r.timestamp.nanoseconds);</code>
+      * <code>Assert false (dws_ptp_parse_pdelay_resp(buf, n, &g, &r))</code>
+      * <code>Assert false (dws_ptp_parse_pdelay_resp(req, rn, &g, &r))</code>
+      * <code>Assert false (dws_ptp_parse_pdelay_req(buf, n, &g, &got))</code>
+      * <code>Assert equal uint (0, dws_ptp_build_pdelay_req(buf, 20, &h, &t1))</code>
+      * <code>Assert equal uint (0, dws_ptp_build_pdelay_resp(buf, sizeof(buf), &h, &t2, nullptr, 7))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pdelay_link_delay</b> &mdash; <i>t1 = req egress, t2 = req ingress at peer, t3 = resp egress, t4 = resp ingress.</i></summary>
+
+    * **Objective**: t1 = req egress, t2 = req ingress at peer, t3 = resp egress, t4 = resp ingress.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT64(50, dws_ptp_compute_link_delay(100, 150, 250, 300));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(200, dws_ptp_compute_link_delay(0, 200, 1200, 1400));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(0, dws_ptp_compute_link_delay(500, 500, 500, 500));</code>
   </details>
 
 </details>
