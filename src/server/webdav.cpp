@@ -278,9 +278,13 @@ struct DavPutCtx
 };
 static DavPutCtx s_davput;
 
-// The server-global WebDAV lock table (RFC 4918 §6-7). Zero-initialized: every slot starts inactive, so
-// nothing is locked until a LOCK request stores a token.
-static DavLockTable s_dav_locks;
+// The server-global WebDAV lock state, owned by one instance (internal linkage): the lock table (RFC 4918
+// §6-7). Zero-initialized, so every slot starts inactive and nothing is locked until a LOCK stores a token.
+struct DavLockCtx
+{
+    DavLockTable table;
+};
+static DavLockCtx s_dav_lock;
 
 // True if a write to the URL @p path is blocked by a lock the request does not present a token for. The
 // token, if any, comes from the request's If header (RFC 4918 §10.4 / §7).
@@ -289,7 +293,7 @@ static bool dav_write_blocked(HttpReq *req, const char *path)
     const char *if_hdr = http_get_header(req, "If");
     char tok[DWS_DAV_LOCK_TOKEN_MAX];
     const char *presented = (if_hdr && dws_dav_if_token(if_hdr, tok, sizeof(tok))) ? tok : nullptr;
-    return !dws_dav_lock_can_write(&s_dav_locks, path, presented);
+    return !dws_dav_lock_can_write(&s_dav_lock.table, path, presented);
 }
 
 // True if the (always NUL-terminated) request body contains @p needle - used to spot a <shared> lockscope.
@@ -514,7 +518,7 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
     // Expire any timed-out locks (RFC 4918 §6.6) before this request consults the table, so a stale lock
     // never gates a write. The clock is dws_millis() (pluggable); seconds are enough for lock lifetimes.
     uint32_t dav_now_s = (uint32_t)(dws_millis() / 1000u);
-    dws_dav_lock_sweep(&s_dav_locks, dav_now_s);
+    dws_dav_lock_sweep(&s_dav_lock.table, dav_now_s);
 
     switch (dws_webdav_method(req->method))
     {
@@ -727,7 +731,7 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         char iftok[DWS_DAV_LOCK_TOKEN_MAX];
         const DavLock *lk = nullptr;
         if (if_hdr && dws_dav_if_token(if_hdr, iftok, sizeof(iftok)))
-            lk = dws_dav_lock_refresh(&s_dav_locks, iftok, expiry_s);
+            lk = dws_dav_lock_refresh(&s_dav_lock.table, iftok, expiry_s);
 
         char token[DWS_DAV_LOCK_TOKEN_MAX];
         bool shared, depth_inf;
@@ -748,7 +752,7 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
             tok ^= (unsigned long)esp_random();
 #endif
             snprintf(token, sizeof(token), "opaquelocktoken:%08lx-dws", tok);
-            if (!dws_dav_lock_acquire(&s_dav_locks, req->path, token, /*exclusive=*/!shared, depth_inf, expiry_s))
+            if (!dws_dav_lock_acquire(&s_dav_lock.table, req->path, token, /*exclusive=*/!shared, depth_inf, expiry_s))
             {
                 dav_send_status(slot_id, 423, ""); // a conflicting lock already holds this resource / subtree
                 return;
@@ -775,7 +779,7 @@ void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
         // Release the lock named by the Lock-Token header (a Coded-URL: "<opaquelocktoken:...>").
         const char *lt = http_get_header(req, "Lock-Token");
         char token[DWS_DAV_LOCK_TOKEN_MAX];
-        if (!lt || !dav_coded_url_token(lt, token, sizeof(token)) || !dws_dav_lock_release(&s_dav_locks, token))
+        if (!lt || !dav_coded_url_token(lt, token, sizeof(token)) || !dws_dav_lock_release(&s_dav_lock.table, token))
         {
             dav_send_status(slot_id, 409, ""); // no such lock to release (RFC 4918 §9.11.1)
             return;
