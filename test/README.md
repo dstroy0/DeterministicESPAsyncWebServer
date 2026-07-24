@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5164 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5165 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -43701,7 +43701,7 @@ A thorough directory of all **5164 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sdi12 (15 tests)</b></summary>
+<summary><b>test_sdi12 (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_command_builders</b> &mdash; <i>Command builders</i></summary>
@@ -43731,6 +43731,23 @@ A thorough directory of all **5164 test cases** across **291 suites**. Expand a 
       * <code>Assert equal string ("1RC3!", buf)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_continuous(buf, sizeof(buf), '0', 10, false)); // index &gt; 9</code>
       * <code>Assert equal string ("7V!", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_additional_measurements</b> &mdash; <i>The index must be 1..9 (0 is the primary aM! / aC!, handled by the base builders).</i></summary>
+
+    * **Objective**: The index must be 1..9 (0 is the primary aM! / aC!, handled by the base builders).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dws_sdi12_build_measure_additional(buf, sizeof(buf), '0', 1, false));</code>
+      * <code>Assert equal string ("0M1!", buf)</code>
+      * <code>Assert equal string ("3M9!", buf)</code>
+      * <code>Assert equal string ("1MC2!", buf)</code>
+      * <code>Assert equal string ("0C1!", buf)</code>
+      * <code>Assert equal string ("2CC4!", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_measure_additional(buf, sizeof(buf), '0', 0, false));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_measure_additional(buf, sizeof(buf), '0', 10, false));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_concurrent_additional(buf, sizeof(buf), '0', 0, false));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sdi12_build_concurrent_additional(buf, sizeof(buf), '0', 10, false));</code>
   </details>
 
   <details style="margin-left: 20px;">
