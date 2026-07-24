@@ -323,6 +323,27 @@ bool dws_n2k_decode_attitude(const uint8_t *payload, size_t len, N2kAttitude *ou
  */
 bool dws_n2k_decode_temperature(const uint8_t *payload, size_t len, N2kTemperature *out);
 
+/** @brief Decoded Battery Status (PGN 127508): a battery bank's voltage, current, and temperature. Each
+ *  measurement clears a validity flag for a not-available raw. */
+struct N2kBatteryStatus
+{
+    uint8_t instance;   ///< battery instance
+    bool voltage_valid; ///< false when the raw voltage is in the not-available range
+    float voltage_v;    ///< battery voltage (V, 0.01 V/bit)
+    bool current_valid;
+    float current_a; ///< battery current (A, 0.1 A/bit, signed)
+    bool temp_valid;
+    float temp_c; ///< battery temperature (degrees C; carried as Kelvin at 0.01 K/bit on the wire)
+    uint8_t sid;  ///< sequence id (correlates related messages)
+};
+
+/**
+ * @brief Decode a Battery Status (PGN 127508) payload into @p out: instance + voltage (2, signed, 0.01 V) +
+ *        current (2, signed, 0.1 A) + temperature (2, unsigned, 0.01 K) + SID.
+ * @return true iff @p len is at least 8 octets; false otherwise.
+ */
+bool dws_n2k_decode_battery_status(const uint8_t *payload, size_t len, N2kBatteryStatus *out);
+
 /**
  * @brief Decode a Wind Data (PGN 130306) payload into @p out.
  * @return true iff @p len is at least 6 octets; false otherwise.

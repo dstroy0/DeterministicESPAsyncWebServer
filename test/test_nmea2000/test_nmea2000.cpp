@@ -360,6 +360,34 @@ void test_decode_temperature()
     TEST_ASSERT_FALSE(dws_n2k_decode_temperature(nullptr, 8, &d));
 }
 
+void test_decode_battery_status()
+{
+    // instance 1, voltage 12.6 V (raw 1260 = 0x04EC), current 5.5 A (raw 55), temp 25.0 C (raw 29815 = 0x7477), sid 10.
+    const uint8_t b[8] = {0x01, 0xEC, 0x04, 0x37, 0x00, 0x77, 0x74, 0x0A};
+    N2kBatteryStatus d;
+    TEST_ASSERT_TRUE(dws_n2k_decode_battery_status(b, sizeof(b), &d));
+    TEST_ASSERT_EQUAL_UINT8(1, d.instance);
+    TEST_ASSERT_TRUE(d.voltage_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 12.6f, d.voltage_v);
+    TEST_ASSERT_TRUE(d.current_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 5.5f, d.current_a);
+    TEST_ASSERT_TRUE(d.temp_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 25.0f, d.temp_c);
+    TEST_ASSERT_EQUAL_UINT8(10, d.sid);
+
+    // A discharging (negative) current, and a not-available voltage (0x7FFF) that clears just its flag.
+    const uint8_t neg[8] = {0x01, 0xFF, 0x7F, 0x9C,
+                            0xFF, 0x77, 0x74, 0x0A}; // voltage 0x7FFF n/a, current -100 -> -10.0 A
+    TEST_ASSERT_TRUE(dws_n2k_decode_battery_status(neg, sizeof(neg), &d));
+    TEST_ASSERT_FALSE(d.voltage_valid);
+    TEST_ASSERT_TRUE(d.current_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, -10.0f, d.current_a);
+
+    // Short payload + nulls are rejected.
+    TEST_ASSERT_FALSE(dws_n2k_decode_battery_status(b, 7, &d));
+    TEST_ASSERT_FALSE(dws_n2k_decode_battery_status(nullptr, 8, &d));
+}
+
 void test_decode_attitude()
 {
     // sid 5, yaw 0.5236 rad (raw 5236), pitch 0.1 rad (raw 1000), roll -0.2 rad (raw -2000).
@@ -564,6 +592,7 @@ int main()
     RUN_TEST(test_decode_engine_rapid);
     RUN_TEST(test_decode_engine_dynamic);
     RUN_TEST(test_decode_temperature);
+    RUN_TEST(test_decode_battery_status);
     RUN_TEST(test_decode_attitude);
     RUN_TEST(test_decode_rudder);
     RUN_TEST(test_decode_wind_data);

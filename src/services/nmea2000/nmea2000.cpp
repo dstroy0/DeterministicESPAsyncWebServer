@@ -202,6 +202,24 @@ bool dws_n2k_decode_temperature(const uint8_t *payload, size_t len, N2kTemperatu
     return true;
 }
 
+bool dws_n2k_decode_battery_status(const uint8_t *payload, size_t len, N2kBatteryStatus *out)
+{
+    if (!payload || !out || len < 8) // instance(1) + voltage(2) + current(2) + temperature(2) + sid(1)
+        return false;
+    out->instance = payload[0];
+    int16_t v = rd_i16le(payload + 1); // 0.01 V per bit, signed (0x7FFF = not available)
+    out->voltage_valid = (v != (int16_t)0x7FFF);
+    out->voltage_v = (float)v * 0.01f;
+    int16_t c = rd_i16le(payload + 3); // 0.1 A per bit, signed
+    out->current_valid = (c != (int16_t)0x7FFF);
+    out->current_a = (float)c * 0.1f;
+    uint16_t t = rd_u16le(payload + 5); // 0.01 K per bit, unsigned (0xFFFF = not available)
+    out->temp_valid = (t != 0xFFFFu);
+    out->temp_c = (float)t * 0.01f - 273.15f; // Kelvin -> Celsius
+    out->sid = payload[7];
+    return true;
+}
+
 bool dws_n2k_decode_rudder(const uint8_t *payload, size_t len, N2kRudder *out)
 {
     if (!payload || !out || len < 6) // instance(1) + direction(1) + angle order(2) + position(2)
