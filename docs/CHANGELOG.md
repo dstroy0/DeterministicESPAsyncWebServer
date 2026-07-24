@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.73.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.73.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a0b46f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0b46f5f319fe1c8579c106cbef5bb6549b4c4b0))
+
+### Changes
+
+- Bump version: 7.72.0 → 7.73.0 ([`8847312`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88473120085b243409e020b619daed0553834826))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b3c0419`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3c041955dd734118af68f69a31026243fdea65d))
+
+### Features
+
+- 802.11v BTM Request parser ([`ce84046`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ce840463f12992584bdc7d969440ea338064ebde))
+
+</details>
+
 ## [7.72.0] - 2026-07-24
 
 <details>
