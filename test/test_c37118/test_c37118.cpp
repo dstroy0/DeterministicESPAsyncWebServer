@@ -81,6 +81,52 @@ void test_data_frame_payload()
     TEST_ASSERT_FALSE(dws_c37118_parse_command(&f, &cmd)); // not a command frame
 }
 
+void test_decode_stat()
+{
+    // A data frame whose STAT word 0xFB63 exercises a mix of flags:
+    //   data invalid, PMU error, not in sync, sorted by arrival, trigger, data modified,
+    //   time quality 5, unlocked 100..1000 s, trigger reason = phase-angle difference.
+    const uint8_t payload[] = {0xFB, 0x63, 0x12, 0x34}; // STAT + one phasor value stub
+    uint8_t buf[64];
+    size_t n = dws_c37118_build_frame(buf, sizeof(buf), C37118_TYPE_DATA, C37118_VERSION_2011, 60, 100, 200, payload,
+                                      sizeof(payload));
+    C37118Frame f;
+    TEST_ASSERT_TRUE(dws_c37118_parse_frame(buf, n, &f));
+
+    C37118Stat st;
+    TEST_ASSERT_TRUE(dws_c37118_decode_stat(&f, &st));
+    TEST_ASSERT_EQUAL_HEX16(0xFB63, st.raw);
+    TEST_ASSERT_FALSE(st.data_valid);
+    TEST_ASSERT_TRUE(st.pmu_error);
+    TEST_ASSERT_FALSE(st.in_sync);
+    TEST_ASSERT_TRUE(st.sorted_by_arrival);
+    TEST_ASSERT_TRUE(st.trigger);
+    TEST_ASSERT_FALSE(st.config_change);
+    TEST_ASSERT_TRUE(st.data_modified);
+    TEST_ASSERT_EQUAL_UINT8(5, st.time_quality);
+    TEST_ASSERT_EQUAL_UINT8(C37118_UNLOCKED_100_1000S, st.unlocked_time);
+    TEST_ASSERT_EQUAL_UINT8(C37118_TRIGGER_PHASE_ANGLE, st.trigger_reason);
+
+    // An all-zero STAT is the nominal healthy state: valid, in sync, no trigger.
+    const uint8_t healthy[] = {0x00, 0x00, 0x00, 0x00};
+    n = dws_c37118_build_frame(buf, sizeof(buf), C37118_TYPE_DATA, C37118_VERSION_2011, 60, 1, 2, healthy,
+                               sizeof(healthy));
+    TEST_ASSERT_TRUE(dws_c37118_parse_frame(buf, n, &f));
+    TEST_ASSERT_TRUE(dws_c37118_decode_stat(&f, &st));
+    TEST_ASSERT_TRUE(st.data_valid);
+    TEST_ASSERT_TRUE(st.in_sync);
+    TEST_ASSERT_FALSE(st.trigger);
+    TEST_ASSERT_EQUAL_UINT8(C37118_TRIGGER_MANUAL, st.trigger_reason);
+
+    // A command frame is not a data frame; a data frame with < 2 payload octets is rejected; nulls too.
+    n = dws_c37118_build_command(buf, sizeof(buf), 1, 2, 3, C37118_CMD_DATA_ON);
+    C37118Frame cf;
+    dws_c37118_parse_frame(buf, n, &cf);
+    TEST_ASSERT_FALSE(dws_c37118_decode_stat(&cf, &st));
+    TEST_ASSERT_FALSE(dws_c37118_decode_stat(nullptr, &st));
+    TEST_ASSERT_FALSE(dws_c37118_decode_stat(&f, nullptr));
+}
+
 void test_parse_rejects_bad()
 {
     uint8_t buf[32];
@@ -202,6 +248,7 @@ int main()
     RUN_TEST(test_build_command_bytes);
     RUN_TEST(test_command_round_trip);
     RUN_TEST(test_data_frame_payload);
+    RUN_TEST(test_decode_stat);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_build_frame_null_and_zero_payload);

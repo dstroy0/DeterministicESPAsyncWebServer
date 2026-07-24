@@ -101,6 +101,44 @@ bool dws_c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out);
 /** @brief Read the command word from a parsed Command frame. */
 bool dws_c37118_parse_command(const C37118Frame *f, uint16_t *cmd);
 
+// --- DATA frame STAT word (IEEE C37.118.2-2011 Table 6): the 16-bit status opening a data frame ---
+
+// Unlocked-time code (STAT bits 5-4): how long the PMU has been unlocked from its time source.
+#define C37118_UNLOCKED_UNDER_10S 0  ///< sync locked, or unlocked < 10 s
+#define C37118_UNLOCKED_10_100S 1    ///< 10 s .. 100 s since unlock
+#define C37118_UNLOCKED_100_1000S 2  ///< 100 s .. 1000 s
+#define C37118_UNLOCKED_OVER_1000S 3 ///< > 1000 s
+
+// Common trigger reasons (STAT bits 3-0).
+#define C37118_TRIGGER_MANUAL 0      ///< manual / no trigger
+#define C37118_TRIGGER_MAG_LOW 1     ///< magnitude low
+#define C37118_TRIGGER_MAG_HIGH 2    ///< magnitude high
+#define C37118_TRIGGER_PHASE_ANGLE 3 ///< phase-angle difference
+#define C37118_TRIGGER_FREQ 4        ///< frequency high or low
+#define C37118_TRIGGER_DFDT 5        ///< df/dt high
+
+/** @brief The decoded STAT word of a data frame. */
+struct C37118Stat
+{
+    uint16_t raw;           ///< the raw 16-bit STAT word
+    bool data_valid;        ///< data is valid (STAT bit 15 == 0)
+    bool pmu_error;         ///< PMU error, including configuration error (bit 14)
+    bool in_sync;           ///< PMU is in sync with UTC (bit 13 == 0)
+    bool sorted_by_arrival; ///< data sorting: false = by time stamp, true = by arrival (bit 12)
+    bool trigger;           ///< PMU trigger detected (bit 11)
+    bool config_change;     ///< configuration change effective within 1 min (bit 10)
+    bool data_modified;     ///< data modified by post-processing (bit 9)
+    uint8_t time_quality;   ///< PMU time quality (bits 8-6, 0..7)
+    uint8_t unlocked_time;  ///< unlocked-time code (bits 5-4, @ref C37118_UNLOCKED_UNDER_10S etc.)
+    uint8_t trigger_reason; ///< trigger reason (bits 3-0, @ref C37118_TRIGGER_MANUAL etc.)
+};
+
+/**
+ * @brief Decode the 16-bit STAT word that opens a DATA frame's payload (IEEE C37.118.2-2011 Table 6).
+ * @return true iff @p f is a data frame (type C37118_TYPE_DATA) carrying at least the 2-octet STAT word.
+ */
+bool dws_c37118_decode_stat(const C37118Frame *f, C37118Stat *out);
+
 #endif // DWS_ENABLE_C37118
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_C37118_H

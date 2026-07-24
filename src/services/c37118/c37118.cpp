@@ -88,4 +88,23 @@ bool dws_c37118_parse_command(const C37118Frame *f, uint16_t *cmd)
     return true;
 }
 
+bool dws_c37118_decode_stat(const C37118Frame *f, C37118Stat *out)
+{
+    if (!f || !out || f->type != C37118_TYPE_DATA || f->data_len < 2)
+        return false;
+    uint16_t s = dws_rd16be(f->data); // STAT is the first word of the data payload, big-endian
+    out->raw = s;
+    out->data_valid = (s & 0x8000u) == 0;             // bit 15: 0 = valid
+    out->pmu_error = (s & 0x4000u) != 0;              // bit 14
+    out->in_sync = (s & 0x2000u) == 0;                // bit 13: 0 = in sync
+    out->sorted_by_arrival = (s & 0x1000u) != 0;      // bit 12
+    out->trigger = (s & 0x0800u) != 0;                // bit 11
+    out->config_change = (s & 0x0400u) != 0;          // bit 10
+    out->data_modified = (s & 0x0200u) != 0;          // bit 9
+    out->time_quality = (uint8_t)((s >> 6) & 0x07u);  // bits 8-6
+    out->unlocked_time = (uint8_t)((s >> 4) & 0x03u); // bits 5-4
+    out->trigger_reason = (uint8_t)(s & 0x0Fu);       // bits 3-0
+    return true;
+}
+
 #endif // DWS_ENABLE_C37118
