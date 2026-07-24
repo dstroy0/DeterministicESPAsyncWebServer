@@ -14,10 +14,13 @@
  * and the SK encrypted-payload envelope). Tier 2's crypto lives here too: the SKEYSEED / SK_* key
  * derivation (RFC 7296 §2.13-2.14, prf+ over HMAC-SHA2-256), the SK-payload AEAD (RFC 5282
  * AES-256-GCM-16), the Diffie-Hellman shared secret (RFC 7296 §2.7, group 31 = X25519), PSK + ECDSA-P256
- * authentication (§2.15 / RFC 7427), the IKE_SA_INIT + IKE_AUTH message assembly (§1.2 / §3.14), the SA
- * key schedule (§2.14), and the initiator IKE_SA_INIT handshake driver. Remaining for tier 2: the
- * IKE_AUTH half of the driver + the responder role. Tier 3 (the ESP datapath, a network-layer transform
- * that hooks lwIP) is a separate, later track. All the crypto reuses primitives the library already ships.
+ * authentication (§2.15 / RFC 7427), the IKE_SA_INIT + IKE_AUTH message assembly (§1.2 / §3.14), and the
+ * SA / Child-SA key schedules (§2.14 / §2.17). On top of those sits a full stateful handshake DRIVER -
+ * both the initiator and responder complete IKE_SA_INIT + IKE_AUTH to IKE_ST_ESTABLISHED with mutual PSK
+ * auth - plus the post-auth INFORMATIONAL (DPD / Delete / Notify) and CREATE_CHILD_SA exchanges over the
+ * established SA. Remaining for tier 2: rekey/retransmit orchestration and RSA-signature auth. Tier 3 (the
+ * ESP datapath, a network-layer transform that hooks lwIP) is a separate, later track. All the crypto
+ * reuses primitives the library already ships.
  *
  * Wire framing (byte-exact, network byte order): the IKE header is 8-byte Initiator SPI, 8-byte
  * Responder SPI, 1-byte Next Payload, 1-byte Version (0x20 = MjVer 2 / MnVer 0), 1-byte Exchange Type,
@@ -840,6 +843,28 @@ size_t dws_ike_informational_build(const IkeSa *sa, bool is_response, uint32_t m
  */
 bool dws_ike_informational_open(const IkeSa *sa, uint8_t *msg, size_t len, IkePayloadType *first_inner_type,
                                 const uint8_t **inner_out, size_t *inner_len_out);
+
+// ── tier 2: CREATE_CHILD_SA exchange (RFC 7296 §1.3, §2.17) ─────────────────────────────────────
+//
+// Create a new Child SA (or rekey) over an established IKE SA. The message is SK-encrypted like an
+// INFORMATIONAL; the inner SA | Ni | Nr | [KEi/KEr] | TSi | TSr chain is the caller's (tier-1 builders).
+// The Child SA's ESP keys come from the §2.17 key schedule below.
+
+/** @brief Build an SK-encrypted CREATE_CHILD_SA message we are SENDING (open it with dws_ike_informational_open). */
+size_t dws_ike_create_child_sa_build(const IkeSa *sa, bool is_response, uint32_t msg_id,
+                                     IkePayloadType first_inner_type, const uint8_t *inner, size_t inner_len,
+                                     const uint8_t iv[DWS_IKE_GCM_IV_LEN], uint8_t *out, size_t out_cap);
+
+/**
+ * @brief Derive Child SA keying material: KEYMAT = prf+(SK_d, [g^ir |] Ni | Nr) (RFC 7296 §2.17), written
+ *        end to end into @p out (SK_ei | SK_ai | SK_er | SK_ar; the caller slices by the ESP transforms).
+ * @param dh_secret NULL for no-PFS; the new g^ir (X25519) for a PFS rekey. @param out_len the total ESP
+ *        key length needed.
+ * @return false on a null arg, an out-of-range length, or more than 255 prf+ blocks.
+ */
+bool dws_ike_child_keymat(const uint8_t *sk_d, size_t sk_d_len, const uint8_t *dh_secret, size_t dh_len,
+                          const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len, uint8_t *out,
+                          size_t out_len);
 
 #endif // DWS_ENABLE_IKEV2
 

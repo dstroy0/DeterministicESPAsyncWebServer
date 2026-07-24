@@ -2093,6 +2093,89 @@ void test_informational_exchange()
     TEST_ASSERT_FALSE(dws_ike_informational_open(&ini.sa, work4, dmn, &first, &inner, &inner_len));
 }
 
+// Drive a full initiator<->responder handshake; both `ini` and `resp` end IKE_ST_ESTABLISHED.
+static void establish_sa_pair(IkeHandshake *ini, IkeHandshake *resp)
+{
+    const IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+    const uint8_t idi[6] = {'r', 'o', 'u', 't', 'e', 'r'}, idr[9] = {'r', 'e', 's', 'p', 'o', 'n', 'd', 'e', 'r'};
+    const uint8_t iv1[8] = {0, 0, 0, 0, 0, 0, 0, 1}, iv2[8] = {0, 0, 0, 0, 0, 0, 0, 2};
+    uint8_t req[512], rsp[512], ai[512], ar[512];
+    size_t reqn = dws_ike_initiator_start(ini, g_our_spi, kat_alice_priv, kat_alice_pub, g_our_nonce, 16, &gcm, g_hs_tf,
+                                          3, req, sizeof(req));
+    size_t rspn = dws_ike_responder_on_sa_init(resp, req, reqn, g_resp_spi, kat_bob_priv, kat_bob_pub, g_resp_nonce, 16,
+                                               &gcm, g_hs_tf, 3, rsp, sizeof(rsp));
+    dws_ike_initiator_on_sa_init(ini, rsp, rspn);
+    size_t ain = dws_ike_initiator_build_auth_psk(ini, IkeIdType::IKE_ID_FQDN, idi, sizeof(idi), g_psk, sizeof(g_psk),
+                                                  iv1, ai, sizeof(ai));
+    size_t arn = dws_ike_responder_on_auth_psk(resp, ai, ain, g_psk, sizeof(g_psk), IkeIdType::IKE_ID_FQDN, idr,
+                                               sizeof(idr), iv2, ar, sizeof(ar));
+    dws_ike_initiator_on_auth_psk(ini, ar, arn, g_psk, sizeof(g_psk));
+}
+
+// ── CREATE_CHILD_SA: the Child-SA key schedule (KAT) + the SK-wrapped message over an established SA ──
+void test_child_keymat_kat()
+{
+    static const uint8_t ck_skd[32] = {0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a,
+                                       0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65,
+                                       0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f};
+    static const uint8_t ck_ni[16] = {0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+                                      0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20};
+    static const uint8_t ck_nr[16] = {0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,
+                                      0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30};
+    static const uint8_t ck_dh[32] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+                                      0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+                                      0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20};
+    static const uint8_t ck_keymat[72] = {
+        0x47, 0x12, 0xb8, 0xeb, 0x57, 0xce, 0x70, 0xbb, 0xa0, 0xbd, 0xea, 0x45, 0x7c, 0x41, 0xc6, 0x88, 0x2c, 0xf0,
+        0xb6, 0xb3, 0xb4, 0x82, 0xa1, 0x39, 0x9b, 0x2c, 0xa4, 0x44, 0x40, 0x88, 0x22, 0xd5, 0x88, 0xc4, 0x5c, 0x5a,
+        0x92, 0x8e, 0xe3, 0x7c, 0xb2, 0xe5, 0x9e, 0xf9, 0xc5, 0x18, 0x63, 0x57, 0x98, 0xfc, 0xf2, 0xdb, 0x77, 0x04,
+        0xf2, 0xbd, 0xf3, 0x24, 0x04, 0xd0, 0x6f, 0xc4, 0xee, 0xd6, 0xb0, 0x7d, 0xfd, 0xd3, 0x9d, 0x44, 0x70, 0xaf};
+    static const uint8_t ck_keymat_pfs[72] = {
+        0x31, 0x9d, 0xa0, 0xc3, 0x15, 0x35, 0xf3, 0xa1, 0xc5, 0xcf, 0x26, 0x4b, 0x72, 0x63, 0x25, 0x61, 0x78, 0x22,
+        0x4b, 0xbc, 0x0f, 0xee, 0xda, 0xd1, 0x02, 0x75, 0xc6, 0xc3, 0x50, 0x4c, 0x5e, 0x94, 0x3e, 0x90, 0x52, 0x77,
+        0x95, 0x72, 0xac, 0x5e, 0x87, 0x13, 0xaf, 0x45, 0x87, 0x39, 0x7a, 0x97, 0x67, 0xd6, 0x55, 0x4e, 0x10, 0xfb,
+        0xb3, 0x74, 0xc6, 0x62, 0xa9, 0x45, 0x65, 0x38, 0x20, 0x6a, 0xb7, 0x1f, 0x55, 0x2f, 0xdb, 0x99, 0x31, 0x27};
+    uint8_t out[72];
+    // No PFS: KEYMAT = prf+(SK_d, Ni | Nr).
+    TEST_ASSERT_TRUE(dws_ike_child_keymat(ck_skd, 32, nullptr, 0, ck_ni, 16, ck_nr, 16, out, 72));
+    TEST_ASSERT_EQUAL_MEMORY(ck_keymat, out, 72);
+    // PFS: KEYMAT = prf+(SK_d, g^ir | Ni | Nr).
+    TEST_ASSERT_TRUE(dws_ike_child_keymat(ck_skd, 32, ck_dh, 32, ck_ni, 16, ck_nr, 16, out, 72));
+    TEST_ASSERT_EQUAL_MEMORY(ck_keymat_pfs, out, 72);
+    // Guards.
+    TEST_ASSERT_FALSE(dws_ike_child_keymat(nullptr, 32, nullptr, 0, ck_ni, 16, ck_nr, 16, out, 72));
+    TEST_ASSERT_FALSE(dws_ike_child_keymat(ck_skd, 32, nullptr, 0, ck_ni, 16, ck_nr, 16, out, 0));
+}
+
+void test_create_child_sa_msg()
+{
+    IkeHandshake ini, resp;
+    establish_sa_pair(&ini, &resp);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)ini.state);
+
+    // Build a CREATE_CHILD_SA carrying an inner Nonce (a stand-in for the SA|Ni|Nr|TSi|TSr chain).
+    const uint8_t ni_child[16] = {0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7,
+                                  0xa8, 0xa9, 0xaa, 0xab, 0xac, 0xad, 0xae, 0xaf};
+    uint8_t inner[64];
+    size_t inl = dws_ike_nonce_build(inner, sizeof(inner), IkePayloadType::IKE_PL_NONE, ni_child, sizeof(ni_child));
+    const uint8_t iv[8] = {0, 0, 0, 0, 0, 0, 0, 9};
+    uint8_t msg[128], work[128];
+    size_t mn = dws_ike_create_child_sa_build(&ini.sa, false, 2, IkePayloadType::IKE_PL_NONCE, inner, inl, iv, msg,
+                                              sizeof(msg));
+    TEST_ASSERT_TRUE(mn > 0);
+    TEST_ASSERT_EQUAL_UINT8(36, msg[18]); // exchange type = IKE_CREATE_CHILD_SA
+
+    // The responder decrypts it and recovers the inner chain byte-exact.
+    memcpy(work, msg, mn);
+    IkePayloadType first;
+    const uint8_t *got;
+    size_t got_len;
+    TEST_ASSERT_TRUE(dws_ike_informational_open(&resp.sa, work, mn, &first, &got, &got_len));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_NONCE, (uint8_t)first);
+    TEST_ASSERT_EQUAL_size_t(inl, got_len);
+    TEST_ASSERT_EQUAL_MEMORY(inner, got, inl);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -2172,5 +2255,7 @@ int main()
     RUN_TEST(test_responder_sa_init_exchange);
     RUN_TEST(test_full_bidirectional_handshake);
     RUN_TEST(test_informational_exchange);
+    RUN_TEST(test_child_keymat_kat);
+    RUN_TEST(test_create_child_sa_msg);
     return UNITY_END();
 }

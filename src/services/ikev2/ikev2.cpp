@@ -1503,21 +1503,61 @@ size_t dws_ike_responder_on_auth_psk(IkeHandshake *hs, const uint8_t *req, size_
     return n;
 }
 
-// ── tier 2: INFORMATIONAL exchange (RFC 7296 §1.4) - DPD, Delete, Notify over an established SA ──
+// ── tier 2: post-auth exchanges (INFORMATIONAL / CREATE_CHILD_SA) over an established SA ─────────
+
+// Build an SK-encrypted message we are SENDING over @p sa: egress-keyed (SK_ei from the original
+// initiator, SK_er from the responder), the flags carrying INITIATOR/RESPONSE independently.
+static size_t sk_send_build(const IkeSa *sa, bool is_response, uint32_t msg_id, IkeExchange exchange,
+                            IkePayloadType first_inner_type, const uint8_t *inner, size_t inner_len, const uint8_t *iv,
+                            uint8_t *out, size_t out_cap)
+{
+    if (!sa || !iv || !out)
+        return 0;
+    const uint8_t *key = sa->is_initiator ? sa->keys.sk_ei : sa->keys.sk_er;
+    uint8_t flags =
+        (uint8_t)((sa->is_initiator ? DWS_IKE_FLAG_INITIATOR : 0) | (is_response ? DWS_IKE_FLAG_RESPONSE : 0));
+    return sk_message_build(out, out_cap, sa->init_spi, sa->resp_spi, msg_id, exchange, flags, first_inner_type, inner,
+                            inner_len, key, key + DWS_IKE_AEAD_KEY_LEN, iv);
+}
 
 size_t dws_ike_informational_build(const IkeSa *sa, bool is_response, uint32_t msg_id, IkePayloadType first_inner_type,
                                    const uint8_t *inner, size_t inner_len, const uint8_t iv[DWS_IKE_GCM_IV_LEN],
                                    uint8_t *out, size_t out_cap)
 {
-    if (!sa || !iv || !out)
-        return 0;
-    // Our egress direction: SK_ei when we are the original initiator, SK_er when we are the responder.
-    const uint8_t *key = sa->is_initiator ? sa->keys.sk_ei : sa->keys.sk_er;
-    // Flags carry BOTH bits independently: INITIATOR iff from the original initiator, RESPONSE iff a reply.
-    uint8_t flags =
-        (uint8_t)((sa->is_initiator ? DWS_IKE_FLAG_INITIATOR : 0) | (is_response ? DWS_IKE_FLAG_RESPONSE : 0));
-    return sk_message_build(out, out_cap, sa->init_spi, sa->resp_spi, msg_id, IkeExchange::IKE_INFORMATIONAL, flags,
-                            first_inner_type, inner, inner_len, key, key + DWS_IKE_AEAD_KEY_LEN, iv);
+    return sk_send_build(sa, is_response, msg_id, IkeExchange::IKE_INFORMATIONAL, first_inner_type, inner, inner_len,
+                         iv, out, out_cap);
+}
+
+size_t dws_ike_create_child_sa_build(const IkeSa *sa, bool is_response, uint32_t msg_id,
+                                     IkePayloadType first_inner_type, const uint8_t *inner, size_t inner_len,
+                                     const uint8_t iv[DWS_IKE_GCM_IV_LEN], uint8_t *out, size_t out_cap)
+{
+    return sk_send_build(sa, is_response, msg_id, IkeExchange::IKE_CREATE_CHILD_SA, first_inner_type, inner, inner_len,
+                         iv, out, out_cap);
+}
+
+bool dws_ike_child_keymat(const uint8_t *sk_d, size_t sk_d_len, const uint8_t *dh_secret, size_t dh_len,
+                          const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len, uint8_t *out,
+                          size_t out_len)
+{
+    if (!sk_d || !ni || !nr || !out || out_len == 0)
+        return false;
+    if (ni_len > DWS_IKE_NONCE_MAX || nr_len > DWS_IKE_NONCE_MAX || dh_len > DWS_IKE_X25519_LEN)
+        return false;
+
+    // KEYMAT = prf+(SK_d, [g^ir |] Ni | Nr) (RFC 7296 §2.17); g^ir is present only for a PFS rekey.
+    uint8_t seed[DWS_IKE_X25519_LEN + 2 * DWS_IKE_NONCE_MAX];
+    size_t o = 0;
+    if (dh_secret && dh_len)
+    {
+        memcpy(seed, dh_secret, dh_len);
+        o = dh_len;
+    }
+    memcpy(seed + o, ni, ni_len);
+    o += ni_len;
+    memcpy(seed + o, nr, nr_len);
+    o += nr_len;
+    return dws_ike_prf_plus(sk_d, sk_d_len, seed, o, out, out_len);
 }
 
 bool dws_ike_informational_open(const IkeSa *sa, uint8_t *msg, size_t len, IkePayloadType *first_inner_type,

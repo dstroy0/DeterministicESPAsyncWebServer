@@ -514,9 +514,14 @@ preempting queue, so sensing shares the real-time ingest path.
           message over an established SA, keyed by the sender's egress direction (SK_ei from the
           initiator, SK_er from the responder) with the INITIATOR/RESPONSE flags set independently -
           exercised end to end with a DPD keepalive both ways and a Delete(IKE) round-trip, and a
-          wrong-direction key is rejected (`test_ikev2` now 67; the SK message builder was generalized
-          to any exchange type). Remaining: CREATE_CHILD_SA + rekey + retransmit, and the RSA-signature
-          auth option (the ECDSA-P256 sign/verify primitives already ship).
+          wrong-direction key is rejected. **CREATE_CHILD_SA is shipped too** (RFC 7296 §1.3 / §2.17):
+          `dws_ike_create_child_sa_build` wraps the SA | Ni | Nr | [KE] | TSi | TSr inner chain in the SK
+          envelope, and `dws_ike_child_keymat` derives the Child-SA ESP keys KEYMAT = prf+(SK_d, [g^ir |]
+          Ni | Nr) (with or without a PFS D-H), cross-checked against a Python reference (`test_ikev2` now
+          69). Every IKEv2 exchange family (IKE_SA_INIT / IKE_AUTH / INFORMATIONAL / CREATE_CHILD_SA) is
+          now implemented. Remaining tier 2: the rekey/retransmit orchestration wiring and the
+          RSA-signature auth option (the ECDSA-P256 sign/verify primitives already ship). Then tier 3 (the
+          ESP datapath) is the separate architecturally-invasive track.
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with
