@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **274 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **275 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -307,6 +307,7 @@ The native test matrix has **274 environments**, one per feature, generated from
 | `native_ssh_ecdsa` | default | `test_ssh_ecdsa` | ECDSA P-256 for ecdsa-sha2-nistp256 (RFC 5656) host-tested on the software path: pubkey, deterministic sign, and verify pinned byte-exact to the RFC 6979 A.2.5 (P-256/SHA-256) vectors, plus tamper rej... |
 | `native_ssh_ed25519` | default | `test_ssh_ed25519` | Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth): SHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). |
 | `native_ssh_hardened` | `WS_SSH_ALLOW_PASSWORD=0` | `test_ssh_hardening` | SSH built with password auth disabled (publickey-only hardening) |
+| `native_ssh_inflate` | `WS_ENABLE_SSH=1`, `WS_ENABLE_SSH_ZLIB=1` | `test_ssh_inflate` | SSH client-to-server resumable INFLATE (ssh_inflate): decompresses OpenSSH's per-packet Z_PARTIAL_FLUSH zlib stream across packets with a 32 KB context-takeover window. |
 | `native_ssh_kbdint` | `WS_ENABLE_SSH=1`, `WS_ENABLE_SSH_KEYBOARD_INTERACTIVE=1` | `test_ssh_kbdint`, `test_ssh_auth` | SSH keyboard-interactive auth (RFC 4256) built with DWS_ENABLE_SSH_KEYBOARD_INTERACTIVE=1: the server sends one non-echoed Password prompt (INFO_REQUEST) and verifies the INFO_RESPONSE via the passwor... |
 | `native_ssh_pqc` | `WS_SSH_MAX_CHANNELS=3`, `WS_ENABLE_PQC_KEX=1` | `test_ssh_pqc` | mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the full SSH transport built with DWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. |
 | `native_ssh_sftp` | `WS_ENABLE_SSH=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_SSH_SFTP=1` | `test_ssh_sftp` | SFTP protocol v3 wire codec (services/sftp): the SSH_FXP_* request reader + response builders (VERSION / STATUS / HANDLE / DATA / ATTRS / NAME), the ATTRS blob encode/decode round-trip (size / perms /... |
@@ -564,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5177 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5183 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -51835,6 +51836,68 @@ A thorough directory of all **5177 test cases** across **291 suites**. Expand a 
       * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ssh_inflate (6 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_partial_flush_stream</b> &mdash; <i>Decode partial flush stream</i></summary>
+
+    * **Objective**: Decode partial flush stream
+    * **Assertions**:
+      * <code>Assert equal int (0, rc)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(vec_plain_len[i], out_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(vec_plain[i], out, vec_plain_len[i]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reinit_resets_stream</b> &mdash; <i>Decode a couple of packets, then re-init and decode from the top again.</i></summary>
+
+    * **Objective**: Decode a couple of packets, then re-init and decode from the top again.
+    * **Assertions**:
+      * <code>Assert equal int (0, rc)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(vec_plain_len[0], out_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(vec_plain[0], out, vec_plain_len[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rejects_bad_header</b> &mdash; <i>Rejects bad header</i></summary>
+
+    * **Objective**: Rejects bad header
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_inflate_packet(&z, bad_cm, sizeof(bad_cm), out, sizeof(out), &out_len))</code>
+      * <code>Assert equal int (-1, ssh_inflate_packet(&z, bad_check, sizeof(bad_check), out, sizeof(out), &out_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rejects_bad_block_type</b> &mdash; <i>0x78 0x9C zlib header, then a block header BFINAL=0 BTYPE=11 -> low three bits 0b110 = 0x06.</i></summary>
+
+    * **Objective**: 0x78 0x9C zlib header, then a block header BFINAL=0 BTYPE=11 -> low three bits 0b110 = 0x06.
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_inflate_packet(&z, bad_block, sizeof(bad_block), out, sizeof(out), &out_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_output_overflow_fails_closed</b> &mdash; <i>vec 0 decompresses to 38 bytes; a 4-byte sink must report overflow.</i></summary>
+
+    * **Objective**: vec 0 decompresses to 38 bytes; a 4-byte sink must report overflow.
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_inflate_packet(&z, vec_comp[0], vec_comp_len[0], tiny, sizeof(tiny), &out_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_header_split_across_calls</b> &mdash; <i>Feed just the first header byte: no output, no error, carried.</i></summary>
+
+    * **Objective**: Feed just the first header byte: no output, no error, carried.
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_inflate_packet(&z, vec_comp[0], 1, out, sizeof(out), &out_len))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, out_len);</code>
+      * <code>Assert equal int (0, rc)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(vec_plain_len[0], out_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(vec_plain[0], out, vec_plain_len[0]);</code>
   </details>
 
 </details>
