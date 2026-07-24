@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.70.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.70.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`5ffb036`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ffb036f36d8a105cdf8547043d5746eeb18f580))
+
+### Changes
+
+- Bump version: 7.69.0 → 7.70.0 ([`d2cd592`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2cd5922a0ccd0d283a467cc240de8fd0c99b48c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`aa7a0db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aa7a0db8d8df3e184c373af01a64ab7f0115431c))
+
+### Features
+
+- typed LFE (fuel economy) PGN decoder ([`7e7d2b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e7d2b085d7f385942e3eb40c080b3fca4090b0f))
+
+</details>
+
 ## [7.69.0] - 2026-07-24
 
 <details>
