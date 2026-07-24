@@ -1687,6 +1687,97 @@ void test_sa_keys_from_init_agreement()
     TEST_ASSERT_FALSE(dws_ike_sa_keys_from_init(&bad, kat_alice_priv, 32, kat_bob_pub, 32, sa_ni, 16, sa_nr, 16));
 }
 
+// ── tier 2: initiator IKE_SA_INIT handshake driver ─────────────────────────────────────────────
+// Drive the initiator's first exchange against a hand-built responder message; the SA it establishes
+// holds the same keys the responder derives (mutual agreement), and the state guards fail closed.
+
+static const IkeTransform g_hs_tf[3] = {
+    {IkeTransformType::IKE_TRANSFORM_ENCR, IKE_ENCR_AES_GCM_16, 256},
+    {IkeTransformType::IKE_TRANSFORM_PRF, IKE_PRF_HMAC_SHA2_256, -1},
+    {IkeTransformType::IKE_TRANSFORM_DH, IKE_DH_CURVE25519, -1},
+};
+
+void test_initiator_sa_init_handshake()
+{
+    const IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+    const uint8_t our_spi[8] = {0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21};
+    const uint8_t our_nonce[16] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+                                   0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f};
+
+    IkeHandshake hs;
+    uint8_t req[512];
+    size_t rn = dws_ike_initiator_start(&hs, our_spi, kat_alice_priv, kat_alice_pub, our_nonce, 16, &gcm, g_hs_tf, 3,
+                                        req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_SA_INIT_SENT, (uint8_t)hs.state);
+    // The emitted request carries our SPI, a zero responder SPI, our KE, and our nonce.
+    IkeSaInitMsg reqm;
+    TEST_ASSERT_TRUE(dws_ike_sa_init_parse(req, rn, &reqm));
+    TEST_ASSERT_FALSE(reqm.is_response);
+    TEST_ASSERT_EQUAL_MEMORY(our_spi, reqm.init_spi, 8);
+    TEST_ASSERT_EQUAL_MEMORY(kat_alice_pub, reqm.ke_data, 32);
+
+    // The responder answers: echo our SPI, choose its own SPI, offer its KE (bob) and a nonce.
+    const uint8_t resp_spi[8] = {0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98};
+    const uint8_t resp_nonce[16] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
+                                    0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f};
+    uint8_t resp[512];
+    size_t rspn = dws_ike_sa_init_build(resp, sizeof(resp), our_spi, resp_spi, 0, /*is_response=*/true, 1, g_hs_tf, 3,
+                                        IKE_DH_CURVE25519, kat_bob_pub, 32, resp_nonce, 16);
+    TEST_ASSERT_TRUE(rspn > 0);
+
+    TEST_ASSERT_TRUE(dws_ike_initiator_on_sa_init(&hs, resp, rspn));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_SA_INIT_DONE, (uint8_t)hs.state);
+    TEST_ASSERT_EQUAL_MEMORY(resp_spi, hs.sa.resp_spi, 8);
+
+    // Mutual agreement: the responder (bob's private + our KE, same nonces/SPIs) derives identical keys.
+    IkeSa peer;
+    memset(&peer, 0, sizeof(peer));
+    memcpy(peer.init_spi, our_spi, 8);
+    memcpy(peer.resp_spi, resp_spi, 8);
+    peer.suite = gcm;
+    TEST_ASSERT_TRUE(
+        dws_ike_sa_keys_from_init(&peer, kat_bob_priv, 32, kat_alice_pub, 32, our_nonce, 16, resp_nonce, 16));
+    TEST_ASSERT_EQUAL_MEMORY(hs.sa.keys.sk_d, peer.keys.sk_d, 32);
+    TEST_ASSERT_EQUAL_MEMORY(hs.sa.keys.sk_ei, peer.keys.sk_ei, 36);
+    TEST_ASSERT_EQUAL_MEMORY(hs.sa.keys.sk_pr, peer.keys.sk_pr, 32);
+}
+
+void test_initiator_handshake_guards()
+{
+    const IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+    const uint8_t our_spi[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    const uint8_t our_nonce[16] = {0};
+    const uint8_t resp_spi[8] = {8, 7, 6, 5, 4, 3, 2, 1};
+    const uint8_t resp_nonce[16] = {0x50};
+    uint8_t req[512];
+
+    // A response echoing the WRONG initiator SPI is rejected and lands in FAILED.
+    IkeHandshake hs;
+    dws_ike_initiator_start(&hs, our_spi, kat_alice_priv, kat_alice_pub, our_nonce, 16, &gcm, g_hs_tf, 3, req,
+                            sizeof(req));
+    const uint8_t wrong_spi[8] = {9, 9, 9, 9, 9, 9, 9, 9};
+    uint8_t rbad[512];
+    size_t bn = dws_ike_sa_init_build(rbad, sizeof(rbad), wrong_spi, resp_spi, 0, true, 1, g_hs_tf, 3,
+                                      IKE_DH_CURVE25519, kat_bob_pub, 32, resp_nonce, 16);
+    TEST_ASSERT_FALSE(dws_ike_initiator_on_sa_init(&hs, rbad, bn));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_FAILED, (uint8_t)hs.state);
+    // Once FAILED, a subsequent (even valid) response is rejected: wrong state.
+    uint8_t rgood[512];
+    size_t gn = dws_ike_sa_init_build(rgood, sizeof(rgood), our_spi, resp_spi, 0, true, 1, g_hs_tf, 3,
+                                      IKE_DH_CURVE25519, kat_bob_pub, 32, resp_nonce, 16);
+    TEST_ASSERT_FALSE(dws_ike_initiator_on_sa_init(&hs, rgood, gn));
+
+    // A message that is NOT a response (INITIATOR flag) is rejected on a fresh handshake.
+    IkeHandshake hs2;
+    dws_ike_initiator_start(&hs2, our_spi, kat_alice_priv, kat_alice_pub, our_nonce, 16, &gcm, g_hs_tf, 3, req,
+                            sizeof(req));
+    uint8_t notresp[512];
+    size_t nn = dws_ike_sa_init_build(notresp, sizeof(notresp), our_spi, resp_spi, 0, /*is_response=*/false, 1, g_hs_tf,
+                                      3, IKE_DH_CURVE25519, kat_bob_pub, 32, resp_nonce, 16);
+    TEST_ASSERT_FALSE(dws_ike_initiator_on_sa_init(&hs2, notresp, nn));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1758,5 +1849,8 @@ int main()
     // tier 2: IKE SA context + key material from a completed IKE_SA_INIT
     RUN_TEST(test_suite_keylengths);
     RUN_TEST(test_sa_keys_from_init_agreement);
+    // tier 2: initiator IKE_SA_INIT handshake driver
+    RUN_TEST(test_initiator_sa_init_handshake);
+    RUN_TEST(test_initiator_handshake_guards);
     return UNITY_END();
 }

@@ -482,9 +482,14 @@ preempting queue, so sensing shares the real-time ingest path.
        negotiated transforms to the SK_* lengths (AEAD -> sk_a = 0 + a 4-byte GCM salt in sk_e) and
        `dws_ike_sa_keys_from_init` computes g^ir and runs the key schedule - verified as a mutual
        agreement (initiator + responder derive identical SK_* from the RFC 7748 Alice/Bob key pair) and
-       cross-checked against a Python reference (`test_ikev2` now 60). Remaining: the stateful
-       message-flow driver (request -> response -> state advance, retransmit/rekey/DPD), and the RSA
-       signature-auth option.
+       cross-checked against a Python reference. **The initiator IKE_SA_INIT handshake driver is shipped
+       too** (RFC 7296 §1.2): an `IkeHandshake` state machine (`IkeState`) where `dws_ike_initiator_start`
+       emits the IKE_SA_INIT request from caller-supplied ephemeral material (SPI, X25519 key pair, nonce
+        - RNG stays out of the pure core) and `dws_ike_initiator_on_sa_init` consumes the responder's
+          reply, captures the responder SPI, and derives the SA keys, failing closed to `IKE_ST_FAILED` on a
+          wrong-SPI / non-response / wrong-state message. Driven against a hand-built responder message it
+          establishes the same keys the responder derives (`test_ikev2` now 62). Remaining: the IKE_AUTH half
+          of the driver + the responder role (retransmit/rekey/DPD), and the RSA signature-auth option.
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with

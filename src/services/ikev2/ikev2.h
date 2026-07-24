@@ -13,9 +13,11 @@
  * (SA -> proposals -> transforms, KE, Ni/Nr, IDi/IDr, CERT/CERTREQ, AUTH, N notify, D delete, TSi/TSr,
  * and the SK encrypted-payload envelope). Tier 2's crypto lives here too: the SKEYSEED / SK_* key
  * derivation (RFC 7296 §2.13-2.14, prf+ over HMAC-SHA2-256), the SK-payload AEAD (RFC 5282
- * AES-256-GCM-16), and the Diffie-Hellman shared secret (RFC 7296 §2.7, group 31 = X25519). The
- * IKE_SA_INIT -> IKE_AUTH state machine is the remaining tier (it reuses the crypto the library already
- * ships); the codec here lays out and reads the bytes so that tier has a tested framing seam.
+ * AES-256-GCM-16), the Diffie-Hellman shared secret (RFC 7296 §2.7, group 31 = X25519), PSK + ECDSA-P256
+ * authentication (§2.15 / RFC 7427), the IKE_SA_INIT + IKE_AUTH message assembly (§1.2 / §3.14), the SA
+ * key schedule (§2.14), and the initiator IKE_SA_INIT handshake driver. Remaining for tier 2: the
+ * IKE_AUTH half of the driver + the responder role. Tier 3 (the ESP datapath, a network-layer transform
+ * that hooks lwIP) is a separate, later track. All the crypto reuses primitives the library already ships.
  *
  * Wire framing (byte-exact, network byte order): the IKE header is 8-byte Initiator SPI, 8-byte
  * Responder SPI, 1-byte Next Payload, 1-byte Version (0x20 = MjVer 2 / MnVer 0), 1-byte Exchange Type,
@@ -696,6 +698,56 @@ bool dws_ike_suite_keylengths(const IkeSuite *suite, IkeKeyLengths *out);
  */
 bool dws_ike_sa_keys_from_init(IkeSa *sa, const uint8_t *our_dh_priv, size_t our_dh_priv_len, const uint8_t *peer_ke,
                                size_t peer_ke_len, const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len);
+
+// ── tier 2: initiator IKE_SA_INIT handshake driver (RFC 7296 §1.2) ─────────────────────────────
+//
+// A small deterministic state machine for the initiator's first exchange: emit the IKE_SA_INIT request,
+// then consume the responder's IKE_SA_INIT and derive the SA keys. The ephemeral material (SPI, the D-H
+// key pair, the nonce) is the CALLER's (supplied from the platform RNG), so the core stays pure and
+// host-testable; the context carries only what the next step needs. The IKE_AUTH exchange is the next
+// increment.
+
+/** @brief Handshake progress for the initiator's IKE_SA_INIT exchange. */
+enum class IkeState : uint8_t
+{
+    IKE_ST_INIT = 0,     ///< nothing sent yet
+    IKE_ST_SA_INIT_SENT, ///< IKE_SA_INIT request emitted, awaiting the response
+    IKE_ST_SA_INIT_DONE, ///< response consumed, SA keys derived (ready for IKE_AUTH)
+    IKE_ST_FAILED,       ///< a received message was rejected
+};
+
+/** @brief Initiator handshake context: the SA under construction plus what the next step needs. */
+struct IkeHandshake
+{
+    IkeSa sa;                                ///< the SA being established (keys filled after SA_INIT)
+    IkeState state;                          ///< @ref IkeState
+    uint8_t our_dh_priv[DWS_IKE_X25519_LEN]; ///< our ephemeral D-H private (to compute g^ir on the response)
+    uint8_t our_nonce[DWS_IKE_NONCE_MAX];    ///< Ni (needed for key derivation + later the AUTH octets)
+    uint16_t our_nonce_len;
+};
+
+/**
+ * @brief Begin the initiator handshake: fill @p hs and emit the IKE_SA_INIT request into @p out.
+ *
+ * The request is HDR | SA(one proposal from @p transforms) | KE(@p our_dh_pub) | Nonce(@p our_nonce),
+ * with the responder SPI 0 and message id 0. @p our_dh_priv / @p our_dh_pub are the caller's ephemeral
+ * X25519 key pair (group @p suite->dh, which must be curve25519 today); @p our_spi is a fresh 8-byte SPI.
+ * @return the request length written to @p out, or 0 on a bad argument / overflow.
+ */
+size_t dws_ike_initiator_start(IkeHandshake *hs, const uint8_t our_spi[DWS_IKE_SPI_LEN],
+                               const uint8_t our_dh_priv[DWS_IKE_X25519_LEN],
+                               const uint8_t our_dh_pub[DWS_IKE_X25519_LEN], const uint8_t *our_nonce, size_t nonce_len,
+                               const IkeSuite *suite, const IkeTransform *transforms, uint8_t num_transforms,
+                               uint8_t *out, size_t out_cap);
+
+/**
+ * @brief Consume the responder's IKE_SA_INIT: validate it, capture the responder SPI + KE + nonce, and
+ *        derive the SA keys (@p hs->sa.keys). Advances @p hs->state to IKE_ST_SA_INIT_DONE, or
+ *        IKE_ST_FAILED on a mismatch.
+ * @return true on success (keys derived), false if the message is malformed, echoes the wrong initiator
+ *         SPI, or the key derivation fails.
+ */
+bool dws_ike_initiator_on_sa_init(IkeHandshake *hs, const uint8_t *resp, size_t resp_len);
 
 #endif // DWS_ENABLE_IKEV2
 
