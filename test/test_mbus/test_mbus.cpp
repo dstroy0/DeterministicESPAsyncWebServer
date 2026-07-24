@@ -313,6 +313,92 @@ void test_record_vife_chain()
     TEST_ASSERT_EQUAL_HEX8(0x42, r.data[0]);
 }
 
+// --- record value + VIF unit decoding ---
+static MbusRecord rec(uint8_t coding, const uint8_t *data, uint8_t len)
+{
+    MbusRecord r;
+    r.dif = 0;
+    r.coding = coding;
+    r.vif = 0;
+    r.data = data;
+    r.data_len = len;
+    return r;
+}
+
+void test_value_int()
+{
+    int64_t v = 0;
+    const uint8_t i32[4] = {0x87, 0xD6, 0x12, 0x00}; // 1234567 little-endian
+    MbusRecord r = rec((uint8_t)MbusDifCoding::MBUS_DIF_INT32, i32, 4);
+    TEST_ASSERT_TRUE(dws_mbus_record_value_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(1234567, v);
+
+    const uint8_t i8[1] = {0xFF}; // -1 signed
+    r = rec((uint8_t)MbusDifCoding::MBUS_DIF_INT8, i8, 1);
+    TEST_ASSERT_TRUE(dws_mbus_record_value_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(-1, v);
+
+    const uint8_t i16[2] = {0x00, 0x80}; // -32768
+    r = rec((uint8_t)MbusDifCoding::MBUS_DIF_INT16, i16, 2);
+    TEST_ASSERT_TRUE(dws_mbus_record_value_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(-32768, v);
+
+    const uint8_t bcd8[4] = {0x78, 0x56, 0x34, 0x12}; // BCD 12345678, little-endian
+    r = rec((uint8_t)MbusDifCoding::MBUS_DIF_BCD8, bcd8, 4);
+    TEST_ASSERT_TRUE(dws_mbus_record_value_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(12345678, v);
+
+    const uint8_t bcdneg[2] = {0x99, 0xF0}; // 0xF top nibble = negative -> -99
+    r = rec((uint8_t)MbusDifCoding::MBUS_DIF_BCD4, bcdneg, 2);
+    TEST_ASSERT_TRUE(dws_mbus_record_value_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(-99, v);
+
+    // An invalid BCD nibble is rejected; a REAL coding is not an integer.
+    const uint8_t bad[1] = {0x1A};
+    r = rec((uint8_t)MbusDifCoding::MBUS_DIF_BCD2, bad, 1);
+    TEST_ASSERT_FALSE(dws_mbus_record_value_int(&r, &v));
+    r = rec((uint8_t)MbusDifCoding::MBUS_DIF_REAL32, i32, 4);
+    TEST_ASSERT_FALSE(dws_mbus_record_value_int(&r, &v));
+}
+
+void test_value_real()
+{
+    float f = 0;
+    const uint8_t r32[4] = {0x00, 0x00, 0xC0, 0x3F}; // 1.5f little-endian
+    MbusRecord r = rec((uint8_t)MbusDifCoding::MBUS_DIF_REAL32, r32, 4);
+    TEST_ASSERT_TRUE(dws_mbus_record_value_real(&r, &f));
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 1.5f, f);
+    // An integer coding is not a real.
+    r = rec((uint8_t)MbusDifCoding::MBUS_DIF_INT32, r32, 4);
+    TEST_ASSERT_FALSE(dws_mbus_record_value_real(&r, &f));
+}
+
+void test_vif_decode()
+{
+    MbusUnit u;
+    int8_t e;
+    TEST_ASSERT_TRUE(dws_mbus_vif_decode(0x13, &u, &e)); // volume 0.001 m3 (litres)
+    TEST_ASSERT_EQUAL(MbusUnit::MBUS_UNIT_M3, u);
+    TEST_ASSERT_EQUAL_INT8(-3, e);
+    TEST_ASSERT_TRUE(dws_mbus_vif_decode(0x06, &u, &e)); // energy 10^3 Wh (kWh)
+    TEST_ASSERT_EQUAL(MbusUnit::MBUS_UNIT_WH, u);
+    TEST_ASSERT_EQUAL_INT8(3, e);
+    TEST_ASSERT_TRUE(dws_mbus_vif_decode(0x2E, &u, &e)); // power 10^3 W (kW)
+    TEST_ASSERT_EQUAL(MbusUnit::MBUS_UNIT_W, u);
+    TEST_ASSERT_EQUAL_INT8(3, e);
+    TEST_ASSERT_TRUE(dws_mbus_vif_decode(0x5A, &u, &e)); // flow temperature 0.1 degC
+    TEST_ASSERT_EQUAL(MbusUnit::MBUS_UNIT_CELSIUS, u);
+    TEST_ASSERT_EQUAL_INT8(-1, e);
+    TEST_ASSERT_TRUE(dws_mbus_vif_decode(0x68, &u, &e)); // pressure 0.001 bar
+    TEST_ASSERT_EQUAL(MbusUnit::MBUS_UNIT_BAR, u);
+    // The extension bit is ignored (0x93 decodes like 0x13).
+    TEST_ASSERT_TRUE(dws_mbus_vif_decode(0x93, &u, &e));
+    TEST_ASSERT_EQUAL(MbusUnit::MBUS_UNIT_M3, u);
+    // A non-measurement VIF (fabrication number 0x78) is unknown.
+    TEST_ASSERT_FALSE(dws_mbus_vif_decode(0x78, &u, &e));
+    TEST_ASSERT_EQUAL(MbusUnit::MBUS_UNIT_UNKNOWN, u);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -330,5 +416,8 @@ int main()
     RUN_TEST(test_dif_data_len_remaining);
     RUN_TEST(test_record_edges);
     RUN_TEST(test_record_vife_chain);
+    RUN_TEST(test_value_int);
+    RUN_TEST(test_value_real);
+    RUN_TEST(test_vif_decode);
     return UNITY_END();
 }

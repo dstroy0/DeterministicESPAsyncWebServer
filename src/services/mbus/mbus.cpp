@@ -231,4 +231,134 @@ bool dws_mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusReco
     return true;
 }
 
+// --- record value + unit decoding ---
+
+bool dws_mbus_record_value_int(const MbusRecord *r, int64_t *out)
+{
+    if (!r || !out || !r->data)
+        return false;
+    const uint8_t *d = r->data;
+    uint8_t n = r->data_len;
+    switch ((MbusDifCoding)r->coding)
+    {
+    case MbusDifCoding::MBUS_DIF_INT8:
+    case MbusDifCoding::MBUS_DIF_INT16:
+    case MbusDifCoding::MBUS_DIF_INT24:
+    case MbusDifCoding::MBUS_DIF_INT32:
+    case MbusDifCoding::MBUS_DIF_INT48:
+    case MbusDifCoding::MBUS_DIF_INT64: {
+        if (n == 0 || n > 8)
+            return false;
+        uint64_t u = 0;
+        for (int i = (int)n - 1; i >= 0; i--)
+            u = (u << 8) | d[i]; // little-endian
+        if (n < 8 && (d[n - 1] & 0x80u))
+            u |= ~(uint64_t)0 << (n * 8); // sign-extend the negative
+        *out = (int64_t)u;
+        return true;
+    }
+    case MbusDifCoding::MBUS_DIF_BCD2:
+    case MbusDifCoding::MBUS_DIF_BCD4:
+    case MbusDifCoding::MBUS_DIF_BCD6:
+    case MbusDifCoding::MBUS_DIF_BCD8:
+    case MbusDifCoding::MBUS_DIF_BCD12: {
+        if (n == 0 || n > 6)
+            return false;
+        bool neg = (uint8_t)(d[n - 1] >> 4) == 0x0Fu; // a 0xF top nibble marks a negative value
+        int64_t v = 0, mult = 1;
+        for (uint8_t i = 0; i < n; i++)
+        {
+            uint8_t lo = (uint8_t)(d[i] & 0x0Fu), hi = (uint8_t)(d[i] >> 4);
+            if (i == (uint8_t)(n - 1) && neg)
+                hi = 0;
+            if (lo > 9 || hi > 9) // an invalid BCD nibble
+                return false;
+            v += (int64_t)(hi * 10 + lo) * mult;
+            mult *= 100;
+        }
+        *out = neg ? -v : v;
+        return true;
+    }
+    default:
+        return false; // real / variable / no-data codings are not integers
+    }
+}
+
+bool dws_mbus_record_value_real(const MbusRecord *r, float *out)
+{
+    if (!r || !out || !r->data || (MbusDifCoding)r->coding != MbusDifCoding::MBUS_DIF_REAL32 || r->data_len < 4)
+        return false;
+    uint32_t bits = (uint32_t)r->data[0] | ((uint32_t)r->data[1] << 8) | ((uint32_t)r->data[2] << 16) |
+                    ((uint32_t)r->data[3] << 24);
+    memcpy(out, &bits, 4);
+    return true;
+}
+
+bool dws_mbus_vif_decode(uint8_t vif, MbusUnit *unit, int8_t *exp10)
+{
+    MbusUnit u = MbusUnit::MBUS_UNIT_UNKNOWN;
+    int8_t e = 0;
+    uint8_t v = (uint8_t)(vif & 0x7Fu); // ignore the VIF extension bit
+    if (v <= 0x07)
+    {
+        u = MbusUnit::MBUS_UNIT_WH;
+        e = (int8_t)((v & 7) - 3); // energy 10^(nnn-3) Wh
+    }
+    else if (v <= 0x0F)
+    {
+        u = MbusUnit::MBUS_UNIT_J;
+        e = (int8_t)(v & 7); // energy 10^(nnn) J
+    }
+    else if (v <= 0x17)
+    {
+        u = MbusUnit::MBUS_UNIT_M3;
+        e = (int8_t)((v & 7) - 6); // volume 10^(nnn-6) m3
+    }
+    else if (v <= 0x1F)
+    {
+        u = MbusUnit::MBUS_UNIT_KG;
+        e = (int8_t)((v & 7) - 3); // mass 10^(nnn-3) kg
+    }
+    else if (v >= 0x28 && v <= 0x2F)
+    {
+        u = MbusUnit::MBUS_UNIT_W;
+        e = (int8_t)((v & 7) - 3); // power 10^(nnn-3) W
+    }
+    else if (v >= 0x30 && v <= 0x37)
+    {
+        u = MbusUnit::MBUS_UNIT_J_PER_H;
+        e = (int8_t)(v & 7); // power 10^(nnn) J/h
+    }
+    else if (v >= 0x38 && v <= 0x3F)
+    {
+        u = MbusUnit::MBUS_UNIT_M3_PER_H;
+        e = (int8_t)((v & 7) - 6); // volume flow 10^(nnn-6) m3/h
+    }
+    else if (v >= 0x58 && v <= 0x5F)
+    {
+        u = MbusUnit::MBUS_UNIT_CELSIUS;
+        e = (int8_t)((v & 3) - 3); // flow / return temperature 10^(nn-3) degC
+    }
+    else if (v >= 0x60 && v <= 0x63)
+    {
+        u = MbusUnit::MBUS_UNIT_K;
+        e = (int8_t)((v & 3) - 3); // temperature difference 10^(nn-3) K
+    }
+    else if (v >= 0x64 && v <= 0x67)
+    {
+        u = MbusUnit::MBUS_UNIT_CELSIUS;
+        e = (int8_t)((v & 3) - 3); // external temperature 10^(nn-3) degC
+    }
+    else if (v >= 0x68 && v <= 0x6B)
+    {
+        u = MbusUnit::MBUS_UNIT_BAR;
+        e = (int8_t)((v & 3) - 3); // pressure 10^(nn-3) bar
+    }
+    if (unit)
+        *unit = u;
+    if (exp10)
+        *exp10 = e;
+    return u != MbusUnit::MBUS_UNIT_UNKNOWN;
+}
+
 #endif // DWS_ENABLE_MBUS

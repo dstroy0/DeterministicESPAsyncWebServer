@@ -18,8 +18,9 @@
  *
  * The wired bus is a powered two-wire pair: the ESP32 talks to it over a UART through an
  * M-Bus level converter (e.g. a TSS721-based master module). This codec is the framing +
- * record layer; the UART transport is the application's. Bridge meters onto Wi-Fi by polling
- * REQ_UD2 and publishing the decoded records.
+ * record layer, including decoding a record's raw value (integer / BCD / real) into a number and its VIF
+ * into a physical unit + decimal exponent; the UART transport is the application's. Bridge meters onto
+ * Wi-Fi by polling REQ_UD2 and publishing the decoded records.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -143,6 +144,45 @@ uint8_t dws_mbus_dif_data_len(uint8_t coding);
  * and advances @p *pos past the record. Returns false at the end of data or on overflow.
  */
 bool dws_mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *out);
+
+// --- record value + unit decoding ---
+
+/**
+ * @brief Decode a record's value as a signed 64-bit integer (the integer and BCD DIF codings).
+ *
+ * Integer codings are little-endian and sign-extended; BCD codings are little-endian octets of two
+ * digits, with a 0xF most-significant nibble marking a negative value. @return false for a real / variable
+ * / no-data coding, or an invalid BCD nibble.
+ */
+bool dws_mbus_record_value_int(const MbusRecord *r, int64_t *out);
+
+/** @brief Decode a record's value as an IEEE-754 float (only the REAL32 DIF coding). @return false otherwise. */
+bool dws_mbus_record_value_real(const MbusRecord *r, float *out);
+
+/** @brief Physical unit a VIF decodes to (the common EN 13757-3 measurement ranges). */
+enum class MbusUnit : uint8_t
+{
+    MBUS_UNIT_UNKNOWN = 0,
+    MBUS_UNIT_WH,       ///< energy, watt-hours
+    MBUS_UNIT_J,        ///< energy, joules
+    MBUS_UNIT_M3,       ///< volume, cubic metres
+    MBUS_UNIT_KG,       ///< mass, kilograms
+    MBUS_UNIT_W,        ///< power, watts
+    MBUS_UNIT_J_PER_H,  ///< power, joules per hour
+    MBUS_UNIT_M3_PER_H, ///< volume flow, cubic metres per hour
+    MBUS_UNIT_CELSIUS,  ///< temperature, degrees Celsius
+    MBUS_UNIT_K,        ///< temperature difference, kelvin
+    MBUS_UNIT_BAR,      ///< pressure, bar
+};
+
+/**
+ * @brief Decode a VIF octet into its unit and the base-10 exponent applied to the raw value.
+ *
+ * Covers the common EN 13757-3 main-table measurement ranges (energy, volume, mass, power, volume flow,
+ * temperature, pressure). The physical value is (raw value) * 10^(@p exp10) in @p unit.
+ * @return true for a decoded measurement VIF; false (unit UNKNOWN) for one outside those ranges.
+ */
+bool dws_mbus_vif_decode(uint8_t vif, MbusUnit *unit, int8_t *exp10);
 
 #endif // DWS_ENABLE_MBUS
 #endif // DETERMINISTICESPASYNCWEBSERVER_MBUS_H
