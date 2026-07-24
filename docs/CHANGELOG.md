@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.155.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.155.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`fd32413`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd32413cacd039fde805636d1aafeca84be44be4))
+
+### Changes
+
+- Bump version: 7.154.3 → 7.155.0 ([`757980d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/757980ddf9e64201873cb66621b9fd0541338c7e))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5536be0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5536be0a9cdbf5896913c5cff9f3d0811ff29598))
+
+### Features
+
+- SHA-256 + HMAC-SHA256 (the SMB2 message-signing primitives) ([`7f3da5b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f3da5b63aac0278a02a564b6874621f489b11d4))
+
+</details>
+
 ## [7.154.3] - 2026-07-24
 
 <details>
