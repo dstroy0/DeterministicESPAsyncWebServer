@@ -422,6 +422,74 @@ void test_io_single_command_in_asdu()
     TEST_ASSERT_FALSE(sel);
 }
 
+void test_io_double_point()
+{
+    uint8_t buf[8];
+    // DPI = ON (2), quality = not-topical.
+    size_t n = dws_iec_io_build_dp(buf, sizeof(buf), 0x001234, IEC_DP_ON, IEC_QUAL_NT);
+    TEST_ASSERT_EQUAL_size_t(4, n);
+    TEST_ASSERT_EQUAL_HEX8(0x34, buf[0]); // IOA little-endian
+    TEST_ASSERT_EQUAL_HEX8(0x12, buf[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x42, buf[3]); // DPI ON (0x02) | NT (0x40)
+
+    uint32_t ioa;
+    uint8_t dpi, q;
+    TEST_ASSERT_TRUE(dws_iec_io_parse_dp(buf, n, &ioa, &dpi, &q));
+    TEST_ASSERT_EQUAL_HEX32(0x1234, ioa);
+    TEST_ASSERT_EQUAL_UINT8(IEC_DP_ON, dpi);
+    TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_NT, q);
+
+    // An OFF value with an invalid flag round-trips, and the reserved bits 2..3 do not leak into the value.
+    dws_iec_io_build_dp(buf, sizeof(buf), 0x0A, IEC_DP_OFF, IEC_QUAL_IV);
+    TEST_ASSERT_TRUE(dws_iec_io_parse_dp(buf, 4, &ioa, &dpi, &q));
+    TEST_ASSERT_EQUAL_UINT8(IEC_DP_OFF, dpi);
+    TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_IV, q);
+    TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_dp(buf, 3, 0, IEC_DP_ON, 0)); // too small
+    TEST_ASSERT_FALSE(dws_iec_io_parse_dp(buf, 3, &ioa, &dpi, &q));
+}
+
+void test_io_double_command_in_asdu()
+{
+    // Assemble a C_DC_NA_1 ASDU: the 6-octet header + one double-command object (select, ON, QU 3).
+    IecAsduHeader h;
+    memset(&h, 0, sizeof(h));
+    h.type_id = IEC_TYPE_C_DC_NA_1;
+    h.count = 1;
+    h.cot = 6; // activation
+    h.common_addr = 1;
+    uint8_t buf[32];
+    size_t p = dws_iec_asdu_build_header(buf, sizeof(buf), &h);
+    TEST_ASSERT_TRUE(p > 0);
+    size_t io = dws_iec_io_build_dc(buf + p, sizeof(buf) - p, 0x00000A, IEC_DP_ON, 3, true);
+    TEST_ASSERT_EQUAL_size_t(4, io);
+    // DCO = DCS ON (0x02) | QU 3 << 2 (0x0C) | S/E (0x80) = 0x8E.
+    TEST_ASSERT_EQUAL_HEX8(0x8E, buf[p + 3]);
+    p += io;
+
+    IecAsduHeader g;
+    size_t consumed = 0;
+    TEST_ASSERT_TRUE(dws_iec_asdu_parse_header(buf, p, &g, &consumed));
+    TEST_ASSERT_EQUAL_UINT8(IEC_TYPE_C_DC_NA_1, g.type_id);
+    uint32_t ioa;
+    uint8_t dcs, qu;
+    bool sel;
+    TEST_ASSERT_TRUE(dws_iec_io_parse_dc(buf + consumed, p - consumed, &ioa, &dcs, &qu, &sel));
+    TEST_ASSERT_EQUAL_HEX32(0x0A, ioa);
+    TEST_ASSERT_EQUAL_UINT8(IEC_DP_ON, dcs);
+    TEST_ASSERT_EQUAL_UINT8(3, qu);
+    TEST_ASSERT_TRUE(sel);
+
+    // An execute (not select) with OFF and QU 0 clears the flag and qualifier.
+    dws_iec_io_build_dc(buf, sizeof(buf), 0x0A, IEC_DP_OFF, 0, false);
+    dws_iec_io_parse_dc(buf, 4, &ioa, &dcs, &qu, &sel);
+    TEST_ASSERT_EQUAL_UINT8(IEC_DP_OFF, dcs);
+    TEST_ASSERT_EQUAL_UINT8(0, qu);
+    TEST_ASSERT_FALSE(sel);
+    TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_dc(buf, 3, 0, IEC_DP_ON, 0, false)); // too small
+    TEST_ASSERT_FALSE(dws_iec_io_parse_dc(buf, 3, &ioa, &dcs, &qu, &sel));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -449,5 +517,7 @@ int main()
     RUN_TEST(test_io_single_point);
     RUN_TEST(test_io_measured_float);
     RUN_TEST(test_io_single_command_in_asdu);
+    RUN_TEST(test_io_double_point);
+    RUN_TEST(test_io_double_command_in_asdu);
     return UNITY_END();
 }

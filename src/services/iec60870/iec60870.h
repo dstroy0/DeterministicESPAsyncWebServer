@@ -151,6 +151,16 @@ uint32_t dws_iec_get_ioa(const uint8_t *p);
 #define IEC_SCO_ON 0x01u  ///< single command: command state ON (SCS)
 #define IEC_SCO_SE 0x80u  ///< single command: select (1) vs execute (0)
 
+// Double-point value (DPI in a DIQ, DCS in a DCO): the low 2 bits of the octet.
+#define IEC_DP_INDETERMINATE 0u   ///< indeterminate or intermediate state
+#define IEC_DP_OFF 1u             ///< determined state OFF
+#define IEC_DP_ON 2u              ///< determined state ON
+#define IEC_DP_INDETERMINATE_3 3u ///< indeterminate state (alternate encoding)
+#define IEC_DP_MASK 0x03u         ///< the DPI / DCS field occupies bits 0..1
+#define IEC_DCO_SE 0x80u          ///< double command: select (1) vs execute (0)
+#define IEC_DCO_QU_SHIFT 2u       ///< double command: qualifier of command (QU) occupies bits 2..6
+#define IEC_DCO_QU_MASK 0x1Fu     ///< the 5-bit qualifier value (after shifting down)
+
 /**
  * @brief Build a single-point information object (M_SP_NA_1, type 1): IOA(3) + SIQ(1).
  * @param on       the single-point value (SPI bit).
@@ -181,6 +191,29 @@ size_t dws_iec_io_build_sc(uint8_t *buf, size_t cap, uint32_t ioa, bool on, bool
 
 /** @brief Parse a single command object into its IOA, commanded state, and select/execute flag. False if < 4. */
 bool dws_iec_io_parse_sc(const uint8_t *buf, size_t len, uint32_t *ioa, bool *on, bool *select);
+
+/**
+ * @brief Build a double-point information object (M_DP_NA_1, type 3): IOA(3) + DIQ(1).
+ * @param dpi      the 2-bit double-point value (IEC_DP_OFF / _ON / _INDETERMINATE).
+ * @param quality  the quality flags (IEC_QUAL_BL / _SB / _NT / _IV; other bits are ignored).
+ * @return 4 on success, 0 on overflow / a null buffer.
+ */
+size_t dws_iec_io_build_dp(uint8_t *buf, size_t cap, uint32_t ioa, uint8_t dpi, uint8_t quality);
+
+/** @brief Parse a double-point information object into its IOA, 2-bit value, and quality flags. False if < 4. */
+bool dws_iec_io_parse_dp(const uint8_t *buf, size_t len, uint32_t *ioa, uint8_t *dpi, uint8_t *quality);
+
+/**
+ * @brief Build a double command object (C_DC_NA_1, type 46): IOA(3) + DCO(1).
+ * @param dcs     the 2-bit double command state (IEC_DP_OFF / _ON).
+ * @param qu      the 5-bit qualifier of command (QU).
+ * @param select  true for a select, false for an execute (S/E bit).
+ * @return 4 on success, 0 on overflow / a null buffer.
+ */
+size_t dws_iec_io_build_dc(uint8_t *buf, size_t cap, uint32_t ioa, uint8_t dcs, uint8_t qu, bool select);
+
+/** @brief Parse a double command object into its IOA, 2-bit state, qualifier, and select/execute flag. False if < 4. */
+bool dws_iec_io_parse_dc(const uint8_t *buf, size_t len, uint32_t *ioa, uint8_t *dcs, uint8_t *qu, bool *select);
 
 // --- IEC 60870-5-101 FT1.2 link frames (over serial) ---
 

@@ -221,6 +221,53 @@ bool dws_iec_io_parse_sc(const uint8_t *buf, size_t len, uint32_t *ioa, bool *on
     return true;
 }
 
+size_t dws_iec_io_build_dp(uint8_t *buf, size_t cap, uint32_t ioa, uint8_t dpi, uint8_t quality)
+{
+    if (!buf || cap < 4)
+        return 0;
+    dws_iec_put_ioa(buf, cap, ioa);
+    buf[3] = (uint8_t)((dpi & IEC_DP_MASK) | (quality & 0xF0u)); // DIQ: DPI (bits 0..1) + quality (bits 4..7)
+    return 4;
+}
+
+bool dws_iec_io_parse_dp(const uint8_t *buf, size_t len, uint32_t *ioa, uint8_t *dpi, uint8_t *quality)
+{
+    if (!buf || len < 4)
+        return false;
+    if (ioa)
+        *ioa = dws_iec_get_ioa(buf);
+    if (dpi)
+        *dpi = (uint8_t)(buf[3] & IEC_DP_MASK);
+    if (quality)
+        *quality = (uint8_t)(buf[3] & 0xF0u);
+    return true;
+}
+
+size_t dws_iec_io_build_dc(uint8_t *buf, size_t cap, uint32_t ioa, uint8_t dcs, uint8_t qu, bool select)
+{
+    if (!buf || cap < 4)
+        return 0;
+    dws_iec_put_ioa(buf, cap, ioa);
+    // DCO: DCS (bits 0..1) + QU (bits 2..6) + S/E (bit 7).
+    buf[3] = (uint8_t)((dcs & IEC_DP_MASK) | ((qu & IEC_DCO_QU_MASK) << IEC_DCO_QU_SHIFT) | (select ? IEC_DCO_SE : 0u));
+    return 4;
+}
+
+bool dws_iec_io_parse_dc(const uint8_t *buf, size_t len, uint32_t *ioa, uint8_t *dcs, uint8_t *qu, bool *select)
+{
+    if (!buf || len < 4)
+        return false;
+    if (ioa)
+        *ioa = dws_iec_get_ioa(buf);
+    if (dcs)
+        *dcs = (uint8_t)(buf[3] & IEC_DP_MASK);
+    if (qu)
+        *qu = (uint8_t)((buf[3] >> IEC_DCO_QU_SHIFT) & IEC_DCO_QU_MASK);
+    if (select)
+        *select = (buf[3] & IEC_DCO_SE) != 0;
+    return true;
+}
+
 // --- -101 FT1.2 link frames ---
 
 static uint8_t sum8(const uint8_t *p, size_t n)
