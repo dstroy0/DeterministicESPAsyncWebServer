@@ -410,7 +410,7 @@ Opt-in FTP client session driver: the two sockets the codec deliberately does no
 
 `DWS_ENABLE_GOOSE`
 
-Opt-in IEC 61850 GOOSE publisher codec. When set, services/goose builds the BER-encoded IECGoosePdu (gocbRef / timeAllowedToLive / datSet / goID / t / stNum / sqNum / simulation / confRev / ndsCom / numDatSetEntries / allData) and wraps it in the 8-octet GOOSE header + Ethernet frame (ethertype 0x88B8) for the fast raw-L2 substation-event publish. Pure codec (allData is a caller-encoded BER blob; the raw-L2 transmit is the device step). Default off.
+Opt-in IEC 61850 GOOSE publisher + subscriber codec. When set, services/goose builds the BER-encoded IECGoosePdu (gocbRef / timeAllowedToLive / datSet / goID / t / stNum / sqNum / simulation / confRev / ndsCom / numDatSetEntries / allData) and wraps it in the 8-octet GOOSE header + Ethernet frame (ethertype 0x88B8) for the fast raw-L2 substation-event publish. On the receive side, `dws_goose_parse_frame` subscribes: it validates the ethertype, walks the BER definite-length TLVs of the IECGoosePdu, and lifts every field into a `DWSGooseRx` (the numeric stNum / sqNum / timeAllowedToLive / confRev / numDatSetEntries, the booleans, the borrowed gocbRef / datSet / goID strings, the 8-octet UtcTime, and the allData slice), skipping unknown/future tags - so a device reacts to a protection trip, not just publishes one. Pure codec (allData is a caller-encoded BER blob; the raw-L2 transmit / receive is the device step). Default off.
 
 ## GPIB
 

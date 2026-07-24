@@ -90,6 +90,42 @@ bool dws_ber_bool(uint8_t *out, size_t cap, size_t *n, uint8_t tag, bool v)
     uint8_t b = v ? 0xFF : 0x00;
     return tlv(out, cap, n, tag, &b, 1);
 }
+
+// Read one definite-length BER TLV at *p within [*p, end). Advances *p past the value on success.
+// Rejects truncation and indefinite / over-4-octet lengths (a GOOSE PDU never needs them).
+bool ber_read(const uint8_t *end, const uint8_t **p, uint8_t *tag, const uint8_t **vptr, size_t *vlen)
+{
+    const uint8_t *q = *p;
+    if (q + 2 > end)
+        return false;
+    uint8_t t = *q++;
+    size_t len = *q++;
+    if (len & 0x80)
+    {
+        size_t nb = len & 0x7F;
+        if (nb == 0 || nb > 4 || q + nb > end)
+            return false;
+        len = 0;
+        for (size_t i = 0; i < nb; i++)
+            len = (len << 8) | *q++;
+    }
+    if (len > (size_t)(end - q))
+        return false;
+    *tag = t;
+    *vptr = q;
+    *vlen = len;
+    *p = q + len;
+    return true;
+}
+
+// A big-endian unsigned BER INTEGER value (a leading 0x00 sign octet folds in harmlessly).
+uint32_t ber_uint(const uint8_t *v, size_t n)
+{
+    uint32_t x = 0;
+    for (size_t i = 0; i < n; i++)
+        x = (x << 8) | v[i];
+    return x;
+}
 } // namespace
 
 size_t dws_goose_pdu(const DWSGoose *g, uint8_t *out, size_t cap)
@@ -146,6 +182,79 @@ size_t dws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, c
     out[16] = (uint8_t)(goose_len >> 8);
     out[17] = (uint8_t)goose_len;
     return 22 + pdu;
+}
+
+bool dws_goose_parse_frame(const uint8_t *buf, size_t len, DWSGooseRx *out)
+{
+    if (!buf || !out || len < 24) // 14 Ethernet + 8 GOOSE header + a minimal PDU
+        return false;
+    if (buf[12] != 0x88 || buf[13] != 0xB8) // GOOSE ethertype
+        return false;
+    memset(out, 0, sizeof(*out));
+    out->appid = (uint16_t)((buf[14] << 8) | buf[15]);
+
+    const uint8_t *end = buf + len;
+    const uint8_t *p = buf + 22; // the IECGoosePdu begins after the 8-octet GOOSE header
+    uint8_t tag = 0;
+    const uint8_t *v = nullptr;
+    size_t vlen = 0;
+    if (!ber_read(end, &p, &tag, &v, &vlen) || tag != 0x61) // the outer IECGoosePdu SEQUENCE
+        return false;
+
+    const uint8_t *inner_end = v + vlen;
+    const uint8_t *ip = v;
+    while (ip < inner_end)
+    {
+        if (!ber_read(inner_end, &ip, &tag, &v, &vlen))
+            return false;
+        switch (tag)
+        {
+        case 0x80:
+            out->gocb_ref = (const char *)v;
+            out->gocb_ref_len = vlen;
+            break;
+        case 0x81:
+            out->time_allowed_to_live = ber_uint(v, vlen);
+            break;
+        case 0x82:
+            out->dat_set = (const char *)v;
+            out->dat_set_len = vlen;
+            break;
+        case 0x83:
+            out->go_id = (const char *)v;
+            out->go_id_len = vlen;
+            break;
+        case 0x84:
+            if (vlen == 8)
+                out->t = v;
+            break;
+        case 0x85:
+            out->st_num = ber_uint(v, vlen);
+            break;
+        case 0x86:
+            out->sq_num = ber_uint(v, vlen);
+            break;
+        case 0x87:
+            out->simulation = (vlen >= 1 && v[0] != 0);
+            break;
+        case 0x88:
+            out->conf_rev = ber_uint(v, vlen);
+            break;
+        case 0x89:
+            out->nds_com = (vlen >= 1 && v[0] != 0);
+            break;
+        case 0x8A:
+            out->num_entries = ber_uint(v, vlen);
+            break;
+        case 0xAB:
+            out->all_data = v;
+            out->all_data_len = vlen;
+            break;
+        default:
+            break; // unknown / future tags are skipped
+        }
+    }
+    return true;
 }
 
 #endif // DWS_ENABLE_GOOSE

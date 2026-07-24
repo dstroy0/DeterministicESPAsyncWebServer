@@ -3,7 +3,7 @@
 
 /**
  * @file goose.h
- * @brief IEC 61850 GOOSE publisher codec (DWS_ENABLE_GOOSE).
+ * @brief IEC 61850 GOOSE publisher + subscriber codec (DWS_ENABLE_GOOSE).
  *
  * GOOSE (Generic Object Oriented Substation Event) is the fast raw-L2 multicast publish IEC 61850 uses
  * for protection trips. A GOOSE frame is an Ethernet frame (ethertype 0x88B8, see services/rawl2) with
@@ -13,8 +13,10 @@
  *             86 sqNum  87 simulation(BOOL)  88 confRev  89 ndsCom(BOOL)  8A numDatSetEntries  AB allData }
  *
  * This builds the control PDU (all fields above) with `allData` supplied as a caller-encoded BER blob
- * (a SEQUENCE of Data elements), then wraps it in the GOOSE header + Ethernet frame. Pure, zero heap,
- * no stdlib, host-testable; the raw-L2 transmit (`esp_eth_transmit`) is the device step.
+ * (a SEQUENCE of Data elements), then wraps it in the GOOSE header + Ethernet frame; `dws_goose_parse_frame`
+ * decodes a received frame the other way (the subscriber side), walking the BER TLVs into a DWSGooseRx.
+ * Pure, zero heap, no stdlib, host-testable; the raw-L2 transmit / receive (`esp_eth_transmit`) is the
+ * device step.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_GOOSE_H
@@ -56,6 +58,36 @@ size_t dws_goose_pdu(const DWSGoose *g, uint8_t *out, size_t cap);
  */
 size_t dws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, const DWSGoose *g, uint8_t *out,
                        size_t cap);
+
+/** @brief The decoded fields of a received GOOSE frame. String / blob members point INTO the source buffer
+ *  and are NOT NUL-terminated (each has an explicit length), so the caller must keep the buffer alive. */
+struct DWSGooseRx
+{
+    uint16_t appid;       ///< GOOSE APPID from the header
+    const char *gocb_ref; ///< gocbRef, or nullptr if absent
+    size_t gocb_ref_len;
+    uint32_t time_allowed_to_live; ///< ms the subscriber should keep this valid
+    const char *dat_set;           ///< dataset reference, or nullptr
+    size_t dat_set_len;
+    const char *go_id; ///< GOOSE id, or nullptr
+    size_t go_id_len;
+    const uint8_t *t;        ///< 8-octet UtcTime, or nullptr
+    uint32_t st_num;         ///< state number
+    uint32_t sq_num;         ///< sequence number
+    bool simulation;         ///< test / simulation flag
+    uint32_t conf_rev;       ///< configuration revision
+    bool nds_com;            ///< needs-commissioning flag
+    uint32_t num_entries;    ///< number of dataset entries
+    const uint8_t *all_data; ///< the BER-encoded allData contents (inside the 0xAB tag), or nullptr
+    size_t all_data_len;
+};
+
+/**
+ * @brief Parse (subscribe to) a received GOOSE Ethernet frame into @p out. String / blob members borrow the
+ *        input buffer. Unknown / future PDU tags are skipped.
+ * @return true iff the ethertype is 0x88B8 and the IECGoosePdu parses without truncation; false otherwise.
+ */
+bool dws_goose_parse_frame(const uint8_t *buf, size_t len, DWSGooseRx *out);
 
 #endif // DWS_ENABLE_GOOSE
 #endif // DETERMINISTICESPASYNCWEBSERVER_GOOSE_H

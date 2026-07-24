@@ -196,6 +196,76 @@ void test_goose_frame_null_guards(void)
     TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g, nullptr, sizeof(out)));  // null out
 }
 
+// Build a frame with the publisher, then subscribe to it and confirm every field round-trips
+// (multi-octet integers, a caller-supplied UtcTime, the true booleans, and the allData blob).
+void test_parse_roundtrip(void)
+{
+    DWSGoose g = base();
+    g.gocb_ref = "GE1/LLN0$GO$gcb";
+    g.time_allowed_to_live = 1000;
+    g.dat_set = "GE1/LLN0$DS";
+    g.go_id = "TRIP1";
+    uint8_t tbuf[8] = {0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD};
+    g.t = tbuf;
+    g.st_num = 200;      // forces a BER leading-zero integer (85 02 00 C8)
+    g.sq_num = 0x012345; // a 3-octet integer
+    g.simulation = true;
+    g.conf_rev = 7;
+    g.nds_com = true;
+    g.num_entries = 2;
+    uint8_t adata[] = {0x83, 0x01, 0x01, 0x83, 0x01, 0x00}; // two boolean Data elements
+    g.all_data = adata;
+    g.all_data_len = sizeof(adata);
+
+    uint8_t dst[6] = {0x01, 0x0C, 0xCD, 0x01, 0x00, 0x01};
+    uint8_t src[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+    uint8_t frame[256];
+    size_t n = dws_goose_frame(dst, src, 0x3001, &g, frame, sizeof(frame));
+    TEST_ASSERT_TRUE(n > 22);
+
+    DWSGooseRx rx;
+    TEST_ASSERT_TRUE(dws_goose_parse_frame(frame, n, &rx));
+    TEST_ASSERT_EQUAL_HEX16(0x3001, rx.appid);
+    TEST_ASSERT_EQUAL_size_t(strlen("GE1/LLN0$GO$gcb"), rx.gocb_ref_len);
+    TEST_ASSERT_EQUAL_MEMORY("GE1/LLN0$GO$gcb", rx.gocb_ref, rx.gocb_ref_len);
+    TEST_ASSERT_EQUAL_UINT32(1000, rx.time_allowed_to_live);
+    TEST_ASSERT_EQUAL_MEMORY("GE1/LLN0$DS", rx.dat_set, rx.dat_set_len);
+    TEST_ASSERT_EQUAL_size_t(5, rx.go_id_len);
+    TEST_ASSERT_EQUAL_MEMORY("TRIP1", rx.go_id, rx.go_id_len);
+    TEST_ASSERT_NOT_NULL(rx.t);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(tbuf, rx.t, 8);
+    TEST_ASSERT_EQUAL_UINT32(200, rx.st_num);
+    TEST_ASSERT_EQUAL_UINT32(0x012345, rx.sq_num);
+    TEST_ASSERT_TRUE(rx.simulation);
+    TEST_ASSERT_EQUAL_UINT32(7, rx.conf_rev);
+    TEST_ASSERT_TRUE(rx.nds_com);
+    TEST_ASSERT_EQUAL_UINT32(2, rx.num_entries);
+    TEST_ASSERT_EQUAL_size_t(sizeof(adata), rx.all_data_len);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(adata, rx.all_data, sizeof(adata));
+}
+
+void test_parse_rejects(void)
+{
+    DWSGoose g = base();
+    uint8_t dst[6] = {0};
+    uint8_t src[6] = {0};
+    uint8_t frame[256];
+    size_t n = dws_goose_frame(dst, src, 0x1234, &g, frame, sizeof(frame));
+
+    DWSGooseRx rx;
+    // A non-GOOSE ethertype is rejected.
+    uint8_t bad[256];
+    memcpy(bad, frame, n);
+    bad[13] = 0xB9;
+    TEST_ASSERT_FALSE(dws_goose_parse_frame(bad, n, &rx));
+    // A frame truncated into the PDU fails the BER definite-length bound check.
+    TEST_ASSERT_FALSE(dws_goose_parse_frame(frame, 25, &rx));
+    // Too short (< 24) and null guards.
+    TEST_ASSERT_FALSE(dws_goose_parse_frame(frame, 23, &rx));
+    TEST_ASSERT_FALSE(dws_goose_parse_frame(nullptr, n, &rx));
+    TEST_ASSERT_FALSE(dws_goose_parse_frame(frame, n, nullptr));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -206,5 +276,7 @@ int main(void)
     RUN_TEST(test_goose_null_string_true_bool_and_time);
     RUN_TEST(test_goose_pdu_field_boundary_failures);
     RUN_TEST(test_goose_frame_null_guards);
+    RUN_TEST(test_parse_roundtrip);
+    RUN_TEST(test_parse_rejects);
     return UNITY_END();
 }
