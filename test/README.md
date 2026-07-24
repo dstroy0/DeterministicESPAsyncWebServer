@@ -25689,8 +25689,8 @@ A thorough directory of all **4981 test cases** across **287 suites**. Expand a 
 
     * **Objective**: Build write rejects bad args
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single(1, 1, 0, 5, nullptr, 16)); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single(1, 1, 0, 5, adu, 4));      // buffer too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single(1, 1, 0, 5, nullptr, 16));         // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_single(1, 1, 0, 5, adu, 4));              // buffer too small</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 2, nullptr, 32)); // null out</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, nullptr, 2, adu, 32));  // null values</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_modbus_build_write_multiple(1, 1, 0, vals, 0, adu, 32));     // count 0</code>
