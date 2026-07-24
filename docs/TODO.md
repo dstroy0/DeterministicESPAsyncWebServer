@@ -854,8 +854,13 @@ shipped work:
       tail and re-decodes it next packet - no mid-block state). s2c is HW-verified against OpenSSH
       10.3 (42 KB byte-perfect); c2s is verified byte-exact against golden vectors from **real zlib**
       (windowBits 15, `Z_PARTIAL_FLUSH`; `native_ssh_inflate` + `native_ssh_comp`,
-      tools/gen_ssh_inflate_vectors.py). _Only remainder:_ HW interop of the c2s path against a live
-      OpenSSH client (`ssh -o Compression=yes` + a c2s upload) on an ESP32-S3.
+      tools/gen_ssh_inflate_vectors.py). The SSH-example firmware with `DWS_ENABLE_SSH_ZLIB=1` +
+      `DWS_SSH_ZLIB_ACK_DRAM=1` + `MAX_SSH_CONNS=1` **build-verified on ESP32-S3** (fits internal
+      DRAM: 948 KB flash / 182 KB globals, 145 KB free; the classic-ESP32 ~122 KB DRAM ceiling
+      overflows, so the S3/P4 or the PSRAM-BSS core is required). _Only remainder:_ live interop of
+      the c2s path against a real OpenSSH client (`ssh -o Compression=yes` + a c2s upload, echoing
+      back to confirm byte-exact decompression) - needs a free S3/P4 rig (RPi rigs currently
+      unplugged; COM7/COM9 are shared GNSS / SSH-interop boards).
 
 </details>
 
