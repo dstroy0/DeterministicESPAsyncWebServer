@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.114.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.114.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`35a156a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35a156a10ed0e85bcd513d500968d80a265e973a))
+
+### Changes
+
+- Bump version: 7.113.0 → 7.114.0 ([`9323212`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9323212dba4b81c059a01aa58ed8064d21499ae2))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e113c81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e113c81dd37fbf5d13c207f43d71e6b066f555f5))
+
+### Features
+
+- parse the identify (aI!) response ([`380975c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/380975ca19ee8b2d6596aa0c5a66629acce25b59))
+
+</details>
+
 ## [7.113.0] - 2026-07-24
 
 <details>
