@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.151.1] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.151.1 - 2026-07-24</b></summary>
+
+### Bug Fixes
+
+- remediate SonarCloud findings and replace banned strlen ([`b00ff82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b00ff82959593ea38e1ae1fe5b2030a09f57c3f1))
+
+### CI / Build
+
+- fail commits and CI on src/ banned constructs ([`d410c52`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d410c526cd9d8f20fca95751811c0ce2914c894a))
+- update test report + coverage [skip ci] ([`e486137`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e486137a486ec465dfd1d860ad9f70577b2a3ca4))
+- update CHANGELOG.md [skip ci] ([`714f882`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/714f882d784d51b3750d161110ea237ef7822a20))
+
+### Changes
+
+- Bump version: 7.151.0 → 7.151.1 ([`b833007`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b833007593b9e6d32e12f0cf7cdba2e70fcc329a))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7be7b61`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7be7b615d98cfbf0c384f9b1ff2bcf9bfb387630))
+
+</details>
+
 ## [7.151.0] - 2026-07-24
 
 <details>
