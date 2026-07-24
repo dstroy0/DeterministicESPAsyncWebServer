@@ -238,6 +238,41 @@ bool dws_mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusReco
 
 // --- record value + unit decoding ---
 
+// Decode a little-endian signed integer of @p n (1..8) octets (M-Bus INT8..INT64), sign-extended.
+static bool mbus_decode_int(const uint8_t *d, uint8_t n, int64_t *out)
+{
+    if (n == 0 || n > 8)
+        return false;
+    uint64_t u = 0;
+    for (int i = (int)n - 1; i >= 0; i--)
+        u = (u << 8) | d[i]; // little-endian
+    if (n < 8 && (d[n - 1] & 0x80u))
+        u |= ~(uint64_t)0 << (n * 8); // sign-extend the negative
+    *out = (int64_t)u;
+    return true;
+}
+
+// Decode a packed-BCD value of @p n (1..6) octets (M-Bus BCD2..BCD12); a 0xF top nibble marks negative.
+static bool mbus_decode_bcd(const uint8_t *d, uint8_t n, int64_t *out)
+{
+    if (n == 0 || n > 6)
+        return false;
+    bool neg = (uint8_t)(d[n - 1] >> 4) == 0x0Fu; // a 0xF top nibble marks a negative value
+    int64_t v = 0, mult = 1;
+    for (uint8_t i = 0; i < n; i++)
+    {
+        uint8_t lo = (uint8_t)(d[i] & 0x0Fu), hi = (uint8_t)(d[i] >> 4);
+        if (i == (uint8_t)(n - 1) && neg)
+            hi = 0;
+        if (lo > 9 || hi > 9) // an invalid BCD nibble
+            return false;
+        v += (int64_t)(hi * 10 + lo) * mult;
+        mult *= 100;
+    }
+    *out = neg ? -v : v;
+    return true;
+}
+
 bool dws_mbus_record_value_int(const MbusRecord *r, int64_t *out)
 {
     if (!r || !out || !r->data)
@@ -251,39 +286,14 @@ bool dws_mbus_record_value_int(const MbusRecord *r, int64_t *out)
     case MbusDifCoding::MBUS_DIF_INT24:
     case MbusDifCoding::MBUS_DIF_INT32:
     case MbusDifCoding::MBUS_DIF_INT48:
-    case MbusDifCoding::MBUS_DIF_INT64: {
-        if (n == 0 || n > 8)
-            return false;
-        uint64_t u = 0;
-        for (int i = (int)n - 1; i >= 0; i--)
-            u = (u << 8) | d[i]; // little-endian
-        if (n < 8 && (d[n - 1] & 0x80u))
-            u |= ~(uint64_t)0 << (n * 8); // sign-extend the negative
-        *out = (int64_t)u;
-        return true;
-    }
+    case MbusDifCoding::MBUS_DIF_INT64:
+        return mbus_decode_int(d, n, out);
     case MbusDifCoding::MBUS_DIF_BCD2:
     case MbusDifCoding::MBUS_DIF_BCD4:
     case MbusDifCoding::MBUS_DIF_BCD6:
     case MbusDifCoding::MBUS_DIF_BCD8:
-    case MbusDifCoding::MBUS_DIF_BCD12: {
-        if (n == 0 || n > 6)
-            return false;
-        bool neg = (uint8_t)(d[n - 1] >> 4) == 0x0Fu; // a 0xF top nibble marks a negative value
-        int64_t v = 0, mult = 1;
-        for (uint8_t i = 0; i < n; i++)
-        {
-            uint8_t lo = (uint8_t)(d[i] & 0x0Fu), hi = (uint8_t)(d[i] >> 4);
-            if (i == (uint8_t)(n - 1) && neg)
-                hi = 0;
-            if (lo > 9 || hi > 9) // an invalid BCD nibble
-                return false;
-            v += (int64_t)(hi * 10 + lo) * mult;
-            mult *= 100;
-        }
-        *out = neg ? -v : v;
-        return true;
-    }
+    case MbusDifCoding::MBUS_DIF_BCD12:
+        return mbus_decode_bcd(d, n, out);
     default:
         return false; // real / variable / no-data codings are not integers
     }
@@ -339,20 +349,17 @@ bool dws_mbus_vif_decode(uint8_t vif, MbusUnit *unit, int8_t *exp10)
         u = MbusUnit::MBUS_UNIT_M3_PER_H;
         e = (int8_t)((v & 7) - 6); // volume flow 10^(nnn-6) m3/h
     }
-    else if (v >= 0x58 && v <= 0x5F)
+    else if ((v >= 0x58 && v <= 0x5F) || (v >= 0x64 && v <= 0x67))
     {
+        // Flow/return (0x58..0x5F) and external (0x64..0x67) temperatures are both degrees Celsius at
+        // the same 10^(nn-3) scale, so they share one branch (the VIF only distinguishes them semantically).
         u = MbusUnit::MBUS_UNIT_CELSIUS;
-        e = (int8_t)((v & 3) - 3); // flow / return temperature 10^(nn-3) degC
+        e = (int8_t)((v & 3) - 3);
     }
     else if (v >= 0x60 && v <= 0x63)
     {
         u = MbusUnit::MBUS_UNIT_K;
         e = (int8_t)((v & 3) - 3); // temperature difference 10^(nn-3) K
-    }
-    else if (v >= 0x64 && v <= 0x67)
-    {
-        u = MbusUnit::MBUS_UNIT_CELSIUS;
-        e = (int8_t)((v & 3) - 3); // external temperature 10^(nn-3) degC
     }
     else if (v >= 0x68 && v <= 0x6B)
     {

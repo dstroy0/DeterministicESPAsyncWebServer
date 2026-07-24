@@ -226,6 +226,50 @@ size_t dws_apdu_build_read_property(uint8_t *buf, size_t cap, uint8_t invoke_id,
     return p;
 }
 
+// Confirmed-Request APDU header: flags + the max-segs/max-apdu octet + invoke id, then a segment
+// sequence/window pair when segmented, then the service choice. Advances *p; false on a short buffer.
+static bool apdu_parse_confirmed_request(const uint8_t *apdu, size_t len, BacnetApdu *out, size_t *p)
+{
+    out->segmented = (apdu[0] & BACNET_APDU_SEG) != 0;
+    out->more_follows = (apdu[0] & BACNET_APDU_MOR) != 0;
+    out->sa = (apdu[0] & BACNET_APDU_SA) != 0;
+    if (len < *p + 2) // max-segs/max-apdu octet + invoke id
+        return false;
+    out->invoke_id = apdu[*p + 1]; // apdu[1] is max segments / max APDU, apdu[2] is the invoke id
+    *p += 2;
+    if (out->segmented) // a segmented request carries a sequence number + proposed window size
+    {
+        if (len < *p + 2)
+            return false;
+        *p += 2;
+    }
+    if (len < *p + 1)
+        return false;
+    out->service_choice = apdu[(*p)++];
+    return true;
+}
+
+// Complex-ACK APDU header: flags + invoke id, then a segment sequence/window pair when segmented, then
+// the service-ACK choice. Advances *p; false on a short buffer.
+static bool apdu_parse_complex_ack(const uint8_t *apdu, size_t len, BacnetApdu *out, size_t *p)
+{
+    out->segmented = (apdu[0] & BACNET_APDU_SEG) != 0;
+    out->more_follows = (apdu[0] & BACNET_APDU_MOR) != 0;
+    if (len < *p + 1) // invoke id
+        return false;
+    out->invoke_id = apdu[(*p)++];
+    if (out->segmented)
+    {
+        if (len < *p + 2)
+            return false;
+        *p += 2;
+    }
+    if (len < *p + 1)
+        return false;
+    out->service_choice = apdu[(*p)++];
+    return true;
+}
+
 bool dws_apdu_parse(const uint8_t *apdu, size_t len, BacnetApdu *out)
 {
     if (!apdu || !out || len < 1)
@@ -236,22 +280,8 @@ bool dws_apdu_parse(const uint8_t *apdu, size_t len, BacnetApdu *out)
     switch (out->pdu_type)
     {
     case BACNET_PDU_CONFIRMED_REQUEST:
-        out->segmented = (apdu[0] & BACNET_APDU_SEG) != 0;
-        out->more_follows = (apdu[0] & BACNET_APDU_MOR) != 0;
-        out->sa = (apdu[0] & BACNET_APDU_SA) != 0;
-        if (len < p + 2) // max-segs/max-apdu octet + invoke id
+        if (!apdu_parse_confirmed_request(apdu, len, out, &p))
             return false;
-        out->invoke_id = apdu[p + 1]; // apdu[1] is max segments / max APDU, apdu[2] is the invoke id
-        p += 2;
-        if (out->segmented) // a segmented request carries a sequence number + proposed window size
-        {
-            if (len < p + 2)
-                return false;
-            p += 2;
-        }
-        if (len < p + 1)
-            return false;
-        out->service_choice = apdu[p++];
         break;
     case BACNET_PDU_UNCONFIRMED_REQUEST:
         if (len < p + 1)
@@ -265,20 +295,8 @@ bool dws_apdu_parse(const uint8_t *apdu, size_t len, BacnetApdu *out)
         out->service_choice = apdu[p++];
         break;
     case BACNET_PDU_COMPLEX_ACK:
-        out->segmented = (apdu[0] & BACNET_APDU_SEG) != 0;
-        out->more_follows = (apdu[0] & BACNET_APDU_MOR) != 0;
-        if (len < p + 1) // invoke id
+        if (!apdu_parse_complex_ack(apdu, len, out, &p))
             return false;
-        out->invoke_id = apdu[p++];
-        if (out->segmented)
-        {
-            if (len < p + 2)
-                return false;
-            p += 2;
-        }
-        if (len < p + 1)
-            return false;
-        out->service_choice = apdu[p++];
         break;
     default:
         return false; // segment-ack / error / reject / abort are not decoded here

@@ -250,13 +250,12 @@ static void ck_add(DwsUbxStream *st, uint8_t b)
     st->ck_b = (uint8_t)(st->ck_b + st->ck_a);
 }
 
-int dws_ubx_stream_feed(DwsUbxStream *st, uint8_t b, DwsUbx *out, uint8_t *passthrough)
+// The sync-hunt phase (S_SYNC1 / S_SYNC2): find the 0xB5 0x62 frame start, passing non-frame bytes
+// through untouched. Returns the stream-feed result and advances st->state on a match.
+static int ubx_feed_sync(DwsUbxStream *st, uint8_t b, uint8_t *passthrough)
 {
-    if (!st)
-        return DWS_UBX_NONE;
-    switch (st->state)
+    if (st->state == S_SYNC1)
     {
-    case S_SYNC1:
         if (b == DWS_UBX_SYNC1)
         {
             st->state = S_SYNC2;
@@ -265,21 +264,32 @@ int dws_ubx_stream_feed(DwsUbxStream *st, uint8_t b, DwsUbx *out, uint8_t *passt
         if (passthrough)
             *passthrough = b;
         return DWS_UBX_PASSTHROUGH;
-    case S_SYNC2:
-        if (b == DWS_UBX_SYNC2)
-        {
-            st->state = S_CLASS;
-            return DWS_UBX_NONE;
-        }
-        st->state = S_SYNC1;
-        if (b == DWS_UBX_SYNC1) // a fresh sync1; the previous one was a false start
-        {
-            st->state = S_SYNC2;
-            return DWS_UBX_NONE;
-        }
-        if (passthrough)
-            *passthrough = b;
-        return DWS_UBX_PASSTHROUGH;
+    }
+    // S_SYNC2
+    if (b == DWS_UBX_SYNC2)
+    {
+        st->state = S_CLASS;
+        return DWS_UBX_NONE;
+    }
+    st->state = S_SYNC1;
+    if (b == DWS_UBX_SYNC1) // a fresh sync1; the previous one was a false start
+    {
+        st->state = S_SYNC2;
+        return DWS_UBX_NONE;
+    }
+    if (passthrough)
+        *passthrough = b;
+    return DWS_UBX_PASSTHROUGH;
+}
+
+int dws_ubx_stream_feed(DwsUbxStream *st, uint8_t b, DwsUbx *out, uint8_t *passthrough)
+{
+    if (!st)
+        return DWS_UBX_NONE;
+    if (st->state == S_SYNC1 || st->state == S_SYNC2)
+        return ubx_feed_sync(st, b, passthrough);
+    switch (st->state)
+    {
     case S_CLASS:
         st->cls = b;
         st->ck_a = b; // Fletcher seed: first byte of the checksummed span

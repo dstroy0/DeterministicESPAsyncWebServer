@@ -77,65 +77,73 @@ size_t dws_pb_build_sd3(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *data,
     return 14;
 }
 
+// SD3 fixed-length telegram: SD3 DA SA FC data[8] FCS ED (14 octets).
+static bool pb_parse_sd3(const uint8_t *frame, size_t len, PbTelegram *out)
+{
+    if (len < 14)
+        return false;
+    if (dws_pb_fcs(frame + 1, 11) != frame[12] || frame[13] != Profibus::PB_ED)
+        return false;
+    out->sd = Profibus::PB_SD3;
+    out->da = frame[1];
+    out->sa = frame[2];
+    out->fc = frame[3];
+    out->data = frame + 4;
+    out->data_len = 8;
+    return true;
+}
+
+// SD1 no-data telegram: SD1 DA SA FC FCS ED (6 octets).
+static bool pb_parse_sd1(const uint8_t *frame, size_t len, PbTelegram *out)
+{
+    (void)len; // len >= 6 already guaranteed by dws_pb_parse
+    uint8_t body[3] = {frame[1], frame[2], frame[3]};
+    if (dws_pb_fcs(body, 3) != frame[4] || frame[5] != Profibus::PB_ED)
+        return false;
+    out->sd = Profibus::PB_SD1;
+    out->da = frame[1];
+    out->sa = frame[2];
+    out->fc = frame[3];
+    out->data = nullptr;
+    out->data_len = 0;
+    return true;
+}
+
+// SD2 variable-length telegram: SD2 LE LEr SD2 DA SA FC [data] FCS ED.
+static bool pb_parse_sd2(const uint8_t *frame, size_t len, PbTelegram *out)
+{
+    if (len < 9)
+        return false;
+    uint8_t le = frame[1];
+    if (frame[2] != le || frame[3] != Profibus::PB_SD2)
+        return false;
+    if (le < 3)
+        return false;
+    size_t total = 4 + le + 2; // header(4) + le body + FCS + ED
+    if (len < total)
+        return false;
+    if (dws_pb_fcs(frame + 4, le) != frame[4 + le] || frame[4 + le + 1] != Profibus::PB_ED)
+        return false;
+    out->sd = Profibus::PB_SD2;
+    out->da = frame[4];
+    out->sa = frame[5];
+    out->fc = frame[6];
+    size_t dl = le - 3;
+    out->data = dl ? (frame + 7) : nullptr;
+    out->data_len = dl;
+    return true;
+}
+
 bool dws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
 {
     if (!frame || !out || len < 6)
         return false;
-
     if (frame[0] == Profibus::PB_SD3)
-    {
-        // SD3 DA SA FC data[8] FCS ED (14 octets, fixed)
-        if (len < 14)
-            return false;
-        if (dws_pb_fcs(frame + 1, 11) != frame[12] || frame[13] != Profibus::PB_ED)
-            return false;
-        out->sd = Profibus::PB_SD3;
-        out->da = frame[1];
-        out->sa = frame[2];
-        out->fc = frame[3];
-        out->data = frame + 4;
-        out->data_len = 8;
-        return true;
-    }
-
+        return pb_parse_sd3(frame, len, out);
     if (frame[0] == Profibus::PB_SD1)
-    {
-        // SD1 DA SA FC FCS ED (len >= 6 already guaranteed above)
-        uint8_t body[3] = {frame[1], frame[2], frame[3]};
-        if (dws_pb_fcs(body, 3) != frame[4] || frame[5] != Profibus::PB_ED)
-            return false;
-        out->sd = Profibus::PB_SD1;
-        out->da = frame[1];
-        out->sa = frame[2];
-        out->fc = frame[3];
-        out->data = nullptr;
-        out->data_len = 0;
-        return true;
-    }
+        return pb_parse_sd1(frame, len, out);
     if (frame[0] == Profibus::PB_SD2)
-    {
-        // SD2 LE LEr SD2 DA SA FC [data] FCS ED
-        if (len < 9)
-            return false;
-        uint8_t le = frame[1];
-        if (frame[2] != le || frame[3] != Profibus::PB_SD2)
-            return false;
-        if (le < 3)
-            return false;
-        size_t total = 4 + le + 2; // header(4) + le body + FCS + ED
-        if (len < total)
-            return false;
-        if (dws_pb_fcs(frame + 4, le) != frame[4 + le] || frame[4 + le + 1] != Profibus::PB_ED)
-            return false;
-        out->sd = Profibus::PB_SD2;
-        out->da = frame[4];
-        out->sa = frame[5];
-        out->fc = frame[6];
-        size_t dl = le - 3;
-        out->data = dl ? (frame + 7) : nullptr;
-        out->data_len = dl;
-        return true;
-    }
+        return pb_parse_sd2(frame, len, out);
     return false;
 }
 
