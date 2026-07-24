@@ -1371,4 +1371,122 @@ size_t dws_ike_responder_on_sa_init(IkeHandshake *hs, const uint8_t *req, size_t
     return n;
 }
 
+// Constant-time 32-byte equality (no early-out on an identity proof).
+static bool ike_ct_eq32(const uint8_t *a, const uint8_t *b)
+{
+    uint8_t diff = 0;
+    for (size_t i = 0; i < DWS_IKE_AUTH_LEN; i++)
+        diff |= (uint8_t)(a[i] ^ b[i]);
+    return diff == 0;
+}
+
+// Find the IDi/IDr and AUTH payloads in a decrypted inner chain; returns false if either is missing.
+static bool ike_find_id_auth(IkePayloadType first, const uint8_t *inner, size_t inner_len, IkePayloadType id_type,
+                             const uint8_t **id_body, size_t *id_body_len, const uint8_t **authdata,
+                             size_t *authdata_len)
+{
+    IkePayloadIter it;
+    dws_ike_payload_iter_init(&it, first, inner, inner_len);
+    IkePayload pl;
+    const uint8_t *auth_body = nullptr;
+    size_t auth_body_len = 0;
+    *id_body = nullptr;
+    *id_body_len = 0;
+    while (dws_ike_payload_next(&it, &pl))
+    {
+        if (pl.type == id_type && !*id_body)
+        {
+            *id_body = pl.body;
+            *id_body_len = pl.body_len;
+        }
+        else if (pl.type == IkePayloadType::IKE_PL_AUTH && !auth_body)
+        {
+            auth_body = pl.body;
+            auth_body_len = pl.body_len;
+        }
+    }
+    IkeAuthMethod method = IkeAuthMethod::IKE_AUTH_RESERVED;
+    if (!*id_body || !auth_body || !dws_ike_auth_parse(auth_body, auth_body_len, &method, authdata, authdata_len) ||
+        method != IkeAuthMethod::IKE_AUTH_PSK || *authdata_len != DWS_IKE_AUTH_LEN)
+        return false;
+    return true;
+}
+
+size_t dws_ike_responder_on_auth_psk(IkeHandshake *hs, const uint8_t *req, size_t req_len, const uint8_t *psk,
+                                     size_t psk_len, IkeIdType idr_type, const uint8_t *idr_data, size_t idr_len,
+                                     const uint8_t iv[DWS_IKE_GCM_IV_LEN], uint8_t *out, size_t out_cap)
+{
+    if (!hs || !req || !psk || !idr_data || !iv || !out)
+        return 0;
+    if (hs->state != IkeState::IKE_ST_SA_INIT_DONE || hs->sa.is_initiator)
+        return 0;
+    if (req_len == 0 || req_len > DWS_IKE_MSG_MAX)
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return 0;
+    }
+
+    // Decrypt the initiator's SK{ IDi | AUTH } with SK_ei (initiator->responder).
+    uint8_t work[DWS_IKE_MSG_MAX];
+    memcpy(work, req, req_len);
+    IkePayloadType first = IkePayloadType::IKE_PL_NONE;
+    const uint8_t *inner = nullptr;
+    size_t inner_len = 0;
+    const uint8_t *idi_body = nullptr, *authdata = nullptr;
+    size_t idi_body_len = 0, authdata_len = 0;
+    if (!dws_ike_auth_msg_open(work, req_len, hs->sa.keys.sk_ei, hs->sa.keys.sk_ei + DWS_IKE_AEAD_KEY_LEN, &first,
+                               &inner, &inner_len) ||
+        !ike_find_id_auth(first, inner, inner_len, IkePayloadType::IKE_PL_IDI, &idi_body, &idi_body_len, &authdata,
+                          &authdata_len))
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return 0;
+    }
+
+    // Verify the initiator's AUTH over RealMessage1 | Nr(our_nonce) | prf(SK_pi, IDi').
+    uint8_t expect[DWS_IKE_AUTH_LEN];
+    if (!dws_ike_auth_psk(psk, psk_len, hs->init_msg, hs->init_msg_len, hs->our_nonce, hs->our_nonce_len,
+                          hs->sa.keys.sk_pi, hs->sa.keys.sk_p_len, idi_body, idi_body_len, expect) ||
+        !ike_ct_eq32(expect, authdata))
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return 0;
+    }
+
+    // Build our IDr | AUTH: AUTH over RealMessage2 | Ni(peer_nonce) | prf(SK_pr, IDr').
+    uint8_t rinner[DWS_IKE_MSG_MAX];
+    size_t ridn = dws_ike_id_build(rinner, sizeof(rinner), IkePayloadType::IKE_PL_AUTH, idr_type, idr_data, idr_len);
+    if (ridn == 0)
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return 0;
+    }
+    uint8_t rauth[DWS_IKE_AUTH_LEN];
+    if (!dws_ike_auth_psk(psk, psk_len, hs->resp_msg, hs->resp_msg_len, hs->peer_nonce, hs->peer_nonce_len,
+                          hs->sa.keys.sk_pr, hs->sa.keys.sk_p_len, rinner + DWS_IKE_PAYLOAD_HDR_LEN,
+                          ridn - DWS_IKE_PAYLOAD_HDR_LEN, rauth))
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return 0;
+    }
+    size_t ran = dws_ike_auth_build(rinner + ridn, sizeof(rinner) - ridn, IkePayloadType::IKE_PL_NONE,
+                                    IkeAuthMethod::IKE_AUTH_PSK, rauth, sizeof(rauth));
+    if (ran == 0)
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return 0;
+    }
+    // Wrap IDr | AUTH in SK{} keyed by SK_er (responder->initiator).
+    size_t n = dws_ike_auth_msg_build(out, out_cap, hs->sa.init_spi, hs->sa.resp_spi, 1, /*is_response=*/true,
+                                      IkePayloadType::IKE_PL_IDR, rinner, ridn + ran, hs->sa.keys.sk_er,
+                                      hs->sa.keys.sk_er + DWS_IKE_AEAD_KEY_LEN, iv);
+    if (n == 0)
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return 0;
+    }
+    hs->state = IkeState::IKE_ST_ESTABLISHED;
+    return n;
+}
+
 #endif // DWS_ENABLE_IKEV2

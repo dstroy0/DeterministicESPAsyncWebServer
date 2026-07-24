@@ -806,6 +806,19 @@ size_t dws_ike_responder_on_sa_init(IkeHandshake *hs, const uint8_t *req, size_t
                                     size_t nonce_len, const IkeSuite *suite, const IkeTransform *transforms,
                                     uint8_t num_transforms, uint8_t *out, size_t out_cap);
 
+/**
+ * @brief Consume the initiator's IKE_AUTH (PSK) and emit the responder's, reaching ESTABLISHED.
+ *
+ * Requires @p hs in IKE_ST_SA_INIT_DONE (responder role). Decrypts SK{ IDi | AUTH } with SK_ei, verifies
+ * the initiator's AUTH over RealMessage1 | Nr | prf(SK_pi, IDi') in constant time, then builds this side's
+ * IDr (from @p idr_type / @p idr_data) + AUTH over RealMessage2 | Ni | prf(SK_pr, IDr') and wraps IDr |
+ * AUTH in SK{} keyed by SK_er with @p iv. Advances to IKE_ST_ESTABLISHED, or IKE_ST_FAILED on any miss.
+ * @return the response message length, or 0 on a decrypt / verify / build failure.
+ */
+size_t dws_ike_responder_on_auth_psk(IkeHandshake *hs, const uint8_t *req, size_t req_len, const uint8_t *psk,
+                                     size_t psk_len, IkeIdType idr_type, const uint8_t *idr_data, size_t idr_len,
+                                     const uint8_t iv[DWS_IKE_GCM_IV_LEN], uint8_t *out, size_t out_cap);
+
 #endif // DWS_ENABLE_IKEV2
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IKEV2_H

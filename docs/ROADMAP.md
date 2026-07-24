@@ -502,9 +502,15 @@ preempting queue, so sensing shares the real-time ingest path.
           **The responder IKE_SA_INIT is shipped too**: `dws_ike_responder_on_sa_init` consumes the
           initiator's request, emits the IKE_SA_INIT response, and derives keys - a real two-driver
           exchange (both the initiator and responder drivers) reaches identical SK_\* on both sides
-          (`test_ikev2` now 65). Remaining: the responder IKE_AUTH (verify IDi/AUTH, emit the responder
-          IKE_AUTH), the maintenance exchanges (retransmit/rekey/DPD/CREATE_CHILD_SA), and RSA
-          signature-auth.
+          exchange reaches identical SK_\* on both sides. **The responder IKE_AUTH completes the state
+          machine**: `dws_ike_responder_on_auth_psk` decrypts the initiator's SK{ IDi | AUTH }, verifies
+          its AUTH, then builds + returns the responder's SK{ IDr | AUTH }, reaching ESTABLISHED. **A FULL
+          bidirectional handshake now runs end to end** - the initiator and responder drivers exchange
+          IKE_SA_INIT + IKE_AUTH through buffers, both mutually authenticate by PSK and reach ESTABLISHED
+          with identical keys, and a wrong-key peer is rejected on either side (`test_ikev2` now 66). The
+          IKE handshake state machine (item 2) is functionally complete for the PSK path. Remaining: the
+          maintenance exchanges (CREATE_CHILD_SA / INFORMATIONAL / rekey / DPD / retransmit) and the
+          RSA-signature auth option (the ECDSA-P256 sign/verify primitives already ship).
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with

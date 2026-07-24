@@ -1963,6 +1963,58 @@ void test_responder_sa_init_exchange()
                                                              g_resp_nonce, 16, &gcm, g_hs_tf, 3, out2, sizeof(out2)));
 }
 
+// ── the FULL bidirectional handshake: both real drivers reach ESTABLISHED with mutual PSK auth ──
+void test_full_bidirectional_handshake()
+{
+    const IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+    const uint8_t idi[6] = {'r', 'o', 'u', 't', 'e', 'r'};
+    const uint8_t idr[9] = {'r', 'e', 's', 'p', 'o', 'n', 'd', 'e', 'r'};
+    const uint8_t iv_i[8] = {0, 0, 0, 0, 0, 0, 0, 1};
+    const uint8_t iv_r[8] = {0, 0, 0, 0, 0, 0, 0, 2};
+    IkeHandshake ini, resp;
+    uint8_t req[512], rsp[512], authi[512], authr[512];
+
+    // IKE_SA_INIT: initiator -> responder -> initiator.
+    size_t reqn = dws_ike_initiator_start(&ini, g_our_spi, kat_alice_priv, kat_alice_pub, g_our_nonce, 16, &gcm,
+                                          g_hs_tf, 3, req, sizeof(req));
+    size_t rspn = dws_ike_responder_on_sa_init(&resp, req, reqn, g_resp_spi, kat_bob_priv, kat_bob_pub, g_resp_nonce,
+                                               16, &gcm, g_hs_tf, 3, rsp, sizeof(rsp));
+    TEST_ASSERT_TRUE(rspn > 0);
+    TEST_ASSERT_TRUE(dws_ike_initiator_on_sa_init(&ini, rsp, rspn));
+
+    // IKE_AUTH: initiator sends, responder verifies + answers (ESTABLISHED), initiator verifies (ESTABLISHED).
+    size_t authin = dws_ike_initiator_build_auth_psk(&ini, IkeIdType::IKE_ID_FQDN, idi, sizeof(idi), g_psk,
+                                                     sizeof(g_psk), iv_i, authi, sizeof(authi));
+    TEST_ASSERT_TRUE(authin > 0);
+    size_t authrn = dws_ike_responder_on_auth_psk(&resp, authi, authin, g_psk, sizeof(g_psk), IkeIdType::IKE_ID_FQDN,
+                                                  idr, sizeof(idr), iv_r, authr, sizeof(authr));
+    TEST_ASSERT_TRUE(authrn > 0);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)resp.state);
+    TEST_ASSERT_TRUE(dws_ike_initiator_on_auth_psk(&ini, authr, authrn, g_psk, sizeof(g_psk)));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_ESTABLISHED, (uint8_t)ini.state);
+
+    // Both ends established the same SA (identical keys) - a real mutual handshake.
+    TEST_ASSERT_EQUAL_MEMORY(ini.sa.keys.sk_ei, resp.sa.keys.sk_ei, 36);
+    TEST_ASSERT_EQUAL_MEMORY(ini.sa.keys.sk_pr, resp.sa.keys.sk_pr, 32);
+
+    // Rejection: an initiator authenticating with the wrong PSK is refused by the responder.
+    IkeHandshake ini2, resp2;
+    size_t reqn2 = dws_ike_initiator_start(&ini2, g_our_spi, kat_alice_priv, kat_alice_pub, g_our_nonce, 16, &gcm,
+                                           g_hs_tf, 3, req, sizeof(req));
+    size_t rspn2 = dws_ike_responder_on_sa_init(&resp2, req, reqn2, g_resp_spi, kat_bob_priv, kat_bob_pub, g_resp_nonce,
+                                                16, &gcm, g_hs_tf, 3, rsp, sizeof(rsp));
+    TEST_ASSERT_TRUE(dws_ike_initiator_on_sa_init(&ini2, rsp, rspn2));
+    const uint8_t wrong[12] = {'w', 'r', 'o', 'n', 'g', '-', 'k', 'e', 'y', '!', '!', '!'};
+    uint8_t bad[512], out2[512];
+    size_t badn = dws_ike_initiator_build_auth_psk(&ini2, IkeIdType::IKE_ID_FQDN, idi, sizeof(idi), wrong,
+                                                   sizeof(wrong), iv_i, bad, sizeof(bad));
+    TEST_ASSERT_TRUE(badn > 0);
+    TEST_ASSERT_EQUAL_size_t(0, dws_ike_responder_on_auth_psk(&resp2, bad, badn, g_psk, sizeof(g_psk),
+                                                              IkeIdType::IKE_ID_FQDN, idr, sizeof(idr), iv_r, out2,
+                                                              sizeof(out2)));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_FAILED, (uint8_t)resp2.state);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -2040,5 +2092,6 @@ int main()
     RUN_TEST(test_initiator_ike_auth_send);
     RUN_TEST(test_initiator_full_handshake);
     RUN_TEST(test_responder_sa_init_exchange);
+    RUN_TEST(test_full_bidirectional_handshake);
     return UNITY_END();
 }
