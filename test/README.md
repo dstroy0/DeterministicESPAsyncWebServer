@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5157 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5158 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29895,7 +29895,7 @@ A thorough directory of all **5157 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (25 tests)</b></summary>
+<summary><b>test_nmea0183 (26 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -30288,6 +30288,22 @@ A thorough directory of all **5157 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8('N', g2.mode);</code>
       * <code>Assert false (dws_nmea0183_parse_gll(&m, &g))</code>
       * <code>Assert false (dws_nmea0183_parse_gll(nullptr, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_vhw</b> &mdash; <i>Water speed + heading: heading 10.0 true / 8.5 magnetic, 6.5 knots / 12.0 km/h through the water.</i></summary>
+
+    * **Objective**: Water speed + heading: heading 10.0 true / 8.5 magnetic, 6.5 knots / 12.0 km/h through the water.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_vhw(&m, &v))</code>
+      * <code>Assert float within (0.01f, 10.0f, v.heading_true_deg)</code>
+      * <code>Assert float within (0.01f, 8.5f, v.heading_mag_deg)</code>
+      * <code>Assert float within (0.01f, 6.5f, v.speed_knots)</code>
+      * <code>Assert float within (0.01f, 12.0f, v.speed_kmh)</code>
+      * <code>Assert false (dws_nmea0183_parse_vhw(&m, &v))</code>
+      * <code>Assert false (dws_nmea0183_parse_vhw(nullptr, &v))</code>
   </details>
 
   <details style="margin-left: 20px;">
