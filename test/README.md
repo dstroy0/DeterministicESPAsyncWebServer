@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5174 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5175 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -9496,7 +9496,7 @@ A thorough directory of all **5174 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dnp3 (19 tests)</b></summary>
+<summary><b>test_dnp3 (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dnp3_parse_guards</b> &mdash; <i>Dnp3 parse guards</i></summary>
@@ -9809,6 +9809,21 @@ A thorough directory of all **5174 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(buf, sizeof(buf), 1, 0x04, false, 1, 0, 0)); // tcc &gt; 3</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(nullptr, sizeof(buf), 1, 1, false, 1, 0, 0));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(buf, 10, 1, 1, false, 1, 0, 0)); // needs 11</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_aob</b> &mdash; <i>g41v1: a 32-bit signed setpoint 12345 (0x3039) little-endian + a status octet (0 in a request).</i></summary>
+
+    * **Objective**: g41v1: a 32-bit signed setpoint 12345 (0x3039) little-endian + a status octet (0 in a request).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(DNP3_AOB_LEN, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(v1, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(v1neg, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DNP3_AOB_LEN, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(v3, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_aob32(nullptr, sizeof(buf), 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_aob32(buf, 4, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_aob_float(buf, 4, 1.0f));</code>
   </details>
 
 </details>
