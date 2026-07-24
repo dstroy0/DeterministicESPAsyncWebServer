@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5002 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5004 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **5002 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (60 tests)</b></summary>
+<summary><b>test_ikev2 (62 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20728,6 +20728,38 @@ A thorough directory of all **5002 test cases** across **287 suites**. Expand a 
       * <code>Assert equal memory (sa_sk_ei, ini.keys.sk_ei, 36)</code>
       * <code>Assert equal memory (sa_sk_pr, ini.keys.sk_pr, 32)</code>
       * <code>Assert false (dws_ike_sa_keys_from_init(&bad, kat_alice_priv, 32, kat_bob_pub, 32, sa_ni, 16, sa_nr, 16))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_initiator_sa_init_handshake</b> &mdash; <i>The emitted request carries our SPI, a zero responder SPI, our KE, and our nonce.</i></summary>
+
+    * **Objective**: The emitted request carries our SPI, a zero responder SPI, our KE, and our nonce.
+    * **Assertions**:
+      * <code>Assert true (rn &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_SA_INIT_SENT, (uint8_t)hs.state);</code>
+      * <code>Assert true (dws_ike_sa_init_parse(req, rn, &reqm))</code>
+      * <code>Assert false (reqm.is_response)</code>
+      * <code>Assert equal memory (our_spi, reqm.init_spi, 8)</code>
+      * <code>Assert equal memory (kat_alice_pub, reqm.ke_data, 32)</code>
+      * <code>Assert true (rspn &gt; 0)</code>
+      * <code>Assert true (dws_ike_initiator_on_sa_init(&hs, resp, rspn))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_SA_INIT_DONE, (uint8_t)hs.state);</code>
+      * <code>Assert equal memory (resp_spi, hs.sa.resp_spi, 8)</code>
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert equal memory (hs.sa.keys.sk_d, peer.keys.sk_d, 32)</code>
+      * <code>Assert equal memory (hs.sa.keys.sk_ei, peer.keys.sk_ei, 36)</code>
+      * <code>Assert equal memory (hs.sa.keys.sk_pr, peer.keys.sk_pr, 32)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_initiator_handshake_guards</b> &mdash; <i>A response echoing the WRONG initiator SPI is rejected and lands in FAILED.</i></summary>
+
+    * **Objective**: A response echoing the WRONG initiator SPI is rejected and lands in FAILED.
+    * **Assertions**:
+      * <code>Assert false (dws_ike_initiator_on_sa_init(&hs, rbad, bn))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_FAILED, (uint8_t)hs.state);</code>
+      * <code>Assert false (dws_ike_initiator_on_sa_init(&hs, rgood, gn))</code>
+      * <code>Assert false (dws_ike_initiator_on_sa_init(&hs2, notresp, nn))</code>
   </details>
 
 </details>
