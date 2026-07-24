@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.52.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.52.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`50eae07`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50eae076787d85179a7e93f80da97f648f620da5))
+
+### Changes
+
+- Bump version: 7.51.0 → 7.52.0 ([`f8596c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8596c8ec0fa8b97c0e370a46ad94104fcdbc2c9))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f85f418`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f85f41862e5fe8cb03f6a55734b55376bc98f6b5))
+
+### Features
+
+- anti-replay window (RFC 4303 s3.4.3) ([`6027454`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6027454360136aae6e341fce6f71908a01c1e099))
+
+</details>
+
 ## [7.51.0] - 2026-07-24
 
 <details>
