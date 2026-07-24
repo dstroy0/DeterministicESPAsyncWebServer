@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5101 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5102 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29041,7 +29041,7 @@ A thorough directory of all **5101 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (18 tests)</b></summary>
+<summary><b>test_nmea0183 (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -29274,6 +29274,32 @@ A thorough directory of all **5101 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(32, g.sats[2].prn);</code>
       * <code>Assert true (g.sats[2].snr_valid)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(36, g.sats[2].snr_db);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_zda</b> &mdash; <i>Full ZDA: 20:15:30.50 UTC on 2026-07-04, local zone -05:30.</i></summary>
+
+    * **Objective**: Full ZDA: 20:15:30.50 UTC on 2026-07-04, local zone -05:30.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_zda(&m, &z))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(20, z.hour);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(15, z.minute);</code>
+      * <code>Assert float within (0.001f, 30.50f, z.second)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, z.day);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(7, z.month);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2026, z.year); // full 4-digit year, unlike RMC</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-5, z.zone_hours);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(30, z.zone_minutes);</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_zda(&m, &z))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2025, z.year);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(24, z.day);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(0, z.zone_hours);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, z.zone_minutes);</code>
+      * <code>Assert false (dws_nmea0183_parse_zda(&m, &z))</code>
+      * <code>Assert false (dws_nmea0183_parse_zda(nullptr, &z))</code>
   </details>
 
   <details style="margin-left: 20px;">
