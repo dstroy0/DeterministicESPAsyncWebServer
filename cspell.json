@@ -1471,7 +1471,8 @@
     "starttransfer",
     "demultiplexer",
     "timestamping",
-    "linuxptp"
+    "linuxptp",
+    "keylengths"
   ],
   "ignorePaths": [
     "node_modules/**",

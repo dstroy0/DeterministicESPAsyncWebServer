@@ -1608,6 +1608,85 @@ void test_auth_ecdsa_sign_verify()
                                                    sizeof(skp), id, sizeof(id)));
 }
 
+// ── tier 2: IKE SA context + key material from a completed IKE_SA_INIT ──────────────────────────
+// The suite->keylength mapping is checked directly; the derivation is exercised as a MUTUAL AGREEMENT
+// (initiator and responder derive identical SK_* from their own D-H private + the peer's KE, the RFC 7748
+// Alice/Bob key pair) AND cross-checked against an independent Python §2.14 key-schedule reference.
+
+void test_suite_keylengths()
+{
+    IkeKeyLengths L;
+    // AEAD (AES-GCM-16, 256-bit): sk_a = 0 (no separate integrity), sk_e = 32 key + 4 salt.
+    IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+    TEST_ASSERT_TRUE(dws_ike_suite_keylengths(&gcm, &L));
+    TEST_ASSERT_EQUAL_size_t(32, L.sk_d);
+    TEST_ASSERT_EQUAL_size_t(0, L.sk_a);
+    TEST_ASSERT_EQUAL_size_t(36, L.sk_e);
+    TEST_ASSERT_EQUAL_size_t(32, L.sk_p);
+    // Non-AEAD (AES-CBC-256 + HMAC-SHA2-256-128): sk_a = 32, sk_e = 32 (no salt).
+    IkeSuite cbc = {IKE_ENCR_AES_CBC, 256, IKE_PRF_HMAC_SHA2_256, IKE_INTEG_HMAC_SHA2_256_128, IKE_DH_CURVE25519};
+    TEST_ASSERT_TRUE(dws_ike_suite_keylengths(&cbc, &L));
+    TEST_ASSERT_EQUAL_size_t(32, L.sk_a);
+    TEST_ASSERT_EQUAL_size_t(32, L.sk_e);
+    // Unsupported PRF and a bad key length fail closed.
+    IkeSuite badprf = {IKE_ENCR_AES_GCM_16, 256, 99, 0, IKE_DH_CURVE25519};
+    TEST_ASSERT_FALSE(dws_ike_suite_keylengths(&badprf, &L));
+    IkeSuite badlen = {IKE_ENCR_AES_CBC, 0, IKE_PRF_HMAC_SHA2_256, IKE_INTEG_HMAC_SHA2_256_128, IKE_DH_CURVE25519};
+    TEST_ASSERT_FALSE(dws_ike_suite_keylengths(&badlen, &L));
+}
+
+void test_sa_keys_from_init_agreement()
+{
+    static const uint8_t sa_ni[16] = {0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+                                      0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20};
+    static const uint8_t sa_nr[16] = {0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,
+                                      0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30};
+    static const uint8_t sa_spii[8] = {0xaa, 0xbb, 0xcc, 0xdd, 0x11, 0x22, 0x33, 0x44};
+    static const uint8_t sa_spir[8] = {0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc};
+    static const uint8_t sa_sk_d[32] = {0xe5, 0x75, 0x83, 0x06, 0x2b, 0xb0, 0x23, 0xba, 0xad, 0x76, 0xe5,
+                                        0x3b, 0xf1, 0xcc, 0xe2, 0xa5, 0x2b, 0x24, 0xc4, 0xa6, 0xd5, 0xef,
+                                        0xe2, 0x69, 0x3b, 0x00, 0x4e, 0x43, 0x10, 0xa5, 0x0b, 0x70};
+    static const uint8_t sa_sk_ei[36] = {0x0a, 0xa0, 0x90, 0x3a, 0x8d, 0x81, 0x6f, 0x2f, 0x71, 0x2c, 0x7c, 0xa3,
+                                         0xf8, 0xa9, 0x43, 0xc2, 0xa9, 0xc1, 0x7b, 0xd4, 0x38, 0xf4, 0x8a, 0x9f,
+                                         0x29, 0xaa, 0xe8, 0x43, 0x90, 0xc7, 0xe3, 0x4e, 0x4d, 0xaf, 0x7c, 0xf4};
+    static const uint8_t sa_sk_pr[32] = {0xd2, 0x21, 0x25, 0x4f, 0x91, 0x14, 0xe4, 0x16, 0x26, 0x63, 0x8c,
+                                         0xe8, 0xe3, 0x1f, 0x92, 0xff, 0x82, 0x05, 0x95, 0x04, 0xd2, 0x53,
+                                         0xe2, 0x48, 0xdb, 0xde, 0x88, 0x93, 0x9a, 0x2a, 0xbb, 0x79};
+    const IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+
+    // The initiator holds Alice's D-H private and receives Bob's KE; the responder is the mirror.
+    IkeSa ini, resp;
+    memset(&ini, 0, sizeof(ini));
+    memset(&resp, 0, sizeof(resp));
+    memcpy(ini.init_spi, sa_spii, 8);
+    memcpy(ini.resp_spi, sa_spir, 8);
+    ini.is_initiator = true;
+    ini.suite = gcm;
+    resp = ini;
+    resp.is_initiator = false;
+
+    TEST_ASSERT_TRUE(dws_ike_sa_keys_from_init(&ini, kat_alice_priv, 32, kat_bob_pub, 32, sa_ni, 16, sa_nr, 16));
+    TEST_ASSERT_TRUE(dws_ike_sa_keys_from_init(&resp, kat_bob_priv, 32, kat_alice_pub, 32, sa_ni, 16, sa_nr, 16));
+
+    // Both peers derived identical key material (the point of the exchange).
+    TEST_ASSERT_EQUAL_size_t(0, ini.keys.sk_a_len); // AEAD: no separate integrity keys
+    TEST_ASSERT_EQUAL_size_t(36, ini.keys.sk_e_len);
+    TEST_ASSERT_EQUAL_MEMORY(ini.keys.sk_d, resp.keys.sk_d, 32);
+    TEST_ASSERT_EQUAL_MEMORY(ini.keys.sk_ei, resp.keys.sk_ei, 36);
+    TEST_ASSERT_EQUAL_MEMORY(ini.keys.sk_er, resp.keys.sk_er, 36);
+    TEST_ASSERT_EQUAL_MEMORY(ini.keys.sk_pi, resp.keys.sk_pi, 32);
+    TEST_ASSERT_EQUAL_MEMORY(ini.keys.sk_pr, resp.keys.sk_pr, 32);
+    // Cross-check the derived keys against the independent Python key schedule.
+    TEST_ASSERT_EQUAL_MEMORY(sa_sk_d, ini.keys.sk_d, 32);
+    TEST_ASSERT_EQUAL_MEMORY(sa_sk_ei, ini.keys.sk_ei, 36);
+    TEST_ASSERT_EQUAL_MEMORY(sa_sk_pr, ini.keys.sk_pr, 32);
+
+    // An unsupported D-H group fails closed.
+    IkeSa bad = ini;
+    bad.suite.dh = IKE_DH_ECP256;
+    TEST_ASSERT_FALSE(dws_ike_sa_keys_from_init(&bad, kat_alice_priv, 32, kat_bob_pub, 32, sa_ni, 16, sa_nr, 16));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1676,5 +1755,8 @@ int main()
     // tier 2: IKE_AUTH ECDSA-P256 (certificate) authentication
     RUN_TEST(test_signed_octets_kat);
     RUN_TEST(test_auth_ecdsa_sign_verify);
+    // tier 2: IKE SA context + key material from a completed IKE_SA_INIT
+    RUN_TEST(test_suite_keylengths);
+    RUN_TEST(test_sa_keys_from_init_agreement);
     return UNITY_END();
 }

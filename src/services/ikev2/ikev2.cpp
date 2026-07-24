@@ -698,8 +698,10 @@ bool dws_ike_derive_keys(const uint8_t *dh_secret, size_t dh_len, const uint8_t 
         return false;
     if (ni_len == 0 || ni_len > DWS_IKE_NONCE_MAX || nr_len == 0 || nr_len > DWS_IKE_NONCE_MAX)
         return false;
-    if (lens->sk_d == 0 || lens->sk_d > DWS_IKE_SK_MAX || lens->sk_a == 0 || lens->sk_a > DWS_IKE_SK_MAX ||
-        lens->sk_e == 0 || lens->sk_e > DWS_IKE_SK_MAX || lens->sk_p == 0 || lens->sk_p > DWS_IKE_SK_MAX)
+    // sk_a MAY be 0 (an AEAD cipher carries its own integrity, so there is no separate SK_ai/SK_ar);
+    // the others must be present.
+    if (lens->sk_d == 0 || lens->sk_d > DWS_IKE_SK_MAX || lens->sk_a > DWS_IKE_SK_MAX || lens->sk_e == 0 ||
+        lens->sk_e > DWS_IKE_SK_MAX || lens->sk_p == 0 || lens->sk_p > DWS_IKE_SK_MAX)
         return false;
 
     // Build S = Ni | Nr | SPIi | SPIr once. Its Ni|Nr prefix is also the SKEYSEED key, so a single buffer
@@ -1066,6 +1068,56 @@ bool dws_ike_auth_verify_ecdsa_p256(const uint8_t pub[DWS_IKE_ECDSA_P256_PUB_LEN
     if (n == 0)
         return false;
     return ssh_ecdsa_p256_verify(pub, scratch, n, sig);
+}
+
+// ── tier 2: IKE SA context + key material from a completed IKE_SA_INIT ──────────────────────────
+
+bool dws_ike_suite_keylengths(const IkeSuite *suite, IkeKeyLengths *out)
+{
+    if (!suite || !out)
+        return false;
+    if (suite->prf != IKE_PRF_HMAC_SHA2_256) // the only PRF the key schedule implements
+        return false;
+
+    out->sk_d = DWS_IKE_PRF_LEN; // the PRF key length
+    out->sk_p = DWS_IKE_PRF_LEN;
+
+    // Integrity: an AEAD cipher (integ == 0) has no separate SK_ai/SK_ar; HMAC-SHA2-256-128 uses a 32-byte key.
+    if (suite->integ == 0)
+        out->sk_a = 0;
+    else if (suite->integ == IKE_INTEG_HMAC_SHA2_256_128)
+        out->sk_a = 32;
+    else
+        return false;
+
+    // Encryption: the key in bytes, plus a 4-byte salt for AES-GCM (RFC 5282).
+    if (suite->encr_keylen <= 0 || (suite->encr_keylen % 8) != 0)
+        return false;
+    size_t ek = (size_t)(suite->encr_keylen / 8);
+    if (suite->encr == IKE_ENCR_AES_GCM_16)
+        ek += DWS_IKE_GCM_SALT_LEN;
+    if (ek == 0 || ek > DWS_IKE_SK_MAX)
+        return false;
+    out->sk_e = ek;
+    return true;
+}
+
+bool dws_ike_sa_keys_from_init(IkeSa *sa, const uint8_t *our_dh_priv, size_t our_dh_priv_len, const uint8_t *peer_ke,
+                               size_t peer_ke_len, const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len)
+{
+    if (!sa || !our_dh_priv || !peer_ke || !ni || !nr)
+        return false;
+    IkeKeyLengths lens;
+    if (!dws_ike_suite_keylengths(&sa->suite, &lens))
+        return false;
+
+    uint8_t shared[DWS_IKE_X25519_LEN]; // the only supported group (31) yields a 32-byte secret
+    size_t sh =
+        dws_ike_dh_compute(sa->suite.dh, our_dh_priv, our_dh_priv_len, peer_ke, peer_ke_len, shared, sizeof(shared));
+    if (sh == 0)
+        return false;
+    // SKEYSEED + SK_* are order-independent in the SPIs/nonces, so both peers derive identical keys.
+    return dws_ike_derive_keys(shared, sh, ni, ni_len, nr, nr_len, sa->init_spi, sa->resp_spi, &lens, &sa->keys);
 }
 
 #endif // DWS_ENABLE_IKEV2

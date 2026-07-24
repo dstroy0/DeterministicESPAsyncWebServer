@@ -652,6 +652,51 @@ bool dws_ike_auth_verify_ecdsa_p256(const uint8_t pub[DWS_IKE_ECDSA_P256_PUB_LEN
                                     const uint8_t *real, size_t real_len, const uint8_t *nonce, size_t nonce_len,
                                     const uint8_t *sk_p, size_t sk_p_len, const uint8_t *id_body, size_t id_body_len);
 
+// ── tier 2: IKE SA context + key material from a completed IKE_SA_INIT (RFC 7296 §2.14, §2.17) ──
+//
+// After IKE_SA_INIT both peers know the SPIs, the negotiated cipher suite, both nonces, and (via their
+// own D-H private + the peer's KE) the shared secret - everything needed to derive the SK_* keys. These
+// tie the tier-2 crypto (D-H + prf+ key schedule) together against a parsed exchange, so the state
+// machine holds one `IkeSa` per session.
+
+/** @brief The negotiated IKE cipher suite (the transforms chosen in the IKE_SA_INIT SA payload). */
+struct IkeSuite
+{
+    uint16_t encr;       ///< encryption transform id (e.g. IKE_ENCR_AES_GCM_16).
+    int32_t encr_keylen; ///< encryption key length in BITS (e.g. 256), or < 0 for a fixed-size cipher.
+    uint16_t prf;        ///< PRF transform id (IKE_PRF_HMAC_SHA2_256).
+    uint16_t integ;      ///< integrity transform id, or 0 for an AEAD cipher (no separate integrity key).
+    uint16_t dh;         ///< D-H group id (IKE_DH_CURVE25519).
+};
+
+/** @brief One IKE SA's session state after IKE_SA_INIT: identity, negotiated suite, and derived keys. */
+struct IkeSa
+{
+    uint8_t init_spi[DWS_IKE_SPI_LEN];
+    uint8_t resp_spi[DWS_IKE_SPI_LEN];
+    bool is_initiator;   ///< our role in this SA
+    IkeSuite suite;      ///< the negotiated cipher suite
+    IkeKeyMaterial keys; ///< the derived SK_d / ai / ar / ei / er / pi / pr (filled by keys_from_init)
+};
+
+/**
+ * @brief Map a negotiated @p suite to the SK_* per-key lengths (RFC 7296 §2.14 + the cipher's key size).
+ *
+ * Supports the suites the library implements: PRF/INTEG HMAC-SHA2-256 (32-byte keys, sk_a = 0 for an
+ * AEAD cipher), and AES-GCM-16 (encr key + a 4-byte salt) or a plain block cipher (encr key only).
+ * @return false on an unsupported suite (a PRF other than HMAC-SHA2-256, or a bad key length).
+ */
+bool dws_ike_suite_keylengths(const IkeSuite *suite, IkeKeyLengths *out);
+
+/**
+ * @brief Derive @p sa->keys from a completed IKE_SA_INIT: compute g^ir = D-H(@p our_dh_priv, @p peer_ke)
+ *        for the suite's group, then run the §2.14 SKEYSEED + SK_* schedule with @p sa's SPIs and the
+ *        suite's key lengths. @p sa->init_spi / resp_spi / suite must already be set.
+ * @return false on an unsupported suite / group or a bad length; the two peers derive identical keys.
+ */
+bool dws_ike_sa_keys_from_init(IkeSa *sa, const uint8_t *our_dh_priv, size_t our_dh_priv_len, const uint8_t *peer_ke,
+                               size_t peer_ke_len, const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len);
+
 #endif // DWS_ENABLE_IKEV2
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IKEV2_H
