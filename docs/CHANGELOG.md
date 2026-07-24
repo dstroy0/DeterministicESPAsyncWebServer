@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.39.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.39.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`2c3494a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c3494ab7cec4a913785998b5c88771e93b7378b))
+
+### Changes
+
+- Bump version: 7.38.0 → 7.39.0 ([`5ffae44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ffae44fe7ddede41acf12bb6b72fb6563c22438))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e55abc0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e55abc066d0b8b49dc17505d69e9f6e54394af14))
+
+### Features
+
+- IKE_AUTH encrypted-message assembly (RFC 7296 s3.14, RFC 5282) ([`4b45091`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b450910aeca7f1c51dc2991d355bd1dbbf2306f))
+
+</details>
+
 ## [7.38.0] - 2026-07-24
 
 <details>
