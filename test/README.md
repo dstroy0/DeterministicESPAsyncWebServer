@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5148 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5149 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -26120,7 +26120,7 @@ A thorough directory of all **5148 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mbus (18 tests)</b></summary>
+<summary><b>test_mbus (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ack</b> &mdash; <i>Ack</i></summary>
@@ -26155,6 +26155,19 @@ A thorough directory of all **5148 test cases** across **291 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_HEX8(0x5B, buf[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x7B, buf[1]); // FCB set</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_req_ud1_fcb</b> &mdash; <i>REQ_UD1 (class-1 / alarm data): C = 0x5A, or 0x7A with the FCB bit set.</i></summary>
+
+    * **Objective**: REQ_UD1 (class-1 / alarm data): C = 0x5A, or 0x7A with the FCB bit set.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, 5);</code>
+      * <code>Assert true (dws_mbus_parse(buf, n, &f, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(MBUS_C_REQ_UD1, f.c);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, f.a);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x7A, buf[1]); // FCB set</code>
   </details>
 
   <details style="margin-left: 20px;">
