@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.71.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.71.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ac7bc27`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac7bc27c278512a7f453892dd2324456a572eb70))
+
+### Changes
+
+- Bump version: 7.70.0 → 7.71.0 ([`4690dc2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4690dc27113212856f91291b6a0e0ffa06156335))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2dca401`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2dca40170f5f60a622d6aee6f572b29962cc9d34))
+
+### Features
+
+- Wi-Fi roaming decision layer (802.11k/v fusion) ([`cdd1b59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdd1b5976cf5e9655e3af3c95b8a18bc4b0c76b6))
+
+</details>
+
 ## [7.70.0] - 2026-07-24
 
 <details>
