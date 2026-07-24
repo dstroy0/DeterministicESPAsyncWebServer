@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5110 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5111 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -29195,7 +29195,7 @@ A thorough directory of all **5110 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea0183 (19 tests)</b></summary>
+<summary><b>test_nmea0183 (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -29454,6 +29454,27 @@ A thorough directory of all **5110 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(0, z.zone_minutes);</code>
       * <code>Assert false (dws_nmea0183_parse_zda(&m, &z))</code>
       * <code>Assert false (dws_nmea0183_parse_zda(nullptr, &z))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_vtg</b> &mdash; <i>Course 54.7 T / 34.4 M, speed 5.5 kn / 10.2 km/h, autonomous mode.</i></summary>
+
+    * **Objective**: Course 54.7 T / 34.4 M, speed 5.5 kn / 10.2 km/h, autonomous mode.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_vtg(&m, &v))</code>
+      * <code>Assert float within (0.01f, 54.7f, v.course_true_deg)</code>
+      * <code>Assert float within (0.01f, 34.4f, v.course_mag_deg)</code>
+      * <code>Assert float within (0.01f, 5.5f, v.speed_knots)</code>
+      * <code>Assert float within (0.01f, 10.2f, v.speed_kmh)</code>
+      * <code>Assert equal char ('A', v.mode)</code>
+      * <code>Assert true (dws_nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (dws_nmea0183_parse_vtg(&m, &v))</code>
+      * <code>Assert float within (0.01f, 5.5f, v.speed_knots)</code>
+      * <code>Assert equal char ('\\0', v.mode)</code>
+      * <code>Assert false (dws_nmea0183_parse_vtg(&m, &v))</code>
+      * <code>Assert false (dws_nmea0183_parse_vtg(nullptr, &v))</code>
   </details>
 
   <details style="margin-left: 20px;">
