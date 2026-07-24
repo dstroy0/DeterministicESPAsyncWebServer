@@ -124,7 +124,7 @@ CiA 402 / IEC 61800-7-201 drive + motion profile over CANopen. Default off (requ
 
 `DWS_ENABLE_CIP`
 
-CIP (Common Industrial Protocol) message codec - the message that rides inside an EtherNet/IP Unconnected Data item (DWS_ENABLE_ENIP). Default off. services/cip builds the request - `dws_cip_build_epath` encodes a class/instance/attribute EPATH from logical segments (`0x20 | type | format`, 8- or 16-bit ids), `dws_cip_build_get_attr_single` / `dws_cip_build_request` prepend the service code + path size - and `dws_cip_parse_response` splits a reply into service / general status / additional status / data. Service codes and the segment encoding are verified against the Wireshark CIP dissector. Pure and host-tested; wrap the request with `dws_eip_build_send_rr_data` for a working CIP read path. See src/services/cip/cip.h.
+CIP (Common Industrial Protocol) message codec - the message that rides inside an EtherNet/IP Unconnected Data item (DWS_ENABLE_ENIP). Default off. services/cip builds the request - `dws_cip_build_epath` encodes a class/instance/attribute EPATH from logical segments (`0x20 | type | format`, 8- or 16-bit ids), `dws_cip_build_get_attr_single` / `dws_cip_build_set_attr_single` (the read and the write, service 0x0E / 0x10, the write appending the attribute value octets) / `dws_cip_build_request` prepend the service code + path size - and `dws_cip_parse_response` splits a reply into service / general status / additional status / data. Service codes and the segment encoding are verified against the Wireshark CIP dissector. Pure and host-tested; wrap the request with `dws_eip_build_send_rr_data` for a working CIP read / write path. See src/services/cip/cip.h.
 
 ## CloudEvents
 

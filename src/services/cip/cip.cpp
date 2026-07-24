@@ -93,6 +93,19 @@ size_t dws_cip_build_get_attr_single(uint8_t *buf, size_t cap, uint16_t class_id
     return dws_cip_build_request(buf, cap, CIP_SC_GET_ATTR_SINGLE, epath, elen, nullptr, 0);
 }
 
+size_t dws_cip_build_set_attr_single(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id,
+                                     uint16_t attribute_id, const uint8_t *value, size_t value_len)
+{
+    uint8_t epath[12];
+    size_t elen = dws_cip_build_epath(epath, sizeof(epath), class_id, instance_id, attribute_id, true);
+    // GCOVR_EXCL_START  unreachable: epath[12] holds the worst-case 3x4B logical segments, so
+    // write_segment() inside dws_cip_build_epath() never fails and elen is never 0.
+    if (!elen)
+        return 0;
+    // GCOVR_EXCL_STOP
+    return dws_cip_build_request(buf, cap, CIP_SC_SET_ATTR_SINGLE, epath, elen, value, value_len);
+}
+
 bool dws_cip_parse_response(const uint8_t *buf, size_t len, CipResponse *out)
 {
     if (!buf || !out || len < 4) // service + reserved + general status + additional-status size

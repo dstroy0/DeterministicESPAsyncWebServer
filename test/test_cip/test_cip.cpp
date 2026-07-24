@@ -50,6 +50,26 @@ void test_get_attr_single()
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
 }
 
+void test_set_attr_single()
+{
+    uint8_t buf[16];
+    const uint8_t value[] = {0xAB, 0xCD};
+    size_t n = dws_cip_build_set_attr_single(buf, sizeof(buf), 0x01, 0x01, 0x07, value, sizeof(value));
+    const uint8_t expect[] = {
+        0x10,                               // Set_Attribute_Single
+        0x03,                               // path size = 3 words
+        0x20, 0x01, 0x24, 0x01, 0x30, 0x07, // EPATH class 1 / instance 1 / attribute 7
+        0xAB, 0xCD                          // the attribute value written
+    };
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);
+
+    // A too-small buffer and a null value with a nonzero length both fail closed.
+    uint8_t small[8];
+    TEST_ASSERT_EQUAL_size_t(0, dws_cip_build_set_attr_single(small, sizeof(small), 1, 1, 7, value, sizeof(value)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_cip_build_set_attr_single(buf, sizeof(buf), 1, 1, 7, nullptr, 2));
+}
+
 void test_build_request_with_data()
 {
     const uint8_t epath[] = {0x20, 0x01, 0x24, 0x01, 0x30, 0x07};
@@ -142,6 +162,7 @@ int main()
     RUN_TEST(test_epath_8bit);
     RUN_TEST(test_epath_16bit);
     RUN_TEST(test_get_attr_single);
+    RUN_TEST(test_set_attr_single);
     RUN_TEST(test_build_request_with_data);
     RUN_TEST(test_parse_response_ok);
     RUN_TEST(test_parse_response_additional_status);

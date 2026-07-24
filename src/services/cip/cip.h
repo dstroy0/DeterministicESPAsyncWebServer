@@ -68,6 +68,14 @@ size_t dws_cip_build_request(uint8_t *buf, size_t cap, uint8_t service, const ui
 size_t dws_cip_build_get_attr_single(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id,
                                      uint16_t attribute_id);
 
+/**
+ * @brief Build a Set_Attribute_Single request for class/instance/attribute carrying @p value_len octets of
+ *        attribute data (the value to write).
+ * @return the request length, or 0 on a null value with a nonzero length, or an overflow.
+ */
+size_t dws_cip_build_set_attr_single(uint8_t *buf, size_t cap, uint16_t class_id, uint16_t instance_id,
+                                     uint16_t attribute_id, const uint8_t *value, size_t value_len);
+
 /** @brief A parsed CIP response. @ref data points INTO the source buffer. */
 struct CipResponse
 {
