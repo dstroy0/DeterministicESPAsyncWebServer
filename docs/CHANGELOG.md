@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ae6abe4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae6abe47dad127eb401c5b2c72800ebf146407b7))
+
+### Documentation
+
+- close SSH channel-mux partial (stale summary; X11 a non-goal) ([`fcb8968`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcb8968f644e4db641d8251a74a8875a8609535e))
+- update ESP32 build footprints [skip ci] ([`37d2423`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37d2423f6e786e5d00ee9bdfa86370eac0c91a67))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9a69818`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a698180a27c438315cd72810bcf4627e0133e8e))
+
 ## [7.154.0] - 2026-07-24
 
 <details>
