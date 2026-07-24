@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5089 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5092 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19536,7 +19536,7 @@ A thorough directory of all **5089 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_iec60870 (21 tests)</b></summary>
+<summary><b>test_iec60870 (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_104_i_format_roundtrip</b> &mdash; <i>104 i format roundtrip</i></summary>
@@ -19792,6 +19792,57 @@ A thorough directory of all **5089 test cases** across **291 suites**. Expand a 
       * <code>Assert false (dws_iec101_parse(bad_second_start, sizeof(bad_second_start), &f, &c))</code>
       * <code>Assert false (dws_iec101_parse(truncated, sizeof(truncated), &f, &c))</code>
       * <code>Assert false (dws_iec101_parse(buf, n, &f, &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_io_single_point</b> &mdash; <i>Io single point</i></summary>
+
+    * **Objective**: Io single point
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x34, buf[0]); // IOA little-endian</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x12, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x81, buf[3]); // SPI (0x01) | IV (0x80)</code>
+      * <code>Assert true (dws_iec_io_parse_sp(buf, n, &ioa, &on, &q))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x1234, ioa);</code>
+      * <code>Assert true (on)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_IV, q);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_sp(buf, 3, 0, false, 0)); // too small</code>
+      * <code>Assert false (dws_iec_io_parse_sp(buf, 3, &ioa, &on, &q))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_io_measured_float</b> &mdash; <i>A negative value round-trips through the IEEE-754 bytes.</i></summary>
+
+    * **Objective**: A negative value round-trips through the IEEE-754 bytes.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
+      * <code>Assert true (dws_iec_io_parse_float(buf, n, &ioa, &v, &qds))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(100, ioa);</code>
+      * <code>Assert float within (0.001f, 23.5f, v)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_NT, qds);</code>
+      * <code>Assert true (dws_iec_io_parse_float(buf, 8, nullptr, &v, nullptr))</code>
+      * <code>Assert float within (0.0001f, -0.125f, v)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_float(buf, 7, 0, 1.0f, 0)); // too small</code>
+      * <code>Assert false (dws_iec_io_parse_float(buf, 7, &ioa, &v, &qds))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_io_single_command_in_asdu</b> &mdash; <i>Assemble a C_SC_NA_1 ASDU: the 6-octet header + one single-command object (select, ON).</i></summary>
+
+    * **Objective**: Assemble a C_SC_NA_1 ASDU: the 6-octet header + one single-command object (select, ON).
+    * **Assertions**:
+      * <code>Assert true (p &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, io);</code>
+      * <code>Assert true (dws_iec_asdu_parse_header(buf, p, &g, &consumed))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(IEC_TYPE_C_SC_NA_1, g.type_id);</code>
+      * <code>Assert true (dws_iec_io_parse_sc(buf + consumed, p - consumed, &ioa, &on, &sel))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x0A, ioa);</code>
+      * <code>Assert true (on)</code>
+      * <code>Assert true (sel)</code>
+      * <code>Assert false (on)</code>
+      * <code>Assert false (sel)</code>
   </details>
 
 </details>
