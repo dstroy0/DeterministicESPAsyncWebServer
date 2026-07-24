@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5050 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5051 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -56554,7 +56554,7 @@ A thorough directory of all **5050 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav (46 tests)</b></summary>
+<summary><b>test_webdav (47 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_method_classification</b> &mdash; <i>Method classification</i></summary>
@@ -56971,7 +56971,7 @@ A thorough directory of all **5050 test cases** across **290 suites**. Expand a 
 
     * **Objective**: A Depth-infinity lock on /dir covers the whole subtree, but not a same-prefix sibling like /dir2.
     * **Assertions**:
-      * <code>Assert not null (dws_dav_lock_acquire(&t, "/dir", tok, true, /*depth_infinity=*/true))</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&t, "/dir", tok, true, /*depth_infinity=*/true, 0))</code>
       * <code>Assert false (dws_dav_lock_can_write(&t, "/dir", nullptr))</code>
       * <code>Assert false (dws_dav_lock_can_write(&t, "/dir/sub/file.txt", nullptr))</code>
       * <code>Assert true (dws_dav_lock_can_write(&t, "/dir/sub/file.txt", tok))</code>
@@ -56986,14 +56986,14 @@ A thorough directory of all **5050 test cases** across **290 suites**. Expand a 
 
     * **Objective**: An exclusive infinity lock on /p blocks any overlapping lock (child, ancestor, or same).
     * **Assertions**:
-      * <code>Assert not null (dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:a", true, true))</code>
-      * <code>Assert null (dws_dav_lock_acquire(&t, "/p/c", "opaquelocktoken:b", true, false))</code>
-      * <code>Assert null (dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:b", false, false))</code>
-      * <code>Assert null (dws_dav_lock_acquire(&t, "/", "opaquelocktoken:b", true, true));     // ancestor (root)</code>
-      * <code>Assert not null (dws_dav_lock_acquire(&t, "/q", "opaquelocktoken:c", true, false))</code>
-      * <code>Assert not null (dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s1", false, false))</code>
-      * <code>Assert not null (dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s2", false, false))</code>
-      * <code>Assert null (dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:x", true, false))</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:a", true, true, 0))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t, "/p/c", "opaquelocktoken:b", true, false, 0))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:b", false, false, 0))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t, "/", "opaquelocktoken:b", true, true, 0)); // ancestor (root)</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&t, "/q", "opaquelocktoken:c", true, false, 0))</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s1", false, false, 0))</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s2", false, false, 0))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:x", true, false, 0))</code>
       * <code>Assert true (dws_dav_lock_can_write(&s, "/f", "opaquelocktoken:s2"))</code>
       * <code>Assert false (dws_dav_lock_can_write(&s, "/f", nullptr))</code>
   </details>
@@ -57003,10 +57003,10 @@ A thorough directory of all **5050 test cases** across **290 suites**. Expand a 
 
     * **Objective**: A token that would not fit is rejected; null arguments fail closed.
     * **Assertions**:
-      * <code>Assert not null (dws_dav_lock_acquire(&t, path, tok, true, false))</code>
-      * <code>Assert null (dws_dav_lock_acquire(&t, "/overflow", "opaquelocktoken:z", true, false))</code>
-      * <code>Assert null (dws_dav_lock_acquire(&t2, "/a", longtok, true, false))</code>
-      * <code>Assert null (dws_dav_lock_acquire(&t2, nullptr, "opaquelocktoken:a", true, false))</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&t, path, tok, true, false, 0))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t, "/overflow", "opaquelocktoken:z", true, false, 0))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t2, "/a", longtok, true, false, 0))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t2, nullptr, "opaquelocktoken:a", true, false, 0))</code>
       * <code>Assert true (dws_dav_lock_can_write(nullptr, "/a", nullptr))</code>
   </details>
 
@@ -57026,6 +57026,29 @@ A thorough directory of all **5050 test cases** across **290 suites**. Expand a 
       * <code>Assert false (dws_dav_if_token(nullptr, out, sizeof(out)))</code>
       * <code>Assert true (dws_dav_if_token("(&lt;opaquelocktoken:aaaa-dws&gt;)", out, sizeof(out)))</code>
       * <code>Assert true (dws_dav_lock_can_write(&t, "/x", out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_lock_timeout_sweep</b> &mdash; <i>A timed lock gates writes until a sweep reaches its expiry second (expiry_s <= now drops it).</i></summary>
+
+    * **Objective**: A timed lock gates writes until a sweep reaches its expiry second (expiry_s <= now drops it).
+    * **Assertions**:
+      * <code>Assert not null (dws_dav_lock_acquire(&t, "/timed", "opaquelocktoken:t", true, false, /*expiry_s=*/100))</code>
+      * <code>Assert false (dws_dav_lock_can_write(&t, "/timed", nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dav_lock_sweep(&t, 99)); // not yet expired</code>
+      * <code>Assert false (dws_dav_lock_can_write(&t, "/timed", nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_dav_lock_sweep(&t, 100)); // expired -&gt; dropped</code>
+      * <code>Assert true (dws_dav_lock_can_write(&t, "/timed", nullptr))</code>
+      * <code>Assert null (dws_dav_lock_find(&t, "/timed"))</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&t, "/perm", "opaquelocktoken:p", true, false, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dav_lock_sweep(&t, 0xFFFFFFFFu));</code>
+      * <code>Assert false (dws_dav_lock_can_write(&t, "/perm", nullptr))</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&t, "/r", "opaquelocktoken:r", true, false, 50))</code>
+      * <code>Assert not null (dws_dav_lock_refresh(&t, "opaquelocktoken:r", 200))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dav_lock_sweep(&t, 100)); // was 50, now 200 -&gt; survives</code>
+      * <code>Assert false (dws_dav_lock_can_write(&t, "/r", nullptr))</code>
+      * <code>Assert null (dws_dav_lock_refresh(&t, "opaquelocktoken:unknown", 300))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_dav_lock_sweep(&t, 200)); // /r now expires (/perm never does)</code>
   </details>
 
 </details>
