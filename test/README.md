@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5146 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5147 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -22301,7 +22301,7 @@ A thorough directory of all **5146 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_j1939 (28 tests)</b></summary>
+<summary><b>test_j1939 (29 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_id_pdu2_roundtrip</b> &mdash; <i>Id pdu2 roundtrip</i></summary>
@@ -22660,6 +22660,22 @@ A thorough directory of all **5146 test cases** across **291 suites**. Expand a 
       * <code>Assert false (v.trip_valid)</code>
       * <code>Assert true (v.total_valid)</code>
       * <code>Assert false (dws_j1939_decode_vd(&ic1, &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_ccvs</b> &mdash; <i>Wheel-based vehicle speed 65.5 km/h (raw 65.5*256 = 16768 = 0x4180, LE bytes 80 41); cruise-active = 1</i></summary>
+
+    * **Objective**: Wheel-based vehicle speed 65.5 km/h (raw 65.5*256 = 16768 = 0x4180, LE bytes 80 41); cruise-active = 1
+    * **Assertions**:
+      * <code>Assert true (dws_j1939_build_message(&f, 6, J1939_PGN_CCVS, 0x00, J1939_ADDR_GLOBAL, data, 8))</code>
+      * <code>Assert true (dws_j1939_decode_ccvs(&f, &c))</code>
+      * <code>Assert true (c.speed_valid)</code>
+      * <code>Assert float within (0.01f, 65.5f, c.wheel_speed_kmh)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, c.cruise_active); // low 2 bits of 0xF5</code>
+      * <code>Assert true (dws_j1939_decode_ccvs(&fna, &c))</code>
+      * <code>Assert false (c.speed_valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, c.cruise_active);</code>
+      * <code>Assert false (dws_j1939_decode_ccvs(&et1, &c))</code>
   </details>
 
   <details style="margin-left: 20px;">
