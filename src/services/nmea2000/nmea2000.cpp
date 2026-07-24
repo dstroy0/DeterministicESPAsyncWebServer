@@ -186,6 +186,22 @@ bool dws_n2k_decode_engine_rapid(const uint8_t *payload, size_t len, N2kEngineRa
     return true;
 }
 
+bool dws_n2k_decode_temperature(const uint8_t *payload, size_t len, N2kTemperature *out)
+{
+    if (!payload || !out || len < 7) // sid(1) + instance(1) + source(1) + actual(2) + set(2)
+        return false;
+    out->sid = payload[0];
+    out->instance = payload[1];
+    out->source = payload[2];
+    uint16_t act = rd_u16le(payload + 3); // 0.01 K per bit
+    out->actual_valid = (act != 0xFFFFu);
+    out->actual_c = (float)act * 0.01f - 273.15f; // Kelvin -> Celsius
+    uint16_t set = rd_u16le(payload + 5);
+    out->set_valid = (set != 0xFFFFu);
+    out->set_c = (float)set * 0.01f - 273.15f;
+    return true;
+}
+
 bool dws_n2k_decode_wind_data(const uint8_t *payload, size_t len, N2kWindData *out)
 {
     if (!payload || !out || len < 6)

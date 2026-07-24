@@ -335,6 +335,31 @@ void test_decode_engine_rapid()
     TEST_ASSERT_FALSE(dws_n2k_decode_engine_rapid(nullptr, 8, &e));
 }
 
+void test_decode_temperature()
+{
+    // sid 5, instance 0, source inside, actual 25.0 C (raw 29815 = 298.15 K), set 20.0 C (raw 29315).
+    const uint8_t t[8] = {0x05, 0x00, 0x02, 0x77, 0x74, 0x83, 0x72, 0xff};
+    N2kTemperature d;
+    TEST_ASSERT_TRUE(dws_n2k_decode_temperature(t, sizeof(t), &d));
+    TEST_ASSERT_EQUAL_UINT8(5, d.sid);
+    TEST_ASSERT_EQUAL_UINT8(0, d.instance);
+    TEST_ASSERT_EQUAL_UINT8(N2K_TEMP_SRC_INSIDE, d.source);
+    TEST_ASSERT_TRUE(d.actual_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 25.0f, d.actual_c);
+    TEST_ASSERT_TRUE(d.set_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 20.0f, d.set_c);
+
+    // A 0xFFFF set temperature is not-available; the actual stays valid.
+    const uint8_t na[8] = {0x05, 0x00, 0x00, 0x77, 0x74, 0xff, 0xff, 0xff};
+    TEST_ASSERT_TRUE(dws_n2k_decode_temperature(na, sizeof(na), &d));
+    TEST_ASSERT_EQUAL_UINT8(N2K_TEMP_SRC_SEA, d.source);
+    TEST_ASSERT_TRUE(d.actual_valid);
+    TEST_ASSERT_FALSE(d.set_valid);
+    // Short payload + nulls are rejected.
+    TEST_ASSERT_FALSE(dws_n2k_decode_temperature(t, 6, &d));
+    TEST_ASSERT_FALSE(dws_n2k_decode_temperature(nullptr, 8, &d));
+}
+
 void test_decode_wind_data()
 {
     // sid 0x2A, speed 5.00 m/s (raw 500), angle 1.5708 rad (raw 15708), reference apparent.
@@ -415,6 +440,7 @@ int main()
     RUN_TEST(test_decode_position_rapid);
     RUN_TEST(test_decode_cog_sog_rapid);
     RUN_TEST(test_decode_engine_rapid);
+    RUN_TEST(test_decode_temperature);
     RUN_TEST(test_decode_wind_data);
     RUN_TEST(test_decode_water_depth);
     RUN_TEST(test_decode_vessel_heading);

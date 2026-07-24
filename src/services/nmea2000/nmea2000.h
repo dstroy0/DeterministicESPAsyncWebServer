@@ -94,6 +94,20 @@ bool dws_n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t
 #define N2K_PGN_WIND_DATA 130306u      ///< Wind Data: speed + angle + reference
 #define N2K_PGN_WATER_DEPTH 128267u    ///< Water Depth: depth below transducer + offset
 #define N2K_PGN_VESSEL_HEADING 127250u ///< Vessel Heading: heading + deviation + variation
+#define N2K_PGN_TEMPERATURE 130312u    ///< Temperature: instance + source + actual / set temperature
+
+// Temperature source (PGN 130312 byte 2).
+#define N2K_TEMP_SRC_SEA 0
+#define N2K_TEMP_SRC_OUTSIDE 1
+#define N2K_TEMP_SRC_INSIDE 2
+#define N2K_TEMP_SRC_ENGINE_ROOM 3
+#define N2K_TEMP_SRC_MAIN_CABIN 4
+#define N2K_TEMP_SRC_LIVE_WELL 5
+#define N2K_TEMP_SRC_BAIT_WELL 6
+#define N2K_TEMP_SRC_REFRIGERATION 7
+#define N2K_TEMP_SRC_HEATING_SYSTEM 8
+#define N2K_TEMP_SRC_FREEZER 13
+#define N2K_TEMP_SRC_EXHAUST_GAS 14
 
 // COG reference (PGN 129026 byte 1, low 2 bits).
 #define N2K_COG_REF_TRUE 0     ///< course over ground referenced to True North
@@ -141,6 +155,19 @@ struct N2kEngineRapid
     float boost_pa;   ///< engine boost pressure (Pa, 100 Pa per bit)
     bool tilt_valid;  ///< false if the tilt/trim is not-available
     int8_t tilt_pct;  ///< engine tilt / trim (percent, 1 %/bit, signed)
+};
+
+/** @brief Decoded Temperature (PGN 130312). Temperatures are carried in Kelvin (0.01 K/bit) on the wire and
+ *  exposed here in Celsius. */
+struct N2kTemperature
+{
+    uint8_t sid;       ///< sequence id
+    uint8_t instance;  ///< temperature instance
+    uint8_t source;    ///< temperature source (@ref N2K_TEMP_SRC_SEA etc.)
+    bool actual_valid; ///< false if the actual temperature is not-available
+    float actual_c;    ///< actual temperature (degrees Celsius)
+    bool set_valid;    ///< false if the set/target temperature is not-available
+    float set_c;       ///< set / target temperature (degrees Celsius)
 };
 
 /** @brief Decoded Wind Data (PGN 130306). */
@@ -191,6 +218,12 @@ bool dws_n2k_decode_cog_sog_rapid(const uint8_t *payload, size_t len, N2kCogSogR
  * @return true iff @p len is at least 6 octets (instance + speed + boost + tilt); false otherwise.
  */
 bool dws_n2k_decode_engine_rapid(const uint8_t *payload, size_t len, N2kEngineRapid *out);
+
+/**
+ * @brief Decode a Temperature (PGN 130312) payload into @p out.
+ * @return true iff @p len is at least 7 octets (SID + instance + source + actual + set); false otherwise.
+ */
+bool dws_n2k_decode_temperature(const uint8_t *payload, size_t len, N2kTemperature *out);
 
 /**
  * @brief Decode a Wind Data (PGN 130306) payload into @p out.
