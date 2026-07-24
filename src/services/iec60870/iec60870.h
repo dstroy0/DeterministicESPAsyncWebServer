@@ -54,6 +54,7 @@
 #define IEC_TYPE_M_ME_NA_1 9   ///< measured value, normalized
 #define IEC_TYPE_M_ME_NB_1 11  ///< measured value, scaled
 #define IEC_TYPE_M_ME_NC_1 13  ///< measured value, short float
+#define IEC_TYPE_M_IT_NA_1 15  ///< integrated totals (counter)
 #define IEC_TYPE_C_SC_NA_1 45  ///< single command
 #define IEC_TYPE_C_DC_NA_1 46  ///< double command
 #define IEC_TYPE_M_EI_NA_1 70  ///< end of initialization
@@ -162,6 +163,12 @@ uint32_t dws_iec_get_ioa(const uint8_t *p);
 #define IEC_DCO_QU_SHIFT 2u       ///< double command: qualifier of command (QU) occupies bits 2..6
 #define IEC_DCO_QU_MASK 0x1Fu     ///< the 5-bit qualifier value (after shifting down)
 
+// Binary counter reading (BCR) sequence-notation octet (M_IT_NA_1, type 15).
+#define IEC_BCR_SQ_MASK 0x1Fu ///< the 5-bit sequence number occupies bits 0..4
+#define IEC_BCR_CY 0x20u      ///< counter overflow (carry) occurred since the last reading
+#define IEC_BCR_CA 0x40u      ///< counter was adjusted since the last reading
+#define IEC_BCR_IV 0x80u      ///< the counter reading is invalid
+
 /**
  * @brief Build a single-point information object (M_SP_NA_1, type 1): IOA(3) + SIQ(1).
  * @param on       the single-point value (SPI bit).
@@ -203,6 +210,19 @@ size_t dws_iec_io_build_normalized(uint8_t *buf, size_t cap, uint32_t ioa, float
 /** @brief Parse a normalized measured-value object into its IOA, the fraction value (NVA / 32768), and the
  *  quality byte. False if < 6 octets. */
 bool dws_iec_io_parse_normalized(const uint8_t *buf, size_t len, uint32_t *ioa, float *value, uint8_t *qds);
+
+/**
+ * @brief Build an integrated-totals object (M_IT_NA_1, type 15): IOA(3) + BCR(5) = a signed 32-bit counter
+ *        value (LE, two's complement) followed by a sequence-notation octet (the 5-bit sequence number in
+ *        IEC_BCR_SQ_MASK plus the IEC_BCR_CY / _CA / _IV flags). The counter reading is the metering (energy /
+ *        pulse total) companion to the measured values.
+ * @return 8 on success, 0 on overflow / a null buffer.
+ */
+size_t dws_iec_io_build_counter(uint8_t *buf, size_t cap, uint32_t ioa, int32_t value, uint8_t seq);
+
+/** @brief Parse an integrated-totals object into its IOA, the signed counter value, and the raw sequence-notation
+ *  octet (test it with IEC_BCR_SQ_MASK / _CY / _CA / _IV). False if < 8 octets. */
+bool dws_iec_io_parse_counter(const uint8_t *buf, size_t len, uint32_t *ioa, int32_t *value, uint8_t *seq);
 
 /**
  * @brief Build a single command object (C_SC_NA_1, type 45): IOA(3) + SCO(1).

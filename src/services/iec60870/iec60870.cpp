@@ -257,6 +257,34 @@ bool dws_iec_io_parse_normalized(const uint8_t *buf, size_t len, uint32_t *ioa, 
     return true;
 }
 
+size_t dws_iec_io_build_counter(uint8_t *buf, size_t cap, uint32_t ioa, int32_t value, uint8_t seq)
+{
+    if (!buf || cap < 8)
+        return 0;
+    dws_iec_put_ioa(buf, cap, ioa);
+    uint32_t u = (uint32_t)value; // two's-complement wire form, little-endian
+    buf[3] = (uint8_t)u;
+    buf[4] = (uint8_t)(u >> 8);
+    buf[5] = (uint8_t)(u >> 16);
+    buf[6] = (uint8_t)(u >> 24);
+    buf[7] = seq; // sequence notation: SQ (bits 0..4) + CY / CA / IV
+    return 8;
+}
+
+bool dws_iec_io_parse_counter(const uint8_t *buf, size_t len, uint32_t *ioa, int32_t *value, uint8_t *seq)
+{
+    if (!buf || len < 8)
+        return false;
+    if (ioa)
+        *ioa = dws_iec_get_ioa(buf);
+    if (value)
+        *value =
+            (int32_t)((uint32_t)buf[3] | ((uint32_t)buf[4] << 8) | ((uint32_t)buf[5] << 16) | ((uint32_t)buf[6] << 24));
+    if (seq)
+        *seq = buf[7];
+    return true;
+}
+
 size_t dws_iec_io_build_sc(uint8_t *buf, size_t cap, uint32_t ioa, bool on, bool select)
 {
     if (!buf || cap < 4)

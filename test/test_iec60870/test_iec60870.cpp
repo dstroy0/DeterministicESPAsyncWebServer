@@ -439,6 +439,38 @@ void test_io_measured_scaled()
     TEST_ASSERT_FALSE(dws_iec_io_parse_scaled(buf, 5, &ioa, &v, &qds));
 }
 
+void test_io_integrated_totals()
+{
+    uint8_t buf[16];
+    // M_IT_NA_1: IOA(3) + BCR = signed 32-bit counter (LE) + sequence-notation octet.
+    // 0x12345678 = 305419896 -> bytes 78 56 34 12; seq = SQ 5 + CY (0x20) -> 0x25.
+    size_t n = dws_iec_io_build_counter(buf, sizeof(buf), 300, 0x12345678, (uint8_t)(5u | IEC_BCR_CY));
+    TEST_ASSERT_EQUAL_size_t(8, n);
+    TEST_ASSERT_EQUAL_HEX8(0x78, buf[3]);
+    TEST_ASSERT_EQUAL_HEX8(0x56, buf[4]);
+    TEST_ASSERT_EQUAL_HEX8(0x34, buf[5]);
+    TEST_ASSERT_EQUAL_HEX8(0x12, buf[6]);
+    TEST_ASSERT_EQUAL_HEX8(0x25, buf[7]);
+    uint32_t ioa;
+    int32_t v;
+    uint8_t seq;
+    TEST_ASSERT_TRUE(dws_iec_io_parse_counter(buf, n, &ioa, &v, &seq));
+    TEST_ASSERT_EQUAL_UINT32(300, ioa);
+    TEST_ASSERT_EQUAL_INT32(0x12345678, v);
+    TEST_ASSERT_EQUAL_UINT8(5, seq & IEC_BCR_SQ_MASK);
+    TEST_ASSERT_TRUE((seq & IEC_BCR_CY) != 0);
+    TEST_ASSERT_TRUE((seq & IEC_BCR_CA) == 0);
+    TEST_ASSERT_TRUE((seq & IEC_BCR_IV) == 0);
+    // A negative counter round-trips through the two's-complement bytes; the adjusted + invalid flags set.
+    dws_iec_io_build_counter(buf, sizeof(buf), 300, -2000000000, (uint8_t)(IEC_BCR_IV | IEC_BCR_CA));
+    TEST_ASSERT_TRUE(dws_iec_io_parse_counter(buf, 8, nullptr, &v, &seq));
+    TEST_ASSERT_EQUAL_INT32(-2000000000, v);
+    TEST_ASSERT_TRUE((seq & IEC_BCR_IV) != 0);
+    TEST_ASSERT_TRUE((seq & IEC_BCR_CA) != 0);
+    TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_counter(buf, 7, 0, 1, 0)); // too small
+    TEST_ASSERT_FALSE(dws_iec_io_parse_counter(buf, 7, &ioa, &v, &seq));
+}
+
 void test_io_single_command_in_asdu()
 {
     // Assemble a C_SC_NA_1 ASDU: the 6-octet header + one single-command object (select, ON).
@@ -568,6 +600,7 @@ int main()
     RUN_TEST(test_io_measured_float);
     RUN_TEST(test_io_measured_scaled);
     RUN_TEST(test_io_measured_normalized);
+    RUN_TEST(test_io_integrated_totals);
     RUN_TEST(test_io_single_command_in_asdu);
     RUN_TEST(test_io_double_point);
     RUN_TEST(test_io_double_command_in_asdu);
