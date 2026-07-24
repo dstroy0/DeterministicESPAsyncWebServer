@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.122.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.122.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`95eb572`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95eb57274cfda2538f23dabe0309b6f1d98f7bc1))
+
+### Changes
+
+- Bump version: 7.121.0 → 7.122.0 ([`4f6b260`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f6b2601c280d0b65e8469569597fac2a46329ae))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`07b4ac9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07b4ac943d8531060bf1e31f3e5452a7c33205ed))
+
+### Features
+
+- CCVS (PGN 65265) wheel-based vehicle speed decoder ([`f659111`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6591112256dbdc20f00b3174921de582ad48637))
+
+</details>
+
 ## [7.121.0] - 2026-07-24
 
 <details>
