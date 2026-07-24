@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5055 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5057 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -54216,7 +54216,7 @@ A thorough directory of all **5055 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ubx (16 tests)</b></summary>
+<summary><b>test_ubx (18 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -54426,6 +54426,50 @@ A thorough directory of all **5055 test cases** across **290 suites**. Expand a 
       * <code>Assert false (dws_ubx_parse_nav_pvt(&sm, &pvt))</code>
       * <code>Assert false (dws_ubx_parse_nav_pvt(nullptr, &pvt))</code>
       * <code>Assert false (dws_ubx_parse_nav_pvt(&m, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_nav_sat_decode</b> &mdash; <i>Nav sat decode</i></summary>
+
+    * **Objective**: Nav sat decode
+    * **Assertions**:
+      * <code>Assert true (dws_ubx_parse(navsat_frame, sizeof(navsat_frame), &m))</code>
+      * <code>Assert true (dws_ubx_parse_nav_sat(&m, &hdr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(123456789u, hdr.itow_ms);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, hdr.version);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, hdr.num_svs);</code>
+      * <code>Assert true (dws_ubx_nav_sat_get(&m, 0, &s0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, s0.gnss_id); // GPS</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, s0.sv_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(42, s0.cno_dbhz);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(45, s0.elev_deg);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(180, s0.azim_deg);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(-3, s0.pr_res_01m);</code>
+      * <code>Assert true (s0.flags & DWS_UBX_SAT_USED)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4, s0.flags & DWS_UBX_SAT_QUALITY_MASK);</code>
+      * <code>Assert true (dws_ubx_nav_sat_get(&m, 1, &s1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, s1.gnss_id); // GLONASS</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, s1.sv_id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT8(-90, s1.elev_deg);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(270, s1.azim_deg);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(15, s1.pr_res_01m);</code>
+      * <code>Assert false (s1.flags & DWS_UBX_SAT_USED)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(7, s1.flags & DWS_UBX_SAT_QUALITY_MASK);</code>
+      * <code>Assert false (dws_ubx_nav_sat_get(&m, 2, &s2))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_nav_sat_rejects</b> &mdash; <i>Wrong class/id (a NAV-PVT frame is not NAV-SAT).</i></summary>
+
+    * **Objective**: Wrong class/id (a NAV-PVT frame is not NAV-SAT).
+    * **Assertions**:
+      * <code>Assert false (dws_ubx_parse_nav_sat(&pvt, &hdr))</code>
+      * <code>Assert true (dws_ubx_parse(buf, n, &sm))</code>
+      * <code>Assert false (dws_ubx_parse_nav_sat(&sm, &hdr))</code>
+      * <code>Assert false (dws_ubx_nav_sat_get(&sm, 0, &sat))</code>
+      * <code>Assert false (dws_ubx_parse_nav_sat(nullptr, &hdr))</code>
+      * <code>Assert false (dws_ubx_parse_nav_sat(&m, nullptr))</code>
+      * <code>Assert false (dws_ubx_nav_sat_get(&m, 0, nullptr))</code>
   </details>
 
 </details>
