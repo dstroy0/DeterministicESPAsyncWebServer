@@ -1317,6 +1317,52 @@ void test_dh_guards()
     TEST_ASSERT_EQUAL_size_t(0, dws_ike_dh_public(IKE_DH_CURVE25519, nullptr, 32, out, 32));
 }
 
+// ── tier 2: IKE_AUTH pre-shared-key authentication (RFC 7296 §2.15) ─────────────────────────────
+// Expected AUTH from an INDEPENDENT reference (Python hmac/hashlib) computing the same two-layer PRF
+// construction, so this is a cross-impl KAT of the AUTH computation, not self-consistency.
+
+void test_auth_psk_kat()
+{
+    static const uint8_t psk[16] = {0x6d, 0x79, 0x2d, 0x70, 0x72, 0x65, 0x73, 0x68,
+                                    0x61, 0x72, 0x65, 0x64, 0x2d, 0x6b, 0x65, 0x79};
+    static const uint8_t real[60] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+                                     0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+                                     0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23,
+                                     0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+                                     0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b};
+    static const uint8_t pnonce[16] = {0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,
+                                       0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f};
+    static const uint8_t skp[32] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+                                    0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
+                                    0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f};
+    static const uint8_t idbody[8] = {0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x01};
+    static const uint8_t expect[32] = {0x73, 0xcd, 0x41, 0x7b, 0x6e, 0xc9, 0xab, 0xf8, 0x04, 0x98, 0x5a,
+                                       0xf5, 0xf9, 0xbe, 0x2c, 0xc2, 0x5d, 0x56, 0x79, 0x27, 0xa4, 0x9a,
+                                       0x46, 0x5a, 0x91, 0x27, 0xfc, 0xd1, 0x60, 0x04, 0xfd, 0xe1};
+    uint8_t out[DWS_IKE_AUTH_LEN];
+    TEST_ASSERT_TRUE(dws_ike_auth_psk(psk, sizeof(psk), real, sizeof(real), pnonce, sizeof(pnonce), skp, sizeof(skp),
+                                      idbody, sizeof(idbody), out));
+    TEST_ASSERT_EQUAL_MEMORY(expect, out, DWS_IKE_AUTH_LEN);
+
+    // Peer-verify semantics: recomputing with the same inputs matches (equal-compare against received);
+    // a different PSK yields a different AUTH (a wrong key would be rejected).
+    uint8_t out2[DWS_IKE_AUTH_LEN];
+    static const uint8_t wrong_psk[16] = {0x6d, 0x79, 0x2d, 0x70, 0x72, 0x65, 0x73, 0x68,
+                                          0x61, 0x72, 0x65, 0x64, 0x2d, 0x6b, 0x65, 0x78}; // last byte differs
+    TEST_ASSERT_TRUE(dws_ike_auth_psk(wrong_psk, sizeof(wrong_psk), real, sizeof(real), pnonce, sizeof(pnonce), skp,
+                                      sizeof(skp), idbody, sizeof(idbody), out2));
+    TEST_ASSERT_NOT_EQUAL(0, memcmp(expect, out2, DWS_IKE_AUTH_LEN));
+}
+
+void test_auth_psk_guards()
+{
+    uint8_t out[DWS_IKE_AUTH_LEN];
+    static const uint8_t b[8] = {0};
+    TEST_ASSERT_FALSE(dws_ike_auth_psk(nullptr, 1, b, 8, b, 8, b, 8, b, 8, out)); // null psk
+    TEST_ASSERT_FALSE(dws_ike_auth_psk(b, 8, b, 8, b, 8, b, 8, b, 8, nullptr));   // null out
+    TEST_ASSERT_FALSE(dws_ike_auth_psk(b, 8, nullptr, 8, b, 8, b, 8, b, 8, out)); // null real_msg
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1373,5 +1419,8 @@ int main()
     RUN_TEST(test_dh_x25519_raw_kat);
     RUN_TEST(test_dh_x25519_agreement);
     RUN_TEST(test_dh_guards);
+    // tier 2: IKE_AUTH pre-shared-key authentication (RFC 7296 §2.15)
+    RUN_TEST(test_auth_psk_kat);
+    RUN_TEST(test_auth_psk_guards);
     return UNITY_END();
 }

@@ -457,7 +457,12 @@ preempting queue, so sensing shares the real-time ingest path.
        `test_ikev2` is now 50 cases.
     2. **IKE SA handshake state machine** (L) - IKE_SA_INIT -> IKE_AUTH (PSK and/or certificate auth) ->
        CREATE_CHILD_SA / INFORMATIONAL, rekeying, DPD (dead-peer detection), and the fixed-BSS SA/SPI tables.
-       Still host-testable against a reference peer (strongSwan / libreswan) with no datapath.
+       Still host-testable against a reference peer (strongSwan / libreswan) with no datapath. **The
+       PSK authentication computation is shipped** (RFC 7296 §2.15): `dws_ike_auth_psk` computes
+       AUTH = prf(prf(PSK, "Key Pad for IKEv2"), RealMessage | Nonce | prf(SK_p, RestOfIDPayload)) over
+       the streamed HMAC-SHA2-256 (RealMessage never re-buffered), cross-checked against an independent
+       Python HMAC reference incl. wrong-key divergence (`test_ikev2` +2, now 52). Remaining: the
+       stateful exchange sequencing + SA/SPI tables, and certificate (RSA/ECDSA) auth.
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with

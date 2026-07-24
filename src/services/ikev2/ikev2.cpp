@@ -814,4 +814,32 @@ size_t dws_ike_dh_compute(uint16_t group, const uint8_t *our_priv, size_t priv_l
     return 0;
 }
 
+// ── tier 2: IKE_AUTH pre-shared-key authentication (RFC 7296 §2.15) ─────────────────────────────
+
+bool dws_ike_auth_psk(const uint8_t *psk, size_t psk_len, const uint8_t *real_msg, size_t real_len,
+                      const uint8_t *peer_nonce, size_t nonce_len, const uint8_t *sk_p, size_t sk_p_len,
+                      const uint8_t *id_body, size_t id_body_len, uint8_t out[DWS_IKE_AUTH_LEN])
+{
+    if (!psk || !real_msg || !peer_nonce || !sk_p || !id_body || !out)
+        return false;
+
+    // MACedID = prf(SK_p, RestOfIDPayload).
+    uint8_t macid[DWS_IKE_AUTH_LEN];
+    ssh_hmac_sha256(sk_p, sk_p_len, id_body, id_body_len, macid);
+
+    // keypad = prf(PSK, "Key Pad for IKEv2") - the inner PRF that turns the shared key into a fixed key.
+    uint8_t keypad[DWS_IKE_AUTH_LEN];
+    static const char pad[] = DWS_IKE_PSK_PAD; // 17 octets, no NUL sent
+    ssh_hmac_sha256(psk, psk_len, (const uint8_t *)pad, sizeof(pad) - 1, keypad);
+
+    // AUTH = prf(keypad, RealMessage | Nonce | MACedID). Streamed so RealMessage is never re-buffered.
+    SshHmacCtx ctx;
+    ssh_hmac_sha256_init(&ctx, keypad, sizeof(keypad));
+    ssh_hmac_sha256_update(&ctx, real_msg, real_len);
+    ssh_hmac_sha256_update(&ctx, peer_nonce, nonce_len);
+    ssh_hmac_sha256_update(&ctx, macid, sizeof(macid));
+    ssh_hmac_sha256_final(&ctx, out);
+    return true;
+}
+
 #endif // DWS_ENABLE_IKEV2

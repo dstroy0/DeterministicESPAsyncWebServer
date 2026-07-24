@@ -499,6 +499,38 @@ size_t dws_ike_dh_public(uint16_t group, const uint8_t *our_priv, size_t priv_le
 size_t dws_ike_dh_compute(uint16_t group, const uint8_t *our_priv, size_t priv_len, const uint8_t *peer_pub,
                           size_t pub_len, uint8_t *out, size_t out_cap);
 
+// ── tier 2: IKE_AUTH pre-shared-key authentication (RFC 7296 §2.15) ─────────────────────────────
+//
+// With a shared key the AUTH payload data is
+//     AUTH = prf( prf(PSK, "Key Pad for IKEv2"), <SignedOctets> )
+// where <SignedOctets> = RealMessage | Nonce(peer) | prf(SK_p, RestOfIDPayload):
+//   * RealMessage  = the octets of this side's first message (the whole IKE_SA_INIT it sent, for the
+//                    initiator; the IKE_SA_INIT it sent, for the responder),
+//   * Nonce(peer)  = the *other* side's nonce data,
+//   * SK_p         = SK_pi when the initiator signs, SK_pr when the responder signs,
+//   * RestOfIDPayload = the ID payload body (the 4 bytes after its generic header: ID type + 3 reserved
+//                    + the identification data), i.e. an IkePayload::body for an IDi/IDr payload.
+// The PRF is HMAC-SHA2-256. This computes the 32-byte AUTH data; verifying a peer is the same value
+// compared in constant time against the received AUTH payload.
+
+/** @brief AUTH payload data length for prf HMAC-SHA2-256 (bytes). */
+#define DWS_IKE_AUTH_LEN 32
+/** @brief The fixed RFC 7296 §2.15 pre-shared-key pad string (17 octets, no NUL). */
+#define DWS_IKE_PSK_PAD "Key Pad for IKEv2"
+
+/**
+ * @brief Compute the RFC 7296 §2.15 pre-shared-key AUTH payload data into @p out (DWS_IKE_AUTH_LEN bytes).
+ * @param psk / psk_len          the shared key.
+ * @param real_msg / real_len    this side's first message octets (RealMessage).
+ * @param peer_nonce / nonce_len the peer's nonce data.
+ * @param sk_p / sk_p_len        SK_pi (initiator) or SK_pr (responder).
+ * @param id_body / id_body_len  the signing side's ID payload body (RestOfIDPayload).
+ * @return false on a null argument; true on success (@p out filled).
+ */
+bool dws_ike_auth_psk(const uint8_t *psk, size_t psk_len, const uint8_t *real_msg, size_t real_len,
+                      const uint8_t *peer_nonce, size_t nonce_len, const uint8_t *sk_p, size_t sk_p_len,
+                      const uint8_t *id_body, size_t id_body_len, uint8_t out[DWS_IKE_AUTH_LEN]);
+
 #endif // DWS_ENABLE_IKEV2
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IKEV2_H
