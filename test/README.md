@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5124 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5125 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -22116,7 +22116,7 @@ A thorough directory of all **5124 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_j1939 (25 tests)</b></summary>
+<summary><b>test_j1939 (26 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_id_pdu2_roundtrip</b> &mdash; <i>Id pdu2 roundtrip</i></summary>
@@ -22431,6 +22431,32 @@ A thorough directory of all **5124 test cases** across **291 suites**. Expand a 
       * <code>Assert false (a.baro_valid)</code>
       * <code>Assert true (a.ambient_temp_valid)</code>
       * <code>Assert false (dws_j1939_decode_amb(&lfe, &a))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_ic1</b> &mdash; <i>trap inlet 25 kPa (raw 50), boost 200 kPa (raw 100), intake 60 C (raw 100), air inlet 100 kPa (raw 50),</i></summary>
+
+    * **Objective**: trap inlet 25 kPa (raw 50), boost 200 kPa (raw 100), intake 60 C (raw 100), air inlet 100 kPa (raw 50),
+    * **Assertions**:
+      * <code>Assert true (dws_j1939_build_message(&f, 6, J1939_PGN_IC1, 0x00, J1939_ADDR_GLOBAL, data, 8))</code>
+      * <code>Assert true (dws_j1939_decode_ic1(&f, &c))</code>
+      * <code>Assert true (c.trap_inlet_valid)</code>
+      * <code>Assert float within (0.01f, 25.0f, c.trap_inlet_kpa)</code>
+      * <code>Assert true (c.boost_valid)</code>
+      * <code>Assert float within (0.01f, 200.0f, c.boost_kpa)</code>
+      * <code>Assert true (c.intake_temp_valid)</code>
+      * <code>Assert float within (0.01f, 60.0f, c.intake_temp_c)</code>
+      * <code>Assert true (c.air_inlet_valid)</code>
+      * <code>Assert float within (0.01f, 100.0f, c.air_inlet_kpa)</code>
+      * <code>Assert true (c.air_filter_valid)</code>
+      * <code>Assert float within (0.01f, 2.5f, c.air_filter_kpa)</code>
+      * <code>Assert true (c.exhaust_temp_valid)</code>
+      * <code>Assert float within (0.02f, 400.0f, c.exhaust_temp_c)</code>
+      * <code>Assert true (c.coolant_filter_valid)</code>
+      * <code>Assert float within (0.01f, 10.0f, c.coolant_filter_kpa)</code>
+      * <code>Assert false (c.boost_valid)</code>
+      * <code>Assert true (c.intake_temp_valid)</code>
+      * <code>Assert false (dws_j1939_decode_ic1(&amb, &c))</code>
   </details>
 
   <details style="margin-left: 20px;">
