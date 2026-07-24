@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5155 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5156 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -3011,7 +3011,7 @@ A thorough directory of all **5155 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_bacnet (14 tests)</b></summary>
+<summary><b>test_bacnet (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_bacnet_guards_and_truncations</b> &mdash; <i>Bacnet guards and truncations</i></summary>
@@ -3206,6 +3206,28 @@ A thorough directory of all **5155 test cases** across **291 suites**. Expand a 
       * <code>Assert false (dws_apdu_parse(nullptr, 4, &a))</code>
       * <code>Assert false (dws_apdu_parse(creq, sizeof(creq), nullptr))</code>
       * <code>Assert false (dws_apdu_parse(creq, 0, &a))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_apdu_build_who_is</b> &mdash; <i>Unbounded Who-Is (no limits): the 2-octet form every device answers.</i></summary>
+
+    * **Objective**: Unbounded Who-Is (no limits): the 2-octet form every device answers.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(unbounded), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(unbounded, buf, n);</code>
+      * <code>Assert true (dws_apdu_parse(buf, n, &a))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_PDU_UNCONFIRMED_REQUEST, a.pdu_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(BACNET_SVC_UN_WHO_IS, a.service_choice);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(small_range), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(small_range, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(big_range), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(big_range, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(zero_range), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(zero_range, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(buf, sizeof(buf), 200, 100, true));    // low &gt; high</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(buf, sizeof(buf), 0, 0x400000, true)); // &gt; BACNET_MAX_INSTANCE</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(nullptr, sizeof(buf), 0, 0, false));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_apdu_build_who_is(buf, 1, 0, 0, false)); // needs 2</code>
   </details>
 
 </details>
