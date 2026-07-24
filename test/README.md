@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5158 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5159 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -9456,7 +9456,7 @@ A thorough directory of all **5158 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dnp3 (18 tests)</b></summary>
+<summary><b>test_dnp3 (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dnp3_parse_guards</b> &mdash; <i>Dnp3 parse guards</i></summary>
@@ -9754,6 +9754,21 @@ A thorough directory of all **5158 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_range(nullptr, sizeof(buf), 1, 2, 0, 9));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_range(buf, 4, 1, 2, 0, 9)); // needs 5</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_object_header_all(buf, 2, 60, 1));        // needs 3</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_crob</b> &mdash; <i>LATCH_ON, no trip/close, count 1, on/off time 0: control code = 0x03.</i></summary>
+
+    * **Objective**: LATCH_ON, no trip/close, count 1, on/off time 0: control code = 0x03.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(DNP3_CROB_LEN, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(latch, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(pulse, buf, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xA4, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(buf, sizeof(buf), 0x10, 0, false, 1, 0, 0)); // op &gt; 0x0F</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(buf, sizeof(buf), 1, 0x04, false, 1, 0, 0)); // tcc &gt; 3</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(nullptr, sizeof(buf), 1, 1, false, 1, 0, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_crob(buf, 10, 1, 1, false, 1, 0, 0)); // needs 11</code>
   </details>
 
 </details>
