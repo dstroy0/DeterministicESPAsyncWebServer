@@ -268,5 +268,19 @@ struct DwsNmeaVhw
  */
 bool dws_nmea0183_parse_vhw(const Nmea0183 *m, DwsNmeaVhw *out);
 
+/** @brief Decoded VLW (distance traveled through the water): the cumulative and trip water-distance log from a
+ *  paddlewheel / pitot log - the marine odometer, the through-water companion to VHW's speed. */
+struct DwsNmeaVlw
+{
+    float total_water_nm; ///< total cumulative water distance (nautical miles; 0 if absent)
+    float trip_water_nm;  ///< water distance since the last reset (nautical miles; 0 if absent)
+};
+
+/**
+ * @brief Decode a parsed VLW sentence into @p out. @return true iff @p m is a VLW sentence with at least the
+ *        total + trip water-distance fields; false otherwise. Empty optional fields read back 0.
+ */
+bool dws_nmea0183_parse_vlw(const Nmea0183 *m, DwsNmeaVlw *out);
+
 #endif // DWS_ENABLE_NMEA0183
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H

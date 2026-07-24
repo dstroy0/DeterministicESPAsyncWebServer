@@ -540,6 +540,25 @@ void test_decode_vhw()
     TEST_ASSERT_FALSE(dws_nmea0183_parse_vhw(nullptr, &v));
 }
 
+void test_decode_vlw()
+{
+    char buf[96];
+    // Distance through water: 1234.5 nm total, 12.3 nm since reset.
+    size_t n = dws_nmea0183_build(buf, sizeof(buf), "VWVLW,1234.5,N,12.3,N");
+    TEST_ASSERT_TRUE(n > 0);
+    Nmea0183 m;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse(buf, n, &m));
+    DwsNmeaVlw v;
+    TEST_ASSERT_TRUE(dws_nmea0183_parse_vlw(&m, &v));
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, 1234.5f, v.total_water_nm);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 12.3f, v.trip_water_nm);
+
+    // A GGA is not a VLW, and null args are rejected.
+    dws_nmea0183_parse(GGA, strlen(GGA), &m);
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_vlw(&m, &v));
+    TEST_ASSERT_FALSE(dws_nmea0183_parse_vlw(nullptr, &v));
+}
+
 void test_decode_type_mismatch()
 {
     Nmea0183 m;
@@ -582,6 +601,7 @@ int main()
     RUN_TEST(test_decode_hdg);
     RUN_TEST(test_decode_gll);
     RUN_TEST(test_decode_vhw);
+    RUN_TEST(test_decode_vlw);
     RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }

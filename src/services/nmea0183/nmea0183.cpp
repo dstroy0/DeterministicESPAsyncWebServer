@@ -402,4 +402,14 @@ bool dws_nmea0183_parse_vhw(const Nmea0183 *m, DwsNmeaVhw *out)
     return true;
 }
 
+bool dws_nmea0183_parse_vlw(const Nmea0183 *m, DwsNmeaVlw *out)
+{
+    if (!m || !out || strcmp(m->type, "VLW") != 0 || m->field_count < 4) // need through the trip distance (field 3)
+        return false;
+    memset(out, 0, sizeof(*out));
+    dws_nmea0183_field_float(m, 1, &out->total_water_nm); // total cumulative; stays 0 if empty (out was zeroed)
+    dws_nmea0183_field_float(m, 3, &out->trip_water_nm);  // since the last reset
+    return true;
+}
+
 #endif // DWS_ENABLE_NMEA0183
