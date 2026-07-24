@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5131 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5132 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -11023,7 +11023,7 @@ A thorough directory of all **5131 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_enip (8 tests)</b></summary>
+<summary><b>test_enip (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_header_round_trip</b> &mdash; <i>command + length, little-endian.</i></summary>
@@ -11056,6 +11056,26 @@ A thorough directory of all **5131 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[25]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[26]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[27]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unregister_session</b> &mdash; <i>A null sender_context zeros the field; a too-small buffer fails closed.</i></summary>
+
+    * **Objective**: A null sender_context zeros the field; a too-small buffer fails closed.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(EIP_HEADER_SIZE, n); // header only, no command-specific data</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x66, buf[0]);         // UnRegisterSession (LE)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]); // length 0</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[3]);</code>
+      * <code>Assert true (dws_eip_parse(buf, n, &h, &data, &dlen))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(EIP_CMD_UNREGISTER_SESSION, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x12345678u, h.session_handle);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dlen);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(ctx, h.sender_context, 8);</code>
+      * <code>Assert true (dws_eip_parse(buf, n, &h, &data, &dlen))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(zero, h.sender_context, 8);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_eip_build_unregister_session(buf, 16, 0x1u, nullptr)); // needs 24</code>
   </details>
 
   <details style="margin-left: 20px;">
