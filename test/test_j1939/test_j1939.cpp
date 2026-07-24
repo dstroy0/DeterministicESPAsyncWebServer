@@ -447,6 +447,44 @@ void test_decode_amb()
     TEST_ASSERT_FALSE(dws_j1939_decode_amb(&lfe, &a));
 }
 
+void test_decode_ic1()
+{
+    // trap inlet 25 kPa (raw 50), boost 200 kPa (raw 100), intake 60 C (raw 100), air inlet 100 kPa (raw 50),
+    // air filter 2.5 kPa (raw 50), exhaust 400 C (raw 21536), coolant filter 10 kPa (raw 20).
+    const uint8_t data[8] = {0x32, 0x64, 0x64, 0x32, 0x32, 0x20, 0x54, 0x14};
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_j1939_build_message(&f, 6, J1939_PGN_IC1, 0x00, J1939_ADDR_GLOBAL, data, 8));
+
+    J1939Ic1 c;
+    TEST_ASSERT_TRUE(dws_j1939_decode_ic1(&f, &c));
+    TEST_ASSERT_TRUE(c.trap_inlet_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 25.0f, c.trap_inlet_kpa);
+    TEST_ASSERT_TRUE(c.boost_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 200.0f, c.boost_kpa);
+    TEST_ASSERT_TRUE(c.intake_temp_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 60.0f, c.intake_temp_c);
+    TEST_ASSERT_TRUE(c.air_inlet_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 100.0f, c.air_inlet_kpa);
+    TEST_ASSERT_TRUE(c.air_filter_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 2.5f, c.air_filter_kpa);
+    TEST_ASSERT_TRUE(c.exhaust_temp_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.02f, 400.0f, c.exhaust_temp_c);
+    TEST_ASSERT_TRUE(c.coolant_filter_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 10.0f, c.coolant_filter_kpa);
+
+    // A not-available boost pressure clears just that flag; the intake temperature stays valid.
+    const uint8_t na[8] = {0x32, 0xFF, 0x64, 0x32, 0x32, 0x20, 0x54, 0x14};
+    CanFrame fna;
+    dws_j1939_build_message(&fna, 6, J1939_PGN_IC1, 0x00, J1939_ADDR_GLOBAL, na, 8);
+    dws_j1939_decode_ic1(&fna, &c);
+    TEST_ASSERT_FALSE(c.boost_valid);
+    TEST_ASSERT_TRUE(c.intake_temp_valid);
+    // A non-IC1 frame (AMB) is rejected.
+    CanFrame amb;
+    dws_j1939_build_message(&amb, 6, J1939_PGN_AMB, 0x00, J1939_ADDR_GLOBAL, data, 8);
+    TEST_ASSERT_FALSE(dws_j1939_decode_ic1(&amb, &c));
+}
+
 void test_decode_pgn_mismatch_and_guards()
 {
     const uint8_t data[8] = {0};
@@ -492,6 +530,7 @@ int main()
     RUN_TEST(test_decode_et1);
     RUN_TEST(test_decode_lfe);
     RUN_TEST(test_decode_amb);
+    RUN_TEST(test_decode_ic1);
     RUN_TEST(test_decode_pgn_mismatch_and_guards);
     return UNITY_END();
 }

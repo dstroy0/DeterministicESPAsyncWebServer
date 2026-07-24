@@ -305,4 +305,29 @@ bool dws_j1939_decode_amb(const CanFrame *f, J1939Amb *out)
     return true;
 }
 
+bool dws_j1939_decode_ic1(const CanFrame *f, J1939Ic1 *out)
+{
+    if (!f || !out || f->dlc < 8)
+        return false;
+    J1939Id id;
+    if (!dws_j1939_decode_id(f->id, &id) || id.pgn != J1939_PGN_IC1)
+        return false;
+    out->trap_inlet_valid = (f->data[0] <= 0xFAu); // SPN 81, 0.5 kPa/bit
+    out->trap_inlet_kpa = (float)f->data[0] * 0.5f;
+    out->boost_valid = (f->data[1] <= 0xFAu); // SPN 102, 2 kPa/bit
+    out->boost_kpa = (float)f->data[1] * 2.0f;
+    out->intake_temp_valid = (f->data[2] <= 0xFAu); // SPN 105, 1 degC/bit, -40 offset
+    out->intake_temp_c = (float)((int)f->data[2] - 40);
+    out->air_inlet_valid = (f->data[3] <= 0xFAu); // SPN 106, 2 kPa/bit
+    out->air_inlet_kpa = (float)f->data[3] * 2.0f;
+    out->air_filter_valid = (f->data[4] <= 0xFAu); // SPN 107, 0.05 kPa/bit
+    out->air_filter_kpa = (float)f->data[4] * 0.05f;
+    uint16_t egt = (uint16_t)(f->data[5] | ((uint16_t)f->data[6] << 8)); // SPN 173
+    out->exhaust_temp_valid = (egt <= 0xFAFFu);
+    out->exhaust_temp_c = (float)egt * 0.03125f - 273.0f; // 0.03125 degC/bit, -273 offset
+    out->coolant_filter_valid = (f->data[7] <= 0xFAu);    // SPN 112, 0.5 kPa/bit
+    out->coolant_filter_kpa = (float)f->data[7] * 0.5f;
+    return true;
+}
+
 #endif // DWS_ENABLE_J1939

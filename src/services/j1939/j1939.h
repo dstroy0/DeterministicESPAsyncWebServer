@@ -140,6 +140,7 @@ J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
 #define J1939_PGN_ET1 0x00FEEEu  ///< Engine Temperature 1 (65262): coolant / fuel / oil temperature
 #define J1939_PGN_LFE 0x00FEF2u  ///< Fuel Economy (65266): fuel rate + instantaneous / average economy
 #define J1939_PGN_AMB 0x00FEF5u  ///< Ambient Conditions (65269): barometric pressure + air / road temperatures
+#define J1939_PGN_IC1 0x00FEF6u  ///< Inlet/Exhaust Conditions 1 (65270): boost + intake / exhaust + filter pressures
 
 /** @brief Decoded EEC1 (PGN 61444). Percent-torque fields are @ref J1939_TORQUE_NA when not available. */
 struct J1939Eec1
@@ -218,6 +219,32 @@ struct J1939Amb
  * @return true iff @p f decodes to PGN 65269 and carries 8 data octets; false otherwise.
  */
 bool dws_j1939_decode_amb(const CanFrame *f, J1939Amb *out);
+
+/** @brief Decoded IC1 (PGN 65270). Each measurement has its own validity flag (cleared for a
+ *  not-available raw). Exhaust gas temperature is a 2-octet SPN; the rest are 1-octet. */
+struct J1939Ic1
+{
+    bool trap_inlet_valid;
+    float trap_inlet_kpa; ///< particulate trap inlet pressure (kPa, 0.5 kPa/bit) - SPN 81
+    bool boost_valid;
+    float boost_kpa; ///< boost pressure (kPa, 2 kPa/bit) - SPN 102
+    bool intake_temp_valid;
+    float intake_temp_c; ///< intake manifold 1 temperature (degC, 1 degC/bit, -40 offset) - SPN 105
+    bool air_inlet_valid;
+    float air_inlet_kpa; ///< air inlet pressure (kPa, 2 kPa/bit) - SPN 106
+    bool air_filter_valid;
+    float air_filter_kpa; ///< air filter 1 differential pressure (kPa, 0.05 kPa/bit) - SPN 107
+    bool exhaust_temp_valid;
+    float exhaust_temp_c; ///< exhaust gas temperature (degC, 0.03125 degC/bit, -273 offset) - SPN 173
+    bool coolant_filter_valid;
+    float coolant_filter_kpa; ///< coolant filter differential pressure (kPa, 0.5 kPa/bit) - SPN 112
+};
+
+/**
+ * @brief Decode an IC1 (PGN 65270) single frame into @p out.
+ * @return true iff @p f decodes to PGN 65270 and carries 8 data octets; false otherwise.
+ */
+bool dws_j1939_decode_ic1(const CanFrame *f, J1939Ic1 *out);
 
 #endif // DWS_ENABLE_J1939
 #endif // DETERMINISTICESPASYNCWEBSERVER_J1939_H
