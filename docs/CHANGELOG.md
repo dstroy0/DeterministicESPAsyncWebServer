@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.104.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.104.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ba27a75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba27a755264bab39c7de5bee849270cb4c99da6e))
+
+### Changes
+
+- Bump version: 7.103.0 → 7.104.0 ([`c8c62b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8c62b901d8a86bae7440f4955cb41fdcea31e1d))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b28bc3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b28bc3b96e08f27333b53951f688abc437085ac5))
+
+### Features
+
+- decode DPT depth-of-water sentence ([`d138d2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d138d2ef853b89ee915784fcc7bbd9cee7178697))
+
+</details>
+
 ## [7.103.0] - 2026-07-24
 
 <details>
