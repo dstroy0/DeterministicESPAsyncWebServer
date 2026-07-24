@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5105 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5107 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -9276,7 +9276,7 @@ A thorough directory of all **5105 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dnp3 (13 tests)</b></summary>
+<summary><b>test_dnp3 (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dnp3_parse_guards</b> &mdash; <i>Dnp3 parse guards</i></summary>
@@ -9434,6 +9434,54 @@ A thorough directory of all **5105 test cases** across **291 suites**. Expand a 
       * <code>Assert equal int (DNP3_TR_ERROR, dws_dnp3_transport_feed(&r2, bigseg, 6))</code>
       * <code>Assert equal int (DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, nullptr, 5))</code>
       * <code>Assert equal int (DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, a, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_app_request_roundtrip</b> &mdash; <i>A READ request: AC = FIR\|FIN, seq 3; FC READ; a small object header (group 1, var 0, qualifier 0x06).</i></summary>
+
+    * **Objective**: A READ request: AC = FIR\|FIN, seq 3; FC READ; a small object header (group 1, var 0, qualifier 0x06).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC3, ac); // FIR|FIN|seq3</code>
+      * <code>Assert equal uint (5, n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC3, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DNP3_FC_READ, buf[1]);</code>
+      * <code>Assert true (dws_dnp3_parse_app_header(buf, n, &h))</code>
+      * <code>Assert true (h.fir)</code>
+      * <code>Assert true (h.fin)</code>
+      * <code>Assert false (h.con)</code>
+      * <code>Assert false (h.uns)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, h.seq);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DNP3_FC_READ, h.fc);</code>
+      * <code>Assert false (h.is_response)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, h.iin);</code>
+      * <code>Assert equal uint (3, h.obj_len)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, h.objects[0]);</code>
+      * <code>Assert equal uint (2, n)</code>
+      * <code>Assert true (dws_dnp3_parse_app_header(buf, n, &h))</code>
+      * <code>Assert equal uint (0, h.obj_len)</code>
+      * <code>Assert null (h.objects)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_app_response_roundtrip</b> &mdash; <i>A response fragment truncated to 3 octets (missing an IIN octet) is rejected.</i></summary>
+
+    * **Objective**: A response fragment truncated to 3 octets (missing an IIN octet) is rejected.
+    * **Assertions**:
+      * <code>Assert equal uint (6, n)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x82, buf[2]); // IIN1, little-endian</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[3]); // IIN2</code>
+      * <code>Assert true (dws_dnp3_parse_app_header(buf, n, &h))</code>
+      * <code>Assert true (h.is_response)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DNP3_FC_RESPONSE, h.fc);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(5, h.seq);</code>
+      * <code>Assert true (h.con)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(iin, h.iin);</code>
+      * <code>Assert true (h.iin & DNP3_IIN_DEVICE_RESTART)</code>
+      * <code>Assert equal uint (2, h.obj_len)</code>
+      * <code>Assert false (dws_dnp3_parse_app_header(buf, 3, &h))</code>
+      * <code>Assert false (dws_dnp3_parse_app_header(buf, 1, &h))</code>
+      * <code>Assert false (dws_dnp3_parse_app_header(nullptr, n, &h))</code>
+      * <code>Assert equal uint (0, dws_dnp3_build_app_response(buf, 3, ac, DNP3_FC_RESPONSE, iin, obj, sizeof(obj)))</code>
   </details>
 
 </details>
