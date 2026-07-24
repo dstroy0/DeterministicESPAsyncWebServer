@@ -92,4 +92,27 @@ bool dws_erp1_parse(const uint8_t *data, uint16_t len, dws_erp1 *out)
     return true;
 }
 
+uint16_t dws_erp1_build(uint8_t *out, uint16_t cap, uint8_t rorg, const uint8_t *payload, uint8_t payload_len,
+                        uint32_t sender_id, uint8_t status)
+{
+    if (!out || (payload_len && !payload))
+        return 0;
+    uint16_t total = (uint16_t)(1 + payload_len + 4 + 1); // RORG + payload + sender id + status
+    if (total > cap)
+        return 0;
+    uint16_t p = 0;
+    out[p++] = rorg;
+    if (payload_len)
+    {
+        memcpy(out + p, payload, payload_len);
+        p = (uint16_t)(p + payload_len);
+    }
+    out[p++] = (uint8_t)(sender_id >> 24); // 4-octet sender id, big-endian
+    out[p++] = (uint8_t)(sender_id >> 16);
+    out[p++] = (uint8_t)(sender_id >> 8);
+    out[p++] = (uint8_t)sender_id;
+    out[p++] = status;
+    return p;
+}
+
 #endif // DWS_ENABLE_ENOCEAN

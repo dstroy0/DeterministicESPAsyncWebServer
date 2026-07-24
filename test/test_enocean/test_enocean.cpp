@@ -181,6 +181,43 @@ void test_erp1_parse()
     TEST_ASSERT_FALSE(dws_erp1_parse(rps, 7, nullptr));
 }
 
+void test_erp1_build()
+{
+    uint8_t buf[16];
+
+    // Build the RPS telegram from test_erp1_parse and check it byte-for-byte.
+    const uint8_t rps_payload[1] = {0x50};
+    uint16_t n = dws_erp1_build(buf, sizeof(buf), DWS_ERP_RORG_RPS, rps_payload, 1, 0x008B1234, 0x30);
+    const uint8_t rps[7] = {0xF6, 0x50, 0x00, 0x8B, 0x12, 0x34, 0x30};
+    TEST_ASSERT_EQUAL_UINT16(sizeof(rps), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(rps, buf, n);
+
+    // It round-trips through the parser.
+    dws_erp1 t;
+    TEST_ASSERT_TRUE(dws_erp1_parse(buf, n, &t));
+    TEST_ASSERT_EQUAL_HEX8(DWS_ERP_RORG_RPS, t.rorg);
+    TEST_ASSERT_EQUAL_HEX32(0x008B1234, t.sender_id);
+    TEST_ASSERT_EQUAL_HEX8(0x30, t.status);
+
+    // A 4BS telegram (4 payload octets).
+    const uint8_t fbs_payload[4] = {0x01, 0x02, 0x03, 0x04};
+    n = dws_erp1_build(buf, sizeof(buf), DWS_ERP_RORG_4BS, fbs_payload, 4, 0xDEADBEEF, 0x00);
+    const uint8_t fbs[10] = {0xA5, 0x01, 0x02, 0x03, 0x04, 0xDE, 0xAD, 0xBE, 0xEF, 0x00};
+    TEST_ASSERT_EQUAL_UINT16(sizeof(fbs), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(fbs, buf, n);
+
+    // A zero-payload telegram is 6 octets (RORG + sender id + status).
+    n = dws_erp1_build(buf, sizeof(buf), DWS_ERP_RORG_1BS, nullptr, 0, 0x11223344, 0x55);
+    const uint8_t minimal[6] = {0xD5, 0x11, 0x22, 0x33, 0x44, 0x55};
+    TEST_ASSERT_EQUAL_UINT16(sizeof(minimal), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(minimal, buf, n);
+
+    // Guards: a null buffer, a null payload with a nonzero length, and a too-small buffer.
+    TEST_ASSERT_EQUAL_UINT16(0, dws_erp1_build(nullptr, sizeof(buf), DWS_ERP_RORG_RPS, rps_payload, 1, 0x1, 0x0));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_erp1_build(buf, sizeof(buf), DWS_ERP_RORG_RPS, nullptr, 1, 0x1, 0x0));
+    TEST_ASSERT_EQUAL_UINT16(0, dws_erp1_build(buf, 5, DWS_ERP_RORG_RPS, rps_payload, 1, 0x1, 0x0)); // needs 7
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -197,5 +234,6 @@ int main()
     RUN_TEST(test_parse_succeeds_with_null_out);
     RUN_TEST(test_build_rejects_null_out);
     RUN_TEST(test_erp1_parse);
+    RUN_TEST(test_erp1_build);
     return UNITY_END();
 }

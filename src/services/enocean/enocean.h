@@ -109,6 +109,16 @@ struct dws_erp1
  */
 bool dws_erp1_parse(const uint8_t *data, uint16_t len, dws_erp1 *out);
 
+/**
+ * @brief Assemble an ERP1 radio telegram (the inverse of dws_erp1_parse): @p rorg + @p payload + the 4-octet
+ *        @p sender_id (big-endian) + @p status. The result is the data field of a RADIO_ERP1 ESP3 packet -
+ *        wrap it with dws_esp3_build to transmit, so a device can send a switch / actuator command.
+ * @return the telegram length (1 + @p payload_len + 5), or 0 on a null buffer, a null payload with a nonzero
+ *         length, or an overflow.
+ */
+uint16_t dws_erp1_build(uint8_t *out, uint16_t cap, uint8_t rorg, const uint8_t *payload, uint8_t payload_len,
+                        uint32_t sender_id, uint8_t status);
+
 #endif // DWS_ENABLE_ENOCEAN
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_ENOCEAN_H
