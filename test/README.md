@@ -562,7 +562,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5018 test cases** across **288 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5020 test cases** across **288 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -10919,7 +10919,7 @@ A thorough directory of all **5018 test cases** across **288 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_esp (5 tests)</b></summary>
+<summary><b>test_esp (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_esp_encapsulate_kat</b> &mdash; <i>Esp encapsulate kat</i></summary>
@@ -10977,6 +10977,43 @@ A thorough directory of all **5018 test cases** across **288 suites**. Expand a 
       * <code>Assert true (dws_esp_gcm_decapsulate(esp_key, esp_salt, pkt, n, &spi, &seq, &nh, &pl, &pl_len))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, pl_len);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(59, nh);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_esp_replay_window</b> &mdash; <i>Sequence 0 is invalid; in-order packets are accepted once each; a duplicate is a replay.</i></summary>
+
+    * **Objective**: Sequence 0 is invalid; in-order packets are accepted once each; a duplicate is a replay.
+    * **Assertions**:
+      * <code>Assert false (dws_esp_replay_check(&r, 0))</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 1))</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 2))</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 3))</code>
+      * <code>Assert false (dws_esp_replay_check(&r, 2))</code>
+      * <code>Assert false (dws_esp_replay_check(&r, 3)); // replay (the current highest)</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 5));  // new highest (gap at 4)</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 4))</code>
+      * <code>Assert false (dws_esp_replay_check(&r, 4))</code>
+      * <code>Assert false (dws_esp_replay_check(&r, 1))</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 100))</code>
+      * <code>Assert false (dws_esp_replay_check(&r, 100))</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 99));                                // inside (offset 1)</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 100 - (DWS_ESP_REPLAY_WINDOW - 1)))</code>
+      * <code>Assert false (dws_esp_replay_check(&r, 100 - DWS_ESP_REPLAY_WINDOW))</code>
+      * <code>Assert false (dws_esp_replay_check(&r, 5))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_esp_replay_large_jump</b> &mdash; <i>A jump larger than the window clears the bitmap: previously-seen numbers in the old window are now</i></summary>
+
+    * **Objective**: A jump larger than the window clears the bitmap: previously-seen numbers in the old window are now
+    * **Assertions**:
+      * <code>Assert true (dws_esp_replay_check(&r, 10))</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 11))</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 1000))</code>
+      * <code>Assert false (dws_esp_replay_check(&r, 1000))</code>
+      * <code>Assert true (dws_esp_replay_check(&r, 999))</code>
+      * <code>Assert false (dws_esp_replay_check(&r, 11))</code>
+      * <code>Assert false (dws_esp_replay_check(nullptr, 1))</code>
   </details>
 
 </details>
