@@ -1144,11 +1144,13 @@ size_t dws_ike_initiator_start(IkeHandshake *hs, const uint8_t our_spi[DWS_IKE_S
     uint8_t zero_spi[DWS_IKE_SPI_LEN] = {0};
     size_t n = dws_ike_sa_init_build(out, out_cap, our_spi, zero_spi, 0, /*is_response=*/false, 1, transforms,
                                      num_transforms, suite->dh, our_dh_pub, DWS_IKE_X25519_LEN, our_nonce, nonce_len);
-    if (n == 0)
+    if (n == 0 || n > DWS_IKE_MSG_MAX) // RealMessage1 must fit the stored copy (needed for the AUTH octets)
     {
         hs->state = IkeState::IKE_ST_FAILED;
         return 0;
     }
+    memcpy(hs->init_msg, out, n);
+    hs->init_msg_len = (uint16_t)n;
     hs->state = IkeState::IKE_ST_SA_INIT_SENT;
     return n;
 }
@@ -1172,6 +1174,15 @@ bool dws_ike_initiator_on_sa_init(IkeHandshake *hs, const uint8_t *resp, size_t 
     }
     memcpy(hs->sa.resp_spi, m.resp_spi, DWS_IKE_SPI_LEN);
 
+    // Capture Nr for the IKE_AUTH octets (must fit our bounded store).
+    if (m.nonce_len == 0 || m.nonce_len > DWS_IKE_NONCE_MAX)
+    {
+        hs->state = IkeState::IKE_ST_FAILED;
+        return false;
+    }
+    memcpy(hs->peer_nonce, m.nonce, m.nonce_len);
+    hs->peer_nonce_len = (uint16_t)m.nonce_len;
+
     // Derive the SA keys: for the initiator, Ni = ours, Nr = the responder's.
     if (!dws_ike_sa_keys_from_init(&hs->sa, hs->our_dh_priv, DWS_IKE_X25519_LEN, m.ke_data, m.ke_len, hs->our_nonce,
                                    hs->our_nonce_len, m.nonce, m.nonce_len))
@@ -1181,6 +1192,42 @@ bool dws_ike_initiator_on_sa_init(IkeHandshake *hs, const uint8_t *resp, size_t 
     }
     hs->state = IkeState::IKE_ST_SA_INIT_DONE;
     return true;
+}
+
+size_t dws_ike_initiator_build_auth_psk(IkeHandshake *hs, IkeIdType idi_type, const uint8_t *idi_data, size_t idi_len,
+                                        const uint8_t *psk, size_t psk_len, const uint8_t iv[DWS_IKE_GCM_IV_LEN],
+                                        uint8_t *out, size_t out_cap)
+{
+    if (!hs || !idi_data || !psk || !iv || !out)
+        return 0;
+    if (hs->state != IkeState::IKE_ST_SA_INIT_DONE)
+        return 0;
+
+    // Build the inner chain IDi(next=AUTH) | AUTH(next=NONE) into a scratch buffer.
+    uint8_t inner[DWS_IKE_MSG_MAX];
+    size_t idn = dws_ike_id_build(inner, sizeof(inner), IkePayloadType::IKE_PL_AUTH, idi_type, idi_data, idi_len);
+    if (idn == 0)
+        return 0;
+    // AUTH signs the IDi payload BODY (RestOfIDPayload = the payload minus its 4-byte generic header).
+    const uint8_t *idi_body = inner + DWS_IKE_PAYLOAD_HDR_LEN;
+    size_t idi_body_len = idn - DWS_IKE_PAYLOAD_HDR_LEN;
+    uint8_t auth[DWS_IKE_AUTH_LEN];
+    if (!dws_ike_auth_psk(psk, psk_len, hs->init_msg, hs->init_msg_len, hs->peer_nonce, hs->peer_nonce_len,
+                          hs->sa.keys.sk_pi, hs->sa.keys.sk_p_len, idi_body, idi_body_len, auth))
+        return 0;
+    size_t an = dws_ike_auth_build(inner + idn, sizeof(inner) - idn, IkePayloadType::IKE_PL_NONE,
+                                   IkeAuthMethod::IKE_AUTH_PSK, auth, sizeof(auth));
+    if (an == 0)
+        return 0;
+
+    // Wrap IDi | AUTH in the SK envelope: SK_ei = the 32-byte AES key || its 4-byte GCM salt (RFC 5282).
+    size_t n = dws_ike_auth_msg_build(out, out_cap, hs->sa.init_spi, hs->sa.resp_spi, 1, /*is_response=*/false,
+                                      IkePayloadType::IKE_PL_IDI, inner, idn + an, hs->sa.keys.sk_ei,
+                                      hs->sa.keys.sk_ei + DWS_IKE_AEAD_KEY_LEN, iv);
+    if (n == 0)
+        return 0;
+    hs->state = IkeState::IKE_ST_AUTH_SENT;
+    return n;
 }
 
 #endif // DWS_ENABLE_IKEV2

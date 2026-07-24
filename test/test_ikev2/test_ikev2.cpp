@@ -1778,6 +1778,74 @@ void test_initiator_handshake_guards()
     TEST_ASSERT_FALSE(dws_ike_initiator_on_sa_init(&hs2, notresp, nn));
 }
 
+// Drive the initiator through IKE_SA_INIT, then emit the IKE_AUTH and confirm the SK-encrypted message
+// carries IDi | AUTH with the AUTH computed over the stored RealMessage1 + Nr (RFC 7296 §2.15).
+void test_initiator_ike_auth_send()
+{
+    const IkeSuite gcm = {IKE_ENCR_AES_GCM_16, 256, IKE_PRF_HMAC_SHA2_256, 0, IKE_DH_CURVE25519};
+    const uint8_t our_spi[8] = {0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21};
+    const uint8_t our_nonce[16] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+                                   0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f};
+    IkeHandshake hs;
+    uint8_t req[512];
+    size_t reqn = dws_ike_initiator_start(&hs, our_spi, kat_alice_priv, kat_alice_pub, our_nonce, 16, &gcm, g_hs_tf, 3,
+                                          req, sizeof(req));
+    TEST_ASSERT_TRUE(reqn > 0);
+    const uint8_t resp_spi[8] = {0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98};
+    const uint8_t resp_nonce[16] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
+                                    0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f};
+    uint8_t resp[512];
+    size_t rspn = dws_ike_sa_init_build(resp, sizeof(resp), our_spi, resp_spi, 0, true, 1, g_hs_tf, 3,
+                                        IKE_DH_CURVE25519, kat_bob_pub, 32, resp_nonce, 16);
+    TEST_ASSERT_TRUE(dws_ike_initiator_on_sa_init(&hs, resp, rspn));
+
+    // build_auth_psk before SA_INIT_DONE would fail; here the state is right.
+    const uint8_t psk[12] = {'s', 'e', 'c', 'r', 'e', 't', '-', 'k', 'e', 'y', '!', '!'};
+    const uint8_t idi[6] = {'r', 'o', 'u', 't', 'e', 'r'};
+    const uint8_t iv[8] = {0, 0, 0, 0, 0, 0, 0, 1};
+    uint8_t authmsg[512];
+    size_t an = dws_ike_initiator_build_auth_psk(&hs, IkeIdType::IKE_ID_FQDN, idi, sizeof(idi), psk, sizeof(psk), iv,
+                                                 authmsg, sizeof(authmsg));
+    TEST_ASSERT_TRUE(an > 0);
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeState::IKE_ST_AUTH_SENT, (uint8_t)hs.state);
+    TEST_ASSERT_EQUAL_UINT8(46, authmsg[16]); // header Next Payload = SK
+
+    // Decrypt with SK_ei (key||salt), as the responder would, and recover the inner chain.
+    uint8_t work[512];
+    memcpy(work, authmsg, an);
+    IkePayloadType first;
+    const uint8_t *inner;
+    size_t inner_len;
+    TEST_ASSERT_TRUE(
+        dws_ike_auth_msg_open(work, an, hs.sa.keys.sk_ei, hs.sa.keys.sk_ei + 32, &first, &inner, &inner_len));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, (uint8_t)first);
+
+    IkePayloadIter it;
+    dws_ike_payload_iter_init(&it, first, inner, inner_len);
+    IkePayload pl_idi, pl_auth;
+    TEST_ASSERT_TRUE(dws_ike_payload_next(&it, &pl_idi));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_IDI, (uint8_t)pl_idi.type);
+    TEST_ASSERT_TRUE(dws_ike_payload_next(&it, &pl_auth));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkePayloadType::IKE_PL_AUTH, (uint8_t)pl_auth.type);
+
+    IkeAuthMethod method;
+    const uint8_t *authdata;
+    size_t authdata_len;
+    TEST_ASSERT_TRUE(dws_ike_auth_parse(pl_auth.body, pl_auth.body_len, &method, &authdata, &authdata_len));
+    TEST_ASSERT_EQUAL_UINT8((uint8_t)IkeAuthMethod::IKE_AUTH_PSK, (uint8_t)method);
+    TEST_ASSERT_EQUAL_size_t(32, authdata_len);
+
+    // Recompute the expected AUTH independently over the same octets and confirm it matches.
+    uint8_t expect[32];
+    TEST_ASSERT_TRUE(dws_ike_auth_psk(psk, sizeof(psk), req, reqn, resp_nonce, 16, hs.sa.keys.sk_pi,
+                                      hs.sa.keys.sk_p_len, pl_idi.body, pl_idi.body_len, expect));
+    TEST_ASSERT_EQUAL_MEMORY(expect, authdata, 32);
+
+    // Calling build_auth again is a wrong-state no-op (already AUTH_SENT).
+    TEST_ASSERT_EQUAL_size_t(0, dws_ike_initiator_build_auth_psk(&hs, IkeIdType::IKE_ID_FQDN, idi, sizeof(idi), psk,
+                                                                 sizeof(psk), iv, authmsg, sizeof(authmsg)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1852,5 +1920,6 @@ int main()
     // tier 2: initiator IKE_SA_INIT handshake driver
     RUN_TEST(test_initiator_sa_init_handshake);
     RUN_TEST(test_initiator_handshake_guards);
+    RUN_TEST(test_initiator_ike_auth_send);
     return UNITY_END();
 }

@@ -708,11 +708,15 @@ bool dws_ike_sa_keys_from_init(IkeSa *sa, const uint8_t *our_dh_priv, size_t our
 // increment.
 
 /** @brief Handshake progress for the initiator's IKE_SA_INIT exchange. */
+/** @brief Largest IKE_SA_INIT message the handshake stores as its RealMessage (for the AUTH octets). */
+#define DWS_IKE_MSG_MAX 640
+
 enum class IkeState : uint8_t
 {
     IKE_ST_INIT = 0,     ///< nothing sent yet
     IKE_ST_SA_INIT_SENT, ///< IKE_SA_INIT request emitted, awaiting the response
     IKE_ST_SA_INIT_DONE, ///< response consumed, SA keys derived (ready for IKE_AUTH)
+    IKE_ST_AUTH_SENT,    ///< IKE_AUTH request emitted, awaiting the response
     IKE_ST_FAILED,       ///< a received message was rejected
 };
 
@@ -724,6 +728,10 @@ struct IkeHandshake
     uint8_t our_dh_priv[DWS_IKE_X25519_LEN]; ///< our ephemeral D-H private (to compute g^ir on the response)
     uint8_t our_nonce[DWS_IKE_NONCE_MAX];    ///< Ni (needed for key derivation + later the AUTH octets)
     uint16_t our_nonce_len;
+    uint8_t peer_nonce[DWS_IKE_NONCE_MAX]; ///< Nr, captured from the response (the AUTH octets sign over it)
+    uint16_t peer_nonce_len;
+    uint8_t init_msg[DWS_IKE_MSG_MAX]; ///< our IKE_SA_INIT bytes = RealMessage1 (signed by the AUTH)
+    uint16_t init_msg_len;
 };
 
 /**
@@ -748,6 +756,19 @@ size_t dws_ike_initiator_start(IkeHandshake *hs, const uint8_t our_spi[DWS_IKE_S
  *         SPI, or the key derivation fails.
  */
 bool dws_ike_initiator_on_sa_init(IkeHandshake *hs, const uint8_t *resp, size_t resp_len);
+
+/**
+ * @brief Emit the initiator's IKE_AUTH request (PSK auth) into @p out: SK{ IDi | AUTH }.
+ *
+ * Requires @p hs in IKE_ST_SA_INIT_DONE. Builds the IDi payload from @p idi_type / @p idi_data, computes
+ * AUTH = prf(prf(PSK, "Key Pad for IKEv2"), RealMessage1 | Nr | prf(SK_pi, IDi')) (RFC 7296 §2.15) over
+ * the stored IKE_SA_INIT + the responder nonce, and wraps IDi | AUTH in the SK envelope keyed by SK_ei
+ * (the salt is SK_ei's 4-byte tail) with the caller's 8-byte @p iv. Advances @p hs to IKE_ST_AUTH_SENT.
+ * @return the message length, or 0 on a bad state / argument / overflow.
+ */
+size_t dws_ike_initiator_build_auth_psk(IkeHandshake *hs, IkeIdType idi_type, const uint8_t *idi_data, size_t idi_len,
+                                        const uint8_t *psk, size_t psk_len, const uint8_t iv[DWS_IKE_GCM_IV_LEN],
+                                        uint8_t *out, size_t out_cap);
 
 #endif // DWS_ENABLE_IKEV2
 
