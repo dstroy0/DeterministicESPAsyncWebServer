@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5168 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5169 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -30409,7 +30409,7 @@ A thorough directory of all **5168 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nmea2000 (25 tests)</b></summary>
+<summary><b>test_nmea2000 (26 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_num_frames</b> &mdash; <i>Num frames</i></summary>
@@ -30686,6 +30686,28 @@ A thorough directory of all **5168 test cases** across **291 suites**. Expand a 
       * <code>Assert false (d.set_valid)</code>
       * <code>Assert false (dws_n2k_decode_temperature(t, 6, &d))</code>
       * <code>Assert false (dws_n2k_decode_temperature(nullptr, 8, &d))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_battery_status</b> &mdash; <i>instance 1, voltage 12.6 V (raw 1260 = 0x04EC), current 5.5 A (raw 55), temp 25.0 C (raw 29815 = 0x7477), sid 10.</i></summary>
+
+    * **Objective**: instance 1, voltage 12.6 V (raw 1260 = 0x04EC), current 5.5 A (raw 55), temp 25.0 C (raw 29815 = 0x7477), sid 10.
+    * **Assertions**:
+      * <code>Assert true (dws_n2k_decode_battery_status(b, sizeof(b), &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, d.instance);</code>
+      * <code>Assert true (d.voltage_valid)</code>
+      * <code>Assert float within (0.01f, 12.6f, d.voltage_v)</code>
+      * <code>Assert true (d.current_valid)</code>
+      * <code>Assert float within (0.01f, 5.5f, d.current_a)</code>
+      * <code>Assert true (d.temp_valid)</code>
+      * <code>Assert float within (0.01f, 25.0f, d.temp_c)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(10, d.sid);</code>
+      * <code>Assert true (dws_n2k_decode_battery_status(neg, sizeof(neg), &d))</code>
+      * <code>Assert false (d.voltage_valid)</code>
+      * <code>Assert true (d.current_valid)</code>
+      * <code>Assert float within (0.01f, -10.0f, d.current_a)</code>
+      * <code>Assert false (dws_n2k_decode_battery_status(b, 7, &d))</code>
+      * <code>Assert false (dws_n2k_decode_battery_status(nullptr, 8, &d))</code>
   </details>
 
   <details style="margin-left: 20px;">
