@@ -86,5 +86,23 @@ struct DwsRoamDecision
 void dws_roam_decide(const uint8_t current_bssid[6], int8_t current_rssi_dbm, const DwsRoamNeighbor *neighbors,
                      uint8_t n, const DwsRoamBtm *btm, const DwsRoamPolicy *policy, DwsRoamDecision *out);
 
+/** @brief 802.11 Neighbor Report element id (IEEE 802.11 §9.4.2.36). */
+#define DWS_ROAM_NR_ELEM_ID 52
+/** @brief Sentinel RSSI meaning "not yet measured" - the caller fills it after scanning the candidate. */
+#define DWS_ROAM_RSSI_UNKNOWN ((int8_t)-128)
+
+/**
+ * @brief Parse a sequence of 802.11k Neighbor Report elements into candidate APs.
+ *
+ * @p elems is the element list an 802.11k Radio Measurement Neighbor Report Response action frame carries
+ * (the caller strips the action header first). Each Neighbor Report element (id 52) supplies a candidate's
+ * BSSID and operating channel; other element ids are skipped. The report does not carry RSSI, so each
+ * candidate's @c rssi_dbm is set to @ref DWS_ROAM_RSSI_UNKNOWN for the caller to fill after measuring, then
+ * feed the list to @ref dws_roam_decide.
+ * @param out receives up to @p max candidates.
+ * @return the number of candidates parsed (0..@p max).
+ */
+uint8_t dws_roam_parse_neighbor_report(const uint8_t *elems, size_t len, DwsRoamNeighbor *out, uint8_t max);
+
 #endif // DWS_ENABLE_ROAMING
 #endif // DETERMINISTICESPASYNCWEBSERVER_ROAMING_H

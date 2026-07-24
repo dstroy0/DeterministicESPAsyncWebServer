@@ -107,4 +107,32 @@ void dws_roam_decide(const uint8_t current_bssid[6], int8_t current_rssi_dbm, co
     // 4. Otherwise stay put.
 }
 
+uint8_t dws_roam_parse_neighbor_report(const uint8_t *elems, size_t len, DwsRoamNeighbor *out, uint8_t max)
+{
+    if (!elems || !out)
+        return 0;
+    // Each Neighbor Report element (id 52) carries: BSSID(6) | BSSID Info(4) | Operating Class(1) |
+    // Channel(1) | PHY Type(1) | optional subelements - so a fixed 13-octet body, plus any subelements.
+    const uint8_t NR_BODY_MIN = 13;
+    uint8_t count = 0;
+    size_t off = 0;
+    while (off + 2 <= len && count < max) // element header: id + length
+    {
+        uint8_t id = elems[off];
+        uint8_t elen = elems[off + 1];
+        if (off + 2 + elen > len) // a truncated element ends the walk
+            break;
+        if (id == DWS_ROAM_NR_ELEM_ID && elen >= NR_BODY_MIN)
+        {
+            const uint8_t *b = elems + off + 2;
+            memcpy(out[count].bssid, b, 6);
+            out[count].channel = b[11]; // after BSSID(6) + BSSID Info(4) + Operating Class(1)
+            out[count].rssi_dbm = DWS_ROAM_RSSI_UNKNOWN;
+            count++;
+        }
+        off += (size_t)2 + elen; // skip this element (and any non-52 / short one)
+    }
+    return count;
+}
+
 #endif // DWS_ENABLE_ROAMING

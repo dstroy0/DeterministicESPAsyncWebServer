@@ -129,6 +129,68 @@ void test_never_targets_current_and_guards()
     TEST_ASSERT_FALSE(d.roam);
 }
 
+// Append an id-52 Neighbor Report element for @p bssid on @p channel.
+static size_t nr_elem(uint8_t *buf, size_t p, const uint8_t *bssid, uint8_t channel)
+{
+    buf[p++] = 52; // element id
+    buf[p++] = 13; // body length
+    memcpy(buf + p, bssid, 6);
+    p += 6;
+    buf[p++] = 0; // BSSID Info (4)
+    buf[p++] = 0;
+    buf[p++] = 0;
+    buf[p++] = 0;
+    buf[p++] = 0x51; // operating class
+    buf[p++] = channel;
+    buf[p++] = 0x09; // PHY type
+    return p;
+}
+
+void test_parse_neighbor_report()
+{
+    uint8_t buf[64];
+    size_t p = nr_elem(buf, 0, AP_A, 6);
+    // A non-neighbor element (id 7, len 3) between the two must be skipped.
+    buf[p++] = 7;
+    buf[p++] = 3;
+    buf[p++] = 1;
+    buf[p++] = 2;
+    buf[p++] = 3;
+    p = nr_elem(buf, p, AP_B, 11);
+
+    DwsRoamNeighbor nb[4];
+    uint8_t count = dws_roam_parse_neighbor_report(buf, p, nb, 4);
+    TEST_ASSERT_EQUAL_UINT8(2, count);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, nb[0].bssid, 6);
+    TEST_ASSERT_EQUAL_UINT8(6, nb[0].channel);
+    TEST_ASSERT_EQUAL_INT8(DWS_ROAM_RSSI_UNKNOWN, nb[0].rssi_dbm); // RSSI not in the report
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_B, nb[1].bssid, 6);
+    TEST_ASSERT_EQUAL_UINT8(11, nb[1].channel);
+
+    // End to end: fill measured RSSI, then the decision layer picks the strong candidate on a weak link.
+    nb[0].rssi_dbm = -50;
+    nb[1].rssi_dbm = -80;
+    DwsRoamDecision d;
+    dws_roam_decide(CUR, -78, nb, count, nullptr, &POLICY, &d);
+    TEST_ASSERT_TRUE(d.roam);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(AP_A, d.target_bssid, 6);
+
+    // max cap + null guard.
+    TEST_ASSERT_EQUAL_UINT8(1, dws_roam_parse_neighbor_report(buf, p, nb, 1));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_roam_parse_neighbor_report(nullptr, p, nb, 4));
+}
+
+void test_parse_neighbor_report_edges()
+{
+    DwsRoamNeighbor nb[4];
+    // A neighbor element shorter than the 13-octet body is skipped (not decoded).
+    uint8_t shortelem[12] = {52, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_UINT8(0, dws_roam_parse_neighbor_report(shortelem, sizeof(shortelem), nb, 4));
+    // A truncated element (claims 13 but the buffer holds less) ends the walk with nothing parsed.
+    uint8_t trunc[5] = {52, 13, 0xAA, 0xAA, 0xAA};
+    TEST_ASSERT_EQUAL_UINT8(0, dws_roam_parse_neighbor_report(trunc, sizeof(trunc), nb, 4));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -138,5 +200,7 @@ int main()
     RUN_TEST(test_btm_imminent_forces_roam);
     RUN_TEST(test_btm_suggested_honoured_only_if_not_weaker);
     RUN_TEST(test_never_targets_current_and_guards);
+    RUN_TEST(test_parse_neighbor_report);
+    RUN_TEST(test_parse_neighbor_report_edges);
     return UNITY_END();
 }
