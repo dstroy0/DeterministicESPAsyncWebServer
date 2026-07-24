@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5123 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5124 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -11077,7 +11077,7 @@ A thorough directory of all **5123 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_enocean (12 tests)</b></summary>
+<summary><b>test_enocean (13 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_crc8_known_answers</b> &mdash; <i>CRC-8 (poly 0x07, init 0, no reflection) check value for "123456789" is 0xF4.</i></summary>
@@ -11186,6 +11186,35 @@ A thorough directory of all **5123 test cases** across **291 suites**. Expand a 
     * **Objective**: Build rejects null out
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_esp3_build(dws_esp3_type::ESP3_RADIO_ERP1, data, 4, nullptr, 0, nullptr, 32));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_erp1_parse</b> &mdash; <i>A RPS (rocker switch) telegram: RORG 0xF6, 1 payload octet, sender 0x008B1234, status 0x30.</i></summary>
+
+    * **Objective**: A RPS (rocker switch) telegram: RORG 0xF6, 1 payload octet, sender 0x008B1234, status 0x30.
+    * **Assertions**:
+      * <code>Assert true (dws_erp1_parse(rps, sizeof(rps), &t))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_ERP_RORG_RPS, t.rorg);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, t.payload_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x50, t.payload[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x008B1234, t.sender_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x30, t.status);</code>
+      * <code>Assert true (dws_erp1_parse(fbs, sizeof(fbs), &t))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DWS_ERP_RORG_4BS, t.rorg);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, t.payload_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, t.payload[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xDEADBEEF, t.sender_id);</code>
+      * <code>Assert true (dws_erp1_parse(minimal, sizeof(minimal), &t))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, t.payload_len);</code>
+      * <code>Assert null (t.payload)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x11223344, t.sender_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x55, t.status);</code>
+      * <code>Assert greater than (0, dws_esp3_parse(buf, n, &p))</code>
+      * <code>Assert true (dws_erp1_parse(p.data, p.data_len, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x008B1234, t.sender_id);</code>
+      * <code>Assert false (dws_erp1_parse(rps, 5, &t))</code>
+      * <code>Assert false (dws_erp1_parse(nullptr, 7, &t))</code>
+      * <code>Assert false (dws_erp1_parse(rps, 7, nullptr))</code>
   </details>
 
 </details>
