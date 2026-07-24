@@ -193,6 +193,18 @@ size_t dws_iec_io_build_scaled(uint8_t *buf, size_t cap, uint32_t ioa, int16_t v
 bool dws_iec_io_parse_scaled(const uint8_t *buf, size_t len, uint32_t *ioa, int16_t *value, uint8_t *qds);
 
 /**
+ * @brief Build a normalized measured-value object (M_ME_NA_1, type 9): IOA(3) + NVA(2, signed 16-bit LE) +
+ *        QDS(1). @p value is the normalized fraction in [-1, +1), stored as value * 32768 (clamped to the
+ *        signed-16-bit range) - the fixed-point companion to the scaled (raw integer) and short-float forms.
+ * @return 6 on success, 0 on overflow / a null buffer.
+ */
+size_t dws_iec_io_build_normalized(uint8_t *buf, size_t cap, uint32_t ioa, float value, uint8_t qds);
+
+/** @brief Parse a normalized measured-value object into its IOA, the fraction value (NVA / 32768), and the
+ *  quality byte. False if < 6 octets. */
+bool dws_iec_io_parse_normalized(const uint8_t *buf, size_t len, uint32_t *ioa, float *value, uint8_t *qds);
+
+/**
  * @brief Build a single command object (C_SC_NA_1, type 45): IOA(3) + SCO(1).
  * @param on      the commanded state (SCS bit).
  * @param select  true for a select, false for an execute (S/E bit).

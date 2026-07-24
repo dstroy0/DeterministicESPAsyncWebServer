@@ -389,6 +389,33 @@ void test_io_measured_float()
     TEST_ASSERT_FALSE(dws_iec_io_parse_float(buf, 7, &ioa, &v, &qds));
 }
 
+void test_io_measured_normalized()
+{
+    uint8_t buf[16];
+    // M_ME_NA_1: IOA(3) + signed 16-bit NVA (LE) + QDS(1); 0.5 -> 0.5*32768 = 16384 = 0x4000 -> bytes 00 40.
+    size_t n = dws_iec_io_build_normalized(buf, sizeof(buf), 200, 0.5f, IEC_QUAL_NT);
+    TEST_ASSERT_EQUAL_size_t(6, n);
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[3]); // NVA low
+    TEST_ASSERT_EQUAL_HEX8(0x40, buf[4]); // NVA high
+    uint32_t ioa;
+    float v;
+    uint8_t qds;
+    TEST_ASSERT_TRUE(dws_iec_io_parse_normalized(buf, n, &ioa, &v, &qds));
+    TEST_ASSERT_EQUAL_UINT32(200, ioa);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 0.5f, v);
+    TEST_ASSERT_EQUAL_HEX8(IEC_QUAL_NT, qds);
+
+    // A negative fraction round-trips; the value clamps to the signed-16-bit range at the extremes.
+    dws_iec_io_build_normalized(buf, sizeof(buf), 200, -0.5f, 0);
+    TEST_ASSERT_TRUE(dws_iec_io_parse_normalized(buf, 6, nullptr, &v, nullptr));
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, -0.5f, v);
+    dws_iec_io_build_normalized(buf, sizeof(buf), 200, 2.0f, 0); // over-range clamps to +32767
+    dws_iec_io_parse_normalized(buf, 6, nullptr, &v, nullptr);
+    TEST_ASSERT_TRUE(v > 0.999f);
+    TEST_ASSERT_EQUAL_size_t(0, dws_iec_io_build_normalized(buf, 5, 0, 0.5f, 0)); // too small
+    TEST_ASSERT_FALSE(dws_iec_io_parse_normalized(buf, 5, &ioa, &v, &qds));
+}
+
 void test_io_measured_scaled()
 {
     uint8_t buf[16];
@@ -540,6 +567,7 @@ int main()
     RUN_TEST(test_io_single_point);
     RUN_TEST(test_io_measured_float);
     RUN_TEST(test_io_measured_scaled);
+    RUN_TEST(test_io_measured_normalized);
     RUN_TEST(test_io_single_command_in_asdu);
     RUN_TEST(test_io_double_point);
     RUN_TEST(test_io_double_command_in_asdu);
