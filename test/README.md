@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5159 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5160 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -1169,7 +1169,7 @@ A thorough directory of all **5159 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_amqp (14 tests)</b></summary>
+<summary><b>test_amqp (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_protocol_header</b> &mdash; <i>Protocol header</i></summary>
@@ -1215,6 +1215,25 @@ A thorough directory of all **5159 test cases** across **291 suites**. Expand a 
       * <code>Assert true (dws_amqp_parse_frame(buf, n, &f, &consumed))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(AMQP_FRAME_HEARTBEAT, f.type);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, f.payload_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_content_header</b> &mdash; <i>Content header for a Basic (class 60) publish of a 5-octet body, no properties.</i></summary>
+
+    * **Objective**: Content header for a Basic (class 60) publish of a 5-octet body, no properties.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+      * <code>Assert true (dws_amqp_parse_frame(buf, n, &f, &consumed))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(AMQP_FRAME_HEADER, f.type);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(14, f.payload_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, consumed);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8 + 14 + 2, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xAB, buf[n - 3]); // the property octets precede the 0xCE end</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xCD, buf[n - 2]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_content_header(buf, sizeof(buf), 1, 60, 5, 0x8000, nullptr, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_content_header(nullptr, sizeof(buf), 1, 60, 5, 0, nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_amqp_build_content_header(buf, 16, 1, 60, 5, 0, nullptr, 0)); // needs 22</code>
   </details>
 
   <details style="margin-left: 20px;">
