@@ -45,6 +45,16 @@
 #define FINS_MRC_MEMORY_AREA 0x01
 #define FINS_SRC_MEMORY_AREA_READ 0x01
 #define FINS_SRC_MEMORY_AREA_WRITE 0x02
+#define FINS_MRC_OPERATING_MODE 0x04
+#define FINS_SRC_RUN 0x01
+#define FINS_SRC_STOP 0x02
+
+/** @brief The operating mode requested by a RUN (0401) command. */
+enum class FinsRunMode : uint8_t
+{
+    MONITOR = 0x02, ///< MONITOR mode (program runs, online edits allowed)
+    RUN = 0x04,     ///< RUN mode (program runs, no online edits)
+};
 
 /** @brief The 10-octet FINS routing header. */
 struct FinsHeader
@@ -80,6 +90,18 @@ size_t dws_fins_build_memory_area_read(uint8_t *buf, size_t cap, const FinsHeade
  */
 size_t dws_fins_build_memory_area_write(uint8_t *buf, size_t cap, const FinsHeader *h, uint8_t area, uint16_t address,
                                         uint8_t bit, uint16_t count, const uint8_t *data, size_t data_len);
+
+/**
+ * @brief Build a RUN command (0401): switches the PLC to @p mode. Parameters are the program number
+ *        (0xFFFF, all programs) followed by the 1-octet mode code. @return total octets, or 0 on overflow.
+ */
+size_t dws_fins_build_run(uint8_t *buf, size_t cap, const FinsHeader *h, FinsRunMode mode);
+
+/**
+ * @brief Build a STOP command (0402): switches the PLC to PROGRAM mode (stops execution). The command
+ *        carries no parameters. @return total octets, or 0 on overflow.
+ */
+size_t dws_fins_build_stop(uint8_t *buf, size_t cap, const FinsHeader *h);
 
 /** @brief A parsed command (request side). @ref params points INTO the source buffer. */
 struct FinsCommand

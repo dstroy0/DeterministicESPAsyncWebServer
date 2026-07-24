@@ -99,6 +99,20 @@ size_t dws_fins_build_memory_area_write(uint8_t *buf, size_t cap, const FinsHead
     return n + data_len;
 }
 
+size_t dws_fins_build_run(uint8_t *buf, size_t cap, const FinsHeader *h, FinsRunMode mode)
+{
+    uint8_t params[3];
+    params[0] = 0xFF;          // program number 0xFFFF (all programs)
+    params[1] = 0xFF;          //
+    params[2] = (uint8_t)mode; // wire byte: 0x02 MONITOR / 0x04 RUN
+    return dws_fins_build_command(buf, cap, h, FINS_MRC_OPERATING_MODE, FINS_SRC_RUN, params, sizeof(params));
+}
+
+size_t dws_fins_build_stop(uint8_t *buf, size_t cap, const FinsHeader *h)
+{
+    return dws_fins_build_command(buf, cap, h, FINS_MRC_OPERATING_MODE, FINS_SRC_STOP, nullptr, 0);
+}
+
 bool dws_fins_parse_command(const uint8_t *buf, size_t len, FinsCommand *out)
 {
     if (!buf || !out || len < FINS_HEADER_SIZE + 2)

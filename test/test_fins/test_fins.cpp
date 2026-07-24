@@ -95,6 +95,44 @@ void test_memory_area_write()
     TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_memory_area_write(buf, 18, &h, 0xB0, 100, 0, 2, words, 4)); // data
 }
 
+// RUN (0401): program number 0xFFFF + a mode byte; STOP (0402): no parameters.
+void test_run_and_stop()
+{
+    FinsHeader h = make_header();
+    uint8_t buf[32];
+
+    // RUN into MONITOR mode.
+    size_t n = dws_fins_build_run(buf, sizeof(buf), &h, FinsRunMode::MONITOR);
+    TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 3, n);
+    TEST_ASSERT_EQUAL_HEX8(FINS_MRC_OPERATING_MODE, buf[10]); // MRC 0x04
+    TEST_ASSERT_EQUAL_HEX8(FINS_SRC_RUN, buf[11]);            // SRC 0x01
+    TEST_ASSERT_EQUAL_HEX8(0xFF, buf[12]);                    // program number 0xFFFF
+    TEST_ASSERT_EQUAL_HEX8(0xFF, buf[13]);
+    TEST_ASSERT_EQUAL_HEX8(0x02, buf[14]); // MONITOR mode
+
+    // RUN into RUN mode carries mode byte 0x04.
+    n = dws_fins_build_run(buf, sizeof(buf), &h, FinsRunMode::RUN);
+    TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2 + 3, n);
+    TEST_ASSERT_EQUAL_HEX8(0x04, buf[14]); // RUN mode
+
+    // STOP: MRC/SRC 04 02 with no parameters.
+    n = dws_fins_build_stop(buf, sizeof(buf), &h);
+    TEST_ASSERT_EQUAL_size_t(FINS_HEADER_SIZE + 2, n);
+    TEST_ASSERT_EQUAL_HEX8(FINS_MRC_OPERATING_MODE, buf[10]); // MRC 0x04
+    TEST_ASSERT_EQUAL_HEX8(FINS_SRC_STOP, buf[11]);           // SRC 0x02
+
+    // Round-trip STOP through the command parser: no params.
+    FinsCommand c;
+    TEST_ASSERT_TRUE(dws_fins_parse_command(buf, n, &c));
+    TEST_ASSERT_EQUAL_HEX8(FINS_MRC_OPERATING_MODE, c.mrc);
+    TEST_ASSERT_EQUAL_HEX8(FINS_SRC_STOP, c.src);
+    TEST_ASSERT_EQUAL_size_t(0, c.params_len);
+
+    // Both fail closed when the buffer is too small.
+    TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_run(buf, 11, &h, FinsRunMode::RUN));
+    TEST_ASSERT_EQUAL_size_t(0, dws_fins_build_stop(buf, 11, &h));
+}
+
 void test_parse_command()
 {
     FinsHeader h = make_header();
@@ -191,6 +229,7 @@ int main()
     RUN_TEST(test_build_command_bytes);
     RUN_TEST(test_memory_area_read);
     RUN_TEST(test_memory_area_write);
+    RUN_TEST(test_run_and_stop);
     RUN_TEST(test_parse_command);
     RUN_TEST(test_parse_response_ok);
     RUN_TEST(test_parse_response_error);
