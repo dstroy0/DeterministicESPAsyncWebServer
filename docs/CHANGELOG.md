@@ -2,6 +2,48 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.131.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.131.0 - 2026-07-24</b></summary>
+
+### Changes
+
+- Bump version: 7.130.0 → 7.131.0 ([`059a20b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/059a20bc4867bc14a1d158511a980d4c219207a4))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`aeff4fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aeff4febf3e721f4750e2cb70e0280c95263b9f8))
+
+### Features
+
+- Who-Is discovery APDU builder ([`0e90d2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e90d2ffe8ee7e372c08289b671d04f426dbe00f))
+
+</details>
+
+## [7.130.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.130.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`4d079b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d079b26091388b4d7434991c26f20e327afc613))
+
+### Changes
+
+- Bump version: 7.129.0 → 7.130.0 ([`8d20b4d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d20b4d7c28b09f71d8a41304c33bf45188bb931))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fcceac1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcceac1feb5ce1e63007934293e1bd3a1ae786ba))
+
+### Features
+
+- ListIdentity discovery request + response decoder ([`8b92b74`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b92b746299f063378430d07dfa0f610a9e3a2d7))
+
+</details>
+
 ## [7.129.0] - 2026-07-24
 
 <details>
