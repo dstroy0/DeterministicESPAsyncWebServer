@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.72.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.72.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`370b509`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/370b509dd29dc74469314b533165ac3ffbb862fe))
+
+### Changes
+
+- Bump version: 7.71.0 → 7.72.0 ([`4b20a0f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b20a0f94c1c239d23a2052afeb2c08d10b2d06c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`008388d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/008388d3b17c6d51e2e519d084b5f72918c31943))
+
+### Features
+
+- 802.11k Neighbor Report parser ([`857bf0a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/857bf0a07bfb4e13da727ead1eba6fe0987f309c))
+
+</details>
+
 ## [7.71.0] - 2026-07-24
 
 <details>
