@@ -563,7 +563,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5045 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5050 test cases** across **290 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -56554,7 +56554,7 @@ A thorough directory of all **5045 test cases** across **290 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav (41 tests)</b></summary>
+<summary><b>test_webdav (46 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_method_classification</b> &mdash; <i>Method classification</i></summary>
@@ -56948,6 +56948,84 @@ A thorough directory of all **5045 test cases** across **290 suites**. Expand a 
     * **Objective**: The property's value contains no "</" anywhere before body_len: the
     * **Assertions**:
       * <code>Assert true (contains(buf, "&lt;D:foo/&gt;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_lock_acquire_and_write_gate</b> &mdash; <i>An unlocked resource is writable by anyone.</i></summary>
+
+    * **Objective**: An unlocked resource is writable by anyone.
+    * **Assertions**:
+      * <code>Assert true (dws_dav_lock_can_write(&t, "/a.txt", nullptr))</code>
+      * <code>Assert not null (l)</code>
+      * <code>Assert false (dws_dav_lock_can_write(&t, "/a.txt", nullptr))</code>
+      * <code>Assert false (dws_dav_lock_can_write(&t, "/a.txt", "opaquelocktoken:other"))</code>
+      * <code>Assert true (dws_dav_lock_can_write(&t, "/a.txt", tok))</code>
+      * <code>Assert true (dws_dav_lock_can_write(&t, "/b.txt", nullptr))</code>
+      * <code>Assert true (dws_dav_lock_release(&t, tok))</code>
+      * <code>Assert true (dws_dav_lock_can_write(&t, "/a.txt", nullptr))</code>
+      * <code>Assert false (dws_dav_lock_release(&t, tok))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_lock_depth_infinity_covers_subtree</b> &mdash; <i>A Depth-infinity lock on /dir covers the whole subtree, but not a same-prefix sibling like /dir2.</i></summary>
+
+    * **Objective**: A Depth-infinity lock on /dir covers the whole subtree, but not a same-prefix sibling like /dir2.
+    * **Assertions**:
+      * <code>Assert not null (dws_dav_lock_acquire(&t, "/dir", tok, true, /*depth_infinity=*/true))</code>
+      * <code>Assert false (dws_dav_lock_can_write(&t, "/dir", nullptr))</code>
+      * <code>Assert false (dws_dav_lock_can_write(&t, "/dir/sub/file.txt", nullptr))</code>
+      * <code>Assert true (dws_dav_lock_can_write(&t, "/dir/sub/file.txt", tok))</code>
+      * <code>Assert true (dws_dav_lock_can_write(&t, "/dir2/file.txt", nullptr))</code>
+      * <code>Assert not null (dws_dav_lock_find(&t, "/dir/sub"))</code>
+      * <code>Assert not null (dws_dav_lock_find(&t, "/dir/"))</code>
+      * <code>Assert null (dws_dav_lock_find(&t, "/dir2"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_lock_conflicts_and_shared</b> &mdash; <i>An exclusive infinity lock on /p blocks any overlapping lock (child, ancestor, or same).</i></summary>
+
+    * **Objective**: An exclusive infinity lock on /p blocks any overlapping lock (child, ancestor, or same).
+    * **Assertions**:
+      * <code>Assert not null (dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:a", true, true))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t, "/p/c", "opaquelocktoken:b", true, false))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t, "/p", "opaquelocktoken:b", false, false))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t, "/", "opaquelocktoken:b", true, true));     // ancestor (root)</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&t, "/q", "opaquelocktoken:c", true, false))</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s1", false, false))</code>
+      * <code>Assert not null (dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:s2", false, false))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&s, "/f", "opaquelocktoken:x", true, false))</code>
+      * <code>Assert true (dws_dav_lock_can_write(&s, "/f", "opaquelocktoken:s2"))</code>
+      * <code>Assert false (dws_dav_lock_can_write(&s, "/f", nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_lock_table_full_and_guards</b> &mdash; <i>A token that would not fit is rejected; null arguments fail closed.</i></summary>
+
+    * **Objective**: A token that would not fit is rejected; null arguments fail closed.
+    * **Assertions**:
+      * <code>Assert not null (dws_dav_lock_acquire(&t, path, tok, true, false))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t, "/overflow", "opaquelocktoken:z", true, false))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t2, "/a", longtok, true, false))</code>
+      * <code>Assert null (dws_dav_lock_acquire(&t2, nullptr, "opaquelocktoken:a", true, false))</code>
+      * <code>Assert true (dws_dav_lock_can_write(nullptr, "/a", nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_if_header_token_extraction</b> &mdash; <i>Untagged condition list.</i></summary>
+
+    * **Objective**: Untagged condition list.
+    * **Assertions**:
+      * <code>Assert true (dws_dav_if_token("(&lt;opaquelocktoken:aaaa-dws&gt;)", out, sizeof(out)))</code>
+      * <code>Assert equal string ("opaquelocktoken:aaaa-dws", out)</code>
+      * <code>Assert true (dws_dav_if_token("&lt;/dir/file.txt&gt; (&lt;opaquelocktoken:bbbb-dws&gt;)", out, sizeof(out)))</code>
+      * <code>Assert equal string ("opaquelocktoken:bbbb-dws", out)</code>
+      * <code>Assert true (dws_dav_if_token("(Not &lt;opaquelocktoken:cccc&gt;)", out, sizeof(out)))</code>
+      * <code>Assert equal string ("opaquelocktoken:cccc", out)</code>
+      * <code>Assert false (dws_dav_if_token("no-list-here", out, sizeof(out)))</code>
+      * <code>Assert false (dws_dav_if_token("(&lt;unterminated", out, sizeof(out)))</code>
+      * <code>Assert false (dws_dav_if_token(nullptr, out, sizeof(out)))</code>
+      * <code>Assert true (dws_dav_if_token("(&lt;opaquelocktoken:aaaa-dws&gt;)", out, sizeof(out)))</code>
+      * <code>Assert true (dws_dav_lock_can_write(&t, "/x", out))</code>
   </details>
 
 </details>
@@ -57401,13 +57479,20 @@ A thorough directory of all **5045 test cases** across **290 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_lock_unlock_advisory</b> &mdash; <i>Lock unlock advisory</i></summary>
+    <summary><b>test_lock_enforcement</b> &mdash; <i>A PUT without the token is refused 423 and the file keeps its original content.</i></summary>
 
-    * **Objective**: Lock unlock advisory
+    * **Objective**: A PUT without the token is refused 423 and the file keeps its original content.
     * **Assertions**:
       * <code>Assert true (dws_resp_status(200))</code>
-      * <code>Assert not null (strstr(r, "Lock-Token"))</code>
+      * <code>Assert true (extract_lock_token(tcp_captured(), token, sizeof(token)))</code>
+      * <code>Assert true (dws_resp_status(423))</code>
+      * <code>Assert true (tree_content_eq("/dav/src/a.txt", "alpha"))</code>
+      * <code>Assert true (dws_resp_status(409))</code>
       * <code>Assert true (dws_resp_status(204))</code>
+      * <code>Assert true (tree_content_eq("/dav/src/a.txt", "updated"))</code>
+      * <code>Assert true (dws_resp_status(204))</code>
+      * <code>Assert true (dws_resp_status(204))</code>
+      * <code>Assert true (tree_content_eq("/dav/src/a.txt", "free"))</code>
   </details>
 
 </details>
