@@ -71,6 +71,13 @@ bool dws_grpcweb_parse(const uint8_t *buf, size_t len, GrpcWebFrame *out, size_t
 /** @brief Extract `grpc-status` (an integer) from a trailers-frame body. */
 bool dws_grpcweb_trailer_status(const uint8_t *body, size_t len, int *status);
 
+/**
+ * @brief Extract `grpc-message` (the human-readable status text) from a trailers-frame body. The value is
+ *        the slice up to the end of its line; per the gRPC spec it is percent-encoded on the wire (any
+ *        decoding is the caller's). @p msg / @p msg_len point INTO @p body. @return true iff the key exists.
+ */
+bool dws_grpcweb_trailer_message(const uint8_t *body, size_t len, const char **msg, size_t *msg_len);
+
 #endif // DWS_ENABLE_GRPC_WEB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_GRPCWEB_H

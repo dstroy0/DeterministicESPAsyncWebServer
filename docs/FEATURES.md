@@ -434,7 +434,7 @@ GraphQL query subset. Default off. services/graphql parses a GraphQL query into 
 
 `DWS_ENABLE_GRPC_WEB`
 
-gRPC-Web message framing. Default off. services/grpcweb is a zero-heap length-prefixed frame builder + parser for gRPC-Web, the HTTP/1.1-reachable subset of gRPC (gRPC proper needs HTTP/2): `dws_grpcweb_frame_message` wraps a Protobuf message in the 5-octet `[flags][length BE32]` prefix, `dws_grpcweb_frame_trailer` emits the 0x80 trailers frame (`grpc-status` / `grpc-message`), and `dws_grpcweb_parse` reads one frame back (with `dws_grpcweb_trailer_status` to pull the status out of a trailers frame). Wraps the Protobuf codec (DWS_ENABLE_PROTOBUF) and rides the shipped HTTP/1.1 server/client. Pure and host-tested. See src/services/grpcweb/grpcweb.h.
+gRPC-Web message framing. Default off. services/grpcweb is a zero-heap length-prefixed frame builder + parser for gRPC-Web, the HTTP/1.1-reachable subset of gRPC (gRPC proper needs HTTP/2): `dws_grpcweb_frame_message` wraps a Protobuf message in the 5-octet `[flags][length BE32]` prefix, `dws_grpcweb_frame_trailer` emits the 0x80 trailers frame (`grpc-status` / `grpc-message`), and `dws_grpcweb_parse` reads one frame back (with `dws_grpcweb_trailer_status` and `dws_grpcweb_trailer_message` pulling the status code and the human-readable error text out of a trailers frame, so a client sees why a call failed). Wraps the Protobuf codec (DWS_ENABLE_PROTOBUF) and rides the shipped HTTP/1.1 server/client. Pure and host-tested. See src/services/grpcweb/grpcweb.h.
 
 ## Guardrails
 

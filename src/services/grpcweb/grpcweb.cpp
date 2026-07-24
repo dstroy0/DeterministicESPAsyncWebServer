@@ -134,4 +134,29 @@ bool dws_grpcweb_trailer_status(const uint8_t *body, size_t len, int *status)
     return false;
 }
 
+bool dws_grpcweb_trailer_message(const uint8_t *body, size_t len, const char **msg, size_t *msg_len)
+{
+    if (!body)
+        return false;
+    static const char key[] = "grpc-message:";
+    const size_t klen = sizeof(key) - 1;
+    for (size_t i = 0; i + klen <= len; i++)
+    {
+        // Match at the start of a line (i == 0 or preceded by '\n').
+        if ((i == 0 || body[i - 1] == '\n') && memcmp(body + i, key, klen) == 0)
+        {
+            size_t start = i + klen;
+            size_t j = start;
+            while (j < len && body[j] != '\r' && body[j] != '\n') // the value runs to end-of-line
+                j++;
+            if (msg)
+                *msg = (const char *)(body + start);
+            if (msg_len)
+                *msg_len = j - start;
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif // DWS_ENABLE_GRPC_WEB

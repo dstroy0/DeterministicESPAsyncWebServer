@@ -50,6 +50,35 @@ void test_trailer_frame()
     TEST_ASSERT_EQUAL_MEMORY(body, buf + GRPCWEB_PREFIX_LEN, blen);
 }
 
+void test_trailer_message()
+{
+    uint8_t buf[64];
+    // A non-zero status (13 = INTERNAL) carrying a human-readable message.
+    size_t n = dws_grpcweb_frame_trailer(buf, sizeof(buf), 13, "boom");
+    GrpcWebFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_grpcweb_parse(buf, n, &f, &c));
+    TEST_ASSERT_TRUE(f.trailer);
+
+    int status;
+    TEST_ASSERT_TRUE(dws_grpcweb_trailer_status(f.body, f.body_len, &status));
+    TEST_ASSERT_EQUAL_INT(13, status);
+
+    const char *msg = nullptr;
+    size_t mlen = 0;
+    TEST_ASSERT_TRUE(dws_grpcweb_trailer_message(f.body, f.body_len, &msg, &mlen));
+    TEST_ASSERT_EQUAL_size_t(4, mlen);
+    TEST_ASSERT_EQUAL_MEMORY("boom", msg, 4);
+
+    // A status-only trailer has no grpc-message line.
+    n = dws_grpcweb_frame_trailer(buf, sizeof(buf), 5, nullptr);
+    TEST_ASSERT_TRUE(dws_grpcweb_parse(buf, n, &f, &c));
+    TEST_ASSERT_FALSE(dws_grpcweb_trailer_message(f.body, f.body_len, &msg, &mlen));
+
+    // A null body is rejected.
+    TEST_ASSERT_FALSE(dws_grpcweb_trailer_message(nullptr, 10, &msg, &mlen));
+}
+
 void test_trailer_status_only()
 {
     uint8_t buf[64];
@@ -251,6 +280,7 @@ int main()
     RUN_TEST(test_frame_message_bytes);
     RUN_TEST(test_compressed_flag);
     RUN_TEST(test_trailer_frame);
+    RUN_TEST(test_trailer_message);
     RUN_TEST(test_trailer_status_only);
     RUN_TEST(test_parse_stream);
     RUN_TEST(test_parse_incomplete);
