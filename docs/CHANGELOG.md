@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.119.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.119.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`7822489`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78224895dc5ee970e6ad41d240862c2826ee6829))
+
+### Changes
+
+- Bump version: 7.118.0 → 7.119.0 ([`980f95a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/980f95a0e48f0863074430937c134260b877cb27))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a884a15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a884a15e86b5eaa5d542813c62f20902b06df5da))
+
+### Features
+
+- DM-area write (WR) C-mode command ([`f5969f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5969f1407009750de2b06b70106047a8b82b511))
+
+</details>
+
 ## [7.118.0] - 2026-07-24
 
 <details>
