@@ -155,6 +155,38 @@ void test_build_ack_negotiates()
     TEST_ASSERT_EQUAL_UINT32(1, dws_ua_r_u32(&r));    // max chunk
 }
 
+void test_build_error()
+{
+    uint8_t buf[64];
+    size_t n = dws_opcua_build_error(DWS_OPCUA_BAD_TCP_MESSAGE_TYPE_INVALID, "Bad type", buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_size_t(24, n); // 8 header + 4 error + 4 length + 8 reason
+
+    UaMsgHeader h;
+    TEST_ASSERT_TRUE(dws_opcua_parse_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_MEMORY("ERR", h.type, 3);
+    TEST_ASSERT_EQUAL_UINT32(24, h.size);
+
+    UaReader r = {buf + 8, n - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BAD_TCP_MESSAGE_TYPE_INVALID, dws_ua_r_u32(&r));
+    char reason[16];
+    int32_t rlen = 0;
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r, reason, sizeof(reason), &rlen));
+    TEST_ASSERT_EQUAL_INT32(8, rlen);
+    TEST_ASSERT_EQUAL_STRING("Bad type", reason);
+
+    // A null reason encodes a null String (length -1); the message is 16 octets.
+    n = dws_opcua_build_error(DWS_OPCUA_BAD_TCP_INTERNAL_ERROR, nullptr, buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_size_t(16, n);
+    UaReader r2 = {buf + 8, n - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BAD_TCP_INTERNAL_ERROR, dws_ua_r_u32(&r2));
+    TEST_ASSERT_TRUE(dws_ua_r_string(&r2, reason, sizeof(reason), &rlen));
+    TEST_ASSERT_EQUAL_INT32(-1, rlen); // null string
+
+    // Guards: a null buffer and a too-small buffer fail closed.
+    TEST_ASSERT_EQUAL_size_t(0, dws_opcua_build_error(DWS_OPCUA_BAD_TCP_INTERNAL_ERROR, "x", nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_opcua_build_error(DWS_OPCUA_BAD_TCP_INTERNAL_ERROR, "reason", buf, 8));
+}
+
 // ---------------------------------------------------------------------------
 // Increment 2 - NodeId / DateTime / SecureChannel (OPN)
 // ---------------------------------------------------------------------------
@@ -2422,6 +2454,7 @@ int main()
     RUN_TEST(test_parse_hello);
     RUN_TEST(test_parse_hello_rejects_short);
     RUN_TEST(test_build_ack_negotiates);
+    RUN_TEST(test_build_error);
     RUN_TEST(test_nodeid_roundtrip);
     RUN_TEST(test_filetime_from_unix);
     RUN_TEST(test_parse_open);

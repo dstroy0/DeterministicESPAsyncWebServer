@@ -142,6 +142,20 @@ bool dws_opcua_parse_hello(const uint8_t *msg, size_t len, OpcUaHello *out);
  */
 size_t dws_opcua_build_ack(const OpcUaHello *hello, uint8_t *out, size_t cap);
 
+// Common transport-level status codes for a UACP ERR message (OPC UA Part 6 §7.1.2.4).
+#define DWS_OPCUA_BAD_TCP_MESSAGE_TYPE_INVALID 0x807E0000u
+#define DWS_OPCUA_BAD_TCP_MESSAGE_TOO_LARGE 0x80800000u
+#define DWS_OPCUA_BAD_TCP_NOT_ENOUGH_RESOURCES 0x80810000u
+#define DWS_OPCUA_BAD_TCP_INTERNAL_ERROR 0x80820000u
+
+/**
+ * @brief Build a transport-level `ERR` message (the reply a server sends before closing when the handshake
+ *        fails): `ERR F <size> <error:UInt32> <reason:String>`. @p error_code is an OPC UA StatusCode
+ *        (DWS_OPCUA_BAD_TCP_*); @p reason is a short UTF-8 diagnostic (may be null for a null String).
+ * @return total ERR message bytes written to @p out, or 0 on a null buffer / overflow.
+ */
+size_t dws_opcua_build_error(uint32_t error_code, const char *reason, uint8_t *out, size_t cap);
+
 // ---------------------------------------------------------------------------
 // NodeId / ExtensionObject / DateTime (OPC UA Part 6 §5.2.2)
 // ---------------------------------------------------------------------------
