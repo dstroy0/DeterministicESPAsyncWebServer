@@ -382,6 +382,37 @@ void test_decode_et1()
     TEST_ASSERT_FALSE(t.oil_valid);
 }
 
+void test_decode_lfe()
+{
+    // fuel rate 20.0 L/h (raw 400), instant econ 5.0 km/L (raw 2560), avg 4.5 (raw 2304), throttle 40 % (raw 100).
+    const uint8_t data[8] = {0x90, 0x01, 0x00, 0x0A, 0x00, 0x09, 100, 0xFF};
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_j1939_build_message(&f, 6, J1939_PGN_LFE, 0x00, J1939_ADDR_GLOBAL, data, 8));
+
+    J1939Lfe l;
+    TEST_ASSERT_TRUE(dws_j1939_decode_lfe(&f, &l));
+    TEST_ASSERT_TRUE(l.fuel_rate_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 20.0f, l.fuel_rate_lph);
+    TEST_ASSERT_TRUE(l.instant_econ_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 5.0f, l.instant_econ_kmpl);
+    TEST_ASSERT_TRUE(l.avg_econ_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 4.5f, l.avg_econ_kmpl);
+    TEST_ASSERT_TRUE(l.throttle_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 40.0f, l.throttle_pct);
+
+    // A not-available fuel rate clears just that flag.
+    const uint8_t na[8] = {0xFF, 0xFF, 0x00, 0x0A, 0x00, 0x09, 100, 0xFF};
+    CanFrame fna;
+    dws_j1939_build_message(&fna, 6, J1939_PGN_LFE, 0x00, J1939_ADDR_GLOBAL, na, 8);
+    dws_j1939_decode_lfe(&fna, &l);
+    TEST_ASSERT_FALSE(l.fuel_rate_valid);
+    TEST_ASSERT_TRUE(l.instant_econ_valid);
+    // A non-LFE frame (EEC1) is rejected.
+    CanFrame eec1;
+    dws_j1939_build_message(&eec1, 3, J1939_PGN_EEC1, 0x00, J1939_ADDR_GLOBAL, data, 8);
+    TEST_ASSERT_FALSE(dws_j1939_decode_lfe(&eec1, &l));
+}
+
 void test_decode_pgn_mismatch_and_guards()
 {
     const uint8_t data[8] = {0};
@@ -425,6 +456,7 @@ int main()
     RUN_TEST(test_tp_feed_dt_wrong_source_ignored);
     RUN_TEST(test_decode_eec1);
     RUN_TEST(test_decode_et1);
+    RUN_TEST(test_decode_lfe);
     RUN_TEST(test_decode_pgn_mismatch_and_guards);
     return UNITY_END();
 }

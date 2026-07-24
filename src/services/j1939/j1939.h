@@ -138,6 +138,7 @@ J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
 
 #define J1939_PGN_EEC1 0x00F004u ///< Electronic Engine Controller 1 (61444): engine speed + torque
 #define J1939_PGN_ET1 0x00FEEEu  ///< Engine Temperature 1 (65262): coolant / fuel / oil temperature
+#define J1939_PGN_LFE 0x00FEF2u  ///< Fuel Economy (65266): fuel rate + instantaneous / average economy
 
 /** @brief Decoded EEC1 (PGN 61444). Percent-torque fields are @ref J1939_TORQUE_NA when not available. */
 struct J1939Eec1
@@ -174,6 +175,25 @@ bool dws_j1939_decode_eec1(const CanFrame *f, J1939Eec1 *out);
  * @return true iff @p f decodes to PGN 65262 and carries 8 data octets; false otherwise.
  */
 bool dws_j1939_decode_et1(const CanFrame *f, J1939Et1 *out);
+
+/** @brief Decoded LFE (PGN 65266). Each value has its own validity flag (cleared for a not-available raw). */
+struct J1939Lfe
+{
+    bool fuel_rate_valid;
+    float fuel_rate_lph; ///< engine fuel rate (L/h, 0.05 L/h per bit)
+    bool instant_econ_valid;
+    float instant_econ_kmpl; ///< instantaneous fuel economy (km/L, 1/512 km/L per bit)
+    bool avg_econ_valid;
+    float avg_econ_kmpl; ///< average fuel economy (km/L, 1/512 km/L per bit)
+    bool throttle_valid;
+    float throttle_pct; ///< throttle valve 1 position (percent, 0.4 %/bit)
+};
+
+/**
+ * @brief Decode an LFE (PGN 65266) single frame into @p out.
+ * @return true iff @p f decodes to PGN 65266 and carries 8 data octets; false otherwise.
+ */
+bool dws_j1939_decode_lfe(const CanFrame *f, J1939Lfe *out);
 
 #endif // DWS_ENABLE_J1939
 #endif // DETERMINISTICESPASYNCWEBSERVER_J1939_H

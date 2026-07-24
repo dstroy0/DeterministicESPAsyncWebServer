@@ -261,4 +261,25 @@ bool dws_j1939_decode_et1(const CanFrame *f, J1939Et1 *out)
     return true;
 }
 
+bool dws_j1939_decode_lfe(const CanFrame *f, J1939Lfe *out)
+{
+    if (!f || !out || f->dlc < 8)
+        return false;
+    J1939Id id;
+    if (!dws_j1939_decode_id(f->id, &id) || id.pgn != J1939_PGN_LFE)
+        return false;
+    uint16_t fr = (uint16_t)(f->data[0] | ((uint16_t)f->data[1] << 8)); // SPN 183, 0.05 L/h/bit
+    out->fuel_rate_valid = (fr <= 0xFAFFu);
+    out->fuel_rate_lph = (float)fr * 0.05f;
+    uint16_t ie = (uint16_t)(f->data[2] | ((uint16_t)f->data[3] << 8)); // SPN 184, 1/512 km/L per bit
+    out->instant_econ_valid = (ie <= 0xFAFFu);
+    out->instant_econ_kmpl = (float)ie * (1.0f / 512.0f);
+    uint16_t ae = (uint16_t)(f->data[4] | ((uint16_t)f->data[5] << 8)); // SPN 185, 1/512 km/L per bit
+    out->avg_econ_valid = (ae <= 0xFAFFu);
+    out->avg_econ_kmpl = (float)ae * (1.0f / 512.0f);
+    out->throttle_valid = (f->data[6] <= 0xFAu); // SPN 51, 0.4 %/bit
+    out->throttle_pct = (float)f->data[6] * 0.4f;
+    return true;
+}
+
 #endif // DWS_ENABLE_J1939
