@@ -330,4 +330,23 @@ bool dws_j1939_decode_ic1(const CanFrame *f, J1939Ic1 *out)
     return true;
 }
 
+bool dws_j1939_decode_vd(const CanFrame *f, J1939Vd *out)
+{
+    if (!f || !out || f->dlc < 8)
+        return false;
+    J1939Id id;
+    if (!dws_j1939_decode_id(f->id, &id) || id.pgn != J1939_PGN_VD)
+        return false;
+    // SPN 244 trip distance + SPN 245 total distance: 4-octet little-endian, 0.125 km/bit.
+    uint32_t trip = (uint32_t)f->data[0] | ((uint32_t)f->data[1] << 8) | ((uint32_t)f->data[2] << 16) |
+                    ((uint32_t)f->data[3] << 24);
+    out->trip_valid = (trip <= 0xFAFFFFFFu); // >= 0xFB000000 is error / not-available
+    out->trip_km = (double)trip * 0.125;
+    uint32_t total = (uint32_t)f->data[4] | ((uint32_t)f->data[5] << 8) | ((uint32_t)f->data[6] << 16) |
+                     ((uint32_t)f->data[7] << 24);
+    out->total_valid = (total <= 0xFAFFFFFFu);
+    out->total_km = (double)total * 0.125;
+    return true;
+}
+
 #endif // DWS_ENABLE_J1939

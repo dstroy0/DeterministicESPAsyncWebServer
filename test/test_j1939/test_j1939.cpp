@@ -485,6 +485,41 @@ void test_decode_ic1()
     TEST_ASSERT_FALSE(dws_j1939_decode_ic1(&amb, &c));
 }
 
+void test_decode_vd()
+{
+    // trip 1000.000 km (raw 8000 = 0x1F40), total 250000.000 km (raw 2,000,000 = 0x1E8480).
+    const uint8_t data[8] = {0x40, 0x1F, 0x00, 0x00, 0x80, 0x84, 0x1E, 0x00};
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_j1939_build_message(&f, 6, J1939_PGN_VD, 0x00, J1939_ADDR_GLOBAL, data, 8));
+
+    J1939Vd v;
+    TEST_ASSERT_TRUE(dws_j1939_decode_vd(&f, &v));
+    TEST_ASSERT_TRUE(v.trip_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 1000.0f, (float)v.trip_km);
+    TEST_ASSERT_TRUE(v.total_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 250000.0f, (float)v.total_km);
+
+    // A near-max odometer (raw 0xFAFFFFFF) keeps full precision in the double; a float would round it up.
+    const uint8_t big[8] = {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFA};
+    CanFrame fb;
+    dws_j1939_build_message(&fb, 6, J1939_PGN_VD, 0x00, J1939_ADDR_GLOBAL, big, 8);
+    dws_j1939_decode_vd(&fb, &v);
+    TEST_ASSERT_TRUE(v.total_valid);
+    TEST_ASSERT_EQUAL_UINT32(0xFAFFFFFFu, (uint32_t)(v.total_km / 0.125 + 0.5)); // exact round-trip
+
+    // A not-available trip distance clears just that flag; the total stays valid.
+    const uint8_t na[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0x80, 0x84, 0x1E, 0x00};
+    CanFrame fna;
+    dws_j1939_build_message(&fna, 6, J1939_PGN_VD, 0x00, J1939_ADDR_GLOBAL, na, 8);
+    dws_j1939_decode_vd(&fna, &v);
+    TEST_ASSERT_FALSE(v.trip_valid);
+    TEST_ASSERT_TRUE(v.total_valid);
+    // A non-VD frame (IC1) is rejected.
+    CanFrame ic1;
+    dws_j1939_build_message(&ic1, 6, J1939_PGN_IC1, 0x00, J1939_ADDR_GLOBAL, data, 8);
+    TEST_ASSERT_FALSE(dws_j1939_decode_vd(&ic1, &v));
+}
+
 void test_decode_pgn_mismatch_and_guards()
 {
     const uint8_t data[8] = {0};
@@ -531,6 +566,7 @@ int main()
     RUN_TEST(test_decode_lfe);
     RUN_TEST(test_decode_amb);
     RUN_TEST(test_decode_ic1);
+    RUN_TEST(test_decode_vd);
     RUN_TEST(test_decode_pgn_mismatch_and_guards);
     return UNITY_END();
 }

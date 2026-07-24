@@ -141,6 +141,7 @@ J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
 #define J1939_PGN_LFE 0x00FEF2u  ///< Fuel Economy (65266): fuel rate + instantaneous / average economy
 #define J1939_PGN_AMB 0x00FEF5u  ///< Ambient Conditions (65269): barometric pressure + air / road temperatures
 #define J1939_PGN_IC1 0x00FEF6u  ///< Inlet/Exhaust Conditions 1 (65270): boost + intake / exhaust + filter pressures
+#define J1939_PGN_VD 0x00FEE0u   ///< Vehicle Distance (65248): trip + total vehicle distance
 
 /** @brief Decoded EEC1 (PGN 61444). Percent-torque fields are @ref J1939_TORQUE_NA when not available. */
 struct J1939Eec1
@@ -245,6 +246,22 @@ struct J1939Ic1
  * @return true iff @p f decodes to PGN 65270 and carries 8 data octets; false otherwise.
  */
 bool dws_j1939_decode_ic1(const CanFrame *f, J1939Ic1 *out);
+
+/** @brief Decoded VD (PGN 65248). The distances are held as double: at 0.125 km/bit a 32-bit odometer
+ *  spans hundreds of millions of km, beyond float's ~7-digit precision. */
+struct J1939Vd
+{
+    bool trip_valid;
+    double trip_km; ///< trip distance (km, 0.125 km/bit) - SPN 244
+    bool total_valid;
+    double total_km; ///< total vehicle distance (km, 0.125 km/bit) - SPN 245
+};
+
+/**
+ * @brief Decode a VD (PGN 65248) single frame into @p out.
+ * @return true iff @p f decodes to PGN 65248 and carries 8 data octets; false otherwise.
+ */
+bool dws_j1939_decode_vd(const CanFrame *f, J1939Vd *out);
 
 #endif // DWS_ENABLE_J1939
 #endif // DETERMINISTICESPASYNCWEBSERVER_J1939_H
