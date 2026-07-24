@@ -304,6 +304,79 @@ void test_stream_null_safe()
     dws_ubx_stream_init(nullptr); // must not crash
 }
 
+// A full UBX-NAV-PVT frame from a Python u-blox-8 reference (San Francisco-ish fix, 2026-07-24 12:30:45).
+static const uint8_t navpvt_frame[100] = {
+    0xb5, 0x62, 0x01, 0x07, 0x5c, 0x00, 0x15, 0xcd, 0x5b, 0x07, 0xea, 0x07, 0x07, 0x18, 0x0c, 0x1e, 0x2d,
+    0x07, 0x19, 0x00, 0x00, 0x00, 0x20, 0xa1, 0x07, 0x00, 0x03, 0x01, 0x00, 0x09, 0xd8, 0x71, 0x3b, 0xb7,
+    0x08, 0xf5, 0x46, 0x16, 0x24, 0x77, 0x00, 0x00, 0x60, 0x6d, 0x00, 0x00, 0xb0, 0x04, 0x00, 0x00, 0x08,
+    0x07, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0xce, 0xff, 0xff, 0xff, 0x05, 0x00, 0x00, 0x00, 0x70, 0x00,
+    0x00, 0x00, 0x20, 0xaa, 0x44, 0x00, 0x1e, 0x00, 0x00, 0x00, 0x80, 0x84, 0x1e, 0x00, 0xb4, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x69, 0xbe};
+
+void test_nav_pvt_decode()
+{
+    DwsUbx m;
+    TEST_ASSERT_TRUE(dws_ubx_parse(navpvt_frame, sizeof(navpvt_frame), &m));
+    TEST_ASSERT_EQUAL_HEX8(DWS_UBX_CLASS_NAV, m.cls);
+    TEST_ASSERT_EQUAL_HEX8(DWS_UBX_NAV_PVT, m.id);
+
+    DwsUbxNavPvt pvt;
+    TEST_ASSERT_TRUE(dws_ubx_parse_nav_pvt(&m, &pvt));
+    TEST_ASSERT_EQUAL_UINT32(123456789u, pvt.itow_ms);
+    TEST_ASSERT_EQUAL_UINT16(2026, pvt.year);
+    TEST_ASSERT_EQUAL_UINT8(7, pvt.month);
+    TEST_ASSERT_EQUAL_UINT8(24, pvt.day);
+    TEST_ASSERT_EQUAL_UINT8(12, pvt.hour);
+    TEST_ASSERT_EQUAL_UINT8(30, pvt.minute);
+    TEST_ASSERT_EQUAL_UINT8(45, pvt.second);
+    TEST_ASSERT_EQUAL_HEX8(0x07, pvt.valid);
+    TEST_ASSERT_EQUAL_INT32(500000, pvt.nano);
+    TEST_ASSERT_EQUAL_UINT32(25, pvt.time_acc_ns);
+    TEST_ASSERT_EQUAL_UINT8(DWS_UBX_FIX_3D, pvt.fix_type);
+    TEST_ASSERT_TRUE(pvt.flags & DWS_UBX_PVT_FIX_OK);
+    TEST_ASSERT_EQUAL_UINT8(9, pvt.num_sv);
+    TEST_ASSERT_EQUAL_INT32(-1220841000, pvt.lon_1e7); // -122.0841 deg
+    TEST_ASSERT_EQUAL_INT32(373749000, pvt.lat_1e7);   // 37.3749 deg
+    TEST_ASSERT_EQUAL_INT32(30500, pvt.height_mm);
+    TEST_ASSERT_EQUAL_INT32(28000, pvt.hmsl_mm);
+    TEST_ASSERT_EQUAL_UINT32(1200, pvt.h_acc_mm);
+    TEST_ASSERT_EQUAL_UINT32(1800, pvt.v_acc_mm);
+    TEST_ASSERT_EQUAL_INT32(100, pvt.vel_n_mm_s);
+    TEST_ASSERT_EQUAL_INT32(-50, pvt.vel_e_mm_s);
+    TEST_ASSERT_EQUAL_INT32(5, pvt.vel_d_mm_s);
+    TEST_ASSERT_EQUAL_INT32(112, pvt.gspeed_mm_s);
+    TEST_ASSERT_EQUAL_INT32(4500000, pvt.head_mot_1e5);
+    TEST_ASSERT_EQUAL_UINT32(30, pvt.s_acc_mm_s);
+    TEST_ASSERT_EQUAL_UINT32(2000000, pvt.head_acc_1e5);
+    TEST_ASSERT_EQUAL_UINT16(180, pvt.pdop_1e2);
+}
+
+void test_nav_pvt_rejects()
+{
+    DwsUbxNavPvt pvt;
+    // Wrong class/id: an ACK-ACK frame is not a NAV-PVT.
+    uint8_t ackpl[2] = {0x06, 0x01};
+    uint8_t ackbuf[16];
+    size_t an = dws_ubx_build(ackbuf, sizeof(ackbuf), 0x05, 0x01, ackpl, 2);
+    DwsUbx ack;
+    TEST_ASSERT_TRUE(dws_ubx_parse(ackbuf, an, &ack));
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_pvt(&ack, &pvt));
+
+    // Right class/id but a short payload (e.g. an older 84-byte protocol) is rejected.
+    uint8_t shortpl[84] = {0};
+    uint8_t sbuf[128];
+    size_t sn = dws_ubx_build(sbuf, sizeof(sbuf), DWS_UBX_CLASS_NAV, DWS_UBX_NAV_PVT, shortpl, sizeof(shortpl));
+    DwsUbx sm;
+    TEST_ASSERT_TRUE(dws_ubx_parse(sbuf, sn, &sm));
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_pvt(&sm, &pvt));
+
+    // Null guards.
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_pvt(nullptr, &pvt));
+    DwsUbx m;
+    dws_ubx_parse(navpvt_frame, sizeof(navpvt_frame), &m);
+    TEST_ASSERT_FALSE(dws_ubx_parse_nav_pvt(&m, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -321,5 +394,7 @@ int main()
     RUN_TEST(test_stream_overflow_skips);
     RUN_TEST(test_stream_false_and_double_sync);
     RUN_TEST(test_stream_null_safe);
+    RUN_TEST(test_nav_pvt_decode);
+    RUN_TEST(test_nav_pvt_rejects);
     return UNITY_END();
 }

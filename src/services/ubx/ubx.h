@@ -77,6 +77,63 @@ uint16_t dws_ubx_u16(const uint8_t *p, size_t off);
 uint32_t dws_ubx_u32(const uint8_t *p, size_t off);
 int32_t dws_ubx_i32(const uint8_t *p, size_t off);
 
+// -- NAV-PVT: the u-blox all-in-one navigation solution (position / velocity / time) --
+
+#define DWS_UBX_CLASS_NAV 0x01   ///< navigation-results message class
+#define DWS_UBX_NAV_PVT 0x07     ///< NAV-PVT message id (class NAV)
+#define DWS_UBX_NAV_PVT_LEN 92   ///< NAV-PVT payload length (u-blox 8 / M8)
+#define DWS_UBX_PVT_FIX_OK 0x01u ///< NAV-PVT flags bit 0: a valid fix (within DOP / accuracy masks)
+
+/** @brief NAV-PVT fixType values. */
+enum DwsUbxFixType
+{
+    DWS_UBX_FIX_NONE = 0,    ///< no fix
+    DWS_UBX_FIX_DR = 1,      ///< dead-reckoning only
+    DWS_UBX_FIX_2D = 2,      ///< 2D fix
+    DWS_UBX_FIX_3D = 3,      ///< 3D fix
+    DWS_UBX_FIX_GNSS_DR = 4, ///< GNSS + dead reckoning
+    DWS_UBX_FIX_TIME = 5     ///< time-only fix
+};
+
+/** @brief Decoded UBX-NAV-PVT payload (the fields an application usually needs; native integer scales). */
+struct DwsUbxNavPvt
+{
+    uint32_t itow_ms;      ///< GPS time of week of the solution (ms)
+    uint16_t year;         ///< UTC year
+    uint8_t month;         ///< UTC month (1..12)
+    uint8_t day;           ///< UTC day (1..31)
+    uint8_t hour;          ///< UTC hour (0..23)
+    uint8_t minute;        ///< UTC minute (0..59)
+    uint8_t second;        ///< UTC second (0..60)
+    uint8_t valid;         ///< validity flags (validDate / validTime / fullyResolved / validMag)
+    int32_t nano;          ///< fraction of second, -1e9..1e9 (ns)
+    uint32_t time_acc_ns;  ///< time accuracy estimate (ns)
+    uint8_t fix_type;      ///< @ref DwsUbxFixType
+    uint8_t flags;         ///< fix status flags (bit 0 = @ref DWS_UBX_PVT_FIX_OK)
+    uint8_t num_sv;        ///< number of satellites used in the solution
+    int32_t lon_1e7;       ///< longitude (1e-7 deg)
+    int32_t lat_1e7;       ///< latitude (1e-7 deg)
+    int32_t height_mm;     ///< height above the ellipsoid (mm)
+    int32_t hmsl_mm;       ///< height above mean sea level (mm)
+    uint32_t h_acc_mm;     ///< horizontal accuracy estimate (mm)
+    uint32_t v_acc_mm;     ///< vertical accuracy estimate (mm)
+    int32_t vel_n_mm_s;    ///< NED north velocity (mm/s)
+    int32_t vel_e_mm_s;    ///< NED east velocity (mm/s)
+    int32_t vel_d_mm_s;    ///< NED down velocity (mm/s)
+    int32_t gspeed_mm_s;   ///< 2-D ground speed (mm/s)
+    int32_t head_mot_1e5;  ///< heading of motion (1e-5 deg)
+    uint32_t s_acc_mm_s;   ///< speed accuracy estimate (mm/s)
+    uint32_t head_acc_1e5; ///< heading accuracy estimate (1e-5 deg)
+    uint16_t pdop_1e2;     ///< position DOP (0.01)
+};
+
+/**
+ * @brief Decode a UBX-NAV-PVT frame into @p out (per the u-blox interface description).
+ * @return true iff @p m is a NAV-PVT frame (class 0x01 / id 0x07) of at least @ref DWS_UBX_NAV_PVT_LEN
+ *         octets; false (and @p out untouched) otherwise.
+ */
+bool dws_ubx_parse_nav_pvt(const DwsUbx *m, DwsUbxNavPvt *out);
+
 /** @brief Result of feeding one byte to the streaming demultiplexer. */
 enum DwsUbxFeed
 {

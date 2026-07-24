@@ -102,6 +102,43 @@ int32_t dws_ubx_i32(const uint8_t *p, size_t off)
     return (int32_t)dws_ubx_u32(p, off);
 }
 
+bool dws_ubx_parse_nav_pvt(const DwsUbx *m, DwsUbxNavPvt *out)
+{
+    if (!m || !out || !m->payload)
+        return false;
+    if (m->cls != DWS_UBX_CLASS_NAV || m->id != DWS_UBX_NAV_PVT || m->len < DWS_UBX_NAV_PVT_LEN)
+        return false;
+    const uint8_t *p = m->payload;
+    out->itow_ms = dws_ubx_u32(p, 0);
+    out->year = dws_ubx_u16(p, 4);
+    out->month = p[6];
+    out->day = p[7];
+    out->hour = p[8];
+    out->minute = p[9];
+    out->second = p[10];
+    out->valid = p[11];
+    out->time_acc_ns = dws_ubx_u32(p, 12);
+    out->nano = dws_ubx_i32(p, 16);
+    out->fix_type = p[20];
+    out->flags = p[21];
+    out->num_sv = p[23];
+    out->lon_1e7 = dws_ubx_i32(p, 24);
+    out->lat_1e7 = dws_ubx_i32(p, 28);
+    out->height_mm = dws_ubx_i32(p, 32);
+    out->hmsl_mm = dws_ubx_i32(p, 36);
+    out->h_acc_mm = dws_ubx_u32(p, 40);
+    out->v_acc_mm = dws_ubx_u32(p, 44);
+    out->vel_n_mm_s = dws_ubx_i32(p, 48);
+    out->vel_e_mm_s = dws_ubx_i32(p, 52);
+    out->vel_d_mm_s = dws_ubx_i32(p, 56);
+    out->gspeed_mm_s = dws_ubx_i32(p, 60);
+    out->head_mot_1e5 = dws_ubx_i32(p, 64);
+    out->s_acc_mm_s = dws_ubx_u32(p, 68);
+    out->head_acc_1e5 = dws_ubx_u32(p, 72);
+    out->pdop_1e2 = dws_ubx_u16(p, 76);
+    return true;
+}
+
 // -- streaming demultiplexer --
 
 enum
