@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5191 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5193 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -46616,7 +46616,7 @@ A thorough directory of all **5191 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb_crypto (5 tests)</b></summary>
+<summary><b>test_smb_crypto (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_md5_vectors</b> &mdash; <i>62 bytes -> spans two 64-byte blocks (RFC 1321 A.5)</i></summary>
@@ -46639,6 +46639,25 @@ A thorough directory of all **5191 test cases** across **292 suites**. Expand a 
       * <code>Assert equal string ("750c783e6ab0b503eaa86e310a5db738", hex)</code>
       * <code>Assert equal string ("56be34521d144c88dbb8c733f0e8b3f6", hex)</code>
       * <code>Assert equal string ("6b1ab7fe4bd7bf8f0b62e6ce61b9d0cd", hex)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sha256_vectors</b> &mdash; <i>56-byte message: crosses the padding boundary into a second block (FIPS 180-4 two-block example).</i></summary>
+
+    * **Objective**: 56-byte message: crosses the padding boundary into a second block (FIPS 180-4 two-block example).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(empty, d, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(abc, d, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(twob, d, 32);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hmac_sha256_vectors</b> &mdash; <i>A key longer than the 64-byte block is hashed to 32 octets first (RFC 4231 test case 6).</i></summary>
+
+    * **Objective**: A key longer than the 64-byte block is hashed to 32 octets first (RFC 4231 test case 6).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(tc1, d, 32); // RFC 4231 test case 1</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(tc6, d, 32);</code>
   </details>
 
   <details style="margin-left: 20px;">
