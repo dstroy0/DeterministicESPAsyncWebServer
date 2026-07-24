@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.36.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.36.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`4f1d50e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f1d50ecb73c51b89f26b749c23df5ff04afb169))
+
+### Changes
+
+- Bump version: 7.35.0 → 7.36.0 ([`a4da311`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4da3111a8ef9ca8bec06f121623399eb9730997))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`dfb9b90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dfb9b90a3efe1c40222d4db74d3edd37caaa7698))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9c30192`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9c301925c7a3d19656a40459e084a62f661646a6))
+
+### Features
+
+- Diffie-Hellman shared secret (X25519, RFC 7296 s2.7) ([`7bcacd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bcacd3ad54e2d26694e5e3b539743398d1d5384))
+
+</details>
+
 ## [7.35.0] - 2026-07-24
 
 <details>
