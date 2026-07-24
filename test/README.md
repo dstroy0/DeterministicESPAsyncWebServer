@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5165 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5166 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -8084,7 +8084,7 @@ A thorough directory of all **5165 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_devicenet (16 tests)</b></summary>
+<summary><b>test_devicenet (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_id_group1</b> &mdash; <i>Id group1</i></summary>
@@ -8180,6 +8180,27 @@ A thorough directory of all **5165 test cases** across **291 suites**. Expand a 
       * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_COMPLETE, dws_devicenet_frag_feed(&rx, f2, 4))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(14, rx.len);</code>
       * <code>Assert equal memory (expect, rx.buf, 14)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_fragment_roundtrip</b> &mdash; <i>The frame body is the fragmented header + the fragmentation octet + the data.</i></summary>
+
+    * **Objective**: The frame body is the fragmented header + the fragmentation octet + the data.
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(dws_devicenet_build_fragment(&f0, DeviceNetGroup::DEVICENET_GROUP_2, 0x00, 0x21, false,</code>
+      * <code>TEST_ASSERT_TRUE(dws_devicenet_build_fragment(&f1, DeviceNetGroup::DEVICENET_GROUP_2, 0x00, 0x21, false,</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(8, f0.dlc); // header + frag octet + 6 data</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x80 | 0x21, f0.data[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(dws_devicenet_frag_octet(DEVICENET_FRAG_FIRST, 0), f0.data[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(1, f0.data[2]);</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_STARTED, dws_devicenet_frag_feed(&rx, f0.data, f0.dlc))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_COMPLETE, dws_devicenet_frag_feed(&rx, f1.data, f1.dlc))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(8, rx.len);</code>
+      * <code>Assert equal memory (expect, rx.buf, 8)</code>
+      * <code>TEST_ASSERT_FALSE(dws_devicenet_build_fragment(&f0, DeviceNetGroup::DEVICENET_GROUP_2, 0, 0x21, false,</code>
+      * <code>TEST_ASSERT_FALSE(dws_devicenet_build_fragment(&f0, DeviceNetGroup::DEVICENET_GROUP_2, 0, 0x21, false,</code>
+      * <code>TEST_ASSERT_FALSE(dws_devicenet_build_fragment(&f0, DeviceNetGroup::DEVICENET_GROUP_2, 0, 0x21, false,</code>
+      * <code>TEST_ASSERT_FALSE(dws_devicenet_build_fragment(nullptr, DeviceNetGroup::DEVICENET_GROUP_2, 0, 0x21, false,</code>
   </details>
 
   <details style="margin-left: 20px;">
