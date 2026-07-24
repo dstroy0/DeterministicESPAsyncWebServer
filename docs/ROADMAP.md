@@ -525,8 +525,14 @@ preempting queue, so sensing shares the real-time ingest path.
           the device signs with its own ECDSA-P256 key, so this covers authenticating an RSA-certificated
           peer, cross-checked against a Python-signed vector with tamper rejection (`test_ikev2` now 70).
           The IKE handshake state machine (item 2) is essentially complete: all four exchanges, PSK +
-          ECDSA + RSA auth. Remaining: the rekey/retransmit orchestration wiring (the message + KEYMAT
-          pieces all ship). Then tier 3 (the ESP datapath) is the separate architecturally-invasive track.
+          ECDSA + RSA auth. **The IKE-SA rekey key schedule is shipped too** (RFC 7296 §2.18):
+          `dws_ike_rekey_derive_keys` derives the new SA's SK_\* from SKEYSEED = prf(SK_d(old), g^ir(new)
+          | Ni | Nr) then prf+ over the new SPIs - distinct from the initial schedule (the old SK_d is the
+          PRF key), cross-checked against a Python reference (`test_ikev2` now 71). **IKEv2 tiers 1-2 are
+          done**: the full wire codec, every exchange, all three auth methods, and the initial / Child-SA /
+          rekey key schedules. The only remaining IKEv2 work is **tier 3, the ESP datapath** (RFC 4303) -
+          the separate, architecturally-invasive network-layer transform that hooks lwIP (a device-side
+          track, not host-unit-testable).
     3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
        encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
        (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with

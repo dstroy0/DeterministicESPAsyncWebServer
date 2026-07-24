@@ -691,38 +691,33 @@ bool dws_ike_prf_plus(const uint8_t *key, size_t key_len, const uint8_t *seed, s
     return true;
 }
 
-bool dws_ike_derive_keys(const uint8_t *dh_secret, size_t dh_len, const uint8_t *ni, size_t ni_len, const uint8_t *nr,
-                         size_t nr_len, const uint8_t *spi_i, const uint8_t *spi_r, const IkeKeyLengths *lens,
-                         IkeKeyMaterial *out)
+// Build S = Ni | Nr | SPIi | SPIr into @p s (caller-sized); returns its length, or 0 on a bad nonce length.
+static size_t build_ni_nr_spi(uint8_t *s, const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len,
+                              const uint8_t *spi_i, const uint8_t *spi_r)
 {
-    if (!dh_secret || !ni || !nr || !spi_i || !spi_r || !lens || !out)
-        return false;
     if (ni_len == 0 || ni_len > DWS_IKE_NONCE_MAX || nr_len == 0 || nr_len > DWS_IKE_NONCE_MAX)
-        return false;
-    // sk_a MAY be 0 (an AEAD cipher carries its own integrity, so there is no separate SK_ai/SK_ar);
-    // the others must be present.
-    if (lens->sk_d == 0 || lens->sk_d > DWS_IKE_SK_MAX || lens->sk_a > DWS_IKE_SK_MAX || lens->sk_e == 0 ||
-        lens->sk_e > DWS_IKE_SK_MAX || lens->sk_p == 0 || lens->sk_p > DWS_IKE_SK_MAX)
-        return false;
-
-    // Build S = Ni | Nr | SPIi | SPIr once. Its Ni|Nr prefix is also the SKEYSEED key, so a single buffer
-    // serves both the SKEYSEED HMAC key and the prf+ seed.
-    uint8_t s[2 * DWS_IKE_NONCE_MAX + 2 * DWS_IKE_SPI_LEN];
+        return 0;
     size_t nlen = ni_len + nr_len;
     memcpy(s, ni, ni_len);
     memcpy(s + ni_len, nr, nr_len);
     memcpy(s + nlen, spi_i, DWS_IKE_SPI_LEN);
     memcpy(s + nlen + DWS_IKE_SPI_LEN, spi_r, DWS_IKE_SPI_LEN);
-    size_t s_len = nlen + 2 * DWS_IKE_SPI_LEN;
+    return nlen + 2 * DWS_IKE_SPI_LEN;
+}
 
-    // SKEYSEED = prf(Ni | Nr, g^ir). HMAC pre-hashes a key longer than the 64-byte block (RFC 2104).
-    uint8_t skeyseed[DWS_IKE_PRF_LEN];
-    ssh_hmac_sha256(s, nlen, dh_secret, dh_len, skeyseed);
-
-    // prf+(SKEYSEED, S) -> SK_d | SK_ai | SK_ar | SK_ei | SK_er | SK_pi | SK_pr, spliced in order.
+// Given SKEYSEED and S = Ni|Nr|SPIi|SPIr, run prf+ and split it into the seven SK_* keys (shared by the
+// initial and the rekey schedules - only how SKEYSEED is computed differs).
+static bool sk_split_from_skeyseed(const uint8_t skeyseed[DWS_IKE_PRF_LEN], const uint8_t *s, size_t s_len,
+                                   const IkeKeyLengths *lens, IkeKeyMaterial *out)
+{
+    // sk_a MAY be 0 (an AEAD cipher carries its own integrity, so there is no separate SK_ai/SK_ar);
+    // the others must be present.
+    if (lens->sk_d == 0 || lens->sk_d > DWS_IKE_SK_MAX || lens->sk_a > DWS_IKE_SK_MAX || lens->sk_e == 0 ||
+        lens->sk_e > DWS_IKE_SK_MAX || lens->sk_p == 0 || lens->sk_p > DWS_IKE_SK_MAX)
+        return false;
     size_t total = lens->sk_d + 2 * lens->sk_a + 2 * lens->sk_e + 2 * lens->sk_p;
     uint8_t ks[7 * DWS_IKE_SK_MAX];
-    if (!dws_ike_prf_plus(skeyseed, sizeof(skeyseed), s, s_len, ks, total))
+    if (!dws_ike_prf_plus(skeyseed, DWS_IKE_PRF_LEN, s, s_len, ks, total))
         return false;
 
     size_t o = 0;
@@ -744,6 +739,52 @@ bool dws_ike_derive_keys(const uint8_t *dh_secret, size_t dh_len, const uint8_t 
     out->sk_e_len = lens->sk_e;
     out->sk_p_len = lens->sk_p;
     return true;
+}
+
+bool dws_ike_derive_keys(const uint8_t *dh_secret, size_t dh_len, const uint8_t *ni, size_t ni_len, const uint8_t *nr,
+                         size_t nr_len, const uint8_t *spi_i, const uint8_t *spi_r, const IkeKeyLengths *lens,
+                         IkeKeyMaterial *out)
+{
+    if (!dh_secret || !ni || !nr || !spi_i || !spi_r || !lens || !out)
+        return false;
+    // S = Ni | Nr | SPIi | SPIr; its Ni|Nr prefix is also the SKEYSEED HMAC key, so one buffer serves both.
+    uint8_t s[2 * DWS_IKE_NONCE_MAX + 2 * DWS_IKE_SPI_LEN];
+    size_t s_len = build_ni_nr_spi(s, ni, ni_len, nr, nr_len, spi_i, spi_r);
+    if (s_len == 0)
+        return false;
+    // SKEYSEED = prf(Ni | Nr, g^ir). HMAC pre-hashes a key longer than the 64-byte block (RFC 2104).
+    uint8_t skeyseed[DWS_IKE_PRF_LEN];
+    ssh_hmac_sha256(s, ni_len + nr_len, dh_secret, dh_len, skeyseed);
+    return sk_split_from_skeyseed(skeyseed, s, s_len, lens, out);
+}
+
+bool dws_ike_rekey_derive_keys(const uint8_t *sk_d_old, size_t sk_d_old_len, const uint8_t *dh_secret, size_t dh_len,
+                               const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len, const uint8_t *spi_i,
+                               const uint8_t *spi_r, const IkeKeyLengths *lens, IkeKeyMaterial *out)
+{
+    if (!sk_d_old || !dh_secret || !ni || !nr || !spi_i || !spi_r || !lens || !out)
+        return false;
+    if (dh_len == 0 || dh_len > DWS_IKE_X25519_LEN || ni_len > DWS_IKE_NONCE_MAX || nr_len > DWS_IKE_NONCE_MAX)
+        return false;
+
+    // Rekey SKEYSEED = prf(SK_d(old), g^ir(new) | Ni | Nr)  (RFC 7296 §2.18) - the OLD SK_d is the key.
+    uint8_t seed[DWS_IKE_X25519_LEN + 2 * DWS_IKE_NONCE_MAX];
+    size_t sl = 0;
+    memcpy(seed, dh_secret, dh_len);
+    sl = dh_len;
+    memcpy(seed + sl, ni, ni_len);
+    sl += ni_len;
+    memcpy(seed + sl, nr, nr_len);
+    sl += nr_len;
+    uint8_t skeyseed[DWS_IKE_PRF_LEN];
+    ssh_hmac_sha256(sk_d_old, sk_d_old_len, seed, sl, skeyseed);
+
+    // Then the identical prf+(SKEYSEED, Ni | Nr | SPIi | SPIr) split with the NEW SPIs.
+    uint8_t s[2 * DWS_IKE_NONCE_MAX + 2 * DWS_IKE_SPI_LEN];
+    size_t s_len = build_ni_nr_spi(s, ni, ni_len, nr, nr_len, spi_i, spi_r);
+    if (s_len == 0)
+        return false;
+    return sk_split_from_skeyseed(skeyseed, s, s_len, lens, out);
 }
 
 // ── tier 2: SK-payload AEAD (AES-256-GCM-16, RFC 5282) ─────────────────────────────────────────

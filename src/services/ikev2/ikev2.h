@@ -702,6 +702,18 @@ bool dws_ike_suite_keylengths(const IkeSuite *suite, IkeKeyLengths *out);
 bool dws_ike_sa_keys_from_init(IkeSa *sa, const uint8_t *our_dh_priv, size_t our_dh_priv_len, const uint8_t *peer_ke,
                                size_t peer_ke_len, const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len);
 
+/**
+ * @brief Derive the NEW IKE SA keys when rekeying an IKE SA (RFC 7296 §2.18):
+ *          SKEYSEED = prf(SK_d(old), g^ir(new) | Ni | Nr)
+ *          {SK_*} = prf+(SKEYSEED, Ni | Nr | SPIi | SPIr)     [the new SPIs]
+ *        Distinct from the initial schedule: the OLD SA's SK_d is the PRF key and g^ir prepends the seed.
+ * @param sk_d_old  the current IKE SA's SK_d. @param dh_secret the new g^ir (X25519). @param spi_i / spi_r
+ *        the new SA's SPIs. @return false on a null arg or an out-of-range length.
+ */
+bool dws_ike_rekey_derive_keys(const uint8_t *sk_d_old, size_t sk_d_old_len, const uint8_t *dh_secret, size_t dh_len,
+                               const uint8_t *ni, size_t ni_len, const uint8_t *nr, size_t nr_len, const uint8_t *spi_i,
+                               const uint8_t *spi_r, const IkeKeyLengths *lens, IkeKeyMaterial *out);
+
 // ── tier 2: initiator IKE_SA_INIT handshake driver (RFC 7296 §1.2) ─────────────────────────────
 //
 // A small deterministic state machine for the initiator's first exchange: emit the IKE_SA_INIT request,
