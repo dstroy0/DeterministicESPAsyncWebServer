@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5086 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5089 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -9255,7 +9255,7 @@ A thorough directory of all **5086 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dnp3 (10 tests)</b></summary>
+<summary><b>test_dnp3 (13 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dnp3_parse_guards</b> &mdash; <i>Dnp3 parse guards</i></summary>
@@ -9370,6 +9370,49 @@ A thorough directory of all **5086 test cases** across **291 suites**. Expand a 
       * <code>Assert false (dws_dnp3_parse_frame(corrupt, n, &f, user, sizeof(user), &user_len))</code>
       * <code>Assert false (dws_dnp3_parse_frame(buf, n, &f, nullptr, 0, &user_len))</code>
       * <code>Assert true (dws_dnp3_parse_frame(buf, n, &f, user, sizeof(user), nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_transport_header_and_build</b> &mdash; <i>Guards: buffer too small, and app data past the 249-octet segment limit.</i></summary>
+
+    * **Objective**: Guards: buffer too small, and app data past the 249-octet segment limit.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC5, dws_dnp3_transport_header(true, true, 5)); // FIR+FIN+seq5</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x40, dws_dnp3_transport_header(true, false, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x80, dws_dnp3_transport_header(false, true, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC5, seg[0]);</code>
+      * <code>Assert equal memory (app, seg + 1, 3)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_transport_segment(seg, 2, true, true, 0, app, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnp3_build_transport_segment(big, sizeof(big), true, true, 0, big, 250));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_transport_single_and_multi</b> &mdash; <i>Single-frame fragment (FIR+FIN, seq 7).</i></summary>
+
+    * **Objective**: Single-frame fragment (FIR+FIN, seq 7).
+    * **Assertions**:
+      * <code>Assert equal int (DNP3_TR_COMPLETE, dws_dnp3_transport_feed(&r, s0, 4))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, r.len);</code>
+      * <code>Assert true (r.done)</code>
+      * <code>Assert equal int (DNP3_TR_PROGRESS, dws_dnp3_transport_feed(&r, f1, 3))</code>
+      * <code>Assert equal int (DNP3_TR_PROGRESS, dws_dnp3_transport_feed(&r, f2, 3))</code>
+      * <code>Assert equal int (DNP3_TR_COMPLETE, dws_dnp3_transport_feed(&r, f3, 2))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(5, r.len);</code>
+      * <code>Assert equal memory (expect, buf, 5)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_transport_errors</b> &mdash; <i>A continuation with no active fragment is ignored.</i></summary>
+
+    * **Objective**: A continuation with no active fragment is ignored.
+    * **Assertions**:
+      * <code>Assert equal int (DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, cont, 2))</code>
+      * <code>Assert equal int (DNP3_TR_PROGRESS, dws_dnp3_transport_feed(&r, a, 2))</code>
+      * <code>Assert equal int (DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, bad, 2))</code>
+      * <code>Assert equal int (DNP3_TR_ERROR, dws_dnp3_transport_feed(&r2, bigseg, 6))</code>
+      * <code>Assert equal int (DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, nullptr, 5))</code>
+      * <code>Assert equal int (DNP3_TR_IGNORED, dws_dnp3_transport_feed(&r, a, 0))</code>
   </details>
 
 </details>
