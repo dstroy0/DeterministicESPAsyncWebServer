@@ -1487,7 +1487,9 @@
     "VDOP",
     "bitfields",
     "DDATA",
-    "NDATA"
+    "NDATA",
+    "HMSG",
+    "HPUB"
   ],
   "ignorePaths": [
     "node_modules/**",

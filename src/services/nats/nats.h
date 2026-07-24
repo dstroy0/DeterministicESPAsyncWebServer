@@ -47,6 +47,14 @@ size_t dws_nats_build_connect(char *buf, size_t cap, const char *options_json);
 size_t dws_nats_build_pub(char *buf, size_t cap, const char *subject, const char *reply_to, const uint8_t *payload,
                           size_t payload_len);
 
+/**
+ * @brief HPUB (headers publish, NATS 2.2+): `HPUB <subject> [reply_to] <hdr_len> <total_len>\r\n<headers>
+ *        <payload>\r\n`. @p headers is the pre-formatted header block (e.g. `NATS/1.0\r\nKey: Value\r\n\r\n`),
+ *        which must be non-empty; the two length fields are the header-block length and header+payload.
+ */
+size_t dws_nats_build_hpub(char *buf, size_t cap, const char *subject, const char *reply_to, const char *headers,
+                           size_t headers_len, const uint8_t *payload, size_t payload_len);
+
 /** @brief SUB: `SUB <subject> [queue] <sid>\r\n` (@p queue may be null). */
 size_t dws_nats_build_sub(char *buf, size_t cap, const char *subject, const char *queue, const char *sid);
 
@@ -83,6 +91,8 @@ struct NatsMsg
     size_t reply_len;
     const uint8_t *payload; ///< MSG payload
     size_t payload_len;
+    const char *headers; ///< HMSG header block (`NATS/1.0\r\n...`); nullptr for a header-less MSG
+    size_t headers_len;
     const char *arg; ///< INFO / -ERR argument (the rest of the control line)
     size_t arg_len;
 };

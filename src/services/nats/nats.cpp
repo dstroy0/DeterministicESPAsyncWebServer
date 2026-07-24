@@ -126,6 +126,30 @@ size_t dws_nats_build_pub(char *buf, size_t cap, const char *subject, const char
     return finish(&b);
 }
 
+size_t dws_nats_build_hpub(char *buf, size_t cap, const char *subject, const char *reply_to, const char *headers,
+                           size_t headers_len, const uint8_t *payload, size_t payload_len)
+{
+    if (!buf || !subject || !headers || headers_len == 0 || (payload_len && !payload))
+        return 0;
+    Buf b = {buf, cap, 0, true};
+    put_str(&b, "HPUB ");
+    put_str(&b, subject);
+    if (reply_to)
+    {
+        put_ch(&b, ' ');
+        put_str(&b, reply_to);
+    }
+    put_ch(&b, ' ');
+    put_uint(&b, headers_len); // hdr_len
+    put_ch(&b, ' ');
+    put_uint(&b, headers_len + payload_len); // total_len = headers + payload
+    put_str(&b, "\r\n");
+    put_bytes(&b, (const uint8_t *)headers, headers_len);
+    put_bytes(&b, payload, payload_len);
+    put_str(&b, "\r\n");
+    return finish(&b);
+}
+
 size_t dws_nats_build_sub(char *buf, size_t cap, const char *subject, const char *queue, const char *sid)
 {
     if (!buf || !subject || !sid)
@@ -226,6 +250,8 @@ bool dws_nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
     out->subject_len = out->sid_len = out->reply_len = out->arg_len = 0;
     out->payload = nullptr;
     out->payload_len = 0;
+    out->headers = nullptr;
+    out->headers_len = 0;
 
     if (verb_is(buf, line_len, "PING"))
     {
@@ -298,6 +324,55 @@ bool dws_nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
         }
         out->payload = (const uint8_t *)(buf + after_line);
         out->payload_len = size;
+        *consumed = total;
+        return true;
+    }
+    if (verb_is(buf, line_len, "HMSG"))
+    {
+        // HMSG <subject> <sid> [reply-to] <hdr_len> <total_len>
+        const char *tok[5];
+        size_t tlen[5];
+        size_t ntok = 0;
+        size_t i = 4; // past "HMSG"
+        while (i < line_len && ntok < 5)
+        {
+            while (i < line_len && (buf[i] == ' ' || buf[i] == '\t'))
+                i++;
+            if (i >= line_len)
+                break;
+            size_t start = i;
+            while (i < line_len && buf[i] != ' ' && buf[i] != '\t')
+                i++;
+            tok[ntok] = buf + start;
+            tlen[ntok] = i - start;
+            ntok++;
+        }
+        if (ntok != 4 && ntok != 5) // subject sid [reply] hdr_len total_len
+            return false;
+        size_t hdr_len, total_size;
+        if (!parse_uint(tok[ntok - 2], tlen[ntok - 2], &hdr_len) ||
+            !parse_uint(tok[ntok - 1], tlen[ntok - 1], &total_size))
+            return false;
+        if (hdr_len > total_size) // the header block cannot exceed the header+payload total
+            return false;
+        // Bound the total against the remaining capacity without overflowing size_t.
+        if (after_line + 2 > len || total_size > len - after_line - 2)
+            return false; // headers + payload + trailing CRLF not fully buffered
+        size_t total = after_line + total_size + 2;
+        out->type = NatsMsgType::NATS_MSG;
+        out->subject = tok[0];
+        out->subject_len = tlen[0];
+        out->sid = tok[1];
+        out->sid_len = tlen[1];
+        if (ntok == 5)
+        {
+            out->reply = tok[2];
+            out->reply_len = tlen[2];
+        }
+        out->headers = buf + after_line;
+        out->headers_len = hdr_len;
+        out->payload = (const uint8_t *)(buf + after_line + hdr_len);
+        out->payload_len = total_size - hdr_len;
         *consumed = total;
         return true;
     }

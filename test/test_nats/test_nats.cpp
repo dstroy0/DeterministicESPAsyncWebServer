@@ -90,6 +90,53 @@ void test_parse_msg_with_reply()
     TEST_ASSERT_EQUAL_MEMORY("hello", m.payload, 5);
 }
 
+void test_build_hpub()
+{
+    char buf[128];
+    const char *hdrs = "NATS/1.0\r\nX: 1\r\n\r\n"; // 18 octets
+    size_t n = dws_nats_build_hpub(buf, sizeof(buf), "foo", nullptr, hdrs, strlen(hdrs), (const uint8_t *)"hi", 2);
+    const char *expect = "HPUB foo 18 20\r\nNATS/1.0\r\nX: 1\r\n\r\nhi\r\n"; // hdr_len 18, total_len 20
+    TEST_ASSERT_EQUAL_size_t(strlen(expect), n);
+    TEST_ASSERT_EQUAL_MEMORY(expect, buf, n);
+
+    // Guards: null headers and a zero header length fail closed.
+    TEST_ASSERT_EQUAL_size_t(
+        0, dws_nats_build_hpub(buf, sizeof(buf), "foo", nullptr, nullptr, 5, (const uint8_t *)"h", 1));
+    TEST_ASSERT_EQUAL_size_t(0, dws_nats_build_hpub(buf, sizeof(buf), "foo", nullptr, hdrs, 0, nullptr, 0));
+}
+
+void test_parse_hmsg()
+{
+    const char *raw = "HMSG foo 9 18 20\r\nNATS/1.0\r\nX: 1\r\n\r\nhi\r\n";
+    NatsMsg m;
+    size_t c;
+    TEST_ASSERT_TRUE(dws_nats_parse(raw, strlen(raw), &m, &c));
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_MSG, m.type);
+    TEST_ASSERT_EQUAL_MEMORY("foo", m.subject, m.subject_len);
+    TEST_ASSERT_EQUAL_MEMORY("9", m.sid, m.sid_len);
+    TEST_ASSERT_EQUAL_size_t(18, m.headers_len);
+    TEST_ASSERT_EQUAL_MEMORY("NATS/1.0\r\nX: 1\r\n\r\n", m.headers, 18);
+    TEST_ASSERT_EQUAL_size_t(2, m.payload_len);
+    TEST_ASSERT_EQUAL_MEMORY("hi", m.payload, 2);
+    TEST_ASSERT_EQUAL_size_t(strlen(raw), c);
+
+    // With a reply-to token.
+    const char *raw2 = "HMSG foo 9 _INBOX.3 18 20\r\nNATS/1.0\r\nX: 1\r\n\r\nhi\r\n";
+    TEST_ASSERT_TRUE(dws_nats_parse(raw2, strlen(raw2), &m, &c));
+    TEST_ASSERT_EQUAL_MEMORY("_INBOX.3", m.reply, m.reply_len);
+    TEST_ASSERT_EQUAL_size_t(18, m.headers_len);
+    TEST_ASSERT_EQUAL_MEMORY("hi", m.payload, 2);
+
+    // A header block larger than the total is rejected; a truncated HMSG is not yet a frame.
+    TEST_ASSERT_FALSE(dws_nats_parse("HMSG foo 9 30 20\r\n\r\n", 19, &m, &c));
+    TEST_ASSERT_FALSE(dws_nats_parse("HMSG foo 9 18 20\r\nNATS", 22, &m, &c));
+
+    // A plain (header-less) MSG leaves headers null.
+    TEST_ASSERT_TRUE(dws_nats_parse("MSG foo 1 2\r\nhi\r\n", 17, &m, &c));
+    TEST_ASSERT_NULL(m.headers);
+    TEST_ASSERT_EQUAL_size_t(0, m.headers_len);
+}
+
 void test_parse_control_lines()
 {
     NatsMsg m;
@@ -250,6 +297,8 @@ int main()
     RUN_TEST(test_build_sub_and_unsub);
     RUN_TEST(test_parse_msg);
     RUN_TEST(test_parse_msg_with_reply);
+    RUN_TEST(test_build_hpub);
+    RUN_TEST(test_parse_hmsg);
     RUN_TEST(test_parse_control_lines);
     RUN_TEST(test_parse_incomplete);
     RUN_TEST(test_build_overflow_fails_closed);

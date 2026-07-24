@@ -794,7 +794,7 @@ multipart/form-data body parser.
 
 `DWS_ENABLE_NATS`
 
-NATS client protocol codec - the text-based NATS pub/sub messaging protocol. Default off. services/nats lets a device be a NATS client over the outbound client transport: builders for `CONNECT`, `PUB` (with optional reply-to), `SUB` (with optional queue group), `UNSUB`, `PING`, and `PONG`, plus `dws_nats_parse` which decodes an inbound `MSG` / `INFO` / `PING` / `PONG` / `+OK` / `-ERR` (a MSG yields subject / sid / reply-to / payload). Line-oriented (CRLF, space-delimited); only PUB and MSG carry a payload. Pure and host-tested; the connection and subscription state are the application's. See src/services/nats/nats.h.
+NATS client protocol codec - the text-based NATS pub/sub messaging protocol. Default off. services/nats lets a device be a NATS client over the outbound client transport: builders for `CONNECT`, `PUB` (with optional reply-to), `HPUB` (a NATS 2.2+ publish carrying a header block), `SUB` (with optional queue group), `UNSUB`, `PING`, and `PONG`, plus `dws_nats_parse` which decodes an inbound `MSG` / `HMSG` / `INFO` / `PING` / `PONG` / `+OK` / `-ERR` (a MSG yields subject / sid / reply-to / payload; an HMSG additionally exposes its header block via the two length fields). Line-oriented (CRLF, space-delimited); only PUB / HPUB / MSG / HMSG carry a payload. Pure and host-tested; the connection and subscription state are the application's. See src/services/nats/nats.h.
 
 ## NEMA TS2
 
