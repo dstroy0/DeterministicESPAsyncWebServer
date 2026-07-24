@@ -561,7 +561,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5012 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5013 test cases** across **287 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -19796,7 +19796,7 @@ A thorough directory of all **5012 test cases** across **287 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ikev2 (70 tests)</b></summary>
+<summary><b>test_ikev2 (71 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hdr_build</b> &mdash; <i>overflow fails closed</i></summary>
@@ -20903,6 +20903,21 @@ A thorough directory of all **5012 test cases** across **287 suites**. Expand a 
       * <code>Assert false (dws_ike_auth_verify_rsa_sha256(rsa_n, rsa_e, rsa_sig, 256, scratch, sizeof(scratch)</code>
       * <code>Assert false (dws_ike_auth_verify_rsa_sha256(rsa_n, rsa_e, bad_sig, 256, scratch, sizeof(scratch)</code>
       * <code>Assert false (dws_ike_auth_verify_rsa_sha256(nullptr, rsa_e, rsa_sig, 256, scratch, sizeof(scratch)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rekey_derive_keys</b> &mdash; <i>The rekey schedule is DISTINCT from the initial one: the same nonces/SPIs/g^ir through the initial</i></summary>
+
+    * **Objective**: The rekey schedule is DISTINCT from the initial one: the same nonces/SPIs/g^ir through the initial
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert equal memory (rk_sk_d, km.sk_d, 32)</code>
+      * <code>Assert equal memory (rk_sk_ei, km.sk_ei, 36)</code>
+      * <code>Assert equal memory (rk_sk_pr, km.sk_pr, 32)</code>
+      * <code>Assert true (dws_ike_derive_keys(rk_dh, 32, rk_ni, 16, rk_nr, 16, rk_spii, rk_spir, &lens, &km_init))</code>
+      * <code>Assert not equal (0, memcmp(km.sk_d, km_init.sk_d, 32))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>TEST_ASSERT_FALSE(</code>
   </details>
 
 </details>
