@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5099 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5100 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -54855,7 +54855,7 @@ A thorough directory of all **5099 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ubx (20 tests)</b></summary>
+<summary><b>test_ubx (21 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum_known_vector</b> &mdash; <i>Checksum known vector</i></summary>
@@ -55141,6 +55141,30 @@ A thorough directory of all **5099 test cases** across **291 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(1, dws_ubx_u16(m.payload, 2));   // navRate</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(DWS_UBX_TIME_REF_GPS, dws_ubx_u16(m.payload, 4));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ubx_build_cfg_rate(buf, 8, 200, 1, DWS_UBX_TIME_REF_GPS)); // too small</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_nav_timeutc_decode</b> &mdash; <i>Wrong class/id (a NAV-PVT frame), a short payload, and null args are rejected.</i></summary>
+
+    * **Objective**: Wrong class/id (a NAV-PVT frame), a short payload, and null args are rejected.
+    * **Assertions**:
+      * <code>Assert true (dws_ubx_parse(timeutc_frame, sizeof(timeutc_frame), &m))</code>
+      * <code>Assert true (dws_ubx_parse_nav_timeutc(&m, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(123456789u, t.itow_ms);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(20, t.time_acc_ns);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(500000, t.nano);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2026, t.year);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(7, t.month);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(24, t.day);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(12, t.hour);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(30, t.minute);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(45, t.second);</code>
+      * <code>Assert true (t.valid & DWS_UBX_TIMEUTC_VALID_TOW)</code>
+      * <code>Assert true (t.valid & DWS_UBX_TIMEUTC_VALID_WKN)</code>
+      * <code>Assert true (t.utc_valid)</code>
+      * <code>Assert false (dws_ubx_parse_nav_timeutc(&pvt, &t))</code>
+      * <code>Assert false (dws_ubx_parse_nav_timeutc(&sm, &t))</code>
+      * <code>Assert false (dws_ubx_parse_nav_timeutc(&m, nullptr))</code>
   </details>
 
 </details>
