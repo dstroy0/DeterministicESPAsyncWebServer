@@ -564,7 +564,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5139 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5140 test cases** across **291 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -47935,7 +47935,7 @@ A thorough directory of all **5139 test cases** across **291 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sparkplug (8 tests)</b></summary>
+<summary><b>test_sparkplug (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_spb_error_and_kind_paths</b> &mdash; <i>Spb error and kind paths</i></summary>
@@ -47950,6 +47950,41 @@ A thorough directory of all **5139 test cases** across **291 suites**. Expand a 
       * <code>Assert true (dws_spb_build_metric(buf, sizeof(buf), &mf) &gt; 0)</code>
       * <code>Assert equal uint (0, dws_spb_build_payload(buf, sizeof(buf), 1, 0, nullptr, 2))</code>
       * <code>Assert equal uint (0, dws_spb_build_payload(buf, sizeof(buf), 1, 0, &ms, 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_payload_and_metrics</b> &mdash; <i>First metric: double "temperature".</i></summary>
+
+    * **Objective**: First metric: double "temperature".
+    * **Assertions**:
+      * <code>Assert greater than (0, (int)n)</code>
+      * <code>Assert true (dws_spb_parse_payload(buf, n, &hdr))</code>
+      * <code>Assert true (hdr.has_timestamp)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1000, hdr.timestamp);</code>
+      * <code>Assert true (hdr.has_seq)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(5, hdr.seq);</code>
+      * <code>Assert true (dws_spb_payload_next_metric(buf, n, &pos, &mb, &mlen))</code>
+      * <code>Assert true (dws_spb_parse_metric(mb, mlen, &d))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(11, d.name_len);</code>
+      * <code>Assert equal memory ("temperature", d.name, 11)</code>
+      * <code>Assert true (d.has_timestamp)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(12345, d.timestamp);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SPB_DT_DOUBLE, d.datatype);</code>
+      * <code>Assert true (d.has_value)</code>
+      * <code>Assert equal int ((int)SpbMetricKind::SPB_M_DOUBLE, (int)d.kind)</code>
+      * <code>Assert true (d.double_value == 23.5)</code>
+      * <code>Assert true (dws_spb_payload_next_metric(buf, n, &pos, &mb, &mlen))</code>
+      * <code>Assert true (dws_spb_parse_metric(mb, mlen, &d))</code>
+      * <code>Assert equal memory ("status", d.name, 6)</code>
+      * <code>Assert true (d.has_alias)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(7, d.alias);</code>
+      * <code>Assert equal int ((int)SpbMetricKind::SPB_M_STRING, (int)d.kind)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, d.string_value_len);</code>
+      * <code>Assert equal memory ("OK", d.string_value, 2)</code>
+      * <code>Assert false (dws_spb_payload_next_metric(buf, n, &pos, &mb, &mlen))</code>
+      * <code>Assert false (dws_spb_parse_payload(nullptr, n, &hdr))</code>
+      * <code>Assert false (dws_spb_parse_metric(nullptr, mlen, &d))</code>
+      * <code>Assert false (dws_spb_payload_next_metric(nullptr, n, &pos, &mb, &mlen))</code>
   </details>
 
   <details style="margin-left: 20px;">
