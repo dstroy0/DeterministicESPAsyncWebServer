@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.110.0] - 2026-07-24
+
+<details>
+<summary><b>Show Changelog for version 7.110.0 - 2026-07-24</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`2fb9f26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fb9f269d2525fe0b5e1396e6ab2bedd3b0d7475))
+
+### Changes
+
+- Bump version: 7.109.0 → 7.110.0 ([`34ce564`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34ce564b014816660855d717c28c0db04df3fa97))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2ba1a5b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ba1a5b7f7609dfae14f4dbece500e317ae04340))
+
+### Features
+
+- decode DM1 active diagnostic trouble codes (PGN 65226) ([`f8d1102`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8d1102d20a304dee7bbb2b252d20486fcb7a585))
+
+</details>
+
 ## [7.109.0] - 2026-07-24
 
 <details>
