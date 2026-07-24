@@ -260,6 +260,69 @@ void test_transport_errors()
     dws_dnp3_transport_rx_init(nullptr, buf, 512); // must not crash
 }
 
+void test_app_request_roundtrip()
+{
+    // A READ request: AC = FIR|FIN, seq 3; FC READ; a small object header (group 1, var 0, qualifier 0x06).
+    uint8_t ac = dws_dnp3_app_control(true, true, false, false, 3);
+    TEST_ASSERT_EQUAL_HEX8(0xC3, ac); // FIR|FIN|seq3
+    const uint8_t obj[3] = {0x01, 0x00, 0x06};
+    uint8_t buf[16];
+    size_t n = dws_dnp3_build_app_request(buf, sizeof(buf), ac, DNP3_FC_READ, obj, sizeof(obj));
+    TEST_ASSERT_EQUAL_UINT(5, n);
+    TEST_ASSERT_EQUAL_HEX8(0xC3, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(DNP3_FC_READ, buf[1]);
+
+    Dnp3AppHeader h;
+    TEST_ASSERT_TRUE(dws_dnp3_parse_app_header(buf, n, &h));
+    TEST_ASSERT_TRUE(h.fir);
+    TEST_ASSERT_TRUE(h.fin);
+    TEST_ASSERT_FALSE(h.con);
+    TEST_ASSERT_FALSE(h.uns);
+    TEST_ASSERT_EQUAL_UINT8(3, h.seq);
+    TEST_ASSERT_EQUAL_HEX8(DNP3_FC_READ, h.fc);
+    TEST_ASSERT_FALSE(h.is_response);
+    TEST_ASSERT_EQUAL_UINT16(0, h.iin);
+    TEST_ASSERT_EQUAL_UINT(3, h.obj_len);
+    TEST_ASSERT_EQUAL_HEX8(0x01, h.objects[0]);
+
+    // A 2-octet fragment (header only, no objects) parses with a null object pointer.
+    n = dws_dnp3_build_app_request(buf, sizeof(buf), ac, DNP3_FC_READ, nullptr, 0);
+    TEST_ASSERT_EQUAL_UINT(2, n);
+    TEST_ASSERT_TRUE(dws_dnp3_parse_app_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT(0, h.obj_len);
+    TEST_ASSERT_NULL(h.objects);
+}
+
+void test_app_response_roundtrip()
+{
+    uint8_t ac = dws_dnp3_app_control(true, true, true, false, 5);   // FIR|FIN|CON seq5
+    uint16_t iin = DNP3_IIN_DEVICE_RESTART | DNP3_IIN_CLASS1_EVENTS; // 0x0082
+    const uint8_t obj[2] = {0x3C, 0x01};                             // class-0 object header stub
+    uint8_t buf[16];
+    size_t n = dws_dnp3_build_app_response(buf, sizeof(buf), ac, DNP3_FC_RESPONSE, iin, obj, sizeof(obj));
+    TEST_ASSERT_EQUAL_UINT(6, n);         // AC + FC + 2 IIN + 2 object octets
+    TEST_ASSERT_EQUAL_HEX8(0x82, buf[2]); // IIN1, little-endian
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[3]); // IIN2
+
+    Dnp3AppHeader h;
+    TEST_ASSERT_TRUE(dws_dnp3_parse_app_header(buf, n, &h));
+    TEST_ASSERT_TRUE(h.is_response);
+    TEST_ASSERT_EQUAL_HEX8(DNP3_FC_RESPONSE, h.fc);
+    TEST_ASSERT_EQUAL_UINT8(5, h.seq);
+    TEST_ASSERT_TRUE(h.con);
+    TEST_ASSERT_EQUAL_UINT16(iin, h.iin);
+    TEST_ASSERT_TRUE(h.iin & DNP3_IIN_DEVICE_RESTART);
+    TEST_ASSERT_EQUAL_UINT(2, h.obj_len);
+
+    // A response fragment truncated to 3 octets (missing an IIN octet) is rejected.
+    TEST_ASSERT_FALSE(dws_dnp3_parse_app_header(buf, 3, &h));
+    // A 1-octet fragment and null guards are rejected.
+    TEST_ASSERT_FALSE(dws_dnp3_parse_app_header(buf, 1, &h));
+    TEST_ASSERT_FALSE(dws_dnp3_parse_app_header(nullptr, n, &h));
+    // Build overflow fails closed.
+    TEST_ASSERT_EQUAL_UINT(0, dws_dnp3_build_app_response(buf, 3, ac, DNP3_FC_RESPONSE, iin, obj, sizeof(obj)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -276,5 +339,7 @@ int main()
     RUN_TEST(test_transport_header_and_build);
     RUN_TEST(test_transport_single_and_multi);
     RUN_TEST(test_transport_errors);
+    RUN_TEST(test_app_request_roundtrip);
+    RUN_TEST(test_app_response_roundtrip);
     return UNITY_END();
 }

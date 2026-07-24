@@ -132,6 +132,85 @@ void dws_dnp3_transport_rx_init(Dnp3TransportRx *r, uint8_t *buf, size_t cap);
  */
 int dws_dnp3_transport_feed(Dnp3TransportRx *r, const uint8_t *user, size_t user_len);
 
+// --- application layer (IEEE 1815 §4.2.2): the reassembled fragment's header ---
+//
+// An application fragment begins with a 1-octet Application Control (AC) and a 1-octet Function Code (FC).
+// A response (FC RESPONSE / UNSOLICITED_RESPONSE) inserts two Internal Indication (IIN) octets before the
+// object data; a request carries object headers immediately after the FC. This layers on the fragment that
+// dws_dnp3_transport_feed reassembles.
+
+// Application Control octet (IEEE 1815 §4.2.2.1).
+#define DNP3_AC_FIR 0x80u      ///< first fragment of a multi-fragment response
+#define DNP3_AC_FIN 0x40u      ///< final fragment
+#define DNP3_AC_CON 0x20u      ///< confirmation of this fragment is requested
+#define DNP3_AC_UNS 0x10u      ///< unsolicited response
+#define DNP3_AC_SEQ_MASK 0x0Fu ///< 4-bit application sequence number
+
+// Application function codes (IEEE 1815 Table 4-1, common subset).
+#define DNP3_FC_CONFIRM 0x00u
+#define DNP3_FC_READ 0x01u
+#define DNP3_FC_WRITE 0x02u
+#define DNP3_FC_SELECT 0x03u
+#define DNP3_FC_OPERATE 0x04u
+#define DNP3_FC_DIRECT_OPERATE 0x05u
+#define DNP3_FC_DIRECT_OPERATE_NR 0x06u ///< direct operate, no response
+#define DNP3_FC_COLD_RESTART 0x0Du
+#define DNP3_FC_WARM_RESTART 0x0Eu
+#define DNP3_FC_RESPONSE 0x81u
+#define DNP3_FC_UNSOLICITED_RESPONSE 0x82u
+
+// Internal Indication bits (IEEE 1815 §4.2.2.5), packed IIN1 in the low octet, IIN2 in the high octet.
+#define DNP3_IIN_BROADCAST 0x0001u          ///< IIN1.0 request was broadcast
+#define DNP3_IIN_CLASS1_EVENTS 0x0002u      ///< IIN1.1 class 1 events available
+#define DNP3_IIN_CLASS2_EVENTS 0x0004u      ///< IIN1.2 class 2 events available
+#define DNP3_IIN_CLASS3_EVENTS 0x0008u      ///< IIN1.3 class 3 events available
+#define DNP3_IIN_NEED_TIME 0x0010u          ///< IIN1.4 time synchronization required
+#define DNP3_IIN_LOCAL_CONTROL 0x0020u      ///< IIN1.5 some output point is in local mode
+#define DNP3_IIN_DEVICE_TROUBLE 0x0040u     ///< IIN1.6 device trouble
+#define DNP3_IIN_DEVICE_RESTART 0x0080u     ///< IIN1.7 device restarted
+#define DNP3_IIN_FUNC_NOT_SUPPORTED 0x0100u ///< IIN2.0 function code not supported
+#define DNP3_IIN_OBJECT_UNKNOWN 0x0200u     ///< IIN2.1 requested object(s) unknown
+#define DNP3_IIN_PARAM_ERROR 0x0400u        ///< IIN2.2 parameter error in the request
+#define DNP3_IIN_EVENT_OVERFLOW 0x0800u     ///< IIN2.3 event buffer overflowed
+#define DNP3_IIN_ALREADY_EXECUTING 0x1000u  ///< IIN2.4 operation already executing
+#define DNP3_IIN_CONFIG_CORRUPT 0x2000u     ///< IIN2.5 configuration corrupt
+
+/** @brief A decoded application-fragment header (from dws_dnp3_parse_app_header). */
+struct Dnp3AppHeader
+{
+    uint8_t app_control; ///< raw Application Control octet
+    bool fir, fin, con, uns;
+    uint8_t seq;            ///< 4-bit application sequence
+    uint8_t fc;             ///< function code
+    bool is_response;       ///< true for RESPONSE / UNSOLICITED_RESPONSE (the two IIN octets are present)
+    uint16_t iin;           ///< internal indications (IIN1 low octet, IIN2 high octet); 0 for a request
+    const uint8_t *objects; ///< pointer into the fragment at the first object header (or nullptr if none)
+    size_t obj_len;         ///< object octets remaining after the header
+};
+
+/** @brief Compose an Application Control octet from the FIR/FIN/CON/UNS flags and a 4-bit sequence. */
+uint8_t dws_dnp3_app_control(bool fir, bool fin, bool con, bool uns, uint8_t seq);
+
+/**
+ * @brief Build an application request fragment: AC + FC + @p obj_len object octets.
+ * @return the fragment length (2 + @p obj_len), or 0 on a bad argument / overflow.
+ */
+size_t dws_dnp3_build_app_request(uint8_t *out, size_t cap, uint8_t app_control, uint8_t fc, const uint8_t *objects,
+                                  size_t obj_len);
+
+/**
+ * @brief Build an application response fragment: AC + FC + IIN (2 octets, little-endian) + object octets.
+ * @return the fragment length (4 + @p obj_len), or 0 on a bad argument / overflow.
+ */
+size_t dws_dnp3_build_app_response(uint8_t *out, size_t cap, uint8_t app_control, uint8_t fc, uint16_t iin,
+                                   const uint8_t *objects, size_t obj_len);
+
+/**
+ * @brief Decode an application fragment's header (AC + FC, plus IIN for a response) into @p out.
+ * @return true iff @p len covers the header (2 octets, or 4 for a response); false otherwise.
+ */
+bool dws_dnp3_parse_app_header(const uint8_t *frag, size_t len, Dnp3AppHeader *out);
+
 #endif // DWS_ENABLE_DNP3
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNP3_H

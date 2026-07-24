@@ -200,4 +200,60 @@ int dws_dnp3_transport_feed(Dnp3TransportRx *r, const uint8_t *user, size_t user
     return DNP3_TR_PROGRESS;
 }
 
+uint8_t dws_dnp3_app_control(bool fir, bool fin, bool con, bool uns, uint8_t seq)
+{
+    return (uint8_t)((fir ? DNP3_AC_FIR : 0u) | (fin ? DNP3_AC_FIN : 0u) | (con ? DNP3_AC_CON : 0u) |
+                     (uns ? DNP3_AC_UNS : 0u) | (seq & DNP3_AC_SEQ_MASK));
+}
+
+size_t dws_dnp3_build_app_request(uint8_t *out, size_t cap, uint8_t app_control, uint8_t fc, const uint8_t *objects,
+                                  size_t obj_len)
+{
+    if (!out || (obj_len && !objects) || cap < 2 + obj_len)
+        return 0;
+    out[0] = app_control;
+    out[1] = fc;
+    if (obj_len)
+        memcpy(out + 2, objects, obj_len);
+    return 2 + obj_len;
+}
+
+size_t dws_dnp3_build_app_response(uint8_t *out, size_t cap, uint8_t app_control, uint8_t fc, uint16_t iin,
+                                   const uint8_t *objects, size_t obj_len)
+{
+    if (!out || (obj_len && !objects) || cap < 4 + obj_len)
+        return 0;
+    out[0] = app_control;
+    out[1] = fc;
+    out[2] = (uint8_t)iin;        // IIN1, little-endian
+    out[3] = (uint8_t)(iin >> 8); // IIN2
+    if (obj_len)
+        memcpy(out + 4, objects, obj_len);
+    return 4 + obj_len;
+}
+
+bool dws_dnp3_parse_app_header(const uint8_t *frag, size_t len, Dnp3AppHeader *out)
+{
+    if (!frag || !out || len < 2)
+        return false;
+    uint8_t ac = frag[0];
+    uint8_t fc = frag[1];
+    bool is_response = (fc == DNP3_FC_RESPONSE || fc == DNP3_FC_UNSOLICITED_RESPONSE);
+    size_t hdr_len = is_response ? 4u : 2u;
+    if (len < hdr_len) // a response needs the two IIN octets
+        return false;
+    out->app_control = ac;
+    out->fir = (ac & DNP3_AC_FIR) != 0;
+    out->fin = (ac & DNP3_AC_FIN) != 0;
+    out->con = (ac & DNP3_AC_CON) != 0;
+    out->uns = (ac & DNP3_AC_UNS) != 0;
+    out->seq = (uint8_t)(ac & DNP3_AC_SEQ_MASK);
+    out->fc = fc;
+    out->is_response = is_response;
+    out->iin = is_response ? (uint16_t)(frag[2] | (frag[3] << 8)) : 0u;
+    out->obj_len = len - hdr_len;
+    out->objects = out->obj_len ? frag + hdr_len : nullptr;
+    return true;
+}
+
 #endif // DWS_ENABLE_DNP3
