@@ -225,4 +225,40 @@ J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
     return J1939TpResult::J1939_TP_IGNORED;
 }
 
+// --- typed decoders (SAE J1939-71) ---
+
+bool dws_j1939_decode_eec1(const CanFrame *f, J1939Eec1 *out)
+{
+    if (!f || !out || f->dlc < 8)
+        return false;
+    J1939Id id;
+    if (!dws_j1939_decode_id(f->id, &id) || id.pgn != J1939_PGN_EEC1)
+        return false;
+    out->torque_mode = (uint8_t)(f->data[0] & 0x0Fu);
+    // percent torque: raw 0..250 maps to -125..+125 %; 0xFB..0xFF is error / not-available.
+    out->drivers_demand_torque_pct = (f->data[1] <= 0xFAu) ? (int16_t)((int)f->data[1] - 125) : J1939_TORQUE_NA;
+    out->actual_engine_torque_pct = (f->data[2] <= 0xFAu) ? (int16_t)((int)f->data[2] - 125) : J1939_TORQUE_NA;
+    uint16_t raw = (uint16_t)(f->data[3] | ((uint16_t)f->data[4] << 8)); // little-endian
+    out->engine_speed_valid = (raw <= 0xFAFFu);                          // >= 0xFB00 is error / not-available
+    out->engine_speed_rpm = (float)raw * 0.125f;
+    return true;
+}
+
+bool dws_j1939_decode_et1(const CanFrame *f, J1939Et1 *out)
+{
+    if (!f || !out || f->dlc < 8)
+        return false;
+    J1939Id id;
+    if (!dws_j1939_decode_id(f->id, &id) || id.pgn != J1939_PGN_ET1)
+        return false;
+    out->coolant_valid = (f->data[0] <= 0xFAu);
+    out->coolant_temp_c = (float)((int)f->data[0] - 40); // 1 degC/bit, -40 offset
+    out->fuel_valid = (f->data[1] <= 0xFAu);
+    out->fuel_temp_c = (float)((int)f->data[1] - 40);
+    uint16_t oilraw = (uint16_t)(f->data[2] | ((uint16_t)f->data[3] << 8));
+    out->oil_valid = (oilraw <= 0xFAFFu);
+    out->oil_temp_c = (float)oilraw * 0.03125f - 273.0f; // 0.03125 degC/bit, -273 offset
+    return true;
+}
+
 #endif // DWS_ENABLE_J1939

@@ -332,6 +332,74 @@ void test_tp_feed_error_paths()
     TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, dws_j1939_tp_feed(&rx, &other));
 }
 
+// --- typed PGN decoders (EEC1 / ET1) ---
+void test_decode_eec1()
+{
+    // 1500 rpm (raw 12000 = 0x2EE0), driver's demand +100 % (raw 225), actual +80 % (raw 205), mode 3.
+    const uint8_t data[8] = {0x03, 225, 205, 0xE0, 0x2E, 0xFF, 0xFF, 0xFF};
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_j1939_build_message(&f, 3, J1939_PGN_EEC1, 0x00, J1939_ADDR_GLOBAL, data, 8));
+
+    J1939Eec1 e;
+    TEST_ASSERT_TRUE(dws_j1939_decode_eec1(&f, &e));
+    TEST_ASSERT_EQUAL_UINT8(3, e.torque_mode);
+    TEST_ASSERT_EQUAL_INT16(100, e.drivers_demand_torque_pct);
+    TEST_ASSERT_EQUAL_INT16(80, e.actual_engine_torque_pct);
+    TEST_ASSERT_TRUE(e.engine_speed_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1500.0f, e.engine_speed_rpm);
+
+    // Not-available raws clear the flag / return the torque sentinel.
+    const uint8_t na[8] = {0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    CanFrame fna;
+    dws_j1939_build_message(&fna, 3, J1939_PGN_EEC1, 0x00, J1939_ADDR_GLOBAL, na, 8);
+    TEST_ASSERT_TRUE(dws_j1939_decode_eec1(&fna, &e));
+    TEST_ASSERT_FALSE(e.engine_speed_valid);
+    TEST_ASSERT_EQUAL_INT16(J1939_TORQUE_NA, e.drivers_demand_torque_pct);
+}
+
+void test_decode_et1()
+{
+    // coolant 90 C (raw 130), fuel 60 C (raw 100), oil 100 C (raw (100+273)/0.03125 = 11936 = 0x2EA0).
+    const uint8_t data[8] = {130, 100, 0xA0, 0x2E, 0xFF, 0xFF, 0xFF, 0xFF};
+    CanFrame f;
+    TEST_ASSERT_TRUE(dws_j1939_build_message(&f, 6, J1939_PGN_ET1, 0x00, J1939_ADDR_GLOBAL, data, 8));
+
+    J1939Et1 t;
+    TEST_ASSERT_TRUE(dws_j1939_decode_et1(&f, &t));
+    TEST_ASSERT_TRUE(t.coolant_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 90.0f, t.coolant_temp_c);
+    TEST_ASSERT_TRUE(t.fuel_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 60.0f, t.fuel_temp_c);
+    TEST_ASSERT_TRUE(t.oil_valid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 100.0f, t.oil_temp_c);
+
+    // An oil raw in the not-available range clears just that flag.
+    const uint8_t na[8] = {130, 100, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    CanFrame fna;
+    dws_j1939_build_message(&fna, 6, J1939_PGN_ET1, 0x00, J1939_ADDR_GLOBAL, na, 8);
+    dws_j1939_decode_et1(&fna, &t);
+    TEST_ASSERT_TRUE(t.coolant_valid);
+    TEST_ASSERT_FALSE(t.oil_valid);
+}
+
+void test_decode_pgn_mismatch_and_guards()
+{
+    const uint8_t data[8] = {0};
+    CanFrame et1;
+    dws_j1939_build_message(&et1, 6, J1939_PGN_ET1, 0x00, J1939_ADDR_GLOBAL, data, 8);
+    J1939Eec1 e;
+    TEST_ASSERT_FALSE(dws_j1939_decode_eec1(&et1, &e)); // an ET1 frame is not EEC1
+    J1939Et1 t;
+    CanFrame eec1;
+    dws_j1939_build_message(&eec1, 3, J1939_PGN_EEC1, 0x00, J1939_ADDR_GLOBAL, data, 8);
+    TEST_ASSERT_FALSE(dws_j1939_decode_et1(&eec1, &t)); // an EEC1 frame is not ET1
+    // Short DLC + null guards.
+    eec1.dlc = 5;
+    TEST_ASSERT_FALSE(dws_j1939_decode_eec1(&eec1, &e));
+    TEST_ASSERT_FALSE(dws_j1939_decode_eec1(nullptr, &e));
+    TEST_ASSERT_FALSE(dws_j1939_decode_et1(&et1, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -355,5 +423,8 @@ int main()
     RUN_TEST(test_tp_feed_cm_total_size_out_of_range);
     RUN_TEST(test_tp_feed_dt_short_frame_ignored);
     RUN_TEST(test_tp_feed_dt_wrong_source_ignored);
+    RUN_TEST(test_decode_eec1);
+    RUN_TEST(test_decode_et1);
+    RUN_TEST(test_decode_pgn_mismatch_and_guards);
     return UNITY_END();
 }

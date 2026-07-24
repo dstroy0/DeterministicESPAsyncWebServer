@@ -130,5 +130,50 @@ void dws_j1939_tp_reset(J1939TpRx *rx);
 /** @brief Feed a received frame to the reassembler; see @ref J1939TpResult. */
 J1939TpResult dws_j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
 
+// --- typed decoders for common engine PGNs (SAE J1939-71) ---
+//
+// These lift a raw single-frame CAN message into engineering units, applying the J1939 scale + offset and
+// the "not available" ranges (a 1-octet SPN is valid 0x00..0xFA, a 2-octet SPN 0x0000..0xFAFF; the rest
+// is error / not-available and clears the corresponding valid flag).
+
+#define J1939_PGN_EEC1 0x00F004u ///< Electronic Engine Controller 1 (61444): engine speed + torque
+#define J1939_PGN_ET1 0x00FEEEu  ///< Engine Temperature 1 (65262): coolant / fuel / oil temperature
+
+/** @brief Decoded EEC1 (PGN 61444). Percent-torque fields are @ref J1939_TORQUE_NA when not available. */
+struct J1939Eec1
+{
+    uint8_t torque_mode;               ///< engine torque mode (data[0] low nibble)
+    int16_t drivers_demand_torque_pct; ///< driver's demand percent torque (-125..125), or J1939_TORQUE_NA
+    int16_t actual_engine_torque_pct;  ///< actual engine percent torque (-125..125), or J1939_TORQUE_NA
+    bool engine_speed_valid;           ///< false when the raw speed is in the not-available range
+    float engine_speed_rpm;            ///< engine speed (rpm, 0.125 rpm/bit)
+};
+
+/** @brief Sentinel percent-torque value meaning "not available". */
+#define J1939_TORQUE_NA ((int16_t)0x7FFF)
+
+/** @brief Decoded ET1 (PGN 65262). Each temperature has its own validity flag. */
+struct J1939Et1
+{
+    bool coolant_valid;
+    float coolant_temp_c; ///< engine coolant temperature (degC, 1 degC/bit, -40 offset)
+    bool fuel_valid;
+    float fuel_temp_c; ///< fuel temperature (degC, 1 degC/bit, -40 offset)
+    bool oil_valid;
+    float oil_temp_c; ///< engine oil temperature (degC, 0.03125 degC/bit, -273 offset)
+};
+
+/**
+ * @brief Decode an EEC1 (PGN 61444) single frame into @p out.
+ * @return true iff @p f decodes to PGN 61444 and carries 8 data octets; false otherwise.
+ */
+bool dws_j1939_decode_eec1(const CanFrame *f, J1939Eec1 *out);
+
+/**
+ * @brief Decode an ET1 (PGN 65262) single frame into @p out.
+ * @return true iff @p f decodes to PGN 65262 and carries 8 data octets; false otherwise.
+ */
+bool dws_j1939_decode_et1(const CanFrame *f, J1939Et1 *out);
+
 #endif // DWS_ENABLE_J1939
 #endif // DETERMINISTICESPASYNCWEBSERVER_J1939_H
