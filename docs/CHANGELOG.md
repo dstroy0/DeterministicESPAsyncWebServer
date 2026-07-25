@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.161.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.161.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`03d72f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03d72f2bbaca1c73df6f8cc009120a79e381907b))
+- update CHANGELOG.md [skip ci] ([`96a688a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96a688a12c728549d64991c6ec3edc7ef0ce9aaa))
+
+### Changes
+
+- Bump version: 7.160.0 → 7.161.0 ([`3a04d62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a04d625e6428abaa938f0a37a857fa7fad52ba8))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`5d73bd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d73bd6f9b7720810148e0aac45c198dfd804f12))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f2fc03e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2fc03edc01eeab0de34e49e1fc32b2607f09b33))
+
+### Refactor
+
+- consolidate SHA-512 into src/crypto (shared, dws_sha512) ([`03631e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03631e3561ed387d08693d387e43ab17142c3783))
+
+</details>
+
 ## [7.160.0] - 2026-07-25
 
 <details>
