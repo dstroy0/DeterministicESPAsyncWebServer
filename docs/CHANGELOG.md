@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.166.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.166.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`0dc8d77`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0dc8d777901ce24c5a2dfd040786c82a969c62fa))
+
+### Changes
+
+- Bump version: 7.165.0 → 7.166.0 ([`991777f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/991777fd5f0b12b676d639cba2a089d69554b894))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`db35132`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db35132488642bdd296bc248a38220a5224ce119))
+
+### Refactor
+
+- move the bignum and ECDSA-P256 primitives into src/crypto ([`ba7b0ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba7b0ea671a62a1e2ce2bffe24ad460270d11746))
+
+</details>
+
 ## [7.165.0] - 2026-07-25
 
 <details>
