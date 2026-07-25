@@ -91,7 +91,7 @@ from each example's `pio ci` size report and aggregated into
 | `PER_IP_THROTTLE`                                                                                         | L4-Transport/PerIpThrottle           | 736.1 KB (57.5%) | 80.3 KB (25.1%)  |
 | `PN532+GATEWAY`                                                                                           | Drivers/NfcGateway                   | 281.4 KB (22.0%) | 21.4 KB (6.7%)   |
 | `POWER_MGMT`                                                                                              | L7-Application/PowerGovernor         | 861.2 KB (67.3%) | 83.7 KB (26.1%)  |
-| `PREEMPT_QUEUE`                                                                                           | Foundation/PreemptQueue              | 267.6 KB (20.9%) | 23.4 KB (7.3%)   |
+| `PREEMPT_QUEUE`                                                                                           | Foundation/PreemptLanes              | 262.1 KB (20.5%) | 23.4 KB (7.3%)   |
 | `PROMISC+FORWARD+ETHERNET`                                                                                | Peripherals/WifiCapture              | 748.1 KB (58.4%) | 46.5 KB (14.5%)  |
 | `PROVISIONING`                                                                                            | L7-Application/Provisioning          | 743.8 KB (58.1%) | 81.5 KB (25.5%)  |
 | `PTP`                                                                                                     | L7-Application/Ptp                   | 711.3 KB (55.6%) | 44.0 KB (13.7%)  |
