@@ -2,13 +2,45 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.173.1] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.173.1 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`f88d866`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f88d8667cd875d25b7d8b297ead7cc4dd23a73b4))
+- update CHANGELOG.md [skip ci] ([`f5319d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5319d6f856a4ee688917f9058223bbb47ccdce7))
+
+### Changes
+
+- Bump version: 7.173.0 → 7.173.1 ([`3a7ee62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a7ee6221d2d9094f44e030c9decf13f53fa6035))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`dc57da7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc57da711a9712c3524ca72ec83130513dbac3cd))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ef50fb6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef50fb6fadfa3df087937cb8f9b17bf44a4b9b1a))
+
+### Performance
+
+- HW-measure the curve25519 KEX handshake wall-clock (S3) ([`2d5d16e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2d5d16e9f81f1845ee2e8904e64ecc24f5ee8f27))
+
+</details>
+
+## [7.173.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.173.0 - 2026-07-25</b></summary>
 
 ### CI / Build
 
 - update test report + coverage [skip ci] ([`419fa54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/419fa54045ff7c20aa86f24dd4ef71fd49fc3d79))
 - update CHANGELOG.md [skip ci] ([`7703c8f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7703c8f8d8cfc9f3693956ec42b92b77efc89a6b))
 - update CHANGELOG.md [skip ci] ([`0c65871`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c65871f41f0177d47cf6487f60bf6e7bc240c45))
+
+### Changes
+
+- Bump version: 7.172.0 → 7.173.0 ([`0e1be19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e1be19e5f38a4a42bc889369a72d7e5786fd45e))
 
 ### Documentation
 
@@ -18,6 +50,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Performance
 
 - hand-written hex chunk size line (~18x on-device vs snprintf) ([`3da983c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3da983c86769c80ecb06217444bf6f5116a90366))
+
+</details>
 
 ## [7.172.0] - 2026-07-25
 
