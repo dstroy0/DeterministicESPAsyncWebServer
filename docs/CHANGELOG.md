@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.163.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.163.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`814b537`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/814b5375da78886b05817cae80914db75ba5911c))
+
+### Changes
+
+- Bump version: 7.162.0 → 7.163.0 ([`8d7c78e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d7c78ea60c42e7cdd9f802b6657bcf503cb6b30))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7f9c665`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f9c665b49e1723884efc4888a229082cd79e224))
+
+### Refactor
+
+- move SMB's SP800-108 KDF + MD4/MD5/HMAC-MD5 into src/crypto ([`96b15ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96b15ed71ab68868aeb5497ff2073e63473235e5))
+
+</details>
+
 ## [7.162.0] - 2026-07-25
 
 <details>
