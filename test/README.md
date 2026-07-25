@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5200 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5201 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -46726,7 +46726,7 @@ A thorough directory of all **5200 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb_crypto (7 tests)</b></summary>
+<summary><b>test_smb_crypto (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_md5_vectors</b> &mdash; <i>62 bytes -> spans two 64-byte blocks (RFC 1321 A.5)</i></summary>
@@ -46784,6 +46784,20 @@ A thorough directory of all **5200 test cases** across **292 suites**. Expand a 
     * **Objective**: Nt hash
     * **Assertions**:
       * <code>Assert equal string ("8846f7eaee8fb117ad06bdd830b7586c", hex)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kdf_ctr_hmac_sha256_nist</b> &mdash; <i>NIST CAVP KDFCTR COUNT=0, L=128 (a single HMAC block).</i></summary>
+
+    * **Objective**: NIST CAVP KDFCTR COUNT=0, L=128 (a single HMAC block).
+    * **Assertions**:
+      * <code>Assert true (dws_kdf_ctr_hmac_sha256(ki1, sizeof(ki1), fix1, sizeof(fix1), out1, sizeof(out1)))</code>
+      * <code>Assert equal memory (ko1, out1, 16)</code>
+      * <code>Assert true (dws_kdf_ctr_hmac_sha256(ki2, sizeof(ki2), fix2, sizeof(fix2), out2, sizeof(out2)))</code>
+      * <code>Assert equal memory (ko2, out2, 40)</code>
+      * <code>Assert false (dws_kdf_ctr_hmac_sha256(nullptr, 32, fix1, sizeof(fix1), tmp, sizeof(tmp)))</code>
+      * <code>Assert false (dws_kdf_ctr_hmac_sha256(ki1, sizeof(ki1), nullptr, 0, tmp, sizeof(tmp)))</code>
+      * <code>Assert false (dws_kdf_ctr_hmac_sha256(ki1, sizeof(ki1), fix1, sizeof(fix1), tmp, 0))</code>
   </details>
 
 </details>
