@@ -39,10 +39,10 @@
 
 #if DWS_ENABLE_DTLS
 
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
 #include "network_drivers/presentation/dtls/dtls_record.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -116,7 +116,7 @@ struct DtlsConn
     DtlsConnState state;
     uint8_t alert; ///< RFC 8446 §6 alert code when @c state is FAILED (0 otherwise)
 
-    SshSha256Ctx transcript;                         ///< running Transcript-Hash over the TLS handshake messages
+    DwsSha256Ctx transcript;                         ///< running Transcript-Hash over the TLS handshake messages
     Tls13KeySchedule ks;                             ///< TLS 1.3 key schedule
     DtlsRecordKeys ep2_srv;                          ///< epoch 2 server write keys (handshake traffic)
     DtlsRecordKeys ep2_cli;                          ///< epoch 2 client read keys
@@ -124,7 +124,7 @@ struct DtlsConn
     DtlsRecordKeys ep3_cli;                          ///< epoch 3 client read keys
     bool ep2_ready;                                  ///< epoch 2 keys installed
     bool ep3_ready;                                  ///< epoch 3 keys installed
-    uint8_t hs_finished_hash[SSH_SHA256_DIGEST_LEN]; ///< Transcript-Hash(CH..server Finished)
+    uint8_t hs_finished_hash[DWS_SHA256_DIGEST_LEN]; ///< Transcript-Hash(CH..server Finished)
 
     uint64_t tx_seq_ep0;                   ///< next outbound record sequence number, epoch 0
     uint64_t tx_seq_ep2;                   ///< next outbound record sequence number, epoch 2

@@ -35,10 +35,10 @@
 
 #if DWS_ENABLE_HTTP3
 
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/http3/quic_crypto.h"
 #include "network_drivers/presentation/http3/quic_tp.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -77,7 +77,7 @@ enum class QtlsState : uint8_t
 struct QuicTls
 {
     QuicTlsConfig cfg;
-    SshSha256Ctx transcript; ///< running Transcript-Hash over the handshake messages
+    DwsSha256Ctx transcript; ///< running Transcript-Hash over the handshake messages
     Tls13KeySchedule ks;
 
     QtlsState state;

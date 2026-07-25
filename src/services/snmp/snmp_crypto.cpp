@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_SNMP_V3
 
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "crypto/sha256.h"
 #include <string.h>
 
 // Zero key material with a volatile loop the compiler cannot optimize away. A
@@ -42,8 +42,8 @@ void dws_snmp_usm_localize_key(const char *password, const uint8_t *engine_id, s
     }
 
     // Ku = SHA-256( password repeated to exactly 1 048 576 bytes ).
-    SshSha256Ctx ctx;
-    ssh_sha256_init(&ctx);
+    DwsSha256Ctx ctx;
+    dws_sha256_init(&ctx);
     uint8_t block[64];
     size_t pw_index = 0;
     uint32_t count = 0;
@@ -54,18 +54,18 @@ void dws_snmp_usm_localize_key(const char *password, const uint8_t *engine_id, s
             block[i] = (uint8_t)password[pw_index];
             pw_index = (pw_index + 1) % pwlen;
         }
-        ssh_sha256_update(&ctx, block, 64);
+        dws_sha256_update(&ctx, block, 64);
         count += 64;
     }
     uint8_t ku[SNMP_USM_KEY_LEN];
-    ssh_sha256_final(&ctx, ku);
+    dws_sha256_final(&ctx, ku);
 
     // Kul = SHA-256( Ku || engineID || Ku ).
-    ssh_sha256_init(&ctx);
-    ssh_sha256_update(&ctx, ku, SNMP_USM_KEY_LEN);
-    ssh_sha256_update(&ctx, engine_id, engine_id_len);
-    ssh_sha256_update(&ctx, ku, SNMP_USM_KEY_LEN);
-    ssh_sha256_final(&ctx, key_out);
+    dws_sha256_init(&ctx);
+    dws_sha256_update(&ctx, ku, SNMP_USM_KEY_LEN);
+    dws_sha256_update(&ctx, engine_id, engine_id_len);
+    dws_sha256_update(&ctx, ku, SNMP_USM_KEY_LEN);
+    dws_sha256_final(&ctx, key_out);
 
     dws_snmp_wipe(ku, sizeof(ku));
     dws_snmp_wipe(block, sizeof(block));

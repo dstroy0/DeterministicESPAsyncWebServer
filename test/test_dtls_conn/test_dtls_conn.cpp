@@ -10,6 +10,7 @@
 // HelloRetryRequest path (RFC 9147 §5.1): a ClientHello with no X25519 key_share triggers an HRR with
 // a cookie, and the retry that echoes it completes the same full handshake.
 
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/dtls/dtls_conn.h"
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
 #include "network_drivers/presentation/dtls/dtls_record.h"
@@ -17,7 +18,6 @@
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "services/clock.h"
 #include <stdint.h>
 #include <string.h>
@@ -319,7 +319,7 @@ static bool ee_has_rpk(const uint8_t *msg, size_t mlen)
 // The fixed 12-byte DER prefix of an Ed25519 SubjectPublicKeyInfo (RFC 8410 §4).
 static const uint8_t SPKI_PREFIX[12] = {0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00};
 
-static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint16_t cfin_msg_seq,
+static void complete_handshake_from_flight(DtlsConn *conn, DwsSha256Ctx tr, uint16_t cfin_msg_seq,
                                            const uint8_t *flight, size_t fl, const uint8_t *client_cid = nullptr,
                                            size_t client_cid_len = 0, bool expect_rpk = false)
 {
@@ -332,7 +332,7 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     uint8_t sh[512];
     size_t sh_len = frag_to_tls(pt.fragment, pt.frag_len, sh);
     TEST_ASSERT_TRUE(sh_len > 0);
-    ssh_sha256_update(&tr, sh, sh_len);
+    dws_sha256_update(&tr, sh, sh_len);
 
     uint8_t server_pub[32];
     TEST_ASSERT_TRUE(sh_keyshare(sh, sh_len, server_pub));
@@ -350,8 +350,8 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
     Tls13KeySchedule cks;
     uint8_t h[32];
-    SshSha256Ctx tmp = tr;
-    ssh_sha256_final(&tmp, h);
+    DwsSha256Ctx tmp = tr;
+    dws_sha256_final(&tmp, h);
     dws_tls13_ks_early(&DTLS13_KDF, &cks);
     dws_tls13_ks_handshake(&cks, ecdhe, h, 32);
 
@@ -383,8 +383,8 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
         {
             TEST_ASSERT_TRUE(have_cert);
             uint8_t h_ch_cert[32];
-            SshSha256Ctx sc = tr;
-            ssh_sha256_final(&sc, h_ch_cert);
+            DwsSha256Ctx sc = tr;
+            dws_sha256_final(&sc, h_ch_cert);
             uint8_t content[160]; // 64*0x20 + 33-byte context + 0x00 + 32-byte hash = 130
             size_t clen = dws_tls13_cert_verify_content(content, sizeof(content), h_ch_cert, true);
             TEST_ASSERT_TRUE(clen > 0);
@@ -394,8 +394,8 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
         if (msg[0] == 20) // server Finished: verify over H(..CertificateVerify)
         {
             uint8_t hcv[32];
-            SshSha256Ctx s = tr;
-            ssh_sha256_final(&s, hcv);
+            DwsSha256Ctx s = tr;
+            dws_sha256_final(&s, hcv);
             uint8_t expect[32];
             dws_tls13_finished_mac(&DTLS13_KDF, cks.server_hs_traffic, hcv, expect);
             TEST_ASSERT_EQUAL_MEMORY(expect, msg + 4, 32);
@@ -405,7 +405,7 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
         if (msg[0] == 8) // EncryptedExtensions: the RPK profile negotiates server_certificate_type here
             TEST_ASSERT_EQUAL(expect_rpk, ee_has_rpk(msg, mlen));
 
-        ssh_sha256_update(&tr, msg, mlen);
+        dws_sha256_update(&tr, msg, mlen);
 
         if (msg[0] == 11) // Certificate: raw Ed25519 pubkey, or (RFC 7250) an Ed25519 SubjectPublicKeyInfo
         {
@@ -429,8 +429,8 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
 
     // --- client Finished over Transcript-Hash(..server Finished) ---
     uint8_t h_sfin[32];
-    SshSha256Ctx s2 = tr;
-    ssh_sha256_final(&s2, h_sfin);
+    DwsSha256Ctx s2 = tr;
+    dws_sha256_final(&s2, h_sfin);
     dws_tls13_ks_master(&cks, h_sfin);
 
     uint8_t cfin_verify[32];
@@ -518,9 +518,9 @@ static void test_full_handshake(void)
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
 
-    SshSha256Ctx tr; // client transcript
-    ssh_sha256_init(&tr);
-    ssh_sha256_update(&tr, ch, ch_len);
+    DwsSha256Ctx tr; // client transcript
+    dws_sha256_init(&tr);
+    dws_sha256_update(&tr, ch, ch_len);
 
     uint8_t ch_frag[300];
     size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
@@ -556,9 +556,9 @@ static void test_full_handshake_rpk(void)
     size_t ch_len = build_client_hello_ex(ch, client_pub, /*with_keyshare=*/true, nullptr, 0, nullptr, 0,
                                           /*offer_rpk=*/true);
 
-    SshSha256Ctx tr;
-    ssh_sha256_init(&tr);
-    ssh_sha256_update(&tr, ch, ch_len);
+    DwsSha256Ctx tr;
+    dws_sha256_init(&tr);
+    dws_sha256_update(&tr, ch, ch_len);
 
     uint8_t ch_frag[300];
     size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
@@ -594,9 +594,9 @@ static void test_cid_handshake(void)
     uint8_t ch[256];
     size_t ch_len =
         build_client_hello_ex(ch, client_pub, /*with_keyshare=*/true, nullptr, 0, client_cid, sizeof(client_cid));
-    SshSha256Ctx tr;
-    ssh_sha256_init(&tr);
-    ssh_sha256_update(&tr, ch, ch_len);
+    DwsSha256Ctx tr;
+    dws_sha256_init(&tr);
+    dws_sha256_update(&tr, ch, ch_len);
 
     uint8_t ch_frag[300];
     size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
@@ -666,23 +666,23 @@ static void test_hrr_group_renegotiation(void)
 
     // --- client transcript for the HRR path: message_hash(Hash(CH1)) || HRR || CH2 (RFC 8446 §4.4.1) ---
     uint8_t ch1_hash[32];
-    SshSha256Ctx h1;
-    ssh_sha256_init(&h1);
-    ssh_sha256_update(&h1, ch1, ch1_len);
-    ssh_sha256_final(&h1, ch1_hash);
+    DwsSha256Ctx h1;
+    dws_sha256_init(&h1);
+    dws_sha256_update(&h1, ch1, ch1_len);
+    dws_sha256_final(&h1, ch1_hash);
 
-    SshSha256Ctx tr;
-    ssh_sha256_init(&tr);
+    DwsSha256Ctx tr;
+    dws_sha256_init(&tr);
     uint8_t mh[36];
     size_t mhl = dws_tls13_build_message_hash(mh, sizeof(mh), ch1_hash);
     TEST_ASSERT_TRUE(mhl > 0);
-    ssh_sha256_update(&tr, mh, mhl);
-    ssh_sha256_update(&tr, hrr, hrr_len);
+    dws_sha256_update(&tr, mh, mhl);
+    dws_sha256_update(&tr, hrr, hrr_len);
 
     // --- client flight 2: ClientHello with the X25519 share and the echoed cookie (message_seq 1) ---
     uint8_t ch2[320];
     size_t ch2_len = build_client_hello_ex(ch2, client_pub, /*with_keyshare=*/true, cookie, cookie_len);
-    ssh_sha256_update(&tr, ch2, ch2_len);
+    dws_sha256_update(&tr, ch2, ch2_len);
 
     uint8_t f2[380];
     size_t f2l =
@@ -766,7 +766,7 @@ static void test_reject_no_tls13(void)
 
 // Drive a fresh connection from ClientHello to WAIT_FINISHED; return the server flight and seed the
 // client transcript @p tr through the ClientHello. Shared by the retransmission-timer tests.
-static int drive_server_flight(DtlsConn *conn, DtlsServerConfig *cfg, SshSha256Ctx *tr, uint8_t *flight,
+static int drive_server_flight(DtlsConn *conn, DtlsServerConfig *cfg, DwsSha256Ctx *tr, uint8_t *flight,
                                size_t flight_cap)
 {
     uint8_t client_pub[32];
@@ -774,8 +774,8 @@ static int drive_server_flight(DtlsConn *conn, DtlsServerConfig *cfg, SshSha256C
     dws_dtls_conn_init(conn, cfg, nullptr, 0);
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
-    ssh_sha256_init(tr);
-    ssh_sha256_update(tr, ch, ch_len);
+    dws_sha256_init(tr);
+    dws_sha256_update(tr, ch, ch_len);
     uint8_t ch_frag[300];
     size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
                                           sizeof(ch_frag));
@@ -794,7 +794,7 @@ static void test_pto_retransmit_and_recovery(void)
     DtlsServerConfig cfg;
     server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    SshSha256Ctx tr;
+    DwsSha256Ctx tr;
     uint8_t flight[2048];
     int fl = drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight));
     TEST_ASSERT_TRUE(fl > 0);
@@ -824,7 +824,7 @@ static void test_pto_backoff_and_giveup(void)
     DtlsServerConfig cfg;
     server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    SshSha256Ctx tr;
+    DwsSha256Ctx tr;
     uint8_t flight[2048], rflight[2048];
     TEST_ASSERT_TRUE(drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight)) > 0);
 
@@ -853,7 +853,7 @@ static void test_pto_ack_cancels_retransmit(void)
     DtlsServerConfig cfg;
     server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    SshSha256Ctx tr;
+    DwsSha256Ctx tr;
     uint8_t flight[2048];
     int fl = drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight));
     TEST_ASSERT_TRUE(fl > 0);
@@ -869,12 +869,12 @@ static void test_pto_ack_cancels_retransmit(void)
     TEST_ASSERT_TRUE(sh_keyshare(sh, sh_len, server_pub));
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
-    SshSha256Ctx t;
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, ch, ch_len);
-    ssh_sha256_update(&t, sh, sh_len);
+    DwsSha256Ctx t;
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, ch, ch_len);
+    dws_sha256_update(&t, sh, sh_len);
     uint8_t h[32];
-    ssh_sha256_final(&t, h);
+    dws_sha256_final(&t, h);
     uint8_t ecdhe[32];
     ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
     Tls13KeySchedule cks;
@@ -939,9 +939,9 @@ static bool run_to_finished(DtlsConn *conn, DtlsServerConfig *cfg, ClientSession
 
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
-    SshSha256Ctx tr;
-    ssh_sha256_init(&tr);
-    ssh_sha256_update(&tr, ch, ch_len);
+    DwsSha256Ctx tr;
+    dws_sha256_init(&tr);
+    dws_sha256_update(&tr, ch, ch_len);
 
     uint8_t rec[320];
     size_t rl = plain_hs_record(rec, sizeof(rec), ch, ch_len, 0, 0);
@@ -960,7 +960,7 @@ static bool run_to_finished(DtlsConn *conn, DtlsServerConfig *cfg, ClientSession
     size_t sh_len = frag_to_tls(pt.fragment, pt.frag_len, sh);
     if (!sh_len)
         return false;
-    ssh_sha256_update(&tr, sh, sh_len);
+    dws_sha256_update(&tr, sh, sh_len);
     uint8_t server_pub[32];
     if (!sh_keyshare(sh, sh_len, server_pub))
         return false;
@@ -968,8 +968,8 @@ static bool run_to_finished(DtlsConn *conn, DtlsServerConfig *cfg, ClientSession
     uint8_t ecdhe[32];
     ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
     uint8_t h[32];
-    SshSha256Ctx tmp = tr;
-    ssh_sha256_final(&tmp, h);
+    DwsSha256Ctx tmp = tr;
+    dws_sha256_final(&tmp, h);
     dws_tls13_ks_early(&DTLS13_KDF, &st->cks);
     dws_tls13_ks_handshake(&st->cks, ecdhe, h, 32);
     dws_dtls_record_keys_derive(&st->srv_hs_read, DtlsCipher::AES_128_GCM_SHA256, 2, st->cks.server_hs_traffic);
@@ -991,12 +991,12 @@ static bool run_to_finished(DtlsConn *conn, DtlsServerConfig *cfg, ClientSession
         size_t mlen = frag_to_tls(inner, info.pt_len, msg);
         if (!mlen)
             return false;
-        ssh_sha256_update(&tr, msg, mlen);
+        dws_sha256_update(&tr, msg, mlen);
     }
 
     uint8_t h_sfin[32];
-    SshSha256Ctx s = tr;
-    ssh_sha256_final(&s, h_sfin);
+    DwsSha256Ctx s = tr;
+    dws_sha256_final(&s, h_sfin);
     dws_tls13_ks_master(&st->cks, h_sfin);
     dws_dtls_record_keys_derive(&st->cli_app_write, DtlsCipher::AES_128_GCM_SHA256, 3, st->cks.client_ap_traffic);
     dws_dtls_record_keys_derive(&st->cli_app_read, DtlsCipher::AES_128_GCM_SHA256, 3, st->cks.server_ap_traffic);
@@ -1330,7 +1330,7 @@ static void test_retransmit_out_cap_too_small(void)
     DtlsServerConfig cfg;
     server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    SshSha256Ctx tr;
+    DwsSha256Ctx tr;
     uint8_t flight[2048];
     TEST_ASSERT_TRUE(drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight)) > 0);
 
@@ -1363,7 +1363,7 @@ static void test_timer_idle_when_done_or_failed(void)
     // A connection that failed while its flight was still outstanding: awaiting_reply is still set,
     // so only the FAILED state stops the timer.
     DtlsConn failed;
-    SshSha256Ctx tr;
+    DwsSha256Ctx tr;
     uint8_t flight[2048];
     TEST_ASSERT_TRUE(drive_server_flight(&failed, &cfg, &tr, flight, sizeof(flight)) > 0);
     TEST_ASSERT_TRUE(dws_dtls_conn_timeout_ms(&failed) >= 0); // armed

@@ -71,7 +71,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_PACKET_H
 
 #include "ServerConfig.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "crypto/hmac_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include <stddef.h>
 #include <stdint.h>

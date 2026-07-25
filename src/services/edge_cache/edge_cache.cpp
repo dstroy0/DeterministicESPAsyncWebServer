@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_EDGE_CACHE
 
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "crypto/sha256.h"
 #include <string.h>
 
 namespace
@@ -318,7 +318,7 @@ size_t edge_key_canon(const char *method, const char *host, const char *path, co
 
 void edge_key_digest(const char *canon, size_t len, uint8_t digest[32])
 {
-    ssh_sha256((const uint8_t *)canon, len, digest);
+    dws_sha256((const uint8_t *)canon, len, digest);
 }
 
 namespace

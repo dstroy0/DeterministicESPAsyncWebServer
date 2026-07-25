@@ -11,11 +11,11 @@
 //   - Retry tag:      RFC 9001 A.4 integrity tag.
 // Pure host crypto; no mbedtls on native, so the software AES-128/GHASH paths are what run here.
 
+#include "crypto/hmac_sha256.h"
 #include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/quic_crypto.h"
 #include "network_drivers/presentation/http3/quic_hkdf.h"
 #include "network_drivers/presentation/http3/quic_packet.h" // QUIC_MAX_CID_LEN (retry-tag guard bound)
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include <string.h>
 #include <unity.h>
 
@@ -418,12 +418,12 @@ static void expand_label_ref(const uint8_t secret[32], const char *label, uint8_
     while (done < out_len)
     {
         counter++;
-        SshHmacCtx c;
-        ssh_hmac_sha256_init(&c, secret, 32);
-        ssh_hmac_sha256_update(&c, t, t_len);
-        ssh_hmac_sha256_update(&c, info, p);
-        ssh_hmac_sha256_update(&c, &counter, 1);
-        ssh_hmac_sha256_final(&c, t);
+        DwsHmacSha256Ctx c;
+        dws_hmac_sha256_init(&c, secret, 32);
+        dws_hmac_sha256_update(&c, t, t_len);
+        dws_hmac_sha256_update(&c, info, p);
+        dws_hmac_sha256_update(&c, &counter, 1);
+        dws_hmac_sha256_final(&c, t);
         t_len = 32;
         size_t take = out_len - done;
         if (take > 32)

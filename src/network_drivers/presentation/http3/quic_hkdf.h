@@ -9,7 +9,7 @@
  * an Initial secret is HKDF-Extract'd from a fixed salt and the client's Destination Connection
  * ID, and every packet-protection value (key / iv / hp) is an HKDF-Expand-Label of a traffic
  * secret. This is the same HMAC-SHA256 the SSH transport already ships, so these two routines are
- * a thin layer over ssh_hmac_sha256 rather than a second HMAC.
+ * a thin layer over dws_hmac_sha256 rather than a second HMAC.
  *
  * Pure, zero heap, host-tested against the RFC 9001 Appendix A worked examples (the HkdfLabel
  * byte strings and the derived client/server secrets).

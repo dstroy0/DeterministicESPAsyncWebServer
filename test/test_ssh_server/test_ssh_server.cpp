@@ -5,10 +5,10 @@
 // (KEXINIT → KEXDH → NEWKEYS → userauth → channel) through dws_ssh_server_dispatch
 // and checks the emitted messages and resulting state at each step.
 
+#include "crypto/hmac_sha256.h" // hand-built ETM / E&M packets
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_server.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // hand-built ETM / E&M packets
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
@@ -1162,11 +1162,11 @@ static size_t ctr_etm_packet(uint8_t *wire, uint32_t pkt_len, const uint8_t *pla
     wr_u32(wire, pkt_len);
     ssh_aes256ctr_crypt(&ctx, plain, wire + 4, pkt_len);
     const uint8_t seq_be[4] = {0, 0, 0, 0};
-    SshHmacCtx h;
-    ssh_hmac_sha256_init(&h, mac_key, sizeof(mac_key));
-    ssh_hmac_sha256_update(&h, seq_be, 4);
-    ssh_hmac_sha256_update(&h, wire, 4 + pkt_len);
-    ssh_hmac_sha256_final(&h, wire + 4 + pkt_len);
+    DwsHmacSha256Ctx h;
+    dws_hmac_sha256_init(&h, mac_key, sizeof(mac_key));
+    dws_hmac_sha256_update(&h, seq_be, 4);
+    dws_hmac_sha256_update(&h, wire, 4 + pkt_len);
+    dws_hmac_sha256_final(&h, wire + 4 + pkt_len);
     return 4 + pkt_len + 32;
 }
 
@@ -1259,11 +1259,11 @@ void test_ssh_pkt_ctr_emac_and_plain_frame_errors()
         uint8_t mac_key[32];
         memset(mac_key, PKT_MAC_BYTE, sizeof(mac_key));
         const uint8_t seq_be[4] = {0, 0, 0, 0};
-        SshHmacCtx h;
-        ssh_hmac_sha256_init(&h, mac_key, sizeof(mac_key));
-        ssh_hmac_sha256_update(&h, seq_be, 4);
-        ssh_hmac_sha256_update(&h, plain, sizeof(plain));
-        ssh_hmac_sha256_final(&h, wire + sizeof(plain));
+        DwsHmacSha256Ctx h;
+        dws_hmac_sha256_init(&h, mac_key, sizeof(mac_key));
+        dws_hmac_sha256_update(&h, seq_be, 4);
+        dws_hmac_sha256_update(&h, plain, sizeof(plain));
+        dws_hmac_sha256_final(&h, wire + sizeof(plain));
         SshAesCtrCtx ctx;
         ssh_aes256ctr_init(&ctx, key, iv);
         ssh_aes256ctr_crypt(&ctx, plain, wire, sizeof(plain));

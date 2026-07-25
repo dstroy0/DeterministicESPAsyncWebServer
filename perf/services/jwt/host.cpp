@@ -8,8 +8,8 @@
 // dws_jwt_verify_hs256 op; this host ns/op is a RELATIVE baseline. Build + run:
 //   g++ -O2 -std=c++17 -Isrc -Itest/mocks -Itest/support -DDWS_ENABLE_JWT=1 perf/services/jwt/host.cpp \
 //       src/services/jwt/jwt.cpp src/network_drivers/presentation/base64/base64.cpp \
-//       src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp \
-//       src/network_drivers/presentation/ssh/crypto/ssh_sha256.cpp -o /tmp/bjwt && /tmp/bjwt
+//       src/network_drivers/presentation/ssh/crypto/dws_hmac_sha256.cpp \
+//       src/network_drivers/presentation/ssh/crypto/dws_sha256.cpp -o /tmp/bjwt && /tmp/bjwt
 
 #define DWS_ENABLE_JWT 1
 #include "services/jwt/jwt.h"

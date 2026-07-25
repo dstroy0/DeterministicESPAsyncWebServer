@@ -22,7 +22,7 @@
  * dws_audit_format() to render a record as one JSON line for that sink.
  *
  * Pure and host-tested (the chain is the same on host and ESP32; SHA-256 comes
- * from ssh_sha256, hardware-accelerated on ESP32). Single-accessor like the log
+ * from dws_sha256, hardware-accelerated on ESP32). Single-accessor like the log
  * buffer: append from one context (a worker / loop), not concurrently.
  *
  * @author  Douglas Quigg (dstroy0)

@@ -55,11 +55,11 @@ void fail(QuicTls *qt, uint8_t alert)
     qt->alert = alert;
 }
 
-// Snapshot the running Transcript-Hash without disturbing it (SshSha256Ctx is copyable state).
-void snapshot_hash(const SshSha256Ctx *ctx, uint8_t out[32])
+// Snapshot the running Transcript-Hash without disturbing it (DwsSha256Ctx is copyable state).
+void snapshot_hash(const DwsSha256Ctx *ctx, uint8_t out[32])
 {
-    SshSha256Ctx tmp = *ctx;
-    ssh_sha256_final(&tmp, out);
+    DwsSha256Ctx tmp = *ctx;
+    dws_sha256_final(&tmp, out);
 }
 
 // Append a handshake message to both the outbound flight buffer and the transcript.
@@ -73,7 +73,7 @@ bool emit(QuicTls *qt, uint8_t *flight, size_t cap, size_t *plen, size_t written
         fail(qt, TlsAlert::TLS_ALERT_INTERNAL_ERROR);
         return false;
     }
-    ssh_sha256_update(&qt->transcript, flight + *plen, written);
+    dws_sha256_update(&qt->transcript, flight + *plen, written);
     *plen += written;
     return true;
 }
@@ -87,12 +87,12 @@ bool send_hello_retry(QuicTls *qt, const uint8_t *msg, size_t msg_len, const Tls
 {
     uint8_t ch1_hash[32];
     {
-        SshSha256Ctx t;
-        ssh_sha256_init(&t);
-        ssh_sha256_update(&t, msg, msg_len);
-        ssh_sha256_final(&t, ch1_hash);
+        DwsSha256Ctx t;
+        dws_sha256_init(&t);
+        dws_sha256_update(&t, msg, msg_len);
+        dws_sha256_final(&t, ch1_hash);
     }
-    ssh_sha256_init(&qt->transcript);
+    dws_sha256_init(&qt->transcript);
     uint8_t mh[40];
     size_t mhn = dws_tls13_build_message_hash(mh, sizeof(mh), ch1_hash);
     if (!mhn) // GCOVR_EXCL_LINE  mh[40] always fits the 36-byte hash
@@ -100,7 +100,7 @@ bool send_hello_retry(QuicTls *qt, const uint8_t *msg, size_t msg_len, const Tls
         fail(qt, TlsAlert::TLS_ALERT_INTERNAL_ERROR); // GCOVR_EXCL_LINE
         return false;                                 // GCOVR_EXCL_LINE
     }
-    ssh_sha256_update(&qt->transcript, mh, mhn); // message_hash is transcript-only, never sent
+    dws_sha256_update(&qt->transcript, mh, mhn); // message_hash is transcript-only, never sent
 
     qt->flight_initial_len = 0;
     size_t n = dws_tls13_build_hello_retry_request(qt->flight_initial, sizeof(qt->flight_initial), ch->session_id,
@@ -206,7 +206,7 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
 
     // Fold the ClientHello into the transcript. On the happy path it is the first message; after a
     // HelloRetryRequest the transcript already holds message_hash || HRR, so this is ClientHello2.
-    ssh_sha256_update(&qt->transcript, msg, msg_len);
+    dws_sha256_update(&qt->transcript, msg, msg_len);
 
     // ServerHello (Initial-level flight). The Initial CRYPTO is one contiguous byte stream, so after a
     // HelloRetryRequest the ServerHello is appended after the HRR already in flight_initial - build at the
@@ -287,7 +287,7 @@ bool process_client_finished(QuicTls *qt, const uint8_t *msg, size_t msg_len)
         fail(qt, TlsAlert::TLS_ALERT_DECRYPT_ERROR);
         return false;
     }
-    ssh_sha256_update(&qt->transcript, msg, msg_len);
+    dws_sha256_update(&qt->transcript, msg, msg_len);
     qt->complete = true;
     qt->state = QtlsState::QTLS_DONE;
     return true;
@@ -310,7 +310,7 @@ void dws_quic_tls_server_init(QuicTls *qt, const QuicTlsConfig *cfg)
 {
     memset(qt, 0, sizeof(*qt));
     qt->cfg = *cfg;
-    ssh_sha256_init(&qt->transcript);
+    dws_sha256_init(&qt->transcript);
     qt->state = QtlsState::QTLS_START;
 }
 

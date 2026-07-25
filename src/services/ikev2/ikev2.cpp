@@ -10,13 +10,13 @@
 
 #if DWS_ENABLE_IKEV2
 
-#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"      // SK-payload AEAD (AES-256-GCM-16)
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"  // D-H group 31 (X25519, RFC 7748)
-#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"       // ECDSA-P256 certificate AUTH
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // PRF = HMAC-SHA2-256
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"         // RSA-2048 certificate AUTH verify
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"      // anti-DoS COOKIE hash (RFC 7296 §2.6)
-#include <string.h>                                                  // memcpy / memset (framing is hand-rolled)
+#include "crypto/hmac_sha256.h"                                     // PRF = HMAC-SHA2-256
+#include "crypto/sha256.h"                                          // anti-DoS COOKIE hash (RFC 7296 §2.6)
+#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"     // SK-payload AEAD (AES-256-GCM-16)
+#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // D-H group 31 (X25519, RFC 7748)
+#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"      // ECDSA-P256 certificate AUTH
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"        // RSA-2048 certificate AUTH verify
+#include <string.h>                                                 // memcpy / memset (framing is hand-rolled)
 
 // ── big-endian scalar helpers ─────────────────────────────────────────────────────────────────
 static inline void put16(uint8_t *p, uint16_t v)
@@ -560,17 +560,17 @@ size_t dws_ike_cookie_compute(uint8_t version, const uint8_t *secret, size_t sec
     if ((ni_len && !ni) || (ipi_len && !ipi) || (secret_len && !secret))
         return 0;
     // Cookie = version | SHA-256( Ni | IPi | SPIi | secret ).
-    SshSha256Ctx ctx;
-    ssh_sha256_init(&ctx);
+    DwsSha256Ctx ctx;
+    dws_sha256_init(&ctx);
     if (ni_len)
-        ssh_sha256_update(&ctx, ni, ni_len);
+        dws_sha256_update(&ctx, ni, ni_len);
     if (ipi_len)
-        ssh_sha256_update(&ctx, ipi, ipi_len);
-    ssh_sha256_update(&ctx, spii, DWS_IKE_SPI_LEN);
+        dws_sha256_update(&ctx, ipi, ipi_len);
+    dws_sha256_update(&ctx, spii, DWS_IKE_SPI_LEN);
     if (secret_len)
-        ssh_sha256_update(&ctx, secret, secret_len);
+        dws_sha256_update(&ctx, secret, secret_len);
     out[0] = version;
-    ssh_sha256_final(&ctx, out + 1);
+    dws_sha256_final(&ctx, out + 1);
     return DWS_IKE_COOKIE_LEN;
 }
 
@@ -919,28 +919,28 @@ bool dws_ike_prf_plus(const uint8_t *key, size_t key_len, const uint8_t *seed, s
     if (!key || !seed || !out || out_len == 0)
         return false;
     // prf+ chains at most 255 blocks: the counter i is a single octet 0x01..0xFF (RFC 7296 §2.13).
-    if (out_len > (size_t)255 * SSH_HMAC_SHA256_LEN)
+    if (out_len > (size_t)255 * DWS_HMAC_SHA256_LEN)
         return false;
 
-    uint8_t t[SSH_HMAC_SHA256_LEN];
+    uint8_t t[DWS_HMAC_SHA256_LEN];
     size_t t_len = 0; // T0 is empty (omitted from the first block's input)
     size_t produced = 0;
     uint8_t counter = 0;
     while (produced < out_len)
     {
         counter++; // 0x01 for T1, 0x02 for T2, ... (bounded by the out_len guard above)
-        SshHmacCtx ctx;
-        ssh_hmac_sha256_init(&ctx, key, key_len);
+        DwsHmacSha256Ctx ctx;
+        dws_hmac_sha256_init(&ctx, key, key_len);
         if (t_len)
-            ssh_hmac_sha256_update(&ctx, t, t_len); // Ti-1
-        ssh_hmac_sha256_update(&ctx, seed, seed_len);
-        ssh_hmac_sha256_update(&ctx, &counter, 1);
-        ssh_hmac_sha256_final(&ctx, t);
-        t_len = SSH_HMAC_SHA256_LEN;
+            dws_hmac_sha256_update(&ctx, t, t_len); // Ti-1
+        dws_hmac_sha256_update(&ctx, seed, seed_len);
+        dws_hmac_sha256_update(&ctx, &counter, 1);
+        dws_hmac_sha256_final(&ctx, t);
+        t_len = DWS_HMAC_SHA256_LEN;
 
         size_t take = out_len - produced;
-        if (take > SSH_HMAC_SHA256_LEN)
-            take = SSH_HMAC_SHA256_LEN;
+        if (take > DWS_HMAC_SHA256_LEN)
+            take = DWS_HMAC_SHA256_LEN;
         memcpy(out + produced, t, take);
         produced += take;
     }
@@ -1010,7 +1010,7 @@ bool dws_ike_derive_keys(const uint8_t *dh_secret, size_t dh_len, const uint8_t 
         return false;
     // SKEYSEED = prf(Ni | Nr, g^ir). HMAC pre-hashes a key longer than the 64-byte block (RFC 2104).
     uint8_t skeyseed[DWS_IKE_PRF_LEN];
-    ssh_hmac_sha256(s, ni_len + nr_len, dh_secret, dh_len, skeyseed);
+    dws_hmac_sha256(s, ni_len + nr_len, dh_secret, dh_len, skeyseed);
     return sk_split_from_skeyseed(skeyseed, s, s_len, lens, out);
 }
 
@@ -1033,7 +1033,7 @@ bool dws_ike_rekey_derive_keys(const uint8_t *sk_d_old, size_t sk_d_old_len, con
     memcpy(seed + sl, nr, nr_len);
     sl += nr_len;
     uint8_t skeyseed[DWS_IKE_PRF_LEN];
-    ssh_hmac_sha256(sk_d_old, sk_d_old_len, seed, sl, skeyseed);
+    dws_hmac_sha256(sk_d_old, sk_d_old_len, seed, sl, skeyseed);
 
     // Then the identical prf+(SKEYSEED, Ni | Nr | SPIi | SPIr) split with the NEW SPIs.
     uint8_t s[2 * DWS_IKE_NONCE_MAX + 2 * DWS_IKE_SPI_LEN];
@@ -1126,20 +1126,20 @@ bool dws_ike_auth_psk(const uint8_t *psk, size_t psk_len, const uint8_t *real_ms
 
     // MACedID = prf(SK_p, RestOfIDPayload).
     uint8_t macid[DWS_IKE_AUTH_LEN];
-    ssh_hmac_sha256(sk_p, sk_p_len, id_body, id_body_len, macid);
+    dws_hmac_sha256(sk_p, sk_p_len, id_body, id_body_len, macid);
 
     // keypad = prf(PSK, "Key Pad for IKEv2") - the inner PRF that turns the shared key into a fixed key.
     uint8_t keypad[DWS_IKE_AUTH_LEN];
     static const char pad[] = DWS_IKE_PSK_PAD; // 17 octets, no NUL sent
-    ssh_hmac_sha256(psk, psk_len, (const uint8_t *)pad, sizeof(pad) - 1, keypad);
+    dws_hmac_sha256(psk, psk_len, (const uint8_t *)pad, sizeof(pad) - 1, keypad);
 
     // AUTH = prf(keypad, RealMessage | Nonce | MACedID). Streamed so RealMessage is never re-buffered.
-    SshHmacCtx ctx;
-    ssh_hmac_sha256_init(&ctx, keypad, sizeof(keypad));
-    ssh_hmac_sha256_update(&ctx, real_msg, real_len);
-    ssh_hmac_sha256_update(&ctx, peer_nonce, nonce_len);
-    ssh_hmac_sha256_update(&ctx, macid, sizeof(macid));
-    ssh_hmac_sha256_final(&ctx, out);
+    DwsHmacSha256Ctx ctx;
+    dws_hmac_sha256_init(&ctx, keypad, sizeof(keypad));
+    dws_hmac_sha256_update(&ctx, real_msg, real_len);
+    dws_hmac_sha256_update(&ctx, peer_nonce, nonce_len);
+    dws_hmac_sha256_update(&ctx, macid, sizeof(macid));
+    dws_hmac_sha256_final(&ctx, out);
     return true;
 }
 
@@ -1350,7 +1350,7 @@ size_t dws_ike_signed_octets(uint8_t *scratch, size_t cap, const uint8_t *real, 
         return 0;
     memcpy(scratch, real, real_len);
     memcpy(scratch + real_len, nonce, nonce_len);
-    ssh_hmac_sha256(sk_p, sk_p_len, id_body, id_body_len, scratch + real_len + nonce_len); // MACedID
+    dws_hmac_sha256(sk_p, sk_p_len, id_body, id_body_len, scratch + real_len + nonce_len); // MACedID
     return total;
 }
 

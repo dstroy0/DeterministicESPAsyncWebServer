@@ -80,7 +80,7 @@
         "+<services/edge_cache/edge_cache.cpp>",
         "+<services/edge_cache/edge_fetch.cpp>",
         "+<server/http_range.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+        "+<crypto/sha256.cpp>"
       ],
       "tests": ["test_edge_cache", "test_edge_fetch"]
     },
@@ -102,7 +102,7 @@
         "+<services/http_client/http_client.cpp>",
         "+<services/edge_cache/edge_cache.cpp>",
         "+<services/edge_cache/edge_cache_sd.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+        "+<crypto/sha256.cpp>"
       ],
       "tests": ["test_edge_cache_sd"]
     },
@@ -120,7 +120,7 @@
         "+<services/edge_cache/edge_cache.cpp>",
         "+<services/edge_cache/edge_cache_sd.cpp>",
         "+<services/edge_cache/edge_mesh.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+        "+<crypto/sha256.cpp>"
       ],
       "tests": ["test_edge_mesh"]
     },
@@ -162,9 +162,9 @@
       "desc": "Data-driven external crypto known-answer tests: HMAC-SHA256/512, AEAD_AES_128_GCM,\nX25519, and Ed25519 verify from Project Wycheproof (including its adversarial edge cases),\nplus HKDF-SHA256 Extract (RFC 5869), the ChaCha20 block (RFC 8439 2.4.2), and Poly1305\n(RFC 8439 2.5.2). Vectors are vendored as auditable JSON (test/vectors) and compiled to a\ntable by tools/gen_crypto_vectors.py. Pure host tests.",
       "flags": ["-DDWS_ENABLE_HTTP3=1"],
       "src": [
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<crypto/sha512.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
@@ -374,8 +374,8 @@
         "-DDWS_ENABLE_SSH_SCP=1"
       ],
       "src": [
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
@@ -413,8 +413,8 @@
         "-DDWS_ENABLE_SSH_KEYBOARD_INTERACTIVE=1"
       ],
       "src": [
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
@@ -443,8 +443,8 @@
       "desc": "mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the\nfull SSH transport built with DWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. Verifies the\nhybrid is negotiated, then runs a real server-side key exchange and checks it as a conforming client\nwould - ML-KEM Decaps (an independent reference) + X25519, K = SHA256(K_PQ || K_CL), the string-K\nexchange hash and KDF, and the ed25519 signature over H.",
       "flags": ["-DDWS_SSH_MAX_CHANNELS=3", "-DDWS_ENABLE_PQC_KEX=1"],
       "src": [
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
@@ -476,8 +476,8 @@
       "desc": "SSH built with password auth disabled (publickey-only hardening)",
       "flags": ["-DDWS_SSH_ALLOW_PASSWORD=0"],
       "src": [
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
@@ -520,8 +520,8 @@
         "+<network_drivers/presentation/websocket/websocket.cpp>",
         "+<network_drivers/presentation/sse/sse.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
@@ -591,7 +591,7 @@
         "+<network_drivers/presentation/websocket/websocket.cpp>",
         "+<network_drivers/presentation/sse/sse.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/http_range.cpp>",
@@ -651,7 +651,7 @@
         "+<network_drivers/presentation/websocket/websocket.cpp>",
         "+<network_drivers/presentation/sse/sse.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/http_range.cpp>",
@@ -699,8 +699,8 @@
         "+<services/snmp/snmp_v3.cpp>",
         "+<services/snmp/snmp_notify.cpp>",
         "+<network_drivers/transport/udp.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>"
       ],
       "tests": ["test_snmp_v3"]
     },
@@ -1011,8 +1011,8 @@
         "+<services/ikev2/ikev2.cpp>",
         "+<services/ikev2/ikev2_natt.cpp>",
         "+<network_drivers/presentation/sha1/sha1.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
@@ -1232,12 +1232,9 @@
       "tests": ["test_dns_resolver"]
     },
     "native_audit_log": {
-      "desc": "Tamper-evident hash-chained audit log (services/audit_log). Pure - the chain is\nidentical on host and ESP32 - so it unit-tests on the host; SHA-256 comes from\nssh_sha256 (software path on native), the timestamp from the pluggable clock.",
+      "desc": "Tamper-evident hash-chained audit log (services/audit_log). Pure - the chain is\nidentical on host and ESP32 - so it unit-tests on the host; SHA-256 comes from\ncrypto/sha256 (software path on native), the timestamp from the pluggable clock.",
       "flags": ["-DDWS_ENABLE_AUDIT_LOG=1"],
-      "src": [
-        "+<services/audit_log/audit_log.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
-      ],
+      "src": ["+<services/audit_log/audit_log.cpp>", "+<crypto/sha256.cpp>"],
       "tests": ["test_audit_log"]
     },
     "native_oidc": {
@@ -1248,7 +1245,7 @@
         "+<network_drivers/presentation/base64/base64.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_rsa.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>"
@@ -1404,8 +1401,9 @@
         "+<services/cotp/cotp.cpp>",
         "+<services/c37118/c37118.cpp>",
         "+<services/jwt/jwt.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/sha512.cpp>",
         "+<services/directnet/directnet.cpp>",
         "+<services/cclink/cclink.cpp>",
         "+<services/amqp/amqp.cpp>",
@@ -1437,7 +1435,7 @@
         "+<network_drivers/presentation/websocket/websocket.cpp>",
         "+<network_drivers/presentation/sse/sse.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/http_range.cpp>",
@@ -1468,7 +1466,7 @@
         "+<network_drivers/presentation/websocket/websocket.cpp>",
         "+<network_drivers/presentation/sse/sse.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/http_range.cpp>",
@@ -1500,6 +1498,8 @@
         "+<services/smb/ntlmssp.cpp>",
         "+<services/smb/spnego.cpp>",
         "+<services/smb/smb_client.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>"
       ],
       "tests": [
@@ -1651,8 +1651,8 @@
       "src": [
         "+<services/jwt/jwt.cpp>",
         "+<network_drivers/presentation/base64/base64.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>"
       ],
       "tests": ["test_jwt"]
     },
@@ -1678,7 +1678,7 @@
         "+<network_drivers/presentation/websocket/websocket.cpp>",
         "+<network_drivers/presentation/sse/sse.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/http_range.cpp>",
@@ -1772,8 +1772,8 @@
         "-DDWS_ENABLE_WS_DEFLATE=1"
       ],
       "src": [
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
@@ -1873,8 +1873,8 @@
       "flags": ["-DDWS_ENABLE_CSRF=1"],
       "src": [
         "+<services/csrf/csrf.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>"
       ],
       "tests": ["test_csrf"]
     },
@@ -2434,7 +2434,8 @@
         "+<services/device_id/device_id.cpp>",
         "+<network_drivers/presentation/inflate/inflate.cpp>",
         "+<network_drivers/presentation/deflate/deflate.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<services/telemetry/telemetry.cpp>",
         "+<services/dashboard/dashboard.cpp>",
         "+<services/dashboard/dashboard_routes.cpp>",
@@ -2558,8 +2559,8 @@
         "+<network_drivers/presentation/http3/quic_aead.cpp>",
         "+<network_drivers/presentation/http3/quic_crypto.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>"
       ],
       "tests": ["test_quic_crypto"]
     },
@@ -2571,8 +2572,8 @@
         "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
         "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_aead.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>"
       ],
       "tests": ["test_dtls_record"]
     },
@@ -2581,8 +2582,8 @@
       "flags": ["-DDWS_ENABLE_DTLS=1"],
       "src": [
         "+<network_drivers/presentation/dtls/dtls_handshake.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>"
       ],
       "tests": ["test_dtls_handshake"]
     },
@@ -2608,8 +2609,8 @@
         "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
         "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_aead.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
@@ -2630,8 +2631,8 @@
         "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
         "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_aead.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
@@ -2653,8 +2654,8 @@
         "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
         "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_aead.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
@@ -2667,8 +2668,8 @@
       "src": [
         "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
         "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>"
       ],
       "tests": ["test_tls13_kdf"]
     },
@@ -2705,8 +2706,8 @@
         "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
         "+<network_drivers/presentation/http3/quic_varint.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
@@ -2730,8 +2731,8 @@
         "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
         "+<network_drivers/presentation/http3/quic_varint.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>",
@@ -2755,8 +2756,8 @@
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
         "+<network_drivers/presentation/http3/quic_frame.cpp>",
         "+<network_drivers/presentation/http3/quic_varint.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
@@ -2782,8 +2783,8 @@
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
         "+<network_drivers/presentation/http3/quic_frame.cpp>",
         "+<network_drivers/presentation/http3/quic_varint.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
@@ -2809,8 +2810,8 @@
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
         "+<network_drivers/presentation/http3/quic_frame.cpp>",
         "+<network_drivers/presentation/http3/quic_varint.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
@@ -2837,8 +2838,8 @@
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
         "+<network_drivers/presentation/http3/quic_frame.cpp>",
         "+<network_drivers/presentation/http3/quic_varint.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
@@ -2867,7 +2868,8 @@
         "+<network_drivers/presentation/http3/h3_frame.cpp>",
         "+<network_drivers/presentation/http3/qpack.cpp>",
         "+<network_drivers/presentation/hpack_prim/hpack_prim.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>",
         "+<crypto/sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
@@ -2895,8 +2897,8 @@
       "flags": [],
       "src": [
         "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
-        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/sha256.cpp>"
       ],
       "tests": ["test_ssh_ecdsa"]
     }

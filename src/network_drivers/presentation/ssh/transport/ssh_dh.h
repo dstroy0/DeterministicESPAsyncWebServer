@@ -52,8 +52,8 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_DH_H
 
 #include "ServerConfig.h"
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -106,7 +106,7 @@ int ssh_dh_generate(uint8_t i);
  * @param K_be        Shared secret K, big-endian, 256 bytes.
  * @param H           Exchange hash, 32 bytes (also used as session_id).
  */
-void ssh_dh_derive_keys(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN]);
+void ssh_dh_derive_keys(uint8_t i, const uint8_t K_be[256], const uint8_t H[DWS_SHA256_DIGEST_LEN]);
 
 /**
  * @brief Derive session keys with an explicit session id (RFC 4253 §7.2).
@@ -123,11 +123,11 @@ void ssh_dh_derive_keys(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_
  */
 void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H, const uint8_t *session_id,
                             uint8_t cipher_alg, uint8_t mac_alg, bool k_is_string = false,
-                            size_t h_len = SSH_SHA256_DIGEST_LEN, size_t sid_len = SSH_SHA256_DIGEST_LEN,
+                            size_t h_len = DWS_SHA256_DIGEST_LEN, size_t sid_len = DWS_SHA256_DIGEST_LEN,
                             bool is512 = false);
 
 /** @brief Max bytes ssh_kdf_derive() can produce (4 SHA-256 blocks). */
-#define SSH_KDF_MAX (4 * SSH_SHA256_DIGEST_LEN)
+#define SSH_KDF_MAX (4 * DWS_SHA256_DIGEST_LEN)
 
 /**
  * @brief RFC 4253 §7.2 key derivation for any length up to @ref SSH_KDF_MAX.
@@ -140,7 +140,7 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H
  * longer key material. @p out_len is clamped to SSH_KDF_MAX.
  */
 void ssh_kdf_derive(const uint8_t K_be[256], const uint8_t *H, const uint8_t *session_id, char label, uint8_t *out,
-                    size_t out_len, bool k_is_string = false, size_t h_len = SSH_SHA256_DIGEST_LEN,
-                    size_t sid_len = SSH_SHA256_DIGEST_LEN, bool is512 = false);
+                    size_t out_len, bool k_is_string = false, size_t h_len = DWS_SHA256_DIGEST_LEN,
+                    size_t sid_len = DWS_SHA256_DIGEST_LEN, bool is512 = false);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_DH_H

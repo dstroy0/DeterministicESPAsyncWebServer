@@ -6,8 +6,8 @@
 // 401 challenge, the test computes the digest response with the same SHA-256
 // the server uses, then re-requests with an Authorization: Digest header.
 
+#include "crypto/sha256.h"
 #include "dwserver.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "services/clock.h"
 #include <stdio.h>
 #include <string.h>
@@ -48,10 +48,10 @@ static void h_secure(uint8_t slot, HttpReq *req)
 
 static void sha256_hex(const char *s, char out[65])
 {
-    uint8_t d[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256((const uint8_t *)s, strlen(s), d);
+    uint8_t d[DWS_SHA256_DIGEST_LEN];
+    dws_sha256((const uint8_t *)s, strlen(s), d);
     static const char *hx = "0123456789abcdef";
-    for (int i = 0; i < SSH_SHA256_DIGEST_LEN; i++)
+    for (int i = 0; i < DWS_SHA256_DIGEST_LEN; i++)
     {
         out[i * 2] = hx[d[i] >> 4];
         out[i * 2 + 1] = hx[d[i] & 0x0f];

@@ -14,7 +14,7 @@
 
 #if DWS_ENABLE_CSRF
 
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "crypto/hmac_sha256.h"
 #include "shared_primitives/hex.h"
 #include <stdio.h>
 #include <string.h>
@@ -46,8 +46,8 @@ bool ct_equal(const char *a, const char *b, size_t n)
 // Hex of the truncated HMAC-SHA256(secret, nonce) into sig_hex (2*CSRF_SIG_BYTES + 1).
 void sign_nonce(const CsrfCtx &c, const uint8_t *nonce, size_t nlen, char *sig_hex)
 {
-    uint8_t mac[SSH_HMAC_SHA256_LEN];
-    ssh_hmac_sha256(c.secret, c.secret_len, nonce, nlen, mac);
+    uint8_t mac[DWS_HMAC_SHA256_LEN];
+    dws_hmac_sha256(c.secret, c.secret_len, nonce, nlen, mac);
     dws_hex_encode(mac, CSRF_SIG_BYTES, sig_hex); // truncate the MAC to CSRF_SIG_BYTES
 }
 

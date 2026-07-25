@@ -7,6 +7,7 @@
 // that the client decrypts and checks. A byte off anywhere - transcript, keys, epoch, CoAP encoding -
 // would fail the AEAD open or the response check.
 
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/dtls/dtls_conn.h"
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
 #include "network_drivers/presentation/dtls/dtls_record.h"
@@ -15,7 +16,6 @@
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "services/coap/coap.h"
 #include "services/coap/coaps.h"
 #include "shared_primitives/aes_block.h"
@@ -193,9 +193,9 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
 
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
-    SshSha256Ctx tr;
-    ssh_sha256_init(&tr);
-    ssh_sha256_update(&tr, ch, ch_len);
+    DwsSha256Ctx tr;
+    dws_sha256_init(&tr);
+    dws_sha256_update(&tr, ch, ch_len);
     uint8_t ch_frag[300];
     size_t ch_fl = dws_dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
                                           sizeof(ch_frag));
@@ -214,7 +214,7 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
     uint8_t sh[512];
     size_t sh_len = frag_to_tls(pt.fragment, pt.frag_len, sh);
     TEST_ASSERT_TRUE(sh_len > 0);
-    ssh_sha256_update(&tr, sh, sh_len);
+    dws_sha256_update(&tr, sh, sh_len);
     uint8_t server_pub[32];
     TEST_ASSERT_TRUE(sh_keyshare(sh, sh_len, server_pub));
 
@@ -222,8 +222,8 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
     ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
     Tls13KeySchedule cks;
     uint8_t h[32];
-    SshSha256Ctx tmp = tr;
-    ssh_sha256_final(&tmp, h);
+    DwsSha256Ctx tmp = tr;
+    dws_sha256_final(&tmp, h);
     dws_tls13_ks_early(&DTLS13_KDF, &cks);
     dws_tls13_ks_handshake(&cks, ecdhe, h, 32);
     DtlsRecordKeys srv_read;
@@ -243,12 +243,12 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
         uint8_t msg[512];
         size_t mlen = frag_to_tls(inner, info.pt_len, msg);
         TEST_ASSERT_TRUE(mlen > 0);
-        ssh_sha256_update(&tr, msg, mlen);
+        dws_sha256_update(&tr, msg, mlen);
     }
 
     uint8_t h_sfin[32];
-    SshSha256Ctx s2 = tr;
-    ssh_sha256_final(&s2, h_sfin);
+    DwsSha256Ctx s2 = tr;
+    dws_sha256_final(&s2, h_sfin);
     dws_tls13_ks_master(&cks, h_sfin);
     uint8_t cfin_verify[32];
     dws_tls13_finished_mac(&DTLS13_KDF, cks.client_hs_traffic, h_sfin, cfin_verify);

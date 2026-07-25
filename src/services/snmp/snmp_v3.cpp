@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_SNMP_V3
 
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "crypto/hmac_sha256.h"
 #include "services/snmp/snmp_agent.h"
 #include "services/snmp/snmp_ber.h"
 #include "services/snmp/snmp_crypto.h"
@@ -275,8 +275,8 @@ static size_t build_message(long msg_id, bool auth, bool priv, const uint8_t *sc
 
     if (auth)
     {
-        uint8_t mac[SSH_HMAC_SHA256_LEN];
-        ssh_hmac_sha256(s_v3.auth_key, SNMP_USM_KEY_LEN, resp, total, mac);
+        uint8_t mac[DWS_HMAC_SHA256_LEN];
+        dws_hmac_sha256(s_v3.auth_key, SNMP_USM_KEY_LEN, resp, total, mac);
         memcpy(resp + sec_value_pos + auth_off, mac, SNMP_V3_AUTH_PARAM_LEN);
     }
     return total;
@@ -431,8 +431,8 @@ size_t dws_snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, si
     }
     memcpy(s_v3.v3_a, req, req_len);
     memset(s_v3.v3_a + aparm_off, 0, SNMP_V3_AUTH_PARAM_LEN);
-    uint8_t mac[SSH_HMAC_SHA256_LEN];
-    ssh_hmac_sha256(s_v3.auth_key, SNMP_USM_KEY_LEN, s_v3.v3_a, req_len, mac);
+    uint8_t mac[DWS_HMAC_SHA256_LEN];
+    dws_hmac_sha256(s_v3.auth_key, SNMP_USM_KEY_LEN, s_v3.v3_a, req_len, mac);
     if (!ct_eq(mac, aparm, SNMP_V3_AUTH_PARAM_LEN))
     {
         s_v3.stat_wrong_digest++;

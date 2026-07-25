@@ -57,7 +57,7 @@
 #include "network_drivers/presentation/base64/base64.h"
 #endif
 #if DWS_ENABLE_AUTH
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "crypto/sha256.h"
 #include "services/clock.h" // dws_millis() for the stateless Digest nonce timestamp
 #if DWS_ENABLE_HTTP_DELIVERY
 #include "services/http_delivery/http_delivery.h" // dws_delivery_cache_control (SWR directive)

@@ -12,13 +12,13 @@
  * methods when a matched route carries auth. Behaviour is identical to the pre-split code.
  */
 
+#include "crypto/sha256.h" // dws_sha256, DWS_SHA256_DIGEST_LEN (Digest)
 #include "dwserver.h"
-#include "network_drivers/presentation/base64/base64.h"         // dws_base64_decode (Basic)
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h" // ssh_sha256, SSH_SHA256_DIGEST_LEN (Digest)
-#include "network_drivers/transport/tcp.h"                      // conn_pool, dws_conn_send, TcpConn/ConnState
-#include "server/dwserver_internal.h"                           // req_is_head, resp helpers
-#include "services/clock.h"                                     // dws_millis() for the stateless nonce
-#include "shared_primitives/hex.h"                              // dws_hex_encode/decode
+#include "network_drivers/presentation/base64/base64.h" // dws_base64_decode (Basic)
+#include "network_drivers/transport/tcp.h"              // conn_pool, dws_conn_send, TcpConn/ConnState
+#include "server/dwserver_internal.h"                   // req_is_head, resp helpers
+#include "services/clock.h"                             // dws_millis() for the stateless nonce
+#include "shared_primitives/hex.h"                      // dws_hex_encode/decode
 #include <stdio.h>
 #include <string.h>
 #if DWS_ENABLE_AUTH
@@ -34,9 +34,9 @@
 // One-shot SHA-256 of @p data, written as 64 lowercase hex chars + NUL.
 static void sha256_hex(const uint8_t *data, size_t len, char out[65])
 {
-    uint8_t d[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(data, len, d);
-    dws_hex_encode(d, SSH_SHA256_DIGEST_LEN, out);
+    uint8_t d[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(data, len, d);
+    dws_hex_encode(d, DWS_SHA256_DIGEST_LEN, out);
 }
 
 // Extract the value of @p key from a Digest auth header into @p out.
@@ -102,8 +102,8 @@ void DWS::regen_digest_secret()
     uint32_t t = (uint32_t)millis();
     memcpy(seed + 16, &c, 4);
     memcpy(seed + 20, &t, 4);
-    uint8_t d[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(seed, sizeof(seed), d);
+    uint8_t d[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(seed, sizeof(seed), d);
     memcpy(_digest_secret, d, sizeof(_digest_secret)); // first 128 bits
 }
 
@@ -117,8 +117,8 @@ static uint32_t digest_nonce_mac(const uint8_t *secret, uint32_t issue, char *ma
     uint8_t material[20];
     memcpy(material, secret, 16);
     memcpy(material + 16, &issue, 4); // endian-symmetric: minted and verified the same way
-    uint8_t d[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(material, sizeof(material), d);
+    uint8_t d[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(material, sizeof(material), d);
     dws_hex_encode(d, 16, mac_hex); // 16 bytes -> 32 hex chars + NUL
     return issue;
 }

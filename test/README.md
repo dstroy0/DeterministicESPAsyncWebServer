@@ -51562,9 +51562,9 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Kdf mpint k edge encodings
     * **Assertions**:
-      * <code>Assert equal memory (expected_zero, out_zero, SSH_SHA256_DIGEST_LEN)</code>
-      * <code>Assert equal memory (expected_lz, out_lz, SSH_SHA256_DIGEST_LEN)</code>
-      * <code>Assert equal memory (expected_msb, out_msb, SSH_SHA256_DIGEST_LEN)</code>
+      * <code>Assert equal memory (expected_zero, out_zero, DWS_SHA256_DIGEST_LEN)</code>
+      * <code>Assert equal memory (expected_lz, out_lz, DWS_SHA256_DIGEST_LEN)</code>
+      * <code>Assert equal memory (expected_msb, out_msb, DWS_SHA256_DIGEST_LEN)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -51572,8 +51572,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Kdf string k hybrid branch
     * **Assertions**:
-      * <code>Assert equal memory (expected, got_string, SSH_SHA256_DIGEST_LEN)</code>
-      * <code>Assert not equal (0, memcmp(got_string, got_mpint, SSH_SHA256_DIGEST_LEN))</code>
+      * <code>Assert equal memory (expected, got_string, DWS_SHA256_DIGEST_LEN)</code>
+      * <code>Assert not equal (0, memcmp(got_string, got_mpint, DWS_SHA256_DIGEST_LEN))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -51582,8 +51582,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Objective**: K1 (the first 32 bytes of the chain) is a direct, independently-computed hash.
     * **Assertions**:
       * <code>Assert equal memory (exact, clamped, SSH_KDF_MAX)</code>
-      * <code>Assert equal memory (expected_k1, clamped, SSH_SHA256_DIGEST_LEN)</code>
-      * <code>Assert equal memory (expected_k2, clamped + SSH_SHA256_DIGEST_LEN, SSH_SHA256_DIGEST_LEN)</code>
+      * <code>Assert equal memory (expected_k1, clamped, DWS_SHA256_DIGEST_LEN)</code>
+      * <code>Assert equal memory (expected_k2, clamped + DWS_SHA256_DIGEST_LEN, DWS_SHA256_DIGEST_LEN)</code>
   </details>
 
 </details>
@@ -52398,11 +52398,11 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert equal memory ("ssh-ed25519", kt, 11)</code>
       * <code>Assert true (rd_string(ks, ks_len, &ko, &hostpub, &hp_len))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(32, hp_len);</code>
-      * <code>Assert equal memory (H, s-&gt;session_id, SSH_SHA256_DIGEST_LEN)</code>
+      * <code>Assert equal memory (H, s-&gt;session_id, DWS_SHA256_DIGEST_LEN)</code>
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &st, &st_len))</code>
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &sig, &sl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
-      * <code>Assert true (ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig))</code>
+      * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_c2s, ssh_keys[0].chacha_key_c2s, SSH_CHACHAPOLY_KEY_LEN);</code>
   </details>
 
@@ -52460,7 +52460,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)))</code>
       * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_SHA256_DIGEST_LEN, s-&gt;session_id_len); // not the SHA-512 hybrid hash</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_SHA256_DIGEST_LEN, s-&gt;session_id_len); // not the SHA-512 hybrid hash</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_NEWKEYS, s-&gt;phase)</code>
       * <code>Assert true (ssh_keys[0].active)</code>
   </details>
@@ -53219,7 +53219,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Objective**: Populate the session fields the hash reads.
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kex_exchange_hash(0, e_be, f_be, k_be, ks, sizeof(ks), got))</code>
-      * <code>Assert equal memory (expected, got, SSH_SHA256_DIGEST_LEN)</code>
+      * <code>Assert equal memory (expected, got, DWS_SHA256_DIGEST_LEN)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -53227,7 +53227,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Exchange hash changes with input
     * **Assertions**:
-      * <code>Assert not equal (0, memcmp(h1, h2, SSH_SHA256_DIGEST_LEN))</code>
+      * <code>Assert not equal (0, memcmp(h1, h2, DWS_SHA256_DIGEST_LEN))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -53326,8 +53326,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert equal memory ("ssh-ed25519", st, 11)</code>
       * <code>Assert true (rd_string(sigblob, sig_len, &so, &sig, &sl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
-      * <code>Assert equal memory (H, s-&gt;session_id, SSH_SHA256_DIGEST_LEN)</code>
-      * <code>Assert true (ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig))</code>
+      * <code>Assert equal memory (H, s-&gt;session_id, DWS_SHA256_DIGEST_LEN)</code>
+      * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -53365,8 +53365,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert true (rd_string(sigblob, sig_len, &so, &sig, &sl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
       * <code>Assert true (ssh_ecdsa_p256_ecdh(K, qs, client_sk))</code>
-      * <code>Assert equal memory (H, s-&gt;session_id, SSH_SHA256_DIGEST_LEN)</code>
-      * <code>Assert true (ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig))</code>
+      * <code>Assert equal memory (H, s-&gt;session_id, DWS_SHA256_DIGEST_LEN)</code>
+      * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -53426,8 +53426,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert true (rd_string(ecsig, ecsig_len, &eo, &rp, &rl))</code>
       * <code>Assert true (rd_string(ecsig, ecsig_len, &eo, &sp, &sl))</code>
       * <code>Assert true (rl &lt;= 32 && sl &lt;= 32)</code>
-      * <code>Assert equal memory (H, s-&gt;session_id, SSH_SHA256_DIGEST_LEN)</code>
-      * <code>Assert true (ssh_ecdsa_p256_verify(ec_pub, H, SSH_SHA256_DIGEST_LEN, raw))</code>
+      * <code>Assert equal memory (H, s-&gt;session_id, DWS_SHA256_DIGEST_LEN)</code>
+      * <code>Assert true (ssh_ecdsa_p256_verify(ec_pub, H, DWS_SHA256_DIGEST_LEN, raw))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -53524,8 +53524,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Independent: K1 = SHA256( string(K[224:256]) \|\| H \|\| 'C' \|\| sid ), string = 4-byte len(32) \|\| bytes.
     * **Assertions**:
-      * <code>Assert equal memory (expected, got, SSH_SHA256_DIGEST_LEN)</code>
-      * <code>Assert not equal (0, memcmp(got, as_mpint, SSH_SHA256_DIGEST_LEN))</code>
+      * <code>Assert equal memory (expected, got, DWS_SHA256_DIGEST_LEN)</code>
+      * <code>Assert not equal (0, memcmp(got, as_mpint, DWS_SHA256_DIGEST_LEN))</code>
   </details>
 
   <details style="margin-left: 20px;">

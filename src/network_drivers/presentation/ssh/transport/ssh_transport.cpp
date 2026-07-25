@@ -7,12 +7,12 @@
  */
 
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"     // bn_*, SshBigNum
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_x25519 (curve25519-sha256 KEX)
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"      // ssh_ecdsa_p256_* (ecdsa-sha2-nistp256 host key)
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"    // ssh_ed25519 host-key sign
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h" // ssh_rsa_encode_pubkey/sign, ssh_host_pubkey, SSH_RSA_*
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"   // ssh_rsa_encode_pubkey/sign, ssh_host_pubkey, SSH_RSA_*
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
 #include "services/clock.h"                                        // dws_millis() (re-key timer)
@@ -736,7 +736,7 @@ static int compute_exchange_hash(uint8_t i, bool pub_is_string, const uint8_t *c
 }
 
 int ssh_kex_exchange_hash(uint8_t i, const uint8_t *e_be, const uint8_t *f_be, const uint8_t *k_be, const uint8_t *ks,
-                          size_t ks_len, uint8_t out[SSH_SHA256_DIGEST_LEN])
+                          size_t ks_len, uint8_t out[DWS_SHA256_DIGEST_LEN])
 {
     size_t out_len = 0; // dh-group14-sha256 is always SHA-256
     return compute_exchange_hash(i, false, e_be, 256, f_be, 256, k_be, 256, ks, ks_len, out, &out_len, false, false);
@@ -983,11 +983,11 @@ static int hybrid_mlkem_x25519(uint8_t i, const uint8_t *payload, size_t len, ui
     }
     memcpy(s_reply + MLKEM768_CT_BYTES, ssh_sess[i].ecdh_pk, 32); // S_PK1: server X25519 public
 
-    SshSha256Ctx hc;
-    ssh_sha256_init(&hc);
-    ssh_sha256_update(&hc, k_pq, sizeof(k_pq)); // K = SHA256(K_PQ || K_CL) (RFC 9370 concat combiner)
-    ssh_sha256_update(&hc, k_cl, sizeof(k_cl));
-    ssh_sha256_final(&hc, k_out);
+    DwsSha256Ctx hc;
+    dws_sha256_init(&hc);
+    dws_sha256_update(&hc, k_pq, sizeof(k_pq)); // K = SHA256(K_PQ || K_CL) (RFC 9370 concat combiner)
+    dws_sha256_update(&hc, k_cl, sizeof(k_cl));
+    dws_sha256_final(&hc, k_out);
     ssh_wipe(k_pq, sizeof(k_pq));
     ssh_wipe(k_cl, sizeof(k_cl));
     return 0;

@@ -10,9 +10,9 @@
 
 #if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
+#include "crypto/hmac_sha256.h"
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/http3/quic_hkdf.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <string.h>
 
 // RFC 8446 sec 7.1 ("tls13 ") and RFC 9147 sec 5.9 ("dtls13") HKDF-Expand-Label prefixes.
@@ -24,7 +24,7 @@ namespace
 // Transcript-Hash of the empty string: SHA-256(""), the context for the two "derived" steps.
 void empty_hash(uint8_t out[TLS13_SECRET_LEN])
 {
-    ssh_sha256(nullptr, 0, out);
+    dws_sha256(nullptr, 0, out);
 }
 } // namespace
 
@@ -87,7 +87,7 @@ void dws_tls13_finished_mac(const Tls13Kdf *kdf, const uint8_t base_secret[TLS13
     // finished_key = HKDF-Expand-Label(base_secret, "finished", "", L); verify_data = HMAC(fk, Hash).
     uint8_t finished_key[TLS13_SECRET_LEN];
     dws_quic_hkdf_expand_label(base_secret, "finished", finished_key, sizeof(finished_key), kdf->label_prefix);
-    ssh_hmac_sha256(finished_key, sizeof(finished_key), transcript_hash, TLS13_SECRET_LEN, out);
+    dws_hmac_sha256(finished_key, sizeof(finished_key), transcript_hash, TLS13_SECRET_LEN, out);
 }
 
 #endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS

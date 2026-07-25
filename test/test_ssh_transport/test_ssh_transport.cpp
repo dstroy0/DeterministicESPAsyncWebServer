@@ -5,12 +5,12 @@
 // KEXINIT algorithm negotiation.
 
 #include "baseline_keys.h"
+#include "crypto/sha256.h"
 #include "cyclone_kex_bytes.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
@@ -430,7 +430,7 @@ void test_exchange_hash_matches_independent_assembly()
     for (int j = 0; j < 64; j++)
         ks[j] = (uint8_t)(0xA0 + j);
 
-    uint8_t got[SSH_SHA256_DIGEST_LEN];
+    uint8_t got[DWS_SHA256_DIGEST_LEN];
     TEST_ASSERT_EQUAL_INT(0, ssh_kex_exchange_hash(0, e_be, f_be, k_be, ks, sizeof(ks), got));
 
     // Build the same pre-image independently and hash it.
@@ -445,10 +445,10 @@ void test_exchange_hash_matches_independent_assembly()
     o += put_mpint(pre + o, f_be, 256);
     o += put_mpint(pre + o, k_be, 256);
 
-    uint8_t expected[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(pre, o, expected);
+    uint8_t expected[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(pre, o, expected);
 
-    TEST_ASSERT_EQUAL_MEMORY(expected, got, SSH_SHA256_DIGEST_LEN);
+    TEST_ASSERT_EQUAL_MEMORY(expected, got, DWS_SHA256_DIGEST_LEN);
 }
 
 void test_exchange_hash_changes_with_input()
@@ -461,11 +461,11 @@ void test_exchange_hash_changes_with_input()
 
     uint8_t e_be[256] = {0}, f_be[256] = {0}, k_be[256] = {0}, ks[4] = {1, 2, 3, 4};
     k_be[255] = 1;
-    uint8_t h1[SSH_SHA256_DIGEST_LEN], h2[SSH_SHA256_DIGEST_LEN];
+    uint8_t h1[DWS_SHA256_DIGEST_LEN], h2[DWS_SHA256_DIGEST_LEN];
     ssh_kex_exchange_hash(0, e_be, f_be, k_be, ks, sizeof(ks), h1);
     k_be[255] = 2; // different shared secret
     ssh_kex_exchange_hash(0, e_be, f_be, k_be, ks, sizeof(ks), h2);
-    TEST_ASSERT_NOT_EQUAL(0, memcmp(h1, h2, SSH_SHA256_DIGEST_LEN));
+    TEST_ASSERT_NOT_EQUAL(0, memcmp(h1, h2, DWS_SHA256_DIGEST_LEN));
 }
 
 // ---- KEXDH (RFC 4253 §8) --------------------------------------------------
@@ -766,12 +766,12 @@ void test_kexdh_handle_curve25519_ed25519_end_to_end()
         o += put_string(pre + o, qc, 32); // Q_C (string)
         o += put_string(pre + o, qs, 32); // Q_S (string)
         o += put_mpint(pre + o, K, 32);   // K (mpint)
-        uint8_t H[SSH_SHA256_DIGEST_LEN];
-        ssh_sha256(pre, o, H);
-        TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, SSH_SHA256_DIGEST_LEN); // server captured this H
+        uint8_t H[DWS_SHA256_DIGEST_LEN];
+        dws_sha256(pre, o, H);
+        TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, DWS_SHA256_DIGEST_LEN); // server captured this H
 
         // The signature verifies against the host key over the reconstructed H.
-        TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig));
+        TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
     }
 }
 
@@ -882,12 +882,12 @@ void test_kexdh_handle_ecdh_nistp256_end_to_end()
     o += put_string(pre + o, qc, 65); // Q_C (string)
     o += put_string(pre + o, qs, 65); // Q_S (string)
     o += put_mpint(pre + o, K, 32);   // K (mpint)
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(pre, o, H);
-    TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, SSH_SHA256_DIGEST_LEN); // server captured this same H
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(pre, o, H);
+    TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, DWS_SHA256_DIGEST_LEN); // server captured this same H
 
     // The host signature verifies against the reconstructed H.
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig));
+    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
 }
 
 // An off-curve client point is rejected (RFC 5656 §4 point validation).
@@ -986,7 +986,7 @@ void test_kexdh_handle_rsa_sha512_signature()
 
     // Rebuild the expected PKCS#1 v1.5 SHA-512 block over H (= session_id) and byte-compare.
     uint8_t d512[DWS_SHA512_DIGEST_LEN];
-    dws_sha512(s->session_id, SSH_SHA256_DIGEST_LEN, d512);
+    dws_sha512(s->session_id, DWS_SHA256_DIGEST_LEN, d512);
     uint8_t em[256];
     const size_t total = SSH_PKCS1_SHA512_DIGESTINFO_LEN + DWS_SHA512_DIGEST_LEN; // 83
     const size_t pad = 256 - 3 - total;                                           // 170
@@ -1117,10 +1117,10 @@ void test_kexdh_handle_ecdsa_end_to_end()
     o += put_string(pre + o, qc, 32);
     o += put_string(pre + o, qs, 32);
     o += put_mpint(pre + o, K, 32);
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(pre, o, H);
-    TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, SSH_SHA256_DIGEST_LEN);
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(ec_pub, H, SSH_SHA256_DIGEST_LEN, raw));
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(pre, o, H);
+    TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, DWS_SHA256_DIGEST_LEN);
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(ec_pub, H, DWS_SHA256_DIGEST_LEN, raw));
 }
 
 // ---- rekey (RFC 4253 §9) --------------------------------------------------
@@ -1224,7 +1224,7 @@ void test_transport_index_guards()
     TEST_ASSERT_EQUAL_INT(-1, ssh_transport_recv_banner(MAX_SSH_CONNS, (const uint8_t *)"x", 1, &consumed));
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_build(MAX_SSH_CONNS, out, &olen, sizeof(out)));
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(MAX_SSH_CONNS, out, 20));
-    uint8_t h[SSH_SHA256_DIGEST_LEN];
+    uint8_t h[DWS_SHA256_DIGEST_LEN];
     TEST_ASSERT_EQUAL_INT(-1, ssh_kex_exchange_hash(MAX_SSH_CONNS, nullptr, nullptr, nullptr, nullptr, 0, h));
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(MAX_SSH_CONNS, out, 10, out, &olen, sizeof(out)));
     ssh_newkeys_complete(MAX_SSH_CONNS); // no-op
@@ -1343,7 +1343,7 @@ void test_kexdh_parse_and_handle_errors()
 
 void test_kdf_edge_paths_and_slot_guards()
 {
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
     memset(H, 0x11, sizeof(H));
 
     // A K of all zeros exercises the empty-mpint (K == 0) branch of the KDF's mpint(K) hashing, and an
@@ -1415,12 +1415,12 @@ void test_dh_derive_keys_gcm_installs()
 {
     ssh_keymat_wipe(0);
     uint8_t K[256];
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
-    uint8_t sid[SSH_SHA256_DIGEST_LEN];
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
+    uint8_t sid[DWS_SHA256_DIGEST_LEN];
     memset(K, 0, sizeof(K));
     K[0] = 0x11; // nonzero shared secret, MSB set -> mpint pad path
     K[255] = 0x22;
-    for (int j = 0; j < SSH_SHA256_DIGEST_LEN; j++)
+    for (int j = 0; j < DWS_SHA256_DIGEST_LEN; j++)
     {
         H[j] = (uint8_t)(0x40 + j);
         sid[j] = (uint8_t)(0x90 + j);
@@ -1431,14 +1431,14 @@ void test_dh_derive_keys_gcm_installs()
     TEST_ASSERT_EQUAL_UINT8(SSH_CIPHER_AES256GCM, ssh_keys[0].cipher_mode);
 
     // Independently derive the C->S key ('C') + IV ('A') and the S->C key ('D') + IV ('B').
-    uint8_t iv_c[SSH_SHA256_DIGEST_LEN];
-    uint8_t iv_s[SSH_SHA256_DIGEST_LEN];
-    uint8_t key_c[SSH_SHA256_DIGEST_LEN];
-    uint8_t key_s[SSH_SHA256_DIGEST_LEN];
-    ssh_kdf_derive(K, H, sid, 'A', iv_c, SSH_SHA256_DIGEST_LEN);
-    ssh_kdf_derive(K, H, sid, 'B', iv_s, SSH_SHA256_DIGEST_LEN);
-    ssh_kdf_derive(K, H, sid, 'C', key_c, SSH_SHA256_DIGEST_LEN);
-    ssh_kdf_derive(K, H, sid, 'D', key_s, SSH_SHA256_DIGEST_LEN);
+    uint8_t iv_c[DWS_SHA256_DIGEST_LEN];
+    uint8_t iv_s[DWS_SHA256_DIGEST_LEN];
+    uint8_t key_c[DWS_SHA256_DIGEST_LEN];
+    uint8_t key_s[DWS_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K, H, sid, 'A', iv_c, DWS_SHA256_DIGEST_LEN);
+    ssh_kdf_derive(K, H, sid, 'B', iv_s, DWS_SHA256_DIGEST_LEN);
+    ssh_kdf_derive(K, H, sid, 'C', key_c, DWS_SHA256_DIGEST_LEN);
+    ssh_kdf_derive(K, H, sid, 'D', key_s, DWS_SHA256_DIGEST_LEN);
 
     SshAesGcmCtx ref_c;
     SshAesGcmCtx ref_s;
@@ -1469,37 +1469,37 @@ void test_dh_derive_keys_gcm_installs()
 void test_kdf_string_k_hybrid()
 {
     uint8_t K[256];
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
-    uint8_t sid[SSH_SHA256_DIGEST_LEN];
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
+    uint8_t sid[DWS_SHA256_DIGEST_LEN];
     for (int i = 0; i < 256; i++)
         K[i] = (uint8_t)(i * 11 + 3);
-    for (int i = 0; i < SSH_SHA256_DIGEST_LEN; i++)
+    for (int i = 0; i < DWS_SHA256_DIGEST_LEN; i++)
     {
         H[i] = (uint8_t)(0x20 + i);
         sid[i] = (uint8_t)(0x70 + i);
     }
 
-    uint8_t got[SSH_SHA256_DIGEST_LEN];
-    ssh_kdf_derive(K, H, sid, 'C', got, SSH_SHA256_DIGEST_LEN, true); // K encoded as a 32-byte string
+    uint8_t got[DWS_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K, H, sid, 'C', got, DWS_SHA256_DIGEST_LEN, true); // K encoded as a 32-byte string
 
     // Independent: K1 = SHA256( string(K[224:256]) || H || 'C' || sid ), string = 4-byte len(32) || bytes.
     uint8_t len_be[4] = {0, 0, 0, 32};
-    SshSha256Ctx c;
-    ssh_sha256_init(&c);
-    ssh_sha256_update(&c, len_be, 4);
-    ssh_sha256_update(&c, K + (256 - 32), 32);
-    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
+    DwsSha256Ctx c;
+    dws_sha256_init(&c);
+    dws_sha256_update(&c, len_be, 4);
+    dws_sha256_update(&c, K + (256 - 32), 32);
+    dws_sha256_update(&c, H, DWS_SHA256_DIGEST_LEN);
     uint8_t lbl = 'C';
-    ssh_sha256_update(&c, &lbl, 1);
-    ssh_sha256_update(&c, sid, SSH_SHA256_DIGEST_LEN);
-    uint8_t expected[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256_final(&c, expected);
-    TEST_ASSERT_EQUAL_MEMORY(expected, got, SSH_SHA256_DIGEST_LEN);
+    dws_sha256_update(&c, &lbl, 1);
+    dws_sha256_update(&c, sid, DWS_SHA256_DIGEST_LEN);
+    uint8_t expected[DWS_SHA256_DIGEST_LEN];
+    dws_sha256_final(&c, expected);
+    TEST_ASSERT_EQUAL_MEMORY(expected, got, DWS_SHA256_DIGEST_LEN);
 
     // The mpint encoding of the same buffer yields a different key (string != mpint encoding).
-    uint8_t as_mpint[SSH_SHA256_DIGEST_LEN];
-    ssh_kdf_derive(K, H, sid, 'C', as_mpint, SSH_SHA256_DIGEST_LEN, false);
-    TEST_ASSERT_NOT_EQUAL(0, memcmp(got, as_mpint, SSH_SHA256_DIGEST_LEN));
+    uint8_t as_mpint[DWS_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K, H, sid, 'C', as_mpint, DWS_SHA256_DIGEST_LEN, false);
+    TEST_ASSERT_NOT_EQUAL(0, memcmp(got, as_mpint, DWS_SHA256_DIGEST_LEN));
 }
 
 // Regression for the client-preference KEX bug (RFC 4253 §7.1). The exact CycloneSSH v2.6.4 KEXINIT +

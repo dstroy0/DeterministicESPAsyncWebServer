@@ -7,11 +7,11 @@
 // derive identical handshake + application secrets and that the server accepts the client Finished
 // (a full interop round-trip of the state machine). Plus: capability-negotiation rejections.
 
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/http3/quic_tls.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #if DWS_ENABLE_PQC_KEX
 #include "../test_pqc_mlkem/mlkem_kat.h"            // kat_ek, kat_dk (a valid ML-KEM key pair)
 #include "../test_ssh_pqc/mlkem_ref.h"              // dws_mlkem768_decaps_ref (the client side)
@@ -202,17 +202,17 @@ void test_full_handshake_roundtrip()
     ssh_x25519_base(server_pub, SERVER_PRIV);
     ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
 
-    SshSha256Ctx t;
+    DwsSha256Ctx t;
     uint8_t ch_sh[32], ch_sf[32];
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, ch, ch_len);
-    ssh_sha256_update(&t, si, si_len);
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, ch, ch_len);
+    dws_sha256_update(&t, si, si_len);
     { // snapshot H(CH..SH)
-        SshSha256Ctx tmp = t;
-        ssh_sha256_final(&tmp, ch_sh);
+        DwsSha256Ctx tmp = t;
+        dws_sha256_final(&tmp, ch_sh);
     }
-    ssh_sha256_update(&t, sh_flight, sh_flight_len);
-    ssh_sha256_final(&t, ch_sf); // H(CH..server Finished)
+    dws_sha256_update(&t, sh_flight, sh_flight_len);
+    dws_sha256_final(&t, ch_sf); // H(CH..server Finished)
 
     Tls13KeySchedule cks;
     dws_tls13_ks_early(&TLS13_KDF, &cks);
@@ -226,11 +226,11 @@ void test_full_handshake_roundtrip()
 
     // The server Finished (tail of the handshake flight) must verify under the server hs secret.
     uint8_t ch_cv[32]; // H(CH..CertificateVerify) = everything but the trailing 36-byte Finished
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, ch, ch_len);
-    ssh_sha256_update(&t, si, si_len);
-    ssh_sha256_update(&t, sh_flight, sh_flight_len - 36);
-    ssh_sha256_final(&t, ch_cv);
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, ch, ch_len);
+    dws_sha256_update(&t, si, si_len);
+    dws_sha256_update(&t, sh_flight, sh_flight_len - 36);
+    dws_sha256_final(&t, ch_cv);
     uint8_t sfin_expected[32];
     dws_tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);
@@ -782,26 +782,26 @@ void test_hybrid_hrr_roundtrip()
     // Client transcript: message_hash(Hash(CH1)) || HRR || CH2 || ServerHello || ...
     uint8_t ch1_hash[32];
     {
-        SshSha256Ctx h;
-        ssh_sha256_init(&h);
-        ssh_sha256_update(&h, ch1, ch1_len);
-        ssh_sha256_final(&h, ch1_hash);
+        DwsSha256Ctx h;
+        dws_sha256_init(&h);
+        dws_sha256_update(&h, ch1, ch1_len);
+        dws_sha256_final(&h, ch1_hash);
     }
     uint8_t mh[40];
     size_t mhn = dws_tls13_build_message_hash(mh, sizeof(mh), ch1_hash);
-    SshSha256Ctx t;
+    DwsSha256Ctx t;
     uint8_t ch_sh[32], ch_sf[32];
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, mh, mhn);
-    ssh_sha256_update(&t, hrr_saved, hrr_len);
-    ssh_sha256_update(&t, ch2, ch2_len);
-    ssh_sha256_update(&t, sh, sh_len);
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, mh, mhn);
+    dws_sha256_update(&t, hrr_saved, hrr_len);
+    dws_sha256_update(&t, ch2, ch2_len);
+    dws_sha256_update(&t, sh, sh_len);
     {
-        SshSha256Ctx tmp = t;
-        ssh_sha256_final(&tmp, ch_sh); // H(..ServerHello)
+        DwsSha256Ctx tmp = t;
+        dws_sha256_final(&tmp, ch_sh); // H(..ServerHello)
     }
-    ssh_sha256_update(&t, sh_flight, sh_flight_len);
-    ssh_sha256_final(&t, ch_sf); // H(..server Finished)
+    dws_sha256_update(&t, sh_flight, sh_flight_len);
+    dws_sha256_final(&t, ch_sf); // H(..server Finished)
 
     Tls13KeySchedule cks;
     dws_tls13_ks_early(&TLS13_KDF, &cks);
@@ -813,14 +813,14 @@ void test_hybrid_hrr_roundtrip()
     // Server Finished verifies over the HRR transcript through CertificateVerify.
     uint8_t ch_cv[32];
     {
-        SshSha256Ctx tt;
-        ssh_sha256_init(&tt);
-        ssh_sha256_update(&tt, mh, mhn);
-        ssh_sha256_update(&tt, hrr_saved, hrr_len);
-        ssh_sha256_update(&tt, ch2, ch2_len);
-        ssh_sha256_update(&tt, sh, sh_len);
-        ssh_sha256_update(&tt, sh_flight, sh_flight_len - 36);
-        ssh_sha256_final(&tt, ch_cv);
+        DwsSha256Ctx tt;
+        dws_sha256_init(&tt);
+        dws_sha256_update(&tt, mh, mhn);
+        dws_sha256_update(&tt, hrr_saved, hrr_len);
+        dws_sha256_update(&tt, ch2, ch2_len);
+        dws_sha256_update(&tt, sh, sh_len);
+        dws_sha256_update(&tt, sh_flight, sh_flight_len - 36);
+        dws_sha256_final(&tt, ch_cv);
     }
     uint8_t sfin_expected[32];
     dws_tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
@@ -901,17 +901,17 @@ void test_hybrid_handshake_roundtrip()
     memcpy(ecdhe, ml_ss, 32);
     memcpy(ecdhe + 32, x_ss, 32);
 
-    SshSha256Ctx t;
+    DwsSha256Ctx t;
     uint8_t ch_sh[32], ch_sf[32];
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, ch, ch_len);
-    ssh_sha256_update(&t, si, si_len);
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, ch, ch_len);
+    dws_sha256_update(&t, si, si_len);
     {
-        SshSha256Ctx tmp = t;
-        ssh_sha256_final(&tmp, ch_sh);
+        DwsSha256Ctx tmp = t;
+        dws_sha256_final(&tmp, ch_sh);
     }
-    ssh_sha256_update(&t, sh_flight, sh_flight_len);
-    ssh_sha256_final(&t, ch_sf);
+    dws_sha256_update(&t, sh_flight, sh_flight_len);
+    dws_sha256_final(&t, ch_sf);
 
     Tls13KeySchedule cks;
     dws_tls13_ks_early(&TLS13_KDF, &cks);
@@ -924,11 +924,11 @@ void test_hybrid_handshake_roundtrip()
 
     // Server Finished verifies, then the server accepts the client Finished.
     uint8_t ch_cv[32];
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, ch, ch_len);
-    ssh_sha256_update(&t, si, si_len);
-    ssh_sha256_update(&t, sh_flight, sh_flight_len - 36);
-    ssh_sha256_final(&t, ch_cv);
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, ch, ch_len);
+    dws_sha256_update(&t, si, si_len);
+    dws_sha256_update(&t, sh_flight, sh_flight_len - 36);
+    dws_sha256_final(&t, ch_cv);
     uint8_t sfin_expected[32];
     dws_tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);

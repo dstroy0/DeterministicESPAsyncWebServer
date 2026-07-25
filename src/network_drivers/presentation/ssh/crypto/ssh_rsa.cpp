@@ -155,12 +155,12 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t si
     // the supplied digest - so for rsa-sha2-256/512 (RFC 8332) we pass SHA-256(msg) / SHA-512(msg), not msg.
     const bool sha512 = (hash == SshRsaHash::SHA512);
     const mbedtls_md_type_t md = sha512 ? MBEDTLS_MD_SHA512 : MBEDTLS_MD_SHA256;
-    const size_t dlen = sha512 ? DWS_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
+    const size_t dlen = sha512 ? DWS_SHA512_DIGEST_LEN : DWS_SHA256_DIGEST_LEN;
     uint8_t digest[DWS_SHA512_DIGEST_LEN];
     if (sha512)
         dws_sha512(msg, msg_len, digest);
     else
-        ssh_sha256(msg, msg_len, digest);
+        dws_sha256(msg, msg_len, digest);
 
     // Serialise: mbedtls mutates the context's blinding state (Vf/Vi) on each private op.
     if (s_rsa.lock)
@@ -204,14 +204,14 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
 
     const bool sha512 = (hash == SshRsaHash::SHA512);
     const mbedtls_md_type_t md = sha512 ? MBEDTLS_MD_SHA512 : MBEDTLS_MD_SHA256;
-    const size_t dlen = sha512 ? DWS_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
+    const size_t dlen = sha512 ? DWS_SHA512_DIGEST_LEN : DWS_SHA256_DIGEST_LEN;
     uint8_t digest[DWS_SHA512_DIGEST_LEN];
     if (rc == 0)
     {
         if (sha512)
             dws_sha512(msg, msg_len, digest);
         else
-            ssh_sha256(msg, msg_len, digest);
+            dws_sha256(msg, msg_len, digest);
 #if MBEDTLS_VERSION_MAJOR >= 3
         rc = mbedtls_rsa_pkcs1_verify(&rsa, md, dlen, digest, sig);
 #else
@@ -264,8 +264,8 @@ static void rsa_digest(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint
     }
     else
     {
-        ssh_sha256(msg, msg_len, digest);
-        *digest_len = SSH_SHA256_DIGEST_LEN;
+        dws_sha256(msg, msg_len, digest);
+        *digest_len = DWS_SHA256_DIGEST_LEN;
         *di = ssh_pkcs1_sha256_digestinfo;
         *di_len = SSH_PKCS1_DIGESTINFO_LEN;
     }

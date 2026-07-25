@@ -10,8 +10,8 @@
 
 #if DWS_ENABLE_JWT
 
+#include "crypto/hmac_sha256.h"
 #include "network_drivers/presentation/base64/base64.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -89,11 +89,11 @@ bool dws_jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *se
     if (sig_len != 43)
         return false;
 
-    uint8_t mac[SSH_HMAC_SHA256_LEN];
-    ssh_hmac_sha256(secret, secret_len, (const uint8_t *)token, signing_len, mac);
+    uint8_t mac[DWS_HMAC_SHA256_LEN];
+    dws_hmac_sha256(secret, secret_len, (const uint8_t *)token, signing_len, mac);
 
     char computed[48];
-    // SSH_HMAC_SHA256_LEN is a fixed 32 bytes, and unpadded base64url of 32 bytes is always
+    // DWS_HMAC_SHA256_LEN is a fixed 32 bytes, and unpadded base64url of 32 bytes is always
     // 43 characters, so this length check can never fail.
     if (dws_base64url_encode(mac, sizeof(mac), computed) != 43) // GCOVR_EXCL_LINE
         return false;                                           // GCOVR_EXCL_LINE

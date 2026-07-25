@@ -5,9 +5,9 @@
 // presentation/ssh/crypto): SHA-256 and the ChaCha20 stream cipher (bulk). The full crypto suite is
 // exercised in depth by pentesting/rig_firmware/main_cryptobench; this is the perf/ counterpart.
 // Build/flash: pio run -d perf/network_drivers/presentation/ssh -t upload
+#include "crypto/sha256.h"
 #include "device_bench.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <Arduino.h>
 #include <string.h>
 
@@ -21,9 +21,9 @@ static void ssh_bench_task(void *)
     {
         Serial.printf("DB ==== ssh device microbench start (CCOUNT @ %u MHz) ====\n", (unsigned)getCpuFrequencyMhz());
         volatile uint32_t sink = 0;
-        uint8_t digest[SSH_SHA256_DIGEST_LEN];
-        DBENCH_BULK("ssh_sha256 (1 KiB)", 2000, 1024, {
-            ssh_sha256(buf, 1024, digest);
+        uint8_t digest[DWS_SHA256_DIGEST_LEN];
+        DBENCH_BULK("dws_sha256 (1 KiB)", 2000, 1024, {
+            dws_sha256(buf, 1024, digest);
             sink += digest[0];
         });
         DBENCH_BULK("ssh_chacha20 (1 KiB)", 1000, 1024, {

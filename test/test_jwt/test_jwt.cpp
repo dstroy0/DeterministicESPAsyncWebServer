@@ -5,8 +5,8 @@
 // with Python (hmac+hashlib) for secret "s3cr3t-key" and payload
 // {"sub":"alice","role":"admin","exp":2000000000,"iat":1700000000}.
 
+#include "crypto/hmac_sha256.h"
 #include "network_drivers/presentation/base64/base64.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "services/jwt/jwt.h"
 #include <stdio.h>
 #include <string.h>
@@ -84,8 +84,8 @@ void test_alg_not_hs256_rejected()
 
     char signing[160];
     int sl = snprintf(signing, sizeof(signing), "%s.%s", hdr, payload);
-    uint8_t mac[SSH_HMAC_SHA256_LEN];
-    ssh_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
+    uint8_t mac[DWS_HMAC_SHA256_LEN];
+    dws_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
     char sig[48];
     dws_base64url_encode(mac, sizeof(mac), sig);
 
@@ -99,7 +99,7 @@ void test_alg_not_hs256_rejected()
     char ok_hdr[64];
     dws_base64url_encode((const uint8_t *)ok_hdr_json, strlen(ok_hdr_json), ok_hdr);
     sl = snprintf(signing, sizeof(signing), "%s.%s", ok_hdr, payload);
-    ssh_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
+    dws_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
     dws_base64url_encode(mac, sizeof(mac), sig);
     snprintf(token, sizeof(token), "%s.%s.%s", ok_hdr, payload, sig);
     TEST_ASSERT_TRUE(dws_jwt_verify_hs256(token, strlen(token), sec(), seclen()));
@@ -266,12 +266,12 @@ static void mk_signed(char *out, size_t cap, const char *pl_json)
 {
     const char *hdr_json = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
     char signing[400], sig[48];
-    uint8_t mac[SSH_HMAC_SHA256_LEN];
+    uint8_t mac[DWS_HMAC_SHA256_LEN];
     char h[128], p[256];
     dws_base64url_encode((const uint8_t *)hdr_json, strlen(hdr_json), h);
     dws_base64url_encode((const uint8_t *)pl_json, strlen(pl_json), p);
     int sl = snprintf(signing, sizeof(signing), "%s.%s", h, p);
-    ssh_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
+    dws_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
     dws_base64url_encode(mac, sizeof(mac), sig);
     snprintf(out, cap, "%s.%s", signing, sig);
 }
@@ -342,11 +342,11 @@ void test_bearer_header_guards()
 static void mk_signed_hdr(char *out, size_t cap, const char *hdr_json, const char *pl_json)
 {
     char h[128], p[256], signing[400], sig[48];
-    uint8_t mac[SSH_HMAC_SHA256_LEN];
+    uint8_t mac[DWS_HMAC_SHA256_LEN];
     dws_base64url_encode((const uint8_t *)hdr_json, strlen(hdr_json), h);
     dws_base64url_encode((const uint8_t *)pl_json, strlen(pl_json), p);
     int sl = snprintf(signing, sizeof(signing), "%s.%s", h, p);
-    ssh_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
+    dws_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
     dws_base64url_encode(mac, sizeof(mac), sig);
     snprintf(out, cap, "%s.%s", signing, sig);
 }

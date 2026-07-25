@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // On-device CCOUNT microbenchmark for the hash-chained audit log (services/audit_log):
-// dws_audit_append() (SHA-256 chain-hash a new record onto the ring, ssh_sha256 HW-accelerated
+// dws_audit_append() (SHA-256 chain-hash a new record onto the ring, dws_sha256 HW-accelerated
 // on ESP32), dws_audit_verify() (recompute the chain over the retained window), and the JSON
 // renderers dws_audit_format()/dws_audit_dump_json() - all pure (fixed RAM ring, no heap, no
 // storage/network sink attached), so every call here exercises the real production code path.

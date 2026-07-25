@@ -450,7 +450,7 @@ preempting queue, so sensing shares the real-time ingest path.
        and **SK** encrypted-payload framing. Pure
        build/parse into caller buffers, host-tested with RFC vectors. **Reuses crypto we already ship**:
        `ssh_curve25519` (D-H group 31 = X25519, and MODP groups via `ssh_bignum`), `ssh_chachapoly`
-       (ChaCha20-Poly1305 per RFC 7634), `ssh_sha256/512` (PRF/INTEG HMAC), AES-GCM (the `dws_quic_aead` core) -
+       (ChaCha20-Poly1305 per RFC 7634), `dws_sha256/512` (PRF/INTEG HMAC), AES-GCM (the `dws_quic_aead` core) -
        so the primitive surface is largely done; this is mostly framing + the key-derivation (SKEYSEED /
        the SK_* chain). **The key derivation is now shipped** (RFC 7296 §2.13-2.14): `dws_ike_prf_plus`
        (prf+ over HMAC-SHA2-256, capped at 255 blocks) and `dws_ike_derive_keys` (SKEYSEED = prf(Ni|Nr,

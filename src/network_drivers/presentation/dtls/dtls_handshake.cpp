@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_DTLS
 
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "crypto/hmac_sha256.h"
 #include <string.h>
 
 namespace
@@ -234,7 +234,7 @@ size_t dws_dtls_cookie_make(const uint8_t dws_hmac_key[32], uint64_t timestamp, 
     if (payload_len > 0xFFFF)
         return 0;
     size_t body = 1 + 8 + 2 + payload_len; // version || timestamp || payload_len || payload
-    size_t total = body + SSH_HMAC_SHA256_LEN;
+    size_t total = body + DWS_HMAC_SHA256_LEN;
     if (total > out_cap || total > DTLS_COOKIE_MAX)
         return 0;
     out[0] = 1; // cookie format version
@@ -245,12 +245,12 @@ size_t dws_dtls_cookie_make(const uint8_t dws_hmac_key[32], uint64_t timestamp, 
         memcpy(out + 11, payload, payload_len);
     // MAC covers version || timestamp || client_addr || payload_len || payload: the address is
     // authenticated (so a cookie cannot be replayed from another peer) without being stored.
-    SshHmacCtx h;
-    ssh_hmac_sha256_init(&h, dws_hmac_key, 32);
-    ssh_hmac_sha256_update(&h, out, 9);
-    ssh_hmac_sha256_update(&h, client_addr, addr_len);
-    ssh_hmac_sha256_update(&h, out + 9, 2 + payload_len);
-    ssh_hmac_sha256_final(&h, out + body);
+    DwsHmacSha256Ctx h;
+    dws_hmac_sha256_init(&h, dws_hmac_key, 32);
+    dws_hmac_sha256_update(&h, out, 9);
+    dws_hmac_sha256_update(&h, client_addr, addr_len);
+    dws_hmac_sha256_update(&h, out + 9, 2 + payload_len);
+    dws_hmac_sha256_final(&h, out + body);
     return total;
 }
 
@@ -258,22 +258,22 @@ bool dws_dtls_cookie_verify(const uint8_t dws_hmac_key[32], uint64_t now, uint64
                             size_t addr_len, const uint8_t *cookie, size_t cookie_len, uint8_t *payload_out,
                             size_t payload_cap, size_t *payload_len_out)
 {
-    if (cookie_len < 1 + 8 + 2 + SSH_HMAC_SHA256_LEN || cookie[0] != 1)
+    if (cookie_len < 1 + 8 + 2 + DWS_HMAC_SHA256_LEN || cookie[0] != 1)
         return false;
     size_t payload_len = ((size_t)cookie[9] << 8) | cookie[10];
     size_t body = 1 + 8 + 2 + payload_len;
-    if (body + SSH_HMAC_SHA256_LEN != cookie_len) // exact-length: bounds payload before it is read
+    if (body + DWS_HMAC_SHA256_LEN != cookie_len) // exact-length: bounds payload before it is read
         return false;
     if (payload_len > payload_cap)
         return false;
-    uint8_t mac[SSH_HMAC_SHA256_LEN];
-    SshHmacCtx h;
-    ssh_hmac_sha256_init(&h, dws_hmac_key, 32);
-    ssh_hmac_sha256_update(&h, cookie, 9);
-    ssh_hmac_sha256_update(&h, client_addr, addr_len);
-    ssh_hmac_sha256_update(&h, cookie + 9, 2 + payload_len);
-    ssh_hmac_sha256_final(&h, mac);
-    if (!ct_equal(mac, cookie + body, SSH_HMAC_SHA256_LEN))
+    uint8_t mac[DWS_HMAC_SHA256_LEN];
+    DwsHmacSha256Ctx h;
+    dws_hmac_sha256_init(&h, dws_hmac_key, 32);
+    dws_hmac_sha256_update(&h, cookie, 9);
+    dws_hmac_sha256_update(&h, client_addr, addr_len);
+    dws_hmac_sha256_update(&h, cookie + 9, 2 + payload_len);
+    dws_hmac_sha256_final(&h, mac);
+    if (!ct_equal(mac, cookie + body, DWS_HMAC_SHA256_LEN))
         return false;
     if (max_age != 0)
     {

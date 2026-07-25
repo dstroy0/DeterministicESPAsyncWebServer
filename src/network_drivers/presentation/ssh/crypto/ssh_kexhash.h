@@ -17,8 +17,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_KEXHASH_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_KEXHASH_H
 
+#include "crypto/sha256.h"
 #include "crypto/sha512.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -28,7 +28,7 @@
 typedef struct
 {
     bool is512;
-    SshSha256Ctx c256;
+    DwsSha256Ctx c256;
     DwsSha512Ctx c512;
 } SshKexHash;
 
@@ -38,7 +38,7 @@ static inline void ssh_kexhash_init(SshKexHash *h, bool is512)
     if (is512)
         dws_sha512_init(&h->c512);
     else
-        ssh_sha256_init(&h->c256);
+        dws_sha256_init(&h->c256);
 }
 
 static inline void ssh_kexhash_update(SshKexHash *h, const uint8_t *data, size_t len)
@@ -46,7 +46,7 @@ static inline void ssh_kexhash_update(SshKexHash *h, const uint8_t *data, size_t
     if (h->is512)
         dws_sha512_update(&h->c512, data, len);
     else
-        ssh_sha256_update(&h->c256, data, len);
+        dws_sha256_update(&h->c256, data, len);
 }
 
 /** @brief Finalize into @p out (must hold SSH_KEXHASH_MAX_LEN); returns the digest length (32 or 64). */
@@ -57,14 +57,14 @@ static inline size_t ssh_kexhash_final(SshKexHash *h, uint8_t out[SSH_KEXHASH_MA
         dws_sha512_final(&h->c512, out);
         return DWS_SHA512_DIGEST_LEN;
     }
-    ssh_sha256_final(&h->c256, out);
-    return SSH_SHA256_DIGEST_LEN;
+    dws_sha256_final(&h->c256, out);
+    return DWS_SHA256_DIGEST_LEN;
 }
 
 /** @brief The digest length for a given hash selection (32 or 64). */
 static inline size_t ssh_kexhash_len(bool is512)
 {
-    return is512 ? DWS_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
+    return is512 ? DWS_SHA512_DIGEST_LEN : DWS_SHA256_DIGEST_LEN;
 }
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_KEXHASH_H

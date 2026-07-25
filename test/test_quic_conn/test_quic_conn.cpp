@@ -8,6 +8,7 @@
 // parsing, per-level AEAD, CRYPTO reassembly, ACK generation, coalescing, HANDSHAKE_DONE, and stream
 // plumbing all interoperate with an independent implementation.
 
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/http3/quic_conn.h"
 #include "network_drivers/presentation/http3/quic_crypto.h"
 #include "network_drivers/presentation/http3/quic_frame.h"
@@ -16,7 +17,6 @@
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <string.h>
 #include <unity.h>
 
@@ -303,14 +303,14 @@ void test_full_handshake_and_stream()
     uint8_t server_pub[32], ecdhe[32];
     ssh_x25519_base(server_pub, SERVER_PRIV);
     ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
-    SshSha256Ctx t;
+    DwsSha256Ctx t;
     uint8_t ch_sh[32], ch_sf[32];
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, ch, ch_len);
-    ssh_sha256_update(&t, sh, sh_len);
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, ch, ch_len);
+    dws_sha256_update(&t, sh, sh_len);
     {
-        SshSha256Ctx tmp = t;
-        ssh_sha256_final(&tmp, ch_sh);
+        DwsSha256Ctx tmp = t;
+        dws_sha256_final(&tmp, ch_sh);
     }
     Tls13KeySchedule cks;
     dws_tls13_ks_early(&TLS13_KDF, &cks);
@@ -327,8 +327,8 @@ void test_full_handshake_and_stream()
     TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS, hsflight[0]);
 
     // Full transcript -> application keys.
-    ssh_sha256_update(&t, hsflight, hsflen);
-    ssh_sha256_final(&t, ch_sf);
+    dws_sha256_update(&t, hsflight, hsflen);
+    dws_sha256_final(&t, ch_sf);
     dws_tls13_ks_master(&cks, ch_sf);
     QuicPacketKeys ap_server_keys, ap_client_keys;
     dws_quic_keys_from_secret(cks.server_ap_traffic, &ap_server_keys);
@@ -610,12 +610,12 @@ void test_connection_close_on_malformed_frame()
     uint8_t server_pub[32], ecdhe[32];
     ssh_x25519_base(server_pub, SERVER_PRIV);
     ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
-    SshSha256Ctx tctx;
+    DwsSha256Ctx tctx;
     uint8_t ch_sh[32];
-    ssh_sha256_init(&tctx);
-    ssh_sha256_update(&tctx, ch, ch_len);
-    ssh_sha256_update(&tctx, sh, sh_len);
-    ssh_sha256_final(&tctx, ch_sh);
+    dws_sha256_init(&tctx);
+    dws_sha256_update(&tctx, ch, ch_len);
+    dws_sha256_update(&tctx, sh, sh_len);
+    dws_sha256_final(&tctx, ch_sh);
     Tls13KeySchedule cks;
     dws_tls13_ks_early(&TLS13_KDF, &cks);
     dws_tls13_ks_handshake(&cks, ecdhe, ch_sh);
@@ -1136,14 +1136,14 @@ static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialS
     uint8_t server_pub[32], ecdhe[32];
     ssh_x25519_base(server_pub, SERVER_PRIV);
     ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
-    SshSha256Ctx t;
+    DwsSha256Ctx t;
     uint8_t ch_sh[32], ch_sf[32];
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, ch, ch_len);
-    ssh_sha256_update(&t, sh, sh_len);
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, ch, ch_len);
+    dws_sha256_update(&t, sh, sh_len);
     {
-        SshSha256Ctx tmp = t;
-        ssh_sha256_final(&tmp, ch_sh);
+        DwsSha256Ctx tmp = t;
+        dws_sha256_final(&tmp, ch_sh);
     }
     Tls13KeySchedule cks;
     dws_tls13_ks_early(&TLS13_KDF, &cks);
@@ -1155,8 +1155,8 @@ static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialS
     uint8_t hstype = 0;
     size_t hpt = open_long(sdg + wire, sl - wire, &hs_server_keys, plain, &hswire, &hstype);
     size_t hsflen = extract_crypto(plain, hpt, hsflight);
-    ssh_sha256_update(&t, hsflight, hsflen);
-    ssh_sha256_final(&t, ch_sf);
+    dws_sha256_update(&t, hsflight, hsflen);
+    dws_sha256_final(&t, ch_sf);
     dws_tls13_ks_master(&cks, ch_sf);
     dws_quic_keys_from_secret(cks.client_ap_traffic, ap_client);
     dws_quic_keys_from_secret(cks.server_ap_traffic, ap_server);

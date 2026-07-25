@@ -7,9 +7,9 @@
  */
 
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "crypto/hmac_sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #if DWS_ENABLE_SSH_ZLIB
@@ -77,11 +77,11 @@ static void compute_mac_mode(uint8_t mac_mode, const uint8_t *mac_key, uint32_t 
     }
     else
     {
-        SshHmacCtx ctx;
-        ssh_hmac_sha256_init(&ctx, mac_key, 32);
-        ssh_hmac_sha256_update(&ctx, seq_be, 4);
-        ssh_hmac_sha256_update(&ctx, buf, buf_len);
-        ssh_hmac_sha256_final(&ctx, mac_out);
+        DwsHmacSha256Ctx ctx;
+        dws_hmac_sha256_init(&ctx, mac_key, 32);
+        dws_hmac_sha256_update(&ctx, seq_be, 4);
+        dws_hmac_sha256_update(&ctx, buf, buf_len);
+        dws_hmac_sha256_final(&ctx, mac_out);
     }
 }
 

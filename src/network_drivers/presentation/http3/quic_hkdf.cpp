@@ -10,15 +10,15 @@
 
 #if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "crypto/hmac_sha256.h"
 #include <string.h>
 
 void dws_quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm, size_t ikm_len,
                            uint8_t prk[QUIC_HKDF_HASH_LEN])
 {
-    // RFC 5869 sec 2.2: PRK = HMAC-Hash(salt, IKM). ssh_hmac_sha256 pre-hashes keys > 64 bytes and
+    // RFC 5869 sec 2.2: PRK = HMAC-Hash(salt, IKM). dws_hmac_sha256 pre-hashes keys > 64 bytes and
     // zero-pads shorter ones, which is exactly HMAC's own key handling, so the salt goes in as-is.
-    ssh_hmac_sha256(salt, salt_len, ikm, ikm_len, prk);
+    dws_hmac_sha256(salt, salt_len, ikm, ikm_len, prk);
 }
 
 namespace
@@ -36,12 +36,12 @@ void hkdf_expand(const uint8_t prk[QUIC_HKDF_HASH_LEN], const uint8_t *info, siz
     while (done < out_len)
     {
         counter++;
-        SshHmacCtx ctx;
-        ssh_hmac_sha256_init(&ctx, prk, QUIC_HKDF_HASH_LEN);
-        ssh_hmac_sha256_update(&ctx, t, t_len);
-        ssh_hmac_sha256_update(&ctx, info, info_len);
-        ssh_hmac_sha256_update(&ctx, &counter, 1);
-        ssh_hmac_sha256_final(&ctx, t);
+        DwsHmacSha256Ctx ctx;
+        dws_hmac_sha256_init(&ctx, prk, QUIC_HKDF_HASH_LEN);
+        dws_hmac_sha256_update(&ctx, t, t_len);
+        dws_hmac_sha256_update(&ctx, info, info_len);
+        dws_hmac_sha256_update(&ctx, &counter, 1);
+        dws_hmac_sha256_final(&ctx, t);
         t_len = QUIC_HKDF_HASH_LEN;
 
         size_t take = out_len - done;

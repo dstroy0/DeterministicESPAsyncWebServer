@@ -49,26 +49,9 @@ void md4(const uint8_t *data, size_t len, uint8_t out[16]);
 /** @brief HMAC-MD5 (RFC 2104): the NTLMv2 MAC primitive. */
 void dws_hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg_len, uint8_t out[16]);
 
-// --- SHA-256 (FIPS 180-4) + HMAC-SHA256 (RFC 2104): the SMB2 message-signing primitives ------------
-
-/** @brief Streaming SHA-256 digest context (32-byte digest, 64-byte block). */
-struct Sha256Ctx
-{
-    uint32_t s[8];   ///< running hash state
-    uint64_t n;      ///< total bytes hashed
-    uint8_t buf[64]; ///< partial block
-    uint32_t buflen; ///< bytes buffered in @ref buf
-};
-
-void dws_sha256_init(Sha256Ctx *c);
-void dws_sha256_update(Sha256Ctx *c, const uint8_t *data, size_t len);
-void dws_sha256_final(Sha256Ctx *c, uint8_t out[32]);
-/** @brief One-shot SHA-256. */
-void dws_sha256(const uint8_t *data, size_t len, uint8_t out[32]);
-
-/** @brief HMAC-SHA256 (RFC 2104): the SMB 2.x message-signing MAC. The 16-byte SMB2 Signature is the
- *  first 16 octets of this 32-byte MAC over the message (with the Signature field zeroed). */
-void dws_hmac_sha256(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg_len, uint8_t out[32]);
+// --- SP800-108 counter-mode KDF (HMAC-SHA256 PRF): the SMB 3.x key-derivation primitive -----------
+// SHA-256 and HMAC-SHA256 themselves are the shared library primitives in src/crypto
+// (crypto/sha256.h, crypto/hmac_sha256.h); this KDF consumes them for SMB 2.x message signing.
 
 /**
  * @brief SP800-108 KDF in counter mode with HMAC-SHA256 as the PRF (NIST SP800-108 §5.1; r = 32-bit

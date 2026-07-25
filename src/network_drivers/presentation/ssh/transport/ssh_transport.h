@@ -6,7 +6,7 @@
  * @brief SSH transport-layer protocol state machine (RFC 4253).
  *
  * Sits on top of the binary packet layer (ssh_packet.*) and the crypto
- * primitives (ssh_dh, ssh_rsa, ssh_aes256ctr, ssh_hmac_sha256). Drives the
+ * primitives (ssh_dh, ssh_rsa, ssh_aes256ctr, dws_hmac_sha256). Drives the
  * handshake: identification-string (banner) exchange → algorithm negotiation
  * (KEXINIT) → Diffie-Hellman key exchange (KEXDH) → NEWKEYS → key install,
  * then hands off to the user-auth layer (ssh_auth.*).
@@ -35,8 +35,8 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_TRANSPORT_H
 
 #include "ServerConfig.h"
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_kexhash.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -280,7 +280,7 @@ int ssh_extinfo_build(uint8_t *out, size_t *len, size_t cap);
  * @return 0 on success, -1 on bad slot.
  */
 int ssh_kex_exchange_hash(uint8_t i, const uint8_t *e_be, const uint8_t *f_be, const uint8_t *k_be, const uint8_t *ks,
-                          size_t ks_len, uint8_t out[SSH_SHA256_DIGEST_LEN]);
+                          size_t ks_len, uint8_t out[DWS_SHA256_DIGEST_LEN]);
 
 /**
  * @brief Parse SSH_MSG_KEXDH_INIT, extracting the client DH value e.

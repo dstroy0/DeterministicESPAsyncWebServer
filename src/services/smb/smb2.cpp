@@ -12,9 +12,9 @@
 
 #include <string.h>
 
-#include "crypto/sha512.h" // dws_sha512 for the SMB 3.1.1 preauth-integrity chain
+#include "crypto/hmac_sha256.h" // dws_hmac_sha256 for message signing
+#include "crypto/sha512.h"      // dws_sha512 for the SMB 3.1.1 preauth-integrity chain
 #include "shared_primitives/endian.h"
-#include "smb_md.h" // dws_hmac_sha256 for message signing
 
 static const uint8_t SMB2_PROTOCOL_ID[4] = {0xFE, 'S', 'M', 'B'};
 

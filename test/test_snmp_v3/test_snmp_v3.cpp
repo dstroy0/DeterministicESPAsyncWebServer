@@ -9,7 +9,7 @@
 // expected value is computed with Python hashlib (RFC 3414 §2.6 / RFC 7860), and
 // the AES-128 block cipher is checked against the FIPS-197 Appendix C.1 KAT.
 
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "crypto/hmac_sha256.h"
 #include "network_drivers/transport/udp.h"
 #include "services/snmp/snmp_agent.h"
 #include "services/snmp/snmp_ber.h"
@@ -214,8 +214,8 @@ static size_t build_get(uint8_t *out, size_t cap, bool auth, bool priv, const ui
 
     if (auth)
     {
-        uint8_t mac[SSH_HMAC_SHA256_LEN];
-        ssh_hmac_sha256(authkey, SNMP_USM_KEY_LEN, out, e.len, mac);
+        uint8_t mac[DWS_HMAC_SHA256_LEN];
+        dws_hmac_sha256(authkey, SNMP_USM_KEY_LEN, out, e.len, mac);
         memcpy(out + sec_value_pos + auth_off, mac, SNMP_V3_AUTH_PARAM_LEN);
     }
     return e.ok ? e.len : 0;
@@ -668,8 +668,8 @@ static size_t build_v3_raw_scoped(uint8_t *out, size_t cap, bool auth, const uin
         return 0;
     if (digest)
     {
-        uint8_t mac[SSH_HMAC_SHA256_LEN];
-        ssh_hmac_sha256(authkey, SNMP_USM_KEY_LEN, out, e.len, mac);
+        uint8_t mac[DWS_HMAC_SHA256_LEN];
+        dws_hmac_sha256(authkey, SNMP_USM_KEY_LEN, out, e.len, mac);
         memcpy(out + sec_value_pos + auth_off, mac, SNMP_V3_AUTH_PARAM_LEN);
     }
     return e.len;

@@ -41,7 +41,7 @@
  */
 
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "crypto/sha256.h"
 #include <string.h>
 
 #ifdef ARDUINO
@@ -106,8 +106,8 @@ bool ssh_ecdsa_p256_pubkey(uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t pr
 bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg, size_t mlen,
                          const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
 {
-    uint8_t h[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(msg, mlen, h);
+    uint8_t h[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(msg, mlen, h);
 
     mbedtls_ecp_group grp;
     mbedtls_mpi d;
@@ -121,7 +121,7 @@ bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg
     bool ok = false;
     if (mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1) == 0 &&
         mbedtls_mpi_read_binary(&d, priv, SSH_ECDSA_P256_PRIV_LEN) == 0 &&
-        mbedtls_ecdsa_sign(&grp, &r, &s, &d, h, SSH_SHA256_DIGEST_LEN, ecdsa_rng, nullptr) == 0 &&
+        mbedtls_ecdsa_sign(&grp, &r, &s, &d, h, DWS_SHA256_DIGEST_LEN, ecdsa_rng, nullptr) == 0 &&
         mbedtls_mpi_write_binary(&r, sig, SSH_ECDSA_P256_COORD_LEN) == 0 &&
         mbedtls_mpi_write_binary(&s, sig + SSH_ECDSA_P256_COORD_LEN, SSH_ECDSA_P256_COORD_LEN) == 0)
         ok = true;
@@ -136,8 +136,8 @@ bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg
 bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t *msg, size_t mlen,
                            const uint8_t sig[SSH_ECDSA_P256_SIG_LEN])
 {
-    uint8_t h[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(msg, mlen, h);
+    uint8_t h[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(msg, mlen, h);
 
     mbedtls_ecp_group grp;
     mbedtls_ecp_point Q;
@@ -153,7 +153,7 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
         mbedtls_ecp_point_read_binary(&grp, &Q, pub, SSH_ECDSA_P256_PUB_LEN) == 0 &&
         mbedtls_ecp_check_pubkey(&grp, &Q) == 0 && mbedtls_mpi_read_binary(&r, sig, SSH_ECDSA_P256_COORD_LEN) == 0 &&
         mbedtls_mpi_read_binary(&s, sig + SSH_ECDSA_P256_COORD_LEN, SSH_ECDSA_P256_COORD_LEN) == 0 &&
-        mbedtls_ecdsa_verify(&grp, h, SSH_SHA256_DIGEST_LEN, &Q, &r, &s) == 0)
+        mbedtls_ecdsa_verify(&grp, h, DWS_SHA256_DIGEST_LEN, &Q, &r, &s) == 0)
         ok = true;
 
     mbedtls_mpi_free(&s);
@@ -192,7 +192,7 @@ bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8
 
 #else // ---- S3 HW-MODMULT path, or native software path (shared complete-formula P-256) ----
 
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "crypto/hmac_sha256.h"
 
 #ifdef DWS_ECDSA_MPI_HW
 #include "soc/hwcrypto_reg.h" // RSA/MPI accelerator register map (MODMULT)
@@ -740,7 +740,7 @@ void dws_hmac_cat(uint8_t out[32], const uint8_t key[32], const uint8_t *v, size
         memcpy(buf + n, e, 32);
         n += 32;
     }
-    ssh_hmac_sha256(key, 32, buf, n, out);
+    dws_hmac_sha256(key, 32, buf, n, out);
 }
 
 // One RFC 6979 candidate k: if it yields a valid r and s, write the 64-byte signature and return true.
@@ -821,7 +821,7 @@ bool ecdsa_sign_core(uint8_t sig[64], const uint8_t h1[32], const uint32_t d[8])
         uint8_t buf[33]; // retry: K = HMAC_K(V || 0x00); V = HMAC_K(V)
         memcpy(buf, V, 32);
         buf[32] = 0x00;
-        ssh_hmac_sha256(K, 32, buf, 33, K);
+        dws_hmac_sha256(K, 32, buf, 33, K);
         dws_hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
         // GCOVR_EXCL_STOP
     }
@@ -863,8 +863,8 @@ bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg
     load_be(d, priv);
     if (fp_is_zero(d) || fp_cmp(d, P256_N) >= 0)
         return false;
-    uint8_t h1[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(msg, mlen, h1);
+    uint8_t h1[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(msg, mlen, h1);
 
     ecdsa_hw_on();
     bool ok = ecdsa_sign_core(sig, h1, d);
@@ -889,8 +889,8 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
     if (fp_is_zero(r) || fp_cmp(r, P256_N) >= 0 || fp_is_zero(s) || fp_cmp(s, P256_N) >= 0)
         return false;
 
-    uint8_t h1[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(msg, mlen, h1);
+    uint8_t h1[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(msg, mlen, h1);
     uint32_t e[8];
     uint32_t etmp[8];
     load_be(etmp, h1);

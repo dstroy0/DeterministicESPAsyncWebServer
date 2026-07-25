@@ -11,13 +11,13 @@
 // key pair, so it reuses the kyber-py KAT fixture (ek, dk).
 
 #include "../test_pqc_mlkem/mlkem_kat.h" // kat_ek, kat_dk, kat_ct, kat_ss
-#include "crypto/sha512.h"               // sntrup761x25519-sha512 exchange hash
+#include "crypto/sha256.h"
+#include "crypto/sha512.h" // sntrup761x25519-sha512 exchange hash
 #include "mlkem_ref.h"
 #include "network_drivers/presentation/pqc/mlkem.h"     // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
 #include "network_drivers/presentation/pqc/sntrup761.h" // the other PQ/T hybrid (NTRU Prime + X25519)
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXDH_INIT / _REPLY
@@ -119,7 +119,7 @@ static void kdf_ref_string(const uint8_t Kb[32], const uint8_t H[32], const uint
     buf[o++] = (uint8_t)label;
     memcpy(buf + o, sid, 32);
     o += 32;
-    ssh_sha256(buf, o, acc);
+    dws_sha256(buf, o, acc);
     have = 32;
     while (have < outlen)
     {
@@ -128,7 +128,7 @@ static void kdf_ref_string(const uint8_t Kb[32], const uint8_t H[32], const uint
         o += 32;
         memcpy(buf + o, acc, have);
         o += have;
-        ssh_sha256(buf, o, acc + have);
+        dws_sha256(buf, o, acc + have);
         have += 32;
     }
     memcpy(out, acc, outlen);
@@ -231,7 +231,7 @@ void test_hybrid_kex_end_to_end()
     memcpy(kin, k_pq, 32);
     memcpy(kin + 32, k_cl, 32);
     uint8_t K[32];
-    ssh_sha256(kin, sizeof(kin), K);
+    dws_sha256(kin, sizeof(kin), K);
 
     // Recover the host public key from K_S = string("ssh-ed25519") || string(pub32).
     size_t ko = 0;
@@ -253,9 +253,9 @@ void test_hybrid_kex_end_to_end()
     o += put_string(pre + o, c_init, sizeof(c_init)); // C_INIT (string)
     o += put_string(pre + o, s_reply, sr_len);        // S_REPLY (string)
     o += put_string(pre + o, K, 32);                  // K (string, NOT mpint)
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(pre, o, H);
-    TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, SSH_SHA256_DIGEST_LEN);
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
+    dws_sha256(pre, o, H);
+    TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, DWS_SHA256_DIGEST_LEN);
 
     // sigblob = string("ssh-ed25519") || string(sig64); it verifies over the reconstructed H.
     size_t so = 0;
@@ -264,7 +264,7 @@ void test_hybrid_kex_end_to_end()
     TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &st, &st_len));
     TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &sig, &sl));
     TEST_ASSERT_EQUAL_UINT32(64, sl);
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig));
+    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
 
     // The string-K KDF must yield the same c2s cipher key the server installed.
     uint8_t expect_c2s[SSH_CHACHAPOLY_KEY_LEN];
@@ -460,7 +460,7 @@ void test_classical_dh_kex_in_pqc_build()
     size_t rlen = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)));
     TEST_ASSERT_EQUAL(SSH_MSG_KEXDH_REPLY, reply[0]);
-    TEST_ASSERT_EQUAL_UINT8(SSH_SHA256_DIGEST_LEN, s->session_id_len); // not the SHA-512 hybrid hash
+    TEST_ASSERT_EQUAL_UINT8(DWS_SHA256_DIGEST_LEN, s->session_id_len); // not the SHA-512 hybrid hash
     TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_NEWKEYS, s->phase);
     TEST_ASSERT_TRUE(ssh_keys[0].active);
 }

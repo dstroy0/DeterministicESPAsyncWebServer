@@ -9,6 +9,7 @@
 // Destination Connection ID (odcid for the long-header handshake packets, our chosen SCID for the
 // 1-RTT short header), the ingest ring, and the request/response callback seam.
 
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/http3/h3_conn.h"
 #include "network_drivers/presentation/http3/h3_frame.h"
 #include "network_drivers/presentation/http3/qpack.h"
@@ -21,7 +22,6 @@
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <string.h>
 #include <unity.h>
 
@@ -353,14 +353,14 @@ void test_quic_server_http3_get()
     uint8_t server_pub[32], ecdhe[32];
     ssh_x25519_base(server_pub, SERVER_PRIV);
     ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
-    SshSha256Ctx t;
+    DwsSha256Ctx t;
     uint8_t chsh[32], chsf[32];
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, ch, chl);
-    ssh_sha256_update(&t, sh, shl);
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, ch, chl);
+    dws_sha256_update(&t, sh, shl);
     {
-        SshSha256Ctx tmp = t;
-        ssh_sha256_final(&tmp, chsh);
+        DwsSha256Ctx tmp = t;
+        dws_sha256_final(&tmp, chsh);
     }
     Tls13KeySchedule cks;
     dws_tls13_ks_early(&TLS13_KDF, &cks);
@@ -372,8 +372,8 @@ void test_quic_server_http3_get()
     uint8_t hty = 0;
     size_t hpt = open_long(g_out[0] + wire, g_out_len[0] - wire, &hs_s, plain, &hw, &hty);
     size_t hsfl = extract_crypto(plain, hpt, hsf);
-    ssh_sha256_update(&t, hsf, hsfl);
-    ssh_sha256_final(&t, chsf);
+    dws_sha256_update(&t, hsf, hsfl);
+    dws_sha256_final(&t, chsf);
     dws_tls13_ks_master(&cks, chsf);
     dws_quic_keys_from_secret(cks.server_ap_traffic, &ap_s);
     dws_quic_keys_from_secret(cks.client_ap_traffic, &ap_c);
@@ -837,14 +837,14 @@ void test_quic_server_on_request_null()
     uint8_t server_pub[32], ecdhe[32];
     ssh_x25519_base(server_pub, SERVER_PRIV);
     ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
-    SshSha256Ctx t;
+    DwsSha256Ctx t;
     uint8_t chsh[32], chsf[32];
-    ssh_sha256_init(&t);
-    ssh_sha256_update(&t, ch, chl);
-    ssh_sha256_update(&t, sh, shl);
+    dws_sha256_init(&t);
+    dws_sha256_update(&t, ch, chl);
+    dws_sha256_update(&t, sh, shl);
     {
-        SshSha256Ctx tmp = t;
-        ssh_sha256_final(&tmp, chsh);
+        DwsSha256Ctx tmp = t;
+        dws_sha256_final(&tmp, chsh);
     }
     Tls13KeySchedule cks;
     dws_tls13_ks_early(&TLS13_KDF, &cks);
@@ -856,8 +856,8 @@ void test_quic_server_on_request_null()
     uint8_t hty = 0;
     size_t hpt = open_long(g_out[0] + wire, g_out_len[0] - wire, &hs_s, plain, &hw, &hty);
     size_t hsfl = extract_crypto(plain, hpt, hsf);
-    ssh_sha256_update(&t, hsf, hsfl);
-    ssh_sha256_final(&t, chsf);
+    dws_sha256_update(&t, hsf, hsfl);
+    dws_sha256_final(&t, chsf);
     dws_tls13_ks_master(&cks, chsf);
     dws_quic_keys_from_secret(cks.client_ap_traffic, &ap_c);
 

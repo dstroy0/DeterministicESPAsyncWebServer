@@ -108,7 +108,7 @@ struct EdgeEntry
 {
     bool used;
     char key[DWS_EDGE_KEY_MAX];         ///< canonical key (collision-safe exact compare)
-    uint8_t digest[32];                 ///< ssh_sha256(key) - the L2 dbm key
+    uint8_t digest[32];                 ///< dws_sha256(key) - the L2 dbm key
     char vary_names[DWS_EDGE_VARY_MAX]; ///< the response Vary header value (field-name list), "" if none
     char vary_vals[DWS_EDGE_VARY_MAX];  ///< serialized request Vary values at store time (secondary key)
     int status;                         ///< stored response status (200)

@@ -8,7 +8,7 @@
  * Fixed RAM ring of records. Each record's hash chains the previous record's
  * hash; the oldest retained record chains a moving "anchor" (the hash of the
  * last evicted record, genesis-zero before any eviction), so the retained window
- * verifies as a complete chain. SHA-256 comes from ssh_sha256 (HW-accelerated on
+ * verifies as a complete chain. SHA-256 comes from dws_sha256 (HW-accelerated on
  * ESP32); the timestamp comes from the pluggable dws_clock.
  */
 
@@ -17,7 +17,7 @@
 
 #if DWS_ENABLE_AUDIT_LOG
 
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "crypto/sha256.h"
 #include "services/clock.h"
 #include <string.h>
 
@@ -54,19 +54,19 @@ void put_le32(uint8_t out[4], uint32_t v)
 // msg_len is length-prefixed so two records can never serialize ambiguously.
 void chain_hash(const uint8_t prev[DWS_AUDIT_HASH_LEN], const DWSAuditEntry *e, uint8_t out[DWS_AUDIT_HASH_LEN])
 {
-    SshSha256Ctx c;
-    ssh_sha256_init(&c);
-    ssh_sha256_update(&c, prev, DWS_AUDIT_HASH_LEN);
+    DwsSha256Ctx c;
+    dws_sha256_init(&c);
+    dws_sha256_update(&c, prev, DWS_AUDIT_HASH_LEN);
     uint8_t le[4];
     put_le32(le, e->seq);
-    ssh_sha256_update(&c, le, 4);
+    dws_sha256_update(&c, le, 4);
     put_le32(le, e->ts);
-    ssh_sha256_update(&c, le, 4);
-    ssh_sha256_update(&c, (const uint8_t *)&e->category, 1); // hash the raw category byte
+    dws_sha256_update(&c, le, 4);
+    dws_sha256_update(&c, (const uint8_t *)&e->category, 1); // hash the raw category byte
     uint8_t mlen = (uint8_t)strnlen(e->msg, DWS_AUDIT_MSG_LEN - 1);
-    ssh_sha256_update(&c, &mlen, 1);
-    ssh_sha256_update(&c, (const uint8_t *)e->msg, mlen);
-    ssh_sha256_final(&c, out);
+    dws_sha256_update(&c, &mlen, 1);
+    dws_sha256_update(&c, (const uint8_t *)e->msg, mlen);
+    dws_sha256_final(&c, out);
 }
 
 // Append @p n JSON-escaped bytes of @p s into out[pos..cap); returns new pos, or

@@ -6,8 +6,8 @@
 // The cookie wire format is pinned byte-for-byte to an INDEPENDENT HMAC-SHA256 (Python stdlib
 // hmac/hashlib) so the field layout and the address binding are proven, not just self-consistent.
 
+#include "crypto/hmac_sha256.h" // DWS_HMAC_SHA256_LEN (cookie MAC size)
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h" // SSH_HMAC_SHA256_LEN (cookie MAC size)
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
@@ -436,7 +436,7 @@ static void test_cookie_empty_payload_roundtrip(void)
     uint8_t cookie[DTLS_COOKIE_MAX];
     size_t n =
         dws_dtls_cookie_make(COOKIE_KEY, 4242, nullptr, 0, COOKIE_ADDR, sizeof(COOKIE_ADDR), cookie, sizeof(cookie));
-    TEST_ASSERT_EQUAL_size_t(1 + 8 + 2 + SSH_HMAC_SHA256_LEN, n);
+    TEST_ASSERT_EQUAL_size_t(1 + 8 + 2 + DWS_HMAC_SHA256_LEN, n);
 
     uint8_t payload[4];
     memset(payload, 0xEE, sizeof(payload));

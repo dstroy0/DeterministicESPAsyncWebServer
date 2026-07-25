@@ -14,15 +14,15 @@
 
 #if DWS_ENABLE_SSH_CLIENT
 
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"     // bn_expmod_group14 (dh-group14 client)
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_x25519 (curve25519-sha256)
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"      // ecdh-sha2-nistp256 + ecdsa host-key verify
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"    // ssh-ed25519 host key + client auth
 #include "network_drivers/presentation/ssh/crypto/ssh_kexhash.h"    // SshKexHash (SHA-256/SHA-512 by method)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"        // rsa-sha2-256/512 host-key verify
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
-#include "network_drivers/presentation/ssh/transport/ssh_dh.h"     // ssh_dh_derive_keys_sid, ssh_rng_fill
-#include "network_drivers/presentation/ssh/transport/ssh_keymat.h" // ssh_keys[], SshKeyMat, SSH_CIPHER_*, SSH_MAC_*
+#include "network_drivers/presentation/ssh/transport/ssh_dh.h"      // ssh_dh_derive_keys_sid, ssh_rng_fill
+#include "network_drivers/presentation/ssh/transport/ssh_keymat.h"  // ssh_keys[], SshKeyMat, SSH_CIPHER_*, SSH_MAC_*
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "shared_primitives/log.h"
 #include <string.h>
@@ -716,11 +716,11 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         uint8_t k_pq[32], k_cl[32];
         dws_mlkem768_decaps(s_cli.hyb.mlkem_dk, srv_pub, k_pq);
         ssh_x25519(k_cl, s_cli.kex_priv, srv_pub + MLKEM768_CT_BYTES);
-        SshSha256Ctx c;
-        ssh_sha256_init(&c);
-        ssh_sha256_update(&c, k_pq, 32);
-        ssh_sha256_update(&c, k_cl, 32);
-        ssh_sha256_final(&c, k_be + (256 - 32));
+        DwsSha256Ctx c;
+        dws_sha256_init(&c);
+        dws_sha256_update(&c, k_pq, 32);
+        dws_sha256_update(&c, k_cl, 32);
+        dws_sha256_final(&c, k_be + (256 - 32));
         ssh_wipe(k_pq, sizeof(k_pq));
         ssh_wipe(k_cl, sizeof(k_cl));
         return true;
@@ -890,10 +890,10 @@ static bool handle_kexdh_reply(const uint8_t *p, size_t len)
 
     // Pin the relay by the SHA-256 fingerprint of its host-key blob (type-agnostic, like known_hosts).
     uint8_t fp[32];
-    SshSha256Ctx fc;
-    ssh_sha256_init(&fc);
-    ssh_sha256_update(&fc, ks, ks_len);
-    ssh_sha256_final(&fc, fp);
+    DwsSha256Ctx fc;
+    dws_sha256_init(&fc);
+    dws_sha256_update(&fc, ks, ks_len);
+    dws_sha256_final(&fc, fp);
     if (memcmp(fp, s_cli.cfg.host_pin, 32) != 0)
     {
         cli_fail("relay host key does not match the pin");

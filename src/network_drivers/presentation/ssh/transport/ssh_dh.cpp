@@ -7,7 +7,7 @@
  */
 
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "crypto/hmac_sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_kexhash.h"
 #include <Arduino.h> // for esp_random() / esp_fill_random() (real or mock)
 #include <string.h>
@@ -148,9 +148,9 @@ void ssh_kdf_derive(const uint8_t K_be[256], const uint8_t *H, const uint8_t *se
 
 // One 32-byte derived value (the only size any negotiated cipher key/IV needs today).
 static void derive_key(const uint8_t K_be[256], const uint8_t *H, const uint8_t *session_id, char label,
-                       uint8_t out[SSH_SHA256_DIGEST_LEN], bool k_is_string, size_t h_len, size_t sid_len, bool is512)
+                       uint8_t out[DWS_SHA256_DIGEST_LEN], bool k_is_string, size_t h_len, size_t sid_len, bool is512)
 {
-    ssh_kdf_derive(K_be, H, session_id, label, out, SSH_SHA256_DIGEST_LEN, k_is_string, h_len, sid_len, is512);
+    ssh_kdf_derive(K_be, H, session_id, label, out, DWS_SHA256_DIGEST_LEN, k_is_string, h_len, sid_len, is512);
 }
 
 void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H, const uint8_t *session_id,
@@ -180,8 +180,8 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H
     {
         // aes256-gcm@openssh.com (RFC 5647): a 256-bit key (labels 'C'/'D') and a 96-bit initial IV
         // (the first 12 bytes of the 'A'/'B' IV material) per direction; no separate MAC key (AEAD).
-        uint8_t iv_c2s[SSH_SHA256_DIGEST_LEN];
-        uint8_t iv_s2c[SSH_SHA256_DIGEST_LEN];
+        uint8_t iv_c2s[DWS_SHA256_DIGEST_LEN];
+        uint8_t iv_s2c[DWS_SHA256_DIGEST_LEN];
         uint8_t key_c2s[32];
         uint8_t key_s2c[32];
         derive_key(K_be, H, session_id, 'A', iv_c2s, k_is_string, h_len, sid_len, is512);  // IV  C→S (first 12 used)
@@ -200,8 +200,8 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H
 
     // aes256-ctr + HMAC-SHA2-256: RFC 4253 §7.2 derives six values, each keyed by a label 'A'..'F'.
     // The AES contexts need both key and IV at init time, so derive all six values first.
-    uint8_t iv_c2s[SSH_SHA256_DIGEST_LEN];
-    uint8_t iv_s2c[SSH_SHA256_DIGEST_LEN];
+    uint8_t iv_c2s[DWS_SHA256_DIGEST_LEN];
+    uint8_t iv_s2c[DWS_SHA256_DIGEST_LEN];
     uint8_t key_c2s[32];
     uint8_t key_s2c[32];
 
@@ -225,7 +225,7 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H
     km->active = true;
 }
 
-void ssh_dh_derive_keys(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN])
+void ssh_dh_derive_keys(uint8_t i, const uint8_t K_be[256], const uint8_t H[DWS_SHA256_DIGEST_LEN])
 {
     // First-KEX convenience: session id equals H; aes256-ctr + hmac-sha2-256 (pre-negotiation defaults),
     // SHA-256 exchange hash (h_len / sid_len / is512 default).

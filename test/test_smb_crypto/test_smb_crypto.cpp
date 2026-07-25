@@ -5,8 +5,10 @@
 // MD4 (RFC 1320 App A.5), HMAC-MD5 (RFC 2104 / RFC 2202). MD5 + HMAC expected
 // values are also cross-checked against python hashlib; MD4 against the RFC text.
 
+#include "crypto/hmac_sha256.h"
+#include "crypto/sha256.h"
 #include "crypto/sha512.h"
-#include "services/smb/smb_md.h"
+#include "services/smb/smb_md.h" // MD4/MD5/HMAC-MD5 + SP800-108 KDF
 #include <string.h>
 #include <unity.h>
 

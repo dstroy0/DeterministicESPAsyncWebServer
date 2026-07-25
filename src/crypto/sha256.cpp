@@ -2,30 +2,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_sha256.cpp
- * @brief SHA-256 implementation.
+ * @file sha256.cpp
+ * @brief SHA-256 implementation (FIPS 180-4).
  *
- * The streaming functions (init/update/final) are software on both
- * platforms - they are only used for KEX hash construction (once per
- * connection).
- *
- * The one-shot ssh_sha256() uses the ESP32 hardware SHA accelerator via
- * mbedtls on Arduino builds, and the software path on native builds.
+ * On Arduino builds streaming + one-shot delegate to mbedtls (ESP32 hardware SHA accelerator); on
+ * native builds the software path below is used. Shared by SSH, TLS 1.3 / QUIC / DTLS, SNMPv3, JWT,
+ * CSRF, and SMB 2.x message signing.
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "crypto/sha256.h"
 #include <string.h>
 
 #ifdef ARDUINO
 
 // ---------------------------------------------------------------------------
 // Arduino (ESP32): streaming + one-shot via mbedtls (hardware SHA accelerator).
-// The software FIPS-180-4 path below is compiled only on native.
 // ---------------------------------------------------------------------------
 
 #include <mbedtls/sha256.h>
 
-void ssh_sha256_init(SshSha256Ctx *ctx)
+void dws_sha256_init(DwsSha256Ctx *ctx)
 {
     mbedtls_sha256_init(&ctx->mbed);
 #if MBEDTLS_VERSION_MAJOR >= 3
@@ -35,7 +31,7 @@ void ssh_sha256_init(SshSha256Ctx *ctx)
 #endif
 }
 
-void ssh_sha256_update(SshSha256Ctx *ctx, const uint8_t *data, size_t len)
+void dws_sha256_update(DwsSha256Ctx *ctx, const uint8_t *data, size_t len)
 {
 #if MBEDTLS_VERSION_MAJOR >= 3
     mbedtls_sha256_update(&ctx->mbed, data, len);
@@ -44,7 +40,7 @@ void ssh_sha256_update(SshSha256Ctx *ctx, const uint8_t *data, size_t len)
 #endif
 }
 
-void ssh_sha256_final(SshSha256Ctx *ctx, uint8_t digest[SSH_SHA256_DIGEST_LEN])
+void dws_sha256_final(DwsSha256Ctx *ctx, uint8_t digest[DWS_SHA256_DIGEST_LEN])
 {
 #if MBEDTLS_VERSION_MAJOR >= 3
     mbedtls_sha256_finish(&ctx->mbed, digest);
@@ -54,18 +50,18 @@ void ssh_sha256_final(SshSha256Ctx *ctx, uint8_t digest[SSH_SHA256_DIGEST_LEN])
     mbedtls_sha256_free(&ctx->mbed);
 }
 
-void ssh_sha256(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA256_DIGEST_LEN])
+void dws_sha256(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA256_DIGEST_LEN])
 {
     (void)mbedtls_sha256(data, len, digest, 0 /* 0 = SHA-256, 1 = SHA-224 */);
 }
 
 #else // native software path
 
-#include "shared_primitives/endian.h"
-
 // ---------------------------------------------------------------------------
 // Software SHA-256 (FIPS 180-4) - native/test builds only
 // ---------------------------------------------------------------------------
+
+#include "shared_primitives/endian.h"
 
 static const uint32_t K256[64] = {
     0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
@@ -87,12 +83,12 @@ static inline uint32_t rotr32(uint32_t x, uint32_t n)
     return (x >> n) | (x << (32 - n));
 }
 
-// Compress one 64-byte block into the running hash state h[0..7] (FIPS 180-4
-// §6.2.2). The caller handles padding and length so this sees full blocks only.
+// Compress one 64-byte block into the running hash state h[0..7] (FIPS 180-4 §6.2.2). The caller
+// handles padding and length so this sees full blocks only.
 static void sha256_block(uint32_t h[8], const uint8_t blk[64])
 {
-    // Message schedule W[0..63]. The first 16 words are the block read as
-    // big-endian; the rest are extended with the sigma-0/sigma-1 recurrence.
+    // Message schedule W[0..63]. The first 16 words are the block read as big-endian; the rest are
+    // extended with the sigma-0/sigma-1 recurrence.
     uint32_t W[64];
     for (int i = 0; i < 16; i++)
         W[i] = dws_rd32be(blk + i * 4);
@@ -113,9 +109,8 @@ static void sha256_block(uint32_t h[8], const uint8_t blk[64])
     uint32_t g = h[6];
     uint32_t hh = h[7];
 
-    // 64 compression rounds. Each mixes in one schedule word W[i] and round
-    // constant K256[i] using the Ch/Maj choice/majority functions and the
-    // Sigma-0/Sigma-1 rotations.
+    // 64 compression rounds. Each mixes in one schedule word W[i] and round constant K256[i] using the
+    // Ch/Maj choice/majority functions and the Sigma-0/Sigma-1 rotations.
     for (int i = 0; i < 64; i++)
     {
         uint32_t S1 = rotr32(e, 6U) ^ rotr32(e, 11U) ^ rotr32(e, 25U); // Σ1
@@ -146,11 +141,7 @@ static void sha256_block(uint32_t h[8], const uint8_t blk[64])
     h[7] += hh;
 }
 
-// ---------------------------------------------------------------------------
-// Streaming API (software, native only)
-// ---------------------------------------------------------------------------
-
-void ssh_sha256_init(SshSha256Ctx *ctx)
+void dws_sha256_init(DwsSha256Ctx *ctx)
 {
     for (int i = 0; i < 8; i++)
         ctx->s[i] = H0[i];
@@ -159,7 +150,7 @@ void ssh_sha256_init(SshSha256Ctx *ctx)
     memset(ctx->buf, 0, sizeof(ctx->buf));
 }
 
-void ssh_sha256_update(SshSha256Ctx *ctx, const uint8_t *data, size_t len)
+void dws_sha256_update(DwsSha256Ctx *ctx, const uint8_t *data, size_t len)
 {
     ctx->n += len;
     while (len > 0)
@@ -178,7 +169,7 @@ void ssh_sha256_update(SshSha256Ctx *ctx, const uint8_t *data, size_t len)
     }
 }
 
-void ssh_sha256_final(SshSha256Ctx *ctx, uint8_t digest[SSH_SHA256_DIGEST_LEN])
+void dws_sha256_final(DwsSha256Ctx *ctx, uint8_t digest[DWS_SHA256_DIGEST_LEN])
 {
     uint64_t bitlen = ctx->n * 8;
 
@@ -202,16 +193,12 @@ void ssh_sha256_final(SshSha256Ctx *ctx, uint8_t digest[SSH_SHA256_DIGEST_LEN])
         dws_wr32be(digest + i * 4, ctx->s[i]);
 }
 
-// ---------------------------------------------------------------------------
-// One-shot (software)
-// ---------------------------------------------------------------------------
-
-void ssh_sha256(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA256_DIGEST_LEN])
+void dws_sha256(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA256_DIGEST_LEN])
 {
-    SshSha256Ctx ctx;
-    ssh_sha256_init(&ctx);
-    ssh_sha256_update(&ctx, data, len);
-    ssh_sha256_final(&ctx, digest);
+    DwsSha256Ctx ctx;
+    dws_sha256_init(&ctx);
+    dws_sha256_update(&ctx, data, len);
+    dws_sha256_final(&ctx, digest);
 }
 
 #endif // !ARDUINO (native software path)

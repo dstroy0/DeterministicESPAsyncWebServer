@@ -11,9 +11,9 @@
 //   - Server Finished verify_data over the full ClientHello..CertificateVerify transcript.
 // Pure host crypto (software SHA-256/HMAC on native).
 
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/http3/quic_hkdf.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <string.h>
 #include <unity.h>
 
@@ -175,21 +175,21 @@ void test_server_finished()
         "8e 95 b8 c3 fb 0b f3 27 84 09 d3 be 15 2a 3d a5 04 3e 06 3d da 65 cd f5 ae a2 0d 53 df ac d4 2f 74 f3";
 
     uint8_t buf[512];
-    SshSha256Ctx sha;
-    ssh_sha256_init(&sha);
+    DwsSha256Ctx sha;
+    dws_sha256_init(&sha);
     size_t n;
     n = hx(CH, buf, sizeof(buf));
-    ssh_sha256_update(&sha, buf, n);
+    dws_sha256_update(&sha, buf, n);
     n = hx(SH, buf, sizeof(buf));
-    ssh_sha256_update(&sha, buf, n);
+    dws_sha256_update(&sha, buf, n);
     n = hx(EE, buf, sizeof(buf));
-    ssh_sha256_update(&sha, buf, n);
+    dws_sha256_update(&sha, buf, n);
     n = hx(CERT, buf, sizeof(buf));
-    ssh_sha256_update(&sha, buf, n);
+    dws_sha256_update(&sha, buf, n);
     n = hx(CV, buf, sizeof(buf));
-    ssh_sha256_update(&sha, buf, n);
+    dws_sha256_update(&sha, buf, n);
     uint8_t thash[32];
-    ssh_sha256_final(&sha, thash);
+    dws_sha256_final(&sha, thash);
 
     uint8_t s_hs[32];
     hx(S_HS, s_hs, 32);

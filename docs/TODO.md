@@ -340,7 +340,7 @@ native Unity tests before moving on. Each must keep the "no heap after
       `test_path_params` (8 cases).
 
 - [x] **4. Digest authentication (medium / medium).** _(done)_ HTTP Digest
-      (RFC 7616, SHA-256, `qop=auth`) via the existing `ssh_sha256`, selected by
+      (RFC 7616, SHA-256, `qop=auth`) via the shared `dws_sha256`, selected by
       the new `digest` flag on
       [`on(..., realm, user, pass, digest=true)`](@ref DWS::on).
       Server nonce regenerated per `begin()`; challenge emitted by
@@ -888,7 +888,7 @@ shipped work:
       now backed by `mbedtls_sha256_context` on Arduino
       (`mbedtls_sha256_starts/update/finish`, v2/v3-guarded), so the HW SHA engine
       accelerates per-packet HMAC **and** KEX hashing. The software FIPS-180-4 path
-      is now compiled only on native (`#ifndef ARDUINO`). The `ssh_hmac_sha256.cpp`
+      is now compiled only on native (`#ifndef ARDUINO`). The `crypto/hmac_sha256.cpp`
       HW-acceleration comment is now accurate. Native software KATs still pass;
       `examples/SSHCryptoSelfTest` validates the HW path on-device.
 

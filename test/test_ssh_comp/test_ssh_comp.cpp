@@ -8,13 +8,13 @@
 // inflate_raw (validated vs Python zlib in test_inflate) - proving payloads are compressed on the
 // wire and the whole session forms one valid, context-takeover zlib stream.
 
+#include "crypto/sha256.h" // independent KDF verification
 #include "network_drivers/presentation/inflate/inflate.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"          // password verifier for the dispatch path
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h" // full-switch dispatch coverage
 #include "network_drivers/presentation/ssh/connection/ssh_server.h"  // dispatcher compression triggers
 #include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"   // native software AES-256-CTR path
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"         // host key for the KEXDH reply
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"      // independent KDF verification
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // DH keygen + RFC 4253 §7.2 key derivation
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
@@ -545,8 +545,8 @@ void test_dh_derive_keys_default_wrapper_and_slot_guard(void)
     uint8_t K[256];
     memset(K, 0, sizeof(K));
     K[0] = 0x01; // nonzero shared secret
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
-    for (int j = 0; j < SSH_SHA256_DIGEST_LEN; j++)
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
+    for (int j = 0; j < DWS_SHA256_DIGEST_LEN; j++)
         H[j] = (uint8_t)(j + 1);
 
     ssh_keymat_wipe(0);
@@ -569,8 +569,8 @@ void test_dh_derive_keys_chachapoly_and_gcm_branches(void)
     uint8_t K[256];
     memset(K, 0, sizeof(K));
     K[0] = 0x42;
-    uint8_t H[SSH_SHA256_DIGEST_LEN], sid[SSH_SHA256_DIGEST_LEN];
-    for (int j = 0; j < SSH_SHA256_DIGEST_LEN; j++)
+    uint8_t H[DWS_SHA256_DIGEST_LEN], sid[DWS_SHA256_DIGEST_LEN];
+    for (int j = 0; j < DWS_SHA256_DIGEST_LEN; j++)
     {
         H[j] = (uint8_t)(0x10 + j);
         sid[j] = (uint8_t)(0x50 + j);
@@ -591,37 +591,37 @@ void test_dh_derive_keys_chachapoly_and_gcm_branches(void)
 // Independently replicates hash_mpint_K's RFC 4251 §5 mpint encoding of K plus the K1 = HASH(mpint(K)
 // || H || label || session_id) step, so each K encoding edge case below can be checked against a value
 // computed a different way than ssh_dh.cpp itself (mirrors test_ssh_transport's KDF verification style).
-static void expected_kdf_k1(const uint8_t K[256], const uint8_t H[SSH_SHA256_DIGEST_LEN], char label,
-                            const uint8_t *sid, size_t sid_len, uint8_t out[SSH_SHA256_DIGEST_LEN])
+static void expected_kdf_k1(const uint8_t K[256], const uint8_t H[DWS_SHA256_DIGEST_LEN], char label,
+                            const uint8_t *sid, size_t sid_len, uint8_t out[DWS_SHA256_DIGEST_LEN])
 {
     size_t off = 0;
     while (off < 256 && K[off] == 0x00u)
         off++;
-    SshSha256Ctx c;
-    ssh_sha256_init(&c);
+    DwsSha256Ctx c;
+    dws_sha256_init(&c);
     if (off == 256)
     {
         uint8_t len_be[4] = {0, 0, 0, 0};
-        ssh_sha256_update(&c, len_be, 4);
+        dws_sha256_update(&c, len_be, 4);
     }
     else
     {
         bool pad = (K[off] & 0x80u) != 0;
         uint32_t mlen = (uint32_t)(256 - off) + (pad ? 1u : 0u);
         uint8_t len_be[4] = {(uint8_t)(mlen >> 24), (uint8_t)(mlen >> 16), (uint8_t)(mlen >> 8), (uint8_t)mlen};
-        ssh_sha256_update(&c, len_be, 4);
+        dws_sha256_update(&c, len_be, 4);
         if (pad)
         {
             uint8_t zero = 0x00u;
-            ssh_sha256_update(&c, &zero, 1);
+            dws_sha256_update(&c, &zero, 1);
         }
-        ssh_sha256_update(&c, K + off, 256 - off);
+        dws_sha256_update(&c, K + off, 256 - off);
     }
-    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
+    dws_sha256_update(&c, H, DWS_SHA256_DIGEST_LEN);
     uint8_t lbl = (uint8_t)label;
-    ssh_sha256_update(&c, &lbl, 1);
-    ssh_sha256_update(&c, sid, sid_len);
-    ssh_sha256_final(&c, out);
+    dws_sha256_update(&c, &lbl, 1);
+    dws_sha256_update(&c, sid, sid_len);
+    dws_sha256_final(&c, out);
 }
 
 // hash_mpint_K has three edge branches a real DH secret never hits on its own, but the public
@@ -630,33 +630,33 @@ static void expected_kdf_k1(const uint8_t K[256], const uint8_t H[SSH_SHA256_DIG
 // with the MSB set (needs the extra 0x00 pad byte so K is not misread as a negative mpint).
 void test_kdf_mpint_k_edge_encodings(void)
 {
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
-    for (int j = 0; j < SSH_SHA256_DIGEST_LEN; j++)
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
+    for (int j = 0; j < DWS_SHA256_DIGEST_LEN; j++)
         H[j] = (uint8_t)(0x20 + j);
 
     uint8_t K_zero[256];
     memset(K_zero, 0, sizeof(K_zero));
-    uint8_t out_zero[SSH_SHA256_DIGEST_LEN], expected_zero[SSH_SHA256_DIGEST_LEN];
-    ssh_kdf_derive(K_zero, H, H, 'A', out_zero, SSH_SHA256_DIGEST_LEN);
-    expected_kdf_k1(K_zero, H, 'A', H, SSH_SHA256_DIGEST_LEN, expected_zero);
-    TEST_ASSERT_EQUAL_MEMORY(expected_zero, out_zero, SSH_SHA256_DIGEST_LEN);
+    uint8_t out_zero[DWS_SHA256_DIGEST_LEN], expected_zero[DWS_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K_zero, H, H, 'A', out_zero, DWS_SHA256_DIGEST_LEN);
+    expected_kdf_k1(K_zero, H, 'A', H, DWS_SHA256_DIGEST_LEN, expected_zero);
+    TEST_ASSERT_EQUAL_MEMORY(expected_zero, out_zero, DWS_SHA256_DIGEST_LEN);
 
     uint8_t K_lead_zero[256];
     memset(K_lead_zero, 0, sizeof(K_lead_zero));
     for (int j = 2; j < 256; j++)
         K_lead_zero[j] = (uint8_t)(j & 0x7F); // K_lead_zero[2] != 0 and its MSB is clear -> no pad
-    uint8_t out_lz[SSH_SHA256_DIGEST_LEN], expected_lz[SSH_SHA256_DIGEST_LEN];
-    ssh_kdf_derive(K_lead_zero, H, H, 'B', out_lz, SSH_SHA256_DIGEST_LEN);
-    expected_kdf_k1(K_lead_zero, H, 'B', H, SSH_SHA256_DIGEST_LEN, expected_lz);
-    TEST_ASSERT_EQUAL_MEMORY(expected_lz, out_lz, SSH_SHA256_DIGEST_LEN);
+    uint8_t out_lz[DWS_SHA256_DIGEST_LEN], expected_lz[DWS_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K_lead_zero, H, H, 'B', out_lz, DWS_SHA256_DIGEST_LEN);
+    expected_kdf_k1(K_lead_zero, H, 'B', H, DWS_SHA256_DIGEST_LEN, expected_lz);
+    TEST_ASSERT_EQUAL_MEMORY(expected_lz, out_lz, DWS_SHA256_DIGEST_LEN);
 
     uint8_t K_msb[256];
     memset(K_msb, 0, sizeof(K_msb));
     K_msb[0] = 0x91; // MSB set on the very first byte -> pad byte required
-    uint8_t out_msb[SSH_SHA256_DIGEST_LEN], expected_msb[SSH_SHA256_DIGEST_LEN];
-    ssh_kdf_derive(K_msb, H, H, 'C', out_msb, SSH_SHA256_DIGEST_LEN);
-    expected_kdf_k1(K_msb, H, 'C', H, SSH_SHA256_DIGEST_LEN, expected_msb);
-    TEST_ASSERT_EQUAL_MEMORY(expected_msb, out_msb, SSH_SHA256_DIGEST_LEN);
+    uint8_t out_msb[DWS_SHA256_DIGEST_LEN], expected_msb[DWS_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K_msb, H, H, 'C', out_msb, DWS_SHA256_DIGEST_LEN);
+    expected_kdf_k1(K_msb, H, 'C', H, DWS_SHA256_DIGEST_LEN, expected_msb);
+    TEST_ASSERT_EQUAL_MEMORY(expected_msb, out_msb, DWS_SHA256_DIGEST_LEN);
 }
 
 // Hybrid KEX (mlkem768x25519-sha256 etc.): k_is_string=true hashes K as a plain SSH string (the last 32
@@ -666,29 +666,29 @@ void test_kdf_string_k_hybrid_branch(void)
     uint8_t K[256];
     for (int j = 0; j < 256; j++)
         K[j] = (uint8_t)(j * 7 + 1);
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
-    for (int j = 0; j < SSH_SHA256_DIGEST_LEN; j++)
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
+    for (int j = 0; j < DWS_SHA256_DIGEST_LEN; j++)
         H[j] = (uint8_t)(0x60 + j);
 
-    uint8_t got_string[SSH_SHA256_DIGEST_LEN];
-    ssh_kdf_derive(K, H, H, 'C', got_string, SSH_SHA256_DIGEST_LEN, true);
+    uint8_t got_string[DWS_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K, H, H, 'C', got_string, DWS_SHA256_DIGEST_LEN, true);
 
     uint8_t len_be[4] = {0, 0, 0, 32};
-    SshSha256Ctx c;
-    ssh_sha256_init(&c);
-    ssh_sha256_update(&c, len_be, 4);
-    ssh_sha256_update(&c, K + (256 - 32), 32);
-    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
+    DwsSha256Ctx c;
+    dws_sha256_init(&c);
+    dws_sha256_update(&c, len_be, 4);
+    dws_sha256_update(&c, K + (256 - 32), 32);
+    dws_sha256_update(&c, H, DWS_SHA256_DIGEST_LEN);
     uint8_t lbl = 'C';
-    ssh_sha256_update(&c, &lbl, 1);
-    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
-    uint8_t expected[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256_final(&c, expected);
-    TEST_ASSERT_EQUAL_MEMORY(expected, got_string, SSH_SHA256_DIGEST_LEN);
+    dws_sha256_update(&c, &lbl, 1);
+    dws_sha256_update(&c, H, DWS_SHA256_DIGEST_LEN);
+    uint8_t expected[DWS_SHA256_DIGEST_LEN];
+    dws_sha256_final(&c, expected);
+    TEST_ASSERT_EQUAL_MEMORY(expected, got_string, DWS_SHA256_DIGEST_LEN);
 
-    uint8_t got_mpint[SSH_SHA256_DIGEST_LEN];
-    ssh_kdf_derive(K, H, H, 'C', got_mpint, SSH_SHA256_DIGEST_LEN, false);
-    TEST_ASSERT_NOT_EQUAL(0, memcmp(got_string, got_mpint, SSH_SHA256_DIGEST_LEN));
+    uint8_t got_mpint[DWS_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K, H, H, 'C', got_mpint, DWS_SHA256_DIGEST_LEN, false);
+    TEST_ASSERT_NOT_EQUAL(0, memcmp(got_string, got_mpint, DWS_SHA256_DIGEST_LEN));
 }
 
 // out_len beyond SSH_KDF_MAX clamps rather than overflowing the caller's buffer, and the extension
@@ -699,8 +699,8 @@ void test_kdf_out_len_clamp_matches_exact_max(void)
     uint8_t K[256];
     for (int j = 0; j < 256; j++)
         K[j] = (uint8_t)(j ^ 0x5A); // K[0] = 0x5A: nonzero, MSB clear -> no pad, mlen = 256
-    uint8_t H[SSH_SHA256_DIGEST_LEN];
-    for (int j = 0; j < SSH_SHA256_DIGEST_LEN; j++)
+    uint8_t H[DWS_SHA256_DIGEST_LEN];
+    for (int j = 0; j < DWS_SHA256_DIGEST_LEN; j++)
         H[j] = (uint8_t)(0x30 + j);
 
     uint8_t clamped[SSH_KDF_MAX];
@@ -711,21 +711,21 @@ void test_kdf_out_len_clamp_matches_exact_max(void)
     TEST_ASSERT_EQUAL_MEMORY(exact, clamped, SSH_KDF_MAX);
 
     // K1 (the first 32 bytes of the chain) is a direct, independently-computed hash.
-    uint8_t expected_k1[SSH_SHA256_DIGEST_LEN];
-    expected_kdf_k1(K, H, 'X', H, SSH_SHA256_DIGEST_LEN, expected_k1);
-    TEST_ASSERT_EQUAL_MEMORY(expected_k1, clamped, SSH_SHA256_DIGEST_LEN);
+    uint8_t expected_k1[DWS_SHA256_DIGEST_LEN];
+    expected_kdf_k1(K, H, 'X', H, DWS_SHA256_DIGEST_LEN, expected_k1);
+    TEST_ASSERT_EQUAL_MEMORY(expected_k1, clamped, DWS_SHA256_DIGEST_LEN);
 
     // K2 = HASH(mpint(K) || H || K1) - the chain extension step carries no label/session_id.
     uint8_t len_be[4] = {0, 0, 1, 0};
-    SshSha256Ctx c;
-    ssh_sha256_init(&c);
-    ssh_sha256_update(&c, len_be, 4);
-    ssh_sha256_update(&c, K, 256);
-    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
-    ssh_sha256_update(&c, clamped, SSH_SHA256_DIGEST_LEN); // K1 = acc[0..32)
-    uint8_t expected_k2[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256_final(&c, expected_k2);
-    TEST_ASSERT_EQUAL_MEMORY(expected_k2, clamped + SSH_SHA256_DIGEST_LEN, SSH_SHA256_DIGEST_LEN);
+    DwsSha256Ctx c;
+    dws_sha256_init(&c);
+    dws_sha256_update(&c, len_be, 4);
+    dws_sha256_update(&c, K, 256);
+    dws_sha256_update(&c, H, DWS_SHA256_DIGEST_LEN);
+    dws_sha256_update(&c, clamped, DWS_SHA256_DIGEST_LEN); // K1 = acc[0..32)
+    uint8_t expected_k2[DWS_SHA256_DIGEST_LEN];
+    dws_sha256_final(&c, expected_k2);
+    TEST_ASSERT_EQUAL_MEMORY(expected_k2, clamped + DWS_SHA256_DIGEST_LEN, DWS_SHA256_DIGEST_LEN);
 }
 
 // ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@
 // Unit tests for the hash-chained audit log (services/audit_log). Verify the
 // chain detects any tampering (message or hash), that the moving anchor keeps the
 // retained window verifiable after the ring wraps, and that the sink + JSON
-// rendering behave. SHA-256 is exercised through ssh_sha256.
+// rendering behave. SHA-256 is exercised through dws_sha256.
 
 #include "services/audit_log/audit_log.h"
 #include "shared_primitives/hex.h"

@@ -16,12 +16,12 @@
 // not secrets - a known-answer test is meaningless if its inputs are not fixed.
 // Ephemeral, per-run keys belong in the handshake/round-trip tests, not here.
 
+#include "crypto/hmac_sha256.h"
 #include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/quic_hkdf.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_poly1305.h"
 #include <stdint.h>
@@ -140,7 +140,7 @@ static void run_hmac(const KatMac *arr, size_t n, bool is512)
         if (is512)
             ssh_hmac_sha512(key, klen, msg, mlen, got);
         else
-            ssh_hmac_sha256(key, klen, msg, mlen, got);
+            dws_hmac_sha256(key, klen, msg, mlen, got);
         size_t cmp = (size_t)v.tag_bits / 8; // truncated-tag length the vector pins
         char m[64];
         snprintf(m, sizeof(m), "HMAC%s tcId=%d", is512 ? "512" : "256", v.tc);

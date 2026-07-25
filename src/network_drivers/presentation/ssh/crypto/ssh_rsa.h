@@ -57,7 +57,7 @@
  *   which performs the full PKCS#1 v1.5 pad-and-sign in hardware-accelerated
  *   multiprecision arithmetic via ESP-IDF.
  *
- * Native:  software path - SHA-256/512 via ssh_sha256()/dws_sha512(), PKCS#1
+ * Native:  software path - SHA-256/512 via dws_sha256()/dws_sha512(), PKCS#1
  *   v1.5 padding built by hand, RSA exponentiation via bn_expmod_group14()
  *   (same Montgomery path used for DH).  Both paths use the same key layout.
  *
@@ -90,9 +90,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_RSA_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_RSA_H
 
+#include "crypto/sha256.h"
 #include "crypto/sha512.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <stddef.h>
 #include <stdint.h>
 
