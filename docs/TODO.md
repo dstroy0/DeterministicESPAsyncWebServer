@@ -225,7 +225,7 @@ layer built first, then the store codecs on top. Substrate before stores.
 
 ### Performance
 
-- [~] **Feature performance measurement -> `docs/FEATURE_PERFORMANCE.md`.** Benchmark each feature's hot
+- [x] **Feature performance measurement -> `docs/FEATURE_PERFORMANCE.md`.** _(done)_ Benchmark each feature's hot
       operation(s) to judge real-world viability: a host **ns/op** deterministic baseline plus the
       on-device **ESP32-S3 us/op @ 240 MHz** and throughput (the number that actually matters). Living
       table: feature, operation, host ns/op, ESP32 us/op, notes. **Done so far:** the storage
@@ -240,9 +240,11 @@ layer built first, then the store codecs on top. Substrate before stores.
       a guarded `DWS_SSH_KEX_BENCH` probe in `ssh_transport.cpp` + `perf/ssh/ssh_kex_time.py` driving a live
       OpenSSH client, HW-measured on the S3) - **67.9 ms of device compute per `curve25519-sha256` KEX**
       (2 X25519 + one comb ed25519 sign; ~97% crypto, ~2.3 ms machinery), a ~93 ms client-observed floor;
-      the measurement also reconciled the section's stale pre-comb "~0.13 s"/85.6 ms-sign figures.
-      _Remaining:_ only the TLS handshake wall-clock (the slim `rig_s3_tls` runs TLS on the stock core, so
-      the PSRAM build is not required after all - next).
+      the measurement also reconciled the section's stale pre-comb "~0.13 s"/85.6 ms-sign figures. The
+      **TLS handshake wall-clock** was already covered (§"TLS handshake": ~498 ms full handshake, the curve
+      preference 2.05x win, resumption ~54 ms) - independently re-verified from a WSL client (min 489.5 ms)
+      and given a committed reproducer (`perf/tls/tls_hs_time.py`). All sub-items are now measured; nothing
+      outstanding.
 - [x] **base64 was slow on-device (mbedTLS).** _(done - hybrid)_ mbedTLS's base64 is slow because it is
       constant-time (side-channel hardened). Rather than drop that globally, the path now splits by data
       sensitivity: **encode** (only the public WebSocket-accept digest) uses the fast software codec on

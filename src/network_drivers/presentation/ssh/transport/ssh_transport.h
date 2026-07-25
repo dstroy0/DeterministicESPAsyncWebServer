@@ -340,15 +340,19 @@ int ssh_kexdh_build_reply(const uint8_t *ks, size_t ks_len, const uint8_t *f_be,
 int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *reply_out, size_t *reply_len, size_t cap);
 
 #ifdef DWS_SSH_KEX_BENCH
-// Wall-clock KEX bench (perf / FEATURE_PERFORMANCE): the two device-side compute spans of a key exchange,
-// in microseconds. ssh_kex_generate records the ephemeral-keygen span (one X25519 base multiply for a
-// curve25519 KEX) into dws_ssh_last_kexgen_us; ssh_kexdh_handle records the reply span (shared-secret
-// X25519 + host-key sign + exchange hash + KDF + reply assembly) into dws_ssh_last_kexreply_us and bumps
-// dws_ssh_kex_count. The rig firmware watches the counter and prints both over its own serial - src writes
-// no output. Compiled out entirely unless DWS_SSH_KEX_BENCH is defined (a rig-only measurement build).
-extern volatile long long dws_ssh_last_kexgen_us;
-extern volatile long long dws_ssh_last_kexreply_us;
-extern volatile unsigned dws_ssh_kex_count;
+// Wall-clock KEX bench (perf / FEATURE_PERFORMANCE): one owned context holding the two device-side compute
+// spans of a key exchange, in microseconds. ssh_kex_generate records the ephemeral-keygen span (one X25519
+// base multiply for a curve25519 KEX) into last_kexgen_us; ssh_kexdh_handle records the reply span
+// (shared-secret X25519 + host-key sign + exchange hash + KDF + reply assembly) into last_kexreply_us and
+// bumps kex_count. The rig firmware watches kex_count and prints both over its own serial - src writes no
+// output. Compiled out entirely unless DWS_SSH_KEX_BENCH is defined (a rig-only measurement build).
+struct SshKexBenchCtx
+{
+    volatile long long last_kexgen_us;   ///< ssh_kex_generate: ephemeral X25519 base-multiply span.
+    volatile long long last_kexreply_us; ///< ssh_kexdh_handle: reply span (shared secret + sign + hash + KDF).
+    volatile unsigned kex_count;         ///< bumped after each completed KEX; the rig prints on change.
+};
+extern SshKexBenchCtx dws_ssh_kex_bench;
 #endif
 
 /**

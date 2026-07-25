@@ -875,8 +875,11 @@ signing input, base64url-encodes the MAC, and constant-time compares it. Host fr
 
 Unlike the codecs above, TLS is not a pure host op - it is an mbedTLS handshake terminated on the device from
 its 48 KB static BSS arena (zero heap, no `malloc`), so the meaningful number is the **device-side wall time**
-of a full handshake, measured end to end from a real client (Python `ssl` on the RPi) against the slim HTTPS
-rig on an ESP32-S3. Cipher suite `ECDHE-ECDSA-AES256-GCM-SHA384` (P-256), self-signed ECDSA leaf.
+of a full handshake, measured end to end from a real client (Python `ssl`,
+[`perf/tls/tls_hs_time.py`](../perf/tls/tls_hs_time.py)) against the slim HTTPS rig on an ESP32-S3. Cipher
+suite `ECDHE-ECDSA-AES256-GCM-SHA384`, X25519 ECDHE + a self-signed P-256 ECDSA leaf (`Server Temp Key:
+X25519` confirmed with `openssl s_client`). Independently re-verified from a WSL client: **min 489.5 ms,
+median 498 ms** over 8 handshakes - matching the numbers below.
 
 | Operation (ECDHE curve)                          | ESP32-S3 min | avg     | Rate (full req) |
 | ------------------------------------------------ | -----------: | ------- | --------------: |

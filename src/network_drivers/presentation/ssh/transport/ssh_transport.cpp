@@ -30,11 +30,9 @@
 
 #ifdef DWS_SSH_KEX_BENCH
 #include <esp_timer.h> // esp_timer_get_time() - microsecond wall clock for the KEX span probe
-// Device-side KEX compute spans (see ssh_transport.h). Set by ssh_kex_generate / ssh_kexdh_handle; the
-// rig firmware prints them. Single active connection during a bench run, so plain globals suffice.
-volatile long long dws_ssh_last_kexgen_us = 0;
-volatile long long dws_ssh_last_kexreply_us = 0;
-volatile unsigned dws_ssh_kex_count = 0;
+// The one owned KEX-bench context (see ssh_transport.h). Set by ssh_kex_generate / ssh_kexdh_handle; the
+// rig firmware prints it. Single active connection during a bench run, so a plain instance suffices.
+SshKexBenchCtx dws_ssh_kex_bench = {0, 0, 0};
 #endif
 
 SshSession ssh_sess[MAX_SSH_CONNS];
@@ -939,7 +937,7 @@ int ssh_kex_generate(uint8_t i)
         ssh_rng_fill(ssh_sess[i].ecdh_sk, 32);
         dws_x25519_base(ssh_sess[i].ecdh_pk, ssh_sess[i].ecdh_sk);
 #ifdef DWS_SSH_KEX_BENCH
-        dws_ssh_last_kexgen_us = (long long)(esp_timer_get_time() - kexgen_t0);
+        dws_ssh_kex_bench.last_kexgen_us = (long long)(esp_timer_get_time() - kexgen_t0);
 #endif
         return 0;
     }
@@ -1220,8 +1218,8 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
 
     s->phase = SshPhase::SSH_PHASE_NEWKEYS;
 #ifdef DWS_SSH_KEX_BENCH
-    dws_ssh_last_kexreply_us = (long long)(esp_timer_get_time() - kexreply_t0);
-    dws_ssh_kex_count++;
+    dws_ssh_kex_bench.last_kexreply_us = (long long)(esp_timer_get_time() - kexreply_t0);
+    dws_ssh_kex_bench.kex_count++;
 #endif
     return 0;
 }
