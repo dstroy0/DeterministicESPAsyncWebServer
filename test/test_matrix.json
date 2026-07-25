@@ -1502,6 +1502,7 @@
         "+<crypto/sha256.cpp>",
         "+<crypto/hmac_sha256.cpp>",
         "+<crypto/kdf.cpp>",
+        "+<crypto/aes_cmac.cpp>",
         "+<crypto/sha512.cpp>"
       ],
       "tests": [

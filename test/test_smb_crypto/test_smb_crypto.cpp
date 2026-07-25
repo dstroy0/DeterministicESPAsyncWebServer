@@ -5,6 +5,7 @@
 // MD4 (RFC 1320 App A.5), HMAC-MD5 (RFC 2104 / RFC 2202). MD5 + HMAC expected
 // values are also cross-checked against python hashlib; MD4 against the RFC text.
 
+#include "crypto/aes_cmac.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/kdf.h"
 #include "crypto/md.h" // MD4/MD5/HMAC-MD5
@@ -302,6 +303,51 @@ void test_sha512_vectors()
     TEST_ASSERT_EQUAL_HEX8_ARRAY(ab, strm, 64);
 }
 
+// AES-128-CMAC known-answer vectors (RFC 4493 sec 4: the four worked examples over the standard AES
+// key 2b7e1516..., lengths 0 / 16 / 40 / 64 - empty, one block, non-block-multiple, block-multiple).
+void test_aes_cmac_rfc4493()
+{
+    const uint8_t key[16] = {0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+                             0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c};
+    // The four RFC 4493 message prefixes concatenate into this 64-byte buffer.
+    const uint8_t msg[64] = {0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73,
+                             0x93, 0x17, 0x2a, 0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7,
+                             0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51, 0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4,
+                             0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef, 0xf6, 0x9f, 0x24, 0x45,
+                             0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10};
+    uint8_t mac[16];
+
+    // Example 1: len 0 (M_last uses K2 over the 10*-padded empty block).
+    const uint8_t e0[16] = {0xbb, 0x1d, 0x69, 0x29, 0xe9, 0x59, 0x37, 0x28,
+                            0x7f, 0xa3, 0x7d, 0x12, 0x9b, 0x75, 0x67, 0x46};
+    dws_aes_cmac(key, nullptr, 0, mac);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(e0, mac, 16);
+
+    // Example 2: len 16 (one complete block -> M_last uses K1).
+    const uint8_t e16[16] = {0x07, 0x0a, 0x16, 0xb4, 0x6b, 0x4d, 0x41, 0x44,
+                             0xf7, 0x9b, 0xdd, 0x9d, 0xd0, 0x4a, 0x28, 0x7c};
+    dws_aes_cmac(key, msg, 16, mac);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(e16, mac, 16);
+
+    // Example 3: len 40 (not a block multiple -> 10*-padded last block uses K2).
+    const uint8_t e40[16] = {0xdf, 0xa6, 0x67, 0x47, 0xde, 0x9a, 0xe6, 0x30,
+                             0x30, 0xca, 0x32, 0x61, 0x14, 0x97, 0xc8, 0x27};
+    dws_aes_cmac(key, msg, 40, mac);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(e40, mac, 16);
+
+    // Example 4: len 64 (four complete blocks -> M_last uses K1).
+    const uint8_t e64[16] = {0x51, 0xf0, 0xbe, 0xbf, 0x7e, 0x3b, 0x9d, 0x92,
+                             0xfc, 0x49, 0x74, 0x17, 0x79, 0x36, 0x3c, 0xfe};
+    dws_aes_cmac(key, msg, 64, mac);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(e64, mac, 16);
+
+    // A 15-byte (sub-block) message also drives the pad-with-K2 branch with a non-zero remainder.
+    dws_aes_cmac(key, msg, 15, mac);
+    uint8_t mac2[16];
+    dws_aes_cmac(key, msg, 15, mac2);
+    TEST_ASSERT_EQUAL_MEMORY(mac, mac2, 16); // deterministic
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -311,6 +357,7 @@ int main()
     RUN_TEST(test_sha256_vectors);
     RUN_TEST(test_sha512_vectors);
     RUN_TEST(test_hmac_sha256_vectors);
+    RUN_TEST(test_aes_cmac_rfc4493);
     RUN_TEST(test_streaming_equals_oneshot);
     RUN_TEST(test_nt_hash);
     RUN_TEST(test_kdf_ctr_hmac_sha256_nist);
