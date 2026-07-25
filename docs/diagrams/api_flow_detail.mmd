@@ -26,7 +26,7 @@ flowchart TB
   consend["Write bytes back<br/>dws_conn_send"]
   udptx["Send a datagram<br/>dws_udp"]
   cout(["The client gets the response"])
-  mods["All L6 presentation modules (18)<br/>base64 / cbor / deflate / dtls / hpack_prim / http2<br/>http3 / http_parser / inflate / json / msgpack / multipart<br/>pqc / sha1 / sse / ssh / telnet / websocket"]
+  mods["All L6 presentation modules (17)<br/>base64 / cbor / deflate / dtls / hpack_prim / http2<br/>http3 / http_parser / inflate / json / msgpack / multipart<br/>pqc / sse / ssh / telnet / websocket"]
 
   run -.->|starts| listen
   cin ==>|TCP| listen

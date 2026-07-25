@@ -1180,8 +1180,6 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
-│   │   ├── __pycache__/
-│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1255,7 +1253,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `HTTP_CLIENT` | `L7-Application/HttpClient` | 734,625 | 63,180 |
 | `SMTP` | `L7-Application/SmtpAlert` | 735,201 | 61,124 |
 | `MQTT` | `L7-Application/MqttClient` | 736,465 | 65,340 |
-| `SMB` | `L7-Application/SmbFileClient` | 744,717 | 65,220 |
+| `SMB` | `L7-Application/SmbFileClient` | 744,281 | 65,220 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,669 | 46,708 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 753,149 | 81,828 |
 | `ADS` | `L7-Application/AdsClient` | 753,317 | 44,204 |
