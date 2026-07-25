@@ -1495,7 +1495,10 @@
     "paddlewheel",
     "crob",
     "asnd",
-    "conformantly"
+    "conformantly",
+    "CAVP",
+    "KBKDF",
+    "KDFCTR"
   ],
   "ignorePaths": [
     "node_modules/**",

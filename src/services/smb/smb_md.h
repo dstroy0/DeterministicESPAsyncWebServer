@@ -70,6 +70,25 @@ void dws_sha256(const uint8_t *data, size_t len, uint8_t out[32]);
  *  first 16 octets of this 32-byte MAC over the message (with the Signature field zeroed). */
 void dws_hmac_sha256(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg_len, uint8_t out[32]);
 
+/**
+ * @brief SP800-108 KDF in counter mode with HMAC-SHA256 as the PRF (NIST SP800-108 §5.1; r = 32-bit
+ *        counter placed before the fixed input). This is the key-derivation primitive SMB 3.x uses to
+ *        derive its signing and encryption keys (MS-SMB2 §3.1.4.2): the caller assembles @p fixed as
+ *        `Label || 0x00 || Context || [L]` (L = the output length in bits, 32-bit big-endian) and passes
+ *        it whole, keeping this primitive independent of the per-key label/context choices.
+ *
+ * K(i) = HMAC-SHA256(Ki, [i]_32be || fixed); the blocks are concatenated for i = 1, 2, ... and the
+ * result truncated to @p out_len bytes. Verified against the NIST CAVP KBKDF (KDFCTR) vectors.
+ *
+ * @param ki       the key-derivation key (the SMB 3.x session key).
+ * @param fixed    the fixed input (`Label || 0x00 || Context || [L]`).
+ * @param out      receives @p out_len derived bytes.
+ * @param out_len  number of output bytes (>= 1); the caller must encode L = out_len * 8 into @p fixed.
+ * @return true on success; false on a null pointer or @p out_len == 0.
+ */
+bool dws_kdf_ctr_hmac_sha256(const uint8_t *ki, size_t ki_len, const uint8_t *fixed, size_t fixed_len, uint8_t *out,
+                             size_t out_len);
+
 #endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SMB_MD_H

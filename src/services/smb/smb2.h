@@ -22,9 +22,10 @@
  * TREE_CONNECT / CREATE / CLOSE / READ / WRITE file commands - the full read/write-a-file-on-a-share
  * client; **SMB 2.x message signing** (dws_smb2_sign / dws_smb2_verify, HMAC-SHA256) wired into the
  * client's SigningRequired path; and the **SMB 3.1.1 negotiate-context codec** (dws_smb2_build_negotiate_311
- * / dws_smb2_parse_negotiate_contexts - preauth-integrity SHA-512, signing, and encryption capabilities).
- * Roadmap (later options): the SMB 3.1.1 preauth-integrity hash chain + the SP800-108 signing-key KDF +
- * AES-CMAC signing, which together let the client negotiate and run 3.1.1 end to end.
+ * / dws_smb2_parse_negotiate_contexts - preauth-integrity SHA-512, signing, and encryption capabilities);
+ * and the **SP800-108 counter-mode KDF** (dws_kdf_ctr_hmac_sha256 in smb_md, NIST-CAVP-verified) that
+ * SMB 3.x uses to derive its keys. Roadmap (later options): the SMB 3.1.1 preauth-integrity hash chain +
+ * the per-key label/context assembly + AES-CMAC signing, which together let a client run 3.1.1 end to end.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
