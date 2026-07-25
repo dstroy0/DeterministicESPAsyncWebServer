@@ -66,6 +66,23 @@ void dws_sha256_final(Sha256Ctx *c, uint8_t out[32]);
 /** @brief One-shot SHA-256. */
 void dws_sha256(const uint8_t *data, size_t len, uint8_t out[32]);
 
+// --- SHA-512 (FIPS 180-4): the SMB 3.1.1 preauth-integrity hash (64-bit words, 128-byte block) -----
+
+/** @brief Streaming SHA-512 digest context (64-byte digest, 128-byte block). */
+struct Sha512Ctx
+{
+    uint64_t s[8];    ///< running hash state
+    uint64_t n;       ///< total bytes hashed (handshake messages are far below the 2^64-byte limit)
+    uint8_t buf[128]; ///< partial block
+    uint32_t buflen;  ///< bytes buffered in @ref buf
+};
+
+void dws_sha512_init(Sha512Ctx *c);
+void dws_sha512_update(Sha512Ctx *c, const uint8_t *data, size_t len);
+void dws_sha512_final(Sha512Ctx *c, uint8_t out[64]);
+/** @brief One-shot SHA-512 (FIPS 180-4); the SMB 3.1.1 preauth-integrity hash. */
+void dws_sha512(const uint8_t *data, size_t len, uint8_t out[64]);
+
 /** @brief HMAC-SHA256 (RFC 2104): the SMB 2.x message-signing MAC. The 16-byte SMB2 Signature is the
  *  first 16 octets of this 32-byte MAC over the message (with the Signature field zeroed). */
 void dws_hmac_sha256(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg_len, uint8_t out[32]);
