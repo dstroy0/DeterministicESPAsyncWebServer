@@ -119,11 +119,11 @@
     "ram_bytes": 81860
   },
   "DIAG": {
-    "example": "Foundation/Configuration",
+    "example": "L7-Application/Diagnostics",
     "flags": "-DDWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 755581,
-    "ram_bytes": 77580
+    "flash_bytes": 754005,
+    "ram_bytes": 81820
   },
   "DIFFSERV": {
     "example": "L4-Transport/DiffServ",
@@ -318,7 +318,7 @@
     "example": "L5-Session/IKEv2",
     "flags": "-DDWS_ENABLE_IKEV2=1",
     "board": "esp32dev",
-    "flash_bytes": 728849,
+    "flash_bytes": 727557,
     "ram_bytes": 43948
   },
   "INA219": {
@@ -486,7 +486,7 @@
     "example": "L7-Application/OidcAuth",
     "flags": "-DDWS_ENABLE_OIDC=1",
     "board": "esp32dev",
-    "flash_bytes": 767349,
+    "flash_bytes": 766077,
     "ram_bytes": 99876
   },
   "OPCUA": {
@@ -675,7 +675,7 @@
     "example": "L7-Application/SmbFileClient",
     "flags": "-DDWS_ENABLE_SMB=1",
     "board": "esp32dev",
-    "flash_bytes": 744281,
+    "flash_bytes": 744257,
     "ram_bytes": 65220
   },
   "SMTP": {
@@ -710,14 +710,14 @@
     "example": "L5-Session/SSHHostKey",
     "flags": "-DDWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 831549,
-    "ram_bytes": 109248
+    "flash_bytes": 831557,
+    "ram_bytes": 109240
   },
   "SSH+FILE_SERVING+SSH_SFTP+SSH_SCP": {
     "example": "L5-Session/SSHSftp",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1",
     "board": "esp32dev",
-    "flash_bytes": 883801,
+    "flash_bytes": 883793,
     "ram_bytes": 118600
   },
   "SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF": {
