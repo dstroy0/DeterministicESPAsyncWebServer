@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.160.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.160.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ef978e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef978e33b6f604428194c10bb02bbcdcd28c2946))
+
+### Changes
+
+- Bump version: 7.159.0 → 7.160.0 ([`28c02dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28c02dd9109f9b439f24716914133c34551fa9a6))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b15142c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b15142c0a5cdc8cb4e930541b8a0dbbcd8577b15))
+
+### Features
+
+- SHA-512 (FIPS 180-4) for the SMB 3.1.1 preauth-integrity hash ([`731014f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/731014fb62eabcce30192ab09e82bac665772c2f))
+
+</details>
+
 ## [7.159.0] - 2026-07-25
 
 <details>
