@@ -6,11 +6,11 @@
 // smb_close releases the handle. Exercised end to end on the host with a scripted mock SMB2 server
 // (a send/recv seam), so no lwIP or real share is needed.
 
+#include "crypto/md.h"
 #include "services/smb/ntlm.h"
 #include "services/smb/ntlmssp.h"
 #include "services/smb/smb2.h"
 #include "services/smb/smb_client.h"
-#include "services/smb/smb_md.h"
 #include "services/smb/spnego.h"
 #include <string.h>
 #include <unity.h>

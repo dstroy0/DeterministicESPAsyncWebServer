@@ -1389,7 +1389,7 @@
         "+<services/smb/spnego.cpp>",
         "+<services/smb/ntlmssp.cpp>",
         "+<services/smb/ntlm.cpp>",
-        "+<services/smb/smb_md.cpp>",
+        "+<crypto/md.cpp>",
         "+<services/dnc/dnc.cpp>",
         "+<services/ftp/ftp.cpp>",
         "+<services/fins/fins.cpp>",
@@ -1493,13 +1493,14 @@
       "flags": ["-DDWS_ENABLE_SMB=1"],
       "src": [
         "+<services/smb/smb2.cpp>",
-        "+<services/smb/smb_md.cpp>",
+        "+<crypto/md.cpp>",
         "+<services/smb/ntlm.cpp>",
         "+<services/smb/ntlmssp.cpp>",
         "+<services/smb/spnego.cpp>",
         "+<services/smb/smb_client.cpp>",
         "+<crypto/sha256.cpp>",
         "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/kdf.cpp>",
         "+<crypto/sha512.cpp>"
       ],
       "tests": [

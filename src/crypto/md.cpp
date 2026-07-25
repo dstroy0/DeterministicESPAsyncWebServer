@@ -2,15 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file smb_md.cpp
- * @brief MD4 / MD5 / HMAC-MD5 implementation (see smb_md.h). Little-endian word order.
+ * @file md.cpp
+ * @brief MD4 / MD5 / HMAC-MD5 implementation (see md.h). Little-endian word order.
  */
 
-#include "smb_md.h"
-
-#if DWS_ENABLE_SMB
-
-#include "crypto/sha256.h" // shared SHA-256 primitive (the KDF's HMAC-SHA256 PRF)
+#include "crypto/md.h"
 #include "shared_primitives/endian.h"
 #include <string.h>
 
@@ -281,52 +277,3 @@ void dws_hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t
     dws_md5_update(&c, inner, 16);
     dws_md5_final(&c, out);
 }
-
-// --- SP800-108 counter-mode KDF (HMAC-SHA256 PRF) ------------------------
-// SHA-256 / HMAC-SHA256 are the shared src/crypto primitives; this KDF consumes them.
-
-bool dws_kdf_ctr_hmac_sha256(const uint8_t *ki, size_t ki_len, const uint8_t *fixed, size_t fixed_len, uint8_t *out,
-                             size_t out_len)
-{
-    if (!ki || !fixed || !out || out_len == 0)
-        return false;
-    // The HMAC key is constant across counter iterations, so derive its pads once (RFC 2104).
-    uint8_t k[64];
-    memset(k, 0, sizeof(k));
-    if (ki_len > 64)
-        dws_sha256(ki, ki_len, k); // a key longer than the block is hashed to 32 octets first
-    else
-        memcpy(k, ki, ki_len);
-    uint8_t ipad[64], opad[64];
-    for (int i = 0; i < 64; i++)
-    {
-        ipad[i] = (uint8_t)(k[i] ^ 0x36u);
-        opad[i] = (uint8_t)(k[i] ^ 0x5cu);
-    }
-
-    // K(i) = HMAC-SHA256(Ki, [i]_32be || fixed); concatenate blocks for i = 1, 2, ... then truncate.
-    size_t done = 0;
-    for (uint32_t counter = 1; done < out_len; counter++)
-    {
-        uint8_t ctr[4];
-        dws_wr32be(ctr, counter);
-        DwsSha256Ctx c;
-        uint8_t inner[32];
-        dws_sha256_init(&c);
-        dws_sha256_update(&c, ipad, 64);
-        dws_sha256_update(&c, ctr, 4);
-        dws_sha256_update(&c, fixed, fixed_len);
-        dws_sha256_final(&c, inner);
-        uint8_t block[32];
-        dws_sha256_init(&c);
-        dws_sha256_update(&c, opad, 64);
-        dws_sha256_update(&c, inner, 32);
-        dws_sha256_final(&c, block);
-        size_t take = (out_len - done < 32) ? out_len - done : 32;
-        memcpy(out + done, block, take);
-        done += take;
-    }
-    return true;
-}
-
-#endif // DWS_ENABLE_SMB

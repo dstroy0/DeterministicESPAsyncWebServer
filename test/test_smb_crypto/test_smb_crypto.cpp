@@ -6,9 +6,10 @@
 // values are also cross-checked against python hashlib; MD4 against the RFC text.
 
 #include "crypto/hmac_sha256.h"
+#include "crypto/kdf.h"
+#include "crypto/md.h" // MD4/MD5/HMAC-MD5
 #include "crypto/sha256.h"
 #include "crypto/sha512.h"
-#include "services/smb/smb_md.h" // MD4/MD5/HMAC-MD5 + SP800-108 KDF
 #include <string.h>
 #include <unity.h>
 

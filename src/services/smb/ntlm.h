@@ -7,7 +7,7 @@
  *
  * The auth core: from the user's password and the server's CHALLENGE (the 8-byte server challenge
  * + the target-info AV_PAIR blob), compute the NtChallengeResponse and the session base key that
- * seed SESSION_SETUP. Built on the KAT-verified MD4 / MD5 / HMAC-MD5 (smb_md.h). Pure, zero heap.
+ * seed SESSION_SETUP. Built on the KAT-verified MD4 / MD5 / HMAC-MD5 (crypto/md.h). Pure, zero heap.
  *
  *   NThash        = MD4(UTF-16LE(password))
  *   NTOWFv2       = HMAC-MD5(NThash, UTF-16LE(Uppercase(user) + domain))

@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_SMB
 
-#include "services/smb/smb_md.h"
+#include "crypto/md.h"
 #include <string.h>
 
 void dws_ntlm_nt_hash(const char *password, uint8_t nt_hash[16])
