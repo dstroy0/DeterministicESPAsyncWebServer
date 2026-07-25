@@ -293,6 +293,29 @@ size_t dws_smb2_build_negotiate_311(uint8_t *buf, size_t cap, const uint8_t clie
  */
 bool dws_smb2_parse_negotiate_contexts(const uint8_t *msg, size_t len, Smb2NegotiateContexts *out);
 
+/** @brief Length of the SMB 3.1.1 preauth-integrity hash (SHA-512 digest size). */
+static constexpr size_t SMB2_PREAUTH_HASH_LEN = 64;
+
+/**
+ * @brief The SMB 3.1.1 preauth-integrity hash value (MS-SMB2 §3.1.5.2): a running SHA-512 chained over
+ *        every NEGOTIATE and SESSION_SETUP message of the handshake. Its final value binds the whole
+ *        pre-authentication exchange and feeds the 3.1.1 signing / encryption key derivation.
+ */
+struct SmbPreauth
+{
+    uint8_t hash[SMB2_PREAUTH_HASH_LEN];
+};
+
+/** @brief Seed the preauth-integrity hash with 64 zero bytes (the initial value, MS-SMB2 §3.1.5.2). */
+void dws_smb_preauth_init(SmbPreauth *p);
+
+/**
+ * @brief Fold one handshake message into the preauth-integrity hash: hash = SHA-512(hash || msg).
+ *        Call once per NEGOTIATE / SESSION_SETUP message (request and response), in wire order, passing
+ *        the SMB2 message (header + body) without the Direct-TCP transport prefix.
+ */
+void dws_smb_preauth_update(SmbPreauth *p, const uint8_t *msg, size_t len);
+
 /** @brief Parsed SESSION_SETUP response (MS-SMB2 §2.2.6). */
 struct Smb2SessionSetupResp
 {

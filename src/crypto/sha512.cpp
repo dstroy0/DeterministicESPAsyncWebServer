@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_sha512.cpp
+ * @file sha512.cpp
  * @brief SHA-512 implementation (FIPS 180-4).
  *
- * On Arduino builds streaming + one-shot delegate to mbedtls; on native builds the
- * software path below is used. Backs Ed25519 (RFC 8032), which hashes with SHA-512.
+ * On Arduino builds streaming + one-shot delegate to mbedtls; on native builds the software path below
+ * is used. Shared by SSH (Ed25519 / kex), PQC, and SMB 3.1.1 preauth integrity.
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
+#include "crypto/sha512.h"
 #include <string.h>
 
 #ifdef ARDUINO
@@ -20,7 +20,7 @@
 
 #include <mbedtls/sha512.h>
 
-void ssh_sha512_init(SshSha512Ctx *ctx)
+void dws_sha512_init(DwsSha512Ctx *ctx)
 {
     mbedtls_sha512_init(&ctx->mbed);
 #if MBEDTLS_VERSION_MAJOR >= 3
@@ -30,7 +30,7 @@ void ssh_sha512_init(SshSha512Ctx *ctx)
 #endif
 }
 
-void ssh_sha512_update(SshSha512Ctx *ctx, const uint8_t *data, size_t len)
+void dws_sha512_update(DwsSha512Ctx *ctx, const uint8_t *data, size_t len)
 {
 #if MBEDTLS_VERSION_MAJOR >= 3
     mbedtls_sha512_update(&ctx->mbed, data, len);
@@ -39,7 +39,7 @@ void ssh_sha512_update(SshSha512Ctx *ctx, const uint8_t *data, size_t len)
 #endif
 }
 
-void ssh_sha512_final(SshSha512Ctx *ctx, uint8_t digest[SSH_SHA512_DIGEST_LEN])
+void dws_sha512_final(DwsSha512Ctx *ctx, uint8_t digest[DWS_SHA512_DIGEST_LEN])
 {
 #if MBEDTLS_VERSION_MAJOR >= 3
     mbedtls_sha512_finish(&ctx->mbed, digest);
@@ -49,7 +49,7 @@ void ssh_sha512_final(SshSha512Ctx *ctx, uint8_t digest[SSH_SHA512_DIGEST_LEN])
     mbedtls_sha512_free(&ctx->mbed);
 }
 
-void ssh_sha512(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA512_DIGEST_LEN])
+void dws_sha512(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA512_DIGEST_LEN])
 {
     (void)mbedtls_sha512(data, len, digest, 0 /* 0 = SHA-512, 1 = SHA-384 */);
 }
@@ -141,7 +141,7 @@ static void sha512_block(uint64_t h[8], const uint8_t blk[128])
     h[7] += hh;
 }
 
-void ssh_sha512_init(SshSha512Ctx *ctx)
+void dws_sha512_init(DwsSha512Ctx *ctx)
 {
     for (int i = 0; i < 8; i++)
         ctx->s[i] = H0[i];
@@ -150,7 +150,7 @@ void ssh_sha512_init(SshSha512Ctx *ctx)
     memset(ctx->buf, 0, sizeof(ctx->buf));
 }
 
-void ssh_sha512_update(SshSha512Ctx *ctx, const uint8_t *data, size_t len)
+void dws_sha512_update(DwsSha512Ctx *ctx, const uint8_t *data, size_t len)
 {
     ctx->n += len;
     while (len > 0)
@@ -169,10 +169,10 @@ void ssh_sha512_update(SshSha512Ctx *ctx, const uint8_t *data, size_t len)
     }
 }
 
-void ssh_sha512_final(SshSha512Ctx *ctx, uint8_t digest[SSH_SHA512_DIGEST_LEN])
+void dws_sha512_final(DwsSha512Ctx *ctx, uint8_t digest[DWS_SHA512_DIGEST_LEN])
 {
-    // 128-bit length in bits. Our byte count fits a uint64, so the high word is
-    // n >> 61 (bits above 64) and the low word is n << 3.
+    // 128-bit length in bits. Our byte count fits a uint64, so the high word is n >> 61 (bits above 64)
+    // and the low word is n << 3.
     uint64_t len_hi = ctx->n >> 61;
     uint64_t len_lo = ctx->n << 3;
 
@@ -196,12 +196,12 @@ void ssh_sha512_final(SshSha512Ctx *ctx, uint8_t digest[SSH_SHA512_DIGEST_LEN])
         dws_wr64be(digest + i * 8, ctx->s[i]);
 }
 
-void ssh_sha512(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA512_DIGEST_LEN])
+void dws_sha512(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA512_DIGEST_LEN])
 {
-    SshSha512Ctx ctx;
-    ssh_sha512_init(&ctx);
-    ssh_sha512_update(&ctx, data, len);
-    ssh_sha512_final(&ctx, digest);
+    DwsSha512Ctx ctx;
+    dws_sha512_init(&ctx);
+    dws_sha512_update(&ctx, data, len);
+    dws_sha512_final(&ctx, digest);
 }
 
 #endif // !ARDUINO (native software path)

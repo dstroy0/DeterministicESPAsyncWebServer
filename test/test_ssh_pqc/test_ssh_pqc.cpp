@@ -11,13 +11,13 @@
 // key pair, so it reuses the kyber-py KAT fixture (ek, dk).
 
 #include "../test_pqc_mlkem/mlkem_kat.h" // kat_ek, kat_dk, kat_ct, kat_ss
+#include "crypto/sha512.h"               // sntrup761x25519-sha512 exchange hash
 #include "mlkem_ref.h"
 #include "network_drivers/presentation/pqc/mlkem.h"     // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
 #include "network_drivers/presentation/pqc/sntrup761.h" // the other PQ/T hybrid (NTRU Prime + X25519)
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h" // sntrup761x25519-sha512 exchange hash
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXDH_INIT / _REPLY
@@ -383,7 +383,7 @@ void test_sntrup761_hybrid_kex_end_to_end()
     size_t rlen = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)));
     TEST_ASSERT_EQUAL(SSH_MSG_KEXDH_REPLY, reply[0]);
-    TEST_ASSERT_EQUAL_UINT8(SSH_SHA512_DIGEST_LEN, s->session_id_len); // SHA-512 exchange hash
+    TEST_ASSERT_EQUAL_UINT8(DWS_SHA512_DIGEST_LEN, s->session_id_len); // SHA-512 exchange hash
     TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_NEWKEYS, s->phase);
 
     size_t off = 1;
@@ -403,8 +403,8 @@ void test_sntrup761_hybrid_kex_end_to_end()
     uint8_t kin[DWS_SNTRUP761_SS_BYTES + 32];
     memcpy(kin, k_pq, DWS_SNTRUP761_SS_BYTES);
     memcpy(kin + DWS_SNTRUP761_SS_BYTES, k_cl, 32);
-    uint8_t K[SSH_SHA512_DIGEST_LEN];
-    ssh_sha512(kin, sizeof(kin), K);
+    uint8_t K[DWS_SHA512_DIGEST_LEN];
+    dws_sha512(kin, sizeof(kin), K);
 
     size_t ko = 0;
     const uint8_t *kt;
@@ -424,10 +424,10 @@ void test_sntrup761_hybrid_kex_end_to_end()
     o += put_string(pre + o, ks, ks_len);
     o += put_string(pre + o, c_init, sizeof(c_init));
     o += put_string(pre + o, s_reply, sr_len);
-    o += put_string(pre + o, K, SSH_SHA512_DIGEST_LEN); // K is a string, not an mpint
-    uint8_t H[SSH_SHA512_DIGEST_LEN];
-    ssh_sha512(pre, o, H);
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(H, s->session_id, SSH_SHA512_DIGEST_LEN);
+    o += put_string(pre + o, K, DWS_SHA512_DIGEST_LEN); // K is a string, not an mpint
+    uint8_t H[DWS_SHA512_DIGEST_LEN];
+    dws_sha512(pre, o, H);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(H, s->session_id, DWS_SHA512_DIGEST_LEN);
 
     size_t so = 0;
     const uint8_t *st;
@@ -436,7 +436,7 @@ void test_sntrup761_hybrid_kex_end_to_end()
     TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &st, &st_len));
     TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &sig, &sl));
     TEST_ASSERT_EQUAL_UINT32(64, sl);
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, SSH_SHA512_DIGEST_LEN, sig));
+    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, DWS_SHA512_DIGEST_LEN, sig));
 }
 
 // A classical finite-field KEX still works in a PQC-enabled build: neither hybrid branch is taken

@@ -7,9 +7,9 @@
 // tool-generated digests (sha512sum), so the tests ground the implementation
 // against the standards, not against itself.
 
+#include "crypto/sha512.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
 #include <string.h>
 #include <unity.h>
 
@@ -45,9 +45,9 @@ static void fromhex(const char *h, uint8_t *out, size_t n)
 
 static void sha512_check(const void *msg, size_t len, const char *expect)
 {
-    uint8_t d[SSH_SHA512_DIGEST_LEN];
-    ssh_sha512((const uint8_t *)msg, len, d);
-    char hex[2 * SSH_SHA512_DIGEST_LEN + 1];
+    uint8_t d[DWS_SHA512_DIGEST_LEN];
+    dws_sha512((const uint8_t *)msg, len, d);
+    char hex[2 * DWS_SHA512_DIGEST_LEN + 1];
     tohex(d, sizeof(d), hex);
     TEST_ASSERT_EQUAL_STRING(expect, hex);
 }
@@ -88,15 +88,15 @@ void test_sha512_two_block_boundary()
 // streaming path + a large length field.
 void test_sha512_million_a_streaming()
 {
-    SshSha512Ctx c;
-    ssh_sha512_init(&c);
+    DwsSha512Ctx c;
+    dws_sha512_init(&c);
     uint8_t a[1000];
     memset(a, 'a', sizeof(a));
     for (int i = 0; i < 1000; i++)
-        ssh_sha512_update(&c, a, sizeof(a));
-    uint8_t d[SSH_SHA512_DIGEST_LEN];
-    ssh_sha512_final(&c, d);
-    char hex[2 * SSH_SHA512_DIGEST_LEN + 1];
+        dws_sha512_update(&c, a, sizeof(a));
+    uint8_t d[DWS_SHA512_DIGEST_LEN];
+    dws_sha512_final(&c, d);
+    char hex[2 * DWS_SHA512_DIGEST_LEN + 1];
     tohex(d, sizeof(d), hex);
     TEST_ASSERT_EQUAL_STRING("e718483d0ce769644e2e42c7bc15b4638e1f98b13b2044285632a803afa973eb"
                              "de0ff244877ea60a4cb0432ce577c31beb009c5c2c49aa2e4eadb217ad8cc09b",
@@ -107,17 +107,17 @@ void test_sha512_million_a_streaming()
 void test_sha512_streaming_matches_oneshot()
 {
     const char *msg = "The quick brown fox jumps over the lazy dog";
-    uint8_t one[SSH_SHA512_DIGEST_LEN];
-    ssh_sha512((const uint8_t *)msg, strlen(msg), one);
+    uint8_t one[DWS_SHA512_DIGEST_LEN];
+    dws_sha512((const uint8_t *)msg, strlen(msg), one);
 
-    SshSha512Ctx c;
-    ssh_sha512_init(&c);
+    DwsSha512Ctx c;
+    dws_sha512_init(&c);
     for (const char *p = msg; *p; p++)
-        ssh_sha512_update(&c, (const uint8_t *)p, 1);
-    uint8_t str[SSH_SHA512_DIGEST_LEN];
-    ssh_sha512_final(&c, str);
+        dws_sha512_update(&c, (const uint8_t *)p, 1);
+    uint8_t str[DWS_SHA512_DIGEST_LEN];
+    dws_sha512_final(&c, str);
 
-    TEST_ASSERT_EQUAL_MEMORY(one, str, SSH_SHA512_DIGEST_LEN);
+    TEST_ASSERT_EQUAL_MEMORY(one, str, DWS_SHA512_DIGEST_LEN);
 }
 
 // ---- X25519 (RFC 7748) -----------------------------------------------------

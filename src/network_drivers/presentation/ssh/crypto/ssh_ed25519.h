@@ -7,7 +7,7 @@
  *
  * PureEdDSA over edwards25519. Deterministic signing (RFC 8032 §5.1.6) - no RNG - and
  * verification, built on the shared Curve25519 field arithmetic (ssh_curve25519) and
- * SHA-512 (ssh_sha512). No heap; state is on the stack. Correctness is pinned to the
+ * SHA-512 (dws_sha512). No heap; state is on the stack. Correctness is pinned to the
  * RFC 8032 §7.1 vectors and to a reference implementation (test_ssh_ed25519).
  *
  * The server signs the KEX exchange hash with its ssh-ed25519 host key, and verifies a

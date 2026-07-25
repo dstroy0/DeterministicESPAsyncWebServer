@@ -336,6 +336,31 @@ void test_parse_negotiate_contexts_rejects()
     TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_contexts(m, 100, &c)); // truncated before the body
 }
 
+// The SMB 3.1.1 preauth-integrity hash chain (MS-SMB2 §3.1.5.2): SHA-512 folded over each handshake
+// message, seeded with 64 zero bytes. Reference computed with Python hashlib (independent SHA-512).
+void test_preauth_hash_chain()
+{
+    SmbPreauth p;
+    dws_smb_preauth_init(&p);
+    const uint8_t zero[64] = {0};
+    TEST_ASSERT_EQUAL_MEMORY(zero, p.hash, 64); // the initial value is 64 zero bytes
+
+    uint8_t m1[40];
+    for (int i = 0; i < 40; i++)
+        m1[i] = (uint8_t)(0x10 + i);
+    uint8_t m2[72];
+    for (int i = 0; i < 72; i++)
+        m2[i] = (uint8_t)(0x80 + i);
+    dws_smb_preauth_update(&p, m1, sizeof(m1)); // fold in a stand-in NEGOTIATE, then a SESSION_SETUP
+    dws_smb_preauth_update(&p, m2, sizeof(m2));
+    const uint8_t expected_preauth[64] = {0x0a, 0xa8, 0x6d, 0xd5, 0xf7, 0x6b, 0x17, 0xb2, 0x92, 0xb7, 0xc5, 0xbe, 0xfe,
+                                          0x58, 0xde, 0xfa, 0xad, 0xfc, 0xad, 0x9b, 0x66, 0x2b, 0x32, 0x54, 0xc2, 0x08,
+                                          0x54, 0x4c, 0xe1, 0xad, 0x96, 0x93, 0xf7, 0xd6, 0x9f, 0xbc, 0x7c, 0x73, 0x17,
+                                          0xad, 0xdc, 0xf7, 0x57, 0xde, 0x50, 0x4e, 0x48, 0x4e, 0x6c, 0x6a, 0x9f, 0xdd,
+                                          0x79, 0xf2, 0x42, 0xd9, 0x76, 0x5a, 0x25, 0x76, 0xa8, 0xa0, 0xc3, 0xf6};
+    TEST_ASSERT_EQUAL_MEMORY(expected_preauth, p.hash, 64);
+}
+
 void test_build_session_setup()
 {
     uint8_t tok[40];
@@ -1062,6 +1087,7 @@ int main()
     RUN_TEST(test_build_negotiate_311);
     RUN_TEST(test_parse_negotiate_contexts);
     RUN_TEST(test_parse_negotiate_contexts_rejects);
+    RUN_TEST(test_preauth_hash_chain);
     RUN_TEST(test_build_session_setup);
     RUN_TEST(test_parse_session_setup_response);
     RUN_TEST(test_session_setup_rejects);

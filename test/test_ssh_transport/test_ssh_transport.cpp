@@ -985,17 +985,17 @@ void test_kexdh_handle_rsa_sha512_signature()
     TEST_ASSERT_EQUAL_UINT32(256, sig_len);
 
     // Rebuild the expected PKCS#1 v1.5 SHA-512 block over H (= session_id) and byte-compare.
-    uint8_t d512[SSH_SHA512_DIGEST_LEN];
-    ssh_sha512(s->session_id, SSH_SHA256_DIGEST_LEN, d512);
+    uint8_t d512[DWS_SHA512_DIGEST_LEN];
+    dws_sha512(s->session_id, SSH_SHA256_DIGEST_LEN, d512);
     uint8_t em[256];
-    const size_t total = SSH_PKCS1_SHA512_DIGESTINFO_LEN + SSH_SHA512_DIGEST_LEN; // 83
+    const size_t total = SSH_PKCS1_SHA512_DIGESTINFO_LEN + DWS_SHA512_DIGEST_LEN; // 83
     const size_t pad = 256 - 3 - total;                                           // 170
     em[0] = 0x00;
     em[1] = 0x01;
     memset(em + 2, 0xFF, pad);
     em[2 + pad] = 0x00;
     memcpy(em + 3 + pad, ssh_pkcs1_sha512_digestinfo, SSH_PKCS1_SHA512_DIGESTINFO_LEN);
-    memcpy(em + 3 + pad + SSH_PKCS1_SHA512_DIGESTINFO_LEN, d512, SSH_SHA512_DIGEST_LEN);
+    memcpy(em + 3 + pad + SSH_PKCS1_SHA512_DIGESTINFO_LEN, d512, DWS_SHA512_DIGEST_LEN);
     TEST_ASSERT_EQUAL_MEMORY(em, sig, 256);
 }
 

@@ -1027,11 +1027,11 @@ static int hybrid_sntrup761_x25519(uint8_t i, const uint8_t *payload, size_t len
     }
     memcpy(s_reply + DWS_SNTRUP761_CT_BYTES, ssh_sess[i].ecdh_pk, 32); // S_PK1: server X25519 public
 
-    SshSha512Ctx hc;
-    ssh_sha512_init(&hc);
-    ssh_sha512_update(&hc, k_pq, sizeof(k_pq)); // K = SHA512(K_PQ || K_CL) (RFC 9370 concat combiner)
-    ssh_sha512_update(&hc, k_cl, sizeof(k_cl));
-    ssh_sha512_final(&hc, k_out);
+    DwsSha512Ctx hc;
+    dws_sha512_init(&hc);
+    dws_sha512_update(&hc, k_pq, sizeof(k_pq)); // K = SHA512(K_PQ || K_CL) (RFC 9370 concat combiner)
+    dws_sha512_update(&hc, k_cl, sizeof(k_cl));
+    dws_sha512_final(&hc, k_out);
     ssh_wipe(k_pq, sizeof(k_pq));
     ssh_wipe(k_cl, sizeof(k_cl));
     return 0;

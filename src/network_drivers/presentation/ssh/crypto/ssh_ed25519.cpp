@@ -21,9 +21,9 @@
  */
 
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#include "crypto/sha512.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_gf + field ops (native / non-S3 path)
 #include "network_drivers/presentation/ssh/crypto/ssh_fe25519.h"    // S3: canonical uint32[8] field on the RSA MODMULT
-#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
 
 // --- Shared constants -------------------------------------------------------
 
@@ -554,7 +554,7 @@ static bool ed_verify_recompute(uint8_t out[32], const uint8_t S[32], const uint
 void ssh_ed25519_pubkey(uint8_t pub[32], const uint8_t seed[32])
 {
     uint8_t d[64];
-    ssh_sha512(seed, 32, d);
+    dws_sha512(seed, 32, d);
     d[0] &= 248;
     d[31] &= 127;
     d[31] |= 64; // clamp -> secret scalar a = d[0..31]
@@ -567,7 +567,7 @@ void ssh_ed25519_sign(uint8_t sig[64], const uint8_t *msg, size_t mlen, const ui
     uint8_t pub[32];
     uint8_t r[64];
     uint8_t h[64];
-    ssh_sha512(seed, 32, d);
+    dws_sha512(seed, 32, d);
     d[0] &= 248;
     d[31] &= 127;
     d[31] |= 64; // a = d[0..31]; prefix = d[32..63]
@@ -576,22 +576,22 @@ void ssh_ed25519_sign(uint8_t sig[64], const uint8_t *msg, size_t mlen, const ui
     ed_scalarbase_bytes(pub, d);
 
     // r = SHA-512(prefix || M) mod L
-    SshSha512Ctx c;
-    ssh_sha512_init(&c);
-    ssh_sha512_update(&c, d + 32, 32);
-    ssh_sha512_update(&c, msg, mlen);
-    ssh_sha512_final(&c, r);
+    DwsSha512Ctx c;
+    dws_sha512_init(&c);
+    dws_sha512_update(&c, d + 32, 32);
+    dws_sha512_update(&c, msg, mlen);
+    dws_sha512_final(&c, r);
     ed_reduce(r);
 
     // R = r * B
     ed_scalarbase_bytes(sig, r); // sig[0..31] = R
 
     // h = SHA-512(R || A || M) mod L
-    ssh_sha512_init(&c);
-    ssh_sha512_update(&c, sig, 32);
-    ssh_sha512_update(&c, pub, 32);
-    ssh_sha512_update(&c, msg, mlen);
-    ssh_sha512_final(&c, h);
+    dws_sha512_init(&c);
+    dws_sha512_update(&c, sig, 32);
+    dws_sha512_update(&c, pub, 32);
+    dws_sha512_update(&c, msg, mlen);
+    dws_sha512_final(&c, h);
     ed_reduce(h);
 
     // S = (r + h*a) mod L
@@ -613,12 +613,12 @@ bool ssh_ed25519_verify(const uint8_t pub[32], const uint8_t *msg, size_t mlen, 
 
     // h = SHA-512(R || A || M) mod L
     uint8_t h[64];
-    SshSha512Ctx c;
-    ssh_sha512_init(&c);
-    ssh_sha512_update(&c, sig, 32); // R
-    ssh_sha512_update(&c, pub, 32); // A
-    ssh_sha512_update(&c, msg, mlen);
-    ssh_sha512_final(&c, h);
+    DwsSha512Ctx c;
+    dws_sha512_init(&c);
+    dws_sha512_update(&c, sig, 32); // R
+    dws_sha512_update(&c, pub, 32); // A
+    dws_sha512_update(&c, msg, mlen);
+    dws_sha512_final(&c, h);
     ed_reduce(h);
 
     uint8_t t[32];

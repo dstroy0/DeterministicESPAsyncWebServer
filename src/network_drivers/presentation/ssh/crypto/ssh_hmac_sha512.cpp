@@ -14,46 +14,46 @@
 namespace
 {
 // One 128-byte HMAC key block: keys > 128 bytes are pre-hashed (RFC 2104), else zero-padded.
-void build_key_block(const uint8_t *key, size_t key_len, uint8_t block[SSH_SHA512_BLOCK_LEN], uint8_t pad_byte)
+void build_key_block(const uint8_t *key, size_t key_len, uint8_t block[DWS_SHA512_BLOCK_LEN], uint8_t pad_byte)
 {
-    uint8_t k[SSH_SHA512_BLOCK_LEN] = {0};
-    if (key_len > SSH_SHA512_BLOCK_LEN)
+    uint8_t k[DWS_SHA512_BLOCK_LEN] = {0};
+    if (key_len > DWS_SHA512_BLOCK_LEN)
     {
-        ssh_sha512(key, key_len, k); // 64-byte digest; the remaining 64 bytes stay zero
+        dws_sha512(key, key_len, k); // 64-byte digest; the remaining 64 bytes stay zero
     }
     else
     {
         for (size_t i = 0; i < key_len; i++)
             k[i] = key[i];
     }
-    for (int i = 0; i < SSH_SHA512_BLOCK_LEN; i++)
+    for (int i = 0; i < DWS_SHA512_BLOCK_LEN; i++)
         block[i] = (uint8_t)(k[i] ^ pad_byte);
 }
 } // namespace
 
 void ssh_hmac_sha512_init(SshHmacSha512Ctx *ctx, const uint8_t *key, size_t key_len)
 {
-    uint8_t ikey[SSH_SHA512_BLOCK_LEN];
+    uint8_t ikey[DWS_SHA512_BLOCK_LEN];
     build_key_block(key, key_len, ikey, 0x36u);      // ipad
     build_key_block(key, key_len, ctx->okey, 0x5cu); // opad (kept for the final step)
-    ssh_sha512_init(&ctx->inner);
-    ssh_sha512_update(&ctx->inner, ikey, SSH_SHA512_BLOCK_LEN);
+    dws_sha512_init(&ctx->inner);
+    dws_sha512_update(&ctx->inner, ikey, DWS_SHA512_BLOCK_LEN);
 }
 
 void ssh_hmac_sha512_update(SshHmacSha512Ctx *ctx, const uint8_t *data, size_t len)
 {
-    ssh_sha512_update(&ctx->inner, data, len);
+    dws_sha512_update(&ctx->inner, data, len);
 }
 
 void ssh_hmac_sha512_final(SshHmacSha512Ctx *ctx, uint8_t mac[SSH_HMAC_SHA512_LEN])
 {
-    uint8_t inner_digest[SSH_SHA512_DIGEST_LEN];
-    ssh_sha512_final(&ctx->inner, inner_digest);
-    SshSha512Ctx outer;
-    ssh_sha512_init(&outer);
-    ssh_sha512_update(&outer, ctx->okey, SSH_SHA512_BLOCK_LEN);
-    ssh_sha512_update(&outer, inner_digest, SSH_SHA512_DIGEST_LEN);
-    ssh_sha512_final(&outer, mac);
+    uint8_t inner_digest[DWS_SHA512_DIGEST_LEN];
+    dws_sha512_final(&ctx->inner, inner_digest);
+    DwsSha512Ctx outer;
+    dws_sha512_init(&outer);
+    dws_sha512_update(&outer, ctx->okey, DWS_SHA512_BLOCK_LEN);
+    dws_sha512_update(&outer, inner_digest, DWS_SHA512_DIGEST_LEN);
+    dws_sha512_final(&outer, mac);
 }
 
 void ssh_hmac_sha512(const uint8_t *key, size_t key_len, const uint8_t *data, size_t len,

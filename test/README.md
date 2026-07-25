@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5202 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5203 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -45548,7 +45548,7 @@ A thorough directory of all **5202 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (40 tests)</b></summary>
+<summary><b>test_smb2 (41 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -45697,6 +45697,15 @@ A thorough directory of all **5202 test cases** across **292 suites**. Expand a 
       * <code>Assert false (dws_smb2_parse_negotiate_contexts(bad, n, &c))</code>
       * <code>Assert false (dws_smb2_parse_negotiate_contexts(bad, n, &c))</code>
       * <code>Assert false (dws_smb2_parse_negotiate_contexts(m, 100, &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_preauth_hash_chain</b> &mdash; <i>Preauth hash chain</i></summary>
+
+    * **Objective**: Preauth hash chain
+    * **Assertions**:
+      * <code>Assert equal memory (zero, p.hash, 64)</code>
+      * <code>Assert equal memory (expected_preauth, p.hash, 64)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -46769,7 +46778,11 @@ A thorough directory of all **5202 test cases** across **292 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(empty, d, 64);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(abc, d, 64);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(twob, d, 64);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(b128, d, 64);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(b136, d, 4);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(b200, d, 64);</code>
       * <code>Assert equal memory (twob, strm, 64)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(ab, strm, 64);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -51928,7 +51941,7 @@ A thorough directory of all **5202 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Sha512 streaming matches oneshot
     * **Assertions**:
-      * <code>Assert equal memory (one, str, SSH_SHA512_DIGEST_LEN)</code>
+      * <code>Assert equal memory (one, str, DWS_SHA512_DIGEST_LEN)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -52423,7 +52436,7 @@ A thorough directory of all **5202 test cases** across **292 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
       * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_SHA512_DIGEST_LEN, s-&gt;session_id_len); // SHA-512 exchange hash</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_SHA512_DIGEST_LEN, s-&gt;session_id_len); // SHA-512 exchange hash</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_NEWKEYS, s-&gt;phase)</code>
       * <code>Assert true (rd_string(reply, rlen, &off, &ks, &ks_len))</code>
       * <code>Assert true (rd_string(reply, rlen, &off, &s_reply, &sr_len))</code>
@@ -52433,11 +52446,11 @@ A thorough directory of all **5202 test cases** across **292 suites**. Expand a 
       * <code>Assert equal memory ("ssh-ed25519", kt, 11)</code>
       * <code>Assert true (rd_string(ks, ks_len, &ko, &hostpub, &hp_len))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(32, hp_len);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(H, s-&gt;session_id, SSH_SHA512_DIGEST_LEN);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(H, s-&gt;session_id, DWS_SHA512_DIGEST_LEN);</code>
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &st, &st_len))</code>
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &sig, &sl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
-      * <code>Assert true (ssh_ed25519_verify(hostpub, H, SSH_SHA512_DIGEST_LEN, sig))</code>
+      * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA512_DIGEST_LEN, sig))</code>
   </details>
 
   <details style="margin-left: 20px;">

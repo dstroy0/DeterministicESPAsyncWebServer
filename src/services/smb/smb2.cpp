@@ -12,6 +12,7 @@
 
 #include <string.h>
 
+#include "crypto/sha512.h" // dws_sha512 for the SMB 3.1.1 preauth-integrity chain
 #include "shared_primitives/endian.h"
 #include "smb_md.h" // dws_hmac_sha256 for message signing
 
@@ -260,6 +261,27 @@ bool dws_smb2_parse_negotiate_contexts(const uint8_t *msg, size_t len, Smb2Negot
         p = data + dlen;
     }
     return true;
+}
+
+void dws_smb_preauth_init(SmbPreauth *p)
+{
+    if (p)
+        memset(p->hash, 0, sizeof(p->hash)); // the preauth hash starts as 64 zero bytes (MS-SMB2 §3.1.5.2)
+}
+
+void dws_smb_preauth_update(SmbPreauth *p, const uint8_t *msg, size_t len)
+{
+    if (!p || (!msg && len))
+        return;
+    // hash = SHA-512(previous hash || message); chain the current value with the next handshake message.
+    // Snapshot the previous hash so the digest input never aliases its output buffer.
+    uint8_t prev[SMB2_PREAUTH_HASH_LEN];
+    memcpy(prev, p->hash, sizeof(prev));
+    DwsSha512Ctx c;
+    dws_sha512_init(&c);
+    dws_sha512_update(&c, prev, sizeof(prev));
+    dws_sha512_update(&c, msg, len);
+    dws_sha512_final(&c, p->hash);
 }
 
 size_t dws_smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,

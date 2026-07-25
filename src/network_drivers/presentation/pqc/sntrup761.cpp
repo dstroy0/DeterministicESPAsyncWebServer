@@ -27,7 +27,7 @@
 
 #if DWS_ENABLE_SSH_SNTRUP761
 
-#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
+#include "crypto/sha512.h"
 #include <string.h>
 
 // The CSPRNG seam (defined in ssh_dh.cpp) - forward-declared so this PQC primitive does not pull in
@@ -353,13 +353,13 @@ void Short_random(small_t *out)
 // out = SHA512(b || in)[0:32].
 void Hash_prefix(uint8_t *out, int b, const uint8_t *in, size_t inlen)
 {
-    SshSha512Ctx ctx;
-    uint8_t h[SSH_SHA512_DIGEST_LEN];
+    DwsSha512Ctx ctx;
+    uint8_t h[DWS_SHA512_DIGEST_LEN];
     uint8_t bb = (uint8_t)b;
-    ssh_sha512_init(&ctx);
-    ssh_sha512_update(&ctx, &bb, 1);
-    ssh_sha512_update(&ctx, in, inlen);
-    ssh_sha512_final(&ctx, h);
+    dws_sha512_init(&ctx);
+    dws_sha512_update(&ctx, &bb, 1);
+    dws_sha512_update(&ctx, in, inlen);
+    dws_sha512_final(&ctx, h);
     memcpy(out, h, HASH_BYTES);
 }
 

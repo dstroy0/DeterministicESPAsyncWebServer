@@ -155,10 +155,10 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t si
     // the supplied digest - so for rsa-sha2-256/512 (RFC 8332) we pass SHA-256(msg) / SHA-512(msg), not msg.
     const bool sha512 = (hash == SshRsaHash::SHA512);
     const mbedtls_md_type_t md = sha512 ? MBEDTLS_MD_SHA512 : MBEDTLS_MD_SHA256;
-    const size_t dlen = sha512 ? SSH_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
-    uint8_t digest[SSH_SHA512_DIGEST_LEN];
+    const size_t dlen = sha512 ? DWS_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
+    uint8_t digest[DWS_SHA512_DIGEST_LEN];
     if (sha512)
-        ssh_sha512(msg, msg_len, digest);
+        dws_sha512(msg, msg_len, digest);
     else
         ssh_sha256(msg, msg_len, digest);
 
@@ -204,12 +204,12 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
 
     const bool sha512 = (hash == SshRsaHash::SHA512);
     const mbedtls_md_type_t md = sha512 ? MBEDTLS_MD_SHA512 : MBEDTLS_MD_SHA256;
-    const size_t dlen = sha512 ? SSH_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
-    uint8_t digest[SSH_SHA512_DIGEST_LEN];
+    const size_t dlen = sha512 ? DWS_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
+    uint8_t digest[DWS_SHA512_DIGEST_LEN];
     if (rc == 0)
     {
         if (sha512)
-            ssh_sha512(msg, msg_len, digest);
+            dws_sha512(msg, msg_len, digest);
         else
             ssh_sha256(msg, msg_len, digest);
 #if MBEDTLS_VERSION_MAJOR >= 3
@@ -251,14 +251,14 @@ int dws_ssh_rsa_load_pubkey(void)
 // ---------------------------------------------------------------------------
 
 // Hash msg with the selected algorithm and return the matching DigestInfo.
-//   digest must be >= SSH_SHA512_DIGEST_LEN bytes.
-static void rsa_digest(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t digest[SSH_SHA512_DIGEST_LEN],
+//   digest must be >= DWS_SHA512_DIGEST_LEN bytes.
+static void rsa_digest(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t digest[DWS_SHA512_DIGEST_LEN],
                        size_t *digest_len, const uint8_t **di, size_t *di_len)
 {
     if (hash == SshRsaHash::SHA512)
     {
-        ssh_sha512(msg, msg_len, digest);
-        *digest_len = SSH_SHA512_DIGEST_LEN;
+        dws_sha512(msg, msg_len, digest);
+        *digest_len = DWS_SHA512_DIGEST_LEN;
         *di = ssh_pkcs1_sha512_digestinfo;
         *di_len = SSH_PKCS1_SHA512_DIGESTINFO_LEN;
     }
@@ -477,7 +477,7 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t si
     memcpy(priv.e_bytes, _test_rsa_e, 4);
 
     // 1. SHA-256/512 digest of the message + matching DigestInfo.
-    uint8_t digest[SSH_SHA512_DIGEST_LEN];
+    uint8_t digest[DWS_SHA512_DIGEST_LEN];
     size_t digest_len = 0;
     const uint8_t *di = nullptr;
     size_t di_len = 0;
@@ -535,7 +535,7 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
     bn_to_bytes(em, &m);
 
     // Recompute the expected PKCS#1 v1.5 block and compare in constant time.
-    uint8_t digest[SSH_SHA512_DIGEST_LEN];
+    uint8_t digest[DWS_SHA512_DIGEST_LEN];
     size_t digest_len = 0;
     const uint8_t *di = nullptr;
     size_t di_len = 0;

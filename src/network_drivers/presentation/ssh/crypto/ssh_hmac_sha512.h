@@ -6,7 +6,7 @@
  * @brief HMAC-SHA2-512 (RFC 2104 + FIPS 198-1).
  *
  * The MAC for the hmac-sha2-512 and hmac-sha2-512-etm@openssh.com SSH integrity algorithms.
- * Implemented over the ssh_sha512 streaming functions (SHA-512 block size 128 bytes). SSH-derived
+ * Implemented over the dws_sha512 streaming functions (SHA-512 block size 128 bytes). SSH-derived
  * MAC keys are 64 bytes (<= the block size), so the key is zero-padded, not pre-hashed. Pure.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -16,7 +16,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_HMAC_SHA512_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_HMAC_SHA512_H
 
-#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
+#include "crypto/sha512.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -26,8 +26,8 @@
 /** @brief Streaming HMAC-SHA2-512 context (stores the opad key block + inner hash state). */
 typedef struct
 {
-    uint8_t okey[SSH_SHA512_BLOCK_LEN]; ///< (key XOR opad), applied in the final step
-    SshSha512Ctx inner;                 ///< inner hash: H((key XOR ipad) || message)
+    uint8_t okey[DWS_SHA512_BLOCK_LEN]; ///< (key XOR opad), applied in the final step
+    DwsSha512Ctx inner;                 ///< inner hash: H((key XOR ipad) || message)
 } SshHmacSha512Ctx;
 
 /** @brief Begin an HMAC-SHA2-512 over @p key (keys > 128 bytes are pre-hashed per RFC 2104). */

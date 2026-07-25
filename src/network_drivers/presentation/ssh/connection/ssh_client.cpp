@@ -735,11 +735,11 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         uint8_t k_pq[DWS_SNTRUP761_SS_BYTES], k_cl[32];
         dws_sntrup761_dec(s_cli.hyb.sntrup_sk, srv_pub, k_pq);
         ssh_x25519(k_cl, s_cli.kex_priv, srv_pub + DWS_SNTRUP761_CT_BYTES);
-        SshSha512Ctx c;
-        ssh_sha512_init(&c);
-        ssh_sha512_update(&c, k_pq, sizeof(k_pq));
-        ssh_sha512_update(&c, k_cl, 32);
-        ssh_sha512_final(&c, k_be + (256 - 64));
+        DwsSha512Ctx c;
+        dws_sha512_init(&c);
+        dws_sha512_update(&c, k_pq, sizeof(k_pq));
+        dws_sha512_update(&c, k_cl, 32);
+        dws_sha512_final(&c, k_be + (256 - 64));
         ssh_wipe(k_pq, sizeof(k_pq));
         ssh_wipe(k_cl, sizeof(k_cl));
         return true;
