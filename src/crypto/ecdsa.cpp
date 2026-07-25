@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_ecdsa.cpp
+ * @file ecdsa.cpp
  * @brief ECDSA over NIST P-256 for ecdsa-sha2-nistp256 (RFC 5656 / FIPS 186-4).
  *
  * ═══════════════════════════════════════════════════════════════════════════
@@ -40,7 +40,7 @@
  * @date    2026
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
+#include "crypto/ecdsa.h"
 #include "crypto/sha256.h"
 #include <string.h>
 
@@ -76,7 +76,7 @@ int ecdsa_rng(void *ctx, unsigned char *buf, size_t len)
 }
 } // namespace
 
-bool ssh_ecdsa_p256_pubkey(uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+bool dws_ecdsa_p256_pubkey(uint8_t pub[DWS_ECDSA_P256_PUB_LEN], const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN])
 {
     mbedtls_ecp_group grp;
     mbedtls_ecp_point Q;
@@ -87,13 +87,13 @@ bool ssh_ecdsa_p256_pubkey(uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t pr
 
     bool ok = false;
     if (mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1) == 0 &&
-        mbedtls_mpi_read_binary(&d, priv, SSH_ECDSA_P256_PRIV_LEN) == 0 &&
+        mbedtls_mpi_read_binary(&d, priv, DWS_ECDSA_P256_PRIV_LEN) == 0 &&
         mbedtls_ecp_mul(&grp, &Q, &d, &grp.G, ecdsa_rng, nullptr) == 0)
     {
         size_t olen = 0;
-        if (mbedtls_ecp_point_write_binary(&grp, &Q, MBEDTLS_ECP_PF_UNCOMPRESSED, &olen, pub, SSH_ECDSA_P256_PUB_LEN) ==
+        if (mbedtls_ecp_point_write_binary(&grp, &Q, MBEDTLS_ECP_PF_UNCOMPRESSED, &olen, pub, DWS_ECDSA_P256_PUB_LEN) ==
                 0 &&
-            olen == SSH_ECDSA_P256_PUB_LEN)
+            olen == DWS_ECDSA_P256_PUB_LEN)
             ok = true;
     }
 
@@ -103,8 +103,8 @@ bool ssh_ecdsa_p256_pubkey(uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t pr
     return ok;
 }
 
-bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg, size_t mlen,
-                         const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+bool dws_ecdsa_p256_sign(uint8_t sig[DWS_ECDSA_P256_SIG_LEN], const uint8_t *msg, size_t mlen,
+                         const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN])
 {
     uint8_t h[DWS_SHA256_DIGEST_LEN];
     dws_sha256(msg, mlen, h);
@@ -120,10 +120,10 @@ bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg
 
     bool ok = false;
     if (mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1) == 0 &&
-        mbedtls_mpi_read_binary(&d, priv, SSH_ECDSA_P256_PRIV_LEN) == 0 &&
+        mbedtls_mpi_read_binary(&d, priv, DWS_ECDSA_P256_PRIV_LEN) == 0 &&
         mbedtls_ecdsa_sign(&grp, &r, &s, &d, h, DWS_SHA256_DIGEST_LEN, ecdsa_rng, nullptr) == 0 &&
-        mbedtls_mpi_write_binary(&r, sig, SSH_ECDSA_P256_COORD_LEN) == 0 &&
-        mbedtls_mpi_write_binary(&s, sig + SSH_ECDSA_P256_COORD_LEN, SSH_ECDSA_P256_COORD_LEN) == 0)
+        mbedtls_mpi_write_binary(&r, sig, DWS_ECDSA_P256_COORD_LEN) == 0 &&
+        mbedtls_mpi_write_binary(&s, sig + DWS_ECDSA_P256_COORD_LEN, DWS_ECDSA_P256_COORD_LEN) == 0)
         ok = true;
 
     mbedtls_mpi_free(&s);
@@ -133,8 +133,8 @@ bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg
     return ok;
 }
 
-bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t *msg, size_t mlen,
-                           const uint8_t sig[SSH_ECDSA_P256_SIG_LEN])
+bool dws_ecdsa_p256_verify(const uint8_t pub[DWS_ECDSA_P256_PUB_LEN], const uint8_t *msg, size_t mlen,
+                           const uint8_t sig[DWS_ECDSA_P256_SIG_LEN])
 {
     uint8_t h[DWS_SHA256_DIGEST_LEN];
     dws_sha256(msg, mlen, h);
@@ -150,9 +150,9 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
 
     bool ok = false;
     if (mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1) == 0 &&
-        mbedtls_ecp_point_read_binary(&grp, &Q, pub, SSH_ECDSA_P256_PUB_LEN) == 0 &&
-        mbedtls_ecp_check_pubkey(&grp, &Q) == 0 && mbedtls_mpi_read_binary(&r, sig, SSH_ECDSA_P256_COORD_LEN) == 0 &&
-        mbedtls_mpi_read_binary(&s, sig + SSH_ECDSA_P256_COORD_LEN, SSH_ECDSA_P256_COORD_LEN) == 0 &&
+        mbedtls_ecp_point_read_binary(&grp, &Q, pub, DWS_ECDSA_P256_PUB_LEN) == 0 &&
+        mbedtls_ecp_check_pubkey(&grp, &Q) == 0 && mbedtls_mpi_read_binary(&r, sig, DWS_ECDSA_P256_COORD_LEN) == 0 &&
+        mbedtls_mpi_read_binary(&s, sig + DWS_ECDSA_P256_COORD_LEN, DWS_ECDSA_P256_COORD_LEN) == 0 &&
         mbedtls_ecdsa_verify(&grp, h, DWS_SHA256_DIGEST_LEN, &Q, &r, &s) == 0)
         ok = true;
 
@@ -163,8 +163,8 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
     return ok;
 }
 
-bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[SSH_ECDSA_P256_PUB_LEN],
-                         const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+bool dws_ecdsa_p256_ecdh(uint8_t shared_x[DWS_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[DWS_ECDSA_P256_PUB_LEN],
+                         const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN])
 {
     mbedtls_ecp_group grp;
     mbedtls_ecp_point Q;
@@ -177,10 +177,10 @@ bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8
 
     bool ok = false;
     if (mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1) == 0 &&
-        mbedtls_ecp_point_read_binary(&grp, &Q, peer_pub, SSH_ECDSA_P256_PUB_LEN) == 0 &&
-        mbedtls_ecp_check_pubkey(&grp, &Q) == 0 && mbedtls_mpi_read_binary(&d, priv, SSH_ECDSA_P256_PRIV_LEN) == 0 &&
+        mbedtls_ecp_point_read_binary(&grp, &Q, peer_pub, DWS_ECDSA_P256_PUB_LEN) == 0 &&
+        mbedtls_ecp_check_pubkey(&grp, &Q) == 0 && mbedtls_mpi_read_binary(&d, priv, DWS_ECDSA_P256_PRIV_LEN) == 0 &&
         mbedtls_ecdh_compute_shared(&grp, &z, &Q, &d, ecdsa_rng, nullptr) == 0 &&
-        mbedtls_mpi_write_binary(&z, shared_x, SSH_ECDSA_P256_COORD_LEN) == 0)
+        mbedtls_mpi_write_binary(&z, shared_x, DWS_ECDSA_P256_COORD_LEN) == 0)
         ok = true;
 
     mbedtls_mpi_free(&z);
@@ -830,7 +830,7 @@ bool ecdsa_sign_core(uint8_t sig[64], const uint8_t h1[32], const uint32_t d[8])
 
 } // namespace
 
-bool ssh_ecdsa_p256_pubkey(uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+bool dws_ecdsa_p256_pubkey(uint8_t pub[DWS_ECDSA_P256_PUB_LEN], const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN])
 {
     uint32_t d[8];
     load_be(d, priv);
@@ -856,8 +856,8 @@ bool ssh_ecdsa_p256_pubkey(uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t pr
     return ok;
 }
 
-bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg, size_t mlen,
-                         const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+bool dws_ecdsa_p256_sign(uint8_t sig[DWS_ECDSA_P256_SIG_LEN], const uint8_t *msg, size_t mlen,
+                         const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN])
 {
     uint32_t d[8];
     load_be(d, priv);
@@ -872,8 +872,8 @@ bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg
     return ok;
 }
 
-bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t *msg, size_t mlen,
-                           const uint8_t sig[SSH_ECDSA_P256_SIG_LEN])
+bool dws_ecdsa_p256_verify(const uint8_t pub[DWS_ECDSA_P256_PUB_LEN], const uint8_t *msg, size_t mlen,
+                           const uint8_t sig[DWS_ECDSA_P256_SIG_LEN])
 {
     if (pub[0] != 0x04)
         return false;
@@ -931,8 +931,8 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
     return ok;
 }
 
-bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[SSH_ECDSA_P256_PUB_LEN],
-                         const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+bool dws_ecdsa_p256_ecdh(uint8_t shared_x[DWS_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[DWS_ECDSA_P256_PUB_LEN],
+                         const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN])
 {
     if (peer_pub[0] != 0x04)
         return false;

@@ -296,28 +296,28 @@ static void pkcs1v15_encode(const uint8_t *digest, size_t digest_len, const uint
 // ---------------------------------------------------------------------------
 
 // Full 128-limb product of two 64-limb little-endian integers.
-static void bn_mul_full(const uint32_t a[SSH_BN_LIMBS], const uint32_t b[SSH_BN_LIMBS], uint32_t p[2 * SSH_BN_LIMBS])
+static void bn_mul_full(const uint32_t a[DWS_BN_LIMBS], const uint32_t b[DWS_BN_LIMBS], uint32_t p[2 * DWS_BN_LIMBS])
 {
-    for (int k = 0; k < 2 * SSH_BN_LIMBS; k++)
+    for (int k = 0; k < 2 * DWS_BN_LIMBS; k++)
         p[k] = 0;
-    for (int i = 0; i < SSH_BN_LIMBS; i++)
+    for (int i = 0; i < DWS_BN_LIMBS; i++)
     {
         uint64_t carry = 0;
-        for (int j = 0; j < SSH_BN_LIMBS; j++)
+        for (int j = 0; j < DWS_BN_LIMBS; j++)
         {
             uint64_t cur = (uint64_t)p[i + j] + (uint64_t)a[i] * b[j] + carry;
             p[i + j] = (uint32_t)cur;
             carry = cur >> 32;
         }
         // Propagate the final carry into the upper half.
-        int k = i + SSH_BN_LIMBS;
-        // a and b are both SSH_BN_LIMBS (64) limbs, so their full product is bounded by
-        // 2*SSH_BN_LIMBS (128) limbs by construction (a 2048-bit x 2048-bit product cannot
+        int k = i + DWS_BN_LIMBS;
+        // a and b are both DWS_BN_LIMBS (64) limbs, so their full product is bounded by
+        // 2*DWS_BN_LIMBS (128) limbs by construction (a 2048-bit x 2048-bit product cannot
         // exceed 4096 bits) - carry propagation out of the top half can therefore never
-        // still be pending when k reaches 2*SSH_BN_LIMBS. The "k < 2*SSH_BN_LIMBS" half of
+        // still be pending when k reaches 2*DWS_BN_LIMBS. The "k < 2*DWS_BN_LIMBS" half of
         // this guard is defensive and provably unreachable for any a/b this function is
         // ever called with, not merely untested.
-        while (carry && k < 2 * SSH_BN_LIMBS) // GCOVR_EXCL_BR_LINE
+        while (carry && k < 2 * DWS_BN_LIMBS) // GCOVR_EXCL_BR_LINE
         {
             uint64_t cur = (uint64_t)p[k] + carry;
             p[k] = (uint32_t)cur;
@@ -328,18 +328,18 @@ static void bn_mul_full(const uint32_t a[SSH_BN_LIMBS], const uint32_t b[SSH_BN_
 }
 
 // Reduce a 128-limb value mod a 64-limb modulus, bit-serial. out = p mod m.
-static void bn_reduce_full(const uint32_t p[2 * SSH_BN_LIMBS], const uint32_t m[SSH_BN_LIMBS],
-                           uint32_t out[SSH_BN_LIMBS])
+static void bn_reduce_full(const uint32_t p[2 * DWS_BN_LIMBS], const uint32_t m[DWS_BN_LIMBS],
+                           uint32_t out[DWS_BN_LIMBS])
 {
-    uint32_t r[SSH_BN_LIMBS + 1];
-    for (int k = 0; k <= SSH_BN_LIMBS; k++)
+    uint32_t r[DWS_BN_LIMBS + 1];
+    for (int k = 0; k <= DWS_BN_LIMBS; k++)
         r[k] = 0;
 
-    for (int bit = 2 * SSH_BN_LIMBS * 32 - 1; bit >= 0; bit--)
+    for (int bit = 2 * DWS_BN_LIMBS * 32 - 1; bit >= 0; bit--)
     {
         // r <<= 1
         uint32_t carry = 0;
-        for (int k = 0; k <= SSH_BN_LIMBS; k++)
+        for (int k = 0; k <= DWS_BN_LIMBS; k++)
         {
             uint32_t nc = r[k] >> 31;
             r[k] = (r[k] << 1) | carry;
@@ -348,12 +348,12 @@ static void bn_reduce_full(const uint32_t p[2 * SSH_BN_LIMBS], const uint32_t m[
         // bring in the next bit of p
         r[0] |= (p[bit >> 5] >> (bit & 31)) & 1u;
 
-        // if r >= m, subtract m. r has one guard limb (r[SSH_BN_LIMBS]).
-        bool ge = r[SSH_BN_LIMBS] != 0;
+        // if r >= m, subtract m. r has one guard limb (r[DWS_BN_LIMBS]).
+        bool ge = r[DWS_BN_LIMBS] != 0;
         if (!ge)
         {
             ge = true; // assume equal/greater until a limb says otherwise
-            for (int k = SSH_BN_LIMBS - 1; k >= 0; k--)
+            for (int k = DWS_BN_LIMBS - 1; k >= 0; k--)
             {
                 if (r[k] != m[k])
                 {
@@ -365,34 +365,34 @@ static void bn_reduce_full(const uint32_t p[2 * SSH_BN_LIMBS], const uint32_t m[
         if (ge)
         {
             uint64_t borrow = 0;
-            for (int k = 0; k < SSH_BN_LIMBS; k++)
+            for (int k = 0; k < DWS_BN_LIMBS; k++)
             {
                 uint64_t v = (uint64_t)r[k] - m[k] - borrow;
                 r[k] = (uint32_t)v;
                 borrow = (v >> 32) & 1u;
             }
-            r[SSH_BN_LIMBS] -= (uint32_t)borrow;
+            r[DWS_BN_LIMBS] -= (uint32_t)borrow;
         }
     }
-    for (int k = 0; k < SSH_BN_LIMBS; k++)
+    for (int k = 0; k < DWS_BN_LIMBS; k++)
         out[k] = r[k];
 }
 
 // out = base^e mod n, e a small public exponent.
-static void bn_modexp_pub(const SshBigNum *base, uint32_t e, const SshBigNum *n, SshBigNum *out)
+static void bn_modexp_pub(const DwsBigNum *base, uint32_t e, const DwsBigNum *n, DwsBigNum *out)
 {
-    uint32_t prod[2 * SSH_BN_LIMBS];
+    uint32_t prod[2 * DWS_BN_LIMBS];
 
     // Reduce the base mod n (signatures are < n, but be safe).
-    SshBigNum b;
-    for (int k = 0; k < SSH_BN_LIMBS; k++)
+    DwsBigNum b;
+    for (int k = 0; k < DWS_BN_LIMBS; k++)
     {
         prod[k] = base->d[k];
-        prod[k + SSH_BN_LIMBS] = 0;
+        prod[k + DWS_BN_LIMBS] = 0;
     }
     bn_reduce_full(prod, n->d, b.d);
 
-    SshBigNum r;
+    DwsBigNum r;
     memset(r.d, 0, sizeof(r.d));
     r.d[0] = 1; // r = 1
 
@@ -416,25 +416,25 @@ static void bn_modexp_pub(const SshBigNum *base, uint32_t e, const SshBigNum *n,
 // Left-to-right square-and-multiply over every bit of exp (MSB to LSB,
 // skipping leading zero limbs/bits).  Same helpers as the public path, so the
 // reduction is full-width and correct for any d (not just d=1).
-static void bn_modexp_full(const SshBigNum *base, const SshBigNum *exp, const SshBigNum *n, SshBigNum *out)
+static void bn_modexp_full(const DwsBigNum *base, const DwsBigNum *exp, const DwsBigNum *n, DwsBigNum *out)
 {
-    uint32_t prod[2 * SSH_BN_LIMBS];
+    uint32_t prod[2 * DWS_BN_LIMBS];
 
     // Reduce the base mod n up front.
-    SshBigNum b;
-    for (int k = 0; k < SSH_BN_LIMBS; k++)
+    DwsBigNum b;
+    for (int k = 0; k < DWS_BN_LIMBS; k++)
     {
         prod[k] = base->d[k];
-        prod[k + SSH_BN_LIMBS] = 0;
+        prod[k + DWS_BN_LIMBS] = 0;
     }
     bn_reduce_full(prod, n->d, b.d);
 
-    SshBigNum r;
+    DwsBigNum r;
     memset(r.d, 0, sizeof(r.d));
     r.d[0] = 1; // r = 1
 
     // Locate the most-significant set bit of exp.
-    int top_limb = SSH_BN_LIMBS - 1;
+    int top_limb = DWS_BN_LIMBS - 1;
     while (top_limb >= 0 && exp->d[top_limb] == 0)
         top_limb--;
     if (top_limb < 0)
@@ -490,10 +490,10 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t si
 
     // 3. RSA private-key operation: s = em^d mod n (full-width, correct for
     //    any private exponent - no longer a d=1 stub).
-    SshBigNum n_bn;
-    SshBigNum d_bn;
-    SshBigNum m_bn;
-    SshBigNum s_bn;
+    DwsBigNum n_bn;
+    DwsBigNum d_bn;
+    DwsBigNum m_bn;
+    DwsBigNum s_bn;
     bn_from_bytes(&n_bn, priv.n, SSH_RSA_KEY_BYTES);
     bn_from_bytes(&d_bn, priv.d, SSH_RSA_KEY_BYTES);
     bn_from_bytes(&m_bn, em, SSH_RSA_KEY_BYTES);
@@ -520,9 +520,9 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
     if (sig_len != SSH_RSA_KEY_BYTES)
         return -1;
 
-    SshBigNum n;
-    SshBigNum s;
-    SshBigNum m;
+    DwsBigNum n;
+    DwsBigNum s;
+    DwsBigNum m;
     bn_from_bytes(&n, n_be, SSH_RSA_KEY_BYTES);
     bn_from_bytes(&s, sig, SSH_RSA_KEY_BYTES);
     if (bn_cmp(&s, &n) >= 0)

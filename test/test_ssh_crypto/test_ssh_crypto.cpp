@@ -13,11 +13,11 @@
 //   PACKET        - ssh_pkt_send/recv round-trip (unencrypted + encrypted)
 
 #include "crypto/aes256ctr.h"
+#include "crypto/bignum.h"
 #include "crypto/chachapoly.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/hmac_sha512.h"
 #include "crypto/sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
@@ -352,11 +352,11 @@ static void test_aes256ctr_wipe(void)
 
 static void test_bn_roundtrip(void)
 {
-    // Round-trip: bytes → SshBigNum → bytes.
+    // Round-trip: bytes → DwsBigNum → bytes.
     uint8_t src[256];
     for (int i = 0; i < 256; i++)
         src[i] = (uint8_t)i;
-    SshBigNum bn;
+    DwsBigNum bn;
     bn_from_bytes(&bn, src, 256);
     uint8_t dst[256];
     bn_to_bytes(dst, &bn);
@@ -365,7 +365,7 @@ static void test_bn_roundtrip(void)
 
 static void test_bn_cmp_equal(void)
 {
-    SshBigNum a, b;
+    DwsBigNum a, b;
     memset(a.d, 0x55, sizeof(a.d));
     memset(b.d, 0x55, sizeof(b.d));
     TEST_ASSERT_EQUAL_INT(0, bn_cmp(&a, &b));
@@ -373,7 +373,7 @@ static void test_bn_cmp_equal(void)
 
 static void test_bn_cmp_less(void)
 {
-    SshBigNum a, b;
+    DwsBigNum a, b;
     memset(a.d, 0, sizeof(a.d));
     memset(b.d, 0, sizeof(b.d));
     b.d[0] = 1;
@@ -382,7 +382,7 @@ static void test_bn_cmp_less(void)
 
 static void test_bn_cmp_greater(void)
 {
-    SshBigNum a, b;
+    DwsBigNum a, b;
     memset(a.d, 0, sizeof(a.d));
     memset(b.d, 0, sizeof(b.d));
     a.d[63] = 1;
@@ -391,7 +391,7 @@ static void test_bn_cmp_greater(void)
 
 static void test_bn_is_zero(void)
 {
-    SshBigNum a;
+    DwsBigNum a;
     memset(a.d, 0, sizeof(a.d));
     TEST_ASSERT_NOT_EQUAL(0, bn_is_zero(&a));
     a.d[0] = 1;
@@ -400,14 +400,14 @@ static void test_bn_is_zero(void)
 
 static void test_bn_dh_validate_rejects_zero(void)
 {
-    SshBigNum zero;
+    DwsBigNum zero;
     memset(zero.d, 0, sizeof(zero.d));
     TEST_ASSERT_EQUAL_INT(-1, bn_dh_validate(&zero));
 }
 
 static void test_bn_dh_validate_rejects_one(void)
 {
-    SshBigNum one;
+    DwsBigNum one;
     memset(one.d, 0, sizeof(one.d));
     one.d[0] = 1;
     TEST_ASSERT_EQUAL_INT(-1, bn_dh_validate(&one));
@@ -415,7 +415,7 @@ static void test_bn_dh_validate_rejects_one(void)
 
 static void test_bn_dh_validate_accepts_two(void)
 {
-    SshBigNum two;
+    DwsBigNum two;
     memset(two.d, 0, sizeof(two.d));
     two.d[0] = 2;
     TEST_ASSERT_EQUAL_INT(0, bn_dh_validate(&two));
@@ -428,8 +428,8 @@ static void test_bn_dh_validate_accepts_two(void)
 // g^1 mod p = g (= 2)
 static void test_expmod_exp1(void)
 {
-    SshBigNum result;
-    SshBigNum exp;
+    DwsBigNum result;
+    DwsBigNum exp;
     memset(exp.d, 0, sizeof(exp.d));
     exp.d[0] = 1; // exponent = 1
     bn_expmod_group14(&result, &group14_g, &exp);
@@ -441,13 +441,13 @@ static void test_expmod_exp1(void)
 // g^2 mod p = 4  (g = 2, so 2^2 = 4)
 static void test_expmod_exp2(void)
 {
-    SshBigNum result;
-    SshBigNum exp;
+    DwsBigNum result;
+    DwsBigNum exp;
     memset(exp.d, 0, sizeof(exp.d));
     exp.d[0] = 2; // exponent = 2
     bn_expmod_group14(&result, &group14_g, &exp);
 
-    SshBigNum four;
+    DwsBigNum four;
     memset(four.d, 0, sizeof(four.d));
     four.d[0] = 4;
     TEST_ASSERT_EQUAL_INT(0, bn_cmp(&result, &four));
@@ -456,13 +456,13 @@ static void test_expmod_exp2(void)
 // g^3 mod p = 8
 static void test_expmod_exp3(void)
 {
-    SshBigNum result;
-    SshBigNum exp;
+    DwsBigNum result;
+    DwsBigNum exp;
     memset(exp.d, 0, sizeof(exp.d));
     exp.d[0] = 3;
     bn_expmod_group14(&result, &group14_g, &exp);
 
-    SshBigNum eight;
+    DwsBigNum eight;
     memset(eight.d, 0, sizeof(eight.d));
     eight.d[0] = 8;
     TEST_ASSERT_EQUAL_INT(0, bn_cmp(&result, &eight));
@@ -471,7 +471,7 @@ static void test_expmod_exp3(void)
 // DH commutativity: g^(ab) == (g^a)^b == (g^b)^a
 static void test_expmod_commutative(void)
 {
-    SshBigNum a_exp, b_exp, ga, gb, gab, gba;
+    DwsBigNum a_exp, b_exp, ga, gb, gab, gba;
     memset(a_exp.d, 0, sizeof(a_exp.d));
     memset(b_exp.d, 0, sizeof(b_exp.d));
     a_exp.d[0] = 0x000003E7u; // 999
@@ -497,7 +497,7 @@ static void test_expmod_commutative(void)
 // e = 65537 (0x00010001)
 // d = modular inverse of e mod phi(n)
 //
-// NOTE: The native ssh_rsa_sign() path uses the SshBigNum type which is
+// NOTE: The native ssh_rsa_sign() path uses the DwsBigNum type which is
 // fixed at 2048 bits (256 bytes).  For a 512-bit key we simply zero-pad.
 // The PKCS#1 padding is built for SSH_RSA_KEY_BYTES (256) regardless of
 // the actual key size in the test; this means the test validates the

@@ -11,10 +11,10 @@
 #if DWS_ENABLE_IKEV2
 
 #include "crypto/aesgcm.h"                                          // SK-payload AEAD (AES-256-GCM-16)
+#include "crypto/ecdsa.h"                                           // ECDSA-P256 certificate AUTH
 #include "crypto/hmac_sha256.h"                                     // PRF = HMAC-SHA2-256
 #include "crypto/sha256.h"                                          // anti-DoS COOKIE hash (RFC 7296 §2.6)
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // D-H group 31 (X25519, RFC 7748)
-#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"      // ECDSA-P256 certificate AUTH
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"        // RSA-2048 certificate AUTH verify
 #include <string.h>                                                 // memcpy / memset (framing is hand-rolled)
 
@@ -1365,7 +1365,7 @@ bool dws_ike_auth_sign_ecdsa_p256(uint8_t sig[DWS_IKE_ECDSA_P256_SIG_LEN],
                                      id_body_len);
     if (n == 0)
         return false;
-    return ssh_ecdsa_p256_sign(sig, scratch, n, priv); // hashes the octets with SHA-256 internally
+    return dws_ecdsa_p256_sign(sig, scratch, n, priv); // hashes the octets with SHA-256 internally
 }
 
 bool dws_ike_auth_verify_ecdsa_p256(const uint8_t pub[DWS_IKE_ECDSA_P256_PUB_LEN],
@@ -1379,7 +1379,7 @@ bool dws_ike_auth_verify_ecdsa_p256(const uint8_t pub[DWS_IKE_ECDSA_P256_PUB_LEN
                                      id_body_len);
     if (n == 0)
         return false;
-    return ssh_ecdsa_p256_verify(pub, scratch, n, sig);
+    return dws_ecdsa_p256_verify(pub, scratch, n, sig);
 }
 
 // ── tier 2: IKE SA context + key material from a completed IKE_SA_INIT ──────────────────────────

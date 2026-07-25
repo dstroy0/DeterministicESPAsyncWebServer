@@ -5,12 +5,12 @@
 // conn_pool ring buffer + packet layer (banner exchange → KEXINIT) and checks
 // the bytes written back to the socket via the tcp_write capture mock.
 
+#include "crypto/bignum.h" // bn_expmod_group14 direct coverage (Montgomery guard sliver)
 #include "lwip/tcp.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h" // password cb for the direct-dispatch handshake
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
 #include "network_drivers/presentation/ssh/connection/ssh_server.h" // dws_ssh_server_set_emit_cb (emit-wiring regression)
-#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h" // bn_expmod_group14 direct coverage (Montgomery guard sliver)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
@@ -882,7 +882,7 @@ void test_conn_rx_banner_then_packet_in_separate_reads()
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
 }
 
-// bn_monpro()'s final correction guard (ssh_bignum.cpp) is "if (t[128] || raw>=p)". The
+// bn_monpro()'s final correction guard (dws_bignum.cpp) is "if (t[128] || raw>=p)". The
 // t[128] half (raw overflowed past 2^2048) is exercised by ordinary DH handshakes elsewhere
 // in this suite; the raw>=p half, reached with t[128] still 0, is not - group14_p's top 64
 // bits are all 1 (p sits within ~2^1984 of 2^2048), so for operands that land the raw SOS
@@ -909,18 +909,18 @@ void test_bn_expmod_group14_hits_correction_sliver_without_overflow_limb(void)
 
     uint8_t base_be[256];
     hex2bytes(base_be, BASE_RINV_MOD_P, 256);
-    SshBigNum base;
+    DwsBigNum base;
     bn_from_bytes(&base, base_be, 256);
 
     // Sanity: base must satisfy the documented bn_expmod_group14() precondition (RFC 4253 §8:
     // a real peer's e/f is validated the same way before it ever reaches this function).
     TEST_ASSERT_EQUAL_INT(0, bn_dh_validate(&base));
 
-    SshBigNum exp;
+    DwsBigNum exp;
     memset(exp.d, 0, sizeof(exp.d));
     exp.d[0] = 1; // exponent = 1 -> out must equal base exactly
 
-    SshBigNum out;
+    DwsBigNum out;
     bn_expmod_group14(&out, &base, &exp);
 
     TEST_ASSERT_EQUAL_INT(0, bn_cmp(&out, &base));

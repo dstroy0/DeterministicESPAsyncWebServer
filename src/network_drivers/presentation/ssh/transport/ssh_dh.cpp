@@ -35,12 +35,12 @@ int ssh_dh_generate(uint8_t i)
     // RFC 4253 §8 does not specify a minimum bit-length for y beyond requiring
     // it to be in [1, p-1].  Common practice is a full 2048-bit random value,
     // which ensures the discrete-log is as hard as the group order.
-    ssh_rng_fill((uint8_t *)dh->y.d, sizeof(SshBigNum));
+    ssh_rng_fill((uint8_t *)dh->y.d, sizeof(DwsBigNum));
 
     // Ensure y < p by clearing the two MSBs (conservative; not strictly
     // required since rejection sampling would also work, but a single mask
     // is sufficient because p ≈ 2^2048 and clearing 2 bits keeps y in range).
-    dh->y.d[SSH_BN_LIMBS - 1] &= 0x3FFFFFFFu;
+    dh->y.d[DWS_BN_LIMBS - 1] &= 0x3FFFFFFFu;
     // Also ensure y > 1 (set bit 1 of the LSB limb to avoid pathological y=0,1).
     dh->y.d[0] |= 0x00000002u;
 

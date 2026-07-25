@@ -21843,11 +21843,11 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: The peer verifies the same octets against the matching public key.
     * **Assertions**:
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub, priv))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(pub, priv))</code>
       * <code>Assert true (dws_ike_auth_sign_ecdsa_p256(sig, priv, scratch, sizeof(scratch), real, sizeof(real)</code>
       * <code>Assert true (dws_ike_auth_verify_ecdsa_p256(pub, sig, scratch, sizeof(scratch), real, sizeof(real)</code>
       * <code>Assert false (dws_ike_auth_verify_ecdsa_p256(pub, sig, scratch, sizeof(scratch), real, sizeof(real)</code>
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub2, priv2))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(pub2, priv2))</code>
       * <code>Assert false (dws_ike_auth_verify_ecdsa_p256(pub2, sig, scratch, sizeof(scratch), real, sizeof(real)</code>
       * <code>Assert false (dws_ike_auth_sign_ecdsa_p256(sig, priv, scratch, 8, real, sizeof(real), nonce, sizeof(nonce)</code>
   </details>
@@ -50408,7 +50408,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Pubkey ecdsa signature rejections
     * **Assertions**:
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(q, d))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(q, d))</code>
       * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
@@ -50556,8 +50556,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: pubkey blob = string("ecdsa-sha2-nistp256") \|\| string("nistp256") \|\| string(Q).
     * **Assertions**:
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(q, d))</code>
-      * <code>Assert true (ssh_ecdsa_p256_sign(raw, sd, sn, d))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(q, d))</code>
+      * <code>Assert true (dws_ecdsa_p256_sign(raw, sd, sn, d))</code>
       * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
@@ -52069,13 +52069,13 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Ecdsa direct sign verify ecdh roundtrip
     * **Assertions**:
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub_a, priv_a))</code>
-      * <code>Assert true (ssh_ecdsa_p256_sign(sig, msg, sizeof(msg) - 1, priv_a))</code>
-      * <code>Assert true (ssh_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig))</code>
-      * <code>Assert false (ssh_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig))</code>
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub_b, priv_b))</code>
-      * <code>Assert true (ssh_ecdsa_p256_ecdh(shared_ab, pub_b, priv_a))</code>
-      * <code>Assert true (ssh_ecdsa_p256_ecdh(shared_ba, pub_a, priv_b))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(pub_a, priv_a))</code>
+      * <code>Assert true (dws_ecdsa_p256_sign(sig, msg, sizeof(msg) - 1, priv_a))</code>
+      * <code>Assert true (dws_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig))</code>
+      * <code>Assert false (dws_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(pub_b, priv_b))</code>
+      * <code>Assert true (dws_ecdsa_p256_ecdh(shared_ab, pub_b, priv_a))</code>
+      * <code>Assert true (dws_ecdsa_p256_ecdh(shared_ba, pub_a, priv_b))</code>
       * <code>Assert equal memory (shared_ab, shared_ba, 32)</code>
   </details>
 
@@ -52084,8 +52084,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: A real client only has a signature to make once the first KEX has produced a session id.
     * **Assertions**:
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(pub, priv))</code>
-      * <code>Assert true (ssh_ecdsa_p256_sign(sig, signed_data, sd, priv))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(pub, priv))</code>
+      * <code>Assert true (dws_ecdsa_p256_sign(sig, signed_data, sd, priv))</code>
       * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
@@ -53345,7 +53345,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Objective**: Server ephemeral (P-256), then a client ephemeral Q_C = client_sk * G (65-byte point).
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kex_generate(0))</code>
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(qc, client_sk))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(qc, client_sk))</code>
       * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
       * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
       * <code>Assert true (s-&gt;have_session_id)</code>
@@ -53364,7 +53364,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert equal memory ("ssh-ed25519", st, 11)</code>
       * <code>Assert true (rd_string(sigblob, sig_len, &so, &sig, &sl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
-      * <code>Assert true (ssh_ecdsa_p256_ecdh(K, qs, client_sk))</code>
+      * <code>Assert true (dws_ecdsa_p256_ecdh(K, qs, client_sk))</code>
       * <code>Assert equal memory (H, s-&gt;session_id, DWS_SHA256_DIGEST_LEN)</code>
       * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
   </details>
@@ -53375,7 +53375,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Objective**: Kexdh handle ecdh nistp256 rejects bad point
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kex_generate(0))</code>
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(qc, client_sk))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(qc, client_sk))</code>
       * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 65, reply, &rlen, sizeof(reply)))</code>
   </details>
 
@@ -53404,7 +53404,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: K_S = string("ecdsa-sha2-nistp256") \|\| string("nistp256") \|\| string(Q = 0x04\|\|X\|\|Y).
     * **Assertions**:
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(ec_pub, ec_priv))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(ec_pub, ec_priv))</code>
       * <code>Assert equal int (0, ssh_kex_generate(0))</code>
       * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
       * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
@@ -53418,8 +53418,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert true (rd_string(ks, ks_len, &ko, &curve, &curve_len))</code>
       * <code>Assert equal memory ("nistp256", curve, 8)</code>
       * <code>Assert true (rd_string(ks, ks_len, &ko, &q, &q_len))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(SSH_ECDSA_P256_PUB_LEN, q_len);</code>
-      * <code>Assert equal memory (ec_pub, q, SSH_ECDSA_P256_PUB_LEN)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_ECDSA_P256_PUB_LEN, q_len);</code>
+      * <code>Assert equal memory (ec_pub, q, DWS_ECDSA_P256_PUB_LEN)</code>
       * <code>Assert true (rd_string(sigblob, sig_len, &so, &st, &st_len))</code>
       * <code>Assert equal memory ("ecdsa-sha2-nistp256", st, 19)</code>
       * <code>Assert true (rd_string(sigblob, sig_len, &so, &ecsig, &ecsig_len))</code>
@@ -53427,7 +53427,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert true (rd_string(ecsig, ecsig_len, &eo, &sp, &sl))</code>
       * <code>Assert true (rl &lt;= 32 && sl &lt;= 32)</code>
       * <code>Assert equal memory (H, s-&gt;session_id, DWS_SHA256_DIGEST_LEN)</code>
-      * <code>Assert true (ssh_ecdsa_p256_verify(ec_pub, H, DWS_SHA256_DIGEST_LEN, raw))</code>
+      * <code>Assert true (dws_ecdsa_p256_verify(ec_pub, H, DWS_SHA256_DIGEST_LEN, raw))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -53627,7 +53627,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Objective**: Kexdh handle ecdh p256 rejects bad ephemeral
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kex_generate(0))</code>
-      * <code>Assert true (ssh_ecdsa_p256_pubkey(qc, d))</code>
+      * <code>Assert true (dws_ecdsa_p256_pubkey(qc, d))</code>
       * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)))</code>
   </details>
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_bignum.cpp
+ * @file bignum.cpp
  * @brief 2048-bit Montgomery modular exponentiation for DH-group14.
  *
  * ─── Montgomery parameter for group-14 ───────────────────────────────────
@@ -25,7 +25,7 @@
  * ─────────────────────────────────────────────────────────────────────────
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
+#include "crypto/bignum.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h" // for ssh_wipe()
 #include <string.h>
 
@@ -40,7 +40,7 @@ uint8_t crypto_work[SSH_CRYPTO_WORK_SIZE];
 // Little-endian 32-bit limbs: d[0] = least significant.
 // ---------------------------------------------------------------------------
 
-const SshBigNum group14_p = {{
+const DwsBigNum group14_p = {{
     // 2048-bit MODP group-14 prime
     0xFFFFFFFFu, 0xFFFFFFFFu, 0x8AACaa68u, 0x15728E5Au, 0x98FA0510u, 0x15D22618u, 0xEA956AE5u, 0x3995497Cu,
     0x95581718u, 0xDE2BCBF6u, 0x6F4C52C9u, 0xB5C55DF0u, 0xEC07A28Fu, 0x9B2783A2u, 0x180E8603u, 0xE39E772Cu,
@@ -52,7 +52,7 @@ const SshBigNum group14_p = {{
     0x8A67CC74u, 0x29024E08u, 0x80DC1CD1u, 0xC4C6628Bu, 0x2168C234u, 0xC90FDAA2u, 0xFFFFFFFFu, 0xFFFFFFFFu,
 }};
 
-const SshBigNum group14_g = {{
+const DwsBigNum group14_g = {{
     2u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
     0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
     0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
@@ -67,8 +67,8 @@ const SshBigNum group14_g = {{
 // and the init flag (all filled by bn_init()). One named owner, unreachable cross-TU.
 struct Group14Ctx
 {
-    SshBigNum r1; // R mod p = 2^2048 - p (two's complement of p in 2048 bits)
-    SshBigNum r2; // R^2 mod p = 2^4096 mod p (bn_init() via repeated doubling)
+    DwsBigNum r1; // R mod p = 2^2048 - p (two's complement of p in 2048 bits)
+    DwsBigNum r2; // R^2 mod p = 2^4096 mod p (bn_init() via repeated doubling)
     bool initialized = false;
 };
 static Group14Ctx s_g14;
@@ -130,7 +130,7 @@ static void bn_init(void)
     // Compute via borrow subtraction: 0 - p with 2048-bit wrap.
     {
         uint64_t borrow = 0;
-        for (int i = 0; i < SSH_BN_LIMBS; i++)
+        for (int i = 0; i < DWS_BN_LIMBS; i++)
         {
             uint64_t v = (uint64_t)0 - group14_p.d[i] - borrow;
             s_g14.r1.d[i] = (uint32_t)v;
@@ -142,10 +142,10 @@ static void bn_init(void)
 
     // R^2 mod p = 2^4096 mod p.
     // Compute by starting from R mod p and doubling it 2048 times mod p.
-    memcpy(s_g14.r2.d, s_g14.r1.d, sizeof(SshBigNum));
+    memcpy(s_g14.r2.d, s_g14.r1.d, sizeof(DwsBigNum));
     for (int i = 0; i < 2048; i++)
     {
-        uint32_t overflow = bn_shl1(s_g14.r2.d, SSH_BN_LIMBS);
+        uint32_t overflow = bn_shl1(s_g14.r2.d, DWS_BN_LIMBS);
         // If overflow bit set OR result >= p, subtract p.
         // bn_init() takes no parameters and reads no state besides the compile-time constant
         // group14_p; combined with the s_g14.initialized memo guard above, this doubling loop
@@ -156,8 +156,8 @@ static void bn_init(void)
         // the doubled 2048-bit value is already < p, so the cmp_raw() half of this OR is never
         // the deciding vote - it only ever agrees with an overflow that is already false.
         // Structurally unreachable (a mathematical constant of this trace), not merely untested.
-        if (overflow || bn_cmp_raw(s_g14.r2.d, group14_p.d, SSH_BN_LIMBS) >= 0) // GCOVR_EXCL_BR_LINE
-            bn_sub_inplace(s_g14.r2.d, group14_p.d, SSH_BN_LIMBS);
+        if (overflow || bn_cmp_raw(s_g14.r2.d, group14_p.d, DWS_BN_LIMBS) >= 0) // GCOVR_EXCL_BR_LINE
+            bn_sub_inplace(s_g14.r2.d, group14_p.d, DWS_BN_LIMBS);
     }
 
     s_g14.initialized = true;
@@ -170,41 +170,41 @@ static void bn_init(void)
 // p_inv = 1 for group-14 (see file header).
 // ---------------------------------------------------------------------------
 
-static void bn_monpro(SshBigNum *out, const SshBigNum *a, const SshBigNum *b)
+static void bn_monpro(DwsBigNum *out, const DwsBigNum *a, const DwsBigNum *b)
 {
     // t lives at offset 768 in crypto_work (after base_mont, result, tmp).
     uint32_t *t = (uint32_t *)(crypto_work + 768);
     memset(t, 0, 129 * sizeof(uint32_t));
 
-    for (int i = 0; i < SSH_BN_LIMBS; i++)
+    for (int i = 0; i < DWS_BN_LIMBS; i++)
     {
         // Multiply step: t[0..63] += a[i] * b[0..63]
         uint64_t carry = 0;
-        for (int j = 0; j < SSH_BN_LIMBS; j++)
+        for (int j = 0; j < DWS_BN_LIMBS; j++)
         {
             uint64_t uv = (uint64_t)t[i + j] + (uint64_t)a->d[i] * (uint64_t)b->d[j] + carry;
             t[i + j] = (uint32_t)uv;
             carry = uv >> 32;
         }
-        t[i + SSH_BN_LIMBS] += (uint32_t)carry;
+        t[i + DWS_BN_LIMBS] += (uint32_t)carry;
 
         // Reduction step: m = t[i] * p_inv = t[i] * 1 = t[i]
         uint32_t m = t[i];
         carry = 0;
-        for (int j = 0; j < SSH_BN_LIMBS; j++)
+        for (int j = 0; j < DWS_BN_LIMBS; j++)
         {
             uint64_t uv = (uint64_t)t[i + j] + (uint64_t)m * (uint64_t)group14_p.d[j] + carry;
             t[i + j] = (uint32_t)uv;
             carry = uv >> 32;
         }
         // Add carry into the high word (t[i+64]); t[128] absorbs final overflow.
-        uint64_t hi = (uint64_t)t[i + SSH_BN_LIMBS] + carry;
-        t[i + SSH_BN_LIMBS] = (uint32_t)hi;
-        t[i + SSH_BN_LIMBS + 1] += (uint32_t)(hi >> 32);
+        uint64_t hi = (uint64_t)t[i + DWS_BN_LIMBS] + carry;
+        t[i + DWS_BN_LIMBS] = (uint32_t)hi;
+        t[i + DWS_BN_LIMBS + 1] += (uint32_t)(hi >> 32);
     }
 
     // Result is in t[64..127].  Conditionally subtract p if result >= p.
-    uint32_t *res = t + SSH_BN_LIMBS;
+    uint32_t *res = t + DWS_BN_LIMBS;
     // For 0 <= a,b < p the raw (pre-correction) SOS value is < 2p, so it needs the guard
     // limb t[128] for the case where it reaches/exceeds 2^2048. group14_p's top two limbs are
     // both 0xFFFFFFFF, i.e. p sits within about 2^-64 of 2^2048, so "the raw value is >= p but
@@ -215,10 +215,10 @@ static void bn_monpro(SshBigNum *out, const SshBigNum *a, const SshBigNum *b)
     // compute base*R mod p = 1 exactly, landing the pre-correction raw value at exactly p+1
     // (t[128]==0, cmp_raw()>=0 true). Exercised by
     // test_bn_expmod_group14_hits_correction_sliver_without_overflow_limb (test_ssh_conn.cpp).
-    if (t[128] || bn_cmp_raw(res, group14_p.d, SSH_BN_LIMBS) >= 0)
-        bn_sub_inplace(res, group14_p.d, SSH_BN_LIMBS);
+    if (t[128] || bn_cmp_raw(res, group14_p.d, DWS_BN_LIMBS) >= 0)
+        bn_sub_inplace(res, group14_p.d, DWS_BN_LIMBS);
 
-    memcpy(out->d, res, SSH_BN_LIMBS * sizeof(uint32_t));
+    memcpy(out->d, res, DWS_BN_LIMBS * sizeof(uint32_t));
 }
 #endif // !ARDUINO (native-only Montgomery helpers)
 
@@ -226,9 +226,9 @@ static void bn_monpro(SshBigNum *out, const SshBigNum *a, const SshBigNum *b)
 // Public API (bn_from_bytes / bn_to_bytes / bn_cmp / ... shared both platforms)
 // ---------------------------------------------------------------------------
 
-void bn_from_bytes(SshBigNum *out, const uint8_t *bytes, size_t len)
+void bn_from_bytes(DwsBigNum *out, const uint8_t *bytes, size_t len)
 {
-    memset(out->d, 0, sizeof(SshBigNum));
+    memset(out->d, 0, sizeof(DwsBigNum));
     // bytes are big-endian; map to little-endian limbs.
     size_t blen = len < 256 ? len : 256;
     for (size_t i = 0; i < blen; i++)
@@ -238,11 +238,11 @@ void bn_from_bytes(SshBigNum *out, const uint8_t *bytes, size_t len)
     }
 }
 
-void bn_to_bytes(uint8_t bytes[256], const SshBigNum *in)
+void bn_to_bytes(uint8_t bytes[256], const DwsBigNum *in)
 {
-    for (int i = 0; i < SSH_BN_LIMBS; i++)
+    for (int i = 0; i < DWS_BN_LIMBS; i++)
     {
-        uint32_t v = in->d[SSH_BN_LIMBS - 1 - i];
+        uint32_t v = in->d[DWS_BN_LIMBS - 1 - i];
         bytes[i * 4 + 0] = (uint8_t)(v >> 24);
         bytes[i * 4 + 1] = (uint8_t)(v >> 16);
         bytes[i * 4 + 2] = (uint8_t)(v >> 8);
@@ -250,24 +250,24 @@ void bn_to_bytes(uint8_t bytes[256], const SshBigNum *in)
     }
 }
 
-int bn_cmp(const SshBigNum *a, const SshBigNum *b)
+int bn_cmp(const DwsBigNum *a, const DwsBigNum *b)
 {
-    return bn_cmp_raw(a->d, b->d, SSH_BN_LIMBS);
+    return bn_cmp_raw(a->d, b->d, DWS_BN_LIMBS);
 }
 
-int bn_is_zero(const SshBigNum *a)
+int bn_is_zero(const DwsBigNum *a)
 {
-    for (int i = 0; i < SSH_BN_LIMBS; i++)
+    for (int i = 0; i < DWS_BN_LIMBS; i++)
         if (a->d[i])
             return 0;
     return 1;
 }
 
-int bn_dh_validate(const SshBigNum *v)
+int bn_dh_validate(const DwsBigNum *v)
 {
     // Must be > 1
     int ok = 0;
-    for (int i = 1; i < SSH_BN_LIMBS; i++)
+    for (int i = 1; i < DWS_BN_LIMBS; i++)
         if (v->d[i])
         {
             ok = 1;
@@ -277,7 +277,7 @@ int bn_dh_validate(const SshBigNum *v)
         return -1;
     // Must be < p-1
     // p-1: subtract 1 from p
-    SshBigNum pm1 = group14_p;
+    DwsBigNum pm1 = group14_p;
     pm1.d[0]--;
     if (bn_cmp(v, &pm1) >= 0)
         return -1;
@@ -292,7 +292,7 @@ int bn_dh_validate(const SshBigNum *v)
 // On ESP32 delegate to mbedtls which uses HW bignum acceleration.
 #include <mbedtls/bignum.h>
 
-void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *exp)
+void bn_expmod_group14(DwsBigNum *out, const DwsBigNum *base, const DwsBigNum *exp)
 {
     uint8_t base_be[256];
     uint8_t exp_be[256];
@@ -331,14 +331,14 @@ void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *e
 
 #else // Native software path
 
-void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *exp)
+void bn_expmod_group14(DwsBigNum *out, const DwsBigNum *base, const DwsBigNum *exp)
 {
     bn_init(); // ensure s_g14.r1, s_g14.r2 are computed
 
-    // Map crypto_work regions (layout documented in ssh_bignum.h):
-    SshBigNum *base_mont = (SshBigNum *)(crypto_work + 0);
-    SshBigNum *result = (SshBigNum *)(crypto_work + 256);
-    SshBigNum *tmp = (SshBigNum *)(crypto_work + 512);
+    // Map crypto_work regions (layout documented in dws_bignum.h):
+    DwsBigNum *base_mont = (DwsBigNum *)(crypto_work + 0);
+    DwsBigNum *result = (DwsBigNum *)(crypto_work + 256);
+    DwsBigNum *tmp = (DwsBigNum *)(crypto_work + 512);
     // t[] at offset 768 is used inside bn_monpro().
 
     // Convert base to Montgomery form: base_mont = base * R mod p
@@ -346,30 +346,30 @@ void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *e
     bn_monpro(base_mont, base, &s_g14.r2);
 
     // result = 1 in Montgomery form = R mod p = s_g14.r1
-    memcpy(result->d, s_g14.r1.d, sizeof(SshBigNum));
+    memcpy(result->d, s_g14.r1.d, sizeof(DwsBigNum));
 
     // Left-to-right binary square-and-multiply (MSB first: d[63]..d[0], bit 31..0)
-    for (int i = SSH_BN_LIMBS - 1; i >= 0; i--)
+    for (int i = DWS_BN_LIMBS - 1; i >= 0; i--)
     {
         for (int b = 31; b >= 0; b--)
         {
             // Square: result = result^2 * R^-1 mod p
             bn_monpro(tmp, result, result);
-            memcpy(result->d, tmp->d, sizeof(SshBigNum));
+            memcpy(result->d, tmp->d, sizeof(DwsBigNum));
 
             if ((exp->d[i] >> b) & 1u)
             {
                 // Multiply: result = result * base_mont * R^-1 mod p
                 bn_monpro(tmp, result, base_mont);
-                memcpy(result->d, tmp->d, sizeof(SshBigNum));
+                memcpy(result->d, tmp->d, sizeof(DwsBigNum));
             }
         }
     }
 
     // Convert back from Montgomery form: out = result * R^-1 mod p
     //   = MonPro(result, 1)
-    SshBigNum one;
-    memset(one.d, 0, sizeof(SshBigNum));
+    DwsBigNum one;
+    memset(one.d, 0, sizeof(DwsBigNum));
     one.d[0] = 1u;
     bn_monpro(out, result, &one);
 

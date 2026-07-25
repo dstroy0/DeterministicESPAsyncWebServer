@@ -14,10 +14,10 @@
 
 #if DWS_ENABLE_SSH_CLIENT
 
+#include "crypto/bignum.h" // bn_expmod_group14 (dh-group14 client)
+#include "crypto/ecdsa.h"  // ecdh-sha2-nistp256 + ecdsa host-key verify
 #include "crypto/sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"     // bn_expmod_group14 (dh-group14 client)
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_x25519 (curve25519-sha256)
-#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"      // ecdh-sha2-nistp256 + ecdsa host-key verify
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"    // ssh-ed25519 host key + client auth
 #include "network_drivers/presentation/ssh/crypto/ssh_kexhash.h"    // SshKexHash (SHA-256/SHA-512 by method)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"        // rsa-sha2-256/512 host-key verify
@@ -491,9 +491,9 @@ static bool build_kex_public(void)
         for (int tries = 0; tries < 8; tries++)
         {
             ssh_rng_fill(s_cli.kex_priv, 32);
-            if (ssh_ecdsa_p256_pubkey(s_cli.qc, s_cli.kex_priv))
+            if (dws_ecdsa_p256_pubkey(s_cli.qc, s_cli.kex_priv))
             {
-                s_cli.qc_len = SSH_ECDSA_P256_PUB_LEN; // 65
+                s_cli.qc_len = DWS_ECDSA_P256_PUB_LEN; // 65
                 return true;
             }
         }
@@ -501,7 +501,7 @@ static bool build_kex_public(void)
     case CliKex::DH_GROUP14: {
         // e = g^x mod p, g = 2 (RFC 3526 group 14). x is a 256-bit exponent.
         ssh_rng_fill(s_cli.kex_priv, 32);
-        SshBigNum g, x, e;
+        DwsBigNum g, x, e;
         uint8_t two = 2;
         bn_from_bytes(&g, &two, 1);
         bn_from_bytes(&x, s_cli.kex_priv, 32);
@@ -686,17 +686,17 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         return true;
     }
     case CliKex::ECDH_P256: {
-        if (srv_pub_len != SSH_ECDSA_P256_PUB_LEN)
+        if (srv_pub_len != DWS_ECDSA_P256_PUB_LEN)
             return false;
-        uint8_t k32[SSH_ECDSA_P256_COORD_LEN];
-        if (!ssh_ecdsa_p256_ecdh(k32, srv_pub, s_cli.kex_priv))
+        uint8_t k32[DWS_ECDSA_P256_COORD_LEN];
+        if (!dws_ecdsa_p256_ecdh(k32, srv_pub, s_cli.kex_priv))
             return false;
         memcpy(k_be + (256 - 32), k32, 32);
         ssh_wipe(k32, 32);
         return true;
     }
     case CliKex::DH_GROUP14: {
-        SshBigNum f, x, K;
+        DwsBigNum f, x, K;
         bn_from_bytes(&f, srv_pub, srv_pub_len);
         if (bn_dh_validate(&f) != 0) // 0 = valid (1 < f < p-1)
             return false;
@@ -843,7 +843,7 @@ static bool verify_host_sig(const uint8_t *ks, uint32_t ks_len, const uint8_t *s
         // signature: string( mpint(r) || mpint(s) ) -> 64-byte raw r||s.
         uint32_t bl;
         const uint8_t *blob = r_string(&rs, &bl);
-        if (!rk.ok || !rs.ok || qn != SSH_ECDSA_P256_PUB_LEN)
+        if (!rk.ok || !rs.ok || qn != DWS_ECDSA_P256_PUB_LEN)
             return false;
         Rd rb = {blob, bl, 0, true};
         uint32_t rlen, slen;
@@ -852,7 +852,7 @@ static bool verify_host_sig(const uint8_t *ks, uint32_t ks_len, const uint8_t *s
         uint8_t raw[64];
         if (!rb.ok || !mpint_to_fixed(rr, rlen, raw, 32) || !mpint_to_fixed(ss, slen, raw + 32, 32))
             return false;
-        return ssh_ecdsa_p256_verify(q, H, h_len, raw);
+        return dws_ecdsa_p256_verify(q, H, h_len, raw);
     }
     case CliHostkey::RSA_SHA256:
     case CliHostkey::RSA_SHA512: {

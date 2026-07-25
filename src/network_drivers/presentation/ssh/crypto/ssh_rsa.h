@@ -90,9 +90,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_RSA_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_RSA_H
 
+#include "crypto/bignum.h"
 #include "crypto/sha256.h"
 #include "crypto/sha512.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
 #include <stddef.h>
 #include <stdint.h>
 

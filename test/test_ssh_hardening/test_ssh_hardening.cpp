@@ -5,8 +5,8 @@
 // refused and not advertised, while publickey auth remains available.
 
 #include "ServerConfig.h"
+#include "crypto/ecdsa.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include <stdint.h>
@@ -103,17 +103,17 @@ void test_failure_advertises_publickey_only()
 }
 
 // ---------------------------------------------------------------------------
-// ECDSA P-256 (ssh_ecdsa.cpp) - this env links ssh_ecdsa.cpp as part of the
+// ECDSA P-256 (dws_ecdsa.cpp) - this env links dws_ecdsa.cpp as part of the
 // SSH auth/transport stack under test (dws_ssh_auth_handle_pubkey verifies
 // "ecdsa-sha2-nistp256" client keys), so its coverage is measured here too.
-// Full RFC 6979 known-answer-vector coverage lives in native_ssh_ecdsa /
-// test_ssh_ecdsa.cpp; these two tests just need to actually run the native
+// Full RFC 6979 known-answer-vector coverage lives in native_dws_ecdsa /
+// test_dws_ecdsa.cpp; these two tests just need to actually run the native
 // software P-256 path (sign, verify, ecdh) at least once under this build.
 // ---------------------------------------------------------------------------
 
 // Direct-API round trip: pubkey -> sign -> verify, plus ecdh between two keys. Exercises the
 // software field/scalar arithmetic (fp_mul -> reduce_mod -> reduce_low8_ge), the RFC 6979
-// deterministic nonce path (ecdsa_try_sign / ecdsa_sign_core), and ssh_ecdsa_p256_ecdh's
+// deterministic nonce path (ecdsa_try_sign / ecdsa_sign_core), and dws_ecdsa_p256_ecdh's
 // on-curve + non-identity checks - none of which any other test in this env's binary reaches.
 void test_ecdsa_direct_sign_verify_ecdh_roundtrip(void)
 {
@@ -121,25 +121,25 @@ void test_ecdsa_direct_sign_verify_ecdh_roundtrip(void)
     memset(priv_a, 0, 32);
     priv_a[31] = 0x2A;
     uint8_t pub_a[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub_a, priv_a));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub_a, priv_a));
 
     const uint8_t msg[] = "ecdsa still works with password auth compiled out";
     uint8_t sig[64];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_sign(sig, msg, sizeof(msg) - 1, priv_a));
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_sign(sig, msg, sizeof(msg) - 1, priv_a));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig));
     sig[0] ^= 0x01;
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub_a, msg, sizeof(msg) - 1, sig));
 
     uint8_t priv_b[32];
     memset(priv_b, 0, 32);
     priv_b[31] = 0x2B;
     uint8_t pub_b[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub_b, priv_b));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub_b, priv_b));
 
     uint8_t shared_ab[32];
     uint8_t shared_ba[32];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_ecdh(shared_ab, pub_b, priv_a));
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_ecdh(shared_ba, pub_a, priv_b));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_ecdh(shared_ab, pub_b, priv_a));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_ecdh(shared_ba, pub_a, priv_b));
     TEST_ASSERT_EQUAL_MEMORY(shared_ab, shared_ba, 32);
 }
 
@@ -158,15 +158,15 @@ void test_ecdsa_publickey_auth_succeeds_when_password_disabled(void)
     uint8_t priv[32];
     memset(priv, 0, 32);
     priv[31] = 0x77;
-    uint8_t pub[SSH_ECDSA_P256_PUB_LEN];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+    uint8_t pub[DWS_ECDSA_P256_PUB_LEN];
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub, priv));
 
     // Public-key blob (RFC 5656 §3.1): string("ecdsa-sha2-nistp256") string("nistp256") string(Q).
-    uint8_t blob[4 + 19 + 4 + 8 + 4 + SSH_ECDSA_P256_PUB_LEN];
+    uint8_t blob[4 + 19 + 4 + 8 + 4 + DWS_ECDSA_P256_PUB_LEN];
     size_t bo = 0;
     bo += put_string(blob + bo, "ecdsa-sha2-nistp256");
     bo += put_string(blob + bo, "nistp256");
-    bo += put_bytes_string(blob + bo, pub, SSH_ECDSA_P256_PUB_LEN);
+    bo += put_bytes_string(blob + bo, pub, DWS_ECDSA_P256_PUB_LEN);
 
     // Everything the signature covers except the session id: byte(REQUEST) || string(user) ||
     // string(service) || string(method) || boolean(TRUE) || string(algo) || string(blob).
@@ -187,8 +187,8 @@ void test_ecdsa_publickey_auth_succeeds_when_password_disabled(void)
     memcpy(signed_data + sd, prefix, po);
     sd += po;
 
-    uint8_t sig[SSH_ECDSA_P256_SIG_LEN];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_sign(sig, signed_data, sd, priv));
+    uint8_t sig[DWS_ECDSA_P256_SIG_LEN];
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_sign(sig, signed_data, sd, priv));
 
     // Signature field: string(sigblob), sigblob = string(sig-algo) || string(mpint(r)||mpint(s)).
     uint8_t rawsig[4 + 32 + 4 + 32];

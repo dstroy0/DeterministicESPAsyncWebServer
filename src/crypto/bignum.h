@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_bignum.h
+ * @file bignum.h
  * @brief 2048-bit big-integer arithmetic for DH-group14 and RSA-2048.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * DESIGN RATIONALE
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * SshBigNum is a fixed-width 2048-bit integer stored as 64 little-endian
+ * DwsBigNum is a fixed-width 2048-bit integer stored as 64 little-endian
  * 32-bit limbs (d[0] = least significant).  Fixed width means:
  *   - Struct size is a compile-time constant: 256 bytes.
  *   - No dynamic allocation - both DH scalars and RSA key fragments fit in
@@ -45,21 +45,21 @@
  *   2. Compute MonPro(aR, bR) = a·b·R mod p
  *   3. Convert back: MonPro(a·b·R, 1) = a·b mod p
  *
- * R² mod p is a precomputed 2048-bit constant (see ssh_bignum.cpp).
+ * R² mod p is a precomputed 2048-bit constant (see dws_bignum.cpp).
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * SCRATCH BUFFER
  * ═══════════════════════════════════════════════════════════════════════════
  *
  * The Montgomery SOS multiplication uses a 129-word (516-byte) temporary
- * array.  The expmod function needs three SshBigNum temporaries (768 bytes).
+ * array.  The expmod function needs three DwsBigNum temporaries (768 bytes).
  * All of these live in crypto_work[] (SSH_CRYPTO_WORK_SIZE = 1536 bytes)
- * defined in ServerConfig.h and allocated in ssh_bignum.cpp.
+ * defined in ServerConfig.h and allocated in dws_bignum.cpp.
  *
  * Layout during bn_expmod_group14():
- *   [0..255]    base_mont  (SshBigNum)
- *   [256..511]  result     (SshBigNum)
- *   [512..767]  tmp        (SshBigNum)
+ *   [0..255]    base_mont  (DwsBigNum)
+ *   [256..511]  result     (DwsBigNum)
+ *   [512..767]  tmp        (DwsBigNum)
  *   [768..1283] mont_t     (uint32_t[129])
  *
  * crypto_work[] is zeroed via ssh_wipe() immediately after bn_expmod_group14()
@@ -71,8 +71,8 @@
  * @date    2026
  */
 
-#ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_BIGNUM_H
-#define DETERMINISTICESPASYNCWEBSERVER_SSH_BIGNUM_H
+#ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_BIGNUM_H
+#define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_BIGNUM_H
 
 #include "ServerConfig.h"
 #include <stddef.h>
@@ -84,7 +84,7 @@
 // ---------------------------------------------------------------------------
 
 /** @brief Number of 32-bit limbs in a 2048-bit integer. */
-#define SSH_BN_LIMBS 64
+#define DWS_BN_LIMBS 64
 
 /**
  * @brief A 2048-bit unsigned integer stored as 64 little-endian 32-bit limbs.
@@ -92,13 +92,13 @@
  * d[0] = least significant 32 bits.
  * d[63] = most significant 32 bits.
  */
-struct SshBigNum
+struct DwsBigNum
 {
-    uint32_t d[SSH_BN_LIMBS]; ///< 256 bytes of magnitude, little-endian limbs.
+    uint32_t d[DWS_BN_LIMBS]; ///< 256 bytes of magnitude, little-endian limbs.
 };
 
 // ---------------------------------------------------------------------------
-// Scratch buffer (defined in ssh_bignum.cpp)
+// Scratch buffer (defined in dws_bignum.cpp)
 // ---------------------------------------------------------------------------
 
 /**
@@ -116,7 +116,7 @@ extern uint8_t crypto_work[SSH_CRYPTO_WORK_SIZE];
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Read a big-endian byte array of @p len bytes into a SshBigNum.
+ * @brief Read a big-endian byte array of @p len bytes into a DwsBigNum.
  *
  * If @p len < 256 the most-significant limbs are zeroed.
  * If @p len > 256 only the least-significant 256 bytes are read.
@@ -125,30 +125,30 @@ extern uint8_t crypto_work[SSH_CRYPTO_WORK_SIZE];
  * @param bytes Big-endian source bytes.
  * @param len   Number of source bytes (typically 256 for 2048-bit).
  */
-void bn_from_bytes(SshBigNum *out, const uint8_t *bytes, size_t len);
+void bn_from_bytes(DwsBigNum *out, const uint8_t *bytes, size_t len);
 
 /**
- * @brief Write a SshBigNum as a 256-byte big-endian array.
+ * @brief Write a DwsBigNum as a 256-byte big-endian array.
  *
  * @param bytes Destination buffer (exactly 256 bytes).
  * @param in    Source bignum.
  */
-void bn_to_bytes(uint8_t bytes[256], const SshBigNum *in);
+void bn_to_bytes(uint8_t bytes[256], const DwsBigNum *in);
 
 // ---------------------------------------------------------------------------
 // Comparison
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Compare two SshBigNum values.
+ * @brief Compare two DwsBigNum values.
  * @return -1 if a < b, 0 if a == b, 1 if a > b.
  */
-int bn_cmp(const SshBigNum *a, const SshBigNum *b);
+int bn_cmp(const DwsBigNum *a, const DwsBigNum *b);
 
 /**
  * @brief Return non-zero if @p a is zero (all limbs zero).
  */
-int bn_is_zero(const SshBigNum *a);
+int bn_is_zero(const DwsBigNum *a);
 
 // ---------------------------------------------------------------------------
 // DH-group14 modular exponentiation
@@ -167,7 +167,7 @@ int bn_is_zero(const SshBigNum *a);
  * @param base  Base value; must satisfy 1 < base < p-1.
  * @param exp   Exponent (e.g. the 2048-bit private DH scalar y).
  */
-void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *exp);
+void bn_expmod_group14(DwsBigNum *out, const DwsBigNum *base, const DwsBigNum *exp);
 
 /**
  * @brief Validate a received DH public value.
@@ -177,16 +177,16 @@ void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *e
  *
  * @param v  Received public DH value.
  */
-int bn_dh_validate(const SshBigNum *v);
+int bn_dh_validate(const DwsBigNum *v);
 
 // ---------------------------------------------------------------------------
 // Group-14 prime constant (exposed for key-derivation and validation)
 // ---------------------------------------------------------------------------
 
 /** @brief The RFC 3526 MODP group-14 prime (2048-bit). */
-extern const SshBigNum group14_p;
+extern const DwsBigNum group14_p;
 
 /** @brief Generator for group-14: g = 2. */
-extern const SshBigNum group14_g;
+extern const DwsBigNum group14_g;
 
-#endif // DETERMINISTICESPASYNCWEBSERVER_SSH_BIGNUM_H
+#endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_BIGNUM_H

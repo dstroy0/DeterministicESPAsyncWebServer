@@ -663,10 +663,14 @@ src/
 │   ├── aes256ctr.h
 │   ├── aesgcm.cpp
 │   ├── aesgcm.h
+│   ├── bignum.cpp
+│   ├── bignum.h
 │   ├── chacha20.cpp
 │   ├── chacha20.h
 │   ├── chachapoly.cpp
 │   ├── chachapoly.h
+│   ├── ecdsa.cpp
+│   ├── ecdsa.h
 │   ├── hmac_sha256.cpp
 │   ├── hmac_sha256.h
 │   ├── hmac_sha512.cpp
@@ -775,12 +779,8 @@ src/
 │   │   │   │   ├── ssh_server.cpp
 │   │   │   │   └── ssh_server.h
 │   │   │   ├── crypto/
-│   │   │   │   ├── ssh_bignum.cpp
-│   │   │   │   ├── ssh_bignum.h
 │   │   │   │   ├── ssh_curve25519.cpp
 │   │   │   │   ├── ssh_curve25519.h
-│   │   │   │   ├── ssh_ecdsa.cpp
-│   │   │   │   ├── ssh_ecdsa.h
 │   │   │   │   ├── ssh_ed25519.cpp
 │   │   │   │   ├── ssh_ed25519.h
 │   │   │   │   ├── ssh_ed25519_comb_table.h
@@ -1180,6 +1180,8 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
+│   │   ├── __pycache__/
+│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py

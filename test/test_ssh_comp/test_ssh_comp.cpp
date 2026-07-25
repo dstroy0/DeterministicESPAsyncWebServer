@@ -531,7 +531,7 @@ void test_dh_generate_slot_guard_and_state(void)
     TEST_ASSERT_EQUAL_INT(0, ssh_dh_generate(0));
     TEST_ASSERT_FALSE(ssh_dh[0].kex_done);
     bool f_nonzero = false;
-    for (int j = 0; j < SSH_BN_LIMBS; j++)
+    for (int j = 0; j < DWS_BN_LIMBS; j++)
         if (ssh_dh[0].f.d[j] != 0)
             f_nonzero = true;
     TEST_ASSERT_TRUE(f_nonzero); // f = g^y mod p, g = 2, y != 0 -> f != 0

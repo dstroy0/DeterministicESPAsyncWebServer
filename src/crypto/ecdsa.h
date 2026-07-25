@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_ecdsa.h
+ * @file ecdsa.h
  * @brief NIST P-256 primitives for SSH: ECDSA signatures and ECDH (RFC 5656 / FIPS 186-4).
  *
  * Backs three P-256 SSH mechanisms, all sharing the one curve:
@@ -31,34 +31,34 @@
  * Public-key blob (RFC 5656 §3.1):
  *   string("ecdsa-sha2-nistp256") || string("nistp256") || string(Q)
  * where Q is the uncompressed point 0x04 || X || Y (65 bytes). This module exposes Q
- * as @ref ssh_ecdsa_p256_pubkey; the layers wrap it.
+ * as @ref dws_ecdsa_p256_pubkey; the layers wrap it.
  *
  * Signature blob (RFC 5656 §3.1.2):
  *   string("ecdsa-sha2-nistp256") || string( mpint(r) || mpint(s) )
  * This module exposes the raw r || s (32 + 32 big-endian); the layers mpint-wrap them.
  *
  * ECDH shared secret (RFC 5656 §4):
- *   K = the X coordinate of d * Q_peer. @ref ssh_ecdsa_p256_ecdh returns the raw 32-byte X;
+ *   K = the X coordinate of d * Q_peer. @ref dws_ecdsa_p256_ecdh returns the raw 32-byte X;
  *   the transport encodes it as an mpint in the exchange hash and the key derivation.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
  */
 
-#ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_ECDSA_H
-#define DETERMINISTICESPASYNCWEBSERVER_SSH_ECDSA_H
+#ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_ECDSA_H
+#define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_ECDSA_H
 
 #include <stddef.h>
 #include <stdint.h>
 
 /** @brief P-256 private key (scalar d) length. */
-static constexpr size_t SSH_ECDSA_P256_PRIV_LEN = 32;
+static constexpr size_t DWS_ECDSA_P256_PRIV_LEN = 32;
 /** @brief P-256 coordinate length (one of X, Y). */
-static constexpr size_t SSH_ECDSA_P256_COORD_LEN = 32;
+static constexpr size_t DWS_ECDSA_P256_COORD_LEN = 32;
 /** @brief P-256 uncompressed public point length: 0x04 || X || Y. */
-static constexpr size_t SSH_ECDSA_P256_PUB_LEN = 65;
+static constexpr size_t DWS_ECDSA_P256_PUB_LEN = 65;
 /** @brief Raw ECDSA signature length: r || s (32 + 32, big-endian). */
-static constexpr size_t SSH_ECDSA_P256_SIG_LEN = 64;
+static constexpr size_t DWS_ECDSA_P256_SIG_LEN = 64;
 
 /**
  * @brief Derive the uncompressed public point Q = d*G from a P-256 private scalar.
@@ -67,7 +67,7 @@ static constexpr size_t SSH_ECDSA_P256_SIG_LEN = 64;
  * @param[in]  priv  32-byte big-endian private scalar d (must satisfy 1 <= d < n).
  * @return true on success, false if @p priv is 0 or >= the group order n.
  */
-bool ssh_ecdsa_p256_pubkey(uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN]);
+bool dws_ecdsa_p256_pubkey(uint8_t pub[DWS_ECDSA_P256_PUB_LEN], const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN]);
 
 /**
  * @brief Sign @p mlen bytes of @p msg with a P-256 private key (ECDSA, SHA-256).
@@ -81,8 +81,8 @@ bool ssh_ecdsa_p256_pubkey(uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t pr
  * @param[in]  priv  32-byte big-endian private scalar d.
  * @return true on success, false on invalid key or internal failure.
  */
-bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg, size_t mlen,
-                         const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN]);
+bool dws_ecdsa_p256_sign(uint8_t sig[DWS_ECDSA_P256_SIG_LEN], const uint8_t *msg, size_t mlen,
+                         const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN]);
 
 /**
  * @brief Verify a P-256 ECDSA signature (SHA-256) against an uncompressed public point.
@@ -93,8 +93,8 @@ bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg
  * @param[in] sig   64-byte raw signature r || s (big-endian, 32 + 32).
  * @return true if the signature is valid, false otherwise.
  */
-bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t *msg, size_t mlen,
-                           const uint8_t sig[SSH_ECDSA_P256_SIG_LEN]);
+bool dws_ecdsa_p256_verify(const uint8_t pub[DWS_ECDSA_P256_PUB_LEN], const uint8_t *msg, size_t mlen,
+                           const uint8_t sig[DWS_ECDSA_P256_SIG_LEN]);
 
 /**
  * @brief P-256 ECDH: the shared-secret X coordinate of d * Q_peer (RFC 5656 §4 / RFC 5903).
@@ -108,7 +108,7 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
  * @param[in]  priv      32-byte big-endian private scalar d (1 <= d < n).
  * @return true on success, false on an invalid peer point / scalar or an identity result.
  */
-bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[SSH_ECDSA_P256_PUB_LEN],
-                         const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN]);
+bool dws_ecdsa_p256_ecdh(uint8_t shared_x[DWS_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[DWS_ECDSA_P256_PUB_LEN],
+                         const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN]);
 
-#endif // DETERMINISTICESPASYNCWEBSERVER_SSH_ECDSA_H
+#endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_ECDSA_H

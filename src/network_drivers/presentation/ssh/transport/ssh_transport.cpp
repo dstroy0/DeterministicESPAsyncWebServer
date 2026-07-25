@@ -7,10 +7,10 @@
  */
 
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
+#include "crypto/bignum.h" // bn_*, DwsBigNum
+#include "crypto/ecdsa.h"  // dws_ecdsa_p256_* (ecdsa-sha2-nistp256 host key)
 #include "crypto/sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"     // bn_*, SshBigNum
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_x25519 (curve25519-sha256 KEX)
-#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"      // ssh_ecdsa_p256_* (ecdsa-sha2-nistp256 host key)
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"    // ssh_ed25519 host-key sign
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"   // ssh_rsa_encode_pubkey/sign, ssh_host_pubkey, SSH_RSA_*
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
@@ -84,8 +84,8 @@ struct SshTransportCtx
     uint8_t ed_seed[32];
     uint8_t ed_pub[32];
     bool ed_have = false;
-    uint8_t ecdsa_priv[SSH_ECDSA_P256_PRIV_LEN]; ///< P-256 host private scalar d.
-    uint8_t ecdsa_pub[SSH_ECDSA_P256_PUB_LEN];   ///< P-256 host public point (0x04||X||Y).
+    uint8_t ecdsa_priv[DWS_ECDSA_P256_PRIV_LEN]; ///< P-256 host private scalar d.
+    uint8_t ecdsa_pub[DWS_ECDSA_P256_PUB_LEN];   ///< P-256 host public point (0x04||X||Y).
     bool ecdsa_have = false;
 };
 static SshTransportCtx s_sshtr;
@@ -109,12 +109,12 @@ bool dws_ssh_hostkey_ed25519_available(void)
 {
     return s_sshtr.ed_have;
 }
-void dws_ssh_hostkey_ecdsa_set(const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+void dws_ssh_hostkey_ecdsa_set(const uint8_t priv[DWS_ECDSA_P256_PRIV_LEN])
 {
     // Derive and cache the public point; reject an invalid scalar (leaves ecdsa_have false).
-    if (!ssh_ecdsa_p256_pubkey(s_sshtr.ecdsa_pub, priv))
+    if (!dws_ecdsa_p256_pubkey(s_sshtr.ecdsa_pub, priv))
         return;
-    memcpy(s_sshtr.ecdsa_priv, priv, SSH_ECDSA_P256_PRIV_LEN);
+    memcpy(s_sshtr.ecdsa_priv, priv, DWS_ECDSA_P256_PRIV_LEN);
     s_sshtr.ecdsa_have = true;
 }
 bool dws_ssh_hostkey_ecdsa_available(void)
@@ -805,15 +805,15 @@ static int parse_ecdh_init(const uint8_t *payload, size_t len, uint8_t qc[32])
 
 // Parse SSH_MSG_KEX_ECDH_INIT for ecdh-sha2-nistp256 (RFC 5656 §4): byte(30) || string(Q_C),
 // where Q_C is the 65-byte uncompressed client point 0x04 || X || Y.
-static int parse_ecdh_init_p256(const uint8_t *payload, size_t len, uint8_t qc[SSH_ECDSA_P256_PUB_LEN])
+static int parse_ecdh_init_p256(const uint8_t *payload, size_t len, uint8_t qc[DWS_ECDSA_P256_PUB_LEN])
 {
     if (len < 1 + 4 || payload[0] != SSH_MSG_KEXDH_INIT)
         return -1;
     uint32_t n = ((uint32_t)payload[1] << 24) | ((uint32_t)payload[2] << 16) | ((uint32_t)payload[3] << 8) |
                  (uint32_t)payload[4];
-    if (n != SSH_ECDSA_P256_PUB_LEN || (size_t)5 + n > len)
+    if (n != DWS_ECDSA_P256_PUB_LEN || (size_t)5 + n > len)
         return -1;
-    memcpy(qc, payload + 5, SSH_ECDSA_P256_PUB_LEN);
+    memcpy(qc, payload + 5, DWS_ECDSA_P256_PUB_LEN);
     return 0;
 }
 
@@ -838,7 +838,7 @@ static int encode_hostkey(uint8_t i, uint8_t *ks, size_t *ks_len, size_t cap)
         Writer w = {ks, cap, 0, true};
         w_string(w, (const uint8_t *)HOSTKEY_ECDSA, sizeof(HOSTKEY_ECDSA) - 1);
         w_string(w, (const uint8_t *)"nistp256", 8); // RFC 5656 curve identifier
-        w_string(w, s_sshtr.ecdsa_pub, SSH_ECDSA_P256_PUB_LEN);
+        w_string(w, s_sshtr.ecdsa_pub, DWS_ECDSA_P256_PUB_LEN);
         if (!w.ok)     // GCOVR_EXCL_LINE  the ecdsa blob (~104B) always fits the RSA-sized ks buffer
             return -1; // GCOVR_EXCL_LINE
         *ks_len = w.len;
@@ -863,13 +863,13 @@ static int sign_hash(uint8_t i, const uint8_t *H, size_t h_len, uint8_t *sig, si
     }
     if (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256)
     {
-        uint8_t raw[SSH_ECDSA_P256_SIG_LEN]; // r || s (32 + 32)
-        if (!ssh_ecdsa_p256_sign(raw, H, h_len, s_sshtr.ecdsa_priv))
+        uint8_t raw[DWS_ECDSA_P256_SIG_LEN]; // r || s (32 + 32)
+        if (!dws_ecdsa_p256_sign(raw, H, h_len, s_sshtr.ecdsa_priv))
             return -1; // GCOVR_EXCL_LINE  key is available (negotiated) and sign is infallible for a valid d
         // ECDSA signature blob is mpint(r) || mpint(s) (RFC 5656 §3.1.2).
         Writer w = {sig, sig_cap, 0, true};
-        w_mpint(w, raw, SSH_ECDSA_P256_COORD_LEN);
-        w_mpint(w, raw + SSH_ECDSA_P256_COORD_LEN, SSH_ECDSA_P256_COORD_LEN);
+        w_mpint(w, raw, DWS_ECDSA_P256_COORD_LEN);
+        w_mpint(w, raw + DWS_ECDSA_P256_COORD_LEN, DWS_ECDSA_P256_COORD_LEN);
         if (!w.ok)     // GCOVR_EXCL_LINE  the mpint blob (~74B) always fits the 256B sig buffer
             return -1; // GCOVR_EXCL_LINE
         *sig_len = w.len;
@@ -933,11 +933,11 @@ int ssh_kex_generate(uint8_t i)
         // P-256 ECDH ephemeral: a random scalar d in [1, n) stored in ecdh_sk. The 65-byte public
         // point Q_S = d*G is re-derived in ssh_kexdh_handle (avoids a curve-specific session field).
         // Re-draw on the negligible chance a raw 32-byte value is 0 or >= n (an invalid P-256 scalar).
-        uint8_t qtmp[SSH_ECDSA_P256_PUB_LEN];
+        uint8_t qtmp[DWS_ECDSA_P256_PUB_LEN];
         for (int t = 0; t < 8; t++) // GCOVR_EXCL_LINE  the loop can only run past its first pass if the RNG
         {                           // hands back an invalid P-256 scalar, which no host build can provoke
             ssh_rng_fill(ssh_sess[i].ecdh_sk, 32);
-            if (ssh_ecdsa_p256_pubkey(qtmp, ssh_sess[i].ecdh_sk)) // GCOVR_EXCL_LINE  a random 32-byte value is a
+            if (dws_ecdsa_p256_pubkey(qtmp, ssh_sess[i].ecdh_sk)) // GCOVR_EXCL_LINE  a random 32-byte value is a
                 return 0;                                         // valid scalar with overwhelming probability
         }
         return -1; // GCOVR_EXCL_LINE  a random 32-byte scalar is a valid P-256 key with overwhelming probability
@@ -1123,20 +1123,20 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     else if (s->kex_alg == SshKexAlg::SSH_KEX_ECDH_NISTP256)
     {
         // ecdh-sha2-nistp256 (RFC 5656 §4): K = X(d_S * Q_C). Q_C/Q_S are 65-byte point strings; K an mpint.
-        uint8_t qc[SSH_ECDSA_P256_PUB_LEN];
+        uint8_t qc[DWS_ECDSA_P256_PUB_LEN];
         if (parse_ecdh_init_p256(payload, len, qc) != 0)
             return -1;
-        uint8_t qs[SSH_ECDSA_P256_PUB_LEN];
-        uint8_t kk[SSH_ECDSA_P256_COORD_LEN];
-        // Re-derive our ephemeral public Q_S, then the shared secret. ssh_ecdsa_p256_ecdh validates
+        uint8_t qs[DWS_ECDSA_P256_PUB_LEN];
+        uint8_t kk[DWS_ECDSA_P256_COORD_LEN];
+        // Re-derive our ephemeral public Q_S, then the shared secret. dws_ecdsa_p256_ecdh validates
         // Q_C is on-curve and the product is not the identity (RFC 5656 §4 point checks).
-        if (!ssh_ecdsa_p256_pubkey(qs, s->ecdh_sk) || !ssh_ecdsa_p256_ecdh(kk, qc, s->ecdh_sk))
+        if (!dws_ecdsa_p256_pubkey(qs, s->ecdh_sk) || !dws_ecdsa_p256_ecdh(kk, qc, s->ecdh_sk))
             return -1;
-        memcpy(k_be + (256 - SSH_ECDSA_P256_COORD_LEN), kk, SSH_ECDSA_P256_COORD_LEN);
-        memcpy(cpub, qc, SSH_ECDSA_P256_PUB_LEN);
-        memcpy(spub, qs, SSH_ECDSA_P256_PUB_LEN);
-        cpub_len = SSH_ECDSA_P256_PUB_LEN;
-        spub_len = SSH_ECDSA_P256_PUB_LEN;
+        memcpy(k_be + (256 - DWS_ECDSA_P256_COORD_LEN), kk, DWS_ECDSA_P256_COORD_LEN);
+        memcpy(cpub, qc, DWS_ECDSA_P256_PUB_LEN);
+        memcpy(spub, qs, DWS_ECDSA_P256_PUB_LEN);
+        cpub_len = DWS_ECDSA_P256_PUB_LEN;
+        spub_len = DWS_ECDSA_P256_PUB_LEN;
         pub_is_string = true;
         ssh_wipe(kk, sizeof(kk));
     }
@@ -1146,11 +1146,11 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         uint8_t e_be[256];
         if (ssh_kexdh_parse_init(payload, len, e_be) != 0)
             return -1;
-        SshBigNum e;
+        DwsBigNum e;
         bn_from_bytes(&e, e_be, 256);
         if (bn_dh_validate(&e) != 0)
             return -1;
-        SshBigNum K;
+        DwsBigNum K;
         bn_expmod_group14(&K, &e, &ssh_dh[i].y);
         bn_to_bytes(k_be, &K);
         ssh_wipe(&K, sizeof(K));

@@ -8,7 +8,7 @@
 // arithmetic, Jacobian point math, scalar multiplication, and RFC 6979 nonce generation. ECDH is
 // pinned to the RFC 5903 §8.1 (256-bit Random ECP Group) shared-secret vectors.
 
-#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
+#include "crypto/ecdsa.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
@@ -47,7 +47,7 @@ static void test_ecdsa_pubkey_matches_rfc6979(void)
     uint8_t priv[32];
     hexdec(PRIV, priv);
     uint8_t pub[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub, priv));
     TEST_ASSERT_EQUAL_UINT8(0x04, pub[0]);
     uint8_t ux[32], uy[32];
     hexdec(UX, ux);
@@ -62,7 +62,7 @@ static void test_ecdsa_sign_deterministic_sample(void)
     uint8_t priv[32];
     hexdec(PRIV, priv);
     uint8_t sig[64];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_sign(sig, (const uint8_t *)"sample", 6, priv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_sign(sig, (const uint8_t *)"sample", 6, priv));
     uint8_t r[32], s[32];
     hexdec(SAMPLE_R, r);
     hexdec(SAMPLE_S, s);
@@ -75,7 +75,7 @@ static void test_ecdsa_sign_deterministic_test(void)
     uint8_t priv[32];
     hexdec(PRIV, priv);
     uint8_t sig[64];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_sign(sig, (const uint8_t *)"test", 4, priv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_sign(sig, (const uint8_t *)"test", 4, priv));
     uint8_t r[32], s[32];
     hexdec(TEST_R, r);
     hexdec(TEST_S, s);
@@ -88,16 +88,16 @@ static void test_ecdsa_verify_valid(void)
     uint8_t priv[32];
     hexdec(PRIV, priv);
     uint8_t pub[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub, priv));
 
     uint8_t sig[64];
     hexdec(SAMPLE_R, sig);
     hexdec(SAMPLE_S, sig + 32);
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig));
 
     hexdec(TEST_R, sig);
     hexdec(TEST_S, sig + 32);
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"test", 4, sig));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"test", 4, sig));
 }
 
 static void test_ecdsa_verify_rejects_tamper(void)
@@ -105,7 +105,7 @@ static void test_ecdsa_verify_rejects_tamper(void)
     uint8_t priv[32];
     hexdec(PRIV, priv);
     uint8_t pub[65];
-    ssh_ecdsa_p256_pubkey(pub, priv);
+    dws_ecdsa_p256_pubkey(pub, priv);
 
     uint8_t sig[64];
     hexdec(SAMPLE_R, sig);
@@ -115,17 +115,17 @@ static void test_ecdsa_verify_rejects_tamper(void)
     uint8_t sig_test[64];
     hexdec(TEST_R, sig_test);
     hexdec(TEST_S, sig_test + 32);
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig_test));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig_test));
 
     // Tampered signature (flip one bit of s).
     sig[63] ^= 0x01;
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig));
 
     // Tampered public key (flip one bit of X -> off curve / wrong key).
     hexdec(SAMPLE_R, sig);
     hexdec(SAMPLE_S, sig + 32);
     pub[1] ^= 0x01;
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig));
 }
 
 // A fresh key round-trips (exercises sign -> verify with a non-vector key).
@@ -135,12 +135,12 @@ static void test_ecdsa_roundtrip_other_key(void)
     memset(priv, 0, 32);
     priv[31] = 0x42; // d = 0x42
     uint8_t pub[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub, priv));
     const uint8_t msg[] = "deterministic ecdsa round trip";
     uint8_t sig[64];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_sign(sig, msg, sizeof(msg) - 1, priv));
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(pub, msg, sizeof(msg) - 1, sig));
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"other message", 13, sig));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_sign(sig, msg, sizeof(msg) - 1, priv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_verify(pub, msg, sizeof(msg) - 1, sig));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"other message", 13, sig));
 }
 
 // Stress the scalar multiplication across many distinct secret scalars: pubkey -> sign -> verify must
@@ -164,15 +164,15 @@ static void test_ecdsa_random_roundtrip_stress(void)
         priv[31] |= 0x01;
 
         uint8_t pub[65];
-        TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+        TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub, priv));
         uint8_t msg[24];
         for (int i = 0; i < 24; i++)
             msg[i] = next();
         uint8_t sig[64];
-        TEST_ASSERT_TRUE(ssh_ecdsa_p256_sign(sig, msg, sizeof(msg), priv));
-        TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(pub, msg, sizeof(msg), sig));
+        TEST_ASSERT_TRUE(dws_ecdsa_p256_sign(sig, msg, sizeof(msg), priv));
+        TEST_ASSERT_TRUE(dws_ecdsa_p256_verify(pub, msg, sizeof(msg), sig));
         sig[iter % 64] ^= (uint8_t)(1u << (iter % 8)); // flip one bit somewhere in r||s
-        TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, msg, sizeof(msg), sig));
+        TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, msg, sizeof(msg), sig));
     }
 }
 
@@ -182,20 +182,20 @@ static void test_ecdsa_pubkey_rejects_bad_scalar(void)
     uint8_t priv[32];
     uint8_t pub[65];
     memset(priv, 0, 32);
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_pubkey(pub, priv)); // d = 0
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_pubkey(pub, priv)); // d = 0
     memset(priv, 0xFF, 32);
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_pubkey(pub, priv)); // d = 2^256-1 > n
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_pubkey(pub, priv)); // d = 2^256-1 > n
 }
 
-// ssh_ecdsa_p256_sign() validates its own private scalar independently of pubkey()'s check.
+// dws_ecdsa_p256_sign() validates its own private scalar independently of pubkey()'s check.
 static void test_ecdsa_sign_rejects_bad_scalar(void)
 {
     uint8_t priv[32];
     uint8_t sig[64];
     memset(priv, 0, 32);
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_sign(sig, (const uint8_t *)"x", 1, priv)); // d = 0
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_sign(sig, (const uint8_t *)"x", 1, priv)); // d = 0
     memset(priv, 0xFF, 32);
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_sign(sig, (const uint8_t *)"x", 1, priv)); // d = 2^256-1 > n
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_sign(sig, (const uint8_t *)"x", 1, priv)); // d = 2^256-1 > n
 }
 
 // verify() rejects a public key with a compressed-point (or any non-0x04) prefix.
@@ -204,13 +204,13 @@ static void test_ecdsa_verify_rejects_bad_prefix(void)
     uint8_t priv[32];
     hexdec(PRIV, priv);
     uint8_t pub[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub, priv));
     pub[0] = 0x02; // compressed-point prefix, not accepted
 
     uint8_t sig[64];
     hexdec(SAMPLE_R, sig);
     hexdec(SAMPLE_S, sig + 32);
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, sig));
 }
 
 // on_curve() must reject a coordinate that is out of the field range [0, p), a distinct failure mode
@@ -220,7 +220,7 @@ static void test_ecdsa_verify_rejects_out_of_range_coord(void)
     uint8_t priv[32];
     hexdec(PRIV, priv);
     uint8_t pub[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub, priv));
 
     uint8_t sig[64];
     hexdec(SAMPLE_R, sig);
@@ -229,11 +229,11 @@ static void test_ecdsa_verify_rejects_out_of_range_coord(void)
     uint8_t bad_pub[65];
     memcpy(bad_pub, pub, 65);
     memset(bad_pub + 1, 0xFF, 32); // X = 2^256-1 >= p
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(bad_pub, (const uint8_t *)"sample", 6, sig));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(bad_pub, (const uint8_t *)"sample", 6, sig));
 
     memcpy(bad_pub, pub, 65);
     memset(bad_pub + 33, 0xFF, 32); // Y = 2^256-1 >= p
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(bad_pub, (const uint8_t *)"sample", 6, sig));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(bad_pub, (const uint8_t *)"sample", 6, sig));
 }
 
 // verify() rejects a signature whose r or s is 0 or >= the group order n, before ever touching the
@@ -243,7 +243,7 @@ static void test_ecdsa_verify_rejects_out_of_range_sig(void)
     uint8_t priv[32];
     hexdec(PRIV, priv);
     uint8_t pub[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub, priv));
 
     // The P-256 group order n itself: an out-of-range (>= n) r/s value.
     static const char *N_HEX = "FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551";
@@ -257,19 +257,19 @@ static void test_ecdsa_verify_rejects_out_of_range_sig(void)
     uint8_t bad[64];
     memcpy(bad, base, 64);
     memset(bad, 0, 32); // r = 0
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
 
     memcpy(bad, base, 64);
     memcpy(bad, n_bytes, 32); // r = n (>= n)
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
 
     memcpy(bad, base, 64);
     memset(bad + 32, 0, 32); // s = 0
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
 
     memcpy(bad, base, 64);
     memcpy(bad + 32, n_bytes, 32); // s = n (>= n)
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"sample", 6, bad));
 }
 
 // verify() must reject a signature crafted so R = u1*G + u2*Q is the point at infinity: with r = s = 1,
@@ -282,13 +282,13 @@ static void test_ecdsa_verify_rejects_forged_infinity(void)
     uint8_t dpriv[32];
     hexdec(DPRIME, dpriv);
     uint8_t pub[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, dpriv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(pub, dpriv));
 
     uint8_t sig[64];
     memset(sig, 0, 64);
     sig[31] = 0x01; // r = 1
     sig[63] = 0x01; // s = 1
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"forge", 5, sig));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_verify(pub, (const uint8_t *)"forge", 5, sig));
 }
 
 // ---- ECDH (ecdh-sha2-nistp256) --------------------------------------------
@@ -325,9 +325,9 @@ static void test_ecdh_rfc5903_shared_secret(void)
     hexdec(ECDH_SHARED, shared);
 
     uint8_t out[32];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_ecdh(out, rpub, ipriv)); // initiator: i * R
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_ecdh(out, rpub, ipriv)); // initiator: i * R
     TEST_ASSERT_EQUAL_MEMORY(shared, out, 32);
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_ecdh(out, ipub, rpriv)); // responder: r * I
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_ecdh(out, ipub, rpriv)); // responder: r * I
     TEST_ASSERT_EQUAL_MEMORY(shared, out, 32);
 }
 
@@ -340,8 +340,8 @@ static void test_ecdh_rfc5903_pubkeys(void)
     hexdec(ECDH_R_PRIV, rpriv);
     uint8_t ipub[65];
     uint8_t rpub[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(ipub, ipriv));
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(rpub, rpriv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(ipub, ipriv));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(rpub, rpriv));
     uint8_t exp[32];
     hexdec(ECDH_IX, exp);
     TEST_ASSERT_EQUAL_MEMORY(exp, ipub + 1, 32);
@@ -363,12 +363,12 @@ static void test_ecdh_rejects_bad_point(void)
     uint8_t bad[65];
     mkpub(bad, ECDH_IX, ECDH_IY);
     bad[1] ^= 0x01; // corrupt X -> off curve
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_ecdh(out, bad, priv));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_ecdh(out, bad, priv));
 
     uint8_t comp[65];
     mkpub(comp, ECDH_IX, ECDH_IY);
     comp[0] = 0x02; // compressed-point prefix, not accepted
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_ecdh(out, comp, priv));
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_ecdh(out, comp, priv));
 }
 
 // ecdh() validates its own private scalar independently of pubkey()'s / sign()'s checks.
@@ -379,9 +379,9 @@ static void test_ecdh_rejects_bad_scalar(void)
     uint8_t priv[32];
     uint8_t out[32];
     memset(priv, 0, 32);
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_ecdh(out, rpub, priv)); // d = 0
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_ecdh(out, rpub, priv)); // d = 0
     memset(priv, 0xFF, 32);
-    TEST_ASSERT_FALSE(ssh_ecdsa_p256_ecdh(out, rpub, priv)); // d = 2^256-1 > n
+    TEST_ASSERT_FALSE(dws_ecdsa_p256_ecdh(out, rpub, priv)); // d = 2^256-1 > n
 }
 
 int main(int, char **)

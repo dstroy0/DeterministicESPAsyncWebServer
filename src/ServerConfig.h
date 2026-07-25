@@ -6107,9 +6107,9 @@
  * Must be large enough for the biggest single crypto operation:
  *
  *   DH expmod:
- *     base_mont  (SshBigNum = 256 B)
- *     result     (SshBigNum = 256 B)
- *     tmp        (SshBigNum = 256 B)
+ *     base_mont  (DwsBigNum = 256 B)
+ *     result     (DwsBigNum = 256 B)
+ *     tmp        (DwsBigNum = 256 B)
  *     mont_t     (uint32_t[129] = 516 B)
  *                                ─────
  *                                1284 B  → round up with margin → 1536 B
@@ -6174,7 +6174,7 @@
 // │  ssh_keys[MAX_SSH_CONNS]     │ MAX_SSH_CONNS × (2×DwsAesCtrCtx + 64)                       │          │
 // │   └─ DwsAesCtrCtx (native)   │   rk[60]=240 + counter[16] + keystream[16] + pos[1] = 273 B │    610 B │
 // │   └─ DwsAesCtrCtx (ARDUINO)  │   mbedtls_aes_context (≈284 B) + 33 B = ≈317 B per ctx     │    698 B │
-// │  ssh_dh[MAX_SSH_CONNS]       │ MAX_SSH_CONNS × (3×SshBigNum[256] + H[32] + 1)              │    801 B │
+// │  ssh_dh[MAX_SSH_CONNS]       │ MAX_SSH_CONNS × (3×DwsBigNum[256] + H[32] + 1)              │    801 B │
 // │  crypto_work[]               │ SSH_CRYPTO_WORK_SIZE (scratch, wiped after each use)         │  1 536 B │
 // │  SSH SUBTOTAL                │                                                              │  5 017 B │
 // ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
@@ -6183,7 +6183,7 @@
 //
 // ESP32 has 320 KB of SRAM; the library uses ~5–18 KB depending on features.
 // Stack usage is separate; the largest frame is during SSH DH key exchange
-// (~256 B for the SshBigNum private scalar on the call stack before it is
+// (~256 B for the DwsBigNum private scalar on the call stack before it is
 // zeroed by ssh_dh_finish()).
 //
 // SSH KEY MATERIAL IS NOT IN THE TABLE ABOVE intentionally:

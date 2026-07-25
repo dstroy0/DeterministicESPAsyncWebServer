@@ -98,8 +98,8 @@
 #include "ServerConfig.h"
 #include "crypto/aes256ctr.h"
 #include "crypto/aesgcm.h"
+#include "crypto/bignum.h"
 #include "crypto/chachapoly.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -225,7 +225,7 @@ extern SshKeyMat ssh_keys[MAX_SSH_CONNS];
 /**
  * @brief Ephemeral Diffie-Hellman state for one SSH connection.
  *
- * The three SshBigNum fields (y, f, K) together hold 768 bytes of sensitive
+ * The three DwsBigNum fields (y, f, K) together hold 768 bytes of sensitive
  * material.  The entire struct is wiped by ssh_dh_wipe() immediately after
  * session keys are derived from K.
  *
@@ -241,9 +241,9 @@ extern SshKeyMat ssh_keys[MAX_SSH_CONNS];
  */
 struct SshDhState
 {
-    SshBigNum y; ///< Server ephemeral private DH scalar (SENSITIVE - wiped after KEX).
-    SshBigNum f; ///< Server DH public value = g^y mod p (sent to client).
-    SshBigNum K; ///< Shared DH secret = e^y mod p (SENSITIVE - wiped after key derivation).
+    DwsBigNum y; ///< Server ephemeral private DH scalar (SENSITIVE - wiped after KEX).
+    DwsBigNum f; ///< Server DH public value = g^y mod p (sent to client).
+    DwsBigNum K; ///< Shared DH secret = e^y mod p (SENSITIVE - wiped after key derivation).
 
     uint8_t H[32]; ///< SHA-256 exchange hash; doubles as session_id after first KEX.
     bool kex_done; ///< True once NEWKEYS has been sent and received.

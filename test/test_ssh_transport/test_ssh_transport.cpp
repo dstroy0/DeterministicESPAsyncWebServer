@@ -5,10 +5,10 @@
 // KEXINIT algorithm negotiation.
 
 #include "baseline_keys.h"
+#include "crypto/ecdsa.h"
 #include "crypto/sha256.h"
 #include "cyclone_kex_bytes.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
@@ -824,7 +824,7 @@ void test_kexdh_handle_ecdh_nistp256_end_to_end()
     memset(client_sk, 0, 32);
     client_sk[31] = 0x09; // d = 9, a valid small P-256 scalar
     uint8_t qc[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(qc, client_sk));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(qc, client_sk));
 
     uint8_t pkt[128];
     pkt[0] = SSH_MSG_KEXDH_INIT;
@@ -871,7 +871,7 @@ void test_kexdh_handle_ecdh_nistp256_end_to_end()
 
     // Client recomputes K = X(client_sk * Q_S) and rebuilds the exchange hash exactly.
     uint8_t K[32];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_ecdh(K, qs, client_sk));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_ecdh(K, qs, client_sk));
     static uint8_t pre[1024];
     size_t o = 0;
     o += put_string(pre + o, (const uint8_t *)vc, strlen(vc));
@@ -906,7 +906,7 @@ void test_kexdh_handle_ecdh_nistp256_rejects_bad_point()
     memset(client_sk, 0, 32);
     client_sk[31] = 0x09;
     uint8_t qc[65];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(qc, client_sk));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(qc, client_sk));
     qc[1] ^= 0x01; // corrupt X -> off curve
 
     uint8_t pkt[128];
@@ -1009,8 +1009,8 @@ void test_kexdh_handle_ecdsa_end_to_end()
     memset(ec_priv, 0, 32);
     ec_priv[31] = 0x07;
     dws_ssh_hostkey_ecdsa_set(ec_priv);
-    uint8_t ec_pub[SSH_ECDSA_P256_PUB_LEN];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(ec_pub, ec_priv));
+    uint8_t ec_pub[DWS_ECDSA_P256_PUB_LEN];
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(ec_pub, ec_priv));
 
     SshSession *s = &ssh_sess[0];
     s->kex_alg = SshKexAlg::SSH_KEX_CURVE25519;
@@ -1067,8 +1067,8 @@ void test_kexdh_handle_ecdsa_end_to_end()
     TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &curve, &curve_len));
     TEST_ASSERT_EQUAL_MEMORY("nistp256", curve, 8);
     TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &q, &q_len));
-    TEST_ASSERT_EQUAL_UINT32(SSH_ECDSA_P256_PUB_LEN, q_len);
-    TEST_ASSERT_EQUAL_MEMORY(ec_pub, q, SSH_ECDSA_P256_PUB_LEN);
+    TEST_ASSERT_EQUAL_UINT32(DWS_ECDSA_P256_PUB_LEN, q_len);
+    TEST_ASSERT_EQUAL_MEMORY(ec_pub, q, DWS_ECDSA_P256_PUB_LEN);
 
     // sigblob = string("ecdsa-sha2-nistp256") || string( mpint(r) || mpint(s) ).
     size_t so = 0;
@@ -1120,7 +1120,7 @@ void test_kexdh_handle_ecdsa_end_to_end()
     uint8_t H[DWS_SHA256_DIGEST_LEN];
     dws_sha256(pre, o, H);
     TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, DWS_SHA256_DIGEST_LEN);
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(ec_pub, H, DWS_SHA256_DIGEST_LEN, raw));
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_verify(ec_pub, H, DWS_SHA256_DIGEST_LEN, raw));
 }
 
 // ---- rekey (RFC 4253 §9) --------------------------------------------------
@@ -1546,12 +1546,12 @@ void test_hostkey_ecdsa_set_rejects_invalid_scalar()
 {
     const bool before = dws_ssh_hostkey_ecdsa_available();
 
-    uint8_t zero[SSH_ECDSA_P256_PRIV_LEN];
+    uint8_t zero[DWS_ECDSA_P256_PRIV_LEN];
     memset(zero, 0, sizeof(zero)); // d = 0 is not in [1, n)
     dws_ssh_hostkey_ecdsa_set(zero);
     TEST_ASSERT_EQUAL(before, dws_ssh_hostkey_ecdsa_available());
 
-    uint8_t over[SSH_ECDSA_P256_PRIV_LEN];
+    uint8_t over[DWS_ECDSA_P256_PRIV_LEN];
     memset(over, 0xFF, sizeof(over)); // d >= n
     dws_ssh_hostkey_ecdsa_set(over);
     TEST_ASSERT_EQUAL(before, dws_ssh_hostkey_ecdsa_available());
@@ -1772,21 +1772,21 @@ void test_kexdh_handle_ecdh_p256_rejects_bad_ephemeral()
     TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
     memset(ssh_sess[0].ecdh_sk, 0, 32); // zero is not in [1, n)
 
-    uint8_t qc[SSH_ECDSA_P256_PUB_LEN];
+    uint8_t qc[DWS_ECDSA_P256_PUB_LEN];
     uint8_t d[32];
     memset(d, 0, sizeof(d));
     d[31] = 0x07;
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(qc, d)); // a well-formed client point
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(qc, d)); // a well-formed client point
 
-    uint8_t pkt[8 + SSH_ECDSA_P256_PUB_LEN];
+    uint8_t pkt[8 + DWS_ECDSA_P256_PUB_LEN];
     size_t n = 0;
     pkt[n++] = SSH_MSG_KEXDH_INIT;
     pkt[n++] = 0;
     pkt[n++] = 0;
     pkt[n++] = 0;
-    pkt[n++] = (uint8_t)SSH_ECDSA_P256_PUB_LEN;
-    memcpy(pkt + n, qc, SSH_ECDSA_P256_PUB_LEN);
-    n += SSH_ECDSA_P256_PUB_LEN;
+    pkt[n++] = (uint8_t)DWS_ECDSA_P256_PUB_LEN;
+    memcpy(pkt + n, qc, DWS_ECDSA_P256_PUB_LEN);
+    n += DWS_ECDSA_P256_PUB_LEN;
 
     uint8_t reply[512];
     size_t rlen = 0;

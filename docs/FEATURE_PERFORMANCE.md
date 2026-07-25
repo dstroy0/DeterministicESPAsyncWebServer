@@ -502,10 +502,10 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 | `ssh_ed25519_sign`                 | HW MODMULT + HW SHA |   4,651,281 |   19.4 ms |
 | `ssh_x25519` scalarmult (KEX)      | HW MODMULT          |   5,547,625 |   23.1 ms |
 | `dws_mlkem768_encaps` (ML-KEM-768) | SW NTT              |   5,645,995 |   23.5 ms |
-| `ssh_ecdsa_p256_ecdh` (KEX)        | HW MODMULT          |  12,269,174 |   51.1 ms |
+| `dws_ecdsa_p256_ecdh` (KEX)        | HW MODMULT          |  12,269,174 |   51.1 ms |
 | `ssh_ed25519_verify`               | HW MODMULT + HW SHA |  12,427,688 |   51.8 ms |
-| `ssh_ecdsa_p256_sign`              | HW MODMULT          |  13,064,925 |   54.4 ms |
-| `ssh_ecdsa_p256_verify`            | HW MODMULT          |  24,774,465 |  103.2 ms |
+| `dws_ecdsa_p256_sign`              | HW MODMULT          |  13,064,925 |   54.4 ms |
+| `dws_ecdsa_p256_verify`            | HW MODMULT          |  24,774,465 |  103.2 ms |
 | `bn_expmod_group14` (DH-2048)      | HW MPI              |  43,543,754 |  181.4 ms |
 | `ssh_rsa_2048_sign` (SHA-256)      | HW MPI (CRT+cached) |  64,699,824 |  269.6 ms |
 
@@ -557,7 +557,7 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
   Xtensa-assembly / CIOS tricks target, it is a hardware peripheral.
 - **ECDSA P-256 now rides the same RSA/MPI MODMULT as curve25519** (sign **54 ms**, verify **103 ms**, ECDH
   **51 ms** - **~2.7-2.9x** the old mbedtls ECP path, which measured 146 / 291 / 140 ms). A self-contained
-  P-256 ([`ssh_ecdsa.cpp`](../src/network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp)) does every field
+  P-256 ([`crypto/ecdsa.cpp`](../src/crypto/ecdsa.cpp)) does every field
   and scalar multiply as one 256-bit MODMULT - the accelerator is modulus-generic, so the same engine serves
   the field (mod p) and the scalar ring (mod n) by swapping the `{M, m', R^2}` constants. Point math uses
   exception-free complete (Renes-Costello-Batina) formulas under a constant-time 4-bit-window ladder, the

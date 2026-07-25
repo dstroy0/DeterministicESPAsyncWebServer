@@ -7,8 +7,8 @@
 // extraction, aud-as-array, and every rejection (alg, signature, iss, aud, exp,
 // missing key, malformed).
 
-#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h" // bn_* direct coverage
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"    // in-test RS256 signing
+#include "crypto/bignum.h"                                   // bn_* direct coverage
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h" // in-test RS256 signing
 #include "network_drivers/session/scratch.h"
 #include "services/oidc/oidc.h"
 #include <stdint.h>
@@ -721,7 +721,7 @@ void test_verify_scratch_partial_exhaustion()
     scratch_reset();
 }
 
-// --- ssh_bignum.cpp direct coverage --------------------------------------------------
+// --- dws_bignum.cpp direct coverage --------------------------------------------------
 //
 // Group-14 DH (bn_expmod_group14 / bn_dh_validate) is never reached through the OIDC
 // verifier - RSA verification uses its own full-width bignum path in ssh_rsa.cpp, not
@@ -731,11 +731,11 @@ void test_verify_scratch_partial_exhaustion()
 // early instead.
 void test_bn_is_zero(void)
 {
-    SshBigNum z;
+    DwsBigNum z;
     memset(z.d, 0, sizeof(z.d));
     TEST_ASSERT_TRUE(bn_is_zero(&z));
 
-    SshBigNum nz;
+    DwsBigNum nz;
     memset(nz.d, 0, sizeof(nz.d));
     nz.d[0] = 1;
     TEST_ASSERT_FALSE(bn_is_zero(&nz));
@@ -746,7 +746,7 @@ void test_bn_is_zero(void)
 // "must be < p-1" comparison (less / equal / greater, via bn_cmp/bn_cmp_raw).
 void test_bn_dh_validate_range_guards(void)
 {
-    SshBigNum v;
+    DwsBigNum v;
 
     // v == 0: no high limb set, d[0] <= 1 -> reject.
     memset(v.d, 0, sizeof(v.d));
@@ -785,14 +785,14 @@ void test_bn_dh_validate_range_guards(void)
 // branch along the way.
 void test_bn_expmod_group14_small_exponent(void)
 {
-    SshBigNum exp;
+    DwsBigNum exp;
     memset(exp.d, 0, sizeof(exp.d));
     exp.d[0] = 5;
 
-    SshBigNum out;
+    DwsBigNum out;
     bn_expmod_group14(&out, &group14_g, &exp);
 
-    SshBigNum expected;
+    DwsBigNum expected;
     memset(expected.d, 0, sizeof(expected.d));
     expected.d[0] = 32; // 2^5, unreduced since 32 << group14_p
     TEST_ASSERT_EQUAL_INT(0, bn_cmp(&out, &expected));
@@ -806,14 +806,14 @@ void test_bn_expmod_group14_small_exponent(void)
 // recomputing R/R^2.
 void test_bn_expmod_group14_reinit_short_circuit(void)
 {
-    SshBigNum exp;
+    DwsBigNum exp;
     memset(exp.d, 0, sizeof(exp.d));
     exp.d[0] = 3;
 
-    SshBigNum out;
+    DwsBigNum out;
     bn_expmod_group14(&out, &group14_g, &exp);
 
-    SshBigNum expected;
+    DwsBigNum expected;
     memset(expected.d, 0, sizeof(expected.d));
     expected.d[0] = 8; // 2^3, unreduced since 8 << group14_p
     TEST_ASSERT_EQUAL_INT(0, bn_cmp(&out, &expected));
@@ -840,20 +840,20 @@ void test_bn_expmod_group14_large_operand_needs_reduction(void)
                                            "bc2ac3da5201cca8d6e5dfea887c4f7a4e92175d9f88bd2779b57f9eb35be752"
                                            "8f965a06da0ac41dcb3a34f1d8ab7d8fee620a94faa42c395997756b007ffeff";
 
-    SshBigNum base;
+    DwsBigNum base;
     memset(base.d, 0, sizeof(base.d));
     base.d[0] = 255;
 
-    SshBigNum exp;
+    DwsBigNum exp;
     memset(exp.d, 0, sizeof(exp.d));
     exp.d[0] = 255;
 
-    SshBigNum out;
+    DwsBigNum out;
     bn_expmod_group14(&out, &base, &exp);
 
     uint8_t expected_bytes[256];
     hex2bytes(expected_bytes, EXP255_255_MOD_P, 256);
-    SshBigNum expected;
+    DwsBigNum expected;
     bn_from_bytes(&expected, expected_bytes, 256);
     TEST_ASSERT_EQUAL_INT(0, bn_cmp(&out, &expected));
 }

@@ -6,8 +6,8 @@
 
 #include "baseline_keys.h"
 #include "crypto/aesgcm.h"
+#include "crypto/ecdsa.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
@@ -425,18 +425,18 @@ void test_pubkey_ecdsa_signature_succeeds()
     uint8_t d[32];
     memset(d, 0, 32);
     d[31] = 0x0A; // client private scalar
-    uint8_t q[SSH_ECDSA_P256_PUB_LEN];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(q, d));
+    uint8_t q[DWS_ECDSA_P256_PUB_LEN];
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(q, d));
 
     // pubkey blob = string("ecdsa-sha2-nistp256") || string("nistp256") || string(Q).
     uint8_t blob[200];
     size_t bl = 0;
     bl += put_string(blob + bl, "ecdsa-sha2-nistp256");
     bl += put_string(blob + bl, "nistp256");
-    wr_u32(blob + bl, SSH_ECDSA_P256_PUB_LEN);
+    wr_u32(blob + bl, DWS_ECDSA_P256_PUB_LEN);
     bl += 4;
-    memcpy(blob + bl, q, SSH_ECDSA_P256_PUB_LEN);
-    bl += SSH_ECDSA_P256_PUB_LEN;
+    memcpy(blob + bl, q, DWS_ECDSA_P256_PUB_LEN);
+    bl += DWS_ECDSA_P256_PUB_LEN;
 
     // Signed prefix P: msg .. blob, has_signature = 1, algo = ecdsa-sha2-nistp256.
     uint8_t P[512];
@@ -461,8 +461,8 @@ void test_pubkey_ecdsa_signature_succeeds()
     sn += 32;
     memcpy(sd + sn, P, pn);
     sn += pn;
-    uint8_t raw[SSH_ECDSA_P256_SIG_LEN];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_sign(raw, sd, sn, d));
+    uint8_t raw[DWS_ECDSA_P256_SIG_LEN];
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_sign(raw, sd, sn, d));
 
     // ECDSA signature blob = mpint(r) || mpint(s).
     uint8_t ecblob[80];
@@ -941,7 +941,7 @@ void test_pubkey_ecdsa_blob_rejections()
     set_session_id_0_to_31();
     uint8_t b[200], pkt[512], out[512];
     size_t bl, n, olen = 0;
-    uint8_t q[SSH_ECDSA_P256_PUB_LEN];
+    uint8_t q[DWS_ECDSA_P256_PUB_LEN];
     memset(q, 0x11, sizeof(q));
     q[0] = 0x04;
 
@@ -959,10 +959,10 @@ void test_pubkey_ecdsa_blob_rejections()
     {
         bl = put_string(b, "ecdsa-sha2-nistp256");
         bl += put_string(b + bl, curves[c]);
-        wr_u32(b + bl, SSH_ECDSA_P256_PUB_LEN);
+        wr_u32(b + bl, DWS_ECDSA_P256_PUB_LEN);
         bl += 4;
-        memcpy(b + bl, q, SSH_ECDSA_P256_PUB_LEN);
-        bl += SSH_ECDSA_P256_PUB_LEN;
+        memcpy(b + bl, q, DWS_ECDSA_P256_PUB_LEN);
+        bl += DWS_ECDSA_P256_PUB_LEN;
         n = build_pubkey_req_generic(pkt, "ecdsa-sha2-nistp256", b, bl, nullptr, 0, false);
         TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
         TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
@@ -971,7 +971,7 @@ void test_pubkey_ecdsa_blob_rejections()
     // point declared but absent.
     bl = put_string(b, "ecdsa-sha2-nistp256");
     bl += put_string(b + bl, "nistp256");
-    wr_u32(b + bl, SSH_ECDSA_P256_PUB_LEN);
+    wr_u32(b + bl, DWS_ECDSA_P256_PUB_LEN);
     bl += 4;
     n = build_pubkey_req_generic(pkt, "ecdsa-sha2-nistp256", b, bl, nullptr, 0, false);
     TEST_ASSERT_EQUAL_INT(0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
@@ -980,7 +980,7 @@ void test_pubkey_ecdsa_blob_rejections()
     // point of the wrong size, then a compressed point (leading byte != 0x04).
     for (int c = 0; c < 2; c++)
     {
-        const uint32_t qlen = c == 0 ? SSH_ECDSA_P256_PUB_LEN - 1u : SSH_ECDSA_P256_PUB_LEN;
+        const uint32_t qlen = c == 0 ? DWS_ECDSA_P256_PUB_LEN - 1u : DWS_ECDSA_P256_PUB_LEN;
         bl = put_string(b, "ecdsa-sha2-nistp256");
         bl += put_string(b + bl, "nistp256");
         wr_u32(b + bl, qlen);
@@ -1006,15 +1006,15 @@ void test_pubkey_ecdsa_signature_rejections()
     uint8_t d[32];
     memset(d, 0, sizeof(d));
     d[31] = 0x0A;
-    uint8_t q[SSH_ECDSA_P256_PUB_LEN];
-    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(q, d));
+    uint8_t q[DWS_ECDSA_P256_PUB_LEN];
+    TEST_ASSERT_TRUE(dws_ecdsa_p256_pubkey(q, d));
     uint8_t b[200];
     size_t bl = put_string(b, "ecdsa-sha2-nistp256");
     bl += put_string(b + bl, "nistp256");
-    wr_u32(b + bl, SSH_ECDSA_P256_PUB_LEN);
+    wr_u32(b + bl, DWS_ECDSA_P256_PUB_LEN);
     bl += 4;
-    memcpy(b + bl, q, SSH_ECDSA_P256_PUB_LEN);
-    bl += SSH_ECDSA_P256_PUB_LEN;
+    memcpy(b + bl, q, DWS_ECDSA_P256_PUB_LEN);
+    bl += DWS_ECDSA_P256_PUB_LEN;
 
     uint8_t wide[33];
     memset(wide, 0x9C, sizeof(wide)); // 33 significant bytes: wider than a P-256 coordinate
