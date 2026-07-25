@@ -339,6 +339,18 @@ int ssh_kexdh_build_reply(const uint8_t *ks, size_t ks_len, const uint8_t *f_be,
  */
 int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *reply_out, size_t *reply_len, size_t cap);
 
+#ifdef DWS_SSH_KEX_BENCH
+// Wall-clock KEX bench (perf / FEATURE_PERFORMANCE): the two device-side compute spans of a key exchange,
+// in microseconds. ssh_kex_generate records the ephemeral-keygen span (one X25519 base multiply for a
+// curve25519 KEX) into dws_ssh_last_kexgen_us; ssh_kexdh_handle records the reply span (shared-secret
+// X25519 + host-key sign + exchange hash + KDF + reply assembly) into dws_ssh_last_kexreply_us and bumps
+// dws_ssh_kex_count. The rig firmware watches the counter and prints both over its own serial - src writes
+// no output. Compiled out entirely unless DWS_SSH_KEX_BENCH is defined (a rig-only measurement build).
+extern volatile long long dws_ssh_last_kexgen_us;
+extern volatile long long dws_ssh_last_kexreply_us;
+extern volatile unsigned dws_ssh_kex_count;
+#endif
+
 /**
  * @brief Activate the outbound direction after emitting our SSH_MSG_NEWKEYS.
  *

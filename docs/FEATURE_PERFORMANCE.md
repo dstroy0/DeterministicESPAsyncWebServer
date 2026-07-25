@@ -383,21 +383,26 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
 | Operation                               | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
 | --------------------------------------- | ---------: | --------: | -------------: | ------------: |
 | `dws_x25519` scalarmult (KEX)           |  1,588,291 |         - |     23,219 [1] |             - |
-| `dws_ed25519_sign` (host-key signature) |  5,448,039 |         - |     85,638 [1] |             - |
+| `dws_ed25519_sign` (host-key signature) |  5,448,039 |         - |  19,400 [1][2] |             - |
 | `dws_chachapoly_encrypt` (1 KiB packet) |      6,103 |     167.8 |            705 |           1.5 |
 | `dws_gf_mul` (radix-2^16 field mul)     |        510 |         - |          55.45 |             - |
 
 [1] Both the X25519 KEX and the Ed25519 host-key signature run their field arithmetic on the RSA/MPI hardware
 accelerator on the S3 (see the MODMULT bullet); the host figures are the software radix-2^16 ladder (the native
 / non-S3 fallback).
+[2] Device figure is the S3-only fixed-base **comb** sign (see the comb bullet in the crypto-sweep section and
+the KEX wall-clock subsection that measured it live); it superseded the 85.6 ms pre-comb MODMULT ladder. The
+host column is the software variable-base ladder (the comb is an S3 flash table only).
 
-- **The SSH handshake crypto is ~0.13 s on the device** (two X25519 at ~23 ms each + one ed25519 sign at
-  ~86 ms) - down from ~0.85 s of pure software crypto. Both the curve25519 KEX and the ed25519 host-key
-  signature now run their GF(2^255-19) field arithmetic on the **RSA/MPI hardware accelerator** (the MODMULT
-  bullet below); only the record-layer chacha20-poly1305 stays software. That is a fixed sub-0.2 s connection
-  setup - comfortable for an admin/config channel or a tunnel, and much closer to viable for shorter
-  connections. The chacha-poly record layer keeps the ~95-115x host/device ratio (a software op); the two
-  HW-offloaded field-arithmetic ops break it.
+- **The SSH handshake crypto is ~68 ms on the device, HW-measured end to end** (two X25519 at ~23 ms each +
+  one ed25519 sign at 19.4 ms after the fixed-base comb below) - down from ~0.85 s of pure software crypto, and
+  from the ~0.13 s this line first reported, which counted a pre-comb ~86 ms sign. See the **SSH KEX handshake
+  wall-clock** subsection for the live OpenSSH measurement and its per-span breakdown. Both the curve25519 KEX
+  and the ed25519 host-key signature run their GF(2^255-19) field arithmetic on the **RSA/MPI hardware
+  accelerator** (the MODMULT bullet below); only the record-layer chacha20-poly1305 stays software. That is a
+  fixed sub-100 ms connection setup - comfortable for an admin/config channel or a tunnel, and much closer to
+  viable for shorter connections. The chacha-poly record layer keeps the ~95-115x host/device ratio (a
+  software op); the two HW-offloaded field-arithmetic ops break it.
 - The **chacha20-poly1305 record layer runs at ~1.5 MB/s** on the S3 (705 us to encrypt+authenticate a 1 KiB
   packet: two ChaCha20 keystreams + a Poly1305 tag, all software). That is the steady-state throughput
   ceiling once the session is up - ample for a shell / control channel or metered telemetry, a bottleneck
@@ -461,6 +466,50 @@ accelerator on the S3 (see the MODMULT bullet); the host figures are the softwar
   acceleration target (a plausible 5-10x handshake win), tracked as the ed25519/curve25519 SIMD work. The FPU is
   **not** an option here: the S3 FPU is single-precision only (`__FP_FAST_FMAF32`, no double), and a
   floating-point curve25519 needs ~51-bit limb products, so the integer path is the only viable one.
+
+### SSH KEX handshake wall-clock (DWS_ENABLE_SSH)
+
+The per-op table above is the crypto cost; this is the **whole `curve25519-sha256` key exchange measured end
+to end** - the one-time connection-setup latency a client actually waits through. Two numbers matter: the
+**device compute** (deterministic, the viability figure) and the **client-observed wall-clock** (device +
+network). Device spans come from a guarded probe (`DWS_SSH_KEX_BENCH`) that brackets the two halves of the KEX
+in [`ssh_transport.cpp`](../src/network_drivers/presentation/ssh/transport/ssh_transport.cpp) with
+`esp_timer_get_time()`: `ssh_kex_generate` (the ephemeral X25519 base multiply, done while handling the client
+KEXINIT) and `ssh_kexdh_handle` (the reply: shared-secret X25519 + the `ssh-ed25519` signature over the
+exchange hash + the SHA-256 exchange hash + the six-key KDF + reply assembly). The rig prints them; a real
+**OpenSSH** client (`ssh -vv`, timestamped) supplies the wall-clock. Measured on the QUAD S3 (COM7,
+`rig_s3_ssh`, `-Og`), 6 runs, `-o KexAlgorithms=curve25519-sha256`, `ssh-ed25519` host key:
+
+| KEX span (curve25519-sha256)                           |     ESP32-S3 |
+| ------------------------------------------------------ | -----------: |
+| `ssh_kex_generate` - ephemeral X25519 base mult        |      23.9 ms |
+| `ssh_kexdh_handle` - shared secret + sign + hash + KDF |      44.0 ms |
+| **device compute total (per KEX)**                     |  **67.9 ms** |
+| client-observed KEX floor (KEXINIT -> NEWKEYS, min)    |      92.9 ms |
+| client ECDH-reply wait (ECDH_INIT -> NEWKEYS)          | 75.7-83.1 ms |
+
+- **The device does ~68 ms of compute per key exchange, and it is ~97% crypto.** The 67.9 ms splits as two
+  X25519 scalar mults (23.9 + ~23.1 = ~46 ms) + one ed25519 sign (19.4 ms) + only ~2.3 ms of protocol
+  machinery (the SHA-256 exchange hash, the six-key KDF, the reply serialization). The machinery is
+  negligible: the handshake cost **is** the field arithmetic, exactly as the per-op table predicts - `gen`
+  23.9 ms vs the table's X25519 23.1 ms, and `reply` 44.0 ms vs X25519 23.1 + ed25519-sign 19.4 + ~1.5. This
+  live end-to-end run is the independent cross-check that the **fixed-base comb ed25519 sign (19.4 ms) is what
+  a real handshake uses**: a pre-comb sign (84.6 ms) would put device compute near 130 ms, and it measures 68.
+- **Supersedes the "~0.13 s handshake" estimate above.** That headline predates the ed25519 fixed-base comb
+  (it counted an 85.6 ms MODMULT sign); with the comb the same handshake is **67.9 ms of device compute**, and
+  this is the measured, current figure.
+- **The wall-clock adds a variable WiFi tax, not device time.** The client-observed KEX floor is **92.9 ms**
+  (the 67.9 ms of compute + ~25 ms of KEXINIT round-trips over 802.11); the ECDH_INIT -> NEWKEYS wait is a
+  rock-steady **76-83 ms** (the 44 ms reply compute + one ~35 ms WiFi round-trip). Back-to-back runs show a
+  jittery median of ~300 ms driven **entirely** by air-link latency in the KEXINIT-negotiation phase - the
+  device spans never move (gen 23.8-24.1, reply 43.6-44.2 across all six runs), so a slow observed handshake is
+  the link, not the chip. On a wired/low-latency link the ~68 ms compute is the floor: a one-time sub-100 ms
+  setup, comfortable for an admin/config channel or a tunnel.
+- **Reproduce:** flash `rig_s3_ssh` (it defines `DWS_SSH_KEX_BENCH`), then
+  [`perf/ssh/ssh_kex_time.py`](../perf/ssh/ssh_kex_time.py) `<ip> 6 curve25519-sha256` drives an OpenSSH client
+  and prints the client spans while the rig prints `KEXBENCH gen_us=.. reply_us=..` per KEX over serial. The
+  P-256 KEX (`ecdh-sha2-nistp256`) is offered too and is heavier (per-op table: P-256 ECDH 51.1 ms vs X25519
+  23.1 ms, run twice).
 
 ### All self-implemented crypto primitives (device CCOUNT sweep)
 

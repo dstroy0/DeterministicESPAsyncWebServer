@@ -1499,7 +1499,8 @@
     "CAVP",
     "KBKDF",
     "KDFCTR",
-    "impacket"
+    "impacket",
+    "KEXBENCH"
   ],
   "ignorePaths": [
     "node_modules/**",

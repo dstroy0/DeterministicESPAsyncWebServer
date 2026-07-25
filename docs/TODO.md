@@ -235,8 +235,14 @@ layer built first, then the store codecs on top. Substrate before stores.
       no optimization was warranted), the full **data-store stack** (section 4), and the **chunked
       send-pump framing** (section 3: `perf/server/send_pump`, host + ESP32-S3) - which surfaced a real
       win: `snprintf("%x")` on the per-chunk size line cost ~4.0 us/chunk on-device, replaced by a
-      hand-written `dws_hex_u32` (`shared_primitives/hex.h`) for an **~18x** framing speedup (v7.173.0).
-      _Remaining:_ only the TLS handshake / SSH KEX wall-clock (needs the PSRAM TLS build).
+      hand-written `dws_hex_u32` (`shared_primitives/hex.h`) for an **~18x** framing speedup (v7.173.0), and
+      the **SSH KEX handshake wall-clock** (`docs/FEATURE_PERFORMANCE.md` "SSH KEX handshake wall-clock":
+      a guarded `DWS_SSH_KEX_BENCH` probe in `ssh_transport.cpp` + `perf/ssh/ssh_kex_time.py` driving a live
+      OpenSSH client, HW-measured on the S3) - **67.9 ms of device compute per `curve25519-sha256` KEX**
+      (2 X25519 + one comb ed25519 sign; ~97% crypto, ~2.3 ms machinery), a ~93 ms client-observed floor;
+      the measurement also reconciled the section's stale pre-comb "~0.13 s"/85.6 ms-sign figures.
+      _Remaining:_ only the TLS handshake wall-clock (the slim `rig_s3_tls` runs TLS on the stock core, so
+      the PSRAM build is not required after all - next).
 - [x] **base64 was slow on-device (mbedTLS).** _(done - hybrid)_ mbedTLS's base64 is slow because it is
       constant-time (side-channel hardened). Rather than drop that globally, the path now splits by data
       sensitivity: **encode** (only the public WebSocket-accept digest) uses the fast software codec on

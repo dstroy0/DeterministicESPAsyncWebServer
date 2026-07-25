@@ -28,6 +28,15 @@
 #include <stdio.h> // snprintf (name-list assembly)
 #include <string.h>
 
+#ifdef DWS_SSH_KEX_BENCH
+#include <esp_timer.h> // esp_timer_get_time() - microsecond wall clock for the KEX span probe
+// Device-side KEX compute spans (see ssh_transport.h). Set by ssh_kex_generate / ssh_kexdh_handle; the
+// rig firmware prints them. Single active connection during a bench run, so plain globals suffice.
+volatile long long dws_ssh_last_kexgen_us = 0;
+volatile long long dws_ssh_last_kexreply_us = 0;
+volatile unsigned dws_ssh_kex_count = 0;
+#endif
+
 SshSession ssh_sess[MAX_SSH_CONNS];
 
 // ---------------------------------------------------------------------------
@@ -924,8 +933,14 @@ int ssh_kex_generate(uint8_t i)
     if (curve)
     {
         // X25519 ephemeral: random 32-byte scalar, public = X25519(scalar, base point).
+#ifdef DWS_SSH_KEX_BENCH
+        int64_t kexgen_t0 = esp_timer_get_time();
+#endif
         ssh_rng_fill(ssh_sess[i].ecdh_sk, 32);
         dws_x25519_base(ssh_sess[i].ecdh_pk, ssh_sess[i].ecdh_sk);
+#ifdef DWS_SSH_KEX_BENCH
+        dws_ssh_last_kexgen_us = (long long)(esp_timer_get_time() - kexgen_t0);
+#endif
         return 0;
     }
     if (a == SshKexAlg::SSH_KEX_ECDH_NISTP256)
@@ -1043,6 +1058,9 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     if (i >= MAX_SSH_CONNS)
         return -1;
     SshSession *s = &ssh_sess[i];
+#ifdef DWS_SSH_KEX_BENCH
+    int64_t kexreply_t0 = esp_timer_get_time();
+#endif
 
     // 1. Shared secret K + the two public values, per negotiated KEX method. cpub_p / spub_p point at
     //    the values hashed into H (local buffers for DH / curve, the larger C_INIT / S_REPLY blobs for
@@ -1201,6 +1219,10 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     ssh_wipe(k_be, sizeof(k_be));
 
     s->phase = SshPhase::SSH_PHASE_NEWKEYS;
+#ifdef DWS_SSH_KEX_BENCH
+    dws_ssh_last_kexreply_us = (long long)(esp_timer_get_time() - kexreply_t0);
+    dws_ssh_kex_count++;
+#endif
     return 0;
 }
 
