@@ -25,7 +25,7 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                                                                                    | L7-Application/Csrf                  | 737.4 KB (57.6%) | 80.0 KB (25.0%)  |
 | `DASHBOARD`                                                                                               | L7-Application/Dashboard             | 756.3 KB (59.1%) | 80.3 KB (25.1%)  |
 | `DEVICE_ID`                                                                                               | L7-Application/DeviceUuid            | 735.9 KB (57.5%) | 79.9 KB (25.0%)  |
-| `DIAG`                                                                                                    | L7-Application/Diagnostics           | 736.3 KB (57.5%) | 79.9 KB (25.0%)  |
+| `DIAG`                                                                                                    | Foundation/Configuration             | 737.9 KB (57.6%) | 75.8 KB (23.7%)  |
 | `DIFFSERV`                                                                                                | L4-Transport/DiffServ                | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`                                                                          | Peripherals/DmaIngest                | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE`                                                                  | Foundation/InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
@@ -109,7 +109,7 @@ from each example's `pio ci` size report and aggregated into
 | `SNMP`                                                                                                    | L7-Application/SNMP                  | 744.8 KB (58.2%) | 92.1 KB (28.8%)  |
 | `SNMP+SNMP_TRAP`                                                                                          | L7-Application/SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
 | `SPA_ROUTER`                                                                                              | L7-Application/SpaFallback           | 737.5 KB (57.6%) | 79.9 KB (25.0%)  |
-| `SSH`                                                                                                     | L5-Session/SSHHostKey                | 812.1 KB (63.4%) | 106.7 KB (33.3%) |
+| `SSH`                                                                                                     | L5-Session/SSH                       | 812.0 KB (63.4%) | 106.7 KB (33.3%) |
 | `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP`                                                                       | L5-Session/SSHSftp                   | 863.1 KB (67.4%) | 115.8 KB (36.2%) |
 | `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF`                                                    | L5-Session/SSHReverseTunnel          | 827.1 KB (64.6%) | 108.4 KB (33.9%) |
 | `STATS`                                                                                                   | L7-Application/Stats                 | 737.6 KB (57.6%) | 80.0 KB (25.0%)  |
