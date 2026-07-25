@@ -486,6 +486,44 @@ void dws_smb2_sign(const uint8_t key[16], uint8_t *msg, size_t msg_len);
  */
 bool dws_smb2_verify(const uint8_t key[16], uint8_t *msg, size_t msg_len);
 
+// ---------------------------------------------------------------------------
+// SMB 3.x signing (MS-SMB2 §3.1.4.1 / §3.1.5.1) - AES-128-CMAC (dialects 3.0 / 3.0.2 / 3.1.1)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Sign an SMB2 message in place with AES-128-CMAC (MS-SMB2 §3.1.4.1, SMB 3.x). Identical framing
+ *        to ::dws_smb2_sign - sets SMB2_FLAGS_SIGNED, zeroes the Signature, MACs the whole message under
+ *        the 16-byte SMB 3.x signing @p key - but the MAC is AES-CMAC, whose full 16-octet tag is the
+ *        Signature. @p msg shorter than a 64-byte header is left untouched.
+ */
+void dws_smb2_sign_cmac(const uint8_t key[16], uint8_t *msg, size_t msg_len);
+
+/**
+ * @brief Verify an AES-128-CMAC-signed SMB2 message (MS-SMB2 §3.1.5.1, SMB 3.x). Recomputes the CMAC
+ *        with the Signature zeroed and constant-time-compares to the received Signature; @p msg is
+ *        restored unchanged.
+ * @return true iff the signature matches; false on a mismatch or a message shorter than the header.
+ */
+bool dws_smb2_verify_cmac(const uint8_t key[16], uint8_t *msg, size_t msg_len);
+
+/**
+ * @brief Derive the 16-byte SMB 3.x signing key from the NTLM session key via the SP800-108 counter-mode
+ *        KDF (MS-SMB2 §3.1.4.2), dialect-dependent:
+ *          - 3.1.1: SigningKey = KDF(SessionKey, "SMBSigningKey\\0", PreauthIntegrityHashValue)
+ *          - 3.0 / 3.0.2: SigningKey = KDF(SessionKey, "SMB2AESCMAC\\0", "SmbSign\\0")
+ *        The KDF's fixed input is `Label || 0x00 || Context || [L=128]_32be`; the label carries its own
+ *        trailing NUL, so the on-wire fixed data has the label followed by two NULs (matches Windows /
+ *        Samba / impacket).
+ *
+ * @param session_key the 16-byte NTLM ExportedSessionKey (SessionBaseKey for NTLMv2 with no key exch).
+ * @param dialect     the negotiated DialectRevision (only 3.1.1 vs pre-3.1.1 matters here).
+ * @param preauth     the 64-byte final preauth-integrity hash; required iff @p dialect == 3.1.1, else ignored.
+ * @param out_key     receives the 16-byte signing key.
+ * @return true on success; false on a null pointer, or a 3.1.1 request with a null @p preauth.
+ */
+bool dws_smb3_derive_signing_key(const uint8_t session_key[16], uint16_t dialect, const uint8_t *preauth,
+                                 uint8_t out_key[16]);
+
 #endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SMB2_H

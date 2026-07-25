@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5204 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5206 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -45548,7 +45548,7 @@ A thorough directory of all **5204 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (41 tests)</b></summary>
+<summary><b>test_smb2 (42 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -46105,6 +46105,21 @@ A thorough directory of all **5204 test cases** across **292 suites**. Expand a 
       * <code>Assert false (dws_smb2_verify(key, msg, sizeof(msg)))</code>
       * <code>Assert false (dws_smb2_verify(wrong, msg, sizeof(msg)))</code>
       * <code>Assert false (dws_smb2_verify(key, msg, 63))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_smb2_signing_cmac</b> &mdash; <i>The Signature matches the reference AES-CMAC(key, message) (impacket crypto.AES_CMAC).</i></summary>
+
+    * **Objective**: The Signature matches the reference AES-CMAC(key, message) (impacket crypto.AES_CMAC).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x08, msg[16]); // SMB2_FLAGS_SIGNED set</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, msg + 48, 16);</code>
+      * <code>Assert true (dws_smb2_verify_cmac(key, msg, sizeof(msg)))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(before, msg, sizeof(msg));</code>
+      * <code>Assert false (dws_smb2_verify(key, msg, sizeof(msg)))</code>
+      * <code>Assert false (dws_smb2_verify_cmac(key, msg, sizeof(msg)))</code>
+      * <code>Assert false (dws_smb2_verify_cmac(wrong, msg, sizeof(msg)))</code>
+      * <code>Assert false (dws_smb2_verify_cmac(key, msg, 63))</code>
   </details>
 
 </details>
@@ -46735,7 +46750,7 @@ A thorough directory of all **5204 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb_crypto (10 tests)</b></summary>
+<summary><b>test_smb_crypto (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_md5_vectors</b> &mdash; <i>62 bytes -> spans two 64-byte blocks (RFC 1321 A.5)</i></summary>
@@ -46804,6 +46819,22 @@ A thorough directory of all **5204 test cases** across **292 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(e40, mac, 16);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(e64, mac, 16);</code>
       * <code>Assert equal memory (mac, mac2, 16)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_smb3_derive_signing_key</b> &mdash; <i>SMB 3.0 / 3.0.2: KDF(SessionKey, "SMB2AESCMAC\0", "SmbSign\0").</i></summary>
+
+    * **Objective**: SMB 3.0 / 3.0.2: KDF(SessionKey, "SMB2AESCMAC\0", "SmbSign\0").
+    * **Assertions**:
+      * <code>Assert true (dws_smb3_derive_signing_key(session_key, (uint16_t)Smb2Dialect::SMB2_DIALECT_0300, nullptr, out))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(k30, out, 16);</code>
+      * <code>Assert true (dws_smb3_derive_signing_key(session_key, (uint16_t)Smb2Dialect::SMB2_DIALECT_0302, preauth, out))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(k30, out, 16);</code>
+      * <code>Assert true (dws_smb3_derive_signing_key(session_key, (uint16_t)Smb2Dialect::SMB2_DIALECT_0311, preauth, out))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(k311, out, 16);</code>
+      * <code>Assert false (dws_smb3_derive_signing_key(nullptr, (uint16_t)Smb2Dialect::SMB2_DIALECT_0300, nullptr, out))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>Assert false (dws_smb3_derive_signing_key(session_key, (uint16_t)Smb2Dialect::SMB2_DIALECT_0311, nullptr, out))</code>
   </details>
 
   <details style="margin-left: 20px;">

@@ -12,7 +12,9 @@
 
 #include <string.h>
 
-#include "crypto/hmac_sha256.h" // dws_hmac_sha256 for message signing
+#include "crypto/aes_cmac.h"    // dws_aes_cmac for SMB 3.x message signing
+#include "crypto/hmac_sha256.h" // dws_hmac_sha256 for SMB 2.x message signing
+#include "crypto/kdf.h"         // dws_kdf_ctr_hmac_sha256 for SMB 3.x key derivation
 #include "crypto/sha512.h"      // dws_sha512 for the SMB 3.1.1 preauth-integrity chain
 #include "shared_primitives/endian.h"
 
@@ -563,37 +565,114 @@ bool dws_smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp
 
 // --- Message signing (MS-SMB2 §3.1.4.1 / §3.1.5.1) -------------------------
 // The SMB2 sync header places the Flags field at offset 16 (LE u32) and the 16-byte Signature at
-// offset 48. The MAC covers the whole message with the Signature zeroed; SMB 2.x uses HMAC-SHA256 and
-// the on-wire Signature is its first 16 octets.
+// offset 48. The MAC covers the whole message with the Signature zeroed. SMB 2.x uses HMAC-SHA256 (the
+// on-wire Signature is its first 16 octets); SMB 3.x uses AES-128-CMAC (its full 16-octet tag). The
+// FLAGS_SIGNED / zero-Signature / MAC / write-back framing is identical - only the MAC differs.
 static constexpr size_t SMB2_FLAGS_OFF = 16;
 static constexpr size_t SMB2_SIGNATURE_OFF = 48;
 static constexpr size_t SMB2_SIGNATURE_LEN = 16;
 
-void dws_smb2_sign(const uint8_t key[16], uint8_t *msg, size_t msg_len)
+// A MAC that writes its first 16 octets into out16 (HMAC-SHA256 truncated, or AES-CMAC whole tag).
+typedef void (*Smb2MacFn)(const uint8_t key[16], const uint8_t *msg, size_t len, uint8_t out16[16]);
+
+static void mac_hmac_sha256(const uint8_t key[16], const uint8_t *msg, size_t len, uint8_t out16[16])
+{
+    uint8_t mac[32];
+    dws_hmac_sha256(key, 16, msg, len, mac);
+    memcpy(out16, mac, 16); // Signature = first 16 octets of the HMAC
+}
+
+static void mac_aes_cmac(const uint8_t key[16], const uint8_t *msg, size_t len, uint8_t out16[16])
+{
+    dws_aes_cmac(key, msg, len, out16); // the whole 16-octet CMAC tag
+}
+
+static void smb2_sign_framed(const uint8_t key[16], uint8_t *msg, size_t msg_len, Smb2MacFn mac)
 {
     if (!key || !msg || msg_len < SMB2_HEADER_SIZE)
         return;
     dws_wr32le(msg + SMB2_FLAGS_OFF, dws_rd32le(msg + SMB2_FLAGS_OFF) | Smb2HeaderFlags::SMB2_FLAGS_SIGNED);
-    memset(msg + SMB2_SIGNATURE_OFF, 0, SMB2_SIGNATURE_LEN); // zero the Signature before hashing
-    uint8_t mac[32];
-    dws_hmac_sha256(key, 16, msg, msg_len, mac);
-    memcpy(msg + SMB2_SIGNATURE_OFF, mac, SMB2_SIGNATURE_LEN); // Signature = first 16 octets of the MAC
+    memset(msg + SMB2_SIGNATURE_OFF, 0, SMB2_SIGNATURE_LEN); // zero the Signature before the MAC
+    uint8_t tag[SMB2_SIGNATURE_LEN];
+    mac(key, msg, msg_len, tag);
+    memcpy(msg + SMB2_SIGNATURE_OFF, tag, SMB2_SIGNATURE_LEN);
 }
 
-bool dws_smb2_verify(const uint8_t key[16], uint8_t *msg, size_t msg_len)
+static bool smb2_verify_framed(const uint8_t key[16], uint8_t *msg, size_t msg_len, Smb2MacFn mac)
 {
     if (!key || !msg || msg_len < SMB2_HEADER_SIZE)
         return false;
     uint8_t received[SMB2_SIGNATURE_LEN];
     memcpy(received, msg + SMB2_SIGNATURE_OFF, SMB2_SIGNATURE_LEN);
     memset(msg + SMB2_SIGNATURE_OFF, 0, SMB2_SIGNATURE_LEN);
-    uint8_t mac[32];
-    dws_hmac_sha256(key, 16, msg, msg_len, mac);
+    uint8_t tag[SMB2_SIGNATURE_LEN];
+    mac(key, msg, msg_len, tag);
     memcpy(msg + SMB2_SIGNATURE_OFF, received, SMB2_SIGNATURE_LEN); // restore; the message is unchanged
     uint8_t diff = 0;
     for (size_t i = 0; i < SMB2_SIGNATURE_LEN; i++)
-        diff |= (uint8_t)(mac[i] ^ received[i]); // constant-time compare (no early exit)
+        diff |= (uint8_t)(tag[i] ^ received[i]); // constant-time compare (no early exit)
     return diff == 0;
+}
+
+void dws_smb2_sign(const uint8_t key[16], uint8_t *msg, size_t msg_len)
+{
+    smb2_sign_framed(key, msg, msg_len, mac_hmac_sha256);
+}
+
+bool dws_smb2_verify(const uint8_t key[16], uint8_t *msg, size_t msg_len)
+{
+    return smb2_verify_framed(key, msg, msg_len, mac_hmac_sha256);
+}
+
+void dws_smb2_sign_cmac(const uint8_t key[16], uint8_t *msg, size_t msg_len)
+{
+    smb2_sign_framed(key, msg, msg_len, mac_aes_cmac);
+}
+
+bool dws_smb2_verify_cmac(const uint8_t key[16], uint8_t *msg, size_t msg_len)
+{
+    return smb2_verify_framed(key, msg, msg_len, mac_aes_cmac);
+}
+
+bool dws_smb3_derive_signing_key(const uint8_t session_key[16], uint16_t dialect, const uint8_t *preauth,
+                                 uint8_t out_key[16])
+{
+    if (!session_key || !out_key)
+        return false;
+
+    // Assemble the SP800-108 fixed input: `Label || 0x00 || Context || [L]`. The KDF prepends the 32-bit
+    // counter. Each label literal carries its own trailing NUL (sizeof includes it), which IS the Label;
+    // the explicit 0x00 after it is the KDF's Label||Context separator - so the label is followed by two
+    // NULs on the wire, matching Windows / Samba / impacket (verified vs impacket KDF_CounterMode).
+    uint8_t fixed[96];
+    size_t n = 0;
+    if (dialect == (uint16_t)Smb2Dialect::SMB2_DIALECT_0311)
+    {
+        if (!preauth)
+            return false;
+        static const char label[] = "SMBSigningKey"; // sizeof == 14 ("SMBSigningKey\0")
+        memcpy(fixed + n, label, sizeof(label));
+        n += sizeof(label);
+        fixed[n++] = 0x00;              // Label||0x00 separator
+        memcpy(fixed + n, preauth, 64); // Context = the 64-byte preauth-integrity hash
+        n += 64;
+    }
+    else
+    {
+        static const char label[] = "SMB2AESCMAC"; // sizeof == 12 ("SMB2AESCMAC\0")
+        static const char context[] = "SmbSign";   // sizeof == 8  ("SmbSign\0")
+        memcpy(fixed + n, label, sizeof(label));
+        n += sizeof(label);
+        fixed[n++] = 0x00; // separator
+        memcpy(fixed + n, context, sizeof(context));
+        n += sizeof(context);
+    }
+    // [L] = the derived-key length in bits (128), 32-bit big-endian.
+    fixed[n++] = 0x00;
+    fixed[n++] = 0x00;
+    fixed[n++] = 0x00;
+    fixed[n++] = 0x80;
+    return dws_kdf_ctr_hmac_sha256(session_key, 16, fixed, n, out_key, 16);
 }
 
 #endif // DWS_ENABLE_SMB

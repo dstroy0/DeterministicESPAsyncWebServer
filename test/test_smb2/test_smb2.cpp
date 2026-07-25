@@ -1075,6 +1075,64 @@ void test_smb2_signing()
     dws_smb2_sign(key, msg, 63); // too short: a no-op, must not corrupt memory
 }
 
+// SMB 3.x AES-128-CMAC signing (MS-SMB2 §3.1.4.1): same framing as HMAC signing, but the Signature is
+// the full AES-CMAC tag. The reference tag is impacket's crypto.AES_CMAC over the same message + key.
+void test_smb2_signing_cmac()
+{
+    uint8_t msg[72];
+    memset(msg, 0, sizeof(msg));
+    msg[0] = 0xFE;
+    msg[1] = 'S';
+    msg[2] = 'M';
+    msg[3] = 'B';
+    msg[4] = 64;
+    msg[12] = 5;
+    msg[14] = 1;
+    msg[24] = 1;
+    msg[36] = 5;
+    msg[40] = 7;
+    msg[64] = 0xDE;
+    msg[65] = 0xAD;
+    msg[66] = 0xBE;
+    msg[67] = 0xEF;
+    msg[68] = 0x01;
+    msg[69] = 0x02;
+    msg[70] = 0x03;
+    msg[71] = 0x04;
+
+    uint8_t key[16];
+    for (int i = 0; i < 16; i++)
+        key[i] = (uint8_t)(i + 1); // 01..10
+
+    dws_smb2_sign_cmac(key, msg, sizeof(msg));
+    TEST_ASSERT_EQUAL_HEX8(0x08, msg[16]); // SMB2_FLAGS_SIGNED set
+
+    // The Signature matches the reference AES-CMAC(key, message) (impacket crypto.AES_CMAC).
+    const uint8_t expect[16] = {0xac, 0x3a, 0x6f, 0x5c, 0xce, 0x50, 0x05, 0x84,
+                                0x6d, 0x09, 0xcf, 0xa6, 0x43, 0x3c, 0x02, 0x1f};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, msg + 48, 16);
+
+    // Verify accepts the freshly-signed message and restores it unchanged.
+    uint8_t before[72];
+    memcpy(before, msg, sizeof(msg));
+    TEST_ASSERT_TRUE(dws_smb2_verify_cmac(key, msg, sizeof(msg)));
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(before, msg, sizeof(msg));
+
+    // A CMAC signature must not verify under the HMAC verifier (the two MACs are distinct).
+    TEST_ASSERT_FALSE(dws_smb2_verify(key, msg, sizeof(msg)));
+
+    // A tampered body byte, a wrong key, and a too-short message all fail closed.
+    msg[70] ^= 0x01;
+    TEST_ASSERT_FALSE(dws_smb2_verify_cmac(key, msg, sizeof(msg)));
+    msg[70] ^= 0x01;
+    uint8_t wrong[16];
+    memcpy(wrong, key, 16);
+    wrong[0] ^= 0xFF;
+    TEST_ASSERT_FALSE(dws_smb2_verify_cmac(wrong, msg, sizeof(msg)));
+    TEST_ASSERT_FALSE(dws_smb2_verify_cmac(key, msg, 63));
+    dws_smb2_sign_cmac(key, msg, 63); // too short: a no-op
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1119,5 +1177,6 @@ int main()
     RUN_TEST(test_build_write_null_args);
     RUN_TEST(test_parse_write_null_and_command);
     RUN_TEST(test_smb2_signing);
+    RUN_TEST(test_smb2_signing_cmac);
     return UNITY_END();
 }

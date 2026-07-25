@@ -1405,6 +1405,8 @@
         "+<crypto/hmac_sha256.cpp>",
         "+<crypto/sha256.cpp>",
         "+<crypto/sha512.cpp>",
+        "+<crypto/kdf.cpp>",
+        "+<crypto/aes_cmac.cpp>",
         "+<services/directnet/directnet.cpp>",
         "+<services/cclink/cclink.cpp>",
         "+<services/amqp/amqp.cpp>",
