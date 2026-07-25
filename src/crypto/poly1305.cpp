@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_poly1305.cpp
- * @brief Poly1305 (RFC 8439) - implementation. See ssh_poly1305.h.
+ * @file poly1305.cpp
+ * @brief Poly1305 (RFC 8439) - implementation. See dws_poly1305.h.
  *
  * poly1305-donna 32-bit: the accumulator h and key part r are held as five 26-bit limbs; each
  * 16-byte block adds the message limb (with the 2^128 high bit), multiplies by r, and reduces
@@ -11,13 +11,13 @@
  * time, and s is added modulo 2^128.
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_poly1305.h"
+#include "crypto/poly1305.h"
 #include "shared_primitives/crypto_opt.h"
 
 // Poly1305 is a hot, pure-integer MAC (the other half of chacha20-poly1305). Like ChaCha it has no vector
 // path on the S3 and runs materially faster than the framework -Os; it is constant-time by structure
 // (the final reduction is branchless), so a higher level for this TU is side-channel safe. Byte-exact.
-// See the caveats in crypto_opt.h and the ChaCha note in ssh_chacha20.cpp.
+// See the caveats in crypto_opt.h and the ChaCha note in dws_chacha20.cpp.
 DWS_CRYPTO_HOT
 
 namespace
@@ -78,8 +78,8 @@ void poly_block(uint32_t h[5], const uint32_t r[5], const uint32_t sr[5], const 
 }
 } // namespace
 
-void ssh_poly1305(uint8_t tag[SSH_POLY1305_TAG_LEN], const uint8_t *msg, size_t len,
-                  const uint8_t key[SSH_POLY1305_KEY_LEN])
+void dws_poly1305(uint8_t tag[DWS_POLY1305_TAG_LEN], const uint8_t *msg, size_t len,
+                  const uint8_t key[DWS_POLY1305_KEY_LEN])
 {
     uint32_t t0 = rd_le32(key + 0), t1 = rd_le32(key + 4), t2 = rd_le32(key + 8), t3 = rd_le32(key + 12);
     // Clamp r (RFC 8439 sec 2.5) folded into the limb split.

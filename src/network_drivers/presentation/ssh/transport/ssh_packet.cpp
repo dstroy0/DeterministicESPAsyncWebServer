@@ -7,10 +7,10 @@
  */
 
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "crypto/aesgcm.h"
+#include "crypto/chachapoly.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/hmac_sha512.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #if DWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h"
@@ -129,19 +129,19 @@ static inline const uint8_t *km_recv_chacha(const SshKeyMat *km, bool cli)
 {
     return cli ? km->chacha_key_s2c : km->chacha_key_c2s;
 }
-static inline SshAesGcmCtx *km_send_gcm(SshKeyMat *km, bool cli)
+static inline DwsAesGcmCtx *km_send_gcm(SshKeyMat *km, bool cli)
 {
     return cli ? &km->gcm_c2s : &km->gcm_s2c;
 }
-static inline SshAesGcmCtx *km_recv_gcm(SshKeyMat *km, bool cli)
+static inline DwsAesGcmCtx *km_recv_gcm(SshKeyMat *km, bool cli)
 {
     return cli ? &km->gcm_s2c : &km->gcm_c2s;
 }
-static inline SshAesCtrCtx *km_send_ctr(SshKeyMat *km, bool cli)
+static inline DwsAesCtrCtx *km_send_ctr(SshKeyMat *km, bool cli)
 {
     return cli ? &km->c2s_ctx : &km->s2c_ctx;
 }
-static inline SshAesCtrCtx *km_recv_ctr(SshKeyMat *km, bool cli)
+static inline DwsAesCtrCtx *km_recv_ctr(SshKeyMat *km, bool cli)
 {
     return cli ? &km->s2c_ctx : &km->c2s_ctx;
 }
@@ -204,7 +204,7 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
         pad_len = 8 - (base % 8);
         if (pad_len < 4)
             pad_len += 8;
-        tag_len = SSH_CHACHAPOLY_TAG_LEN;
+        tag_len = DWS_CHACHAPOLY_TAG_LEN;
     }
     else if (gcm)
     {
@@ -212,7 +212,7 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
         pad_len = 16 - (base % 16);
         if (pad_len < 4)
             pad_len += 16;
-        tag_len = SSH_AESGCM_TAG_LEN;
+        tag_len = DWS_AESGCM_TAG_LEN;
     }
     else if (etm)
     {
@@ -243,18 +243,18 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     if (chacha)
     {
         // Encrypt length (header key) + payload (main key) and append the Poly1305 tag.
-        ssh_chachapoly_encrypt(km_send_chacha(km, cli), s->seq_no_send, out, out, (uint32_t)pkt_len);
+        dws_chachapoly_encrypt(km_send_chacha(km, cli), s->seq_no_send, out, out, (uint32_t)pkt_len);
     }
     else if (gcm)
     {
         // aes256-gcm@openssh.com: length stays in clear (it is the AAD); seal the packet body in
         // place and append the 16-byte GCM tag. The context's invocation counter advances by one.
-        ssh_aesgcm_seal(km_send_gcm(km, cli), out, 4, out + 4, pkt_len, out + 4);
+        dws_aesgcm_seal(km_send_gcm(km, cli), out, 4, out + 4, pkt_len, out + 4);
     }
     else if (etm)
     {
         // Encrypt-then-MAC: length stays in clear; encrypt the payload, then MAC over (length||ct).
-        ssh_aes256ctr_crypt(km_send_ctr(km, cli), out + 4, out + 4, pkt_len);
+        dws_aes256ctr_crypt(km_send_ctr(km, cli), out + 4, out + 4, pkt_len);
         compute_mac_mode(km->mac_mode, km_send_mac(km, cli), s->seq_no_send, out, 4 + pkt_len, out + 4 + pkt_len);
     }
     else if (s->enc_out)
@@ -262,7 +262,7 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
         // Encrypt-and-MAC: MAC over plaintext (seq || unencrypted packet), then AES-256-CTR.
         uint8_t mac[64];
         compute_mac_mode(km->mac_mode, km_send_mac(km, cli), s->seq_no_send, out, 4 + pkt_len, mac);
-        ssh_aes256ctr_crypt(km_send_ctr(km, cli), out, out, 4 + pkt_len);
+        dws_aes256ctr_crypt(km_send_ctr(km, cli), out, out, 4 + pkt_len);
         memcpy(out + 4 + pkt_len, mac, tag_len);
         ssh_wipe(mac, sizeof(mac));
     }
@@ -312,14 +312,14 @@ static int ssh_recv_chachapoly(uint8_t i, SshPacketState *s, const SshKeyMat *km
     // chacha20-poly1305@openssh.com. Keyed by the sequence number, so decrypting the
     // length is stateless/repeatable - no cipher-state peek/restore is needed.
     const uint8_t *rk = km_recv_chacha(km, s->is_client); // recv: client s2c, server c2s
-    uint32_t pkt_len = ssh_chachapoly_get_length(rk, s->seq_no_recv, s->rx_buf);
-    if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - SSH_CHACHAPOLY_TAG_LEN)
+    uint32_t pkt_len = dws_chachapoly_get_length(rk, s->seq_no_recv, s->rx_buf);
+    if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - DWS_CHACHAPOLY_TAG_LEN)
     {
         ssh_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
-    size_t wire_need = 4 + pkt_len + SSH_CHACHAPOLY_TAG_LEN;
+    size_t wire_need = 4 + pkt_len + DWS_CHACHAPOLY_TAG_LEN;
     if (s->rx_len < wire_need)
         return 0; // incomplete packet
 
@@ -334,7 +334,7 @@ static int ssh_recv_chachapoly(uint8_t i, SshPacketState *s, const SshKeyMat *km
     }
 
     // Verify the Poly1305 tag over the ciphertext, then decrypt. No plaintext on failure.
-    if (!ssh_chachapoly_decrypt(rk, s->seq_no_recv, scratch, s->rx_buf, pkt_len))
+    if (!dws_chachapoly_decrypt(rk, s->seq_no_recv, scratch, s->rx_buf, pkt_len))
     {
         ssh_wipe(scratch, scratch_sz);
         ssh_wipe(s->rx_buf, s->rx_len);
@@ -376,13 +376,13 @@ static int ssh_recv_aesgcm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_
     // (length || ciphertext) BEFORE any plaintext is produced.
     uint32_t pkt_len = read_u32_be(s->rx_buf);
     // The encrypted portion (pkt_len) must be a positive whole number of AES blocks.
-    if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - SSH_AESGCM_TAG_LEN || (pkt_len % 16) != 0)
+    if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - DWS_AESGCM_TAG_LEN || (pkt_len % 16) != 0)
     {
         ssh_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
-    size_t wire_need = 4 + pkt_len + SSH_AESGCM_TAG_LEN;
+    size_t wire_need = 4 + pkt_len + DWS_AESGCM_TAG_LEN;
     if (s->rx_len < wire_need)
         return 0; // incomplete packet
 
@@ -397,7 +397,7 @@ static int ssh_recv_aesgcm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_
     }
 
     // Verify the GCM tag over (length || ciphertext), then decrypt. No plaintext on failure.
-    if (!ssh_aesgcm_open(km_recv_gcm(km, s->is_client), s->rx_buf, 4, s->rx_buf + 4, pkt_len, s->rx_buf + 4 + pkt_len,
+    if (!dws_aesgcm_open(km_recv_gcm(km, s->is_client), s->rx_buf, 4, s->rx_buf + 4, pkt_len, s->rx_buf + 4 + pkt_len,
                          scratch))
     {
         ssh_wipe(scratch, scratch_sz);
@@ -476,7 +476,7 @@ static int ssh_recv_ctr_etm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg
         return -1;
     }
     memcpy(scratch, s->rx_buf + 4, pkt_len);
-    ssh_aes256ctr_crypt(km_recv_ctr(km, s->is_client), scratch, scratch, pkt_len);
+    dws_aes256ctr_crypt(km_recv_ctr(km, s->is_client), scratch, scratch, pkt_len);
 
     // scratch = padding_length || payload || padding.
     uint8_t pad_len_byte = scratch[0];
@@ -511,7 +511,7 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     // state (counter/keystream/pos - the key schedule is invariant and
     // may hold internal pointers on mbedtls, so we never copy it),
     // decrypt the first block, then restore.  Nothing is consumed yet.
-    SshAesCtrCtx *rc = km_recv_ctr(km, s->is_client); // recv: client s2c, server c2s
+    DwsAesCtrCtx *rc = km_recv_ctr(km, s->is_client); // recv: client s2c, server c2s
     uint8_t saved_counter[16];
     uint8_t saved_keystream[16];
     uint8_t saved_pos;
@@ -521,7 +521,7 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
 
     uint8_t len_block[16];
     memcpy(len_block, s->rx_buf, 16);
-    ssh_aes256ctr_crypt(rc, len_block, len_block, 16);
+    dws_aes256ctr_crypt(rc, len_block, len_block, 16);
     uint32_t pkt_len = read_u32_be(len_block);
     ssh_wipe(len_block, sizeof(len_block));
 
@@ -564,7 +564,7 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     // which advances c2s_ctx by exactly enc_len/16 blocks and leaves
     // the cipher aligned on the next packet boundary.
     memcpy(scratch, s->rx_buf, enc_len);
-    ssh_aes256ctr_crypt(rc, scratch, scratch, enc_len);
+    dws_aes256ctr_crypt(rc, scratch, scratch, enc_len);
 
     // Verify MAC over seq_no || plaintext(scratch[0..enc_len)).
     const uint8_t *rx_mac = s->rx_buf + enc_len; // MAC is sent in clear

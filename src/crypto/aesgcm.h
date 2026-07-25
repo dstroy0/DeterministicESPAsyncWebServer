@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_aesgcm.h
+ * @file aesgcm.h
  * @brief AES-256-GCM AEAD for SSH (aes256-gcm@openssh.com, RFC 5647).
  *
  * The OpenSSH AES-GCM cipher is an AEAD: the 4-byte SSH packet_length is sent in the clear and
@@ -17,7 +17,7 @@
  * never changes. The counter therefore lives in the context and advances once per sealed/opened packet
  * - this is what makes the cipher stateful and requires whole-packet atomicity in the packet layer.
  *
- * PLATFORM SELECTION (mirrors ssh_aes256ctr / dws_quic_aead)
+ * PLATFORM SELECTION (mirrors dws_aes256ctr / dws_quic_aead)
  * On Arduino (ESP32) the AES-256 block is mbedtls, routed to the hardware AES accelerator. On native
  * host builds a compact software AES-256 is used so the whole AEAD is unit-testable off-target. GHASH
  * and the counter loop are the same software on both targets.
@@ -29,19 +29,19 @@
  * @date    2026
  */
 
-#ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_AESGCM_H
-#define DETERMINISTICESPASYNCWEBSERVER_SSH_AESGCM_H
+#ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AESGCM_H
+#define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AESGCM_H
 
 #include "shared_primitives/ghash.h"
 #include <stddef.h>
 #include <stdint.h>
 
 /** @brief AES-256-GCM key length (bytes). */
-static constexpr size_t SSH_AESGCM_KEY_LEN = 32;
+static constexpr size_t DWS_AESGCM_KEY_LEN = 32;
 /** @brief GCM nonce length (bytes) = fixed_field(4) || invocation_counter(8). */
-static constexpr size_t SSH_AESGCM_IV_LEN = 12;
+static constexpr size_t DWS_AESGCM_IV_LEN = 12;
 /** @brief GCM authentication tag length (bytes). */
-static constexpr size_t SSH_AESGCM_TAG_LEN = 16;
+static constexpr size_t DWS_AESGCM_TAG_LEN = 16;
 
 #ifdef ARDUINO
 #include "soc/soc_caps.h"
@@ -53,39 +53,39 @@ static constexpr size_t SSH_AESGCM_TAG_LEN = 16;
 // overhead makes the manual path 3x-33x slower (measured, 64 B-1 KiB), so route through mbedtls_gcm there.
 // The ESP32-S3's AES peripheral has no GCM mode, so it keeps the manual HW-AES + software-GHASH path.
 #if defined(ARDUINO) && defined(SOC_AES_SUPPORT_GCM) && SOC_AES_SUPPORT_GCM
-#define SSH_AESGCM_HW_GCM 1
+#define DWS_AESGCM_HW_GCM 1
 #else
-#define SSH_AESGCM_HW_GCM 0
+#define DWS_AESGCM_HW_GCM 0
 #endif
 
-#if SSH_AESGCM_HW_GCM
+#if DWS_AESGCM_HW_GCM
 #include <mbedtls/gcm.h>
 /** @brief AES-256-GCM context for one SSH direction (hardware GCM peripheral). */
-struct SshAesGcmCtx
+struct DwsAesGcmCtx
 {
     mbedtls_gcm_context gcm;       ///< mbedtls GCM (routed to the ESP32 hardware GCM), AES-256 key schedule.
-    uint8_t iv[SSH_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
+    uint8_t iv[DWS_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
     bool ready;                    ///< true once a key/IV is installed.
 };
 #elif defined(ARDUINO)
 #include <mbedtls/aes.h>
 /** @brief AES-256-GCM context for one SSH direction (HW AES block + software GHASH). */
-struct SshAesGcmCtx
+struct DwsAesGcmCtx
 {
     mbedtls_aes_context mbed;      ///< mbedtls context (HW-accelerated on ESP32), encrypt key schedule.
     uint8_t h[16];                 ///< GHASH subkey H = E(K, 0^128).
     GhashKey ghk;                  ///< 4-bit GHASH table built from H (once at init).
-    uint8_t iv[SSH_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
+    uint8_t iv[DWS_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
     bool ready;                    ///< true once a key/IV is installed.
 };
 #else
 /** @brief AES-256-GCM context for one SSH direction (software AES on host). */
-struct SshAesGcmCtx
+struct DwsAesGcmCtx
 {
     uint32_t rk[60];               ///< AES-256 expanded round-key schedule (60 words, 240 bytes).
     uint8_t h[16];                 ///< GHASH subkey H = E(K, 0^128).
     GhashKey ghk;                  ///< 4-bit GHASH table built from H (once at init).
-    uint8_t iv[SSH_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
+    uint8_t iv[DWS_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
     bool ready;                    ///< true once a key/IV is installed.
 };
 #endif
@@ -96,15 +96,15 @@ struct SshAesGcmCtx
  * @param key  32-byte AES-256 key (KEX label 'C'/'D').
  * @param iv   12-byte initial nonce (first 12 bytes of the KEX 'A'/'B' IV).
  */
-void ssh_aesgcm_init(SshAesGcmCtx *ctx, const uint8_t key[SSH_AESGCM_KEY_LEN], const uint8_t iv[SSH_AESGCM_IV_LEN]);
+void dws_aesgcm_init(DwsAesGcmCtx *ctx, const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t iv[DWS_AESGCM_IV_LEN]);
 
 /**
  * @brief Seal one packet: AES-256-GCM encrypt @p pt (@p pt_len bytes) and authenticate it together
  *        with @p aad. Writes @p pt_len ciphertext bytes then the 16-byte tag into @p out (so @p out
- *        must hold @p pt_len + ::SSH_AESGCM_TAG_LEN bytes). @p out may alias @p pt (in place).
+ *        must hold @p pt_len + ::DWS_AESGCM_TAG_LEN bytes). @p out may alias @p pt (in place).
  *        The context's invocation counter is advanced by one afterwards.
  */
-void ssh_aesgcm_seal(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len,
+void dws_aesgcm_seal(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len,
                      uint8_t *out);
 
 /**
@@ -112,10 +112,10 @@ void ssh_aesgcm_seal(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, cons
  *        on success decrypt @p ct (@p ct_len bytes) into @p out (@p out may alias @p ct). The
  *        invocation counter is advanced by one on success. @return true iff the tag is valid.
  */
-bool ssh_aesgcm_open(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
-                     const uint8_t tag[SSH_AESGCM_TAG_LEN], uint8_t *out);
+bool dws_aesgcm_open(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
+                     const uint8_t tag[DWS_AESGCM_TAG_LEN], uint8_t *out);
 
 /** @brief Zero the key schedule, H, and nonce (volatile wipe). Call on disconnect. */
-void ssh_aesgcm_wipe(SshAesGcmCtx *ctx);
+void dws_aesgcm_wipe(DwsAesGcmCtx *ctx);
 
-#endif // DETERMINISTICESPASYNCWEBSERVER_SSH_AESGCM_H
+#endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AESGCM_H

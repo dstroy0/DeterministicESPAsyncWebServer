@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_chachapoly.h
+ * @file chachapoly.h
  * @brief chacha20-poly1305@openssh.com AEAD cipher (OpenSSH PROTOCOL.chacha20poly1305).
  *
  * OpenSSH's authenticated cipher for the SSH binary packet. The 512-bit key is split into two
@@ -21,22 +21,22 @@
  * @date    2026
  */
 
-#ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_CHACHAPOLY_H
-#define DETERMINISTICESPASYNCWEBSERVER_SSH_CHACHAPOLY_H
+#ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_CHACHAPOLY_H
+#define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_CHACHAPOLY_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define SSH_CHACHAPOLY_KEY_LEN 64 ///< two 256-bit ChaCha20 keys
-#define SSH_CHACHAPOLY_TAG_LEN 16 ///< Poly1305 tag
-#define SSH_CHACHAPOLY_AAD_LEN 4  ///< the encrypted packet-length field
+#define DWS_CHACHAPOLY_KEY_LEN 64 ///< two 256-bit ChaCha20 keys
+#define DWS_CHACHAPOLY_TAG_LEN 16 ///< Poly1305 tag
+#define DWS_CHACHAPOLY_AAD_LEN 4  ///< the encrypted packet-length field
 
 /**
  * @brief Decrypt just the 4-byte length field to learn the packet length before reading the body.
  * @return the SSH packet_length (bytes of the packet after the length field, excluding the tag).
  */
-uint32_t ssh_chachapoly_get_length(const uint8_t key[SSH_CHACHAPOLY_KEY_LEN], uint32_t seqnr,
-                                   const uint8_t enc_len[SSH_CHACHAPOLY_AAD_LEN]);
+uint32_t dws_chachapoly_get_length(const uint8_t key[DWS_CHACHAPOLY_KEY_LEN], uint32_t seqnr,
+                                   const uint8_t enc_len[DWS_CHACHAPOLY_AAD_LEN]);
 
 /**
  * @brief Encrypt+authenticate one packet.
@@ -44,7 +44,7 @@ uint32_t ssh_chachapoly_get_length(const uint8_t key[SSH_CHACHAPOLY_KEY_LEN], ui
  * @param dest  output: encrypted length (4) || encrypted payload (@p payload_len) || tag (16).
  *              May alias @p src. dest must hold 4 + payload_len + 16 bytes.
  */
-void ssh_chachapoly_encrypt(const uint8_t key[SSH_CHACHAPOLY_KEY_LEN], uint32_t seqnr, uint8_t *dest,
+void dws_chachapoly_encrypt(const uint8_t key[DWS_CHACHAPOLY_KEY_LEN], uint32_t seqnr, uint8_t *dest,
                             const uint8_t *src, uint32_t payload_len);
 
 /**
@@ -53,7 +53,7 @@ void ssh_chachapoly_encrypt(const uint8_t key[SSH_CHACHAPOLY_KEY_LEN], uint32_t 
  * @param dest  output: plaintext length (4) || plaintext payload (@p payload_len). May alias @p src.
  * @return true if the Poly1305 tag verified; false (and no usable plaintext) otherwise.
  */
-bool ssh_chachapoly_decrypt(const uint8_t key[SSH_CHACHAPOLY_KEY_LEN], uint32_t seqnr, uint8_t *dest,
+bool dws_chachapoly_decrypt(const uint8_t key[DWS_CHACHAPOLY_KEY_LEN], uint32_t seqnr, uint8_t *dest,
                             const uint8_t *src, uint32_t payload_len);
 
-#endif // DETERMINISTICESPASYNCWEBSERVER_SSH_CHACHAPOLY_H
+#endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_CHACHAPOLY_H

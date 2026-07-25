@@ -659,6 +659,14 @@ src/
 │   ├── s31_defaults.h
 │   └── s3_defaults.h
 ├── crypto/
+│   ├── aes256ctr.cpp
+│   ├── aes256ctr.h
+│   ├── aesgcm.cpp
+│   ├── aesgcm.h
+│   ├── chacha20.cpp
+│   ├── chacha20.h
+│   ├── chachapoly.cpp
+│   ├── chachapoly.h
 │   ├── hmac_sha256.cpp
 │   ├── hmac_sha256.h
 │   ├── hmac_sha512.cpp
@@ -667,6 +675,8 @@ src/
 │   ├── kdf.h
 │   ├── md.cpp
 │   ├── md.h
+│   ├── poly1305.cpp
+│   ├── poly1305.h
 │   ├── sha1.cpp
 │   ├── sha1.h
 │   ├── sha256.cpp
@@ -765,16 +775,8 @@ src/
 │   │   │   │   ├── ssh_server.cpp
 │   │   │   │   └── ssh_server.h
 │   │   │   ├── crypto/
-│   │   │   │   ├── ssh_aes256ctr.cpp
-│   │   │   │   ├── ssh_aes256ctr.h
-│   │   │   │   ├── ssh_aesgcm.cpp
-│   │   │   │   ├── ssh_aesgcm.h
 │   │   │   │   ├── ssh_bignum.cpp
 │   │   │   │   ├── ssh_bignum.h
-│   │   │   │   ├── ssh_chacha20.cpp
-│   │   │   │   ├── ssh_chacha20.h
-│   │   │   │   ├── ssh_chachapoly.cpp
-│   │   │   │   ├── ssh_chachapoly.h
 │   │   │   │   ├── ssh_curve25519.cpp
 │   │   │   │   ├── ssh_curve25519.h
 │   │   │   │   ├── ssh_ecdsa.cpp
@@ -784,8 +786,6 @@ src/
 │   │   │   │   ├── ssh_ed25519_comb_table.h
 │   │   │   │   ├── ssh_fe25519.h
 │   │   │   │   ├── ssh_kexhash.h
-│   │   │   │   ├── ssh_poly1305.cpp
-│   │   │   │   ├── ssh_poly1305.h
 │   │   │   │   ├── ssh_rsa.cpp
 │   │   │   │   └── ssh_rsa.h
 │   │   │   └── transport/

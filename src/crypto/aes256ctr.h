@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_aes256ctr.h
+ * @file aes256ctr.h
  * @brief AES-256-CTR stream cipher context and API.
  *
  * AES-256-CTR is the mandatory cipher for this SSH implementation
@@ -34,8 +34,8 @@
  * @date    2026
  */
 
-#ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_AES256CTR_H
-#define DETERMINISTICESPASYNCWEBSERVER_SSH_AES256CTR_H
+#ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AES256CTR_H
+#define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AES256CTR_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -49,7 +49,7 @@
 // actual mbedtls_aes_context so the compiler knows its size exactly.
 #include <mbedtls/aes.h>
 
-struct SshAesCtrCtx
+struct DwsAesCtrCtx
 {
     mbedtls_aes_context _mbed; ///< mbedtls context with pre-expanded key schedule.
     uint8_t counter[16];       ///< Current CTR block (big-endian 128-bit counter).
@@ -59,7 +59,7 @@ struct SshAesCtrCtx
 
 #else // Native - software AES, no mbedtls dependency
 
-struct SshAesCtrCtx
+struct DwsAesCtrCtx
 {
     uint32_t rk[60];       ///< AES-256 expanded round key schedule (60 words, 240 bytes).
     uint8_t counter[16];   ///< Current CTR block (big-endian 128-bit counter).
@@ -83,7 +83,7 @@ struct SshAesCtrCtx
  * @param key  32-byte AES-256 key (derived from KEX via RFC 4253 §7.2).
  * @param iv   16-byte initial counter block (derived from KEX).
  */
-void ssh_aes256ctr_init(SshAesCtrCtx *ctx, const uint8_t key[32], const uint8_t iv[16]);
+void dws_aes256ctr_init(DwsAesCtrCtx *ctx, const uint8_t key[32], const uint8_t iv[16]);
 
 /**
  * @brief Encrypt or decrypt @p len bytes in-place (or src→dst).
@@ -99,7 +99,7 @@ void ssh_aes256ctr_init(SshAesCtrCtx *ctx, const uint8_t key[32], const uint8_t 
  * @param out  Output bytes (may equal @p in for in-place).
  * @param len  Number of bytes to process.
  */
-void ssh_aes256ctr_crypt(SshAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, size_t len);
+void dws_aes256ctr_crypt(DwsAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, size_t len);
 
 /**
  * @brief Zero the key schedule and all context fields.
@@ -109,6 +109,6 @@ void ssh_aes256ctr_crypt(SshAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, siz
  *
  * @param ctx  Context to wipe.
  */
-void ssh_aes256ctr_wipe(SshAesCtrCtx *ctx);
+void dws_aes256ctr_wipe(DwsAesCtrCtx *ctx);
 
-#endif // DETERMINISTICESPASYNCWEBSERVER_SSH_AES256CTR_H
+#endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AES256CTR_H

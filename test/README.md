@@ -50234,12 +50234,12 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Tampered tag -> reject; the counter must NOT have advanced, so a correct open still works.
     * **Assertions**:
-      * <code>Assert true (ssh_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
+      * <code>Assert true (dws_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_PT, pt, sizeof(TC16_PT));</code>
-      * <code>Assert false (ssh_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), bad_tag, pt))</code>
-      * <code>Assert true (ssh_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
+      * <code>Assert false (dws_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), bad_tag, pt))</code>
+      * <code>Assert true (dws_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_PT, pt, sizeof(TC16_PT));</code>
-      * <code>Assert false (ssh_aesgcm_open(&ctx, bad_aad, sizeof(bad_aad), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
+      * <code>Assert false (dws_aesgcm_open(&ctx, bad_aad, sizeof(bad_aad), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -50248,11 +50248,11 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Objective**: Same key + same plaintext but a different invocation counter -> different ciphertext AND tag.
     * **Assertions**:
       * <code>Assert true (memcmp(p0, p1, 32) != 0)</code>
-      * <code>Assert true (ssh_aesgcm_open(&dec, aad, 4, p0, 16, p0 + 16, r0))</code>
+      * <code>Assert true (dws_aesgcm_open(&dec, aad, 4, p0, 16, p0 + 16, r0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(msg, r0, 16);</code>
-      * <code>Assert true (ssh_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, r1))</code>
+      * <code>Assert true (dws_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, r1))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(msg, r1, 16);</code>
-      * <code>Assert false (ssh_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, rx))</code>
+      * <code>Assert false (dws_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, rx))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -50268,7 +50268,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Aesgcm gctr counter byte carry
     * **Assertions**:
-      * <code>Assert true (ssh_aesgcm_open(&dec, NULL, 0, out, n, out + n, rt))</code>
+      * <code>Assert true (dws_aesgcm_open(&dec, NULL, 0, out, n, out + n, rt))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, n);</code>
   </details>
 
@@ -50600,7 +50600,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Aesgcm gctr counter byte carry
     * **Assertions**:
-      * <code>Assert true (ssh_aesgcm_open(&dec, aad, sizeof(aad), ct, sizeof(pt), ct + sizeof(pt), rt))</code>
+      * <code>Assert true (dws_aesgcm_open(&dec, aad, sizeof(aad), ct, sizeof(pt), ct + sizeof(pt), rt))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, sizeof(pt));</code>
   </details>
 
@@ -50631,8 +50631,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Objective**: Independent cross-check: the exact ciphertext+tag OpenSSL (pyca ChaCha20 + Poly1305) produces
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(openssl_ref, ct, 120);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(payload_len, ssh_chachapoly_get_length(key, seqnr, enc_len));</code>
-      * <code>Assert true (ssh_chachapoly_decrypt(key, seqnr, rt, ct, payload_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(payload_len, dws_chachapoly_get_length(key, seqnr, enc_len));</code>
+      * <code>Assert true (dws_chachapoly_decrypt(key, seqnr, rt, ct, payload_len))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, 4 + payload_len);</code>
       * <code>Assert true (memcmp(ct + 4, pt + 4, payload_len) != 0)</code>
   </details>
@@ -50642,10 +50642,10 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Flip a payload byte -> tag mismatch -> reject.
     * **Assertions**:
-      * <code>Assert false (ssh_chachapoly_decrypt(key, 0, rt, ct, payload_len))</code>
-      * <code>Assert false (ssh_chachapoly_decrypt(key, 0, rt, ct, payload_len))</code>
-      * <code>Assert false (ssh_chachapoly_decrypt(key, 1, rt, ct, payload_len))</code>
-      * <code>Assert true (ssh_chachapoly_decrypt(key, 0, rt, ct, payload_len))</code>
+      * <code>Assert false (dws_chachapoly_decrypt(key, 0, rt, ct, payload_len))</code>
+      * <code>Assert false (dws_chachapoly_decrypt(key, 0, rt, ct, payload_len))</code>
+      * <code>Assert false (dws_chachapoly_decrypt(key, 1, rt, ct, payload_len))</code>
+      * <code>Assert true (dws_chachapoly_decrypt(key, 0, rt, ct, payload_len))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -50653,10 +50653,10 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: The length field decodes to 0.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, ssh_chachapoly_get_length(key, seqnr, enc_len));</code>
-      * <code>Assert true (ssh_chachapoly_decrypt(key, seqnr, rt, ct, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_chachapoly_get_length(key, seqnr, enc_len));</code>
+      * <code>Assert true (dws_chachapoly_decrypt(key, seqnr, rt, ct, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, 4);</code>
-      * <code>Assert false (ssh_chachapoly_decrypt(key, seqnr, rt, ct, 0))</code>
+      * <code>Assert false (dws_chachapoly_decrypt(key, seqnr, rt, ct, 0))</code>
   </details>
 
 </details>
@@ -51514,7 +51514,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal memory (expected_ct, ct, 64)</code>
       * <code>Assert equal memory (pt, pt_back, 64)</code>
-      * <code>Assert equal memory (zeros, &ctx, sizeof(SshAesCtrCtx))</code>
+      * <code>Assert equal memory (zeros, &ctx, sizeof(DwsAesCtrCtx))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -52403,7 +52403,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &sig, &sl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
       * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_c2s, ssh_keys[0].chacha_key_c2s, SSH_CHACHAPOLY_KEY_LEN);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_c2s, ssh_keys[0].chacha_key_c2s, DWS_CHACHAPOLY_KEY_LEN);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -52646,7 +52646,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1u + 13u + 18u, pkt_len);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(4 + pkt_len + SSH_AESGCM_TAG_LEN, wlen);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + pkt_len + DWS_AESGCM_TAG_LEN, wlen);</code>
       * <code>Assert equal int (0, ssh_pkt_recv(0, wire, wlen, pkt_rec_handler))</code>
       * <code>Assert equal int (1, g_pkt_calls)</code>
   </details>
@@ -52672,7 +52672,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 64, pkt_rec_handler))</code>
       * <code>Assert equal int (0, ssh_pkt_recv(0, rx, 12, pkt_rec_handler))</code>
       * <code>Assert equal int (0, g_pkt_calls)</code>
-      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 4 + 16 + SSH_AESGCM_TAG_LEN, pkt_rec_handler))</code>
+      * <code>Assert equal int (-1, ssh_pkt_recv(0, rx, 4 + 16 + DWS_AESGCM_TAG_LEN, pkt_rec_handler))</code>
       * <code>Assert equal int (0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)))</code>
       * <code>Assert equal int (-1, ssh_pkt_recv(0, wire, wlen, pkt_rec_handler))</code>
       * <code>Assert equal int (-1, ssh_pkt_recv(0, wire, n, pkt_rec_handler))</code>

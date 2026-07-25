@@ -11,7 +11,7 @@
  * level for that one translation unit, regardless of the consumer's size-optimized build:
  *
  * @code
- *   #include "ssh_chacha20.h"
+ *   #include "crypto/chacha20.h"
  *   #include "shared_primitives/crypto_opt.h"
  *   DWS_CRYPTO_HOT   // this TU builds at -O2 (or the configured level)
  * @endcode

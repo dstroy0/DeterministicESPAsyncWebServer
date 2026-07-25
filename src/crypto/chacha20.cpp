@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_chacha20.cpp
- * @brief ChaCha20 (RFC 8439) - implementation. See ssh_chacha20.h.
+ * @file chacha20.cpp
+ * @brief ChaCha20 (RFC 8439) - implementation. See dws_chacha20.h.
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
+#include "crypto/chacha20.h"
 #include "shared_primitives/crypto_opt.h"
 
 // ChaCha20 is a hot, pure-integer (add/xor/rotate) keystream generator. The ESP32-S3 has no usable
@@ -76,7 +76,7 @@ const uint32_t SIGMA2 = 0x79622d32;
 const uint32_t SIGMA3 = 0x6b206574;
 } // namespace
 
-void ssh_chacha20_xor(const uint8_t key[SSH_CHACHA20_KEY_LEN], const uint8_t iv[8], uint64_t counter, const uint8_t *in,
+void dws_chacha20_xor(const uint8_t key[DWS_CHACHA20_KEY_LEN], const uint8_t iv[8], uint64_t counter, const uint8_t *in,
                       uint8_t *out, size_t len)
 {
     uint32_t st[16];
@@ -103,8 +103,8 @@ void ssh_chacha20_xor(const uint8_t key[SSH_CHACHA20_KEY_LEN], const uint8_t iv[
     }
 }
 
-void ssh_chacha20_block_ietf(const uint8_t key[SSH_CHACHA20_KEY_LEN], uint32_t counter, const uint8_t nonce[12],
-                             uint8_t out[SSH_CHACHA20_BLOCK_LEN])
+void dws_chacha20_block_ietf(const uint8_t key[DWS_CHACHA20_KEY_LEN], uint32_t counter, const uint8_t nonce[12],
+                             uint8_t out[DWS_CHACHA20_BLOCK_LEN])
 {
     uint32_t st[16];
     st[0] = SIGMA0;

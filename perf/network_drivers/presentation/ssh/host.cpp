@@ -15,12 +15,12 @@
 //       src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp \
 //       src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp \
 //       src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp \
-//       src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp \
-//       src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp \
-//       src/network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp -o /tmp/bssh && /tmp/bssh
+//       src/network_drivers/presentation/ssh/crypto/dws_chacha20.cpp \
+//       src/network_drivers/presentation/ssh/crypto/dws_poly1305.cpp \
+//       src/network_drivers/presentation/ssh/crypto/dws_chachapoly.cpp -o /tmp/bssh && /tmp/bssh
 
 #define DWS_ENABLE_SSH 1
-#include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
+#include "crypto/chachapoly.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 
@@ -114,10 +114,10 @@ int main()
     // Record layer: chacha20-poly1305@openssh.com encrypt of a full 1 KB data packet. The per-packet
     // steady-state op, so its throughput (MB/s over the payload) is the interesting figure.
     const uint32_t plen = 1024;
-    uint8_t key[SSH_CHACHAPOLY_KEY_LEN];
+    uint8_t key[DWS_CHACHAPOLY_KEY_LEN];
     memset(key, 0x55, sizeof(key));
     static uint8_t src[4 + 1024];
-    static uint8_t dst[4 + 1024 + SSH_CHACHAPOLY_TAG_LEN];
+    static uint8_t dst[4 + 1024 + DWS_CHACHAPOLY_TAG_LEN];
     src[0] = 0;
     src[1] = 0;
     src[2] = (uint8_t)(plen >> 8);
@@ -126,7 +126,7 @@ int main()
     {
         uint32_t seq = 0;
         double ns = bench_ns(40000, [&] {
-            ssh_chachapoly_encrypt(key, seq++, dst, src, plen);
+            dws_chachapoly_encrypt(key, seq++, dst, src, plen);
             sink += dst[0];
         });
         row("ssh", "chacha20-poly1305 enc (1 KB)", ns, (double)plen);

@@ -1440,24 +1440,24 @@ void test_dh_derive_keys_gcm_installs()
     ssh_kdf_derive(K, H, sid, 'C', key_c, DWS_SHA256_DIGEST_LEN);
     ssh_kdf_derive(K, H, sid, 'D', key_s, DWS_SHA256_DIGEST_LEN);
 
-    SshAesGcmCtx ref_c;
-    SshAesGcmCtx ref_s;
-    ssh_aesgcm_init(&ref_c, key_c, iv_c); // ssh_aesgcm_init reads the first 12 bytes as the IV
-    ssh_aesgcm_init(&ref_s, key_s, iv_s);
+    DwsAesGcmCtx ref_c;
+    DwsAesGcmCtx ref_s;
+    dws_aesgcm_init(&ref_c, key_c, iv_c); // dws_aesgcm_init reads the first 12 bytes as the IV
+    dws_aesgcm_init(&ref_s, key_s, iv_s);
 
     uint8_t pt[16];
     for (int j = 0; j < 16; j++)
         pt[j] = (uint8_t)(j + 1);
     uint8_t aad[4] = {0, 0, 0, 16};
-    uint8_t seal_ref[16 + SSH_AESGCM_TAG_LEN];
-    uint8_t seal_km[16 + SSH_AESGCM_TAG_LEN];
+    uint8_t seal_ref[16 + DWS_AESGCM_TAG_LEN];
+    uint8_t seal_km[16 + DWS_AESGCM_TAG_LEN];
 
-    ssh_aesgcm_seal(&ref_c, aad, sizeof(aad), pt, sizeof(pt), seal_ref);
-    ssh_aesgcm_seal(&ssh_keys[0].gcm_c2s, aad, sizeof(aad), pt, sizeof(pt), seal_km);
+    dws_aesgcm_seal(&ref_c, aad, sizeof(aad), pt, sizeof(pt), seal_ref);
+    dws_aesgcm_seal(&ssh_keys[0].gcm_c2s, aad, sizeof(aad), pt, sizeof(pt), seal_km);
     TEST_ASSERT_EQUAL_MEMORY(seal_ref, seal_km, sizeof(seal_ref)); // C->S key + IV byte-correct
 
-    ssh_aesgcm_seal(&ref_s, aad, sizeof(aad), pt, sizeof(pt), seal_ref);
-    ssh_aesgcm_seal(&ssh_keys[0].gcm_s2c, aad, sizeof(aad), pt, sizeof(pt), seal_km);
+    dws_aesgcm_seal(&ref_s, aad, sizeof(aad), pt, sizeof(pt), seal_ref);
+    dws_aesgcm_seal(&ssh_keys[0].gcm_s2c, aad, sizeof(aad), pt, sizeof(pt), seal_km);
     TEST_ASSERT_EQUAL_MEMORY(seal_ref, seal_km, sizeof(seal_ref)); // S->C key + IV byte-correct
 
     ssh_keymat_wipe(0);

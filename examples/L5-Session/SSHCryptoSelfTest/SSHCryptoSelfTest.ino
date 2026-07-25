@@ -21,9 +21,9 @@
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path) - MUST come first
 
+#include "crypto/aes256ctr.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
 #include <string.h>
 
 static bool eq(const uint8_t *a, const uint8_t *b, size_t n)
@@ -83,12 +83,12 @@ void setup()
                                        0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a};
         static const uint8_t want[16] = {0x60, 0x1e, 0xc3, 0x13, 0x77, 0x57, 0x89, 0xa5,
                                          0xb7, 0xa7, 0xf5, 0x04, 0xbb, 0xf3, 0xd2, 0x28};
-        SshAesCtrCtx c;
+        DwsAesCtrCtx c;
         uint8_t out[16];
-        ssh_aes256ctr_init(&c, key, iv);
-        ssh_aes256ctr_crypt(&c, pt, out, 16);
+        dws_aes256ctr_init(&c, key, iv);
+        dws_aes256ctr_crypt(&c, pt, out, 16);
         report("aes256-ctr nist", eq(out, want, 16), all_ok);
-        ssh_aes256ctr_wipe(&c);
+        dws_aes256ctr_wipe(&c);
     }
 
     Serial.println(all_ok ? "ALL TESTS PASSED" : "SOME TESTS FAILED");

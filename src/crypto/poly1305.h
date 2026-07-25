@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_poly1305.h
+ * @file poly1305.h
  * @brief Poly1305 one-time authenticator (D. J. Bernstein; RFC 8439 Section 2.5).
  *
  * A one-time MAC over a message under a 32-byte key (r || s). Used by the
@@ -14,17 +14,17 @@
  * @date    2026
  */
 
-#ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_POLY1305_H
-#define DETERMINISTICESPASYNCWEBSERVER_SSH_POLY1305_H
+#ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_POLY1305_H
+#define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_POLY1305_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define SSH_POLY1305_KEY_LEN 32
-#define SSH_POLY1305_TAG_LEN 16
+#define DWS_POLY1305_KEY_LEN 32
+#define DWS_POLY1305_TAG_LEN 16
 
 /** @brief Compute the 16-byte Poly1305 tag over @p msg under the 32-byte one-time @p key. */
-void ssh_poly1305(uint8_t tag[SSH_POLY1305_TAG_LEN], const uint8_t *msg, size_t len,
-                  const uint8_t key[SSH_POLY1305_KEY_LEN]);
+void dws_poly1305(uint8_t tag[DWS_POLY1305_TAG_LEN], const uint8_t *msg, size_t len,
+                  const uint8_t key[DWS_POLY1305_KEY_LEN]);
 
-#endif // DETERMINISTICESPASYNCWEBSERVER_SSH_POLY1305_H
+#endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_POLY1305_H

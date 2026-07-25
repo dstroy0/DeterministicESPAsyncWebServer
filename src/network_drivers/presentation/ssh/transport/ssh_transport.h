@@ -6,7 +6,7 @@
  * @brief SSH transport-layer protocol state machine (RFC 4253).
  *
  * Sits on top of the binary packet layer (ssh_packet.*) and the crypto
- * primitives (ssh_dh, ssh_rsa, ssh_aes256ctr, dws_hmac_sha256). Drives the
+ * primitives (ssh_dh, ssh_rsa, dws_aes256ctr, dws_hmac_sha256). Drives the
  * handshake: identification-string (banner) exchange → algorithm negotiation
  * (KEXINIT) → Diffie-Hellman key exchange (KEXDH) → NEWKEYS → key install,
  * then hands off to the user-auth layer (ssh_auth.*).

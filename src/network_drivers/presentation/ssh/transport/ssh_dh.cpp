@@ -168,9 +168,9 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H
         // chacha20-poly1305@openssh.com: a 512-bit key per direction (labels 'C'/'D'), no IV and
         // no separate MAC key (the AEAD authenticates). The 64 bytes come from the RFC 4253 §7.2
         // extension chain (K1 || K2).
-        ssh_kdf_derive(K_be, H, session_id, 'C', km->chacha_key_c2s, SSH_CHACHAPOLY_KEY_LEN, k_is_string, h_len,
+        ssh_kdf_derive(K_be, H, session_id, 'C', km->chacha_key_c2s, DWS_CHACHAPOLY_KEY_LEN, k_is_string, h_len,
                        sid_len, is512);
-        ssh_kdf_derive(K_be, H, session_id, 'D', km->chacha_key_s2c, SSH_CHACHAPOLY_KEY_LEN, k_is_string, h_len,
+        ssh_kdf_derive(K_be, H, session_id, 'D', km->chacha_key_s2c, DWS_CHACHAPOLY_KEY_LEN, k_is_string, h_len,
                        sid_len, is512);
         km->active = true;
         return;
@@ -188,8 +188,8 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H
         derive_key(K_be, H, session_id, 'B', iv_s2c, k_is_string, h_len, sid_len, is512);  // IV  S→C
         derive_key(K_be, H, session_id, 'C', key_c2s, k_is_string, h_len, sid_len, is512); // key C→S
         derive_key(K_be, H, session_id, 'D', key_s2c, k_is_string, h_len, sid_len, is512); // key S→C
-        ssh_aesgcm_init(&km->gcm_c2s, key_c2s, iv_c2s);
-        ssh_aesgcm_init(&km->gcm_s2c, key_s2c, iv_s2c);
+        dws_aesgcm_init(&km->gcm_c2s, key_c2s, iv_c2s);
+        dws_aesgcm_init(&km->gcm_s2c, key_s2c, iv_s2c);
         ssh_wipe(key_c2s, sizeof(key_c2s));
         ssh_wipe(key_s2c, sizeof(key_s2c));
         ssh_wipe(iv_c2s, sizeof(iv_c2s));
@@ -213,8 +213,8 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H
     ssh_kdf_derive(K_be, H, session_id, 'E', km->mac_key_c2s, mlen, k_is_string, h_len, sid_len, is512); // MAC C→S
     ssh_kdf_derive(K_be, H, session_id, 'F', km->mac_key_s2c, mlen, k_is_string, h_len, sid_len, is512); // MAC S→C
 
-    ssh_aes256ctr_init(&km->c2s_ctx, key_c2s, iv_c2s);
-    ssh_aes256ctr_init(&km->s2c_ctx, key_s2c, iv_s2c);
+    dws_aes256ctr_init(&km->c2s_ctx, key_c2s, iv_c2s);
+    dws_aes256ctr_init(&km->s2c_ctx, key_s2c, iv_s2c);
 
     // Wipe stack temporaries (key material).
     ssh_wipe(key_c2s, sizeof(key_c2s));

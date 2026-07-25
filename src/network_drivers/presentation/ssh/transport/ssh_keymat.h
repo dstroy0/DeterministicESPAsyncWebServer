@@ -96,10 +96,10 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_KEYMAT_H
 
 #include "ServerConfig.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
+#include "crypto/aes256ctr.h"
+#include "crypto/aesgcm.h"
+#include "crypto/chachapoly.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -190,8 +190,8 @@ static inline void ssh_wipe(void *ptr, size_t len)
  */
 struct SshKeyMat
 {
-    SshAesCtrCtx c2s_ctx; ///< Client→server cipher (AES-256-CTR); server decrypts inbound with it.
-    SshAesCtrCtx s2c_ctx; ///< Server→client cipher (AES-256-CTR); server encrypts outbound with it.
+    DwsAesCtrCtx c2s_ctx; ///< Client→server cipher (AES-256-CTR); server decrypts inbound with it.
+    DwsAesCtrCtx s2c_ctx; ///< Server→client cipher (AES-256-CTR); server encrypts outbound with it.
 
     uint8_t mac_key_c2s[64]; ///< HMAC key, client-to-server (aes mode); 32 bytes for SHA-256, 64 for SHA-512.
     uint8_t mac_key_s2c[64]; ///< HMAC key, server-to-client (aes mode).
@@ -199,13 +199,13 @@ struct SshKeyMat
 
     uint8_t cipher_mode; ///< SSH_CIPHER_* selected for this session (0 = aes256-ctr).
     // chacha20-poly1305@openssh.com: 512-bit key per direction (K_main || K_header); no IV, no MAC key.
-    uint8_t chacha_key_c2s[SSH_CHACHAPOLY_KEY_LEN]; ///< client-to-server, used only in chacha mode.
-    uint8_t chacha_key_s2c[SSH_CHACHAPOLY_KEY_LEN]; ///< server-to-client, used only in chacha mode.
+    uint8_t chacha_key_c2s[DWS_CHACHAPOLY_KEY_LEN]; ///< client-to-server, used only in chacha mode.
+    uint8_t chacha_key_s2c[DWS_CHACHAPOLY_KEY_LEN]; ///< server-to-client, used only in chacha mode.
 
     // aes256-gcm@openssh.com (RFC 5647): a stateful AEAD context per direction (256-bit key + 96-bit
     // nonce whose invocation counter advances per packet); no separate MAC key. Used only in gcm mode.
-    SshAesGcmCtx gcm_c2s; ///< client-to-server AES-256-GCM (server opens inbound with it).
-    SshAesGcmCtx gcm_s2c; ///< server-to-client AES-256-GCM (server seals outbound with it).
+    DwsAesGcmCtx gcm_c2s; ///< client-to-server AES-256-GCM (server opens inbound with it).
+    DwsAesGcmCtx gcm_s2c; ///< server-to-client AES-256-GCM (server seals outbound with it).
 
     bool active; ///< True once keys are installed after successful KEX.
 };

@@ -6,9 +6,9 @@
 //   - Poly1305 vs RFC 8439 Section 2.5.2 test vector
 //   - the OpenSSH AEAD: length decode, encrypt/decrypt round-trip, and tag-tamper rejection.
 
-#include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_poly1305.h"
+#include "crypto/chacha20.h"
+#include "crypto/chachapoly.h"
+#include "crypto/poly1305.h"
 #include <string.h>
 #include <unity.h>
 
@@ -32,7 +32,7 @@ void test_chacha20_block_rfc8439()
                                   0x09, 0x14, 0xc2, 0xd7, 0x05, 0xd9, 0x8b, 0x02, 0xa2, 0xb5, 0x12, 0x9c, 0xd1,
                                   0xde, 0x16, 0x4e, 0xb9, 0xcb, 0xd0, 0x83, 0xe8, 0xa2, 0x50, 0x3c, 0x4e};
     uint8_t out[64];
-    ssh_chacha20_block_ietf(key, 1, nonce, out);
+    dws_chacha20_block_ietf(key, 1, nonce, out);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, out, 64);
 }
 
@@ -46,7 +46,7 @@ void test_poly1305_rfc8439()
     const uint8_t expected[16] = {0xa8, 0x06, 0x1d, 0xc1, 0x30, 0x51, 0x36, 0xc6,
                                   0xc2, 0x2b, 0x8b, 0xaf, 0x0c, 0x01, 0x27, 0xa9};
     uint8_t tag[16];
-    ssh_poly1305(tag, (const uint8_t *)msg, strlen(msg), key);
+    dws_poly1305(tag, (const uint8_t *)msg, strlen(msg), key);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, tag, 16);
 }
 
@@ -67,7 +67,7 @@ void test_chachapoly_roundtrip()
         pt[4 + i] = (uint8_t)(i ^ 0x5a);
 
     uint8_t ct[4 + 100 + 16];
-    ssh_chachapoly_encrypt(key, seqnr, ct, pt, payload_len);
+    dws_chachapoly_encrypt(key, seqnr, ct, pt, payload_len);
 
     // Independent cross-check: the exact ciphertext+tag OpenSSL (pyca ChaCha20 + Poly1305) produces
     // for this key/seqnr/payload via the OpenSSH construction. Byte-for-byte agreement proves the
@@ -84,11 +84,11 @@ void test_chachapoly_roundtrip()
 
     // The length field is independently recoverable.
     uint8_t enc_len[4] = {ct[0], ct[1], ct[2], ct[3]};
-    TEST_ASSERT_EQUAL_UINT32(payload_len, ssh_chachapoly_get_length(key, seqnr, enc_len));
+    TEST_ASSERT_EQUAL_UINT32(payload_len, dws_chachapoly_get_length(key, seqnr, enc_len));
 
     // Verify + decrypt recovers the plaintext exactly.
     uint8_t rt[4 + 100];
-    TEST_ASSERT_TRUE(ssh_chachapoly_decrypt(key, seqnr, rt, ct, payload_len));
+    TEST_ASSERT_TRUE(dws_chachapoly_decrypt(key, seqnr, rt, ct, payload_len));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, 4 + payload_len);
 
     // The ciphertext must differ from the plaintext (it is actually encrypted).
@@ -103,23 +103,23 @@ void test_chachapoly_tamper_rejected()
     const uint32_t payload_len = 16;
     uint8_t pt[4 + 16] = {0, 0, 0, 16, 'h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd', '!', '!', '?', '?', '?', '?'};
     uint8_t ct[4 + 16 + 16];
-    ssh_chachapoly_encrypt(key, 0, ct, pt, payload_len);
+    dws_chachapoly_encrypt(key, 0, ct, pt, payload_len);
     uint8_t rt[4 + 16];
 
     // Flip a payload byte -> tag mismatch -> reject.
     ct[6] ^= 0x01;
-    TEST_ASSERT_FALSE(ssh_chachapoly_decrypt(key, 0, rt, ct, payload_len));
+    TEST_ASSERT_FALSE(dws_chachapoly_decrypt(key, 0, rt, ct, payload_len));
     ct[6] ^= 0x01; // restore
 
     // Flip a tag byte -> reject.
     ct[4 + payload_len] ^= 0x80;
-    TEST_ASSERT_FALSE(ssh_chachapoly_decrypt(key, 0, rt, ct, payload_len));
+    TEST_ASSERT_FALSE(dws_chachapoly_decrypt(key, 0, rt, ct, payload_len));
     ct[4 + payload_len] ^= 0x80;
 
     // Wrong sequence number (different nonce) -> reject.
-    TEST_ASSERT_FALSE(ssh_chachapoly_decrypt(key, 1, rt, ct, payload_len));
+    TEST_ASSERT_FALSE(dws_chachapoly_decrypt(key, 1, rt, ct, payload_len));
     // Correct again -> accept.
-    TEST_ASSERT_TRUE(ssh_chachapoly_decrypt(key, 0, rt, ct, payload_len));
+    TEST_ASSERT_TRUE(dws_chachapoly_decrypt(key, 0, rt, ct, payload_len));
 }
 
 // A zero-length payload (payload_len == 0): the AEAD still authenticates the 4-byte length field. The
@@ -132,20 +132,20 @@ void test_chachapoly_empty_payload()
     const uint32_t seqnr = 7;
     uint8_t pt[4] = {0, 0, 0, 0}; // length field = 0, no payload
     uint8_t ct[4 + 16];           // encrypted length (4) + tag (16), no payload bytes
-    ssh_chachapoly_encrypt(key, seqnr, ct, pt, 0);
+    dws_chachapoly_encrypt(key, seqnr, ct, pt, 0);
 
     // The length field decodes to 0.
     uint8_t enc_len[4] = {ct[0], ct[1], ct[2], ct[3]};
-    TEST_ASSERT_EQUAL_UINT32(0, ssh_chachapoly_get_length(key, seqnr, enc_len));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_chachapoly_get_length(key, seqnr, enc_len));
 
     // Verify + decrypt recovers the (empty-payload) length field.
     uint8_t rt[4];
-    TEST_ASSERT_TRUE(ssh_chachapoly_decrypt(key, seqnr, rt, ct, 0));
+    TEST_ASSERT_TRUE(dws_chachapoly_decrypt(key, seqnr, rt, ct, 0));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, 4);
 
     // Flip a tag byte -> reject even with an empty payload.
     ct[4] ^= 0x01;
-    TEST_ASSERT_FALSE(ssh_chachapoly_decrypt(key, seqnr, rt, ct, 0));
+    TEST_ASSERT_FALSE(dws_chachapoly_decrypt(key, seqnr, rt, ct, 0));
 }
 
 int main()

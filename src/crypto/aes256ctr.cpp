@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_aes256ctr.cpp
+ * @file aes256ctr.cpp
  * @brief AES-256-CTR implementation.
  *
  * Arduino path: delegates block encryption to mbedtls_aes_crypt_ecb(), which
@@ -12,7 +12,7 @@
  * S-box and GF(2^8) multiply-by-2/3 for MixColumns.  No large lookup tables.
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
+#include "crypto/aes256ctr.h"
 #include <string.h>
 
 // ============================================================================
@@ -21,7 +21,7 @@
 
 #ifdef ARDUINO
 
-void ssh_aes256ctr_init(SshAesCtrCtx *ctx, const uint8_t key[32], const uint8_t iv[16])
+void dws_aes256ctr_init(DwsAesCtrCtx *ctx, const uint8_t key[32], const uint8_t iv[16])
 {
     mbedtls_aes_init(&ctx->_mbed);
     mbedtls_aes_setkey_enc(&ctx->_mbed, key, 256);
@@ -30,7 +30,7 @@ void ssh_aes256ctr_init(SshAesCtrCtx *ctx, const uint8_t key[32], const uint8_t 
     ctx->pos = 0;
 }
 
-void ssh_aes256ctr_crypt(SshAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, size_t len)
+void dws_aes256ctr_crypt(DwsAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, size_t len)
 {
     // Encrypt the whole buffer in one mbedtls call: it acquires the HW AES
     // engine / loads the key once and manages the big-endian counter, keystream
@@ -43,11 +43,11 @@ void ssh_aes256ctr_crypt(SshAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, siz
     ctx->pos = (uint8_t)nc_off; // 0..15
 }
 
-void ssh_aes256ctr_wipe(SshAesCtrCtx *ctx)
+void dws_aes256ctr_wipe(DwsAesCtrCtx *ctx)
 {
     mbedtls_aes_free(&ctx->_mbed);
     volatile uint8_t *p = (volatile uint8_t *)ctx;
-    for (size_t i = 0; i < sizeof(SshAesCtrCtx); i++)
+    for (size_t i = 0; i < sizeof(DwsAesCtrCtx); i++)
         p[i] = 0;
 }
 
@@ -67,7 +67,7 @@ void ssh_aes256ctr_wipe(SshAesCtrCtx *ctx)
 // Public API (native software path)
 // ---------------------------------------------------------------------------
 
-void ssh_aes256ctr_init(SshAesCtrCtx *ctx, const uint8_t key[32], const uint8_t iv[16])
+void dws_aes256ctr_init(DwsAesCtrCtx *ctx, const uint8_t key[32], const uint8_t iv[16])
 {
     dws_aes_key_expand(key, 8, ctx->rk);
     memcpy(ctx->counter, iv, 16);
@@ -75,7 +75,7 @@ void ssh_aes256ctr_init(SshAesCtrCtx *ctx, const uint8_t key[32], const uint8_t 
     ctx->pos = 0;
 }
 
-static void aes_block_sw(SshAesCtrCtx *ctx)
+static void aes_block_sw(DwsAesCtrCtx *ctx)
 {
     dws_aes_encrypt_block(ctx->rk, 14, ctx->counter, ctx->keystream);
     for (int j = 15; j >= 0; j--)
@@ -83,7 +83,7 @@ static void aes_block_sw(SshAesCtrCtx *ctx)
             break;
 }
 
-void ssh_aes256ctr_crypt(SshAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, size_t len)
+void dws_aes256ctr_crypt(DwsAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, size_t len)
 {
     for (size_t i = 0; i < len; i++)
     {
@@ -94,10 +94,10 @@ void ssh_aes256ctr_crypt(SshAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, siz
     }
 }
 
-void ssh_aes256ctr_wipe(SshAesCtrCtx *ctx)
+void dws_aes256ctr_wipe(DwsAesCtrCtx *ctx)
 {
     volatile uint8_t *p = (volatile uint8_t *)ctx;
-    for (size_t i = 0; i < sizeof(SshAesCtrCtx); i++)
+    for (size_t i = 0; i < sizeof(DwsAesCtrCtx); i++)
         p[i] = 0;
 }
 

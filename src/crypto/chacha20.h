@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_chacha20.h
+ * @file chacha20.h
  * @brief ChaCha20 stream cipher (D. J. Bernstein; RFC 8439).
  *
  * The 20-round ARX permutation used by the chacha20-poly1305@openssh.com cipher. Two views of the
  * same core are exposed:
  *
- *   - ssh_chacha20_xor(): the original ChaCha layout OpenSSH uses - a 64-bit little-endian block
+ *   - dws_chacha20_xor(): the original ChaCha layout OpenSSH uses - a 64-bit little-endian block
  *     counter (state words 12-13) and a 64-bit nonce/IV (words 14-15). This is what the SSH AEAD
  *     drives; the counter increments per 64-byte block.
- *   - ssh_chacha20_block_ietf(): the RFC 8439 layout (32-bit counter in word 12, 96-bit nonce in
+ *   - dws_chacha20_block_ietf(): the RFC 8439 layout (32-bit counter in word 12, 96-bit nonce in
  *     words 13-15), exposed so the core can be checked against the published RFC 8439 Section 2.3.2
  *     block test vector.
  *
@@ -21,14 +21,14 @@
  * @date    2026
  */
 
-#ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_CHACHA20_H
-#define DETERMINISTICESPASYNCWEBSERVER_SSH_CHACHA20_H
+#ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_CHACHA20_H
+#define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_CHACHA20_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define SSH_CHACHA20_KEY_LEN 32
-#define SSH_CHACHA20_BLOCK_LEN 64
+#define DWS_CHACHA20_KEY_LEN 32
+#define DWS_CHACHA20_BLOCK_LEN 64
 
 /**
  * @brief XOR @p len bytes of @p in with the ChaCha20 keystream into @p out (OpenSSH layout).
@@ -39,7 +39,7 @@
  * @param in        plaintext (or ciphertext when decrypting); may be nullptr to emit raw keystream.
  * @param out       output buffer (@p len bytes); may alias @p in.
  */
-void ssh_chacha20_xor(const uint8_t key[SSH_CHACHA20_KEY_LEN], const uint8_t iv[8], uint64_t counter, const uint8_t *in,
+void dws_chacha20_xor(const uint8_t key[DWS_CHACHA20_KEY_LEN], const uint8_t iv[8], uint64_t counter, const uint8_t *in,
                       uint8_t *out, size_t len);
 
 /**
@@ -49,7 +49,7 @@ void ssh_chacha20_xor(const uint8_t key[SSH_CHACHA20_KEY_LEN], const uint8_t iv[
  * @param nonce   12-byte nonce (words 13-15).
  * @param out     64-byte keystream block.
  */
-void ssh_chacha20_block_ietf(const uint8_t key[SSH_CHACHA20_KEY_LEN], uint32_t counter, const uint8_t nonce[12],
-                             uint8_t out[SSH_CHACHA20_BLOCK_LEN]);
+void dws_chacha20_block_ietf(const uint8_t key[DWS_CHACHA20_KEY_LEN], uint32_t counter, const uint8_t nonce[12],
+                             uint8_t out[DWS_CHACHA20_BLOCK_LEN]);
 
-#endif // DETERMINISTICESPASYNCWEBSERVER_SSH_CHACHA20_H
+#endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_CHACHA20_H

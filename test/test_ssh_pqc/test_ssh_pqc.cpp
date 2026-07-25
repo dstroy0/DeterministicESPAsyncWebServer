@@ -267,9 +267,9 @@ void test_hybrid_kex_end_to_end()
     TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
 
     // The string-K KDF must yield the same c2s cipher key the server installed.
-    uint8_t expect_c2s[SSH_CHACHAPOLY_KEY_LEN];
+    uint8_t expect_c2s[DWS_CHACHAPOLY_KEY_LEN];
     kdf_ref_string(K, H, s->session_id, 'C', expect_c2s, sizeof(expect_c2s));
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_c2s, ssh_keys[0].chacha_key_c2s, SSH_CHACHAPOLY_KEY_LEN);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_c2s, ssh_keys[0].chacha_key_c2s, DWS_CHACHAPOLY_KEY_LEN);
 }
 
 // ---------------------------------------------------------------------------

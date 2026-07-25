@@ -384,7 +384,7 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
 | --------------------------------------- | ---------: | --------: | -------------: | ------------: |
 | `ssh_x25519` scalarmult (KEX)           |  1,588,291 |         - |     23,219 [1] |             - |
 | `ssh_ed25519_sign` (host-key signature) |  5,448,039 |         - |     85,638 [1] |             - |
-| `ssh_chachapoly_encrypt` (1 KiB packet) |      6,103 |     167.8 |            705 |           1.5 |
+| `dws_chachapoly_encrypt` (1 KiB packet) |      6,103 |     167.8 |            705 |           1.5 |
 | `ssh_gf_mul` (radix-2^16 field mul)     |        510 |         - |          55.45 |             - |
 
 [1] Both the X25519 KEX and the Ed25519 host-key signature run their field arithmetic on the RSA/MPI hardware
@@ -477,15 +477,15 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 
 | Primitive                           | Backend           | S3 cyc / KiB | ns / byte | MB/s |
 | ----------------------------------- | ----------------- | -----------: | --------: | ---: |
-| `ssh_aes256ctr`                     | HW AES            |       10,909 |      44.4 | 22.5 |
+| `dws_aes256ctr`                     | HW AES            |       10,909 |      44.4 | 22.5 |
 | `dws_sha256`                        | HW SHA            |       12,859 |      52.3 | 19.1 |
 | `dws_sha512`                        | HW SHA            |       17,149 |      69.8 | 14.3 |
-| `ssh_poly1305`                      | SW (-O2 TU)       |       24,904 |     101.3 |  9.9 |
+| `dws_poly1305`                      | SW (-O2 TU)       |       24,904 |     101.3 |  9.9 |
 | `dws_hmac_sha256`                   | HW SHA            |       31,994 |     130.2 |  7.7 |
 | `dws_hmac_sha512`                   | HW SHA            |       43,628 |     177.5 |  5.6 |
-| `ssh_chacha20`                      | SW (-O2 TU)       |       46,434 |     188.9 |  5.3 |
-| `ssh_chachapoly` encrypt (AEAD)     | SW (-O2 TU)       |       77,433 |     315.1 |  3.2 |
-| `ssh_aesgcm` seal (AES-256-GCM)     | HW AES + SW GHASH |      555,421 |     2,260 | 0.44 |
+| `dws_chacha20`                      | SW (-O2 TU)       |       46,434 |     188.9 |  5.3 |
+| `dws_chachapoly` encrypt (AEAD)     | SW (-O2 TU)       |       77,433 |     315.1 |  3.2 |
+| `dws_aesgcm` seal (AES-256-GCM)     | HW AES + SW GHASH |      555,421 |     2,260 | 0.44 |
 | `dws_quic_aes128_gcm` seal          | HW AES + SW GHASH |      562,292 |     2,288 | 0.44 |
 | `dws_dtls_record` protect (DTLS1.3) | HW AES + SW GHASH |      578,730 |     2,355 | 0.42 |
 
@@ -525,7 +525,7 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
   software) is still faster than aes256-gcm and is negotiated first; AES-256-CTR (22.5 MB/s) is faster still
   where an AEAD is not required.
 - **ESP32-P4: hardware GCM makes AES-256-GCM 3-40x faster (measured on silicon).** Unlike the S3, the
-  ESP32-P4's AES peripheral has a hardware GCM mode (`SOC_AES_SUPPORT_GCM`), so `ssh_aesgcm` routes the whole
+  ESP32-P4's AES peripheral has a hardware GCM mode (`SOC_AES_SUPPORT_GCM`), so `dws_aesgcm` routes the whole
   AEAD through `mbedtls_gcm` → the HW GCM peripheral (gate `SSH_AESGCM_HW_GCM`; the S3, which has no HW GCM,
   keeps the software-GHASH path above). This matters even more than on the S3 because the P4's HW AES carries
   heavy per-single-block DMA/setup overhead, so driving the block cipher one 16-byte block at a time (the
@@ -580,7 +580,7 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
   saturate too). The real lever is that the whole library ships at the arduino framework's `-Os`; ChaCha runs
   **108,919 -> 46,434 cyc (2.35x, 2.3 -> 5.3 MB/s)** and Poly1305 **31,452 -> 24,904 cyc (1.26x)** at `-O2`,
   so `chacha20-poly1305` seal goes **154,194 -> 77,433 cyc (1.99x, 1.6 -> 3.2 MB/s)**. A per-translation-unit
-  `#pragma GCC optimize("O2")` on `ssh_chacha20.cpp` / `ssh_poly1305.cpp` forces `-O2` for just those hot
+  `#pragma GCC optimize("O2")` on `chacha20.cpp` / `poly1305.cpp` forces `-O2` for just those hot
   functions (byte-exact, RFC 8439 KATs unchanged) so the cipher is fast on any consumer's size-optimized
   build. AES-256-CTR (22.5 MB/s, HW) is still faster where an AEAD is not required.
 

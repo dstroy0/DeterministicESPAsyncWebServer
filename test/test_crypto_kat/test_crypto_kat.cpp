@@ -16,14 +16,14 @@
 // not secrets - a known-answer test is meaningless if its inputs are not fixed.
 // Ephemeral, per-run keys belong in the handshake/round-trip tests, not here.
 
+#include "crypto/chacha20.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/hmac_sha512.h"
+#include "crypto/poly1305.h"
 #include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/quic_hkdf.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_poly1305.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -329,7 +329,7 @@ static void test_chacha20_block(void)
         hexdec(v.key, key);
         hexdec(v.nonce, nonce);
         hexdec(v.keystream, want);
-        ssh_chacha20_block_ietf(key, v.counter, nonce, got);
+        dws_chacha20_block_ietf(key, v.counter, nonce, got);
         char m[48];
         snprintf(m, sizeof(m), "ChaCha20 tcId=%d", v.tc);
         TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(want, got, 64, m);
@@ -344,7 +344,7 @@ static void test_poly1305(void)
         hexdec(v.key, key);
         size_t mlen = hexdec(v.msg, msg);
         hexdec(v.tag, want);
-        ssh_poly1305(got, msg, mlen, key);
+        dws_poly1305(got, msg, mlen, key);
         char m[48];
         snprintf(m, sizeof(m), "Poly1305 tcId=%d", v.tc);
         TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(want, got, 16, m);

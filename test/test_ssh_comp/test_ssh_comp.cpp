@@ -8,12 +8,12 @@
 // inflate_raw (validated vs Python zlib in test_inflate) - proving payloads are compressed on the
 // wire and the whole session forms one valid, context-takeover zlib stream.
 
-#include "crypto/sha256.h" // independent KDF verification
+#include "crypto/aes256ctr.h" // native software AES-256-CTR path
+#include "crypto/sha256.h"    // independent KDF verification
 #include "network_drivers/presentation/inflate/inflate.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"          // password verifier for the dispatch path
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h" // full-switch dispatch coverage
 #include "network_drivers/presentation/ssh/connection/ssh_server.h"  // dispatcher compression triggers
-#include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"   // native software AES-256-CTR path
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"         // host key for the KEXDH reply
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // DH keygen + RFC 4253 §7.2 key derivation
@@ -440,7 +440,7 @@ void test_dispatch_auth_success_starts_delayed_compression()
 }
 
 // ============================================================================
-// AES-256-CTR (network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp)
+// AES-256-CTR (network_drivers/presentation/ssh/crypto/dws_aes256ctr.cpp)
 // ============================================================================
 // This env's own tests only drive ssh_pkt_send before NEWKEYS (no cipher active), so the native
 // software AES-256-CTR path is otherwise never called here. Exercised directly below.
@@ -461,7 +461,7 @@ static void aes_hex_to_bytes(uint8_t *out, const char *hex, size_t n)
 
 // NIST SP 800-38A §F.5.5 (AES-256-CTR), blocks 1-4: encrypt then decrypt must round-trip (CTR is its
 // own inverse), and the 64-byte run crosses 4 keystream blocks, driving the big-endian counter
-// increment across a byte carry (…feff -> …ff00). Also proves ssh_aes256ctr_wipe() zeroes the context.
+// increment across a byte carry (…feff -> …ff00). Also proves dws_aes256ctr_wipe() zeroes the context.
 void test_aes256ctr_nist_vector_roundtrip_and_wipe(void)
 {
     uint8_t key[32], iv[16];
@@ -482,20 +482,20 @@ void test_aes256ctr_nist_vector_roundtrip_and_wipe(void)
                      "dfc9c58db67aada613c2dd08457941a6",
                      64);
 
-    SshAesCtrCtx ctx;
+    DwsAesCtrCtx ctx;
     uint8_t ct[64];
-    ssh_aes256ctr_init(&ctx, key, iv);
-    ssh_aes256ctr_crypt(&ctx, pt, ct, 64);
+    dws_aes256ctr_init(&ctx, key, iv);
+    dws_aes256ctr_crypt(&ctx, pt, ct, 64);
     TEST_ASSERT_EQUAL_MEMORY(expected_ct, ct, 64);
 
     uint8_t pt_back[64];
-    ssh_aes256ctr_init(&ctx, key, iv); // decrypt = re-init + the same XOR pass over the ciphertext
-    ssh_aes256ctr_crypt(&ctx, ct, pt_back, 64);
+    dws_aes256ctr_init(&ctx, key, iv); // decrypt = re-init + the same XOR pass over the ciphertext
+    dws_aes256ctr_crypt(&ctx, ct, pt_back, 64);
     TEST_ASSERT_EQUAL_MEMORY(pt, pt_back, 64);
 
-    ssh_aes256ctr_wipe(&ctx);
-    uint8_t zeros[sizeof(SshAesCtrCtx)] = {0};
-    TEST_ASSERT_EQUAL_MEMORY(zeros, &ctx, sizeof(SshAesCtrCtx));
+    dws_aes256ctr_wipe(&ctx);
+    uint8_t zeros[sizeof(DwsAesCtrCtx)] = {0};
+    TEST_ASSERT_EQUAL_MEMORY(zeros, &ctx, sizeof(DwsAesCtrCtx));
 }
 
 // The big-endian 128-bit counter incrementer carries out of every byte only when the whole counter is
@@ -507,14 +507,14 @@ void test_aes256ctr_counter_full_wraparound(void)
     uint8_t iv[16];
     memset(iv, 0xFF, sizeof(iv));
 
-    SshAesCtrCtx ctx;
-    ssh_aes256ctr_init(&ctx, key, iv);
+    DwsAesCtrCtx ctx;
+    dws_aes256ctr_init(&ctx, key, iv);
     uint8_t pt[16] = {0}, ct[16];
-    ssh_aes256ctr_crypt(&ctx, pt, ct, 16); // one block: encrypts under the all-0xFF counter, then wraps it
+    dws_aes256ctr_crypt(&ctx, pt, ct, 16); // one block: encrypts under the all-0xFF counter, then wraps it
 
     uint8_t zero_counter[16] = {0};
     TEST_ASSERT_EQUAL_MEMORY(zero_counter, ctx.counter, 16);
-    ssh_aes256ctr_wipe(&ctx);
+    dws_aes256ctr_wipe(&ctx);
 }
 
 // ============================================================================

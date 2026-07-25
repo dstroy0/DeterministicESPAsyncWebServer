@@ -12,12 +12,12 @@
 //   RSA PKCS#1    - pkcs1v15 pad/unpad + sign/verify with a test key
 //   PACKET        - ssh_pkt_send/recv round-trip (unencrypted + encrypted)
 
+#include "crypto/aes256ctr.h"
+#include "crypto/chachapoly.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/hmac_sha512.h"
 #include "crypto/sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
@@ -275,10 +275,10 @@ static void test_aes256ctr_encrypt(void)
     uint8_t pt[16], ct[16];
     hex_to_bytes(pt, "6bc1bee22e409f96e93d7e117393172a", 16);
 
-    SshAesCtrCtx ctx;
-    ssh_aes256ctr_init(&ctx, key, iv);
-    ssh_aes256ctr_crypt(&ctx, pt, ct, 16);
-    ssh_aes256ctr_wipe(&ctx);
+    DwsAesCtrCtx ctx;
+    dws_aes256ctr_init(&ctx, key, iv);
+    dws_aes256ctr_crypt(&ctx, pt, ct, 16);
+    dws_aes256ctr_wipe(&ctx);
 
     uint8_t expected[16];
     hex_to_bytes(expected, "601ec313775789a5b7a7f504bbf3d228", 16);
@@ -295,10 +295,10 @@ static void test_aes256ctr_decrypt(void)
     uint8_t ct[16], pt[16];
     hex_to_bytes(ct, "601ec313775789a5b7a7f504bbf3d228", 16);
 
-    SshAesCtrCtx ctx;
-    ssh_aes256ctr_init(&ctx, key, iv);
-    ssh_aes256ctr_crypt(&ctx, ct, pt, 16);
-    ssh_aes256ctr_wipe(&ctx);
+    DwsAesCtrCtx ctx;
+    dws_aes256ctr_init(&ctx, key, iv);
+    dws_aes256ctr_crypt(&ctx, ct, pt, 16);
+    dws_aes256ctr_wipe(&ctx);
 
     uint8_t expected[16];
     hex_to_bytes(expected, "6bc1bee22e409f96e93d7e117393172a", 16);
@@ -320,10 +320,10 @@ static void test_aes256ctr_multi_block(void)
                  "f69f2445df4f9b17ad2b417be66c3710",
                  64);
 
-    SshAesCtrCtx ctx;
-    ssh_aes256ctr_init(&ctx, key, iv);
-    ssh_aes256ctr_crypt(&ctx, pt, ct, 64);
-    ssh_aes256ctr_wipe(&ctx);
+    DwsAesCtrCtx ctx;
+    dws_aes256ctr_init(&ctx, key, iv);
+    dws_aes256ctr_crypt(&ctx, pt, ct, 64);
+    dws_aes256ctr_wipe(&ctx);
 
     uint8_t expected[64];
     hex_to_bytes(expected,
@@ -339,11 +339,11 @@ static void test_aes256ctr_wipe(void)
 {
     // After wipe, the context should be all zeros.
     uint8_t key[32] = {0}, iv[16] = {0};
-    SshAesCtrCtx ctx;
-    ssh_aes256ctr_init(&ctx, key, iv);
-    ssh_aes256ctr_wipe(&ctx);
-    uint8_t zeros[sizeof(SshAesCtrCtx)] = {0};
-    TEST_ASSERT_EQUAL_MEMORY(zeros, &ctx, sizeof(SshAesCtrCtx));
+    DwsAesCtrCtx ctx;
+    dws_aes256ctr_init(&ctx, key, iv);
+    dws_aes256ctr_wipe(&ctx);
+    uint8_t zeros[sizeof(DwsAesCtrCtx)] = {0};
+    TEST_ASSERT_EQUAL_MEMORY(zeros, &ctx, sizeof(DwsAesCtrCtx));
 }
 
 // ============================================================================
@@ -923,7 +923,7 @@ static size_t build_client_packet(const uint8_t *payload, size_t payload_len, ui
     dws_hmac_sha256_update(&hctx, out, enc_len);
     dws_hmac_sha256_final(&hctx, out + enc_len);
 
-    ssh_aes256ctr_crypt(&km->c2s_ctx, out, out, enc_len);
+    dws_aes256ctr_crypt(&km->c2s_ctx, out, out, enc_len);
     return enc_len + DWS_HMAC_SHA256_LEN;
 }
 
@@ -956,7 +956,7 @@ static void test_pkt_chacha20poly1305_roundtrip(void)
     ssh_keymat_wipe(0);
     SshKeyMat *km = &ssh_keys[0];
     km->cipher_mode = SSH_CIPHER_CHACHA20POLY1305;
-    for (int i = 0; i < SSH_CHACHAPOLY_KEY_LEN; i++)
+    for (int i = 0; i < DWS_CHACHAPOLY_KEY_LEN; i++)
     {
         km->chacha_key_c2s[i] = (uint8_t)(i * 3 + 1);
         km->chacha_key_s2c[i] = (uint8_t)(i * 3 + 1);
@@ -971,7 +971,7 @@ static void test_pkt_chacha20poly1305_roundtrip(void)
     uint8_t wire[256];
     size_t wlen = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)));
-    TEST_ASSERT_TRUE(wlen > 4 + SSH_CHACHAPOLY_TAG_LEN); // length + payload + tag
+    TEST_ASSERT_TRUE(wlen > 4 + DWS_CHACHAPOLY_TAG_LEN); // length + payload + tag
     // The payload region is actually encrypted (not equal to plaintext).
     TEST_ASSERT_TRUE(memcmp(wire + 5, payload + 1, sizeof(payload) - 1) != 0);
 
@@ -1005,8 +1005,8 @@ static void test_pkt_aes256gcm_roundtrip(void)
         key[i] = (uint8_t)(i * 3 + 7);
     for (int i = 0; i < 12; i++)
         iv[i] = (uint8_t)(0x40 + i);
-    ssh_aesgcm_init(&km->gcm_c2s, key, iv);
-    ssh_aesgcm_init(&km->gcm_s2c, key, iv); // same key/IV both directions
+    dws_aesgcm_init(&km->gcm_c2s, key, iv);
+    dws_aesgcm_init(&km->gcm_s2c, key, iv); // same key/IV both directions
     km->active = true;
 
     ssh_pkt_init(0);
@@ -1017,10 +1017,10 @@ static void test_pkt_aes256gcm_roundtrip(void)
     uint8_t wire[256];
     size_t wlen = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)));
-    TEST_ASSERT_TRUE(wlen > 4 + SSH_AESGCM_TAG_LEN); // length + ciphertext + tag
+    TEST_ASSERT_TRUE(wlen > 4 + DWS_AESGCM_TAG_LEN); // length + ciphertext + tag
     // The 4-byte packet_length is in the clear (it is the AEAD's AAD).
     uint32_t pkt_len = (uint32_t)((wire[0] << 24) | (wire[1] << 16) | (wire[2] << 8) | wire[3]);
-    TEST_ASSERT_EQUAL_UINT32(wlen - 4 - SSH_AESGCM_TAG_LEN, pkt_len);
+    TEST_ASSERT_EQUAL_UINT32(wlen - 4 - DWS_AESGCM_TAG_LEN, pkt_len);
     TEST_ASSERT_EQUAL_UINT32(0, pkt_len % 16); // whole AES blocks
     // The packet body is actually encrypted (not equal to the plaintext payload).
     TEST_ASSERT_TRUE(memcmp(wire + 5, payload + 1, sizeof(payload) - 1) != 0);
@@ -1037,7 +1037,7 @@ static void test_pkt_aes256gcm_roundtrip(void)
     ssh_pkt_init(0);
     ssh_pkt[0].enc_out = true;
     ssh_pkt[0].enc_in = true;
-    ssh_aesgcm_init(&km->gcm_c2s, key, iv); // reset receiver counter to the packet boundary
+    dws_aesgcm_init(&km->gcm_c2s, key, iv); // reset receiver counter to the packet boundary
     wire[6] ^= 0x01;
     TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
 
@@ -1057,8 +1057,8 @@ static void etm_roundtrip_helper(uint8_t mac_mode)
         key[i] = (uint8_t)(i + 1);
     for (int i = 0; i < 16; i++)
         iv[i] = (uint8_t)(0x80 + i);
-    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
-    ssh_aes256ctr_init(&km->s2c_ctx, key, iv); // same key/IV both directions
+    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
+    dws_aes256ctr_init(&km->s2c_ctx, key, iv); // same key/IV both directions
     for (int i = 0; i < 64; i++)
         km->mac_key_c2s[i] = km->mac_key_s2c[i] = (uint8_t)(i * 5 + 3);
     km->active = true;
@@ -1085,7 +1085,7 @@ static void etm_roundtrip_helper(uint8_t mac_mode)
     ssh_pkt_init(0);
     ssh_pkt[0].enc_out = true;
     ssh_pkt[0].enc_in = true;
-    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
     wire[6] ^= 0x01;
     TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
     ssh_keymat_wipe(0);
@@ -1287,7 +1287,7 @@ static void test_pkt_chacha_padding_and_incomplete(void)
     ssh_keymat_wipe(0);
     SshKeyMat *km = &ssh_keys[0];
     km->cipher_mode = SSH_CIPHER_CHACHA20POLY1305;
-    for (int i = 0; i < SSH_CHACHAPOLY_KEY_LEN; i++)
+    for (int i = 0; i < DWS_CHACHAPOLY_KEY_LEN; i++)
         km->chacha_key_c2s[i] = km->chacha_key_s2c[i] = (uint8_t)(i * 3 + 1);
     km->active = true;
     ssh_pkt_init(0);
@@ -1324,8 +1324,8 @@ static void test_pkt_etm_padding_and_incomplete(void)
         key[i] = (uint8_t)(i + 1);
     for (int i = 0; i < 16; i++)
         iv[i] = (uint8_t)(0x80 + i);
-    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
-    ssh_aes256ctr_init(&km->s2c_ctx, key, iv);
+    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
+    dws_aes256ctr_init(&km->s2c_ctx, key, iv);
     for (int i = 0; i < 64; i++)
         km->mac_key_c2s[i] = km->mac_key_s2c[i] = (uint8_t)(i * 5 + 3);
     km->active = true;
@@ -1340,18 +1340,18 @@ static void test_pkt_etm_padding_and_incomplete(void)
     uint8_t wire[256];
     size_t wlen = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, p12, sizeof(p12), wire, &wlen, sizeof(wire)));
-    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);                          // reset the receive cipher
+    dws_aes256ctr_init(&km->c2s_ctx, key, iv);                          // reset the receive cipher
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen, pkt_handler)); // valid round-trip
 
     ssh_pkt_init(0);
     ssh_pkt[0].enc_out = true;
     ssh_pkt[0].enc_in = true;
-    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
-    ssh_aes256ctr_init(&km->s2c_ctx, key, iv);
+    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
+    dws_aes256ctr_init(&km->s2c_ctx, key, iv);
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, p12, sizeof(p12), wire, &wlen, sizeof(wire)));
     ssh_pkt_init(0);
     ssh_pkt[0].enc_in = true;
-    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen - 8, pkt_handler)); // truncated -> held
     ssh_keymat_wipe(0);
 }
@@ -1360,7 +1360,7 @@ static void test_pkt_etm_padding_and_incomplete(void)
 // byte at a given sequence number - drives the decrypted-field guards the loopback cannot reach.
 static size_t forge_chacha(SshKeyMat *km, uint32_t seq, uint32_t pkt_len, uint8_t pad_byte, uint8_t *out)
 {
-    memset(out, 0, 4 + pkt_len + SSH_CHACHAPOLY_TAG_LEN);
+    memset(out, 0, 4 + pkt_len + DWS_CHACHAPOLY_TAG_LEN);
     out[0] = (uint8_t)(pkt_len >> 24);
     out[1] = (uint8_t)(pkt_len >> 16);
     out[2] = (uint8_t)(pkt_len >> 8);
@@ -1369,15 +1369,15 @@ static size_t forge_chacha(SshKeyMat *km, uint32_t seq, uint32_t pkt_len, uint8_
         out[4] = pad_byte;
     if (pkt_len >= 2)
         out[5] = SSH_MSG_IGNORE;
-    ssh_chachapoly_encrypt(km->chacha_key_c2s, seq, out, out, pkt_len);
-    return 4 + pkt_len + SSH_CHACHAPOLY_TAG_LEN;
+    dws_chachapoly_encrypt(km->chacha_key_c2s, seq, out, out, pkt_len);
+    return 4 + pkt_len + DWS_CHACHAPOLY_TAG_LEN;
 }
 
 static void chacha_recv_setup(SshKeyMat *km)
 {
     ssh_keymat_wipe(0);
     km->cipher_mode = SSH_CIPHER_CHACHA20POLY1305;
-    for (int i = 0; i < SSH_CHACHAPOLY_KEY_LEN; i++)
+    for (int i = 0; i < DWS_CHACHAPOLY_KEY_LEN; i++)
         km->chacha_key_c2s[i] = km->chacha_key_s2c[i] = (uint8_t)(i * 3 + 1);
     km->active = true;
     ssh_pkt_init(0);
@@ -1416,7 +1416,7 @@ static void test_pkt_etm_bad_length(void)
     km->cipher_mode = SSH_CIPHER_AES256CTR;
     km->mac_mode = SSH_MAC_HMAC_SHA256_ETM;
     uint8_t key[32] = {0}, iv[16] = {0};
-    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
     km->active = true;
     ssh_pkt_init(0);
     ssh_pkt[0].enc_in = true;
@@ -1455,8 +1455,8 @@ static size_t forge_etm(SshKeyMat *km, const uint8_t *key, const uint8_t *iv, ui
     body[0] = pad_byte;
     if (pkt_len >= 2)
         body[1] = SSH_MSG_IGNORE;
-    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
-    ssh_aes256ctr_crypt(&km->c2s_ctx, body, body, pkt_len);
+    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
+    dws_aes256ctr_crypt(&km->c2s_ctx, body, body, pkt_len);
     memcpy(out + 4, body, pkt_len);
     uint8_t seq_be[4] = {(uint8_t)(seq >> 24), (uint8_t)(seq >> 16), (uint8_t)(seq >> 8), (uint8_t)seq};
     DwsHmacSha256Ctx hctx;
@@ -1464,7 +1464,7 @@ static size_t forge_etm(SshKeyMat *km, const uint8_t *key, const uint8_t *iv, ui
     dws_hmac_sha256_update(&hctx, seq_be, 4);
     dws_hmac_sha256_update(&hctx, out, 4 + pkt_len);
     dws_hmac_sha256_final(&hctx, out + 4 + pkt_len);
-    ssh_aes256ctr_init(&km->c2s_ctx, key, iv); // reset the receive cipher to the packet boundary
+    dws_aes256ctr_init(&km->c2s_ctx, key, iv); // reset the receive cipher to the packet boundary
     return 4 + pkt_len + DWS_HMAC_SHA256_LEN;
 }
 
@@ -1533,7 +1533,7 @@ static size_t forge_eam(SshKeyMat *km, uint32_t seq, uint32_t pkt_len, uint8_t p
     dws_hmac_sha256_update(&hctx, seq_be, 4);
     dws_hmac_sha256_update(&hctx, out, enc_len);
     dws_hmac_sha256_final(&hctx, out + enc_len);
-    ssh_aes256ctr_crypt(&km->c2s_ctx, out, out, enc_len);
+    dws_aes256ctr_crypt(&km->c2s_ctx, out, out, enc_len);
     return enc_len + DWS_HMAC_SHA256_LEN;
 }
 

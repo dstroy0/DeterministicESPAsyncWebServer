@@ -512,7 +512,7 @@ void test_inbound_ext_info_ignored()
 // Packet-layer (ssh_packet.cpp) framing edge cases
 // ---------------------------------------------------------------------------
 
-#include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
+#include "crypto/aes256ctr.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 
 static int g_pkt_calls = 0;
@@ -592,8 +592,8 @@ void test_ssh_pkt_encrypted_roundtrip_and_mac_fail()
     ssh_pkt_init(0);
     ssh_pkt[0].enc_out = true;
     ssh_pkt[0].enc_in = true;
-    ssh_aes256ctr_init(&ssh_keys[0].s2c_ctx, key, iv);
-    ssh_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv); // identical -> loopback
+    dws_aes256ctr_init(&ssh_keys[0].s2c_ctx, key, iv);
+    dws_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv); // identical -> loopback
     memset(ssh_keys[0].mac_key_s2c, 0x33, 32);
     memset(ssh_keys[0].mac_key_c2s, 0x33, 32);
 
@@ -606,7 +606,7 @@ void test_ssh_pkt_encrypted_roundtrip_and_mac_fail()
     TEST_ASSERT_TRUE(out_len > 0);
 
     // Good packet: decrypt + MAC verify + deliver.
-    ssh_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv); // reset decrypt cipher to the send's start
+    dws_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv); // reset decrypt cipher to the send's start
     ssh_pkt[0].seq_no_recv = 0;
     ssh_pkt[0].rx_len = 0;
     uint8_t rx[256];
@@ -616,7 +616,7 @@ void test_ssh_pkt_encrypted_roundtrip_and_mac_fail()
     TEST_ASSERT_EQUAL_INT(1, g_pkt_calls);
 
     // Corrupted MAC (last byte) is rejected.
-    ssh_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv);
+    dws_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv);
     ssh_pkt[0].seq_no_recv = 0;
     ssh_pkt[0].rx_len = 0;
     memcpy(rx, out, out_len);
@@ -932,7 +932,7 @@ static const uint8_t PKT_MAC_BYTE = 0x77;
 // this process sends can be fed straight back into the receive path whichever role is selected.
 static void pkt_loopback_keys(uint8_t cipher_mode, uint8_t mac_mode, bool client)
 {
-    uint8_t key[SSH_CHACHAPOLY_KEY_LEN];
+    uint8_t key[DWS_CHACHAPOLY_KEY_LEN];
     uint8_t iv[16];
     memset(key, PKT_KEY_BYTE, sizeof(key));
     memset(iv, PKT_IV_BYTE, sizeof(iv));
@@ -944,12 +944,12 @@ static void pkt_loopback_keys(uint8_t cipher_mode, uint8_t mac_mode, bool client
     memset(&ssh_keys[0], 0, sizeof(ssh_keys[0]));
     ssh_keys[0].cipher_mode = cipher_mode;
     ssh_keys[0].mac_mode = mac_mode;
-    memcpy(ssh_keys[0].chacha_key_c2s, key, SSH_CHACHAPOLY_KEY_LEN);
-    memcpy(ssh_keys[0].chacha_key_s2c, key, SSH_CHACHAPOLY_KEY_LEN);
-    ssh_aesgcm_init(&ssh_keys[0].gcm_c2s, key, iv);
-    ssh_aesgcm_init(&ssh_keys[0].gcm_s2c, key, iv);
-    ssh_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv);
-    ssh_aes256ctr_init(&ssh_keys[0].s2c_ctx, key, iv);
+    memcpy(ssh_keys[0].chacha_key_c2s, key, DWS_CHACHAPOLY_KEY_LEN);
+    memcpy(ssh_keys[0].chacha_key_s2c, key, DWS_CHACHAPOLY_KEY_LEN);
+    dws_aesgcm_init(&ssh_keys[0].gcm_c2s, key, iv);
+    dws_aesgcm_init(&ssh_keys[0].gcm_s2c, key, iv);
+    dws_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv);
+    dws_aes256ctr_init(&ssh_keys[0].s2c_ctx, key, iv);
     memset(ssh_keys[0].mac_key_c2s, PKT_MAC_BYTE, sizeof(ssh_keys[0].mac_key_c2s));
     memset(ssh_keys[0].mac_key_s2c, PKT_MAC_BYTE, sizeof(ssh_keys[0].mac_key_s2c));
 }
@@ -1018,7 +1018,7 @@ void test_ssh_pkt_aesgcm_minimum_padding()
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)));
     const uint32_t pkt_len = rd_u32(wire);
     TEST_ASSERT_EQUAL_UINT32(1u + 13u + 18u, pkt_len);
-    TEST_ASSERT_EQUAL_size_t(4 + pkt_len + SSH_AESGCM_TAG_LEN, wlen);
+    TEST_ASSERT_EQUAL_size_t(4 + pkt_len + DWS_AESGCM_TAG_LEN, wlen);
 
     ssh_pkt[0].seq_no_recv = 0;
     ssh_pkt[0].rx_len = 0;
@@ -1033,7 +1033,7 @@ void test_ssh_pkt_aesgcm_minimum_padding()
 static void chacha_len_field(uint8_t out[4], uint32_t want)
 {
     const uint8_t zero[4] = {0, 0, 0, 0};
-    uint32_t ks = ssh_chachapoly_get_length(ssh_keys[0].chacha_key_c2s, ssh_pkt[0].seq_no_recv, zero);
+    uint32_t ks = dws_chachapoly_get_length(ssh_keys[0].chacha_key_c2s, ssh_pkt[0].seq_no_recv, zero);
     wr_u32(out, want ^ ks);
 }
 
@@ -1055,18 +1055,18 @@ void test_ssh_pkt_chachapoly_frame_errors()
     // A genuinely sealed packet carrying padding_length 2 (< 4).
     const uint32_t pkt_len = 32;
     uint8_t plain[4 + pkt_len];
-    uint8_t sealed[4 + pkt_len + SSH_CHACHAPOLY_TAG_LEN];
+    uint8_t sealed[4 + pkt_len + DWS_CHACHAPOLY_TAG_LEN];
     memset(plain, 0xEE, sizeof(plain));
     wr_u32(plain, pkt_len);
     plain[4] = 2;
     pkt_loopback_keys(SSH_CIPHER_CHACHA20POLY1305, SSH_MAC_HMAC_SHA256, false);
-    ssh_chachapoly_encrypt(ssh_keys[0].chacha_key_c2s, 0, sealed, plain, pkt_len);
+    dws_chachapoly_encrypt(ssh_keys[0].chacha_key_c2s, 0, sealed, plain, pkt_len);
     TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, sealed, sizeof(sealed), pkt_rec_handler));
 
     // ...and one whose padding_length runs past the packet itself.
     plain[4] = (uint8_t)pkt_len;
     pkt_loopback_keys(SSH_CIPHER_CHACHA20POLY1305, SSH_MAC_HMAC_SHA256, false);
-    ssh_chachapoly_encrypt(ssh_keys[0].chacha_key_c2s, 0, sealed, plain, pkt_len);
+    dws_chachapoly_encrypt(ssh_keys[0].chacha_key_c2s, 0, sealed, plain, pkt_len);
     TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, sealed, sizeof(sealed), pkt_rec_handler));
     ssh_pkt_init(0);
 }
@@ -1074,15 +1074,15 @@ void test_ssh_pkt_chachapoly_frame_errors()
 // Seal a hand-built GCM packet body with a context matching the loopback receive keys.
 static size_t gcm_seal_packet(uint8_t *wire, uint32_t pkt_len, const uint8_t *plain)
 {
-    uint8_t key[SSH_AESGCM_KEY_LEN];
-    uint8_t iv[SSH_AESGCM_IV_LEN];
+    uint8_t key[DWS_AESGCM_KEY_LEN];
+    uint8_t iv[DWS_AESGCM_IV_LEN];
     memset(key, PKT_KEY_BYTE, sizeof(key));
     memset(iv, PKT_IV_BYTE, sizeof(iv));
-    SshAesGcmCtx ctx;
-    ssh_aesgcm_init(&ctx, key, iv);
+    DwsAesGcmCtx ctx;
+    dws_aesgcm_init(&ctx, key, iv);
     wr_u32(wire, pkt_len);
-    ssh_aesgcm_seal(&ctx, wire, 4, plain, pkt_len, wire + 4);
-    return 4 + pkt_len + SSH_AESGCM_TAG_LEN;
+    dws_aesgcm_seal(&ctx, wire, 4, plain, pkt_len, wire + 4);
+    return 4 + pkt_len + DWS_AESGCM_TAG_LEN;
 }
 
 // aes256-gcm@openssh.com receive: the cleartext packet_length must be positive, within the receive
@@ -1119,7 +1119,7 @@ void test_ssh_pkt_aesgcm_frame_errors()
     while (scratch_alloc(64, 1))
     {
     }
-    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, rx, 4 + 16 + SSH_AESGCM_TAG_LEN, pkt_rec_handler));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, rx, 4 + 16 + DWS_AESGCM_TAG_LEN, pkt_rec_handler));
     scratch_reset();
 
     // A tag-valid packet arriving at the sequence-number ceiling is refused.
@@ -1157,10 +1157,10 @@ static size_t ctr_etm_packet(uint8_t *wire, uint32_t pkt_len, const uint8_t *pla
     memset(key, PKT_KEY_BYTE, sizeof(key));
     memset(iv, PKT_IV_BYTE, sizeof(iv));
     memset(mac_key, PKT_MAC_BYTE, sizeof(mac_key));
-    SshAesCtrCtx ctx;
-    ssh_aes256ctr_init(&ctx, key, iv);
+    DwsAesCtrCtx ctx;
+    dws_aes256ctr_init(&ctx, key, iv);
     wr_u32(wire, pkt_len);
-    ssh_aes256ctr_crypt(&ctx, plain, wire + 4, pkt_len);
+    dws_aes256ctr_crypt(&ctx, plain, wire + 4, pkt_len);
     const uint8_t seq_be[4] = {0, 0, 0, 0};
     DwsHmacSha256Ctx h;
     dws_hmac_sha256_init(&h, mac_key, sizeof(mac_key));
@@ -1239,9 +1239,9 @@ void test_ssh_pkt_ctr_emac_and_plain_frame_errors()
     {
         memset(hdr, 0xA7, sizeof(hdr));
         wr_u32(hdr, bad_lens[c]);
-        SshAesCtrCtx ctx;
-        ssh_aes256ctr_init(&ctx, key, iv);
-        ssh_aes256ctr_crypt(&ctx, hdr, wire, sizeof(hdr));
+        DwsAesCtrCtx ctx;
+        dws_aes256ctr_init(&ctx, key, iv);
+        dws_aes256ctr_crypt(&ctx, hdr, wire, sizeof(hdr));
         pkt_loopback_keys(SSH_CIPHER_AES256CTR, SSH_MAC_HMAC_SHA256, false);
         TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, sizeof(hdr), pkt_rec_handler));
     }
@@ -1264,9 +1264,9 @@ void test_ssh_pkt_ctr_emac_and_plain_frame_errors()
         dws_hmac_sha256_update(&h, seq_be, 4);
         dws_hmac_sha256_update(&h, plain, sizeof(plain));
         dws_hmac_sha256_final(&h, wire + sizeof(plain));
-        SshAesCtrCtx ctx;
-        ssh_aes256ctr_init(&ctx, key, iv);
-        ssh_aes256ctr_crypt(&ctx, plain, wire, sizeof(plain));
+        DwsAesCtrCtx ctx;
+        dws_aes256ctr_init(&ctx, key, iv);
+        dws_aes256ctr_crypt(&ctx, plain, wire, sizeof(plain));
 
         pkt_loopback_keys(SSH_CIPHER_AES256CTR, SSH_MAC_HMAC_SHA256, false);
         TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, sizeof(plain) + 32, pkt_rec_handler));

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_aesgcm.cpp
- * @brief AES-256-GCM AEAD for SSH (aes256-gcm@openssh.com, RFC 5647) - see ssh_aesgcm.h.
+ * @file aesgcm.cpp
+ * @brief AES-256-GCM AEAD for SSH (aes256-gcm@openssh.com, RFC 5647) - see dws_aesgcm.h.
  *
  * Arduino: the AES-256 block is mbedtls_aes_crypt_ecb() (ESP32 HW accelerator). Native: a compact
  * software AES-256 (shared forward S-box + GF(2^8) xtime, no large tables). GHASH and the counter
@@ -11,10 +11,10 @@
  * module: AES-256 vs AES-128 and a different build gate, so it is kept self-contained here).
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
+#include "crypto/aesgcm.h"
 #include <string.h>
 
-#if SSH_AESGCM_HW_GCM
+#if DWS_AESGCM_HW_GCM
 // ===========================================================================
 // Hardware GCM path (mbedtls_gcm -> the ESP32 AES peripheral's GCM mode, e.g. ESP32-P4). One HW call
 // does AES-CTR + GHASH for the whole packet - far faster than the per-block software path (measured
@@ -22,51 +22,51 @@
 // ===========================================================================
 
 // Advance the RFC 5647 invocation counter: the low 8 bytes of the 12-byte nonce, big-endian.
-static inline void iv_increment(uint8_t iv[SSH_AESGCM_IV_LEN])
+static inline void iv_increment(uint8_t iv[DWS_AESGCM_IV_LEN])
 {
-    for (int j = SSH_AESGCM_IV_LEN - 1; j >= 4; j--)
+    for (int j = DWS_AESGCM_IV_LEN - 1; j >= 4; j--)
         if (++iv[j])
             break;
 }
 
-void ssh_aesgcm_init(SshAesGcmCtx *ctx, const uint8_t key[SSH_AESGCM_KEY_LEN], const uint8_t iv[SSH_AESGCM_IV_LEN])
+void dws_aesgcm_init(DwsAesGcmCtx *ctx, const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t iv[DWS_AESGCM_IV_LEN])
 {
     mbedtls_gcm_init(&ctx->gcm);
     mbedtls_gcm_setkey(&ctx->gcm, MBEDTLS_CIPHER_ID_AES, key, 256);
-    memcpy(ctx->iv, iv, SSH_AESGCM_IV_LEN);
+    memcpy(ctx->iv, iv, DWS_AESGCM_IV_LEN);
     ctx->ready = true;
 }
 
-void ssh_aesgcm_seal(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len,
+void dws_aesgcm_seal(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len,
                      uint8_t *out)
 {
-    mbedtls_gcm_crypt_and_tag(&ctx->gcm, MBEDTLS_GCM_ENCRYPT, pt_len, ctx->iv, SSH_AESGCM_IV_LEN, aad, aad_len, pt, out,
-                              SSH_AESGCM_TAG_LEN, out + pt_len);
+    mbedtls_gcm_crypt_and_tag(&ctx->gcm, MBEDTLS_GCM_ENCRYPT, pt_len, ctx->iv, DWS_AESGCM_IV_LEN, aad, aad_len, pt, out,
+                              DWS_AESGCM_TAG_LEN, out + pt_len);
     iv_increment(ctx->iv);
 }
 
-bool ssh_aesgcm_open(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
-                     const uint8_t tag[SSH_AESGCM_TAG_LEN], uint8_t *out)
+bool dws_aesgcm_open(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
+                     const uint8_t tag[DWS_AESGCM_TAG_LEN], uint8_t *out)
 {
     // mbedtls_gcm_auth_decrypt verifies the tag in constant time and only then keeps the plaintext; on a
     // tag mismatch it returns non-zero (out is left undefined, and the caller drops the packet). The
     // invocation counter is advanced only on success, matching the software path.
-    if (mbedtls_gcm_auth_decrypt(&ctx->gcm, ct_len, ctx->iv, SSH_AESGCM_IV_LEN, aad, aad_len, tag, SSH_AESGCM_TAG_LEN,
+    if (mbedtls_gcm_auth_decrypt(&ctx->gcm, ct_len, ctx->iv, DWS_AESGCM_IV_LEN, aad, aad_len, tag, DWS_AESGCM_TAG_LEN,
                                  ct, out) != 0)
         return false;
     iv_increment(ctx->iv);
     return true;
 }
 
-void ssh_aesgcm_wipe(SshAesGcmCtx *ctx)
+void dws_aesgcm_wipe(DwsAesGcmCtx *ctx)
 {
     mbedtls_gcm_free(&ctx->gcm);
     volatile uint8_t *p = (volatile uint8_t *)ctx;
-    for (size_t i = 0; i < sizeof(SshAesGcmCtx); i++)
+    for (size_t i = 0; i < sizeof(DwsAesGcmCtx); i++)
         p[i] = 0;
 }
 
-#else // !SSH_AESGCM_HW_GCM
+#else // !DWS_AESGCM_HW_GCM
 
 // ===========================================================================
 // AES-256 single-block primitive
@@ -74,16 +74,16 @@ void ssh_aesgcm_wipe(SshAesGcmCtx *ctx)
 
 #ifdef ARDUINO
 
-static inline void aes256_ecb(SshAesGcmCtx *ctx, const uint8_t in[16], uint8_t out[16])
+static inline void aes256_ecb(DwsAesGcmCtx *ctx, const uint8_t in[16], uint8_t out[16])
 {
     mbedtls_aes_crypt_ecb(&ctx->mbed, MBEDTLS_AES_ENCRYPT, in, out);
 }
-static inline void aes256_load_key(SshAesGcmCtx *ctx, const uint8_t key[32])
+static inline void aes256_load_key(DwsAesGcmCtx *ctx, const uint8_t key[32])
 {
     mbedtls_aes_init(&ctx->mbed);
     mbedtls_aes_setkey_enc(&ctx->mbed, key, 256);
 }
-static inline void aes256_free_key(SshAesGcmCtx *ctx)
+static inline void aes256_free_key(DwsAesGcmCtx *ctx)
 {
     mbedtls_aes_free(&ctx->mbed);
 }
@@ -94,17 +94,17 @@ static inline void aes256_free_key(SshAesGcmCtx *ctx)
 
 // Non-const ctx for signature parity with the ARDUINO path (below), where aes256_ecb wraps
 // mbedtls_aes_crypt_ecb() on a non-const mbedtls_aes_context. (S995 does not apply portably.)
-static inline void aes256_ecb(SshAesGcmCtx *ctx, const uint8_t in[16], uint8_t out[16])
+static inline void aes256_ecb(DwsAesGcmCtx *ctx, const uint8_t in[16], uint8_t out[16])
 {
     dws_aes_encrypt_block(ctx->rk, 14, in, out);
 }
-static inline void aes256_load_key(SshAesGcmCtx *ctx, const uint8_t key[32])
+static inline void aes256_load_key(DwsAesGcmCtx *ctx, const uint8_t key[32])
 {
     dws_aes_key_expand(key, 8, ctx->rk);
 }
-static inline void aes256_free_key(SshAesGcmCtx *)
+static inline void aes256_free_key(DwsAesGcmCtx *)
 {
-    // no-op: the key schedule lives in-place in SshAesGcmCtx (a plain array), so there is
+    // no-op: the key schedule lives in-place in DwsAesGcmCtx (a plain array), so there is
     // no external key handle to release. Kept for signature parity with the hardware path.
 }
 
@@ -154,7 +154,7 @@ inline void inc32(uint8_t ctr[16])
 
 // GCTR (NIST SP 800-38D sec 6.5): out = in XOR AES-CTR keystream starting from counter @p ctr,
 // advanced in place. @p in / @p out may alias.
-void gctr(SshAesGcmCtx *ctx, uint8_t ctr[16], const uint8_t *in, size_t len, uint8_t *out)
+void gctr(DwsAesGcmCtx *ctx, uint8_t ctr[16], const uint8_t *in, size_t len, uint8_t *out)
 {
     uint8_t ks[16];
     size_t off = 0;
@@ -174,7 +174,7 @@ void gctr(SshAesGcmCtx *ctx, uint8_t ctr[16], const uint8_t *in, size_t len, uin
 // Compute J0 (96-bit nonce), the GHASH tag over aad || cipher, and the tag for one GCM operation.
 // @p cipher is the ciphertext to authenticate (== output for seal, == input for open). Writes j0[16]
 // (for the caller to derive the CTR start) and the 16-byte tag.
-void gcm_core(SshAesGcmCtx *ctx, const uint8_t nonce[12], const uint8_t *aad, size_t aad_len, const uint8_t *cipher,
+void gcm_core(DwsAesGcmCtx *ctx, const uint8_t nonce[12], const uint8_t *aad, size_t aad_len, const uint8_t *cipher,
               size_t cipher_len, uint8_t j0[16], uint8_t tag[16])
 {
     // 96-bit nonce: J0 = nonce || 0^31 || 1.
@@ -201,9 +201,9 @@ void gcm_core(SshAesGcmCtx *ctx, const uint8_t nonce[12], const uint8_t *aad, si
 
 // Advance the RFC 5647 invocation counter: the low 8 bytes of the 12-byte nonce, big-endian; the
 // 4-byte fixed field never changes.
-inline void iv_increment(uint8_t iv[SSH_AESGCM_IV_LEN])
+inline void iv_increment(uint8_t iv[DWS_AESGCM_IV_LEN])
 {
-    for (int j = SSH_AESGCM_IV_LEN - 1; j >= 4; j--)
+    for (int j = DWS_AESGCM_IV_LEN - 1; j >= 4; j--)
         if (++iv[j])
             break;
 }
@@ -213,17 +213,17 @@ inline void iv_increment(uint8_t iv[SSH_AESGCM_IV_LEN])
 // Public API
 // ===========================================================================
 
-void ssh_aesgcm_init(SshAesGcmCtx *ctx, const uint8_t key[SSH_AESGCM_KEY_LEN], const uint8_t iv[SSH_AESGCM_IV_LEN])
+void dws_aesgcm_init(DwsAesGcmCtx *ctx, const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t iv[DWS_AESGCM_IV_LEN])
 {
     aes256_load_key(ctx, key);
     uint8_t zero[16] = {0};
     aes256_ecb(ctx, zero, ctx->h); // H = E(K, 0^128)
     ghash_key_init(&ctx->ghk, ctx->h);
-    memcpy(ctx->iv, iv, SSH_AESGCM_IV_LEN);
+    memcpy(ctx->iv, iv, DWS_AESGCM_IV_LEN);
     ctx->ready = true;
 }
 
-void ssh_aesgcm_seal(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len,
+void dws_aesgcm_seal(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len,
                      uint8_t *out)
 {
     // Encrypt with the CTR starting at inc32(J0), then GHASH the resulting ciphertext.
@@ -241,13 +241,13 @@ void ssh_aesgcm_seal(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, cons
     uint8_t j0b[16];
     uint8_t tag[16];
     gcm_core(ctx, ctx->iv, aad, aad_len, out, pt_len, j0b, tag);
-    memcpy(out + pt_len, tag, SSH_AESGCM_TAG_LEN);
+    memcpy(out + pt_len, tag, DWS_AESGCM_TAG_LEN);
 
     iv_increment(ctx->iv);
 }
 
-bool ssh_aesgcm_open(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
-                     const uint8_t tag[SSH_AESGCM_TAG_LEN], uint8_t *out)
+bool dws_aesgcm_open(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
+                     const uint8_t tag[DWS_AESGCM_TAG_LEN], uint8_t *out)
 {
     // Authenticate over the received ciphertext BEFORE producing any plaintext.
     uint8_t j0[16];
@@ -255,7 +255,7 @@ bool ssh_aesgcm_open(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, cons
     gcm_core(ctx, ctx->iv, aad, aad_len, ct, ct_len, j0, exp_tag);
 
     uint8_t diff = 0;
-    for (int i = 0; i < SSH_AESGCM_TAG_LEN; i++)
+    for (int i = 0; i < DWS_AESGCM_TAG_LEN; i++)
         diff |= (uint8_t)(exp_tag[i] ^ tag[i]);
     if (diff != 0)
         return false; // tag mismatch: nothing written, counter NOT advanced
@@ -269,12 +269,12 @@ bool ssh_aesgcm_open(SshAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, cons
     return true;
 }
 
-void ssh_aesgcm_wipe(SshAesGcmCtx *ctx)
+void dws_aesgcm_wipe(DwsAesGcmCtx *ctx)
 {
     aes256_free_key(ctx);
     volatile uint8_t *p = (volatile uint8_t *)ctx;
-    for (size_t i = 0; i < sizeof(SshAesGcmCtx); i++)
+    for (size_t i = 0; i < sizeof(DwsAesGcmCtx); i++)
         p[i] = 0;
 }
 
-#endif // SSH_AESGCM_HW_GCM
+#endif // DWS_AESGCM_HW_GCM

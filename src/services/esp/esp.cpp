@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_IKEV2
 
-#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
+#include "crypto/aesgcm.h"
 #include <string.h>
 
 namespace
@@ -26,7 +26,7 @@ uint32_t get32be(const uint8_t *p)
 {
     return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
 }
-void esp_nonce(uint8_t nonce[SSH_AESGCM_IV_LEN], const uint8_t *salt, const uint8_t *iv)
+void esp_nonce(uint8_t nonce[DWS_AESGCM_IV_LEN], const uint8_t *salt, const uint8_t *iv)
 {
     memcpy(nonce, salt, DWS_ESP_SALT_LEN);
     memcpy(nonce + DWS_ESP_SALT_LEN, iv, DWS_ESP_IV_LEN);
@@ -64,12 +64,12 @@ size_t dws_esp_gcm_encapsulate(uint32_t spi, uint32_t seq, const uint8_t key[DWS
     pt[payload_len + padn + 1] = next_header;   // Next Header
 
     // Encrypt in place: AAD = SPI | Seq (the first 8 octets), plaintext -> ciphertext || ICV at ESP_CT_OFF.
-    uint8_t nonce[SSH_AESGCM_IV_LEN];
+    uint8_t nonce[DWS_AESGCM_IV_LEN];
     esp_nonce(nonce, salt, iv);
-    SshAesGcmCtx ctx;
-    ssh_aesgcm_init(&ctx, key, nonce);
-    ssh_aesgcm_seal(&ctx, out, DWS_ESP_HDR_LEN, pt, pt_len, pt);
-    ssh_aesgcm_wipe(&ctx);
+    DwsAesGcmCtx ctx;
+    dws_aesgcm_init(&ctx, key, nonce);
+    dws_aesgcm_seal(&ctx, out, DWS_ESP_HDR_LEN, pt, pt_len, pt);
+    dws_aesgcm_wipe(&ctx);
     return total;
 }
 
@@ -88,12 +88,12 @@ bool dws_esp_gcm_decapsulate(const uint8_t key[DWS_ESP_KEY_LEN], const uint8_t s
     size_t ct_len = len - ESP_CT_OFF - DWS_ESP_ICV_LEN;
     const uint8_t *tag = ct + ct_len;
 
-    uint8_t nonce[SSH_AESGCM_IV_LEN];
+    uint8_t nonce[DWS_AESGCM_IV_LEN];
     esp_nonce(nonce, salt, iv);
-    SshAesGcmCtx ctx;
-    ssh_aesgcm_init(&ctx, key, nonce);
-    bool ok = ssh_aesgcm_open(&ctx, packet, DWS_ESP_HDR_LEN, ct, ct_len, tag, ct); // AAD = SPI | Seq
-    ssh_aesgcm_wipe(&ctx);
+    DwsAesGcmCtx ctx;
+    dws_aesgcm_init(&ctx, key, nonce);
+    bool ok = dws_aesgcm_open(&ctx, packet, DWS_ESP_HDR_LEN, ct, ct_len, tag, ct); // AAD = SPI | Seq
+    dws_aesgcm_wipe(&ctx);
     if (!ok)
         return false;
 
