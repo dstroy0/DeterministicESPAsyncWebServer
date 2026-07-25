@@ -222,6 +222,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_inflate",
 "native_ssh_kbdint",
 "native_ssh_pqc",
 "native_ssh_sftp",
@@ -487,6 +488,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_inflate",
 "native_ssh_kbdint",
 "native_ssh_pqc",
 "native_ssh_sftp",
@@ -752,6 +754,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_inflate",
 "native_ssh_kbdint",
 "native_ssh_pqc",
 "native_ssh_sftp",
@@ -1017,6 +1020,7 @@
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
+"native_ssh_inflate",
 "native_ssh_kbdint",
 "native_ssh_pqc",
 "native_ssh_sftp",
@@ -2386,6 +2390,14 @@
 "native_ssh_kbdint",
 "native_ssh_pqc"
 ],
+"src/network_drivers/presentation/ssh/transport/ssh_inflate.cpp": [
+"native_ssh_comp",
+"native_ssh_inflate"
+],
+"src/network_drivers/presentation/ssh/transport/ssh_inflate.h": [
+"native_ssh_comp",
+"native_ssh_inflate"
+],
 "src/network_drivers/presentation/ssh/transport/ssh_keymat.cpp": [
 "native_ssh",
 "native_ssh_comp",
@@ -2959,6 +2971,7 @@
 "native_ads1115",
 "native_app",
 "native_audit_log",
+"native_coap",
 "native_coap_observe",
 "native_coaps",
 "native_coaps_server",
@@ -2977,6 +2990,7 @@
 "native_mqtt",
 "native_observability",
 "native_packml",
+"native_pentest",
 "native_prov",
 "native_range",
 "native_sht3x",
@@ -4691,6 +4705,7 @@
 "native_app",
 "native_audit_log",
 "native_cloudevents",
+"native_coap",
 "native_coap_observe",
 "native_coaps",
 "native_coaps_server",
