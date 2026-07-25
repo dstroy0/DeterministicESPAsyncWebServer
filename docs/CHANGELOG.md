@@ -2,6 +2,23 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`419fa54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/419fa54045ff7c20aa86f24dd4ef71fd49fc3d79))
+- update CHANGELOG.md [skip ci] ([`7703c8f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7703c8f8d8cfc9f3693956ec42b92b77efc89a6b))
+- update CHANGELOG.md [skip ci] ([`0c65871`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c65871f41f0177d47cf6487f60bf6e7bc240c45))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`1be0dec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1be0decd1f7bf2a4c6328f4450c5e517077d2c32))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5fa29f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5fa29f24e358ee798684fef0ce3911fbd2b804cd))
+
+### Performance
+
+- hand-written hex chunk size line (~18x on-device vs snprintf) ([`3da983c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3da983c86769c80ecb06217444bf6f5116a90366))
+
 ## [7.172.0] - 2026-07-25
 
 <details>
@@ -26,25 +43,6 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - NTLMSSP AUTHENTICATE MIC + HW-verify SMB 3.1.1 vs real Samba ([`b83b59e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b83b59efdbae1889c8ef7032b95148a89bf91165))
 
 </details>
-
-## [7.171.0] - 2026-07-25
-
-<details>
-<summary><b>Show Changelog for version 7.171.0 - 2026-07-25</b></summary>
-
-### CI / Build
-
-- update test report + coverage [skip ci] ([`417c977`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/417c977b463d2f17f10771dfd7826ed6f70a3036))
-- update CHANGELOG.md [skip ci] ([`5b69ee7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b69ee773cf1fa8739b35b1d02a9f699ae4b42d3))
-
-### Documentation
-
-- update ESP32 build footprints [skip ci] ([`2c5387d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c5387da6357d6d17466902d1482e3c0d898bd58))
-- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cbe3251`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cbe32512760699c0902b8d8939eb750f83f98269))
-
-### Features
-
-- NTLMSSP AUTHENTICATE MIC + HW-verify SMB 3.1.1 vs real Samba ([`b83b59e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b83b59efdbae1889c8ef7032b95148a89bf91165))
 
 ## [7.171.0] - 2026-07-25
 
