@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.159.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.159.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`f5102cb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5102cbd4f2dc4cd0e3301ee70d067ca1d22f588))
+
+### Changes
+
+- Bump version: 7.158.0 → 7.159.0 ([`985ff5e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/985ff5e1ae09312658f6489f183806f2556466ee))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`35dfbae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35dfbaea107e30b62e2f77b219badb4de6918a3c))
+
+### Features
+
+- SP800-108 counter-mode KDF (HMAC-SHA256) for SMB 3.x key derivation ([`6bd2b1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bd2b1f18bbefdfd9090e50e22e2afe5b40cddd9))
+
+</details>
+
 ## [7.158.0] - 2026-07-25
 
 <details>
