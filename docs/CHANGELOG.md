@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.167.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.167.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e2a20cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2a20cf55b635d500ccc5744dadb5ff48e480428))
+
+### Changes
+
+- Bump version: 7.166.0 → 7.167.0 ([`aca1fd2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aca1fd27914b073202d356d6e25eee7b3018cf73))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`142448f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/142448f440476000bf5809dda2fd4adade074c7e))
+
+### Refactor
+
+- move the Curve25519/Ed25519 family into src/crypto ([`7a2fce0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a2fce0bab727c477c53caf462d25a2dd2b8b07a))
+
+</details>
+
 ## [7.166.0] - 2026-07-25
 
 <details>
