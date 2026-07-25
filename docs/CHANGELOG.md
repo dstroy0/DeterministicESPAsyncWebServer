@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.173.2] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.173.2 - 2026-07-25</b></summary>
+
+### Bug Fixes
+
+- own the KEX-bench state in a Ctx; close the Feature-perf item ([`d136b1e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d136b1e04c4667a038741e1e1295b511bc5c9718))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`2eed7d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2eed7d3ef3f6bf509c724fec418550088c6a883b))
+
+### Changes
+
+- Bump version: 7.173.1 → 7.173.2 ([`d98021a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d98021a752df4e5c81ef671404e11a9889f1c815))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9f71e4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f71e4e328ac6f8cfac1790a83015db1d83e9207))
+
+</details>
+
 ## [7.173.1] - 2026-07-25
 
 <details>
