@@ -1081,6 +1081,14 @@
 "native_ssh_kbdint",
 "native_ssh_pqc"
 ],
+"src/crypto/aes_cmac.cpp": [
+"native_pentest",
+"native_smb"
+],
+"src/crypto/aes_cmac.h": [
+"native_pentest",
+"native_smb"
+],
 "src/crypto/aesgcm.cpp": [
 "native_esp",
 "native_ikev2",
@@ -1378,9 +1386,11 @@
 "native_ssh_pqc"
 ],
 "src/crypto/kdf.cpp": [
+"native_pentest",
 "native_smb"
 ],
 "src/crypto/kdf.h": [
+"native_pentest",
 "native_smb"
 ],
 "src/crypto/md.cpp": [
@@ -4425,11 +4435,13 @@
 "native_h3_server",
 "native_ikev2",
 "native_ipsec_db",
+"native_pentest",
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
 "native_quic_tls_pqc",
+"native_smb",
 "native_ssh",
 "native_ssh_aesgcm",
 "native_ssh_comp",
@@ -4450,11 +4462,13 @@
 "native_h3_server",
 "native_ikev2",
 "native_ipsec_db",
+"native_pentest",
 "native_quic_conn",
 "native_quic_crypto",
 "native_quic_server",
 "native_quic_tls",
 "native_quic_tls_pqc",
+"native_smb",
 "native_snmp_v3",
 "native_ssh",
 "native_ssh_aesgcm",
