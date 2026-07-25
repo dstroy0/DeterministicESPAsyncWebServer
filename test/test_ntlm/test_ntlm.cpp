@@ -150,6 +150,58 @@ void test_v2_response_null_skey()
     TEST_ASSERT_EQUAL_STRING("68cd0ab851e51c96aabc927bebef6a1c", hex); // NTProofStr unaffected
 }
 
+// dws_ntlm_set_mic_flag: OR the MsvAvFlags MIC bit into an existing pair, splice one in before the EOL
+// when absent, or append at the tail of a list with no EOL terminator.
+void test_set_mic_flag()
+{
+    uint8_t out[64];
+
+    // (a) MsvAvTimestamp + EOL: no MsvAvFlags -> a new pair is inserted just before the EOL.
+    const uint8_t ti_ts[] = {0x07, 0x00, 0x08, 0x00, 0x11, 0x22, 0x33, 0x44,
+                             0x55, 0x66, 0x77, 0x88, 0x00, 0x00, 0x00, 0x00}; // ts(12) + EOL(4)
+    size_t n = dws_ntlm_set_mic_flag(ti_ts, sizeof(ti_ts), out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(sizeof(ti_ts) + 8, n);
+    const uint8_t exp_a[] = {0x07, 0x00, 0x08, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, // ts
+                             0x06, 0x00, 0x04, 0x00, 0x02, 0x00, 0x00, 0x00,                         // flags
+                             0x00, 0x00, 0x00, 0x00};                                                // EOL
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(exp_a, out, (int)n);
+
+    // (b) existing MsvAvFlags value 0x00000001 -> the bit is OR'd to 0x03, same length.
+    const uint8_t ti_fl[] = {0x06, 0x00, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    n = dws_ntlm_set_mic_flag(ti_fl, sizeof(ti_fl), out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(sizeof(ti_fl), n);
+    TEST_ASSERT_EQUAL_HEX8(0x03, out[4]); // 0x01 | 0x02
+
+    // (c) no EOL terminator -> the pair is appended at the end (leniently, never fails).
+    const uint8_t ti_bad[] = {0x07, 0x00, 0x08, 0x00}; // header only, runs off the end
+    n = dws_ntlm_set_mic_flag(ti_bad, sizeof(ti_bad), out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(sizeof(ti_bad) + 8, n);
+    const uint8_t exp_c[] = {0x07, 0x00, 0x08, 0x00, 0x06, 0x00, 0x04, 0x00, 0x02, 0x00, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(exp_c, out, (int)n);
+
+    // fail-closed: null args and a too-small output buffer.
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntlm_set_mic_flag(nullptr, 4, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_ntlm_set_mic_flag(ti_ts, sizeof(ti_ts), out, 4));
+}
+
+// dws_ntlm_mic == HMAC-MD5(key, neg || chal || auth), cross-checked against Python hmac/hashlib.
+void test_ntlm_mic()
+{
+    uint8_t key[16];
+    for (int i = 0; i < 16; i++)
+        key[i] = (uint8_t)i;
+    const uint8_t neg[3] = {0x01, 0x02, 0x03};
+    const uint8_t chal[4] = {0x10, 0x11, 0x12, 0x13};
+    uint8_t auth[16];
+    for (int i = 0; i < 16; i++)
+        auth[i] = (uint8_t)(0x20 + i);
+    uint8_t mic[16];
+    dws_ntlm_mic(key, neg, sizeof(neg), chal, sizeof(chal), auth, sizeof(auth), mic);
+    const uint8_t expect[16] = {0xd2, 0x3e, 0x19, 0x94, 0x2c, 0xa7, 0x07, 0x7a,
+                                0x14, 0x92, 0x22, 0x17, 0x69, 0x4f, 0xc7, 0x8d};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, mic, 16);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -161,5 +213,7 @@ int main()
     RUN_TEST(test_ntowfv2_upper_high_char);
     RUN_TEST(test_v2_response_null_out);
     RUN_TEST(test_v2_response_null_skey);
+    RUN_TEST(test_set_mic_flag);
+    RUN_TEST(test_ntlm_mic);
     return UNITY_END();
 }

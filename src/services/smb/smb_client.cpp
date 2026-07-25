@@ -126,6 +126,7 @@ struct SmbClientCtx
     uint8_t ntauth[DWS_SMB_BUF / 2];
     uint8_t sp2[DWS_SMB_BUF / 2];
     uint8_t utf16[DWS_SMB_BUF / 2];
+    uint8_t ti[DWS_SMB_BUF / 2]; ///< the CHALLENGE target-info with the MsvAvFlags MIC bit set (NTLMv2 input)
 };
 static SmbClientCtx s_smb;
 
@@ -261,7 +262,7 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, boo
     if (!dws_ntlmssp_parse_challenge(chal_tok, chal_len, &ch))
         return SmbResult::SMB_ERR_PROTOCOL;
 
-    // 3. Compute the NTLMv2 response, wrap the AUTHENTICATE in SPNEGO
+    // 3. Compute the NTLMv2 response and build the AUTHENTICATE with a MIC (MS-NLMP §3.1.5.1.2).
     uint8_t nt_hash[16];
     uint8_t owf[16];
     dws_ntlm_nt_hash(cfg->pass, nt_hash);
@@ -272,14 +273,23 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, boo
     uint8_t skey[16];
     esp_fill_random(cli_chal, 8);
     find_av_timestamp(ch.target_info, ch.target_info_len, ts);
-    size_t nt_len = dws_ntlm_v2_response(owf, ch.server_challenge, cli_chal, ts, ch.target_info, ch.target_info_len,
-                                         s_smb.nt_resp, sizeof(s_smb.nt_resp), skey);
+    // Set the MsvAvFlags "MIC provided" bit in the target-info the NTLMv2 response is computed over, so a
+    // server that enforces the MIC accepts it and verifies the digest attached below.
+    size_t ti_len = dws_ntlm_set_mic_flag(ch.target_info, ch.target_info_len, s_smb.ti, sizeof(s_smb.ti));
+    if (!ti_len)
+        return SmbResult::SMB_ERR_OVERFLOW;
+    size_t nt_len = dws_ntlm_v2_response(owf, ch.server_challenge, cli_chal, ts, s_smb.ti, ti_len, s_smb.nt_resp,
+                                         sizeof(s_smb.nt_resp), skey);
     if (!nt_len)
         return SmbResult::SMB_ERR_OVERFLOW;
     size_t ntauth_n = dws_ntlmssp_build_authenticate(s_smb.ntauth, sizeof(s_smb.ntauth), nullptr, 0, s_smb.nt_resp,
-                                                     nt_len, domain, cfg->user, cfg->workstation, ch.flags);
+                                                     nt_len, domain, cfg->user, cfg->workstation, ch.flags, true);
     if (!ntauth_n)
         return SmbResult::SMB_ERR_OVERFLOW;
+    // MIC = HMAC-MD5(session key, NEGOTIATE || CHALLENGE || AUTHENTICATE); write it into the zeroed field.
+    uint8_t mic[DWS_NTLMSSP_MIC_LEN];
+    dws_ntlm_mic(skey, ntneg, ntneg_n, chal_tok, chal_len, s_smb.ntauth, ntauth_n, mic);
+    memcpy(s_smb.ntauth + DWS_NTLMSSP_MIC_OFFSET, mic, DWS_NTLMSSP_MIC_LEN);
     size_t sp2_n = dws_spnego_wrap_authenticate(s_smb.ntauth, ntauth_n, s_smb.sp2, sizeof(s_smb.sp2));
     if (!sp2_n)
         return SmbResult::SMB_ERR_OVERFLOW;

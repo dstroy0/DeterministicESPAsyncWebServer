@@ -38,6 +38,7 @@ struct NtlmsspFlags
     static constexpr uint32_t NTLMSSP_NEGOTIATE_ALWAYS_SIGN = 0x00008000;
     static constexpr uint32_t NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY = 0x00080000;
     static constexpr uint32_t NTLMSSP_NEGOTIATE_TARGET_INFO = 0x00800000;
+    static constexpr uint32_t NTLMSSP_NEGOTIATE_VERSION = 0x02000000;
     static constexpr uint32_t NTLMSSP_NEGOTIATE_128 = 0x20000000;
     static constexpr uint32_t NTLMSSP_NEGOTIATE_56 = 0x80000000;
     // the default NEGOTIATE flag set for an NTLMv2 client
@@ -70,6 +71,16 @@ size_t dws_ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags);
 bool dws_ntlmssp_parse_challenge(const uint8_t *msg, size_t len, NtlmChallenge *out);
 
 /**
+ * @brief Offset of the 16-byte MIC field within an AUTHENTICATE_MESSAGE built @p with_mic (MS-NLMP
+ *        §2.2.1.3): the 64-byte fixed header + the 8-byte Version field. The caller writes the computed
+ *        MIC here after the message is built and the digest taken over it with these bytes zeroed.
+ */
+static constexpr size_t DWS_NTLMSSP_MIC_OFFSET = 72;
+
+/** @brief Length of the AUTHENTICATE MIC field (an HMAC-MD5 digest). */
+static constexpr size_t DWS_NTLMSSP_MIC_LEN = 16;
+
+/**
  * @brief Build an AUTHENTICATE_MESSAGE (type 3) carrying the LM + NT responses and the identity.
  *
  * @param lm_resp / lm_len  the LM(v2) response (may be null/0).
@@ -77,11 +88,14 @@ bool dws_ntlmssp_parse_challenge(const uint8_t *msg, size_t len, NtlmChallenge *
  * @param domain / user / workstation  ASCII/UTF-8 identity strings (encoded UTF-16LE); user
  *        and domain are typically required, workstation is optional (may be null).
  * @param flags  the NegotiateFlags to echo (usually the server's from the CHALLENGE).
- * @return total message length, or 0 on overflow. No Version, no MIC, no session-key exchange.
+ * @param with_mic  when true, reserve the 8-byte Version + 16-byte MIC fields between the fixed header
+ *        and the payload (set NTLMSSP_NEGOTIATE_VERSION, MIC zeroed at ::DWS_NTLMSSP_MIC_OFFSET); the
+ *        caller then computes the MIC and writes it there. When false the message has no Version/MIC.
+ * @return total message length, or 0 on overflow. No session-key exchange (EncryptedRandomSessionKey empty).
  */
 size_t dws_ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_resp, size_t lm_len,
                                       const uint8_t *nt_resp, size_t nt_len, const char *domain, const char *user,
-                                      const char *workstation, uint32_t flags);
+                                      const char *workstation, uint32_t flags, bool with_mic = false);
 
 #endif // DWS_ENABLE_SMB
 

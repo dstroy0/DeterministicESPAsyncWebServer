@@ -83,9 +83,13 @@ static size_t utf16_len(const char *s)
 
 size_t dws_ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_resp, size_t lm_len,
                                       const uint8_t *nt_resp, size_t nt_len, const char *domain, const char *user,
-                                      const char *workstation, uint32_t flags)
+                                      const char *workstation, uint32_t flags, bool with_mic)
 {
-    const size_t HDR = 64; // fixed part (no Version, no MIC)
+    // With a MIC the fixed part carries an 8-byte Version + a 16-byte MIC before the payload (MS-NLMP
+    // §2.2.1.3); NTLMSSP_NEGOTIATE_VERSION must then be set so the server knows the Version is present.
+    const size_t HDR = with_mic ? 88 : 64;
+    if (with_mic)
+        flags |= NtlmsspFlags::NTLMSSP_NEGOTIATE_VERSION;
     size_t dlen = utf16_len(domain);
     size_t ulen = utf16_len(user);
     size_t wlen = utf16_len(workstation);
@@ -96,6 +100,15 @@ size_t dws_ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *l
     memset(buf, 0, HDR);
     memcpy(buf + 0, NTLMSSP_SIG, 8); // Signature
     dws_wr32le(buf + 8, 3);          // MessageType = AUTHENTICATE
+    if (with_mic)
+    {
+        // Version (offset 64): a plausible Windows build; servers do not validate the value. MIC (offset
+        // 72) stays zero here - the caller writes it after taking HMAC-MD5 over the three messages.
+        buf[64] = 6;                // ProductMajorVersion
+        buf[65] = 1;                // ProductMinorVersion
+        dws_wr16le(buf + 66, 7601); // ProductBuild
+        buf[71] = 15;               // NTLMRevisionCurrent (NTLMSSP_REVISION_W2K3)
+    }
 
     // Lay out the payload after the fixed header, then point each field at it.
     size_t off = HDR;

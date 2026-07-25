@@ -58,6 +58,34 @@ size_t dws_ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challeng
                             const uint8_t timestamp[8], const uint8_t *target_info, size_t ti_len, uint8_t *out,
                             size_t out_cap, uint8_t session_key[16]);
 
+/**
+ * @brief Copy the CHALLENGE target-info AV_PAIR list into @p out, setting the MsvAvFlags (AvId 6)
+ *        bit 0x00000002 ("the client provides a MIC in the AUTHENTICATE", MS-NLMP §2.2.2.10 / §3.1.5.1.2).
+ *
+ * If an MsvAvFlags pair is already present its value is OR'd with 0x2; otherwise a new
+ * `AvId=6, AvLen=4, value=0x00000002` pair is inserted immediately before the MsvAvEOL (AvId 0)
+ * terminator. The resulting blob is what the NTLMv2 response is computed over, so the server sees the
+ * flag and verifies the MIC. Call before ::dws_ntlm_v2_response and feed it the returned blob.
+ *
+ * @return the new target-info length in @p out (@p ti_len, or @p ti_len + 8 when a pair was inserted),
+ *         or 0 on a null pointer / overflow / a malformed (unterminated) list.
+ */
+size_t dws_ntlm_set_mic_flag(const uint8_t *target_info, size_t ti_len, uint8_t *out, size_t out_cap);
+
+/**
+ * @brief The NTLMSSP AUTHENTICATE MIC (MS-NLMP §3.1.5.1.2): HMAC-MD5 over the concatenation of the
+ *        three NTLM messages, keyed by the ExportedSessionKey (= the NTLMv2 SessionBaseKey when no key
+ *        exchange is negotiated).
+ *
+ *   MIC = HMAC-MD5(session_key, NEGOTIATE_MESSAGE || CHALLENGE_MESSAGE || AUTHENTICATE_MESSAGE)
+ *
+ * The three are the raw NTLMSSP token bytes (not SPNEGO-wrapped); @p auth must already have its 16-byte
+ * MIC field zeroed (as ::dws_ntlmssp_build_authenticate leaves it). Streams the parts, so no scratch
+ * concatenation buffer is needed.
+ */
+void dws_ntlm_mic(const uint8_t session_key[16], const uint8_t *neg, size_t neg_len, const uint8_t *chal,
+                  size_t chal_len, const uint8_t *auth, size_t auth_len, uint8_t out[16]);
+
 #endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_NTLM_H

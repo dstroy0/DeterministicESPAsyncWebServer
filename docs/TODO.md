@@ -97,11 +97,15 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
   2.0.2 .. 3.1.1, chains the preauth-integrity hash across NEGOTIATE + both SESSION_SETUP rounds,
   derives the SP800-108 signing key, and signs the session with AES-128-CMAC (`crypto/aes_cmac`,
   RFC 4493); the KDF label/context assembly + the CMAC are cross-checked byte-for-byte against
-  impacket (validated against real Windows). Host-tested end to end with a scripted mock SMB2 server
-  that is a full 3.1.1 reference peer - the same preauth chain + derived key on both sides, a
-  byte-exact signed write/read round trip, and CMAC tamper rejection (`native_smb`, incl. the 3.1.1
-  signed session). Remainder: the NTLMSSP AUTHENTICATE **MIC** (for servers that enforce it), then
-  HW-verify against a real Samba/Windows share (needs a share to point at).
+  impacket (validated against real Windows). The **NTLMSSP AUTHENTICATE MIC** is sent too
+  (`dws_ntlm_mic` = HMAC-MD5 over NEGOTIATE‖CHALLENGE‖AUTHENTICATE, with the MsvAvFlags MIC bit set).
+  Host-tested end to end with a scripted mock SMB2 server that is a full 3.1.1 reference peer - the same
+  preauth chain + derived key on both sides, a byte-exact signed write/read round trip, and CMAC tamper
+  rejection (`native_smb`). **HW-verified (2026-07-25) against a real Samba 4.19** forced to `SMB3_11` +
+  `server signing = mandatory`: the `smb_client` engine over a live socket authenticated, negotiated
+  `algo=AES-CMAC`, wrote a CMAC-signed file Samba accepted, and read it back byte-exact - and a
+  deliberately corrupted MIC made Samba reject the logon (`STATUS_LOGON_FAILURE`), proving the server
+  verifies our MIC. **Done.**
 - **Concurrent TLS** (`MAX_TLS_CONNS`>1) - library + PSRAM build done; only the live 2-client soak remains
   (the reserved **two-rig HW test**, held per the user's "keep looping, hold the rigs").
 - **Ethernet PHY** - RMII bring-up shipped + **HW-verified (2026-07-19)** on a Waveshare ESP32-P4-POE-ETH

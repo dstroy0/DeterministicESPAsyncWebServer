@@ -111,4 +111,82 @@ size_t dws_ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challeng
     return dws_resp_len;
 }
 
+size_t dws_ntlm_set_mic_flag(const uint8_t *target_info, size_t ti_len, uint8_t *out, size_t out_cap)
+{
+    if (!target_info || !out)
+        return 0;
+    // Walk the AV_PAIR list (AvId u16, AvLen u16, Value[AvLen]), copying it and, if an MsvAvFlags pair
+    // (AvId 6) is present, OR-ing bit 0x2 into its 32-bit LE value in place. Track the EOL position so a
+    // missing pair can be inserted there.
+    if (ti_len > out_cap)
+        return 0;
+    memcpy(out, target_info, ti_len);
+    size_t p = 0;
+    bool found = false;
+    size_t eol = ti_len; // offset of the MsvAvEOL header, if any
+    while (p + 4 <= ti_len)
+    {
+        uint16_t id = (uint16_t)(out[p] | (out[p + 1] << 8));
+        uint16_t len = (uint16_t)(out[p + 2] | (out[p + 3] << 8));
+        if (id == 0) // MsvAvEOL
+        {
+            eol = p;
+            break;
+        }
+        if (id == 6 && len == 4 && p + 8 <= ti_len)
+        {
+            out[p + 4] |= 0x02; // MsvAvFlags: set "MIC provided" in the low byte of the LE value
+            found = true;
+        }
+        if (p + 4 + len < p + 4) // overflow guard
+            return 0;
+        p += 4 + len;
+    }
+    if (found)
+        return ti_len;
+    // Insert a fresh MsvAvFlags pair (AvId 6, AvLen 4, value 0x00000002). A well-formed list has an EOL
+    // (AvId 0) terminator - splice the pair in just before it; a fixture without one (or that ran off the
+    // end) gets the pair appended at the tail, matching the pre-MIC pass-through leniency (never fail here).
+    if (ti_len + 8 > out_cap)
+        return 0;
+    const size_t at = eol != ti_len ? eol : ti_len;
+    if (at < ti_len)
+        memmove(out + at + 8, out + at, ti_len - at); // shift the EOL (and anything after) up by 8
+    out[at + 0] = 0x06;
+    out[at + 1] = 0x00;
+    out[at + 2] = 0x04;
+    out[at + 3] = 0x00;
+    out[at + 4] = 0x02;
+    out[at + 5] = 0x00;
+    out[at + 6] = 0x00;
+    out[at + 7] = 0x00;
+    return ti_len + 8;
+}
+
+void dws_ntlm_mic(const uint8_t session_key[16], const uint8_t *neg, size_t neg_len, const uint8_t *chal,
+                  size_t chal_len, const uint8_t *auth, size_t auth_len, uint8_t out[16])
+{
+    // HMAC-MD5(session_key, neg || chal || auth), streamed. The key is 16 bytes (< 64), no shortening.
+    uint8_t ipad[64];
+    uint8_t opad[64];
+    for (int i = 0; i < 64; i++)
+    {
+        uint8_t k = i < 16 ? session_key[i] : 0;
+        ipad[i] = (uint8_t)(k ^ 0x36);
+        opad[i] = (uint8_t)(k ^ 0x5c);
+    }
+    MdCtx c;
+    uint8_t inner[16];
+    dws_md5_init(&c);
+    dws_md5_update(&c, ipad, 64);
+    dws_md5_update(&c, neg, neg_len);
+    dws_md5_update(&c, chal, chal_len);
+    dws_md5_update(&c, auth, auth_len);
+    dws_md5_final(&c, inner);
+    dws_md5_init(&c);
+    dws_md5_update(&c, opad, 64);
+    dws_md5_update(&c, inner, 16);
+    dws_md5_final(&c, out);
+}
+
 #endif // DWS_ENABLE_SMB

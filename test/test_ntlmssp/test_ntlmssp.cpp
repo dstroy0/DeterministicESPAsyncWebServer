@@ -143,6 +143,30 @@ void test_build_authenticate()
                                                                nullptr, 0)); // overflow
 }
 
+// with_mic=true: the AUTHENTICATE reserves an 8-byte Version + 16-byte MIC before the payload, sets
+// NTLMSSP_NEGOTIATE_VERSION, zeroes the MIC at DWS_NTLMSSP_MIC_OFFSET, and shifts all field offsets to 88.
+void test_build_authenticate_with_mic()
+{
+    uint8_t nt[48];
+    for (int i = 0; i < 48; i++)
+        nt[i] = (uint8_t)(0x40 + i);
+    uint8_t buf[256];
+    size_t n = dws_ntlmssp_build_authenticate(buf, sizeof(buf), nullptr, 0, nt, sizeof(nt), "Domain", "User", "WS",
+                                              0x00000001, /*with_mic=*/true);
+    TEST_ASSERT_GREATER_THAN_size_t(88, n);
+    // NTLMSSP_NEGOTIATE_VERSION (0x02000000) OR'd into the flags word by the builder.
+    TEST_ASSERT_EQUAL_UINT32(0x00000001u | NtlmsspFlags::NTLMSSP_NEGOTIATE_VERSION, r32(buf + 60));
+    // Version at offset 64 (a plausible build), MIC zeroed at offset 72.
+    TEST_ASSERT_EQUAL_HEX8(6, buf[64]);
+    TEST_ASSERT_EQUAL_size_t(72, DWS_NTLMSSP_MIC_OFFSET);
+    const uint8_t zero_mic[16] = {0};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(zero_mic, buf + DWS_NTLMSSP_MIC_OFFSET, 16);
+    // The NtChallengeResponse now lives at or after offset 88 (past the fixed header + Version + MIC).
+    uint32_t nt_off = r32(buf + 24);
+    TEST_ASSERT_GREATER_OR_EQUAL_UINT32(88, nt_off);
+    TEST_ASSERT_EQUAL_MEMORY(nt, buf + nt_off, 48);
+}
+
 // End to end (MS-NLMP 4.2): parse a CHALLENGE, compute the NTLMv2 response, embed it in an
 // AUTHENTICATE, and confirm the NT response field carries the expected NtChallengeResponse.
 void test_end_to_end()
@@ -292,5 +316,6 @@ int main()
     RUN_TEST(test_build_authenticate_null_buf);
     RUN_TEST(test_build_authenticate_with_lm);
     RUN_TEST(test_build_authenticate_empty_responses);
+    RUN_TEST(test_build_authenticate_with_mic);
     return UNITY_END();
 }
