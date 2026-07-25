@@ -6,9 +6,11 @@
 // smb_close releases the handle. Exercised end to end on the host with a scripted mock SMB2 server
 // (a send/recv seam), so no lwIP or real share is needed.
 
+#include "services/smb/ntlm.h"
 #include "services/smb/ntlmssp.h"
 #include "services/smb/smb2.h"
 #include "services/smb/smb_client.h"
+#include "services/smb/smb_md.h"
 #include "services/smb/spnego.h"
 #include <string.h>
 #include <unity.h>
@@ -131,11 +133,48 @@ struct Mock
     int ss1_secbuf_mode;    // SsSecBufMode for the round-1 security buffer
     const uint8_t *chal_ti; // optional custom target-info for the round-1 CHALLENGE (null => default)
     size_t chal_ti_len;
+    // Signing reference-peer state (MS-SMB2 §3.1.4.1 / §3.1.5.1). When require_signing is set the mock
+    // advertises SIGNING_REQUIRED, derives the same NTLMv2 session key from the client's AUTHENTICATE,
+    // signs every response, and verifies every signed request - so the whole session runs signed.
+    bool require_signing;   // NEGOTIATE advertises SMB2_NEGOTIATE_SIGNING_REQUIRED and the mock signs
+    bool signing;           // set once the session key has been derived (round-2 onward)
+    uint8_t sign_key[16];   // the derived SMB 2.x signing key
+    int bad_req_sigs;       // count of client requests that arrived unsigned or wrongly signed
+    bool corrupt_read_sig;  // flip a byte of the signature on the READ response (tamper in transit)
+    const SmbConfig *creds; // the credentials the mock uses to re-derive the session key
 };
 
 static void append_frame(Mock *m, const uint8_t *resp, size_t rlen)
 {
     m->rx_len += dws_smb2_transport_frame(m->rx + m->rx_len, sizeof(m->rx) - m->rx_len, resp, rlen);
+}
+
+// Re-derive the SMB 2.x signing key (the NTLMv2 SessionBaseKey) from the client's round-2 SESSION_SETUP
+// request the way a real server would: unwrap the SPNEGO AUTHENTICATE, take the NTProofStr (the first
+// 16 bytes of the NtChallengeResponse), and HMAC-MD5 it under NTOWFv2 computed from the known creds.
+static bool mock_derive_key(const uint8_t *msg, size_t mlen, const SmbConfig *cfg, uint8_t key[16])
+{
+    if (mlen < 88)
+        return false;
+    uint16_t sec_off = rd16(msg + 76); // SESSION_SETUP SecurityBufferOffset / Length
+    uint16_t sec_len = rd16(msg + 78);
+    if ((size_t)sec_off + sec_len > mlen)
+        return false;
+    const uint8_t *auth = nullptr;
+    size_t auth_len = 0;
+    if (!dws_spnego_parse_response(msg + sec_off, sec_len, &auth, &auth_len) || auth_len < 28)
+        return false;
+    uint16_t nt_len = rd16(auth + 20); // NtChallengeResponseFields: Len @20, BufferOffset @24
+    uint32_t nt_off = rd32(auth + 24);
+    if (nt_len < 16 || (size_t)nt_off + 16 > auth_len)
+        return false;
+    uint8_t nt_hash[16];
+    uint8_t owf[16];
+    dws_ntlm_nt_hash(cfg->pass, nt_hash);
+    if (!dws_ntlm_ntowfv2(nt_hash, cfg->user, cfg->domain ? cfg->domain : "", owf))
+        return false;
+    dws_hmac_md5(owf, 16, auth + nt_off, 16, key); // SessionBaseKey = HMAC-MD5(NTOWFv2, NTProofStr)
+    return true;
 }
 
 static int mock_send(void *c, const uint8_t *d, size_t n)
@@ -148,6 +187,18 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     if (!dws_smb2_parse_header(msg, mlen, &h))
         return -1;
 
+    // Once the session is signed, every request the client sends must carry a valid signature.
+    if (m->signing)
+    {
+        uint8_t vbuf[DWS_SMB_BUF];
+        if (mlen <= sizeof(vbuf))
+        {
+            memcpy(vbuf, msg, mlen);
+            if (!(vbuf[16] & Smb2HeaderFlags::SMB2_FLAGS_SIGNED) || !dws_smb2_verify(m->sign_key, vbuf, mlen))
+                m->bad_req_sigs++;
+        }
+    }
+
     uint8_t resp[DWS_SMB_BUF + 128];
     memset(resp, 0, sizeof(resp));
     size_t rlen = 0;
@@ -156,9 +207,11 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     {
     case Smb2Command::SMB2_NEGOTIATE:
         dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_NEGOTIATE, 1, h.message_id, 0, 0);
-        w16(b + 0, 65);                                       // StructureSize
-        w16(b + 4, (uint16_t)Smb2Dialect::SMB2_DIALECT_0210); // DialectRevision
-        rlen = 128;                                           // header + 64-byte fixed body, empty security buffer
+        w16(b + 0, 65); // StructureSize
+        if (m->require_signing)
+            w16(b + 2, Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_REQUIRED); // SecurityMode
+        w16(b + 4, (uint16_t)Smb2Dialect::SMB2_DIALECT_0210);              // DialectRevision
+        rlen = 128;                                                        // header + 64-byte fixed body, empty buffer
         break;
     case Smb2Command::SMB2_SESSION_SETUP: {
         dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_SESSION_SETUP, 1, h.message_id, 0, m->session_id);
@@ -203,6 +256,9 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         }
         else
         {
+            // Round 2 carries the AUTHENTICATE: derive the shared signing key, then sign from here on.
+            if (m->require_signing && m->creds && mock_derive_key(msg, mlen, m->creds, m->sign_key))
+                m->signing = true;
             w32(resp + 8, m->auth_status);
             rlen = 72; // header + 8-byte body, empty buffer
         }
@@ -283,6 +339,12 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
             resp[0] = 0x00; // break the ProtocolId magic (FE 53 4D 42) -> dws_smb2_parse_header fails
         else if (m->fault_kind == FAULT_BAD_BODY)
             w16(resp + 64, 0xFFFF); // break the body StructureSize -> the body parser fails
+    }
+    if (m->signing)
+    {
+        dws_smb2_sign(m->sign_key, resp, rlen);
+        if (m->corrupt_read_sig && h.command == Smb2Command::SMB2_READ)
+            resp[48] ^= 0xFF; // tamper: invalidate the signature after signing
     }
     if (!drop)
         append_frame(m, resp, rlen);
@@ -1345,6 +1407,81 @@ void test_close_bad_transport_prefix()
     TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO, smb_close(&h, canned_send, canned_recv, &cn));
 }
 
+// ---- SMB 2.x message signing wired end to end (MS-SMB2 §3.1.4.1 / §3.1.5.1) ----
+
+// The server requires signing: the full session runs signed. smb_open derives the key and signs the
+// round-2 SESSION_SETUP, TREE_CONNECT, and CREATE; smb_read / smb_write / smb_close sign every request
+// and verify every response. The mock, a reference peer sharing the derived key, confirms each request
+// arrived correctly signed (bad_req_sigs == 0) and signs its own responses for the client to verify.
+void test_signed_session_roundtrip()
+{
+    Mock m = make_mock();
+    SmbConfig cfg = make_cfg();
+    m.require_signing = true;
+    m.creds = &cfg;
+    for (int i = 0; i < 1200; i++)
+        m.file_data[i] = (uint8_t)(i * 17 + 5);
+    m.file_data_len = 1200;
+    m.file_size = 1200;
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_TRUE(h.signing_active); // the session negotiated signing
+    TEST_ASSERT_TRUE(m.signing);        // and the mock re-derived the same key
+
+    uint8_t buf[1200];
+    size_t got = 0; // spans two signed READ round trips (chunk_max < 1200)
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(1200, got);
+    TEST_ASSERT_EQUAL_MEMORY(m.file_data, buf, 1200);
+
+    uint8_t wr[500];
+    for (int i = 0; i < 500; i++)
+        wr[i] = (uint8_t)(i ^ 0x3C);
+    size_t wrote = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_write(&h, 0, wr, sizeof(wr), &wrote, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(500, wrote);
+    TEST_ASSERT_EQUAL_MEMORY(wr, m.file_data, 500);
+
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(0, m.bad_req_sigs); // every signed request verified server-side
+}
+
+// A signed session where the server's READ response signature is tampered in transit: the client must
+// reject it (a signing-required session never trusts an unverifiable response).
+void test_signed_response_tampered()
+{
+    Mock m = make_mock();
+    SmbConfig cfg = make_cfg();
+    m.require_signing = true;
+    m.creds = &cfg;
+    m.corrupt_read_sig = true;
+    for (int i = 0; i < 64; i++)
+        m.file_data[i] = (uint8_t)i;
+    m.file_data_len = 64;
+    m.file_size = 64;
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m)); // handshake sigs valid
+    uint8_t buf[64];
+    size_t got = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,
+                          smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m));
+}
+
+// When the server does not require signing the session stays unsigned (the client advertises only
+// SIGNING_ENABLED): no signatures are attached and the mock never sees a signed request.
+void test_unsigned_session_when_not_required()
+{
+    Mock m = make_mock(); // require_signing stays false
+    SmbConfig cfg = make_cfg();
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_FALSE(h.signing_active);
+    TEST_ASSERT_EQUAL_INT(0, m.bad_req_sigs);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1415,5 +1552,8 @@ int main()
     RUN_TEST(test_read_eof_status);
     RUN_TEST(test_write_no_extend);
     RUN_TEST(test_close_bad_transport_prefix);
+    RUN_TEST(test_signed_session_roundtrip);
+    RUN_TEST(test_signed_response_tampered);
+    RUN_TEST(test_unsigned_session_when_not_required);
     return UNITY_END();
 }

@@ -70,6 +70,8 @@ struct SmbHandle
     uint8_t file_id[16];
     uint64_t file_size;       ///< EndofFile from CREATE (the current size)
     uint64_t next_message_id; ///< the MessageId for the next request on this handle
+    bool signing_active;      ///< the session negotiated SMB signing (server set SigningRequired, not guest/null)
+    uint8_t signing_key[16];  ///< the SMB 2.x signing key (the NTLMv2 session key) when @ref signing_active
 };
 
 /**
