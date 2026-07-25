@@ -82,7 +82,7 @@ static void make_jwt(const char *payload_json, char *tok, size_t tok_cap)
     b64url_enc((const uint8_t *)payload_json, strlen(payload_json), seg1);
     int sl = snprintf(signing, sizeof(signing), "%s.%s", seg0, seg1);
     uint8_t sig[256];
-    ssh_rsa_sign((const uint8_t *)signing, (size_t)sl, SshRsaHash::SHA256, sig); // RS256 = SHA-256
+    ssh_rsa_sign((const uint8_t *)signing, (size_t)sl, DwsRsaHash::SHA256, sig); // RS256 = SHA-256
     b64url_enc(sig, 256, seg2);
     snprintf(tok, tok_cap, "%s.%s.%s", seg0, seg1, seg2);
 }
@@ -220,7 +220,7 @@ void test_oidc_signed_claim_guards()
         b64url_enc((const uint8_t *)HDR, strlen(HDR), seg0);
         int sl = snprintf(signing, sizeof(signing), "%s.A", seg0); // payload segment "A" decodes to 0 bytes
         uint8_t sig[256];
-        ssh_rsa_sign((const uint8_t *)signing, (size_t)sl, SshRsaHash::SHA256, sig); // RS256 = SHA-256
+        ssh_rsa_sign((const uint8_t *)signing, (size_t)sl, DwsRsaHash::SHA256, sig); // RS256 = SHA-256
         b64url_enc(sig, 256, seg2);
         snprintf(tok, sizeof(tok), "%s.A.%s", seg0, seg2);
         TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,
@@ -873,14 +873,14 @@ void test_rsa_sign_verify_sha512(void)
     _test_rsa_e[3] = 1; // e = 65537
 
     static const char msg[] = "sha512 coverage message";
-    uint8_t sig[SSH_RSA_SIG_BYTES];
-    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA512, sig));
+    uint8_t sig[DWS_RSA_SIG_BYTES];
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA512, sig));
 
-    uint8_t n_be[SSH_RSA_KEY_BYTES];
+    uint8_t n_be[DWS_RSA_KEY_BYTES];
     hex2bytes(n_be, RT_N, 256);
     uint8_t e_be[4] = {0, 1, 0, 1};
     TEST_ASSERT_EQUAL_INT(
-        0, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), sig, SSH_RSA_SIG_BYTES, SshRsaHash::SHA512));
+        0, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), sig, DWS_RSA_SIG_BYTES, DwsRsaHash::SHA512));
 }
 
 // bn_modexp_full's private-exponent scan short-circuits to "result = 1" when every limb
@@ -896,13 +896,13 @@ void test_rsa_sign_zero_exponent(void)
     _test_rsa_e[3] = 1;
 
     static const char msg[] = "zero exponent";
-    uint8_t sig[SSH_RSA_SIG_BYTES];
-    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig));
+    uint8_t sig[DWS_RSA_SIG_BYTES];
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig));
 
     // s = em^0 mod n == 1, encoded big-endian as 255 zero bytes followed by 0x01.
-    for (size_t i = 0; i < SSH_RSA_SIG_BYTES - 1; i++)
+    for (size_t i = 0; i < DWS_RSA_SIG_BYTES - 1; i++)
         TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);
-    TEST_ASSERT_EQUAL_HEX8(0x01, sig[SSH_RSA_SIG_BYTES - 1]);
+    TEST_ASSERT_EQUAL_HEX8(0x01, sig[DWS_RSA_SIG_BYTES - 1]);
 
     // Restore d for any later test that (re)signs with the RT key.
     hex2bytes(_test_rsa_d, RT_D, 256);
@@ -920,23 +920,23 @@ void test_rsa_sign_zero_exponent(void)
 // some steps too, so the scan also completes with no differing limb found at all.
 void test_rsa_sign_tiny_modulus_reduction_equal_limbs(void)
 {
-    memset(_test_rsa_n, 0, SSH_RSA_KEY_BYTES);
-    _test_rsa_n[SSH_RSA_KEY_BYTES - 1] = 5; // n = 5
-    memset(_test_rsa_d, 0, SSH_RSA_KEY_BYTES);
-    _test_rsa_d[SSH_RSA_KEY_BYTES - 1] = 1; // d = 1
+    memset(_test_rsa_n, 0, DWS_RSA_KEY_BYTES);
+    _test_rsa_n[DWS_RSA_KEY_BYTES - 1] = 5; // n = 5
+    memset(_test_rsa_d, 0, DWS_RSA_KEY_BYTES);
+    _test_rsa_d[DWS_RSA_KEY_BYTES - 1] = 1; // d = 1
     _test_rsa_e[0] = 0;
     _test_rsa_e[1] = 0;
     _test_rsa_e[2] = 0;
     _test_rsa_e[3] = 1;
 
     static const char msg[] = "tiny modulus";
-    uint8_t sig[SSH_RSA_SIG_BYTES];
-    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig));
+    uint8_t sig[DWS_RSA_SIG_BYTES];
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig));
 
     // Every result is < n == 5, so the high 255 bytes are all zero.
-    for (size_t i = 0; i < SSH_RSA_SIG_BYTES - 1; i++)
+    for (size_t i = 0; i < DWS_RSA_SIG_BYTES - 1; i++)
         TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);
-    TEST_ASSERT_TRUE(sig[SSH_RSA_SIG_BYTES - 1] < 5);
+    TEST_ASSERT_TRUE(sig[DWS_RSA_SIG_BYTES - 1] < 5);
 
     // Restore the RT key for any later test that (re)signs with it.
     hex2bytes(_test_rsa_n, RT_N, 256);
@@ -944,47 +944,47 @@ void test_rsa_sign_tiny_modulus_reduction_equal_limbs(void)
     _test_rsa_e[1] = 1;
 }
 
-// ssh_rsa_verify rejects a signature of the wrong length before touching any bignum
+// dws_rsa_verify rejects a signature of the wrong length before touching any bignum
 // state, and separately rejects (without crashing) a signature that is numerically >= the
 // modulus (RFC 8017 requires s < n); an all-0xFF byte string is guaranteed larger than any
 // 2048-bit RSA modulus whose top byte's MSB is clear, as RT_N's is.
 void test_rsa_verify_length_and_range_guards(void)
 {
-    uint8_t n_be[SSH_RSA_KEY_BYTES];
+    uint8_t n_be[DWS_RSA_KEY_BYTES];
     hex2bytes(n_be, RT_N, 256);
     uint8_t e_be[4] = {0, 1, 0, 1};
     static const char msg[] = "guard check";
 
     uint8_t short_sig[10] = {0};
-    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), short_sig,
-                                             sizeof(short_sig), SshRsaHash::SHA256));
+    TEST_ASSERT_EQUAL_INT(-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), short_sig,
+                                             sizeof(short_sig), DwsRsaHash::SHA256));
 
-    uint8_t big_sig[SSH_RSA_KEY_BYTES];
+    uint8_t big_sig[DWS_RSA_KEY_BYTES];
     memset(big_sig, 0xFF, sizeof(big_sig));
-    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig),
-                                             SshRsaHash::SHA256));
+    TEST_ASSERT_EQUAL_INT(-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig),
+                                             DwsRsaHash::SHA256));
 }
 
 // bn_modexp_pub's public-exponent bit scan starts unconditionally at bit 31 with no
 // precondition that e is nonzero (unlike bn_modexp_full's private-exponent scan, which is
 // guarded by an earlier all-limbs-zero check covered by test_rsa_sign_zero_exponent above).
 // A real "ssh-rsa" public exponent is never 0, but e's raw bytes come straight off the wire
-// in ssh_rsa_verify, so a malformed/zero e must not run past the top of the scan. e = 0
+// in dws_rsa_verify, so a malformed/zero e must not run past the top of the scan. e = 0
 // drives `top` down to -1 (never finding a set bit), which is what this covers.
 void test_rsa_verify_zero_public_exponent(void)
 {
-    uint8_t n_be[SSH_RSA_KEY_BYTES];
+    uint8_t n_be[DWS_RSA_KEY_BYTES];
     hex2bytes(n_be, RT_N, 256);
     uint8_t e_be[4] = {0, 0, 0, 0}; // e == 0
     static const char msg[] = "zero e";
 
-    uint8_t sig[SSH_RSA_SIG_BYTES] = {0};
-    sig[SSH_RSA_SIG_BYTES - 1] = 1; // s = 1, s < n so the range guard passes
+    uint8_t sig[DWS_RSA_SIG_BYTES] = {0};
+    sig[DWS_RSA_SIG_BYTES - 1] = 1; // s = 1, s < n so the range guard passes
 
     // s^0 mod n == 1, which never matches the expected PKCS#1 block, so verify still
     // fails - but only after bn_modexp_pub's e == 0 short-circuit runs without looping.
     TEST_ASSERT_EQUAL_INT(
-        -1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), sig, SSH_RSA_SIG_BYTES, SshRsaHash::SHA256));
+        -1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), sig, DWS_RSA_SIG_BYTES, DwsRsaHash::SHA256));
 }
 
 // ssh_rsa_encode_pubkey: the not-yet-loaded guard, the too-small-buffer guard, and the

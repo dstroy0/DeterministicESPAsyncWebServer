@@ -32568,16 +32568,16 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA512, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA512, sig))</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[SSH_RSA_SIG_BYTES - 1]);</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[DWS_RSA_SIG_BYTES - 1]);</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>Assert true (sig[SSH_RSA_SIG_BYTES - 1] &lt; 5)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
+      * <code>Assert true (sig[DWS_RSA_SIG_BYTES - 1] &lt; 5)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal int (-1, ssh_rsa_encode_pubkey(out, &out_len, sizeof(out)))</code>
       * <code>Assert equal int (0, dws_ssh_rsa_load_pubkey())</code>
@@ -32660,16 +32660,16 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA512, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA512, sig))</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[SSH_RSA_SIG_BYTES - 1]);</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[DWS_RSA_SIG_BYTES - 1]);</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>Assert true (sig[SSH_RSA_SIG_BYTES - 1] &lt; 5)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
+      * <code>Assert true (sig[DWS_RSA_SIG_BYTES - 1] &lt; 5)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal int (-1, ssh_rsa_encode_pubkey(out, &out_len, sizeof(out)))</code>
       * <code>Assert equal int (0, dws_ssh_rsa_load_pubkey())</code>
@@ -32777,16 +32777,16 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA512, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA512, sig))</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[SSH_RSA_SIG_BYTES - 1]);</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[DWS_RSA_SIG_BYTES - 1]);</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>Assert true (sig[SSH_RSA_SIG_BYTES - 1] &lt; 5)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
+      * <code>Assert true (sig[DWS_RSA_SIG_BYTES - 1] &lt; 5)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal int (-1, ssh_rsa_encode_pubkey(out, &out_len, sizeof(out)))</code>
       * <code>Assert equal int (0, dws_ssh_rsa_load_pubkey())</code>
@@ -32960,16 +32960,16 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA512, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA512, sig))</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[SSH_RSA_SIG_BYTES - 1]);</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[DWS_RSA_SIG_BYTES - 1]);</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>Assert true (sig[SSH_RSA_SIG_BYTES - 1] &lt; 5)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
+      * <code>Assert true (sig[DWS_RSA_SIG_BYTES - 1] &lt; 5)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal int (-1, ssh_rsa_encode_pubkey(out, &out_len, sizeof(out)))</code>
       * <code>Assert equal int (0, dws_ssh_rsa_load_pubkey())</code>
@@ -33114,16 +33114,16 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
       * <code>Assert equal int (0, bn_cmp(&out, &expected))</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA512, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA512, sig))</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[SSH_RSA_SIG_BYTES - 1]);</code>
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[DWS_RSA_SIG_BYTES - 1]);</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>Assert true (sig[SSH_RSA_SIG_BYTES - 1] &lt; 5)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
+      * <code>Assert true (sig[DWS_RSA_SIG_BYTES - 1] &lt; 5)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal int (-1, ssh_rsa_encode_pubkey(out, &out_len, sizeof(out)))</code>
       * <code>Assert equal int (0, dws_ssh_rsa_load_pubkey())</code>
@@ -33336,7 +33336,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Rsa sign verify sha512
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA512, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA512, sig))</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
   </details>
 
@@ -33345,9 +33345,9 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: s = em^0 mod n == 1, encoded big-endian as 255 zero bytes followed by 0x01.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[SSH_RSA_SIG_BYTES - 1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, sig[DWS_RSA_SIG_BYTES - 1]);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33355,9 +33355,9 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Every result is < n == 5, so the high 255 bytes are all zero.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), SshRsaHash::SHA256, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign((const uint8_t *)msg, strlen(msg), DwsRsaHash::SHA256, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, sig[i]);</code>
-      * <code>Assert true (sig[SSH_RSA_SIG_BYTES - 1] &lt; 5)</code>
+      * <code>Assert true (sig[DWS_RSA_SIG_BYTES - 1] &lt; 5)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33365,8 +33365,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Rsa verify length and range guards
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
-      * <code>Assert equal int (-1, ssh_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg)</code>
+      * <code>Assert equal int (-1, dws_rsa_verify(n_be, e_be, (const uint8_t *)msg, strlen(msg), big_sig, sizeof(big_sig)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -50545,7 +50545,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Install the private key into the native RSA sign fixture, e = 65537.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_rsa_sign(sd, sn, SshRsaHash::SHA512, sig))</code>
+      * <code>Assert equal int (0, ssh_rsa_sign(sd, sn, DwsRsaHash::SHA512, sig))</code>
       * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>

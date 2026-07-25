@@ -394,7 +394,7 @@ void test_pubkey_rsa_sha512_signature_succeeds()
     memcpy(sd + sn, P, pn);
     sn += pn;
     uint8_t sig[256];
-    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign(sd, sn, SshRsaHash::SHA512, sig));
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign(sd, sn, DwsRsaHash::SHA512, sig));
 
     // Full request = P || string( string("rsa-sha2-512") || string(sig) ).
     uint8_t pkt[1024];
@@ -784,7 +784,7 @@ void test_pubkey_blob_parse_failures()
     wr_u32(b + bl, 1);
     bl += 4;
     b[bl++] = 3;
-    uint32_t nlen = 300; // > SSH_RSA_KEY_BYTES (256)
+    uint32_t nlen = 300; // > DWS_RSA_KEY_BYTES (256)
     wr_u32(b + bl, nlen);
     bl += 4;
     memset(b + bl, 0x11, nlen);

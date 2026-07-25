@@ -10,13 +10,13 @@
 
 #if DWS_ENABLE_IKEV2
 
-#include "crypto/aesgcm.h"                                   // SK-payload AEAD (AES-256-GCM-16)
-#include "crypto/curve25519.h"                               // D-H group 31 (X25519, RFC 7748)
-#include "crypto/ecdsa.h"                                    // ECDSA-P256 certificate AUTH
-#include "crypto/hmac_sha256.h"                              // PRF = HMAC-SHA2-256
-#include "crypto/sha256.h"                                   // anti-DoS COOKIE hash (RFC 7296 §2.6)
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h" // RSA-2048 certificate AUTH verify
-#include <string.h>                                          // memcpy / memset (framing is hand-rolled)
+#include "crypto/aesgcm.h"      // SK-payload AEAD (AES-256-GCM-16)
+#include "crypto/curve25519.h"  // D-H group 31 (X25519, RFC 7748)
+#include "crypto/ecdsa.h"       // ECDSA-P256 certificate AUTH
+#include "crypto/hmac_sha256.h" // PRF = HMAC-SHA2-256
+#include "crypto/rsa.h"         // RSA-2048 certificate AUTH verify
+#include "crypto/sha256.h"      // anti-DoS COOKIE hash (RFC 7296 §2.6)
+#include <string.h>             // memcpy / memset (framing is hand-rolled)
 
 // ── big-endian scalar helpers ─────────────────────────────────────────────────────────────────
 static inline void put16(uint8_t *p, uint16_t v)
@@ -1882,7 +1882,7 @@ bool dws_ike_auth_verify_rsa_sha256(const uint8_t *n_be, const uint8_t *e_be4, c
     if (n == 0)
         return false;
     // The device signs with its own ECDSA key; this verifies a PEER whose CERT is RSA-2048 (SHA-256).
-    return ssh_rsa_verify(n_be, e_be4, scratch, n, sig, sig_len, SshRsaHash::SHA256) == 0;
+    return dws_rsa_verify(n_be, e_be4, scratch, n, sig, sig_len, DwsRsaHash::SHA256) == 0;
 }
 
 #endif // DWS_ENABLE_IKEV2

@@ -9,7 +9,7 @@
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
 #include "crypto/ecdsa.h"                                             // dws_ecdsa_p256_verify() (ecdsa-sha2-nistp256)
 #include "crypto/ed25519.h"                                           // dws_ed25519_verify() (ssh-ed25519 client keys)
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"          // ssh_rsa_verify(), SSH_RSA_KEY_BYTES
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"          // dws_rsa_verify(), DWS_RSA_KEY_BYTES
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"    // SSH_MSG_* constants
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h" // ssh_sess[], SshPhase
 #include <string.h>
@@ -109,7 +109,7 @@ static bool mpint_to_fixed(const uint8_t *m, uint32_t mlen, uint8_t *out, size_t
 }
 
 // Parse an "ssh-rsa" public-key blob: string("ssh-rsa") mpint(e) mpint(n).
-static bool parse_ssh_rsa_blob(const uint8_t *blob, uint32_t blen, uint8_t n_be[SSH_RSA_KEY_BYTES], uint8_t e_be[4])
+static bool parse_ssh_rsa_blob(const uint8_t *blob, uint32_t blen, uint8_t n_be[DWS_RSA_KEY_BYTES], uint8_t e_be[4])
 {
     size_t off = 0;
     const uint8_t *type;
@@ -130,7 +130,7 @@ static bool parse_ssh_rsa_blob(const uint8_t *blob, uint32_t blen, uint8_t n_be[
     uint32_t n_len;
     if (!read_string_ref(blob, blen, &off, &n_mp, &n_len))
         return false;
-    if (!mpint_to_fixed(n_mp, n_len, n_be, SSH_RSA_KEY_BYTES))
+    if (!mpint_to_fixed(n_mp, n_len, n_be, DWS_RSA_KEY_BYTES))
         return false;
 
     return true;
@@ -403,7 +403,7 @@ static int dws_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t 
                                                          "\x00\x00\x00\x13"
                                                          "ecdsa-sha2-nistp256",
                                                          4 + 19) == 0;
-    uint8_t n_be[SSH_RSA_KEY_BYTES];
+    uint8_t n_be[DWS_RSA_KEY_BYTES];
     uint8_t e_be[4];
     uint8_t ed_pub[32];
     uint8_t ec_pub[DWS_ECDSA_P256_PUB_LEN];
@@ -437,7 +437,7 @@ static int dws_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t 
 
     // For RSA the signature hash is chosen by the client's algorithm name (RFC 8332),
     // not the key blob: rsa-sha2-512 -> SHA-512, otherwise SHA-256.
-    const SshRsaHash rh = (strcmp(req->pk_algo, SSH_RSA_SIG_ALG_SHA512) == 0) ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
+    const DwsRsaHash rh = (strcmp(req->pk_algo, SSH_RSA_SIG_ALG_SHA512) == 0) ? DwsRsaHash::SHA512 : DwsRsaHash::SHA256;
     bool sig_ok;
     if (is_ed)
     {
@@ -451,7 +451,7 @@ static int dws_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t 
     }
     else
     {
-        sig_ok = ssh_rsa_verify(n_be, e_be, signed_data, sd, req->signature, req->signature_len, rh) == 0;
+        sig_ok = dws_rsa_verify(n_be, e_be, signed_data, sd, req->signature, req->signature_len, rh) == 0;
     }
     if (sig_ok)
     {

@@ -867,8 +867,8 @@ static bool verify_host_sig(const uint8_t *ks, uint32_t ks_len, const uint8_t *s
         uint8_t e4[4], n256[256];
         if (!rk.ok || !rs.ok || !mpint_to_fixed(e, elen, e4, 4) || !mpint_to_fixed(n, nlen, n256, 256))
             return false;
-        SshRsaHash h = (s_cli.hostkey == CliHostkey::RSA_SHA512) ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
-        return ssh_rsa_verify(n256, e4, H, h_len, raw, rawlen, h) == 0;
+        DwsRsaHash h = (s_cli.hostkey == CliHostkey::RSA_SHA512) ? DwsRsaHash::SHA512 : DwsRsaHash::SHA256;
+        return dws_rsa_verify(n256, e4, H, h_len, raw, rawlen, h) == 0;
     }
     }
     return false;

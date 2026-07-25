@@ -7,7 +7,7 @@
  *
  * The shared base64url decoder (base64 module), small bounded JSON field scanners
  * (no full parser, no heap), and the RS256 signature check delegated to
- * ssh_rsa_verify() (real RSA modexp; mbedTLS on ESP32). Claims are read only
+ * dws_rsa_verify() (real RSA modexp; mbedTLS on ESP32). Claims are read only
  * after the signature verifies.
  */
 
@@ -15,8 +15,8 @@
 
 #if DWS_ENABLE_OIDC
 
+#include "crypto/rsa.h"
 #include "network_drivers/presentation/base64/base64.h" // shared dws_base64url_decode
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/session/scratch.h" // per-dispatch arena (keeps the decode buffers off the worker stack)
 
 #include <stdio.h>
@@ -345,10 +345,10 @@ DWSOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, cons
     if (dws_base64url_decode(seg[2], seglen[2], sig, DWS_OIDC_RSA_BYTES) != DWS_OIDC_RSA_BYTES)
         return DWSOidcResult::DWS_OIDC_ERR_FORMAT;
 
-    // Verify over the signing input "header.payload" (ssh_rsa_verify hashes it). RS256 = SHA-256.
+    // Verify over the signing input "header.payload" (dws_rsa_verify hashes it). RS256 = SHA-256.
     size_t signing_len = (size_t)(seg[1] + seglen[1] - token);
-    if (ssh_rsa_verify(key->n, key->e, (const uint8_t *)token, signing_len, sig, DWS_OIDC_RSA_BYTES,
-                       SshRsaHash::SHA256) != 0)
+    if (dws_rsa_verify(key->n, key->e, (const uint8_t *)token, signing_len, sig, DWS_OIDC_RSA_BYTES,
+                       DwsRsaHash::SHA256) != 0)
         return DWSOidcResult::DWS_OIDC_ERR_SIGNATURE;
 
     // Claims (trusted only now that the signature is valid).

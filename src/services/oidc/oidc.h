@@ -9,7 +9,7 @@
  * 3.1.3.7). Given an ID token and the issuer's JWKS, it:
  *   1. parses the JWT header and requires `alg` == RS256,
  *   2. selects the signing key by `kid` (or the sole key if the token has none),
- *   3. verifies the RSASSA-PKCS1-v1.5 SHA-256 signature (via ssh_rsa_verify -
+ *   3. verifies the RSASSA-PKCS1-v1.5 SHA-256 signature (via dws_rsa_verify -
  *      real modular exponentiation; mbedTLS-accelerated on ESP32),
  *   4. checks `iss`, `aud` (string or array), `exp`, and `nbf` against the
  *      caller's expectations and clock,

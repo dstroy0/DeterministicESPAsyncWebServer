@@ -630,7 +630,7 @@ int ssh_extinfo_build(uint8_t *out, size_t *len, size_t cap)
     // Accepted client public-key signature algorithms for userauth. All are always
     // verifiable (independent of which host key we hold); ordered by our preference so a
     // modern client picks the steered-to type. A client uses this to choose a key to offer.
-    // Both RSA hashes are offered (rsa-sha2-512 first, RFC 8332); ssh_rsa_verify picks the
+    // Both RSA hashes are offered (rsa-sha2-512 first, RFC 8332); dws_rsa_verify picks the
     // hash from the client's chosen algorithm name. ecdsa-sha2-nistp256 (RFC 5656) and
     // ssh-ed25519 are also verifiable, so all four are advertised in preference order.
     const char *siglist = s_sshtr.prefer_rsa ? "rsa-sha2-512,rsa-sha2-256,ecdsa-sha2-nistp256,ssh-ed25519"
@@ -854,7 +854,7 @@ static int sign_hash(uint8_t i, const uint8_t *H, size_t h_len, uint8_t *sig, si
 {
     if (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_ED25519)
     {
-        if (sig_cap < 64) // GCOVR_EXCL_LINE  the caller's sig buffer is SSH_RSA_SIG_BYTES (256) >= 64
+        if (sig_cap < 64) // GCOVR_EXCL_LINE  the caller's sig buffer is DWS_RSA_SIG_BYTES (256) >= 64
             return -1;    // GCOVR_EXCL_LINE
         dws_ed25519_sign(sig, H, h_len, s_sshtr.ed_seed);
         *sig_len = 64;
@@ -879,11 +879,11 @@ static int sign_hash(uint8_t i, const uint8_t *H, size_t h_len, uint8_t *sig, si
     // rsa-sha2-512 and rsa-sha2-256 share the one "ssh-rsa" key; the negotiated
     // algorithm only chooses the signature hash (RFC 8332).
     const bool sha512 = (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512);
-    const SshRsaHash rh = sha512 ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
-    if (sig_cap < SSH_RSA_SIG_BYTES ||        // GCOVR_EXCL_LINE  neither operand can be true: the caller's buffer is
+    const DwsRsaHash rh = sha512 ? DwsRsaHash::SHA512 : DwsRsaHash::SHA256;
+    if (sig_cap < DWS_RSA_SIG_BYTES ||        // GCOVR_EXCL_LINE  neither operand can be true: the caller's buffer is
         ssh_rsa_sign(H, h_len, rh, sig) != 0) // GCOVR_EXCL_LINE  sig buffer is 256B and the negotiated
         return -1; // GCOVR_EXCL_LINE  RSA key is loaded (available), so neither the size nor the sign can fail
-    *sig_len = SSH_RSA_SIG_BYTES;
+    *sig_len = DWS_RSA_SIG_BYTES;
     *sig_name = sha512 ? HOSTKEY_RSA_SHA512 : HOSTKEY_RSA_SHA256;
     return 0;
 }
@@ -1181,7 +1181,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     }
 
     // 4. Sign H with the negotiated host key (rsa-sha2-512/256 or ssh-ed25519).
-    uint8_t sig[SSH_RSA_SIG_BYTES]; // 256 bytes: fits an RSA-2048 sig and a 64-byte ed25519 sig
+    uint8_t sig[DWS_RSA_SIG_BYTES]; // 256 bytes: fits an RSA-2048 sig and a 64-byte ed25519 sig
     size_t sig_len = 0;
     const char *sig_name = nullptr;
     if (sign_hash(i, H, h_len, sig, &sig_len, sizeof(sig), &sig_name) != 0) // GCOVR_EXCL_LINE  cannot fail here:

@@ -6,7 +6,7 @@
 // verifies the RSASSA-PKCS1-v1.5 SHA-256 signature. Four pure operations are timed:
 //   * dws_oidc_token_kid        - base64url-decode the header and scan out the `kid` (cheap, no crypto)
 //   * dws_oidc_jwks_find        - scan the JWKS JSON and base64url-decode the RSA modulus/exponent
-//   * dws_oidc_verify_with_key  - the headline op: real RSA-2048 modexp (ssh_rsa_verify, mbedTLS-
+//   * dws_oidc_verify_with_key  - the headline op: real RSA-2048 modexp (dws_rsa_verify, mbedTLS-
 //                                 accelerated on ESP32) over a pre-resolved key + all claim checks
 //   * dws_oidc_verify           - the end-to-end entry point (jwks_find + verify_with_key combined)
 // Everything here is deterministic CPU work over fixed BSS/scratch buffers - the verifier never
