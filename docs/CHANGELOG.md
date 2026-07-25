@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.165.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.165.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1a3fcba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a3fcba7b6908568998f9c6c50a99d6f96bc5941))
+
+### Changes
+
+- Bump version: 7.164.0 → 7.165.0 ([`a1a6baa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1a6baa21f7a71ed09cb97bdb624a148676cb45e))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7eadd54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7eadd5452db4184cd6d4b6613214c9afc2db08c5))
+
+### Refactor
+
+- move the symmetric cipher suite (ChaCha20, Poly1305, ChaCha20-Poly1305, AES-256-CTR, AES-256-GCM) into src/crypto ([`b0a7578`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0a75787aa23c9931135d77c5bb78fb6d0af5f48))
+
+</details>
+
 ## [7.164.0] - 2026-07-25
 
 <details>
