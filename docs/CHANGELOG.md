@@ -2,12 +2,42 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.170.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.170.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a2b9cdf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2b9cdfa4aa526a125e51e4925652e1dac6e1a2a))
+
+### Changes
+
+- Bump version: 7.169.0 → 7.170.0 ([`f1c7615`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1c76157e387a981a2690bcff22cc4e9019ad0b0))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e2c71e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2c71e04900ad6601feb1700d6b7907b7395d66e))
+
+### Features
+
+- SMB 3.x AES-CMAC signing + SP800-108 signing-key derivation ([`d72402d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d72402de3c339f7d217da2b1cd1045934080e692))
+
+</details>
+
+## [7.169.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.169.0 - 2026-07-25</b></summary>
 
 ### CI / Build
 
 - update test report + coverage [skip ci] ([`01f4d00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01f4d00a39e201b09a126df185d6120d120467e1))
 - update CHANGELOG.md [skip ci] ([`8bc1538`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8bc15382fecaa5389c195083ed344099715feea0))
+
+### Changes
+
+- Bump version: 7.168.1 → 7.169.0 ([`527aeeb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/527aeebf61b6e3198ad4468105cb998253dadb42))
 
 ### Documentation
 
@@ -17,6 +47,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - AES-128-CMAC primitive (RFC 4493) for SMB 3.x signing ([`00a3e9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00a3e9e4e82fb2a3b9e7a33ad4555578271d6b6d))
+
+</details>
 
 ## [7.168.1] - 2026-07-25
 
