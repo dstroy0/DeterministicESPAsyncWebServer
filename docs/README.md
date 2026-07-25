@@ -658,6 +658,7 @@ src/
 │   ├── s2_defaults.h
 │   ├── s31_defaults.h
 │   └── s3_defaults.h
+├── crypto/  (sha512.h, sha512.cpp)
 ├── network_drivers/
 │   ├── application/
 │   │   ├── binary_asset_blobs.cpp
@@ -779,9 +780,7 @@ src/
 │   │   │   │   ├── ssh_rsa.cpp
 │   │   │   │   ├── ssh_rsa.h
 │   │   │   │   ├── ssh_sha256.cpp
-│   │   │   │   ├── ssh_sha256.h
-│   │   │   │   ├── ssh_sha512.cpp
-│   │   │   │   └── ssh_sha512.h
+│   │   │   │   └── ssh_sha256.h
 │   │   │   └── transport/
 │   │   │       ├── ssh_comp.cpp
 │   │   │       ├── ssh_comp.h
@@ -1249,7 +1248,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `HTTP_CLIENT` | `L7-Application/HttpClient` | 734,625 | 63,180 |
 | `SMTP` | `L7-Application/SmtpAlert` | 735,201 | 61,124 |
 | `MQTT` | `L7-Application/MqttClient` | 736,465 | 65,340 |
-| `SMB` | `L7-Application/SmbFileClient` | 744,661 | 65,220 |
+| `SMB` | `L7-Application/SmbFileClient` | 744,673 | 65,220 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,669 | 46,708 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 753,149 | 81,828 |
 | `ADS` | `L7-Application/AdsClient` | 753,317 | 44,204 |
