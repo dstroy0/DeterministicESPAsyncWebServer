@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5197 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5200 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -45548,7 +45548,7 @@ A thorough directory of all **5197 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (37 tests)</b></summary>
+<summary><b>test_smb2 (40 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -45638,6 +45638,65 @@ A thorough directory of all **5197 test cases** across **292 suites**. Expand a 
       * <code>Assert false (dws_smb2_parse_negotiate_response(bad, n, &r))</code>
       * <code>Assert false (dws_smb2_parse_negotiate_response(bad, n, &r))</code>
       * <code>Assert false (dws_smb2_parse_negotiate_response(m, 100, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_negotiate_311</b> &mdash; <i>header(64) + body(36) + 5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) = 172</i></summary>
+
+    * **Objective**: header(64) + body(36) + 5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) = 172
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(172, n);</code>
+      * <code>Assert true (dws_smb2_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_NEGOTIATE, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(36, r16(b + 0)); // StructureSize</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(5, r16(b + 2));  // DialectCount now includes 3.1.1</code>
+      * <code>Assert equal memory (gid, b + 12, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0311, r16(b + 44)); // 5th dialect</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, r16(b + 32));                              // NegotiateContextCount</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(112, ctx_off);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, ctx_off % 8); // 8-byte aligned</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_PREAUTH_INTEGRITY_CAPABILITIES, r16(c + 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(6 + 32, r16(c + 2)); // DataLength</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, r16(c + 8));      // HashAlgorithmCount</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(32, r16(c + 10));    // SaltLength</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2HashAlgorithm::SMB2_PREAUTH_INTEGRITY_SHA512, r16(c + 12));</code>
+      * <code>Assert equal memory (salt, c + 14, 32)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_SIGNING_CAPABILITIES, r16(c2 + 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, r16(c2 + 2)); // DataLength</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, r16(c2 + 8)); // SigningAlgorithmCount</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2SigningAlgorithm::SMB2_SIGNING_HMAC_SHA256, r16(c2 + 10));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, 100, gid, 0, salt, sizeof(salt)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, nullptr, 32));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_negotiate_contexts</b> &mdash; <i>Parse negotiate contexts</i></summary>
+
+    * **Objective**: Parse negotiate contexts
+    * **Assertions**:
+      * <code>Assert true (dws_smb2_parse_negotiate_contexts(m, n, &c))</code>
+      * <code>Assert true (c.have_preauth)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2HashAlgorithm::SMB2_PREAUTH_INTEGRITY_SHA512, c.hash_algorithm);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(16, c.salt_len);</code>
+      * <code>Assert not null (c.salt)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x50, c.salt[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x5F, c.salt[15]);</code>
+      * <code>Assert true (c.have_encryption)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, c.cipher);</code>
+      * <code>Assert true (c.have_signing)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2SigningAlgorithm::SMB2_SIGNING_HMAC_SHA256, c.signing_algorithm);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_negotiate_contexts_rejects</b> &mdash; <i>Parse negotiate contexts rejects</i></summary>
+
+    * **Objective**: Parse negotiate contexts rejects
+    * **Assertions**:
+      * <code>Assert false (dws_smb2_parse_negotiate_contexts(bad, n, &c))</code>
+      * <code>Assert false (dws_smb2_parse_negotiate_contexts(bad, n, &c))</code>
+      * <code>Assert false (dws_smb2_parse_negotiate_contexts(bad, n, &c))</code>
+      * <code>Assert false (dws_smb2_parse_negotiate_contexts(m, 100, &c))</code>
   </details>
 
   <details style="margin-left: 20px;">
