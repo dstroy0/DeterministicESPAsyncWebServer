@@ -194,7 +194,7 @@
  *     modexp) uses ~7 KB (measured on a DevKitV1).
  *   - SSH modern crypto (curve25519-sha256 KEX + ssh-ed25519, software field
  *     arithmetic in radix-2^16) peaks at ~10.5 KB (measured on an ESP32-S3): the
- *     deep ssh_gf call chain plus the on-accelerator field inversion nests deeper
+ *     deep dws_gf call chain plus the on-accelerator field inversion nests deeper
  *     than the RSA path.
  * So the default adapts: 12 KB when SSH is enabled (curve/ed25519 can be
  * negotiated), 8 KB otherwise. Do NOT lower it below the matching floor
@@ -205,7 +205,7 @@
  */
 #ifndef DWS_WORKER_TASK_STACK
 // SSH (curve25519 + ssh-ed25519, server OR the reverse-SSH client) and HTTP/3 (the QUIC TLS-1.3
-// handshake reuses the same ssh_ed25519 signer for CertificateVerify) all peak at ~10.5 KB on the
+// handshake reuses the same dws_ed25519 signer for CertificateVerify) all peak at ~10.5 KB on the
 // worker task; the PQ/T hybrid (DWS_ENABLE_PQC_KEX) runs ML-KEM-768 on top, ~7 KB more. The default
 // tracks the matching floor so a hybrid build is provisioned, not starved; the guard at the bottom of
 // this file is the backstop when the stack is set by hand. (A flag set only in the config block below,

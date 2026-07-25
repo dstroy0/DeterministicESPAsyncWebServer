@@ -8,6 +8,7 @@
 // HEADERS (:status 200) + DATA body. Exercises QUIC packet crypto + framing, the TLS 1.3 handshake,
 // QUIC streams, HTTP/3 framing, and QPACK, all composed.
 
+#include "crypto/curve25519.h"
 #include "crypto/sha256.h"
 #include "network_drivers/presentation/http3/h3_conn.h"
 #include "network_drivers/presentation/http3/h3_frame.h"
@@ -19,7 +20,6 @@
 #include "network_drivers/presentation/http3/quic_varint.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include <string.h>
 #include <unity.h>
 
@@ -229,7 +229,7 @@ void test_http3_get_end_to_end()
     uint8_t ctpe[128];
     size_t ctpl = dws_quic_tp_encode(&ctp, ctpe, sizeof(ctpe));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t chl = build_client_hello(ch, client_pub, ctpe, ctpl);
     uint8_t frames[1200];
@@ -249,8 +249,8 @@ void test_http3_get_end_to_end()
     size_t pt = open_long(sdg, sl, &init.server, plain, &wire, &ty);
     size_t shl = extract_crypto(plain, pt, sh);
     uint8_t server_pub[32], ecdhe[32];
-    ssh_x25519_base(server_pub, SERVER_PRIV);
-    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+    dws_x25519_base(server_pub, SERVER_PRIV);
+    dws_x25519(ecdhe, CLIENT_PRIV, server_pub);
     DwsSha256Ctx t;
     uint8_t chsh[32], chsf[32];
     dws_sha256_init(&t);

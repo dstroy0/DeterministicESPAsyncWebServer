@@ -51999,10 +51999,10 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Ed25519 verify rejects tampering
     * **Assertions**:
-      * <code>Assert true (ssh_ed25519_verify(pub, msg, 3, sig))</code>
-      * <code>Assert false (ssh_ed25519_verify(pub, msg, 3, bad))</code>
-      * <code>Assert false (ssh_ed25519_verify(pub, badmsg, 3, sig))</code>
-      * <code>Assert false (ssh_ed25519_verify(badpub, msg, 3, sig))</code>
+      * <code>Assert true (dws_ed25519_verify(pub, msg, 3, sig))</code>
+      * <code>Assert false (dws_ed25519_verify(pub, msg, 3, bad))</code>
+      * <code>Assert false (dws_ed25519_verify(pub, badmsg, 3, sig))</code>
+      * <code>Assert false (dws_ed25519_verify(badpub, msg, 3, sig))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -52010,9 +52010,9 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: S = 0xFF..FF is far above the group order L (~2^252): non-canonical -> reject.
     * **Assertions**:
-      * <code>Assert true (ssh_ed25519_verify(pub, msg, 3, sig))</code>
-      * <code>Assert false (ssh_ed25519_verify(pub, msg, 3, bad))</code>
-      * <code>Assert false (ssh_ed25519_verify(pub, msg, 3, bad))</code>
+      * <code>Assert true (dws_ed25519_verify(pub, msg, 3, sig))</code>
+      * <code>Assert false (dws_ed25519_verify(pub, msg, 3, bad))</code>
+      * <code>Assert false (dws_ed25519_verify(pub, msg, 3, bad))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -52020,7 +52020,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Ed25519 verify rejects invalid pubkey point
     * **Assertions**:
-      * <code>Assert false (ssh_ed25519_verify(cand, wrongmsg, 3, sig))</code>
+      * <code>Assert false (dws_ed25519_verify(cand, wrongmsg, 3, sig))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -52028,7 +52028,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Ed25519 roundtrip long
     * **Assertions**:
-      * <code>Assert true (ssh_ed25519_verify(pub, msg, sizeof(msg), sig))</code>
+      * <code>Assert true (dws_ed25519_verify(pub, msg, sizeof(msg), sig))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -52402,7 +52402,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &st, &st_len))</code>
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &sig, &sl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
-      * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
+      * <code>Assert true (dws_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_c2s, ssh_keys[0].chacha_key_c2s, DWS_CHACHAPOLY_KEY_LEN);</code>
   </details>
 
@@ -52450,7 +52450,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &st, &st_len))</code>
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &sig, &sl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
-      * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA512_DIGEST_LEN, sig))</code>
+      * <code>Assert true (dws_ed25519_verify(hostpub, H, DWS_SHA512_DIGEST_LEN, sig))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -53327,7 +53327,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>Assert true (rd_string(sigblob, sig_len, &so, &sig, &sl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
       * <code>Assert equal memory (H, s-&gt;session_id, DWS_SHA256_DIGEST_LEN)</code>
-      * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
+      * <code>Assert true (dws_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -53366,7 +53366,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
       * <code>Assert true (dws_ecdsa_p256_ecdh(K, qs, client_sk))</code>
       * <code>Assert equal memory (H, s-&gt;session_id, DWS_SHA256_DIGEST_LEN)</code>
-      * <code>Assert true (ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
+      * <code>Assert true (dws_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -55706,8 +55706,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(TLS_SIG_ED25519, (out[4] &lt;&lt; 8) | out[5]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(64, (out[6] &lt;&lt; 8) | out[7]);</code>
       * <code>Assert equal uint (8 + 64, n)</code>
-      * <code>Assert true (ssh_ed25519_verify(pub, content, clen, out + 8))</code>
-      * <code>Assert false (ssh_ed25519_verify(pub, content, clen, out + 8))</code>
+      * <code>Assert true (dws_ed25519_verify(pub, content, clen, out + 8))</code>
+      * <code>Assert false (dws_ed25519_verify(pub, content, clen, out + 8))</code>
   </details>
 
 </details>

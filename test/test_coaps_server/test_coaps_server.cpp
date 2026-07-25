@@ -9,14 +9,14 @@
 // reaping idle connections. The DTLS/CoAP crypto correctness itself is covered by test_dtls_conn and
 // test_coaps; here the client is just a vehicle to reach and use an established connection.
 
+#include "crypto/curve25519.h"
+#include "crypto/ed25519.h"
 #include "crypto/sha256.h"
 #include "network_drivers/presentation/dtls/dtls_conn.h"
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
 #include "network_drivers/presentation/dtls/dtls_record.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "services/clock.h"
 #include "services/coap/coap.h"
 #include "services/coap/coaps_server.h"
@@ -115,7 +115,7 @@ void setUp()
     g_rng_ctr = 0;
     out_reset();
 
-    ssh_ed25519_pubkey(g_server_cert, SERVER_ED_SEED);
+    dws_ed25519_pubkey(g_server_cert, SERVER_ED_SEED);
     CoapsServerConfig cfg;
     memset(&cfg, 0, sizeof cfg);
     cfg.cert_der = g_server_cert;
@@ -296,7 +296,7 @@ static void client_handshake(const char *ip, uint16_t port, DtlsRecordKeys *cli_
                              uint8_t *scid_out = nullptr, size_t *scid_len_out = nullptr)
 {
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    dws_x25519_base(client_pub, CLIENT_X25519_PRIV);
 
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub, client_cid, client_cid_len);
@@ -341,7 +341,7 @@ static void client_handshake(const char *ip, uint16_t port, DtlsRecordKeys *cli_
     }
 
     uint8_t ecdhe[32];
-    ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
+    dws_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
     Tls13KeySchedule cks;
     uint8_t hh[32];
     DwsSha256Ctx tmp = tr;
@@ -479,7 +479,7 @@ static void test_idle_reap(void)
 static void test_pto_retransmit_driven_by_poll(void)
 {
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    dws_x25519_base(client_pub, CLIENT_X25519_PRIV);
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
     uint8_t ch_frag[300];
@@ -542,7 +542,7 @@ static void test_cid_address_migration(void)
 static void ingest_real_client_hello(const char *ip, uint16_t port)
 {
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    dws_x25519_base(client_pub, CLIENT_X25519_PRIV);
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
     uint8_t ch_frag[300];

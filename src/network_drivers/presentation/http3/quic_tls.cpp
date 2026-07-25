@@ -10,8 +10,8 @@
 
 #if DWS_ENABLE_HTTP3
 
+#include "crypto/curve25519.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #if DWS_ENABLE_PQC_KEX
 #include "network_drivers/presentation/pqc/mlkem.h" // dws_mlkem768_encaps (X25519MLKEM768 hybrid)
 #endif
@@ -183,8 +183,8 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
         }
         uint8_t x_ss[32];
         uint8_t server_pub[32];
-        ssh_x25519(x_ss, qt->cfg.ephemeral_priv, ch.client_x25519);
-        ssh_x25519_base(server_pub, qt->cfg.ephemeral_priv);
+        dws_x25519(x_ss, qt->cfg.ephemeral_priv, ch.client_x25519);
+        dws_x25519_base(server_pub, qt->cfg.ephemeral_priv);
         memcpy(server_share + MLKEM768_CT_BYTES, server_pub, 32);
         memcpy(ecdhe, ml_ss, 32);
         memcpy(ecdhe + 32, x_ss, 32);
@@ -197,8 +197,8 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     uint8_t server_share[32];
 #endif
     {
-        ssh_x25519(ecdhe, qt->cfg.ephemeral_priv, ch.client_x25519);
-        ssh_x25519_base(server_share, qt->cfg.ephemeral_priv);
+        dws_x25519(ecdhe, qt->cfg.ephemeral_priv, ch.client_x25519);
+        dws_x25519_base(server_share, qt->cfg.ephemeral_priv);
         ecdhe_len = 32;
         share_len = 32;
         group = TLS_GROUP_X25519;

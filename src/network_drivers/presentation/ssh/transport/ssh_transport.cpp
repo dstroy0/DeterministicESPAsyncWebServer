@@ -7,11 +7,11 @@
  */
 
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
-#include "crypto/bignum.h" // bn_*, DwsBigNum
-#include "crypto/ecdsa.h"  // dws_ecdsa_p256_* (ecdsa-sha2-nistp256 host key)
+#include "crypto/bignum.h"     // bn_*, DwsBigNum
+#include "crypto/curve25519.h" // dws_x25519 (curve25519-sha256 KEX)
+#include "crypto/ecdsa.h"      // dws_ecdsa_p256_* (ecdsa-sha2-nistp256 host key)
+#include "crypto/ed25519.h"    // dws_ed25519 host-key sign
 #include "crypto/sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_x25519 (curve25519-sha256 KEX)
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"    // ssh_ed25519 host-key sign
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"   // ssh_rsa_encode_pubkey/sign, ssh_host_pubkey, SSH_RSA_*
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
@@ -102,7 +102,7 @@ bool ssh_kex_prefer_rsa(void)
 void dws_ssh_hostkey_ed25519_set(const uint8_t seed[32])
 {
     memcpy(s_sshtr.ed_seed, seed, 32);
-    ssh_ed25519_pubkey(s_sshtr.ed_pub, s_sshtr.ed_seed);
+    dws_ed25519_pubkey(s_sshtr.ed_pub, s_sshtr.ed_seed);
     s_sshtr.ed_have = true;
 }
 bool dws_ssh_hostkey_ed25519_available(void)
@@ -856,7 +856,7 @@ static int sign_hash(uint8_t i, const uint8_t *H, size_t h_len, uint8_t *sig, si
     {
         if (sig_cap < 64) // GCOVR_EXCL_LINE  the caller's sig buffer is SSH_RSA_SIG_BYTES (256) >= 64
             return -1;    // GCOVR_EXCL_LINE
-        ssh_ed25519_sign(sig, H, h_len, s_sshtr.ed_seed);
+        dws_ed25519_sign(sig, H, h_len, s_sshtr.ed_seed);
         *sig_len = 64;
         *sig_name = HOSTKEY_ED; // "ssh-ed25519"
         return 0;
@@ -925,7 +925,7 @@ int ssh_kex_generate(uint8_t i)
     {
         // X25519 ephemeral: random 32-byte scalar, public = X25519(scalar, base point).
         ssh_rng_fill(ssh_sess[i].ecdh_sk, 32);
-        ssh_x25519_base(ssh_sess[i].ecdh_pk, ssh_sess[i].ecdh_sk);
+        dws_x25519_base(ssh_sess[i].ecdh_pk, ssh_sess[i].ecdh_sk);
         return 0;
     }
     if (a == SshKexAlg::SSH_KEX_ECDH_NISTP256)
@@ -971,7 +971,7 @@ static int hybrid_mlkem_x25519(uint8_t i, const uint8_t *payload, size_t len, ui
         return -1; // malformed encapsulation key (FIPS 203 modulus check)
 
     uint8_t k_cl[32];
-    ssh_x25519(k_cl, ssh_sess[i].ecdh_sk, qc);
+    dws_x25519(k_cl, ssh_sess[i].ecdh_sk, qc);
     uint8_t zacc = 0;
     for (int b = 0; b < 32; b++)
         zacc |= k_cl[b];
@@ -1015,7 +1015,7 @@ static int hybrid_sntrup761_x25519(uint8_t i, const uint8_t *payload, size_t len
     dws_sntrup761_enc(pk, s_reply, k_pq); // ciphertext -> s_reply[0..1038], shared -> k_pq
 
     uint8_t k_cl[32];
-    ssh_x25519(k_cl, ssh_sess[i].ecdh_sk, qc);
+    dws_x25519(k_cl, ssh_sess[i].ecdh_sk, qc);
     uint8_t zacc = 0;
     for (int b = 0; b < 32; b++)
         zacc |= k_cl[b];
@@ -1071,7 +1071,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         uint8_t kk[32];
         if (parse_ecdh_init(payload, len, qc) != 0)
             return -1;
-        ssh_x25519(kk, s->ecdh_sk, qc);
+        dws_x25519(kk, s->ecdh_sk, qc);
         // Reject a low-order client point (all-zero shared secret) - RFC 7748 §6.1.
         uint8_t zacc = 0;
         for (int b = 0; b < 32; b++)

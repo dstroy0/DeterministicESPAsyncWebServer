@@ -5,11 +5,11 @@
 // KEXINIT algorithm negotiation.
 
 #include "baseline_keys.h"
+#include "crypto/curve25519.h"
 #include "crypto/ecdsa.h"
+#include "crypto/ed25519.h"
 #include "crypto/sha256.h"
 #include "cyclone_kex_bytes.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
@@ -709,7 +709,7 @@ void test_kexdh_handle_curve25519_ed25519_end_to_end()
         uint8_t client_sk[32], qc[32];
         for (int j = 0; j < 32; j++)
             client_sk[j] = (uint8_t)(0x40 + j);
-        ssh_x25519_base(qc, client_sk);
+        dws_x25519_base(qc, client_sk);
         uint8_t pkt[64];
         pkt[0] = SSH_MSG_KEXDH_INIT;
         put_string(pkt + 1, qc, 32);
@@ -741,7 +741,7 @@ void test_kexdh_handle_curve25519_ed25519_end_to_end()
         TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &hostpub, &hp_len));
         TEST_ASSERT_EQUAL_UINT32(32, hp_len);
         uint8_t expect_pub[32];
-        ssh_ed25519_pubkey(expect_pub, seed);
+        dws_ed25519_pubkey(expect_pub, seed);
         TEST_ASSERT_EQUAL_MEMORY(expect_pub, hostpub, 32);
 
         // sigblob = string("ssh-ed25519") || string(sig64).
@@ -755,7 +755,7 @@ void test_kexdh_handle_curve25519_ed25519_end_to_end()
 
         // Client recomputes K = X25519(client_sk, Q_S) and rebuilds the exchange hash.
         uint8_t K[32];
-        ssh_x25519(K, client_sk, qs);
+        dws_x25519(K, client_sk, qs);
         static uint8_t pre[1024];
         size_t o = 0;
         o += put_string(pre + o, (const uint8_t *)vc, strlen(vc));
@@ -771,7 +771,7 @@ void test_kexdh_handle_curve25519_ed25519_end_to_end()
         TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, DWS_SHA256_DIGEST_LEN); // server captured this H
 
         // The signature verifies against the host key over the reconstructed H.
-        TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
+        TEST_ASSERT_TRUE(dws_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
     }
 }
 
@@ -857,7 +857,7 @@ void test_kexdh_handle_ecdh_nistp256_end_to_end()
     TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &hostpub, &hp_len));
     TEST_ASSERT_EQUAL_UINT32(32, hp_len);
     uint8_t expect_pub[32];
-    ssh_ed25519_pubkey(expect_pub, seed);
+    dws_ed25519_pubkey(expect_pub, seed);
     TEST_ASSERT_EQUAL_MEMORY(expect_pub, hostpub, 32);
 
     // sigblob = string("ssh-ed25519") || string(sig64).
@@ -887,7 +887,7 @@ void test_kexdh_handle_ecdh_nistp256_end_to_end()
     TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, DWS_SHA256_DIGEST_LEN); // server captured this same H
 
     // The host signature verifies against the reconstructed H.
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
+    TEST_ASSERT_TRUE(dws_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
 }
 
 // An off-curve client point is rejected (RFC 5656 §4 point validation).
@@ -1030,7 +1030,7 @@ void test_kexdh_handle_ecdsa_end_to_end()
     uint8_t qc[32];
     for (int j = 0; j < 32; j++)
         client_sk[j] = (uint8_t)(0x40 + j);
-    ssh_x25519_base(qc, client_sk);
+    dws_x25519_base(qc, client_sk);
     uint8_t pkt[64];
     pkt[0] = SSH_MSG_KEXDH_INIT;
     put_string(pkt + 1, qc, 32);
@@ -1106,7 +1106,7 @@ void test_kexdh_handle_ecdsa_end_to_end()
 
     // Reconstruct H the way a conforming client would and verify the P-256 signature.
     uint8_t K[32];
-    ssh_x25519(K, client_sk, qs);
+    dws_x25519(K, client_sk, qs);
     static uint8_t pre[1024];
     size_t o = 0;
     o += put_string(pre + o, (const uint8_t *)vc, strlen(vc));
@@ -1711,7 +1711,7 @@ void test_kexdh_handle_ecdsa_hostkey_absent_fails()
     uint8_t qc[32];
     for (int j = 0; j < 32; j++)
         client_sk[j] = (uint8_t)(0x20 + j);
-    ssh_x25519_base(qc, client_sk);
+    dws_x25519_base(qc, client_sk);
 
     uint8_t pkt[64];
     pkt[0] = SSH_MSG_KEXDH_INIT;

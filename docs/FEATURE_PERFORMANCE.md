@@ -382,10 +382,10 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
 
 | Operation                               | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
 | --------------------------------------- | ---------: | --------: | -------------: | ------------: |
-| `ssh_x25519` scalarmult (KEX)           |  1,588,291 |         - |     23,219 [1] |             - |
-| `ssh_ed25519_sign` (host-key signature) |  5,448,039 |         - |     85,638 [1] |             - |
+| `dws_x25519` scalarmult (KEX)           |  1,588,291 |         - |     23,219 [1] |             - |
+| `dws_ed25519_sign` (host-key signature) |  5,448,039 |         - |     85,638 [1] |             - |
 | `dws_chachapoly_encrypt` (1 KiB packet) |      6,103 |     167.8 |            705 |           1.5 |
-| `ssh_gf_mul` (radix-2^16 field mul)     |        510 |         - |          55.45 |             - |
+| `dws_gf_mul` (radix-2^16 field mul)     |        510 |         - |          55.45 |             - |
 
 [1] Both the X25519 KEX and the Ed25519 host-key signature run their field arithmetic on the RSA/MPI hardware
 accelerator on the S3 (see the MODMULT bullet); the host figures are the software radix-2^16 ladder (the native
@@ -403,13 +403,13 @@ accelerator on the S3 (see the MODMULT bullet); the host figures are the softwar
   ceiling once the session is up - ample for a shell / control channel or metered telemetry, a bottleneck
   for bulk file transfer (`scp` of large files). AES-256-CTR is offered as a fallback (HW-accelerated AES),
   but chacha is negotiated first and is the security-preferred choice.
-- **SIMD field multiply SHIPPED (ESP32-S3).** `ssh_gf_mul` now runs on the S3 vector unit
+- **SIMD field multiply SHIPPED (ESP32-S3).** `dws_gf_mul` now runs on the S3 vector unit
   (`ee.vmulas.s16.accx`): balance the limbs into signed-16-bit, run the 31-output convolution on the 40-bit
   ACCX, fold in C. The isolated field multiply is **8,583 vs 13,308 cycles = 1.55x** (device-measured,
   byte-exact vs scalar across 3000 operands; guarded `#if CONFIG_IDF_TARGET_ESP32S3`, scalar fallback
   elsewhere). Measured in the ladder: **X25519 150.8 -> 97.5 ms (1.55x), ed25519_sign 547.9 -> 380.3 ms (1.44x)**, so the
   handshake crypto (2 X25519 + 1 ed25519 sign) falls from ~0.85 s to ~0.58 s. Getting there took three
-  levers past the raw MAC: (1) a dedicated vector `ssh_gf_sq` that balances the operand **once** (squarings
+  levers past the raw MAC: (1) a dedicated vector `dws_gf_sq` that balances the operand **once** (squarings
   are ~2/3 of the Montgomery ladder; `mul(a,a)` would balance twice); (2) **`gf_balance_s16` in `int32`
   instead of `int64`** - the balance runs per operand and its 48-step carry propagation was emulated 64-bit
   math, which dominated the field op (limbs stay ~+-2^18 so `int32` is byte-exact); (3) confirming the
@@ -425,7 +425,7 @@ accelerator on the S3 (see the MODMULT bullet); the host figures are the softwar
   tweetnacl MODMULT chains; no per-op pack/unpack because everything stays canonical - MODMULT output is provably
   `< p`, verified 0 / 5000). One modmul is **1,386 cycles vs the SIMD `gf_mul`'s 7,955 (5.8x), 9.6x vs scalar**,
   data-independent (constant-time). The X25519 Montgomery ladder and the Ed25519 extended-twisted-Edwards point
-  arithmetic share this `fe` layer (`ssh_fe25519.h`, `DWS_FE25519_MPI_HW`); end to end **X25519 97.5 -> 22.65
+  arithmetic share this `fe` layer (`crypto/fe25519.h`, `DWS_FE25519_MPI_HW`); end to end **X25519 97.5 -> 22.65
   ms, ed25519_sign 380 -> 85.6 ms**, dropping the handshake crypto from ~0.58 s (SIMD) to **~0.13 s**. Byte-exact
   vs the software radix-2^16 ladder (RFC 7748 §5.2 / RFC 8032 §7.1 + Wycheproof, native tests) and **HW-verified
   by a live `curve25519-sha256` KEX with an `ssh-ed25519` host key against OpenSSH** on the rig (a wrong X25519
@@ -433,8 +433,8 @@ accelerator on the S3 (see the MODMULT bullet); the host figures are the softwar
   shares the accelerator (and its lock) with mbedTLS RSA/DH, so each scalar-mult brackets itself with
   `esp_mpi_{enable,disable}_hardware_hw_op()` - the same lock+power bring-up mbedTLS uses - and holds the lock for
   its run (a handshake is infrequent; per-multiply toggling would cost more than it saves). Guarded
-  `#if defined(ARDUINO) && CONFIG_IDF_TARGET_ESP32S3`, with the SIMD/scalar `ssh_gf` ladder as the fallback.
-  **HTTP/3 shares the same `ssh_x25519` + `ssh_ed25519`, so the QUIC handshake gets the win too.** The
+  `#if defined(ARDUINO) && CONFIG_IDF_TARGET_ESP32S3`, with the SIMD/scalar `dws_gf` ladder as the fallback.
+  **HTTP/3 shares the same `dws_x25519` + `dws_ed25519`, so the QUIC handshake gets the win too.** The
   reproducible probe lives in `pentesting/rig_firmware/src/main_ssh.cpp` under `DWS_SSH_BENCH`.
 - **`-O2` does not speed up the crypto (measured).** Rebuilt `rig_s3_ssh` at `-O2` (pre-MODMULT SIMD build):
   X25519 **97.3 ms**, ed25519_sign **380 ms** - identical to the `-Og` numbers. The ladder is hand-written
@@ -447,7 +447,7 @@ accelerator on the S3 (see the MODMULT bullet); the host figures are the softwar
   structure; the mask-select scalar-mult paths are deliberately left at `-Os` (they are HW-dominated and cranking
   the optimizer risks defeating their constant-time property for no speedup).
 - **Where the handshake time goes - and the SIMD acceleration target.** The radix-2^16 field multiply
-  `ssh_gf_mul` is **13,308 cycles / 55.4 us** on the S3 in scalar form (a 16x16 schoolbook = 256 multiply-accumulates). At
+  `dws_gf_mul` is **13,308 cycles / 55.4 us** on the S3 in scalar form (a 16x16 schoolbook = 256 multiply-accumulates). At
   ~2,600 field multiplies per X25519 (255 ladder steps x ~10 mul/sq + the reduction) it is essentially the
   **entire** scalar-multiply cost - so cutting it cuts the whole handshake. A first, host-validatable scalar
   optimization already landed: casting the limbs to `int32` in the inner product makes gcc emit a hardware
@@ -494,16 +494,16 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 | Primitive                          | Backend             | S3 cyc / op | time / op |
 | ---------------------------------- | ------------------- | ----------: | --------: |
 | `fe_mul` (256-bit field multiply)  | HW MODMULT          |       1,377 |   5.74 us |
-| `ssh_gf_mul` (field mul, fallback) | SW radix-2^16       |       9,212 |   38.4 us |
+| `dws_gf_mul` (field mul, fallback) | SW radix-2^16       |       9,212 |   38.4 us |
 | `dws_quic_hkdf_extract`            | HW SHA              |      25,044 |    104 us |
 | `dws_quic_hkdf_expand_label`(16)   | HW SHA              |      25,946 |    108 us |
 | `dws_tls13_kdf_expand_label`(16)   | HW SHA              |      25,910 |    108 us |
 | `ssh_rsa_2048_verify` (SHA-256)    | HW MPI              |   3,959,764 |   16.5 ms |
-| `ssh_ed25519_sign`                 | HW MODMULT + HW SHA |   4,651,281 |   19.4 ms |
-| `ssh_x25519` scalarmult (KEX)      | HW MODMULT          |   5,547,625 |   23.1 ms |
+| `dws_ed25519_sign`                 | HW MODMULT + HW SHA |   4,651,281 |   19.4 ms |
+| `dws_x25519` scalarmult (KEX)      | HW MODMULT          |   5,547,625 |   23.1 ms |
 | `dws_mlkem768_encaps` (ML-KEM-768) | SW NTT              |   5,645,995 |   23.5 ms |
 | `dws_ecdsa_p256_ecdh` (KEX)        | HW MODMULT          |  12,269,174 |   51.1 ms |
-| `ssh_ed25519_verify`               | HW MODMULT + HW SHA |  12,427,688 |   51.8 ms |
+| `dws_ed25519_verify`               | HW MODMULT + HW SHA |  12,427,688 |   51.8 ms |
 | `dws_ecdsa_p256_sign`              | HW MODMULT          |  13,064,925 |   54.4 ms |
 | `dws_ecdsa_p256_verify`            | HW MODMULT          |  24,774,465 |  103.2 ms |
 | `bn_expmod_group14` (DH-2048)      | HW MPI              |  43,543,754 |  181.4 ms |
@@ -536,13 +536,13 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 - **Ed25519 sign is ~4.4x faster with a fixed-base comb.** An `ssh-ed25519` host-key signature dropped from
   **84.6 ms to 19.4 ms** by replacing the variable-base ladder for the base point B with a constant-time
   signed 4-bit fixed-base comb (ref10 layout): a table of `256^i * B` multiples in flash
-  ([`ssh_ed25519_comb_table.h`](../src/network_drivers/presentation/ssh/crypto/ssh_ed25519_comb_table.h),
+  ([`dws_ed25519_comb_table.h`](../src/network_drivers/presentation/ssh/crypto/dws_ed25519_comb_table.h),
   generated by [`tools/gen_ed25519_comb.py`](../tools/gen_ed25519_comb.py), verified vs an affine reference)
   bakes the doublings into the table, so a base-point scalar mult is ~64 additions + 4 doublings instead of
   the 255-add / 255-double ladder. Sign gains ~4.4x because it does **two** fixed-base mults (`A = a*B` for
   the public key, `R = r*B` for the nonce); Ed25519 _verify_ gains ~1.6x (**84.3 -> 51.8 ms**, only the
   `S*B` half is fixed-base - `h*A` stays a variable-base ladder). Byte-exact vs RFC 8032 sec 7.1 on-device
-  (KAT: pubkey + sign + verify) and the `ssh_gf` path (native suite) is unchanged. The table is S3-only
+  (KAT: pubkey + sign + verify) and the `dws_gf` path (native suite) is unchanged. The table is S3-only
   (flash, ~24 KB, zero RAM).
 - **Prefer Ed25519 host keys over RSA.** An `ssh-ed25519` host-key signature is **19.4 ms**; an RSA-2048
   signature is **270 ms** (~14x slower). RSA _verify_ is cheap (16.5 ms, public exponent 65537), but the
@@ -900,7 +900,7 @@ h3 rig.
 
 - The **~0.95 s** cold connect is the heaviest of the three transports (TLS 1.2 ~0.9 s, h2 cold ~0.45 s): the
   QUIC handshake adds an Ed25519 signature over the transcript on top of the X25519 exchange (the same
-  `ssh_x25519` / `ssh_ed25519` path, ~10.5 KB of stack). Both now run their field arithmetic on the RSA/MPI
+  `dws_x25519` / `dws_ed25519` path, ~10.5 KB of stack). Both now run their field arithmetic on the RSA/MPI
   hardware accelerator on the S3 (`DWS_FE25519_MPI_HW`: X25519 97.5 -> 22.65 ms, ed25519_sign 380 -> 85.6 ms;
   see the SSH crypto section), which should cut the QUIC handshake's crypto (one X25519 + one Ed25519 sign) from
   ~0.46 s to ~0.11 s - re-measuring the cold-connect figure on a rebuilt h3 rig is a follow-up. Once up, a

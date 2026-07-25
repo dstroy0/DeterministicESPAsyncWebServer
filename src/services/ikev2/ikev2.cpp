@@ -10,13 +10,13 @@
 
 #if DWS_ENABLE_IKEV2
 
-#include "crypto/aesgcm.h"                                          // SK-payload AEAD (AES-256-GCM-16)
-#include "crypto/ecdsa.h"                                           // ECDSA-P256 certificate AUTH
-#include "crypto/hmac_sha256.h"                                     // PRF = HMAC-SHA2-256
-#include "crypto/sha256.h"                                          // anti-DoS COOKIE hash (RFC 7296 §2.6)
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // D-H group 31 (X25519, RFC 7748)
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"        // RSA-2048 certificate AUTH verify
-#include <string.h>                                                 // memcpy / memset (framing is hand-rolled)
+#include "crypto/aesgcm.h"                                   // SK-payload AEAD (AES-256-GCM-16)
+#include "crypto/curve25519.h"                               // D-H group 31 (X25519, RFC 7748)
+#include "crypto/ecdsa.h"                                    // ECDSA-P256 certificate AUTH
+#include "crypto/hmac_sha256.h"                              // PRF = HMAC-SHA2-256
+#include "crypto/sha256.h"                                   // anti-DoS COOKIE hash (RFC 7296 §2.6)
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h" // RSA-2048 certificate AUTH verify
+#include <string.h>                                          // memcpy / memset (framing is hand-rolled)
 
 // ── big-endian scalar helpers ─────────────────────────────────────────────────────────────────
 static inline void put16(uint8_t *p, uint16_t v)
@@ -1094,7 +1094,7 @@ size_t dws_ike_dh_public(uint16_t group, const uint8_t *our_priv, size_t priv_le
     {
         if (priv_len != DWS_IKE_X25519_LEN || out_cap < DWS_IKE_X25519_LEN)
             return 0;
-        ssh_x25519_base(out, our_priv); // out = our_priv * G
+        dws_x25519_base(out, our_priv); // out = our_priv * G
         return DWS_IKE_X25519_LEN;
     }
     return 0; // groups 19 (P-256) / 14 (MODP-2048) are a later increment
@@ -1109,7 +1109,7 @@ size_t dws_ike_dh_compute(uint16_t group, const uint8_t *our_priv, size_t priv_l
     {
         if (priv_len != DWS_IKE_X25519_LEN || pub_len != DWS_IKE_X25519_LEN || out_cap < DWS_IKE_X25519_LEN)
             return 0;
-        ssh_x25519(out, our_priv, peer_pub); // out = our_priv * peer_pub
+        dws_x25519(out, our_priv, peer_pub); // out = our_priv * peer_pub
         return DWS_IKE_X25519_LEN;
     }
     return 0;

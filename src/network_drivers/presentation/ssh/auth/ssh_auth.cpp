@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
 #include "crypto/ecdsa.h"                                             // dws_ecdsa_p256_verify() (ecdsa-sha2-nistp256)
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"      // ssh_ed25519_verify() (ssh-ed25519 client keys)
+#include "crypto/ed25519.h"                                           // dws_ed25519_verify() (ssh-ed25519 client keys)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"          // ssh_rsa_verify(), SSH_RSA_KEY_BYTES
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"    // SSH_MSG_* constants
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h" // ssh_sess[], SshPhase
@@ -137,7 +137,7 @@ static bool parse_ssh_rsa_blob(const uint8_t *blob, uint32_t blen, uint8_t n_be[
 }
 
 // Parse an "ssh-ed25519" public-key blob: string("ssh-ed25519") string(pub32). (RFC 8709 §4)
-static bool parse_ssh_ed25519_blob(const uint8_t *blob, uint32_t blen, uint8_t pub[32])
+static bool parse_dws_ed25519_blob(const uint8_t *blob, uint32_t blen, uint8_t pub[32])
 {
     size_t off = 0;
     const uint8_t *type;
@@ -409,7 +409,7 @@ static int dws_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t 
     uint8_t ec_pub[DWS_ECDSA_P256_PUB_LEN];
     bool parsed = false;
     if (is_ed)
-        parsed = parse_ssh_ed25519_blob(req->pk_blob, req->pk_blob_len, ed_pub);
+        parsed = parse_dws_ed25519_blob(req->pk_blob, req->pk_blob_len, ed_pub);
     else if (is_ecdsa)
         parsed = parse_dws_ecdsa_blob(req->pk_blob, req->pk_blob_len, ec_pub);
     else
@@ -441,7 +441,7 @@ static int dws_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t 
     bool sig_ok;
     if (is_ed)
     {
-        sig_ok = req->signature_len == 64 && ssh_ed25519_verify(ed_pub, signed_data, sd, req->signature);
+        sig_ok = req->signature_len == 64 && dws_ed25519_verify(ed_pub, signed_data, sd, req->signature);
     }
     else if (is_ecdsa)
     {

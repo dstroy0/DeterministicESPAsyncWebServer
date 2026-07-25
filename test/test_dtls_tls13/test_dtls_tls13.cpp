@@ -7,8 +7,8 @@
 // builds and works for the DTLS path. The HelloRetryRequest is pinned byte-for-byte, anchored on the
 // RFC 8446 §4.1.3 magic random.
 
+#include "crypto/ed25519.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
@@ -174,7 +174,7 @@ static void test_build_certificate_rpk(void)
     for (int i = 0; i < 32; i++)
         seed[i] = (uint8_t)(i * 7 + 1);
     uint8_t pub[32];
-    ssh_ed25519_pubkey(pub, seed);
+    dws_ed25519_pubkey(pub, seed);
 
     uint8_t out[80];
     size_t n = dws_tls13_build_certificate_rpk(out, sizeof(out), pub);

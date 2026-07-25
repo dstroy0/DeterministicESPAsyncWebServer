@@ -17,13 +17,13 @@
 // Ephemeral, per-run keys belong in the handshake/round-trip tests, not here.
 
 #include "crypto/chacha20.h"
+#include "crypto/curve25519.h"
+#include "crypto/ed25519.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/hmac_sha512.h"
 #include "crypto/poly1305.h"
 #include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/quic_hkdf.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -241,7 +241,7 @@ static void test_x25519(void)
         hexdec(v.pub, pub);
         hexdec(v.priv, priv);
         size_t wlen = hexdec(v.shared, want);
-        ssh_x25519(got, priv, pub);
+        dws_x25519(got, priv, pub);
         char m[48];
         snprintf(m, sizeof(m), "X25519 tcId=%d", v.tc);
         TEST_ASSERT_EQUAL_MESSAGE(32, wlen, m);
@@ -270,7 +270,7 @@ static void test_ed25519_verify(void)
             TEST_ASSERT_FALSE_MESSAGE(v.valid, m);
             continue;
         }
-        bool ok = ssh_ed25519_verify(pub, msg, mlen, sig);
+        bool ok = dws_ed25519_verify(pub, msg, mlen, sig);
         TEST_ASSERT_EQUAL_MESSAGE(v.valid ? true : false, ok, m);
     }
 }
@@ -292,9 +292,9 @@ static void test_ed25519_sign(void)
         size_t mlen = hexdec(v.msg, msg);
         char m[48];
         snprintf(m, sizeof(m), "Ed25519-sign tcId=%d", v.tc);
-        ssh_ed25519_pubkey(got_pub, seed);
+        dws_ed25519_pubkey(got_pub, seed);
         TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(want_pub, got_pub, 32, m);
-        ssh_ed25519_sign(got_sig, msg, mlen, seed);
+        dws_ed25519_sign(got_sig, msg, mlen, seed);
         TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(want_sig, got_sig, 64, m);
     }
 }

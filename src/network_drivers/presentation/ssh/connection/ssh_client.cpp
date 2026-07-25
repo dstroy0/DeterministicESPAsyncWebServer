@@ -14,15 +14,15 @@
 
 #if DWS_ENABLE_SSH_CLIENT
 
-#include "crypto/bignum.h" // bn_expmod_group14 (dh-group14 client)
-#include "crypto/ecdsa.h"  // ecdh-sha2-nistp256 + ecdsa host-key verify
+#include "crypto/bignum.h"     // bn_expmod_group14 (dh-group14 client)
+#include "crypto/curve25519.h" // dws_x25519 (curve25519-sha256)
+#include "crypto/ecdsa.h"      // ecdh-sha2-nistp256 + ecdsa host-key verify
+#include "crypto/ed25519.h"    // ssh-ed25519 host key + client auth
 #include "crypto/sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_x25519 (curve25519-sha256)
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"    // ssh-ed25519 host key + client auth
-#include "network_drivers/presentation/ssh/crypto/ssh_kexhash.h"    // SshKexHash (SHA-256/SHA-512 by method)
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"        // rsa-sha2-256/512 host-key verify
-#include "network_drivers/presentation/ssh/transport/ssh_dh.h"      // ssh_dh_derive_keys_sid, ssh_rng_fill
-#include "network_drivers/presentation/ssh/transport/ssh_keymat.h"  // ssh_keys[], SshKeyMat, SSH_CIPHER_*, SSH_MAC_*
+#include "network_drivers/presentation/ssh/crypto/ssh_kexhash.h"   // SshKexHash (SHA-256/SHA-512 by method)
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"       // rsa-sha2-256/512 host-key verify
+#include "network_drivers/presentation/ssh/transport/ssh_dh.h"     // ssh_dh_derive_keys_sid, ssh_rng_fill
+#include "network_drivers/presentation/ssh/transport/ssh_keymat.h" // ssh_keys[], SshKeyMat, SSH_CIPHER_*, SSH_MAC_*
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "shared_primitives/log.h"
 #include <string.h>
@@ -483,7 +483,7 @@ static bool build_kex_public(void)
     {
     case CliKex::CURVE25519:
         ssh_rng_fill(s_cli.kex_priv, 32);
-        ssh_x25519_base(s_cli.qc, s_cli.kex_priv);
+        dws_x25519_base(s_cli.qc, s_cli.kex_priv);
         s_cli.qc_len = 32;
         return true;
     case CliKex::ECDH_P256:
@@ -524,7 +524,7 @@ static bool build_kex_public(void)
         ssh_wipe(z, sizeof(z));
         ssh_wipe(ek, sizeof(ek)); // ek persists inside mlkem_dk
         ssh_rng_fill(s_cli.kex_priv, 32);
-        ssh_x25519_base(s_cli.qc, s_cli.kex_priv);
+        dws_x25519_base(s_cli.qc, s_cli.kex_priv);
         s_cli.qc_len = 32;
         return true;
     }
@@ -541,7 +541,7 @@ static bool build_kex_public(void)
         dws_sntrup761_keypair(pk, s_cli.hyb.sntrup_sk);
         scratch_release(mark); // pk persists inside sntrup_sk at DWS_SNTRUP761_SK_PK_OFFSET
         ssh_rng_fill(s_cli.kex_priv, 32);
-        ssh_x25519_base(s_cli.qc, s_cli.kex_priv);
+        dws_x25519_base(s_cli.qc, s_cli.kex_priv);
         s_cli.qc_len = 32;
         return true;
     }
@@ -680,7 +680,7 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         if (srv_pub_len != 32)
             return false;
         uint8_t k32[32];
-        ssh_x25519(k32, s_cli.kex_priv, srv_pub);
+        dws_x25519(k32, s_cli.kex_priv, srv_pub);
         memcpy(k_be + (256 - 32), k32, 32);
         ssh_wipe(k32, 32);
         return true;
@@ -715,7 +715,7 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
             return false;
         uint8_t k_pq[32], k_cl[32];
         dws_mlkem768_decaps(s_cli.hyb.mlkem_dk, srv_pub, k_pq);
-        ssh_x25519(k_cl, s_cli.kex_priv, srv_pub + MLKEM768_CT_BYTES);
+        dws_x25519(k_cl, s_cli.kex_priv, srv_pub + MLKEM768_CT_BYTES);
         DwsSha256Ctx c;
         dws_sha256_init(&c);
         dws_sha256_update(&c, k_pq, 32);
@@ -734,7 +734,7 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
             return false;
         uint8_t k_pq[DWS_SNTRUP761_SS_BYTES], k_cl[32];
         dws_sntrup761_dec(s_cli.hyb.sntrup_sk, srv_pub, k_pq);
-        ssh_x25519(k_cl, s_cli.kex_priv, srv_pub + DWS_SNTRUP761_CT_BYTES);
+        dws_x25519(k_cl, s_cli.kex_priv, srv_pub + DWS_SNTRUP761_CT_BYTES);
         DwsSha512Ctx c;
         dws_sha512_init(&c);
         dws_sha512_update(&c, k_pq, sizeof(k_pq));
@@ -833,7 +833,7 @@ static bool verify_host_sig(const uint8_t *ks, uint32_t ks_len, const uint8_t *s
         const uint8_t *pub = r_string(&rk, &pn);
         uint32_t rl;
         const uint8_t *raw = r_string(&rs, &rl);
-        return rk.ok && rs.ok && pn == 32 && rl == 64 && ssh_ed25519_verify(pub, H, h_len, raw);
+        return rk.ok && rs.ok && pn == 32 && rl == 64 && dws_ed25519_verify(pub, H, h_len, raw);
     }
     case CliHostkey::ECDSA_P256: {
         uint32_t cn;
@@ -965,7 +965,7 @@ static bool send_userauth_publickey(void)
 {
     const char *user = s_cli.cfg.user;
     uint8_t pub[32];
-    ssh_ed25519_pubkey(pub, s_cli.cfg.auth_seed);
+    dws_ed25519_pubkey(pub, s_cli.cfg.auth_seed);
 
     // The device's public-key blob: string("ssh-ed25519") || string(pub32).
     uint8_t pkblob[4 + 11 + 4 + 32];
@@ -992,7 +992,7 @@ static bool send_userauth_publickey(void)
         return false;
 
     uint8_t sig[64];
-    ssh_ed25519_sign(sig, signed_data, sd.off, s_cli.cfg.auth_seed);
+    dws_ed25519_sign(sig, signed_data, sd.off, s_cli.cfg.auth_seed);
 
     // Signature blob: string("ssh-ed25519") || string(sig64).
     uint8_t sigblob[4 + 11 + 4 + 64];
@@ -1518,7 +1518,7 @@ bool dws_ssh_tunnel_up(void)
 // Available on both host and device: pure key derivation for provisioning.
 void dws_ssh_tunnel_pubkey(const uint8_t seed[32], uint8_t pub[32])
 {
-    ssh_ed25519_pubkey(pub, seed);
+    dws_ed25519_pubkey(pub, seed);
 }
 
 #endif // DWS_ENABLE_SSH_CLIENT

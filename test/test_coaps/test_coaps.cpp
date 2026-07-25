@@ -7,6 +7,8 @@
 // that the client decrypts and checks. A byte off anywhere - transcript, keys, epoch, CoAP encoding -
 // would fail the AEAD open or the response check.
 
+#include "crypto/curve25519.h"
+#include "crypto/ed25519.h"
 #include "crypto/sha256.h"
 #include "network_drivers/presentation/dtls/dtls_conn.h"
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
@@ -14,8 +16,6 @@
 #include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "services/coap/coap.h"
 #include "services/coap/coaps.h"
 #include "shared_primitives/aes_block.h"
@@ -178,9 +178,9 @@ static size_t ct_record_len(const uint8_t *rec, size_t avail)
 static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordKeys *cli_app_read)
 {
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    dws_x25519_base(client_pub, CLIENT_X25519_PRIV);
     uint8_t server_ed_pub[32];
-    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    dws_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
 
     DtlsServerConfig cfg;
     cfg.cert_der = server_ed_pub;
@@ -219,7 +219,7 @@ static void handshake(DtlsConn *conn, DtlsRecordKeys *cli_app_write, DtlsRecordK
     TEST_ASSERT_TRUE(sh_keyshare(sh, sh_len, server_pub));
 
     uint8_t ecdhe[32];
-    ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
+    dws_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
     Tls13KeySchedule cks;
     uint8_t h[32];
     DwsSha256Ctx tmp = tr;
@@ -380,9 +380,9 @@ static void test_coaps_wrong_epoch_record(void)
 static void test_coaps_forwards_handshake(void)
 {
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    dws_x25519_base(client_pub, CLIENT_X25519_PRIV);
     uint8_t server_ed_pub[32];
-    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    dws_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
 
     DtlsServerConfig cfg;
     cfg.cert_der = server_ed_pub;

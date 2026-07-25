@@ -10,7 +10,7 @@
  * ═══════════════════════════════════════════════════════════════════════════
  *
  * ESP32-S3 (Arduino): a self-contained P-256 whose every 256-bit field / scalar multiply is one
- *   modular multiply on the RSA/MPI hardware accelerator (the same engine ssh_fe25519.h drives for
+ *   modular multiply on the RSA/MPI hardware accelerator (the same engine dws_fe25519.h drives for
  *   X25519 / Ed25519) - the MODMULT is modulus-generic, so it serves both the field domain (mod p)
  *   and the scalar domain (mod n) by swapping the {M, m', R^2} constants. Point arithmetic uses the
  *   exception-free complete formulas (Renes-Costello-Batina 2016, EFD add/dbl-2015-rcb, a = -3) driven by

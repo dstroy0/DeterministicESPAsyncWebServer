@@ -11,13 +11,13 @@
 // key pair, so it reuses the kyber-py KAT fixture (ek, dk).
 
 #include "../test_pqc_mlkem/mlkem_kat.h" // kat_ek, kat_dk, kat_ct, kat_ss
+#include "crypto/curve25519.h"
+#include "crypto/ed25519.h"
 #include "crypto/sha256.h"
 #include "crypto/sha512.h" // sntrup761x25519-sha512 exchange hash
 #include "mlkem_ref.h"
 #include "network_drivers/presentation/pqc/mlkem.h"     // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
 #include "network_drivers/presentation/pqc/sntrup761.h" // the other PQ/T hybrid (NTRU Prime + X25519)
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXDH_INIT / _REPLY
@@ -193,7 +193,7 @@ void test_hybrid_kex_end_to_end()
     uint8_t qc[32];
     for (int j = 0; j < 32; j++)
         client_sk[j] = (uint8_t)(0x40 + j);
-    ssh_x25519_base(qc, client_sk);
+    dws_x25519_base(qc, client_sk);
 
     // SSH_MSG_KEX_HYBRID_INIT: byte(30) || string(C_INIT), C_INIT = ek(1184) || Q_C(32).
     static uint8_t c_init[MLKEM768_EK_BYTES + 32];
@@ -226,7 +226,7 @@ void test_hybrid_kex_end_to_end()
     uint8_t k_pq[32];
     dws_mlkem768_decaps_ref(kat_dk, ct, k_pq);
     uint8_t k_cl[32];
-    ssh_x25519(k_cl, client_sk, qs);
+    dws_x25519(k_cl, client_sk, qs);
     uint8_t kin[64];
     memcpy(kin, k_pq, 32);
     memcpy(kin + 32, k_cl, 32);
@@ -264,7 +264,7 @@ void test_hybrid_kex_end_to_end()
     TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &st, &st_len));
     TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &sig, &sl));
     TEST_ASSERT_EQUAL_UINT32(64, sl);
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
+    TEST_ASSERT_TRUE(dws_ed25519_verify(hostpub, H, DWS_SHA256_DIGEST_LEN, sig));
 
     // The string-K KDF must yield the same c2s cipher key the server installed.
     uint8_t expect_c2s[DWS_CHACHAPOLY_KEY_LEN];
@@ -370,7 +370,7 @@ void test_sntrup761_hybrid_kex_end_to_end()
     uint8_t qc[32];
     for (int j = 0; j < 32; j++)
         client_sk[j] = (uint8_t)(0x70 + j);
-    ssh_x25519_base(qc, client_sk);
+    dws_x25519_base(qc, client_sk);
 
     static uint8_t c_init[DWS_SNTRUP761_PK_BYTES + 32];
     memcpy(c_init, pk, DWS_SNTRUP761_PK_BYTES);
@@ -399,7 +399,7 @@ void test_sntrup761_hybrid_kex_end_to_end()
     uint8_t k_pq[DWS_SNTRUP761_SS_BYTES];
     dws_sntrup761_dec(sk, s_reply, k_pq);
     uint8_t k_cl[32];
-    ssh_x25519(k_cl, client_sk, s_reply + DWS_SNTRUP761_CT_BYTES);
+    dws_x25519(k_cl, client_sk, s_reply + DWS_SNTRUP761_CT_BYTES);
     uint8_t kin[DWS_SNTRUP761_SS_BYTES + 32];
     memcpy(kin, k_pq, DWS_SNTRUP761_SS_BYTES);
     memcpy(kin + DWS_SNTRUP761_SS_BYTES, k_cl, 32);
@@ -436,7 +436,7 @@ void test_sntrup761_hybrid_kex_end_to_end()
     TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &st, &st_len));
     TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &sig, &sl));
     TEST_ASSERT_EQUAL_UINT32(64, sl);
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, DWS_SHA512_DIGEST_LEN, sig));
+    TEST_ASSERT_TRUE(dws_ed25519_verify(hostpub, H, DWS_SHA512_DIGEST_LEN, sig));
 }
 
 // A classical finite-field KEX still works in a PQC-enabled build: neither hybrid branch is taken
@@ -511,7 +511,7 @@ void test_hybrid_rejects_low_order_point_and_bad_ek()
     uint8_t qc[32];
     for (int j = 0; j < 32; j++)
         client_sk[j] = (uint8_t)(0x50 + j);
-    ssh_x25519_base(qc, client_sk);
+    dws_x25519_base(qc, client_sk);
 
     // ML-KEM: a genuine encapsulation key, but Q_C is the all-zero point.
     prepare_session(SshKexAlg::SSH_KEX_MLKEM768_X25519);

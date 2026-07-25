@@ -2,26 +2,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_fe25519.h
+ * @file fe25519.h
  * @brief ESP32-S3 GF(2^255-19) field layer on the RSA/MPI hardware accelerator (X25519 + Ed25519).
  *
  * Field elements are canonical `uint32[8]` (< p = 2^255-19) so every field multiply is a single
  * 256-bit modular multiply on the S3 RSA accelerator (~1,386 cycles vs 7,955 for the software SIMD
- * `ssh_gf_mul`). add/sub are native 32-bit (carry + one conditional subtract of p); bytes<->fe is a
+ * `dws_gf_mul`). add/sub are native 32-bit (carry + one conditional subtract of p); bytes<->fe is a
  * per-scalar-mult conversion, not per multiply. This is the shared engine behind both the X25519 KEX
- * (`ssh_curve25519.cpp`) and the Ed25519 host-key signature (`ssh_ed25519.cpp`) on the S3; the
- * radix-2^16 `ssh_gf` path is the native / non-S3 fallback in both.
+ * (`dws_curve25519.cpp`) and the Ed25519 host-key signature (`dws_ed25519.cpp`) on the S3; the
+ * radix-2^16 `dws_gf` path is the native / non-S3 fallback in both.
  *
  * The accelerator (and its lock) are shared with mbedTLS RSA/DH, so a scalar-mult brackets itself with
- * `ssh_fe_hw_enable()` / `ssh_fe_hw_disable()` (mbedTLS's own `esp_mpi_{enable,disable}_hardware_hw_op`,
+ * `dws_fe_hw_enable()` / `dws_fe_hw_disable()` (mbedTLS's own `esp_mpi_{enable,disable}_hardware_hw_op`,
  * i.e. acquire the MPI lock + clock/power the peripheral) and holds the lock for its whole run.
  *
  * Header-only `static inline` on purpose: the cheap ops (add/sub/cswap) inline into the ladder in each
  * translation unit with no cross-TU call overhead, and the whole layer stays one source of truth.
  */
 
-#ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_FE25519_H
-#define DETERMINISTICESPASYNCWEBSERVER_SSH_FE25519_H
+#ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_FE25519_H
+#define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_FE25519_H
 
 #include <stdint.h>
 
@@ -60,17 +60,17 @@ static const uint32_t FE_MOD_P[8] = {0xffffffedu, 0xffffffffu, 0xffffffffu, 0xff
 static const uint32_t FE_MOD_R2[8] = {0x000005a4u, 0, 0, 0, 0, 0, 0, 0};
 
 // Acquire the accelerator (lock + power) for a scalar-mult, and drop it after. Bracket every run.
-static inline void ssh_fe_hw_enable(void)
+static inline void dws_fe_hw_enable(void)
 {
     esp_mpi_enable_hardware_hw_op();    // lock + clock/power the peripheral
     SSH_RSA_REG(RSA_INTERRUPT_REG) = 0; // poll only, no completion IRQ
 }
-static inline void ssh_fe_hw_disable(void)
+static inline void dws_fe_hw_disable(void)
 {
     esp_mpi_disable_hardware_hw_op(); // release the lock + power down
 }
 
-// z = x*y mod p (8 words / 256-bit). Requires ssh_fe_hw_enable() first. Output is always canonical (< p).
+// z = x*y mod p (8 words / 256-bit). Requires dws_fe_hw_enable() first. Output is always canonical (< p).
 static inline void fe_mul(fe z, const fe x, const fe y) // safe if z aliases x/y
 {
     volatile uint32_t *M = (volatile uint32_t *)RSA_MEM_M_BLOCK_BASE;
@@ -238,4 +238,4 @@ static inline int fe_neq(const fe a, const fe b)
 }
 
 #endif // DWS_FE25519_MPI_HW
-#endif // DETERMINISTICESPASYNCWEBSERVER_SSH_FE25519_H
+#endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_FE25519_H

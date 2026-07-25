@@ -11,6 +11,7 @@
 // The client extracts the server's ephemeral X25519 public key and its chosen connection ID from the
 // ServerHello, so it needs no knowledge of the server's RNG.
 
+#include "crypto/curve25519.h"
 #include "crypto/sha256.h"
 #include "dwserver.h"
 #include "network_drivers/presentation/http3/h3_frame.h"
@@ -23,7 +24,6 @@
 #include "network_drivers/presentation/http3/quic_varint.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include <string.h>
 #include <unity.h>
 
@@ -315,7 +315,7 @@ void test_h3_request_served_by_route()
     uint8_t ctpe[128];
     size_t ctpl = dws_quic_tp_encode(&ctp, ctpe, sizeof(ctpe));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t chl = build_client_hello(ch, client_pub, ctpe, ctpl);
     uint8_t frames[1200];
@@ -345,7 +345,7 @@ void test_h3_request_served_by_route()
     size_t shl = extract_crypto(plain, pt, sh);
     uint8_t server_pub[32], ecdhe[32];
     TEST_ASSERT_TRUE(server_pub_from_sh(sh, shl, server_pub));
-    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+    dws_x25519(ecdhe, CLIENT_PRIV, server_pub);
     DwsSha256Ctx t;
     uint8_t chsh[32], chsf[32];
     dws_sha256_init(&t);

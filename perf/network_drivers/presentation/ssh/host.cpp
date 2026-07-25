@@ -12,8 +12,8 @@
 // this host ns/op is a RELATIVE baseline. Build + run:
 //   g++ -O2 -std=c++17 -Isrc -Itest/mocks -Itest/support -DDWS_ENABLE_SSH=1
 //   perf/network_drivers/presentation/ssh/host.cpp \
-//       src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp \
-//       src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp \
+//       src/network_drivers/presentation/ssh/crypto/dws_curve25519.cpp \
+//       src/network_drivers/presentation/ssh/crypto/dws_ed25519.cpp \
 //       src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp \
 //       src/network_drivers/presentation/ssh/crypto/dws_chacha20.cpp \
 //       src/network_drivers/presentation/ssh/crypto/dws_poly1305.cpp \
@@ -21,8 +21,8 @@
 
 #define DWS_ENABLE_SSH 1
 #include "crypto/chachapoly.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#include "crypto/curve25519.h"
+#include "crypto/ed25519.h"
 
 #include <chrono>
 #include <cstdint>
@@ -60,7 +60,7 @@ int main()
     memset(peer_pk, 0x22, sizeof(peer_pk));
     {
         double ns = bench_ns(4000, [&] {
-            ssh_x25519_base(pk, sk);
+            dws_x25519_base(pk, sk);
             sink += pk[0];
         });
         row("ssh", "x25519_base (KEX ephemeral)", ns, 0);
@@ -69,16 +69,16 @@ int main()
     // KEX: X25519 shared secret = scalarmult(sk, Q_C). One per connection.
     {
         double ns = bench_ns(4000, [&] {
-            ssh_x25519(shared, sk, peer_pk);
+            dws_x25519(shared, sk, peer_pk);
             sink += shared[0];
         });
         row("ssh", "x25519 (KEX shared secret)", ns, 0);
     }
 
-    // Field arithmetic: the radix-2^16 schoolbook multiply / square (ssh_gf = int64[16]). This is the
+    // Field arithmetic: the radix-2^16 schoolbook multiply / square (dws_gf = int64[16]). This is the
     // innermost hot op of the Montgomery ladder (~9 field mul/sq per ladder step x 255 steps) and thus the
     // dominant cost of every X25519 / ed25519 scalar multiplication - the target for S3 vector (QACC) SIMD.
-    ssh_gf ga, gb, go;
+    dws_gf ga, gb, go;
     for (int k = 0; k < 16; k++)
     {
         ga[k] = 0x5a5a + k;
@@ -86,14 +86,14 @@ int main()
     }
     {
         double ns = bench_ns(200000, [&] {
-            ssh_gf_mul(go, ga, gb);
+            dws_gf_mul(go, ga, gb);
             sink += (uint32_t)go[0];
         });
         row("ssh", "gf_mul (field 16x16 mul)", ns, 0);
     }
     {
         double ns = bench_ns(200000, [&] {
-            ssh_gf_sq(go, ga);
+            dws_gf_sq(go, ga);
             sink += (uint32_t)go[0];
         });
         row("ssh", "gf_sq (field square)", ns, 0);
@@ -105,7 +105,7 @@ int main()
     memset(hash, 0x44, sizeof(hash));
     {
         double ns = bench_ns(2000, [&] {
-            ssh_ed25519_sign(sig, hash, sizeof(hash), seed);
+            dws_ed25519_sign(sig, hash, sizeof(hash), seed);
             sink += sig[0];
         });
         row("ssh", "ed25519_sign (host key)", ns, 0);

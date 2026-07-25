@@ -10,7 +10,7 @@
 
 #if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#include "crypto/ed25519.h"
 #if DWS_ENABLE_PQC_KEX
 #include "network_drivers/presentation/pqc/mlkem.h" // MLKEM768_EK_BYTES (X25519MLKEM768 share sizing)
 #endif
@@ -622,15 +622,15 @@ size_t dws_tls13_build_cert_verify(uint8_t *out, size_t cap, const uint8_t trans
     if (!clen)
         return 0;
     // GCOVR_EXCL_STOP
-    uint8_t sig[SSH_ED25519_SIG_LEN];
-    ssh_ed25519_sign(sig, content, clen, seed);
+    uint8_t sig[DWS_ED25519_SIG_LEN];
+    dws_ed25519_sign(sig, content, clen, seed);
 
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_CERTIFICATE_VERIFY);
     size_t hs_len = w_mark(&w, 3);
     w_u16(&w, TLS_SIG_ED25519);
-    w_u16(&w, SSH_ED25519_SIG_LEN);
-    w_bytes(&w, sig, SSH_ED25519_SIG_LEN);
+    w_u16(&w, DWS_ED25519_SIG_LEN);
+    w_bytes(&w, sig, DWS_ED25519_SIG_LEN);
     w_patch24(&w, hs_len);
     return w.ok ? w.pos : 0;
 }

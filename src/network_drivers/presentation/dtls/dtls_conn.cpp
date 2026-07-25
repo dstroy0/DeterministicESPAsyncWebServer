@@ -10,9 +10,9 @@
 
 #if DWS_ENABLE_DTLS
 
+#include "crypto/curve25519.h"
+#include "crypto/ed25519.h" // dws_ed25519_pubkey for the RFC 7250 RawPublicKey
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h" // ssh_ed25519_pubkey for the RFC 7250 RawPublicKey
 #include "services/clock.h" // dws_millis() stamps / checks the HelloRetryRequest cookie freshness
 #include <string.h>
 
@@ -274,8 +274,8 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     // X25519 shared secret and the server's key_share.
     uint8_t ecdhe[32];
     uint8_t server_share[32];
-    ssh_x25519(ecdhe, c->cfg.ephemeral_priv, ch.client_x25519);
-    ssh_x25519_base(server_share, c->cfg.ephemeral_priv);
+    dws_x25519(ecdhe, c->cfg.ephemeral_priv, ch.client_x25519);
+    dws_x25519_base(server_share, c->cfg.ephemeral_priv);
 
     dws_sha256_update(&c->transcript, msg, msg_len); // transcript: ClientHello (CH2 when an HRR preceded it)
 
@@ -319,8 +319,8 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
 #if DWS_ENABLE_TLS_RPK
     if (rpk)
     {
-        uint8_t ed_pub[SSH_ED25519_PUBKEY_LEN];
-        ssh_ed25519_pubkey(ed_pub, c->cfg.ed25519_seed);
+        uint8_t ed_pub[DWS_ED25519_PUBKEY_LEN];
+        dws_ed25519_pubkey(ed_pub, c->cfg.ed25519_seed);
         n = dws_tls13_build_certificate_rpk(c->msgbuf, sizeof(c->msgbuf), ed_pub);
     }
     else

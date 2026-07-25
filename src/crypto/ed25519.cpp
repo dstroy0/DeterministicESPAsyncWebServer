@@ -2,28 +2,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_ed25519.cpp
+ * @file ed25519.cpp
  * @brief Ed25519 (RFC 8032) sign + verify over edwards25519.
  *
  * Points are held in extended twisted-Edwards coordinates (X, Y, Z, T) as four field
  * elements; scalar multiplication is a constant-time bit-by-bit double-and-add; scalars
  * are reduced mod the group order L. SHA-512 hashes the seed, the nonce input, and R||A||M.
  * Deterministic (no RNG). Validated against the RFC 8032 §7.1 vectors and a reference
- * implementation (test_ssh_ed25519).
+ * implementation (test_dws_ed25519).
  *
  * The field elements and point arithmetic have two implementations: the portable radix-2^16
- * `ssh_gf` (from ssh_curve25519, the native / non-S3 path), and on the ESP32-S3 a canonical
+ * `dws_gf` (from dws_curve25519, the native / non-S3 path), and on the ESP32-S3 a canonical
  * `uint32[8]` layer that does each field multiply as one 256-bit modular multiply on the
- * RSA/MPI accelerator (ssh_fe25519.h, active as DWS_FE25519_MPI_HW) - the same engine that
+ * RSA/MPI accelerator (dws_fe25519.h, active as DWS_FE25519_MPI_HW) - the same engine that
  * accelerates the X25519 KEX, here driving the Edwards point arithmetic so the host-key
  * signature runs several times faster. Only the point/field layer differs; the SHA-512 hashing
  * and the scalar arithmetic mod L are shared. Both paths are byte-identical by construction.
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#include "crypto/ed25519.h"
 #include "crypto/sha512.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_gf + field ops (native / non-S3 path)
-#include "network_drivers/presentation/ssh/crypto/ssh_fe25519.h"    // S3: canonical uint32[8] field on the RSA MODMULT
+#include "crypto/curve25519.h" // dws_gf + field ops (native / non-S3 path)
+#include "crypto/fe25519.h"    // S3: canonical uint32[8] field on the RSA MODMULT
 
 // --- Shared constants -------------------------------------------------------
 
@@ -108,8 +108,8 @@ static bool ed_scalar_canonical(const uint8_t s[32])
 
 #ifdef DWS_FE25519_MPI_HW
 // ===================== ESP32-S3 Edwards point arithmetic on the RSA/MPI field ============================
-// The curve constants as canonical uint32[8] (each word = ssh_gf limb 2i | limb 2i+1 << 16 of the radix-2^16
-// constants below; the point arithmetic is byte-identical to the ssh_gf path, verified by the RFC 8032 KAT).
+// The curve constants as canonical uint32[8] (each word = dws_gf limb 2i | limb 2i+1 << 16 of the radix-2^16
+// constants below; the point arithmetic is byte-identical to the dws_gf path, verified by the RFC 8032 KAT).
 static const fe ED_D_FE = {0x135978a3, 0x75eb4dca, 0x4141d8ab, 0x00700a4d,
                            0x7779e898, 0x8cc74079, 0x2b6ffe73, 0x52036cee}; // d = -121665/121666
 static const fe ED_D2_FE = {0x26b2f159, 0xebd69b94, 0x8283b156, 0x00e0149a,
@@ -122,10 +122,10 @@ static const fe ED_I_FE = {0x4a0ea0b0, 0xc4ee1b27, 0xad2fe478, 0x2f431806,
                            0x3dfbd7a7, 0x2b4d0099, 0x4fc1df0b, 0x2b832480}; // sqrt(-1) mod p
 
 // Fixed-base comb table ED_COMB[i][j] = (j+1) * 256^i * B (extended X, Y, T; Z = 1), in flash.
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519_comb_table.h"
+#include "crypto/ed25519_comb_table.h"
 
 // p += q (twisted-Edwards addition, RFC 8032 §5.1.4). Safe when q aliases p (point doubling): every read of
-// q happens before any write of p. Requires ssh_fe_hw_enable() (the fe_mul/fe_sq run on the accelerator).
+// q happens before any write of p. Requires dws_fe_hw_enable() (the fe_mul/fe_sq run on the accelerator).
 static void edf_add(fe p[4], fe q[4])
 {
     fe a;
@@ -325,10 +325,10 @@ static int edf_unpackneg(fe r[4], const uint8_t p[32])
 static void ed_scalarbase_bytes(uint8_t out[32], const uint8_t s[32])
 {
     fe p[4];
-    ssh_fe_hw_enable();
+    dws_fe_hw_enable();
     edf_scalarbase(p, s);
     edf_pack(out, p);
-    ssh_fe_hw_disable();
+    dws_fe_hw_disable();
 }
 
 // out = pack(S*B - h*A); false if the public key A does not decode to a curve point.
@@ -337,129 +337,129 @@ static bool ed_verify_recompute(uint8_t out[32], const uint8_t S[32], const uint
     fe p[4];
     fe q[4];
     fe sb[4];
-    ssh_fe_hw_enable();
+    dws_fe_hw_enable();
     if (edf_unpackneg(q, pub) != 0) // q = -A
     {
-        ssh_fe_hw_disable();
+        dws_fe_hw_disable();
         return false;
     }
     edf_scalarmult(p, q, h); // p = h * (-A)
     edf_scalarbase(sb, S);   // sb = S * B
     edf_add(p, sb);          // p = S*B - h*A
     edf_pack(out, p);
-    ssh_fe_hw_disable();
+    dws_fe_hw_disable();
     return true;
 }
 #else
 // --- Curve constants (radix-2^16 field elements, little-endian limbs) --------
 
-static const ssh_gf GF0 = {0};
-static const ssh_gf GF1 = {1};
+static const dws_gf GF0 = {0};
+static const dws_gf GF1 = {1};
 // d = -121665/121666 (the twisted-Edwards curve constant) and 2d.
-static const ssh_gf ED_D = {0x78a3, 0x1359, 0x4dca, 0x75eb, 0xd8ab, 0x4141, 0x0a4d, 0x0070,
+static const dws_gf ED_D = {0x78a3, 0x1359, 0x4dca, 0x75eb, 0xd8ab, 0x4141, 0x0a4d, 0x0070,
                             0xe898, 0x7779, 0x4079, 0x8cc7, 0xfe73, 0x2b6f, 0x6cee, 0x5203};
-static const ssh_gf ED_D2 = {0xf159, 0x26b2, 0x9b94, 0xebd6, 0xb156, 0x8283, 0x149a, 0x00e0,
+static const dws_gf ED_D2 = {0xf159, 0x26b2, 0x9b94, 0xebd6, 0xb156, 0x8283, 0x149a, 0x00e0,
                              0xd130, 0xeef3, 0x80f2, 0x198e, 0xfce7, 0x56df, 0xd9dc, 0x2406};
 // Base point B = (X, Y).
-static const ssh_gf ED_X = {0xd51a, 0x8f25, 0x2d60, 0xc956, 0xa7b2, 0x9525, 0xc760, 0x692c,
+static const dws_gf ED_X = {0xd51a, 0x8f25, 0x2d60, 0xc956, 0xa7b2, 0x9525, 0xc760, 0x692c,
                             0xdc5c, 0xfdd6, 0xe231, 0xc0a4, 0x53fe, 0xcd6e, 0x36d3, 0x2169};
-static const ssh_gf ED_Y = {0x6658, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666,
+static const dws_gf ED_Y = {0x6658, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666,
                             0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666};
 // sqrt(-1) mod p.
-static const ssh_gf ED_I = {0xa0b0, 0x4a0e, 0x1b27, 0xc4ee, 0xe478, 0xad2f, 0x1806, 0x2f43,
+static const dws_gf ED_I = {0xa0b0, 0x4a0e, 0x1b27, 0xc4ee, 0xe478, 0xad2f, 0x1806, 0x2f43,
                             0xd7a7, 0x3dfb, 0x0099, 0x2b4d, 0xdf0b, 0x4fc1, 0x2480, 0x2b83};
 
 // Parity (low bit) of the canonical encoding of a field element.
-static int gf_parity(const ssh_gf a)
+static int gf_parity(const dws_gf a)
 {
     uint8_t d[32];
-    ssh_gf_pack(d, a);
+    dws_gf_pack(d, a);
     return d[0] & 1;
 }
 
 // 0 if a and b encode the same field element, -1 otherwise.
-static int gf_neq(const ssh_gf a, const ssh_gf b)
+static int gf_neq(const dws_gf a, const dws_gf b)
 {
     uint8_t c[32];
     uint8_t d[32];
-    ssh_gf_pack(c, a);
-    ssh_gf_pack(d, b);
+    dws_gf_pack(c, a);
+    dws_gf_pack(d, b);
     return ct_verify32(c, d);
 }
 
 // out = a^(2^252 - 3) - used to take the square root during point decompression.
-static void gf_pow2523(ssh_gf out, const ssh_gf a)
+static void gf_pow2523(dws_gf out, const dws_gf a)
 {
-    ssh_gf c;
-    ssh_gf_copy(c, a);
+    dws_gf c;
+    dws_gf_copy(c, a);
     for (int i = 250; i >= 0; i--)
     {
-        ssh_gf_sq(c, c);
+        dws_gf_sq(c, c);
         if (i != 1)
-            ssh_gf_mul(c, c, a);
+            dws_gf_mul(c, c, a);
     }
-    ssh_gf_copy(out, c);
+    dws_gf_copy(out, c);
 }
 
 // p += q (twisted-Edwards addition, RFC 8032 §5.1.4 / the unified add formula).
-static void ed_add(ssh_gf p[4], ssh_gf q[4])
+static void ed_add(dws_gf p[4], dws_gf q[4])
 {
-    ssh_gf a;
-    ssh_gf b;
-    ssh_gf c;
-    ssh_gf d;
-    ssh_gf t;
-    ssh_gf e;
-    ssh_gf f;
-    ssh_gf g;
-    ssh_gf h;
-    ssh_gf_sub(a, p[1], p[0]);
-    ssh_gf_sub(t, q[1], q[0]);
-    ssh_gf_mul(a, a, t);
-    ssh_gf_add(b, p[0], p[1]);
-    ssh_gf_add(t, q[0], q[1]);
-    ssh_gf_mul(b, b, t);
-    ssh_gf_mul(c, p[3], q[3]);
-    ssh_gf_mul(c, c, ED_D2);
-    ssh_gf_mul(d, p[2], q[2]);
-    ssh_gf_add(d, d, d);
-    ssh_gf_sub(e, b, a);
-    ssh_gf_sub(f, d, c);
-    ssh_gf_add(g, d, c);
-    ssh_gf_add(h, b, a);
-    ssh_gf_mul(p[0], e, f);
-    ssh_gf_mul(p[1], h, g);
-    ssh_gf_mul(p[2], g, f);
-    ssh_gf_mul(p[3], e, h);
+    dws_gf a;
+    dws_gf b;
+    dws_gf c;
+    dws_gf d;
+    dws_gf t;
+    dws_gf e;
+    dws_gf f;
+    dws_gf g;
+    dws_gf h;
+    dws_gf_sub(a, p[1], p[0]);
+    dws_gf_sub(t, q[1], q[0]);
+    dws_gf_mul(a, a, t);
+    dws_gf_add(b, p[0], p[1]);
+    dws_gf_add(t, q[0], q[1]);
+    dws_gf_mul(b, b, t);
+    dws_gf_mul(c, p[3], q[3]);
+    dws_gf_mul(c, c, ED_D2);
+    dws_gf_mul(d, p[2], q[2]);
+    dws_gf_add(d, d, d);
+    dws_gf_sub(e, b, a);
+    dws_gf_sub(f, d, c);
+    dws_gf_add(g, d, c);
+    dws_gf_add(h, b, a);
+    dws_gf_mul(p[0], e, f);
+    dws_gf_mul(p[1], h, g);
+    dws_gf_mul(p[2], g, f);
+    dws_gf_mul(p[3], e, h);
 }
 
 // Constant-time conditional swap of points p and q when b == 1.
-static void ed_cswap(ssh_gf p[4], ssh_gf q[4], int b)
+static void ed_cswap(dws_gf p[4], dws_gf q[4], int b)
 {
     for (int i = 0; i < 4; i++)
-        ssh_gf_cswap(p[i], q[i], b);
+        dws_gf_cswap(p[i], q[i], b);
 }
 
 // Encode a point to 32 bytes: y with x's low bit in the top bit.
-static void ed_pack(uint8_t r[32], ssh_gf p[4])
+static void ed_pack(uint8_t r[32], dws_gf p[4])
 {
-    ssh_gf tx;
-    ssh_gf ty;
-    ssh_gf zi;
-    ssh_gf_inv(zi, p[2]);
-    ssh_gf_mul(tx, p[0], zi);
-    ssh_gf_mul(ty, p[1], zi);
-    ssh_gf_pack(r, ty);
+    dws_gf tx;
+    dws_gf ty;
+    dws_gf zi;
+    dws_gf_inv(zi, p[2]);
+    dws_gf_mul(tx, p[0], zi);
+    dws_gf_mul(ty, p[1], zi);
+    dws_gf_pack(r, ty);
     r[31] ^= (uint8_t)(gf_parity(tx) << 7);
 }
 
 // p = s * q (variable-base scalar mult), s is 32 bytes little-endian.
-static void ed_scalarmult(ssh_gf p[4], ssh_gf q[4], const uint8_t *s)
+static void ed_scalarmult(dws_gf p[4], dws_gf q[4], const uint8_t *s)
 {
-    ssh_gf_copy(p[0], GF0);
-    ssh_gf_copy(p[1], GF1);
-    ssh_gf_copy(p[2], GF1);
-    ssh_gf_copy(p[3], GF0);
+    dws_gf_copy(p[0], GF0);
+    dws_gf_copy(p[1], GF1);
+    dws_gf_copy(p[2], GF1);
+    dws_gf_copy(p[3], GF0);
     for (int i = 255; i >= 0; i--)
     {
         int b = (s[i >> 3] >> (i & 7)) & 1;
@@ -471,64 +471,64 @@ static void ed_scalarmult(ssh_gf p[4], ssh_gf q[4], const uint8_t *s)
 }
 
 // p = s * B (base-point scalar mult).
-static void ed_scalarbase(ssh_gf p[4], const uint8_t *s)
+static void ed_scalarbase(dws_gf p[4], const uint8_t *s)
 {
-    ssh_gf q[4];
-    ssh_gf_copy(q[0], ED_X);
-    ssh_gf_copy(q[1], ED_Y);
-    ssh_gf_copy(q[2], GF1);
-    ssh_gf_mul(q[3], ED_X, ED_Y);
+    dws_gf q[4];
+    dws_gf_copy(q[0], ED_X);
+    dws_gf_copy(q[1], ED_Y);
+    dws_gf_copy(q[2], GF1);
+    dws_gf_mul(q[3], ED_X, ED_Y);
     ed_scalarmult(p, q, s);
 }
 
 // Decode a point and negate it (r = -A) for the verification equation; returns 0 on
 // success, -1 if the encoding is not a valid curve point.
-static int ed_unpackneg(ssh_gf r[4], const uint8_t p[32])
+static int ed_unpackneg(dws_gf r[4], const uint8_t p[32])
 {
-    ssh_gf t;
-    ssh_gf chk;
-    ssh_gf num;
-    ssh_gf den;
-    ssh_gf den2;
-    ssh_gf den4;
-    ssh_gf den6;
-    ssh_gf_copy(r[2], GF1);
-    ssh_gf_unpack(r[1], p); // y (top/sign bit masked off)
-    ssh_gf_sq(num, r[1]);   // y^2
-    ssh_gf_mul(den, num, ED_D);
-    ssh_gf_sub(num, num, r[2]); // u = y^2 - 1
-    ssh_gf_add(den, r[2], den); // v = d*y^2 + 1
+    dws_gf t;
+    dws_gf chk;
+    dws_gf num;
+    dws_gf den;
+    dws_gf den2;
+    dws_gf den4;
+    dws_gf den6;
+    dws_gf_copy(r[2], GF1);
+    dws_gf_unpack(r[1], p); // y (top/sign bit masked off)
+    dws_gf_sq(num, r[1]);   // y^2
+    dws_gf_mul(den, num, ED_D);
+    dws_gf_sub(num, num, r[2]); // u = y^2 - 1
+    dws_gf_add(den, r[2], den); // v = d*y^2 + 1
 
-    ssh_gf_sq(den2, den);
-    ssh_gf_sq(den4, den2);
-    ssh_gf_mul(den6, den4, den2);
-    ssh_gf_mul(t, den6, num);
-    ssh_gf_mul(t, t, den);
+    dws_gf_sq(den2, den);
+    dws_gf_sq(den4, den2);
+    dws_gf_mul(den6, den4, den2);
+    dws_gf_mul(t, den6, num);
+    dws_gf_mul(t, t, den);
     gf_pow2523(t, t); // t = (u v^7)^((p-5)/8)
-    ssh_gf_mul(t, t, num);
-    ssh_gf_mul(t, t, den);
-    ssh_gf_mul(t, t, den);
-    ssh_gf_mul(r[0], t, den); // x candidate = u v^3 (u v^7)^((p-5)/8)
+    dws_gf_mul(t, t, num);
+    dws_gf_mul(t, t, den);
+    dws_gf_mul(t, t, den);
+    dws_gf_mul(r[0], t, den); // x candidate = u v^3 (u v^7)^((p-5)/8)
 
-    ssh_gf_sq(chk, r[0]);
-    ssh_gf_mul(chk, chk, den);
+    dws_gf_sq(chk, r[0]);
+    dws_gf_mul(chk, chk, den);
     if (gf_neq(chk, num))
-        ssh_gf_mul(r[0], r[0], ED_I); // multiply by sqrt(-1)
-    ssh_gf_sq(chk, r[0]);
-    ssh_gf_mul(chk, chk, den);
+        dws_gf_mul(r[0], r[0], ED_I); // multiply by sqrt(-1)
+    dws_gf_sq(chk, r[0]);
+    dws_gf_mul(chk, chk, den);
     if (gf_neq(chk, num))
         return -1; // no square root: invalid point
 
     if (gf_parity(r[0]) == (p[31] >> 7))
-        ssh_gf_sub(r[0], GF0, r[0]); // pick the correct sign, then negate for -A
-    ssh_gf_mul(r[3], r[0], r[1]);
+        dws_gf_sub(r[0], GF0, r[0]); // pick the correct sign, then negate for -A
+    dws_gf_mul(r[3], r[0], r[1]);
     return 0;
 }
 
 // out = pack(s * B).
 static void ed_scalarbase_bytes(uint8_t out[32], const uint8_t s[32])
 {
-    ssh_gf p[4];
+    dws_gf p[4];
     ed_scalarbase(p, s);
     ed_pack(out, p);
 }
@@ -536,9 +536,9 @@ static void ed_scalarbase_bytes(uint8_t out[32], const uint8_t s[32])
 // out = pack(S*B - h*A); false if the public key A does not decode to a curve point.
 static bool ed_verify_recompute(uint8_t out[32], const uint8_t S[32], const uint8_t h[32], const uint8_t pub[32])
 {
-    ssh_gf p[4];
-    ssh_gf q[4];
-    ssh_gf sb[4];
+    dws_gf p[4];
+    dws_gf q[4];
+    dws_gf sb[4];
     if (ed_unpackneg(q, pub) != 0) // q = -A
         return false;
     ed_scalarmult(p, q, h); // p = h * (-A)
@@ -551,7 +551,7 @@ static bool ed_verify_recompute(uint8_t out[32], const uint8_t S[32], const uint
 
 // --- Public API -------------------------------------------------------------
 
-void ssh_ed25519_pubkey(uint8_t pub[32], const uint8_t seed[32])
+void dws_ed25519_pubkey(uint8_t pub[32], const uint8_t seed[32])
 {
     uint8_t d[64];
     dws_sha512(seed, 32, d);
@@ -561,7 +561,7 @@ void ssh_ed25519_pubkey(uint8_t pub[32], const uint8_t seed[32])
     ed_scalarbase_bytes(pub, d);
 }
 
-void ssh_ed25519_sign(uint8_t sig[64], const uint8_t *msg, size_t mlen, const uint8_t seed[32])
+void dws_ed25519_sign(uint8_t sig[64], const uint8_t *msg, size_t mlen, const uint8_t seed[32])
 {
     uint8_t d[64];
     uint8_t pub[32];
@@ -606,7 +606,7 @@ void ssh_ed25519_sign(uint8_t sig[64], const uint8_t *msg, size_t mlen, const ui
     ed_modL(sig + 32, x); // sig[32..63] = S
 }
 
-bool ssh_ed25519_verify(const uint8_t pub[32], const uint8_t *msg, size_t mlen, const uint8_t sig[64])
+bool dws_ed25519_verify(const uint8_t pub[32], const uint8_t *msg, size_t mlen, const uint8_t sig[64])
 {
     if (!ed_scalar_canonical(sig + 32))
         return false; // non-canonical S (RFC 8032 §5.1.7): reject to prevent malleability

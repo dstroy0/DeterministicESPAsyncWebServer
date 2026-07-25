@@ -2,27 +2,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_curve25519.cpp
+ * @file curve25519.cpp
  * @brief Curve25519 field arithmetic (GF(2^255-19), radix-2^16) + X25519 (RFC 7748).
  *
  * The field element is sixteen int64 limbs of ~16 bits each; a full 16x16 schoolbook
  * product fits in int64 (no 128-bit type, so it builds on 32-bit xtensa). Reduction
  * folds anything at or above 2^256 back as *38 (2^256 = 2*2^255 = 2*19 mod p). The
  * X25519 scalar multiplication is the RFC 7748 §5 Montgomery ladder with constant-time
- * conditional swaps. Validated against the RFC 7748 §5.2 vectors (test_ssh_ed25519).
+ * conditional swaps. Validated against the RFC 7748 §5.2 vectors (test_dws_ed25519).
  *
  * On the ESP32-S3 (Arduino) X25519 has a second, byte-identical implementation that runs the
  * ladder in canonical uint32[8] and does each field multiply as one 256-bit modular multiply on
- * the RSA/MPI accelerator (~4.3x the software/PIE ladder); the field layer is in ssh_fe25519.h (shared with
+ * the RSA/MPI accelerator (~4.3x the software/PIE ladder); the field layer is in dws_fe25519.h (shared with
  * Ed25519, active as DWS_FE25519_MPI_HW). It shares the accelerator lock with mbedtls, so a scalar-mult is
- * bracketed by ssh_fe_hw_enable()/ssh_fe_hw_disable() (esp_mpi_{enable,disable}_hardware_hw_op()).
+ * bracketed by dws_fe_hw_enable()/dws_fe_hw_disable() (esp_mpi_{enable,disable}_hardware_hw_op()).
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
+#include "crypto/curve25519.h"
 // On the S3, X25519 runs its whole Montgomery ladder in canonical uint32[8] and does each field multiply as
 // one 256-bit modular multiply on the RSA/MPI accelerator (~4.3x the software/PIE ladder). That field layer is
-// shared with Ed25519 (ssh_ed25519.cpp) and defines DWS_FE25519_MPI_HW when active (Arduino + S3).
-#include "network_drivers/presentation/ssh/crypto/ssh_fe25519.h"
+// shared with Ed25519 (dws_ed25519.cpp) and defines DWS_FE25519_MPI_HW when active (Arduino + S3).
+#include "crypto/fe25519.h"
 #ifdef ARDUINO
 #include "sdkconfig.h"      // CONFIG_IDF_TARGET_ESP32S3 - selects the vector (PIE) field multiply
 #include <mbedtls/bignum.h> // ESP32: field inversion on the MPI/RSA hardware accelerator
@@ -31,12 +31,12 @@
 // Small field constant (radix-2^16). Used only by the software X25519 ladder (the S3 MODMULT path carries its
 // own canonical a24), so it would be unused there.
 #ifndef DWS_FE25519_MPI_HW
-static const ssh_gf GF_121665 = {0xDB41, 1}; // 121665 = 0x1DB41 (Montgomery a24)
+static const dws_gf GF_121665 = {0xDB41, 1}; // 121665 = 0x1DB41 (Montgomery a24)
 #endif
 
 // Normalize each limb toward 16 bits, folding the carry above 2^256 back in as *38.
 // Two passes fully reduce a product's limbs; the +2^16 / -1 dance keeps it branch-free.
-static void gf_carry(ssh_gf o)
+static void gf_carry(dws_gf o)
 {
     for (int i = 0; i < 16; i++)
     {
@@ -47,19 +47,19 @@ static void gf_carry(ssh_gf o)
     }
 }
 
-void ssh_gf_copy(ssh_gf out, const ssh_gf in)
+void dws_gf_copy(dws_gf out, const dws_gf in)
 {
     for (int i = 0; i < 16; i++)
         out[i] = in[i];
 }
 
-void ssh_gf_add(ssh_gf out, const ssh_gf a, const ssh_gf b)
+void dws_gf_add(dws_gf out, const dws_gf a, const dws_gf b)
 {
     for (int i = 0; i < 16; i++)
         out[i] = a[i] + b[i];
 }
 
-void ssh_gf_sub(ssh_gf out, const ssh_gf a, const ssh_gf b)
+void dws_gf_sub(dws_gf out, const dws_gf a, const dws_gf b)
 {
     for (int i = 0; i < 16; i++)
         out[i] = a[i] - b[i];
@@ -76,7 +76,7 @@ void ssh_gf_sub(ssh_gf out, const ssh_gf a, const ssh_gf b)
 
 // Balance a[16] into signed-16-bit limbs of the same value mod p (round-to-nearest carry; limb-15
 // overflow wraps *38 into limb 0 since 2^256 == 38; three passes settle the wrap).
-static void gf_balance_s16(int16_t o[16], const ssh_gf a)
+static void gf_balance_s16(int16_t o[16], const dws_gf a)
 {
     // int32 throughout: limbs stay ~+-2^18 and carries ~+-2, so no value exceeds int32 - which avoids the
     // emulated 64-bit carry-propagation math (48 steps per operand) that dominated the field multiply.
@@ -125,7 +125,7 @@ static inline int64_t gf_accx_dot_win(const int16_t *as, const int16_t *w)
 
 // Shared tail: build the reversed-bs window array, run the ACCX convolution, fold + carry. as points at
 // a 16-byte-aligned int16[16]; bs is read scalar-only (no alignment needed).
-static void gf_conv_finish(ssh_gf out, const int16_t *as, const int16_t *bs)
+static void gf_conv_finish(dws_gf out, const int16_t *as, const int16_t *bs)
 {
     // bp = [15 zeros][bs reversed: bs15..bs0][zeros]; output k's window starts at bp[30-k].
     __attribute__((aligned(16))) int16_t bp[64];
@@ -144,7 +144,7 @@ static void gf_conv_finish(ssh_gf out, const int16_t *as, const int16_t *bs)
     gf_carry(out);
 }
 
-void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
+void dws_gf_mul(dws_gf out, const dws_gf a, const dws_gf b)
 {
     __attribute__((aligned(16))) int16_t as[16];
     int16_t bs[16];
@@ -155,15 +155,15 @@ void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
 
 // Squaring balances the operand ONCE (a == b, and gf_balance_s16 is deterministic, so the second balance
 // in mul(a,a) is pure waste). ~2/3 of the Montgomery-ladder field ops are squarings, so this matters.
-// Byte-exact with ssh_gf_mul(out, a, a) by construction.
-void ssh_gf_sq(ssh_gf out, const ssh_gf a)
+// Byte-exact with dws_gf_mul(out, a, a) by construction.
+void dws_gf_sq(dws_gf out, const dws_gf a)
 {
     __attribute__((aligned(16))) int16_t as[16];
     gf_balance_s16(as, a);
     gf_conv_finish(out, as, as);
 }
 #else
-void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
+void dws_gf_mul(dws_gf out, const dws_gf a, const dws_gf b)
 {
     int64_t t[31];
     for (int i = 0; i < 31; i++)
@@ -188,26 +188,26 @@ void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
 #endif
 
 #if !(defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3)
-void ssh_gf_sq(ssh_gf out, const ssh_gf a)
+void dws_gf_sq(dws_gf out, const dws_gf a)
 {
-    ssh_gf_mul(out, a, a);
+    dws_gf_mul(out, a, a);
 }
 #endif
 
 // Software field inversion out = a^-1 = a^(p-2). Fixed addition chain: square 255 times,
 // multiplying in a at every bit except positions 2 and 4 (which are 0 in p-2 = 2^255 - 21).
 // The reference path (native builds) and the fallback if the hardware modexp ever fails.
-static void gf_inv_sw(ssh_gf out, const ssh_gf a)
+static void gf_inv_sw(dws_gf out, const dws_gf a)
 {
-    ssh_gf c;
-    ssh_gf_copy(c, a);
+    dws_gf c;
+    dws_gf_copy(c, a);
     for (int i = 253; i >= 0; i--)
     {
-        ssh_gf_sq(c, c);
+        dws_gf_sq(c, c);
         if (i != 2 && i != 4)
-            ssh_gf_mul(c, c, a);
+            dws_gf_mul(c, c, a);
     }
-    ssh_gf_copy(out, c);
+    dws_gf_copy(out, c);
 }
 
 #ifdef ARDUINO
@@ -225,11 +225,11 @@ static const uint8_t P25519_MINUS2_BE[32] = {0x7f, 0xff, 0xff, 0xff, 0xff, 0xff,
 // the 255-round Montgomery ladder multiply stays in the software radix-2^16 core, where
 // per-multiply marshalling to the peripheral would cost more than it saves. The exponent
 // is a public constant; the base is packed to its canonical residue first.
-void ssh_gf_inv(ssh_gf out, const ssh_gf a)
+void dws_gf_inv(dws_gf out, const dws_gf a)
 {
     uint8_t le[32];
     uint8_t be[32];
-    ssh_gf_pack(le, a); // canonical little-endian residue in [0, p)
+    dws_gf_pack(le, a); // canonical little-endian residue in [0, p)
     for (int i = 0; i < 32; i++)
         be[i] = le[31 - i]; // to big-endian for mbedtls
 
@@ -255,17 +255,17 @@ void ssh_gf_inv(ssh_gf out, const ssh_gf a)
     }
     for (int i = 0; i < 32; i++)
         le[i] = be[31 - i];
-    ssh_gf_unpack(out, le);
+    dws_gf_unpack(out, le);
 }
 #else
-void ssh_gf_inv(ssh_gf out, const ssh_gf a)
+void dws_gf_inv(dws_gf out, const dws_gf a)
 {
     gf_inv_sw(out, a);
 }
 #endif
 
 // Constant-time conditional swap of p and q when b == 1 (b must be 0 or 1).
-void ssh_gf_cswap(ssh_gf p, ssh_gf q, int b)
+void dws_gf_cswap(dws_gf p, dws_gf q, int b)
 {
     int64_t mask = ~((int64_t)b - 1); // all ones when b==1, zero when b==0
     for (int i = 0; i < 16; i++)
@@ -278,11 +278,11 @@ void ssh_gf_cswap(ssh_gf p, ssh_gf q, int b)
 
 // Canonical little-endian encoding: fully reduce mod p (conditional subtract twice),
 // then emit 16-bit limbs low byte first.
-void ssh_gf_pack(uint8_t out[32], const ssh_gf a)
+void dws_gf_pack(uint8_t out[32], const dws_gf a)
 {
-    ssh_gf t;
-    ssh_gf m;
-    ssh_gf_copy(t, a);
+    dws_gf t;
+    dws_gf m;
+    dws_gf_copy(t, a);
     gf_carry(t);
     gf_carry(t);
     gf_carry(t);
@@ -297,7 +297,7 @@ void ssh_gf_pack(uint8_t out[32], const ssh_gf a)
         m[15] = t[15] - 0x7fff - ((m[14] >> 16) & 1);
         int b = (int)((m[15] >> 16) & 1);
         m[14] &= 0xffff;
-        ssh_gf_cswap(t, m, 1 - b); // keep the subtracted value only if it did not borrow
+        dws_gf_cswap(t, m, 1 - b); // keep the subtracted value only if it did not borrow
     }
     for (int i = 0; i < 16; i++)
     {
@@ -307,7 +307,7 @@ void ssh_gf_pack(uint8_t out[32], const ssh_gf a)
 }
 
 // Decode 32 little-endian bytes into a field element; the top bit is masked off (255-bit).
-void ssh_gf_unpack(ssh_gf out, const uint8_t in[32])
+void dws_gf_unpack(dws_gf out, const uint8_t in[32])
 {
     for (int i = 0; i < 16; i++)
         out[i] = (int64_t)in[2 * i] + ((int64_t)in[2 * i + 1] << 8);
@@ -317,10 +317,10 @@ void ssh_gf_unpack(ssh_gf out, const uint8_t in[32])
 #ifdef DWS_FE25519_MPI_HW
 // ============================= ESP32-S3 X25519 on the RSA/MPI accelerator =================================
 // The canonical uint32[8] field layer (fe, fe_add/sub/mul/sq/..., the MODMULT, and the lock+power bring-up)
-// lives in ssh_fe25519.h - shared with Ed25519. Here is only the X25519-specific a24 and the RFC 7748 ladder.
+// lives in dws_fe25519.h - shared with Ed25519. Here is only the X25519-specific a24 and the RFC 7748 ladder.
 static const uint32_t FE_A24[8] = {121665u, 0, 0, 0, 0, 0, 0, 0}; // X25519 a24 = (486662-2)/4 (RFC 7748 §5)
 
-void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[32])
+void dws_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[32])
 {
     uint8_t e[32];
     for (int i = 0; i < 32; i++)
@@ -329,7 +329,7 @@ void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[3
     e[31] &= 127;
     e[31] |= 64;
 
-    ssh_fe_hw_enable(); // lock + power the accelerator for the whole ladder
+    dws_fe_hw_enable(); // lock + power the accelerator for the whole ladder
 
     fe x1;
     fe x2;
@@ -388,10 +388,10 @@ void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[3
     fe_invert(z2, z2);
     fe_mul(x2, x2, z2);
     fe_tobytes(out, x2);
-    ssh_fe_hw_disable(); // release the lock + power down
+    dws_fe_hw_disable(); // release the lock + power down
 }
 #else
-void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[32])
+void dws_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[32])
 {
     uint8_t z[32];
     for (int i = 0; i < 31; i++)
@@ -399,14 +399,14 @@ void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[3
     z[31] = (uint8_t)((scalar[31] & 127) | 64); // clamp the scalar (RFC 7748 §5)
     z[0] &= 248;
 
-    ssh_gf x;
-    ssh_gf a;
-    ssh_gf b;
-    ssh_gf c;
-    ssh_gf d;
-    ssh_gf e;
-    ssh_gf f;
-    ssh_gf_unpack(x, point);
+    dws_gf x;
+    dws_gf a;
+    dws_gf b;
+    dws_gf c;
+    dws_gf d;
+    dws_gf e;
+    dws_gf f;
+    dws_gf_unpack(x, point);
     for (int i = 0; i < 16; i++)
     {
         b[i] = x[i];
@@ -418,39 +418,39 @@ void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[3
     for (int i = 254; i >= 0; i--)
     {
         int r = (z[i >> 3] >> (i & 7)) & 1;
-        ssh_gf_cswap(a, b, r);
-        ssh_gf_cswap(c, d, r);
-        ssh_gf_add(e, a, c);
-        ssh_gf_sub(a, a, c);
-        ssh_gf_add(c, b, d);
-        ssh_gf_sub(b, b, d);
-        ssh_gf_sq(d, e);
-        ssh_gf_sq(f, a);
-        ssh_gf_mul(a, c, a);
-        ssh_gf_mul(c, b, e);
-        ssh_gf_add(e, a, c);
-        ssh_gf_sub(a, a, c);
-        ssh_gf_sq(b, a);
-        ssh_gf_sub(c, d, f);
-        ssh_gf_mul(a, c, GF_121665);
-        ssh_gf_add(a, a, d);
-        ssh_gf_mul(c, c, a);
-        ssh_gf_mul(a, d, f);
-        ssh_gf_mul(d, b, x);
-        ssh_gf_sq(b, e);
-        ssh_gf_cswap(a, b, r);
-        ssh_gf_cswap(c, d, r);
+        dws_gf_cswap(a, b, r);
+        dws_gf_cswap(c, d, r);
+        dws_gf_add(e, a, c);
+        dws_gf_sub(a, a, c);
+        dws_gf_add(c, b, d);
+        dws_gf_sub(b, b, d);
+        dws_gf_sq(d, e);
+        dws_gf_sq(f, a);
+        dws_gf_mul(a, c, a);
+        dws_gf_mul(c, b, e);
+        dws_gf_add(e, a, c);
+        dws_gf_sub(a, a, c);
+        dws_gf_sq(b, a);
+        dws_gf_sub(c, d, f);
+        dws_gf_mul(a, c, GF_121665);
+        dws_gf_add(a, a, d);
+        dws_gf_mul(c, c, a);
+        dws_gf_mul(a, d, f);
+        dws_gf_mul(d, b, x);
+        dws_gf_sq(b, e);
+        dws_gf_cswap(a, b, r);
+        dws_gf_cswap(c, d, r);
     }
 
     // Result = X / Z = a * c^-1.
-    ssh_gf_inv(c, c);
-    ssh_gf_mul(a, a, c);
-    ssh_gf_pack(out, a);
+    dws_gf_inv(c, c);
+    dws_gf_mul(a, a, c);
+    dws_gf_pack(out, a);
 }
 #endif // DWS_FE25519_MPI_HW
 
-void ssh_x25519_base(uint8_t out[32], const uint8_t scalar[32])
+void dws_x25519_base(uint8_t out[32], const uint8_t scalar[32])
 {
     uint8_t base[32] = {9};
-    ssh_x25519(out, scalar, base);
+    dws_x25519(out, scalar, base);
 }

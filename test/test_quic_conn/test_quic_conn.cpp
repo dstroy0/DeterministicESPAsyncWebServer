@@ -8,6 +8,7 @@
 // parsing, per-level AEAD, CRYPTO reassembly, ACK generation, coalescing, HANDSHAKE_DONE, and stream
 // plumbing all interoperate with an independent implementation.
 
+#include "crypto/curve25519.h"
 #include "crypto/sha256.h"
 #include "network_drivers/presentation/http3/quic_conn.h"
 #include "network_drivers/presentation/http3/quic_crypto.h"
@@ -16,7 +17,6 @@
 #include "network_drivers/presentation/http3/quic_varint.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include <string.h>
 #include <unity.h>
 
@@ -273,7 +273,7 @@ void test_full_handshake_and_stream()
     uint8_t ctp_enc[128];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
 
@@ -301,8 +301,8 @@ void test_full_handshake_and_stream()
 
     // Derive the handshake secrets (client side) and open the Handshake packet.
     uint8_t server_pub[32], ecdhe[32];
-    ssh_x25519_base(server_pub, SERVER_PRIV);
-    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+    dws_x25519_base(server_pub, SERVER_PRIV);
+    dws_x25519(ecdhe, CLIENT_PRIV, server_pub);
     DwsSha256Ctx t;
     uint8_t ch_sh[32], ch_sf[32];
     dws_sha256_init(&t);
@@ -496,7 +496,7 @@ void test_pto_retransmits_flight()
     uint8_t ctp_enc[128];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
     uint8_t frames[1200];
@@ -555,7 +555,7 @@ static void feed_client_initial(QuicConn *qc, QuicConnCallbacks *cb, QuicInitial
     uint8_t ctp_enc[128];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     *ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
     uint8_t frames[1200];
     size_t fl = dws_quic_build_crypto(frames, sizeof(frames), 0, ch, *ch_len);
@@ -608,8 +608,8 @@ void test_connection_close_on_malformed_frame()
     size_t pt = open_long(sdg, sl, &init.server, plain, &wire, &type);
     size_t sh_len = extract_crypto(plain, pt, sh);
     uint8_t server_pub[32], ecdhe[32];
-    ssh_x25519_base(server_pub, SERVER_PRIV);
-    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+    dws_x25519_base(server_pub, SERVER_PRIV);
+    dws_x25519(ecdhe, CLIENT_PRIV, server_pub);
     DwsSha256Ctx tctx;
     uint8_t ch_sh[32];
     dws_sha256_init(&tctx);
@@ -1113,7 +1113,7 @@ static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialS
     uint8_t ctp_enc[128];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
     uint8_t frames[1200];
@@ -1134,8 +1134,8 @@ static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialS
     size_t sh_len = extract_crypto(plain, pt, sh);
 
     uint8_t server_pub[32], ecdhe[32];
-    ssh_x25519_base(server_pub, SERVER_PRIV);
-    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+    dws_x25519_base(server_pub, SERVER_PRIV);
+    dws_x25519(ecdhe, CLIENT_PRIV, server_pub);
     DwsSha256Ctx t;
     uint8_t ch_sh[32], ch_sf[32];
     dws_sha256_init(&t);
@@ -1645,7 +1645,7 @@ void test_quic_conn_crypto_flight_fragmented()
     uint8_t ctp_enc[128];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t chb[512];
     size_t ch_len = build_client_hello(chb, client_pub, ctp_enc, ctp_len);
     uint8_t frames[1200];

@@ -7,9 +7,9 @@
 // tool-generated digests (sha512sum), so the tests ground the implementation
 // against the standards, not against itself.
 
+#include "crypto/curve25519.h"
+#include "crypto/ed25519.h"
 #include "crypto/sha512.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include <string.h>
 #include <unity.h>
 
@@ -127,7 +127,7 @@ static void x25519_check(const char *scalar_hex, const char *u_hex, const char *
     uint8_t scalar[32], u[32], out[32];
     fromhex(scalar_hex, scalar, 32);
     fromhex(u_hex, u, 32);
-    ssh_x25519(out, scalar, u);
+    dws_x25519(out, scalar, u);
     char hex[65];
     tohex(out, 32, hex);
     TEST_ASSERT_EQUAL_STRING(expect, hex);
@@ -154,7 +154,7 @@ static void x25519_iterate(int iters, const char *expect)
     for (int i = 0; i < iters; i++)
     {
         uint8_t r[32];
-        ssh_x25519(r, k, u);
+        dws_x25519(r, k, u);
         memcpy(u, k, 32);
         memcpy(k, r, 32);
     }
@@ -179,10 +179,10 @@ void test_x25519_dh_agreement()
     uint8_t a[32], b[32], apub[32], bpub[32], ss1[32], ss2[32];
     memset(a, 0x11, 32);
     memset(b, 0x22, 32);
-    ssh_x25519_base(apub, a);
-    ssh_x25519_base(bpub, b);
-    ssh_x25519(ss1, a, bpub);
-    ssh_x25519(ss2, b, apub);
+    dws_x25519_base(apub, a);
+    dws_x25519_base(bpub, b);
+    dws_x25519(ss1, a, bpub);
+    dws_x25519(ss2, b, apub);
     TEST_ASSERT_EQUAL_MEMORY(ss1, ss2, 32);
 }
 
@@ -202,14 +202,14 @@ static void ed_check(const char *seedh, const char *msgh, const char *pubh, cons
         fromhex(msgh, msg, mlen);
 
     uint8_t gotpub[32];
-    ssh_ed25519_pubkey(gotpub, seed);
+    dws_ed25519_pubkey(gotpub, seed);
     TEST_ASSERT_EQUAL_MEMORY(pub, gotpub, 32);
 
     uint8_t gotsig[64];
-    ssh_ed25519_sign(gotsig, msg, mlen, seed);
+    dws_ed25519_sign(gotsig, msg, mlen, seed);
     TEST_ASSERT_EQUAL_MEMORY(expsig, gotsig, 64);
 
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(pub, msg, mlen, expsig));
+    TEST_ASSERT_TRUE(dws_ed25519_verify(pub, msg, mlen, expsig));
 }
 
 void test_ed25519_vector_empty_msg()
@@ -241,23 +241,23 @@ void test_ed25519_verify_rejects_tampering()
 {
     uint8_t seed[32], pub[32], sig[64], msg[3] = {'a', 'b', 'c'};
     fromhex("4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb", seed, 32);
-    ssh_ed25519_pubkey(pub, seed);
-    ssh_ed25519_sign(sig, msg, 3, seed);
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(pub, msg, 3, sig));
+    dws_ed25519_pubkey(pub, seed);
+    dws_ed25519_sign(sig, msg, 3, seed);
+    TEST_ASSERT_TRUE(dws_ed25519_verify(pub, msg, 3, sig));
 
     for (int i = 0; i < 64; i += 21) // flip a bit in R and in S
     {
         uint8_t bad[64];
         memcpy(bad, sig, 64);
         bad[i] ^= 0x01;
-        TEST_ASSERT_FALSE(ssh_ed25519_verify(pub, msg, 3, bad));
+        TEST_ASSERT_FALSE(dws_ed25519_verify(pub, msg, 3, bad));
     }
     uint8_t badmsg[3] = {'a', 'b', 'd'};
-    TEST_ASSERT_FALSE(ssh_ed25519_verify(pub, badmsg, 3, sig));
+    TEST_ASSERT_FALSE(dws_ed25519_verify(pub, badmsg, 3, sig));
     uint8_t badpub[32];
     memcpy(badpub, pub, 32);
     badpub[0] ^= 0x01;
-    TEST_ASSERT_FALSE(ssh_ed25519_verify(badpub, msg, 3, sig));
+    TEST_ASSERT_FALSE(dws_ed25519_verify(badpub, msg, 3, sig));
 }
 
 // Verification must reject a non-canonical scalar S >= L (RFC 8032 §5.1.7): S and S+L both satisfy the
@@ -267,15 +267,15 @@ void test_ed25519_verify_rejects_noncanonical_s()
 {
     uint8_t seed[32], pub[32], sig[64], msg[3] = {'a', 'b', 'c'};
     fromhex("4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb", seed, 32);
-    ssh_ed25519_pubkey(pub, seed);
-    ssh_ed25519_sign(sig, msg, 3, seed);
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(pub, msg, 3, sig)); // sanity: the honest signature verifies
+    dws_ed25519_pubkey(pub, seed);
+    dws_ed25519_sign(sig, msg, 3, seed);
+    TEST_ASSERT_TRUE(dws_ed25519_verify(pub, msg, 3, sig)); // sanity: the honest signature verifies
 
     // S = 0xFF..FF is far above the group order L (~2^252): non-canonical -> reject.
     uint8_t bad[64];
     memcpy(bad, sig, 64);
     memset(bad + 32, 0xFF, 32);
-    TEST_ASSERT_FALSE(ssh_ed25519_verify(pub, msg, 3, bad));
+    TEST_ASSERT_FALSE(dws_ed25519_verify(pub, msg, 3, bad));
 
     // S == L (the group order, little-endian) is also out of range (canonical requires S < L).
     static const uint8_t L_le[32] = {0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7,
@@ -283,7 +283,7 @@ void test_ed25519_verify_rejects_noncanonical_s()
                                      0,    0,    0,    0,    0,    0,    0,    0,    0,    0x10};
     memcpy(bad, sig, 64);
     memcpy(bad + 32, L_le, 32);
-    TEST_ASSERT_FALSE(ssh_ed25519_verify(pub, msg, 3, bad));
+    TEST_ASSERT_FALSE(dws_ed25519_verify(pub, msg, 3, bad));
 }
 
 // Verification must reject a public key that does not decode to a valid curve point (RFC 8032 §5.1.7:
@@ -296,7 +296,7 @@ void test_ed25519_verify_rejects_invalid_pubkey_point()
     uint8_t seed[32], sig[64];
     fromhex("4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb", seed, 32);
     uint8_t realmsg[3] = {'a', 'b', 'c'};
-    ssh_ed25519_sign(sig, realmsg, 3, seed); // canonical S -> verify() reaches point decode
+    dws_ed25519_sign(sig, realmsg, 3, seed); // canonical S -> verify() reaches point decode
 
     uint8_t wrongmsg[3] = {'x', 'y', 'z'}; // different message: even a valid-point key cannot verify
     for (int i = 0; i < 64; i++)
@@ -305,7 +305,7 @@ void test_ed25519_verify_rejects_invalid_pubkey_point()
         memset(cand, 0, 32);
         cand[0] = (uint8_t)i;
         cand[16] = (uint8_t)(i * 7 + 1); // spread bits so successive candidate y are unrelated
-        TEST_ASSERT_FALSE(ssh_ed25519_verify(cand, wrongmsg, 3, sig));
+        TEST_ASSERT_FALSE(dws_ed25519_verify(cand, wrongmsg, 3, sig));
     }
 }
 
@@ -318,9 +318,9 @@ void test_ed25519_roundtrip_long()
     uint8_t pub[32], sig[64], msg[200];
     for (int i = 0; i < 200; i++)
         msg[i] = (uint8_t)(i ^ 0x5a);
-    ssh_ed25519_pubkey(pub, seed);
-    ssh_ed25519_sign(sig, msg, sizeof(msg), seed);
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(pub, msg, sizeof(msg), sig));
+    dws_ed25519_pubkey(pub, seed);
+    dws_ed25519_sign(sig, msg, sizeof(msg), seed);
+    TEST_ASSERT_TRUE(dws_ed25519_verify(pub, msg, sizeof(msg), sig));
 }
 
 // ---------------------------------------------------------------------------
@@ -329,8 +329,8 @@ void test_ed25519_roundtrip_long()
 // do not fit s16. The fix: balance each limb into signed-16-bit (a value-preserving carry redistribution
 // mod p) before the multiply, then the product is a pure s16xs16 convolution - exactly what the vector
 // MAC does. This model is the C reference the forthcoming S3 asm implements + is validated against; this
-// test proves it byte-exact-equivalent to the scalar ssh_gf_mul. See the ed25519-hwaccel plan.
-static void gf_balance_s16(int16_t o[16], const ssh_gf a)
+// test proves it byte-exact-equivalent to the scalar dws_gf_mul. See the ed25519-hwaccel plan.
+static void gf_balance_s16(int16_t o[16], const dws_gf a)
 {
     int32_t c[16]; // int32 suffices (limbs ~+-2^18, carries ~+-2) and matches the device path
     for (int i = 0; i < 16; i++)
@@ -350,7 +350,7 @@ static void gf_balance_s16(int16_t o[16], const ssh_gf a)
         o[i] = (int16_t)c[i];
 }
 
-static void gf_mul_s16_model(ssh_gf out, const ssh_gf a, const ssh_gf b)
+static void gf_mul_s16_model(dws_gf out, const dws_gf a, const dws_gf b)
 {
     int16_t as[16], bs[16];
     gf_balance_s16(as, a);
@@ -370,7 +370,7 @@ static void gf_mul_s16_model(ssh_gf out, const ssh_gf a, const ssh_gf b)
 void test_gf_mul_s16_model_matches_scalar()
 {
     uint64_t s = 0x123456789abcdef0ULL;
-    ssh_gf a, b, r1, r2;
+    dws_gf a, b, r1, r2;
     uint8_t p1[32], p2[32];
     for (int t = 0; t < 20000; t++)
     {
@@ -385,10 +385,10 @@ void test_gf_mul_s16_model_matches_scalar()
             s ^= s << 17;
             b[i] = (int64_t)(s & 0x3FFFF) - 0x10000;
         }
-        ssh_gf_mul(r1, a, b);
+        dws_gf_mul(r1, a, b);
         gf_mul_s16_model(r2, a, b);
-        ssh_gf_pack(p1, r1);
-        ssh_gf_pack(p2, r2);
+        dws_gf_pack(p1, r1);
+        dws_gf_pack(p2, r2);
         TEST_ASSERT_EQUAL_MEMORY(p1, p2, 32);
     }
 }

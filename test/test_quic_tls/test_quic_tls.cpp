@@ -7,11 +7,11 @@
 // derive identical handshake + application secrets and that the server accepts the client Finished
 // (a full interop round-trip of the state machine). Plus: capability-negotiation rejections.
 
+#include "crypto/curve25519.h"
 #include "crypto/sha256.h"
 #include "network_drivers/presentation/http3/quic_tls.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #if DWS_ENABLE_PQC_KEX
 #include "../test_pqc_mlkem/mlkem_kat.h"            // kat_ek, kat_dk (a valid ML-KEM key pair)
 #include "../test_ssh_pqc/mlkem_ref.h"              // dws_mlkem768_decaps_ref (the client side)
@@ -175,7 +175,7 @@ void test_full_handshake_roundtrip()
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
 
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
 
@@ -199,8 +199,8 @@ void test_full_handshake_roundtrip()
 
     // 2) Independently run the CLIENT key schedule and confirm the secrets match the server's.
     uint8_t server_pub[32], ecdhe[32];
-    ssh_x25519_base(server_pub, SERVER_PRIV);
-    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+    dws_x25519_base(server_pub, SERVER_PRIV);
+    dws_x25519(ecdhe, CLIENT_PRIV, server_pub);
 
     DwsSha256Ctx t;
     uint8_t ch_sh[32], ch_sf[32];
@@ -261,7 +261,7 @@ void test_reject_bad_client_finished()
     uint8_t ctp_enc[64];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
     dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
@@ -289,7 +289,7 @@ void test_reject_no_h3_alpn()
     uint8_t ctp_enc[64];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
     // Corrupt the ALPN protocol name "h3" -> "h9" so it no longer offers h3.
@@ -318,7 +318,7 @@ void test_partial_client_hello()
     uint8_t ctp_enc[64];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
 
@@ -349,7 +349,7 @@ static uint8_t reject_alert(unsigned inc, const uint8_t *bad_tp, size_t bad_tp_l
     size_t tpl = bad_tp ? bad_tp_len : ctp_len;
 
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_ch_ext(ch, client_pub, tp, tpl, inc);
     dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
@@ -416,7 +416,7 @@ static void drive_to_wait_finished(QuicTls *qt, QuicTlsConfig *cfg)
     uint8_t ctp_enc[64];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
     dws_quic_tls_recv_crypto(qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
@@ -432,7 +432,7 @@ static QtlsState run_handshake(const QuicTlsConfig *cfg)
     uint8_t ctp_enc[64];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
     dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
@@ -527,7 +527,7 @@ void test_quic_tls_more_guards()
     uint8_t ctp_enc[64];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
     dws_quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
@@ -719,7 +719,7 @@ void test_hybrid_hrr_roundtrip()
     uint8_t ctp_enc[128];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
 
     // --- ClientHello1: hybrid group offered, classical share only -> HelloRetryRequest ---
     static uint8_t ch1[2048];
@@ -774,7 +774,7 @@ void test_hybrid_hrr_roundtrip()
     uint8_t ml_ss[32];
     dws_mlkem768_decaps_ref(kat_dk, server_ct, ml_ss);
     uint8_t x_ss[32];
-    ssh_x25519(x_ss, CLIENT_PRIV, server_x25519);
+    dws_x25519(x_ss, CLIENT_PRIV, server_x25519);
     uint8_t ecdhe[64];
     memcpy(ecdhe, ml_ss, 32);
     memcpy(ecdhe + 32, x_ss, 32);
@@ -856,7 +856,7 @@ void test_hybrid_handshake_roundtrip()
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
 
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     static uint8_t ch[2048];
     size_t ch_len = build_client_hello_hybrid(ch, client_pub, ctp_enc, ctp_len);
 
@@ -896,7 +896,7 @@ void test_hybrid_handshake_roundtrip()
     uint8_t ml_ss[32];
     dws_mlkem768_decaps_ref(kat_dk, server_ct, ml_ss);
     uint8_t x_ss[32];
-    ssh_x25519(x_ss, CLIENT_PRIV, server_x25519);
+    dws_x25519(x_ss, CLIENT_PRIV, server_x25519);
     uint8_t ecdhe[64];
     memcpy(ecdhe, ml_ss, 32);
     memcpy(ecdhe + 32, x_ss, 32);
@@ -957,7 +957,7 @@ void test_hybrid_share_without_group_offer()
     uint8_t ctp_enc[128];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     static uint8_t ch[2048];
     size_t ch_len = build_client_hello_hybrid(ch, client_pub, ctp_enc, ctp_len, kat_ek, /*offer_hybrid_group=*/false);
 
@@ -984,7 +984,7 @@ void test_hybrid_hrr_retry_without_share_is_fatal()
     uint8_t ctp_enc[128];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     static uint8_t ch[2048];
     size_t ch_len = build_client_hello_hybrid_classical(ch, client_pub, ctp_enc, ctp_len);
 
@@ -1016,7 +1016,7 @@ void test_hybrid_bad_mlkem_key_rejected()
     uint8_t ctp_enc[128];
     size_t ctp_len = dws_quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
 
     static uint8_t bad_ek[MLKEM768_EK_BYTES];
     memcpy(bad_ek, kat_ek, sizeof(bad_ek));
@@ -1037,7 +1037,7 @@ void test_hybrid_key_share_entry_skipping()
 {
     fill_test_material();
     uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    dws_x25519_base(client_pub, CLIENT_PRIV);
     QuicTransportParams ctp;
     dws_quic_tp_defaults(&ctp);
     uint8_t ctp_enc[128];

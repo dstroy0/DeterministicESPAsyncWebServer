@@ -669,8 +669,14 @@ src/
 │   ├── chacha20.h
 │   ├── chachapoly.cpp
 │   ├── chachapoly.h
+│   ├── curve25519.cpp
+│   ├── curve25519.h
 │   ├── ecdsa.cpp
 │   ├── ecdsa.h
+│   ├── ed25519.cpp
+│   ├── ed25519.h
+│   ├── ed25519_comb_table.h
+│   ├── fe25519.h
 │   ├── hmac_sha256.cpp
 │   ├── hmac_sha256.h
 │   ├── hmac_sha512.cpp
@@ -779,12 +785,6 @@ src/
 │   │   │   │   ├── ssh_server.cpp
 │   │   │   │   └── ssh_server.h
 │   │   │   ├── crypto/
-│   │   │   │   ├── ssh_curve25519.cpp
-│   │   │   │   ├── ssh_curve25519.h
-│   │   │   │   ├── ssh_ed25519.cpp
-│   │   │   │   ├── ssh_ed25519.h
-│   │   │   │   ├── ssh_ed25519_comb_table.h
-│   │   │   │   ├── ssh_fe25519.h
 │   │   │   │   ├── ssh_kexhash.h
 │   │   │   │   ├── ssh_rsa.cpp
 │   │   │   │   └── ssh_rsa.h

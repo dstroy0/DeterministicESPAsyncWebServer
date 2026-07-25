@@ -11,8 +11,8 @@
 //   - EncryptedExtensions: ALPN "h3" + dws_quic_transport_parameters structure.
 //   - CertificateVerify: sec 4.4.3 signed content + an Ed25519 sign/verify round-trip.
 
+#include "crypto/ed25519.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include <string.h>
 #include <unity.h>
 
@@ -176,7 +176,7 @@ void test_cert_verify_sign_roundtrip()
 {
     uint8_t seed[32], pub[32];
     memset(seed, 0x42, 32);
-    ssh_ed25519_pubkey(pub, seed);
+    dws_ed25519_pubkey(pub, seed);
     uint8_t thash[32];
     for (int i = 0; i < 32; i++)
         thash[i] = (uint8_t)i;
@@ -193,11 +193,11 @@ void test_cert_verify_sign_roundtrip()
     // Rebuild the signed content and verify the signature.
     uint8_t content[160];
     size_t clen = dws_tls13_cert_verify_content(content, sizeof(content), thash, true);
-    TEST_ASSERT_TRUE(ssh_ed25519_verify(pub, content, clen, out + 8));
+    TEST_ASSERT_TRUE(dws_ed25519_verify(pub, content, clen, out + 8));
     // A different transcript hash must not verify against the same signature.
     thash[0] ^= 0x01;
     clen = dws_tls13_cert_verify_content(content, sizeof(content), thash, true);
-    TEST_ASSERT_FALSE(ssh_ed25519_verify(pub, content, clen, out + 8));
+    TEST_ASSERT_FALSE(dws_ed25519_verify(pub, content, clen, out + 8));
 }
 
 // Assemble a minimal TLS 1.3 ClientHello wrapping the given extensions block.

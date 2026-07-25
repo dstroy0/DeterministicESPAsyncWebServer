@@ -7,8 +7,8 @@
 #include "baseline_keys.h"
 #include "crypto/aesgcm.h"
 #include "crypto/ecdsa.h"
+#include "crypto/ed25519.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
@@ -570,7 +570,7 @@ void test_pubkey_ed25519_valid_signature_succeeds()
     dws_ssh_auth_set_pubkey_cb(pk_cb_alice);
     set_session_id_0_to_31();
     uint8_t pub[32];
-    ssh_ed25519_pubkey(pub, seed);
+    dws_ed25519_pubkey(pub, seed);
 
     // Build the signed prefix, prepend string(session_id), sign the whole thing.
     uint8_t pkt[512];
@@ -585,7 +585,7 @@ void test_pubkey_ed25519_valid_signature_succeeds()
     memcpy(signed_data + sd, pkt, prefix_len);
     sd += prefix_len;
     uint8_t sig[64];
-    ssh_ed25519_sign(sig, signed_data, sd, seed);
+    dws_ed25519_sign(sig, signed_data, sd, seed);
 
     size_t n = build_pubkey_req_ed(pkt, pub, sig, true, nullptr);
     uint8_t out[64];
