@@ -294,6 +294,12 @@
     "output": ".pio/build/native_coap/src/services/coap/coap.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/crypto/sha512.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/crypto/sha512.cpp",
+    "directory": "@ROOT@",
+    "file": "src/crypto/sha512.cpp",
+    "output": ".pio/build/native_coaps/src/crypto/sha512.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/dtls/dtls_conn.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/dtls/dtls_conn.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/dtls/dtls_conn.cpp",
@@ -352,12 +358,6 @@
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp",
     "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
-    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/services/coap/coaps.o -c -std=c++14 -fno-exceptions -DPLATFORMIO=60119 -DDWS_ENABLE_DTLS=1 -DDWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/services/coap/coaps.cpp",
