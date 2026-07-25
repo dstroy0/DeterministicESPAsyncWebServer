@@ -1182,8 +1182,6 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
-│   │   ├── __pycache__/
-│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1356,7 +1354,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/WebDav` | 824,681 | 92,348 |
 | `ETAG` | `L7-Application/ETag` | 829,713 | 83,124 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
-| `SSH` | `L5-Session/SSH` | 831,441 | 109,248 |
+| `SSH` | `L5-Session/SSHHostKey` | 831,549 | 109,248 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 832,493 | 107,272 |
 | `HOTSWAP` | `L7-Application/HotSwapStorage` | 839,129 | 82,760 |
