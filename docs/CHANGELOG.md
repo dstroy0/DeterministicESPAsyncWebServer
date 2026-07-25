@@ -6,7 +6,30 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`417c977`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/417c977b463d2f17f10771dfd7826ed6f70a3036))
+- update CHANGELOG.md [skip ci] ([`5b69ee7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b69ee773cf1fa8739b35b1d02a9f699ae4b42d3))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`2c5387d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c5387da6357d6d17466902d1482e3c0d898bd58))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cbe3251`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cbe32512760699c0902b8d8939eb750f83f98269))
+
+### Features
+
+- NTLMSSP AUTHENTICATE MIC + HW-verify SMB 3.1.1 vs real Samba ([`b83b59e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b83b59efdbae1889c8ef7032b95148a89bf91165))
+
+## [7.171.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.171.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
 - update CHANGELOG.md [skip ci] ([`a5b5230`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5b523009aceae41333e8643ce1981951049c224))
+
+### Changes
+
+- Bump version: 7.170.0 → 7.171.0 ([`2431ec1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2431ec1060c0df5aa57e49c50123874f2dabd80f))
 
 ### Documentation
 
@@ -16,6 +39,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - run SMB 3.1.1 end to end - preauth chain + AES-CMAC signing ([`c56a163`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c56a16380d6c8f03f9d899fc07bcf96ecee774dc))
+
+</details>
 
 ## [7.170.0] - 2026-07-25
 
