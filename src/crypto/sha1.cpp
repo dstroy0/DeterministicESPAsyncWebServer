@@ -3,17 +3,13 @@
 
 /**
  * @file sha1.cpp
- * @brief SHA-1 implementation.
+ * @brief SHA-1 implementation (FIPS 180-4).
  *
- * On Arduino (ESP32) targets, delegates to mbedtls_sha1() which uses the
- * hardware SHA accelerator in the ESP32 and is significantly faster than the
- * software implementation.
- *
- * On native (x86) test targets, uses a portable software implementation so
- * unit tests run without mbedTLS installed.
+ * On Arduino (ESP32) targets, delegates to mbedtls_sha1() which uses the hardware SHA accelerator. On
+ * native (x86) test targets, uses a portable software implementation so unit tests run without mbedTLS.
  */
 
-#include "sha1.h"
+#include "crypto/sha1.h"
 
 #ifdef ARDUINO
 
@@ -21,7 +17,7 @@
 #include "mbedtls/sha1.h"
 #include <string.h>
 
-void sha1(const uint8_t *data, size_t len, uint8_t digest[SHA1_DIGEST_LEN])
+void dws_sha1(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA1_DIGEST_LEN])
 {
     (void)mbedtls_sha1(data, len, digest);
 }
@@ -32,23 +28,16 @@ void sha1(const uint8_t *data, size_t len, uint8_t digest[SHA1_DIGEST_LEN])
 #include "shared_primitives/endian.h"
 #include <string.h>
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 static inline uint32_t rot32(uint32_t x, int n)
 {
     return (x << n) | (x >> (32 - n));
 }
 
-// ---------------------------------------------------------------------------
-// SHA-1 block compression (processes one 64-byte block)
-// ---------------------------------------------------------------------------
-
+// Process one 64-byte block into the running state h[0..4] (FIPS 180-4 §6.1.2).
 static void sha1_block(uint32_t h[5], const uint8_t block[64])
 {
-    // Message schedule: 16 big-endian words from the block, extended to 80 by
-    // XOR-and-rotate (the SHA-1 recurrence; the rotate-by-1 is what SHA-0 lacked).
+    // Message schedule: 16 big-endian words from the block, extended to 80 by XOR-and-rotate (the
+    // SHA-1 recurrence; the rotate-by-1 is what SHA-0 lacked).
     uint32_t w[80];
     for (int i = 0; i < 16; i++)
         w[i] = dws_rd32be(block + i * 4);
@@ -61,8 +50,7 @@ static void sha1_block(uint32_t h[5], const uint8_t block[64])
     uint32_t d = h[3];
     uint32_t e = h[4];
 
-    // 80 rounds in four 20-round regimes, each with its own mixing function f
-    // and constant k (FIPS 180-4 §6.1.2).
+    // 80 rounds in four 20-round regimes, each with its own mixing function f and constant k.
     for (int i = 0; i < 80; i++)
     {
         uint32_t f;
@@ -104,11 +92,7 @@ static void sha1_block(uint32_t h[5], const uint8_t block[64])
     h[4] += e;
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-void sha1(const uint8_t *data, size_t len, uint8_t digest[SHA1_DIGEST_LEN])
+void dws_sha1(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA1_DIGEST_LEN])
 {
     uint32_t h[5] = {0x67452301u, 0xEFCDAB89u, 0x98BADCFEu, 0x10325476u, 0xC3D2E1F0u};
 

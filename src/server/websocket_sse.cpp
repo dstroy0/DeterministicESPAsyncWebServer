@@ -16,8 +16,8 @@
 #include "network_drivers/transport/tcp.h" // conn_pool, dws_conn_*, TcpConn/ConnState
 #include "server/dwserver_internal.h"
 #if DWS_ENABLE_WEBSOCKET
+#include "crypto/sha1.h"                                      // dws_sha1, DWS_SHA1_DIGEST_LEN
 #include "network_drivers/presentation/base64/base64.h"       // dws_base64_decode/encode
-#include "network_drivers/presentation/sha1/sha1.h"           // sha1, SHA1_DIGEST_LEN
 #include "network_drivers/presentation/websocket/websocket.h" // ws_pool, WsConn, ws_alloc/send_frame/close
 #endif
 #if DWS_ENABLE_SSE
@@ -70,9 +70,9 @@ static bool ws_accept_key(const char *client_key, char *out)
     memcpy(concat, client_key, key_len);
     memcpy(concat + key_len, WS_MAGIC, magic_len);
 
-    uint8_t digest[SHA1_DIGEST_LEN];
-    sha1((const uint8_t *)concat, key_len + magic_len, digest);
-    dws_base64_encode(digest, SHA1_DIGEST_LEN, out);
+    uint8_t digest[DWS_SHA1_DIGEST_LEN];
+    dws_sha1((const uint8_t *)concat, key_len + magic_len, digest);
+    dws_base64_encode(digest, DWS_SHA1_DIGEST_LEN, out);
     return true;
 }
 

@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_IKEV2
 
-#include "network_drivers/presentation/sha1/sha1.h"
+#include "crypto/sha1.h"
 #include <string.h>
 
 namespace
@@ -46,7 +46,7 @@ size_t dws_ike_natd_hash(const uint8_t init_spi[DWS_IKE_SPI_LEN], const uint8_t 
     size_t n = natd_input(in, init_spi, resp_spi, ip, ip_len, port);
     if (n == 0)
         return 0;
-    sha1(in, n, out);
+    dws_sha1(in, n, out);
     return DWS_IKE_NATD_HASH_LEN;
 }
 

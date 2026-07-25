@@ -60457,7 +60457,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Sha1 empty string
     * **Assertions**:
-      * <code>Assert equal memory (expected, digest, SHA1_DIGEST_LEN)</code>
+      * <code>Assert equal memory (expected, digest, DWS_SHA1_DIGEST_LEN)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -60465,7 +60465,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Sha1 abc
     * **Assertions**:
-      * <code>Assert equal memory (expected, digest, SHA1_DIGEST_LEN)</code>
+      * <code>Assert equal memory (expected, digest, DWS_SHA1_DIGEST_LEN)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -60473,7 +60473,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Client sends: Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
     * **Assertions**:
-      * <code>Assert equal memory (expected, digest, SHA1_DIGEST_LEN)</code>
+      * <code>Assert equal memory (expected, digest, DWS_SHA1_DIGEST_LEN)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -60481,7 +60481,7 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Sha1 different inputs different digests
     * **Assertions**:
-      * <code>Assert not equal (0, memcmp(d1, d2, SHA1_DIGEST_LEN))</code>
+      * <code>Assert not equal (0, memcmp(d1, d2, DWS_SHA1_DIGEST_LEN))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -60551,8 +60551,8 @@ A thorough directory of all **5203 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Base64 decode ws accept key
     * **Assertions**:
-      * <code>Assert equal (SHA1_DIGEST_LEN, (int)n)</code>
-      * <code>Assert equal memory (expected, dst, SHA1_DIGEST_LEN)</code>
+      * <code>Assert equal (DWS_SHA1_DIGEST_LEN, (int)n)</code>
+      * <code>Assert equal memory (expected, dst, DWS_SHA1_DIGEST_LEN)</code>
   </details>
 
   <details style="margin-left: 20px;">

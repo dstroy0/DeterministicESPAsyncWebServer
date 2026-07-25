@@ -12,8 +12,8 @@
 
 #if DWS_ENABLE_WS_CLIENT
 
+#include "crypto/sha1.h"
 #include "network_drivers/presentation/base64/base64.h"
-#include "network_drivers/presentation/sha1/sha1.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -37,11 +37,11 @@ void ws_client_accept_for_key(const char *key_b64, char *out, size_t out_cap)
         return;
     memcpy(concat, key_b64, klen);
     memcpy(concat + klen, WS_MAGIC, mlen);
-    uint8_t digest[SHA1_DIGEST_LEN];
-    sha1((const uint8_t *)concat, klen + mlen, digest);
+    uint8_t digest[DWS_SHA1_DIGEST_LEN];
+    dws_sha1((const uint8_t *)concat, klen + mlen, digest);
     if (out_cap < 29) // 28 base64 chars + NUL
         return;
-    dws_base64_encode(digest, SHA1_DIGEST_LEN, out);
+    dws_base64_encode(digest, DWS_SHA1_DIGEST_LEN, out);
 }
 
 size_t ws_client_build_handshake(uint8_t *out, size_t cap, const char *host, const char *path, const char *key_b64,

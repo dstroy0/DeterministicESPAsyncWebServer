@@ -13,7 +13,7 @@
 
 #if DWS_ENABLE_TOTP
 
-#include "network_drivers/presentation/sha1/sha1.h"
+#include "crypto/sha1.h"
 #include <string.h>
 
 namespace
@@ -21,14 +21,14 @@ namespace
 constexpr int BLOCK = 64; // SHA-1 block size
 
 // HMAC-SHA1 over an 8-byte message (the HOTP/TOTP counter).
-void dws_hmac_sha1_8(const uint8_t *key, size_t keylen, const uint8_t msg[8], uint8_t out[SHA1_DIGEST_LEN])
+void dws_hmac_sha1_8(const uint8_t *key, size_t keylen, const uint8_t msg[8], uint8_t out[DWS_SHA1_DIGEST_LEN])
 {
     uint8_t k[BLOCK] = {0};
     if (keylen > BLOCK)
     {
-        uint8_t kh[SHA1_DIGEST_LEN];
-        sha1(key, keylen, kh);
-        memcpy(k, kh, SHA1_DIGEST_LEN);
+        uint8_t kh[DWS_SHA1_DIGEST_LEN];
+        dws_sha1(key, keylen, kh);
+        memcpy(k, kh, DWS_SHA1_DIGEST_LEN);
     }
     else
     {
@@ -39,14 +39,14 @@ void dws_hmac_sha1_8(const uint8_t *key, size_t keylen, const uint8_t msg[8], ui
     for (int i = 0; i < BLOCK; i++)
         inner_in[i] = k[i] ^ 0x36; // ipad
     memcpy(inner_in + BLOCK, msg, 8);
-    uint8_t inner[SHA1_DIGEST_LEN];
-    sha1(inner_in, sizeof(inner_in), inner);
+    uint8_t inner[DWS_SHA1_DIGEST_LEN];
+    dws_sha1(inner_in, sizeof(inner_in), inner);
 
-    uint8_t outer_in[BLOCK + SHA1_DIGEST_LEN];
+    uint8_t outer_in[BLOCK + DWS_SHA1_DIGEST_LEN];
     for (int i = 0; i < BLOCK; i++)
         outer_in[i] = k[i] ^ 0x5c; // opad
-    memcpy(outer_in + BLOCK, inner, SHA1_DIGEST_LEN);
-    sha1(outer_in, sizeof(outer_in), out);
+    memcpy(outer_in + BLOCK, inner, DWS_SHA1_DIGEST_LEN);
+    dws_sha1(outer_in, sizeof(outer_in), out);
 }
 
 uint32_t pow10u(uint8_t n)
@@ -66,10 +66,10 @@ uint32_t dws_hotp(const uint8_t *key, size_t keylen, uint64_t counter, uint8_t d
         msg[i] = (uint8_t)(counter & 0xFF);
         counter >>= 8;
     }
-    uint8_t mac[SHA1_DIGEST_LEN];
+    uint8_t mac[DWS_SHA1_DIGEST_LEN];
     dws_hmac_sha1_8(key, keylen, msg, mac);
 
-    int off = mac[SHA1_DIGEST_LEN - 1] & 0x0F; // dynamic truncation (RFC 4226 §5.3)
+    int off = mac[DWS_SHA1_DIGEST_LEN - 1] & 0x0F; // dynamic truncation (RFC 4226 §5.3)
     uint32_t bin = ((uint32_t)(mac[off] & 0x7F) << 24) | ((uint32_t)mac[off + 1] << 16) |
                    ((uint32_t)mac[off + 2] << 8) | (uint32_t)mac[off + 3];
     return bin % pow10u(digits);

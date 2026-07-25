@@ -17,12 +17,12 @@
 // Ephemeral, per-run keys belong in the handshake/round-trip tests, not here.
 
 #include "crypto/hmac_sha256.h"
+#include "crypto/hmac_sha512.h"
 #include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/quic_hkdf.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_poly1305.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -138,7 +138,7 @@ static void run_hmac(const KatMac *arr, size_t n, bool is512)
         uint8_t key[MAXB], msg[MAXB], want[64], got[64];
         size_t klen = hexdec(v.key, key), mlen = hexdec(v.msg, msg), wlen = hexdec(v.tag, want);
         if (is512)
-            ssh_hmac_sha512(key, klen, msg, mlen, got);
+            dws_hmac_sha512(key, klen, msg, mlen, got);
         else
             dws_hmac_sha256(key, klen, msg, mlen, got);
         size_t cmp = (size_t)v.tag_bits / 8; // truncated-tag length the vector pins

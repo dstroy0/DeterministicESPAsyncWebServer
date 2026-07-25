@@ -11,7 +11,7 @@
 
 #if DWS_ENABLE_DEVICE_ID
 
-#include "network_drivers/presentation/sha1/sha1.h"
+#include "crypto/sha1.h"
 
 #ifdef ARDUINO
 #include <esp_mac.h> // esp_read_mac()
@@ -36,8 +36,8 @@ void dws_uuid_from_mac(const uint8_t mac[6], char out[DWS_UUID_STR_LEN])
         input[16 + i * 2 + 1] = (uint8_t)dws_hex_digit((uint8_t)(mac[i] & 0x0F));
     }
 
-    uint8_t h[SHA1_DIGEST_LEN];
-    sha1(input, sizeof(input), h);
+    uint8_t h[DWS_SHA1_DIGEST_LEN];
+    dws_sha1(input, sizeof(input), h);
     h[6] = (uint8_t)((h[6] & 0x0F) | 0x50); // version 5
     h[8] = (uint8_t)((h[8] & 0x3F) | 0x80); // RFC 4122 variant
 

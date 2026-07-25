@@ -482,7 +482,7 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 | `dws_sha512`                        | HW SHA            |       17,149 |      69.8 | 14.3 |
 | `ssh_poly1305`                      | SW (-O2 TU)       |       24,904 |     101.3 |  9.9 |
 | `dws_hmac_sha256`                   | HW SHA            |       31,994 |     130.2 |  7.7 |
-| `ssh_hmac_sha512`                   | HW SHA            |       43,628 |     177.5 |  5.6 |
+| `dws_hmac_sha512`                   | HW SHA            |       43,628 |     177.5 |  5.6 |
 | `ssh_chacha20`                      | SW (-O2 TU)       |       46,434 |     188.9 |  5.3 |
 | `ssh_chachapoly` encrypt (AEAD)     | SW (-O2 TU)       |       77,433 |     315.1 |  3.2 |
 | `ssh_aesgcm` seal (AES-256-GCM)     | HW AES + SW GHASH |      555,421 |     2,260 | 0.44 |

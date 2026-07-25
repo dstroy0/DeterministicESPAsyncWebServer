@@ -661,10 +661,14 @@ src/
 ├── crypto/
 │   ├── hmac_sha256.cpp
 │   ├── hmac_sha256.h
+│   ├── hmac_sha512.cpp
+│   ├── hmac_sha512.h
 │   ├── kdf.cpp
 │   ├── kdf.h
 │   ├── md.cpp
 │   ├── md.h
+│   ├── sha1.cpp
+│   ├── sha1.h
 │   ├── sha256.cpp
 │   ├── sha256.h
 │   ├── sha512.cpp
@@ -746,7 +750,6 @@ src/
 │   │   │   ├── sha3.h
 │   │   │   ├── sntrup761.cpp
 │   │   │   └── sntrup761.h
-│   │   ├── sha1/  (sha1.h, sha1.cpp)
 │   │   ├── sse/  (sse.h, sse.cpp)
 │   │   ├── ssh/
 │   │   │   ├── auth/  (ssh_auth.h, ssh_auth.cpp)
@@ -780,8 +783,6 @@ src/
 │   │   │   │   ├── ssh_ed25519.h
 │   │   │   │   ├── ssh_ed25519_comb_table.h
 │   │   │   │   ├── ssh_fe25519.h
-│   │   │   │   ├── ssh_hmac_sha512.cpp
-│   │   │   │   ├── ssh_hmac_sha512.h
 │   │   │   │   ├── ssh_kexhash.h
 │   │   │   │   ├── ssh_poly1305.cpp
 │   │   │   │   ├── ssh_poly1305.h
@@ -1179,6 +1180,8 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
+│   │   ├── __pycache__/
+│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py

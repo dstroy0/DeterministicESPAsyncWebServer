@@ -8,9 +8,9 @@
 
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "crypto/hmac_sha256.h"
+#include "crypto/hmac_sha512.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #if DWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h"
@@ -69,11 +69,11 @@ static void compute_mac_mode(uint8_t mac_mode, const uint8_t *mac_key, uint32_t 
     write_u32_be(seq_be, seq_no);
     if (mac_mode == SSH_MAC_HMAC_SHA512 || mac_mode == SSH_MAC_HMAC_SHA512_ETM)
     {
-        SshHmacSha512Ctx ctx;
-        ssh_hmac_sha512_init(&ctx, mac_key, 64);
-        ssh_hmac_sha512_update(&ctx, seq_be, 4);
-        ssh_hmac_sha512_update(&ctx, buf, buf_len);
-        ssh_hmac_sha512_final(&ctx, mac_out);
+        DwsHmacSha512Ctx ctx;
+        dws_hmac_sha512_init(&ctx, mac_key, 64);
+        dws_hmac_sha512_update(&ctx, seq_be, 4);
+        dws_hmac_sha512_update(&ctx, buf, buf_len);
+        dws_hmac_sha512_final(&ctx, mac_out);
     }
     else
     {

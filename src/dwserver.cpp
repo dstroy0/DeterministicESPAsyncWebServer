@@ -52,7 +52,7 @@
 #endif
 #if DWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/base64/base64.h"
-#include "network_drivers/presentation/sha1/sha1.h"
+#include "crypto/sha1.h"
 #elif DWS_ENABLE_AUTH
 #include "network_drivers/presentation/base64/base64.h"
 #endif

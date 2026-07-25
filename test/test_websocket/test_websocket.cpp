@@ -10,8 +10,8 @@
 //   WS PARSER   -- per-state-machine path through ws_parse()
 //   STRESS      -- sustained-load and boundary-value coverage
 
+#include "crypto/sha1.h"
 #include "network_drivers/presentation/base64/base64.h"
-#include "network_drivers/presentation/sha1/sha1.h"
 #include "network_drivers/presentation/websocket/websocket.h"
 #include <string.h>
 #include <unity.h>
@@ -101,21 +101,21 @@ void tearDown()
 // RFC 3174 test vector: empty string
 void test_sha1_empty_string()
 {
-    uint8_t digest[SHA1_DIGEST_LEN];
-    sha1((const uint8_t *)"", 0, digest);
-    const uint8_t expected[SHA1_DIGEST_LEN] = {0xDA, 0x39, 0xA3, 0xEE, 0x5E, 0x6B, 0x4B, 0x0D, 0x32, 0x55,
-                                               0xBF, 0xEF, 0x95, 0x60, 0x18, 0x90, 0xAF, 0xD8, 0x07, 0x09};
-    TEST_ASSERT_EQUAL_MEMORY(expected, digest, SHA1_DIGEST_LEN);
+    uint8_t digest[DWS_SHA1_DIGEST_LEN];
+    dws_sha1((const uint8_t *)"", 0, digest);
+    const uint8_t expected[DWS_SHA1_DIGEST_LEN] = {0xDA, 0x39, 0xA3, 0xEE, 0x5E, 0x6B, 0x4B, 0x0D, 0x32, 0x55,
+                                                   0xBF, 0xEF, 0x95, 0x60, 0x18, 0x90, 0xAF, 0xD8, 0x07, 0x09};
+    TEST_ASSERT_EQUAL_MEMORY(expected, digest, DWS_SHA1_DIGEST_LEN);
 }
 
 // RFC 3174 test vector: "abc"
 void test_sha1_abc()
 {
-    uint8_t digest[SHA1_DIGEST_LEN];
-    sha1((const uint8_t *)"abc", 3, digest);
-    const uint8_t expected[SHA1_DIGEST_LEN] = {0xA9, 0x99, 0x3E, 0x36, 0x47, 0x06, 0x81, 0x6A, 0xBA, 0x3E,
-                                               0x25, 0x71, 0x78, 0x50, 0xC2, 0x6C, 0x9C, 0xD0, 0xD8, 0x9D};
-    TEST_ASSERT_EQUAL_MEMORY(expected, digest, SHA1_DIGEST_LEN);
+    uint8_t digest[DWS_SHA1_DIGEST_LEN];
+    dws_sha1((const uint8_t *)"abc", 3, digest);
+    const uint8_t expected[DWS_SHA1_DIGEST_LEN] = {0xA9, 0x99, 0x3E, 0x36, 0x47, 0x06, 0x81, 0x6A, 0xBA, 0x3E,
+                                                   0x25, 0x71, 0x78, 0x50, 0xC2, 0x6C, 0x9C, 0xD0, 0xD8, 0x9D};
+    TEST_ASSERT_EQUAL_MEMORY(expected, digest, DWS_SHA1_DIGEST_LEN);
 }
 
 // RFC 6455 §B handshake key: SHA-1 of client key + magic GUID
@@ -124,21 +124,21 @@ void test_sha1_rfc6455_handshake_key()
     // Client sends: Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
     // Server concatenates with magic: 258EAFA5-E914-47DA-95CA-C5AB0DC85B11
     const char *input = "dGhlIHNhbXBsZSBub25jZQ==258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    uint8_t digest[SHA1_DIGEST_LEN];
-    sha1((const uint8_t *)input, strlen(input), digest);
+    uint8_t digest[DWS_SHA1_DIGEST_LEN];
+    dws_sha1((const uint8_t *)input, strlen(input), digest);
 
-    const uint8_t expected[SHA1_DIGEST_LEN] = {0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16, 0x90, 0xF6,
-                                               0x46, 0x06, 0xCF, 0x38, 0x59, 0x45, 0xB2, 0xBE, 0xC4, 0xEA};
-    TEST_ASSERT_EQUAL_MEMORY(expected, digest, SHA1_DIGEST_LEN);
+    const uint8_t expected[DWS_SHA1_DIGEST_LEN] = {0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16, 0x90, 0xF6,
+                                                   0x46, 0x06, 0xCF, 0x38, 0x59, 0x45, 0xB2, 0xBE, 0xC4, 0xEA};
+    TEST_ASSERT_EQUAL_MEMORY(expected, digest, DWS_SHA1_DIGEST_LEN);
 }
 
 // Digest changes when input changes (basic independence)
 void test_sha1_different_inputs_different_digests()
 {
-    uint8_t d1[SHA1_DIGEST_LEN], d2[SHA1_DIGEST_LEN];
-    sha1((const uint8_t *)"abc", 3, d1);
-    sha1((const uint8_t *)"abd", 3, d2);
-    TEST_ASSERT_NOT_EQUAL(0, memcmp(d1, d2, SHA1_DIGEST_LEN));
+    uint8_t d1[DWS_SHA1_DIGEST_LEN], d2[DWS_SHA1_DIGEST_LEN];
+    dws_sha1((const uint8_t *)"abc", 3, d1);
+    dws_sha1((const uint8_t *)"abd", 3, d2);
+    TEST_ASSERT_NOT_EQUAL(0, memcmp(d1, d2, DWS_SHA1_DIGEST_LEN));
 }
 
 // ====================================================================
@@ -175,10 +175,10 @@ void test_base64_encode_three_bytes()
 // Encode the RFC 6455 §B SHA-1 digest → known accept header value
 void test_base64_encode_ws_accept_key()
 {
-    const uint8_t digest[SHA1_DIGEST_LEN] = {0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16, 0x90, 0xF6,
-                                             0x46, 0x06, 0xCF, 0x38, 0x59, 0x45, 0xB2, 0xBE, 0xC4, 0xEA};
+    const uint8_t digest[DWS_SHA1_DIGEST_LEN] = {0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16, 0x90, 0xF6,
+                                                 0x46, 0x06, 0xCF, 0x38, 0x59, 0x45, 0xB2, 0xBE, 0xC4, 0xEA};
     char out[32] = {};
-    dws_base64_encode(digest, SHA1_DIGEST_LEN, out);
+    dws_base64_encode(digest, DWS_SHA1_DIGEST_LEN, out);
     TEST_ASSERT_EQUAL_STRING("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=", out);
 }
 
@@ -215,12 +215,12 @@ void test_base64_decode_three_bytes()
 // Decode the RFC 6455 §B accept key back to the original digest bytes
 void test_base64_decode_ws_accept_key()
 {
-    uint8_t dst[SHA1_DIGEST_LEN + 4] = {};
+    uint8_t dst[DWS_SHA1_DIGEST_LEN + 4] = {};
     size_t n = dws_base64_decode("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=", dst, sizeof(dst));
-    TEST_ASSERT_EQUAL(SHA1_DIGEST_LEN, (int)n);
-    const uint8_t expected[SHA1_DIGEST_LEN] = {0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16, 0x90, 0xF6,
-                                               0x46, 0x06, 0xCF, 0x38, 0x59, 0x45, 0xB2, 0xBE, 0xC4, 0xEA};
-    TEST_ASSERT_EQUAL_MEMORY(expected, dst, SHA1_DIGEST_LEN);
+    TEST_ASSERT_EQUAL(DWS_SHA1_DIGEST_LEN, (int)n);
+    const uint8_t expected[DWS_SHA1_DIGEST_LEN] = {0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16, 0x90, 0xF6,
+                                                   0x46, 0x06, 0xCF, 0x38, 0x59, 0x45, 0xB2, 0xBE, 0xC4, 0xEA};
+    TEST_ASSERT_EQUAL_MEMORY(expected, dst, DWS_SHA1_DIGEST_LEN);
 }
 
 // Encode then decode must return identical bytes

@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file ssh_hmac_sha512.cpp
- * @brief HMAC-SHA2-512 implementation (RFC 2104). See ssh_hmac_sha512.h.
+ * @file hmac_sha512.cpp
+ * @brief HMAC-SHA2-512 implementation (RFC 2104). See hmac_sha512.h.
  *
  * HMAC(K, m) = H((K XOR opad) || H((K XOR ipad) || m)), H = SHA-512, block = 128 bytes,
  * ipad = 0x36 repeated, opad = 0x5c repeated.
  */
 
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
+#include "crypto/hmac_sha512.h"
 
 namespace
 {
@@ -31,7 +31,7 @@ void build_key_block(const uint8_t *key, size_t key_len, uint8_t block[DWS_SHA51
 }
 } // namespace
 
-void ssh_hmac_sha512_init(SshHmacSha512Ctx *ctx, const uint8_t *key, size_t key_len)
+void dws_hmac_sha512_init(DwsHmacSha512Ctx *ctx, const uint8_t *key, size_t key_len)
 {
     uint8_t ikey[DWS_SHA512_BLOCK_LEN];
     build_key_block(key, key_len, ikey, 0x36u);      // ipad
@@ -40,12 +40,12 @@ void ssh_hmac_sha512_init(SshHmacSha512Ctx *ctx, const uint8_t *key, size_t key_
     dws_sha512_update(&ctx->inner, ikey, DWS_SHA512_BLOCK_LEN);
 }
 
-void ssh_hmac_sha512_update(SshHmacSha512Ctx *ctx, const uint8_t *data, size_t len)
+void dws_hmac_sha512_update(DwsHmacSha512Ctx *ctx, const uint8_t *data, size_t len)
 {
     dws_sha512_update(&ctx->inner, data, len);
 }
 
-void ssh_hmac_sha512_final(SshHmacSha512Ctx *ctx, uint8_t mac[SSH_HMAC_SHA512_LEN])
+void dws_hmac_sha512_final(DwsHmacSha512Ctx *ctx, uint8_t mac[DWS_HMAC_SHA512_LEN])
 {
     uint8_t inner_digest[DWS_SHA512_DIGEST_LEN];
     dws_sha512_final(&ctx->inner, inner_digest);
@@ -56,11 +56,11 @@ void ssh_hmac_sha512_final(SshHmacSha512Ctx *ctx, uint8_t mac[SSH_HMAC_SHA512_LE
     dws_sha512_final(&outer, mac);
 }
 
-void ssh_hmac_sha512(const uint8_t *key, size_t key_len, const uint8_t *data, size_t len,
-                     uint8_t mac[SSH_HMAC_SHA512_LEN])
+void dws_hmac_sha512(const uint8_t *key, size_t key_len, const uint8_t *data, size_t len,
+                     uint8_t mac[DWS_HMAC_SHA512_LEN])
 {
-    SshHmacSha512Ctx ctx;
-    ssh_hmac_sha512_init(&ctx, key, key_len);
-    ssh_hmac_sha512_update(&ctx, data, len);
-    ssh_hmac_sha512_final(&ctx, mac);
+    DwsHmacSha512Ctx ctx;
+    dws_hmac_sha512_init(&ctx, key, key_len);
+    dws_hmac_sha512_update(&ctx, data, len);
+    dws_hmac_sha512_final(&ctx, mac);
 }

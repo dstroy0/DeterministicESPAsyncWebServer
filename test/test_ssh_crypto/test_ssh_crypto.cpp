@@ -13,11 +13,11 @@
 //   PACKET        - ssh_pkt_send/recv round-trip (unencrypted + encrypted)
 
 #include "crypto/hmac_sha256.h"
+#include "crypto/hmac_sha512.h"
 #include "crypto/sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
@@ -183,7 +183,7 @@ static void test_hmac_sha512_tc1(void)
     uint8_t key[20];
     memset(key, 0x0b, 20);
     uint8_t got[64];
-    ssh_hmac_sha512(key, 20, (const uint8_t *)"Hi There", 8, got);
+    dws_hmac_sha512(key, 20, (const uint8_t *)"Hi There", 8, got);
     uint8_t expected[64];
     hex_to_bytes(expected,
                  "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cded"
@@ -196,7 +196,7 @@ static void test_hmac_sha512_tc2(void)
 {
     // RFC 4231 Test Case 2: Key = "Jefe", Data = "what do ya want for nothing?".
     uint8_t got[64];
-    ssh_hmac_sha512((const uint8_t *)"Jefe", 4, (const uint8_t *)"what do ya want for nothing?", 28, got);
+    dws_hmac_sha512((const uint8_t *)"Jefe", 4, (const uint8_t *)"what do ya want for nothing?", 28, got);
     uint8_t expected[64];
     hex_to_bytes(expected,
                  "164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549"
@@ -210,12 +210,12 @@ static void test_hmac_sha512_streaming(void)
     // Same as tc1 but via the streaming API (also exercises the 128-byte block boundary).
     uint8_t key[20];
     memset(key, 0x0b, 20);
-    SshHmacSha512Ctx ctx;
-    ssh_hmac_sha512_init(&ctx, key, 20);
-    ssh_hmac_sha512_update(&ctx, (const uint8_t *)"Hi ", 3);
-    ssh_hmac_sha512_update(&ctx, (const uint8_t *)"There", 5);
+    DwsHmacSha512Ctx ctx;
+    dws_hmac_sha512_init(&ctx, key, 20);
+    dws_hmac_sha512_update(&ctx, (const uint8_t *)"Hi ", 3);
+    dws_hmac_sha512_update(&ctx, (const uint8_t *)"There", 5);
     uint8_t got[64];
-    ssh_hmac_sha512_final(&ctx, got);
+    dws_hmac_sha512_final(&ctx, got);
     uint8_t expected[64];
     hex_to_bytes(expected,
                  "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cded"
@@ -247,7 +247,7 @@ static void test_hmac_sha512_tc6_large_key(void)
     memset(key, 0xaa, sizeof(key));
     const char *data = "Test Using Larger Than Block-Size Key - Hash Key First";
     uint8_t got[64];
-    ssh_hmac_sha512(key, sizeof(key), (const uint8_t *)data, strlen(data), got);
+    dws_hmac_sha512(key, sizeof(key), (const uint8_t *)data, strlen(data), got);
     uint8_t expected[64];
     hex_to_bytes(expected,
                  "80b24263c7c1a3ebb71493c1dd7be8b49b46d1f41b4aeec1121b013783f8f352"
