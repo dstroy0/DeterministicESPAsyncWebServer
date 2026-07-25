@@ -40,6 +40,31 @@ inline int dws_hex_val(char c)
 }
 
 /**
+ * @brief Write @p v as lowercase hex digits (no `0x` prefix, no NUL) into @p out, most-significant
+ *        first; returns the digit count (1..8, with 0 -> "0"). @p out needs room for up to 8 digits.
+ *
+ * The hot path is the HTTP/1.1 chunked send-pump size line ("<hexlen>\r\n"): this replaces
+ * snprintf("%x") there, whose format-string parse dwarfs the few nibble writes (measured ~9x on the
+ * host, larger on the ESP32 where newlib snprintf is heavier - see perf/server/send_pump).
+ */
+inline size_t dws_hex_u32(uint32_t v, char *out)
+{
+    char tmp[8];
+    size_t t = 0;
+    if (v == 0)
+        tmp[t++] = '0';
+    else
+        while (v)
+        {
+            tmp[t++] = "0123456789abcdef"[v & 0xF];
+            v >>= 4;
+        }
+    for (size_t i = 0; i < t; i++)
+        out[i] = tmp[t - 1 - i]; // reverse (least-significant nibble was written first)
+    return t;
+}
+
+/**
  * @brief Encode @p n bytes as 2*n hex chars + NUL into @p out (needs cap >= 2*n+1).
  * @param upper  uppercase A-F when true, else lowercase a-f.
  */

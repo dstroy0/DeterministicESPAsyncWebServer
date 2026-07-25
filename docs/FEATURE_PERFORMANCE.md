@@ -966,9 +966,35 @@ Notes:
   Xtensa LX7, and the two tracked each other with no surprises - nothing on the request path behaved
   differently on hardware than the host predicted.
 
+### Chunked send-pump framing (`perf/server/send_pump`)
+
+The response side: `chunk_send_pump` (`src/server/response.cpp`) frames every body piece as an HTTP/1.1
+chunk - `"<hexlen>\r\n<body>\r\n"` - into one send-window buffer so it goes out in a single
+`dws_conn_send`. The body itself is written in place by the `ChunkSource` (file read = section 1, template
+render = the request path above), so the pump's own hot cost is just that per-chunk size line. It used
+`snprintf("%x\r\n", n)`; the benchmark measured framing one 1440-byte chunk (one TCP MSS) and pumping a
+64 KiB body (46 chunks). Host = Raspberry Pi 5 `-O2` (relative baseline); ESP32-S3 = the real device at
+240 MHz over in-RAM buffers (pure compute, no socket).
+
+| Operation                   | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
+| --------------------------- | ---------: | --------: | -------------: | ------------: |
+| frame `snprintf` (1440B)    |       59.1 |   24377.1 |          4.022 |         358.0 |
+| frame `dws_hex_u32` (1440B) |        6.3 |  228097.0 |          0.222 |        6486.5 |
+| pump 64 KiB `snprintf`      |     2960.7 |   22135.4 |         22.225 |         353.9 |
+| pump 64 KiB `dws_hex_u32`   |      186.5 |  351418.2 |          1.252 |        6280.4 |
+
+**Finding + optimization (2026-07-25).** `snprintf("%x")` on the ESP32 (newlib) costs **~4.0 us per
+chunk** - its format-string parse dwarfs the two nibble writes the size line actually needs. Replacing it
+with a hand-written hex writer (`dws_hex_u32`, `shared_primitives/hex.h`) drops the per-chunk framing to
+**0.22 us, an ~18x win on-device** (~9x on the host, where snprintf is lighter). At MSS-size chunks that
+removes ~2.8 ms of pure CPU per MiB streamed from the send path. The framing is now so far below the
+network / W5500 ceiling (~8 Mbit/s wired, section 5) that it is not measurable in end-to-end throughput -
+but the cycles are freed for the poll loop's other slots. `test_chunked` / `test_file_serving` /
+`test_range` (386 host cases) are unchanged; the size line is byte-identical, just built faster.
+
 _Still to add:_ the TLS handshake and SSH KEX wall-clock (one-time per-connection costs, dominated by the
 mbedTLS RSA/ECDHE math - the ~7 KB modexp stack cost is already characterized in docs/TODO.md; a full
-end-to-end handshake bench needs the PSRAM TLS build) and a chunked / file send-pump pass.
+end-to-end handshake bench needs the PSRAM TLS build).
 
 ## 4. Embedded data-store stack
 

@@ -16,6 +16,7 @@
 #include "dwserver.h"
 #include "network_drivers/transport/tcp.h" // conn_pool, dws_conn_send, TcpConn/ConnState
 #include "server/dwserver_internal.h"      // status_text, req_is_head, SendCtx s_send
+#include "shared_primitives/hex.h"         // dws_hex_u32 (chunk size-line writer)
 #include "shared_primitives/mime.h"        // DWS_MIME_*, mime tables
 #include <stdio.h>
 #include <string.h>
@@ -258,14 +259,19 @@ void DWS::chunk_send_pump(uint8_t slot_id)
         else
         {
             // Prepend the size line (right-justified against the body) + append the trailing CRLF,
-            // then send the framed chunk in one call.
-            char sz[8];
-            int sn = snprintf(sz, sizeof(sz), "%x\r\n", (unsigned)n);
+            // then send the framed chunk in one call. The size line is a hand-written hex (dws_hex_u32),
+            // not snprintf("%x") - the format-string parse dwarfed the few nibble writes on the hot
+            // per-chunk path (perf/server/send_pump: ~9x on the host, more on the ESP32).
+            char digits[8];
+            size_t nd = dws_hex_u32((uint32_t)n, digits);
+            size_t sn = nd + 2; // "<hex>\r\n"
             uint8_t *start = body - sn;
-            memcpy(start, sz, (size_t)sn);
+            memcpy(start, digits, nd);
+            start[nd] = '\r';
+            start[nd + 1] = '\n';
             body[n] = '\r';
             body[n + 1] = '\n';
-            dws_conn_send(slot_id, start, (u16_t)((size_t)sn + n + 2));
+            dws_conn_send(slot_id, start, (u16_t)(sn + n + 2));
         }
         s.total += (int)n;
     }

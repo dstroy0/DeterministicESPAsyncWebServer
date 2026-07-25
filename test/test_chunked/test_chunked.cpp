@@ -4,6 +4,7 @@
 // Unit tests for send_chunked() / ChunkedResponse streaming responses.
 
 #include "dwserver.h"
+#include "shared_primitives/hex.h" // dws_hex_u32 (the chunk size-line writer)
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
@@ -390,9 +391,31 @@ void test_chunked_source_overreport_clamped()
     TEST_ASSERT_EQUAL_INT(CHUNK_BUF_SIZE, g_log_len); // body length is the clamped count
 }
 
+// dws_hex_u32 (the chunk size-line writer that replaced snprintf("%x") in chunk_send_pump): the digits
+// must match snprintf("%x") across the range, and 0 must write "0" (the branch the chunked path itself
+// never hits - its terminating chunk is a literal "0\r\n\r\n").
+void test_hex_u32_size_line()
+{
+    char out[8];
+    size_t nd = dws_hex_u32(0, out);
+    TEST_ASSERT_EQUAL_size_t(1, nd);
+    TEST_ASSERT_EQUAL_HEX8('0', out[0]);
+
+    const uint32_t vals[] = {1, 0xF, 0x10, 0x5A0 /* CHUNK_BUF_SIZE */, 0xFFFF, 0x12345, 0xFFFFFFFFu};
+    for (size_t i = 0; i < sizeof(vals) / sizeof(vals[0]); i++)
+    {
+        char ref[16];
+        int rn = snprintf(ref, sizeof(ref), "%x", (unsigned)vals[i]);
+        nd = dws_hex_u32(vals[i], out);
+        TEST_ASSERT_EQUAL_size_t((size_t)rn, nd);
+        TEST_ASSERT_EQUAL_MEMORY(ref, out, nd); // most-significant nibble first, matches %x
+    }
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_hex_u32_size_line);
     RUN_TEST(test_chunked_source_overreport_clamped);
     RUN_TEST(test_chunked_backpressure_resumes_across_polls);
     RUN_TEST(test_headers_announce_chunked_no_content_length);

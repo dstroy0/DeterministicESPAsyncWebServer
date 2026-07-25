@@ -232,9 +232,11 @@ layer built first, then the store codecs on top. Substrate before stores.
       characterization (section 1), the base64 / mtconnect codecs (section 2), the **request path** (section
       3: HTTP request parse for GET + POST, JSON encode + decode - `perf/bench_reqpath.cpp` + an on-device
       firmware; finding: the parse -> build-JSON round trip is ~135 us of CPU, far under the network cost, so
-      no optimization was warranted), and the full **data-store stack** (section 4) - all with host +
-      on-device ESP32-S3 numbers. _Remaining:_ the TLS handshake / SSH KEX wall-clock (needs the PSRAM TLS
-      build) and a chunked / file send-pump pass.
+      no optimization was warranted), the full **data-store stack** (section 4), and the **chunked
+      send-pump framing** (section 3: `perf/server/send_pump`, host + ESP32-S3) - which surfaced a real
+      win: `snprintf("%x")` on the per-chunk size line cost ~4.0 us/chunk on-device, replaced by a
+      hand-written `dws_hex_u32` (`shared_primitives/hex.h`) for an **~18x** framing speedup (v7.173.0).
+      _Remaining:_ only the TLS handshake / SSH KEX wall-clock (needs the PSRAM TLS build).
 - [x] **base64 was slow on-device (mbedTLS).** _(done - hybrid)_ mbedTLS's base64 is slow because it is
       constant-time (side-channel hardened). Rather than drop that globally, the path now splits by data
       sensitivity: **encode** (only the public WebSocket-accept digest) uses the fast software codec on
