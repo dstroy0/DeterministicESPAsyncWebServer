@@ -26,6 +26,7 @@
 
 #if DWS_ENABLE_SMB
 
+#include "smb2.h" // Smb2SignAlgo (the per-session signing algorithm carried on the handle)
 #include <stddef.h>
 #include <stdint.h>
 
@@ -68,10 +69,11 @@ struct SmbHandle
     uint64_t session_id;
     uint32_t tree_id;
     uint8_t file_id[16];
-    uint64_t file_size;       ///< EndofFile from CREATE (the current size)
-    uint64_t next_message_id; ///< the MessageId for the next request on this handle
-    bool signing_active;      ///< the session negotiated SMB signing (server set SigningRequired, not guest/null)
-    uint8_t signing_key[16];  ///< the SMB 2.x signing key (the NTLMv2 session key) when @ref signing_active
+    uint64_t file_size;        ///< EndofFile from CREATE (the current size)
+    uint64_t next_message_id;  ///< the MessageId for the next request on this handle
+    bool signing_active;       ///< the session negotiated SMB signing (server set SigningRequired, not guest/null)
+    Smb2SignAlgo signing_algo; ///< HMAC-SHA256 (SMB 2.x) or AES-CMAC (SMB 3.x), from the negotiated dialect
+    uint8_t signing_key[16];   ///< the session signing key when @ref signing_active (2.x: NTLMv2 key; 3.x: KDF-derived)
 };
 
 /**

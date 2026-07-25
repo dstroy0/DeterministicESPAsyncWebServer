@@ -93,9 +93,15 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
   a 3 s XOFF hold, then the full identical program after XON).
 - **SMB/CIFS client** - complete and shipped: all 8 codec increments + the `smb_client` engine
   (`smb_open` / `smb_read` / `smb_write` / `smb_close`, a POSIX-like surface) + a runnable example
-  (`SmbFileClient`, ESP32-compile-verified). Host-tested end to end with a scripted mock SMB2 server
-  (`native_smb` 46 cases, incl. a byte-exact round trip). Only remainder: HW-verify against a real
-  Samba/Windows share (needs a share to point at).
+  (`SmbFileClient`, ESP32-compile-verified). **SMB 3.1.1 now runs end to end:** the client offers
+  2.0.2 .. 3.1.1, chains the preauth-integrity hash across NEGOTIATE + both SESSION_SETUP rounds,
+  derives the SP800-108 signing key, and signs the session with AES-128-CMAC (`crypto/aes_cmac`,
+  RFC 4493); the KDF label/context assembly + the CMAC are cross-checked byte-for-byte against
+  impacket (validated against real Windows). Host-tested end to end with a scripted mock SMB2 server
+  that is a full 3.1.1 reference peer - the same preauth chain + derived key on both sides, a
+  byte-exact signed write/read round trip, and CMAC tamper rejection (`native_smb`, incl. the 3.1.1
+  signed session). Remainder: the NTLMSSP AUTHENTICATE **MIC** (for servers that enforce it), then
+  HW-verify against a real Samba/Windows share (needs a share to point at).
 - **Concurrent TLS** (`MAX_TLS_CONNS`>1) - library + PSRAM build done; only the live 2-client soak remains
   (the reserved **two-rig HW test**, held per the user's "keep looping, hold the rigs").
 - **Ethernet PHY** - RMII bring-up shipped + **HW-verified (2026-07-19)** on a Waveshare ESP32-P4-POE-ETH

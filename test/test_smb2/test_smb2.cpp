@@ -245,7 +245,7 @@ void test_build_negotiate_311()
     TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_SIGNING_CAPABILITIES, r16(c2 + 0));
     TEST_ASSERT_EQUAL_UINT16(4, r16(c2 + 2)); // DataLength
     TEST_ASSERT_EQUAL_UINT16(1, r16(c2 + 8)); // SigningAlgorithmCount
-    TEST_ASSERT_EQUAL_UINT16(Smb2SigningAlgorithm::SMB2_SIGNING_HMAC_SHA256, r16(c2 + 10));
+    TEST_ASSERT_EQUAL_UINT16(Smb2SigningAlgorithm::SMB2_SIGNING_AES_CMAC, r16(c2 + 10));
 
     // overflow + bad-arg fail closed
     TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, 100, gid, 0, salt, sizeof(salt)));

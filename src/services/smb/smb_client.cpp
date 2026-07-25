@@ -129,14 +129,30 @@ struct SmbClientCtx
 };
 static SmbClientCtx s_smb;
 
-// SMB 2.x message-signing state for a session: the 16-byte signing key (the NTLMv2 session key) and
-// whether the server required signing. When active, every request this engine sends is HMAC-SHA256
-// signed in place and every response must carry a matching signature (MS-SMB2 §3.1.4.1 / §3.1.5.1).
+// SMB message-signing state for a session: the algorithm (HMAC-SHA256 for SMB 2.x, AES-CMAC for
+// SMB 3.x), the 16-byte signing key, and whether the server required signing. When active, every
+// request this engine sends is signed in place and every response must carry a matching signature
+// (MS-SMB2 §3.1.4.1 / §3.1.5.1).
 struct SmbSign
 {
     bool active;
+    Smb2SignAlgo algo;
     uint8_t key[16];
 };
+
+// Sign / verify a message with the session's negotiated algorithm.
+static void smb_apply_sign(const SmbSign *s, uint8_t *msg, size_t len)
+{
+    if (s->algo == Smb2SignAlgo::AES_CMAC)
+        dws_smb2_sign_cmac(s->key, msg, len);
+    else
+        dws_smb2_sign(s->key, msg, len);
+}
+static bool smb_check_sign(const SmbSign *s, uint8_t *msg, size_t len)
+{
+    return s->algo == Smb2SignAlgo::AES_CMAC ? dws_smb2_verify_cmac(s->key, msg, len)
+                                             : dws_smb2_verify(s->key, msg, len);
+}
 
 // Send the framed message currently in s_smb.tx (mlen bytes at tx+4) and receive the reply into s_smb.rx.
 // When @p sign is active the request is signed before sending and the response signature is verified
@@ -145,7 +161,7 @@ struct SmbSign
 static int smb_round_trip(SmbSendFn send, SmbRecvFn recv, void *ctx, size_t mlen, const SmbSign *sign, SmbResult *res)
 {
     if (sign && sign->active)
-        dws_smb2_sign(sign->key, s_smb.tx + 4, mlen);
+        smb_apply_sign(sign, s_smb.tx + 4, mlen);
     if (!send_msg(send, ctx, s_smb.tx, mlen))
     {
         *res = SmbResult::SMB_ERR_IO;
@@ -157,7 +173,7 @@ static int smb_round_trip(SmbSendFn send, SmbRecvFn recv, void *ctx, size_t mlen
         *res = (rl == -2) ? SmbResult::SMB_ERR_OVERFLOW : SmbResult::SMB_ERR_IO;
         return -1;
     }
-    if (sign && sign->active && !dws_smb2_verify(sign->key, s_smb.rx, (size_t)rl))
+    if (sign && sign->active && !smb_check_sign(sign, s_smb.rx, (size_t)rl))
     {
         *res = SmbResult::SMB_ERR_PROTOCOL;
         return -1;
@@ -165,34 +181,53 @@ static int smb_round_trip(SmbSendFn send, SmbRecvFn recv, void *ctx, size_t mlen
     return rl;
 }
 
-// Step 1 - NEGOTIATE: advertise SMB2 and confirm the server's negotiate response parses. Reports the
-// server's SecurityMode in *sec_mode so smb_open can decide whether the session must be signed.
-static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx, uint16_t *sec_mode)
+// Step 1 - NEGOTIATE: advertise SMB 2.0.2 .. 3.1.1 (with the mandatory 3.1.1 preauth-integrity + an
+// AES-CMAC signing context) and confirm the server's negotiate response parses. Reports the server's
+// SecurityMode in *sec_mode and the chosen DialectRevision in *dialect (so smb_open picks HMAC vs
+// AES-CMAC signing), and seeds + folds the NEGOTIATE request/response into the 3.1.1 preauth-integrity
+// hash chain (MS-SMB2 §3.1.5.2). The salt is a fresh random blob; it lives only in the request bytes
+// that feed the hash, so it needs no separate storage.
+static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx, uint16_t *sec_mode, uint16_t *dialect,
+                               SmbPreauth *preauth)
 {
     uint8_t guid[16];
+    uint8_t salt[32];
     esp_fill_random(guid, 16);
-    size_t mlen = dws_smb2_build_negotiate(s_smb.tx + 4, sizeof(s_smb.tx) - 4, guid,
-                                           Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED);
+    esp_fill_random(salt, sizeof(salt));
+    size_t mlen = dws_smb2_build_negotiate_311(s_smb.tx + 4, sizeof(s_smb.tx) - 4, guid,
+                                               Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, salt, sizeof(salt));
     if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
         return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
+
+    // Seed the preauth-integrity hash and fold the NEGOTIATE request (the bytes are final - NEGOTIATE is
+    // never signed). The chain is only consumed when the server chooses 3.1.1, but folding is harmless
+    // otherwise.
+    dws_smb_preauth_init(preauth);
+    dws_smb_preauth_update(preauth, s_smb.tx + 4, mlen);
+
     SmbResult rt = SmbResult::SMB_ERR_IO;
     // NEGOTIATE precedes authentication, so there is no session key yet: never signed.
     int rl = smb_round_trip(send, recv, ctx, mlen, nullptr, &rt);
     if (rl < 0)
         return rt;
+    dws_smb_preauth_update(preauth, s_smb.rx, (size_t)rl); // fold the NEGOTIATE response
     Smb2NegotiateResp neg;
     if (!dws_smb2_parse_negotiate_response(s_smb.rx, (size_t)rl, &neg))
         return SmbResult::SMB_ERR_PROTOCOL;
     *sec_mode = neg.security_mode;
+    *dialect = neg.dialect;
     return SmbResult::SMB_OK;
 }
 
 // Steps 2-4 - NTLMv2 SESSION_SETUP: SPNEGO/NTLMSSP negotiate, compute the NTLMv2 response to the server
-// challenge, then authenticate. Fills *session_id from the server's SessionId, and - when the server
-// required signing (@p want_signing) and the session is not GUEST/NULL - fills *sign with the derived
-// SMB 2.x signing key so every later request on the session is signed.
-static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, bool want_signing, SmbSendFn send,
-                                   SmbRecvFn recv, void *ctx, uint64_t *session_id, SmbSign *sign)
+// challenge, then authenticate. Fills *session_id from the server's SessionId, threads the SESSION_SETUP
+// messages through the 3.1.1 preauth-integrity chain (@p preauth, seeded by smb_negotiate), and - when
+// the server required signing (@p want_signing) and the session is not GUEST/NULL - fills *sign with the
+// per-dialect signer: HMAC-SHA256 over the NTLMv2 session key for SMB 2.x, or AES-CMAC over the
+// SP800-108-derived signing key (from the final preauth hash) for SMB 3.x, so every later request signs.
+static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, bool want_signing, uint16_t dialect,
+                                   SmbPreauth *preauth, SmbSendFn send, SmbRecvFn recv, void *ctx, uint64_t *session_id,
+                                   SmbSign *sign)
 {
     // 2. SESSION_SETUP round 1: NTLMSSP NEGOTIATE wrapped in SPNEGO
     uint8_t ntneg[64];
@@ -202,12 +237,14 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, boo
     size_t mlen = dws_smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 1, 0,
                                                Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, sp1, sp1_n);
     if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
-        return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
+        return SmbResult::SMB_ERR_OVERFLOW;              // GCOVR_EXCL_LINE - unreachable body of the guard above
+    dws_smb_preauth_update(preauth, s_smb.tx + 4, mlen); // fold SESSION_SETUP request 1 (unsigned)
     SmbResult rt = SmbResult::SMB_ERR_IO;
     // Round 1 precedes the session key, so it is never signed.
     int rl = smb_round_trip(send, recv, ctx, mlen, nullptr, &rt);
     if (rl < 0)
         return rt;
+    dws_smb_preauth_update(preauth, s_smb.rx, (size_t)rl); // fold SESSION_SETUP response 1
     Smb2Header h1;
     if (!dws_smb2_parse_header(s_smb.rx, (size_t)rl, &h1) ||
         h1.status != Smb2Status::SMB2_STATUS_MORE_PROCESSING_REQUIRED)
@@ -247,16 +284,34 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, boo
     if (!sp2_n)
         return SmbResult::SMB_ERR_OVERFLOW;
 
-    // 4. SESSION_SETUP round 2 (echo the server SessionId). This request completes authentication, so
-    // it is the first message that can be signed: when the server required signing we sign it here with
-    // the freshly derived session key (skey) so a signing-required server accepts it. The response that
-    // finalises the session is not itself verified - the GUEST/NULL downgrade below is decided from it.
+    // 4. SESSION_SETUP round 2 (echo the server SessionId). This request completes authentication and is
+    // folded into the preauth chain (unsigned), whose final value derives the SMB 3.x signing key.
     mlen = dws_smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 2, *session_id,
                                         Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, s_smb.sp2, sp2_n);
     if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
-        return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
-    if (want_signing)
-        dws_smb2_sign(skey, s_smb.tx + 4, mlen);
+        return SmbResult::SMB_ERR_OVERFLOW;              // GCOVR_EXCL_LINE - unreachable body of the guard above
+    dws_smb_preauth_update(preauth, s_smb.tx + 4, mlen); // fold request 2 -> the key-derivation hash is now final
+
+    // Select the session signer from the negotiated dialect: SMB 3.x (>= 3.0) signs with AES-CMAC over the
+    // SP800-108-derived key (3.1.1 mixes in the preauth hash); SMB 2.x signs with HMAC-SHA256 over the
+    // NTLMv2 session key. For SMB 2.x we sign request 2 with that key so a signing-required 2.x server
+    // accepts it; SMB 3.x leaves request 2 unsigned (the derived key signs from TREE_CONNECT onward,
+    // matching Windows / Samba / impacket).
+    const Smb2SignAlgo algo =
+        dialect >= (uint16_t)Smb2Dialect::SMB2_DIALECT_0300 ? Smb2SignAlgo::AES_CMAC : Smb2SignAlgo::HMAC_SHA256;
+    uint8_t sign_key[16];
+    if (algo == Smb2SignAlgo::AES_CMAC)
+    {
+        const bool is_311 = dialect == (uint16_t)Smb2Dialect::SMB2_DIALECT_0311;
+        dws_smb3_derive_signing_key(skey, dialect, is_311 ? preauth->hash : nullptr, sign_key);
+    }
+    else
+    {
+        memcpy(sign_key, skey, sizeof(sign_key));
+        if (want_signing)
+            dws_smb2_sign(skey, s_smb.tx + 4, mlen);
+    }
+
     rl = smb_round_trip(send, recv, ctx, mlen, nullptr, &rt);
     if (rl < 0)
         return rt;
@@ -273,7 +328,8 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, boo
         guest_or_null = (ss2.session_flags & (Smb2SessionFlags::SMB2_SESSION_FLAG_IS_GUEST |
                                               Smb2SessionFlags::SMB2_SESSION_FLAG_IS_NULL)) != 0;
     sign->active = want_signing && !guest_or_null;
-    memcpy(sign->key, skey, sizeof(sign->key));
+    sign->algo = algo;
+    memcpy(sign->key, sign_key, sizeof(sign->key));
     return SmbResult::SMB_OK;
 }
 
@@ -330,6 +386,7 @@ static SmbResult smb_create(const SmbConfig *cfg, SmbHandle *h, uint64_t session
     h->file_size = cr.end_of_file;
     h->next_message_id = 5;
     h->signing_active = sign->active;
+    h->signing_algo = sign->algo;
     memcpy(h->signing_key, sign->key, sizeof(h->signing_key));
     return SmbResult::SMB_OK;
 }
@@ -342,15 +399,17 @@ SmbResult smb_open(const SmbConfig *cfg, SmbHandle *h, SmbSendFn send, SmbRecvFn
     const char *domain = cfg->domain ? cfg->domain : "";
 
     uint16_t sec_mode = 0;
-    SmbResult r = smb_negotiate(send, recv, ctx, &sec_mode);
+    uint16_t dialect = 0;
+    SmbPreauth preauth;
+    SmbResult r = smb_negotiate(send, recv, ctx, &sec_mode, &dialect, &preauth);
     if (r != SmbResult::SMB_OK)
         return r;
     // The client advertises SIGNING_ENABLED, so the session is signed exactly when the server requires it.
     bool want_signing = (sec_mode & Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_REQUIRED) != 0;
 
-    SmbSign sign = {false, {0}};
+    SmbSign sign = {false, Smb2SignAlgo::HMAC_SHA256, {0}};
     uint64_t session_id = 0;
-    r = smb_session_setup(cfg, domain, want_signing, send, recv, ctx, &session_id, &sign);
+    r = smb_session_setup(cfg, domain, want_signing, dialect, &preauth, send, recv, ctx, &session_id, &sign);
     if (r != SmbResult::SMB_OK)
         return r;
 
@@ -372,14 +431,16 @@ SmbResult smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx)
         dws_smb2_build_close(tx + 4, sizeof(tx) - 4, h->next_message_id, h->session_id, h->tree_id, h->file_id);
     if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
         return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
-    if (h->signing_active)
-        dws_smb2_sign(h->signing_key, tx + 4, mlen);
+    SmbSign sign = {h->signing_active, h->signing_algo, {0}};
+    memcpy(sign.key, h->signing_key, sizeof(sign.key));
+    if (sign.active)
+        smb_apply_sign(&sign, tx + 4, mlen);
     if (!send_msg(send, ctx, tx, mlen))
         return SmbResult::SMB_ERR_IO;
     int rl = recv_msg(recv, ctx, rx, sizeof(rx));
     if (rl < 0)
         return rl == -2 ? SmbResult::SMB_ERR_OVERFLOW : SmbResult::SMB_ERR_IO;
-    if (h->signing_active && !dws_smb2_verify(h->signing_key, rx, (size_t)rl))
+    if (sign.active && !smb_check_sign(&sign, rx, (size_t)rl))
         return SmbResult::SMB_ERR_PROTOCOL;
     Smb2Header hd;
     Smb2CloseResp cl;
@@ -397,7 +458,7 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
     if (!h || !out || !out_len || !send || !recv)
         return SmbResult::SMB_ERR_ARG;
     *out_len = 0;
-    SmbSign sign = {h->signing_active, {0}};
+    SmbSign sign = {h->signing_active, h->signing_algo, {0}};
     memcpy(sign.key, h->signing_key, sizeof(sign.key));
     const size_t chunk_max = DWS_SMB_BUF - 96; // room for the header + READ response body
     size_t total = 0;
@@ -442,7 +503,7 @@ SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t l
     if (!h || !data || !written || !send || !recv)
         return SmbResult::SMB_ERR_ARG;
     *written = 0;
-    SmbSign sign = {h->signing_active, {0}};
+    SmbSign sign = {h->signing_active, h->signing_algo, {0}};
     memcpy(sign.key, h->signing_key, sizeof(sign.key));
     const size_t chunk_max = DWS_SMB_BUF - 128; // room for the header + WRITE request body
     size_t total = 0;

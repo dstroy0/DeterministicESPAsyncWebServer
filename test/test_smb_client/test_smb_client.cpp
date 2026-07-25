@@ -142,6 +142,13 @@ struct Mock
     int bad_req_sigs;       // count of client requests that arrived unsigned or wrongly signed
     bool corrupt_read_sig;  // flip a byte of the signature on the READ response (tamper in transit)
     const SmbConfig *creds; // the credentials the mock uses to re-derive the session key
+    // SMB 3.1.1 reference-peer state. When require_311 is set the mock answers NEGOTIATE with dialect
+    // 0x0311 + preauth-integrity (SHA-512) and AES-CMAC signing contexts, maintains the same preauth-
+    // integrity hash chain the client does, derives the SP800-108 signing key, and signs/verifies the
+    // post-auth traffic with AES-CMAC - so the whole 3.1.1 session runs signed end to end.
+    bool require_311;       // NEGOTIATE advertises 3.1.1 + SIGNING_REQUIRED and the mock signs with AES-CMAC
+    Smb2SignAlgo sign_algo; // the signing algorithm in force once signing begins (CMAC for 3.1.1)
+    SmbPreauth preauth;     // the running preauth-integrity hash (seeded on the NEGOTIATE request)
 };
 
 static void append_frame(Mock *m, const uint8_t *resp, size_t rlen)
@@ -177,6 +184,53 @@ static bool mock_derive_key(const uint8_t *msg, size_t mlen, const SmbConfig *cf
     return true;
 }
 
+// Sign / verify a message with the mock's in-force algorithm (HMAC-SHA256 for SMB 2.x, AES-CMAC for 3.1.1).
+static void mock_sign(const Mock *m, uint8_t *msg, size_t len)
+{
+    if (m->sign_algo == Smb2SignAlgo::AES_CMAC)
+        dws_smb2_sign_cmac(m->sign_key, msg, len);
+    else
+        dws_smb2_sign(m->sign_key, msg, len);
+}
+static bool mock_verify(const Mock *m, uint8_t *msg, size_t len)
+{
+    return m->sign_algo == Smb2SignAlgo::AES_CMAC ? dws_smb2_verify_cmac(m->sign_key, msg, len)
+                                                  : dws_smb2_verify(m->sign_key, msg, len);
+}
+
+// Build the SMB 3.1.1 NEGOTIATE response body (dialect 0x0311 + SIGNING_REQUIRED + a preauth-integrity
+// SHA-512 context with a server salt + an AES-CMAC signing context) into resp; returns the total length.
+static size_t build_neg_resp_311(uint8_t *resp, uint64_t msg_id)
+{
+    dws_smb2_build_header(resp, DWS_SMB_BUF + 128, Smb2Command::SMB2_NEGOTIATE, 1, msg_id, 0, 0);
+    uint8_t *b = resp + 64;
+    memset(b, 0, 64);
+    w16(b + 0, 65);                                                // StructureSize
+    w16(b + 2, Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_REQUIRED); // SecurityMode
+    w16(b + 4, (uint16_t)Smb2Dialect::SMB2_DIALECT_0311);          // DialectRevision
+    w16(b + 6, 2);                                                 // NegotiateContextCount
+    w16(b + 56, 0);                                                // SecurityBufferOffset
+    w16(b + 58, 0);                                                // SecurityBufferLength
+    const uint32_t ctx = 128;                                      // 8-aligned, right after the 64-byte body
+    w32(b + 60, ctx);                                              // NegotiateContextOffset (from msg start)
+    // Context 1 - PREAUTH_INTEGRITY_CAPABILITIES: SHA-512 + a 32-byte server salt.
+    uint8_t *c = resp + ctx;
+    w16(c + 0, Smb2NegotiateContextType::SMB2_PREAUTH_INTEGRITY_CAPABILITIES);
+    w16(c + 2, 6 + 32); // DataLength
+    w16(c + 8, 1);      // HashAlgorithmCount
+    w16(c + 10, 32);    // SaltLength
+    w16(c + 12, Smb2HashAlgorithm::SMB2_PREAUTH_INTEGRITY_SHA512);
+    for (int i = 0; i < 32; i++)
+        c[14 + i] = (uint8_t)(0x40 + i); // deterministic server salt
+    // Context 2 - SIGNING_CAPABILITIES advertising AES-CMAC, 8-byte aligned after context 1 (46 -> 48).
+    uint8_t *c2 = c + 48;
+    w16(c2 + 0, Smb2NegotiateContextType::SMB2_SIGNING_CAPABILITIES);
+    w16(c2 + 2, 4); // DataLength
+    w16(c2 + 8, 1); // SigningAlgorithmCount
+    w16(c2 + 10, Smb2SigningAlgorithm::SMB2_SIGNING_AES_CMAC);
+    return ctx + 48 + 12; // 128 + 48 + 12 = 188
+}
+
 static int mock_send(void *c, const uint8_t *d, size_t n)
 {
     Mock *m = (Mock *)c;
@@ -187,6 +241,16 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     if (!dws_smb2_parse_header(msg, mlen, &h))
         return -1;
 
+    // SMB 3.1.1 preauth-integrity chain: fold each NEGOTIATE / SESSION_SETUP request as received, in the
+    // same order the client folds it, so both sides reach the same final hash for key derivation.
+    if (m->require_311)
+    {
+        if (h.command == Smb2Command::SMB2_NEGOTIATE)
+            dws_smb_preauth_init(&m->preauth);
+        if (h.command == Smb2Command::SMB2_NEGOTIATE || h.command == Smb2Command::SMB2_SESSION_SETUP)
+            dws_smb_preauth_update(&m->preauth, msg, mlen);
+    }
+
     // Once the session is signed, every request the client sends must carry a valid signature.
     if (m->signing)
     {
@@ -194,7 +258,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         if (mlen <= sizeof(vbuf))
         {
             memcpy(vbuf, msg, mlen);
-            if (!(vbuf[16] & Smb2HeaderFlags::SMB2_FLAGS_SIGNED) || !dws_smb2_verify(m->sign_key, vbuf, mlen))
+            if (!(vbuf[16] & Smb2HeaderFlags::SMB2_FLAGS_SIGNED) || !mock_verify(m, vbuf, mlen))
                 m->bad_req_sigs++;
         }
     }
@@ -206,6 +270,11 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     switch (h.command)
     {
     case Smb2Command::SMB2_NEGOTIATE:
+        if (m->require_311)
+        {
+            rlen = build_neg_resp_311(resp, h.message_id); // dialect 0x0311 + preauth + AES-CMAC contexts
+            break;
+        }
         dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_NEGOTIATE, 1, h.message_id, 0, 0);
         w16(b + 0, 65); // StructureSize
         if (m->require_signing)
@@ -257,8 +326,24 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         else
         {
             // Round 2 carries the AUTHENTICATE: derive the shared signing key, then sign from here on.
-            if (m->require_signing && m->creds && mock_derive_key(msg, mlen, m->creds, m->sign_key))
-                m->signing = true;
+            // SMB 3.1.1 folds this request (done above), then derives the AES-CMAC signing key from the
+            // NTLMv2 session base key + the final preauth hash; SMB 2.x uses the base key with HMAC.
+            uint8_t base_key[16];
+            if (m->creds && mock_derive_key(msg, mlen, m->creds, base_key))
+            {
+                if (m->require_311)
+                {
+                    dws_smb3_derive_signing_key(base_key, (uint16_t)Smb2Dialect::SMB2_DIALECT_0311, m->preauth.hash,
+                                                m->sign_key);
+                    m->sign_algo = Smb2SignAlgo::AES_CMAC;
+                    m->signing = true;
+                }
+                else if (m->require_signing)
+                {
+                    memcpy(m->sign_key, base_key, 16);
+                    m->signing = true;
+                }
+            }
             w32(resp + 8, m->auth_status);
             rlen = 72; // header + 8-byte body, empty buffer
         }
@@ -340,9 +425,16 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         else if (m->fault_kind == FAULT_BAD_BODY)
             w16(resp + 64, 0xFFFF); // break the body StructureSize -> the body parser fails
     }
+    // Fold the response into the preauth chain in the same order the client does: the NEGOTIATE response
+    // and the round-1 SESSION_SETUP response (STATUS_MORE_PROCESSING). The round-2 response (SUCCESS) is
+    // NOT folded - the key is already derived by then - so ss_round == 1 is exactly the round-1 case.
+    if (m->require_311 && (h.command == Smb2Command::SMB2_NEGOTIATE ||
+                           (h.command == Smb2Command::SMB2_SESSION_SETUP && m->ss_round == 1)))
+        dws_smb_preauth_update(&m->preauth, resp, rlen);
+
     if (m->signing)
     {
-        dws_smb2_sign(m->sign_key, resp, rlen);
+        mock_sign(m, resp, rlen);
         if (m->corrupt_read_sig && h.command == Smb2Command::SMB2_READ)
             resp[48] ^= 0xFF; // tamper: invalidate the signature after signing
     }
@@ -1482,6 +1574,70 @@ void test_unsigned_session_when_not_required()
     TEST_ASSERT_EQUAL_INT(0, m.bad_req_sigs);
 }
 
+// SMB 3.1.1 end to end: the mock negotiates dialect 0x0311 with the preauth-integrity + AES-CMAC
+// contexts, so the client runs the full 3.1.1 handshake - offering 3.1.1, chaining the preauth hash
+// across NEGOTIATE + both SESSION_SETUP rounds, deriving the SP800-108 signing key, and signing every
+// post-auth request with AES-CMAC. The mock, chaining the identical preauth hash and deriving the same
+// key, verifies each request (bad_req_sigs == 0) and CMAC-signs its own responses for the client to
+// verify - a byte-exact write/read round trip proves the whole signed 3.1.1 session.
+void test_open_signed_311_roundtrip()
+{
+    Mock m = make_mock();
+    SmbConfig cfg = make_cfg();
+    m.require_311 = true;
+    m.creds = &cfg;
+    for (int i = 0; i < 1400; i++)
+        m.file_data[i] = (uint8_t)(i * 23 + 11);
+    m.file_data_len = 1400;
+    m.file_size = 1400;
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_TRUE(h.signing_active);
+    TEST_ASSERT_EQUAL_INT(Smb2SignAlgo::AES_CMAC, h.signing_algo); // 3.1.1 signs with AES-CMAC
+    TEST_ASSERT_TRUE(m.signing);
+    TEST_ASSERT_EQUAL_INT(Smb2SignAlgo::AES_CMAC, m.sign_algo); // the mock derived the same CMAC key
+
+    uint8_t buf[1400];
+    size_t got = 0; // spans two CMAC-signed READ round trips (chunk_max < 1400)
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(1400, got);
+    TEST_ASSERT_EQUAL_MEMORY(m.file_data, buf, 1400);
+
+    uint8_t wr[700];
+    for (int i = 0; i < 700; i++)
+        wr[i] = (uint8_t)(i ^ 0x5A);
+    size_t wrote = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_write(&h, 0, wr, sizeof(wr), &wrote, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(700, wrote);
+    TEST_ASSERT_EQUAL_MEMORY(wr, m.file_data, 700);
+
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(0, m.bad_req_sigs); // every AES-CMAC-signed request verified server-side
+}
+
+// A signed 3.1.1 session with the server's READ response CMAC tampered in transit: the client rejects it.
+void test_signed_311_response_tampered()
+{
+    Mock m = make_mock();
+    SmbConfig cfg = make_cfg();
+    m.require_311 = true;
+    m.creds = &cfg;
+    m.corrupt_read_sig = true;
+    for (int i = 0; i < 64; i++)
+        m.file_data[i] = (uint8_t)i;
+    m.file_data_len = 64;
+    m.file_size = 64;
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(Smb2SignAlgo::AES_CMAC, h.signing_algo);
+    uint8_t buf[64];
+    size_t got = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,
+                          smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1555,5 +1711,7 @@ int main()
     RUN_TEST(test_signed_session_roundtrip);
     RUN_TEST(test_signed_response_tampered);
     RUN_TEST(test_unsigned_session_when_not_required);
+    RUN_TEST(test_open_signed_311_roundtrip);
+    RUN_TEST(test_signed_311_response_tampered);
     return UNITY_END();
 }

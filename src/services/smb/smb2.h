@@ -24,8 +24,10 @@
  * client's SigningRequired path; and the **SMB 3.1.1 negotiate-context codec** (dws_smb2_build_negotiate_311
  * / dws_smb2_parse_negotiate_contexts - preauth-integrity SHA-512, signing, and encryption capabilities);
  * and the **SP800-108 counter-mode KDF** (dws_kdf_ctr_hmac_sha256 in src/crypto/kdf, NIST-CAVP-verified) that
- * SMB 3.x uses to derive its keys. Roadmap (later options): the SMB 3.1.1 preauth-integrity hash chain +
- * the per-key label/context assembly + AES-CMAC signing, which together let a client run 3.1.1 end to end.
+ * SMB 3.x uses to derive its keys. **SMB 3.1.1 runs end to end:** the client offers 2.0.2 .. 3.1.1, chains
+ * the preauth-integrity hash (dws_smb_preauth_*) across NEGOTIATE + both SESSION_SETUP rounds, derives the
+ * signing key (dws_smb3_derive_signing_key), and signs the session with AES-128-CMAC (dws_smb2_sign_cmac /
+ * _verify_cmac; crypto/aes_cmac) - the KDF assembly + CMAC cross-checked byte-for-byte against impacket.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -270,7 +272,7 @@ bool dws_smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2Negot
 /**
  * @brief Build an SMB 3.1.1 NEGOTIATE request: the dialect list SMB 2.0.2 .. 3.1.1 followed by the
  *        mandatory PREAUTH_INTEGRITY_CAPABILITIES negotiate context (SHA-512 + @p salt) and a
- *        SIGNING_CAPABILITIES context advertising HMAC-SHA256 (MS-SMB2 §2.2.3 / §2.2.3.1.1 / §2.2.3.1.7).
+ *        SIGNING_CAPABILITIES context advertising AES-CMAC (MS-SMB2 §2.2.3 / §2.2.3.1.1 / §2.2.3.1.7).
  *
  * Offering 0x0311 obliges the client to send the preauth-integrity context, so this is a distinct
  * builder from ::dws_smb2_build_negotiate (which stops at 3.0.2). The NegotiateContextOffset /
@@ -465,8 +467,15 @@ struct Smb2WriteResp
 bool dws_smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *out);
 
 // ---------------------------------------------------------------------------
-// Message signing (MS-SMB2 §3.1.4.1 / §3.1.5.1) - SMB 2.x: HMAC-SHA256
+// Message signing (MS-SMB2 §3.1.4.1 / §3.1.5.1) - SMB 2.x: HMAC-SHA256; SMB 3.x: AES-128-CMAC
 // ---------------------------------------------------------------------------
+
+/** @brief The per-session message-signing algorithm the client selects from the negotiated dialect. */
+enum class Smb2SignAlgo : uint8_t
+{
+    HMAC_SHA256 = 0, ///< SMB 2.0.2 / 2.1 (key = the NTLMv2 session key)
+    AES_CMAC = 1,    ///< SMB 3.0 / 3.0.2 / 3.1.1 (key = the SP800-108-derived signing key)
+};
 
 /**
  * @brief Sign an SMB2 message in place (MS-SMB2 §3.1.4.1, SMB 2.x). Sets SMB2_FLAGS_SIGNED in the Flags

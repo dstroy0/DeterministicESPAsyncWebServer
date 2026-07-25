@@ -188,15 +188,17 @@ size_t dws_smb2_build_negotiate_311(uint8_t *buf, size_t cap, const uint8_t clie
     dws_wr16le(c + 12, Smb2HashAlgorithm::SMB2_PREAUTH_INTEGRITY_SHA512); // HashAlgorithms[0]
     memcpy(c + 14, salt, salt_len);                                       // Salt
 
-    // Context 2 - SIGNING_CAPABILITIES advertising HMAC-SHA256 (the algorithm this client signs with).
+    // Context 2 - SIGNING_CAPABILITIES advertising AES-CMAC (the algorithm this client signs 3.x with;
+    // the mandatory-to-implement SMB 3.x signer and the Windows default). A 3.1.1 server that accepts it
+    // signs with AES-128-CMAC over the KDF-derived key; 3.0 / 3.0.2 use AES-CMAC unconditionally.
     uint8_t *c2 = c + preauth_ctx + preauth_pad;
     if (preauth_pad)
         memset(c + preauth_ctx, 0, preauth_pad);
     dws_wr16le(c2 + 0, Smb2NegotiateContextType::SMB2_SIGNING_CAPABILITIES);
-    dws_wr16le(c2 + 2, 4);                                               // DataLength
-    dws_wr32le(c2 + 4, 0);                                               // Reserved
-    dws_wr16le(c2 + 8, 1);                                               // SigningAlgorithmCount
-    dws_wr16le(c2 + 10, Smb2SigningAlgorithm::SMB2_SIGNING_HMAC_SHA256); // SigningAlgorithms[0]
+    dws_wr16le(c2 + 2, 4);                                            // DataLength
+    dws_wr32le(c2 + 4, 0);                                            // Reserved
+    dws_wr16le(c2 + 8, 1);                                            // SigningAlgorithmCount
+    dws_wr16le(c2 + 10, Smb2SigningAlgorithm::SMB2_SIGNING_AES_CMAC); // SigningAlgorithms[0]
     return total;
 }
 

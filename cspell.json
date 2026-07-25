@@ -1498,7 +1498,8 @@
     "conformantly",
     "CAVP",
     "KBKDF",
-    "KDFCTR"
+    "KDFCTR",
+    "impacket"
   ],
   "ignorePaths": [
     "node_modules/**",
