@@ -740,12 +740,13 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Layer | Feature             | Flash (best-worst) | RAM (best-worst) |
 | ----- | ------------------- | -----------------: | ---------------: |
 | Core  | `IPV6`              |             3.1 KB |          15.3 KB |
+| Core  | `DIAG`              |             2.7 KB |          11.1 KB |
 | L4    | `IP_ALLOWLIST`      |             1.9 KB |          15.3 KB |
 | L4    | `PER_IP_THROTTLE`   |             0.9 KB |          15.7 KB |
 | L4    | `DIFFSERV`          |             0.8 KB |          15.3 KB |
 | L4    | `KEEPALIVE`         |             0.7 KB |          15.3 KB |
 | L4    | `ACCEPT_THROTTLE`   |           < 0.5 KB |          15.3 KB |
-| L5    | `SSH`               |       66.6-76.9 KB |     21.8-42.0 KB |
+| L5    | `SSH`               |       66.6-76.8 KB |     21.8-42.0 KB |
 | L5    | `TELNET`            |             2.8 KB |          15.8 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.1-7.9 KB |      8.0-23.3 KB |
@@ -803,7 +804,6 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `TOTP`              |             1.7 KB |          15.3 KB |
 | L7    | `OTA_ROLLBACK`      |             1.5 KB |          15.3 KB |
 | L7    | `PARTITION_MONITOR` |             1.2 KB |          15.3 KB |
-| L7    | `DIAG`              |             1.1 KB |          15.3 KB |
 | L7    | `GUARDRAILS`        |             0.9 KB |          15.3 KB |
 | L7    | `DEVICE_ID`         |             0.7 KB |          15.3 KB |
 | L7    | `RADIO_POWER`       |             0.6 KB |          15.3 KB |

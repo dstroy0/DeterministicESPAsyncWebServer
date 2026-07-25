@@ -1180,8 +1180,6 @@ src/
 │   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
-│   │   ├── __pycache__/
-│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1275,7 +1273,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/WebSocket` | `L6-Presentation/WebSocket` | 753,781 | 81,820 |
 | `core/Middleware` | `L7-Application/Middleware` | 753,861 | 81,828 |
 | `core/ChunkedResponse` | `L7-Application/ChunkedResponse` | 753,981 | 81,836 |
-| `DIAG` | `L7-Application/Diagnostics` | 754,005 | 81,820 |
 | `core/NetEgress` | `L7-Application/NetEgress` | 754,069 | 81,820 |
 | `core/FormParams` | `L6-Presentation/FormParams` | 754,081 | 81,820 |
 | `PARTITION_MONITOR` | `L7-Application/PartitionMonitor` | 754,121 | 81,828 |
@@ -1295,6 +1292,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SIMATIC` | `L7-Application/SimaticSerial` | 755,513 | 83,292 |
 | `MODBUS` | `L7-Application/ModbusTcp` | 755,533 | 82,108 |
 | `core/Basic` | `Foundation/Basic` | 755,533 | 81,836 |
+| `DIAG` | `Foundation/Configuration` | 755,581 | 77,580 |
 | `JWT` | `L6-Presentation/JWTAuth` | 755,649 | 82,972 |
 | `TELNET` | `L5-Session/Telnet` | 755,737 | 82,364 |
 | `CBOR` | `L6-Presentation/Cbor` | 755,797 | 81,900 |
@@ -1354,7 +1352,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/WebDav` | 824,681 | 92,348 |
 | `ETAG` | `L7-Application/ETag` | 829,713 | 83,124 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
-| `SSH` | `L5-Session/SSHHostKey` | 831,549 | 109,248 |
+| `SSH` | `L5-Session/SSH` | 831,441 | 109,248 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 832,493 | 107,272 |
 | `HOTSWAP` | `L7-Application/HotSwapStorage` | 839,129 | 82,760 |
