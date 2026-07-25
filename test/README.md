@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5208 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5211 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -31261,7 +31261,7 @@ A thorough directory of all **5208 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ntlm (8 tests)</b></summary>
+<summary><b>test_ntlm (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ntowfv2</b> &mdash; <i>MS-NLMP 4.2.4.1 published value</i></summary>
@@ -31317,6 +31317,15 @@ A thorough directory of all **5208 test cases** across **292 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), nullptr, 100, skey));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(48 + ti_len, n);</code>
       * <code>Assert equal string ("68cd0ab851e51c96aabc927bebef6a1c", hex)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(ti_ts) + 8, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(exp_a, out, (int)n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(ti_fl), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x03, out[4]); // 0x01 | 0x02</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(ti_bad) + 8, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(exp_c, out, (int)n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntlm_set_mic_flag(nullptr, 4, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntlm_set_mic_flag(ti_ts, sizeof(ti_ts), out, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, mic, 16);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31336,10 +31345,33 @@ A thorough directory of all **5208 test cases** across **292 suites**. Expand a 
       * <code>Assert equal string ("68cd0ab851e51c96aabc927bebef6a1c", hex)</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_mic_flag</b> &mdash; <i>(a) MsvAvTimestamp + EOL: no MsvAvFlags -> a new pair is inserted just before the EOL.</i></summary>
+
+    * **Objective**: (a) MsvAvTimestamp + EOL: no MsvAvFlags -> a new pair is inserted just before the EOL.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(ti_ts) + 8, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(exp_a, out, (int)n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(ti_fl), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x03, out[4]); // 0x01 | 0x02</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(ti_bad) + 8, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(exp_c, out, (int)n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntlm_set_mic_flag(nullptr, 4, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_ntlm_set_mic_flag(ti_ts, sizeof(ti_ts), out, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ntlm_mic</b> &mdash; <i>Ntlm mic</i></summary>
+
+    * **Objective**: Ntlm mic
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, mic, 16);</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_ntlmssp (11 tests)</b></summary>
+<summary><b>test_ntlmssp (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_negotiate</b> &mdash; <i>Build negotiate</i></summary>
@@ -31473,6 +31505,20 @@ A thorough directory of all **5208 test cases** across **292 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(2, r16(buf + 28));  // DomainNameLen</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(64, r32(buf + 32)); // DomainNameOffset</code>
       * <code>Assert equal memory (dom16, buf + 64, 2)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_authenticate_with_mic</b> &mdash; <i>NTLMSSP_NEGOTIATE_VERSION (0x02000000) OR'd into the flags word by the builder.</i></summary>
+
+    * **Objective**: NTLMSSP_NEGOTIATE_VERSION (0x02000000) OR'd into the flags word by the builder.
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(88, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x00000001u | NtlmsspFlags::NTLMSSP_NEGOTIATE_VERSION, r32(buf + 60));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(6, buf[64]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(72, DWS_NTLMSSP_MIC_OFFSET);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(zero_mic, buf + DWS_NTLMSSP_MIC_OFFSET, 16);</code>
+      * <code>TEST_ASSERT_GREATER_OR_EQUAL_UINT32(88, nt_off);</code>
+      * <code>Assert equal memory (nt, buf + nt_off, 48)</code>
   </details>
 
 </details>
