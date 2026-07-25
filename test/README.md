@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5211 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5212 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -4653,7 +4653,18 @@ A thorough directory of all **5211 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_chunked (14 tests)</b></summary>
+<summary><b>test_chunked (15 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hex_u32_size_line</b> &mdash; <i>Hex u32 size line</i></summary>
+
+    * **Objective**: Hex u32 size line
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(1, nd);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('0', out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t((size_t)rn, nd);</code>
+      * <code>Assert equal memory (ref, out, nd)</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_chunked_source_overreport_clamped</b> &mdash; <i>CHUNK_BUF_SIZE bytes framed, then the terminator - the over-report is dropped.</i></summary>
