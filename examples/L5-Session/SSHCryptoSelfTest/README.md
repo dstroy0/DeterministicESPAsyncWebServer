@@ -57,9 +57,11 @@ reproduced verbatim with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+#include "dwserver.h" // discovers the library (adds src/ to the include path) - MUST come first
+
+#include "crypto/hmac_sha256.h"
+#include "crypto/sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <Arduino.h>
 #include <string.h>
 
