@@ -203,6 +203,139 @@ void test_parse_negotiate_response_rejects()
     TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_response(m, 100, &r)); // truncated before the body
 }
 
+// ---- SMB 3.1.1 negotiate contexts (MS-SMB2 §2.2.3 / §2.2.3.1 / §2.2.4) ----
+
+void test_build_negotiate_311()
+{
+    uint8_t gid[16];
+    for (int i = 0; i < 16; i++)
+        gid[i] = (uint8_t)(0x20 + i);
+    uint8_t salt[32];
+    for (int i = 0; i < 32; i++)
+        salt[i] = (uint8_t)(0xA0 + i);
+    uint8_t buf[256];
+    size_t n = dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED,
+                                            salt, sizeof(salt));
+    // header(64) + body(36) + 5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) = 172
+    TEST_ASSERT_EQUAL_size_t(172, n);
+
+    Smb2Header h;
+    TEST_ASSERT_TRUE(dws_smb2_parse_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_NEGOTIATE, h.command);
+
+    const uint8_t *b = buf + 64;
+    TEST_ASSERT_EQUAL_UINT16(36, r16(b + 0)); // StructureSize
+    TEST_ASSERT_EQUAL_UINT16(5, r16(b + 2));  // DialectCount now includes 3.1.1
+    TEST_ASSERT_EQUAL_MEMORY(gid, b + 12, 16);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0311, r16(b + 44)); // 5th dialect
+    TEST_ASSERT_EQUAL_UINT16(2, r16(b + 32));                              // NegotiateContextCount
+    uint32_t ctx_off = r32(b + 28);                                        // NegotiateContextOffset
+    TEST_ASSERT_EQUAL_UINT32(112, ctx_off);
+    TEST_ASSERT_EQUAL_UINT32(0, ctx_off % 8); // 8-byte aligned
+
+    const uint8_t *c = buf + ctx_off; // PREAUTH_INTEGRITY_CAPABILITIES
+    TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_PREAUTH_INTEGRITY_CAPABILITIES, r16(c + 0));
+    TEST_ASSERT_EQUAL_UINT16(6 + 32, r16(c + 2)); // DataLength
+    TEST_ASSERT_EQUAL_UINT16(1, r16(c + 8));      // HashAlgorithmCount
+    TEST_ASSERT_EQUAL_UINT16(32, r16(c + 10));    // SaltLength
+    TEST_ASSERT_EQUAL_UINT16(Smb2HashAlgorithm::SMB2_PREAUTH_INTEGRITY_SHA512, r16(c + 12));
+    TEST_ASSERT_EQUAL_MEMORY(salt, c + 14, 32);
+
+    const uint8_t *c2 = buf + 160; // SIGNING_CAPABILITIES, aligned after the preauth context
+    TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_SIGNING_CAPABILITIES, r16(c2 + 0));
+    TEST_ASSERT_EQUAL_UINT16(4, r16(c2 + 2)); // DataLength
+    TEST_ASSERT_EQUAL_UINT16(1, r16(c2 + 8)); // SigningAlgorithmCount
+    TEST_ASSERT_EQUAL_UINT16(Smb2SigningAlgorithm::SMB2_SIGNING_HMAC_SHA256, r16(c2 + 10));
+
+    // overflow + bad-arg fail closed
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, 100, gid, 0, salt, sizeof(salt)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, nullptr, 32));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 0));
+}
+
+// A NEGOTIATE response (dialect 3.1.1) carrying preauth-integrity + encryption + signing contexts.
+static size_t build_neg_resp_311(uint8_t *m)
+{
+    dws_smb2_build_header(m, 512, Smb2Command::SMB2_NEGOTIATE, 1, 5, 0, 0);
+    uint8_t *b = m + 64;
+    memset(b, 0, 64);
+    w16(b + 0, 65); // StructureSize
+    w16(b + 2, Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_REQUIRED);
+    w16(b + 4, (uint16_t)Smb2Dialect::SMB2_DIALECT_0311); // DialectRevision
+    w16(b + 56, 0);                                       // SecurityBufferOffset (none here)
+    w16(b + 58, 0);                                       // SecurityBufferLength
+    const uint32_t ctx = 128;                             // right after the 64-byte fixed body, 8-aligned
+    w16(b + 6, 3);                                        // NegotiateContextCount
+    w32(b + 60, ctx);                                     // NegotiateContextOffset
+
+    uint8_t *p = m + ctx; // 1) PREAUTH_INTEGRITY: SHA-512 + a 16-byte salt
+    w16(p + 0, Smb2NegotiateContextType::SMB2_PREAUTH_INTEGRITY_CAPABILITIES);
+    w16(p + 2, 6 + 16);
+    w32(p + 4, 0);
+    w16(p + 8, 1);
+    w16(p + 10, 16);
+    w16(p + 12, Smb2HashAlgorithm::SMB2_PREAUTH_INTEGRITY_SHA512);
+    for (int i = 0; i < 16; i++)
+        p[14 + i] = (uint8_t)(0x50 + i);
+
+    size_t o = (ctx + 30 + 7) & ~(size_t)7; // 128+30=158 -> 160
+    p = m + o;                              // 2) ENCRYPTION: AES-128-GCM
+    w16(p + 0, Smb2NegotiateContextType::SMB2_ENCRYPTION_CAPABILITIES);
+    w16(p + 2, 4);
+    w32(p + 4, 0);
+    w16(p + 8, 1);
+    w16(p + 10, Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM);
+
+    o = (o + 12 + 7) & ~(size_t)7; // 160+12=172 -> 176
+    p = m + o;                     // 3) SIGNING: HMAC-SHA256
+    w16(p + 0, Smb2NegotiateContextType::SMB2_SIGNING_CAPABILITIES);
+    w16(p + 2, 4);
+    w32(p + 4, 0);
+    w16(p + 8, 1);
+    w16(p + 10, Smb2SigningAlgorithm::SMB2_SIGNING_HMAC_SHA256);
+    return o + 12; // 176 + 12 = 188
+}
+
+void test_parse_negotiate_contexts()
+{
+    uint8_t m[512];
+    size_t n = build_neg_resp_311(m);
+    Smb2NegotiateContexts c;
+    TEST_ASSERT_TRUE(dws_smb2_parse_negotiate_contexts(m, n, &c));
+    TEST_ASSERT_TRUE(c.have_preauth);
+    TEST_ASSERT_EQUAL_UINT16(Smb2HashAlgorithm::SMB2_PREAUTH_INTEGRITY_SHA512, c.hash_algorithm);
+    TEST_ASSERT_EQUAL_UINT16(16, c.salt_len);
+    TEST_ASSERT_NOT_NULL(c.salt);
+    TEST_ASSERT_EQUAL_HEX8(0x50, c.salt[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x5F, c.salt[15]);
+    TEST_ASSERT_TRUE(c.have_encryption);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, c.cipher);
+    TEST_ASSERT_TRUE(c.have_signing);
+    TEST_ASSERT_EQUAL_UINT16(Smb2SigningAlgorithm::SMB2_SIGNING_HMAC_SHA256, c.signing_algorithm);
+}
+
+void test_parse_negotiate_contexts_rejects()
+{
+    uint8_t m[512];
+    size_t n = build_neg_resp_311(m);
+    Smb2NegotiateContexts c;
+    uint8_t bad[512];
+
+    memcpy(bad, m, n);
+    w16(bad + 64 + 6, 0); // NegotiateContextCount 0 -> not a context-bearing response
+    TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_contexts(bad, n, &c));
+
+    memcpy(bad, m, n);
+    w16(bad + 128 + 2, 5000); // a context DataLength that runs past the message
+    TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_contexts(bad, n, &c));
+
+    memcpy(bad, m, n);
+    w32(bad + 64 + 60, 10); // NegotiateContextOffset below the header
+    TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_contexts(bad, n, &c));
+
+    TEST_ASSERT_FALSE(dws_smb2_parse_negotiate_contexts(m, 100, &c)); // truncated before the body
+}
+
 void test_build_session_setup()
 {
     uint8_t tok[40];
@@ -926,6 +1059,9 @@ int main()
     RUN_TEST(test_build_negotiate);
     RUN_TEST(test_parse_negotiate_response);
     RUN_TEST(test_parse_negotiate_response_rejects);
+    RUN_TEST(test_build_negotiate_311);
+    RUN_TEST(test_parse_negotiate_contexts);
+    RUN_TEST(test_parse_negotiate_contexts_rejects);
     RUN_TEST(test_build_session_setup);
     RUN_TEST(test_parse_session_setup_response);
     RUN_TEST(test_session_setup_rejects);

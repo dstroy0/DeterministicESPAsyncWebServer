@@ -136,6 +136,132 @@ bool dws_smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2Negot
     return true;
 }
 
+size_t dws_smb2_build_negotiate_311(uint8_t *buf, size_t cap, const uint8_t client_guid[16], uint16_t security_mode,
+                                    const uint8_t *salt, size_t salt_len)
+{
+    static const Smb2Dialect dialects[] = {Smb2Dialect::SMB2_DIALECT_0202, Smb2Dialect::SMB2_DIALECT_0210,
+                                           Smb2Dialect::SMB2_DIALECT_0300, Smb2Dialect::SMB2_DIALECT_0302,
+                                           Smb2Dialect::SMB2_DIALECT_0311};
+    const uint16_t ndialects = (uint16_t)(sizeof(dialects) / sizeof(dialects[0]));
+    if (!buf || !client_guid || !salt || salt_len == 0 || salt_len > 0xFFFF)
+        return 0;
+
+    // header(64) + fixed body(36) + dialects(2*n), padded to 8, then the negotiate-context list. Each
+    // context is ContextType(2) + DataLength(2) + Reserved(4) + Data, 8-byte aligned (MS-SMB2 §2.2.3.1).
+    const size_t body_end = SMB2_HEADER_SIZE + 36 + (size_t)ndialects * 2;
+    const size_t ctx_start = (body_end + 7) & ~(size_t)7; // NegotiateContextOffset (from msg start)
+    const size_t preauth_data = 6 + salt_len;             // HashAlgorithmCount + SaltLength + 1 hash + Salt
+    const size_t preauth_ctx = 8 + preauth_data;          // context header + data
+    const size_t after_preauth = ctx_start + preauth_ctx;
+    const size_t preauth_pad = ((after_preauth + 7) & ~(size_t)7) - after_preauth; // align the next context
+    const size_t sign_ctx = 8 + 4; // header + SigningAlgorithmCount + 1 algorithm
+    const size_t total = ctx_start + preauth_ctx + preauth_pad + sign_ctx;
+    if (cap < total)
+        return 0;
+
+    // GCOVR_EXCL_START  cap >= total >= SMB2_HEADER_SIZE was checked above, so this cannot fail
+    if (dws_smb2_build_header(buf, cap, Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0) == 0)
+        return 0;
+    // GCOVR_EXCL_STOP
+
+    uint8_t *b = buf + SMB2_HEADER_SIZE;
+    memset(b, 0, ctx_start - SMB2_HEADER_SIZE); // fixed body + dialects + alignment pad
+    dws_wr16le(b + 0, 36);                      // StructureSize
+    dws_wr16le(b + 2, ndialects);               // DialectCount
+    dws_wr16le(b + 4, security_mode);           // SecurityMode
+    memcpy(b + 12, client_guid, 16);            // ClientGuid
+    dws_wr32le(b + 28, (uint32_t)ctx_start);    // NegotiateContextOffset (overlays ClientStartTime)
+    dws_wr16le(b + 32, 2);                      // NegotiateContextCount (preauth + signing)
+    for (uint16_t i = 0; i < ndialects; i++)
+        dws_wr16le(b + 36 + i * 2, (uint16_t)dialects[i]);
+
+    // Context 1 - PREAUTH_INTEGRITY_CAPABILITIES (mandatory once 0x0311 is offered), §2.2.3.1.1.
+    uint8_t *c = buf + ctx_start;
+    dws_wr16le(c + 0, Smb2NegotiateContextType::SMB2_PREAUTH_INTEGRITY_CAPABILITIES);
+    dws_wr16le(c + 2, (uint16_t)preauth_data);
+    dws_wr32le(c + 4, 0);                                                 // Reserved
+    dws_wr16le(c + 8, 1);                                                 // HashAlgorithmCount
+    dws_wr16le(c + 10, (uint16_t)salt_len);                               // SaltLength
+    dws_wr16le(c + 12, Smb2HashAlgorithm::SMB2_PREAUTH_INTEGRITY_SHA512); // HashAlgorithms[0]
+    memcpy(c + 14, salt, salt_len);                                       // Salt
+
+    // Context 2 - SIGNING_CAPABILITIES advertising HMAC-SHA256 (the algorithm this client signs with).
+    uint8_t *c2 = c + preauth_ctx + preauth_pad;
+    if (preauth_pad)
+        memset(c + preauth_ctx, 0, preauth_pad);
+    dws_wr16le(c2 + 0, Smb2NegotiateContextType::SMB2_SIGNING_CAPABILITIES);
+    dws_wr16le(c2 + 2, 4);                                               // DataLength
+    dws_wr32le(c2 + 4, 0);                                               // Reserved
+    dws_wr16le(c2 + 8, 1);                                               // SigningAlgorithmCount
+    dws_wr16le(c2 + 10, Smb2SigningAlgorithm::SMB2_SIGNING_HMAC_SHA256); // SigningAlgorithms[0]
+    return total;
+}
+
+bool dws_smb2_parse_negotiate_contexts(const uint8_t *msg, size_t len, Smb2NegotiateContexts *out)
+{
+    if (!msg || !out)
+        return false;
+    memset(out, 0, sizeof(*out));
+    Smb2Header h;
+    if (!dws_smb2_parse_header(msg, len, &h) || h.command != Smb2Command::SMB2_NEGOTIATE)
+        return false;
+    if (len < SMB2_HEADER_SIZE + 64)
+        return false;
+    const uint8_t *b = msg + SMB2_HEADER_SIZE;
+    if (dws_rd16le(b + 0) != 65) // StructureSize
+        return false;
+    uint16_t count = dws_rd16le(b + 6); // NegotiateContextCount (reserved for < 3.1.1)
+    uint32_t off = dws_rd32le(b + 60);  // NegotiateContextOffset (from the SMB2 header start)
+    if (count == 0 || off < SMB2_HEADER_SIZE)
+        return false; // not a 3.1.1 response carrying a context list
+
+    size_t p = off;
+    for (uint16_t i = 0; i < count; i++)
+    {
+        p = (p + 7) & ~(size_t)7; // every context is 8-byte aligned
+        if (p + 8 > len)
+            return false;
+        uint16_t ctype = dws_rd16le(msg + p);
+        uint16_t dlen = dws_rd16le(msg + p + 2); // Reserved (4) follows at p+4
+        size_t data = p + 8;
+        if (data + dlen > len)
+            return false;
+        const uint8_t *d = msg + data;
+        if (ctype == Smb2NegotiateContextType::SMB2_PREAUTH_INTEGRITY_CAPABILITIES && dlen >= 6)
+        {
+            uint16_t hcount = dws_rd16le(d + 0); // HashAlgorithmCount
+            uint16_t slen = dws_rd16le(d + 2);   // SaltLength
+            if (hcount >= 1 && (size_t)dlen >= 4 + (size_t)hcount * 2 + slen)
+            {
+                out->have_preauth = true;
+                out->hash_algorithm = dws_rd16le(d + 4); // HashAlgorithms[0]
+                out->salt_len = slen;
+                out->salt = slen ? d + 4 + (size_t)hcount * 2 : nullptr;
+            }
+        }
+        else if (ctype == Smb2NegotiateContextType::SMB2_SIGNING_CAPABILITIES && dlen >= 4)
+        {
+            uint16_t scount = dws_rd16le(d + 0); // SigningAlgorithmCount
+            if (scount >= 1 && (size_t)dlen >= 2 + (size_t)scount * 2)
+            {
+                out->have_signing = true;
+                out->signing_algorithm = dws_rd16le(d + 2); // SigningAlgorithms[0]
+            }
+        }
+        else if (ctype == Smb2NegotiateContextType::SMB2_ENCRYPTION_CAPABILITIES && dlen >= 4)
+        {
+            uint16_t ccount = dws_rd16le(d + 0); // CipherCount
+            if (ccount >= 1 && (size_t)dlen >= 2 + (size_t)ccount * 2)
+            {
+                out->have_encryption = true;
+                out->cipher = dws_rd16le(d + 2); // Ciphers[0]
+            }
+        }
+        p = data + dlen;
+    }
+    return true;
+}
+
 size_t dws_smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
                                     uint8_t security_mode, const uint8_t *sec_buf, size_t sec_len)
 {

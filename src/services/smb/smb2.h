@@ -20,9 +20,11 @@
  * Shipped: the NEGOTIATE exchange; the NTLM crypto (smb_md / ntlm / ntlmssp); the SPNEGO wrapping
  * (spnego); the SESSION_SETUP request/response framing that carries those tokens; and the
  * TREE_CONNECT / CREATE / CLOSE / READ / WRITE file commands - the full read/write-a-file-on-a-share
- * client; and **SMB 2.x message signing** (dws_smb2_sign / dws_smb2_verify, HMAC-SHA256). Roadmap
- * (later options): SMB 3.1.1 negotiate contexts + preauth integrity + AES-CMAC signing, and wiring the
- * signer into the client's send/receive path (SigningRequired negotiation).
+ * client; **SMB 2.x message signing** (dws_smb2_sign / dws_smb2_verify, HMAC-SHA256) wired into the
+ * client's SigningRequired path; and the **SMB 3.1.1 negotiate-context codec** (dws_smb2_build_negotiate_311
+ * / dws_smb2_parse_negotiate_contexts - preauth-integrity SHA-512, signing, and encryption capabilities).
+ * Roadmap (later options): the SMB 3.1.1 preauth-integrity hash chain + the SP800-108 signing-key KDF +
+ * AES-CMAC signing, which together let the client negotiate and run 3.1.1 end to end.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -156,6 +158,54 @@ struct Smb2Header
     uint16_t credit_response;
 };
 
+/** @brief SMB 3.1.1 negotiate-context types (MS-SMB2 §2.2.3.1). */
+struct Smb2NegotiateContextType
+{
+    static constexpr uint16_t SMB2_PREAUTH_INTEGRITY_CAPABILITIES = 0x0001;
+    static constexpr uint16_t SMB2_ENCRYPTION_CAPABILITIES = 0x0002;
+    static constexpr uint16_t SMB2_COMPRESSION_CAPABILITIES = 0x0003;
+    static constexpr uint16_t SMB2_NETNAME_NEGOTIATE_CONTEXT_ID = 0x0005;
+    static constexpr uint16_t SMB2_TRANSPORT_CAPABILITIES = 0x0006;
+    static constexpr uint16_t SMB2_RDMA_TRANSFORM_CAPABILITIES = 0x0007;
+    static constexpr uint16_t SMB2_SIGNING_CAPABILITIES = 0x0008;
+};
+
+/** @brief Preauth-integrity hash algorithm IDs (MS-SMB2 §2.2.3.1.1). */
+struct Smb2HashAlgorithm
+{
+    static constexpr uint16_t SMB2_PREAUTH_INTEGRITY_SHA512 = 0x0001;
+};
+
+/** @brief Signing algorithm IDs (MS-SMB2 §2.2.3.1.7). */
+struct Smb2SigningAlgorithm
+{
+    static constexpr uint16_t SMB2_SIGNING_HMAC_SHA256 = 0x0000;
+    static constexpr uint16_t SMB2_SIGNING_AES_CMAC = 0x0001;
+    static constexpr uint16_t SMB2_SIGNING_AES_GMAC = 0x0002;
+};
+
+/** @brief Encryption cipher IDs (MS-SMB2 §2.2.3.1.2). */
+struct Smb2Cipher
+{
+    static constexpr uint16_t SMB2_ENCRYPTION_AES128_CCM = 0x0001;
+    static constexpr uint16_t SMB2_ENCRYPTION_AES128_GCM = 0x0002;
+    static constexpr uint16_t SMB2_ENCRYPTION_AES256_CCM = 0x0003;
+    static constexpr uint16_t SMB2_ENCRYPTION_AES256_GCM = 0x0004;
+};
+
+/** @brief Parsed SMB 3.1.1 NEGOTIATE-response negotiate contexts (MS-SMB2 §2.2.4 / §2.2.3.1). */
+struct Smb2NegotiateContexts
+{
+    bool have_preauth;          ///< a PREAUTH_INTEGRITY_CAPABILITIES context was present
+    uint16_t hash_algorithm;    ///< the server's chosen preauth hash (expect SMB2_PREAUTH_INTEGRITY_SHA512)
+    const uint8_t *salt;        ///< the preauth-integrity salt (points into msg), or nullptr
+    uint16_t salt_len;          ///< length of @ref salt
+    bool have_signing;          ///< a SIGNING_CAPABILITIES context was present
+    uint16_t signing_algorithm; ///< the server's chosen signing algorithm
+    bool have_encryption;       ///< an ENCRYPTION_CAPABILITIES context was present
+    uint16_t cipher;            ///< the server's chosen cipher
+};
+
 /** @brief Parsed NEGOTIATE response (MS-SMB2 §2.2.4). */
 struct Smb2NegotiateResp
 {
@@ -215,6 +265,32 @@ size_t dws_smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_g
  *         into @p msg (or is nullptr when SecurityBufferLength is 0).
  */
 bool dws_smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2NegotiateResp *out);
+
+/**
+ * @brief Build an SMB 3.1.1 NEGOTIATE request: the dialect list SMB 2.0.2 .. 3.1.1 followed by the
+ *        mandatory PREAUTH_INTEGRITY_CAPABILITIES negotiate context (SHA-512 + @p salt) and a
+ *        SIGNING_CAPABILITIES context advertising HMAC-SHA256 (MS-SMB2 §2.2.3 / §2.2.3.1.1 / §2.2.3.1.7).
+ *
+ * Offering 0x0311 obliges the client to send the preauth-integrity context, so this is a distinct
+ * builder from ::dws_smb2_build_negotiate (which stops at 3.0.2). The NegotiateContextOffset /
+ * NegotiateContextCount fields overlay the pre-3.1.1 ClientStartTime, and each context is 8-byte
+ * aligned per §2.2.3.1.
+ *
+ * @param salt      the preauth-integrity salt (a fresh random blob the client keeps for the hash chain).
+ * @param salt_len  salt length in bytes (>= 1); a common choice is 32.
+ * @return total message bytes (no transport prefix), or 0 on overflow / bad args.
+ */
+size_t dws_smb2_build_negotiate_311(uint8_t *buf, size_t cap, const uint8_t client_guid[16], uint16_t security_mode,
+                                    const uint8_t *salt, size_t salt_len);
+
+/**
+ * @brief Walk the negotiate-context list of a 3.1.1 NEGOTIATE response (located by NegotiateContextOffset
+ *        / NegotiateContextCount in the §2.2.4 body) and extract the preauth hash + salt, the signing
+ *        algorithm, and the cipher. Every context header and its data are bounds-checked against @p len.
+ * @return true if the list parsed cleanly (all contexts within bounds); false on a malformed / truncated
+ *         list. Absent context types leave their `have_*` flag false.
+ */
+bool dws_smb2_parse_negotiate_contexts(const uint8_t *msg, size_t len, Smb2NegotiateContexts *out);
 
 /** @brief Parsed SESSION_SETUP response (MS-SMB2 §2.2.6). */
 struct Smb2SessionSetupResp
