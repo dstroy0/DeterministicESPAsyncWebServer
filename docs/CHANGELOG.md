@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`01f4d00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01f4d00a39e201b09a126df185d6120d120467e1))
+- update CHANGELOG.md [skip ci] ([`8bc1538`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8bc15382fecaa5389c195083ed344099715feea0))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`83b9f32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83b9f32cf7b4d5076eef5cb7b18d7352463df0ad))
+- update ESP32 build footprints [skip ci] ([`76d3803`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76d3803c1531d50aae5c497059a7582a205ff64f))
+
+### Features
+
+- AES-128-CMAC primitive (RFC 4493) for SMB 3.x signing ([`00a3e9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00a3e9e4e82fb2a3b9e7a33ad4555578271d6b6d))
+
 ## [7.168.1] - 2026-07-25
 
 <details>
