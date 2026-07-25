@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.168.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.168.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`8b20aea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b20aea2737db6fd6b151829ed1c5d026dd3f0ea))
+
+### Changes
+
+- Bump version: 7.167.0 → 7.168.0 ([`8d00aa5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d00aa51068cf3ff589b45e8ee7f67bb8813f529))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`fe3ae35`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe3ae3529039ceedf9020df57cba25442e60e12a))
+
+### Refactor
+
+- separate the RSA primitive into src/crypto/rsa; ssh_rsa keeps only the SSH host-key layer ([`279cd02`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/279cd02d13bc5f542ea5d4db8c4fba65b2525fd5))
+
+</details>
+
 ## [7.167.0] - 2026-07-25
 
 <details>
