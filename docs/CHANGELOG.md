@@ -2,6 +2,33 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.164.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.164.0 - 2026-07-25</b></summary>
+
+### Bug Fixes
+
+- keep dwserver.h include first so arduino-cli resolves crypto/ headers ([`988d242`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/988d242f20c20cbd1738b32b835f60e5aad1d324))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`45b7299`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45b72997a0a6f7b1eb2865bc43e15623a007c326))
+
+### Changes
+
+- Bump version: 7.163.0 → 7.164.0 ([`957fe38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/957fe38a8f69b4aed8c9094d248b8ebda118d328))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`9e3b932`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e3b932fa7e25cd0e84fa828d2c5064e96246adb))
+
+### Refactor
+
+- move HMAC-SHA512 and SHA-1 into src/crypto (shared, dws_hmac_sha512/dws_sha1) ([`fb9071b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb9071b04e66f97acc03de390d934357fb2274ae))
+
+</details>
+
 ## [7.163.0] - 2026-07-25
 
 <details>
