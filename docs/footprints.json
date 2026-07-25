@@ -707,10 +707,10 @@
     "ram_bytes": 81820
   },
   "SSH": {
-    "example": "L5-Session/SSH",
+    "example": "L5-Session/SSHHostKey",
     "flags": "-DDWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 831441,
+    "flash_bytes": 831549,
     "ram_bytes": 109248
   },
   "SSH+FILE_SERVING+SSH_SFTP+SSH_SCP": {
