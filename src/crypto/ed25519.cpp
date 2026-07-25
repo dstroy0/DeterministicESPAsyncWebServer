@@ -21,9 +21,9 @@
  */
 
 #include "crypto/ed25519.h"
-#include "crypto/sha512.h"
 #include "crypto/curve25519.h" // dws_gf + field ops (native / non-S3 path)
 #include "crypto/fe25519.h"    // S3: canonical uint32[8] field on the RSA MODMULT
+#include "crypto/sha512.h"
 
 // --- Shared constants -------------------------------------------------------
 
