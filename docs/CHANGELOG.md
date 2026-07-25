@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.157.0] - 2026-07-25
+
+<details>
+<summary><b>Show Changelog for version 7.157.0 - 2026-07-25</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`96c8274`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96c8274698f20361521bd97bdf34c8fc5e2b60a9))
+
+### Changes
+
+- Bump version: 7.156.0 → 7.157.0 ([`20477e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/20477e496a4c8c84d22e79608d1527424d5abbef))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`ea6414d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ea6414d42bc685429d98952757171246736665f6))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`10c17f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10c17f996b1e2fcb7369546afe46d058265c99a8))
+
+### Features
+
+- wire SMB2 signing into smb_client (sign requests, verify responses) ([`1d147f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d147f7d95d29ece7ab8b2f3c30136610b3a176c))
+
+</details>
+
 ## [7.156.0] - 2026-07-24
 
 <details>
