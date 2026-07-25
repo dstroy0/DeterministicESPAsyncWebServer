@@ -661,6 +661,8 @@ src/
 ├── crypto/
 │   ├── aes256ctr.cpp
 │   ├── aes256ctr.h
+│   ├── aes_cmac.cpp
+│   ├── aes_cmac.h
 │   ├── aesgcm.cpp
 │   ├── aesgcm.h
 │   ├── bignum.cpp
@@ -1214,6 +1216,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | Feature | Example | Flash (bytes) | Static RAM (bytes) |
 | :------ | :------ | ------------: | -----------------: |
 | `SIGFOX` | `Drivers/SigfoxUplink` | 267,961 | 21,464 |
+| `PREEMPT_QUEUE` | `Foundation/PreemptLanes` | 268,401 | 23,936 |
 | `ENOCEAN+GATEWAY` | `Drivers/EnOceanGateway` | 268,701 | 21,848 |
 | `ZWAVE+GATEWAY` | `Drivers/ZWaveGateway` | 268,905 | 21,848 |
 | `ZIGBEE+GATEWAY` | `Drivers/ZigbeeGateway` | 269,417 | 22,104 |
@@ -1225,7 +1228,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/InterfaceForward` | 270,849 | 29,096 |
 | `THREAD+GATEWAY` | `Drivers/ThreadGateway` | 271,889 | 22,616 |
 | `NMEA0183+UBX` | `Drivers/UbloxGnss` | 273,765 | 22,432 |
-| `PREEMPT_QUEUE` | `Foundation/PreemptQueue` | 274,069 | 23,968 |
 | `NRF24+GATEWAY` | `Drivers/Nrf24Gateway` | 276,105 | 21,680 |
 | `LORA+GATEWAY` | `Drivers/LoRaGateway` | 276,329 | 21,688 |
 | `PCA9685` | `Drivers/Pca9685` | 284,601 | 21,800 |
@@ -1243,11 +1245,11 @@ Feature Tables workflow from `docs/footprints.json`.
 | `DNS_SERVER` | `L7-Application/DnsServer` | 725,929 | 46,044 |
 | `WIFI_SNIFFER+PROMISC` | `Peripherals/WifiSniffer` | 725,973 | 43,644 |
 | `VXI11` | `L7-Application/Vxi11` | 726,205 | 44,196 |
+| `IKEV2` | `L5-Session/IKEv2` | 727,557 | 43,948 |
 | `UDP_TELEMETRY` | `L7-Application/UdpTelemetry` | 728,197 | 45,012 |
 | `PTP` | `L7-Application/Ptp` | 728,325 | 45,020 |
 | `SNMP+SNMP_TRAP` | `L7-Application/SnmpTrap` | 728,421 | 44,988 |
 | `STATSD` | `L7-Application/StatsdMetrics` | 728,453 | 45,148 |
-| `IKEV2` | `L5-Session/IKEv2` | 728,849 | 43,948 |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD` | `L7-Application/CoapBlock` | 729,137 | 49,572 |
 | `COAP+COAP_OBSERVE` | `L7-Application/CoapObserve` | 730,405 | 47,324 |
 | `ESPNOW` | `L7-Application/EspNow` | 731,525 | 43,580 |
@@ -1255,7 +1257,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `HTTP_CLIENT` | `L7-Application/HttpClient` | 734,625 | 63,180 |
 | `SMTP` | `L7-Application/SmtpAlert` | 735,201 | 61,124 |
 | `MQTT` | `L7-Application/MqttClient` | 736,465 | 65,340 |
-| `SMB` | `L7-Application/SmbFileClient` | 744,281 | 65,220 |
+| `SMB` | `L7-Application/SmbFileClient` | 744,257 | 65,220 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,669 | 46,708 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 753,149 | 81,828 |
 | `ADS` | `L7-Application/AdsClient` | 753,317 | 44,204 |
@@ -1275,6 +1277,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/WebSocket` | `L6-Presentation/WebSocket` | 753,781 | 81,820 |
 | `core/Middleware` | `L7-Application/Middleware` | 753,861 | 81,828 |
 | `core/ChunkedResponse` | `L7-Application/ChunkedResponse` | 753,981 | 81,836 |
+| `DIAG` | `L7-Application/Diagnostics` | 754,005 | 81,820 |
 | `core/NetEgress` | `L7-Application/NetEgress` | 754,069 | 81,820 |
 | `core/FormParams` | `L6-Presentation/FormParams` | 754,081 | 81,820 |
 | `PARTITION_MONITOR` | `L7-Application/PartitionMonitor` | 754,121 | 81,828 |
@@ -1294,7 +1297,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SIMATIC` | `L7-Application/SimaticSerial` | 755,513 | 83,292 |
 | `MODBUS` | `L7-Application/ModbusTcp` | 755,533 | 82,108 |
 | `core/Basic` | `Foundation/Basic` | 755,533 | 81,836 |
-| `DIAG` | `Foundation/Configuration` | 755,581 | 77,580 |
 | `JWT` | `L6-Presentation/JWTAuth` | 755,649 | 82,972 |
 | `TELNET` | `L5-Session/Telnet` | 755,737 | 82,364 |
 | `CBOR` | `L6-Presentation/Cbor` | 755,797 | 81,900 |
@@ -1324,11 +1326,11 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RELAY` | `L7-Application/PortForward` | 763,277 | 116,436 |
 | `HTTP_CLIENT+WEBHOOK` | `L7-Application/Webhook` | 764,057 | 101,580 |
 | `PROMISC+FORWARD+ETHERNET` | `Peripherals/WifiCapture` | 766,049 | 47,584 |
+| `OIDC` | `L7-Application/OidcAuth` | 766,077 | 99,876 |
 | `OPCUA+OPCUA_CLIENT` | `L7-Application/OpcUaClient` | 766,337 | 94,724 |
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/OAuth2` | 766,405 | 104,644 |
 | `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,001 | 45,388 |
 | `core/Sysadmin` | `Foundation/Sysadmin` | 767,345 | 81,836 |
-| `OIDC` | `L7-Application/OidcAuth` | 767,349 | 99,876 |
 | `OPCUA+UMATI` | `L7-Application/Umati` | 768,477 | 92,252 |
 | `OPCUA+EUROMAP77` | `L7-Application/Euromap77` | 768,733 | 92,276 |
 | `OPCUA+ROBOTICS` | `L7-Application/Robotics` | 768,853 | 92,468 |
@@ -1354,13 +1356,13 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/WebDav` | 824,681 | 92,348 |
 | `ETAG` | `L7-Application/ETag` | 829,713 | 83,124 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
-| `SSH` | `L5-Session/SSHHostKey` | 831,549 | 109,248 |
+| `SSH` | `L5-Session/SSHHostKey` | 831,557 | 109,240 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 832,493 | 107,272 |
 | `HOTSWAP` | `L7-Application/HotSwapStorage` | 839,129 | 82,760 |
 | `EXC_DECODER+FTP+FTP_SESSION` | `L7-Application/CoreDump` | 841,917 | 83,460 |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE` | `L7-Application/HttpDelivery` | 843,409 | 82,736 |
-| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 846,961 | 110,984 |
+| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 846,949 | 110,976 |
 | `TLS` | `L6-Presentation/SecureWebSocket` | 855,873 | 122,020 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/mTLS` | 856,829 | 122,356 |
@@ -1368,7 +1370,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/TlsResumption` | 859,061 | 105,840 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/mTLS` | 859,141 | 106,016 |
 | `POWER_MGMT` | `L7-Application/PowerGovernor` | 881,833 | 85,680 |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 883,801 | 118,600 |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 883,793 | 118,600 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
