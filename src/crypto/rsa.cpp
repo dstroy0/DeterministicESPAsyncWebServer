@@ -12,7 +12,15 @@
 #include "crypto/rsa.h"
 #include "crypto/sha256.h"
 #include "crypto/sha512.h"
+#include "shared_primitives/crypto_opt.h"
 #include <string.h>
+#ifdef ARDUINO
+#include <mbedtls/md.h>
+#include <mbedtls/rsa.h>
+#else
+#include "crypto/bignum.h" // native software RSA (test reference)
+#endif
+DWS_CRYPTO_HOT
 
 // ---------------------------------------------------------------------------
 // DigestInfo for SHA-256 / SHA-512 (PKCS#1 v1.5, RFC 8017 §9.2, RFC 5754)
@@ -41,9 +49,6 @@ const uint8_t dws_pkcs1_sha512_digestinfo[DWS_PKCS1_SHA512_DIGESTINFO_LEN] = {
 // ---------------------------------------------------------------------------
 // Arduino - mbedtls verify path
 // ---------------------------------------------------------------------------
-
-#include <mbedtls/md.h>
-#include <mbedtls/rsa.h>
 
 int dws_rsa_verify(const uint8_t n_be[DWS_RSA_KEY_BYTES], const uint8_t e_be4[4], const uint8_t *msg, size_t msg_len,
                    const uint8_t *sig, size_t sig_len, DwsRsaHash hash)
@@ -97,8 +102,6 @@ int dws_rsa_verify(const uint8_t n_be[DWS_RSA_KEY_BYTES], const uint8_t e_be4[4]
 // ---------------------------------------------------------------------------
 // Native - software RSA path (test reference; NOT constant-time)
 // ---------------------------------------------------------------------------
-
-#include "crypto/bignum.h"
 
 // Secure-zero that the optimizer may not elide (crypto/ stays independent of the SSH wipe util).
 static void secure_zero(void *p, size_t n)

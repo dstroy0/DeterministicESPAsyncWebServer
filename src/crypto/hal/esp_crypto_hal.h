@@ -36,16 +36,19 @@
 #endif
 
 // Enabled per-variant on every die with a single-shot hardware MODMULT. Add a die here once its rig has passed
-// the on-device RFC KAT (fe25519/ecdsa via main_cryptobench). Classic ESP32 has no single-shot MODMULT.
+// the on-device RFC KAT (fe25519/ecdsa via main_cryptobench). Classic ESP32 has no single-shot MODMULT. This
+// die detection MUST precede the soc-register include below so the header pulls in its own vendor dependency
+// (rather than relying on some other TU including soc/hwcrypto_reg.h first).
 #if defined(ARDUINO) && ((defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3) ||                          \
                          (defined(CONFIG_IDF_TARGET_ESP32P4) && CONFIG_IDF_TARGET_ESP32P4))
 #define DWS_RSA_MODMUL_HW 1
 #endif
-
-#ifdef DWS_RSA_MODMUL_HW
-
+#if defined(DWS_RSA_MODMUL_HW)
 #include "soc/hwcrypto_reg.h" // RSA/MPI accelerator register map (the ONLY vendor register dependency)
 #include "soc/soc.h"          // DR_REG_RSA_BASE
+#endif
+
+#ifdef DWS_RSA_MODMUL_HW
 
 extern "C"
 {

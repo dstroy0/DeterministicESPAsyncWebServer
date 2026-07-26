@@ -16,9 +16,22 @@
  *   DWS_CRYPTO_HOT   // this TU builds at -O2 (or the configured level)
  * @endcode
  *
- * Configure with `DWS_CRYPTO_OPT_LEVEL` (define in `build_flags` or ServerConfig): `2` (default) or `3`;
- * define it to `0` to inherit the framework `-Os`. Only GCC honors `#pragma GCC optimize`; clang/other
- * compilers get a no-op and inherit their normal level.
+ * The level is `DWS_CRYPTO_OPT_LEVEL`: `2` or `3`, or `0` to inherit the framework `-Os`. It is NOT a
+ * ServerConfig / user knob - it is internal crypto tuning with a measured per-die default (see below), which
+ * a hot TU can override for its own build with `#define DWS_CRYPTO_OPT_LEVEL 3` before this include. Only GCC
+ * honors `#pragma GCC optimize`; clang/other compilers get a no-op and inherit their normal level.
+ *
+ * When a TU's `-O3` win bisects (on-device) to a SINGLE named transform, prefer the deliberate
+ * `DWS_CRYPTO_HOT_PEEL` / `DWS_CRYPTO_HOT_UNSWITCH` pin (the `-O2` floor + just that transform) over full
+ * `-O3`, scoped inside the TU's own die guard - same speed, none of `-O3`'s extra code-size / miscompile risk:
+ * @code
+ *   #include "shared_primitives/crypto_opt.h"
+ *   #if defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
+ *   DWS_CRYPTO_HOT_UNSWITCH   // S3: the -O3 win here is entirely -funswitch-loops (bisected)
+ *   #else
+ *   DWS_CRYPTO_HOT            // every other die: the per-die default
+ *   #endif
+ * @endcode
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * CAVEATS - read before applying this to a new file
@@ -36,17 +49,32 @@
  *    classic ESP32 (tight internal DRAM/IRAM, where TLS example builds already run close to the limit)
  *    prefer level `2` or `0`.
  *
- * 3. `-O3` IS NOT RELIABLY FASTER than `-O2` here. The bigger unrolled code can thrash the instruction /
- *    flash cache and regress, and `-O3` widens the miscompile and latent-UB surface. `-O2` captures
- *    essentially all of the practical win; treat `3` as a measure-it-yourself option, not a default.
+ * 3. `-O3` IS NOT UNIVERSALLY FASTER than `-O2` here - it is per-die and per-algo. The bigger unrolled code
+ *    can thrash the instruction / flash cache and regress (e.g. the S3's Ed25519 sign is ~1.2% SLOWER at
+ *    `-O3`), and `-O3` widens the miscompile / latent-UB surface. So full `-O3` is taken only where it was
+ *    MEASURED to help wholesale (the P4, whose win is `-O3`'s parameter budget - see below); on the S3 the
+ *    win of a given TU is one transform, taken via a `DWS_CRYPTO_HOT_*` pin, and `-O2` is the floor elsewhere.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_OPT_H
 #define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_OPT_H
 
 #if defined(__GNUC__) && !defined(__clang__)
+#ifdef ARDUINO
+#include "sdkconfig.h" // CONFIG_IDF_TARGET_* - the per-die default below + the single-transform die guards in the TUs
+#endif
 #ifndef DWS_CRYPTO_OPT_LEVEL
-#define DWS_CRYPTO_OPT_LEVEL 2 // default: -O2 (the -Os -> -O2 jump is the ~2x win; O2 -> O3 is marginal)
+// Per-variant default, measured on the crypto bench (main_cryptobench). The ESP32-P4 (RISC-V) is faster or flat
+// at -O3 across the whole software crypto suite (chacha -22.9%, poly -15.6%, x25519 -6.8%, ed25519 -4.5%; the HW
+// ops flat) - and its win is -O3's larger inline / unroll PARAMETER budget, not any one -f transform (verified:
+// -O3 with all 14 O2->O3 delta flags disabled still hits the full -O3 numbers), so the P4 takes -O3 wholesale.
+// Every other die defaults to -O2 (the big -Os -> -O2 win); the S3's few -O3 wins are each a SINGLE transform,
+// pinned per-TU with the DWS_CRYPTO_HOT_* macros below (see ecdsa/chacha20/hmac_sha256).
+#if defined(CONFIG_IDF_TARGET_ESP32P4) && CONFIG_IDF_TARGET_ESP32P4
+#define DWS_CRYPTO_OPT_LEVEL 3
+#else
+#define DWS_CRYPTO_OPT_LEVEL 2
+#endif
 #endif
 #if DWS_CRYPTO_OPT_LEVEL == 3
 #define DWS_CRYPTO_HOT _Pragma("GCC optimize(\"O3\")")
@@ -55,8 +83,16 @@
 #else
 #define DWS_CRYPTO_HOT // 0 / other: inherit the framework -Os
 #endif
+// Deliberate single-transform pins: the -O2 floor + exactly ONE -O3 transform that (alone, not full -O3) was
+// MEASURED to carry a TU's win - capturing it without -O3's code-size / miscompile / cache-thrash baggage. A TU
+// selects one inside its own die guard (e.g. #if CONFIG_IDF_TARGET_ESP32S3) and uses DWS_CRYPTO_HOT otherwise.
+// This is a closed set (add one only after bisecting the win to a named flag on-device); it is NOT a user knob.
+#define DWS_CRYPTO_HOT_PEEL _Pragma("GCC optimize(\"O2\",\"peel-loops\")")
+#define DWS_CRYPTO_HOT_UNSWITCH _Pragma("GCC optimize(\"O2\",\"unswitch-loops\")")
 #else
-#define DWS_CRYPTO_HOT // non-GCC: no per-TU pragma; inherit the toolchain default
+#define DWS_CRYPTO_HOT          // non-GCC: no per-TU pragma; inherit the toolchain default
+#define DWS_CRYPTO_HOT_PEEL     // "
+#define DWS_CRYPTO_HOT_UNSWITCH // "
 #endif
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_OPT_H

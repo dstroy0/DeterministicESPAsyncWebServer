@@ -12,7 +12,12 @@
  */
 
 #include "crypto/aesgcm.h"
+#include "shared_primitives/crypto_opt.h"
 #include <string.h>
+#if !DWS_AESGCM_HW_GCM && !defined(ARDUINO)
+#include "shared_primitives/aes_block.h" // native software AES-256 (the HW-GCM and mbedtls paths use their own)
+#endif
+DWS_CRYPTO_HOT
 
 #if DWS_AESGCM_HW_GCM
 // ===========================================================================
@@ -89,8 +94,6 @@ static inline void aes256_free_key(DwsAesGcmCtx *ctx)
 }
 
 #else // Native software AES-256
-
-#include "shared_primitives/aes_block.h"
 
 // Non-const ctx for signature parity with the ARDUINO path (below), where aes256_ecb wraps
 // mbedtls_aes_crypt_ecb() on a non-const mbedtls_aes_context. (S995 does not apply portably.)

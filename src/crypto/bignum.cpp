@@ -27,7 +27,12 @@
 
 #include "crypto/bignum.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h" // for ssh_wipe()
+#include "shared_primitives/crypto_opt.h"
 #include <string.h>
+#ifdef ARDUINO
+#include <mbedtls/bignum.h> // HW bignum acceleration for the DH-2048 modexp
+#endif
+DWS_CRYPTO_HOT
 
 // ---------------------------------------------------------------------------
 // Scratch buffer (SSH_CRYPTO_WORK_SIZE bytes, zeroed after each crypto op)
@@ -290,7 +295,6 @@ int bn_dh_validate(const DwsBigNum *v)
 
 #ifdef ARDUINO
 // On ESP32 delegate to mbedtls which uses HW bignum acceleration.
-#include <mbedtls/bignum.h>
 
 void bn_expmod_group14(DwsBigNum *out, const DwsBigNum *base, const DwsBigNum *exp)
 {

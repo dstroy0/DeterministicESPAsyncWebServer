@@ -10,15 +10,20 @@
  */
 
 #include "crypto/sha512.h"
+#include "shared_primitives/crypto_opt.h"
 #include <string.h>
+#ifdef ARDUINO
+#include <mbedtls/sha512.h> // hardware SHA accelerator
+#else
+#include "shared_primitives/endian.h" // native software SHA-512
+#endif
+DWS_CRYPTO_HOT
 
 #ifdef ARDUINO
 
 // ---------------------------------------------------------------------------
 // Arduino (ESP32): streaming + one-shot via mbedtls.
 // ---------------------------------------------------------------------------
-
-#include <mbedtls/sha512.h>
 
 void dws_sha512_init(DwsSha512Ctx *ctx)
 {
@@ -59,8 +64,6 @@ void dws_sha512(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA512_DIGES
 // ---------------------------------------------------------------------------
 // Software SHA-512 (FIPS 180-4) - native/test builds only
 // ---------------------------------------------------------------------------
-
-#include "shared_primitives/endian.h"
 
 static const uint64_t K512[80] = {
     0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL,

@@ -14,7 +14,15 @@
  */
 
 #include "crypto/hmac_sha256.h"
+#include "shared_primitives/crypto_opt.h"
 #include <string.h>
+// HMAC-SHA256 is HW-SHA-dominated; the only -O lever is its SW key-block glue. On the P4 that rides the per-die
+// -O3 default (whose win is -O3's loop-unroll parameter budget). The S3's ~4% O3 edge is the same parameter
+// class (bisected on-device: -fpeel-loops and -funswitch-loops both no-op), not a single transform, and not
+// worth -O3's code-size / miscompile baggage on a HW-dominated MAC - so the S3 keeps the -O2 default. Capturing
+// that 4% deliberately would take a source #pragma GCC unroll on the key-block loops (a code change, not a flag).
+// See crypto_opt.h caveat 1.
+DWS_CRYPTO_HOT
 
 // Build one 64-byte HMAC key block from a variable-length key (RFC 2104 §2).
 static void build_key_block(const uint8_t *key, size_t key_len, uint8_t block[64], uint8_t pad_byte)

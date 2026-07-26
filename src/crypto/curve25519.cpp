@@ -27,6 +27,8 @@
 #include "sdkconfig.h"      // CONFIG_IDF_TARGET_ESP32S3 - selects the vector (PIE) field multiply
 #include <mbedtls/bignum.h> // ESP32: field inversion on the MPI/RSA hardware accelerator
 #endif
+#include "shared_primitives/crypto_opt.h"
+DWS_CRYPTO_HOT
 
 // Small field constant (radix-2^16). Used only by the software X25519 ladder (the S3 MODMULT path carries its
 // own canonical a24), so it would be unused there.

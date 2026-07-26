@@ -35,16 +35,8 @@
 #include "shared_primitives/ghash.h"
 #include <stddef.h>
 #include <stdint.h>
-
-/** @brief AES-256-GCM key length (bytes). */
-static constexpr size_t DWS_AESGCM_KEY_LEN = 32;
-/** @brief GCM nonce length (bytes) = fixed_field(4) || invocation_counter(8). */
-static constexpr size_t DWS_AESGCM_IV_LEN = 12;
-/** @brief GCM authentication tag length (bytes). */
-static constexpr size_t DWS_AESGCM_TAG_LEN = 16;
-
 #ifdef ARDUINO
-#include "soc/soc_caps.h"
+#include "soc/soc_caps.h" // SOC_AES_SUPPORT_GCM - does this die's AES peripheral have a hardware GCM mode?
 #endif
 
 // Chips whose AES peripheral has a hardware GCM mode (e.g. ESP32-P4, SOC_AES_SUPPORT_GCM) do the whole
@@ -59,7 +51,19 @@ static constexpr size_t DWS_AESGCM_TAG_LEN = 16;
 #endif
 
 #if DWS_AESGCM_HW_GCM
-#include <mbedtls/gcm.h>
+#include <mbedtls/gcm.h> // hardware GCM peripheral: AES-CTR + GHASH in one call
+#elif defined(ARDUINO)
+#include <mbedtls/aes.h> // HW AES block + software GHASH
+#endif
+
+/** @brief AES-256-GCM key length (bytes). */
+static constexpr size_t DWS_AESGCM_KEY_LEN = 32;
+/** @brief GCM nonce length (bytes) = fixed_field(4) || invocation_counter(8). */
+static constexpr size_t DWS_AESGCM_IV_LEN = 12;
+/** @brief GCM authentication tag length (bytes). */
+static constexpr size_t DWS_AESGCM_TAG_LEN = 16;
+
+#if DWS_AESGCM_HW_GCM
 /** @brief AES-256-GCM context for one SSH direction (hardware GCM peripheral). */
 struct DwsAesGcmCtx
 {
@@ -68,7 +72,6 @@ struct DwsAesGcmCtx
     bool ready;                    ///< true once a key/IV is installed.
 };
 #elif defined(ARDUINO)
-#include <mbedtls/aes.h>
 /** @brief AES-256-GCM context for one SSH direction (HW AES block + software GHASH). */
 struct DwsAesGcmCtx
 {

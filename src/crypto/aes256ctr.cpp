@@ -13,7 +13,12 @@
  */
 
 #include "crypto/aes256ctr.h"
+#include "shared_primitives/crypto_opt.h"
 #include <string.h>
+#ifndef ARDUINO
+#include "shared_primitives/aes_block.h" // native software AES S-box/blocks (ARDUINO uses mbedtls via the header)
+#endif
+DWS_CRYPTO_HOT
 
 // ============================================================================
 // ARDUINO - hardware-accelerated path via mbedtls
@@ -56,12 +61,6 @@ void dws_aes256ctr_wipe(DwsAesCtrCtx *ctx)
 // ============================================================================
 
 #else
-
-// ---------------------------------------------------------------------------
-// AES S-box (FIPS 197 Figure 7)
-// ---------------------------------------------------------------------------
-
-#include "shared_primitives/aes_block.h"
 
 // ---------------------------------------------------------------------------
 // Public API (native software path)

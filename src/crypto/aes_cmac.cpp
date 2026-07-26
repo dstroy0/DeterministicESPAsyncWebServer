@@ -11,15 +11,20 @@
  */
 
 #include "crypto/aes_cmac.h"
+#include "shared_primitives/crypto_opt.h"
 #include <string.h>
+#ifdef ARDUINO
+#include <mbedtls/aes.h> // AES-128 single-block via the ESP32 AES peripheral
+#else
+#include "shared_primitives/aes_block.h" // native software AES-128 block
+#endif
+DWS_CRYPTO_HOT
 
 // ---------------------------------------------------------------------------
 // AES-128 single-block encrypt seam - one small wrapper, two platform bodies
 // ---------------------------------------------------------------------------
 
 #ifdef ARDUINO
-
-#include <mbedtls/aes.h>
 
 namespace
 {
@@ -43,8 +48,6 @@ inline void blk_free(AesBlk *b)
 } // namespace
 
 #else
-
-#include "shared_primitives/aes_block.h"
 
 namespace
 {

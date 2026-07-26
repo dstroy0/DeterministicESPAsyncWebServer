@@ -457,11 +457,23 @@ host column is the software variable-base ladder (the comb is an S3 flash table 
   vector assembly plus already-`int32` C glue, neither of which the optimizer can improve, so the shipped `-Og`
   figures **are** the production crypto numbers (unlike the pure-C protocol codecs, which gain ~15-30% at `-O2`).
   The MODMULT X25519 is likewise hardware-bound (the accelerator, not the C glue, is the floor), so `-O2` is a
-  no-op there too. The pure-C ciphers that _do_ benefit (ChaCha20, Poly1305 - ~2x) force a higher level per
-  translation unit via `DWS_CRYPTO_HOT` ([`shared_primitives/crypto_opt.h`](../src/shared_primitives/crypto_opt.h),
-  configurable `DWS_CRYPTO_OPT_LEVEL` = 2 default / 3 / 0), applied **only** to code that is constant-time by
-  structure; the mask-select scalar-mult paths are deliberately left at `-Os` (they are HW-dominated and cranking
-  the optimizer risks defeating their constant-time property for no speedup).
+  no-op there too. The pure-C ciphers that _do_ benefit force a higher level
+  **per translation unit and per die** via `DWS_CRYPTO_HOT` ([`shared_primitives/crypto_opt.h`](../src/shared_primitives/crypto_opt.h)),
+  applied **only** to code that is constant-time by structure; the mask-select scalar-mult paths are left at the
+  framework `-Os`/`-O2` (HW-dominated; cranking the optimizer risks defeating their constant-time property for no
+  speedup). The level is not a user knob - each die carries a **measured default** (bisected on the crypto bench):
+    - **ESP32-P4** (RISC-V, gcc 14) defaults to `-O3` across the whole software suite because its win is `-O3`'s
+      larger inline/unroll **parameter budget**, not any one transform - verified by disabling all 14 `-O2`->`-O3`
+      delta `-f` flags under `-O3` and still hitting the full `-O3` numbers (ChaCha20 `-22.9%` -> 32,162 cyc,
+      Poly1305 `-15.6%` -> 17,672 cyc; HW ops flat).
+    - **Every other die** defaults to `-O2`. The S3's individual `-O3` wins each bisect (on-device) to a **single**
+      transform, so they are pinned deliberately as `-O2` + that one flag (`DWS_CRYPTO_HOT_UNSWITCH` /
+      `DWS_CRYPTO_HOT_PEEL`): ChaCha20 = `-funswitch-loops` (46,430 -> 41,315 cyc, **+11%**), ECDSA P-256 field
+      path = `-fpeel-loops` (~14% over `-O2`). Each measured **as fast as or slightly faster than** full `-O3`
+      (chacha 41,315 vs O3 41,740) while avoiding `-O3`'s code-size / miscompile baggage and the S3's `-O3` Ed25519
+      regression (`-1.2%`, so Ed25519/X25519 stay at `-O2`). HMAC-SHA256's ~4% S3 `-O3` edge is the same parameter
+      class (peel/unswitch both no-op) and, on a HW-SHA-dominated MAC, not worth `-O3` - it stays `-O2`. All pins
+      are byte-exact on-device (ECDSA/Ed25519 KATs pass on both the S3 and P4 rigs).
 - **Where the handshake time goes - and the SIMD acceleration target.** The radix-2^16 field multiply
   `dws_gf_mul` is **13,308 cycles / 55.4 us** on the S3 in scalar form (a 16x16 schoolbook = 256 multiply-accumulates). At
   ~2,600 field multiplies per X25519 (255 ladder steps x ~10 mul/sq + the reduction) it is essentially the

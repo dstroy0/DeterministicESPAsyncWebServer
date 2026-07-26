@@ -9,7 +9,9 @@
 #include "crypto/chachapoly.h"
 #include "crypto/chacha20.h"
 #include "crypto/poly1305.h"
+#include "shared_primitives/crypto_opt.h"
 #include <string.h>
+DWS_CRYPTO_HOT
 
 namespace
 {

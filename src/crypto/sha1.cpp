@@ -10,12 +10,18 @@
  */
 
 #include "crypto/sha1.h"
+#include "shared_primitives/crypto_opt.h"
+#include <string.h>
+#ifdef ARDUINO
+#include "mbedtls/sha1.h" // hardware-accelerated SHA-1 on ESP32
+#else
+#include "shared_primitives/endian.h" // native software SHA-1
+#endif
+DWS_CRYPTO_HOT
 
 #ifdef ARDUINO
 
 // --- ESP32 / Arduino: use mbedTLS (hardware-accelerated on ESP32) ----------
-#include "mbedtls/sha1.h"
-#include <string.h>
 
 void dws_sha1(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA1_DIGEST_LEN])
 {
@@ -25,8 +31,6 @@ void dws_sha1(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA1_DIGEST_LE
 #else
 
 // --- Native / test: software SHA-1, no external dependencies ---------------
-#include "shared_primitives/endian.h"
-#include <string.h>
 
 static inline uint32_t rot32(uint32_t x, int n)
 {

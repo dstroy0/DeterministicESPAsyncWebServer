@@ -54,16 +54,35 @@
 #define DWS_ECDSA_MPI_HW 1
 #endif
 
+// Platform-conditional headers, hoisted here so no #include follows code (no mid-file includes -
+// tools/check_src_banned.py enforces it). The implementation branches below use the same guards.
+#if defined(ARDUINO) && !defined(DWS_ECDSA_MPI_HW)
+#include <esp_random.h> // esp_fill_random() for the ECDSA nonce / blinding RNG
+#include <mbedtls/ecdh.h>
+#include <mbedtls/ecdsa.h>
+#include <mbedtls/ecp.h>
+#else
+#include "crypto/hmac_sha256.h" // RFC 6979 HMAC-DRBG for the deterministic-nonce complete-formula path
+#ifdef DWS_ECDSA_MPI_HW
+#include "crypto/hal/esp_crypto_hal.h" // dws_rsa_modmul + dws_rsa_hw_acquire/release (RSA-register owner)
+#endif
+#endif
+
+// Measured (crypto bench): the S3 P-256 MODMULT path's ~14% -O3 win is carried by -fpeel-loops (bisected
+// on-device); pin just that transform on the -O2 floor. Non-S3 dies run ecdsa on mbedtls/HW (flat at any level)
+// and take the crypto_opt per-die default (P4 -O3, else -O2). sdkconfig is included above.
+#include "shared_primitives/crypto_opt.h"
+#if defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
+DWS_CRYPTO_HOT_PEEL
+#else
+DWS_CRYPTO_HOT
+#endif
+
 // ---------------------------------------------------------------------------
 // Other Arduino (non-S3) - mbedTLS path (portable, hardware-accelerated)
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO) && !defined(DWS_ECDSA_MPI_HW)
-
-#include <esp_random.h> // esp_fill_random() for the ECDSA nonce / blinding RNG
-#include <mbedtls/ecdh.h>
-#include <mbedtls/ecdsa.h>
-#include <mbedtls/ecp.h>
 
 namespace
 {
@@ -191,12 +210,6 @@ bool dws_ecdsa_p256_ecdh(uint8_t shared_x[DWS_ECDSA_P256_COORD_LEN], const uint8
 }
 
 #else // ---- S3 HW-MODMULT path, or native software path (shared complete-formula P-256) ----
-
-#include "crypto/hmac_sha256.h"
-
-#ifdef DWS_ECDSA_MPI_HW
-#include "crypto/hal/esp_crypto_hal.h" // dws_rsa_modmul + dws_rsa_hw_acquire/release (the RSA-register owner)
-#endif
 
 namespace
 {

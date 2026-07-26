@@ -7,8 +7,10 @@
  */
 
 #include "crypto/md.h"
+#include "shared_primitives/crypto_opt.h"
 #include "shared_primitives/endian.h"
 #include <string.h>
+DWS_CRYPTO_HOT
 
 static inline uint32_t rotl(uint32_t v, unsigned n)
 {

@@ -22,8 +22,13 @@
 
 #include "crypto/ed25519.h"
 #include "crypto/curve25519.h" // dws_gf + field ops (native / non-S3 path)
-#include "crypto/fe25519.h"    // S3: canonical uint32[8] field on the RSA MODMULT
+#include "crypto/fe25519.h"    // MODMULT dies: canonical uint32[8] field on the RSA accelerator
 #include "crypto/sha512.h"
+#include "shared_primitives/crypto_opt.h"
+#ifdef DWS_FE25519_MPI_HW
+#include "crypto/ed25519_comb_table.h" // fixed-base comb ED_COMB[i][j] = (j+1)*256^i*B; drives the MODMULT sign
+#endif
+DWS_CRYPTO_HOT
 
 // --- Shared constants -------------------------------------------------------
 
@@ -121,8 +126,7 @@ static const fe ED_Y_FE = {0x66666658, 0x66666666, 0x66666666, 0x66666666,
 static const fe ED_I_FE = {0x4a0ea0b0, 0xc4ee1b27, 0xad2fe478, 0x2f431806,
                            0x3dfbd7a7, 0x2b4d0099, 0x4fc1df0b, 0x2b832480}; // sqrt(-1) mod p
 
-// Fixed-base comb table ED_COMB[i][j] = (j+1) * 256^i * B (extended X, Y, T; Z = 1), in flash.
-#include "crypto/ed25519_comb_table.h"
+// ED_COMB (the fixed-base comb table) is included at the top of the file with the other headers.
 
 // p += q (twisted-Edwards addition, RFC 8032 §5.1.4). Safe when q aliases p (point doubling): every read of
 // q happens before any write of p. Requires dws_fe_hw_enable() (the fe_mul/fe_sq run on the accelerator).

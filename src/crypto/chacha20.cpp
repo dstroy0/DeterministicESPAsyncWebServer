@@ -15,7 +15,15 @@
 // the arduino framework's -Os, and ChaCha runs ~2.36x faster at -O2 (measured on-device, CCOUNT). It is
 // constant-time by structure (no secret-dependent branches), so forcing a higher level is side-channel
 // safe - see the caveats in crypto_opt.h. Byte-exact; the SIMD investigation is in docs/FEATURE_PERFORMANCE.md.
+//
+// Measured (crypto bench): ChaCha20's additional ~8.8% S3 win at -O3 is carried entirely by -funswitch-loops
+// (bisected on-device); pin just that transform on the -O2 floor. The P4 takes full -O3 via the per-die default
+// (its win is -O3's inline/unroll parameter budget, not one flag).
+#if defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
+DWS_CRYPTO_HOT_UNSWITCH
+#else
 DWS_CRYPTO_HOT
+#endif
 
 namespace
 {

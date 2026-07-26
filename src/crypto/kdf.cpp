@@ -12,8 +12,10 @@
 
 #include "crypto/kdf.h"
 #include "crypto/sha256.h"
+#include "shared_primitives/crypto_opt.h"
 #include "shared_primitives/endian.h"
 #include <string.h>
+DWS_CRYPTO_HOT
 
 bool dws_kdf_ctr_hmac_sha256(const uint8_t *ki, size_t ki_len, const uint8_t *fixed, size_t fixed_len, uint8_t *out,
                              size_t out_len)

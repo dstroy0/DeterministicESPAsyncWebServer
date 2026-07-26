@@ -11,15 +11,20 @@
  */
 
 #include "crypto/sha256.h"
+#include "shared_primitives/crypto_opt.h"
 #include <string.h>
+#ifdef ARDUINO
+#include <mbedtls/sha256.h> // hardware SHA accelerator
+#else
+#include "shared_primitives/endian.h" // native software SHA-256
+#endif
+DWS_CRYPTO_HOT
 
 #ifdef ARDUINO
 
 // ---------------------------------------------------------------------------
 // Arduino (ESP32): streaming + one-shot via mbedtls (hardware SHA accelerator).
 // ---------------------------------------------------------------------------
-
-#include <mbedtls/sha256.h>
 
 void dws_sha256_init(DwsSha256Ctx *ctx)
 {
@@ -60,8 +65,6 @@ void dws_sha256(const uint8_t *data, size_t len, uint8_t digest[DWS_SHA256_DIGES
 // ---------------------------------------------------------------------------
 // Software SHA-256 (FIPS 180-4) - native/test builds only
 // ---------------------------------------------------------------------------
-
-#include "shared_primitives/endian.h"
 
 static const uint32_t K256[64] = {
     0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
