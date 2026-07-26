@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.173.3] - 2026-07-26
+
+<details>
+<summary><b>Show Changelog for version 7.173.3 - 2026-07-26</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`ba4fba8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba4fba82b50af100c13a1ebac4fad657d8f6ab60))
+- update CHANGELOG.md [skip ci] ([`a141e93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a141e931413e159fef2b3d60ab427268517ba907))
+
+### Changes
+
+- Bump version: 7.173.2 → 7.173.3 ([`488387f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/488387f486eba579c6489b70523bd1f9695cd5e4))
+
+### Performance
+
+- multi-rig handshake investigation - S3 compute-bound, P4 HW-ECC 5.5x ([`37d7b02`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37d7b02fa0f239918fbbcb346ad739914edc1700))
+
+</details>
+
 ## [7.173.2] - 2026-07-25
 
 <details>
