@@ -659,6 +659,8 @@ src/
 │   ├── s31_defaults.h
 │   └── s3_defaults.h
 ├── crypto/
+│   ├── hal/
+│   │   └── esp_crypto_hal.h
 │   ├── aes256ctr.cpp
 │   ├── aes256ctr.h
 │   ├── aes_cmac.cpp
