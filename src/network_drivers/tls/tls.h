@@ -72,6 +72,19 @@ bool dws_tls_conn_begin(uint8_t slot);
  */
 int dws_tls_handshake(uint8_t slot);
 
+#ifdef DWS_TLS_HS_BENCH
+// Handshake-bench context (see tls.cpp): the last completed handshake's device-CPU time (summed over the
+// pumped mbedtls_ssl_handshake calls, so network waits between pumps are excluded) and wall time. The rig
+// firmware watches count and prints both. Compiled out unless DWS_TLS_HS_BENCH is defined.
+struct TlsHsBenchCtx
+{
+    volatile long long last_cpu_us;
+    volatile long long last_wall_us;
+    volatile unsigned count;
+};
+extern TlsHsBenchCtx dws_tls_hs_bench;
+#endif
+
 /** @brief True once the handshake on @p slot has completed. */
 bool dws_tls_established(uint8_t slot);
 

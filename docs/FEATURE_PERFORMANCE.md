@@ -915,6 +915,43 @@ median 498 ms** over 8 handshakes - matching the numbers below.
   Bringing this up found and fixed two hardware-only bugs (a tcpip_thread self-deadlock and an RX ring smaller
   than a modern ClientHello) - see [BUGS.md](BUGS.md).
 
+#### Device-CPU breakdown + the ESP32-P4 (HW ECC)
+
+The wall-clock above is the client's view; a guarded server-side probe (`DWS_TLS_HS_BENCH`, in
+[`tls.cpp`](../src/network_drivers/tls/tls.cpp)) times the actual handshake **on the device** - it sums the
+CPU spent inside the pumped `mbedtls_ssl_handshake` calls (network waits fall between pumps) and the wall
+time. Measured on the two S3 rigs and a wired **ESP32-P4** (`rig_s3_tls` twin, [`pentesting/rig_firmware/p4`](../pentesting/rig_firmware/p4);
+`perf/tls/tls_hs_time.py` + `s3_hs_investigate.py`):
+
+| Board / curve                       | device CPU |   wall | client-observed | ping RTT |
+| ----------------------------------- | ---------: | -----: | --------------: | -------: |
+| ESP32-S3 (240 MHz), x25519 ECDHE    |     453 ms | 458 ms |         ~498 ms |    ~6 ms |
+| ESP32-S3 (240 MHz), P-256 ECDHE     |     444 ms | 447 ms |               - |    ~6 ms |
+| ESP32-P4 (360 MHz), x25519 ECDHE    |          - |      - |         ~160 ms |    ~1 ms |
+| ESP32-P4 (360 MHz), **P-256 ECDHE** |          - |      - |      **~29 ms** |    ~1 ms |
+
+- **The S3 handshake is compute-bound, not network-bound.** device-CPU 453 ms vs wall 458 ms (and a ~6 ms
+  ping): the ~0.5 s is **~99% the chip doing math**, not WiFi. The two S3 boards agree to <1% (cross-board
+  reproducible).
+- **On the S3 the ECDHE curve barely matters (453 vs 444 ms, ~9 ms).** The isolated `/bench/tls` op counts
+  suggest P-256 ECDHE is ~95 ms cheaper than x25519 (199 vs 294 ms), but that gap **collapses to 9 ms in the
+  full handshake** - so "prefer P-256 on the S3" is a red herring. And the real handshake CPU (453 ms) is
+  **~96 ms more than the raw ECDHE + ECDSA-sign** (294 + 63 = 357 ms from `/bench/tls`): that residual is the
+  mbedTLS handshake machinery (SHA-384 PRF/key schedule, cert handling, the Finished HMACs, AES-GCM setup). So
+  the ECDHE scalar mult is ~65% of the handshake, the signature ~14%, the machinery ~21% - not a single
+  dominant op.
+- **The ESP32-P4 has a hardware ECC accelerator (P-256 via mbedTLS `ecc_alt`), and it changes the picture
+  completely.** `/bench/tls` on the P4: P-256 ECDHE (gen+shared) **10.4 ms** (vs the S3's 199 ms, **19x**) and
+  ECDSA-P256 sign **10.6 ms** (vs 63 ms, **5.9x**); x25519 stays software (132 ms, no HW path). So the
+  full-handshake wall-clock is **~160 ms with the default x25519** but **~29 ms when the client offers P-256**
+  (`Server Temp Key: ECDH, prime256v1` confirmed) - a **5.5x** win from routing the key exchange onto the HW
+  curve. The wired link also drops the RTT to ~1 ms.
+- **Actionable: the curve preference should be board-aware.** x25519-first (the shipped order) is right for the
+  S3 (no ECC HW, so x25519's modern-curve security is free) but leaves the P4's HW P-256 idle - preferring
+  P-256 on the P4 cuts its TLS handshake ~5.5x (160 → 29 ms). A P-256 ECDSA leaf also constrains the client's
+  `supported_groups` in TLS 1.2 (the group list gates the cert curve too), which is why a client offering no
+  P-256 fails outright against this rig.
+
 ### HTTP/2 over TLS (DWS_ENABLE_HTTP2, PSRAM)
 
 HTTP/2 rides the TLS handshake (ALPN `h2`) and adds the binary framing + HPACK + a per-connection stream

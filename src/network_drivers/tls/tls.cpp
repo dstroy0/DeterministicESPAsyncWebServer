@@ -220,6 +220,11 @@ struct TlsConn
     uint8_t slot;
     bool active;
     bool established;
+#ifdef DWS_TLS_HS_BENCH
+    long long hs_cpu_us;   // accumulated device CPU time INSIDE mbedtls_ssl_handshake across pumps
+    long long hs_wall0_us; // esp_timer at the first handshake pump (wall clock incl. network waits)
+    bool hs_started;       // timing began for this handshake
+#endif
 };
 // TLS connection pool, owned by one instance (internal linkage): the per-slot mbedTLS session
 // contexts. One named owner, unreachable from any other translation unit.
@@ -228,6 +233,13 @@ struct TlsConnsCtx
     TlsConn conns[MAX_TLS_CONNS];
 };
 static TlsConnsCtx s_conns;
+
+#ifdef DWS_TLS_HS_BENCH
+#include <esp_timer.h> // esp_timer_get_time() - microsecond wall clock for the handshake span probe
+// The one owned handshake-bench instance (struct declared in tls.h): the last completed handshake's
+// device-CPU time (summed across the pumped mbedtls_ssl_handshake calls) and wall time. The rig prints it.
+TlsHsBenchCtx dws_tls_hs_bench = {0, 0, 0};
+#endif
 
 static TlsConn *find(uint8_t slot)
 {
@@ -480,10 +492,28 @@ int dws_tls_handshake(uint8_t slot)
     TlsConn *e = find(slot);
     if (!e)
         return -1;
+#ifdef DWS_TLS_HS_BENCH
+    if (!e->hs_started)
+    {
+        e->hs_started = true;
+        e->hs_cpu_us = 0;
+        e->hs_wall0_us = esp_timer_get_time();
+    }
+    long long hs_t0 = esp_timer_get_time();
+#endif
     int ret = mbedtls_ssl_handshake(&e->ssl);
+#ifdef DWS_TLS_HS_BENCH
+    e->hs_cpu_us += esp_timer_get_time() - hs_t0; // device CPU in this pump; network waits are between pumps
+#endif
     if (ret == 0)
     {
         e->established = true;
+#ifdef DWS_TLS_HS_BENCH
+        dws_tls_hs_bench.last_cpu_us = e->hs_cpu_us;
+        dws_tls_hs_bench.last_wall_us = esp_timer_get_time() - e->hs_wall0_us;
+        dws_tls_hs_bench.count++;
+        e->hs_started = false;
+#endif
         return 1;
     }
     if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
