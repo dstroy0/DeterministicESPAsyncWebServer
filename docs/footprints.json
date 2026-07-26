@@ -80,7 +80,7 @@
     "example": "L7-Application/CoapSecure",
     "flags": "-DDWS_ENABLE_COAP=1 -DDWS_ENABLE_DTLS=1",
     "board": "esp32dev",
-    "flash_bytes": 781993,
+    "flash_bytes": 782457,
     "ram_bytes": 104116
   },
   "CONFIG_STORE+CONFIG_IO": {
@@ -101,7 +101,7 @@
     "example": "L7-Application/Csrf",
     "flags": "-DDWS_ENABLE_CSRF=1",
     "board": "esp32dev",
-    "flash_bytes": 755145,
+    "flash_bytes": 755157,
     "ram_bytes": 81876
   },
   "DASHBOARD": {
@@ -346,7 +346,7 @@
     "example": "L6-Presentation/JWTAuth",
     "flags": "-DDWS_ENABLE_JWT=1",
     "board": "esp32dev",
-    "flash_bytes": 755733,
+    "flash_bytes": 755745,
     "ram_bytes": 82972
   },
   "KEEPALIVE": {
@@ -486,7 +486,7 @@
     "example": "L7-Application/OidcAuth",
     "flags": "-DDWS_ENABLE_OIDC=1",
     "board": "esp32dev",
-    "flash_bytes": 766157,
+    "flash_bytes": 766193,
     "ram_bytes": 99876
   },
   "OPCUA": {
@@ -675,7 +675,7 @@
     "example": "L7-Application/SmbFileClient",
     "flags": "-DDWS_ENABLE_SMB=1",
     "board": "esp32dev",
-    "flash_bytes": 747109,
+    "flash_bytes": 747473,
     "ram_bytes": 65732
   },
   "SMTP": {
@@ -710,21 +710,21 @@
     "example": "L5-Session/SSHHostKey",
     "flags": "-DDWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 831629,
+    "flash_bytes": 832565,
     "ram_bytes": 109240
   },
   "SSH+FILE_SERVING+SSH_SFTP+SSH_SCP": {
     "example": "L5-Session/SSHSftp",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1",
     "board": "esp32dev",
-    "flash_bytes": 883865,
+    "flash_bytes": 884797,
     "ram_bytes": 118600
   },
   "SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF": {
     "example": "L5-Session/SSHReverseTunnel",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_SSH_CLIENT=1 -DDWS_SSH_CLIENT_MAX_CHANNELS=2 -DDWS_CLIENT_RX_BUF=2048 -DMAX_CONNS=4",
     "board": "esp32dev",
-    "flash_bytes": 847021,
+    "flash_bytes": 847941,
     "ram_bytes": 110976
   },
   "STATS": {
@@ -1060,7 +1060,7 @@
     "example": "L5-Session/SSHCryptoSelfTest",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 269537,
+    "flash_bytes": 269545,
     "ram_bytes": 21476
   },
   "core/ServerSentEvents": {
