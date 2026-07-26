@@ -2,6 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.176.0] - 2026-07-26
+
+<details>
+<summary><b>Show Changelog for version 7.176.0 - 2026-07-26</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`d646a20`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d646a205561fcdc07db9e84f4e1f891b38288ece))
+- update CHANGELOG.md [skip ci] ([`6552936`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6552936f5ad434be9931df7723cd1a97e90c6386))
+
+### Changes
+
+- Bump version: 7.175.1 → 7.176.0 ([`4614076`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/461407684e2b72a57a5939c5d5771f5279c4431c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e4e6487`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4e64870cd836fe6f7b49d115765be15e2517da8))
+
+### Performance
+
+- per-variant -O levels with deliberate single-transform pins; self-contained RSA HAL ([`127a8c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/127a8c0a30c3c760d55c370bd7a47afbac156ac7))
+
+### Refactor
+
+- ban mid-file #include (ban #18) and hoist all 124 across the tree ([`7b3ac62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b3ac6283c8caf81b471d5e5294327ca4ae03429))
+
+</details>
+
 ## [7.175.1] - 2026-07-26
 
 <details>
