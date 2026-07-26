@@ -1500,7 +1500,8 @@
     "KBKDF",
     "KDFCTR",
     "impacket",
-    "KEXBENCH"
+    "KEXBENCH",
+    "undercount"
   ],
   "ignorePaths": [
     "node_modules/**",

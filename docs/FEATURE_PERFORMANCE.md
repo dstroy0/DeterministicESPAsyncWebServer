@@ -891,9 +891,11 @@ median 498 ms** over 8 handshakes - matching the numbers below.
   mbedTLS (no ECC accelerator on the S3). mbedTLS, given no server preference, negotiates the _first_ curve
   in its own list that the client offers - which on the esp-idf build is **secp521r1, the most expensive**
   (its scalar mult is ~2.4x a P-256/x25519 one). The library now pins a fast, modern preference order
-  (`mbedtls_ssl_conf_curves`/`_groups`: x25519, secp256r1 ahead of secp384r1/secp521r1) on both the server
-  and outbound-client config, so the negotiated curve is a cheap 128-bit one. Every curve stays enabled -
-  this only reorders preference, so a peer that supports just one still connects.
+  (`mbedtls_ssl_conf_curves`/`_groups`) on both the server and outbound-client config so the negotiated curve
+  is a cheap 128-bit one, with secp384r1/secp521r1 last (interop only). The order of the two cheap curves is
+  **per-variant** (`DWS_TLS_ECDHE_PREFER_P256`, defaulting to `DWS_HW_ECC`): x25519 first on a die with no ECC
+  HW (S3), secp256r1 first on a die whose HW accelerates it (P4) - see the device-CPU subsection below. Every
+  curve stays enabled - this only reorders preference, so a peer that supports just one still connects.
 - Decomposition (CCOUNT `us/op` on the S3, `/bench/tls`): ECDHE shared-secret (variable base) **~142 ms**
   (x25519) / **~142 ms** (P-256) / **~333 ms** (P-521); ECDHE ephemeral gen (fixed base) ~57-142 ms; the
   fixed **ECDSA-P256 server signature is only ~63 ms**. So the _curve_ is what moves the handshake, not the
@@ -923,34 +925,41 @@ CPU spent inside the pumped `mbedtls_ssl_handshake` calls (network waits fall be
 time. Measured on the two S3 rigs and a wired **ESP32-P4** (`rig_s3_tls` twin, [`pentesting/rig_firmware/p4`](../pentesting/rig_firmware/p4);
 `perf/tls/tls_hs_time.py` + `s3_hs_investigate.py`):
 
-| Board / curve                       | device CPU |   wall | client-observed | ping RTT |
-| ----------------------------------- | ---------: | -----: | --------------: | -------: |
-| ESP32-S3 (240 MHz), x25519 ECDHE    |     453 ms | 458 ms |         ~498 ms |    ~6 ms |
-| ESP32-S3 (240 MHz), P-256 ECDHE     |     444 ms | 447 ms |               - |    ~6 ms |
-| ESP32-P4 (360 MHz), x25519 ECDHE    |          - |      - |         ~160 ms |    ~1 ms |
-| ESP32-P4 (360 MHz), **P-256 ECDHE** |          - |      - |      **~29 ms** |    ~1 ms |
+| Board / curve (ECDHE)                   | device CPU |   wall | client-observed | ping RTT |
+| --------------------------------------- | ---------: | -----: | --------------: | -------: |
+| ESP32-S3 (240 MHz), x25519 (default)    |     453 ms | 458 ms |         ~498 ms |    ~6 ms |
+| ESP32-S3 (240 MHz), P-256 (forced)      |     444 ms | 447 ms |               - |    ~6 ms |
+| ESP32-P4 (360 MHz), x25519 (forced)     |          - |      - |         ~160 ms |    ~1 ms |
+| ESP32-P4 (360 MHz), **P-256 (default)** |          - |      - |      **~29 ms** |    ~1 ms |
 
 - **The S3 handshake is compute-bound, not network-bound.** device-CPU 453 ms vs wall 458 ms (and a ~6 ms
   ping): the ~0.5 s is **~99% the chip doing math**, not WiFi. The two S3 boards agree to <1% (cross-board
   reproducible).
-- **On the S3 the ECDHE curve barely matters (453 vs 444 ms, ~9 ms).** The isolated `/bench/tls` op counts
-  suggest P-256 ECDHE is ~95 ms cheaper than x25519 (199 vs 294 ms), but that gap **collapses to 9 ms in the
-  full handshake** - so "prefer P-256 on the S3" is a red herring. And the real handshake CPU (453 ms) is
-  **~96 ms more than the raw ECDHE + ECDSA-sign** (294 + 63 = 357 ms from `/bench/tls`): that residual is the
-  mbedTLS handshake machinery (SHA-384 PRF/key schedule, cert handling, the Finished HMACs, AES-GCM setup). So
-  the ECDHE scalar mult is ~65% of the handshake, the signature ~14%, the machinery ~21% - not a single
-  dominant op.
+- **Where the S3's 453 ms goes (per-pump probe).** The probe also records per-flight CPU. Two flights carry
+  it: the server's ServerKeyExchange flight (ephemeral keygen + the ECDSA-P256 signature) is **~298 ms**, and
+  the ClientKeyExchange flight (the shared-secret mult + key derivation + the Finished messages) is **~155 ms**.
+  The second flight is ~155 ms ≈ the shared-secret X25519 mult (~149 ms) **+ only ~6 ms** - so the SHA-384 PRF
+  / key schedule / Finished HMACs cost almost nothing (the S3 has a HW SHA-512 engine). The isolated
+  `/bench/tls` ops (gen 145 + shared 149 + sign 63 = 357 ms) still undercount the live 453 ms by ~96 ms, and
+  that residual is **entirely in the ServerKeyExchange flight** (per-handshake mbedTLS work around the keygen
+  and signature, not the key schedule) - it is not attributed further here.
+- **On the S3 the ECDHE curve barely matters (453 vs 444 ms, ~9 ms).** The isolated `/bench/tls` counts suggest
+  P-256 ECDHE is ~95 ms cheaper than x25519 (199 vs 294 ms), but that gap **collapses to 9 ms in the full
+  handshake** - so on a no-ECC-HW die, x25519 (the security-preferred modern curve) is kept first for free.
 - **The ESP32-P4 has a hardware ECC accelerator (P-256 via mbedTLS `ecc_alt`), and it changes the picture
   completely.** `/bench/tls` on the P4: P-256 ECDHE (gen+shared) **10.4 ms** (vs the S3's 199 ms, **19x**) and
-  ECDSA-P256 sign **10.6 ms** (vs 63 ms, **5.9x**); x25519 stays software (132 ms, no HW path). So the
-  full-handshake wall-clock is **~160 ms with the default x25519** but **~29 ms when the client offers P-256**
-  (`Server Temp Key: ECDH, prime256v1` confirmed) - a **5.5x** win from routing the key exchange onto the HW
-  curve. The wired link also drops the RTT to ~1 ms.
-- **Actionable: the curve preference should be board-aware.** x25519-first (the shipped order) is right for the
-  S3 (no ECC HW, so x25519's modern-curve security is free) but leaves the P4's HW P-256 idle - preferring
-  P-256 on the P4 cuts its TLS handshake ~5.5x (160 → 29 ms). A P-256 ECDSA leaf also constrains the client's
-  `supported_groups` in TLS 1.2 (the group list gates the cert curve too), which is why a client offering no
-  P-256 fails outright against this rig.
+  ECDSA-P256 sign **10.6 ms** (vs 63 ms, **5.9x**); x25519 stays software (132 ms, no HW path).
+- **Board-aware curve preference (implemented + HW-verified).** `DWS_TLS_ECDHE_PREFER_P256` (defaulting to the
+  per-variant `DWS_HW_ECC`) leads the ECDHE group list with **secp256r1 on a die with HW NIST-ECC** (P4/C5/C6/
+  ...) and with **x25519 on a die without it** (S3/S2/classic); every curve stays enabled, so it only reorders
+  preference. Measured effect: the **P4's default handshake drops from ~160 ms (x25519) to ~29 ms (P-256), a
+  5.4x win** (`Server Temp Key: ECDH, prime256v1` confirmed, no client curve forcing), while the **S3 is
+  unchanged at ~498 ms x25519**. Getting there also fixed a latent bug: `board_profiles/board_profile.h` keyed
+  the chip select off `CONFIG_IDF_TARGET_*` but did not pull in `sdkconfig.h`, so any TU that included
+  `ServerConfig.h` before an esp header (e.g. `tls.cpp`) saw the macros undefined and **every board silently
+  fell through to the classic profile** (`DWS_HW_ECC 0`) - the P-256 preference never engaged until the header
+  pulled `sdkconfig.h` in itself. (A P-256 ECDSA leaf also constrains the client's TLS 1.2 `supported_groups` -
+  the group list gates the cert curve too - so a client offering no P-256 fails against this rig outright.)
 
 ### HTTP/2 over TLS (DWS_ENABLE_HTTP2, PSRAM)
 

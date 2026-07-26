@@ -2666,6 +2666,27 @@
 #endif
 
 /**
+ * @brief Lead the ECDHE curve/group preference with secp256r1 (P-256) instead of x25519.
+ *
+ * PER-VARIANT by default, because the ECC silicon differs wildly between dies. On a chip with a
+ * hardware NIST-ECC accelerator (`DWS_HW_ECC` = 1: ESP32-P4/C5/C6/C61/H2/H4/... where mbedTLS routes
+ * P-256 through the HW via `ecc_alt`), P-256 is dramatically faster than x25519, which stays software
+ * (measured on an ESP32-P4: P-256 ECDHE ~10 ms vs x25519 ~132 ms, and the full TLS handshake ~29 ms
+ * vs ~160 ms - a 5.5x win). On a chip WITHOUT ECC HW (`DWS_HW_ECC` = 0: ESP32-S3/S2/classic), both
+ * curves are software and near-identical in the full handshake, so x25519 (the security-preferred
+ * modern default) leads and this stays 0 (the S3 order is unchanged).
+ *
+ * So the default tracks `DWS_HW_ECC` - the profile's assertion that the die has NIST-ECC HW - and is
+ * overridable: force `-DDWS_TLS_ECDHE_PREFER_P256=0` to mandate x25519-first even on an ECC-HW chip
+ * (a deployment policy choice), or `=1` to prefer P-256 on a chip whose profile has not flagged HW ECC.
+ * This only reorders PREFERENCE; every curve stays enabled, so a peer that offers just one still
+ * connects. Applied to both the server and outbound-client configs (tls.cpp `tls_apply_curve_pref`).
+ */
+#ifndef DWS_TLS_ECDHE_PREFER_P256
+#define DWS_TLS_ECDHE_PREFER_P256 DWS_HW_ECC
+#endif
+
+/**
  * @brief Acknowledge that a MAX_TLS_CONNS > 1 build has been sized to fit.
  *
  * The whole TLS arena is static `.bss` and the internal `dram0_0_seg` ceiling is only

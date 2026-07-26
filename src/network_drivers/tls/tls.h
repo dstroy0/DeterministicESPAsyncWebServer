@@ -81,6 +81,8 @@ struct TlsHsBenchCtx
     volatile long long last_cpu_us;
     volatile long long last_wall_us;
     volatile unsigned count;
+    volatile long long pumps[8]; // per-pump device CPU (us) for pumps > 2 ms - localizes the cost to a flight
+    volatile int n_pumps;
 };
 extern TlsHsBenchCtx dws_tls_hs_bench;
 #endif

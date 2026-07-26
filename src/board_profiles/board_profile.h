@@ -31,6 +31,20 @@
 #ifndef DWS_BOARD_PROFILE_H
 #define DWS_BOARD_PROFILE_H
 
+// The chip / flash / PSRAM selection below keys off the ESP-IDF sdkconfig macros (CONFIG_IDF_TARGET_*,
+// CONFIG_ESPTOOLPY_FLASHSIZE_*, CONFIG_SPIRAM_SIZE). sdkconfig.h is NOT force-included in every translation
+// unit, and ServerConfig.h pulls this header in before any esp/Arduino header - so a TU that includes
+// ServerConfig.h first (e.g. tls.cpp) would see none of those macros and EVERY board would silently fall
+// through to the classic floor (wrong sizing + HW-accel flags, and inconsistent with TUs that happen to pull
+// an Arduino header in first). Pull sdkconfig.h in here when it is on the include path (all ESP-IDF /
+// Arduino-ESP32 builds have it) so the detection is include-order-independent. It is absent on host/native
+// builds, where the classic profile is the correct choice anyway.
+#if defined(__has_include)
+#if __has_include("sdkconfig.h")
+#include "sdkconfig.h"
+#endif
+#endif
+
 // --- flash size (MB): honor an explicit -DDWS_FLASH_MB, else read the ESP-IDF sdkconfig ---
 #if !defined(DWS_FLASH_MB)
 #if defined(CONFIG_ESPTOOLPY_FLASHSIZE_32MB)
