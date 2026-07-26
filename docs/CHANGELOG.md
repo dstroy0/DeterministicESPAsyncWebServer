@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.174.0] - 2026-07-26
+
+<details>
+<summary><b>Show Changelog for version 7.174.0 - 2026-07-26</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`0841963`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08419630fa693a3ef7e75a48cdad41de1c2d8e41))
+
+### Changes
+
+- Bump version: 7.173.3 → 7.174.0 ([`ee68cb5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee68cb557af0edf3ebb5263aaac4a6d6938e980e))
+
+### Performance
+
+- board-aware ECDHE curve preference (P4 5.4x) + fix profile include-order bug ([`8cd3c55`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8cd3c55724f221df1fee0642b81dadfa4218dc64))
+
+</details>
+
 ## [7.173.3] - 2026-07-26
 
 <details>
