@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.175.0] - 2026-07-26
+
+<details>
+<summary><b>Show Changelog for version 7.175.0 - 2026-07-26</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`eff602a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eff602a1f1333c32d5fd023ed956f80d35634d72))
+
+### Changes
+
+- Bump version: 7.174.0 → 7.175.0 ([`1c9b0e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c9b0e27440b74a4979d2a7dcdf577ec4492266a))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9799d11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9799d11f976a4dd0487c8dddd8422920867b95e0))
+
+### Performance
+
+- HW-accelerate x25519/ed25519 on the ESP32-P4 (RSA MODMULT, 6.6x) ([`6719bec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6719bec83930136ed183dedc9667ec5bc0c9a3be))
+
+</details>
+
 ## [7.174.0] - 2026-07-26
 
 <details>
