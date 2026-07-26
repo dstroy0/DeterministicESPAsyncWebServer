@@ -195,14 +195,7 @@ bool dws_ecdsa_p256_ecdh(uint8_t shared_x[DWS_ECDSA_P256_COORD_LEN], const uint8
 #include "crypto/hmac_sha256.h"
 
 #ifdef DWS_ECDSA_MPI_HW
-#include "soc/hwcrypto_reg.h" // RSA/MPI accelerator register map (MODMULT)
-#include "soc/soc.h"          // DR_REG_RSA_BASE
-extern "C"
-{
-    void esp_mpi_enable_hardware_hw_op(void);  // mbedTLS port: acquire the MPI lock + clock/power the peripheral
-    void esp_mpi_disable_hardware_hw_op(void); // release the lock + power down
-}
-#define SSH_RSA_REG(a) (*(volatile uint32_t *)(a))
+#include "crypto/hal/esp_crypto_hal.h" // dws_rsa_modmul + dws_rsa_hw_acquire/release (the RSA-register owner)
 #endif
 
 namespace
@@ -328,35 +321,17 @@ void fp_reduce_once(uint32_t r[8], const uint32_t a[8], const uint32_t m[8])
 // block makes MODMULT return the plain residue (the esp_mpi_mul_mpi_mod convention). Output canonical (< m).
 void fp_mul(uint32_t z[8], const uint32_t x[8], const uint32_t y[8], const Fp *F) // safe if z aliases x/y
 {
-    volatile uint32_t *M = (volatile uint32_t *)RSA_MEM_M_BLOCK_BASE;
-    volatile uint32_t *X = (volatile uint32_t *)RSA_MEM_X_BLOCK_BASE;
-    volatile uint32_t *Y = (volatile uint32_t *)RSA_MEM_Y_BLOCK_BASE;
-    volatile uint32_t *Z = (volatile uint32_t *)RSA_MEM_Z_BLOCK_BASE;
-    SSH_RSA_REG(RSA_LENGTH_REG) = 8 - 1; // mode = words - 1
-    SSH_RSA_REG(RSA_M_DASH_REG) = F->mprime;
-    for (int i = 0; i < 8; i++)
-    {
-        M[i] = F->m[i];
-        X[i] = x[i];
-        Y[i] = y[i];
-        Z[i] = F->r2[i]; // r = R^2 mod m -> plain (non-Montgomery) output
-    }
-    SSH_RSA_REG(RSA_CLEAR_INTERRUPT_REG) = 1;
-    SSH_RSA_REG(RSA_MOD_MULT_START_REG) = 1;
-    while (SSH_RSA_REG(RSA_QUERY_INTERRUPT_REG) == 0)
-        ;
-    SSH_RSA_REG(RSA_CLEAR_INTERRUPT_REG) = 1;
-    for (int i = 0; i < 8; i++)
-        z[i] = Z[i];
+    // Same 256-bit RSA MODMULT the 25519 field layer uses, parameterized by the domain (mod p or mod n): the
+    // HAL owns the register access; here we only pass this domain's {m, m', R^2 mod m}. Output canonical (< m).
+    dws_rsa_modmul(z, x, y, F->m, F->mprime, F->r2, 8);
 }
 void ecdsa_hw_on()
 {
-    esp_mpi_enable_hardware_hw_op();    // lock + clock/power the peripheral
-    SSH_RSA_REG(RSA_INTERRUPT_REG) = 0; // poll only, no completion IRQ
+    dws_rsa_hw_acquire();
 }
 void ecdsa_hw_off()
 {
-    esp_mpi_disable_hardware_hw_op(); // release the lock + power down
+    dws_rsa_hw_release();
 }
 #else
 // acc[0..7] >= m[0..7]? Compares the low 8 limbs from the most significant down.
