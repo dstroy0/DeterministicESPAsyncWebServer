@@ -3,14 +3,15 @@
 
 /**
  * @file fe25519.h
- * @brief ESP32-S3 GF(2^255-19) field layer on the RSA/MPI hardware accelerator (X25519 + Ed25519).
+ * @brief Per-variant GF(2^255-19) field layer on the RSA/MPI hardware accelerator (X25519 + Ed25519).
  *
  * Field elements are canonical `uint32[8]` (< p = 2^255-19) so every field multiply is a single
- * 256-bit modular multiply on the S3 RSA accelerator (~1,386 cycles vs 7,955 for the software SIMD
- * `dws_gf_mul`). add/sub are native 32-bit (carry + one conditional subtract of p); bytes<->fe is a
- * per-scalar-mult conversion, not per multiply. This is the shared engine behind both the X25519 KEX
- * (`dws_curve25519.cpp`) and the Ed25519 host-key signature (`dws_ed25519.cpp`) on the S3; the
- * radix-2^16 `dws_gf` path is the native / non-S3 fallback in both.
+ * 256-bit modular multiply on the RSA accelerator (S3: ~1,386 cycles vs 7,955 for the software SIMD
+ * `dws_gf_mul`; P4: ~2,118 cycles / 5.9 us). add/sub are native 32-bit (carry + one conditional subtract
+ * of p); bytes<->fe is a per-scalar-mult conversion, not per multiply. This is the shared engine behind
+ * both the X25519 KEX (`dws_curve25519.cpp`) and the Ed25519 host-key signature (`dws_ed25519.cpp`) on
+ * every die with a single-shot hardware MODMULT (S3 hw_ver1, P4 and newer hw_ver3 - see the gate below);
+ * the radix-2^16 `dws_gf` path is the native / classic-ESP32 fallback in both.
  *
  * The accelerator (and its lock) are shared with mbedTLS RSA/DH, so a scalar-mult brackets itself with
  * `dws_fe_hw_enable()` / `dws_fe_hw_disable()` (mbedTLS's own `esp_mpi_{enable,disable}_hardware_hw_op`,
@@ -26,12 +27,17 @@
 #include <stdint.h>
 
 #ifdef ARDUINO
-#include "sdkconfig.h" // CONFIG_IDF_TARGET_ESP32S3
+#include "sdkconfig.h" // CONFIG_IDF_TARGET_* selects the die
 #endif
 
-// Gated to Arduino on the S3: the field layer drives the RSA peripheral through mbedTLS's port
-// (esp_mpi_*), which only exists in the on-device toolchain.
-#if defined(ARDUINO) && defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
+// The GF(2^255-19) field layer runs each multiply as one 256-bit modular multiply on the RSA/MPI
+// accelerator (esp_mpi_*, which exists only in the on-device toolchain). Enabled PER-VARIANT on every
+// die with a single-shot hardware MODMULT op: the ESP32-S3 (older "hw_ver1" RSA register names) and the
+// ESP32-P4 and newer (the "hw_ver3" names). The classic ESP32 has no single-shot MODMULT - it needs two
+// MULT passes (see esp_mpi_mul_mpi_mod_hw_op) - so it keeps the software radix-2^16 ladder. Add a die to
+// this list once its rig has passed the on-device RFC KAT (test/interop + main_cryptobench).
+#if defined(ARDUINO) && ((defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3) ||                          \
+                         (defined(CONFIG_IDF_TARGET_ESP32P4) && CONFIG_IDF_TARGET_ESP32P4))
 #define DWS_FE25519_MPI_HW 1
 #endif
 
@@ -48,6 +54,37 @@ extern "C"
 
 #define SSH_RSA_REG(a) (*(volatile uint32_t *)(a))
 
+// The RSA MODMULT register set was renamed between silicon generations. Key off the macro the die's
+// soc/rsa_reg.h actually defines so one code path serves both: the modular-multiply sequence, the
+// Montgomery constants, and the "poll until the done/idle bit reads 1" completion are identical - only
+// the register names (and the done bit's name: INTERRUPT vs IDLE) differ. Verified byte-exact against
+// the RFC 8032 / RFC 6979 KATs on both an S3 (hw_ver1) and a P4 (hw_ver3).
+#if defined(RSA_SET_START_MODMULT_REG) // hw_ver3: ESP32-P4 and newer
+#define DWS_RSA_MEM_M RSA_M_MEM
+#define DWS_RSA_MEM_X RSA_X_MEM
+#define DWS_RSA_MEM_Y RSA_Y_MEM
+#define DWS_RSA_MEM_Z RSA_Z_MEM
+#define DWS_RSA_MODE RSA_MODE_REG      // operand length in words, minus 1
+#define DWS_RSA_MPRIME RSA_M_PRIME_REG // Montgomery m' (mod 2^32)
+#define DWS_RSA_START RSA_SET_START_MODMULT_REG
+#define DWS_RSA_DONE RSA_QUERY_IDLE_REG // reads 1 once the accelerator is idle (op complete)
+#define DWS_RSA_INTCLR RSA_INT_CLR_REG
+#define DWS_RSA_INTENA RSA_INT_ENA_REG
+#elif defined(RSA_MOD_MULT_START_REG) // hw_ver1: ESP32-S3 / S2
+#define DWS_RSA_MEM_M RSA_MEM_M_BLOCK_BASE
+#define DWS_RSA_MEM_X RSA_MEM_X_BLOCK_BASE
+#define DWS_RSA_MEM_Y RSA_MEM_Y_BLOCK_BASE
+#define DWS_RSA_MEM_Z RSA_MEM_Z_BLOCK_BASE
+#define DWS_RSA_MODE RSA_LENGTH_REG
+#define DWS_RSA_MPRIME RSA_M_DASH_REG
+#define DWS_RSA_START RSA_MOD_MULT_START_REG
+#define DWS_RSA_DONE RSA_QUERY_INTERRUPT_REG // reads 1 once the op raises its completion bit
+#define DWS_RSA_INTCLR RSA_CLEAR_INTERRUPT_REG
+#define DWS_RSA_INTENA RSA_INTERRUPT_REG
+#else
+#error "DWS_FE25519_MPI_HW: no known RSA MODMULT register set for this target - add its die to the gate"
+#endif
+
 /** @brief A field element of GF(2^255-19): canonical, eight little-endian 32-bit limbs (< p). */
 typedef uint32_t fe[8];
 
@@ -62,8 +99,8 @@ static const uint32_t FE_MOD_R2[8] = {0x000005a4u, 0, 0, 0, 0, 0, 0, 0};
 // Acquire the accelerator (lock + power) for a scalar-mult, and drop it after. Bracket every run.
 static inline void dws_fe_hw_enable(void)
 {
-    esp_mpi_enable_hardware_hw_op();    // lock + clock/power the peripheral
-    SSH_RSA_REG(RSA_INTERRUPT_REG) = 0; // poll only, no completion IRQ
+    esp_mpi_enable_hardware_hw_op(); // lock + clock/power the peripheral (waits for its memory-init)
+    SSH_RSA_REG(DWS_RSA_INTENA) = 0; // poll only, no completion IRQ
 }
 static inline void dws_fe_hw_disable(void)
 {
@@ -73,24 +110,24 @@ static inline void dws_fe_hw_disable(void)
 // z = x*y mod p (8 words / 256-bit). Requires dws_fe_hw_enable() first. Output is always canonical (< p).
 static inline void fe_mul(fe z, const fe x, const fe y) // safe if z aliases x/y
 {
-    volatile uint32_t *M = (volatile uint32_t *)RSA_MEM_M_BLOCK_BASE;
-    volatile uint32_t *X = (volatile uint32_t *)RSA_MEM_X_BLOCK_BASE;
-    volatile uint32_t *Y = (volatile uint32_t *)RSA_MEM_Y_BLOCK_BASE;
-    volatile uint32_t *Z = (volatile uint32_t *)RSA_MEM_Z_BLOCK_BASE;
-    SSH_RSA_REG(RSA_LENGTH_REG) = 8 - 1; // mode = words - 1
-    SSH_RSA_REG(RSA_M_DASH_REG) = FE_MOD_MPRIME;
+    volatile uint32_t *M = (volatile uint32_t *)DWS_RSA_MEM_M;
+    volatile uint32_t *X = (volatile uint32_t *)DWS_RSA_MEM_X;
+    volatile uint32_t *Y = (volatile uint32_t *)DWS_RSA_MEM_Y;
+    volatile uint32_t *Z = (volatile uint32_t *)DWS_RSA_MEM_Z;
+    SSH_RSA_REG(DWS_RSA_MODE) = 8 - 1; // mode = words - 1
+    SSH_RSA_REG(DWS_RSA_MPRIME) = FE_MOD_MPRIME;
     for (int i = 0; i < 8; i++)
     {
         M[i] = FE_MOD_P[i];
         X[i] = x[i];
         Y[i] = y[i];
-        Z[i] = FE_MOD_R2[i]; // r = R^2 mod p in the result block -> plain (non-Montgomery) output
+        Z[i] = FE_MOD_R2[i]; // Rinv = R^2 mod p in the result block -> plain (non-Montgomery) output
     }
-    SSH_RSA_REG(RSA_CLEAR_INTERRUPT_REG) = 1; // clear any stale done flag before starting
-    SSH_RSA_REG(RSA_MOD_MULT_START_REG) = 1;
-    while (SSH_RSA_REG(RSA_QUERY_INTERRUPT_REG) == 0)
+    SSH_RSA_REG(DWS_RSA_INTCLR) = 1; // clear any stale done flag before starting
+    SSH_RSA_REG(DWS_RSA_START) = 1;
+    while (SSH_RSA_REG(DWS_RSA_DONE) == 0) // wait until the done/idle bit reads 1
         ;
-    SSH_RSA_REG(RSA_CLEAR_INTERRUPT_REG) = 1;
+    SSH_RSA_REG(DWS_RSA_INTCLR) = 1;
     for (int i = 0; i < 8; i++)
         z[i] = Z[i];
 }

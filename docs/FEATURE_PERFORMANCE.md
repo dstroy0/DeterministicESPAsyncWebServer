@@ -422,8 +422,8 @@ host column is the software variable-base ladder (the comb is an S3 flash table 
   `ee.ld.128.usar` is byte-exact but only ~1.4% faster (7,955 vs 8,067 cycles), so it was not shipped. X25519
   gains more than ed25519 because ed25519's Edwards scalar-mult is multiply-dominated (fewer squarings). The
   paragraph below is the pre-SIMD baseline.
-- **The GF(2^255-19) field layer runs on the RSA/MPI hardware MODMULT (SHIPPED, ESP32-S3) - X25519 97.5 -> 22.65
-  ms (4.31x) AND ed25519_sign 380.3 -> 85.6 ms (4.44x).** Field elements are canonical `uint32[8] mod p` and each
+- **The GF(2^255-19) field layer runs on the RSA/MPI hardware MODMULT (SHIPPED, ESP32-S3 + ESP32-P4) - X25519
+  97.5 -> 22.65 ms (4.31x) AND ed25519_sign 380.3 -> 85.6 ms (4.44x) on the S3.** Field elements are canonical `uint32[8] mod p` and each
   field multiply is one **256-bit modular multiply** `Z = X*Y mod p` on the RSA accelerator, driven
   **register-direct with static buffers (zero heap)**: load `M,X,Y` + `r=R^2 mod p` into the result block + `M'`,
   trigger `MOD_MULT`, read `Z` (add/sub are native 32-bit carry + conditional-subtract-p; the inversions are
@@ -438,7 +438,18 @@ host column is the software variable-base ladder (the comb is an S3 flash table 
   shares the accelerator (and its lock) with mbedTLS RSA/DH, so each scalar-mult brackets itself with
   `esp_mpi_{enable,disable}_hardware_hw_op()` - the same lock+power bring-up mbedTLS uses - and holds the lock for
   its run (a handshake is infrequent; per-multiply toggling would cost more than it saves). Guarded
-  `#if defined(ARDUINO) && CONFIG_IDF_TARGET_ESP32S3`, with the SIMD/scalar `dws_gf` ladder as the fallback.
+  **per-variant** on every die with a single-shot HW MODMULT, keyed off the die's own RSA register set: the S3
+  (hw_ver1 register names) and the **ESP32-P4 and newer** (hw_ver3). The MODMULT sequence and Montgomery
+  constants are identical - only the register names (and the done-bit's name, INTERRUPT vs IDLE) differ. The
+  classic ESP32 has no single-shot MODMULT (it takes two MULT passes) so it keeps the SIMD/scalar `dws_gf`
+  ladder, as does native.
+- **ESP32-P4 (HW MODMULT, hw_ver3): X25519 19.9 ms, ed25519_sign 15.5 ms, one `fe_mul` 2,118 cyc / 5.9 us**
+  (`rig_s3_cryptobench`'s P4 twin `pentesting/rig_firmware/p4/P4CryptoBench`, `-Og`, 360 MHz). The P4 has no
+  software 25519 HW path otherwise (its dedicated ECC accelerator does only NIST P-192/P-256), so this takes the
+  P4's X25519 from ~131 ms (mbedTLS software) to 19.9 ms (**6.6x**) and its Ed25519 host-key sign into 15.5 ms -
+  the whole SSH/QUIC ed25519 handshake (2 X25519 + one comb sign) drops from ~0.5 s of software crypto to **~55
+  ms** of device compute. Byte-exact: the on-device RFC 8032 §7.1 Ed25519 KAT passes on the P4 (the P-256 ECDSA
+  stays on the P4's faster dedicated ECC HW via mbedTLS `ecc_alt`, so it is left there, not moved to MODMULT).
   **HTTP/3 shares the same `dws_x25519` + `dws_ed25519`, so the QUIC handshake gets the win too.** The
   reproducible probe lives in `pentesting/rig_firmware/src/main_ssh.cpp` under `DWS_SSH_BENCH`.
 - **`-O2` does not speed up the crypto (measured).** Rebuilt `rig_s3_ssh` at `-O2` (pre-MODMULT SIMD build):
