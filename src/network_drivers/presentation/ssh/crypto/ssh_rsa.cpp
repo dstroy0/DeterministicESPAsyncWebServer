@@ -16,14 +16,7 @@
 #include <string.h>
 
 // Public host key (BSS - no secret material).
-SshRsaPubKey ssh_host_pubkey;
-
-#ifdef ARDUINO
-
-// ---------------------------------------------------------------------------
-// Arduino - cached mbedtls host-key signer (NVS-backed)
-// ---------------------------------------------------------------------------
-
+#if defined(ARDUINO)
 #include <Preferences.h> // ESP-IDF NVS wrapper
 #include <esp_random.h>  // esp_fill_random() for the RSA blinding RNG
 #include <freertos/FreeRTOS.h>
@@ -31,6 +24,14 @@ SshRsaPubKey ssh_host_pubkey;
 #include <mbedtls/md.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/rsa.h>
+#endif
+SshRsaPubKey ssh_host_pubkey;
+
+#ifdef ARDUINO
+
+// ---------------------------------------------------------------------------
+// Arduino - cached mbedtls host-key signer (NVS-backed)
+// ---------------------------------------------------------------------------
 
 // RNG callback for mbedtls private-key operations (mbedtls v3 requires a real f_rng for RSA blinding).
 static int ssh_mbedtls_rng(void *ctx, unsigned char *buf, size_t len)

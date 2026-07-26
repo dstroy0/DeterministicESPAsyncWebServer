@@ -18,6 +18,11 @@
 
 #include <string.h>
 
+#if defined(ARDUINO)
+#include "services/i2c.h"
+#include <Arduino.h>
+#include <Wire.h>
+#endif
 uint16_t dws_mpr121_touched(uint8_t status_lo, uint8_t status_hi)
 {
     return (uint16_t)(((uint16_t)status_lo | ((uint16_t)status_hi << 8)) & 0x0FFF);
@@ -86,10 +91,6 @@ size_t dws_mpr121_build_init(uint8_t *buf, size_t cap, uint8_t n, uint8_t touch_
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include "services/i2c.h"
-#include <Arduino.h>
-#include <Wire.h>
 
 namespace
 {

@@ -16,6 +16,9 @@
 
 #include <string.h>
 
+#if defined(ARDUINO)
+#include <Arduino.h>
+#endif
 namespace
 {
 const uint8_t HDR[4] = {0xF4, 0xF3, 0xF2, 0xF1};
@@ -206,8 +209,6 @@ bool dws_hmmd_ack_matches(const HmmdAck *ack, uint16_t word)
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include <Arduino.h>
 
 namespace
 {

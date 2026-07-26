@@ -10,6 +10,9 @@
 
 #if DWS_ENABLE_BUS_CAPTURE
 
+#if defined(ARDUINO)
+#include "driver/twai.h"
+#endif
 size_t can_to_socketcan(const CanFrame *f, uint8_t *out, size_t cap)
 {
     if (!f || !out || cap < DWS_SOCKETCAN_FRAME_LEN)
@@ -38,8 +41,6 @@ size_t can_to_socketcan(const CanFrame *f, uint8_t *out, size_t cap)
 
 // --- ESP32 TWAI (CAN) binding ------------------------------------------------------------
 #ifdef ARDUINO
-
-#include "driver/twai.h"
 
 namespace
 {

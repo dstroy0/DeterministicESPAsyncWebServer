@@ -15,6 +15,12 @@
 
 #include <stdio.h>
 
+#if defined(ARDUINO)
+#include "esp_heap_caps.h"
+#include "esp_system.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#endif
 uint8_t dws_guardrail_eval(const DWSHealth *h, uint32_t heap_min, uint32_t frag_min_block, uint32_t stack_min)
 {
     uint8_t b = DWSBreach::DWS_BREACH_NONE;
@@ -50,11 +56,6 @@ int dws_health_json(const DWSHealth *h, char *out, size_t cap)
 }
 
 #ifdef ARDUINO
-
-#include "esp_heap_caps.h"
-#include "esp_system.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 
 namespace
 {

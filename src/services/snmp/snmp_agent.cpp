@@ -16,6 +16,7 @@
 #include "services/snmp/snmp_v3.h"
 #endif
 
+#include "network_drivers/transport/udp.h"
 #if defined(ARDUINO)
 #include <Arduino.h>
 static uint32_t dws_snmp_uptime_cs()
@@ -684,8 +685,6 @@ size_t dws_snmp_agent_process(const uint8_t *req, size_t req_len, uint8_t *resp,
 // ---------------------------------------------------------------------------
 // UDP binding (via the transport-layer UDP service - no lwIP here)
 // ---------------------------------------------------------------------------
-
-#include "network_drivers/transport/udp.h"
 
 // All SNMP UDP-binding state, owned by one instance (internal linkage): the response scratch
 // (the request is transport-owned), so it is one named owner, unreachable cross-TU.

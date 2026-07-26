@@ -16,6 +16,13 @@
 // Pure decision
 // ---------------------------------------------------------------------------
 
+#if defined(ARDUINO)
+#include <Arduino.h>
+#include <esp_system.h>
+#endif
+#if defined(ARDUINO) && defined(CONFIG_BT_ENABLED)
+#include <esp_bt.h>
+#endif
 void dws_power_cfg_defaults(PowerCfg *cfg)
 {
     if (!cfg)
@@ -97,13 +104,6 @@ size_t dws_power_json(const PowerPlan *plan, int16_t temp_c, char *out, size_t c
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include <Arduino.h>
-#include <esp_system.h>
-
-#if defined(CONFIG_BT_ENABLED)
-#include <esp_bt.h>
-#endif
 
 /** @brief Owned state: the latched boot reason and whether BT has already been released. */
 struct PowerCtx

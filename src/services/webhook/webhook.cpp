@@ -15,6 +15,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#if DWS_ENABLE_HTTP_CLIENT
+#include "services/http_client/http_client.h"
+#endif
 namespace
 {
 bool put(char *out, size_t cap, size_t *pos, const char *s)
@@ -113,8 +116,6 @@ int dws_ifttt_payload(const char *v1, const char *v2, const char *v3, char *out,
 }
 
 #if DWS_ENABLE_HTTP_CLIENT
-
-#include "services/http_client/http_client.h"
 
 int dws_webhook_post(const char *url, const char *json)
 {

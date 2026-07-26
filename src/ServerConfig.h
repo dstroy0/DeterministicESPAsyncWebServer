@@ -7162,6 +7162,6 @@ static_assert((unsigned)ConnProto::PROTO_MESH < DWS_PROTO_MAX, "DWS_PROTO_MAX mu
 
 // Final sizing pass: raise buffers to the floors the enabled features require (every DWS_ENABLE_*
 // flag is resolved by this point). Kept in the board-profile layer, not inline above.
-#include "board_profiles/derived_sizing.h"
+#include "board_profiles/derived_sizing.h" // DWS_ALLOW_LATE_INCLUDE: ordered - derives sizes from the DWS_ENABLE_* flags resolved above
 
 #endif

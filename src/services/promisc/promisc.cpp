@@ -13,6 +13,9 @@
 
 #include <string.h>
 
+#if defined(ARDUINO)
+#include <esp_wifi.h>
+#endif
 bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
 {
     if (!frame || !out || len < 10) // FC(2) + Duration(2) + Addr1(6) - the shortest control frame
@@ -90,8 +93,6 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
 
 // --- ESP32 radio binding -----------------------------------------------------------------
 #ifdef ARDUINO
-
-#include <esp_wifi.h>
 
 namespace
 {

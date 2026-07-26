@@ -20,6 +20,9 @@
 
 #include "shared_primitives/fmtbuf.h"
 
+#if defined(ARDUINO)
+#include <Arduino.h>
+#endif
 const char *dws_gpio_dir_name(DWSGpioDir dir)
 {
     switch (dir)
@@ -106,8 +109,6 @@ bool dws_gpio_is_output(const DWSGpioPin *pins, uint8_t count, uint8_t pin)
 }
 
 #ifdef ARDUINO
-
-#include <Arduino.h>
 
 void dws_gpio_begin_pins(const DWSGpioPin *pins, uint8_t count)
 {

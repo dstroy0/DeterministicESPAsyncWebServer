@@ -15,6 +15,10 @@
 #include <string.h>
 
 // The two mandatory bindings of any v2c/v3 notification (RFC 3416 4.2.6).
+#if defined(ARDUINO)
+#include "network_drivers/transport/udp.h"
+#include <Arduino.h>
+#endif
 static const uint32_t OID_SYSUPTIME_0[] = {1, 3, 6, 1, 2, 1, 1, 3, 0};
 static const uint32_t OID_SNMPTRAPOID_0[] = {1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0};
 
@@ -106,9 +110,6 @@ size_t dws_snmp_notify_build_v2c(uint8_t *out, size_t cap, const char *community
 // Transport (ESP32 only)
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
-
-#include "network_drivers/transport/udp.h"
-#include <Arduino.h>
 
 // All SNMP-notify transport state, owned by one instance (internal linkage): the trap
 // request-id counter, so it is one named owner, unreachable from any other translation unit.

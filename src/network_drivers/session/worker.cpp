@@ -13,6 +13,11 @@
 #include "network_drivers/session/worker.h"
 #include <atomic>
 
+#if defined(ARDUINO)
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
+#endif
 namespace
 {
 // Per-task worker id. Default 0: the user loop(), the lwIP thread, and unit tests
@@ -40,10 +45,6 @@ void dws_worker_set_self(int id)
 // ---------------------------------------------------------------------------
 
 #ifdef ARDUINO
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "freertos/task.h"
 
 namespace
 {

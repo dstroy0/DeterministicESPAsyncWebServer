@@ -13,6 +13,9 @@
 
 #include <string.h> // memcpy, strlen
 
+#if defined(ARDUINO)
+#include "network_drivers/transport/udp.h"
+#endif
 namespace
 {
 // Case-insensitive ASCII string equality (DNS names are case-insensitive).
@@ -193,8 +196,6 @@ void dws_dns_server_clear()
 }
 
 #if defined(ARDUINO)
-
-#include "network_drivers/transport/udp.h"
 
 namespace
 {

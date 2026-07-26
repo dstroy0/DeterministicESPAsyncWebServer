@@ -16,6 +16,9 @@
 
 #include "shared_primitives/ghash.h"
 #include <string.h>
+#if !defined(ARDUINO)
+#include "shared_primitives/aes_block.h" // native software AES-128 (Arduino uses the mbedtls HW block below)
+#endif
 
 // ===========================================================================
 // AES-128 single-block primitive
@@ -40,8 +43,6 @@ void dws_quic_aes128_wipe(QuicAes128 *ctx)
 }
 
 #else // Native software AES-128
-
-#include "shared_primitives/aes_block.h"
 
 void dws_quic_aes128_init(QuicAes128 *ctx, const uint8_t key[16])
 {

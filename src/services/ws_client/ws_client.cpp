@@ -21,6 +21,15 @@
 // Pure codec (host-testable)
 // ---------------------------------------------------------------------------
 
+#if defined(ARDUINO)
+#include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
+#include <Arduino.h>
+#include <esp_system.h> // esp_fill_random (per-frame masking key)
+#endif
+#if defined(ARDUINO) && DWS_ENABLE_WS_CLIENT_TLS
+#include "network_drivers/tls/tls.h"
+#include <mbedtls/ssl.h>
+#endif
 static const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 void ws_client_accept_for_key(const char *key_b64, char *out, size_t out_cap)
@@ -212,15 +221,6 @@ bool ws_client_parse_frame(const uint8_t *buf, size_t avail, uint8_t *opcode, bo
 // with wss:// over a persistent client TLS session (dws_tls csess).
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
-
-#include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
-#include <Arduino.h>
-#include <esp_system.h> // esp_fill_random (per-frame masking key)
-
-#if DWS_ENABLE_WS_CLIENT_TLS
-#include "network_drivers/tls/tls.h"
-#include <mbedtls/ssl.h>
-#endif
 
 #ifdef DWS_WS_CLIENT_DEBUG
 #define WSC_DBG(...) printf(__VA_ARGS__)

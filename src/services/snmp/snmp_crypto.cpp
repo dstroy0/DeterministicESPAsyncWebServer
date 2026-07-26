@@ -16,6 +16,7 @@
 // Zero key material with a volatile loop the compiler cannot optimize away. A
 // plain memset() whose result is never observed (the buffer dies at return) may
 // be elided as a dead store, leaving secrets on the stack. Same idiom as ssh_wipe.
+#include "shared_primitives/aes_sbox.h"
 static inline void dws_snmp_wipe(void *p, size_t n)
 {
     volatile uint8_t *v = (volatile uint8_t *)p;
@@ -74,8 +75,6 @@ void dws_snmp_usm_localize_key(const char *password, const uint8_t *engine_id, s
 // ---------------------------------------------------------------------------
 // AES-128 (FIPS-197) block encrypt + CFB-128 mode
 // ---------------------------------------------------------------------------
-
-#include "shared_primitives/aes_sbox.h"
 
 static const uint8_t kRcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
 

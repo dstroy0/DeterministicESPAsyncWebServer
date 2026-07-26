@@ -13,6 +13,14 @@
 
 #if DWS_ENABLE_DNS_RESOLVER
 
+#if defined(ARDUINO)
+#include "lwip/def.h"
+#include "lwip/dns.h"
+#include "lwip/ip_addr.h"
+#include "lwip/priv/tcpip_priv.h"
+#include "services/clock.h" // dws_millis() - the single pluggable monotonic source
+#include <Arduino.h>
+#endif
 DWSIpClass dws_dns_resolver_classify(uint32_t ip)
 {
     if (ip == 0u)
@@ -51,13 +59,6 @@ bool dws_dns_resolver_verify(uint32_t ip)
 }
 
 #ifdef ARDUINO
-
-#include "lwip/def.h"
-#include "lwip/dns.h"
-#include "lwip/ip_addr.h"
-#include "lwip/priv/tcpip_priv.h"
-#include "services/clock.h" // dws_millis() - the single pluggable monotonic source
-#include <Arduino.h>
 
 namespace
 {

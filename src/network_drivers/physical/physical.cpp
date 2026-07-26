@@ -23,6 +23,10 @@
 #include <ETH.h>
 #endif
 
+#if DWS_ENABLE_IPV6
+#include "lwip/ip6_addr.h"
+#include <string.h>
+#endif
 bool init_wifi_physical(const char *ssid, const char *password)
 {
     WiFi.begin(ssid, password);
@@ -80,8 +84,6 @@ bool eth_ready(void)
 #endif
 
 #if DWS_ENABLE_IPV6
-#include "lwip/ip6_addr.h"
-#include <string.h>
 
 bool init_ipv6_physical(void)
 {

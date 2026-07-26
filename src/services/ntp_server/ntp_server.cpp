@@ -13,6 +13,11 @@
 
 #include <string.h> // memset, memcpy
 
+#if defined(ARDUINO)
+#include "network_drivers/transport/udp.h"
+#include "services/clock.h"
+#include "services/time_source/time_source.h"
+#endif
 namespace
 {
 void put_be32(uint8_t *p, uint32_t v)
@@ -51,10 +56,6 @@ size_t dws_ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t
 }
 
 #if defined(ARDUINO)
-
-#include "network_drivers/transport/udp.h"
-#include "services/clock.h"
-#include "services/time_source/time_source.h"
 
 namespace
 {

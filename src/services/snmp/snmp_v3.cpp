@@ -16,6 +16,10 @@
 #include "services/snmp/snmp_crypto.h"
 #include <string.h>
 
+#if DWS_ENABLE_SNMP_TRAP
+#include "network_drivers/transport/udp.h"
+#include "services/snmp/snmp_notify.h"
+#endif
 #if defined(ARDUINO)
 #include <Arduino.h>
 static uint32_t dws_snmp_v3_uptime_s()
@@ -511,8 +515,6 @@ size_t dws_snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, si
 }
 
 #if DWS_ENABLE_SNMP_TRAP
-#include "network_drivers/transport/udp.h"
-#include "services/snmp/snmp_notify.h"
 
 // Shared SNMPv3 USM notification path: authenticated, and encrypted when a
 // privacy password is configured. Reuses the engine ID + localized keys from

@@ -19,6 +19,9 @@
 
 #include <string.h>
 
+#if defined(ARDUINO)
+#include <Arduino.h>
+#endif
 namespace
 {
 const uint8_t HDR[4] = {0xF4, 0xF3, 0xF2, 0xF1};
@@ -273,8 +276,6 @@ bool dws_ld2410_ack_mac(const Ld2410Ack *ack, uint8_t mac[6])
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include <Arduino.h>
 
 namespace
 {

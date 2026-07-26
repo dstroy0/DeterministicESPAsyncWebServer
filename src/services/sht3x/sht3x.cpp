@@ -13,6 +13,11 @@
 
 #if DWS_ENABLE_SHT3X
 
+#if defined(ARDUINO)
+#include "services/i2c.h"
+#include <Arduino.h>
+#include <Wire.h>
+#endif
 uint8_t dws_sht3x_crc8(const uint8_t *data, size_t len)
 {
     // The Sensirion CRC-8 is the catalogue's CRC-8/NRSC-5 (poly 0x31, init 0xFF, no reflection, no
@@ -51,10 +56,6 @@ bool dws_sht3x_parse(const uint8_t resp[6], int32_t *temp_mc, int32_t *rh_mpct)
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include "services/i2c.h"
-#include <Arduino.h>
-#include <Wire.h>
 
 namespace
 {

@@ -10,6 +10,10 @@
 
 #if DWS_ENABLE_OTA_ROLLBACK
 
+#if defined(ARDUINO)
+#include "esp_ota_ops.h"
+#include "services/clock.h" // dws_millis() (pulls in Arduino millis())
+#endif
 DWSOtaAction dws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t ms_since_boot, uint32_t window_ms)
 {
     if (img_state != DWSOtaImg::DWS_OTA_IMG_PENDING_VERIFY)
@@ -22,9 +26,6 @@ DWSOtaAction dws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t ms_si
 }
 
 #ifdef ARDUINO
-
-#include "esp_ota_ops.h"
-#include "services/clock.h" // dws_millis() (pulls in Arduino millis())
 
 uint8_t dws_ota_img_state(void)
 {

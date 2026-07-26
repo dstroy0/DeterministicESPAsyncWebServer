@@ -20,6 +20,10 @@
 // All Modbus data-model state, owned by one instance (internal linkage): the coil / discrete
 // bitfields, the holding / input registers, and the write callback, grouped so it is one
 // named owner, unreachable from any other translation unit.
+#if defined(ARDUINO)
+#include "network_drivers/session/proto_handler.h"
+#include "network_drivers/transport/tcp.h"
+#endif
 struct ModbusCtx
 {
     uint8_t coils[(DWS_MODBUS_COILS + 7) / 8];
@@ -388,9 +392,6 @@ size_t dws_modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *r
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include "network_drivers/session/proto_handler.h"
-#include "network_drivers/transport/tcp.h"
 
 // Bytes available in the slot's rx ring.
 // Thin adapters over the transport RX read API - the ring is owned by transport;

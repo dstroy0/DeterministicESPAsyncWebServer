@@ -14,6 +14,10 @@
 
 #if DWS_ENABLE_RTC
 
+#if defined(ARDUINO)
+#include "services/i2c.h"
+#include <Wire.h>
+#endif
 namespace
 {
 int bcd2int(uint8_t b)
@@ -110,9 +114,6 @@ void dws_rtc_epoch_to_regs(uint32_t epoch, uint8_t r[RTC_REG_COUNT])
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include "services/i2c.h"
-#include <Wire.h>
 
 bool dws_rtc_begin()
 {

@@ -11,6 +11,11 @@
 
 #if DWS_ENABLE_INA219
 
+#if defined(ARDUINO)
+#include "services/i2c.h"
+#include <Arduino.h>
+#include <Wire.h>
+#endif
 int32_t dws_ina219_bus_mv(uint16_t raw)
 {
     return (int32_t)((raw >> 3) * 4); // value in bits [15:3], LSB 4 mV
@@ -46,10 +51,6 @@ int32_t dws_ina219_power_uw(int16_t raw, uint32_t current_lsb_ua)
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include "services/i2c.h"
-#include <Arduino.h>
-#include <Wire.h>
 
 namespace
 {

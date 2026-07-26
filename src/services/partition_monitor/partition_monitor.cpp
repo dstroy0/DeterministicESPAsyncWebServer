@@ -20,6 +20,10 @@
 
 // esp_partition type/subtype constants (mirrors esp_partition_type_t/subtype_t so
 // the classifier stays pure and host-testable without the IDF headers).
+#if defined(ARDUINO)
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
+#endif
 const char *dws_partition_kind(uint8_t type, uint8_t subtype)
 {
     if (type == 0) // ESP_PARTITION_TYPE_APP
@@ -82,9 +86,6 @@ int dws_partition_json(const DWSPartitionInfo *parts, uint8_t count, char *out, 
 }
 
 #ifdef ARDUINO
-
-#include <esp_ota_ops.h>
-#include <esp_partition.h>
 
 uint8_t dws_partition_collect(DWSPartitionInfo *out, uint8_t max)
 {

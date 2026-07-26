@@ -14,6 +14,11 @@
 
 #if DWS_ENABLE_PCA9685
 
+#if defined(ARDUINO)
+#include "services/i2c.h"
+#include <Arduino.h>
+#include <Wire.h>
+#endif
 namespace
 {
 const uint32_t PCA9685_OSC_HZ = 25000000u;
@@ -68,10 +73,6 @@ size_t dws_pca9685_set_pwm_bytes(uint8_t *buf, size_t cap, uint8_t channel, uint
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include "services/i2c.h"
-#include <Arduino.h>
-#include <Wire.h>
 
 namespace
 {

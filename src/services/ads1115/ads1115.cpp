@@ -12,6 +12,11 @@
 
 #if DWS_ENABLE_ADS1115
 
+#if defined(ARDUINO)
+#include "services/i2c.h"
+#include <Arduino.h>
+#include <Wire.h>
+#endif
 namespace
 {
 // Config-register field values (per the ADS1115 datasheet).
@@ -58,10 +63,6 @@ int32_t dws_ads1115_raw_to_uv(int16_t raw, uint8_t gain)
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include "services/i2c.h"
-#include <Arduino.h>
-#include <Wire.h>
 
 namespace
 {

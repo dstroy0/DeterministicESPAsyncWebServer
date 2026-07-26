@@ -14,6 +14,10 @@
 // Pure presence state machine (host-tested).
 // ---------------------------------------------------------------------------
 
+#if defined(ARDUINO)
+#include "services/clock.h" // dws_millis()
+#include <Arduino.h>
+#endif
 void dws_sen0192_motion_init(Sen0192Motion *m, uint32_t hold_ms, bool active_high)
 {
     m->present = false;
@@ -70,9 +74,6 @@ uint32_t dws_sen0192_motion_active_age_ms(const Sen0192Motion *m, uint32_t now_m
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include "services/clock.h" // dws_millis()
-#include <Arduino.h>
 
 namespace
 {

@@ -12,6 +12,11 @@
 
 #include <string.h>
 
+#if defined(ARDUINO)
+#include <esp_idf_version.h> // ESP_IDF_VERSION / ESP_IDF_VERSION_VAL for the recv-cb ABI guard
+#include <esp_now.h>
+#include <esp_wifi.h>
+#endif
 const uint8_t DWS_ESPNOW_BROADCAST[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // ---------------------------------------------------------------------------
@@ -127,10 +132,6 @@ int dws_espnow_peer_count(void)
 // ESP32 radio binding
 // ---------------------------------------------------------------------------
 #ifdef ARDUINO
-
-#include <esp_idf_version.h> // ESP_IDF_VERSION / ESP_IDF_VERSION_VAL for the recv-cb ABI guard
-#include <esp_now.h>
-#include <esp_wifi.h>
 
 namespace
 {

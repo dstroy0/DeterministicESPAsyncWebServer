@@ -14,6 +14,9 @@
 #include "network_drivers/presentation/json/json.h"
 #include <string.h>
 
+#if DWS_ENABLE_HTTP_CLIENT
+#include "services/http_client/http_client.h"
+#endif
 namespace
 {
 // Bounded form-body builder.
@@ -147,8 +150,6 @@ bool dws_oauth2_parse_token_response(const char *json, DWSOAuth2Tokens *out)
 }
 
 #if DWS_ENABLE_HTTP_CLIENT
-
-#include "services/http_client/http_client.h"
 
 namespace
 {

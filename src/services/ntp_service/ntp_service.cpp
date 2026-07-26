@@ -8,6 +8,7 @@
 
 #include "ntp_service.h"
 #include "shared_primitives/http_date.h" // dws_http_date() - the shared IMF-fixdate formatter
+#include <time.h>                        // time_t / time() - used by both the Arduino SNTP and host test-seam paths
 
 #if DWS_ENABLE_NTP && defined(ARDUINO)
 
@@ -44,7 +45,6 @@ size_t dws_ntp_http_date(char *out, size_t out_cap)
 
 // Host build: no SNTP. A test seam lets a unit test inject a wall-clock epoch so
 // the Date-header path (and any time-dependent code) is exercisable off-device.
-#include <time.h>
 // All host NTP test-seam state, owned by one instance (internal linkage): the injected
 // wall-clock epoch, so it is one named owner, unreachable from any other translation unit.
 namespace

@@ -16,6 +16,9 @@
 
 #if DWS_ENABLE_RCWL0516
 
+#if defined(ARDUINO)
+#include <Arduino.h>
+#endif
 namespace
 {
 // Elapsed-time test, wrap-safe across a millis() rollover (unsigned arithmetic is modulo 2^32).
@@ -97,8 +100,6 @@ void dws_rcwl0516_core_init(PresenceCore *c, uint32_t now)
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include <Arduino.h>
 
 namespace
 {

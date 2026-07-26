@@ -22,6 +22,11 @@
 // ---------------------------------------------------------------------------
 // Built-in type codec
 // ---------------------------------------------------------------------------
+#if defined(ARDUINO)
+#include "network_drivers/session/proto_handler.h"
+#include "network_drivers/transport/tcp.h"
+#include <time.h>
+#endif
 static void w_bytes(UaWriter *w, const void *src, size_t n)
 {
     if (!w->ok || w->n + n > w->cap)
@@ -1084,10 +1089,6 @@ void dws_opcua_set_browse_handler(OpcUaBrowseHandler fn)
 // ESP32 TCP server (ConnProto::PROTO_OPCUA)
 // ---------------------------------------------------------------------------
 #ifdef ARDUINO
-
-#include "network_drivers/session/proto_handler.h"
-#include "network_drivers/transport/tcp.h"
-#include <time.h>
 
 namespace
 {

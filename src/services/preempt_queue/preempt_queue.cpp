@@ -16,6 +16,11 @@
 
 #include <string.h>
 
+#if defined(ARDUINO)
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
+#endif
 namespace
 {
 // Common preempt-queue state (both host + device), owned by one instance (internal linkage):
@@ -73,10 +78,6 @@ uint8_t dws_pq_lane_priority(dws_pq_lane lane)
 }
 
 #ifdef ARDUINO
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "freertos/task.h"
 
 namespace
 {

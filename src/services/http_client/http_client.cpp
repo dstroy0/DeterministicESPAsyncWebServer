@@ -21,6 +21,14 @@
 // Pure helpers (host-testable)
 // ---------------------------------------------------------------------------
 
+#if defined(ARDUINO)
+#include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
+#include <Arduino.h>                          // millis()
+#endif
+#if defined(ARDUINO) && DWS_ENABLE_HTTP_CLIENT_TLS
+#include "network_drivers/tls/tls.h"
+#include <mbedtls/ssl.h> // MBEDTLS_ERR_SSL_WANT_READ for the BIO recv callback
+#endif
 bool http_client_parse_url(const char *url, bool *is_https, char *host, size_t host_cap, uint16_t *port, char *path,
                            size_t path_cap)
 {
@@ -256,14 +264,6 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
 // Transport (ESP32 only): raw-lwIP TCP client + DNS, optional client mbedTLS.
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
-
-#include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
-#include <Arduino.h>                          // millis()
-
-#if DWS_ENABLE_HTTP_CLIENT_TLS
-#include "network_drivers/tls/tls.h"
-#include <mbedtls/ssl.h> // MBEDTLS_ERR_SSL_WANT_READ for the BIO recv callback
-#endif
 
 // Optional stage tracing: build with -DDWS_HTTP_CLIENT_DEBUG to print where a
 // request stalls (DNS / connect / send / receive). Goes to the console UART.

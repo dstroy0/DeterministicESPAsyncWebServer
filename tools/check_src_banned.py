@@ -5,7 +5,9 @@ This is the mechanical guardrail behind that checklist: the pre-commit hook runs
 ``src/`` sources and refuses the commit if any banned construct appears, so a violation can never
 land. It scans for the machine-detectable hard bans - unbounded ``strlen``, ``<stdlib.h>`` and its
 heap / parse functions, the ``auto`` keyword, blocking ``delay()``, the non-reentrant ``gmtime`` /
-``localtime`` / ``ctime`` / ``asctime`` family, and em-dashes.
+``localtime`` / ``ctime`` / ``asctime`` family, em-dashes, and mid-file ``#include`` (ban #18: any
+``#include`` after code - every include must be hoisted to the top of the file; the sole exemption is a
+justified ``// DWS_ALLOW_LATE_INCLUDE:`` on an ordered include that derives from earlier macros).
 
 Ban #5 (bare ``millis()``) is deliberately *not* enforced here: it is a "for new timing" rule, so a
 whole-file scan cannot distinguish a new call from a grandfathered timing site, and the clock source
@@ -53,6 +55,18 @@ BANS = [
 # reported line numbers stay accurate. The leftmost-match rule protects "http://" inside a string.
 _STRIP = re.compile(r'//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])*\'', re.DOTALL)
 
+_INCLUDE = re.compile(r"^\s*#\s*include\b")
+_PREPROC = re.compile(r"^\s*#")
+# Ban #18: mid-file #include. All includes must be hoisted to the top of a src/ file - an #include that
+# appears after real code makes the dependency graph read-order-dependent and hides layering (see the
+# ecdsa.cpp / chacha20.cpp hoist). "Real code" is any non-blank line that is not a preprocessor
+# directive; comments/strings are already blanked. Preprocessor lines (#if/#define/#pragma/...) and
+# blank lines do NOT open the code region, so a top-of-file `#if ... #include ... #endif` block is fine.
+# A load-bearing ordered include that genuinely cannot be hoisted (it must run after earlier macros
+# resolve) is exempt only with a justified `// DWS_ALLOW_LATE_INCLUDE: <reason>` on the include line.
+_MIDINC_MSG = "#include after code; hoist all includes to the top of the file"
+_ALLOW_LATE = "DWS_ALLOW_LATE_INCLUDE"
+
 
 def _blank(match):
     return re.sub(r"[^\n]", " ", match.group(0))
@@ -65,11 +79,22 @@ def scan_file(path):
     except OSError:
         return []
     clean = _STRIP.sub(_blank, code)
+    raw_lines = code.splitlines()
     hits = []
+    seen_code = False
+    pp_cont = False  # previous line was a preprocessor directive continued with a trailing backslash
     for line_no, line in enumerate(clean.splitlines(), 1):
         for pattern, ban_no, message in BANS:
             if pattern.search(line):
                 hits.append((str(path), line_no, ban_no, message))
+        stripped = line.strip()
+        is_pp = pp_cont or bool(_PREPROC.match(line))  # a `\`-continued #if spans lines - all are preprocessor
+        if _INCLUDE.match(line) and not pp_cont:
+            if seen_code and _ALLOW_LATE not in raw_lines[line_no - 1]:
+                hits.append((str(path), line_no, 18, _MIDINC_MSG))
+        elif stripped and not is_pp:
+            seen_code = True
+        pp_cont = is_pp and stripped.endswith("\\")
     return hits
 
 

@@ -47,6 +47,10 @@
 // arguments (incl. the DWSConnReason names, which are only declared when the
 // feature is on) are dropped unparsed by the preprocessor.
 // ---------------------------------------------------------------------------
+#if defined(ARDUINO)
+#include "lwip/priv/tcpip_priv.h"
+#include <string.h>
+#endif
 #if DWS_ENABLE_OBSERVABILITY
 #include <atomic>
 
@@ -171,8 +175,6 @@ void dws_obs_notice(uint8_t slot, ConnState st, DWSConnReason reason)
 static void closing_check(uint8_t slot, struct tcp_pcb *pcb);
 
 #if defined(ARDUINO)
-#include "lwip/priv/tcpip_priv.h"
-#include <string.h>
 
 enum class DWSTcpOp : uint8_t
 {

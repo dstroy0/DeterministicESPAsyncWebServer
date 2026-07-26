@@ -19,6 +19,14 @@
 // Form-field parser (always compiled; the only non-trivial logic, unit-tested).
 // ---------------------------------------------------------------------------
 
+#if DWS_ENABLE_PROVISIONING && defined(ARDUINO)
+#include "dwserver.h"
+#include "network_drivers/application/web_assets.h"
+#include "network_drivers/transport/udp.h"
+#include <Arduino.h>
+#include <Preferences.h>
+#include <WiFi.h>
+#endif
 bool dws_prov_form_field(const char *body, const char *key, char *out, size_t cap)
 {
     if (out && cap)
@@ -72,13 +80,6 @@ bool dws_prov_form_field(const char *body, const char *key, char *out, size_t ca
 // ---------------------------------------------------------------------------
 
 #if DWS_ENABLE_PROVISIONING && defined(ARDUINO)
-
-#include "dwserver.h"
-#include "network_drivers/application/web_assets.h"
-#include "network_drivers/transport/udp.h"
-#include <Arduino.h>
-#include <Preferences.h>
-#include <WiFi.h>
 
 // All provisioning-service state, owned by one instance (internal linkage): the server handle
 // and the softAP IP the captive-portal DNS answers with. Grouped so it is one named owner,

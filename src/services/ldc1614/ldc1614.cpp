@@ -11,6 +11,11 @@
 
 #if DWS_ENABLE_LDC1614
 
+#if defined(ARDUINO)
+#include "services/i2c.h"
+#include <Arduino.h>
+#include <Wire.h>
+#endif
 uint32_t dws_ldc1614_data(uint16_t msb_reg, uint16_t lsb_reg)
 {
     return ((uint32_t)(msb_reg & 0x0FFF) << 16) | lsb_reg;
@@ -50,10 +55,6 @@ size_t dws_ldc1614_build_config(uint8_t *buf, size_t cap, uint16_t rcount, uint1
 }
 
 #if defined(ARDUINO)
-
-#include "services/i2c.h"
-#include <Arduino.h>
-#include <Wire.h>
 
 namespace
 {

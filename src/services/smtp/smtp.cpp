@@ -19,6 +19,14 @@
 #include <stdio.h>  // snprintf
 #include <string.h> // strlen, memcmp
 
+#if defined(ARDUINO)
+#include "network_drivers/transport/client.h"
+#include <Arduino.h> // millis, delay
+#endif
+#if defined(ARDUINO) && DWS_ENABLE_SMTP_TLS
+#include "network_drivers/tls/tls.h"
+#include <mbedtls/ssl.h> // MBEDTLS_ERR_SSL_WANT_* for the BIO callbacks
+#endif
 namespace
 {
 // Send an entire C string; returns true only if every byte went out.
@@ -376,13 +384,6 @@ SmtpResult smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn se
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
-
-#include "network_drivers/transport/client.h"
-#include <Arduino.h> // millis, delay
-#if DWS_ENABLE_SMTP_TLS
-#include "network_drivers/tls/tls.h"
-#include <mbedtls/ssl.h> // MBEDTLS_ERR_SSL_WANT_* for the BIO callbacks
-#endif
 
 namespace
 {

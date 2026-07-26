@@ -20,6 +20,14 @@
 // ---------------------------------------------------------------------------
 
 // Big-endian 16-bit helpers and a length-prefixed UTF-8 string writer.
+#if defined(ARDUINO)
+#include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
+#include <Arduino.h>
+#endif
+#if defined(ARDUINO) && DWS_ENABLE_MQTT_TLS
+#include "network_drivers/tls/tls.h" // persistent client TLS session (csess)
+#include <mbedtls/ssl.h>             // MBEDTLS_ERR_SSL_WANT_* for the BIO callbacks
+#endif
 static inline void put_u16(uint8_t *p, uint16_t v)
 {
     p[0] = (uint8_t)(v >> 8);
@@ -345,14 +353,6 @@ bool dws_mqtt_parse_suback(const uint8_t *buf, uint32_t remaining_len, uint16_t 
 // with mqtts:// over a persistent client TLS session (dws_tls csess).
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
-
-#include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
-#include <Arduino.h>
-
-#if DWS_ENABLE_MQTT_TLS
-#include "network_drivers/tls/tls.h" // persistent client TLS session (csess)
-#include <mbedtls/ssl.h>             // MBEDTLS_ERR_SSL_WANT_* for the BIO callbacks
-#endif
 
 #ifdef DWS_MQTT_DEBUG
 #define MQ_DBG(...) printf(__VA_ARGS__)

@@ -10,6 +10,9 @@
 
 #if DWS_ENABLE_RADIO_POWER
 
+#if defined(ARDUINO)
+#include "esp_wifi.h"
+#endif
 const char *dws_radio_ps_name(uint8_t mode)
 {
     switch (mode)
@@ -26,8 +29,6 @@ const char *dws_radio_ps_name(uint8_t mode)
 }
 
 #ifdef ARDUINO
-
-#include "esp_wifi.h"
 
 namespace
 {

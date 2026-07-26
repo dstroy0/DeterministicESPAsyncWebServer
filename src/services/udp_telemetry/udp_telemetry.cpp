@@ -20,6 +20,9 @@
 // Line builder (pure)
 // ---------------------------------------------------------------------------
 
+#if defined(ARDUINO)
+#include "network_drivers/transport/udp.h"
+#endif
 static void line_append(DWSLine *l, const char *s)
 {
     if (l->overflow)
@@ -148,8 +151,6 @@ bool dws_line_ok(const DWSLine *l)
 // ---------------------------------------------------------------------------
 
 #ifdef ARDUINO
-
-#include "network_drivers/transport/udp.h"
 
 namespace
 {

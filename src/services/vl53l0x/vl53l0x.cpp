@@ -11,6 +11,11 @@
 
 #if DWS_ENABLE_VL53L0X
 
+#if defined(ARDUINO)
+#include "services/i2c.h"
+#include <Arduino.h>
+#include <Wire.h>
+#endif
 uint16_t dws_vl53l0x_range_mm(uint8_t hi, uint8_t lo)
 {
     return (uint16_t)((hi << 8) | lo);
@@ -32,10 +37,6 @@ bool dws_vl53l0x_range_valid(uint8_t range_status_reg)
 }
 
 #if defined(ARDUINO)
-
-#include "services/i2c.h"
-#include <Arduino.h>
-#include <Wire.h>
 
 namespace
 {

@@ -17,6 +17,9 @@
 
 #include <string.h>
 
+#if defined(ARDUINO)
+#include <FS.h>
+#endif
 namespace
 {
 // ---- RAM backend ----------------------------------------------------------
@@ -274,8 +277,6 @@ bool dws_vfs_write_file(const char *path, const void *buf, size_t n)
 // Arduino FS backend (ESP32): wraps a real fs::FS over LittleFS / SD / SPIFFS.
 // ---------------------------------------------------------------------------
 #ifdef ARDUINO
-
-#include <FS.h>
 
 namespace
 {

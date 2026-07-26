@@ -83,6 +83,9 @@
 #endif
 // Arena allocator state, owned by one instance (internal linkage): the static arena backing
 // every mbedTLS object plus the first-fit pool cursors. One named owner, unreachable cross-TU.
+#if defined(DWS_TLS_HS_BENCH)
+#include <esp_timer.h> // esp_timer_get_time() - microsecond wall clock for the handshake span probe
+#endif
 struct TlsPoolCtx
 {
     uint8_t arena[DWS_TLS_ARENA_SIZE];
@@ -235,7 +238,6 @@ struct TlsConnsCtx
 static TlsConnsCtx s_conns;
 
 #ifdef DWS_TLS_HS_BENCH
-#include <esp_timer.h> // esp_timer_get_time() - microsecond wall clock for the handshake span probe
 // The one owned handshake-bench instance (struct declared in tls.h): the last completed handshake's
 // device-CPU time (summed across the pumped mbedtls_ssl_handshake calls) and wall time. The rig prints it.
 TlsHsBenchCtx dws_tls_hs_bench = {0, 0, 0};

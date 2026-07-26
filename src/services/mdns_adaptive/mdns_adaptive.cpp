@@ -10,6 +10,12 @@
 
 #if DWS_ENABLE_MDNS_ADAPTIVE
 
+#if defined(ARDUINO) && DWS_ENABLE_MDNS && DWS_ENABLE_PROMISC
+#include "network_drivers/physical/physical.h"  // dws_net_channel
+#include "services/clock.h"                     // dws_millis
+#include "services/mdns_service/mdns_service.h" // dws_mdns_txt
+#include "services/promisc/promisc.h"           // dws_promisc_*
+#endif
 uint32_t dws_mdns_refresh_interval(uint32_t ttl_s)
 {
     // Half the TTL, in ms; guard the *1000 against overflow.
@@ -100,11 +106,6 @@ bool dws_mdns_contention_sample(MdnsContentionWindow *w, uint32_t frames_now, ui
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO) && DWS_ENABLE_MDNS && DWS_ENABLE_PROMISC
-
-#include "network_drivers/physical/physical.h"  // dws_net_channel
-#include "services/clock.h"                     // dws_millis
-#include "services/mdns_service/mdns_service.h" // dws_mdns_txt
-#include "services/promisc/promisc.h"           // dws_promisc_*
 
 /** @brief Owned state for the live adaptive announcer. */
 struct MdnsAdaptiveCtx
