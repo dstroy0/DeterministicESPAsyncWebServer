@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.175.1] - 2026-07-26
+
+<details>
+<summary><b>Show Changelog for version 7.175.1 - 2026-07-26</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`0c7a5da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c7a5daa6c4139fc92966b819e287db79013d7d2))
+
+### Changes
+
+- Bump version: 7.175.0 → 7.175.1 ([`45ab1f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45ab1f6f18fae6266c765e173a183a3affbfa22c))
+
+### Refactor
+
+- centralize the RSA MODMULT behind esp_crypto_hal (one register owner) ([`12c1592`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12c159258bfa657e3c0816933aca17986801035e))
+
+</details>
+
 ## [7.175.0] - 2026-07-26
 
 <details>
