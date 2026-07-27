@@ -1329,6 +1329,12 @@
 "native_zigbee",
 "native_zwave"
 ],
+"src/crypto/aes128gcm.cpp": [
+"native_smb"
+],
+"src/crypto/aes128gcm.h": [
+"native_smb"
+],
 "src/crypto/aes256ctr.cpp": [
 "native_ssh",
 "native_ssh_comp",
@@ -1347,12 +1353,18 @@
 "native_ssh_kbdint",
 "native_ssh_pqc"
 ],
+"src/crypto/aes_block.h": [
+"native_smb"
+],
 "src/crypto/aes_cmac.cpp": [
 "native_pentest",
 "native_smb"
 ],
 "src/crypto/aes_cmac.h": [
 "native_pentest",
+"native_smb"
+],
+"src/crypto/aes_sbox.h": [
 "native_smb"
 ],
 "src/crypto/aesgcm.cpp": [
@@ -1439,6 +1451,9 @@
 "native_ssh_hardened",
 "native_ssh_kbdint",
 "native_ssh_pqc"
+],
+"src/crypto/crypto_opt.h": [
+"native_smb"
 ],
 "src/crypto/curve25519.cpp": [
 "native_coaps",
@@ -1572,6 +1587,9 @@
 "native_ssh_kbdint",
 "native_ssh_pqc",
 "native_tls13_msg"
+],
+"src/crypto/ghash.h": [
+"native_smb"
 ],
 "src/crypto/hmac_sha256.cpp": [
 "native_coaps",
@@ -4730,7 +4748,6 @@
 "native_quic_server",
 "native_quic_tls",
 "native_quic_tls_pqc",
-"native_smb",
 "native_ssh",
 "native_ssh_aesgcm",
 "native_ssh_comp",
@@ -4757,7 +4774,6 @@
 "native_quic_server",
 "native_quic_tls",
 "native_quic_tls_pqc",
-"native_smb",
 "native_snmp_v3",
 "native_ssh",
 "native_ssh_aesgcm",
@@ -4840,7 +4856,6 @@
 "native_quic_tls",
 "native_quic_tls_pqc",
 "native_range",
-"native_smb",
 "native_snmp_v3",
 "native_ssh",
 "native_ssh_aesgcm",

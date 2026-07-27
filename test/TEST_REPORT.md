@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-25 08:38:27
+**Generated:** 2026-07-27 04:34:54
 **Command:** `pio test` over 273 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 5748 passed - 1187s
+**Result:** ✅ 5751 passed - 391s
 
 ---
 
@@ -181,12 +181,12 @@
 | `test_keepalive`         | `native_keepalive`       |    12 |   ✅   | 00:00:01.801 |
 | `test_range`             | `native_range`           |    21 |   ✅   | 00:00:01.808 |
 | `test_syslog`            | `native_syslog`          |    14 |   ✅   | 00:00:00.800 |
-| `test_smb2`              | `native_smb`             |    42 |   ✅   | 00:00:01.070 |
-| `test_ntlmssp`           | `native_smb`             |    12 |   ✅   | 00:00:00.607 |
-| `test_spnego`            | `native_smb`             |    16 |   ✅   | 00:00:00.600 |
-| `test_ntlm`              | `native_smb`             |    10 |   ✅   | 00:00:00.595 |
-| `test_smb_crypto`        | `native_smb`             |    11 |   ✅   | 00:00:00.612 |
-| `test_smb_client`        | `native_smb`             |    72 |   ✅   | 00:00:00.728 |
+| `test_smb2`              | `native_smb`             |    45 |   ✅   | 00:00:09.147 |
+| `test_ntlmssp`           | `native_smb`             |    12 |   ✅   | 00:00:00.665 |
+| `test_spnego`            | `native_smb`             |    16 |   ✅   | 00:00:00.636 |
+| `test_ntlm`              | `native_smb`             |    10 |   ✅   | 00:00:00.636 |
+| `test_smb_crypto`        | `native_smb`             |    11 |   ✅   | 00:00:00.657 |
+| `test_smb_client`        | `native_smb`             |    72 |   ✅   | 00:00:00.764 |
 | `test_smtp`              | `native_smtp`            |    39 |   ✅   | 00:00:01.022 |
 | `test_ntp_server`        | `native_ntp_server`      |     9 |   ✅   | 00:00:00.752 |
 | `test_dns_server`        | `native_dns_server`      |    13 |   ✅   | 00:00:00.762 |
@@ -6504,7 +6504,7 @@ _Unit tests for the RFC 5424 syslog client (dws_syslog_format formatter + dws_sy
 
 ---
 
-## test_smb2 - native_smb - ✅ 42 passed
+## test_smb2 - native_smb - ✅ 45 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6555,6 +6555,9 @@ _Unit tests for the SMB2 client wire codec (services/smb, MS-SMB2): the Direct-T
 |  40 | `test_parse_write_null_and_command`                 |   ✅   | Parse write null and command                 |
 |  41 | `test_smb2_signing`                                 |   ✅   | Smb2 signing                                 |
 |  42 | `test_smb2_signing_cmac`                            |   ✅   | Smb2 signing cmac                            |
+|  43 | `test_smb3_derive_encryption_keys`                  |   ✅   | Smb3 derive encryption keys                  |
+|  44 | `test_smb3_encrypt_decrypt_roundtrip`               |   ✅   | Smb3 encrypt decrypt roundtrip               |
+|  45 | `test_smb3_decrypt_rejects_tamper`                  |   ✅   | Smb3 decrypt rejects tamper                  |
 
 </details>
 
