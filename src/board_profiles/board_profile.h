@@ -82,30 +82,30 @@
 // --- PSRAM-size profile (most specific: RAM-backed buffers scale with available PSRAM) ---
 #if defined(DWS_PSRAM_MB)
 #if DWS_PSRAM_MB >= 32
-#include "32mbpsram.h"
+#include "esp/32mbpsram.h"
 #elif DWS_PSRAM_MB >= 16
-#include "16mbpsram.h"
+#include "esp/16mbpsram.h"
 #elif DWS_PSRAM_MB >= 8
-#include "8mbpsram.h"
+#include "esp/8mbpsram.h"
 #elif DWS_PSRAM_MB >= 4
-#include "4mbpsram.h"
+#include "esp/4mbpsram.h"
 #elif DWS_PSRAM_MB >= 2
-#include "2mbpsram.h"
+#include "esp/2mbpsram.h"
 #endif
 #endif
 
 // --- flash-size profile (flash-backed sizing scales with available flash) ---
 #if defined(DWS_FLASH_MB)
 #if DWS_FLASH_MB >= 32
-#include "32mbflash.h"
+#include "esp/32mbflash.h"
 #elif DWS_FLASH_MB >= 16
-#include "16mbflash.h"
+#include "esp/16mbflash.h"
 #elif DWS_FLASH_MB >= 8
-#include "8mbflash.h"
+#include "esp/8mbflash.h"
 #elif DWS_FLASH_MB >= 4
-#include "4mbflash.h"
+#include "esp/4mbflash.h"
 #elif DWS_FLASH_MB >= 2
-#include "2mbflash.h"
+#include "esp/2mbflash.h"
 #endif
 #endif
 
@@ -115,29 +115,29 @@
 //     S31/H4/H21 are preview targets (in ESP-IDF master, not a stable release yet). ---
 #if DWS_VENDOR_ESP
 #if defined(CONFIG_IDF_TARGET_ESP32P4)
-#include "p4_defaults.h"
+#include "esp/p4_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S31)
-#include "s31_defaults.h"
+#include "esp/s31_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-#include "s3_defaults.h"
+#include "esp/s3_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S2)
-#include "s2_defaults.h"
+#include "esp/s2_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32C2)
-#include "c2_defaults.h"
+#include "esp/c2_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-#include "c3_defaults.h"
+#include "esp/c3_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32C5)
-#include "c5_defaults.h"
+#include "esp/c5_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32C61)
-#include "c61_defaults.h"
+#include "esp/c61_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32C6)
-#include "c6_defaults.h"
+#include "esp/c6_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32H21)
-#include "h21_defaults.h"
+#include "esp/h21_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32H2)
-#include "h2_defaults.h"
+#include "esp/h2_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32H4)
-#include "h4_defaults.h"
+#include "esp/h4_defaults.h"
 #else
 // Classic ESP32 (no dedicated profile) lands on the universal floor.
 #include "classic_defaults.h"

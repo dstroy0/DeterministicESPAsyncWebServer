@@ -107,5 +107,5 @@
 #define DWS_MESH_MAX_CONNS 1
 #endif
 
-#include "classic_defaults.h"
+#include "../classic_defaults.h"
 #endif // DWS_C6_DEFAULTS_H

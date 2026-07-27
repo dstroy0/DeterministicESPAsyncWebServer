@@ -108,5 +108,5 @@
 #define DWS_MESH_MAX_CONNS 2
 #endif
 
-#include "classic_defaults.h"
+#include "../classic_defaults.h"
 #endif // DWS_P4_DEFAULTS_H

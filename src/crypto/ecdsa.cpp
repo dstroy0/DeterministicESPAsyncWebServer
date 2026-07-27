@@ -64,7 +64,7 @@
 #else
 #include "crypto/hmac_sha256.h" // RFC 6979 HMAC-DRBG for the deterministic-nonce complete-formula path
 #ifdef DWS_ECDSA_MPI_HW
-#include "hal/esp_crypto_hal.h" // dws_rsa_modmul + dws_rsa_hw_acquire/release (RSA-accelerator HAL)
+#include "hal/esp/esp_crypto_hal.h" // dws_rsa_modmul + dws_rsa_hw_acquire/release (RSA-accelerator HAL)
 #endif
 #endif
 

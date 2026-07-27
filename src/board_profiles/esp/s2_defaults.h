@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file c3_defaults.h
- * @brief ESP32-C3 die profile - single RISC-V, 400 KB SRAM, Wi-Fi 4 + BLE 5.0, no PSRAM.
+ * @file s2_defaults.h
+ * @brief ESP32-S2 die profile - single Xtensa LX7, 320 KB SRAM, Wi-Fi 4 only (no Bluetooth).
  *
- * The mainstream single-core RISC-V drop-in for the classic ESP32. 400 KB SRAM with a roomier
- * usable-DRAM map than the classic die, so a small bump over the floor; single core keeps the
- * concurrency-bound pools modest. Crypto HW: AES, SHA, RSA/MPI, HMAC, DS (no ECC/ECDSA). No PSRAM.
- * classic_defaults.h is the sizing floor; every macro is `#ifndef`-guarded.
+ * Single core and 320 KB SRAM (tighter than the classic ESP32's usable DRAM), so it stays at the
+ * conservative floor - no sizing bump. Native USB-OTG; the only radio is Wi-Fi 4 (no Bluetooth at
+ * all). Crypto HW: AES, SHA, RSA/MPI, HMAC, DS (no ECC/ECDSA). Supports external PSRAM (2 MB in
+ * the in-package R2 parts). classic_defaults.h is the sizing floor; every macro is `#ifndef`-guarded.
  */
 
-#ifndef DWS_C3_DEFAULTS_H
-#define DWS_C3_DEFAULTS_H
+#ifndef DWS_S2_DEFAULTS_H
+#define DWS_S2_DEFAULTS_H
 
 // --- HW crypto accelerators ---
 #ifndef DWS_HW_AES
@@ -37,75 +37,75 @@
 #define DWS_HW_DS 1
 #endif
 
-// --- Sizing (bump over the floor; single core, 400 KB SRAM) ---
+// --- Sizing (conservative: single core, 320 KB SRAM) ---
 // Internal-SRAM-budget values (no PSRAM assumed); a PSRAM-size profile, included first, scales the
 // RAM-backed buffers further and moves the big TLS / HTTP-2 pools off-chip.
 
 // Connection pools + per-connection buffers.
 #ifndef MAX_CONNS
-#define MAX_CONNS 12
+#define MAX_CONNS 8
 #endif
 #ifndef RX_BUF_SIZE
-#define RX_BUF_SIZE 1536
+#define RX_BUF_SIZE 1024
 #endif
 #ifndef DWS_SCRATCH_ARENA_SIZE
-#define DWS_SCRATCH_ARENA_SIZE 10240
+#define DWS_SCRATCH_ARENA_SIZE 8192
 #endif
 #ifndef DWS_CLIENT_RX_BUF
-#define DWS_CLIENT_RX_BUF 8192
+#define DWS_CLIENT_RX_BUF 4096
 #endif
 
 // HTTP surface.
 #ifndef MAX_ROUTES
-#define MAX_ROUTES 24
+#define MAX_ROUTES 16
 #endif
 #ifndef MAX_HEADERS
-#define MAX_HEADERS 12
+#define MAX_HEADERS 8
 #endif
 #ifndef BODY_BUF_SIZE
-#define BODY_BUF_SIZE 512
+#define BODY_BUF_SIZE 256
 #endif
 
 // WebSocket / SSE fan-out.
 #ifndef MAX_WS_CONNS
-#define MAX_WS_CONNS 4
+#define MAX_WS_CONNS 2
 #endif
 #ifndef MAX_SSE_CONNS
-#define MAX_SSE_CONNS 4
+#define MAX_SSE_CONNS 2
 #endif
 
-// TLS: one handshake on the internal-DRAM arena; a PSRAM profile raises this with the arena in PSRAM.
+// TLS: a single handshake fits the tight internal SRAM; a PSRAM profile raises this and moves the arena.
 #ifndef MAX_TLS_CONNS
 #define MAX_TLS_CONNS 1
 #endif
 
 // SSH server + reverse-SSH client.
 #ifndef MAX_SSH_CONNS
-#define MAX_SSH_CONNS 2
+#define MAX_SSH_CONNS 1
 #endif
 #ifndef DWS_SSH_MAX_CHANNELS
-#define DWS_SSH_MAX_CHANNELS 4
+#define DWS_SSH_MAX_CHANNELS 2
 #endif
 #ifndef DWS_SSH_CLIENT_MAX_CHANNELS
-#define DWS_SSH_CLIENT_MAX_CHANNELS 4
+#define DWS_SSH_CLIENT_MAX_CHANNELS 2
 #endif
 
 // Edge cache + mesh (RAM-backed L1).
 #ifndef DWS_EDGE_CACHE_SLOTS
-#define DWS_EDGE_CACHE_SLOTS 6
+#define DWS_EDGE_CACHE_SLOTS 4
 #endif
 #ifndef DWS_EDGE_BODY_MAX
-#define DWS_EDGE_BODY_MAX 4096
+#define DWS_EDGE_BODY_MAX 2048
 #endif
 #ifndef DWS_EDGE_FETCH_SLOTS
-#define DWS_EDGE_FETCH_SLOTS 3
+#define DWS_EDGE_FETCH_SLOTS 2
 #endif
 #ifndef DWS_MESH_MAX_PEERS
-#define DWS_MESH_MAX_PEERS 6
+#define DWS_MESH_MAX_PEERS 4
 #endif
 #ifndef DWS_MESH_MAX_CONNS
 #define DWS_MESH_MAX_CONNS 1
 #endif
 
-#include "classic_defaults.h"
-#endif // DWS_C3_DEFAULTS_H
+#include "../classic_defaults.h"
+#endif // DWS_S2_DEFAULTS_H

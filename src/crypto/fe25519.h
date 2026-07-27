@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 
-#include "hal/esp_crypto_hal.h" // dws_rsa_modmul + dws_rsa_hw_acquire/release (the RSA-accelerator HAL)
+#include "hal/esp/esp_crypto_hal.h" // dws_rsa_modmul + dws_rsa_hw_acquire/release (the RSA-accelerator HAL)
 
 // 25519 has no dedicated ECC accelerator on any ESP32 die, so the RSA MODMULT is the field-layer win wherever
 // it exists - track the HAL's DWS_RSA_MODMUL_HW (S3, P4, ...). Classic ESP32 / native keep the software ladder.

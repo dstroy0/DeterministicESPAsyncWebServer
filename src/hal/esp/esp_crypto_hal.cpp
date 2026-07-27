@@ -18,7 +18,7 @@
  * registers (always accessible), never the possibly-unclocked RSA block.
  */
 
-#include "hal/esp_crypto_hal.h"
+#include "hal/esp/esp_crypto_hal.h"
 
 #ifdef DWS_RSA_MODMUL_HW
 

@@ -51,14 +51,14 @@ src/board_profiles/
   stm/ { stm32h7_defaults.h, ... }
   rp/  { rp2350_defaults.h, ... }
   ti/  { ... }
-src/crypto/
-  <portable C impls: chacha20, poly1305, sha*, ed25519, x25519, rsa/bignum>  # common fallback, always builds
-  hal/
-    crypto_hal.h             # common API surface (dws_rsa_modmul, dws_sha_*, dws_aes_*, dws_ecc_*)
-    esp/ { esp_crypto_hal.h/.cpp }   # move existing here (RSA/MPI direct-register, 7 dies)
-    stm/ { stm_crypto_hal.* }        # STM32 PKA / CRYP / HASH, direct-register
-    rp/  { ... }                     # RP2350 SHA-256 block etc, else falls back to common
-    ti/  { ... }
+src/hal/                     # the accelerator HAL - it is ONLY a HAL, partitioned by vendor
+  esp/ { esp_crypto_hal.h/.cpp }   # move existing here (RSA/MPI direct-register, 7 dies)
+  stm/ { stm_crypto_hal.* }        # STM32 PKA / CRYP / HASH, direct-register
+  rp/  { ... }                     # RP2350 SHA-256 block etc, else the crypto/ software path
+  ti/  { ... }
+src/crypto/                  # stays vendor-AGNOSTIC: portable algorithms only, no move. The HW field/modmul
+  <chacha20, poly1305, sha*, ed25519, x25519, rsa/bignum>   # win is pulled in via the HAL's DWS_RSA_MODMUL_HW
+                                                            # capability macro (already how it works today)
 src/network_drivers/physical/
   physical.h                 # common PHY/link API
   esp/ { emac + eth_phy + lwIP raw-register glue }             # move existing here
@@ -75,10 +75,14 @@ detail directly:
   `STM32*` / CMSIS device), `DWS_VENDOR_RP` (`PICO_RP2350` ...), `DWS_VENDOR_TI`.
 - die/board: the existing `CONFIG_IDF_TARGET_*`-style discriminator per vendor.
 
-Each **common API header** then resolves its backend once:
+A **common selector point** then resolves the backend once per layer:
 `#if DWS_VENDOR_ESP` -> `#include "esp/..."` `#elif DWS_VENDOR_STM` -> `stm/...`
-else -> the portable software path. Common code includes only the API header; it
-never sees a vendor subdir.
+else -> the portable software path (this is how `board_profile.h` picks the die
+profile). The crypto layer already does the vendor-agnostic thing without a
+dispatcher: `crypto/` is portable C, and each TU keys off the HAL's capability
+macro (`DWS_RSA_MODMUL_HW`) that the selected `hal/<vendor>/` backend defines - so
+`crypto/` never moves and never names a vendor. Common code sees an API/macro, not
+a vendor subdir.
 
 **Principles (carry the ones the ESP crypto HAL already proved):**
 
