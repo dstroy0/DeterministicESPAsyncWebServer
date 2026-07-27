@@ -8,6 +8,34 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SMB 3.x client couldn't reach a `smb encrypt = required` share; then AES-CCM in-place decrypt clobbered its own AAD/tag
+
+- **Status:** FIXED (2026-07-27). HW-verified against a real Samba (RPi, `smb encrypt = required` share) with all
+  four SMB 3.1.1 ciphers (AES-128/256-GCM, AES-128/256-CCM), each reading the share file byte-exact.
+- **Symptom (1):** the encrypted-share probe failed at TREE_CONNECT with ACCESS_DENIED (0xc0000022). **Symptom
+  (2), found while adding the other ciphers:** AES-CCM round-tripped in isolation (KAT + separate-buffer codec
+  test) but failed end to end in the client (`smb_open` -> SMB_ERR_PROTOCOL), while GCM worked.
+- **Root cause (1):** the NEGOTIATE request left the Capabilities field zero, so it never advertised
+  `SMB2_GLOBAL_CAP_ENCRYPTION` (MS-SMB2 §3.2.4.2.2.2). Samba then negotiated no cipher and rejected the
+  unencrypted session. Additionally, a share-level (not global) `smb encrypt = required` does **not** set the
+  session `SMB2_SESSION_FLAG_ENCRYPT_DATA`, so the client - which only encrypted when the server set that flag -
+  never turned encryption on; it needs client-forced encryption (like smbclient `-e`, MS-SMB2 §3.2.4.1.5).
+- **Root cause (2):** CCM is decrypt-then-MAC (unlike GCM, which verifies before producing plaintext), so
+  `dws_aesccm_open_tag` reads the AAD and received tag **after** writing the recovered plaintext. The SMB codec
+  decrypts **in place** (`rx -> rx`, a no-heap design GCM tolerated by read-before-write), so the plaintext
+  overwrote the TRANSFORM_HEADER's AAD (`rx[20..51]`) and tag (`rx[4..19]`) before the MAC consumed them - it
+  authenticated garbage and failed closed. Separate-buffer tests couldn't see it (no aliasing).
+- **Fix:** (1) advertise `SMB2_GLOBAL_CAP_ENCRYPTION` in NEGOTIATE and add `SmbConfig.encrypt` (client-forced
+  encryption: activate once a cipher is negotiated, regardless of the server session flag). (2) `dws_smb2_decrypt`
+  snapshots the 48 header bytes (AAD + tag) into locals before decrypting, making in-place decrypt correct for
+  every cipher - the crypto primitive's contract is "out may alias the ciphertext", never the AAD/tag, so the
+  codec that aliased the whole buffer is what must preserve them. Read the authoritative MS-SMB2 spec + the
+  smbclient reference trace to get the negotiation right.
+- **Also delivered:** AES-CCM (SP800-38C, 128/256) as a new `crypto/aesccm`, detached-tag AES-256-GCM in
+  `crypto/aesgcm`, all four ciphers wired into the codec + negotiate + key derivation. KAT'd vs pyca/cryptography.
+
+---
+
 ## dws_net_mac read all-zeros on an Ethernet-only device (no egress-interface MAC accessor)
 
 - **Status:** FIXED (2026-07-26). Surfaced + validated on the ESP32-P4 (Ethernet, 192.168.1.153) and S3 (WiFi).

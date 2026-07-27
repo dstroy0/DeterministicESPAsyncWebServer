@@ -12,6 +12,7 @@
 #include "services/smb/smb2.h"
 #include "services/smb/smb_client.h"
 #include "services/smb/spnego.h"
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
@@ -149,14 +150,21 @@ struct Mock
     bool require_311;       // NEGOTIATE advertises 3.1.1 + SIGNING_REQUIRED and the mock signs with AES-CMAC
     Smb2SignAlgo sign_algo; // the signing algorithm in force once signing begins (CMAC for 3.1.1)
     SmbPreauth preauth;     // the running preauth-integrity hash (seeded on the NEGOTIATE request)
-    // SMB 3.1.1 encryption reference-peer state. When require_encrypt is set the mock also offers AES-128-GCM,
-    // derives the same C2S/S2C cipher keys, flags the session encrypt-required, DECRYPTS every TRANSFORM-wrapped
-    // request and ENCRYPTS every response - so the post-auth session runs encrypted end to end.
+    // SMB 3.1.1 encryption reference-peer state. When require_encrypt is set the mock offers @ref cipher (any of
+    // the four SMB 3.1.1 ciphers; defaults to AES-128-GCM), derives the same C2S/S2C cipher keys, flags the
+    // session encrypt-required, DECRYPTS every TRANSFORM-wrapped request and ENCRYPTS every response - so the
+    // post-auth session runs encrypted end to end.
     bool require_encrypt;
-    bool enc_keys;       // cipher keys derived (round-2 onward)
-    uint8_t enc_c2s[16]; // client->server key: the mock decrypts requests with it
-    uint8_t enc_s2c[16]; // server->client key: the mock encrypts responses with it
-    uint64_t enc_nonce;  // the mock's monotonic response nonce
+    // Model a share (not the global server) that requires encryption, like Samba `smb encrypt = required` on a
+    // share: the mock negotiates a cipher + derives keys but does NOT set the session ENCRYPT_DATA flag, and
+    // rejects an unencrypted TREE_CONNECT with ACCESS_DENIED. Only a client that forces encryption (cfg.encrypt)
+    // can then reach the share - the exact case that needs client-forced encryption.
+    bool encrypt_share_only;
+    uint16_t cipher; // the Smb2Cipher to negotiate (0 => AES-128-GCM); selects key + nonce length
+    bool enc_keys;   // cipher keys derived (round-2 onward)
+    uint8_t enc_c2s[DWS_SMB2_MAX_CIPHER_KEY_LEN]; // client->server key: the mock decrypts requests with it
+    uint8_t enc_s2c[DWS_SMB2_MAX_CIPHER_KEY_LEN]; // server->client key: the mock encrypts responses with it
+    uint64_t enc_nonce;                           // the mock's monotonic response nonce
 };
 
 static void append_frame(Mock *m, const uint8_t *resp, size_t rlen)
@@ -208,7 +216,7 @@ static bool mock_verify(const Mock *m, uint8_t *msg, size_t len)
 
 // Build the SMB 3.1.1 NEGOTIATE response body (dialect 0x0311 + SIGNING_REQUIRED + a preauth-integrity
 // SHA-512 context with a server salt + an AES-CMAC signing context) into resp; returns the total length.
-static size_t build_neg_resp_311(uint8_t *resp, uint64_t msg_id, bool offer_encrypt)
+static size_t build_neg_resp_311(uint8_t *resp, uint64_t msg_id, bool offer_encrypt, uint16_t cipher)
 {
     dws_smb2_build_header(resp, DWS_SMB_BUF + 128, Smb2Command::SMB2_NEGOTIATE, 1, msg_id, 0, 0);
     uint8_t *b = resp + 64;
@@ -238,12 +246,12 @@ static size_t build_neg_resp_311(uint8_t *resp, uint64_t msg_id, bool offer_encr
     w16(c2 + 10, Smb2SigningAlgorithm::SMB2_SIGNING_AES_CMAC);
     if (!offer_encrypt)
         return ctx + 48 + 12; // 128 + 48 + 12 = 188
-    // Context 3 - ENCRYPTION_CAPABILITIES advertising AES-128-GCM, 8-byte aligned after context 2 (188 -> 192).
+    // Context 3 - ENCRYPTION_CAPABILITIES advertising the negotiated cipher, 8-byte aligned after context 2.
     uint8_t *c3 = c2 + 16;
     w16(c3 + 0, Smb2NegotiateContextType::SMB2_ENCRYPTION_CAPABILITIES);
     w16(c3 + 2, 4); // DataLength
     w16(c3 + 8, 1); // CipherCount
-    w16(c3 + 10, Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM);
+    w16(c3 + 10, cipher);
     return ctx + 48 + 16 + 12; // 204
 }
 
@@ -260,7 +268,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     if (m->enc_keys && mlen >= DWS_SMB2_TRANSFORM_HDR_LEN && msg[0] == 0xFD && msg[1] == 'S' && msg[2] == 'M' &&
         msg[3] == 'B')
     {
-        size_t pl = dws_smb2_decrypt(m->enc_c2s, msg, mlen, plain, sizeof(plain));
+        size_t pl = dws_smb2_decrypt(m->cipher, m->enc_c2s, msg, mlen, plain, sizeof(plain));
         if (pl == 0)
             return -1; // bad tag / not decryptable -> the client will see the connection drop
         msg = plain;
@@ -303,8 +311,10 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     case Smb2Command::SMB2_NEGOTIATE:
         if (m->require_311)
         {
-            rlen = build_neg_resp_311(resp, h.message_id,
-                                      m->require_encrypt); // dialect 0x0311 + preauth + signing (+ encryption)
+            if (m->cipher == 0)
+                m->cipher = Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM; // default when a test does not pin one
+            rlen = build_neg_resp_311(resp, h.message_id, m->require_encrypt || m->encrypt_share_only,
+                                      m->cipher); // dialect 0x0311 + preauth + signing (+ encryption)
             break;
         }
         dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_NEGOTIATE, 1, h.message_id, 0, 0);
@@ -369,14 +379,18 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
                                                 m->sign_key);
                     m->sign_algo = Smb2SignAlgo::AES_CMAC;
                     m->signing = true;
-                    if (m->require_encrypt)
+                    if (m->require_encrypt || m->encrypt_share_only)
                     {
-                        // Derive the same cipher keys the client will, and flag the session encrypt-required so
-                        // the client encrypts everything from TREE_CONNECT onward (this SS2 reply stays plaintext).
+                        // Derive the same cipher keys the client will. A globally-required server flags the
+                        // session encrypt-required (the client then encrypts from TREE_CONNECT onward); a
+                        // share-only requirement derives keys but leaves the flag clear, so only a client that
+                        // forces encryption (cfg.encrypt) proceeds. This SS2 reply always stays plaintext.
                         dws_smb3_derive_encryption_keys(base_key, (uint16_t)Smb2Dialect::SMB2_DIALECT_0311,
-                                                        m->preauth.hash, m->enc_c2s, m->enc_s2c);
+                                                        m->preauth.hash, dws_smb2_cipher_key_len(m->cipher), m->enc_c2s,
+                                                        m->enc_s2c);
                         m->enc_keys = true;
-                        w16(b + 2, Smb2SessionFlags::SMB2_SESSION_FLAG_ENCRYPT_DATA); // SessionFlags
+                        if (m->require_encrypt)
+                            w16(b + 2, Smb2SessionFlags::SMB2_SESSION_FLAG_ENCRYPT_DATA); // SessionFlags
                     }
                 }
                 else if (m->require_signing)
@@ -393,7 +407,12 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     case Smb2Command::SMB2_TREE_CONNECT:
         dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_TREE_CONNECT, 1, h.message_id, m->tree_id,
                               m->session_id);
-        w32(resp + 8, m->tc_status);
+        // A share that requires encryption rejects an unencrypted TREE_CONNECT (ACCESS_DENIED) - exactly what a
+        // real Samba `smb encrypt = required` share does, forcing the client to encrypt from here on.
+        if (m->encrypt_share_only && !req_enc)
+            w32(resp + 8, 0xC0000022u); // STATUS_ACCESS_DENIED
+        else
+            w32(resp + 8, m->tc_status);
         w16(b + 0, 16); // StructureSize
         b[2] = Smb2ShareType::SMB2_SHARE_TYPE_DISK;
         rlen = 64 + 16;
@@ -486,11 +505,11 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
             // Encrypt the response with the S2C key + a fresh monotonic nonce (the client reads the nonce from
             // the TRANSFORM_HEADER, so it need not track ours). Encrypted replies are never separately signed.
             uint8_t enc[DWS_SMB_BUF + 128];
-            uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN] = {0};
+            uint8_t nonce[DWS_SMB2_NONCE_FIELD_LEN] = {0};
             uint64_t ctr = m->enc_nonce++;
             for (int i = 0; i < 8; i++)
                 nonce[i] = (uint8_t)(ctr >> (8 * i));
-            size_t el = dws_smb2_encrypt(m->enc_s2c, nonce, m->session_id, resp, rlen, enc, sizeof(enc));
+            size_t el = dws_smb2_encrypt(m->cipher, m->enc_s2c, nonce, m->session_id, resp, rlen, enc, sizeof(enc));
             if (m->corrupt_read_sig && h.command == Smb2Command::SMB2_READ)
                 enc[DWS_SMB2_TRANSFORM_HDR_LEN + 2] ^= 0xFF; // tamper a ciphertext byte -> the client's open fails
             append_frame(m, enc, el);
@@ -1760,6 +1779,91 @@ void test_encrypted_response_tampered()
     TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL, smb_read(&h, 0, buf, 100, &got, mock_send, mock_recv, &m));
 }
 
+// Every SMB 3.1.1 cipher must drive the client encrypt/decrypt wiring end to end: for each of the four
+// ciphers the mock offers it, derives the matching-length keys, and the whole post-auth session round-trips.
+void test_open_encrypted_all_ciphers()
+{
+    const uint16_t ciphers[4] = {Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, Smb2Cipher::SMB2_ENCRYPTION_AES256_GCM,
+                                 Smb2Cipher::SMB2_ENCRYPTION_AES128_CCM, Smb2Cipher::SMB2_ENCRYPTION_AES256_CCM};
+    SmbConfig cfg = make_cfg();
+    cfg.desired_access = Smb2Access::SMB2_FILE_GENERIC_READ | Smb2Access::SMB2_FILE_GENERIC_WRITE;
+    cfg.disposition = Smb2Disposition::SMB2_FILE_OPEN_IF;
+    for (int ci = 0; ci < 4; ci++)
+    {
+        Mock m = make_mock();
+        m.require_311 = true;
+        m.require_encrypt = true;
+        m.cipher = ciphers[ci];
+        m.creds = &cfg;
+
+        SmbHandle h;
+        memset(&h, 0, sizeof(h));
+        char cmsg[48];
+        snprintf(cmsg, sizeof(cmsg), "cipher 0x%04x", ciphers[ci]);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m), cmsg);
+        TEST_ASSERT_TRUE(h.encrypt_active);
+        TEST_ASSERT_EQUAL_UINT16(ciphers[ci], h.enc_cipher);
+        TEST_ASSERT_EQUAL_INT(0, m.bad_req_sigs);
+
+        uint8_t data[200];
+        for (int i = 0; i < 200; i++)
+            data[i] = (uint8_t)(0x11 * ci + i * 5);
+        size_t wr = 0;
+        TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_write(&h, 0, data, sizeof(data), &wr, mock_send, mock_recv, &m));
+        TEST_ASSERT_EQUAL_UINT32(sizeof(data), wr);
+        uint8_t buf[256];
+        size_t got = 0;
+        TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(data), &got, mock_send, mock_recv, &m));
+        TEST_ASSERT_EQUAL_UINT32(sizeof(data), got);
+        TEST_ASSERT_EQUAL_MEMORY(data, buf, sizeof(data));
+        TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m));
+    }
+}
+
+// A share that requires encryption (server negotiates a cipher but does NOT set the session ENCRYPT_DATA flag,
+// and denies an unencrypted TREE_CONNECT) is reachable ONLY when the client forces encryption (cfg.encrypt) -
+// the exact fix for the real Samba `smb encrypt = required` share. Without it the client fails at TREE_CONNECT.
+void test_open_encrypted_share_requires_client_force()
+{
+    SmbConfig cfg = make_cfg();
+
+    // No client-forced encryption: TREE_CONNECT goes out unencrypted -> ACCESS_DENIED -> open fails.
+    {
+        Mock m = make_mock();
+        m.require_311 = true;
+        m.encrypt_share_only = true;
+        m.creds = &cfg;
+        SmbHandle h;
+        memset(&h, 0, sizeof(h));
+        TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    }
+
+    // With cfg.encrypt the client encrypts from TREE_CONNECT on -> the share accepts -> open + read succeed.
+    {
+        Mock m = make_mock();
+        for (int i = 0; i < 60; i++)
+            m.file_data[i] = (uint8_t)(i + 1);
+        m.file_data_len = 60;
+        m.file_size = 60;
+        m.require_311 = true;
+        m.encrypt_share_only = true;
+        m.creds = &cfg;
+
+        SmbConfig ecfg = cfg;
+        ecfg.encrypt = true;
+        SmbHandle h;
+        memset(&h, 0, sizeof(h));
+        TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&ecfg, &h, mock_send, mock_recv, &m));
+        TEST_ASSERT_TRUE(h.encrypt_active); // forced on despite no session ENCRYPT_DATA flag
+        uint8_t buf[64];
+        size_t got = 0;
+        TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_read(&h, 0, buf, 60, &got, mock_send, mock_recv, &m));
+        TEST_ASSERT_EQUAL_UINT32(60, got);
+        TEST_ASSERT_EQUAL_MEMORY(m.file_data, buf, 60);
+        TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m));
+    }
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1836,6 +1940,8 @@ int main()
     RUN_TEST(test_open_signed_311_roundtrip);
     RUN_TEST(test_signed_311_response_tampered);
     RUN_TEST(test_open_encrypted_311_roundtrip);
+    RUN_TEST(test_open_encrypted_all_ciphers);
+    RUN_TEST(test_open_encrypted_share_requires_client_force);
     RUN_TEST(test_encrypted_response_tampered);
     return UNITY_END();
 }

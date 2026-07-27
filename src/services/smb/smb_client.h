@@ -61,6 +61,11 @@ struct SmbConfig
     const char *path;        ///< file name relative to the share root (e.g. `PROGRAMS\A.NC`)
     uint32_t desired_access; ///< Smb2Access::SMB2_FILE_GENERIC_READ and/or _WRITE
     uint32_t disposition;    ///< Smb2Disposition::SMB2_FILE_OPEN / _OPEN_IF / _OVERWRITE_IF / _CREATE
+    bool encrypt;            ///< request SMB 3.x transport encryption from the session on (client-forced, like
+                             ///< smbclient -e): needed to reach a share whose server requires encryption, which
+                             ///< rejects the unencrypted TREE_CONNECT before it can advertise the share flag.
+    uint16_t cipher_pref;    ///< preferred Smb2Cipher to negotiate (moved to the front of the offer); 0 = default
+                             ///< order (AES-128-GCM, AES-256-GCM, AES-128-CCM, AES-256-CCM).
 };
 
 /** @brief An open file on an authenticated session; the ids thread the follow-up requests. */
@@ -75,9 +80,10 @@ struct SmbHandle
     Smb2SignAlgo signing_algo; ///< HMAC-SHA256 (SMB 2.x) or AES-CMAC (SMB 3.x), from the negotiated dialect
     uint8_t signing_key[16];   ///< the session signing key when @ref signing_active (2.x: NTLMv2 key; 3.x: KDF-derived)
     bool encrypt_active;       ///< SMB 3.x transport encryption is in force (server session or share required it)
-    uint8_t enc_c2s[16];       ///< client->server AES-128-GCM key (encrypts requests) when @ref encrypt_active
-    uint8_t enc_s2c[16];       ///< server->client AES-128-GCM key (decrypts responses) when @ref encrypt_active
-    uint64_t enc_nonce;        ///< monotonic per-session GCM nonce counter, persisted across read/write/close
+    uint16_t enc_cipher;       ///< negotiated Smb2Cipher id (selects the key + nonce length) when @ref encrypt_active
+    uint8_t enc_c2s[DWS_SMB2_MAX_CIPHER_KEY_LEN]; ///< client->server cipher key (encrypts requests)
+    uint8_t enc_s2c[DWS_SMB2_MAX_CIPHER_KEY_LEN]; ///< server->client cipher key (decrypts responses)
+    uint64_t enc_nonce; ///< monotonic per-session AEAD nonce counter, persisted across read/write/close
 };
 
 /**

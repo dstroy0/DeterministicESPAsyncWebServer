@@ -6,6 +6,8 @@
 // request/response framing - including a full auth round routed through the framing (SPNEGO +
 // NTLMSSP). All fields little-endian. Pure host tests against the MS-SMB2 field layout.
 
+#include "crypto/aesccm.h" // KAT the AES-CCM primitive directly (SMB 3.x AES-128/256-CCM)
+#include "crypto/aesgcm.h" // KAT the detached AES-256-GCM primitive
 #include "services/smb/ntlmssp.h"
 #include "services/smb/smb2.h"
 #include "services/smb/spnego.h"
@@ -213,12 +215,15 @@ void test_build_negotiate_311()
     uint8_t salt[32];
     for (int i = 0; i < 32; i++)
         salt[i] = (uint8_t)(0xA0 + i);
+    // The four SMB 3.1.1 ciphers, in the client's default preference order.
+    const uint16_t offer[4] = {Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, Smb2Cipher::SMB2_ENCRYPTION_AES256_GCM,
+                               Smb2Cipher::SMB2_ENCRYPTION_AES128_CCM, Smb2Cipher::SMB2_ENCRYPTION_AES256_CCM};
     uint8_t buf[256];
     size_t n = dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED,
-                                            salt, sizeof(salt));
+                                            salt, sizeof(salt), offer, 4);
     // header(64)+body(36)+5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) -> pad
-    // to 176; encryption ctx(12) = 188
-    TEST_ASSERT_EQUAL_size_t(188, n);
+    // to 176; encryption ctx(8 + 2 + 4*2 = 18) = 194
+    TEST_ASSERT_EQUAL_size_t(194, n);
 
     Smb2Header h;
     TEST_ASSERT_TRUE(dws_smb2_parse_header(buf, n, &h));
@@ -250,14 +255,26 @@ void test_build_negotiate_311()
 
     const uint8_t *c3 = buf + 176; // ENCRYPTION_CAPABILITIES, aligned after the signing context
     TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_ENCRYPTION_CAPABILITIES, r16(c3 + 0));
-    TEST_ASSERT_EQUAL_UINT16(4, r16(c3 + 2)); // DataLength
-    TEST_ASSERT_EQUAL_UINT16(1, r16(c3 + 8)); // CipherCount
-    TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, r16(c3 + 10));
+    TEST_ASSERT_EQUAL_UINT16(10, r16(c3 + 2)); // DataLength = CipherCount(2) + 4 ciphers(8)
+    TEST_ASSERT_EQUAL_UINT16(4, r16(c3 + 8));  // CipherCount = all four ciphers
+    TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, r16(c3 + 10)); // Ciphers[0]
+    TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES256_GCM, r16(c3 + 12)); // Ciphers[1]
+    TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_CCM, r16(c3 + 14)); // Ciphers[2]
+    TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES256_CCM, r16(c3 + 16)); // Ciphers[3]
+
+    // With no ciphers offered the encryption context is omitted (NegotiateContextCount = 2, total 172).
+    size_t n0 = dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED,
+                                             salt, sizeof(salt), nullptr, 0);
+    TEST_ASSERT_EQUAL_size_t(172, n0);
+    TEST_ASSERT_EQUAL_UINT16(2, r16(buf + 64 + 32)); // NegotiateContextCount
 
     // overflow + bad-arg fail closed
-    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, 100, gid, 0, salt, sizeof(salt)));
-    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, nullptr, 32));
-    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, 100, gid, 0, salt, sizeof(salt), offer, 4));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, nullptr, 32, offer, 4));
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 0, offer, 4));
+    TEST_ASSERT_EQUAL_size_t(0,
+                             dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 32, nullptr, 4)); // null list
+    TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 32, offer, 5)); // too many
 }
 
 // A NEGOTIATE response (dialect 3.1.1) carrying preauth-integrity + encryption + signing contexts.
@@ -1140,7 +1157,102 @@ void test_smb2_signing_cmac()
     dws_smb2_sign_cmac(key, msg, 63); // too short: a no-op
 }
 
-// ---- SMB 3.x transport encryption (TRANSFORM_HEADER + AES-128-GCM) --------------------------------------
+// ---- SMB 3.x transport encryption (TRANSFORM_HEADER + AES-128/256-GCM and AES-128/256-CCM) --------------
+
+// Known-answer vectors from pyca/cryptography (AES-CCM tag_length=16, AES-256-GCM), SMB nonce lengths
+// (11 CCM / 12 GCM), 32-byte AAD, 50-byte payload - an independent reference for the CCM + 256-GCM crypto.
+static const uint8_t kat_ccm128_key[16] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
+                                           0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f};
+static const uint8_t kat_ccm128_nonce[11] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a};
+static const uint8_t kat_ccm128_aad[32] = {0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a,
+                                           0x8b, 0x8c, 0x8d, 0x8e, 0x8f, 0x90, 0x91, 0x92, 0x93, 0x94, 0x95,
+                                           0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f};
+static const uint8_t kat_ccm128_pt[50] = {0x03, 0x0a, 0x11, 0x18, 0x1f, 0x26, 0x2d, 0x34, 0x3b, 0x42, 0x49, 0x50, 0x57,
+                                          0x5e, 0x65, 0x6c, 0x73, 0x7a, 0x81, 0x88, 0x8f, 0x96, 0x9d, 0xa4, 0xab, 0xb2,
+                                          0xb9, 0xc0, 0xc7, 0xce, 0xd5, 0xdc, 0xe3, 0xea, 0xf1, 0xf8, 0xff, 0x06, 0x0d,
+                                          0x14, 0x1b, 0x22, 0x29, 0x30, 0x37, 0x3e, 0x45, 0x4c, 0x53, 0x5a};
+static const uint8_t kat_ccm128_ct[50] = {0xf5, 0xf9, 0xb8, 0x20, 0x1f, 0xbb, 0x50, 0x5c, 0xe8, 0x8b, 0xfa, 0xf3, 0x72,
+                                          0xa9, 0xfd, 0x6d, 0x76, 0x09, 0x39, 0x87, 0x71, 0xe2, 0x16, 0x5b, 0x13, 0x53,
+                                          0x83, 0xff, 0x4b, 0xc9, 0xf3, 0x00, 0xdd, 0x66, 0x94, 0xe3, 0x10, 0x6c, 0x5f,
+                                          0xe8, 0xb5, 0xd0, 0x2f, 0x59, 0xf7, 0xe3, 0x68, 0x06, 0x9b, 0xd7};
+static const uint8_t kat_ccm128_tag[16] = {0xb9, 0xf5, 0x12, 0x3c, 0x6d, 0x5e, 0xf5, 0x7f,
+                                           0x2f, 0x2c, 0x3a, 0xbf, 0x06, 0x45, 0xbe, 0x62};
+
+static const uint8_t kat_ccm256_key[32] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a,
+                                           0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55,
+                                           0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f};
+static const uint8_t kat_ccm256_nonce[11] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a};
+static const uint8_t kat_ccm256_aad[32] = {0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a,
+                                           0x8b, 0x8c, 0x8d, 0x8e, 0x8f, 0x90, 0x91, 0x92, 0x93, 0x94, 0x95,
+                                           0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f};
+static const uint8_t kat_ccm256_pt[50] = {0x03, 0x0a, 0x11, 0x18, 0x1f, 0x26, 0x2d, 0x34, 0x3b, 0x42, 0x49, 0x50, 0x57,
+                                          0x5e, 0x65, 0x6c, 0x73, 0x7a, 0x81, 0x88, 0x8f, 0x96, 0x9d, 0xa4, 0xab, 0xb2,
+                                          0xb9, 0xc0, 0xc7, 0xce, 0xd5, 0xdc, 0xe3, 0xea, 0xf1, 0xf8, 0xff, 0x06, 0x0d,
+                                          0x14, 0x1b, 0x22, 0x29, 0x30, 0x37, 0x3e, 0x45, 0x4c, 0x53, 0x5a};
+static const uint8_t kat_ccm256_ct[50] = {0x26, 0x95, 0x7c, 0x92, 0xbe, 0x2b, 0x92, 0x21, 0xaf, 0x93, 0x47, 0x0b, 0xe1,
+                                          0x3a, 0x1b, 0x9e, 0x3a, 0x44, 0x15, 0x92, 0xeb, 0x1c, 0x14, 0xc3, 0x3b, 0x63,
+                                          0x67, 0x02, 0x70, 0xaa, 0x65, 0xb2, 0x7f, 0xf4, 0x4d, 0x5a, 0x69, 0x27, 0xb6,
+                                          0x1a, 0x2b, 0xa7, 0x20, 0xeb, 0x72, 0x29, 0xa5, 0x61, 0x76, 0x5c};
+static const uint8_t kat_ccm256_tag[16] = {0x0d, 0xe9, 0x4d, 0x7d, 0xae, 0x97, 0x66, 0x24,
+                                           0x7a, 0xa5, 0xb4, 0x0b, 0x61, 0x18, 0xe8, 0x2c};
+
+static const uint8_t kat_gcm256_key[32] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a,
+                                           0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55,
+                                           0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f};
+static const uint8_t kat_gcm256_nonce[12] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b};
+static const uint8_t kat_gcm256_aad[32] = {0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a,
+                                           0x8b, 0x8c, 0x8d, 0x8e, 0x8f, 0x90, 0x91, 0x92, 0x93, 0x94, 0x95,
+                                           0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f};
+static const uint8_t kat_gcm256_pt[50] = {0x03, 0x0a, 0x11, 0x18, 0x1f, 0x26, 0x2d, 0x34, 0x3b, 0x42, 0x49, 0x50, 0x57,
+                                          0x5e, 0x65, 0x6c, 0x73, 0x7a, 0x81, 0x88, 0x8f, 0x96, 0x9d, 0xa4, 0xab, 0xb2,
+                                          0xb9, 0xc0, 0xc7, 0xce, 0xd5, 0xdc, 0xe3, 0xea, 0xf1, 0xf8, 0xff, 0x06, 0x0d,
+                                          0x14, 0x1b, 0x22, 0x29, 0x30, 0x37, 0x3e, 0x45, 0x4c, 0x53, 0x5a};
+static const uint8_t kat_gcm256_ct[50] = {0x7a, 0x30, 0x2c, 0xc9, 0x49, 0xb7, 0x39, 0x17, 0x95, 0xe4, 0x9f, 0x00, 0xbc,
+                                          0xa6, 0x6a, 0xda, 0x76, 0x6d, 0x05, 0x41, 0x89, 0x87, 0xd7, 0xaf, 0xd3, 0xdc,
+                                          0x70, 0x11, 0x1c, 0xa7, 0x67, 0x0c, 0x00, 0x1e, 0xe3, 0x03, 0x93, 0xf5, 0x4e,
+                                          0xeb, 0x29, 0x42, 0xc8, 0xae, 0x1b, 0xab, 0xe0, 0xd8, 0x01, 0x21};
+static const uint8_t kat_gcm256_tag[16] = {0x1e, 0xad, 0x4c, 0x0a, 0x8b, 0x61, 0x4c, 0x40,
+                                           0x12, 0x9d, 0xa7, 0x46, 0x59, 0xcb, 0xdb, 0xe3};
+
+// KAT the CCM (128/256) and detached 256-GCM primitives against the independent reference vectors, so the new
+// crypto is verified beyond a self-consistent round trip (a KAT vs one's own round trip proves only that).
+void test_smb3_cipher_kat()
+{
+    uint8_t ct[64];
+    uint8_t tag[16];
+    uint8_t pt[64];
+
+    TEST_ASSERT_TRUE(
+        dws_aesccm_seal_tag(kat_ccm128_key, 16, kat_ccm128_nonce, 11, kat_ccm128_aad, 32, kat_ccm128_pt, 50, ct, tag));
+    TEST_ASSERT_EQUAL_MEMORY(kat_ccm128_ct, ct, 50);
+    TEST_ASSERT_EQUAL_MEMORY(kat_ccm128_tag, tag, 16);
+    TEST_ASSERT_TRUE(dws_aesccm_open_tag(kat_ccm128_key, 16, kat_ccm128_nonce, 11, kat_ccm128_aad, 32, kat_ccm128_ct,
+                                         50, kat_ccm128_tag, pt));
+    TEST_ASSERT_EQUAL_MEMORY(kat_ccm128_pt, pt, 50);
+
+    TEST_ASSERT_TRUE(
+        dws_aesccm_seal_tag(kat_ccm256_key, 32, kat_ccm256_nonce, 11, kat_ccm256_aad, 32, kat_ccm256_pt, 50, ct, tag));
+    TEST_ASSERT_EQUAL_MEMORY(kat_ccm256_ct, ct, 50);
+    TEST_ASSERT_EQUAL_MEMORY(kat_ccm256_tag, tag, 16);
+    TEST_ASSERT_TRUE(dws_aesccm_open_tag(kat_ccm256_key, 32, kat_ccm256_nonce, 11, kat_ccm256_aad, 32, kat_ccm256_ct,
+                                         50, kat_ccm256_tag, pt));
+    TEST_ASSERT_EQUAL_MEMORY(kat_ccm256_pt, pt, 50);
+
+    dws_aesgcm_seal_tag(kat_gcm256_key, kat_gcm256_nonce, kat_gcm256_aad, 32, kat_gcm256_pt, 50, ct, tag);
+    TEST_ASSERT_EQUAL_MEMORY(kat_gcm256_ct, ct, 50);
+    TEST_ASSERT_EQUAL_MEMORY(kat_gcm256_tag, tag, 16);
+    TEST_ASSERT_TRUE(dws_aesgcm_open_tag(kat_gcm256_key, kat_gcm256_nonce, kat_gcm256_aad, 32, kat_gcm256_ct, 50,
+                                         kat_gcm256_tag, pt));
+    TEST_ASSERT_EQUAL_MEMORY(kat_gcm256_pt, pt, 50);
+
+    // A flipped tag byte fails closed (CCM open recomputes the MAC over the plaintext).
+    uint8_t bad[16];
+    memcpy(bad, kat_ccm128_tag, 16);
+    bad[0] ^= 0x01;
+    TEST_ASSERT_FALSE(
+        dws_aesccm_open_tag(kat_ccm128_key, 16, kat_ccm128_nonce, 11, kat_ccm128_aad, 32, kat_ccm128_ct, 50, bad, pt));
+}
+
 void test_smb3_derive_encryption_keys()
 {
     uint8_t sk[16];
@@ -1150,18 +1262,26 @@ void test_smb3_derive_encryption_keys()
     for (int i = 0; i < 64; i++)
         preauth[i] = (uint8_t)i;
 
-    uint8_t c2s[16] = {0}, s2c[16] = {0}, c2s2[16] = {0}, s2c2[16] = {0};
-    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c));
-    // Deterministic: same inputs -> same keys.
-    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s2, s2c2));
+    uint8_t c2s[32] = {0}, s2c[32] = {0}, c2s2[32] = {0}, s2c2[32] = {0};
+    // 128-bit cipher keys (AES-128 ciphers).
+    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, 16, c2s, s2c));
+    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, 16, c2s2, s2c2)); // deterministic
     TEST_ASSERT_EQUAL_MEMORY(c2s, c2s2, 16);
     TEST_ASSERT_EQUAL_MEMORY(s2c, s2c2, 16);
-    // The two directions use different labels, so the keys must differ.
-    TEST_ASSERT_TRUE(memcmp(c2s, s2c, 16) != 0);
-    // 3.1.1 requires the preauth hash.
-    TEST_ASSERT_FALSE(dws_smb3_derive_encryption_keys(sk, 0x0311, nullptr, c2s, s2c));
+    TEST_ASSERT_TRUE(memcmp(c2s, s2c, 16) != 0); // the two directions use different labels
+
+    // 256-bit cipher keys (AES-256 ciphers): 32 bytes, distinct directions, and different from the 128-bit key
+    // (the [L] length field differs, so the whole KDF output differs).
+    uint8_t c2s256[32] = {0}, s2c256[32] = {0};
+    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, 32, c2s256, s2c256));
+    TEST_ASSERT_TRUE(memcmp(c2s256, s2c256, 32) != 0);
+    TEST_ASSERT_TRUE(memcmp(c2s256, c2s, 16) != 0);
+
+    // 3.1.1 requires the preauth hash; an invalid key length fails closed.
+    TEST_ASSERT_FALSE(dws_smb3_derive_encryption_keys(sk, 0x0311, nullptr, 16, c2s, s2c));
+    TEST_ASSERT_FALSE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, 24, c2s, s2c));
     // 3.0.2 uses the fixed contexts (no preauth) and still derives distinct keys.
-    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0302, nullptr, c2s, s2c));
+    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0302, nullptr, 16, c2s, s2c));
     TEST_ASSERT_TRUE(memcmp(c2s, s2c, 16) != 0);
 }
 
@@ -1171,73 +1291,89 @@ void test_smb3_encrypt_decrypt_roundtrip()
     for (int i = 0; i < 16; i++)
         sk[i] = (uint8_t)(0xA0 + i);
     uint8_t preauth[64] = {0};
-    uint8_t c2s[16], s2c[16];
-    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c));
 
-    uint8_t msg[100];
-    for (int i = 0; i < 100; i++)
-        msg[i] = (uint8_t)(i * 7 + 3);
-    uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-    const uint64_t sid = 0x0011223344556677ULL;
+    // Every SMB 3.1.1 cipher must round-trip through the TRANSFORM_HEADER codec.
+    const uint16_t ciphers[4] = {Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, Smb2Cipher::SMB2_ENCRYPTION_AES256_GCM,
+                                 Smb2Cipher::SMB2_ENCRYPTION_AES128_CCM, Smb2Cipher::SMB2_ENCRYPTION_AES256_CCM};
+    for (int ci = 0; ci < 4; ci++)
+    {
+        const uint16_t cipher = ciphers[ci];
+        const size_t klen = dws_smb2_cipher_key_len(cipher);
+        uint8_t c2s[32], s2c[32];
+        TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, klen, c2s, s2c));
 
-    uint8_t enc[DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg)];
-    size_t elen = dws_smb2_encrypt(c2s, nonce, sid, msg, sizeof(msg), enc, sizeof(enc));
-    TEST_ASSERT_EQUAL_UINT32(DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg), elen);
-    // TRANSFORM_HEADER layout.
-    TEST_ASSERT_EQUAL_HEX8(0xFD, enc[0]);
-    TEST_ASSERT_EQUAL_HEX8('S', enc[1]);
-    TEST_ASSERT_EQUAL_HEX8('M', enc[2]);
-    TEST_ASSERT_EQUAL_HEX8('B', enc[3]);
-    TEST_ASSERT_EQUAL_MEMORY(nonce, enc + 20, DWS_SMB2_GCM_NONCE_LEN); // Nonce
-    TEST_ASSERT_EQUAL_HEX8(0x01, enc[42]);                             // Flags = Encrypted
-    // Ciphertext must differ from plaintext (it was actually encrypted).
-    TEST_ASSERT_TRUE(memcmp(enc + DWS_SMB2_TRANSFORM_HDR_LEN, msg, sizeof(msg)) != 0);
+        uint8_t msg[100];
+        for (int i = 0; i < 100; i++)
+            msg[i] = (uint8_t)(i * 7 + 3);
+        uint8_t nonce[DWS_SMB2_NONCE_FIELD_LEN] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0, 0, 0, 0};
+        const uint64_t sid = 0x0011223344556677ULL;
 
-    // Round trip.
-    uint8_t dec[sizeof(msg)];
-    size_t dlen = dws_smb2_decrypt(c2s, enc, elen, dec, sizeof(dec));
-    TEST_ASSERT_EQUAL_UINT32(sizeof(msg), dlen);
-    TEST_ASSERT_EQUAL_MEMORY(msg, dec, sizeof(msg));
+        uint8_t enc[DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg)];
+        size_t elen = dws_smb2_encrypt(cipher, c2s, nonce, sid, msg, sizeof(msg), enc, sizeof(enc));
+        TEST_ASSERT_EQUAL_UINT32(DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg), elen);
+        TEST_ASSERT_EQUAL_HEX8(0xFD, enc[0]);
+        TEST_ASSERT_EQUAL_HEX8('S', enc[1]);
+        TEST_ASSERT_EQUAL_HEX8('M', enc[2]);
+        TEST_ASSERT_EQUAL_HEX8('B', enc[3]);
+        TEST_ASSERT_EQUAL_MEMORY(nonce, enc + 20, DWS_SMB2_NONCE_FIELD_LEN); // full 16-byte Nonce field
+        TEST_ASSERT_EQUAL_HEX8(0x01, enc[42]);                               // Flags = Encrypted
+        TEST_ASSERT_TRUE(memcmp(enc + DWS_SMB2_TRANSFORM_HDR_LEN, msg, sizeof(msg)) != 0);
+
+        uint8_t dec[sizeof(msg)];
+        size_t dlen = dws_smb2_decrypt(cipher, c2s, enc, elen, dec, sizeof(dec));
+        TEST_ASSERT_EQUAL_UINT32(sizeof(msg), dlen);
+        TEST_ASSERT_EQUAL_MEMORY(msg, dec, sizeof(msg));
+
+        // Decrypting with a different cipher id must fail (different key length / nonce length / construction).
+        const uint16_t other = (cipher == Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM)
+                                   ? Smb2Cipher::SMB2_ENCRYPTION_AES128_CCM
+                                   : Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM;
+        TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(other, c2s, enc, elen, dec, sizeof(dec)));
+    }
 }
 
 void test_smb3_decrypt_rejects_tamper()
 {
+    const uint16_t cipher = Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM;
     uint8_t sk[16] = {0};
     uint8_t preauth[64] = {0};
-    uint8_t c2s[16], s2c[16];
-    dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c);
+    uint8_t c2s[32], s2c[32];
+    dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, 16, c2s, s2c);
 
     uint8_t msg[40];
     memset(msg, 0x5A, sizeof(msg));
-    uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN] = {9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 1};
+    uint8_t nonce[DWS_SMB2_NONCE_FIELD_LEN] = {9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
     uint8_t enc[DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg)];
-    size_t elen = dws_smb2_encrypt(c2s, nonce, 42, msg, sizeof(msg), enc, sizeof(enc));
+    size_t elen = dws_smb2_encrypt(cipher, c2s, nonce, 42, msg, sizeof(msg), enc, sizeof(enc));
     uint8_t dec[sizeof(msg)];
 
     // Flip a ciphertext byte -> tag mismatch.
     uint8_t t1[sizeof(enc)];
     memcpy(t1, enc, elen);
     t1[DWS_SMB2_TRANSFORM_HDR_LEN + 5] ^= 0x01;
-    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, t1, elen, dec, sizeof(dec)));
     // Flip a Signature (tag) byte.
     memcpy(t1, enc, elen);
     t1[4] ^= 0x01;
-    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, t1, elen, dec, sizeof(dec)));
     // Flip an AAD byte (SessionId, part of the header covered by the AEAD).
     memcpy(t1, enc, elen);
     t1[44] ^= 0x01;
-    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, t1, elen, dec, sizeof(dec)));
     // Wrong key.
-    uint8_t wrong[16];
-    memcpy(wrong, c2s, 16);
+    uint8_t wrong[32];
+    memcpy(wrong, c2s, 32);
     wrong[0] ^= 0xFF;
-    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(wrong, enc, elen, dec, sizeof(dec)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, wrong, enc, elen, dec, sizeof(dec)));
     // Bad ProtocolId, short input, and OriginalMessageSize mismatch.
     memcpy(t1, enc, elen);
     t1[0] ^= 0x01;
-    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));
-    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, enc, DWS_SMB2_TRANSFORM_HDR_LEN - 1, dec, sizeof(dec)));
-    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, enc, elen, dec, sizeof(dec) - 1)); // out too small
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, t1, elen, dec, sizeof(dec)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, enc, DWS_SMB2_TRANSFORM_HDR_LEN - 1, dec, sizeof(dec)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, enc, elen, dec, sizeof(dec) - 1)); // out too small
+    // An unrecognized cipher id fails closed (encrypt and decrypt).
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_encrypt(0x00FF, c2s, nonce, 42, msg, sizeof(msg), enc, sizeof(enc)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(0x00FF, c2s, enc, elen, dec, sizeof(dec)));
 }
 
 int main()
@@ -1285,6 +1421,7 @@ int main()
     RUN_TEST(test_parse_write_null_and_command);
     RUN_TEST(test_smb2_signing);
     RUN_TEST(test_smb2_signing_cmac);
+    RUN_TEST(test_smb3_cipher_kat);
     RUN_TEST(test_smb3_derive_encryption_keys);
     RUN_TEST(test_smb3_encrypt_decrypt_roundtrip);
     RUN_TEST(test_smb3_decrypt_rejects_tamper);

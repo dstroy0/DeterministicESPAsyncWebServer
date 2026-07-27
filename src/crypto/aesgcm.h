@@ -121,4 +121,26 @@ bool dws_aesgcm_open(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, cons
 /** @brief Zero the key schedule, H, and nonce (volatile wipe). Call on disconnect. */
 void dws_aesgcm_wipe(DwsAesGcmCtx *ctx);
 
+// ---------------------------------------------------------------------------
+// Stateless detached-tag one-shots (explicit nonce, tag kept apart from the ciphertext). Used by SMB 3.x
+// AES-256-GCM, whose TRANSFORM_HEADER carries the tag in its own Signature field and supplies the nonce per
+// message rather than advancing an invocation counter. Mirrors dws_aes128gcm_seal_tag / _open_tag.
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Seal one message with AES-256-GCM under @p key and @p nonce; @p ct_out receives @p pt_len ciphertext
+ *        bytes (may alias @p pt) and @p tag_out the 16-byte tag. No context state is kept or advanced.
+ */
+void dws_aesgcm_seal_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
+                         const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len, uint8_t *ct_out,
+                         uint8_t tag_out[DWS_AESGCM_TAG_LEN]);
+
+/**
+ * @brief Open one AES-256-GCM message: verify @p tag over @p aad || @p ct in constant time, then (only on
+ *        success) decrypt @p ct into @p out (may alias @p ct). @return true iff the tag is valid.
+ */
+bool dws_aesgcm_open_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
+                         const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
+                         const uint8_t tag[DWS_AESGCM_TAG_LEN], uint8_t *out);
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AESGCM_H

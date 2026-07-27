@@ -1497,6 +1497,8 @@
       "src": [
         "+<services/smb/smb2.cpp>",
         "+<crypto/aes128gcm.cpp>",
+        "+<crypto/aesgcm.cpp>",
+        "+<crypto/aesccm.cpp>",
         "+<crypto/md.cpp>",
         "+<services/smb/ntlm.cpp>",
         "+<services/smb/ntlmssp.cpp>",

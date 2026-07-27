@@ -71,6 +71,31 @@ void dws_aesgcm_wipe(DwsAesGcmCtx *ctx)
         p[i] = 0;
 }
 
+void dws_aesgcm_seal_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
+                         const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len, uint8_t *ct_out,
+                         uint8_t tag_out[DWS_AESGCM_TAG_LEN])
+{
+    mbedtls_gcm_context g;
+    mbedtls_gcm_init(&g);
+    mbedtls_gcm_setkey(&g, MBEDTLS_CIPHER_ID_AES, key, 256);
+    mbedtls_gcm_crypt_and_tag(&g, MBEDTLS_GCM_ENCRYPT, pt_len, nonce, DWS_AESGCM_IV_LEN, aad, aad_len, pt, ct_out,
+                              DWS_AESGCM_TAG_LEN, tag_out);
+    mbedtls_gcm_free(&g);
+}
+
+bool dws_aesgcm_open_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
+                         const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
+                         const uint8_t tag[DWS_AESGCM_TAG_LEN], uint8_t *out)
+{
+    mbedtls_gcm_context g;
+    mbedtls_gcm_init(&g);
+    mbedtls_gcm_setkey(&g, MBEDTLS_CIPHER_ID_AES, key, 256);
+    int rc =
+        mbedtls_gcm_auth_decrypt(&g, ct_len, nonce, DWS_AESGCM_IV_LEN, aad, aad_len, tag, DWS_AESGCM_TAG_LEN, ct, out);
+    mbedtls_gcm_free(&g);
+    return rc == 0;
+}
+
 #else // !DWS_AESGCM_HW_GCM
 
 // ===========================================================================
@@ -278,6 +303,53 @@ void dws_aesgcm_wipe(DwsAesGcmCtx *ctx)
     volatile uint8_t *p = (volatile uint8_t *)ctx;
     for (size_t i = 0; i < sizeof(DwsAesGcmCtx); i++)
         p[i] = 0;
+}
+
+void dws_aesgcm_seal_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
+                         const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len, uint8_t *ct_out,
+                         uint8_t tag_out[DWS_AESGCM_TAG_LEN])
+{
+    DwsAesGcmCtx ctx;
+    dws_aesgcm_init(&ctx, key, nonce);
+    uint8_t j0[16];
+    memcpy(j0, nonce, 12);
+    j0[12] = 0;
+    j0[13] = 0;
+    j0[14] = 0;
+    j0[15] = 1;
+    uint8_t ctr[16];
+    memcpy(ctr, j0, 16);
+    inc32(ctr);
+    gctr(&ctx, ctr, pt, pt_len, ct_out);
+
+    uint8_t j0b[16];
+    gcm_core(&ctx, nonce, aad, aad_len, ct_out, pt_len, j0b, tag_out);
+    dws_aesgcm_wipe(&ctx);
+}
+
+bool dws_aesgcm_open_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
+                         const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
+                         const uint8_t tag[DWS_AESGCM_TAG_LEN], uint8_t *out)
+{
+    DwsAesGcmCtx ctx;
+    dws_aesgcm_init(&ctx, key, nonce);
+    uint8_t j0[16];
+    uint8_t exp_tag[16];
+    gcm_core(&ctx, nonce, aad, aad_len, ct, ct_len, j0, exp_tag);
+    uint8_t diff = 0;
+    for (int i = 0; i < DWS_AESGCM_TAG_LEN; i++)
+        diff |= (uint8_t)(exp_tag[i] ^ tag[i]);
+    if (diff != 0)
+    {
+        dws_aesgcm_wipe(&ctx);
+        return false; // tag mismatch: nothing written
+    }
+    uint8_t ctr[16];
+    memcpy(ctr, j0, 16);
+    inc32(ctr);
+    gctr(&ctx, ctr, ct, ct_len, out);
+    dws_aesgcm_wipe(&ctx);
+    return true;
 }
 
 #endif // DWS_AESGCM_HW_GCM

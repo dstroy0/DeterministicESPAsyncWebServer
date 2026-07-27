@@ -1515,7 +1515,11 @@
     "PICO",
     "regmap",
     "Sitara",
-    "subdirs"
+    "subdirs",
+    "aesccm",
+    "netconn",
+    "SMBC",
+    "SMBS"
   ],
   "ignorePaths": [
     "node_modules/**",

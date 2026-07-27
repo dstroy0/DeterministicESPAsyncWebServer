@@ -142,16 +142,18 @@ struct SmbSign
 };
 
 // SMB 3.x transport-encryption state for a session. Once @ref active, every request is wrapped in a
-// TRANSFORM_HEADER (AES-128-GCM) instead of signed, and every response must decrypt (MS-SMB2 §3.1.4.3/4).
-// @ref available means the cipher keys were derived (server negotiated GCM) even before encryption is
-// required. @ref nonce is a monotonic per-session counter - it MUST never repeat for a given key, so callers
-// persist it across requests (on the SmbHandle for read/write/close).
+// TRANSFORM_HEADER (the negotiated AEAD: AES-128/256-GCM or AES-128/256-CCM) instead of signed, and every
+// response must decrypt (MS-SMB2 §3.1.4.3/4). @ref available means the cipher keys were derived (the server
+// negotiated a cipher) even before encryption is required. @ref cipher is the negotiated Smb2Cipher id (it
+// selects the key + nonce length). @ref nonce is a monotonic per-session counter - it MUST never repeat for a
+// given key, so callers persist it across requests (on the SmbHandle for read/write/close).
 struct SmbCrypt
 {
     bool active;
     bool available;
-    uint8_t c2s[16];
-    uint8_t s2c[16];
+    uint16_t cipher;
+    uint8_t c2s[DWS_SMB2_MAX_CIPHER_KEY_LEN];
+    uint8_t s2c[DWS_SMB2_MAX_CIPHER_KEY_LEN];
     uint64_t session_id;
     uint64_t nonce;
 };
@@ -182,12 +184,12 @@ static int smb_round_trip(SmbSendFn send, SmbRecvFn recv, void *ctx, size_t mlen
     // is the integrity check), so a message is never both encrypted and signed.
     if (crypt && crypt->active)
     {
-        uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN] = {0};
+        uint8_t nonce[DWS_SMB2_NONCE_FIELD_LEN] = {0};
         const uint64_t ctr = crypt->nonce++; // unique per key: never reuse a nonce, so advance every message
         for (int i = 0; i < 8; i++)
             nonce[i] = (uint8_t)(ctr >> (8 * i));
-        size_t tlen = dws_smb2_encrypt(crypt->c2s, nonce, crypt->session_id, s_smb.tx + 4, mlen, s_smb.rx + 4,
-                                       sizeof(s_smb.rx) - 4);
+        size_t tlen = dws_smb2_encrypt(crypt->cipher, crypt->c2s, nonce, crypt->session_id, s_smb.tx + 4, mlen,
+                                       s_smb.rx + 4, sizeof(s_smb.rx) - 4);
         if (tlen == 0)
         {
             *res = SmbResult::SMB_ERR_OVERFLOW;
@@ -206,7 +208,7 @@ static int smb_round_trip(SmbSendFn send, SmbRecvFn recv, void *ctx, size_t mlen
         }
         // Decrypt in place: dws_smb2_decrypt GHASHes the whole ciphertext before the CTR pass, so an
         // out == in (backward-shifted) overlap is safe. Fails closed on a bad tag / non-TRANSFORM reply.
-        size_t plen = dws_smb2_decrypt(crypt->s2c, s_smb.rx, (size_t)rl, s_smb.rx, sizeof(s_smb.rx));
+        size_t plen = dws_smb2_decrypt(crypt->cipher, crypt->s2c, s_smb.rx, (size_t)rl, s_smb.rx, sizeof(s_smb.rx));
         if (plen == 0)
         {
             *res = SmbResult::SMB_ERR_PROTOCOL;
@@ -243,14 +245,15 @@ static int smb_round_trip(SmbSendFn send, SmbRecvFn recv, void *ctx, size_t mlen
 // hash chain (MS-SMB2 §3.1.5.2). The salt is a fresh random blob; it lives only in the request bytes
 // that feed the hash, so it needs no separate storage.
 static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx, uint16_t *sec_mode, uint16_t *dialect,
-                               uint16_t *cipher, SmbPreauth *preauth)
+                               uint16_t *cipher, SmbPreauth *preauth, const uint16_t *offer_ciphers, size_t offer_count)
 {
     uint8_t guid[16];
     uint8_t salt[32];
     esp_fill_random(guid, 16);
     esp_fill_random(salt, sizeof(salt));
     size_t mlen = dws_smb2_build_negotiate_311(s_smb.tx + 4, sizeof(s_smb.tx) - 4, guid,
-                                               Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, salt, sizeof(salt));
+                                               Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, salt, sizeof(salt),
+                                               offer_ciphers, offer_count);
     if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
         return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
 
@@ -272,7 +275,8 @@ static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx, uint16
     *sec_mode = neg.security_mode;
     *dialect = neg.dialect;
     // The negotiated encryption cipher lives in the 3.1.1 ENCRYPTION_CAPABILITIES context. 0 = none offered /
-    // accepted -> the session stays unencrypted. We only implement AES-128-GCM, which is what we offer.
+    // accepted -> the session stays unencrypted. The server picks one of the ciphers we offered (any of the
+    // four SMB 3.1.1 ciphers - AES-128/256-GCM, AES-128/256-CCM), in our preference order.
     *cipher = 0;
     if (neg.dialect == (uint16_t)Smb2Dialect::SMB2_DIALECT_0311)
     {
@@ -408,21 +412,29 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, boo
     sign->algo = algo;
     memcpy(sign->key, sign_key, sizeof(sign->key));
 
-    // SMB 3.x transport encryption: derive the C2S/S2C AES-128-GCM keys if the server negotiated GCM (SMB 3.x,
-    // non-guest), and turn encryption on now if the session is flagged encrypt-required. A share can also
-    // require it (checked at TREE_CONNECT); until then the keys sit ready (available) but inactive.
+    // SMB 3.x transport encryption: derive the C2S/S2C cipher keys if the server negotiated a cipher (SMB 3.x,
+    // non-guest), sized by the cipher (16 for -128, 32 for -256). A server that requires encryption globally
+    // flags the session encrypt-required; a share can also require it (checked at TREE_CONNECT). But a share
+    // that requires encryption rejects the unencrypted TREE_CONNECT before it can advertise the share flag, so
+    // a caller that wants such a share sets cfg->encrypt to force encryption on from TREE_CONNECT (client-forced,
+    // like smbclient -e; MS-SMB2 §3.2.4.1.5). Otherwise the keys sit ready (available) but inactive.
     crypt->active = false;
     crypt->available = false;
+    crypt->cipher = 0;
     crypt->session_id = *session_id;
     crypt->nonce = 0;
-    if (cipher == Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM && dialect >= (uint16_t)Smb2Dialect::SMB2_DIALECT_0300 &&
-        !guest_or_null)
+    const size_t cipher_key_len = dws_smb2_cipher_key_len(cipher);
+    if (cipher_key_len != 0 && dialect >= (uint16_t)Smb2Dialect::SMB2_DIALECT_0300 && !guest_or_null)
     {
         const bool is_311 = dialect == (uint16_t)Smb2Dialect::SMB2_DIALECT_0311;
-        crypt->available =
-            dws_smb3_derive_encryption_keys(skey, dialect, is_311 ? preauth->hash : nullptr, crypt->c2s, crypt->s2c);
-        if (crypt->available && (sess_flags & Smb2SessionFlags::SMB2_SESSION_FLAG_ENCRYPT_DATA))
-            crypt->active = true;
+        crypt->available = dws_smb3_derive_encryption_keys(skey, dialect, is_311 ? preauth->hash : nullptr,
+                                                           cipher_key_len, crypt->c2s, crypt->s2c);
+        if (crypt->available)
+        {
+            crypt->cipher = cipher;
+            if ((sess_flags & Smb2SessionFlags::SMB2_SESSION_FLAG_ENCRYPT_DATA) || cfg->encrypt)
+                crypt->active = true;
+        }
     }
     return SmbResult::SMB_OK;
 }
@@ -489,6 +501,7 @@ static SmbResult smb_create(const SmbConfig *cfg, SmbHandle *h, uint64_t session
     // Carry the encryption state onto the handle so read/write/close keep encrypting with the same keys and a
     // continuing nonce (the counter must not restart, or a nonce would repeat under the same key).
     h->encrypt_active = crypt->active;
+    h->enc_cipher = crypt->cipher;
     memcpy(h->enc_c2s, crypt->c2s, sizeof(h->enc_c2s));
     memcpy(h->enc_s2c, crypt->s2c, sizeof(h->enc_s2c));
     h->enc_nonce = crypt->nonce;
@@ -502,18 +515,35 @@ SmbResult smb_open(const SmbConfig *cfg, SmbHandle *h, SmbSendFn send, SmbRecvFn
 
     const char *domain = cfg->domain ? cfg->domain : "";
 
+    // Offer all four SMB 3.1.1 ciphers in preference order (a server selects the first it supports). cfg->
+    // cipher_pref, when set, is moved to the front so a caller can pin a specific cipher (used to exercise
+    // each one against a real server).
+    uint16_t offer[DWS_SMB2_MAX_OFFER_CIPHERS] = {
+        Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, Smb2Cipher::SMB2_ENCRYPTION_AES256_GCM,
+        Smb2Cipher::SMB2_ENCRYPTION_AES128_CCM, Smb2Cipher::SMB2_ENCRYPTION_AES256_CCM};
+    if (cfg->cipher_pref != 0 && dws_smb2_cipher_key_len(cfg->cipher_pref) != 0)
+        for (size_t i = 1; i < DWS_SMB2_MAX_OFFER_CIPHERS; i++)
+            if (offer[i] == cfg->cipher_pref)
+            {
+                for (size_t j = i; j > 0; j--)
+                    offer[j] = offer[j - 1];
+                offer[0] = cfg->cipher_pref;
+                break;
+            }
+
     uint16_t sec_mode = 0;
     uint16_t dialect = 0;
     uint16_t cipher = 0;
     SmbPreauth preauth;
-    SmbResult r = smb_negotiate(send, recv, ctx, &sec_mode, &dialect, &cipher, &preauth);
+    SmbResult r =
+        smb_negotiate(send, recv, ctx, &sec_mode, &dialect, &cipher, &preauth, offer, DWS_SMB2_MAX_OFFER_CIPHERS);
     if (r != SmbResult::SMB_OK)
         return r;
     // The client advertises SIGNING_ENABLED, so the session is signed exactly when the server requires it.
     bool want_signing = (sec_mode & Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_REQUIRED) != 0;
 
     SmbSign sign = {false, Smb2SignAlgo::HMAC_SHA256, {0}};
-    SmbCrypt crypt = {false, false, {0}, {0}, 0, 0};
+    SmbCrypt crypt = {false, false, 0, {0}, {0}, 0, 0};
     uint64_t session_id = 0;
     r = smb_session_setup(cfg, domain, want_signing, dialect, cipher, &preauth, send, recv, ctx, &session_id, &sign,
                           &crypt);
@@ -538,7 +568,7 @@ SmbResult smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx)
         return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     SmbSign sign = {h->signing_active, h->signing_algo, {0}};
     memcpy(sign.key, h->signing_key, sizeof(sign.key));
-    SmbCrypt crypt = {h->encrypt_active, h->encrypt_active, {0}, {0}, h->session_id, h->enc_nonce};
+    SmbCrypt crypt = {h->encrypt_active, h->encrypt_active, h->enc_cipher, {0}, {0}, h->session_id, h->enc_nonce};
     memcpy(crypt.c2s, h->enc_c2s, sizeof(crypt.c2s));
     memcpy(crypt.s2c, h->enc_s2c, sizeof(crypt.s2c));
     SmbResult rt = SmbResult::SMB_ERR_IO;
@@ -564,7 +594,7 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
     *out_len = 0;
     SmbSign sign = {h->signing_active, h->signing_algo, {0}};
     memcpy(sign.key, h->signing_key, sizeof(sign.key));
-    SmbCrypt crypt = {h->encrypt_active, h->encrypt_active, {0}, {0}, h->session_id, h->enc_nonce};
+    SmbCrypt crypt = {h->encrypt_active, h->encrypt_active, h->enc_cipher, {0}, {0}, h->session_id, h->enc_nonce};
     memcpy(crypt.c2s, h->enc_c2s, sizeof(crypt.c2s));
     memcpy(crypt.s2c, h->enc_s2c, sizeof(crypt.s2c));
     const size_t chunk_max = DWS_SMB_BUF - 96; // room for the header + READ response body
@@ -613,7 +643,7 @@ SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t l
     *written = 0;
     SmbSign sign = {h->signing_active, h->signing_algo, {0}};
     memcpy(sign.key, h->signing_key, sizeof(sign.key));
-    SmbCrypt crypt = {h->encrypt_active, h->encrypt_active, {0}, {0}, h->session_id, h->enc_nonce};
+    SmbCrypt crypt = {h->encrypt_active, h->encrypt_active, h->enc_cipher, {0}, {0}, h->session_id, h->enc_nonce};
     memcpy(crypt.c2s, h->enc_c2s, sizeof(crypt.c2s));
     memcpy(crypt.s2c, h->enc_s2c, sizeof(crypt.s2c));
     const size_t chunk_max = DWS_SMB_BUF - 128; // room for the header + WRITE request body

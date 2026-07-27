@@ -97,9 +97,12 @@ a vendor subdir.
   `static_assert` regmap cross-check (`pentesting/rig_firmware/hal_verify` today
   for ESP soc macros; add an STM CMSIS variant), so a map is proven correct even
   for silicon we have no board for, plus an on-device KAT where a board exists.
-- **lwIP stays the common L3+ core;** only L1/L2 (MAC + PHY) and crypto accel are
-  vendor-partitioned. The datalink/network/transport/session/presentation/
-  application layers do not move.
+- **lwIP stays the common L3+ core** _for portability_; only L1/L2 (MAC + PHY) and
+  crypto accel are vendor-partitioned, and the datalink/network/transport/session/
+  presentation/application layers do not move _structurally_. **Perf exception:** the
+  hot data-path bottlenecks get pulled out of lwIP into a direct-register/DMA network
+  HAL (see "Network data-path HAL" under Concurrency / performance below); lwIP is
+  retained as the portable fallback + cold-path stack, not the fast path.
 - **One RTOS seam.** ESP is FreeRTOS; STM/RP may be FreeRTOS or bare-metal. Fold
   the few primitives we use (mutex, critical section, task spawn, the already-
   abstracted `services/clock.h` time) behind a thin `services/dws_rtos` so a
@@ -150,6 +153,47 @@ against `DWS_WORKER_COUNT` scheduling before switching the default. Keep mbedtls
 the fallback where the HAL has no MODMULT (classic ESP32) or where a die's interrupt
 path already wins (measure C6). Legacy finite-field DH is lower-priority than RSA sign;
 modern KEX is curve25519/ECDH already.
+
+### Network data-path HAL - replace lwIP hot paths with direct MAC/DMA register calls (L, perf + portability)
+
+Raised 2026-07-27. lwIP is a fine portable reference stack but it is slow in the
+places that matter for a deterministic single-owner server, and several of its costs
+are structural, not tunable. Mirror what the crypto HAL did (`src/hal`: direct
+registers, our own `DWS_` register map, **zero** `soc/` / vendor symbols, ground-truth
+`static_assert`-verified vs the vendor headers): pull the networking **data path** out
+of lwIP into a direct-register/DMA HAL under `network_drivers/physical/<vendor>/`, and
+keep lwIP only as the portable fallback / cold-path L3+ where throughput does not
+matter.
+
+**lwIP pain points (measure each, fix the ones that pay):**
+
+- **pbuf churn + copies** - RX/TX bounce through pbuf pools with per-segment copies; a
+  zero-copy DMA-descriptor ring (own the EMAC / WiFi RX/TX descriptors) removes both
+  the copy and the pool-exhaustion stalls.
+- **`tcpip_thread` marshaling** - every socket/PCB call is marshaled onto the single
+  tcpip task via `tcpip_api_call` (our transport layer already pays this - real per-op
+  overhead + a serialization point); a direct datapath skips the trip.
+- **TIME_WAIT PCB memory** - each closed active connection parks a ~224 B `tcp_pcb` in
+  TIME_WAIT for ~1 min (observed 2026-07-27 on the SMB rig: free heap dipped exactly
+  one PCB per rapid outbound probe, then recovered on expiry). A lean connection table
+  with our own reuse policy reclaims it immediately for the trusted deterministic case.
+- **stacked socket / netconn / raw-PCB APIs** - three layers each add copies/locks; the
+  hot path can target the raw PCB or below.
+- **coarse timers + conservative window/retransmit logic** - leave throughput on the
+  table on a fast local link.
+
+**Opportunity:** a `dws_net` datapath HAL (RX/TX descriptor rings + a minimal,
+deterministic TCP fast-path) that runs the common case at wire/DMA speed, with lwIP
+retained for ARP/ICMP/DHCP/edge cases and as the portability floor for a new vendor
+before its HAL exists. Same shape as the crypto HAL: vendor-agnostic API, per-die
+register backends, ground-truth verified vs the vendor headers.
+
+**Tradeoffs to measure, not assume** (run the experiment): a hand-rolled TCP fast-path
+must stay RFC-correct - re-verify interop against real peers, not just self-consistency
+(a self-consistent stack test proves only self-consistency). Scope per pain point; land
+the zero-copy DMA ring + TIME_WAIT reclaim first (highest value, lowest correctness
+risk), and defer a full TCP fast-path until measured. Keep every change behind the
+`network_drivers/physical/<vendor>/` seam so lwIP-only vendors still boot.
 
 ## Concurrency / performance
 

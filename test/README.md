@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5217 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5220 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -45605,7 +45605,7 @@ A thorough directory of all **5217 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (45 tests)</b></summary>
+<summary><b>test_smb2 (46 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -45698,11 +45698,11 @@ A thorough directory of all **5217 test cases** across **292 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_build_negotiate_311</b> &mdash; <i>header(64)+body(36)+5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) -> pad</i></summary>
+    <summary><b>test_build_negotiate_311</b> &mdash; <i>The four SMB 3.1.1 ciphers, in the client's default preference order.</i></summary>
 
-    * **Objective**: header(64)+body(36)+5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) -> pad
+    * **Objective**: The four SMB 3.1.1 ciphers, in the client's default preference order.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(188, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(194, n);</code>
       * <code>Assert true (dws_smb2_parse_header(buf, n, &h))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_NEGOTIATE, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(36, r16(b + 0)); // StructureSize</code>
@@ -45723,12 +45723,19 @@ A thorough directory of all **5217 test cases** across **292 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(1, r16(c2 + 8)); // SigningAlgorithmCount</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2SigningAlgorithm::SMB2_SIGNING_AES_CMAC, r16(c2 + 10));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_ENCRYPTION_CAPABILITIES, r16(c3 + 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(4, r16(c3 + 2)); // DataLength</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(1, r16(c3 + 8)); // CipherCount</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, r16(c3 + 10));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, 100, gid, 0, salt, sizeof(salt)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, nullptr, 32));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(10, r16(c3 + 2)); // DataLength = CipherCount(2) + 4 ciphers(8)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, r16(c3 + 8));  // CipherCount = all four ciphers</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, r16(c3 + 10)); // Ciphers[0]</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES256_GCM, r16(c3 + 12)); // Ciphers[1]</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_CCM, r16(c3 + 14)); // Ciphers[2]</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES256_CCM, r16(c3 + 16)); // Ciphers[3]</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(172, n0);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, r16(buf + 64 + 32)); // NegotiateContextCount</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, 100, gid, 0, salt, sizeof(salt), offer, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, nullptr, 32, offer, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 0, offer, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 32, offer, 5)); // too many</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -46184,36 +46191,63 @@ A thorough directory of all **5217 test cases** across **292 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_smb3_derive_encryption_keys</b> &mdash; <i>Deterministic: same inputs -> same keys.</i></summary>
+    <summary><b>test_smb3_cipher_kat</b> &mdash; <i>A flipped tag byte fails closed (CCM open recomputes the MAC over the plaintext).</i></summary>
 
-    * **Objective**: Deterministic: same inputs -> same keys.
+    * **Objective**: A flipped tag byte fails closed (CCM open recomputes the MAC over the plaintext).
     * **Assertions**:
-      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c))</code>
-      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s2, s2c2))</code>
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert equal memory (kat_ccm128_ct, ct, 50)</code>
+      * <code>Assert equal memory (kat_ccm128_tag, tag, 16)</code>
+      * <code>TEST_ASSERT_TRUE(dws_aesccm_open_tag(kat_ccm128_key, 16, kat_ccm128_nonce, 11, kat_ccm128_aad, 32, kat_ccm128_ct,</code>
+      * <code>Assert equal memory (kat_ccm128_pt, pt, 50)</code>
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert equal memory (kat_ccm256_ct, ct, 50)</code>
+      * <code>Assert equal memory (kat_ccm256_tag, tag, 16)</code>
+      * <code>TEST_ASSERT_TRUE(dws_aesccm_open_tag(kat_ccm256_key, 32, kat_ccm256_nonce, 11, kat_ccm256_aad, 32, kat_ccm256_ct,</code>
+      * <code>Assert equal memory (kat_ccm256_pt, pt, 50)</code>
+      * <code>Assert equal memory (kat_gcm256_ct, ct, 50)</code>
+      * <code>Assert equal memory (kat_gcm256_tag, tag, 16)</code>
+      * <code>TEST_ASSERT_TRUE(dws_aesgcm_open_tag(kat_gcm256_key, kat_gcm256_nonce, kat_gcm256_aad, 32, kat_gcm256_ct, 50,</code>
+      * <code>Assert equal memory (kat_gcm256_pt, pt, 50)</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_smb3_derive_encryption_keys</b> &mdash; <i>128-bit cipher keys (AES-128 ciphers).</i></summary>
+
+    * **Objective**: 128-bit cipher keys (AES-128 ciphers).
+    * **Assertions**:
+      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, 16, c2s, s2c))</code>
+      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, 16, c2s2, s2c2))</code>
       * <code>Assert equal memory (c2s, c2s2, 16)</code>
       * <code>Assert equal memory (s2c, s2c2, 16)</code>
       * <code>Assert true (memcmp(c2s, s2c, 16) != 0)</code>
-      * <code>Assert false (dws_smb3_derive_encryption_keys(sk, 0x0311, nullptr, c2s, s2c))</code>
-      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0302, nullptr, c2s, s2c))</code>
+      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, 32, c2s256, s2c256))</code>
+      * <code>Assert true (memcmp(c2s256, s2c256, 32) != 0)</code>
+      * <code>Assert true (memcmp(c2s256, c2s, 16) != 0)</code>
+      * <code>Assert false (dws_smb3_derive_encryption_keys(sk, 0x0311, nullptr, 16, c2s, s2c))</code>
+      * <code>Assert false (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, 24, c2s, s2c))</code>
+      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0302, nullptr, 16, c2s, s2c))</code>
       * <code>Assert true (memcmp(c2s, s2c, 16) != 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_smb3_encrypt_decrypt_roundtrip</b> &mdash; <i>TRANSFORM_HEADER layout.</i></summary>
+    <summary><b>test_smb3_encrypt_decrypt_roundtrip</b> &mdash; <i>Every SMB 3.1.1 cipher must round-trip through the TRANSFORM_HEADER codec.</i></summary>
 
-    * **Objective**: TRANSFORM_HEADER layout.
+    * **Objective**: Every SMB 3.1.1 cipher must round-trip through the TRANSFORM_HEADER codec.
     * **Assertions**:
-      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c))</code>
+      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, klen, c2s, s2c))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg), elen);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xFD, enc[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8('S', enc[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8('M', enc[2]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8('B', enc[3]);</code>
-      * <code>Assert equal memory (nonce, enc + 20, DWS_SMB2_GCM_NONCE_LEN)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, enc[42]);                             // Flags = Encrypted</code>
+      * <code>Assert equal memory (nonce, enc + 20, DWS_SMB2_NONCE_FIELD_LEN)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, enc[42]);                               // Flags = Encrypted</code>
       * <code>Assert true (memcmp(enc + DWS_SMB2_TRANSFORM_HDR_LEN, msg, sizeof(msg)) != 0)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(msg), dlen);</code>
       * <code>Assert equal memory (msg, dec, sizeof(msg))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(other, c2s, enc, elen, dec, sizeof(dec)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -46221,19 +46255,21 @@ A thorough directory of all **5217 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Flip a ciphertext byte -> tag mismatch.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(wrong, enc, elen, dec, sizeof(dec)));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, enc, DWS_SMB2_TRANSFORM_HDR_LEN - 1, dec, sizeof(dec)));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, enc, elen, dec, sizeof(dec) - 1)); // out too small</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, t1, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, t1, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, t1, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, wrong, enc, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, t1, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, enc, DWS_SMB2_TRANSFORM_HDR_LEN - 1, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(cipher, c2s, enc, elen, dec, sizeof(dec) - 1)); // out too small</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_encrypt(0x00FF, c2s, nonce, 42, msg, sizeof(msg), enc, sizeof(enc)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(0x00FF, c2s, enc, elen, dec, sizeof(dec)));</code>
   </details>
 
 </details>
 
 <details>
-<summary><b>test_smb_client (74 tests)</b></summary>
+<summary><b>test_smb_client (76 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_open_close_success</b> &mdash; <i>NEGOTIATE + 2x SESSION_SETUP + TREE_CONNECT + CREATE = 5 requests</i></summary>
@@ -46900,6 +46936,37 @@ A thorough directory of all **5217 test cases** across **292 suites**. Expand a 
       * <code>Assert equal memory (data, buf, sizeof(data))</code>
       * <code>Assert equal int (SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m))</code>
       * <code>Assert equal int (0, m.bad_req_sigs)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_open_encrypted_all_ciphers</b> &mdash; <i>Open encrypted all ciphers</i></summary>
+
+    * **Objective**: Open encrypted all ciphers
+    * **Assertions**:
+      * <code>Assert equal int message (SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m), cmsg)</code>
+      * <code>Assert true (h.encrypt_active)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(ciphers[ci], h.enc_cipher);</code>
+      * <code>Assert equal int (0, m.bad_req_sigs)</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_write(&h, 0, data, sizeof(data), &wr, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(data), wr);</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(data), &got, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(data), got);</code>
+      * <code>Assert equal memory (data, buf, sizeof(data))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_open_encrypted_share_requires_client_force</b> &mdash; <i>No client-forced encryption: TREE_CONNECT goes out unencrypted -> ACCESS_DENIED -> open fails.</i></summary>
+
+    * **Objective**: No client-forced encryption: TREE_CONNECT goes out unencrypted -> ACCESS_DENIED -> open fails.
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_open(&ecfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert true (h.encrypt_active)</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_read(&h, 0, buf, 60, &got, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(60, got);</code>
+      * <code>Assert equal memory (m.file_data, buf, 60)</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">

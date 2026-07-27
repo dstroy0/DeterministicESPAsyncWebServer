@@ -117,7 +117,13 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
   `server signing = mandatory`: the `smb_client` engine over a live socket authenticated, negotiated
   `algo=AES-CMAC`, wrote a CMAC-signed file Samba accepted, and read it back byte-exact - and a
   deliberately corrupted MIC made Samba reject the logon (`STATUS_LOGON_FAILURE`), proving the server
-  verifies our MIC. **Done.**
+  verifies our MIC. **SMB 3.x transport encryption is now shipped too:** all four SMB 3.1.1 ciphers -
+  AES-128/256-GCM (`crypto/aes128gcm`, `crypto/aesgcm`) and AES-128/256-CCM (the new `crypto/aesccm`,
+  SP800-38C) - wired into the §2.2.41 TRANSFORM_HEADER codec + the §2.2.3.1.2 ENCRYPTION_CAPABILITIES
+  negotiate + SP800-108 cipher-key derivation, plus **client-forced encryption** (`SmbConfig.encrypt`) so the
+  client can reach a share whose server requires encryption (which denies the unencrypted TREE_CONNECT before
+  it can advertise the share flag). KAT'd vs pyca/cryptography and **HW-verified (2026-07-27) against a real
+  Samba `smb encrypt = required` share**, each of the four ciphers reading the file byte-exact. **Done.**
 - **Concurrent TLS** (`MAX_TLS_CONNS`>1) - library + PSRAM build done; only the live 2-client soak remains
   (the reserved **two-rig HW test**, held per the user's "keep looping, hold the rigs").
 - **Ethernet PHY** - RMII bring-up shipped + **HW-verified (2026-07-19)** on a Waveshare ESP32-P4-POE-ETH
