@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5215 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5217 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -46233,7 +46233,7 @@ A thorough directory of all **5215 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb_client (72 tests)</b></summary>
+<summary><b>test_smb_client (74 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_open_close_success</b> &mdash; <i>NEGOTIATE + 2x SESSION_SETUP + TREE_CONNECT + CREATE = 5 requests</i></summary>
@@ -46883,6 +46883,33 @@ A thorough directory of all **5215 test cases** across **292 suites**. Expand a 
       * <code>Assert equal int (SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
       * <code>Assert equal int (Smb2SignAlgo::AES_CMAC, h.signing_algo)</code>
       * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_open_encrypted_311_roundtrip</b> &mdash; <i>Write a buffer then read it back byte-exact - every request and response TRANSFORM-wrapped.</i></summary>
+
+    * **Objective**: Write a buffer then read it back byte-exact - every request and response TRANSFORM-wrapped.
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert true (h.encrypt_active)</code>
+      * <code>Assert equal int (0, m.bad_req_sigs)</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_write(&h, 0, data, sizeof(data), &wr, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(data), wr);</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(data), &got, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(data), got);</code>
+      * <code>Assert equal memory (data, buf, sizeof(data))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (0, m.bad_req_sigs)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encrypted_response_tampered</b> &mdash; <i>Encrypted response tampered</i></summary>
+
+    * **Objective**: Encrypted response tampered
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert true (h.encrypt_active)</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_read(&h, 0, buf, 100, &got, mock_send, mock_recv, &m))</code>
   </details>
 
 </details>
