@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`c85b9e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c85b9e1045e3eb3d93ed50bf09b1af191438b2c6))
+- update CHANGELOG.md [skip ci] ([`43044df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43044df69595161a423fd937cf48d3b7ee2648d1))
+
+### Changes
+
+- Create SRC_LAW.md ([`0a00782`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a007823ee34003dd62a069ba5bcaa64875ad008))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`0147b44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0147b44700b51efd89344becbd7f54837ab183c2))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a250eb0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a250eb0481799d2b1780cb96c3259020c22d68f7))
+
 ## [7.181.1] - 2026-07-27
 
 <details>
