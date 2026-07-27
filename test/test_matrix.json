@@ -711,7 +711,8 @@
         "+<services/snmp/snmp_notify.cpp>",
         "+<network_drivers/transport/udp.cpp>",
         "+<crypto/sha256.cpp>",
-        "+<crypto/hmac_sha256.cpp>"
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/crypto_scratch.cpp>"
       ],
       "tests": ["test_snmp_v3"]
     },
@@ -1678,7 +1679,8 @@
         "+<services/jwt/jwt.cpp>",
         "+<network_drivers/presentation/base64/base64.cpp>",
         "+<crypto/sha256.cpp>",
-        "+<crypto/hmac_sha256.cpp>"
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/crypto_scratch.cpp>"
       ],
       "tests": ["test_jwt"]
     },
@@ -1899,6 +1901,7 @@
       "src": [
         "+<services/csrf/csrf.cpp>",
         "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/sha256.cpp>"
       ],
       "tests": ["test_csrf"]
@@ -2612,7 +2615,8 @@
       "src": [
         "+<network_drivers/presentation/dtls/dtls_handshake.cpp>",
         "+<crypto/sha256.cpp>",
-        "+<crypto/hmac_sha256.cpp>"
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/crypto_scratch.cpp>"
       ],
       "tests": ["test_dtls_handshake"]
     },
@@ -2701,7 +2705,8 @@
         "+<crypto/tls13_kdf.cpp>",
         "+<crypto/hkdf.cpp>",
         "+<crypto/sha256.cpp>",
-        "+<crypto/hmac_sha256.cpp>"
+        "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/crypto_scratch.cpp>"
       ],
       "tests": ["test_tls13_kdf"]
     },
@@ -2938,6 +2943,7 @@
       "src": [
         "+<crypto/ecdsa.cpp>",
         "+<crypto/hmac_sha256.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/sha256.cpp>"
       ],
       "tests": ["test_ssh_ecdsa"]

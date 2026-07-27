@@ -6156,8 +6156,13 @@
 #define DWS_CW_CHACHA20_SZ 192
 #define DWS_CW_POLY1305_OFF (DWS_CW_CHACHA20_OFF + DWS_CW_CHACHA20_SZ) // poly1305 accumulator/limbs
 #define DWS_CW_POLY1305_SZ 96
+// HMAC-SHA256 transient scratch (padded ipad/opad key blocks, inner digest, one transient hash context). A
+// nested sub-primitive: HMAC runs under the KDFs (SP800-108 / HKDF / TLS1.3) which own the base, and its own
+// caller-owned streaming context (DwsHmacSha256Ctx: opad block + inner hash) is session state, not kept here.
+#define DWS_CW_HMAC256_OFF (DWS_CW_POLY1305_OFF + DWS_CW_POLY1305_SZ)
+#define DWS_CW_HMAC256_SZ 320
 #ifndef DWS_CRYPTO_WORK_SIZE
-#define DWS_CRYPTO_WORK_SIZE (DWS_CW_POLY1305_OFF + DWS_CW_POLY1305_SZ) // base + nested sub-primitive regions
+#define DWS_CRYPTO_WORK_SIZE (DWS_CW_HMAC256_OFF + DWS_CW_HMAC256_SZ) // base + nested sub-primitive regions
 #endif
 
 /**
