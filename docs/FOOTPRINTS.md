@@ -25,7 +25,7 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                                                                                    | L7-Application/Csrf                  | 737.5 KB (57.6%) | 80.0 KB (25.0%)  |
 | `DASHBOARD`                                                                                               | L7-Application/Dashboard             | 756.4 KB (59.1%) | 80.3 KB (25.1%)  |
 | `DEVICE_ID`                                                                                               | L7-Application/DeviceUuid            | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
-| `DIAG`                                                                                                    | Foundation/Configuration             | 738.0 KB (57.7%) | 75.8 KB (23.7%)  |
+| `DIAG`                                                                                                    | L7-Application/Diagnostics           | 736.4 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DIFFSERV`                                                                                                | L4-Transport/DiffServ                | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`                                                                          | Peripherals/DmaIngest                | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE`                                                                  | Foundation/InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
@@ -53,7 +53,7 @@ from each example's `pio ci` size report and aggregated into
 | `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/Webhook               | 746.2 KB (58.3%) | 99.2 KB (31.0%)  |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE`                                                                        | L7-Application/HttpDelivery          | 823.7 KB (64.4%) | 80.8 KB (25.2%)  |
 | `IFACE_BRIDGE`                                                                                            | L7-Application/InterfaceBridge       | 763.3 KB (59.6%) | 80.7 KB (25.2%)  |
-| `IKEV2`                                                                                                   | L5-Session/IKEv2                     | 710.5 KB (55.5%) | 42.9 KB (13.4%)  |
+| `IKEV2`                                                                                                   | L5-Session/IKEv2                     | 710.6 KB (55.5%) | 42.9 KB (13.4%)  |
 | `INA219`                                                                                                  | Drivers/Ina219                       | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `IPV6`                                                                                                    | Foundation/IPv6                      | 738.4 KB (57.7%) | 79.9 KB (25.0%)  |
 | `IP_ALLOWLIST`                                                                                            | L4-Transport/IpAllowlist             | 737.2 KB (57.6%) | 79.9 KB (25.0%)  |
@@ -104,13 +104,13 @@ from each example's `pio ci` size report and aggregated into
 | `SHT3X`                                                                                                   | Drivers/Sht3x                        | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                                                                                  | Drivers/SigfoxUplink                 | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
 | `SIMATIC`                                                                                                 | L7-Application/SimaticSerial         | 737.9 KB (57.6%) | 81.3 KB (25.4%)  |
-| `SMB`                                                                                                     | L7-Application/SmbFileClient         | 733.7 KB (57.3%) | 64.2 KB (20.1%)  |
+| `SMB`                                                                                                     | L7-Application/SmbFileClient         | 749.6 KB (58.6%) | 64.2 KB (20.1%)  |
 | `SMTP`                                                                                                    | L7-Application/SmtpAlert             | 718.0 KB (56.1%) | 59.7 KB (18.7%)  |
 | `SNMP`                                                                                                    | L7-Application/SNMP                  | 744.9 KB (58.2%) | 92.1 KB (28.8%)  |
 | `SNMP+SNMP_TRAP`                                                                                          | L7-Application/SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
 | `SPA_ROUTER`                                                                                              | L7-Application/SpaFallback           | 737.5 KB (57.6%) | 79.9 KB (25.0%)  |
 | `SSH`                                                                                                     | L5-Session/SSHHostKey                | 813.1 KB (63.5%) | 106.7 KB (33.3%) |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP`                                                                       | L5-Session/SSHSftp                   | 864.0 KB (67.5%) | 115.8 KB (36.2%) |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP`                                                                       | L5-Session/SSHSftp                   | 864.1 KB (67.5%) | 115.8 KB (36.2%) |
 | `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF`                                                    | L5-Session/SSHReverseTunnel          | 828.1 KB (64.7%) | 108.4 KB (33.9%) |
 | `STATS`                                                                                                   | L7-Application/Stats                 | 737.7 KB (57.6%) | 80.0 KB (25.0%)  |
 | `STATS+METRICS`                                                                                           | L7-Application/PrometheusMetrics     | 739.6 KB (57.8%) | 80.0 KB (25.0%)  |
