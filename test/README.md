@@ -45698,18 +45698,18 @@ A thorough directory of all **5215 test cases** across **292 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_build_negotiate_311</b> &mdash; <i>header(64) + body(36) + 5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) = 172</i></summary>
+    <summary><b>test_build_negotiate_311</b> &mdash; <i>header(64)+body(36)+5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) -> pad</i></summary>
 
-    * **Objective**: header(64) + body(36) + 5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) = 172
+    * **Objective**: header(64)+body(36)+5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) -> pad
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(172, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(188, n);</code>
       * <code>Assert true (dws_smb2_parse_header(buf, n, &h))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_NEGOTIATE, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(36, r16(b + 0)); // StructureSize</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(5, r16(b + 2));  // DialectCount now includes 3.1.1</code>
       * <code>Assert equal memory (gid, b + 12, 16)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0311, r16(b + 44)); // 5th dialect</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(2, r16(b + 32));                              // NegotiateContextCount</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, r16(b + 32));                              // NegotiateContextCount</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(112, ctx_off);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, ctx_off % 8); // 8-byte aligned</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_PREAUTH_INTEGRITY_CAPABILITIES, r16(c + 0));</code>
@@ -45722,6 +45722,10 @@ A thorough directory of all **5215 test cases** across **292 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(4, r16(c2 + 2)); // DataLength</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1, r16(c2 + 8)); // SigningAlgorithmCount</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2SigningAlgorithm::SMB2_SIGNING_AES_CMAC, r16(c2 + 10));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_ENCRYPTION_CAPABILITIES, r16(c3 + 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, r16(c3 + 2)); // DataLength</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, r16(c3 + 8)); // CipherCount</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, r16(c3 + 10));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, 100, gid, 0, salt, sizeof(salt)));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, nullptr, 32));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, 0, salt, 0));</code>
