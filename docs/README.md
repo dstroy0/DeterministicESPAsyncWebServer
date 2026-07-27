@@ -1341,7 +1341,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/OAuth2` | 766,481 | 104,644 |
 | `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,009 | 45,388 |
 | `core/Sysadmin` | `Foundation/Sysadmin` | 767,429 | 81,836 |
-| `SMB` | `L7-Application/SmbFileClient` | 767,589 | 65,740 |
+| `SMB` | `L7-Application/SmbFileClient` | 767,505 | 67,276 |
 | `OPCUA+UMATI` | `L7-Application/Umati` | 768,553 | 92,252 |
 | `OPCUA+EUROMAP77` | `L7-Application/Euromap77` | 768,809 | 92,276 |
 | `OPCUA+ROBOTICS` | `L7-Application/Robotics` | 768,929 | 92,468 |
@@ -1754,7 +1754,6 @@ guards at compile time.
 | `DWS_CONFIG_KEY_MAX` | `16` | Max key length incl. |
 | `DWS_CONFIG_MAX_ENTRIES` | `16` | Max key/value entries in the host (test) config backend. |
 | `DWS_CONFIG_VAL_MAX` | `64` | Max value bytes per entry in the host (test) config backend. |
-| `DWS_CRYPTO_WORK_SIZE` | `1536` | Size of the shared crypto scratch buffer (crypto/crypto_scratch: `crypto_work`). |
 | `DWS_DASHBOARD_JSON_BUF` | `1024` | Stack buffer for the dashboard layout / values JSON (bytes). |
 | `DWS_DASHBOARD_MAX_WIDGETS` | `16` | Maximum widgets in the dashboard table (BSS value array). |
 | `DWS_DEFER_QUEUE_DEPTH` | `8` | Depth of each worker's deferred-callback queue. |

@@ -772,7 +772,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `EDGE_CACHE`        |            21.3 KB |          51.9 KB |
 | L7    | `DASHBOARD`         |            21.2 KB |          15.6 KB |
 | L7    | `NTRIP_CASTER`      |            18.2 KB |          18.1 KB |
-| L7    | `SMB`               |            14.4 KB |         < 0.5 KB |
+| L7    | `SMB`               |            14.3 KB |           1.1 KB |
 | L7    | `OAUTH2`            |            13.3 KB |          37.5 KB |
 | L7    | `OPCUA_CLIENT`      |        6.8-13.2 KB |     10.0-27.9 KB |
 | L7    | `OIDC`              |            13.0 KB |          32.9 KB |
