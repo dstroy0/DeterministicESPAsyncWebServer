@@ -11,6 +11,7 @@
 #if DWS_ENABLE_DTLS
 
 #include "crypto/aes128gcm.h"
+#include "crypto/crypto_scratch.h" // crypto_work (opaque DwsAes128 storage for sequence-number protection)
 #include "crypto/tls13_kdf.h"
 #include <string.h>
 
@@ -157,11 +158,11 @@ size_t dws_dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uin
 
     // Encrypt the sequence number (RFC 9147 §4.2.3): mask = AES-ECB(sn_key, ciphertext[0..15]).
     // enc_len = inner_len + 16 >= 17, so the 16-byte sample is always available.
-    DwsAes128 sn;
-    dws_aes128_init(&sn, keys->sn_key);
+    DwsAes128 *sn = reinterpret_cast<DwsAes128 *>(crypto_work);
+    dws_aes128_init(sn, keys->sn_key);
     uint8_t mask[16];
-    dws_aes128_encrypt_block(&sn, out + hdr_len, mask);
-    dws_aes128_wipe(&sn);
+    dws_aes128_encrypt_block(sn, out + hdr_len, mask);
+    dws_aes128_wipe(sn);
     out[seq_off] ^= mask[0];
     out[seq_off + 1] ^= mask[1];
     return total;
@@ -225,11 +226,11 @@ bool dws_dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq
     memcpy(hdr, rec, hdr_len);
 
     // Decrypt the sequence number (RFC 9147 §4.2.3).
-    DwsAes128 sn;
-    dws_aes128_init(&sn, keys->sn_key);
+    DwsAes128 *sn = reinterpret_cast<DwsAes128 *>(crypto_work);
+    dws_aes128_init(sn, keys->sn_key);
     uint8_t mask[16];
-    dws_aes128_encrypt_block(&sn, enc, mask);
-    dws_aes128_wipe(&sn);
+    dws_aes128_encrypt_block(sn, enc, mask);
+    dws_aes128_wipe(sn);
     uint64_t trunc = 0;
     for (size_t i = 0; i < seq_len; i++)
     {

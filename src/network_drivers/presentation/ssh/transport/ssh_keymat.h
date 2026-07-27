@@ -165,13 +165,20 @@ static inline uint8_t ssh_mac_len(uint8_t mac_mode)
  *   mac_c2s = SHA256(K || H || "E" || session_id)   [32 bytes]
  *   mac_s2c = SHA256(K || H || "F" || session_id)   [32 bytes]
  *
- * c2s_ctx is initialized with key_c2s + IV_c2s (client-to-server, server decrypts).
- * s2c_ctx is initialized with key_s2c + IV_s2c (server-to-client, server encrypts).
+ * aes_key/aes_ctr C→S are the client-to-server key + counter (server decrypts inbound); S→C are the
+ * reverse (server encrypts outbound).
  */
 struct SshKeyMat
 {
-    DwsAesCtrCtx c2s_ctx; ///< Client→server cipher (AES-256-CTR); server decrypts inbound with it.
-    DwsAesCtrCtx s2c_ctx; ///< Server→client cipher (AES-256-CTR); server encrypts outbound with it.
+    // AES ciphers (aes256-ctr and aes256-gcm@openssh.com) store only the raw 32-byte key and the 16-byte IV
+    // per direction; the two modes are mutually exclusive, so they share this storage. The key schedule is
+    // rebuilt per packet in the shared crypto scratch (crypto_work) and never lingers in this pool. For CTR
+    // the IV is the running 128-bit counter; for GCM the low 12 bytes are the RFC 5647 nonce whose invocation
+    // counter advances per packet (see aes256ctr.h / aesgcm.h / crypto_scratch.h).
+    uint8_t aes_key_c2s[DWS_AES256CTR_KEY_LEN]; ///< AES key C→S (server decrypts inbound).
+    uint8_t aes_key_s2c[DWS_AES256CTR_KEY_LEN]; ///< AES key S→C (server encrypts outbound).
+    uint8_t aes_iv_c2s[DWS_AES256CTR_CTR_LEN];  ///< AES IV C→S (CTR counter / GCM nonce); advances per packet.
+    uint8_t aes_iv_s2c[DWS_AES256CTR_CTR_LEN];  ///< AES IV S→C (CTR counter / GCM nonce); advances per packet.
 
     uint8_t mac_key_c2s[64]; ///< HMAC key, client-to-server (aes mode); 32 bytes for SHA-256, 64 for SHA-512.
     uint8_t mac_key_s2c[64]; ///< HMAC key, server-to-client (aes mode).
@@ -182,10 +189,8 @@ struct SshKeyMat
     uint8_t chacha_key_c2s[DWS_CHACHAPOLY_KEY_LEN]; ///< client-to-server, used only in chacha mode.
     uint8_t chacha_key_s2c[DWS_CHACHAPOLY_KEY_LEN]; ///< server-to-client, used only in chacha mode.
 
-    // aes256-gcm@openssh.com (RFC 5647): a stateful AEAD context per direction (256-bit key + 96-bit
-    // nonce whose invocation counter advances per packet); no separate MAC key. Used only in gcm mode.
-    DwsAesGcmCtx gcm_c2s; ///< client-to-server AES-256-GCM (server opens inbound with it).
-    DwsAesGcmCtx gcm_s2c; ///< server-to-client AES-256-GCM (server seals outbound with it).
+    // aes256-gcm@openssh.com (RFC 5647) reuses aes_key_* + aes_iv_* above (mode-exclusive with CTR): the low
+    // 12 bytes of aes_iv_* are the nonce, advanced per packet by dws_aesgcm_iv_increment. No separate MAC key.
 
     bool active; ///< True once keys are installed after successful KEX.
 };

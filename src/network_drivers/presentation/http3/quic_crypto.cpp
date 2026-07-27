@@ -11,6 +11,7 @@
 #if DWS_ENABLE_HTTP3
 
 #include "crypto/aes128gcm.h"
+#include "crypto/crypto_scratch.h" // crypto_work (opaque DwsAes128 storage for header protection)
 #include "crypto/hkdf.h"
 #include "network_drivers/presentation/http3/quic_packet.h"
 #include <string.h>
@@ -75,11 +76,11 @@ size_t dws_quic_packet_protect(uint8_t *pkt, size_t cap, size_t pn_offset, uint8
 
     // Header protection (RFC 9001 sec 5.4): sample 16 bytes at pn_offset + 4 (always inside the
     // ciphertext because pn_len <= 4), AES-ECB it under hp, mask the low first-byte bits and the PN.
-    DwsAes128 hp;
-    dws_aes128_init(&hp, keys->hp);
+    DwsAes128 *hp = reinterpret_cast<DwsAes128 *>(crypto_work);
+    dws_aes128_init(hp, keys->hp);
     uint8_t mask[16];
-    dws_aes128_encrypt_block(&hp, pkt + pn_offset + 4, mask);
-    dws_aes128_wipe(&hp);
+    dws_aes128_encrypt_block(hp, pkt + pn_offset + 4, mask);
+    dws_aes128_wipe(hp);
 
     pkt[0] ^= mask[0] & (is_long ? 0x0f : 0x1f);
     for (uint8_t i = 0; i < pn_len; i++)
@@ -96,11 +97,11 @@ size_t dws_quic_packet_unprotect(uint8_t *pkt, size_t pn_offset, size_t length, 
     if (length < 4 + DWS_AES128GCM_TAG_LEN)
         return (size_t)-1;
 
-    DwsAes128 hp;
-    dws_aes128_init(&hp, keys->hp);
+    DwsAes128 *hp = reinterpret_cast<DwsAes128 *>(crypto_work);
+    dws_aes128_init(hp, keys->hp);
     uint8_t mask[16];
-    dws_aes128_encrypt_block(&hp, pkt + pn_offset + 4, mask);
-    dws_aes128_wipe(&hp);
+    dws_aes128_encrypt_block(hp, pkt + pn_offset + 4, mask);
+    dws_aes128_wipe(hp);
 
     pkt[0] ^= mask[0] & (is_long ? 0x0f : 0x1f);
     uint8_t pn_len = (uint8_t)((pkt[0] & 0x03) + 1);

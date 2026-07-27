@@ -3,32 +3,32 @@
 
 /**
  * @file aes256ctr.h
- * @brief AES-256-CTR stream cipher context and API.
+ * @brief AES-256-CTR stream cipher (aes256-ctr, RFC 4344 §4) - stateless one-shot API.
  *
- * AES-256-CTR is the mandatory cipher for this SSH implementation
- * (aes256-ctr, RFC 4344 §4).  CTR mode turns AES into a stream cipher:
- * each 16-byte counter block is encrypted with AES-ECB to produce a
- * keystream block, and data is XOR'd with the keystream.  Encrypt and
- * decrypt are identical operations.
+ * AES-256-CTR is the mandatory cipher for this SSH implementation. CTR mode turns AES into a stream
+ * cipher: each 16-byte counter block is AES-ECB encrypted to produce a keystream block, and data is
+ * XOR'd with the keystream. Encrypt and decrypt are the identical operation.
+ *
+ * STATELESS API (mirrors chachapoly.h)
+ * ────────────────────────────────────
+ * There is no context object. The caller keeps the two things that must persist across packets - the
+ * 32-byte key and the 16-byte counter - as plain bytes (SshKeyMat holds them, exactly as it holds the
+ * raw chacha20-poly1305 key), and passes both in on every call. The AES key schedule is rebuilt per call
+ * in the shared crypto scratch (crypto_work) and wiped afterward, so expanded key material never lives in
+ * BSS or on the stack - every crypto secret is funneled through the one hardened, wiped scratch region
+ * (crypto_scratch.h). @p counter is advanced in place by ceil(@p len / 16) blocks so successive calls
+ * continue the stream.
  *
  * COUNTER FORMAT (RFC 4344 §4)
- * The 16-byte IV/counter block increments as a big-endian 128-bit integer
- * after each 16 bytes of output.  The initial IV is derived per RFC 4253 §7.2:
- *   IV = SHA256(K || H || 'A' || session_id)   (C→S)
- *   IV = SHA256(K || H || 'B' || session_id)   (S→C)
+ * The 16-byte counter increments as a big-endian 128-bit integer after each 16-byte keystream block.
+ * The initial counter is the IV from the key exchange (RFC 4253 §7.2, labels 'A'/'B').
  *
- * PLATFORM SELECTION
- * ──────────────────
- * On Arduino (ESP32) the struct embeds an actual mbedtls_aes_context so that
- * mbedtls_aes_setkey_enc() / mbedtls_aes_crypt_ecb() are used for every AES
- * block encryption.  The ESP32 mbedtls port routes these calls to the
- * hardware AES accelerator transparently.  The compiler knows the true size
- * of mbedtls_aes_context at compile time - no guessing, no overflow possible.
+ * @note The SSH binary packet is always a whole number of cipher blocks, so every call is block-aligned
+ *       and the counter alone is sufficient state. A non-block-aligned @p len is permitted only as the
+ *       final call of a stream (any leftover keystream in the last block is discarded, not carried).
  *
- * On native (x86 test builds) the struct stores a software-expanded 60-word
- * AES-256 round key schedule (240 bytes) and a software AES block cipher is
- * used.  The software path exists only to allow host-side unit testing; it is
- * never compiled into the production ESP32 firmware.
+ * On Arduino (ESP32) the AES block is mbedtls, routed to the hardware AES accelerator; on native host
+ * builds a compact software AES-256 is used so the cipher is unit-testable off-target.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -40,75 +40,40 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// ---------------------------------------------------------------------------
-// Platform-specific AES context storage
-// ---------------------------------------------------------------------------
-
-#ifdef ARDUINO
-// On ESP32/Arduino, include the real mbedtls header.  The struct stores the
-// actual mbedtls_aes_context so the compiler knows its size exactly.
-#include <mbedtls/aes.h>
-
-struct DwsAesCtrCtx
-{
-    mbedtls_aes_context _mbed; ///< mbedtls context with pre-expanded key schedule.
-    uint8_t counter[16];       ///< Current CTR block (big-endian 128-bit counter).
-    uint8_t keystream[16];     ///< Buffered keystream from last AES-ECB call.
-    uint8_t pos;               ///< Next byte position within keystream[].
-};
-
-#else // Native - software AES, no mbedtls dependency
-
-struct DwsAesCtrCtx
-{
-    uint32_t rk[60];       ///< AES-256 expanded round key schedule (60 words, 240 bytes).
-    uint8_t counter[16];   ///< Current CTR block (big-endian 128-bit counter).
-    uint8_t keystream[16]; ///< Buffered keystream from last AES block encrypt.
-    uint8_t pos;           ///< Next byte position within keystream[].
-};
-
-#endif // ARDUINO
-
-// ---------------------------------------------------------------------------
-// API
-// ---------------------------------------------------------------------------
+/** @brief AES-256-CTR key length (bytes). */
+#define DWS_AES256CTR_KEY_LEN 32
+/** @brief AES-256-CTR counter/IV block length (bytes). */
+#define DWS_AES256CTR_CTR_LEN 16
 
 /**
- * @brief Initialize an AES-256-CTR context.
+ * @brief Encrypt or decrypt @p len bytes with AES-256-CTR (the two are identical).
  *
- * Expands the key schedule (hardware on Arduino, software on native) and
- * stores the initial counter/IV.
+ * Rebuilds the key schedule from @p key on the stack, produces the CTR keystream starting at @p counter,
+ * and XORs it into @p out. @p counter is advanced in place by ceil(@p len / 16) blocks so the next call
+ * continues the same stream. @p in and @p out may alias (in-place is the mode ssh_packet.cpp uses).
  *
- * @param ctx  Uninitialized context.
- * @param key  32-byte AES-256 key (derived from KEX via RFC 4253 §7.2).
- * @param iv   16-byte initial counter block (derived from KEX).
+ * @param key      32-byte AES-256 key.
+ * @param counter  16-byte counter block (big-endian); updated in place to the next unused block.
+ * @param in       Input bytes.
+ * @param out      Output bytes (may equal @p in).
+ * @param len      Number of bytes to process.
  */
-void dws_aes256ctr_init(DwsAesCtrCtx *ctx, const uint8_t key[32], const uint8_t iv[16]);
+void dws_aes256ctr_crypt(const uint8_t key[DWS_AES256CTR_KEY_LEN], uint8_t counter[DWS_AES256CTR_CTR_LEN],
+                         const uint8_t *in, uint8_t *out, size_t len);
 
 /**
- * @brief Encrypt or decrypt @p len bytes in-place (or src→dst).
+ * @brief Decrypt only the 4-byte SSH packet_length prefix WITHOUT advancing @p counter.
  *
- * AES-CTR is symmetric: XOR with keystream is its own inverse.
- * Calling this function for encryption and decryption is identical.
+ * Mirrors dws_chachapoly_get_length: lets the receiver learn a packet's length (and thus how many bytes
+ * to wait for) before the whole packet has arrived, without consuming counter state. The key schedule
+ * and keystream block live in the shared crypto scratch; no cipher state touches the stack.
  *
- * The counter advances by ceil(len/16) blocks.  If @p in == @p out the
- * operation is in-place (the only mode used by ssh_packet.cpp).
- *
- * @param ctx  Initialized AES-256-CTR context.
- * @param in   Input bytes.
- * @param out  Output bytes (may equal @p in for in-place).
- * @param len  Number of bytes to process.
+ * @param key      32-byte AES-256 key.
+ * @param counter  current 16-byte counter block (read only; not advanced).
+ * @param enc4     the 4 encrypted length bytes (start of the packet).
+ * @return the decrypted big-endian SSH packet_length.
  */
-void dws_aes256ctr_crypt(DwsAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, size_t len);
-
-/**
- * @brief Zero the key schedule and all context fields.
- *
- * Call on disconnect.  Uses a volatile wipe so the compiler cannot elide it.
- * On Arduino also calls mbedtls_aes_free() to release any internal resources.
- *
- * @param ctx  Context to wipe.
- */
-void dws_aes256ctr_wipe(DwsAesCtrCtx *ctx);
+uint32_t dws_aes256ctr_get_length(const uint8_t key[DWS_AES256CTR_KEY_LEN],
+                                  const uint8_t counter[DWS_AES256CTR_CTR_LEN], const uint8_t enc4[4]);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AES256CTR_H

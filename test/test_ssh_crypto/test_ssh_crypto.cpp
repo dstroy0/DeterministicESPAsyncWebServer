@@ -15,6 +15,7 @@
 #include "crypto/aes256ctr.h"
 #include "crypto/bignum.h"
 #include "crypto/chachapoly.h"
+#include "crypto/crypto_scratch.h" // crypto_work - to assert the ephemeral schedule is wiped after use
 #include "crypto/ghash.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/hmac_sha512.h"
@@ -275,10 +276,9 @@ static void test_aes256ctr_encrypt(void)
     uint8_t pt[16], ct[16];
     hex_to_bytes(pt, "6bc1bee22e409f96e93d7e117393172a", 16);
 
-    DwsAesCtrCtx ctx;
-    dws_aes256ctr_init(&ctx, key, iv);
-    dws_aes256ctr_crypt(&ctx, pt, ct, 16);
-    dws_aes256ctr_wipe(&ctx);
+    uint8_t ctr[16];
+    memcpy(ctr, iv, 16);
+    dws_aes256ctr_crypt(key, ctr, pt, ct, 16);
 
     uint8_t expected[16];
     hex_to_bytes(expected, "601ec313775789a5b7a7f504bbf3d228", 16);
@@ -295,10 +295,9 @@ static void test_aes256ctr_decrypt(void)
     uint8_t ct[16], pt[16];
     hex_to_bytes(ct, "601ec313775789a5b7a7f504bbf3d228", 16);
 
-    DwsAesCtrCtx ctx;
-    dws_aes256ctr_init(&ctx, key, iv);
-    dws_aes256ctr_crypt(&ctx, ct, pt, 16);
-    dws_aes256ctr_wipe(&ctx);
+    uint8_t ctr[16];
+    memcpy(ctr, iv, 16);
+    dws_aes256ctr_crypt(key, ctr, ct, pt, 16);
 
     uint8_t expected[16];
     hex_to_bytes(expected, "6bc1bee22e409f96e93d7e117393172a", 16);
@@ -320,10 +319,9 @@ static void test_aes256ctr_multi_block(void)
                  "f69f2445df4f9b17ad2b417be66c3710",
                  64);
 
-    DwsAesCtrCtx ctx;
-    dws_aes256ctr_init(&ctx, key, iv);
-    dws_aes256ctr_crypt(&ctx, pt, ct, 64);
-    dws_aes256ctr_wipe(&ctx);
+    uint8_t ctr[16];
+    memcpy(ctr, iv, 16);
+    dws_aes256ctr_crypt(key, ctr, pt, ct, 64);
 
     uint8_t expected[64];
     hex_to_bytes(expected,
@@ -335,15 +333,16 @@ static void test_aes256ctr_multi_block(void)
     TEST_ASSERT_EQUAL_MEMORY(expected, ct, 64);
 }
 
-static void test_aes256ctr_wipe(void)
+static void test_aes256ctr_scratch_wiped(void)
 {
-    // After wipe, the context should be all zeros.
-    uint8_t key[32] = {0}, iv[16] = {0};
-    DwsAesCtrCtx ctx;
-    dws_aes256ctr_init(&ctx, key, iv);
-    dws_aes256ctr_wipe(&ctx);
-    uint8_t zeros[sizeof(DwsAesCtrCtx)] = {0};
-    TEST_ASSERT_EQUAL_MEMORY(zeros, &ctx, sizeof(DwsAesCtrCtx));
+    // Security model: the ephemeral AES key schedule lives in the shared crypto scratch and MUST be wiped
+    // after every call, so no expanded key material lingers in the one region an attacker would target.
+    uint8_t key[32], ctr[16], in[32] = {0}, out[32];
+    hex_to_bytes(key, "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4", 32);
+    hex_to_bytes(ctr, "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff", 16);
+    dws_aes256ctr_crypt(key, ctr, in, out, 32);
+    uint8_t zeros[256] = {0};
+    TEST_ASSERT_EQUAL_MEMORY(zeros, crypto_work, 256); // schedule + keystream region cleared after use
 }
 
 // ============================================================================
@@ -923,7 +922,7 @@ static size_t build_client_packet(const uint8_t *payload, size_t payload_len, ui
     dws_hmac_sha256_update(&hctx, out, enc_len);
     dws_hmac_sha256_final(&hctx, out + enc_len);
 
-    dws_aes256ctr_crypt(&km->c2s_ctx, out, out, enc_len);
+    dws_aes256ctr_crypt(km->aes_key_c2s, km->aes_iv_c2s, out, out, enc_len);
     return enc_len + DWS_HMAC_SHA256_LEN;
 }
 
@@ -1005,8 +1004,10 @@ static void test_pkt_aes256gcm_roundtrip(void)
         key[i] = (uint8_t)(i * 3 + 7);
     for (int i = 0; i < 12; i++)
         iv[i] = (uint8_t)(0x40 + i);
-    dws_aesgcm_init(&km->gcm_c2s, key, iv);
-    dws_aesgcm_init(&km->gcm_s2c, key, iv); // same key/IV both directions
+    memcpy(km->aes_key_c2s, key, 32);
+    memcpy(km->aes_key_s2c, key, 32);
+    memcpy(km->aes_iv_c2s, iv, DWS_AESGCM_IV_LEN);
+    memcpy(km->aes_iv_s2c, iv, DWS_AESGCM_IV_LEN); // same key/IV both directions (GCM reuses aes_key_*/aes_iv_*)
     km->active = true;
 
     ssh_pkt_init(0);
@@ -1037,7 +1038,7 @@ static void test_pkt_aes256gcm_roundtrip(void)
     ssh_pkt_init(0);
     ssh_pkt[0].enc_out = true;
     ssh_pkt[0].enc_in = true;
-    dws_aesgcm_init(&km->gcm_c2s, key, iv); // reset receiver counter to the packet boundary
+    memcpy(km->aes_iv_c2s, iv, DWS_AESGCM_IV_LEN); // reset receiver nonce to the packet boundary
     wire[6] ^= 0x01;
     TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
 
@@ -1057,8 +1058,10 @@ static void etm_roundtrip_helper(uint8_t mac_mode)
         key[i] = (uint8_t)(i + 1);
     for (int i = 0; i < 16; i++)
         iv[i] = (uint8_t)(0x80 + i);
-    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
-    dws_aes256ctr_init(&km->s2c_ctx, key, iv); // same key/IV both directions
+    memcpy(km->aes_key_c2s, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_c2s, iv, DWS_AES256CTR_CTR_LEN);
+    memcpy(km->aes_key_s2c, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_s2c, iv, DWS_AES256CTR_CTR_LEN); // same key/IV both directions
     for (int i = 0; i < 64; i++)
         km->mac_key_c2s[i] = km->mac_key_s2c[i] = (uint8_t)(i * 5 + 3);
     km->active = true;
@@ -1085,7 +1088,8 @@ static void etm_roundtrip_helper(uint8_t mac_mode)
     ssh_pkt_init(0);
     ssh_pkt[0].enc_out = true;
     ssh_pkt[0].enc_in = true;
-    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
+    memcpy(km->aes_key_c2s, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_c2s, iv, DWS_AES256CTR_CTR_LEN);
     wire[6] ^= 0x01;
     TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
     ssh_keymat_wipe(0);
@@ -1324,8 +1328,10 @@ static void test_pkt_etm_padding_and_incomplete(void)
         key[i] = (uint8_t)(i + 1);
     for (int i = 0; i < 16; i++)
         iv[i] = (uint8_t)(0x80 + i);
-    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
-    dws_aes256ctr_init(&km->s2c_ctx, key, iv);
+    memcpy(km->aes_key_c2s, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_c2s, iv, DWS_AES256CTR_CTR_LEN);
+    memcpy(km->aes_key_s2c, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_s2c, iv, DWS_AES256CTR_CTR_LEN);
     for (int i = 0; i < 64; i++)
         km->mac_key_c2s[i] = km->mac_key_s2c[i] = (uint8_t)(i * 5 + 3);
     km->active = true;
@@ -1340,18 +1346,22 @@ static void test_pkt_etm_padding_and_incomplete(void)
     uint8_t wire[256];
     size_t wlen = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, p12, sizeof(p12), wire, &wlen, sizeof(wire)));
-    dws_aes256ctr_init(&km->c2s_ctx, key, iv);                          // reset the receive cipher
+    memcpy(km->aes_key_c2s, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_c2s, iv, DWS_AES256CTR_CTR_LEN);                  // reset the receive cipher
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen, pkt_handler)); // valid round-trip
 
     ssh_pkt_init(0);
     ssh_pkt[0].enc_out = true;
     ssh_pkt[0].enc_in = true;
-    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
-    dws_aes256ctr_init(&km->s2c_ctx, key, iv);
+    memcpy(km->aes_key_c2s, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_c2s, iv, DWS_AES256CTR_CTR_LEN);
+    memcpy(km->aes_key_s2c, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_s2c, iv, DWS_AES256CTR_CTR_LEN);
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, p12, sizeof(p12), wire, &wlen, sizeof(wire)));
     ssh_pkt_init(0);
     ssh_pkt[0].enc_in = true;
-    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
+    memcpy(km->aes_key_c2s, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_c2s, iv, DWS_AES256CTR_CTR_LEN);
     TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen - 8, pkt_handler)); // truncated -> held
     ssh_keymat_wipe(0);
 }
@@ -1416,7 +1426,8 @@ static void test_pkt_etm_bad_length(void)
     km->cipher_mode = SSH_CIPHER_AES256CTR;
     km->mac_mode = SSH_MAC_HMAC_SHA256_ETM;
     uint8_t key[32] = {0}, iv[16] = {0};
-    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
+    memcpy(km->aes_key_c2s, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_c2s, iv, DWS_AES256CTR_CTR_LEN);
     km->active = true;
     ssh_pkt_init(0);
     ssh_pkt[0].enc_in = true;
@@ -1455,8 +1466,9 @@ static size_t forge_etm(SshKeyMat *km, const uint8_t *key, const uint8_t *iv, ui
     body[0] = pad_byte;
     if (pkt_len >= 2)
         body[1] = SSH_MSG_IGNORE;
-    dws_aes256ctr_init(&km->c2s_ctx, key, iv);
-    dws_aes256ctr_crypt(&km->c2s_ctx, body, body, pkt_len);
+    memcpy(km->aes_key_c2s, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_c2s, iv, DWS_AES256CTR_CTR_LEN);
+    dws_aes256ctr_crypt(km->aes_key_c2s, km->aes_iv_c2s, body, body, pkt_len);
     memcpy(out + 4, body, pkt_len);
     uint8_t seq_be[4] = {(uint8_t)(seq >> 24), (uint8_t)(seq >> 16), (uint8_t)(seq >> 8), (uint8_t)seq};
     DwsHmacSha256Ctx hctx;
@@ -1464,7 +1476,8 @@ static size_t forge_etm(SshKeyMat *km, const uint8_t *key, const uint8_t *iv, ui
     dws_hmac_sha256_update(&hctx, seq_be, 4);
     dws_hmac_sha256_update(&hctx, out, 4 + pkt_len);
     dws_hmac_sha256_final(&hctx, out + 4 + pkt_len);
-    dws_aes256ctr_init(&km->c2s_ctx, key, iv); // reset the receive cipher to the packet boundary
+    memcpy(km->aes_key_c2s, key, DWS_AES256CTR_KEY_LEN);
+    memcpy(km->aes_iv_c2s, iv, DWS_AES256CTR_CTR_LEN); // reset the receive cipher to the packet boundary
     return 4 + pkt_len + DWS_HMAC_SHA256_LEN;
 }
 
@@ -1533,7 +1546,7 @@ static size_t forge_eam(SshKeyMat *km, uint32_t seq, uint32_t pkt_len, uint8_t p
     dws_hmac_sha256_update(&hctx, seq_be, 4);
     dws_hmac_sha256_update(&hctx, out, enc_len);
     dws_hmac_sha256_final(&hctx, out + enc_len);
-    dws_aes256ctr_crypt(&km->c2s_ctx, out, out, enc_len);
+    dws_aes256ctr_crypt(km->aes_key_c2s, km->aes_iv_c2s, out, out, enc_len);
     return enc_len + DWS_HMAC_SHA256_LEN;
 }
 
@@ -1697,7 +1710,7 @@ int main(void)
     RUN_TEST(test_aes256ctr_encrypt);
     RUN_TEST(test_aes256ctr_decrypt);
     RUN_TEST(test_aes256ctr_multi_block);
-    RUN_TEST(test_aes256ctr_wipe);
+    RUN_TEST(test_aes256ctr_scratch_wiped);
 
     // BigNum
     RUN_TEST(test_bn_roundtrip);

@@ -66,10 +66,7 @@ size_t dws_esp_gcm_encapsulate(uint32_t spi, uint32_t seq, const uint8_t key[DWS
     // Encrypt in place: AAD = SPI | Seq (the first 8 octets), plaintext -> ciphertext || ICV at ESP_CT_OFF.
     uint8_t nonce[DWS_AESGCM_IV_LEN];
     esp_nonce(nonce, salt, iv);
-    DwsAesGcmCtx ctx;
-    dws_aesgcm_init(&ctx, key, nonce);
-    dws_aesgcm_seal(&ctx, out, DWS_ESP_HDR_LEN, pt, pt_len, pt);
-    dws_aesgcm_wipe(&ctx);
+    dws_aesgcm_seal_tag(key, nonce, out, DWS_ESP_HDR_LEN, pt, pt_len, pt, pt + pt_len);
     return total;
 }
 
@@ -90,10 +87,7 @@ bool dws_esp_gcm_decapsulate(const uint8_t key[DWS_ESP_KEY_LEN], const uint8_t s
 
     uint8_t nonce[DWS_AESGCM_IV_LEN];
     esp_nonce(nonce, salt, iv);
-    DwsAesGcmCtx ctx;
-    dws_aesgcm_init(&ctx, key, nonce);
-    bool ok = dws_aesgcm_open(&ctx, packet, DWS_ESP_HDR_LEN, ct, ct_len, tag, ct); // AAD = SPI | Seq
-    dws_aesgcm_wipe(&ctx);
+    bool ok = dws_aesgcm_open_tag(key, nonce, packet, DWS_ESP_HDR_LEN, ct, ct_len, tag, ct); // AAD = SPI | Seq
     if (!ok)
         return false;
 

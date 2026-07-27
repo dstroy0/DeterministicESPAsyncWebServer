@@ -1440,11 +1440,6 @@ void test_dh_derive_keys_gcm_installs()
     ssh_kdf_derive(K, H, sid, 'C', key_c, DWS_SHA256_DIGEST_LEN);
     ssh_kdf_derive(K, H, sid, 'D', key_s, DWS_SHA256_DIGEST_LEN);
 
-    DwsAesGcmCtx ref_c;
-    DwsAesGcmCtx ref_s;
-    dws_aesgcm_init(&ref_c, key_c, iv_c); // dws_aesgcm_init reads the first 12 bytes as the IV
-    dws_aesgcm_init(&ref_s, key_s, iv_s);
-
     uint8_t pt[16];
     for (int j = 0; j < 16; j++)
         pt[j] = (uint8_t)(j + 1);
@@ -1452,12 +1447,16 @@ void test_dh_derive_keys_gcm_installs()
     uint8_t seal_ref[16 + DWS_AESGCM_TAG_LEN];
     uint8_t seal_km[16 + DWS_AESGCM_TAG_LEN];
 
-    dws_aesgcm_seal(&ref_c, aad, sizeof(aad), pt, sizeof(pt), seal_ref);
-    dws_aesgcm_seal(&ssh_keys[0].gcm_c2s, aad, sizeof(aad), pt, sizeof(pt), seal_km);
+    // Reference seal uses the derived key + IV directly (GCM takes the first 12 bytes of the IV as the nonce);
+    // the keymat seal uses the raw key + IV the KEX stored - they must be byte-identical.
+    dws_aesgcm_seal_tag(key_c, iv_c, aad, sizeof(aad), pt, sizeof(pt), seal_ref, seal_ref + sizeof(pt));
+    dws_aesgcm_seal_tag(ssh_keys[0].aes_key_c2s, ssh_keys[0].aes_iv_c2s, aad, sizeof(aad), pt, sizeof(pt), seal_km,
+                        seal_km + sizeof(pt));
     TEST_ASSERT_EQUAL_MEMORY(seal_ref, seal_km, sizeof(seal_ref)); // C->S key + IV byte-correct
 
-    dws_aesgcm_seal(&ref_s, aad, sizeof(aad), pt, sizeof(pt), seal_ref);
-    dws_aesgcm_seal(&ssh_keys[0].gcm_s2c, aad, sizeof(aad), pt, sizeof(pt), seal_km);
+    dws_aesgcm_seal_tag(key_s, iv_s, aad, sizeof(aad), pt, sizeof(pt), seal_ref, seal_ref + sizeof(pt));
+    dws_aesgcm_seal_tag(ssh_keys[0].aes_key_s2c, ssh_keys[0].aes_iv_s2c, aad, sizeof(aad), pt, sizeof(pt), seal_km,
+                        seal_km + sizeof(pt));
     TEST_ASSERT_EQUAL_MEMORY(seal_ref, seal_km, sizeof(seal_ref)); // S->C key + IV byte-correct
 
     ssh_keymat_wipe(0);

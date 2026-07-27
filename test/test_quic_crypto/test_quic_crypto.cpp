@@ -12,6 +12,7 @@
 // Pure host crypto; no mbedtls on native, so the software AES-128/GHASH paths are what run here.
 
 #include "crypto/aes128gcm.h"
+#include "crypto/crypto_scratch.h" // crypto_work (opaque DwsAes128 storage)
 #include "crypto/hkdf.h"
 #include "crypto/hmac_sha256.h"
 #include "network_drivers/presentation/http3/quic_crypto.h"
@@ -63,10 +64,10 @@ void test_aes128_block_fips197()
     hx("000102030405060708090a0b0c0d0e0f", key, 16);
     hx("00112233445566778899aabbccddeeff", in, 16);
     hx("69c4e0d86a7b0430d8cdb78070b4c55a", exp, 16);
-    DwsAes128 aes;
-    dws_aes128_init(&aes, key);
-    dws_aes128_encrypt_block(&aes, in, out);
-    dws_aes128_wipe(&aes);
+    DwsAes128 *aes = reinterpret_cast<DwsAes128 *>(crypto_work);
+    dws_aes128_init(aes, key);
+    dws_aes128_encrypt_block(aes, in, out);
+    dws_aes128_wipe(aes);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, out, 16);
 }
 

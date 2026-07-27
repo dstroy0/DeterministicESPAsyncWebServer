@@ -43,41 +43,38 @@ static const uint8_t TC16_TAG[16] = {0x76, 0xfc, 0x6e, 0xce, 0x0f, 0x4e, 0x17, 0
 // seal(AAD, PT) must reproduce the NIST ciphertext and tag exactly.
 void test_aesgcm_nist_tc16_seal()
 {
-    DwsAesGcmCtx ctx;
-    dws_aesgcm_init(&ctx, TC16_KEY, TC16_IV);
     uint8_t out[60 + 16];
-    dws_aesgcm_seal(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_PT, sizeof(TC16_PT), out);
+    dws_aesgcm_seal_tag(TC16_KEY, TC16_IV, TC16_AAD, sizeof(TC16_AAD), TC16_PT, sizeof(TC16_PT), out,
+                        out + sizeof(TC16_CT));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_CT, out, sizeof(TC16_CT));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_TAG, out + sizeof(TC16_CT), 16);
-    dws_aesgcm_wipe(&ctx);
 }
 
 // open(AAD, CT, TAG) must verify and recover the plaintext; a tampered tag/ciphertext must fail
 // without writing plaintext and without advancing the invocation counter.
 void test_aesgcm_nist_tc16_open()
 {
-    DwsAesGcmCtx ctx;
-    dws_aesgcm_init(&ctx, TC16_KEY, TC16_IV);
     uint8_t pt[60];
-    TEST_ASSERT_TRUE(dws_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt));
+    TEST_ASSERT_TRUE(
+        dws_aesgcm_open_tag(TC16_KEY, TC16_IV, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_PT, pt, sizeof(TC16_PT));
 
-    // Tampered tag -> reject; the counter must NOT have advanced, so a correct open still works.
-    dws_aesgcm_init(&ctx, TC16_KEY, TC16_IV);
+    // Tampered tag -> reject; a correct open still works (stateless: no counter to corrupt).
     uint8_t bad_tag[16];
     memcpy(bad_tag, TC16_TAG, 16);
     bad_tag[0] ^= 0x01;
-    TEST_ASSERT_FALSE(dws_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), bad_tag, pt));
-    TEST_ASSERT_TRUE(dws_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt));
+    TEST_ASSERT_FALSE(
+        dws_aesgcm_open_tag(TC16_KEY, TC16_IV, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), bad_tag, pt));
+    TEST_ASSERT_TRUE(
+        dws_aesgcm_open_tag(TC16_KEY, TC16_IV, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_PT, pt, sizeof(TC16_PT));
 
     // Tampered AAD -> reject.
-    dws_aesgcm_init(&ctx, TC16_KEY, TC16_IV);
     uint8_t bad_aad[20];
     memcpy(bad_aad, TC16_AAD, 20);
     bad_aad[3] ^= 0x40;
-    TEST_ASSERT_FALSE(dws_aesgcm_open(&ctx, bad_aad, sizeof(bad_aad), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt));
-    dws_aesgcm_wipe(&ctx);
+    TEST_ASSERT_FALSE(
+        dws_aesgcm_open_tag(TC16_KEY, TC16_IV, bad_aad, sizeof(bad_aad), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt));
 }
 
 // RFC 5647 sec 7.1: the invocation counter advances once per sealed/opened packet, so the same
@@ -85,42 +82,42 @@ void test_aesgcm_nist_tc16_open()
 // same key/IV opens both in order.
 void test_aesgcm_invocation_counter_advances()
 {
-    DwsAesGcmCtx enc, dec;
     uint8_t key[32], iv[12];
     for (int i = 0; i < 32; i++)
         key[i] = (uint8_t)(i * 7 + 1);
     for (int i = 0; i < 12; i++)
         iv[i] = (uint8_t)(0x10 + i);
-    dws_aesgcm_init(&enc, key, iv);
-    dws_aesgcm_init(&dec, key, iv);
 
     const uint8_t aad[4] = {0, 0, 0, 16};
     uint8_t msg[16];
     for (int i = 0; i < 16; i++)
         msg[i] = (uint8_t)(0xA0 + i);
 
+    // The caller advances the invocation counter per packet (RFC 5647), stateless API.
+    uint8_t enc_iv[12];
+    memcpy(enc_iv, iv, 12);
     uint8_t p0[16 + 16], p1[16 + 16];
-    dws_aesgcm_seal(&enc, aad, 4, msg, 16, p0); // packet 0 (counter = initial)
-    dws_aesgcm_seal(&enc, aad, 4, msg, 16, p1); // packet 1 (counter incremented)
+    dws_aesgcm_seal_tag(key, enc_iv, aad, 4, msg, 16, p0, p0 + 16); // packet 0 (counter = initial)
+    dws_aesgcm_iv_increment(enc_iv);
+    dws_aesgcm_seal_tag(key, enc_iv, aad, 4, msg, 16, p1, p1 + 16); // packet 1 (counter incremented)
 
     // Same key + same plaintext but a different invocation counter -> different ciphertext AND tag.
     TEST_ASSERT_TRUE(memcmp(p0, p1, 32) != 0);
 
     // The receiver, stepping its own counter in lockstep, opens both in order.
+    uint8_t dec_iv[12];
+    memcpy(dec_iv, iv, 12);
     uint8_t r0[16], r1[16];
-    TEST_ASSERT_TRUE(dws_aesgcm_open(&dec, aad, 4, p0, 16, p0 + 16, r0));
+    TEST_ASSERT_TRUE(dws_aesgcm_open_tag(key, dec_iv, aad, 4, p0, 16, p0 + 16, r0));
+    dws_aesgcm_iv_increment(dec_iv);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(msg, r0, 16);
-    TEST_ASSERT_TRUE(dws_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, r1));
+    TEST_ASSERT_TRUE(dws_aesgcm_open_tag(key, dec_iv, aad, 4, p1, 16, p1 + 16, r1));
+    dws_aesgcm_iv_increment(dec_iv);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(msg, r1, 16);
 
-    // Feeding packet 1 to a freshly-reset decryptor (counter back at start) must fail: the nonce is
-    // wrong for that packet.
-    dws_aesgcm_init(&dec, key, iv);
+    // Packet 1 opened with the counter back at the start must fail: wrong nonce for that packet.
     uint8_t rx[16];
-    TEST_ASSERT_FALSE(dws_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, rx));
-
-    dws_aesgcm_wipe(&enc);
-    dws_aesgcm_wipe(&dec);
+    TEST_ASSERT_FALSE(dws_aesgcm_open_tag(key, iv, aad, 4, p1, 16, p1 + 16, rx));
 }
 
 // RFC 5647 sec 7.1: the invocation counter is the low 8 bytes of the 12-byte nonce, incremented as one
@@ -129,19 +126,12 @@ void test_aesgcm_invocation_counter_advances()
 // carry-propagation path that a non-wrapping counter never takes. The 4-byte fixed field is untouched.
 void test_aesgcm_iv_counter_carries(void)
 {
-    DwsAesGcmCtx ctx;
-    const uint8_t key[32] = {0};
-    const uint8_t iv[12] = {0x01, 0x02, 0x03, 0x04, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-    dws_aesgcm_init(&ctx, key, iv);
-
-    const uint8_t pt[16] = {0};
-    uint8_t out[16 + 16];
-    dws_aesgcm_seal(&ctx, NULL, 0, pt, sizeof(pt), out);
-
+    // The invocation-counter advance is now the caller's job (dws_aesgcm_iv_increment); this checks the
+    // carry propagates through all 8 low bytes while the 4-byte fixed field is untouched.
+    uint8_t iv[12] = {0x01, 0x02, 0x03, 0x04, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    dws_aesgcm_iv_increment(iv);
     const uint8_t expected_iv[12] = {0x01, 0x02, 0x03, 0x04, 0, 0, 0, 0, 0, 0, 0, 0};
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_iv, ctx.iv, 12);
-
-    dws_aesgcm_wipe(&ctx);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_iv, iv, 12);
 }
 
 // The GCTR keystream counter (inc32, low 32 bits of the block, NIST SP 800-38D sec 6.5) starts at
@@ -151,14 +141,11 @@ void test_aesgcm_iv_counter_carries(void)
 // byte-compare to prove the wrapped keystream is still self-consistent.
 void test_aesgcm_gctr_counter_byte_carry(void)
 {
-    DwsAesGcmCtx enc, dec;
     uint8_t key[32], iv[12];
     for (int i = 0; i < 32; i++)
         key[i] = (uint8_t)(i * 3 + 5);
     for (int i = 0; i < 12; i++)
         iv[i] = (uint8_t)(0x20 + i);
-    dws_aesgcm_init(&enc, key, iv);
-    dws_aesgcm_init(&dec, key, iv);
 
     const size_t n = 255 * 16; // 4080 B > 254 blocks -> GCTR counter byte 15 carries mid-seal
     uint8_t *pt = new uint8_t[n];
@@ -167,15 +154,13 @@ void test_aesgcm_gctr_counter_byte_carry(void)
     for (size_t i = 0; i < n; i++)
         pt[i] = (uint8_t)(i * 31 + 7);
 
-    dws_aesgcm_seal(&enc, NULL, 0, pt, n, out);
-    TEST_ASSERT_TRUE(dws_aesgcm_open(&dec, NULL, 0, out, n, out + n, rt));
+    dws_aesgcm_seal_tag(key, iv, NULL, 0, pt, n, out, out + n);
+    TEST_ASSERT_TRUE(dws_aesgcm_open_tag(key, iv, NULL, 0, out, n, out + n, rt));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, n);
 
     delete[] pt;
     delete[] out;
     delete[] rt;
-    dws_aesgcm_wipe(&enc);
-    dws_aesgcm_wipe(&dec);
 }
 
 int main()

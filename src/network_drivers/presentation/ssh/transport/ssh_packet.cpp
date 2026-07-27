@@ -129,21 +129,21 @@ static inline const uint8_t *km_recv_chacha(const SshKeyMat *km, bool cli)
 {
     return cli ? km->chacha_key_s2c : km->chacha_key_c2s;
 }
-static inline DwsAesGcmCtx *km_send_gcm(SshKeyMat *km, bool cli)
+static inline const uint8_t *km_send_aes_key(const SshKeyMat *km, bool cli)
 {
-    return cli ? &km->gcm_c2s : &km->gcm_s2c;
+    return cli ? km->aes_key_c2s : km->aes_key_s2c;
 }
-static inline DwsAesGcmCtx *km_recv_gcm(SshKeyMat *km, bool cli)
+static inline uint8_t *km_send_aes_iv(SshKeyMat *km, bool cli)
 {
-    return cli ? &km->gcm_s2c : &km->gcm_c2s;
+    return cli ? km->aes_iv_c2s : km->aes_iv_s2c;
 }
-static inline DwsAesCtrCtx *km_send_ctr(SshKeyMat *km, bool cli)
+static inline const uint8_t *km_recv_aes_key(const SshKeyMat *km, bool cli)
 {
-    return cli ? &km->c2s_ctx : &km->s2c_ctx;
+    return cli ? km->aes_key_s2c : km->aes_key_c2s;
 }
-static inline DwsAesCtrCtx *km_recv_ctr(SshKeyMat *km, bool cli)
+static inline uint8_t *km_recv_aes_iv(SshKeyMat *km, bool cli)
 {
-    return cli ? &km->s2c_ctx : &km->c2s_ctx;
+    return cli ? km->aes_iv_s2c : km->aes_iv_c2s;
 }
 static inline const uint8_t *km_send_mac(const SshKeyMat *km, bool cli)
 {
@@ -249,12 +249,15 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     {
         // aes256-gcm@openssh.com: length stays in clear (it is the AAD); seal the packet body in
         // place and append the 16-byte GCM tag. The context's invocation counter advances by one.
-        dws_aesgcm_seal(km_send_gcm(km, cli), out, 4, out + 4, pkt_len, out + 4);
+        // Seal in place (tag appended after the ciphertext), then advance the RFC 5647 invocation counter.
+        uint8_t *iv = km_send_aes_iv(km, cli);
+        dws_aesgcm_seal_tag(km_send_aes_key(km, cli), iv, out, 4, out + 4, pkt_len, out + 4, out + 4 + pkt_len);
+        dws_aesgcm_iv_increment(iv);
     }
     else if (etm)
     {
         // Encrypt-then-MAC: length stays in clear; encrypt the payload, then MAC over (length||ct).
-        dws_aes256ctr_crypt(km_send_ctr(km, cli), out + 4, out + 4, pkt_len);
+        dws_aes256ctr_crypt(km_send_aes_key(km, cli), km_send_aes_iv(km, cli), out + 4, out + 4, pkt_len);
         compute_mac_mode(km->mac_mode, km_send_mac(km, cli), s->seq_no_send, out, 4 + pkt_len, out + 4 + pkt_len);
     }
     else if (s->enc_out)
@@ -262,7 +265,7 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
         // Encrypt-and-MAC: MAC over plaintext (seq || unencrypted packet), then AES-256-CTR.
         uint8_t mac[64];
         compute_mac_mode(km->mac_mode, km_send_mac(km, cli), s->seq_no_send, out, 4 + pkt_len, mac);
-        dws_aes256ctr_crypt(km_send_ctr(km, cli), out, out, 4 + pkt_len);
+        dws_aes256ctr_crypt(km_send_aes_key(km, cli), km_send_aes_iv(km, cli), out, out, 4 + pkt_len);
         memcpy(out + 4 + pkt_len, mac, tag_len);
         dws_crypto_wipe(mac, sizeof(mac));
     }
@@ -397,14 +400,16 @@ static int ssh_recv_aesgcm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_
     }
 
     // Verify the GCM tag over (length || ciphertext), then decrypt. No plaintext on failure.
-    if (!dws_aesgcm_open(km_recv_gcm(km, s->is_client), s->rx_buf, 4, s->rx_buf + 4, pkt_len, s->rx_buf + 4 + pkt_len,
-                         scratch))
+    uint8_t *iv = km_recv_aes_iv(km, s->is_client);
+    if (!dws_aesgcm_open_tag(km_recv_aes_key(km, s->is_client), iv, s->rx_buf, 4, s->rx_buf + 4, pkt_len,
+                             s->rx_buf + 4 + pkt_len, scratch))
     {
         dws_crypto_wipe(scratch, scratch_sz);
         dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1; // caller must close connection
     }
+    dws_aesgcm_iv_increment(iv); // tag verified: advance the RFC 5647 invocation counter (recv success)
 
     if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
     {
@@ -476,7 +481,7 @@ static int ssh_recv_ctr_etm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg
         return -1;
     }
     memcpy(scratch, s->rx_buf + 4, pkt_len);
-    dws_aes256ctr_crypt(km_recv_ctr(km, s->is_client), scratch, scratch, pkt_len);
+    dws_aes256ctr_crypt(km_recv_aes_key(km, s->is_client), km_recv_aes_iv(km, s->is_client), scratch, scratch, pkt_len);
 
     // scratch = padding_length || payload || padding.
     uint8_t pad_len_byte = scratch[0];
@@ -505,31 +510,12 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     if (s->rx_len < 16)
         return 0; // wait for more data
 
-    // --- Peek packet_length WITHOUT permanently advancing the cipher ---
-    // AES-CTR is stateful: decrypting bytes advances the counter.  To
-    // read the length without committing, snapshot the CTR streaming
-    // state (counter/keystream/pos - the key schedule is invariant and
-    // may hold internal pointers on mbedtls, so we never copy it),
-    // decrypt the first block, then restore.  Nothing is consumed yet.
-    DwsAesCtrCtx *rc = km_recv_ctr(km, s->is_client); // recv: client s2c, server c2s
-    uint8_t saved_counter[16];
-    uint8_t saved_keystream[16];
-    uint8_t saved_pos;
-    memcpy(saved_counter, rc->counter, 16);
-    memcpy(saved_keystream, rc->keystream, 16);
-    saved_pos = rc->pos;
-
-    uint8_t len_block[16];
-    memcpy(len_block, s->rx_buf, 16);
-    dws_aes256ctr_crypt(rc, len_block, len_block, 16);
-    uint32_t pkt_len = read_u32_be(len_block);
-    dws_crypto_wipe(len_block, sizeof(len_block));
-
-    // Restore the cipher to the packet boundary (un-peek).
-    memcpy(rc->counter, saved_counter, 16);
-    memcpy(rc->keystream, saved_keystream, 16);
-    rc->pos = saved_pos;
-    dws_crypto_wipe(saved_keystream, sizeof(saved_keystream));
+    // --- Peek packet_length WITHOUT advancing the cipher ---
+    // Decrypt only the 4-byte length prefix against the current counter block; the counter is not advanced
+    // and no cipher state touches the stack (all working memory stays in the shared crypto scratch).
+    const uint8_t *rk = km_recv_aes_key(km, s->is_client); // recv: client s2c, server c2s
+    uint8_t *rctr = km_recv_aes_iv(km, s->is_client);
+    uint32_t pkt_len = dws_aes256ctr_get_length(rk, rctr, s->rx_buf);
 
     // Validate length.  The encrypted portion (4 + pkt_len) must be a
     // whole number of AES blocks (RFC 4253 §6 padding guarantees this).
@@ -561,10 +547,10 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     }
 
     // Full packet present.  Decrypt EXACTLY the encrypted portion,
-    // which advances c2s_ctx by exactly enc_len/16 blocks and leaves
-    // the cipher aligned on the next packet boundary.
+    // which advances the recv counter by exactly enc_len/16 blocks and
+    // leaves it aligned on the next packet boundary.
     memcpy(scratch, s->rx_buf, enc_len);
-    dws_aes256ctr_crypt(rc, scratch, scratch, enc_len);
+    dws_aes256ctr_crypt(rk, rctr, scratch, scratch, enc_len);
 
     // Verify MAC over seq_no || plaintext(scratch[0..enc_len)).
     const uint8_t *rx_mac = s->rx_buf + enc_len; // MAC is sent in clear

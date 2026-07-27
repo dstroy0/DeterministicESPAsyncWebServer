@@ -1121,26 +1121,20 @@ void test_handle_request_index_and_parse_guards()
 // trip reaches the byte-carry arm without anywhere near the ~2^32-block full-counter wrap.
 void test_aesgcm_gctr_counter_byte_carry(void)
 {
-    DwsAesGcmCtx enc, dec;
     uint8_t key[32], iv[12];
     for (int i = 0; i < 32; i++)
         key[i] = (uint8_t)(i * 3 + 5);
     for (int i = 0; i < 12; i++)
         iv[i] = (uint8_t)(0x20 + i);
-    dws_aesgcm_init(&enc, key, iv);
-    dws_aesgcm_init(&dec, key, iv);
 
     static uint8_t pt[4096], ct[4096 + DWS_AESGCM_TAG_LEN], rt[4096];
     for (size_t i = 0; i < sizeof(pt); i++)
         pt[i] = (uint8_t)(i * 31 + 7);
     const uint8_t aad[4] = {0, 0, 0x10, 0x00};
 
-    dws_aesgcm_seal(&enc, aad, sizeof(aad), pt, sizeof(pt), ct);
-    TEST_ASSERT_TRUE(dws_aesgcm_open(&dec, aad, sizeof(aad), ct, sizeof(pt), ct + sizeof(pt), rt));
+    dws_aesgcm_seal_tag(key, iv, aad, sizeof(aad), pt, sizeof(pt), ct, ct + sizeof(pt));
+    TEST_ASSERT_TRUE(dws_aesgcm_open_tag(key, iv, aad, sizeof(aad), ct, sizeof(pt), ct + sizeof(pt), rt));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, sizeof(pt));
-
-    dws_aesgcm_wipe(&enc);
-    dws_aesgcm_wipe(&dec);
 }
 
 int main()

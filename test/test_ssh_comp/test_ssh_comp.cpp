@@ -482,20 +482,16 @@ void test_aes256ctr_nist_vector_roundtrip_and_wipe(void)
                      "dfc9c58db67aada613c2dd08457941a6",
                      64);
 
-    DwsAesCtrCtx ctx;
     uint8_t ct[64];
-    dws_aes256ctr_init(&ctx, key, iv);
-    dws_aes256ctr_crypt(&ctx, pt, ct, 64);
+    uint8_t ctr[16];
+    memcpy(ctr, iv, 16);
+    dws_aes256ctr_crypt(key, ctr, pt, ct, 64);
     TEST_ASSERT_EQUAL_MEMORY(expected_ct, ct, 64);
 
     uint8_t pt_back[64];
-    dws_aes256ctr_init(&ctx, key, iv); // decrypt = re-init + the same XOR pass over the ciphertext
-    dws_aes256ctr_crypt(&ctx, ct, pt_back, 64);
+    memcpy(ctr, iv, 16); // decrypt = reset the counter + the same XOR pass over the ciphertext
+    dws_aes256ctr_crypt(key, ctr, ct, pt_back, 64);
     TEST_ASSERT_EQUAL_MEMORY(pt, pt_back, 64);
-
-    dws_aes256ctr_wipe(&ctx);
-    uint8_t zeros[sizeof(DwsAesCtrCtx)] = {0};
-    TEST_ASSERT_EQUAL_MEMORY(zeros, &ctx, sizeof(DwsAesCtrCtx));
 }
 
 // The big-endian 128-bit counter incrementer carries out of every byte only when the whole counter is
@@ -507,14 +503,13 @@ void test_aes256ctr_counter_full_wraparound(void)
     uint8_t iv[16];
     memset(iv, 0xFF, sizeof(iv));
 
-    DwsAesCtrCtx ctx;
-    dws_aes256ctr_init(&ctx, key, iv);
+    uint8_t ctr[16];
+    memcpy(ctr, iv, 16); // all 0xFF
     uint8_t pt[16] = {0}, ct[16];
-    dws_aes256ctr_crypt(&ctx, pt, ct, 16); // one block: encrypts under the all-0xFF counter, then wraps it
+    dws_aes256ctr_crypt(key, ctr, pt, ct, 16); // one block under the all-0xFF counter, then wraps it
 
     uint8_t zero_counter[16] = {0};
-    TEST_ASSERT_EQUAL_MEMORY(zero_counter, ctx.counter, 16);
-    dws_aes256ctr_wipe(&ctx);
+    TEST_ASSERT_EQUAL_MEMORY(zero_counter, ctr, 16); // counter wrapped to all-zero in place
 }
 
 // ============================================================================

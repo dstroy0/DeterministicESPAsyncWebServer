@@ -295,10 +295,13 @@ int bn_dh_validate(const DwsBigNum *v)
 
 void bn_expmod_group14(DwsBigNum *out, const DwsBigNum *base, const DwsBigNum *exp)
 {
-    uint8_t base_be[256];
-    uint8_t exp_be[256];
-    uint8_t p_be[256];
-    uint8_t res_be[256];
+    // Big-endian temporaries live in the shared crypto scratch, not on the stack: exp holds the DH private
+    // exponent and res the shared secret, so the whole region is wiped on exit (crypto_scratch.h).
+    static_assert(4 * 256 <= DWS_CRYPTO_WORK_SIZE, "DH expmod byte temporaries must fit crypto_work");
+    uint8_t *base_be = crypto_work;
+    uint8_t *exp_be = crypto_work + 256;
+    uint8_t *p_be = crypto_work + 512;
+    uint8_t *res_be = crypto_work + 768;
     bn_to_bytes(base_be, base);
     bn_to_bytes(exp_be, exp);
     bn_to_bytes(p_be, &group14_p);
@@ -325,9 +328,8 @@ void bn_expmod_group14(DwsBigNum *out, const DwsBigNum *base, const DwsBigNum *e
     mbedtls_mpi_free(&R);
 
     bn_from_bytes(out, res_be, 256);
-    // Wipe the big-endian temporaries (they held the private exponent).
-    dws_crypto_wipe(exp_be, 256);
-    dws_crypto_wipe(res_be, 256);
+    // Wipe the whole scratch region used (base/exp/p/res): exp held the DH private exponent, res the shared secret.
+    dws_crypto_wipe(crypto_work, 4 * 256);
 }
 
 #else // Native software path

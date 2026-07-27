@@ -1062,10 +1062,7 @@ bool dws_ike_sk_aead_seal(const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t
     ike_gcm_nonce(nonce, salt, iv);
     // IKEv2 chooses a fresh explicit IV per message, so the GCM context is single-use here (the SSH
     // invocation-counter model does not apply): init, seal once, wipe.
-    DwsAesGcmCtx ctx;
-    dws_aesgcm_init(&ctx, key, nonce);
-    dws_aesgcm_seal(&ctx, aad, aad_len, pt, pt_len, out); // out = ciphertext || 16-byte tag
-    dws_aesgcm_wipe(&ctx);
+    dws_aesgcm_seal_tag(key, nonce, aad, aad_len, pt, pt_len, out, out + pt_len); // out = ciphertext || 16-byte tag
     return true;
 }
 
@@ -1077,10 +1074,7 @@ bool dws_ike_sk_aead_open(const uint8_t key[DWS_IKE_AEAD_KEY_LEN], const uint8_t
         return false;
     uint8_t nonce[DWS_AESGCM_IV_LEN];
     ike_gcm_nonce(nonce, salt, iv);
-    DwsAesGcmCtx ctx;
-    dws_aesgcm_init(&ctx, key, nonce);
-    bool ok = dws_aesgcm_open(&ctx, aad, aad_len, ct, ct_len, tag, out);
-    dws_aesgcm_wipe(&ctx);
+    bool ok = dws_aesgcm_open_tag(key, nonce, aad, aad_len, ct, ct_len, tag, out);
     return ok;
 }
 

@@ -6138,9 +6138,26 @@
  *
  * Zeroed via dws_crypto_wipe() immediately after each operation. Only one crypto op runs at a time (the
  * single loop/worker task + synchronous handshake model), so the buffer has one accessor and needs no lock.
+ * Long-lived streaming contexts (running transcript / kex hashes) are NOT kept here - they are owned
+ * per-session state, wiped at teardown and unreachable by any user.
+ *
+ * REGION MAP (compile-time running total). Top-level crypto ops - the DH/RSA Montgomery modexp, the AEAD
+ * per-op contexts, one-shot hash contexts, and a composed op's OWN state - share the base span
+ * [0, DWS_CW_BASE_SZ): only one runs at a time. A composed op that nests sub-primitives (chacha20-poly1305:
+ * chachapoly calls chacha20 + poly1305, all live simultaneously) puts each nested sub-primitive in its own
+ * region ABOVE the base, handed out by running total (next start = prev start + prev size), so a callee never
+ * clobbers its caller's state. crypto_work is the final running total. No allocator, no runtime guard.
  */
+#ifndef DWS_CW_BASE_SZ
+#define DWS_CW_BASE_SZ 1536 // biggest single top-level op: DH Montgomery modexp (1284, rounded)
+#endif
+// Nested sub-primitive regions (above the base). Each: OFF = running total, SZ = its working set.
+#define DWS_CW_CHACHA20_OFF DWS_CW_BASE_SZ // chacha20 block state (st+ks+round)
+#define DWS_CW_CHACHA20_SZ 192
+#define DWS_CW_POLY1305_OFF (DWS_CW_CHACHA20_OFF + DWS_CW_CHACHA20_SZ) // poly1305 accumulator/limbs
+#define DWS_CW_POLY1305_SZ 96
 #ifndef DWS_CRYPTO_WORK_SIZE
-#define DWS_CRYPTO_WORK_SIZE 1536
+#define DWS_CRYPTO_WORK_SIZE (DWS_CW_POLY1305_OFF + DWS_CW_POLY1305_SZ) // base + nested sub-primitive regions
 #endif
 
 /**

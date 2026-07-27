@@ -171,7 +171,8 @@
         "+<crypto/curve25519.cpp>",
         "+<crypto/ed25519.cpp>",
         "+<crypto/hkdf.cpp>",
-        "+<crypto/aes128gcm.cpp>"
+        "+<crypto/aes128gcm.cpp>",
+        "+<crypto/crypto_scratch.cpp>"
       ],
       "tests": ["test_crypto_kat"]
     },
@@ -1037,7 +1038,11 @@
     "native_esp": {
       "desc": "ESP (RFC 4303) packet transform with AES-256-GCM (RFC 4106) - the IPsec datapath crypto core\n(services/esp): encapsulate a payload into SPI|Seq|IV|AES-GCM(payload|pad|padlen|nexthdr)|ICV and\nverify + decapsulate it, with the SPI|Seq AAD + salt||IV nonce. Gated on the IKEv2 feature. Pure host\ntests cross-checked against a Python AES-256-GCM reference.",
       "flags": ["-DDWS_ENABLE_IKEV2=1"],
-      "src": ["+<services/esp/esp.cpp>", "+<crypto/aesgcm.cpp>"],
+      "src": [
+        "+<services/esp/esp.cpp>",
+        "+<crypto/aesgcm.cpp>",
+        "+<crypto/crypto_scratch.cpp>"
+      ],
       "tests": ["test_esp"]
     },
     "native_ipsec_db": {
@@ -1046,7 +1051,8 @@
       "src": [
         "+<services/esp/ipsec_db.cpp>",
         "+<services/esp/esp.cpp>",
-        "+<crypto/aesgcm.cpp>"
+        "+<crypto/aesgcm.cpp>",
+        "+<crypto/crypto_scratch.cpp>"
       ],
       "tests": ["test_ipsec_db"]
     },
@@ -1397,6 +1403,10 @@
         "+<services/smb/spnego.cpp>",
         "+<services/smb/ntlmssp.cpp>",
         "+<services/smb/ntlm.cpp>",
+        "+<crypto/aesgcm.cpp>",
+        "+<crypto/aes128gcm.cpp>",
+        "+<crypto/aesccm.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/md.cpp>",
         "+<services/dnc/dnc.cpp>",
         "+<services/ftp/ftp.cpp>",
@@ -2574,6 +2584,7 @@
       "src": [
         "+<crypto/hkdf.cpp>",
         "+<crypto/aes128gcm.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<network_drivers/presentation/http3/quic_crypto.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
         "+<crypto/sha256.cpp>",
@@ -2586,6 +2597,7 @@
       "flags": ["-DDWS_ENABLE_DTLS=1"],
       "src": [
         "+<network_drivers/presentation/dtls/dtls_record.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/tls13_kdf.cpp>",
         "+<crypto/hkdf.cpp>",
         "+<crypto/aes128gcm.cpp>",
@@ -2621,6 +2633,7 @@
       "src": [
         "+<network_drivers/presentation/dtls/dtls_conn.cpp>",
         "+<network_drivers/presentation/dtls/dtls_record.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<network_drivers/presentation/dtls/dtls_handshake.cpp>",
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<crypto/tls13_kdf.cpp>",
@@ -2643,6 +2656,7 @@
         "+<network_drivers/transport/udp.cpp>",
         "+<network_drivers/presentation/dtls/dtls_conn.cpp>",
         "+<network_drivers/presentation/dtls/dtls_record.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<network_drivers/presentation/dtls/dtls_handshake.cpp>",
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<crypto/tls13_kdf.cpp>",
@@ -2666,6 +2680,7 @@
         "+<network_drivers/transport/udp.cpp>",
         "+<network_drivers/presentation/dtls/dtls_conn.cpp>",
         "+<network_drivers/presentation/dtls/dtls_record.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<network_drivers/presentation/dtls/dtls_handshake.cpp>",
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<crypto/tls13_kdf.cpp>",
@@ -2719,6 +2734,7 @@
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<network_drivers/presentation/http3/quic_tp.cpp>",
         "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/aes128gcm.cpp>",
         "+<crypto/hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
@@ -2744,6 +2760,7 @@
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<network_drivers/presentation/http3/quic_tp.cpp>",
         "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/aes128gcm.cpp>",
         "+<crypto/hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
@@ -2768,6 +2785,7 @@
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<network_drivers/presentation/http3/quic_tp.cpp>",
         "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/aes128gcm.cpp>",
         "+<crypto/hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
@@ -2795,6 +2813,7 @@
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<network_drivers/presentation/http3/quic_tp.cpp>",
         "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/aes128gcm.cpp>",
         "+<crypto/hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
@@ -2822,6 +2841,7 @@
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<network_drivers/presentation/http3/quic_tp.cpp>",
         "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/aes128gcm.cpp>",
         "+<crypto/hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
@@ -2850,6 +2870,7 @@
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<network_drivers/presentation/http3/quic_tp.cpp>",
         "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/aes128gcm.cpp>",
         "+<crypto/hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
@@ -2876,6 +2897,7 @@
         "+<network_drivers/presentation/http3/tls13_msg.cpp>",
         "+<network_drivers/presentation/http3/quic_tp.cpp>",
         "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/aes128gcm.cpp>",
         "+<crypto/hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_packet.cpp>",
@@ -2898,6 +2920,7 @@
       "flags": [],
       "src": [
         "+<crypto/chacha20.cpp>",
+        "+<crypto/crypto_scratch.cpp>",
         "+<crypto/poly1305.cpp>",
         "+<crypto/chachapoly.cpp>"
       ],
@@ -2906,7 +2929,7 @@
     "native_ssh_aesgcm": {
       "desc": "AES-256-GCM AEAD for aes256-gcm@openssh.com (RFC 5647) host-tested here: seal/open vs the\nNIST/McGrew AES-256-GCM Test Case 16 vector, tamper rejection, and the invocation-counter\nadvance. Software AES-256 + GHASH; no heap, no stdlib.",
       "flags": [],
-      "src": ["+<crypto/aesgcm.cpp>"],
+      "src": ["+<crypto/aesgcm.cpp>", "+<crypto/crypto_scratch.cpp>"],
       "tests": ["test_ssh_aesgcm"]
     },
     "native_ssh_ecdsa": {

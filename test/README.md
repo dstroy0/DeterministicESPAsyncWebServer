@@ -50505,37 +50505,37 @@ A thorough directory of all **5220 test cases** across **292 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_aesgcm_nist_tc16_open</b> &mdash; <i>Tampered tag -> reject; the counter must NOT have advanced, so a correct open still works.</i></summary>
+    <summary><b>test_aesgcm_nist_tc16_open</b> &mdash; <i>Tampered tag -> reject; a correct open still works (stateless: no counter to corrupt).</i></summary>
 
-    * **Objective**: Tampered tag -> reject; the counter must NOT have advanced, so a correct open still works.
+    * **Objective**: Tampered tag -> reject; a correct open still works (stateless: no counter to corrupt).
     * **Assertions**:
-      * <code>Assert true (dws_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
+      * <code>TEST_ASSERT_TRUE(</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_PT, pt, sizeof(TC16_PT));</code>
-      * <code>Assert false (dws_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), bad_tag, pt))</code>
-      * <code>Assert true (dws_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>TEST_ASSERT_TRUE(</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_PT, pt, sizeof(TC16_PT));</code>
-      * <code>Assert false (dws_aesgcm_open(&ctx, bad_aad, sizeof(bad_aad), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_aesgcm_invocation_counter_advances</b> &mdash; <i>Same key + same plaintext but a different invocation counter -> different ciphertext AND tag.</i></summary>
+    <summary><b>test_aesgcm_invocation_counter_advances</b> &mdash; <i>The caller advances the invocation counter per packet (RFC 5647), stateless API.</i></summary>
 
-    * **Objective**: Same key + same plaintext but a different invocation counter -> different ciphertext AND tag.
+    * **Objective**: The caller advances the invocation counter per packet (RFC 5647), stateless API.
     * **Assertions**:
       * <code>Assert true (memcmp(p0, p1, 32) != 0)</code>
-      * <code>Assert true (dws_aesgcm_open(&dec, aad, 4, p0, 16, p0 + 16, r0))</code>
+      * <code>Assert true (dws_aesgcm_open_tag(key, dec_iv, aad, 4, p0, 16, p0 + 16, r0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(msg, r0, 16);</code>
-      * <code>Assert true (dws_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, r1))</code>
+      * <code>Assert true (dws_aesgcm_open_tag(key, dec_iv, aad, 4, p1, 16, p1 + 16, r1))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(msg, r1, 16);</code>
-      * <code>Assert false (dws_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, rx))</code>
+      * <code>Assert false (dws_aesgcm_open_tag(key, iv, aad, 4, p1, 16, p1 + 16, rx))</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_aesgcm_iv_counter_carries</b> &mdash; <i>Aesgcm iv counter carries</i></summary>
+    <summary><b>test_aesgcm_iv_counter_carries</b> &mdash; <i>The invocation-counter advance is now the caller's job (dws_aesgcm_iv_increment); this checks the</i></summary>
 
-    * **Objective**: Aesgcm iv counter carries
+    * **Objective**: The invocation-counter advance is now the caller's job (dws_aesgcm_iv_increment); this checks the
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_iv, ctx.iv, 12);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_iv, iv, 12);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -50543,7 +50543,7 @@ A thorough directory of all **5220 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Aesgcm gctr counter byte carry
     * **Assertions**:
-      * <code>Assert true (dws_aesgcm_open(&dec, NULL, 0, out, n, out + n, rt))</code>
+      * <code>Assert true (dws_aesgcm_open_tag(key, iv, NULL, 0, out, n, out + n, rt))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, n);</code>
   </details>
 
@@ -50875,7 +50875,7 @@ A thorough directory of all **5220 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Aesgcm gctr counter byte carry
     * **Assertions**:
-      * <code>Assert true (dws_aesgcm_open(&dec, aad, sizeof(aad), ct, sizeof(pt), ct + sizeof(pt), rt))</code>
+      * <code>Assert true (dws_aesgcm_open_tag(key, iv, aad, sizeof(aad), ct, sizeof(pt), ct + sizeof(pt), rt))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, sizeof(pt));</code>
   </details>
 
@@ -51789,7 +51789,6 @@ A thorough directory of all **5220 test cases** across **292 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal memory (expected_ct, ct, 64)</code>
       * <code>Assert equal memory (pt, pt_back, 64)</code>
-      * <code>Assert equal memory (zeros, &ctx, sizeof(DwsAesCtrCtx))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -51797,7 +51796,7 @@ A thorough directory of all **5220 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Aes256ctr counter full wraparound
     * **Assertions**:
-      * <code>Assert equal memory (zero_counter, ctx.counter, 16)</code>
+      * <code>Assert equal memory (zero_counter, ctr, 16)</code>
   </details>
 
   <details style="margin-left: 20px;">

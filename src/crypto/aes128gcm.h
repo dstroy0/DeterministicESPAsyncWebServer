@@ -37,18 +37,9 @@
 // AES-128 single-block primitive (used by GCM and by header protection)
 // ---------------------------------------------------------------------------
 
-#ifdef ARDUINO
-#include <mbedtls/aes.h>
-struct DwsAes128
-{
-    mbedtls_aes_context mbed; ///< mbedtls context (HW-accelerated on ESP32), key schedule loaded.
-};
-#else
-struct DwsAes128
-{
-    uint32_t rk[44]; ///< AES-128 expanded round-key schedule (11 round keys x 4 words).
-};
-#endif
+// Opaque: the definition (mbedtls_aes_context on ESP32, a software key schedule on host) is private to
+// aes128gcm.cpp - consumers know only the symbol and hold it via DwsAes128*.
+struct DwsAes128;
 
 /** @brief Load a 128-bit key and expand the encryption key schedule. */
 void dws_aes128_init(DwsAes128 *ctx, const uint8_t key[16]);

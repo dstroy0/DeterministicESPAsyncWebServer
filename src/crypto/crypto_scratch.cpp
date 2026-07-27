@@ -10,4 +10,4 @@
 
 #include "crypto/crypto_scratch.h"
 
-uint8_t crypto_work[DWS_CRYPTO_WORK_SIZE];
+alignas(16) uint8_t crypto_work[DWS_CRYPTO_WORK_SIZE];

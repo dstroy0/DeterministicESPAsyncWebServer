@@ -8,6 +8,7 @@
 
 #include "crypto/chacha20.h"
 #include "crypto/crypto_opt.h"
+#include "crypto/crypto_scratch.h" // crypto_work chacha20 region (nested-cipher scratch) + dws_crypto_wipe
 
 // ChaCha20 is a hot, pure-integer (add/xor/rotate) keystream generator. The ESP32-S3 has no usable
 // vector path (its PIE unit has only a *saturating* 32-bit add, `ee.vadds.s32`; ChaCha needs modular
@@ -50,26 +51,38 @@ uint32_t rotl32(uint32_t v, int c)
     b ^= c;                                                                                                            \
     b = rotl32(b, 7)
 
-// The ChaCha20 core: 20 rounds over the 16-word state, add the original state, serialize LE.
-void chacha_core(const uint32_t in[16], uint8_t out[64])
+// ChaCha20 working set (input state + keystream block + round state) in the shared crypto scratch, at the
+// chacha20 nested-cipher region (it runs under chachapoly, so it cannot share the base span). Wiped per op.
+struct Chacha20Work
 {
-    uint32_t x[16];
+    uint32_t st[16]; // input state (key / nonce / counter)
+    uint8_t ks[64];  // keystream block
+    uint32_t x[16];  // round state
+};
+inline Chacha20Work *cc_work()
+{
+    return reinterpret_cast<Chacha20Work *>(crypto_work + DWS_CW_CHACHA20_OFF);
+}
+
+// The ChaCha20 core: 20 rounds over w->st, add the original state, serialize LE into @p out (64 bytes).
+void chacha_core(Chacha20Work *w, uint8_t out[64])
+{
     for (int i = 0; i < 16; i++)
-        x[i] = in[i];
+        w->x[i] = w->st[i];
     for (int i = 0; i < 10; i++) // 10 double-rounds = 20 rounds
     {
-        QR(x[0], x[4], x[8], x[12]);
-        QR(x[1], x[5], x[9], x[13]);
-        QR(x[2], x[6], x[10], x[14]);
-        QR(x[3], x[7], x[11], x[15]);
-        QR(x[0], x[5], x[10], x[15]);
-        QR(x[1], x[6], x[11], x[12]);
-        QR(x[2], x[7], x[8], x[13]);
-        QR(x[3], x[4], x[9], x[14]);
+        QR(w->x[0], w->x[4], w->x[8], w->x[12]);
+        QR(w->x[1], w->x[5], w->x[9], w->x[13]);
+        QR(w->x[2], w->x[6], w->x[10], w->x[14]);
+        QR(w->x[3], w->x[7], w->x[11], w->x[15]);
+        QR(w->x[0], w->x[5], w->x[10], w->x[15]);
+        QR(w->x[1], w->x[6], w->x[11], w->x[12]);
+        QR(w->x[2], w->x[7], w->x[8], w->x[13]);
+        QR(w->x[3], w->x[4], w->x[9], w->x[14]);
     }
     for (int i = 0; i < 16; i++)
     {
-        uint32_t v = x[i] + in[i];
+        uint32_t v = w->x[i] + w->st[i];
         out[4 * i + 0] = (uint8_t)v;
         out[4 * i + 1] = (uint8_t)(v >> 8);
         out[4 * i + 2] = (uint8_t)(v >> 16);
@@ -87,43 +100,44 @@ const uint32_t SIGMA3 = 0x6b206574;
 void dws_chacha20_xor(const uint8_t key[DWS_CHACHA20_KEY_LEN], const uint8_t iv[8], uint64_t counter, const uint8_t *in,
                       uint8_t *out, size_t len)
 {
-    uint32_t st[16];
-    st[0] = SIGMA0;
-    st[1] = SIGMA1;
-    st[2] = SIGMA2;
-    st[3] = SIGMA3;
+    Chacha20Work *w = cc_work();
+    w->st[0] = SIGMA0;
+    w->st[1] = SIGMA1;
+    w->st[2] = SIGMA2;
+    w->st[3] = SIGMA3;
     for (int i = 0; i < 8; i++)
-        st[4 + i] = rd_le32(key + 4 * i);
-    st[14] = rd_le32(iv + 0); // OpenSSH layout: 64-bit nonce in words 14-15
-    st[15] = rd_le32(iv + 4);
-    uint8_t ks[64];
+        w->st[4 + i] = rd_le32(key + 4 * i);
+    w->st[14] = rd_le32(iv + 0); // OpenSSH layout: 64-bit nonce in words 14-15
+    w->st[15] = rd_le32(iv + 4);
     size_t off = 0;
     while (off < len)
     {
-        st[12] = (uint32_t)(counter & 0xffffffffu); // 64-bit little-endian counter in words 12-13
-        st[13] = (uint32_t)(counter >> 32);
-        chacha_core(st, ks);
+        w->st[12] = (uint32_t)(counter & 0xffffffffu); // 64-bit little-endian counter in words 12-13
+        w->st[13] = (uint32_t)(counter >> 32);
+        chacha_core(w, w->ks);
         size_t n = (len - off < 64) ? (len - off) : 64;
         for (size_t i = 0; i < n; i++)
-            out[off + i] = (uint8_t)((in ? in[off + i] : 0) ^ ks[i]);
+            out[off + i] = (uint8_t)((in ? in[off + i] : 0) ^ w->ks[i]);
         off += n;
         counter++;
     }
+    dws_crypto_wipe(crypto_work + DWS_CW_CHACHA20_OFF, DWS_CW_CHACHA20_SZ);
 }
 
 void dws_chacha20_block_ietf(const uint8_t key[DWS_CHACHA20_KEY_LEN], uint32_t counter, const uint8_t nonce[12],
                              uint8_t out[DWS_CHACHA20_BLOCK_LEN])
 {
-    uint32_t st[16];
-    st[0] = SIGMA0;
-    st[1] = SIGMA1;
-    st[2] = SIGMA2;
-    st[3] = SIGMA3;
+    Chacha20Work *w = cc_work();
+    w->st[0] = SIGMA0;
+    w->st[1] = SIGMA1;
+    w->st[2] = SIGMA2;
+    w->st[3] = SIGMA3;
     for (int i = 0; i < 8; i++)
-        st[4 + i] = rd_le32(key + 4 * i);
-    st[12] = counter; // RFC 8439 layout: 32-bit counter, 96-bit nonce
-    st[13] = rd_le32(nonce + 0);
-    st[14] = rd_le32(nonce + 4);
-    st[15] = rd_le32(nonce + 8);
-    chacha_core(st, out);
+        w->st[4 + i] = rd_le32(key + 4 * i);
+    w->st[12] = counter; // RFC 8439 layout: 32-bit counter, 96-bit nonce
+    w->st[13] = rd_le32(nonce + 0);
+    w->st[14] = rd_le32(nonce + 4);
+    w->st[15] = rd_le32(nonce + 8);
+    chacha_core(w, out);
+    dws_crypto_wipe(crypto_work + DWS_CW_CHACHA20_OFF, DWS_CW_CHACHA20_SZ);
 }

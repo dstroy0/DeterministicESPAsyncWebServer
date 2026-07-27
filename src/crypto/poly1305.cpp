@@ -13,6 +13,8 @@
 
 #include "crypto/poly1305.h"
 #include "crypto/crypto_opt.h"
+#include "crypto/crypto_scratch.h" // crypto_work poly1305 region (nested-MAC scratch) + dws_crypto_wipe
+#include <string.h>
 
 // Poly1305 is a hot, pure-integer MAC (the other half of chacha20-poly1305). Like ChaCha it has no vector
 // path on the S3 and runs materially faster than the framework -Os; it is constant-time by structure
@@ -76,21 +78,45 @@ void poly_block(uint32_t h[5], const uint32_t r[5], const uint32_t sr[5], const 
     h[0] &= 0x3ffffff;
     h[1] += c;
 }
+
+// Poly1305 working limbs (key part r, its *5 form sr, accumulator h) + the partial-block buffer, in the
+// shared crypto scratch at the poly1305 region (it runs under chachapoly, so cannot share the base span).
+struct Poly1305Work
+{
+    uint32_t r[5];
+    uint32_t sr[5];
+    uint32_t h[5];
+    uint8_t buf[16];
+};
+static_assert(sizeof(Poly1305Work) <= DWS_CW_POLY1305_SZ, "Poly1305Work must fit its crypto_work region");
 } // namespace
 
 void dws_poly1305(uint8_t tag[DWS_POLY1305_TAG_LEN], const uint8_t *msg, size_t len,
                   const uint8_t key[DWS_POLY1305_KEY_LEN])
 {
+    // Working limbs + the partial-block buffer live in the shared crypto scratch (poly1305 region), not on
+    // the stack; wiped on exit.
+    Poly1305Work *w = reinterpret_cast<Poly1305Work *>(crypto_work + DWS_CW_POLY1305_OFF);
+    uint32_t *r = w->r;
+    uint32_t *sr = w->sr;
+    uint32_t *h = w->h;
     uint32_t t0 = rd_le32(key + 0), t1 = rd_le32(key + 4), t2 = rd_le32(key + 8), t3 = rd_le32(key + 12);
     // Clamp r (RFC 8439 sec 2.5) folded into the limb split.
-    uint32_t r[5];
     r[0] = t0 & 0x3ffffff;
     r[1] = ((t0 >> 26) | (t1 << 6)) & 0x3ffff03;
     r[2] = ((t1 >> 20) | (t2 << 12)) & 0x3ffc0ff;
     r[3] = ((t2 >> 14) | (t3 << 18)) & 0x3f03fff;
     r[4] = (t3 >> 8) & 0x00fffff;
-    uint32_t sr[5] = {0, r[1] * 5, r[2] * 5, r[3] * 5, r[4] * 5};
-    uint32_t h[5] = {0, 0, 0, 0, 0};
+    sr[0] = 0;
+    sr[1] = r[1] * 5;
+    sr[2] = r[2] * 5;
+    sr[3] = r[3] * 5;
+    sr[4] = r[4] * 5;
+    h[0] = 0;
+    h[1] = 0;
+    h[2] = 0;
+    h[3] = 0;
+    h[4] = 0;
 
     while (len >= 16)
     {
@@ -100,11 +126,11 @@ void dws_poly1305(uint8_t tag[DWS_POLY1305_TAG_LEN], const uint8_t *msg, size_t 
     }
     if (len)
     {
-        uint8_t buf[16] = {0};
+        memset(w->buf, 0, 16);
         for (size_t i = 0; i < len; i++)
-            buf[i] = msg[i];
-        buf[len] = 1; // the message-terminating high bit for the partial block
-        poly_block(h, r, sr, buf, 0);
+            w->buf[i] = msg[i];
+        w->buf[len] = 1; // the message-terminating high bit for the partial block
+        poly_block(h, r, sr, w->buf, 0);
     }
 
     // Fully carry h.
@@ -174,4 +200,5 @@ void dws_poly1305(uint8_t tag[DWS_POLY1305_TAG_LEN], const uint8_t *msg, size_t 
     wr_le32(tag + 4, f1);
     wr_le32(tag + 8, f2);
     wr_le32(tag + 12, f3);
+    dws_crypto_wipe(crypto_work + DWS_CW_POLY1305_OFF, DWS_CW_POLY1305_SZ);
 }

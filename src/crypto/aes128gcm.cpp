@@ -7,18 +7,36 @@
  *
  * Arduino: the AES block is mbedtls_aes_crypt_ecb() (ESP32 HW accelerator). Native: a compact
  * software AES-128 (forward S-box + GF(2^8) xtime, no large tables). GHASH and the counter loop
- * are software on both targets.
+ * are software on both targets. The AEAD's working memory (key schedule, GHASH table, keystream,
+ * accumulator, tag mask, counters) lives in an Aes128GcmWork over the shared crypto scratch and is
+ * wiped on exit; no cipher state on the stack.
  */
 
 #include "crypto/aes128gcm.h"
 
 #if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS || DWS_ENABLE_SMB)
 
-#include "crypto/crypto_scratch.h" // dws_crypto_wipe (the canonical secure wipe)
+#include "crypto/crypto_scratch.h" // crypto_work + dws_crypto_wipe + dws_ct_eq (the shared crypto scratch)
 #include "crypto/ghash.h"
 #include <string.h>
-#if !defined(ARDUINO)
+#ifdef ARDUINO
+#include <mbedtls/aes.h> // DwsAes128 wraps mbedtls_aes_context on ESP32 (definition private to this TU)
+#else
 #include "crypto/aes_block.h" // native software AES-128 (Arduino uses the mbedtls HW block below)
+#endif
+
+// DwsAes128 - definition private to this TU (aes128gcm.h forward-declares the symbol only): mbedtls key
+// schedule on ESP32, a software round-key schedule on host.
+#ifdef ARDUINO
+struct DwsAes128
+{
+    mbedtls_aes_context mbed; ///< mbedtls context (HW-accelerated on ESP32), key schedule loaded.
+};
+#else
+struct DwsAes128
+{
+    uint32_t rk[44]; ///< AES-128 expanded round-key schedule (11 round keys x 4 words).
+};
 #endif
 
 // ===========================================================================
@@ -63,8 +81,24 @@ void dws_aes128_wipe(DwsAes128 *ctx)
 #endif // ARDUINO
 
 // ===========================================================================
-// AEAD_AES_128_GCM (NIST SP 800-38D) - software on all targets
+// AEAD_AES_128_GCM (NIST SP 800-38D) - software GHASH/GCTR on all targets. All working memory lives in an
+// Aes128GcmWork laid over the shared crypto scratch (crypto_work) and is wiped after each op.
 // ===========================================================================
+
+struct Aes128GcmWork
+{
+    DwsAes128 aes;   ///< AES-128 key schedule.
+    uint8_t h[16];   ///< GHASH subkey H = E(K, 0^128).
+    GhashKey ghk;    ///< 4-bit GHASH table built from H.
+    uint8_t ks[16];  ///< GCTR keystream block.
+    uint8_t acc[16]; ///< GHASH accumulator.
+    uint8_t lb[16];  ///< length block (aad_len || cipher_len, in bits).
+    uint8_t ej0[16]; ///< E(K, J0), the tag mask.
+    uint8_t j0[16];  ///< pre-counter block J0 = nonce || 0^31 || 1.
+    uint8_t ctr[16]; ///< running GCTR counter.
+    uint8_t tag[16]; ///< computed tag (open: compared; seal writes the caller's buffer directly).
+};
+static_assert(sizeof(Aes128GcmWork) <= DWS_CRYPTO_WORK_SIZE, "Aes128GcmWork must fit the shared crypto scratch");
 
 namespace
 {
@@ -74,9 +108,8 @@ inline void xor16(uint8_t *dst, const uint8_t *src)
         dst[i] ^= src[i];
 }
 
-// GHASH (acc *= H, and fold buffers into acc) is the shared 4-bit-table primitive in
-// crypto/ghash.h: build a GhashKey from H per packet (ghash_key_init), then ghash_update /
-// ghash_mul. Replaced the old 128-iteration bitwise multiply (~37x faster on-device).
+// GHASH (acc *= H, and fold buffers into acc) is the shared 4-bit-table primitive in crypto/ghash.h:
+// ghash_key_init(&w->ghk, w->h) once, then ghash_update / ghash_mul on w->ghk.
 
 inline void put_be64(uint8_t *p, uint64_t v)
 {
@@ -105,82 +138,80 @@ inline void inc32(uint8_t ctr[16])
             break;
 }
 
-// GCTR (NIST SP 800-38D sec 6.5): out = in XOR AES-CTR keystream starting from counter @p ctr,
-// which is advanced in place. @p in / @p out may alias.
-void gctr(DwsAes128 *aes, uint8_t ctr[16], const uint8_t *in, size_t len, uint8_t *out)
+// GCTR (NIST SP 800-38D sec 6.5): out = in XOR AES-CTR keystream from w->ctr, advanced in place. Uses
+// w->ks. @p in / @p out may alias.
+void gctr(Aes128GcmWork *w, const uint8_t *in, size_t len, uint8_t *out)
 {
-    uint8_t ks[16];
     size_t off = 0;
     while (off < len)
     {
-        dws_aes128_encrypt_block(aes, ctr, ks);
-        inc32(ctr);
+        dws_aes128_encrypt_block(&w->aes, w->ctr, w->ks);
+        inc32(w->ctr);
         size_t take = len - off;
         if (take > 16)
             take = 16;
         for (size_t i = 0; i < take; i++)
-            out[off + i] = in[off + i] ^ ks[i];
+            out[off + i] = in[off + i] ^ w->ks[i];
         off += take;
     }
 }
 
-// Compute H, J0, the GHASH tag and the ciphertext for a 96-bit-nonce GCM operation. @p cipher is
-// the ciphertext to authenticate (== output for seal, == input for open). Writes the 16-byte tag.
-void gcm_core(DwsAes128 *aes, const uint8_t nonce[12], const uint8_t *aad, size_t aad_len, const uint8_t *cipher,
-              size_t cipher_len, uint8_t j0[16], uint8_t tag[16])
+// Compute H, the GHASH table, J0, GHASH(aad || cipher) and the 16-byte tag for a 96-bit-nonce GCM
+// operation. @p cipher is the ciphertext to authenticate (== output for seal, == input for open). Uses
+// w->h/ghk/j0/acc/lb/ej0; writes @p tag_out.
+void gcm_core(Aes128GcmWork *w, const uint8_t nonce[12], const uint8_t *aad, size_t aad_len, const uint8_t *cipher,
+              size_t cipher_len, uint8_t tag_out[16])
 {
-    uint8_t h[16] = {0};
-    dws_aes128_encrypt_block(aes, h, h); // H = E(K, 0^128)
-    GhashKey ghk;
-    ghash_key_init(&ghk, h);
+    memset(w->h, 0, 16);
+    dws_aes128_encrypt_block(&w->aes, w->h, w->h); // H = E(K, 0^128)
+    ghash_key_init(&w->ghk, w->h);
 
     // 96-bit nonce: J0 = nonce || 0^31 || 1.
-    memcpy(j0, nonce, 12);
-    j0[12] = 0;
-    j0[13] = 0;
-    j0[14] = 0;
-    j0[15] = 1;
+    memcpy(w->j0, nonce, 12);
+    w->j0[12] = 0;
+    w->j0[13] = 0;
+    w->j0[14] = 0;
+    w->j0[15] = 1;
 
-    uint8_t s[16] = {0};
-    ghash_update(&ghk, s, aad, aad_len);
-    ghash_update(&ghk, s, cipher, cipher_len);
-    uint8_t lb[16];
-    put_be64(lb, (uint64_t)aad_len * 8);
-    put_be64(lb + 8, (uint64_t)cipher_len * 8);
-    xor16(s, lb);
-    ghash_mul(&ghk, s);
+    memset(w->acc, 0, 16);
+    ghash_update(&w->ghk, w->acc, aad, aad_len);
+    ghash_update(&w->ghk, w->acc, cipher, cipher_len);
+    put_be64(w->lb, (uint64_t)aad_len * 8);
+    put_be64(w->lb + 8, (uint64_t)cipher_len * 8);
+    xor16(w->acc, w->lb);
+    ghash_mul(&w->ghk, w->acc);
 
-    uint8_t ej0[16];
-    dws_aes128_encrypt_block(aes, j0, ej0);
+    dws_aes128_encrypt_block(&w->aes, w->j0, w->ej0);
     for (int i = 0; i < 16; i++)
-        tag[i] = s[i] ^ ej0[i];
+        tag_out[i] = w->acc[i] ^ w->ej0[i];
+}
+
+// Free the AES key schedule (mbedtls on ARDUINO) and wipe the whole working set from the shared scratch.
+inline void work_wipe(Aes128GcmWork *w)
+{
+    dws_aes128_wipe(&w->aes);
+    dws_crypto_wipe(crypto_work, sizeof(Aes128GcmWork));
 }
 } // namespace
 
 void dws_aes128gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
                         const uint8_t *pt, size_t pt_len, uint8_t *out)
 {
-    DwsAes128 aes;
-    dws_aes128_init(&aes, key);
+    Aes128GcmWork *w = reinterpret_cast<Aes128GcmWork *>(crypto_work);
+    dws_aes128_init(&w->aes, key);
 
     // Encrypt first (counter starts at inc32(J0)), then GHASH the resulting ciphertext.
-    uint8_t j0[16];
-    memcpy(j0, nonce, 12);
-    j0[12] = 0;
-    j0[13] = 0;
-    j0[14] = 0;
-    j0[15] = 1;
-    uint8_t ctr[16];
-    memcpy(ctr, j0, 16);
-    inc32(ctr);
-    gctr(&aes, ctr, pt, pt_len, out);
+    memcpy(w->j0, nonce, 12);
+    w->j0[12] = 0;
+    w->j0[13] = 0;
+    w->j0[14] = 0;
+    w->j0[15] = 1;
+    memcpy(w->ctr, w->j0, 16);
+    inc32(w->ctr);
+    gctr(w, pt, pt_len, out);
 
-    uint8_t j0b[16];
-    uint8_t tag[16];
-    gcm_core(&aes, nonce, aad, aad_len, out, pt_len, j0b, tag);
-    memcpy(out + pt_len, tag, DWS_AES128GCM_TAG_LEN);
-
-    dws_aes128_wipe(&aes);
+    gcm_core(w, nonce, aad, aad_len, out, pt_len, out + pt_len); // tag appended after the ciphertext
+    work_wipe(w);
 }
 
 bool dws_aes128gcm_open(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
@@ -190,77 +221,65 @@ bool dws_aes128gcm_open(const uint8_t key[16], const uint8_t nonce[12], const ui
         return false;
     size_t pt_len = ct_len - DWS_AES128GCM_TAG_LEN;
 
-    DwsAes128 aes;
-    dws_aes128_init(&aes, key);
+    Aes128GcmWork *w = reinterpret_cast<Aes128GcmWork *>(crypto_work);
+    dws_aes128_init(&w->aes, key);
 
     // Authenticate over the received ciphertext before producing any plaintext.
-    uint8_t j0[16];
-    uint8_t tag[16];
-    gcm_core(&aes, nonce, aad, aad_len, ct, pt_len, j0, tag);
-
-    if (!dws_ct_eq(tag, ct + pt_len, DWS_AES128GCM_TAG_LEN))
+    gcm_core(w, nonce, aad, aad_len, ct, pt_len, w->tag);
+    if (!dws_ct_eq(w->tag, ct + pt_len, DWS_AES128GCM_TAG_LEN))
     {
-        dws_aes128_wipe(&aes);
+        work_wipe(w);
         return false;
     }
 
-    uint8_t ctr[16];
-    memcpy(ctr, j0, 16);
-    inc32(ctr);
-    gctr(&aes, ctr, ct, pt_len, out);
+    memcpy(w->ctr, w->j0, 16);
+    inc32(w->ctr);
+    gctr(w, ct, pt_len, out);
 
-    dws_aes128_wipe(&aes);
+    work_wipe(w);
     return true;
 }
 
 void dws_aes128gcm_seal_tag(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
                             const uint8_t *pt, size_t pt_len, uint8_t *ct_out, uint8_t tag_out[16])
 {
-    DwsAes128 aes;
-    dws_aes128_init(&aes, key);
+    Aes128GcmWork *w = reinterpret_cast<Aes128GcmWork *>(crypto_work);
+    dws_aes128_init(&w->aes, key);
 
     // Encrypt (CTR from inc32(J0)), then GHASH the ciphertext - identical to dws_aes128gcm_seal, except the
     // tag lands in a separate buffer instead of being appended (SMB 3.x carries it in the TRANSFORM_HEADER).
-    uint8_t j0[16];
-    memcpy(j0, nonce, 12);
-    j0[12] = 0;
-    j0[13] = 0;
-    j0[14] = 0;
-    j0[15] = 1;
-    uint8_t ctr[16];
-    memcpy(ctr, j0, 16);
-    inc32(ctr);
-    gctr(&aes, ctr, pt, pt_len, ct_out);
+    memcpy(w->j0, nonce, 12);
+    w->j0[12] = 0;
+    w->j0[13] = 0;
+    w->j0[14] = 0;
+    w->j0[15] = 1;
+    memcpy(w->ctr, w->j0, 16);
+    inc32(w->ctr);
+    gctr(w, pt, pt_len, ct_out);
 
-    uint8_t j0b[16];
-    gcm_core(&aes, nonce, aad, aad_len, ct_out, pt_len, j0b, tag_out);
-
-    dws_aes128_wipe(&aes);
+    gcm_core(w, nonce, aad, aad_len, ct_out, pt_len, tag_out);
+    work_wipe(w);
 }
 
 bool dws_aes128gcm_open_tag(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
                             const uint8_t *ct, size_t ct_len, const uint8_t tag[16], uint8_t *out)
 {
-    DwsAes128 aes;
-    dws_aes128_init(&aes, key);
+    Aes128GcmWork *w = reinterpret_cast<Aes128GcmWork *>(crypto_work);
+    dws_aes128_init(&w->aes, key);
 
     // Authenticate over the received ciphertext before producing any plaintext.
-    uint8_t j0[16];
-    uint8_t exp_tag[16];
-    gcm_core(&aes, nonce, aad, aad_len, ct, ct_len, j0, exp_tag);
-
-    if (!dws_ct_eq(exp_tag, tag, DWS_AES128GCM_TAG_LEN))
+    gcm_core(w, nonce, aad, aad_len, ct, ct_len, w->tag);
+    if (!dws_ct_eq(w->tag, tag, DWS_AES128GCM_TAG_LEN))
     {
-        dws_aes128_wipe(&aes);
+        work_wipe(w);
         return false;
     }
 
-    uint8_t ctr[16];
-    memcpy(ctr, j0, 16);
-    inc32(ctr);
-    gctr(&aes, ctr, ct, ct_len, out);
+    memcpy(w->ctr, w->j0, 16);
+    inc32(w->ctr);
+    gctr(w, ct, ct_len, out);
 
-    dws_aes128_wipe(&aes);
+    work_wipe(w);
     return true;
 }
 

@@ -188,8 +188,12 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H
         derive_key(K_be, H, session_id, 'B', iv_s2c, k_is_string, h_len, sid_len, is512);  // IV  S→C
         derive_key(K_be, H, session_id, 'C', key_c2s, k_is_string, h_len, sid_len, is512); // key C→S
         derive_key(K_be, H, session_id, 'D', key_s2c, k_is_string, h_len, sid_len, is512); // key S→C
-        dws_aesgcm_init(&km->gcm_c2s, key_c2s, iv_c2s);
-        dws_aesgcm_init(&km->gcm_s2c, key_s2c, iv_s2c);
+        // Store only the raw key + nonce (GCM nonce = low 12 bytes of the 16-byte IV field); the schedule
+        // is rebuilt per packet in the shared crypto scratch (aesgcm.h), never kept in the keymat pool.
+        memcpy(km->aes_key_c2s, key_c2s, sizeof(km->aes_key_c2s));
+        memcpy(km->aes_key_s2c, key_s2c, sizeof(km->aes_key_s2c));
+        memcpy(km->aes_iv_c2s, iv_c2s, sizeof(km->aes_iv_c2s));
+        memcpy(km->aes_iv_s2c, iv_s2c, sizeof(km->aes_iv_s2c));
         dws_crypto_wipe(key_c2s, sizeof(key_c2s));
         dws_crypto_wipe(key_s2c, sizeof(key_s2c));
         dws_crypto_wipe(iv_c2s, sizeof(iv_c2s));
@@ -213,8 +217,12 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t *H
     ssh_kdf_derive(K_be, H, session_id, 'E', km->mac_key_c2s, mlen, k_is_string, h_len, sid_len, is512); // MAC C→S
     ssh_kdf_derive(K_be, H, session_id, 'F', km->mac_key_s2c, mlen, k_is_string, h_len, sid_len, is512); // MAC S→C
 
-    dws_aes256ctr_init(&km->c2s_ctx, key_c2s, iv_c2s);
-    dws_aes256ctr_init(&km->s2c_ctx, key_s2c, iv_s2c);
+    // Store only the raw key + the initial counter (first 16 bytes of the derived IV); the key schedule is
+    // rebuilt per packet in the shared crypto scratch, so no expanded key ever lands in the keymat pool.
+    memcpy(km->aes_key_c2s, key_c2s, sizeof(km->aes_key_c2s));
+    memcpy(km->aes_key_s2c, key_s2c, sizeof(km->aes_key_s2c));
+    memcpy(km->aes_iv_c2s, iv_c2s, sizeof(km->aes_iv_c2s));
+    memcpy(km->aes_iv_s2c, iv_s2c, sizeof(km->aes_iv_s2c));
 
     // Wipe stack temporaries (key material).
     dws_crypto_wipe(key_c2s, sizeof(key_c2s));

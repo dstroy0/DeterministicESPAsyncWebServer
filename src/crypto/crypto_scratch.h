@@ -33,9 +33,13 @@
  *
  * Borrowed by the big-number modexp (Montgomery temporaries at fixed offsets) and the crypto modules' opaque
  * per-operation contexts. Only one crypto op runs at a time per task, so it has a single accessor. Wipe with
- * dws_crypto_wipe(crypto_work, DWS_CRYPTO_WORK_SIZE) after any op that touched secrets.
+ * dws_crypto_wipe(crypto_work, DWS_CRYPTO_WORK_SIZE) after any op that touched secrets. Long-lived streaming
+ * contexts (running transcript / kex hashes) are NOT kept here: they are owned per-session state, wiped at
+ * teardown and unreachable by any user - never left in this shared scratch.
  */
-extern uint8_t crypto_work[DWS_CRYPTO_WORK_SIZE];
+// 16-byte aligned: callers borrow typed crypto contexts from this buffer (mbedtls_aes_context, MdCtx with
+// a uint64_t, ...) via reinterpret_cast, which requires the base to satisfy those types' alignment.
+alignas(16) extern uint8_t crypto_work[DWS_CRYPTO_WORK_SIZE];
 
 /**
  * @brief Securely zero @p len bytes at @p ptr with a volatile store the compiler cannot elide.

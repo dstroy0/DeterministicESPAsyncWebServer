@@ -3,27 +3,21 @@
 
 /**
  * @file aesgcm.h
- * @brief AES-256-GCM AEAD for SSH (aes256-gcm@openssh.com, RFC 5647).
+ * @brief AES-256-GCM AEAD (RFC 5116) - stateless, detached-tag API.
  *
- * The OpenSSH AES-GCM cipher is an AEAD: the 4-byte SSH packet_length is sent in the clear and
- * authenticated as additional data (AAD), the rest of the binary packet (padding_length || payload
- * || padding) is encrypted, and a 16-byte GCM tag follows. No separate MAC is negotiated - the AEAD
- * tag *is* the integrity check (RFC 5647 sec 7.3).
+ * There is no context object and no cipher state on the stack: the caller keeps only the raw 32-byte key
+ * and the 12-byte nonce (as plain bytes), and every call rebuilds the AES key schedule + GHASH table in
+ * the shared crypto scratch (crypto_work) and wipes the whole region on the way out. This mirrors the
+ * chacha20-poly1305 and AES-256-CTR APIs and keeps all expanded key material funneled through the one
+ * hardened, wiped region - nothing lingers in BSS or on the stack.
  *
- * NONCE / INVOCATION COUNTER (RFC 5647 sec 7.1)
- * The 12-byte GCM nonce is `fixed_field(4) || invocation_counter(8)`. The initial nonce is the first
- * 12 bytes of the IV derived from the key exchange (RFC 4253 sec 7.2, labels 'A'/'B'). After every
- * packet the 8-byte invocation_counter is incremented as a big-endian integer; the 4-byte fixed field
- * never changes. The counter therefore lives in the context and advances once per sealed/opened packet
- * - this is what makes the cipher stateful and requires whole-packet atomicity in the packet layer.
+ * Used by SSH aes256-gcm@openssh.com (RFC 5647: the caller advances the invocation counter with
+ * dws_aesgcm_iv_increment after every packet) and SMB 3.x transport encryption (fresh nonce per message).
  *
- * PLATFORM SELECTION (mirrors dws_aes256ctr / aes128gcm)
- * On Arduino (ESP32) the AES-256 block is mbedtls, routed to the hardware AES accelerator. On native
- * host builds a compact software AES-256 is used so the whole AEAD is unit-testable off-target. GHASH
- * and the counter loop are the same software on both targets.
- *
- * Pure, zero heap; host-tested against the NIST/McGrew AES-256-GCM test vectors and round-tripped
- * through the SSH packet layer.
+ * On Arduino (ESP32) the AES-256 block is mbedtls, routed to the hardware AES accelerator (and on dies
+ * with a hardware GCM mode the whole AEAD is one mbedtls_gcm call); native host builds use a compact
+ * software AES-256 + software GHASH so the AEAD is unit-testable off-target. Host-tested byte-exact
+ * against the NIST/McGrew AES-256-GCM vectors.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -32,29 +26,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AESGCM_H
 #define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AESGCM_H
 
-#include "crypto/ghash.h"
 #include <stddef.h>
 #include <stdint.h>
-#ifdef ARDUINO
-#include "soc/soc_caps.h" // SOC_AES_SUPPORT_GCM - does this die's AES peripheral have a hardware GCM mode?
-#endif
-
-// Chips whose AES peripheral has a hardware GCM mode (e.g. ESP32-P4, SOC_AES_SUPPORT_GCM) do the whole
-// AEAD - AES-CTR *and* GHASH - in one hardware call. That is dramatically faster than driving the block
-// cipher one 16-byte block at a time and folding GHASH in software: on the P4 the per-block HW-AES call
-// overhead makes the manual path 3x-33x slower (measured, 64 B-1 KiB), so route through mbedtls_gcm there.
-// The ESP32-S3's AES peripheral has no GCM mode, so it keeps the manual HW-AES + software-GHASH path.
-#if defined(ARDUINO) && defined(SOC_AES_SUPPORT_GCM) && SOC_AES_SUPPORT_GCM
-#define DWS_AESGCM_HW_GCM 1
-#else
-#define DWS_AESGCM_HW_GCM 0
-#endif
-
-#if DWS_AESGCM_HW_GCM
-#include <mbedtls/gcm.h> // hardware GCM peripheral: AES-CTR + GHASH in one call
-#elif defined(ARDUINO)
-#include <mbedtls/aes.h> // HW AES block + software GHASH
-#endif
 
 /** @brief AES-256-GCM key length (bytes). */
 static constexpr size_t DWS_AESGCM_KEY_LEN = 32;
@@ -63,73 +36,12 @@ static constexpr size_t DWS_AESGCM_IV_LEN = 12;
 /** @brief GCM authentication tag length (bytes). */
 static constexpr size_t DWS_AESGCM_TAG_LEN = 16;
 
-#if DWS_AESGCM_HW_GCM
-/** @brief AES-256-GCM context for one SSH direction (hardware GCM peripheral). */
-struct DwsAesGcmCtx
-{
-    mbedtls_gcm_context gcm;       ///< mbedtls GCM (routed to the ESP32 hardware GCM), AES-256 key schedule.
-    uint8_t iv[DWS_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
-    bool ready;                    ///< true once a key/IV is installed.
-};
-#elif defined(ARDUINO)
-/** @brief AES-256-GCM context for one SSH direction (HW AES block + software GHASH). */
-struct DwsAesGcmCtx
-{
-    mbedtls_aes_context mbed;      ///< mbedtls context (HW-accelerated on ESP32), encrypt key schedule.
-    uint8_t h[16];                 ///< GHASH subkey H = E(K, 0^128).
-    GhashKey ghk;                  ///< 4-bit GHASH table built from H (once at init).
-    uint8_t iv[DWS_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
-    bool ready;                    ///< true once a key/IV is installed.
-};
-#else
-/** @brief AES-256-GCM context for one SSH direction (software AES on host). */
-struct DwsAesGcmCtx
-{
-    uint32_t rk[60];               ///< AES-256 expanded round-key schedule (60 words, 240 bytes).
-    uint8_t h[16];                 ///< GHASH subkey H = E(K, 0^128).
-    GhashKey ghk;                  ///< 4-bit GHASH table built from H (once at init).
-    uint8_t iv[DWS_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
-    bool ready;                    ///< true once a key/IV is installed.
-};
-#endif
-
 /**
- * @brief Initialize an AES-256-GCM context: expand the key, precompute H, latch the initial nonce.
- * @param ctx  Uninitialized context.
- * @param key  32-byte AES-256 key (KEX label 'C'/'D').
- * @param iv   12-byte initial nonce (first 12 bytes of the KEX 'A'/'B' IV).
- */
-void dws_aesgcm_init(DwsAesGcmCtx *ctx, const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t iv[DWS_AESGCM_IV_LEN]);
-
-/**
- * @brief Seal one packet: AES-256-GCM encrypt @p pt (@p pt_len bytes) and authenticate it together
- *        with @p aad. Writes @p pt_len ciphertext bytes then the 16-byte tag into @p out (so @p out
- *        must hold @p pt_len + ::DWS_AESGCM_TAG_LEN bytes). @p out may alias @p pt (in place).
- *        The context's invocation counter is advanced by one afterwards.
- */
-void dws_aesgcm_seal(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len,
-                     uint8_t *out);
-
-/**
- * @brief Open one packet: verify the 16-byte @p tag over @p aad || @p ct in constant time, and only
- *        on success decrypt @p ct (@p ct_len bytes) into @p out (@p out may alias @p ct). The
- *        invocation counter is advanced by one on success. @return true iff the tag is valid.
- */
-bool dws_aesgcm_open(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
-                     const uint8_t tag[DWS_AESGCM_TAG_LEN], uint8_t *out);
-
-/** @brief Zero the key schedule, H, and nonce (volatile wipe). Call on disconnect. */
-void dws_aesgcm_wipe(DwsAesGcmCtx *ctx);
-
-// ---------------------------------------------------------------------------
-// Stateless detached-tag one-shots (explicit nonce, tag kept apart from the ciphertext). Used by SMB 3.x
-// AES-256-GCM, whose TRANSFORM_HEADER carries the tag in its own Signature field and supplies the nonce per
-// message rather than advancing an invocation counter. Mirrors dws_aes128gcm_seal_tag / _open_tag.
-// ---------------------------------------------------------------------------
-
-/**
- * @brief Seal one message with AES-256-GCM under @p key and @p nonce; @p ct_out receives @p pt_len ciphertext
- *        bytes (may alias @p pt) and @p tag_out the 16-byte tag. No context state is kept or advanced.
+ * @brief Seal one message with AES-256-GCM under @p key and @p nonce.
+ *
+ * @p ct_out receives @p pt_len ciphertext bytes (may alias @p pt) and @p tag_out the 16-byte tag. All AES
+ * key-schedule / GHASH working memory lives in the shared crypto scratch; none of it touches the stack.
+ * No state is kept or advanced (the caller owns the nonce).
  */
 void dws_aesgcm_seal_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
                          const uint8_t *aad, size_t aad_len, const uint8_t *pt, size_t pt_len, uint8_t *ct_out,
@@ -142,5 +54,11 @@ void dws_aesgcm_seal_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t no
 bool dws_aesgcm_open_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
                          const uint8_t *aad, size_t aad_len, const uint8_t *ct, size_t ct_len,
                          const uint8_t tag[DWS_AESGCM_TAG_LEN], uint8_t *out);
+
+/**
+ * @brief Advance the RFC 5647 invocation counter: the low 8 bytes of the 12-byte nonce as a big-endian
+ *        integer; the 4-byte fixed field never changes. SSH calls this after each sealed/opened packet.
+ */
+void dws_aesgcm_iv_increment(uint8_t iv[DWS_AESGCM_IV_LEN]);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AESGCM_H
