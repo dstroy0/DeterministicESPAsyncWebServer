@@ -216,8 +216,9 @@ void test_build_negotiate_311()
     uint8_t buf[256];
     size_t n = dws_smb2_build_negotiate_311(buf, sizeof(buf), gid, Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED,
                                             salt, sizeof(salt));
-    // header(64) + body(36) + 5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) = 172
-    TEST_ASSERT_EQUAL_size_t(172, n);
+    // header(64)+body(36)+5 dialects(10) -> pad to 112; preauth ctx(46) -> pad to 160; signing ctx(12) -> pad
+    // to 176; encryption ctx(12) = 188
+    TEST_ASSERT_EQUAL_size_t(188, n);
 
     Smb2Header h;
     TEST_ASSERT_TRUE(dws_smb2_parse_header(buf, n, &h));
@@ -228,7 +229,7 @@ void test_build_negotiate_311()
     TEST_ASSERT_EQUAL_UINT16(5, r16(b + 2));  // DialectCount now includes 3.1.1
     TEST_ASSERT_EQUAL_MEMORY(gid, b + 12, 16);
     TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0311, r16(b + 44)); // 5th dialect
-    TEST_ASSERT_EQUAL_UINT16(2, r16(b + 32));                              // NegotiateContextCount
+    TEST_ASSERT_EQUAL_UINT16(3, r16(b + 32));                              // NegotiateContextCount
     uint32_t ctx_off = r32(b + 28);                                        // NegotiateContextOffset
     TEST_ASSERT_EQUAL_UINT32(112, ctx_off);
     TEST_ASSERT_EQUAL_UINT32(0, ctx_off % 8); // 8-byte aligned
@@ -246,6 +247,12 @@ void test_build_negotiate_311()
     TEST_ASSERT_EQUAL_UINT16(4, r16(c2 + 2)); // DataLength
     TEST_ASSERT_EQUAL_UINT16(1, r16(c2 + 8)); // SigningAlgorithmCount
     TEST_ASSERT_EQUAL_UINT16(Smb2SigningAlgorithm::SMB2_SIGNING_AES_CMAC, r16(c2 + 10));
+
+    const uint8_t *c3 = buf + 176; // ENCRYPTION_CAPABILITIES, aligned after the signing context
+    TEST_ASSERT_EQUAL_UINT16(Smb2NegotiateContextType::SMB2_ENCRYPTION_CAPABILITIES, r16(c3 + 0));
+    TEST_ASSERT_EQUAL_UINT16(4, r16(c3 + 2)); // DataLength
+    TEST_ASSERT_EQUAL_UINT16(1, r16(c3 + 8)); // CipherCount
+    TEST_ASSERT_EQUAL_UINT16(Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM, r16(c3 + 10));
 
     // overflow + bad-arg fail closed
     TEST_ASSERT_EQUAL_size_t(0, dws_smb2_build_negotiate_311(buf, 100, gid, 0, salt, sizeof(salt)));

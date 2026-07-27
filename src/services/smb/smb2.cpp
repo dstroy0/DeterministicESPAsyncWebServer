@@ -159,7 +159,10 @@ size_t dws_smb2_build_negotiate_311(uint8_t *buf, size_t cap, const uint8_t clie
     const size_t after_preauth = ctx_start + preauth_ctx;
     const size_t preauth_pad = ((after_preauth + 7) & ~(size_t)7) - after_preauth; // align the next context
     const size_t sign_ctx = 8 + 4; // header + SigningAlgorithmCount + 1 algorithm
-    const size_t total = ctx_start + preauth_ctx + preauth_pad + sign_ctx;
+    const size_t after_sign = ctx_start + preauth_ctx + preauth_pad + sign_ctx;
+    const size_t sign_pad = ((after_sign + 7) & ~(size_t)7) - after_sign; // align the encryption context
+    const size_t enc_ctx = 8 + 4;                                         // header + CipherCount + 1 cipher
+    const size_t total = ctx_start + preauth_ctx + preauth_pad + sign_ctx + sign_pad + enc_ctx;
     if (cap < total)
         return 0;
 
@@ -175,7 +178,7 @@ size_t dws_smb2_build_negotiate_311(uint8_t *buf, size_t cap, const uint8_t clie
     dws_wr16le(b + 4, security_mode);           // SecurityMode
     memcpy(b + 12, client_guid, 16);            // ClientGuid
     dws_wr32le(b + 28, (uint32_t)ctx_start);    // NegotiateContextOffset (overlays ClientStartTime)
-    dws_wr16le(b + 32, 2);                      // NegotiateContextCount (preauth + signing)
+    dws_wr16le(b + 32, 3);                      // NegotiateContextCount (preauth + signing + encryption)
     for (uint16_t i = 0; i < ndialects; i++)
         dws_wr16le(b + 36 + i * 2, (uint16_t)dialects[i]);
 
@@ -200,6 +203,18 @@ size_t dws_smb2_build_negotiate_311(uint8_t *buf, size_t cap, const uint8_t clie
     dws_wr32le(c2 + 4, 0);                                            // Reserved
     dws_wr16le(c2 + 8, 1);                                            // SigningAlgorithmCount
     dws_wr16le(c2 + 10, Smb2SigningAlgorithm::SMB2_SIGNING_AES_CMAC); // SigningAlgorithms[0]
+
+    // Context 3 - ENCRYPTION_CAPABILITIES advertising AES-128-GCM (the SMB 3.1.1 default cipher), §2.2.3.1.2.
+    // A server that accepts it may require an encrypted session/share; we then wrap messages in a
+    // TRANSFORM_HEADER (dws_smb2_encrypt). We offer GCM only - the codec implements GCM, not CCM.
+    uint8_t *c3 = c2 + sign_ctx + sign_pad;
+    if (sign_pad)
+        memset(c2 + sign_ctx, 0, sign_pad);
+    dws_wr16le(c3 + 0, Smb2NegotiateContextType::SMB2_ENCRYPTION_CAPABILITIES);
+    dws_wr16le(c3 + 2, 4);                                       // DataLength = CipherCount(2) + 1 cipher(2)
+    dws_wr32le(c3 + 4, 0);                                       // Reserved
+    dws_wr16le(c3 + 8, 1);                                       // CipherCount
+    dws_wr16le(c3 + 10, Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM); // Ciphers[0]
     return total;
 }
 
