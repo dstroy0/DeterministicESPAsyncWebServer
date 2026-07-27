@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.178.0] - 2026-07-27
+
+<details>
+<summary><b>Show Changelog for version 7.178.0 - 2026-07-27</b></summary>
 
 ### Bug Fixes
 
@@ -10,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`44eab1d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44eab1d4e47278c10be31b3954e5912e8f82eab2))
+- update CHANGELOG.md [skip ci] ([`2c8bd2a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c8bd2a9e90014787dc923e7248b9230859e4a96))
 - update test report + coverage [skip ci] ([`9fbdd3e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fbdd3ec5978644e014698a5484806b536379a93))
 - update CHANGELOG.md [skip ci] ([`cdff3ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdff3ffff8d3e2a316fd593f7c6a20b81c4642ca))
 - update test report + coverage [skip ci] ([`6428195`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6428195148134b6d41c785ddf618549dd0a689e9))
@@ -27,10 +32,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 7.177.0 → 7.178.0 ([`549e323`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/549e3233ced9b7eb78c9eb727ca95bf1932c21dd))
 - re-align s3_defaults.h #endif comment after the ../classic_defaults.h include move (clang-format) ([`f3527f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3527f29f21db69458d3570b9ee1d8119bef3abb))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b1c4ffc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1c4ffc4a5bd8721b95fee2476a7be1895be9827))
 - update ESP32 build footprints [skip ci] ([`c703c32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c703c326edd12e3220d9f1689378acb98c6d8098))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`31d2bba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31d2bbac63aef09ad529d05304ce02f352474396))
 - update ESP32 build footprints [skip ci] ([`83be0fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83be0fd3824c0014f7e57b87da9f61b407249296))
@@ -49,6 +56,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- all four SMB 3.1.1 ciphers + client-forced encryption, HW-verified vs Samba ([`8e4e145`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e4e145a1735331e5de899d12c0b4de6ead97099))
 - wire SMB 3.x transport encryption into the client dialogue ([`584a315`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/584a3151b0c008e1cea1496d2beec476290779ef))
 - offer SMB2_ENCRYPTION_CAPABILITIES (AES-128-GCM) in the 3.1.1 negotiate ([`f1a529f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1a529f33232adfaeeaa68db512ff9aa472aa4ff))
 - SMB 3.x transport encryption codec - wire AES-128-GCM to the TRANSFORM_HEADER ([`07aedd7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07aedd76cd659be0100c8786d22780fdecbd4a7d))
@@ -65,6 +73,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - end-to-end encrypted SMB 3.1.1 round-trip against a reference-peer mock ([`cc4e20a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc4e20a406df9a129af6eec6021322fd2b800842))
 - HW link-bringup test for the reorganized L1 layer + roadmap naming candidates ([`ec81e04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec81e0480348b9ebfa9ffef9d9e4ef9006d389c8))
+
+</details>
 
 ## [7.177.0] - 2026-07-27
 
