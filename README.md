@@ -745,7 +745,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L4    | `DIFFSERV`          |             0.8 KB |          15.3 KB |
 | L4    | `KEEPALIVE`         |             0.8 KB |          15.3 KB |
 | L4    | `ACCEPT_THROTTLE`   |           < 0.5 KB |          15.3 KB |
-| L5    | `SSH`               |       66.6-76.9 KB |     21.8-42.0 KB |
+| L5    | `SSH`               |       66.6-77.9 KB |     21.8-42.0 KB |
 | L5    | `TELNET`            |             2.9 KB |          15.8 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.1-7.9 KB |      8.0-23.3 KB |
@@ -798,7 +798,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `CONTROL`           |             2.6 KB |          23.1 KB |
 | L7    | `STATS`             |             2.5 KB |          15.4 KB |
 | L7    | `SPA_ROUTER`        |             2.3 KB |          15.3 KB |
-| L7    | `CSRF`              |             2.2 KB |          15.3 KB |
+| L7    | `CSRF`              |             2.3 KB |          15.3 KB |
 | L7    | `LOGBUF`            |             1.9 KB |          18.3 KB |
 | L7    | `TOTP`              |             1.7 KB |          15.3 KB |
 | L7    | `OTA_ROLLBACK`      |             1.6 KB |          15.3 KB |

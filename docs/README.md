@@ -659,8 +659,6 @@ src/
 │   ├── s31_defaults.h
 │   └── s3_defaults.h
 ├── crypto/
-│   ├── hal/
-│   │   └── esp_crypto_hal.h
 │   ├── aes256ctr.cpp
 │   ├── aes256ctr.h
 │   ├── aes_cmac.cpp
@@ -699,6 +697,7 @@ src/
 │   ├── sha256.h
 │   ├── sha512.cpp
 │   └── sha512.h
+├── hal/  (esp_crypto_hal.h, esp_crypto_hal.cpp)
 ├── network_drivers/
 │   ├── application/
 │   │   ├── binary_asset_blobs.cpp
@@ -1222,7 +1221,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `ZWAVE+GATEWAY` | `Drivers/ZWaveGateway` | 268,905 | 21,848 |
 | `ZIGBEE+GATEWAY` | `Drivers/ZigbeeGateway` | 269,417 | 22,104 |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE` | `Peripherals/DmaIngest` | 269,437 | 28,608 |
-| `core/SSHCryptoSelfTest` | `L5-Session/SSHCryptoSelfTest` | 269,537 | 21,476 |
+| `core/SSHCryptoSelfTest` | `L5-Session/SSHCryptoSelfTest` | 269,545 | 21,476 |
 | `SEN0192` | `Drivers/Sen0192` | 269,805 | 21,488 |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | `Drivers/RadioGateway` | 270,593 | 28,728 |
 | `LD2410` | `Drivers/Ld2410` | 270,685 | 21,576 |
@@ -1259,7 +1258,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `HTTP_CLIENT` | `L7-Application/HttpClient` | 734,625 | 63,180 |
 | `SMTP` | `L7-Application/SmtpAlert` | 735,201 | 61,124 |
 | `MQTT` | `L7-Application/MqttClient` | 736,465 | 65,340 |
-| `SMB` | `L7-Application/SmbFileClient` | 747,109 | 65,732 |
+| `SMB` | `L7-Application/SmbFileClient` | 747,473 | 65,732 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,669 | 46,708 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 753,245 | 81,828 |
 | `ADS` | `L7-Application/AdsClient` | 753,317 | 44,204 |
@@ -1291,15 +1290,15 @@ Feature Tables workflow from `docs/footprints.json`.
 | `LOGBUF` | `L7-Application/LogBuffer` | 754,809 | 84,948 |
 | `IP_ALLOWLIST` | `L4-Transport/IpAllowlist` | 754,861 | 81,820 |
 | `core/InterfaceFilter` | `L7-Application/InterfaceFilter` | 755,089 | 81,820 |
-| `CSRF` | `L7-Application/Csrf` | 755,145 | 81,876 |
 | `core/Templating` | `L7-Application/Templating` | 755,149 | 81,868 |
+| `CSRF` | `L7-Application/Csrf` | 755,157 | 81,876 |
 | `SPA_ROUTER` | `L7-Application/SpaFallback` | 755,237 | 81,820 |
 | `STATS` | `L7-Application/Stats` | 755,369 | 81,924 |
 | `CONTROL` | `L7-Application/PidTuning` | 755,541 | 89,900 |
 | `SIMATIC` | `L7-Application/SimaticSerial` | 755,589 | 83,292 |
 | `MODBUS` | `L7-Application/ModbusTcp` | 755,609 | 82,108 |
 | `core/Basic` | `Foundation/Basic` | 755,621 | 81,836 |
-| `JWT` | `L6-Presentation/JWTAuth` | 755,733 | 82,972 |
+| `JWT` | `L6-Presentation/JWTAuth` | 755,745 | 82,972 |
 | `TELNET` | `L5-Session/Telnet` | 755,825 | 82,364 |
 | `CBOR` | `L6-Presentation/Cbor` | 755,873 | 81,900 |
 | `AUDIT_LOG` | `L7-Application/AuditLog` | 755,889 | 84,812 |
@@ -1328,7 +1327,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RELAY` | `L7-Application/PortForward` | 763,353 | 116,436 |
 | `HTTP_CLIENT+WEBHOOK` | `L7-Application/Webhook` | 764,133 | 101,580 |
 | `PROMISC+FORWARD+ETHERNET` | `Peripherals/WifiCapture` | 766,049 | 47,584 |
-| `OIDC` | `L7-Application/OidcAuth` | 766,157 | 99,876 |
+| `OIDC` | `L7-Application/OidcAuth` | 766,193 | 99,876 |
 | `OPCUA+OPCUA_CLIENT` | `L7-Application/OpcUaClient` | 766,413 | 94,724 |
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/OAuth2` | 766,481 | 104,644 |
 | `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,001 | 45,388 |
@@ -1347,7 +1346,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `NTP` | `L7-Application/SNTP` | 779,421 | 84,368 |
 | `MDNS+PROMISC+WIFI_SNIFFER+MDNS_ADAPTIVE` | `L7-Application/MdnsAdaptive` | 781,081 | 83,816 |
 | `IFACE_BRIDGE` | `L7-Application/InterfaceBridge` | 781,605 | 82,668 |
-| `COAP+DTLS` | `L7-Application/CoapSecure` | 781,993 | 104,116 |
+| `COAP+DTLS` | `L7-Application/CoapSecure` | 782,457 | 104,116 |
 | `ETHERNET` | `Peripherals/Ethernet` | 792,777 | 81,880 |
 | `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Peripherals/EthernetW5500` | 792,809 | 81,880 |
 | `core/FileServing` | `L7-Application/FileServing` | 794,909 | 81,860 |
@@ -1358,13 +1357,13 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/WebDav` | 824,753 | 92,348 |
 | `ETAG` | `L7-Application/ETag` | 829,785 | 83,124 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
-| `SSH` | `L5-Session/SSHHostKey` | 831,629 | 109,240 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 832,493 | 107,272 |
+| `SSH` | `L5-Session/SSHHostKey` | 832,565 | 109,240 |
 | `HOTSWAP` | `L7-Application/HotSwapStorage` | 839,201 | 82,760 |
 | `EXC_DECODER+FTP+FTP_SESSION` | `L7-Application/CoreDump` | 841,993 | 83,460 |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE` | `L7-Application/HttpDelivery` | 843,481 | 82,736 |
-| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 847,021 | 110,976 |
+| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 847,941 | 110,976 |
 | `TLS` | `L6-Presentation/SecureWebSocket` | 855,873 | 122,020 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/mTLS` | 856,829 | 122,356 |
@@ -1372,7 +1371,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/TlsResumption` | 859,133 | 105,840 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/mTLS` | 859,217 | 106,016 |
 | `POWER_MGMT` | `L7-Application/PowerGovernor` | 881,905 | 85,680 |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 883,865 | 118,600 |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 884,797 | 118,600 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
