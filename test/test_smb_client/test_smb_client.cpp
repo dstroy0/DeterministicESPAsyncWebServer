@@ -149,6 +149,14 @@ struct Mock
     bool require_311;       // NEGOTIATE advertises 3.1.1 + SIGNING_REQUIRED and the mock signs with AES-CMAC
     Smb2SignAlgo sign_algo; // the signing algorithm in force once signing begins (CMAC for 3.1.1)
     SmbPreauth preauth;     // the running preauth-integrity hash (seeded on the NEGOTIATE request)
+    // SMB 3.1.1 encryption reference-peer state. When require_encrypt is set the mock also offers AES-128-GCM,
+    // derives the same C2S/S2C cipher keys, flags the session encrypt-required, DECRYPTS every TRANSFORM-wrapped
+    // request and ENCRYPTS every response - so the post-auth session runs encrypted end to end.
+    bool require_encrypt;
+    bool enc_keys;       // cipher keys derived (round-2 onward)
+    uint8_t enc_c2s[16]; // client->server key: the mock decrypts requests with it
+    uint8_t enc_s2c[16]; // server->client key: the mock encrypts responses with it
+    uint64_t enc_nonce;  // the mock's monotonic response nonce
 };
 
 static void append_frame(Mock *m, const uint8_t *resp, size_t rlen)
@@ -200,7 +208,7 @@ static bool mock_verify(const Mock *m, uint8_t *msg, size_t len)
 
 // Build the SMB 3.1.1 NEGOTIATE response body (dialect 0x0311 + SIGNING_REQUIRED + a preauth-integrity
 // SHA-512 context with a server salt + an AES-CMAC signing context) into resp; returns the total length.
-static size_t build_neg_resp_311(uint8_t *resp, uint64_t msg_id)
+static size_t build_neg_resp_311(uint8_t *resp, uint64_t msg_id, bool offer_encrypt)
 {
     dws_smb2_build_header(resp, DWS_SMB_BUF + 128, Smb2Command::SMB2_NEGOTIATE, 1, msg_id, 0, 0);
     uint8_t *b = resp + 64;
@@ -208,7 +216,7 @@ static size_t build_neg_resp_311(uint8_t *resp, uint64_t msg_id)
     w16(b + 0, 65);                                                // StructureSize
     w16(b + 2, Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_REQUIRED); // SecurityMode
     w16(b + 4, (uint16_t)Smb2Dialect::SMB2_DIALECT_0311);          // DialectRevision
-    w16(b + 6, 2);                                                 // NegotiateContextCount
+    w16(b + 6, offer_encrypt ? 3 : 2);                             // NegotiateContextCount
     w16(b + 56, 0);                                                // SecurityBufferOffset
     w16(b + 58, 0);                                                // SecurityBufferLength
     const uint32_t ctx = 128;                                      // 8-aligned, right after the 64-byte body
@@ -228,7 +236,15 @@ static size_t build_neg_resp_311(uint8_t *resp, uint64_t msg_id)
     w16(c2 + 2, 4); // DataLength
     w16(c2 + 8, 1); // SigningAlgorithmCount
     w16(c2 + 10, Smb2SigningAlgorithm::SMB2_SIGNING_AES_CMAC);
-    return ctx + 48 + 12; // 128 + 48 + 12 = 188
+    if (!offer_encrypt)
+        return ctx + 48 + 12; // 128 + 48 + 12 = 188
+    // Context 3 - ENCRYPTION_CAPABILITIES advertising AES-128-GCM, 8-byte aligned after context 2 (188 -> 192).
+    uint8_t *c3 = c2 + 16;
+    w16(c3 + 0, Smb2NegotiateContextType::SMB2_ENCRYPTION_CAPABILITIES);
+    w16(c3 + 2, 4); // DataLength
+    w16(c3 + 8, 1); // CipherCount
+    w16(c3 + 10, Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM);
+    return ctx + 48 + 16 + 12; // 204
 }
 
 static int mock_send(void *c, const uint8_t *d, size_t n)
@@ -237,6 +253,20 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     m->req_count++;
     const uint8_t *msg = d + 4; // skip the Direct-TCP prefix
     size_t mlen = n - 4;
+    // SMB 3.x: a request wrapped in a TRANSFORM_HEADER (ProtocolId 0xFD 'S' 'M' 'B') is decrypted before
+    // processing, using the same C2S key the client encrypted with (the mock is a reference peer).
+    uint8_t plain[DWS_SMB_BUF];
+    bool req_enc = false;
+    if (m->enc_keys && mlen >= DWS_SMB2_TRANSFORM_HDR_LEN && msg[0] == 0xFD && msg[1] == 'S' && msg[2] == 'M' &&
+        msg[3] == 'B')
+    {
+        size_t pl = dws_smb2_decrypt(m->enc_c2s, msg, mlen, plain, sizeof(plain));
+        if (pl == 0)
+            return -1; // bad tag / not decryptable -> the client will see the connection drop
+        msg = plain;
+        mlen = pl;
+        req_enc = true;
+    }
     Smb2Header h;
     if (!dws_smb2_parse_header(msg, mlen, &h))
         return -1;
@@ -251,8 +281,9 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
             dws_smb_preauth_update(&m->preauth, msg, mlen);
     }
 
-    // Once the session is signed, every request the client sends must carry a valid signature.
-    if (m->signing)
+    // Once the session is signed, every request the client sends must carry a valid signature - unless it is
+    // encrypted, in which case the AEAD tag (already verified on decrypt) is the integrity check, not a signature.
+    if (m->signing && !req_enc)
     {
         uint8_t vbuf[DWS_SMB_BUF];
         if (mlen <= sizeof(vbuf))
@@ -272,7 +303,8 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     case Smb2Command::SMB2_NEGOTIATE:
         if (m->require_311)
         {
-            rlen = build_neg_resp_311(resp, h.message_id); // dialect 0x0311 + preauth + AES-CMAC contexts
+            rlen = build_neg_resp_311(resp, h.message_id,
+                                      m->require_encrypt); // dialect 0x0311 + preauth + signing (+ encryption)
             break;
         }
         dws_smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_NEGOTIATE, 1, h.message_id, 0, 0);
@@ -337,6 +369,15 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
                                                 m->sign_key);
                     m->sign_algo = Smb2SignAlgo::AES_CMAC;
                     m->signing = true;
+                    if (m->require_encrypt)
+                    {
+                        // Derive the same cipher keys the client will, and flag the session encrypt-required so
+                        // the client encrypts everything from TREE_CONNECT onward (this SS2 reply stays plaintext).
+                        dws_smb3_derive_encryption_keys(base_key, (uint16_t)Smb2Dialect::SMB2_DIALECT_0311,
+                                                        m->preauth.hash, m->enc_c2s, m->enc_s2c);
+                        m->enc_keys = true;
+                        w16(b + 2, Smb2SessionFlags::SMB2_SESSION_FLAG_ENCRYPT_DATA); // SessionFlags
+                    }
                 }
                 else if (m->require_signing)
                 {
@@ -432,14 +473,31 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
                            (h.command == Smb2Command::SMB2_SESSION_SETUP && m->ss_round == 1)))
         dws_smb_preauth_update(&m->preauth, resp, rlen);
 
-    if (m->signing)
+    if (m->signing && !req_enc)
     {
         mock_sign(m, resp, rlen);
         if (m->corrupt_read_sig && h.command == Smb2Command::SMB2_READ)
             resp[48] ^= 0xFF; // tamper: invalidate the signature after signing
     }
     if (!drop)
-        append_frame(m, resp, rlen);
+    {
+        if (req_enc)
+        {
+            // Encrypt the response with the S2C key + a fresh monotonic nonce (the client reads the nonce from
+            // the TRANSFORM_HEADER, so it need not track ours). Encrypted replies are never separately signed.
+            uint8_t enc[DWS_SMB_BUF + 128];
+            uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN] = {0};
+            uint64_t ctr = m->enc_nonce++;
+            for (int i = 0; i < 8; i++)
+                nonce[i] = (uint8_t)(ctr >> (8 * i));
+            size_t el = dws_smb2_encrypt(m->enc_s2c, nonce, m->session_id, resp, rlen, enc, sizeof(enc));
+            if (m->corrupt_read_sig && h.command == Smb2Command::SMB2_READ)
+                enc[DWS_SMB2_TRANSFORM_HDR_LEN + 2] ^= 0xFF; // tamper a ciphertext byte -> the client's open fails
+            append_frame(m, enc, el);
+        }
+        else
+            append_frame(m, resp, rlen);
+    }
     return (int)n;
 }
 
@@ -1640,6 +1698,68 @@ void test_signed_311_response_tampered()
                           smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m));
 }
 
+// SMB 3.1.1 with transport encryption: the whole post-auth session (TREE_CONNECT .. CLOSE) is AES-128-GCM
+// TRANSFORM-wrapped. The mock is a reference peer - it offers GCM, derives the same C2S/S2C keys, decrypts
+// every request and encrypts every response - so this exercises the client encrypt/decrypt wiring end to end.
+// (Self-consistency only; real spec/attack conformance is the pentest harness + HW-vs-Samba.)
+void test_open_encrypted_311_roundtrip()
+{
+    Mock m = make_mock();
+    m.file_size = 300;
+    SmbConfig cfg = make_cfg();
+    cfg.desired_access = Smb2Access::SMB2_FILE_GENERIC_READ | Smb2Access::SMB2_FILE_GENERIC_WRITE;
+    cfg.disposition = Smb2Disposition::SMB2_FILE_OPEN_IF;
+    m.require_311 = true;
+    m.require_encrypt = true;
+    m.creds = &cfg;
+
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_TRUE(h.encrypt_active);       // client turned encryption on from the session ENCRYPT_DATA flag
+    TEST_ASSERT_EQUAL_INT(0, m.bad_req_sigs); // encrypted requests carry no signature; none should be flagged
+
+    // Write a buffer then read it back byte-exact - every request and response TRANSFORM-wrapped.
+    uint8_t data[250];
+    for (int i = 0; i < 250; i++)
+        data[i] = (uint8_t)(0xC0 ^ (i * 7));
+    size_t wr = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_write(&h, 0, data, sizeof(data), &wr, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(sizeof(data), wr);
+
+    uint8_t buf[256];
+    size_t got = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(data), &got, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(sizeof(data), got);
+    TEST_ASSERT_EQUAL_MEMORY(data, buf, sizeof(data));
+
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(0, m.bad_req_sigs);
+}
+
+// A tampered (bit-flipped) encrypted READ response must fail the AEAD tag, so the client rejects it.
+void test_encrypted_response_tampered()
+{
+    Mock m = make_mock();
+    for (int i = 0; i < 100; i++)
+        m.file_data[i] = (uint8_t)i;
+    m.file_data_len = 100;
+    m.file_size = 100;
+    SmbConfig cfg = make_cfg();
+    m.require_311 = true;
+    m.require_encrypt = true;
+    m.creds = &cfg;
+    m.corrupt_read_sig = true; // repurposed here: flip a ciphertext byte of the READ response
+
+    SmbHandle h;
+    memset(&h, 0, sizeof(h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_TRUE(h.encrypt_active);
+    uint8_t buf[128];
+    size_t got = 0;
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL, smb_read(&h, 0, buf, 100, &got, mock_send, mock_recv, &m));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1715,5 +1835,7 @@ int main()
     RUN_TEST(test_unsigned_session_when_not_required);
     RUN_TEST(test_open_signed_311_roundtrip);
     RUN_TEST(test_signed_311_response_tampered);
+    RUN_TEST(test_open_encrypted_311_roundtrip);
+    RUN_TEST(test_encrypted_response_tampered);
     return UNITY_END();
 }
