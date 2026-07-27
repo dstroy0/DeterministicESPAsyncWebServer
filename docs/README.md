@@ -713,7 +713,11 @@ src/
 │   │   ├── ip.h
 │   │   ├── network.cpp
 │   │   └── network.h
-│   ├── physical/  (physical.h, physical.cpp)
+│   ├── physical/
+│   │   ├── esp/
+│   │   │   └── physical_esp.cpp
+│   │   ├── physical.cpp
+│   │   └── physical.h
 │   ├── presentation/
 │   │   ├── base64/  (base64.h, base64.cpp)
 │   │   ├── cbor/  (cbor.h, cbor.cpp)
