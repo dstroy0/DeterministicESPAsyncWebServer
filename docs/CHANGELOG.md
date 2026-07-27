@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`6428195`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6428195148134b6d41c785ddf618549dd0a689e9))
+- update CHANGELOG.md [skip ci] ([`3fa5fff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3fa5fff04c80d8efb64a386896d757666235fed1))
 - update CHANGELOG.md [skip ci] ([`13c9bd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13c9bd521f2aa4fdc49d6b7a362523996f640629))
 - update CHANGELOG.md [skip ci] ([`46d46c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46d46c9ad01c84aaabd5863cddc4771f20d7aa50))
 - update CHANGELOG.md [skip ci] ([`49bc259`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49bc25978bfa7c4a8f9be60393a5de98390bf5e7))
@@ -27,6 +29,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`83be0fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83be0fd3824c0014f7e57b87da9f61b407249296))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7c860b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c860b39675e81a9e346b8b0b3a96e445e8d48e3))
+- update ESP32 build footprints [skip ci] ([`938a29f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/938a29f40ba77488c31816f1d7d5d71b0acbacd2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cdadce8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdadce8758c3f0cb112a145fcbd0887b898dc8bd))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8392a57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8392a574746120c1c4f41fcc3c4bf395e322514e))
 - update ESP32 build footprints [skip ci] ([`6d1af8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d1af8dc1c2a99906c46eebce771b62e53a8babc))
@@ -40,6 +45,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- wire SMB 3.x transport encryption into the client dialogue ([`584a315`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/584a3151b0c008e1cea1496d2beec476290779ef))
 - offer SMB2_ENCRYPTION_CAPABILITIES (AES-128-GCM) in the 3.1.1 negotiate ([`f1a529f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1a529f33232adfaeeaa68db512ff9aa472aa4ff))
 - SMB 3.x transport encryption codec - wire AES-128-GCM to the TRANSFORM_HEADER ([`07aedd7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07aedd76cd659be0100c8786d22780fdecbd4a7d))
 - add dws_platform.h vendor selector; kick off multi-vendor track ([`c12605b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c12605bfcfd19400768b727251b0e9aa693886c9))
