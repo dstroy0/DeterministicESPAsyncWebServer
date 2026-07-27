@@ -12,6 +12,7 @@
 
 #include <string.h>
 
+#include "crypto/aes128gcm.h"   // dws_aes128gcm_seal_tag/open_tag for SMB 3.x transport encryption
 #include "crypto/aes_cmac.h"    // dws_aes_cmac for SMB 3.x message signing
 #include "crypto/hmac_sha256.h" // dws_hmac_sha256 for SMB 2.x message signing
 #include "crypto/kdf.h"         // dws_kdf_ctr_hmac_sha256 for SMB 3.x key derivation
@@ -675,6 +676,94 @@ bool dws_smb3_derive_signing_key(const uint8_t session_key[16], uint16_t dialect
     fixed[n++] = 0x00;
     fixed[n++] = 0x80;
     return dws_kdf_ctr_hmac_sha256(session_key, 16, fixed, n, out_key, 16);
+}
+
+// One SMB 3.x cipher key (MS-SMB2 §3.1.4.2), same SP800-108 construction as the signing key. @p c2s picks the
+// client->server (encrypt) label/context vs server->client (decrypt). 3.1.1 keys the context on the preauth
+// hash; 3.0/3.0.2 use the fixed "ServerIn "/"ServerOut" contexts (label "SMB2AESCCM" even when the cipher is
+// GCM, per the spec).
+static bool smb3_derive_cipher_key(const uint8_t session_key[16], uint16_t dialect, const uint8_t *preauth, bool c2s,
+                                   uint8_t out_key[16])
+{
+    uint8_t fixed[96];
+    size_t n = 0;
+    if (dialect == (uint16_t)Smb2Dialect::SMB2_DIALECT_0311)
+    {
+        if (!preauth)
+            return false;
+        static const char c2s_label[] = "SMBC2SCipherKey"; // sizeof == 16 (15 chars + NUL)
+        static const char s2c_label[] = "SMBS2CCipherKey";
+        memcpy(fixed + n, c2s ? c2s_label : s2c_label, sizeof(c2s_label));
+        n += sizeof(c2s_label);
+        fixed[n++] = 0x00;              // Label||0x00 separator
+        memcpy(fixed + n, preauth, 64); // Context = the 64-byte preauth-integrity hash
+        n += 64;
+    }
+    else
+    {
+        static const char label[] = "SMB2AESCCM";  // sizeof == 11
+        static const char ctx_in[] = "ServerIn ";  // sizeof == 10 (note the trailing space, MS-SMB2 §3.1.4.2)
+        static const char ctx_out[] = "ServerOut"; // sizeof == 10
+        memcpy(fixed + n, label, sizeof(label));
+        n += sizeof(label);
+        fixed[n++] = 0x00;
+        memcpy(fixed + n, c2s ? ctx_in : ctx_out, sizeof(ctx_in));
+        n += sizeof(ctx_in);
+    }
+    fixed[n++] = 0x00; // [L] = 128 bits, 32-bit big-endian
+    fixed[n++] = 0x00;
+    fixed[n++] = 0x00;
+    fixed[n++] = 0x80;
+    return dws_kdf_ctr_hmac_sha256(session_key, 16, fixed, n, out_key, 16);
+}
+
+bool dws_smb3_derive_encryption_keys(const uint8_t session_key[16], uint16_t dialect, const uint8_t *preauth,
+                                     uint8_t out_c2s[16], uint8_t out_s2c[16])
+{
+    if (!session_key || !out_c2s || !out_s2c)
+        return false;
+    return smb3_derive_cipher_key(session_key, dialect, preauth, true, out_c2s) &&
+           smb3_derive_cipher_key(session_key, dialect, preauth, false, out_s2c);
+}
+
+size_t dws_smb2_encrypt(const uint8_t key[16], const uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN], uint64_t session_id,
+                        const uint8_t *msg, size_t msg_len, uint8_t *out, size_t out_cap)
+{
+    if (!key || !nonce || !msg || !out || out_cap < DWS_SMB2_TRANSFORM_HDR_LEN + msg_len)
+        return 0;
+
+    // TRANSFORM_HEADER (MS-SMB2 §2.2.41). Signature (the AEAD tag) is filled after sealing; it and the
+    // ProtocolId are outside the AAD, which is the header from the Nonce field to its end (offsets 20..51).
+    memset(out, 0, DWS_SMB2_TRANSFORM_HDR_LEN);
+    dws_wr32le(out + 0, DWS_SMB2_TRANSFORM_PROTOCOL_ID); // ProtocolId 0xFD 'S' 'M' 'B'
+    memcpy(out + 20, nonce, DWS_SMB2_GCM_NONCE_LEN);     // Nonce (12 bytes; out[32..35] stay zero)
+    dws_wr32le(out + 36, (uint32_t)msg_len);             // OriginalMessageSize
+    dws_wr16le(out + 40, 0);                             // Reserved
+    dws_wr16le(out + 42, 0x0001);                        // Flags = Encrypted (3.1.1)
+    dws_wr64le(out + 44, session_id);                    // SessionId
+
+    uint8_t tag[16];
+    dws_aes128gcm_seal_tag(key, nonce, out + 20, 32, msg, msg_len, out + DWS_SMB2_TRANSFORM_HDR_LEN, tag);
+    memcpy(out + 4, tag, 16); // Signature = the 16-byte AEAD tag
+    return DWS_SMB2_TRANSFORM_HDR_LEN + msg_len;
+}
+
+size_t dws_smb2_decrypt(const uint8_t key[16], const uint8_t *in, size_t in_len, uint8_t *out, size_t out_cap)
+{
+    if (!key || !in || !out || in_len < DWS_SMB2_TRANSFORM_HDR_LEN)
+        return 0;
+    if (dws_rd32le(in + 0) != DWS_SMB2_TRANSFORM_PROTOCOL_ID)
+        return 0;
+    size_t ct_len = in_len - DWS_SMB2_TRANSFORM_HDR_LEN;
+    if (dws_rd32le(in + 36) != (uint32_t)ct_len || out_cap < ct_len) // OriginalMessageSize must match
+        return 0;
+
+    uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN];
+    memcpy(nonce, in + 20, DWS_SMB2_GCM_NONCE_LEN);
+    // AAD = header[20..51] (32 bytes), tag = Signature (in+4), ciphertext = in+52. Fails closed on a bad tag.
+    if (!dws_aes128gcm_open_tag(key, nonce, in + 20, 32, in + DWS_SMB2_TRANSFORM_HDR_LEN, ct_len, in + 4, out))
+        return 0;
+    return ct_len;
 }
 
 #endif // DWS_ENABLE_SMB

@@ -1133,6 +1133,106 @@ void test_smb2_signing_cmac()
     dws_smb2_sign_cmac(key, msg, 63); // too short: a no-op
 }
 
+// ---- SMB 3.x transport encryption (TRANSFORM_HEADER + AES-128-GCM) --------------------------------------
+void test_smb3_derive_encryption_keys()
+{
+    uint8_t sk[16];
+    for (int i = 0; i < 16; i++)
+        sk[i] = (uint8_t)(0x10 + i);
+    uint8_t preauth[64];
+    for (int i = 0; i < 64; i++)
+        preauth[i] = (uint8_t)i;
+
+    uint8_t c2s[16] = {0}, s2c[16] = {0}, c2s2[16] = {0}, s2c2[16] = {0};
+    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c));
+    // Deterministic: same inputs -> same keys.
+    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s2, s2c2));
+    TEST_ASSERT_EQUAL_MEMORY(c2s, c2s2, 16);
+    TEST_ASSERT_EQUAL_MEMORY(s2c, s2c2, 16);
+    // The two directions use different labels, so the keys must differ.
+    TEST_ASSERT_TRUE(memcmp(c2s, s2c, 16) != 0);
+    // 3.1.1 requires the preauth hash.
+    TEST_ASSERT_FALSE(dws_smb3_derive_encryption_keys(sk, 0x0311, nullptr, c2s, s2c));
+    // 3.0.2 uses the fixed contexts (no preauth) and still derives distinct keys.
+    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0302, nullptr, c2s, s2c));
+    TEST_ASSERT_TRUE(memcmp(c2s, s2c, 16) != 0);
+}
+
+void test_smb3_encrypt_decrypt_roundtrip()
+{
+    uint8_t sk[16];
+    for (int i = 0; i < 16; i++)
+        sk[i] = (uint8_t)(0xA0 + i);
+    uint8_t preauth[64] = {0};
+    uint8_t c2s[16], s2c[16];
+    TEST_ASSERT_TRUE(dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c));
+
+    uint8_t msg[100];
+    for (int i = 0; i < 100; i++)
+        msg[i] = (uint8_t)(i * 7 + 3);
+    uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    const uint64_t sid = 0x0011223344556677ULL;
+
+    uint8_t enc[DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg)];
+    size_t elen = dws_smb2_encrypt(c2s, nonce, sid, msg, sizeof(msg), enc, sizeof(enc));
+    TEST_ASSERT_EQUAL_UINT32(DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg), elen);
+    // TRANSFORM_HEADER layout.
+    TEST_ASSERT_EQUAL_HEX8(0xFD, enc[0]);
+    TEST_ASSERT_EQUAL_HEX8('S', enc[1]);
+    TEST_ASSERT_EQUAL_HEX8('M', enc[2]);
+    TEST_ASSERT_EQUAL_HEX8('B', enc[3]);
+    TEST_ASSERT_EQUAL_MEMORY(nonce, enc + 20, DWS_SMB2_GCM_NONCE_LEN); // Nonce
+    TEST_ASSERT_EQUAL_HEX8(0x01, enc[42]);                             // Flags = Encrypted
+    // Ciphertext must differ from plaintext (it was actually encrypted).
+    TEST_ASSERT_TRUE(memcmp(enc + DWS_SMB2_TRANSFORM_HDR_LEN, msg, sizeof(msg)) != 0);
+
+    // Round trip.
+    uint8_t dec[sizeof(msg)];
+    size_t dlen = dws_smb2_decrypt(c2s, enc, elen, dec, sizeof(dec));
+    TEST_ASSERT_EQUAL_UINT32(sizeof(msg), dlen);
+    TEST_ASSERT_EQUAL_MEMORY(msg, dec, sizeof(msg));
+}
+
+void test_smb3_decrypt_rejects_tamper()
+{
+    uint8_t sk[16] = {0};
+    uint8_t preauth[64] = {0};
+    uint8_t c2s[16], s2c[16];
+    dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c);
+
+    uint8_t msg[40];
+    memset(msg, 0x5A, sizeof(msg));
+    uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN] = {9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 1};
+    uint8_t enc[DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg)];
+    size_t elen = dws_smb2_encrypt(c2s, nonce, 42, msg, sizeof(msg), enc, sizeof(enc));
+    uint8_t dec[sizeof(msg)];
+
+    // Flip a ciphertext byte -> tag mismatch.
+    uint8_t t1[sizeof(enc)];
+    memcpy(t1, enc, elen);
+    t1[DWS_SMB2_TRANSFORM_HDR_LEN + 5] ^= 0x01;
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));
+    // Flip a Signature (tag) byte.
+    memcpy(t1, enc, elen);
+    t1[4] ^= 0x01;
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));
+    // Flip an AAD byte (SessionId, part of the header covered by the AEAD).
+    memcpy(t1, enc, elen);
+    t1[44] ^= 0x01;
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));
+    // Wrong key.
+    uint8_t wrong[16];
+    memcpy(wrong, c2s, 16);
+    wrong[0] ^= 0xFF;
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(wrong, enc, elen, dec, sizeof(dec)));
+    // Bad ProtocolId, short input, and OriginalMessageSize mismatch.
+    memcpy(t1, enc, elen);
+    t1[0] ^= 0x01;
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, enc, DWS_SMB2_TRANSFORM_HDR_LEN - 1, dec, sizeof(dec)));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, enc, elen, dec, sizeof(dec) - 1)); // out too small
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1178,5 +1278,8 @@ int main()
     RUN_TEST(test_parse_write_null_and_command);
     RUN_TEST(test_smb2_signing);
     RUN_TEST(test_smb2_signing_cmac);
+    RUN_TEST(test_smb3_derive_encryption_keys);
+    RUN_TEST(test_smb3_encrypt_decrypt_roundtrip);
+    RUN_TEST(test_smb3_decrypt_rejects_tamper);
     return UNITY_END();
 }

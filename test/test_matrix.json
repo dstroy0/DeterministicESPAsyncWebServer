@@ -1496,6 +1496,7 @@
       "flags": ["-DDWS_ENABLE_SMB=1"],
       "src": [
         "+<services/smb/smb2.cpp>",
+        "+<crypto/aes128gcm.cpp>",
         "+<crypto/md.cpp>",
         "+<services/smb/ntlm.cpp>",
         "+<services/smb/ntlmssp.cpp>",

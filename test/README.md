@@ -565,7 +565,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **5212 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **5215 test cases** across **292 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (19 tests)</b></summary>
@@ -45605,7 +45605,7 @@ A thorough directory of all **5212 test cases** across **292 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (42 tests)</b></summary>
+<summary><b>test_smb2 (45 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -46177,6 +46177,53 @@ A thorough directory of all **5212 test cases** across **292 suites**. Expand a 
       * <code>Assert false (dws_smb2_verify_cmac(key, msg, sizeof(msg)))</code>
       * <code>Assert false (dws_smb2_verify_cmac(wrong, msg, sizeof(msg)))</code>
       * <code>Assert false (dws_smb2_verify_cmac(key, msg, 63))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_smb3_derive_encryption_keys</b> &mdash; <i>Deterministic: same inputs -> same keys.</i></summary>
+
+    * **Objective**: Deterministic: same inputs -> same keys.
+    * **Assertions**:
+      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c))</code>
+      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s2, s2c2))</code>
+      * <code>Assert equal memory (c2s, c2s2, 16)</code>
+      * <code>Assert equal memory (s2c, s2c2, 16)</code>
+      * <code>Assert true (memcmp(c2s, s2c, 16) != 0)</code>
+      * <code>Assert false (dws_smb3_derive_encryption_keys(sk, 0x0311, nullptr, c2s, s2c))</code>
+      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0302, nullptr, c2s, s2c))</code>
+      * <code>Assert true (memcmp(c2s, s2c, 16) != 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_smb3_encrypt_decrypt_roundtrip</b> &mdash; <i>TRANSFORM_HEADER layout.</i></summary>
+
+    * **Objective**: TRANSFORM_HEADER layout.
+    * **Assertions**:
+      * <code>Assert true (dws_smb3_derive_encryption_keys(sk, 0x0311, preauth, c2s, s2c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_SMB2_TRANSFORM_HDR_LEN + sizeof(msg), elen);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFD, enc[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('S', enc[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('M', enc[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('B', enc[3]);</code>
+      * <code>Assert equal memory (nonce, enc + 20, DWS_SMB2_GCM_NONCE_LEN)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, enc[42]);                             // Flags = Encrypted</code>
+      * <code>Assert true (memcmp(enc + DWS_SMB2_TRANSFORM_HDR_LEN, msg, sizeof(msg)) != 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(msg), dlen);</code>
+      * <code>Assert equal memory (msg, dec, sizeof(msg))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_smb3_decrypt_rejects_tamper</b> &mdash; <i>Flip a ciphertext byte -> tag mismatch.</i></summary>
+
+    * **Objective**: Flip a ciphertext byte -> tag mismatch.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(wrong, enc, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, t1, elen, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, enc, DWS_SMB2_TRANSFORM_HDR_LEN - 1, dec, sizeof(dec)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_smb2_decrypt(c2s, enc, elen, dec, sizeof(dec) - 1)); // out too small</code>
   </details>
 
 </details>

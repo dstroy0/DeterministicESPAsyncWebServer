@@ -533,6 +533,51 @@ bool dws_smb2_verify_cmac(const uint8_t key[16], uint8_t *msg, size_t msg_len);
 bool dws_smb3_derive_signing_key(const uint8_t session_key[16], uint16_t dialect, const uint8_t *preauth,
                                  uint8_t out_key[16]);
 
+// ---------------------------------------------------------------------------
+// SMB 3.x transport encryption - AEAD-wrapped messages (MS-SMB2 §2.2.41 TRANSFORM_HEADER, §3.1.4.3/§3.1.4.4).
+// AES-128-GCM only (cipher 0x0002, the Windows/Samba default from SMB 3.1.1 on), via crypto/aes128gcm.
+// ---------------------------------------------------------------------------
+
+/** @brief TRANSFORM_HEADER size: ProtocolId(4)+Signature(16)+Nonce(16)+OriginalMessageSize(4)+Reserved(2)+
+ *         Flags(2)+SessionId(8) = 52 bytes (MS-SMB2 §2.2.41). */
+static constexpr size_t DWS_SMB2_TRANSFORM_HDR_LEN = 52;
+/** @brief TRANSFORM_HEADER ProtocolId 0xFD 'S' 'M' 'B' as a little-endian u32. */
+static constexpr uint32_t DWS_SMB2_TRANSFORM_PROTOCOL_ID = 0x424D53FDu;
+/** @brief AES-128-GCM nonce length written to the 16-byte Nonce field (trailing 4 bytes are zero). */
+static constexpr size_t DWS_SMB2_GCM_NONCE_LEN = 12;
+
+/**
+ * @brief Derive the two 16-byte SMB 3.x AES-128 cipher keys from the NTLM session key (MS-SMB2 §3.1.4.2),
+ *        via the same SP800-108 KDF as dws_smb3_derive_signing_key, dialect-dependent:
+ *          - 3.1.1:       C2S = KDF(SessionKey, "SMBC2SCipherKey\\0", PreauthHash);
+ *                         S2C = KDF(SessionKey, "SMBS2CCipherKey\\0", PreauthHash)
+ *          - 3.0 / 3.0.2: C2S = KDF(SessionKey, "SMB2AESCCM\\0", "ServerIn \\0");  (label is AESCCM even for GCM)
+ *                         S2C = KDF(SessionKey, "SMB2AESCCM\\0", "ServerOut\\0")
+ * @param out_c2s client->server key (ENCRYPTS our requests); @param out_s2c server->client key (DECRYPTS responses).
+ * @return true on success; false on a null pointer or a 3.1.1 request with a null @p preauth.
+ */
+bool dws_smb3_derive_encryption_keys(const uint8_t session_key[16], uint16_t dialect, const uint8_t *preauth,
+                                     uint8_t out_c2s[16], uint8_t out_s2c[16]);
+
+/**
+ * @brief Encrypt one SMB2 message into an AES-128-GCM TRANSFORM_HEADER-wrapped blob (MS-SMB2 §3.1.4.3): a
+ *        52-byte header (ProtocolId, the AEAD tag in Signature, @p nonce, OriginalMessageSize, Flags=Encrypted,
+ *        @p session_id) followed by the ciphertext. AAD is the header from the Nonce field to its end.
+ * @param key 16-byte C2S cipher key; @param nonce 12-byte nonce UNIQUE per key (caller advances a counter);
+ * @param session_id echoed into the header; @param out needs >= DWS_SMB2_TRANSFORM_HDR_LEN + @p msg_len.
+ * @return total encrypted length (52 + msg_len), or 0 on a null pointer / insufficient @p out_cap.
+ */
+size_t dws_smb2_encrypt(const uint8_t key[16], const uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN], uint64_t session_id,
+                        const uint8_t *msg, size_t msg_len, uint8_t *out, size_t out_cap);
+
+/**
+ * @brief Decrypt an AES-128-GCM TRANSFORM_HEADER-wrapped SMB2 message (MS-SMB2 §3.1.4.4): validates the
+ *        ProtocolId and verifies the AEAD tag (constant time) before exposing any plaintext.
+ * @param key 16-byte S2C cipher key; @param out needs >= the header's OriginalMessageSize.
+ * @return the plaintext length, or 0 on a short/invalid header, tag mismatch, or insufficient @p out_cap.
+ */
+size_t dws_smb2_decrypt(const uint8_t key[16], const uint8_t *in, size_t in_len, uint8_t *out, size_t out_cap);
+
 #endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SMB2_H

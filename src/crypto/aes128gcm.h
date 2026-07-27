@@ -92,5 +92,28 @@ void dws_aes128gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const ui
 bool dws_aes128gcm_open(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
                         const uint8_t *ct, size_t ct_len, uint8_t *out);
 
+// ---------------------------------------------------------------------------
+// Detached-tag variants (tag kept separate from the ciphertext, e.g. SMB 3.x TRANSFORM_HEADER, RFC 5116 §5.1)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Seal with the authentication tag written to a separate buffer (not appended to the ciphertext).
+ *
+ * @p ct_out receives @p pt_len ciphertext bytes (may alias @p pt); @p tag_out receives the 16-byte tag. Used
+ * where the wire format carries the tag apart from the ciphertext, such as the SMB 3.x TRANSFORM_HEADER
+ * Signature field.
+ */
+void dws_aes128gcm_seal_tag(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
+                            const uint8_t *pt, size_t pt_len, uint8_t *ct_out, uint8_t tag_out[16]);
+
+/**
+ * @brief Open with a detached authentication tag. The tag is verified in constant time over @p aad || @p ct
+ *        before any plaintext is exposed; on mismatch nothing is written and false is returned. @p out
+ *        receives @p ct_len plaintext bytes and may alias @p ct.
+ * @return true iff the tag is valid.
+ */
+bool dws_aes128gcm_open_tag(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
+                            const uint8_t *ct, size_t ct_len, const uint8_t tag[16], uint8_t *out);
+
 #endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AES128GCM_H

@@ -217,4 +217,58 @@ bool dws_aes128gcm_open(const uint8_t key[16], const uint8_t nonce[12], const ui
     return true;
 }
 
+void dws_aes128gcm_seal_tag(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
+                            const uint8_t *pt, size_t pt_len, uint8_t *ct_out, uint8_t tag_out[16])
+{
+    DwsAes128 aes;
+    dws_aes128_init(&aes, key);
+
+    // Encrypt (CTR from inc32(J0)), then GHASH the ciphertext - identical to dws_aes128gcm_seal, except the
+    // tag lands in a separate buffer instead of being appended (SMB 3.x carries it in the TRANSFORM_HEADER).
+    uint8_t j0[16];
+    memcpy(j0, nonce, 12);
+    j0[12] = 0;
+    j0[13] = 0;
+    j0[14] = 0;
+    j0[15] = 1;
+    uint8_t ctr[16];
+    memcpy(ctr, j0, 16);
+    inc32(ctr);
+    gctr(&aes, ctr, pt, pt_len, ct_out);
+
+    uint8_t j0b[16];
+    gcm_core(&aes, nonce, aad, aad_len, ct_out, pt_len, j0b, tag_out);
+
+    dws_aes128_wipe(&aes);
+}
+
+bool dws_aes128gcm_open_tag(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
+                            const uint8_t *ct, size_t ct_len, const uint8_t tag[16], uint8_t *out)
+{
+    DwsAes128 aes;
+    dws_aes128_init(&aes, key);
+
+    // Authenticate over the received ciphertext before producing any plaintext.
+    uint8_t j0[16];
+    uint8_t exp_tag[16];
+    gcm_core(&aes, nonce, aad, aad_len, ct, ct_len, j0, exp_tag);
+
+    uint8_t diff = 0;
+    for (int i = 0; i < 16; i++)
+        diff |= (uint8_t)(exp_tag[i] ^ tag[i]);
+    if (diff != 0)
+    {
+        dws_aes128_wipe(&aes);
+        return false;
+    }
+
+    uint8_t ctr[16];
+    memcpy(ctr, j0, 16);
+    inc32(ctr);
+    gctr(&aes, ctr, ct, ct_len, out);
+
+    dws_aes128_wipe(&aes);
+    return true;
+}
+
 #endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS
