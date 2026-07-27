@@ -87,6 +87,10 @@ bool dws_net_mac(uint8_t *)
 {
     return false;
 }
+bool dws_net_egress_mac(uint8_t *)
+{
+    return false;
+}
 size_t dws_net_ssid(char *out, size_t cap)
 {
     if (out && cap)

@@ -130,10 +130,27 @@ uint32_t dws_net_ap_ip(void);
 int8_t dws_net_rssi(void);
 
 /**
- * @brief Copy the station interface MAC (6 bytes) into @p out.
+ * @brief Copy the WiFi station interface MAC (6 bytes) into @p out.
+ *
+ * This is specifically the 802.11 STA address (what ESP-NOW and WiFi diagnostics want). It is only valid once
+ * the WiFi driver is up; on an Ethernet-only device (e.g. the P4 that never starts WiFi) it reads back as
+ * zeros. For "the MAC this device is actually using on the wire right now", regardless of link type, use
+ * dws_net_egress_mac().
+ *
  * @return true on success; false if @p out is null or on a host build (out is left untouched).
  */
 bool dws_net_mac(uint8_t out[6]);
+
+/**
+ * @brief Copy the MAC of the current egress interface (the live default-route netif) into @p out.
+ *
+ * Vendor- and link-neutral: returns the Ethernet PHY's MAC on a wired link, the WiFi STA MAC on a wireless
+ * one - whichever netif currently carries outbound traffic (the same interface dws_net_egress_ip() reports).
+ *
+ * @return true and fills @p out when a default interface with a 6-byte hwaddr exists; false otherwise (no
+ *         egress up, @p out null, or a host build), leaving @p out untouched.
+ */
+bool dws_net_egress_mac(uint8_t out[6]);
 
 /**
  * @brief Copy the associated SSID (null-terminated) into @p out.

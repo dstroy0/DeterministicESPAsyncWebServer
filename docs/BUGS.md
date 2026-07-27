@@ -8,6 +8,24 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## dws_net_mac read all-zeros on an Ethernet-only device (no egress-interface MAC accessor)
+
+- **Status:** FIXED (2026-07-26). Surfaced + validated on the ESP32-P4 (Ethernet, 192.168.1.153) and S3 (WiFi).
+- **Symptom:** the physical (L1) link test printed `MAC=00:00:00:00:00:00` on the P4 - an Ethernet-only board
+  whose PHY plainly has a MAC (`e8:f6:0a:e0:a7:8d`). The library exposed no way to read the active interface's
+  hardware address.
+- **Root cause:** `dws_net_mac()` returns the WiFi _station_ MAC via `WiFi.macAddress()` (what ESP-NOW / WiFi
+  diagnostics need), which reads back zeros when the WiFi driver was never started, as on the wired P4. It does
+  exactly what it is documented to do; the real gap was the absence of an interface-neutral "MAC on the wire"
+  accessor for the egress link. Not a regression - the physical-layer vendor-partition HW test just exposed it.
+- **Fix:** added `dws_net_egress_mac()` - reads the live default-route netif's `hwaddr` (lwIP), so it returns
+  the Ethernet PHY's MAC on a wired link and the WiFi STA MAC on a wireless one, independent of which driver
+  started; fallback stub on host / no-backend builds. Clarified `dws_net_mac()`'s doc as WiFi-STA-specific and
+  cross-referenced the new accessor. HW-verified: P4 `egress_mac=e8:f6:0a:e0:a7:8d` (with `wifi_sta_mac` zeros);
+  S3 `egress_mac=94:a9:90:d1:7a:b8` == its `wifi_sta_mac` (WiFi is the egress there).
+
+---
+
 ## Slow-loris held the connection pool indefinitely (slot-exhaustion DoS)
 
 - **Status:** FIXED (2026-07-21). Reproduced and fixed on an ESP32-P4 (Ethernet, 192.168.1.153).

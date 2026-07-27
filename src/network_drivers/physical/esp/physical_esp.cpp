@@ -171,6 +171,16 @@ bool dws_net_mac(uint8_t out[6])
     return true;
 }
 
+bool dws_net_egress_mac(uint8_t out[6])
+{
+    // The egress interface's own link-layer address, straight off the live default netif - the Ethernet PHY's
+    // MAC on a wired link, the WiFi STA MAC on a wireless one. Independent of which driver started.
+    if (!out || !netif_default || netif_default->hwaddr_len < 6)
+        return false;
+    memcpy(out, netif_default->hwaddr, 6);
+    return true;
+}
+
 size_t dws_net_ssid(char *out, size_t cap)
 {
     if (!out || cap == 0)
