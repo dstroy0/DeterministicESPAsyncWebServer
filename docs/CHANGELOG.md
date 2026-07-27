@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`46d46c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46d46c9ad01c84aaabd5863cddc4771f20d7aa50))
 - update CHANGELOG.md [skip ci] ([`49bc259`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49bc25978bfa7c4a8f9be60393a5de98390bf5e7))
 - update test report + coverage [skip ci] ([`9867780`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9867780410bcf4b4ed05d49d5dd74f9dc62c0d90))
 - update CHANGELOG.md [skip ci] ([`fe19cae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe19cae60688ef5a7c70355cd294ac7b1959c6fa))
@@ -25,6 +26,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8392a57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8392a574746120c1c4f41fcc3c4bf395e322514e))
+- update ESP32 build footprints [skip ci] ([`6d1af8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d1af8dc1c2a99906c46eebce771b62e53a8babc))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dc862d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc862d1eb133fb8c16c7a0bfcab7a0a4ca1bd61c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`09bc388`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09bc388937d7ef1308e79d343a3165fdc28e5915))
 - update ESP32 build footprints [skip ci] ([`5dd4646`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5dd46461d3ebd8eebac50053cc65313bf8649d1e))
@@ -35,6 +38,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- SMB 3.x transport encryption codec - wire AES-128-GCM to the TRANSFORM_HEADER ([`07aedd7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07aedd76cd659be0100c8786d22780fdecbd4a7d))
 - add dws_platform.h vendor selector; kick off multi-vendor track ([`c12605b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c12605bfcfd19400768b727251b0e9aa693886c9))
 
 ### Refactor
