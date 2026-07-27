@@ -311,7 +311,7 @@
     "example": "L7-Application/InterfaceBridge",
     "flags": "-DDWS_ENABLE_IFACE_BRIDGE=1",
     "board": "esp32dev",
-    "flash_bytes": 781605,
+    "flash_bytes": 781613,
     "ram_bytes": 82668
   },
   "IKEV2": {
@@ -633,7 +633,7 @@
     "example": "Drivers/Rtc",
     "flags": "-DDWS_ENABLE_RTC=1 -DDWS_ENABLE_TIME_SOURCE=1 -DDWS_ENABLE_NTP=1",
     "board": "esp32dev",
-    "flash_bytes": 767001,
+    "flash_bytes": 767009,
     "ram_bytes": 45388
   },
   "SCPI": {
@@ -717,7 +717,7 @@
     "example": "L5-Session/SSHSftp",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1",
     "board": "esp32dev",
-    "flash_bytes": 884797,
+    "flash_bytes": 884761,
     "ram_bytes": 118600
   },
   "SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF": {
