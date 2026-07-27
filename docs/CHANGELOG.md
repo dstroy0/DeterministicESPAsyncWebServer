@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`49bc259`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49bc25978bfa7c4a8f9be60393a5de98390bf5e7))
 - update test report + coverage [skip ci] ([`9867780`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9867780410bcf4b4ed05d49d5dd74f9dc62c0d90))
 - update CHANGELOG.md [skip ci] ([`fe19cae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe19cae60688ef5a7c70355cd294ac7b1959c6fa))
 - update CHANGELOG.md [skip ci] ([`674547f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/674547fe073202f9715d324045b780da2a88d668))
@@ -24,6 +25,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dc862d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc862d1eb133fb8c16c7a0bfcab7a0a4ca1bd61c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`09bc388`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09bc388937d7ef1308e79d343a3165fdc28e5915))
 - update ESP32 build footprints [skip ci] ([`5dd4646`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5dd46461d3ebd8eebac50053cc65313bf8649d1e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7b16e7b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b16e7b0464490ee8a1899bfe943f296c7bf4e31))
@@ -37,6 +39,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- move the crypto primitives out of shared_primitives into src/crypto ([`18bc8cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18bc8cc94793b0d5a8a40416a6715227e6e41e89))
 - consolidate all crypto into src/crypto (no crypto hidden in protocol layers) ([`2e648d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e648d389768fa9c9622118ae506ad5826499cd8))
 - make the physical (L1) layer extensible per-vendor, like the crypto HAL ([`7151c4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7151c4a9369a8a9507fc71f4f7a09586058478c9))
 - extract ESP backends into per-vendor subdirs (step 1, zero behavior change) ([`04c812d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04c812db72387be33792970c2121122786f40392))
