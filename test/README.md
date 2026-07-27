@@ -51783,9 +51783,9 @@ A thorough directory of all **5220 test cases** across **292 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_aes256ctr_nist_vector_roundtrip_and_wipe</b> &mdash; <i>Aes256ctr nist vector roundtrip and wipe</i></summary>
+    <summary><b>test_aes256ctr_nist_vector_roundtrip</b> &mdash; <i>Aes256ctr nist vector roundtrip</i></summary>
 
-    * **Objective**: Aes256ctr nist vector roundtrip and wipe
+    * **Objective**: Aes256ctr nist vector roundtrip
     * **Assertions**:
       * <code>Assert equal memory (expected_ct, ct, 64)</code>
       * <code>Assert equal memory (pt, pt_back, 64)</code>

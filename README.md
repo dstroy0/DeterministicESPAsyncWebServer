@@ -745,14 +745,14 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L4    | `DIFFSERV`          |             0.8 KB |          15.3 KB |
 | L4    | `KEEPALIVE`         |             0.8 KB |          15.3 KB |
 | L4    | `ACCEPT_THROTTLE`   |           < 0.5 KB |          15.3 KB |
-| L5    | `SSH`               |       66.6-77.7 KB |     21.8-43.2 KB |
+| L5    | `SSH`               |       66.6-77.7 KB |     21.8-43.5 KB |
 | L5    | `TELNET`            |             2.9 KB |          15.8 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.1-7.9 KB |      8.0-23.3 KB |
 | L6    | `WEB_TERMINAL`      |         0.0-5.2 KB |      0.0-15.3 KB |
 | L6    | `MSGPACK`           |             4.3 KB |          15.3 KB |
 | L6    | `CBOR`              |             3.0 KB |          15.3 KB |
-| L6    | `JWT`               |             2.8 KB |          16.4 KB |
+| L6    | `JWT`               |             2.7 KB |          18.5 KB |
 | L6    | `AUTH_LOCKOUT`      |             1.7 KB |          15.8 KB |
 | L7    | `POWER_MGMT`        |           126.0 KB |          19.0 KB |
 | L7    | `FILE_SERVING`      |        0.0-88.5 KB |      0.0-16.1 KB |
@@ -772,7 +772,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `EDGE_CACHE`        |            21.3 KB |          51.9 KB |
 | L7    | `DASHBOARD`         |            21.2 KB |          15.6 KB |
 | L7    | `NTRIP_CASTER`      |            18.2 KB |          18.1 KB |
-| L7    | `SMB`               |            13.9 KB |           1.3 KB |
+| L7    | `SMB`               |            13.7 KB |           1.6 KB |
 | L7    | `OAUTH2`            |            13.3 KB |          37.5 KB |
 | L7    | `OPCUA_CLIENT`      |        6.8-13.2 KB |     10.0-27.9 KB |
 | L7    | `OIDC`              |            13.0 KB |          32.9 KB |
@@ -799,7 +799,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `CONTROL`           |             2.6 KB |          23.1 KB |
 | L7    | `STATS`             |             2.5 KB |          15.4 KB |
 | L7    | `SPA_ROUTER`        |             2.3 KB |          15.3 KB |
-| L7    | `CSRF`              |             2.3 KB |          15.3 KB |
+| L7    | `CSRF`              |             2.1 KB |          17.4 KB |
 | L7    | `LOGBUF`            |             1.9 KB |          18.3 KB |
 | L7    | `TOTP`              |             1.7 KB |          15.3 KB |
 | L7    | `OTA_ROLLBACK`      |             1.6 KB |          15.3 KB |
