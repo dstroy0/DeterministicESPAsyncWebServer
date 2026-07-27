@@ -6,6 +6,7 @@
 // values are also cross-checked against python hashlib; MD4 against the RFC text.
 
 #include "crypto/aes_cmac.h"
+#include "crypto/crypto_scratch.h" // crypto_work (opaque MdCtx storage)
 #include "crypto/hmac_sha256.h"
 #include "crypto/kdf.h"
 #include "crypto/md.h" // MD4/MD5/HMAC-MD5
@@ -156,12 +157,12 @@ void test_streaming_equals_oneshot()
     size_t n = strlen(s);
     uint8_t one[16], strm[16];
     md5((const uint8_t *)s, n, one);
-    MdCtx c;
-    dws_md5_init(&c);
-    dws_md5_update(&c, (const uint8_t *)s, 10);
-    dws_md5_update(&c, (const uint8_t *)s + 10, 1); // odd split across the buffer boundary
-    dws_md5_update(&c, (const uint8_t *)s + 11, n - 11);
-    dws_md5_final(&c, strm);
+    MdCtx *c = reinterpret_cast<MdCtx *>(crypto_work);
+    dws_md5_init(c);
+    dws_md5_update(c, (const uint8_t *)s, 10);
+    dws_md5_update(c, (const uint8_t *)s + 10, 1); // odd split across the buffer boundary
+    dws_md5_update(c, (const uint8_t *)s + 11, n - 11);
+    dws_md5_final(c, strm);
     TEST_ASSERT_EQUAL_MEMORY(one, strm, 16);
 }
 

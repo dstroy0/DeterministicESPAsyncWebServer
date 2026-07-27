@@ -21,14 +21,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/** @brief Streaming digest context (shared by MD4 and MD5; both are 16-byte, 64-byte-block). */
-struct MdCtx
-{
-    uint32_t state[4];
-    uint64_t bits;    ///< total message length in bits
-    uint8_t buf[64];  ///< partial block
-    uint32_t buf_len; ///< bytes currently in @ref buf
-};
+/**
+ * @brief Opaque streaming digest context (MD4 / MD5). Forward-declared only: the definition is private to
+ * md.cpp, so other translation units know the symbol but never its members - they hold it via `MdCtx *`,
+ * borrowing storage from the shared crypto scratch (crypto/crypto_scratch.h: crypto_work).
+ */
+struct MdCtx;
 
 void dws_md5_init(MdCtx *c);
 void dws_md5_update(MdCtx *c, const uint8_t *data, size_t len);

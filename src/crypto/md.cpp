@@ -8,9 +8,21 @@
 
 #include "crypto/md.h"
 #include "crypto/crypto_opt.h"
+#include "crypto/crypto_scratch.h" // DWS_CRYPTO_WORK_SIZE - the scratch external callers borrow an MdCtx from
 #include "shared_primitives/endian.h"
 #include <string.h>
 DWS_CRYPTO_HOT
+
+// The one definition of MdCtx - private to this TU (md.h forward-declares it). External callers hold it only
+// via pointer, borrowing storage from the shared crypto scratch (crypto_work), so it must fit there.
+struct MdCtx
+{
+    uint32_t state[4];
+    uint64_t bits;    ///< total message length in bits
+    uint8_t buf[64];  ///< partial block
+    uint32_t buf_len; ///< bytes currently in buf
+};
+static_assert(sizeof(MdCtx) <= DWS_CRYPTO_WORK_SIZE, "MdCtx must fit the shared crypto scratch (crypto_work)");
 
 static inline uint32_t rotl(uint32_t v, unsigned n)
 {

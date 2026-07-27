@@ -10,19 +10,20 @@
 
 #if DWS_ENABLE_SMB
 
+#include "crypto/crypto_scratch.h" // crypto_work (borrow an opaque MdCtx from the shared crypto scratch)
 #include "crypto/md.h"
 #include <string.h>
 
 void dws_ntlm_nt_hash(const char *password, uint8_t nt_hash[16])
 {
-    MdCtx c;
-    dws_md4_init(&c);
+    MdCtx *c = reinterpret_cast<MdCtx *>(crypto_work);
+    dws_md4_init(c);
     for (const char *p = password; *p; p++)
     {
         uint8_t pair[2] = {(uint8_t)*p, 0}; // UTF-16LE (ASCII/UTF-8 code unit + high byte 0)
-        dws_md4_update(&c, pair, 2);
+        dws_md4_update(c, pair, 2);
     }
-    dws_md4_final(&c, nt_hash);
+    dws_md4_final(c, nt_hash);
 }
 
 bool dws_ntlm_ntowfv2(const uint8_t nt_hash[16], const char *user, const char *domain, uint8_t owf[16])
@@ -64,17 +65,17 @@ static void dws_hmac_md5_2(const uint8_t key[16], const uint8_t *m1, size_t l1, 
         opad[i] = (uint8_t)(k ^ 0x5c);
     }
     uint8_t inner[16];
-    MdCtx c;
-    dws_md5_init(&c);
-    dws_md5_update(&c, ipad, 64);
-    dws_md5_update(&c, m1, l1);
+    MdCtx *c = reinterpret_cast<MdCtx *>(crypto_work);
+    dws_md5_init(c);
+    dws_md5_update(c, ipad, 64);
+    dws_md5_update(c, m1, l1);
     if (m2 && l2) // GCOVR_EXCL_LINE  the sole caller always passes temp: non-null and always >= 32 bytes
-        dws_md5_update(&c, m2, l2);
-    dws_md5_final(&c, inner);
-    dws_md5_init(&c);
-    dws_md5_update(&c, opad, 64);
-    dws_md5_update(&c, inner, 16);
-    dws_md5_final(&c, out);
+        dws_md5_update(c, m2, l2);
+    dws_md5_final(c, inner);
+    dws_md5_init(c);
+    dws_md5_update(c, opad, 64);
+    dws_md5_update(c, inner, 16);
+    dws_md5_final(c, out);
 }
 
 size_t dws_ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challenge[8], const uint8_t client_challenge[8],
@@ -175,18 +176,18 @@ void dws_ntlm_mic(const uint8_t session_key[16], const uint8_t *neg, size_t neg_
         ipad[i] = (uint8_t)(k ^ 0x36);
         opad[i] = (uint8_t)(k ^ 0x5c);
     }
-    MdCtx c;
+    MdCtx *c = reinterpret_cast<MdCtx *>(crypto_work);
     uint8_t inner[16];
-    dws_md5_init(&c);
-    dws_md5_update(&c, ipad, 64);
-    dws_md5_update(&c, neg, neg_len);
-    dws_md5_update(&c, chal, chal_len);
-    dws_md5_update(&c, auth, auth_len);
-    dws_md5_final(&c, inner);
-    dws_md5_init(&c);
-    dws_md5_update(&c, opad, 64);
-    dws_md5_update(&c, inner, 16);
-    dws_md5_final(&c, out);
+    dws_md5_init(c);
+    dws_md5_update(c, ipad, 64);
+    dws_md5_update(c, neg, neg_len);
+    dws_md5_update(c, chal, chal_len);
+    dws_md5_update(c, auth, auth_len);
+    dws_md5_final(c, inner);
+    dws_md5_init(c);
+    dws_md5_update(c, opad, 64);
+    dws_md5_update(c, inner, 16);
+    dws_md5_final(c, out);
 }
 
 #endif // DWS_ENABLE_SMB
