@@ -264,7 +264,7 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
         compute_mac_mode(km->mac_mode, km_send_mac(km, cli), s->seq_no_send, out, 4 + pkt_len, mac);
         dws_aes256ctr_crypt(km_send_ctr(km, cli), out, out, 4 + pkt_len);
         memcpy(out + 4 + pkt_len, mac, tag_len);
-        ssh_wipe(mac, sizeof(mac));
+        dws_crypto_wipe(mac, sizeof(mac));
     }
 
     *out_len = wire_len;
@@ -315,7 +315,7 @@ static int ssh_recv_chachapoly(uint8_t i, SshPacketState *s, const SshKeyMat *km
     uint32_t pkt_len = dws_chachapoly_get_length(rk, s->seq_no_recv, s->rx_buf);
     if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - DWS_CHACHAPOLY_TAG_LEN)
     {
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
@@ -328,7 +328,7 @@ static int ssh_recv_chachapoly(uint8_t i, SshPacketState *s, const SshKeyMat *km
     uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
     if (!scratch)
     {
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
@@ -336,15 +336,15 @@ static int ssh_recv_chachapoly(uint8_t i, SshPacketState *s, const SshKeyMat *km
     // Verify the Poly1305 tag over the ciphertext, then decrypt. No plaintext on failure.
     if (!dws_chachapoly_decrypt(rk, s->seq_no_recv, scratch, s->rx_buf, pkt_len))
     {
-        ssh_wipe(scratch, scratch_sz);
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1; // caller must close connection
     }
 
     if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
     s->seq_no_recv++;
@@ -352,20 +352,20 @@ static int ssh_recv_chachapoly(uint8_t i, SshPacketState *s, const SshKeyMat *km
     uint8_t pad_len_byte = scratch[4];
     if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
     size_t payload_len = pkt_len - 1 - pad_len_byte;
     if (ssh_dispatch_payload(i, scratch + 5, payload_len, handler) < 0)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
 
     size_t consumed = wire_need;
     memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
     s->rx_len -= consumed;
-    ssh_wipe(scratch, scratch_sz);
+    dws_crypto_wipe(scratch, scratch_sz);
     return 1;
 }
 
@@ -378,7 +378,7 @@ static int ssh_recv_aesgcm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_
     // The encrypted portion (pkt_len) must be a positive whole number of AES blocks.
     if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - DWS_AESGCM_TAG_LEN || (pkt_len % 16) != 0)
     {
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
@@ -391,7 +391,7 @@ static int ssh_recv_aesgcm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_
     uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
     if (!scratch)
     {
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
@@ -400,15 +400,15 @@ static int ssh_recv_aesgcm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_
     if (!dws_aesgcm_open(km_recv_gcm(km, s->is_client), s->rx_buf, 4, s->rx_buf + 4, pkt_len, s->rx_buf + 4 + pkt_len,
                          scratch))
     {
-        ssh_wipe(scratch, scratch_sz);
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1; // caller must close connection
     }
 
     if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
     s->seq_no_recv++;
@@ -416,20 +416,20 @@ static int ssh_recv_aesgcm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_
     uint8_t pad_len_byte = scratch[0];
     if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
     size_t payload_len = pkt_len - 1 - pad_len_byte;
     if (ssh_dispatch_payload(i, scratch + 1, payload_len, handler) < 0)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
 
     size_t consumed = wire_need;
     memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
     s->rx_len -= consumed;
-    ssh_wipe(scratch, scratch_sz);
+    dws_crypto_wipe(scratch, scratch_sz);
     return 1;
 }
 
@@ -442,7 +442,7 @@ static int ssh_recv_ctr_etm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg
     // The encrypted portion (pkt_len) must be a positive whole number of AES blocks.
     if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 || (pkt_len % 16) != 0)
     {
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
@@ -454,12 +454,12 @@ static int ssh_recv_ctr_etm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg
     compute_mac_mode(km->mac_mode, km_recv_mac(km, s->is_client), s->seq_no_recv, s->rx_buf, 4 + pkt_len, expected_mac);
     if (ct_memcmp(expected_mac, s->rx_buf + 4 + pkt_len, mac_tag) != 0)
     {
-        ssh_wipe(expected_mac, sizeof(expected_mac));
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(expected_mac, sizeof(expected_mac));
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1; // caller must close connection
     }
-    ssh_wipe(expected_mac, sizeof(expected_mac));
+    dws_crypto_wipe(expected_mac, sizeof(expected_mac));
 
     if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
         return -1;
@@ -471,7 +471,7 @@ static int ssh_recv_ctr_etm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg
     uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
     if (!scratch)
     {
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
@@ -482,20 +482,20 @@ static int ssh_recv_ctr_etm(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg
     uint8_t pad_len_byte = scratch[0];
     if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
     size_t payload_len = pkt_len - 1 - pad_len_byte;
     if (ssh_dispatch_payload(i, scratch + 1, payload_len, handler) < 0)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
 
     size_t consumed = wire_need;
     memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
     s->rx_len -= consumed;
-    ssh_wipe(scratch, scratch_sz);
+    dws_crypto_wipe(scratch, scratch_sz);
     return 1;
 }
 
@@ -523,20 +523,20 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     memcpy(len_block, s->rx_buf, 16);
     dws_aes256ctr_crypt(rc, len_block, len_block, 16);
     uint32_t pkt_len = read_u32_be(len_block);
-    ssh_wipe(len_block, sizeof(len_block));
+    dws_crypto_wipe(len_block, sizeof(len_block));
 
     // Restore the cipher to the packet boundary (un-peek).
     memcpy(rc->counter, saved_counter, 16);
     memcpy(rc->keystream, saved_keystream, 16);
     rc->pos = saved_pos;
-    ssh_wipe(saved_keystream, sizeof(saved_keystream));
+    dws_crypto_wipe(saved_keystream, sizeof(saved_keystream));
 
     // Validate length.  The encrypted portion (4 + pkt_len) must be a
     // whole number of AES blocks (RFC 4253 §6 padding guarantees this).
     size_t enc_len = 4 + pkt_len;
     if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 || (enc_len % 16) != 0)
     {
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
@@ -555,7 +555,7 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
     if (!scratch)
     {
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
@@ -574,18 +574,18 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     if (ct_memcmp(expected_mac, rx_mac, mac_tag) != 0)
     {
         // MAC failure: zero everything and disconnect.
-        ssh_wipe(scratch, scratch_sz);
-        ssh_wipe(expected_mac, sizeof(expected_mac));
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(expected_mac, sizeof(expected_mac));
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1; // caller must close connection
     }
-    ssh_wipe(expected_mac, sizeof(expected_mac));
+    dws_crypto_wipe(expected_mac, sizeof(expected_mac));
 
     // MAC verified.  Sequence overflow guard.
     if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
     s->seq_no_recv++;
@@ -596,13 +596,13 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     // exceed the packet (which would underflow payload_len).
     if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
     size_t payload_len = pkt_len - 1 - pad_len_byte;
     if (ssh_dispatch_payload(i, scratch + 5, payload_len, handler) < 0)
     {
-        ssh_wipe(scratch, scratch_sz);
+        dws_crypto_wipe(scratch, scratch_sz);
         return -1;
     }
 
@@ -610,7 +610,7 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     size_t consumed = wire_need;
     memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
     s->rx_len -= consumed;
-    ssh_wipe(scratch, scratch_sz);
+    dws_crypto_wipe(scratch, scratch_sz);
     return 1;
 }
 
@@ -621,7 +621,7 @@ static int ssh_recv_plain(uint8_t i, SshPacketState *s, const SshKeyMat *km, ssh
     uint32_t pkt_len = read_u32_be(s->rx_buf);
     if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4)
     {
-        ssh_wipe(s->rx_buf, s->rx_len);
+        dws_crypto_wipe(s->rx_buf, s->rx_len);
         s->rx_len = 0;
         return -1;
     }
@@ -664,7 +664,7 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
         {
             // The buffer is full yet no complete packet could be extracted -> a single packet larger than the
             // buffer. Discard and disconnect.
-            ssh_wipe(s->rx_buf, s->rx_len);
+            dws_crypto_wipe(s->rx_buf, s->rx_len);
             s->rx_len = 0;
             return -1;
         }

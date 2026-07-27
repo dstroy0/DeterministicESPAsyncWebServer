@@ -979,7 +979,7 @@ static int hybrid_mlkem_x25519(uint8_t i, const uint8_t *payload, size_t len, ui
     ssh_rng_fill(m, sizeof(m));
     uint8_t k_pq[32];
     bool ok = dws_mlkem768_encaps(ek, m, s_reply, k_pq); // ciphertext -> s_reply[0..1087]
-    ssh_wipe(m, sizeof(m));
+    dws_crypto_wipe(m, sizeof(m));
     if (!ok)
         return -1; // malformed encapsulation key (FIPS 203 modulus check)
 
@@ -990,8 +990,8 @@ static int hybrid_mlkem_x25519(uint8_t i, const uint8_t *payload, size_t len, ui
         zacc |= k_cl[b];
     if (zacc == 0) // low-order X25519 point (RFC 7748 §6.1)
     {
-        ssh_wipe(k_pq, sizeof(k_pq));
-        ssh_wipe(k_cl, sizeof(k_cl));
+        dws_crypto_wipe(k_pq, sizeof(k_pq));
+        dws_crypto_wipe(k_cl, sizeof(k_cl));
         return -1;
     }
     memcpy(s_reply + MLKEM768_CT_BYTES, ssh_sess[i].ecdh_pk, 32); // S_PK1: server X25519 public
@@ -1001,8 +1001,8 @@ static int hybrid_mlkem_x25519(uint8_t i, const uint8_t *payload, size_t len, ui
     dws_sha256_update(&hc, k_pq, sizeof(k_pq)); // K = SHA256(K_PQ || K_CL) (RFC 9370 concat combiner)
     dws_sha256_update(&hc, k_cl, sizeof(k_cl));
     dws_sha256_final(&hc, k_out);
-    ssh_wipe(k_pq, sizeof(k_pq));
-    ssh_wipe(k_cl, sizeof(k_cl));
+    dws_crypto_wipe(k_pq, sizeof(k_pq));
+    dws_crypto_wipe(k_cl, sizeof(k_cl));
     return 0;
 }
 #endif // DWS_ENABLE_PQC_KEX (ML-KEM hybrid)
@@ -1034,8 +1034,8 @@ static int hybrid_sntrup761_x25519(uint8_t i, const uint8_t *payload, size_t len
         zacc |= k_cl[b];
     if (zacc == 0) // low-order X25519 point (RFC 7748 §6.1)
     {
-        ssh_wipe(k_pq, sizeof(k_pq));
-        ssh_wipe(k_cl, sizeof(k_cl));
+        dws_crypto_wipe(k_pq, sizeof(k_pq));
+        dws_crypto_wipe(k_cl, sizeof(k_cl));
         return -1;
     }
     memcpy(s_reply + DWS_SNTRUP761_CT_BYTES, ssh_sess[i].ecdh_pk, 32); // S_PK1: server X25519 public
@@ -1045,8 +1045,8 @@ static int hybrid_sntrup761_x25519(uint8_t i, const uint8_t *payload, size_t len
     dws_sha512_update(&hc, k_pq, sizeof(k_pq)); // K = SHA512(K_PQ || K_CL) (RFC 9370 concat combiner)
     dws_sha512_update(&hc, k_cl, sizeof(k_cl));
     dws_sha512_final(&hc, k_out);
-    ssh_wipe(k_pq, sizeof(k_pq));
-    ssh_wipe(k_cl, sizeof(k_cl));
+    dws_crypto_wipe(k_pq, sizeof(k_pq));
+    dws_crypto_wipe(k_cl, sizeof(k_cl));
     return 0;
 }
 #endif // DWS_ENABLE_SSH_SNTRUP761
@@ -1094,7 +1094,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
             zacc |= kk[b];
         if (zacc == 0)
         {
-            ssh_wipe(kk, sizeof(kk));
+            dws_crypto_wipe(kk, sizeof(kk));
             return -1;
         }
         memcpy(k_be + (256 - 32), kk, 32);
@@ -1102,7 +1102,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         memcpy(spub, s->ecdh_pk, 32);
         cpub_len = spub_len = 32;
         pub_is_string = true;
-        ssh_wipe(kk, sizeof(kk));
+        dws_crypto_wipe(kk, sizeof(kk));
     }
 #if DWS_ENABLE_PQC_KEX
     else if (s->kex_alg == SshKexAlg::SSH_KEX_MLKEM768_X25519)
@@ -1154,7 +1154,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         cpub_len = DWS_ECDSA_P256_PUB_LEN;
         spub_len = DWS_ECDSA_P256_PUB_LEN;
         pub_is_string = true;
-        ssh_wipe(kk, sizeof(kk));
+        dws_crypto_wipe(kk, sizeof(kk));
     }
     else
     {
@@ -1169,7 +1169,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         DwsBigNum K;
         bn_expmod_group14(&K, &e, &ssh_dh[i].y);
         bn_to_bytes(k_be, &K);
-        ssh_wipe(&K, sizeof(K));
+        dws_crypto_wipe(&K, sizeof(K));
         memcpy(cpub, e_be, 256);
         bn_to_bytes(spub, &ssh_dh[i].f);
     }
@@ -1178,9 +1178,9 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     uint8_t ks[SSH_RSA_PUBKEY_BLOB_MAX];
     size_t ks_len = 0;
     if (encode_hostkey(i, ks, &ks_len, sizeof(ks)) != 0) // GCOVR_EXCL_LINE  encode_hostkey cannot fail: ks is
-    {                                 // GCOVR_EXCL_LINE  SSH_RSA_PUBKEY_BLOB_MAX, sized for either blob
-        ssh_wipe(k_be, sizeof(k_be)); // GCOVR_EXCL_LINE
-        return -1;                    // GCOVR_EXCL_LINE
+    {                                        // GCOVR_EXCL_LINE  SSH_RSA_PUBKEY_BLOB_MAX, sized for either blob
+        dws_crypto_wipe(k_be, sizeof(k_be)); // GCOVR_EXCL_LINE
+        return -1;                           // GCOVR_EXCL_LINE
     }
 
     // 3. Exchange hash H (SHA-256 or SHA-512 per the KEX method); capture the session id on first KEX.
@@ -1202,19 +1202,19 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     const char *sig_name = nullptr;
     if (sign_hash(i, H, h_len, sig, &sig_len, sizeof(sig), &sig_name) != 0) // GCOVR_EXCL_LINE  cannot fail here:
     {                                                                       // GCOVR_EXCL_LINE  256B sig + loaded key
-        ssh_wipe(k_be, sizeof(k_be));                                       // GCOVR_EXCL_LINE
+        dws_crypto_wipe(k_be, sizeof(k_be));                                // GCOVR_EXCL_LINE
         return -1;                                                          // GCOVR_EXCL_LINE
     }
 
     // 5. Assemble the reply, then derive the six session keys (id fixed at first KEX's H).
     if (build_kex_reply(i, ks, ks_len, spub_p, spub_len, sig_name, sig, sig_len, reply_out, reply_len, cap) != 0)
     {
-        ssh_wipe(k_be, sizeof(k_be));
+        dws_crypto_wipe(k_be, sizeof(k_be));
         return -1;
     }
     ssh_dh_derive_keys_sid(i, k_be, H, s->session_id, s->cipher_alg, s->mac_alg, k_is_string, h_len, s->session_id_len,
                            is512);
-    ssh_wipe(k_be, sizeof(k_be));
+    dws_crypto_wipe(k_be, sizeof(k_be));
 
     s->phase = SshPhase::SSH_PHASE_NEWKEYS;
 #ifdef DWS_SSH_KEX_BENCH

@@ -15,6 +15,7 @@
 #if DWS_ENABLE_SMB
 
 #include "crypto/crypto_opt.h"
+#include "crypto/crypto_scratch.h" // dws_ct_eq (the canonical constant-time compare)
 #include <string.h>
 #ifndef ARDUINO
 #include "crypto/aes_block.h" // native software AES-128/256 (mbedtls path uses its own on Arduino)
@@ -237,10 +238,7 @@ bool dws_aesccm_open_tag(const uint8_t *key, size_t key_len, const uint8_t *nonc
     cbc_mac(&k, nonce, nonce_len, aad, aad_len, out, ct_len, T);
     uint8_t exp[DWS_AESCCM_TAG_LEN];
     tag_encrypt(&k, nonce, nonce_len, T, exp);
-    uint8_t diff = 0;
-    for (int i = 0; i < DWS_AESCCM_TAG_LEN; i++)
-        diff |= (uint8_t)(exp[i] ^ tag[i]);
-    if (diff != 0)
+    if (!dws_ct_eq(exp, tag, DWS_AESCCM_TAG_LEN))
     {
         memset(out, 0, ct_len); // fail closed: no unauthenticated plaintext escapes
         return false;

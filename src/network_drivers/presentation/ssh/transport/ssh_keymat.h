@@ -49,16 +49,16 @@
  * DEFENSE 3 - DH ephemeral scalar zeroing
  * ─────────────────────────────────────────
  * y (2048-bit private DH scalar) lives in ssh_dh[slot].y.  After
- * ssh_dh_finish() derives K it calls ssh_wipe() on the entire SshDhState
+ * ssh_dh_finish() derives K it calls dws_crypto_wipe() on the entire SshDhState
  * struct, which uses a volatile loop to zero all 801 bytes including y,
  * f, and K.  K must be zeroed after session keys are derived from it
  * (RFC 4253 §7.2 makes no requirement, but it reduces long-term exposure).
  *
  * DEFENSE 4 - crypto_work scratch buffer zeroing
  * ────────────────────────────────────────────────
- * crypto_work[SSH_CRYPTO_WORK_SIZE] is used for Montgomery multiplication
+ * crypto_work[DWS_CRYPTO_WORK_SIZE] is used for Montgomery multiplication
  * temporaries (up to 516 bytes of intermediate products that contain
- * combinations of y, K, and d fragments).  It is zeroed via ssh_wipe()
+ * combinations of y, K, and d fragments).  It is zeroed via dws_crypto_wipe()
  * immediately after every call to bn_expmod_group14() or ssh_rsa_sign().
  *
  * DEFENSE 5 - MAC-verify-before-use (all packet input)
@@ -100,6 +100,7 @@
 #include "crypto/aesgcm.h"
 #include "crypto/bignum.h"
 #include "crypto/chachapoly.h"
+#include "crypto/crypto_scratch.h" // dws_crypto_wipe (the canonical secure wipe) + crypto_work
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -140,29 +141,8 @@ static inline uint8_t ssh_mac_len(uint8_t mac_mode)
     return (mac_mode == SSH_MAC_HMAC_SHA512 || mac_mode == SSH_MAC_HMAC_SHA512_ETM) ? 64 : 32;
 }
 
-// ---------------------------------------------------------------------------
-// Secure wipe
-// ---------------------------------------------------------------------------
-
-/**
- * @brief Zero @p len bytes at @p ptr using a volatile loop the compiler
- *        cannot optimize away.
- *
- * Use this (not memset) for any buffer that contains key material.
- * C compilers are permitted to elide a plain memset() whose result is
- * "not observed" - a common optimization that silently skips zeroing of
- * local key buffers before they go out of scope.  The volatile write
- * forces the store to happen even if the memory is never read again.
- *
- * @param ptr  Buffer to wipe.
- * @param len  Number of bytes to zero.
- */
-static inline void ssh_wipe(void *ptr, size_t len)
-{
-    volatile uint8_t *p = (volatile uint8_t *)ptr;
-    for (size_t i = 0; i < len; i++)
-        p[i] = 0;
-}
+// Secure wipe: the canonical dws_crypto_wipe() lives in crypto/crypto_scratch.h (included above). Use it for
+// any buffer that held key material - a volatile store the compiler may not elide, unlike a dead memset.
 
 // ---------------------------------------------------------------------------
 // Session key material  (one entry per SSH connection)
@@ -260,14 +240,14 @@ extern SshDhState ssh_dh[MAX_SSH_CONNS];
 static inline void ssh_keymat_wipe(uint8_t i)
 {
     if (i < MAX_SSH_CONNS)
-        ssh_wipe(&ssh_keys[i], sizeof(SshKeyMat));
+        dws_crypto_wipe(&ssh_keys[i], sizeof(SshKeyMat));
 }
 
 /** @brief Zero the ephemeral DH state for slot @p i after keys are derived. */
 static inline void ssh_dh_wipe(uint8_t i)
 {
     if (i < MAX_SSH_CONNS)
-        ssh_wipe(&ssh_dh[i], sizeof(SshDhState));
+        dws_crypto_wipe(&ssh_dh[i], sizeof(SshDhState));
 }
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_KEYMAT_H

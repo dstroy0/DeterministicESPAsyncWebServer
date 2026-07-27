@@ -86,7 +86,7 @@ int dws_ssh_rsa_load_pubkey(void)
                                   ssh_mbedtls_rng, nullptr
 #endif
     );
-    ssh_wipe(der, der_len);
+    dws_crypto_wipe(der, der_len);
 
     if (rc != 0)
     {
@@ -146,7 +146,7 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, DwsRsaHash hash, uint8_t si
 #endif
     if (s_rsa.lock)
         xSemaphoreGive(s_rsa.lock);
-    ssh_wipe(digest, sizeof(digest));
+    dws_crypto_wipe(digest, sizeof(digest));
 
     return (rc == 0 && sig_len == DWS_RSA_SIG_BYTES) ? 0 : -1;
 }

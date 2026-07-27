@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 
+#include "crypto/crypto_scratch.h"  // dws_ct_eq (the canonical constant-time compare)
 #include "hal/esp/esp_crypto_hal.h" // dws_rsa_modmul + dws_rsa_hw_acquire/release (the RSA-accelerator HAL)
 
 // 25519 has no dedicated ECC accelerator on any ESP32 die, so the RSA MODMULT is the field-layer win wherever
@@ -203,10 +204,7 @@ static inline int fe_neq(const fe a, const fe b)
     uint8_t d[32];
     fe_tobytes(c, a);
     fe_tobytes(d, b);
-    unsigned diff = 0;
-    for (int i = 0; i < 32; i++)
-        diff |= (unsigned)(c[i] ^ d[i]);
-    return (int)((1 & ((diff - 1) >> 8)) - 1);
+    return dws_ct_eq(c, d, 32) ? 0 : -1;
 }
 
 #endif // DWS_FE25519_MPI_HW

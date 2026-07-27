@@ -14,6 +14,7 @@
 
 #include "crypto/aes256ctr.h"
 #include "crypto/crypto_opt.h"
+#include "crypto/crypto_scratch.h" // dws_crypto_wipe (the canonical secure wipe)
 #include <string.h>
 #ifndef ARDUINO
 #include "crypto/aes_block.h" // native software AES S-box/blocks (ARDUINO uses mbedtls via the header)
@@ -51,9 +52,7 @@ void dws_aes256ctr_crypt(DwsAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, siz
 void dws_aes256ctr_wipe(DwsAesCtrCtx *ctx)
 {
     mbedtls_aes_free(&ctx->_mbed);
-    volatile uint8_t *p = (volatile uint8_t *)ctx;
-    for (size_t i = 0; i < sizeof(DwsAesCtrCtx); i++)
-        p[i] = 0;
+    dws_crypto_wipe(ctx, sizeof(DwsAesCtrCtx));
 }
 
 // ============================================================================
@@ -95,9 +94,7 @@ void dws_aes256ctr_crypt(DwsAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, siz
 
 void dws_aes256ctr_wipe(DwsAesCtrCtx *ctx)
 {
-    volatile uint8_t *p = (volatile uint8_t *)ctx;
-    for (size_t i = 0; i < sizeof(DwsAesCtrCtx); i++)
-        p[i] = 0;
+    dws_crypto_wipe(ctx, sizeof(DwsAesCtrCtx));
 }
 
 #endif // ARDUINO

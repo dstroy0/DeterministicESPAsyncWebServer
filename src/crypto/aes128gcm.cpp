@@ -14,6 +14,7 @@
 
 #if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS || DWS_ENABLE_SMB)
 
+#include "crypto/crypto_scratch.h" // dws_crypto_wipe (the canonical secure wipe)
 #include "crypto/ghash.h"
 #include <string.h>
 #if !defined(ARDUINO)
@@ -56,9 +57,7 @@ void dws_aes128_encrypt_block(DwsAes128 *ctx, const uint8_t in[16], uint8_t out[
 
 void dws_aes128_wipe(DwsAes128 *ctx)
 {
-    volatile uint8_t *p = (volatile uint8_t *)ctx;
-    for (size_t i = 0; i < sizeof(DwsAes128); i++)
-        p[i] = 0;
+    dws_crypto_wipe(ctx, sizeof(DwsAes128));
 }
 
 #endif // ARDUINO
@@ -199,10 +198,7 @@ bool dws_aes128gcm_open(const uint8_t key[16], const uint8_t nonce[12], const ui
     uint8_t tag[16];
     gcm_core(&aes, nonce, aad, aad_len, ct, pt_len, j0, tag);
 
-    uint8_t diff = 0;
-    for (int i = 0; i < DWS_AES128GCM_TAG_LEN; i++)
-        diff |= (uint8_t)(tag[i] ^ ct[pt_len + i]);
-    if (diff != 0)
+    if (!dws_ct_eq(tag, ct + pt_len, DWS_AES128GCM_TAG_LEN))
     {
         dws_aes128_wipe(&aes);
         return false;
@@ -253,10 +249,7 @@ bool dws_aes128gcm_open_tag(const uint8_t key[16], const uint8_t nonce[12], cons
     uint8_t exp_tag[16];
     gcm_core(&aes, nonce, aad, aad_len, ct, ct_len, j0, exp_tag);
 
-    uint8_t diff = 0;
-    for (int i = 0; i < 16; i++)
-        diff |= (uint8_t)(exp_tag[i] ^ tag[i]);
-    if (diff != 0)
+    if (!dws_ct_eq(exp_tag, tag, DWS_AES128GCM_TAG_LEN))
     {
         dws_aes128_wipe(&aes);
         return false;

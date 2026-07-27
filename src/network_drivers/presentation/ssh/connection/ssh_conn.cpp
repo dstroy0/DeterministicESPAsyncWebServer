@@ -316,7 +316,7 @@ void dws_ssh_conn_rx(uint8_t conn_slot)
     if (off < n)
         ssh_pkt_recv(j, buf + off, n - off, ssh_msg_handler);
 
-    ssh_wipe(buf, n);
+    dws_crypto_wipe(buf, n);
 
     if (s_sshc.close[j])
         close_conn(conn_slot);
@@ -334,7 +334,7 @@ void dws_ssh_conn_close(uint8_t conn_slot)
         // Zero all key material and session state for this slot.
         ssh_keymat_wipe(j);
         ssh_dh_wipe(j);
-        ssh_wipe(&ssh_sess[j], sizeof(SshSession));
+        dws_crypto_wipe(&ssh_sess[j], sizeof(SshSession));
         s_sshc.conn_for_ssh[j] = 0xFF;
     }
     conn->proto_slot = DWS_PROTO_SLOT_NONE;

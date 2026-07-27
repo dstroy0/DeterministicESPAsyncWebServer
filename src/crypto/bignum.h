@@ -53,8 +53,8 @@
  *
  * The Montgomery SOS multiplication uses a 129-word (516-byte) temporary
  * array.  The expmod function needs three DwsBigNum temporaries (768 bytes).
- * All of these live in crypto_work[] (SSH_CRYPTO_WORK_SIZE = 1536 bytes)
- * defined in ServerConfig.h and allocated in dws_bignum.cpp.
+ * All of these live in crypto_work[] (DWS_CRYPTO_WORK_SIZE = 1536 bytes,
+ * defined in ServerConfig.h and allocated in crypto/crypto_scratch.cpp).
  *
  * Layout during bn_expmod_group14():
  *   [0..255]    base_mont  (DwsBigNum)
@@ -62,7 +62,7 @@
  *   [512..767]  tmp        (DwsBigNum)
  *   [768..1283] mont_t     (uint32_t[129])
  *
- * crypto_work[] is zeroed via ssh_wipe() immediately after bn_expmod_group14()
+ * crypto_work[] is zeroed via dws_crypto_wipe() immediately after bn_expmod_group14()
  * returns so intermediate DH/RSA products do not persist in memory.
  *
  * ═══════════════════════════════════════════════════════════════════════════
@@ -75,6 +75,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_BIGNUM_H
 
 #include "ServerConfig.h"
+#include "crypto/crypto_scratch.h" // crypto_work + dws_crypto_wipe (the shared crypto scratch)
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -101,15 +102,9 @@ struct DwsBigNum
 // Scratch buffer (defined in dws_bignum.cpp)
 // ---------------------------------------------------------------------------
 
-/**
- * @brief Global scratch buffer for big-number temporaries.
- *
- * Only one SSH KEX or RSA-sign operation runs at a time (single Arduino
- * loop task, synchronous handshake).  Zeroed after every use via ssh_wipe().
- *
- * See the layout comment in the file header for the exact field map.
- */
-extern uint8_t crypto_work[SSH_CRYPTO_WORK_SIZE];
+// The shared crypto scratch buffer `crypto_work[DWS_CRYPTO_WORK_SIZE]` is declared in crypto/crypto_scratch.h
+// (included above) and defined in crypto/crypto_scratch.cpp; bn_expmod_group14() borrows it for the Montgomery
+// temporaries and wipes it with dws_crypto_wipe() on exit. See the file-header layout map for the offsets.
 
 // ---------------------------------------------------------------------------
 // Conversion helpers

@@ -11,6 +11,7 @@
 
 #include "crypto/rsa.h"
 #include "crypto/crypto_opt.h"
+#include "crypto/crypto_scratch.h" // dws_crypto_wipe (the canonical secure wipe)
 #include "crypto/sha256.h"
 #include "crypto/sha512.h"
 #include <string.h>
@@ -102,14 +103,6 @@ int dws_rsa_verify(const uint8_t n_be[DWS_RSA_KEY_BYTES], const uint8_t e_be4[4]
 // ---------------------------------------------------------------------------
 // Native - software RSA path (test reference; NOT constant-time)
 // ---------------------------------------------------------------------------
-
-// Secure-zero that the optimizer may not elide (crypto/ stays independent of the SSH wipe util).
-static void secure_zero(void *p, size_t n)
-{
-    volatile uint8_t *v = (volatile uint8_t *)p;
-    while (n--)
-        *v++ = 0;
-}
 
 // Hash msg with the selected algorithm and return the matching DigestInfo.
 //   digest must be >= DWS_SHA512_DIGEST_LEN bytes.
@@ -322,7 +315,7 @@ int dws_rsa_sign_sw(const uint8_t n_be[DWS_RSA_KEY_BYTES], const uint8_t d_be[DW
     // 2. PKCS#1 v1.5 encode: 0x00 0x01 0xFF... 0x00 DigestInfo digest
     uint8_t em[DWS_RSA_KEY_BYTES];
     pkcs1v15_encode(digest, digest_len, di, di_len, em);
-    secure_zero(digest, sizeof(digest));
+    dws_crypto_wipe(digest, sizeof(digest));
 
     // 3. RSA private-key operation: s = em^d mod n (full-width).
     DwsBigNum n_bn;
@@ -332,16 +325,16 @@ int dws_rsa_sign_sw(const uint8_t n_be[DWS_RSA_KEY_BYTES], const uint8_t d_be[DW
     bn_from_bytes(&n_bn, n_be, DWS_RSA_KEY_BYTES);
     bn_from_bytes(&d_bn, d_be, DWS_RSA_KEY_BYTES);
     bn_from_bytes(&m_bn, em, DWS_RSA_KEY_BYTES);
-    secure_zero(em, sizeof(em));
+    dws_crypto_wipe(em, sizeof(em));
 
     bn_modexp_full(&m_bn, &d_bn, &n_bn, &s_bn);
 
     bn_to_bytes(sig, &s_bn);
 
-    secure_zero(&n_bn, sizeof(n_bn));
-    secure_zero(&d_bn, sizeof(d_bn));
-    secure_zero(&m_bn, sizeof(m_bn));
-    secure_zero(&s_bn, sizeof(s_bn));
+    dws_crypto_wipe(&n_bn, sizeof(n_bn));
+    dws_crypto_wipe(&d_bn, sizeof(d_bn));
+    dws_crypto_wipe(&m_bn, sizeof(m_bn));
+    dws_crypto_wipe(&s_bn, sizeof(s_bn));
     return 0;
 }
 
@@ -374,10 +367,7 @@ int dws_rsa_verify(const uint8_t n_be[DWS_RSA_KEY_BYTES], const uint8_t e_be4[4]
     uint8_t expected[DWS_RSA_KEY_BYTES];
     pkcs1v15_encode(digest, digest_len, di, di_len, expected);
 
-    uint8_t diff = 0;
-    for (size_t k = 0; k < DWS_RSA_KEY_BYTES; k++)
-        diff |= (uint8_t)(em[k] ^ expected[k]);
-    return diff == 0 ? 0 : -1;
+    return dws_ct_eq(em, expected, DWS_RSA_KEY_BYTES) ? 0 : -1;
 }
 
 #endif // ARDUINO

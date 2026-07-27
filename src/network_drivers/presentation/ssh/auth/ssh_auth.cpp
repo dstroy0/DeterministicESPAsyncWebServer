@@ -7,6 +7,7 @@
  */
 
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
+#include "crypto/crypto_scratch.h"                                    // dws_crypto_wipe() (the canonical secure wipe)
 #include "crypto/ecdsa.h"                                             // dws_ecdsa_p256_verify() (ecdsa-sha2-nistp256)
 #include "crypto/ed25519.h"                                           // dws_ed25519_verify() (ssh-ed25519 client keys)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"          // dws_rsa_verify(), DWS_RSA_KEY_BYTES
@@ -499,9 +500,7 @@ int dws_ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, u
 #endif
 
     // Wipe the password from the stack regardless of the outcome.
-    volatile char *p = req.password;
-    for (size_t k = 0; k < sizeof(req.password); k++)
-        p[k] = 0;
+    dws_crypto_wipe(req.password, sizeof(req.password));
 
     if (ok)
     {
@@ -539,12 +538,8 @@ int dws_ssh_auth_handle_info_response(uint8_t i, const uint8_t *payload, size_t 
         ok = s_auth.pw_cb && s_auth.pw_cb(s_auth.ki[i].user, resp);
 
     // Wipe the response and the remembered user from memory regardless of outcome.
-    volatile char *rp = resp;
-    for (size_t k = 0; k < sizeof(resp); k++)
-        rp[k] = 0;
-    volatile char *up = s_auth.ki[i].user;
-    for (size_t k = 0; k < sizeof(s_auth.ki[i].user); k++)
-        up[k] = 0;
+    dws_crypto_wipe(resp, sizeof(resp));
+    dws_crypto_wipe(s_auth.ki[i].user, sizeof(s_auth.ki[i].user));
 
     if (ok)
     {

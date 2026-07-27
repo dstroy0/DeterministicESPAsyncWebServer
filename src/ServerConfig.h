@@ -6122,25 +6122,25 @@
 #endif
 
 /**
- * @brief Shared scratch buffer for SSH big-number operations.
+ * @brief Size of the shared crypto scratch buffer (crypto/crypto_scratch: `crypto_work`).
  *
- * Holds Montgomery multiplication temporaries and RSA padding workspace.
- * Must be large enough for the biggest single crypto operation:
+ * Holds the transient working memory of the biggest single crypto operation - the big-number Montgomery
+ * modexp temporaries + RSA padding workspace, and the opaque per-operation contexts the crypto modules carve.
+ * Must be large enough for the biggest single op:
  *
  *   DH expmod:
  *     base_mont  (DwsBigNum = 256 B)
  *     result     (DwsBigNum = 256 B)
  *     tmp        (DwsBigNum = 256 B)
  *     mont_t     (uint32_t[129] = 516 B)
- *                                ─────
- *                                1284 B  → round up with margin → 1536 B
+ *                                -----
+ *                                1284 B  -> round up with margin -> 1536 B
  *
- * The buffer is zeroed via volatile memset immediately after each operation.
- * Only one SSH KEX may run at a time (guaranteed by the single Arduino loop
- * task and MAX_SSH_CONNS synchronous handshake model).
+ * Zeroed via dws_crypto_wipe() immediately after each operation. Only one crypto op runs at a time (the
+ * single loop/worker task + synchronous handshake model), so the buffer has one accessor and needs no lock.
  */
-#ifndef SSH_CRYPTO_WORK_SIZE
-#define SSH_CRYPTO_WORK_SIZE 1536
+#ifndef DWS_CRYPTO_WORK_SIZE
+#define DWS_CRYPTO_WORK_SIZE 1536
 #endif
 
 /**
@@ -6196,7 +6196,7 @@
 // │   └─ DwsAesCtrCtx (native)   │   rk[60]=240 + counter[16] + keystream[16] + pos[1] = 273 B │    610 B │
 // │   └─ DwsAesCtrCtx (ARDUINO)  │   mbedtls_aes_context (≈284 B) + 33 B = ≈317 B per ctx     │    698 B │
 // │  ssh_dh[MAX_SSH_CONNS]       │ MAX_SSH_CONNS × (3×DwsBigNum[256] + H[32] + 1)              │    801 B │
-// │  crypto_work[]               │ SSH_CRYPTO_WORK_SIZE (scratch, wiped after each use)         │  1 536 B │
+// │  crypto_work[]               │ DWS_CRYPTO_WORK_SIZE (scratch, wiped after each use)         │  1 536 B │
 // │  SSH SUBTOTAL                │                                                              │  5 017 B │
 // ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
 // │ GRAND TOTAL (all features)   │                                                              │ ≈18 KB   │
@@ -6218,7 +6218,7 @@
 //     significant barrier against heap/BSS spray attacks.
 //   - The DH ephemeral private scalar y lives in ssh_dh[].y and is zeroed
 //     immediately after the shared secret K is derived.
-//   - crypto_work[] is zeroed via volatile memset after every use so that
+//   - crypto_work[] is zeroed via dws_crypto_wipe() after every use so that
 //     bignum intermediates (including partial products that contain key
 //     material) do not persist in memory.
 

@@ -27,18 +27,15 @@
 
 #include "crypto/bignum.h"
 #include "crypto/crypto_opt.h"
-#include "network_drivers/presentation/ssh/transport/ssh_keymat.h" // for ssh_wipe()
+#include "crypto/crypto_scratch.h" // crypto_work + dws_crypto_wipe (the shared crypto scratch)
 #include <string.h>
 #ifdef ARDUINO
 #include <mbedtls/bignum.h> // HW bignum acceleration for the DH-2048 modexp
 #endif
 DWS_CRYPTO_HOT
 
-// ---------------------------------------------------------------------------
-// Scratch buffer (SSH_CRYPTO_WORK_SIZE bytes, zeroed after each crypto op)
-// ---------------------------------------------------------------------------
-
-uint8_t crypto_work[SSH_CRYPTO_WORK_SIZE];
+// The shared crypto scratch buffer (crypto_work) is defined in crypto/crypto_scratch.cpp; the modexp below
+// borrows it for the Montgomery temporaries (fixed offsets, see the bignum.h layout map) and wipes it on exit.
 
 // ---------------------------------------------------------------------------
 // Group-14 prime and generator (RFC 3526, §3)
@@ -329,8 +326,8 @@ void bn_expmod_group14(DwsBigNum *out, const DwsBigNum *base, const DwsBigNum *e
 
     bn_from_bytes(out, res_be, 256);
     // Wipe the big-endian temporaries (they held the private exponent).
-    ssh_wipe(exp_be, 256);
-    ssh_wipe(res_be, 256);
+    dws_crypto_wipe(exp_be, 256);
+    dws_crypto_wipe(res_be, 256);
 }
 
 #else // Native software path
@@ -378,7 +375,7 @@ void bn_expmod_group14(DwsBigNum *out, const DwsBigNum *base, const DwsBigNum *e
     bn_monpro(out, result, &one);
 
     // Wipe all temporaries in crypto_work (they contained DH private key fragments).
-    ssh_wipe(crypto_work, SSH_CRYPTO_WORK_SIZE);
+    dws_crypto_wipe(crypto_work, DWS_CRYPTO_WORK_SIZE);
 }
 
 #endif // ARDUINO

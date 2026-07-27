@@ -10,19 +10,10 @@
 
 #if DWS_ENABLE_SNMP_V3
 
+#include "crypto/aes_sbox.h"
+#include "crypto/crypto_scratch.h" // dws_crypto_wipe (the canonical secure wipe)
 #include "crypto/sha256.h"
 #include <string.h>
-
-// Zero key material with a volatile loop the compiler cannot optimize away. A
-// plain memset() whose result is never observed (the buffer dies at return) may
-// be elided as a dead store, leaving secrets on the stack. Same idiom as ssh_wipe.
-#include "crypto/aes_sbox.h"
-static inline void dws_snmp_wipe(void *p, size_t n)
-{
-    volatile uint8_t *v = (volatile uint8_t *)p;
-    while (n--)
-        *v++ = 0;
-}
 
 // ---------------------------------------------------------------------------
 // RFC 3414 §2.6 key localization (SHA-256)
@@ -68,8 +59,8 @@ void dws_snmp_usm_localize_key(const char *password, const uint8_t *engine_id, s
     dws_sha256_update(&ctx, ku, SNMP_USM_KEY_LEN);
     dws_sha256_final(&ctx, key_out);
 
-    dws_snmp_wipe(ku, sizeof(ku));
-    dws_snmp_wipe(block, sizeof(block));
+    dws_crypto_wipe(ku, sizeof(ku));
+    dws_crypto_wipe(block, sizeof(block));
 }
 
 // ---------------------------------------------------------------------------
@@ -188,9 +179,9 @@ void dws_snmp_aes128_cfb(const uint8_t key[16], const uint8_t iv[16], const uint
         off += bl;
     }
 
-    dws_snmp_wipe(rk, sizeof(rk));
-    dws_snmp_wipe(ks, sizeof(ks));
-    dws_snmp_wipe(fb, sizeof(fb));
+    dws_crypto_wipe(rk, sizeof(rk));
+    dws_crypto_wipe(ks, sizeof(ks));
+    dws_crypto_wipe(fb, sizeof(fb));
 }
 
 #endif // DWS_ENABLE_SNMP_V3

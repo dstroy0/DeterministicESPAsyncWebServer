@@ -400,7 +400,7 @@ static void cli_fail(const char *why)
         dws_client_close(s_cli.cid);
     s_cli.cid = -1;
     ssh_keymat_wipe(SSH_CLI_SLOT);
-    ssh_wipe(s_cli.kex_priv, sizeof(s_cli.kex_priv));
+    dws_crypto_wipe(s_cli.kex_priv, sizeof(s_cli.kex_priv));
 }
 
 // ---------------------------------------------------------------------------
@@ -508,8 +508,8 @@ static bool build_kex_public(void)
         bn_expmod_group14(&e, &g, &x);
         bn_to_bytes(s_cli.qc, &e);
         s_cli.qc_len = 256;
-        ssh_wipe(&x, sizeof(x));
-        ssh_wipe(&e, sizeof(e));
+        dws_crypto_wipe(&x, sizeof(x));
+        dws_crypto_wipe(&e, sizeof(e));
         return true;
     }
 #if DWS_ENABLE_PQC_KEX
@@ -520,9 +520,9 @@ static bool build_kex_public(void)
         ssh_rng_fill(d, sizeof(d));
         ssh_rng_fill(z, sizeof(z));
         dws_mlkem768_keygen(d, z, ek, s_cli.hyb.mlkem_dk);
-        ssh_wipe(d, sizeof(d));
-        ssh_wipe(z, sizeof(z));
-        ssh_wipe(ek, sizeof(ek)); // ek persists inside mlkem_dk
+        dws_crypto_wipe(d, sizeof(d));
+        dws_crypto_wipe(z, sizeof(z));
+        dws_crypto_wipe(ek, sizeof(ek)); // ek persists inside mlkem_dk
         ssh_rng_fill(s_cli.kex_priv, 32);
         dws_x25519_base(s_cli.qc, s_cli.kex_priv);
         s_cli.qc_len = 32;
@@ -682,7 +682,7 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         uint8_t k32[32];
         dws_x25519(k32, s_cli.kex_priv, srv_pub);
         memcpy(k_be + (256 - 32), k32, 32);
-        ssh_wipe(k32, 32);
+        dws_crypto_wipe(k32, 32);
         return true;
     }
     case CliKex::ECDH_P256: {
@@ -692,7 +692,7 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         if (!dws_ecdsa_p256_ecdh(k32, srv_pub, s_cli.kex_priv))
             return false;
         memcpy(k_be + (256 - 32), k32, 32);
-        ssh_wipe(k32, 32);
+        dws_crypto_wipe(k32, 32);
         return true;
     }
     case CliKex::DH_GROUP14: {
@@ -703,8 +703,8 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         bn_from_bytes(&x, s_cli.kex_priv, 32);
         bn_expmod_group14(&K, &f, &x);
         bn_to_bytes(k_be, &K);
-        ssh_wipe(&x, sizeof(x));
-        ssh_wipe(&K, sizeof(K));
+        dws_crypto_wipe(&x, sizeof(x));
+        dws_crypto_wipe(&K, sizeof(K));
         return true;
     }
 #if DWS_ENABLE_PQC_KEX
@@ -721,8 +721,8 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         dws_sha256_update(&c, k_pq, 32);
         dws_sha256_update(&c, k_cl, 32);
         dws_sha256_final(&c, k_be + (256 - 32));
-        ssh_wipe(k_pq, sizeof(k_pq));
-        ssh_wipe(k_cl, sizeof(k_cl));
+        dws_crypto_wipe(k_pq, sizeof(k_pq));
+        dws_crypto_wipe(k_cl, sizeof(k_cl));
         return true;
     }
 #endif
@@ -740,8 +740,8 @@ static bool compute_k(const uint8_t *srv_pub, uint32_t srv_pub_len, uint8_t k_be
         dws_sha512_update(&c, k_pq, sizeof(k_pq));
         dws_sha512_update(&c, k_cl, 32);
         dws_sha512_final(&c, k_be + (256 - 64));
-        ssh_wipe(k_pq, sizeof(k_pq));
-        ssh_wipe(k_cl, sizeof(k_cl));
+        dws_crypto_wipe(k_pq, sizeof(k_pq));
+        dws_crypto_wipe(k_cl, sizeof(k_cl));
         return true;
     }
 #endif
@@ -909,7 +909,7 @@ static bool handle_kexdh_reply(const uint8_t *p, size_t len)
 
     if (!verify_host_sig(ks, ks_len, sig, sig_len, H, h_len))
     {
-        ssh_wipe(k_be, sizeof(k_be));
+        dws_crypto_wipe(k_be, sizeof(k_be));
         cli_fail("relay signature verification failed");
         return false;
     }
@@ -935,10 +935,10 @@ static bool handle_kexdh_reply(const uint8_t *p, size_t len)
 #endif
     ssh_dh_derive_keys_sid(SSH_CLI_SLOT, k_be, H, s_cli.session_id, s_cli.cipher, s_cli.mac, k_is_string, h_len,
                            s_cli.session_id_len, is512);
-    ssh_wipe(k_be, sizeof(k_be));
-    ssh_wipe(s_cli.kex_priv, sizeof(s_cli.kex_priv));
+    dws_crypto_wipe(k_be, sizeof(k_be));
+    dws_crypto_wipe(s_cli.kex_priv, sizeof(s_cli.kex_priv));
 #if DWS_ENABLE_PQC_KEX || DWS_ENABLE_SSH_SNTRUP761
-    ssh_wipe((uint8_t *)&s_cli.hyb, sizeof(s_cli.hyb));
+    dws_crypto_wipe((uint8_t *)&s_cli.hyb, sizeof(s_cli.hyb));
 #endif
 
     uint8_t nk = SSH_MSG_NEWKEYS;
@@ -1475,7 +1475,7 @@ void dws_ssh_tunnel_end(void)
     if (s_cli.cid >= 0)
         dws_client_close(s_cli.cid);
     ssh_keymat_wipe(SSH_CLI_SLOT);
-    ssh_wipe(s_cli.kex_priv, sizeof(s_cli.kex_priv));
+    dws_crypto_wipe(s_cli.kex_priv, sizeof(s_cli.kex_priv));
     memset(&s_cli, 0, sizeof(s_cli));
     s_cli.cid = -1;
     s_cli.phase = CliPhase::IDLE;

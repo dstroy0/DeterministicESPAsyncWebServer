@@ -13,6 +13,7 @@
 
 #include "crypto/aesgcm.h"
 #include "crypto/crypto_opt.h"
+#include "crypto/crypto_scratch.h" // dws_crypto_wipe (the canonical secure wipe)
 #include <string.h>
 #if !DWS_AESGCM_HW_GCM && !defined(ARDUINO)
 #include "crypto/aes_block.h" // native software AES-256 (the HW-GCM and mbedtls paths use their own)
@@ -66,9 +67,7 @@ bool dws_aesgcm_open(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, cons
 void dws_aesgcm_wipe(DwsAesGcmCtx *ctx)
 {
     mbedtls_gcm_free(&ctx->gcm);
-    volatile uint8_t *p = (volatile uint8_t *)ctx;
-    for (size_t i = 0; i < sizeof(DwsAesGcmCtx); i++)
-        p[i] = 0;
+    dws_crypto_wipe(ctx, sizeof(DwsAesGcmCtx));
 }
 
 void dws_aesgcm_seal_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
@@ -282,10 +281,7 @@ bool dws_aesgcm_open(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, cons
     uint8_t exp_tag[16];
     gcm_core(ctx, ctx->iv, aad, aad_len, ct, ct_len, j0, exp_tag);
 
-    uint8_t diff = 0;
-    for (int i = 0; i < DWS_AESGCM_TAG_LEN; i++)
-        diff |= (uint8_t)(exp_tag[i] ^ tag[i]);
-    if (diff != 0)
+    if (!dws_ct_eq(exp_tag, tag, DWS_AESGCM_TAG_LEN))
         return false; // tag mismatch: nothing written, counter NOT advanced
 
     uint8_t ctr[16];
@@ -300,9 +296,7 @@ bool dws_aesgcm_open(DwsAesGcmCtx *ctx, const uint8_t *aad, size_t aad_len, cons
 void dws_aesgcm_wipe(DwsAesGcmCtx *ctx)
 {
     aes256_free_key(ctx);
-    volatile uint8_t *p = (volatile uint8_t *)ctx;
-    for (size_t i = 0; i < sizeof(DwsAesGcmCtx); i++)
-        p[i] = 0;
+    dws_crypto_wipe(ctx, sizeof(DwsAesGcmCtx));
 }
 
 void dws_aesgcm_seal_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t nonce[DWS_AESGCM_IV_LEN],
@@ -336,10 +330,7 @@ bool dws_aesgcm_open_tag(const uint8_t key[DWS_AESGCM_KEY_LEN], const uint8_t no
     uint8_t j0[16];
     uint8_t exp_tag[16];
     gcm_core(&ctx, nonce, aad, aad_len, ct, ct_len, j0, exp_tag);
-    uint8_t diff = 0;
-    for (int i = 0; i < DWS_AESGCM_TAG_LEN; i++)
-        diff |= (uint8_t)(exp_tag[i] ^ tag[i]);
-    if (diff != 0)
+    if (!dws_ct_eq(exp_tag, tag, DWS_AESGCM_TAG_LEN))
     {
         dws_aesgcm_wipe(&ctx);
         return false; // tag mismatch: nothing written

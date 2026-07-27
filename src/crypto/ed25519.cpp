@@ -22,8 +22,9 @@
 
 #include "crypto/ed25519.h"
 #include "crypto/crypto_opt.h"
-#include "crypto/curve25519.h" // dws_gf + field ops (native / non-S3 path)
-#include "crypto/fe25519.h"    // MODMULT dies: canonical uint32[8] field on the RSA accelerator
+#include "crypto/crypto_scratch.h" // dws_ct_eq (the canonical constant-time compare)
+#include "crypto/curve25519.h"     // dws_gf + field ops (native / non-S3 path)
+#include "crypto/fe25519.h"        // MODMULT dies: canonical uint32[8] field on the RSA accelerator
 #include "crypto/sha512.h"
 #ifdef DWS_FE25519_MPI_HW
 #include "crypto/ed25519_comb_table.h" // fixed-base comb ED_COMB[i][j] = (j+1)*256^i*B; drives the MODMULT sign
@@ -39,13 +40,10 @@ static const int64_t ED_L[32] = {0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
 
 // --- Shared helpers (representation-independent) ----------------------------
 
-// Constant-time 32-byte compare: 0 if equal, -1 otherwise.
+// Constant-time 32-byte compare: 0 if equal, -1 otherwise (Ed25519 verify + point decode, public data).
 static int ct_verify32(const uint8_t *x, const uint8_t *y)
 {
-    unsigned diff = 0;
-    for (int i = 0; i < 32; i++)
-        diff |= (unsigned)(x[i] ^ y[i]);
-    return (int)((1 & ((diff - 1) >> 8)) - 1);
+    return dws_ct_eq(x, y, 32) ? 0 : -1;
 }
 
 // --- Scalar reduction mod L -------------------------------------------------
