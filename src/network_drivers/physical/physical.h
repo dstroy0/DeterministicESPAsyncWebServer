@@ -20,10 +20,22 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 #define DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 
-#include "ServerConfig.h" // DWSIface
+#include "ServerConfig.h"                // DWSIface
+#include "board_profiles/dws_platform.h" // DWS_VENDOR_* selector (picks the L1 backend)
 #include "network_drivers/network/ip.h"
 #include <stddef.h>
 #include <stdint.h>
+
+// Does the selected vendor ship a physical (L1) backend? The real bring-up (radio / Ethernet PHY / lwIP
+// netif access) lives in a per-vendor subdir - physical/esp/ today; add physical/stm/, physical/rp/, ... as
+// they land, and OR their vendor here. When 0 (host/native, or a vendor whose PHY driver is not written yet),
+// physical.cpp supplies safe no-op stubs so the target still builds and runs headless - the L1 analogue of
+// crypto/ falling back to its portable software field path.
+#if DWS_VENDOR_ESP
+#define DWS_PHYSICAL_HAS_BACKEND 1
+#else
+#define DWS_PHYSICAL_HAS_BACKEND 0
+#endif
 
 /**
  * @brief Connect to a WiFi access point.
