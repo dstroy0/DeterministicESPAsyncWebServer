@@ -80,8 +80,8 @@
     "example": "L7-Application/CoapSecure",
     "flags": "-DDWS_ENABLE_COAP=1 -DDWS_ENABLE_DTLS=1",
     "board": "esp32dev",
-    "flash_bytes": 782357,
-    "ram_bytes": 105956
+    "flash_bytes": 782389,
+    "ram_bytes": 106276
   },
   "CONFIG_STORE+CONFIG_IO": {
     "example": "L7-Application/ConfigExport",
@@ -101,8 +101,8 @@
     "example": "L7-Application/Csrf",
     "flags": "-DDWS_ENABLE_CSRF=1",
     "board": "esp32dev",
-    "flash_bytes": 755157,
-    "ram_bytes": 81876
+    "flash_bytes": 755041,
+    "ram_bytes": 84020
   },
   "DASHBOARD": {
     "example": "L7-Application/Dashboard",
@@ -346,8 +346,8 @@
     "example": "L6-Presentation/JWTAuth",
     "flags": "-DDWS_ENABLE_JWT=1",
     "board": "esp32dev",
-    "flash_bytes": 755745,
-    "ram_bytes": 82972
+    "flash_bytes": 755617,
+    "ram_bytes": 85124
   },
   "KEEPALIVE": {
     "example": "L4-Transport/KeepAlive",
@@ -675,8 +675,8 @@
     "example": "L7-Application/SmbFileClient",
     "flags": "-DDWS_ENABLE_SMB=1",
     "board": "esp32dev",
-    "flash_bytes": 767041,
-    "ram_bytes": 67564
+    "flash_bytes": 766921,
+    "ram_bytes": 67884
   },
   "SMTP": {
     "example": "L7-Application/SmtpAlert",
@@ -710,22 +710,22 @@
     "example": "L5-Session/SSHHostKey",
     "flags": "-DDWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 832449,
-    "ram_bytes": 110400
+    "flash_bytes": 832413,
+    "ram_bytes": 110720
   },
   "SSH+FILE_SERVING+SSH_SFTP+SSH_SCP": {
     "example": "L5-Session/SSHSftp",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1",
     "board": "esp32dev",
-    "flash_bytes": 884637,
-    "ram_bytes": 119728
+    "flash_bytes": 884597,
+    "ram_bytes": 120048
   },
   "SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF": {
     "example": "L5-Session/SSHReverseTunnel",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_SSH_CLIENT=1 -DDWS_SSH_CLIENT_MAX_CHANNELS=2 -DDWS_CLIENT_RX_BUF=2048 -DMAX_CONNS=4",
     "board": "esp32dev",
-    "flash_bytes": 847833,
-    "ram_bytes": 112136
+    "flash_bytes": 847793,
+    "ram_bytes": 112456
   },
   "STATS": {
     "example": "L7-Application/Stats",
