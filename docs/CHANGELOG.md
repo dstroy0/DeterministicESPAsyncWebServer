@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`40be511`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/40be5117fa214577a03ba8fcc0a3fd4c09a931f8))
+- update CHANGELOG.md [skip ci] ([`adab7aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/adab7aac634afb42ce744f5f5941a9a644a4a0f5))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`616ea8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/616ea8d737d54ec4826992b98fbfec039b28a813))
+
+### Features
+
+- add dws_platform.h vendor selector; kick off multi-vendor track ([`c12605b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c12605bfcfd19400768b727251b0e9aa693886c9))
+
 ## [7.177.0] - 2026-07-27
 
 <details>
