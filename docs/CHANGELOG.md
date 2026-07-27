@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`f7de63b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7de63bb0e09de12fc427d2f1bbf84c7b0eef46e))
+
+### Changes
+
+- Bump version: 7.179.0 → 7.179.1 ([`767bf66`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/767bf667f134641f63772d68255b8534426f76b0))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`62e938c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/62e938c08bb50b88c896da029bebae5878d31e50))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c0b15f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0b15f3a915142f2b7ff01b98db1887614bca94f))
+
+### Refactor
+
+- opaque MdCtx - forward-declare in md.h, define in md.cpp ([`801a517`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/801a517654658f965fb654dc59ffec69a45b8d85))
+
 ## [7.179.0] - 2026-07-27
 
 <details>
