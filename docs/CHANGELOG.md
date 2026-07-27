@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.181.0] - 2026-07-27
+
+<details>
+<summary><b>Show Changelog for version 7.181.0 - 2026-07-27</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e9ac685`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e9ac685b8f3b9b637a321bb4dfffef6de0a149fd))
+
+### Changes
+
+- Bump version: 7.180.0 → 7.181.0 ([`9c45cf8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9c45cf80d9e00f9fbdd65de60e2d9210ef03b373))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`800007b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/800007b00083a2a485a39621713884528c9d7139))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cabcabd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cabcabd4e94a552f264768a92b3fa33c466bb60e))
+
+### Refactor
+
+- funnel HMAC-SHA256 transient state through the region-mapped shared scratch ([`7c3a164`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c3a1647e4d939a9fa8eb46271b99f073e845220))
+
+</details>
+
 ## [7.180.0] - 2026-07-27
 
 <details>
