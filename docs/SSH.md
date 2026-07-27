@@ -198,10 +198,10 @@ All numbers use default configuration values.
 | Symbol                    | Type | Notes                                            |
 | ------------------------- | ---- | ------------------------------------------------ |
 | `ssh_pkt[MAX_SSH_CONNS]`  | BSS  | Packet state + RX reassembly buffers             |
-| `ssh_keys[MAX_SSH_CONNS]` | BSS  | 2 AES-CTR contexts + 2 × 32-byte MAC keys (IV/counter lives inside each AES-CTR ctx) |
+| `ssh_keys[MAX_SSH_CONNS]` | BSS  | 2 × 32-byte AES keys + 2 × 16-byte IV/counters + 2 × 64-byte MAC keys (raw bytes; the key schedule is rebuilt per packet in `crypto_work`, never stored here) |
 | `ssh_dh[MAX_SSH_CONNS]`   | BSS  | DH scalars y, f, K (wiped post-KEX) + H          |
 | `ssh_sess[MAX_SSH_CONNS]` | BSS  | Handshake phase, V_C/I_C/I_S, session id         |
-| `crypto_work[1536]`       | BSS  | Montgomery bignum scratch; zeroed after each use |
+| `crypto_work[2144]`       | BSS  | Shared crypto scratch (bignum / AES / HMAC / cipher state); wiped after each use |
 | `group14_p`, `group14_g`  | BSS  | RFC 3526 prime + generator (constants)           |
 | `ssh_host_pubkey`         | BSS  | RSA-2048 public key (n + e); no secret material  |
 

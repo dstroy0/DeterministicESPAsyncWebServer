@@ -710,7 +710,7 @@ Three separate BSS symbols hold SSH state:
 
 ```
 ssh_pkt[MAX_SSH_CONNS]     ← packet state + receive buffers
-ssh_keys[MAX_SSH_CONNS]    ← AES contexts + MAC keys   (separate symbol)
+ssh_keys[MAX_SSH_CONNS]    ← AES keys + IV/counters + MAC keys  (separate symbol)
 ssh_dh[MAX_SSH_CONNS]      ← DH scalars y, f, K        (separate symbol)
 ```
 

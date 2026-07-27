@@ -440,7 +440,7 @@ void test_dispatch_auth_success_starts_delayed_compression()
 }
 
 // ============================================================================
-// AES-256-CTR (network_drivers/presentation/ssh/crypto/dws_aes256ctr.cpp)
+// AES-256-CTR (crypto/aes256ctr.cpp)
 // ============================================================================
 // This env's own tests only drive ssh_pkt_send before NEWKEYS (no cipher active), so the native
 // software AES-256-CTR path is otherwise never called here. Exercised directly below.
@@ -461,8 +461,9 @@ static void aes_hex_to_bytes(uint8_t *out, const char *hex, size_t n)
 
 // NIST SP 800-38A §F.5.5 (AES-256-CTR), blocks 1-4: encrypt then decrypt must round-trip (CTR is its
 // own inverse), and the 64-byte run crosses 4 keystream blocks, driving the big-endian counter
-// increment across a byte carry (…feff -> …ff00). Also proves dws_aes256ctr_wipe() zeroes the context.
-void test_aes256ctr_nist_vector_roundtrip_and_wipe(void)
+// increment across a byte carry (…feff -> …ff00). The stateless API keeps no context to wipe; the
+// per-call key schedule is built and wiped inside crypto_work by dws_aes256ctr_crypt itself.
+void test_aes256ctr_nist_vector_roundtrip(void)
 {
     uint8_t key[32], iv[16];
     aes_hex_to_bytes(key, "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4", 32);
@@ -1063,7 +1064,7 @@ int main()
     RUN_TEST(test_newkeys_sent_starts_immediate_stream_only);
     RUN_TEST(test_packet_compress_rejects_oversized_payload);
     RUN_TEST(test_dispatch_auth_success_starts_delayed_compression);
-    RUN_TEST(test_aes256ctr_nist_vector_roundtrip_and_wipe);
+    RUN_TEST(test_aes256ctr_nist_vector_roundtrip);
     RUN_TEST(test_aes256ctr_counter_full_wraparound);
     RUN_TEST(test_dh_generate_slot_guard_and_state);
     RUN_TEST(test_dh_derive_keys_default_wrapper_and_slot_guard);

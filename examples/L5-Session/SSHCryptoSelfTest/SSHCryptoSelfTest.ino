@@ -83,12 +83,12 @@ void setup()
                                        0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a};
         static const uint8_t want[16] = {0x60, 0x1e, 0xc3, 0x13, 0x77, 0x57, 0x89, 0xa5,
                                          0xb7, 0xa7, 0xf5, 0x04, 0xbb, 0xf3, 0xd2, 0x28};
-        DwsAesCtrCtx c;
+        uint8_t counter[16]; // stateless API advances the counter in place, so copy the IV out of const storage
+        memcpy(counter, iv, sizeof(counter));
         uint8_t out[16];
-        dws_aes256ctr_init(&c, key, iv);
-        dws_aes256ctr_crypt(&c, pt, out, 16);
+        // Key schedule and keystream ride the wiped crypto scratch; no cipher state persists on the stack.
+        dws_aes256ctr_crypt(key, counter, pt, out, 16);
         report("aes256-ctr nist", eq(out, want, 16), all_ok);
-        dws_aes256ctr_wipe(&c);
     }
 
     Serial.println(all_ok ? "ALL TESTS PASSED" : "SOME TESTS FAILED");

@@ -6214,12 +6214,12 @@
 // ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
 // │ SSH (DWS_ENABLE_SSH=1)     │                                                              │          │
 // │  ssh_pool[MAX_SSH_CONNS]     │ MAX_SSH_CONNS × (SSH_PKT_BUF_SIZE + 22)                     │  2 070 B │
-// │  ssh_keys[MAX_SSH_CONNS]     │ MAX_SSH_CONNS × (2×DwsAesCtrCtx + 64)                       │          │
-// │   └─ DwsAesCtrCtx (native)   │   rk[60]=240 + counter[16] + keystream[16] + pos[1] = 273 B │    610 B │
-// │   └─ DwsAesCtrCtx (ARDUINO)  │   mbedtls_aes_context (≈284 B) + 33 B = ≈317 B per ctx     │    698 B │
+// │  ssh_keys[MAX_SSH_CONNS]     │ MAX_SSH_CONNS × sizeof(SshKeyMat)                            │    355 B │
+// │   └─ SshKeyMat (all builds)  │   2×aes_key[32] + 2×aes_iv[16] + 2×mac_key[64]               │          │
+// │                              │   + 2×chacha_key[64] + 3 flags = 355 B; schedule in scratch  │          │
 // │  ssh_dh[MAX_SSH_CONNS]       │ MAX_SSH_CONNS × (3×DwsBigNum[256] + H[32] + 1)              │    801 B │
-// │  crypto_work[]               │ DWS_CRYPTO_WORK_SIZE (scratch, wiped after each use)         │  1 536 B │
-// │  SSH SUBTOTAL                │                                                              │  5 017 B │
+// │  crypto_work[]               │ DWS_CRYPTO_WORK_SIZE (scratch, wiped after each use)         │  2 144 B │
+// │  SSH SUBTOTAL                │                                                              │  5 370 B │
 // ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
 // │ GRAND TOTAL (all features)   │                                                              │ ≈18 KB   │
 // └──────────────────────────────┴──────────────────────────────────────────────────────────────┴──────────┘

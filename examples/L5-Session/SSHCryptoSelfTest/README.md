@@ -24,15 +24,17 @@ chunks (`"a"` then `"bc"`) so the incremental `init`/`update`/`final` path is
 covered, not just a one-shot hash:
 
 ```cpp
-ssh_sha256_init(&c);
-ssh_sha256_update(&c, (const uint8_t *)"a", 1);
-ssh_sha256_update(&c, (const uint8_t *)"bc", 2); // chunked -> exercises streaming
-ssh_sha256_final(&c, out);
+dws_sha256_init(&c);
+dws_sha256_update(&c, (const uint8_t *)"a", 1);
+dws_sha256_update(&c, (const uint8_t *)"bc", 2); // chunked -> exercises streaming
+dws_sha256_final(&c, out);
 report("sha256 streaming", eq(out, want, 32), all_ok);
 ```
 
-**Keys are wiped.** The AES context is explicitly scrubbed after use with
-`ssh_aes256ctr_wipe(&c)` - the same hygiene the SSH server uses for session keys.
+**Keys are wiped.** The stateless AES-256-CTR primitive rebuilds its key
+schedule in the shared crypto scratch (`crypto_work`) and wipes it after each
+call - the same hygiene the SSH server uses for session keys, with no key
+material left on the stack or in BSS.
 
 This is the test to run after enabling or changing the hardware crypto paths: if
 it prints `ALL TESTS PASSED`, the primitives are byte-correct on your silicon.
@@ -59,10 +61,9 @@ reproduced verbatim with added explanatory comments:
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path) - MUST come first
 
+#include "crypto/aes256ctr.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/sha256.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
-#include <Arduino.h>
 #include <string.h>
 
 // Byte-equality helper used by every check below.
@@ -92,12 +93,12 @@ void setup()
         static const uint8_t want[32] = {0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40,
                                          0xde, 0x5d, 0xae, 0x22, 0x23, 0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17,
                                          0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad};
-        SshSha256Ctx c;
+        DwsSha256Ctx c;
         uint8_t out[32];
-        ssh_sha256_init(&c);
-        ssh_sha256_update(&c, (const uint8_t *)"a", 1);
-        ssh_sha256_update(&c, (const uint8_t *)"bc", 2); // two chunks -> streaming path
-        ssh_sha256_final(&c, out);
+        dws_sha256_init(&c);
+        dws_sha256_update(&c, (const uint8_t *)"a", 1);
+        dws_sha256_update(&c, (const uint8_t *)"bc", 2); // two chunks -> streaming path
+        dws_sha256_final(&c, out);
         report("sha256 streaming", eq(out, want, 32), all_ok);
     }
 
@@ -109,7 +110,7 @@ void setup()
                                          0xce, 0xaf, 0x0b, 0xf1, 0x2b, 0x88, 0x1d, 0xc2, 0x00, 0xc9, 0x83,
                                          0x3d, 0xa7, 0x26, 0xe9, 0x37, 0x6c, 0x2e, 0x32, 0xcf, 0xf7};
         uint8_t mac[32];
-        ssh_hmac_sha256(key, sizeof(key), (const uint8_t *)"Hi There", 8, mac);
+        dws_hmac_sha256(key, sizeof(key), (const uint8_t *)"Hi There", 8, mac);
         report("hmac-sha256 rfc4231", eq(mac, want, 32), all_ok);
     }
 
@@ -124,12 +125,12 @@ void setup()
                                        0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a};
         static const uint8_t want[16] = {0x60, 0x1e, 0xc3, 0x13, 0x77, 0x57, 0x89, 0xa5,
                                          0xb7, 0xa7, 0xf5, 0x04, 0xbb, 0xf3, 0xd2, 0x28};
-        SshAesCtrCtx c;
+        uint8_t counter[16]; // stateless API advances the counter in place, so copy the IV out of const storage
+        memcpy(counter, iv, sizeof(counter));
         uint8_t out[16];
-        ssh_aes256ctr_init(&c, key, iv);
-        ssh_aes256ctr_crypt(&c, pt, out, 16);
+        // Key schedule and keystream ride the wiped crypto scratch; no cipher state persists on the stack.
+        dws_aes256ctr_crypt(key, counter, pt, out, 16);
         report("aes256-ctr nist", eq(out, want, 16), all_ok);
-        ssh_aes256ctr_wipe(&c); // scrub the key schedule after use
     }
 
     Serial.println(all_ok ? "ALL TESTS PASSED" : "SOME TESTS FAILED");
