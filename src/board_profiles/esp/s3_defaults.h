@@ -109,4 +109,4 @@
 #endif
 
 #include "../classic_defaults.h" // sizing floor for anything not set above
-#endif                        // DWS_S3_DEFAULTS_H
+#endif                           // DWS_S3_DEFAULTS_H
