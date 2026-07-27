@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.177.0] - 2026-07-27
+
+<details>
+<summary><b>Show Changelog for version 7.177.0 - 2026-07-27</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`a8d486b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8d486b4329a50417f4dd3cc25b30fa8dce64cb9))
+- update CHANGELOG.md [skip ci] ([`be82511`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be82511ccc28ea088c72314d78271025a7948a2a))
+
+### Changes
+
+- Bump version: 7.176.0 → 7.177.0 ([`795e70f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/795e70f63fa5db151e939dcfe261ef03cc1b0f08))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`1434816`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1434816fc46e6609e8c36973ea16222b084242cb))
+
+### Features
+
+- self-contained direct-register RSA/MPI HAL in src/hal, all single-shot-MODMULT dies ([`a6e00a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6e00a2f9d28cad3f03bdb0bb1bdfa4531d4c81f))
+
+</details>
+
 ## [7.176.0] - 2026-07-26
 
 <details>
