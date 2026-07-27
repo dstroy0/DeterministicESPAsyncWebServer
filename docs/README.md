@@ -665,8 +665,10 @@ src/
 │   ├── aes128gcm.h
 │   ├── aes256ctr.cpp
 │   ├── aes256ctr.h
+│   ├── aes_block.h
 │   ├── aes_cmac.cpp
 │   ├── aes_cmac.h
+│   ├── aes_sbox.h
 │   ├── aesgcm.cpp
 │   ├── aesgcm.h
 │   ├── bignum.cpp
@@ -675,6 +677,7 @@ src/
 │   ├── chacha20.h
 │   ├── chachapoly.cpp
 │   ├── chachapoly.h
+│   ├── crypto_opt.h
 │   ├── curve25519.cpp
 │   ├── curve25519.h
 │   ├── ecdsa.cpp
@@ -683,6 +686,7 @@ src/
 │   ├── ed25519.h
 │   ├── ed25519_comb_table.h
 │   ├── fe25519.h
+│   ├── ghash.h
 │   ├── hkdf.cpp
 │   ├── hkdf.h
 │   ├── hmac_sha256.cpp
@@ -1158,16 +1162,12 @@ src/
 │   ├── clock.h
 │   └── i2c.h
 ├── shared_primitives/
-│   ├── aes_block.h
-│   ├── aes_sbox.h
 │   ├── bitio.h
 │   ├── bytes.h
 │   ├── can.h
 │   ├── crc.h
-│   ├── crypto_opt.h
 │   ├── endian.h
 │   ├── fmtbuf.h
-│   ├── ghash.h
 │   ├── hex.h
 │   ├── http_date.h
 │   ├── log.cpp
