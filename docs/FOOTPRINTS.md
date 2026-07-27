@@ -19,7 +19,7 @@ from each example's `pio ci` size report and aggregated into
 | `COAP`                                                                                                    | L7-Application/CoAP                  | 743.1 KB (58.1%) | 83.5 KB (26.1%)  |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`                                                                        | L7-Application/CoapBlock             | 712.0 KB (55.6%) | 48.4 KB (15.1%)  |
 | `COAP+COAP_OBSERVE`                                                                                       | L7-Application/CoapObserve           | 713.3 KB (55.7%) | 46.2 KB (14.4%)  |
-| `COAP+DTLS`                                                                                               | L7-Application/CoapSecure            | 764.2 KB (59.7%) | 101.7 KB (31.8%) |
+| `COAP+DTLS`                                                                                               | L7-Application/CoapSecure            | 764.0 KB (59.7%) | 103.5 KB (32.3%) |
 | `CONFIG_STORE+CONFIG_IO`                                                                                  | L7-Application/ConfigExport          | 740.7 KB (57.9%) | 80.0 KB (25.0%)  |
 | `CONTROL`                                                                                                 | L7-Application/PidTuning             | 737.8 KB (57.6%) | 87.8 KB (27.4%)  |
 | `CSRF`                                                                                                    | L7-Application/Csrf                  | 737.5 KB (57.6%) | 80.0 KB (25.0%)  |
@@ -53,7 +53,7 @@ from each example's `pio ci` size report and aggregated into
 | `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/Webhook               | 746.2 KB (58.3%) | 99.2 KB (31.0%)  |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE`                                                                        | L7-Application/HttpDelivery          | 823.7 KB (64.4%) | 80.8 KB (25.2%)  |
 | `IFACE_BRIDGE`                                                                                            | L7-Application/InterfaceBridge       | 763.3 KB (59.6%) | 80.7 KB (25.2%)  |
-| `IKEV2`                                                                                                   | L5-Session/IKEv2                     | 710.6 KB (55.5%) | 42.9 KB (13.4%)  |
+| `IKEV2`                                                                                                   | L5-Session/IKEv2                     | 710.4 KB (55.5%) | 42.9 KB (13.4%)  |
 | `INA219`                                                                                                  | Drivers/Ina219                       | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `IPV6`                                                                                                    | Foundation/IPv6                      | 738.4 KB (57.7%) | 79.9 KB (25.0%)  |
 | `IP_ALLOWLIST`                                                                                            | L4-Transport/IpAllowlist             | 737.2 KB (57.6%) | 79.9 KB (25.0%)  |
@@ -104,14 +104,14 @@ from each example's `pio ci` size report and aggregated into
 | `SHT3X`                                                                                                   | Drivers/Sht3x                        | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                                                                                  | Drivers/SigfoxUplink                 | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
 | `SIMATIC`                                                                                                 | L7-Application/SimaticSerial         | 737.9 KB (57.6%) | 81.3 KB (25.4%)  |
-| `SMB`                                                                                                     | L7-Application/SmbFileClient         | 749.5 KB (58.6%) | 65.7 KB (20.5%)  |
+| `SMB`                                                                                                     | L7-Application/SmbFileClient         | 749.1 KB (58.5%) | 66.0 KB (20.6%)  |
 | `SMTP`                                                                                                    | L7-Application/SmtpAlert             | 718.0 KB (56.1%) | 59.7 KB (18.7%)  |
 | `SNMP`                                                                                                    | L7-Application/SNMP                  | 744.9 KB (58.2%) | 92.1 KB (28.8%)  |
 | `SNMP+SNMP_TRAP`                                                                                          | L7-Application/SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
 | `SPA_ROUTER`                                                                                              | L7-Application/SpaFallback           | 737.5 KB (57.6%) | 79.9 KB (25.0%)  |
-| `SSH`                                                                                                     | L5-Session/SSHHostKey                | 813.1 KB (63.5%) | 106.7 KB (33.3%) |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP`                                                                       | L5-Session/SSHSftp                   | 864.1 KB (67.5%) | 115.8 KB (36.2%) |
-| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF`                                                    | L5-Session/SSHReverseTunnel          | 828.1 KB (64.7%) | 108.4 KB (33.9%) |
+| `SSH`                                                                                                     | L5-Session/SSHHostKey                | 812.9 KB (63.5%) | 107.8 KB (33.7%) |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP`                                                                       | L5-Session/SSHSftp                   | 863.9 KB (67.5%) | 116.9 KB (36.5%) |
+| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF`                                                    | L5-Session/SSHReverseTunnel          | 828.0 KB (64.7%) | 109.5 KB (34.2%) |
 | `STATS`                                                                                                   | L7-Application/Stats                 | 737.7 KB (57.6%) | 80.0 KB (25.0%)  |
 | `STATS+METRICS`                                                                                           | L7-Application/PrometheusMetrics     | 739.6 KB (57.8%) | 80.0 KB (25.0%)  |
 | `STATSD`                                                                                                  | L7-Application/StatsdMetrics         | 711.4 KB (55.6%) | 44.1 KB (13.8%)  |

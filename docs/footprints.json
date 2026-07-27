@@ -80,8 +80,8 @@
     "example": "L7-Application/CoapSecure",
     "flags": "-DDWS_ENABLE_COAP=1 -DDWS_ENABLE_DTLS=1",
     "board": "esp32dev",
-    "flash_bytes": 782505,
-    "ram_bytes": 104116
+    "flash_bytes": 782357,
+    "ram_bytes": 105956
   },
   "CONFIG_STORE+CONFIG_IO": {
     "example": "L7-Application/ConfigExport",
@@ -318,7 +318,7 @@
     "example": "L5-Session/IKEv2",
     "flags": "-DDWS_ENABLE_IKEV2=1",
     "board": "esp32dev",
-    "flash_bytes": 727605,
+    "flash_bytes": 727489,
     "ram_bytes": 43948
   },
   "INA219": {
@@ -675,8 +675,8 @@
     "example": "L7-Application/SmbFileClient",
     "flags": "-DDWS_ENABLE_SMB=1",
     "board": "esp32dev",
-    "flash_bytes": 767505,
-    "ram_bytes": 67276
+    "flash_bytes": 767041,
+    "ram_bytes": 67564
   },
   "SMTP": {
     "example": "L7-Application/SmtpAlert",
@@ -710,22 +710,22 @@
     "example": "L5-Session/SSHHostKey",
     "flags": "-DDWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 832621,
-    "ram_bytes": 109240
+    "flash_bytes": 832449,
+    "ram_bytes": 110400
   },
   "SSH+FILE_SERVING+SSH_SFTP+SSH_SCP": {
     "example": "L5-Session/SSHSftp",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1",
     "board": "esp32dev",
-    "flash_bytes": 884817,
-    "ram_bytes": 118600
+    "flash_bytes": 884637,
+    "ram_bytes": 119728
   },
   "SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF": {
     "example": "L5-Session/SSHReverseTunnel",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_SSH_CLIENT=1 -DDWS_SSH_CLIENT_MAX_CHANNELS=2 -DDWS_CLIENT_RX_BUF=2048 -DMAX_CONNS=4",
     "board": "esp32dev",
-    "flash_bytes": 847997,
-    "ram_bytes": 110976
+    "flash_bytes": 847833,
+    "ram_bytes": 112136
   },
   "STATS": {
     "example": "L7-Application/Stats",
