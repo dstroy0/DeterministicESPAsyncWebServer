@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.181.1] - 2026-07-27
+
+<details>
+<summary><b>Show Changelog for version 7.181.1 - 2026-07-27</b></summary>
+
+### Bug Fixes
+
+- migrate SSHCryptoSelfTest to the stateless AES-256-CTR API ([`9926f81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9926f81ac23e54a630ca135bf9739d925c12fd4c))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`5d28933`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d28933725624f63f277b5e412cf3d264ae6c985))
+- update CHANGELOG.md [skip ci] ([`a0aebca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0aebca99758a234097455edd123a2dbdded27b6))
+
+### Changes
+
+- Bump version: 7.181.0 → 7.181.1 ([`db92598`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db92598e0a72d63ce302e4349b5e61de4964cb88))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`e88016f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e88016f380f6eb9a9969a6c451cdf1375eba8f0d))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4bddc26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4bddc2636ecd4aaea494efdade511b7f8f5c276f))
+
+</details>
+
 ## [7.181.0] - 2026-07-27
 
 <details>
