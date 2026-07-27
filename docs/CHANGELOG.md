@@ -2,24 +2,35 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.180.0] - 2026-07-27
+
+<details>
+<summary><b>Show Changelog for version 7.180.0 - 2026-07-27</b></summary>
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`61c1724`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61c17246c8b417b27a7833fcd65e8d5233a4d6b4))
+- update CHANGELOG.md [skip ci] ([`75cdca3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75cdca32babb2cf92cabfd20cbd38cc1609e1361))
 - update CHANGELOG.md [skip ci] ([`f7de63b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7de63bb0e09de12fc427d2f1bbf84c7b0eef46e))
 
 ### Changes
 
+- Bump version: 7.179.1 → 7.180.0 ([`d4b4971`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4b4971169b06ffadcb629becdf9c03591205efb))
 - Bump version: 7.179.0 → 7.179.1 ([`767bf66`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/767bf667f134641f63772d68255b8534426f76b0))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`76501c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76501c80b68c68106671fc7649a820f411f4cf36))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f182208`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1822084b3fb892ebd23b89f268fc0b8041d9973))
 - update ESP32 build footprints [skip ci] ([`62e938c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/62e938c08bb50b88c896da029bebae5878d31e50))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c0b15f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0b15f3a915142f2b7ff01b98db1887614bca94f))
 
 ### Refactor
 
+- funnel symmetric cipher/AEAD state through the region-mapped shared scratch ([`0484c9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0484c9a459f6d2c4ac8fb963ec5cf13111919b3d))
 - opaque MdCtx - forward-declare in md.h, define in md.cpp ([`801a517`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/801a517654658f965fb654dc59ffec69a45b8d85))
+
+</details>
 
 ## [7.179.0] - 2026-07-27
 
