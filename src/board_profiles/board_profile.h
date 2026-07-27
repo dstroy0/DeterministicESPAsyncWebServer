@@ -45,6 +45,10 @@
 #endif
 #endif
 
+// The one vendor/die selector: derives DWS_VENDOR_ESP / _STM / _RP / _TI / _HOST from the toolchain target
+// macros so the per-vendor partitioning keys off DWS_VENDOR_* instead of re-testing CONFIG_IDF_TARGET_* here.
+#include "dws_platform.h"
+
 // --- flash size (MB): honor an explicit -DDWS_FLASH_MB, else read the ESP-IDF sdkconfig ---
 #if !defined(DWS_FLASH_MB)
 #if defined(CONFIG_ESPTOOLPY_FLASHSIZE_32MB)
@@ -109,6 +113,7 @@
 //     last as the universal sizing floor). Every macro name is uppercase with no hyphen/underscore
 //     in the suffix (e.g. ...ESP32C61), verified against ESP-IDF's components/soc/<target>/.
 //     S31/H4/H21 are preview targets (in ESP-IDF master, not a stable release yet). ---
+#if DWS_VENDOR_ESP
 #if defined(CONFIG_IDF_TARGET_ESP32P4)
 #include "p4_defaults.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S31)
@@ -134,7 +139,13 @@
 #elif defined(CONFIG_IDF_TARGET_ESP32H4)
 #include "h4_defaults.h"
 #else
-// Classic ESP32 and host/native builds (no SoC target macro) land here.
+// Classic ESP32 (no dedicated profile) lands on the universal floor.
+#include "classic_defaults.h"
+#endif
+#else
+// Non-ESP vendors (STM / RP / TI) and host/native builds: the universal sizing floor until per-vendor
+// profiles land (the multi-vendor portability track). Behavior-identical to the pre-selector path, which
+// fell through to classic_defaults.h whenever no CONFIG_IDF_TARGET_* macro was defined.
 #include "classic_defaults.h"
 #endif
 

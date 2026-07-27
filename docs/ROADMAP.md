@@ -25,6 +25,127 @@ flag (default off) so it costs nothing when unused.
    and the WebSocket controls + Canvas chart.
 5. **Architectural (deliberate):** egress-interface reporting done (the stack
    already owns failover); next Ethernet PHY, GraphQL, OPC UA.
+6. **Multi-vendor portability (L, greenlit):** partition every silicon-specific
+   layer by vendor so the library runs beyond ESP32 (STM32 next, then TI / RP
+   and others). Own architectural track below.
+
+## Multi-vendor portability (ESP / STM / RP / TI ...)
+
+The library is already OSI-layered and the code prefix (`dws_` / `DWS_`) is
+vendor-neutral, but three layers still bake in ESP silicon: the per-die board
+profiles, the crypto accelerator HAL, and the physical (EMAC + PHY + raw-register
+/ lwIP glue) layer. The goal is to **move the vendor-neutral majority into common
+areas and let the preprocessor pull in exactly one vendor backend per build**, so
+adding STM32 (then TI Sitara / CC32xx, RP2350, others) is "add a subdir + wire the
+selector", not a fork. We are targeting a broad board matrix; the seams have to be
+designed once, correctly, up front.
+
+**Layout - common by default, a thin per-vendor subdir for what is genuinely
+silicon-specific:**
+
+```
+src/board_profiles/
+  board_profile.h            # common: derives (vendor, die, sizes) from build macros
+  derived_sizing.h           # common (vendor-agnostic)
+  esp/ { s3_defaults.h, p4_defaults.h, c6_defaults.h, ... }   # move existing here
+  stm/ { stm32h7_defaults.h, ... }
+  rp/  { rp2350_defaults.h, ... }
+  ti/  { ... }
+src/crypto/
+  <portable C impls: chacha20, poly1305, sha*, ed25519, x25519, rsa/bignum>  # common fallback, always builds
+  hal/
+    crypto_hal.h             # common API surface (dws_rsa_modmul, dws_sha_*, dws_aes_*, dws_ecc_*)
+    esp/ { esp_crypto_hal.h/.cpp }   # move existing here (RSA/MPI direct-register, 7 dies)
+    stm/ { stm_crypto_hal.* }        # STM32 PKA / CRYP / HASH, direct-register
+    rp/  { ... }                     # RP2350 SHA-256 block etc, else falls back to common
+    ti/  { ... }
+src/network_drivers/physical/
+  physical.h                 # common PHY/link API
+  esp/ { emac + eth_phy + lwIP raw-register glue }             # move existing here
+  stm/ { STM32 ETH MAC + PHY }
+  rp/  { PIO-eth / CYW43 / native MAC }
+  ti/  { ... }
+```
+
+**Selector (the one new common seam):** a single `src/board_profiles/dws_platform.h`
+maps the toolchain's target macro onto two axes and nothing else pulls vendor
+detail directly:
+
+- vendor: `DWS_VENDOR_ESP` (from `CONFIG_IDF_TARGET_*`), `DWS_VENDOR_STM` (from
+  `STM32*` / CMSIS device), `DWS_VENDOR_RP` (`PICO_RP2350` ...), `DWS_VENDOR_TI`.
+- die/board: the existing `CONFIG_IDF_TARGET_*`-style discriminator per vendor.
+
+Each **common API header** then resolves its backend once:
+`#if DWS_VENDOR_ESP` -> `#include "esp/..."` `#elif DWS_VENDOR_STM` -> `stm/...`
+else -> the portable software path. Common code includes only the API header; it
+never sees a vendor subdir.
+
+**Principles (carry the ones the ESP crypto HAL already proved):**
+
+- **The HAL API is total.** Every backend maps each op to hardware or to the
+  portable software impl in `crypto/`, so a brand-new vendor with no accelerator
+  still links and runs from day one; accel is added incrementally.
+- **Zero vendor-SDK symbols inside a HAL backend** - direct register access, our
+  own `DWS_` register map, no `HAL_*` / `esp_*` / vendor struct (the
+  `esp_crypto_hal` rule, applied per vendor). STM32 backends poke CRYP/HASH/PKA
+  registers directly.
+- **Ground-truth-verify every backend** against that vendor's own headers with the
+  `static_assert` regmap cross-check (`pentesting/rig_firmware/hal_verify` today
+  for ESP soc macros; add an STM CMSIS variant), so a map is proven correct even
+  for silicon we have no board for, plus an on-device KAT where a board exists.
+- **lwIP stays the common L3+ core;** only L1/L2 (MAC + PHY) and crypto accel are
+  vendor-partitioned. The datalink/network/transport/session/presentation/
+  application layers do not move.
+- **One RTOS seam.** ESP is FreeRTOS; STM/RP may be FreeRTOS or bare-metal. Fold
+  the few primitives we use (mutex, critical section, task spawn, the already-
+  abstracted `services/clock.h` time) behind a thin `services/dws_rtos` so a
+  vendor picks its RTOS without touching callers.
+- **MISRA C / AUTOSAR C++ hold across every backend** (global directive) and no
+  `stdlib` in `src/`.
+
+**Sub-items (sized):**
+
+- Extract the ESP backends into `esp/` subdirs + add the `dws_platform.h` selector,
+  with **zero behavior change on ESP32** (pure move + include rewire, CI-gated). (M)
+- Second vendor: **STM32** board profile + STM crypto HAL (PKA/CRYP/HASH) +
+  STM ETH MAC/PHY physical backend, each ground-truth-verified vs CMSIS + KAT'd on
+  a Nucleo/Disco once a board is on the bench. (L)
+- RP2350 and TI backends as boards arrive; software-fallback crypto makes them
+  bootable before any accel exists. (L each)
+
+**Rename - drop "esp" from the name (`DeterministicAsyncWebServer`).** The code
+prefix `dws_`/`DWS_` is _already_ vendor-neutral ("Deterministic Web Server"), so
+this is a product/library-name + docs change, not a code-wide symbol churn. It
+touches the repo/library display name (`library.json` / `library.properties`),
+README, and the doc prose that says "ESP" where it now means "any target". Do it
+alongside the STM32 backend landing (a real second vendor), not before, so the
+name stops being aspirational the moment it changes. (S, coordinated)
+
+### DWS polling-mode HW modexp - CRT RSA / DH on our own HAL (L, perf + portability)
+
+Found while benching the connected rigs (2026-07-26). Big-integer modexp (DH-2048,
+RSA sign/verify) already routes through mbedtls with `CONFIG_MBEDTLS_HARDWARE_MPI=y`
+on every die - there is **no software fallback being wrongly taken** on firmware.
+But the mbedtls path uses `CONFIG_MBEDTLS_MPI_USE_INTERRUPT=y`: it blocks on the
+RSA-done interrupt for **every** modular multiply, and that per-op round-trip, not
+the accelerator, dominates. Evidence: our own polling-mode HAL `fe_mul` (single-shot
+`dws_rsa_modmul`) is comparable across dies (S3 1403 / P4 1896 / C6 1695 cyc for a
+256-bit MODMULT), yet mbedtls's 2048-bit DH modexp spreads ~7.5x (P4 ~20.7k cyc per
+2048-bit modmul vs a raw modmul that should cost only a few thousand). The overhead
+is the interrupt/driver layer, not the silicon.
+
+**Opportunity:** build a DWS modexp on top of the crypto HAL's polling `dws_rsa_modmul`
+(Montgomery, CRT for RSA sign, constant-time exponent handling) so RSA/DH run at the
+accelerator's real throughput instead of interrupt-round-trip-bound. This is _also_ a
+portability win: it gives the library a **vendor-agnostic HW modexp** (the same HAL
+API the STM PKA / others implement), so RSA/DH stop depending on each vendor's mbedtls
+port. **Tradeoff to measure, not assume** (run the experiment): polling busy-waits the
+worker for the modexp duration where interrupt mode yields; for the deterministic
+single-owner model a bounded ~tens-of-ms blocking op is likely fine, but confirm
+against `DWS_WORKER_COUNT` scheduling before switching the default. Keep mbedtls as
+the fallback where the HAL has no MODMULT (classic ESP32) or where a die's interrupt
+path already wins (measure C6). Legacy finite-field DH is lower-priority than RSA sign;
+modern KEX is curve25519/ECDH already.
 
 ## Concurrency / performance
 

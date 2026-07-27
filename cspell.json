@@ -1504,7 +1504,18 @@
     "undercount",
     "fpeel",
     "funswitch",
-    "miscompile"
+    "miscompile",
+    "AUTOSAR",
+    "bootable",
+    "CMSIS",
+    "CRYP",
+    "elif",
+    "MISRA",
+    "Nucleo",
+    "PICO",
+    "regmap",
+    "Sitara",
+    "subdirs"
   ],
   "ignorePaths": [
     "node_modules/**",

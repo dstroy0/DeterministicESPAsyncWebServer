@@ -42,6 +42,18 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
 
 ### OPEN (actionable now)
 
+- **Multi-vendor portability** (architectural track, greenlit) - partition the three silicon-specific layers
+  (board profiles, crypto accelerator HAL, physical MAC+PHY) into per-vendor subdirs (`esp/`, `stm/`, `rp/`,
+  `ti/`) under common API headers, with a `dws_platform.h` selector so the preprocessor pulls exactly one
+  backend per build. First step is a **zero-behavior-change extraction** of today's ESP backends into `esp/`
+  plus the selector; then an STM32 backend (PKA/CRYP/HASH crypto + ETH MAC/PHY). Includes the library rename
+  (drop "esp" -> `DeterministicAsyncWebServer`; the `dws_`/`DWS_` prefix is already vendor-neutral). Full
+  design in [ROADMAP.md](ROADMAP.md#multi-vendor-portability-esp--stm--rp--ti-).
+- **Cryptobench harness: put the S3 env on the 3.x core** - `pentesting/rig_firmware` `rig_s3*` builds with
+  `platform = espressif32@6.13.0` (Arduino-ESP32 **2.x**) while the P4/C6 benches use arduino-cli **3.3.10**
+  (3.x). Cross-die crypto numbers therefore compare two different mbedtls builds (2.x S3 has no HW ECC/GCM);
+  rebuild S3 on the 3.x core (or bench all dies via one toolchain) so the sweep is apples-to-apples. Surfaced
+  by the 2026-07-26 rig bench; see the DWS polling-mode HW modexp item in ROADMAP.md for the perf follow-up.
 - **CDN caching tier** - the RAM-tier reverse-proxy edge cache + cache key / invalidation / purge, the
   **SD (L2) persistence tier** (`DWS_ENABLE_DBM`), **Range/`206`-from-cache** (`DWS_ENABLE_RANGE`),
   **`https://` origins** (`DWS_ENABLE_EDGE_ORIGIN_TLS`), and **cross-device mesh distribution**
