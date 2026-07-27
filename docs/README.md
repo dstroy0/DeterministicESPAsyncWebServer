@@ -1337,7 +1337,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `OIDC` | `L7-Application/OidcAuth` | 766,193 | 99,876 |
 | `OPCUA+OPCUA_CLIENT` | `L7-Application/OpcUaClient` | 766,413 | 94,724 |
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/OAuth2` | 766,481 | 104,644 |
-| `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,001 | 45,388 |
+| `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,009 | 45,388 |
 | `core/Sysadmin` | `Foundation/Sysadmin` | 767,429 | 81,836 |
 | `OPCUA+UMATI` | `L7-Application/Umati` | 768,553 | 92,252 |
 | `OPCUA+EUROMAP77` | `L7-Application/Euromap77` | 768,809 | 92,276 |
@@ -1352,7 +1352,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH+EDGE_CACHE_SLOTS+EDGE_FETCH_SLOTS+MESH_MAX_PEERS` | `L7-Application/MeshCache` | 779,261 | 115,364 |
 | `NTP` | `L7-Application/SNTP` | 779,421 | 84,368 |
 | `MDNS+PROMISC+WIFI_SNIFFER+MDNS_ADAPTIVE` | `L7-Application/MdnsAdaptive` | 781,081 | 83,816 |
-| `IFACE_BRIDGE` | `L7-Application/InterfaceBridge` | 781,605 | 82,668 |
+| `IFACE_BRIDGE` | `L7-Application/InterfaceBridge` | 781,613 | 82,668 |
 | `COAP+DTLS` | `L7-Application/CoapSecure` | 782,457 | 104,116 |
 | `ETHERNET` | `Peripherals/Ethernet` | 792,777 | 81,880 |
 | `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Peripherals/EthernetW5500` | 792,809 | 81,880 |
@@ -1378,7 +1378,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/TlsResumption` | 859,133 | 105,840 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/mTLS` | 859,217 | 106,016 |
 | `POWER_MGMT` | `L7-Application/PowerGovernor` | 881,905 | 85,680 |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 884,797 | 118,600 |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 884,761 | 118,600 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
