@@ -16,14 +16,14 @@
 // not secrets - a known-answer test is meaningless if its inputs are not fixed.
 // Ephemeral, per-run keys belong in the handshake/round-trip tests, not here.
 
+#include "crypto/aes128gcm.h"
 #include "crypto/chacha20.h"
 #include "crypto/curve25519.h"
 #include "crypto/ed25519.h"
+#include "crypto/hkdf.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/hmac_sha512.h"
 #include "crypto/poly1305.h"
-#include "network_drivers/presentation/http3/quic_aead.h"
-#include "network_drivers/presentation/http3/quic_hkdf.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -180,21 +180,21 @@ static void test_aes128gcm(void)
         snprintf(m, sizeof(m), "AES128GCM tcId=%d", v.tc);
 
         // seal: out == ciphertext || tag (ciphertext is empty when plaintext is)
-        dws_quic_aes128_gcm_seal(key, iv, alen ? aad : nullptr, alen, plen ? pt : nullptr, plen, sealed);
+        dws_aes128gcm_seal(key, iv, alen ? aad : nullptr, alen, plen ? pt : nullptr, plen, sealed);
         if (clen)
             TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(ct, sealed, clen, m);
         TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(tag, sealed + plen, 16, m);
 
         // open: recovers the plaintext and authenticates
-        bool ok = dws_quic_aes128_gcm_open(key, iv, alen ? aad : nullptr, alen, sealed, plen + 16, opened);
+        bool ok = dws_aes128gcm_open(key, iv, alen ? aad : nullptr, alen, sealed, plen + 16, opened);
         TEST_ASSERT_TRUE_MESSAGE(ok, m);
         if (plen)
             TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(pt, opened, plen, m);
 
         // negative: a flipped tag byte must fail authentication
         sealed[plen + 15] ^= 0x80;
-        TEST_ASSERT_FALSE_MESSAGE(
-            dws_quic_aes128_gcm_open(key, iv, alen ? aad : nullptr, alen, sealed, plen + 16, opened), m);
+        TEST_ASSERT_FALSE_MESSAGE(dws_aes128gcm_open(key, iv, alen ? aad : nullptr, alen, sealed, plen + 16, opened),
+                                  m);
     }
 }
 
@@ -218,14 +218,14 @@ static void test_aes128gcm_ctr_carry(void)
     for (size_t i = 0; i < CTR_CARRY_PT_LEN; i++)
         pt[i] = (uint8_t)(i * 131u + 7u);
 
-    dws_quic_aes128_gcm_seal(key, iv, nullptr, 0, pt, CTR_CARRY_PT_LEN, sealed);
-    bool ok = dws_quic_aes128_gcm_open(key, iv, nullptr, 0, sealed, CTR_CARRY_PT_LEN + 16, opened);
+    dws_aes128gcm_seal(key, iv, nullptr, 0, pt, CTR_CARRY_PT_LEN, sealed);
+    bool ok = dws_aes128gcm_open(key, iv, nullptr, 0, sealed, CTR_CARRY_PT_LEN + 16, opened);
     TEST_ASSERT_TRUE(ok);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, opened, CTR_CARRY_PT_LEN);
 
     // negative: a flipped tag byte must still fail authentication past the carry boundary
     sealed[CTR_CARRY_PT_LEN + 15] ^= 0x80;
-    TEST_ASSERT_FALSE(dws_quic_aes128_gcm_open(key, iv, nullptr, 0, sealed, CTR_CARRY_PT_LEN + 16, opened));
+    TEST_ASSERT_FALSE(dws_aes128gcm_open(key, iv, nullptr, 0, sealed, CTR_CARRY_PT_LEN + 16, opened));
 }
 
 // ====================================================================
@@ -310,7 +310,7 @@ static void test_hkdf_extract(void)
         uint8_t salt[MAXB], ikm[MAXB], want[32], got[32];
         size_t slen = hexdec(v.salt, salt), ilen = hexdec(v.ikm, ikm);
         hexdec(v.prk, want);
-        dws_quic_hkdf_extract(slen ? salt : nullptr, slen, ikm, ilen, got);
+        dws_hkdf_extract(slen ? salt : nullptr, slen, ikm, ilen, got);
         char m[48];
         snprintf(m, sizeof(m), "HKDF-Extract tcId=%d", v.tc);
         TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(want, got, 32, m);

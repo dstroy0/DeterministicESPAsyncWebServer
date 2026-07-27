@@ -17,10 +17,10 @@
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
 #include "services/clock.h"                                        // dws_millis() (re-key timer)
 #if DWS_ENABLE_PQC_KEX
-#include "network_drivers/presentation/pqc/mlkem.h" // dws_mlkem768_encaps (PQ/T hybrid KEX responder)
+#include "crypto/mlkem.h" // dws_mlkem768_encaps (PQ/T hybrid KEX responder)
 #endif
 #if DWS_ENABLE_SSH_SNTRUP761
-#include "network_drivers/presentation/pqc/sntrup761.h" // dws_sntrup761_enc (sntrup761x25519 responder)
+#include "crypto/sntrup761.h" // dws_sntrup761_enc (sntrup761x25519 responder)
 #endif
 #if DWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h" // s2c compression negotiation

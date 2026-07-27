@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file dws_tls13_kdf.h
+ * @file tls13_kdf.h
  * @brief TLS 1.3 key schedule (RFC 8446 sec 7.1) for the QUIC handshake.
  *
  * QUIC runs TLS 1.3 as its handshake protocol (RFC 9001), and mbedTLS exposes no QUIC-TLS callback

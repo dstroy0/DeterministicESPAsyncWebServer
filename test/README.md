@@ -254,7 +254,7 @@ The native test matrix has **275 environments**, one per feature, generated from
 | `native_ptp` | `WS_ENABLE_PTP=1` | `test_ptp` | PTP / IEEE 1588-2008 (PTPv2) message codec + slave clock math (services/ptp): the 34-octet common header, 10-octet timestamp, Sync/Delay_Req/Follow_Up/Delay_Resp/Announce build+parse, and the offset/m... |
 | `native_qpack` | `WS_ENABLE_HTTP3=1` | `test_qpack` | QPACK field-section compression for HTTP/3 (network_drivers/presentation/http3/qpack, RFC 9204): the Appendix B.1 worked example (literal field line with a static name reference), the encoder's exact ... |
 | `native_quic_conn` | `WS_ENABLE_HTTP3=1` | `test_quic_conn` | QUIC v1 server connection engine (network_drivers/presentation/http3/quic_conn, RFC 9000 / RFC 9001): the test acts as a QUIC client - builds real Initial / Handshake / 1-RTT packets and drives a serv... |
-| `native_quic_crypto` | `WS_ENABLE_HTTP3=1` | `test_quic_crypto` | QUIC Initial packet crypto (network_drivers/presentation/http3/quic_hkdf + quic_aead + quic_crypto, RFC 9001): HKDF-Expand-Label key derivation, AEAD_AES_128_GCM (software AES-128 + GHASH) and header ... |
+| `native_quic_crypto` | `WS_ENABLE_HTTP3=1` | `test_quic_crypto` | QUIC Initial packet crypto (crypto/hkdf + quic_aead + quic_crypto, RFC 9001): HKDF-Expand-Label key derivation, AEAD_AES_128_GCM (software AES-128 + GHASH) and header protection. |
 | `native_quic_frame` | `WS_ENABLE_HTTP3=1` | `test_quic_frame` | QUIC frame codec (network_drivers/presentation/http3/quic_frame, RFC 9000 sec 19): builder/parser round-trips for PADDING/PING/HANDSHAKE_DONE, ACK (single-range + a hand-built multi-range-with-ECN cur... |
 | `native_quic_packet` | `WS_ENABLE_HTTP3=1` | `test_quic_packet` | QUIC packet header + packet-number codec (network_drivers/presentation/http3/quic_packet, RFC 9000 sec 17): the long-header build/parse round-trip, a Version Negotiation packet (Version 0 + supported-... |
 | `native_quic_server` | `WS_ENABLE_HTTP3=1` | `test_quic_server` | HTTP/3 server glue (network_drivers/presentation/http3/quic_server): the UDP-facing pool that routes datagrams by Destination Connection ID to a pool of QuicConn + H3Conn engines. |
@@ -320,7 +320,7 @@ The native test matrix has **275 environments**, one per feature, generated from
 | `native_telnet` | `WS_ENABLE_TELNET=1` | `test_telnet` | Telnet server (RFC 854 IAC negotiation + line editing) wired through the real transport ring buffer; output checked via the tcp_write capture mock. |
 | `native_thread` | `WS_ENABLE_THREAD=1`, `WS_THREAD_MAX_DATA=64` | `test_thread` | Thread spinel / HDLC-lite codec (services/thread), v5 radio plugin: the FCS (CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the byte-stuffing of reserved bytes,... |
 | `native_time_source` | `WS_ENABLE_TIME_SOURCE=1` | `test_time_source` | Multi-source time fallback matrix (services/time_source): priority-ordered query of user time sources with first-valid-wins fallback. |
-| `native_tls13_kdf` | `WS_ENABLE_HTTP3=1` | `test_tls13_kdf` | TLS 1.3 key schedule for the QUIC handshake (network_drivers/presentation/http3/tls13_kdf, RFC 8446 sec 7.1 / 4.4.4): Early/Handshake/Master secret Extract chain, client/server handshake + application... |
+| `native_tls13_kdf` | `WS_ENABLE_HTTP3=1` | `test_tls13_kdf` | TLS 1.3 key schedule for the QUIC handshake (crypto/tls13_kdf, RFC 8446 sec 7.1 / 4.4.4): Early/Handshake/Master secret Extract chain, client/server handshake + application traffic secrets, the server... |
 | `native_tls13_msg` | `WS_ENABLE_HTTP3=1` | `test_tls13_msg` | TLS 1.3 handshake messages for the QUIC handshake (network_drivers/presentation/http3/ tls13_msg, RFC 8446 sec 4): ClientHello parse (X25519 key_share + capability flags), and the server flight. |
 | `native_tls_policy` | `WS_ENABLE_TLS_POLICY=1` | `test_tls_policy` | TLS version negotiation + pinned cipher policy (services/tls_policy): the server-style version pick (highest supported not above the client's), the version name, cipher selection by server preference ... |
 | `native_totp` | `WS_ENABLE_TOTP=1` | `test_totp` | TOTP two-factor (services/totp): HMAC-SHA1 HOTP/TOTP + base32, host-tested against the RFC 6238 vectors (builds on the software SHA-1). |
@@ -40073,9 +40073,9 @@ A thorough directory of all **5212 test cases** across **292 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_ct, sealed, 60);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_tag, sealed + 60, 16);</code>
-      * <code>Assert true (dws_quic_aes128_gcm_open(key, iv, aad, 20, sealed, sizeof sealed, opened))</code>
+      * <code>Assert true (dws_aes128gcm_open(key, iv, aad, 20, sealed, sizeof sealed, opened))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, opened, 60);</code>
-      * <code>Assert false (dws_quic_aes128_gcm_open(key, iv, aad, 20, sealed, sizeof sealed, opened))</code>
+      * <code>Assert false (dws_aes128gcm_open(key, iv, aad, 20, sealed, sizeof sealed, opened))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -40136,7 +40136,7 @@ A thorough directory of all **5212 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Gcm open rejects short
     * **Assertions**:
-      * <code>Assert false (dws_quic_aes128_gcm_open(key, nonce, nullptr, 0, ct, sizeof ct, out))</code>
+      * <code>Assert false (dws_aes128gcm_open(key, nonce, nullptr, 0, ct, sizeof ct, out))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -40178,7 +40178,7 @@ A thorough directory of all **5212 test cases** across **292 suites**. Expand a 
 
     * **Objective**: Short header roundtrip null out pn
     * **Assertions**:
-      * <code>Assert equal int ((int)(pn_offset + pn_len + sizeof payload + QUIC_AEAD_TAG_LEN), (int)total)</code>
+      * <code>Assert equal int ((int)(pn_offset + pn_len + sizeof payload + DWS_AES128GCM_TAG_LEN), (int)total)</code>
       * <code>Assert equal int ((int)sizeof payload, (int)got)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(payload, out, sizeof payload);</code>
   </details>

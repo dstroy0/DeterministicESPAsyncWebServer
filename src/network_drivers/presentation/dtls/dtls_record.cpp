@@ -10,8 +10,8 @@
 
 #if DWS_ENABLE_DTLS
 
-#include "network_drivers/presentation/http3/quic_aead.h"
-#include "network_drivers/presentation/http3/tls13_kdf.h"
+#include "crypto/aes128gcm.h"
+#include "crypto/tls13_kdf.h"
 #include <string.h>
 
 namespace
@@ -153,15 +153,15 @@ size_t dws_dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uin
     build_nonce(keys->iv, seq, nonce);
     // AAD = the whole unified header (including any connection id) carrying the plaintext sequence
     // number (before §4.2.3 encryption).
-    dws_quic_aes128_gcm_seal(keys->key, nonce, out, hdr_len, out + hdr_len, inner_len, out + hdr_len);
+    dws_aes128gcm_seal(keys->key, nonce, out, hdr_len, out + hdr_len, inner_len, out + hdr_len);
 
     // Encrypt the sequence number (RFC 9147 §4.2.3): mask = AES-ECB(sn_key, ciphertext[0..15]).
     // enc_len = inner_len + 16 >= 17, so the 16-byte sample is always available.
-    QuicAes128 sn;
-    dws_quic_aes128_init(&sn, keys->sn_key);
+    DwsAes128 sn;
+    dws_aes128_init(&sn, keys->sn_key);
     uint8_t mask[16];
-    dws_quic_aes128_encrypt_block(&sn, out + hdr_len, mask);
-    dws_quic_aes128_wipe(&sn);
+    dws_aes128_encrypt_block(&sn, out + hdr_len, mask);
+    dws_aes128_wipe(&sn);
     out[seq_off] ^= mask[0];
     out[seq_off + 1] ^= mask[1];
     return total;
@@ -225,11 +225,11 @@ bool dws_dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq
     memcpy(hdr, rec, hdr_len);
 
     // Decrypt the sequence number (RFC 9147 §4.2.3).
-    QuicAes128 sn;
-    dws_quic_aes128_init(&sn, keys->sn_key);
+    DwsAes128 sn;
+    dws_aes128_init(&sn, keys->sn_key);
     uint8_t mask[16];
-    dws_quic_aes128_encrypt_block(&sn, enc, mask);
-    dws_quic_aes128_wipe(&sn);
+    dws_aes128_encrypt_block(&sn, enc, mask);
+    dws_aes128_wipe(&sn);
     uint64_t trunc = 0;
     for (size_t i = 0; i < seq_len; i++)
     {
@@ -244,7 +244,7 @@ bool dws_dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq
 
     uint8_t nonce[12];
     build_nonce(keys->iv, full_seq, nonce);
-    if (!dws_quic_aes128_gcm_open(keys->key, nonce, hdr, hdr_len, enc, enc_len, out))
+    if (!dws_aes128gcm_open(keys->key, nonce, hdr, hdr_len, enc, enc_len, out))
         return false;
 
     // Strip zero padding: the last non-zero byte of the inner plaintext is the content type (RFC 8446 §5.2).

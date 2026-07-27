@@ -9,13 +9,13 @@
 
 #include "crypto/curve25519.h"
 #include "crypto/sha256.h"
+#include "crypto/tls13_kdf.h"
 #include "network_drivers/presentation/http3/quic_tls.h"
-#include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #if DWS_ENABLE_PQC_KEX
-#include "../test_pqc_mlkem/mlkem_kat.h"            // kat_ek, kat_dk (a valid ML-KEM key pair)
-#include "../test_ssh_pqc/mlkem_ref.h"              // dws_mlkem768_decaps_ref (the client side)
-#include "network_drivers/presentation/pqc/mlkem.h" // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
+#include "../test_pqc_mlkem/mlkem_kat.h" // kat_ek, kat_dk (a valid ML-KEM key pair)
+#include "../test_ssh_pqc/mlkem_ref.h"   // dws_mlkem768_decaps_ref (the client side)
+#include "crypto/mlkem.h"                // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
 #endif
 #include <string.h>
 #include <unity.h>

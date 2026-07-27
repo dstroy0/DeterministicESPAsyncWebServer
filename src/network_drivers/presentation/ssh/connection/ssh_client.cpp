@@ -28,10 +28,10 @@
 #include <string.h>
 
 #if DWS_ENABLE_PQC_KEX
-#include "network_drivers/presentation/pqc/mlkem.h" // mlkem768x25519-sha256 hybrid (client: KeyGen + Decaps)
+#include "crypto/mlkem.h" // mlkem768x25519-sha256 hybrid (client: KeyGen + Decaps)
 #endif
 #if DWS_ENABLE_SSH_SNTRUP761
-#include "network_drivers/presentation/pqc/sntrup761.h" // sntrup761x25519-sha512 hybrid (client: KeyGen + Decaps)
+#include "crypto/sntrup761.h" // sntrup761x25519-sha512 hybrid (client: KeyGen + Decaps)
 #endif
 #if DWS_ENABLE_PQC_KEX || DWS_ENABLE_SSH_SNTRUP761
 #include "network_drivers/session/scratch.h" // scratch_alloc for the large hybrid C_INIT

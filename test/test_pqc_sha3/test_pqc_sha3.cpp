@@ -6,7 +6,7 @@
 // streaming-XOF continuity check across the sponge block boundary (the path ML-KEM's matrix sampler
 // uses). Pure host tests.
 
-#include "network_drivers/presentation/pqc/sha3.h"
+#include "crypto/sha3.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>

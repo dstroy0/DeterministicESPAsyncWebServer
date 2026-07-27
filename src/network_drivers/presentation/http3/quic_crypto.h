@@ -6,7 +6,7 @@
  * @brief QUIC packet protection: Initial secrets, AEAD payload protection, header protection,
  *        and the Retry integrity tag (RFC 9001).
  *
- * This ties the HKDF key schedule (dws_quic_hkdf) and AEAD_AES_128_GCM (dws_quic_aead) into the two QUIC
+ * This ties the HKDF key schedule (dws_hkdf) and AEAD_AES_128_GCM (aes128gcm) into the two QUIC
  * packet-protection operations of RFC 9001 sec 5:
  *
  *  - dws_quic_derive_initial_secrets() runs the sec 5.2 Initial key derivation: a fixed salt and the
@@ -33,7 +33,7 @@
 
 #if DWS_ENABLE_HTTP3
 
-#include "network_drivers/presentation/http3/quic_hkdf.h" // QUIC_HKDF_HASH_LEN
+#include "crypto/hkdf.h" // DWS_HKDF_HASH_LEN
 #include <stddef.h>
 #include <stdint.h>
 
@@ -68,7 +68,7 @@ void dws_quic_derive_initial_secrets(const uint8_t *dcid, size_t dcid_len, QuicI
  * Initial derivation uses this internally; the Handshake and 1-RTT levels call it directly on the
  * TLS-derived handshake / application traffic secrets so every level shares one code path.
  */
-void dws_quic_keys_from_secret(const uint8_t secret[QUIC_HKDF_HASH_LEN], QuicPacketKeys *out);
+void dws_quic_keys_from_secret(const uint8_t secret[DWS_HKDF_HASH_LEN], QuicPacketKeys *out);
 
 /**
  * @brief Protect one QUIC packet in place: AEAD-seal the payload, then apply header protection.

@@ -12,7 +12,7 @@
 
 #include "crypto/ed25519.h"
 #if DWS_ENABLE_PQC_KEX
-#include "network_drivers/presentation/pqc/mlkem.h" // MLKEM768_EK_BYTES (X25519MLKEM768 share sizing)
+#include "crypto/mlkem.h" // MLKEM768_EK_BYTES (X25519MLKEM768 share sizing)
 #endif
 #include <string.h>
 

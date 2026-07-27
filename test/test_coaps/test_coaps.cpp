@@ -7,14 +7,14 @@
 // that the client decrypts and checks. A byte off anywhere - transcript, keys, epoch, CoAP encoding -
 // would fail the AEAD open or the response check.
 
+#include "crypto/aes128gcm.h"
 #include "crypto/curve25519.h"
 #include "crypto/ed25519.h"
 #include "crypto/sha256.h"
+#include "crypto/tls13_kdf.h"
 #include "network_drivers/presentation/dtls/dtls_conn.h"
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
 #include "network_drivers/presentation/dtls/dtls_record.h"
-#include "network_drivers/presentation/http3/quic_aead.h"
-#include "network_drivers/presentation/http3/tls13_kdf.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "services/coap/coap.h"
 #include "services/coap/coaps.h"
@@ -408,7 +408,7 @@ static void test_coaps_forwards_handshake(void)
     TEST_ASSERT_TRUE(fl > 0); // the server flight was produced via the handshake-forward path
 }
 
-// dws_quic_aes128_gcm_open's ct_len < QUIC_AEAD_TAG_LEN guard (RFC 5116 sec 5.1): a ciphertext shorter
+// dws_aes128gcm_open's ct_len < DWS_AES128GCM_TAG_LEN guard (RFC 5116 sec 5.1): a ciphertext shorter
 // than the 16-byte tag can never carry a valid tag, so open() must reject it before touching AES/GHASH
 // at all (ct/out are never dereferenced on this path, so nullptr is safe for the zero-length case).
 static void test_quic_aead_open_rejects_short_ciphertext(void)
@@ -416,9 +416,9 @@ static void test_quic_aead_open_rejects_short_ciphertext(void)
     uint8_t key[16] = {0};
     uint8_t nonce[12] = {0};
     uint8_t out[16];
-    TEST_ASSERT_FALSE(dws_quic_aes128_gcm_open(key, nonce, nullptr, 0, nullptr, 0, out));
-    uint8_t short_ct[QUIC_AEAD_TAG_LEN - 1] = {0};
-    TEST_ASSERT_FALSE(dws_quic_aes128_gcm_open(key, nonce, nullptr, 0, short_ct, sizeof(short_ct), out));
+    TEST_ASSERT_FALSE(dws_aes128gcm_open(key, nonce, nullptr, 0, nullptr, 0, out));
+    uint8_t short_ct[DWS_AES128GCM_TAG_LEN - 1] = {0};
+    TEST_ASSERT_FALSE(dws_aes128gcm_open(key, nonce, nullptr, 0, short_ct, sizeof(short_ct), out));
 }
 
 // aes_block.h's key schedule is shared by AES-128 (nk=4, used here by QUIC/DTLS) and AES-256 (nk=8, used

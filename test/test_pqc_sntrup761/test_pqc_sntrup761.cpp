@@ -7,7 +7,7 @@
 // round-trip proves the responder Encaps and the initiator KeyGen+Decaps agree. Enc conformance
 // against a real peer is the HW OpenSSH interop; here the reference KAT anchors Decaps.
 
-#include "network_drivers/presentation/pqc/sntrup761.h"
+#include "crypto/sntrup761.h"
 
 #include "sntrup761_kat.h"
 #include <stdint.h>

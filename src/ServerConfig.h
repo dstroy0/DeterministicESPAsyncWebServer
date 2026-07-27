@@ -5565,7 +5565,7 @@
  * one-round-trip full handshake (TLS_AES_128_GCM_SHA256 / X25519 / Ed25519), epoch 0->2->3
  * transitions, reusing the TLS 1.3 messages + key schedule (dws_tls13_msg / dws_tls13_kdf). The
  * HelloRetryRequest cookie round-trip and ACK/timeout retransmission, plus a CoAPs front-end, are
- * the following phases. Enabling this also compiles the shared dws_quic_hkdf / dws_quic_aead / dws_tls13_*
+ * the following phases. Enabling this also compiles the shared dws_hkdf / aes128gcm / dws_tls13_*
  * primitives (otherwise gated behind HTTP/3). Default off.
  */
 #ifndef DWS_ENABLE_DTLS

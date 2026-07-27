@@ -7,7 +7,7 @@
  *
  * The datagram counterpart to the TLS 1.3 record layer: it protects and unprotects individual
  * UDP-carried records. This is the transport-specific half of DTLS 1.3; the handshake it carries
- * reuses the TLS 1.3 crypto that already backs HTTP/3 (dws_tls13_*, dws_quic_hkdf, dws_quic_aead).
+ * reuses the TLS 1.3 crypto that already backs HTTP/3 (dws_tls13_*, dws_hkdf, aes128gcm).
  *
  * Two record shapes (RFC 9147 §4):
  *   - **DTLSPlaintext** - the classic 13-byte header (type, legacy_version, epoch, 48-bit sequence
@@ -19,7 +19,7 @@
  *
  * ─ Reuse ─
  *   AEAD (AEAD_AES_128_GCM) and the AES-128 block used for sequence-number encryption come from
- *   dws_quic_aead; key/iv/sn derivation from dws_quic_hkdf (HKDF-Expand-Label). Phase 1 supports the one
+ *   aes128gcm; key/iv/sn derivation from dws_hkdf (HKDF-Expand-Label). Phase 1 supports the one
  *   cipher suite the whole hand-rolled TLS 1.3 stack uses: TLS_AES_128_GCM_SHA256.
  *
  * Pure, zero heap, host-tested. Not the mbedTLS TCP-TLS engine (network_drivers/tls) - this is the

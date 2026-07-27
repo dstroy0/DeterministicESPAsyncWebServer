@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_HTTP3
 
-#include "network_drivers/presentation/http3/quic_aead.h" // QUIC_AEAD_TAG_LEN
+#include "crypto/aes128gcm.h" // DWS_AES128GCM_TAG_LEN
 #include "network_drivers/presentation/http3/quic_frame.h"
 #include "network_drivers/presentation/http3/quic_packet.h"
 #include "network_drivers/presentation/http3/quic_varint.h"
@@ -484,7 +484,7 @@ uint8_t level_lp_type(int level)
 // Bytes a protected packet needs on top of its payload: AEAD tag + packet number, plus the header.
 size_t packet_overhead(const QuicConn *qc, bool is_long, uint8_t pn_len)
 {
-    size_t overhead = (size_t)QUIC_AEAD_TAG_LEN + pn_len;
+    size_t overhead = (size_t)DWS_AES128GCM_TAG_LEN + pn_len;
     if (is_long)
     {
         // type(1) + version(4) + dcid_len(1) + dcid + scid_len(1) + scid, then the Initial token
@@ -566,7 +566,7 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
                 return 0;                                           // GCOVR_EXCL_LINE
             p += n;
         }
-        uint64_t length = (uint64_t)pn_len + frame_len + QUIC_AEAD_TAG_LEN;
+        uint64_t length = (uint64_t)pn_len + frame_len + DWS_AES128GCM_TAG_LEN;
         size_t n = dws_quic_varint_encode(out + p, cap - p, length);
         if (!n)       // GCOVR_EXCL_BR_LINE - reserved in `overhead`
             return 0; // GCOVR_EXCL_LINE
@@ -588,8 +588,8 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
     // writing it (avoids a size_t addition wrap in the bounds check, cpp:S3519).
     // Redundant since the payload is now budgeted against `overhead` up front, which is exactly
     // what makes the offsets build_frames() advanced safe to keep. Retained as defence in depth.
-    if (cap - p < (size_t)pn_len + frame_len + QUIC_AEAD_TAG_LEN) // GCOVR_EXCL_BR_LINE - see above
-        return 0;                                                 // GCOVR_EXCL_LINE
+    if (cap - p < (size_t)pn_len + frame_len + DWS_AES128GCM_TAG_LEN) // GCOVR_EXCL_BR_LINE - see above
+        return 0;                                                     // GCOVR_EXCL_LINE
     // Write the (unprotected) truncated packet number.
     for (uint8_t i = 0; i < pn_len; i++)
         out[pn_offset + i] = (uint8_t)(pn >> (8 * (pn_len - 1 - i)));

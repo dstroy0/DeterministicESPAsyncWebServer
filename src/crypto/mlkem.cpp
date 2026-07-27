@@ -1,11 +1,11 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#include "network_drivers/presentation/pqc/mlkem.h"
+#include "crypto/mlkem.h"
 
 #if DWS_ENABLE_PQC_KEX
 
-#include "network_drivers/presentation/pqc/sha3.h"
+#include "crypto/sha3.h"
 #include <string.h>
 
 // ML-KEM-768 parameters (FIPS 203).

@@ -7,9 +7,9 @@
 // encapsulation message m, then pins (ek, dk, ct, ss). A byte-exact match here proves our independent
 // KeyGen, Encaps and Decaps all agree with a reference implementation. Pure host tests.
 
+#include "crypto/mlkem.h"
+#include "crypto/sha3.h"
 #include "mlkem_kat.h"
-#include "network_drivers/presentation/pqc/mlkem.h"
-#include "network_drivers/presentation/pqc/sha3.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>

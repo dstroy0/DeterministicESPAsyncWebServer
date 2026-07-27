@@ -10,8 +10,8 @@
 
 #if DWS_ENABLE_HTTP3
 
-#include "network_drivers/presentation/http3/quic_aead.h"
-#include "network_drivers/presentation/http3/quic_hkdf.h"
+#include "crypto/aes128gcm.h"
+#include "crypto/hkdf.h"
 #include "network_drivers/presentation/http3/quic_packet.h"
 #include <string.h>
 
@@ -35,24 +35,24 @@ void build_nonce(const uint8_t iv[12], uint64_t full_pn, uint8_t nonce[12])
 }
 } // namespace
 
-void dws_quic_keys_from_secret(const uint8_t secret[QUIC_HKDF_HASH_LEN], QuicPacketKeys *out)
+void dws_quic_keys_from_secret(const uint8_t secret[DWS_HKDF_HASH_LEN], QuicPacketKeys *out)
 {
     // RFC 9001 sec 5.1: every encryption level's packet keys are these three Expand-Labels of the
     // level's traffic secret (the Initial secrets below, or the TLS handshake / application secrets).
-    dws_quic_hkdf_expand_label(secret, "quic key", out->key, sizeof(out->key));
-    dws_quic_hkdf_expand_label(secret, "quic iv", out->iv, sizeof(out->iv));
-    dws_quic_hkdf_expand_label(secret, "quic hp", out->hp, sizeof(out->hp));
+    dws_hkdf_expand_label(secret, "quic key", out->key, sizeof(out->key));
+    dws_hkdf_expand_label(secret, "quic iv", out->iv, sizeof(out->iv));
+    dws_hkdf_expand_label(secret, "quic hp", out->hp, sizeof(out->hp));
 }
 
 void dws_quic_derive_initial_secrets(const uint8_t *dcid, size_t dcid_len, QuicInitialSecrets *out)
 {
-    uint8_t initial_secret[QUIC_HKDF_HASH_LEN];
-    dws_quic_hkdf_extract(INITIAL_SALT, sizeof(INITIAL_SALT), dcid, dcid_len, initial_secret);
+    uint8_t initial_secret[DWS_HKDF_HASH_LEN];
+    dws_hkdf_extract(INITIAL_SALT, sizeof(INITIAL_SALT), dcid, dcid_len, initial_secret);
 
-    uint8_t client_secret[QUIC_HKDF_HASH_LEN];
-    uint8_t server_secret[QUIC_HKDF_HASH_LEN];
-    dws_quic_hkdf_expand_label(initial_secret, "client in", client_secret, sizeof(client_secret));
-    dws_quic_hkdf_expand_label(initial_secret, "server in", server_secret, sizeof(server_secret));
+    uint8_t client_secret[DWS_HKDF_HASH_LEN];
+    uint8_t server_secret[DWS_HKDF_HASH_LEN];
+    dws_hkdf_expand_label(initial_secret, "client in", client_secret, sizeof(client_secret));
+    dws_hkdf_expand_label(initial_secret, "server in", server_secret, sizeof(server_secret));
 
     dws_quic_keys_from_secret(client_secret, &out->client);
     dws_quic_keys_from_secret(server_secret, &out->server);
@@ -64,22 +64,22 @@ size_t dws_quic_packet_protect(uint8_t *pkt, size_t cap, size_t pn_offset, uint8
     if (pn_len < 1 || pn_len > 4)
         return 0;
     size_t hdr_len = pn_offset + pn_len;
-    size_t total = hdr_len + payload_len + QUIC_AEAD_TAG_LEN;
+    size_t total = hdr_len + payload_len + DWS_AES128GCM_TAG_LEN;
     if (total > cap)
         return 0;
 
     // AEAD-seal the payload in place; associated data is the unprotected header.
     uint8_t nonce[12];
     build_nonce(keys->iv, full_pn, nonce);
-    dws_quic_aes128_gcm_seal(keys->key, nonce, pkt, hdr_len, pkt + hdr_len, payload_len, pkt + hdr_len);
+    dws_aes128gcm_seal(keys->key, nonce, pkt, hdr_len, pkt + hdr_len, payload_len, pkt + hdr_len);
 
     // Header protection (RFC 9001 sec 5.4): sample 16 bytes at pn_offset + 4 (always inside the
     // ciphertext because pn_len <= 4), AES-ECB it under hp, mask the low first-byte bits and the PN.
-    QuicAes128 hp;
-    dws_quic_aes128_init(&hp, keys->hp);
+    DwsAes128 hp;
+    dws_aes128_init(&hp, keys->hp);
     uint8_t mask[16];
-    dws_quic_aes128_encrypt_block(&hp, pkt + pn_offset + 4, mask);
-    dws_quic_aes128_wipe(&hp);
+    dws_aes128_encrypt_block(&hp, pkt + pn_offset + 4, mask);
+    dws_aes128_wipe(&hp);
 
     pkt[0] ^= mask[0] & (is_long ? 0x0f : 0x1f);
     for (uint8_t i = 0; i < pn_len; i++)
@@ -93,14 +93,14 @@ size_t dws_quic_packet_unprotect(uint8_t *pkt, size_t pn_offset, size_t length, 
 {
     // Header protection needs a full 16-byte sample starting at pn_offset + 4, and the AEAD region
     // must carry at least the 16-byte tag once the (<=4-byte) packet number is removed.
-    if (length < 4 + QUIC_AEAD_TAG_LEN)
+    if (length < 4 + DWS_AES128GCM_TAG_LEN)
         return (size_t)-1;
 
-    QuicAes128 hp;
-    dws_quic_aes128_init(&hp, keys->hp);
+    DwsAes128 hp;
+    dws_aes128_init(&hp, keys->hp);
     uint8_t mask[16];
-    dws_quic_aes128_encrypt_block(&hp, pkt + pn_offset + 4, mask);
-    dws_quic_aes128_wipe(&hp);
+    dws_aes128_encrypt_block(&hp, pkt + pn_offset + 4, mask);
+    dws_aes128_wipe(&hp);
 
     pkt[0] ^= mask[0] & (is_long ? 0x0f : 0x1f);
     uint8_t pn_len = (uint8_t)((pkt[0] & 0x03) + 1);
@@ -119,10 +119,10 @@ size_t dws_quic_packet_unprotect(uint8_t *pkt, size_t pn_offset, size_t length, 
     size_t ct_len = length - pn_len; // ciphertext + tag
     uint8_t nonce[12];
     build_nonce(keys->iv, full_pn, nonce);
-    if (!dws_quic_aes128_gcm_open(keys->key, nonce, pkt, hdr_len, pkt + hdr_len, ct_len, out))
+    if (!dws_aes128gcm_open(keys->key, nonce, pkt, hdr_len, pkt + hdr_len, ct_len, out))
         return (size_t)-1;
 
-    return ct_len - QUIC_AEAD_TAG_LEN;
+    return ct_len - DWS_AES128GCM_TAG_LEN;
 }
 
 void dws_quic_retry_integrity_tag(const uint8_t *odcid, size_t odcid_len, const uint8_t *retry, size_t retry_len,
@@ -144,7 +144,7 @@ void dws_quic_retry_integrity_tag(const uint8_t *odcid, size_t odcid_len, const 
     p += retry_len;
 
     // Empty plaintext: seal writes only the 16-byte tag.
-    dws_quic_aes128_gcm_seal(RETRY_KEY, RETRY_NONCE, aad, p, nullptr, 0, tag);
+    dws_aes128gcm_seal(RETRY_KEY, RETRY_NONCE, aad, p, nullptr, 0, tag);
 }
 
 #endif // DWS_ENABLE_HTTP3

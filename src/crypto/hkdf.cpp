@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file dws_quic_hkdf.cpp
- * @brief HKDF-SHA256 and TLS 1.3 HKDF-Expand-Label (see dws_quic_hkdf.h).
+ * @file hkdf.cpp
+ * @brief HKDF-SHA256 and TLS 1.3 HKDF-Expand-Label (see dws_hkdf.h).
  */
 
-#include "network_drivers/presentation/http3/quic_hkdf.h"
+#include "crypto/hkdf.h"
 
 #if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include "crypto/hmac_sha256.h"
 #include <string.h>
 
-void dws_quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm, size_t ikm_len,
-                           uint8_t prk[QUIC_HKDF_HASH_LEN])
+void dws_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm, size_t ikm_len,
+                      uint8_t prk[DWS_HKDF_HASH_LEN])
 {
     // RFC 5869 sec 2.2: PRK = HMAC-Hash(salt, IKM). dws_hmac_sha256 pre-hashes keys > 64 bytes and
     // zero-pads shorter ones, which is exactly HMAC's own key handling, so the salt goes in as-is.
@@ -26,35 +26,35 @@ namespace
 // RFC 5869 sec 2.3 HKDF-Expand for the QUIC case: the info block is small and fixed and the
 // requested length never exceeds one hash block, but the general N-block loop is written out so a
 // future >32-byte caller stays correct. T(i) = HMAC(PRK, T(i-1) || info || i), i counts from 1.
-void hkdf_expand(const uint8_t prk[QUIC_HKDF_HASH_LEN], const uint8_t *info, size_t info_len, uint8_t *out,
+void hkdf_expand(const uint8_t prk[DWS_HKDF_HASH_LEN], const uint8_t *info, size_t info_len, uint8_t *out,
                  size_t out_len)
 {
-    uint8_t t[QUIC_HKDF_HASH_LEN];
-    size_t t_len = 0; // 0 for T(0) (empty), QUIC_HKDF_HASH_LEN afterwards
+    uint8_t t[DWS_HKDF_HASH_LEN];
+    size_t t_len = 0; // 0 for T(0) (empty), DWS_HKDF_HASH_LEN afterwards
     size_t done = 0;
     uint8_t counter = 0;
     while (done < out_len)
     {
         counter++;
         DwsHmacSha256Ctx ctx;
-        dws_hmac_sha256_init(&ctx, prk, QUIC_HKDF_HASH_LEN);
+        dws_hmac_sha256_init(&ctx, prk, DWS_HKDF_HASH_LEN);
         dws_hmac_sha256_update(&ctx, t, t_len);
         dws_hmac_sha256_update(&ctx, info, info_len);
         dws_hmac_sha256_update(&ctx, &counter, 1);
         dws_hmac_sha256_final(&ctx, t);
-        t_len = QUIC_HKDF_HASH_LEN;
+        t_len = DWS_HKDF_HASH_LEN;
 
         size_t take = out_len - done;
-        if (take > QUIC_HKDF_HASH_LEN)
-            take = QUIC_HKDF_HASH_LEN;
+        if (take > DWS_HKDF_HASH_LEN)
+            take = DWS_HKDF_HASH_LEN;
         memcpy(out + done, t, take);
         done += take;
     }
 }
 } // namespace
 
-void dws_quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, const uint8_t *context,
-                                    size_t context_len, uint8_t *out, size_t out_len, const char *label_prefix)
+void dws_hkdf_expand_label_ctx(const uint8_t secret[DWS_HKDF_HASH_LEN], const char *label, const uint8_t *context,
+                               size_t context_len, uint8_t *out, size_t out_len, const char *label_prefix)
 {
     // HkdfLabel (RFC 8446 sec 7.1): uint16 length | opaque label<..> = label_prefix + label | opaque context.
     // The prefix is "tls13 " for TLS/QUIC (RFC 8446) or "dtls13" for DTLS 1.3 (RFC 9147 sec 5.9); the
@@ -86,10 +86,10 @@ void dws_quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], co
     hkdf_expand(secret, info, p, out, out_len);
 }
 
-void dws_quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out,
-                                size_t out_len, const char *label_prefix)
+void dws_hkdf_expand_label(const uint8_t secret[DWS_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len,
+                           const char *label_prefix)
 {
-    dws_quic_hkdf_expand_label_ctx(secret, label, nullptr, 0, out, out_len, label_prefix);
+    dws_hkdf_expand_label_ctx(secret, label, nullptr, 0, out, out_len, label_prefix);
 }
 
 #endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS

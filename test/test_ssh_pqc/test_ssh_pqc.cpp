@@ -13,11 +13,11 @@
 #include "../test_pqc_mlkem/mlkem_kat.h" // kat_ek, kat_dk, kat_ct, kat_ss
 #include "crypto/curve25519.h"
 #include "crypto/ed25519.h"
+#include "crypto/mlkem.h" // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
 #include "crypto/sha256.h"
-#include "crypto/sha512.h" // sntrup761x25519-sha512 exchange hash
+#include "crypto/sha512.h"    // sntrup761x25519-sha512 exchange hash
+#include "crypto/sntrup761.h" // the other PQ/T hybrid (NTRU Prime + X25519)
 #include "mlkem_ref.h"
-#include "network_drivers/presentation/pqc/mlkem.h"     // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
-#include "network_drivers/presentation/pqc/sntrup761.h" // the other PQ/T hybrid (NTRU Prime + X25519)
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXDH_INIT / _REPLY

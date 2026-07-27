@@ -40,9 +40,9 @@
 #if DWS_ENABLE_DTLS
 
 #include "crypto/sha256.h"
+#include "crypto/tls13_kdf.h"
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
 #include "network_drivers/presentation/dtls/dtls_record.h"
-#include "network_drivers/presentation/http3/tls13_kdf.h"
 #include <stddef.h>
 #include <stdint.h>
 

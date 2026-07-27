@@ -23,7 +23,7 @@
  * house style normally.
  */
 
-#include "network_drivers/presentation/pqc/sntrup761.h"
+#include "crypto/sntrup761.h"
 
 #if DWS_ENABLE_SSH_SNTRUP761
 

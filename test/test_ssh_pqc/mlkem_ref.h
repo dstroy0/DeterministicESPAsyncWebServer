@@ -13,7 +13,7 @@
 #ifndef DWS_TEST_MLKEM_REF_H
 #define DWS_TEST_MLKEM_REF_H
 
-#include "network_drivers/presentation/pqc/sha3.h"
+#include "crypto/sha3.h"
 #include <stdint.h>
 #include <string.h>
 

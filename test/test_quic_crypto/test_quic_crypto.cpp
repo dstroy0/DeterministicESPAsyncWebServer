@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for QUIC Initial packet crypto (network_drivers/presentation/http3/dws_quic_hkdf,
+// Unit tests for QUIC Initial packet crypto (network_drivers/presentation/http3/dws_hkdf,
 // dws_quic_aead, dws_quic_crypto; RFC 9001). Everything is checked against authoritative vectors:
 //   - AES-128 block:  FIPS 197 Appendix B known-answer.
 //   - AES-128-GCM:    the McGrew/Viega GCM Test Case 4 (non-block-aligned plaintext + AAD).
@@ -11,10 +11,10 @@
 //   - Retry tag:      RFC 9001 A.4 integrity tag.
 // Pure host crypto; no mbedtls on native, so the software AES-128/GHASH paths are what run here.
 
+#include "crypto/aes128gcm.h"
+#include "crypto/hkdf.h"
 #include "crypto/hmac_sha256.h"
-#include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/quic_crypto.h"
-#include "network_drivers/presentation/http3/quic_hkdf.h"
 #include "network_drivers/presentation/http3/quic_packet.h" // QUIC_MAX_CID_LEN (retry-tag guard bound)
 #include <string.h>
 #include <unity.h>
@@ -63,10 +63,10 @@ void test_aes128_block_fips197()
     hx("000102030405060708090a0b0c0d0e0f", key, 16);
     hx("00112233445566778899aabbccddeeff", in, 16);
     hx("69c4e0d86a7b0430d8cdb78070b4c55a", exp, 16);
-    QuicAes128 aes;
-    dws_quic_aes128_init(&aes, key);
-    dws_quic_aes128_encrypt_block(&aes, in, out);
-    dws_quic_aes128_wipe(&aes);
+    DwsAes128 aes;
+    dws_aes128_init(&aes, key);
+    dws_aes128_encrypt_block(&aes, in, out);
+    dws_aes128_wipe(&aes);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, out, 16);
 }
 
@@ -86,17 +86,17 @@ void test_aes128_gcm_testcase4()
     hx("5bc94fbc3221a5db94fae95ae7121a47", exp_tag, 16);
 
     uint8_t sealed[60 + 16];
-    dws_quic_aes128_gcm_seal(key, iv, aad, 20, pt, 60, sealed);
+    dws_aes128gcm_seal(key, iv, aad, 20, pt, 60, sealed);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_ct, sealed, 60);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_tag, sealed + 60, 16);
 
     uint8_t opened[60];
-    TEST_ASSERT_TRUE(dws_quic_aes128_gcm_open(key, iv, aad, 20, sealed, sizeof sealed, opened));
+    TEST_ASSERT_TRUE(dws_aes128gcm_open(key, iv, aad, 20, sealed, sizeof sealed, opened));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, opened, 60);
 
     // A single flipped ciphertext bit must fail authentication and write nothing.
     sealed[0] ^= 0x01;
-    TEST_ASSERT_FALSE(dws_quic_aes128_gcm_open(key, iv, aad, 20, sealed, sizeof sealed, opened));
+    TEST_ASSERT_FALSE(dws_aes128gcm_open(key, iv, aad, 20, sealed, sizeof sealed, opened));
 }
 
 // --- RFC 9001 A.1: Initial secret derivation from the Destination Connection ID -------------
@@ -255,7 +255,7 @@ void test_gcm_open_rejects_short()
 {
     uint8_t key[16] = {0}, nonce[12] = {0}, out[8];
     uint8_t ct[8] = {0}; // shorter than a 16-byte tag
-    TEST_ASSERT_FALSE(dws_quic_aes128_gcm_open(key, nonce, nullptr, 0, ct, sizeof ct, out));
+    TEST_ASSERT_FALSE(dws_aes128gcm_open(key, nonce, nullptr, 0, ct, sizeof ct, out));
 }
 
 // --- dws_quic_packet_protect parameter/capacity guards ------------------------------------------
@@ -356,7 +356,7 @@ void test_short_header_roundtrip_null_out_pn()
 
     size_t total = dws_quic_packet_protect(pkt, sizeof pkt, pn_offset, pn_len, /*full_pn*/ 7, sizeof payload, &s.client,
                                            /*is_long*/ false);
-    TEST_ASSERT_EQUAL_INT((int)(pn_offset + pn_len + sizeof payload + QUIC_AEAD_TAG_LEN), (int)total);
+    TEST_ASSERT_EQUAL_INT((int)(pn_offset + pn_len + sizeof payload + DWS_AES128GCM_TAG_LEN), (int)total);
 
     uint8_t out[8];
     size_t got = dws_quic_packet_unprotect(pkt, pn_offset, total - pn_offset, /*largest_pn*/ 0, &s.client,
@@ -391,7 +391,7 @@ void test_retry_tag_rejects_oversize()
     TEST_ASSERT_EQUAL_UINT8_ARRAY(zero, tag, 16);
 }
 
-// --- dws_quic_hkdf HKDF-Expand-Label multi-block output -----------------------------------------
+// --- dws_hkdf HKDF-Expand-Label multi-block output -----------------------------------------
 // An independent recomputation of RFC 5869 HKDF-Expand over the RFC 8446 sec 7.1 HkdfLabel, using the
 // KAT-verified HMAC-SHA256 primitive. Used to check the > 32-byte (multi-hash-block) path of the
 // library's expander, which QUIC itself never exercises (all its outputs are <= 32).
@@ -442,7 +442,7 @@ void test_hkdf_expand_label_multiblock()
         secret[i] = (uint8_t)(0xA0 + i);
 
     uint8_t got[48], exp[48];
-    dws_quic_hkdf_expand_label(secret, "test label", got, sizeof got);
+    dws_hkdf_expand_label(secret, "test label", got, sizeof got);
     expand_label_ref(secret, "test label", exp, sizeof exp);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, got, sizeof got);
 }

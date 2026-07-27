@@ -13,7 +13,7 @@
 #include "crypto/curve25519.h"
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #if DWS_ENABLE_PQC_KEX
-#include "network_drivers/presentation/pqc/mlkem.h" // dws_mlkem768_encaps (X25519MLKEM768 hybrid)
+#include "crypto/mlkem.h" // dws_mlkem768_encaps (X25519MLKEM768 hybrid)
 #endif
 #include <string.h>
 

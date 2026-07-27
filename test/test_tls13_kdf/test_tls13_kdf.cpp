@@ -11,9 +11,9 @@
 //   - Server Finished verify_data over the full ClientHello..CertificateVerify transcript.
 // Pure host crypto (software SHA-256/HMAC on native).
 
+#include "crypto/hkdf.h"
 #include "crypto/sha256.h"
-#include "network_drivers/presentation/http3/quic_hkdf.h"
-#include "network_drivers/presentation/http3/tls13_kdf.h"
+#include "crypto/tls13_kdf.h"
 #include <string.h>
 #include <unity.h>
 
@@ -122,8 +122,8 @@ void test_server_hs_write_keys()
     uint8_t s_hs[32];
     hx(S_HS, s_hs, 32);
     uint8_t key[16], iv[12], exp_key[16], exp_iv[12];
-    dws_quic_hkdf_expand_label(s_hs, "key", key, sizeof(key));
-    dws_quic_hkdf_expand_label(s_hs, "iv", iv, sizeof(iv));
+    dws_hkdf_expand_label(s_hs, "key", key, sizeof(key));
+    dws_hkdf_expand_label(s_hs, "iv", iv, sizeof(iv));
     hx("3fce516009c21727d0f2e4e86ee403bc", exp_key, 16);
     hx("5d313eb2671276ee13000b30", exp_iv, 12);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_key, key, 16);
@@ -203,7 +203,7 @@ void test_server_finished()
 // call (the key-schedule steps above reach the HKDF core through dws_tls13_derive_secret instead, so this
 // public entry point is otherwise unexercised). RFC 8448 sec 3: HKDF-Expand-Label("tls13 " prefix,
 // server_handshake_traffic_secret, "key", 16) is the server write key - the same KAT as
-// test_server_hs_write_keys, here through the wrapper. It must equal dws_quic_hkdf_expand_label() with the
+// test_server_hs_write_keys, here through the wrapper. It must equal dws_hkdf_expand_label() with the
 // TLS 1.3 prefix, which is exactly what the wrapper forwards to.
 void test_kdf_expand_label_wrapper()
 {
@@ -216,7 +216,7 @@ void test_kdf_expand_label_wrapper()
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_key, key, 16);
 
     uint8_t via_quic[16];
-    dws_quic_hkdf_expand_label(s_hs, "key", via_quic, sizeof(via_quic));
+    dws_hkdf_expand_label(s_hs, "key", via_quic, sizeof(via_quic));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(via_quic, key, 16);
 }
 

@@ -36,9 +36,9 @@
 #if DWS_ENABLE_HTTP3
 
 #include "crypto/sha256.h"
+#include "crypto/tls13_kdf.h"
 #include "network_drivers/presentation/http3/quic_crypto.h"
 #include "network_drivers/presentation/http3/quic_tp.h"
-#include "network_drivers/presentation/http3/tls13_kdf.h"
 #include <stddef.h>
 #include <stdint.h>
 
