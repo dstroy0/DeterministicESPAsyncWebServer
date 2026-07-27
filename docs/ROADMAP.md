@@ -2239,3 +2239,35 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       check (the guard that caught MeshCache) and add an S3/PSRAM build of the same heavy examples asserting
       the larger-tier defaults actually took effect (link succeeds and uses the bigger sizes), so a future
       change can't silently re-flatten the profiles or regress the classic-board ceiling.
+
+## Naming - a shorter name than `DeterministicESPAsyncWebServer`
+
+The current name is literal (a deterministic asynchronous web server for the ESP) but a mouthful, and with the
+[multi-vendor portability](#multi-vendor-portability-esp--stm--rp--ti-) work the "ESP" part stops being true.
+Goal: a short, punchy name that evokes what the library actually _is_ - deterministic (no heap after `begin()`,
+fixed buffers, bounded time), reliable, embedded. The `dws_`/`DWS_` house prefix can stay as a stable
+letters-only prefix regardless of the product name (avoids a tree-wide symbol churn), or move to match the new
+name later; the rename itself is a product-name + docs change (see the portability section's rename note).
+
+**Current favorites (owner):**
+
+- **Keystone** - the wedge stone that locks an arch; the one piece everything else bears on. Evokes structural
+  reliability and "the dependable core of the system". Strong, memorable, embedded-agnostic.
+- **Coherence** - consistency / everything staying in lockstep; doubles as a signals/physics term (phase
+  coherence) that lands well for an embedded + networking library. Reads as "predictable, in-phase, no drift".
+
+**Further candidates (short, on-theme - determinism / timing / solidity / structure):**
+
+- **Cadence** - deterministic rhythm; nods to the pluggable monotonic clock and bounded, in-time behavior.
+- **Datum** - a fixed reference point (surveying/engineering) _and_ "data" - a deterministic baseline you build on.
+- **Quartz** - the crystal that keeps deterministic time; precise, embedded, unglamorous-in-a-good-way.
+- **Latch** - digital-logic latch: holds a defined state, deterministic, tiny. Very embedded.
+- **Invariant** - a property that always holds (CS/formal-methods term for exactly the guarantee we make).
+- **Bedrock** / **Cornerstone** - the dependable foundation (same idea as Keystone, if that one is taken).
+- **Fulcrum** - the fixed point that gives leverage; short, structural, memorable.
+- **Rivet** - fixed, embedded, solid; joins things permanently.
+
+Selection criteria when picking: short + easy to say/type; not colliding with a well-known language/framework
+or an active PlatformIO/Arduino library; a clean namespace/prefix; and a spare `.io`/`.dev` domain + a free
+GitHub org/repo. Decide alongside the STM32 backend landing so the name changes exactly when "ESP" stops being
+literally true, not before.
