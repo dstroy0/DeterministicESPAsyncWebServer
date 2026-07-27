@@ -12,7 +12,7 @@
  * 3.1.1); it is a general primitive, not SMB-specific.
  *
  * On ESP32/Arduino the AES-128 block runs on the mbedTLS context (hardware AES accelerator); on the
- * native host build it uses the shared table-free software AES (shared_primitives/aes_block.h). Pure,
+ * native host build it uses the shared table-free software AES (crypto/aes_block.h). Pure,
  * zero heap. Verified against the RFC 4493 §4 worked examples.
  *
  * @author  Douglas Quigg (dstroy0)

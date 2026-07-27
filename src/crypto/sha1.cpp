@@ -10,7 +10,7 @@
  */
 
 #include "crypto/sha1.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 #include <string.h>
 #ifdef ARDUINO
 #include "mbedtls/sha1.h" // hardware-accelerated SHA-1 on ESP32

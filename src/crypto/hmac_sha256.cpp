@@ -14,7 +14,7 @@
  */
 
 #include "crypto/hmac_sha256.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 #include <string.h>
 // HMAC-SHA256 is HW-SHA-dominated; the only -O lever is its SW key-block glue. On the P4 that rides the per-die
 // -O3 default (whose win is -O3's loop-unroll parameter budget). The S3's ~4% O3 edge is the same parameter

@@ -12,7 +12,7 @@
  */
 
 #include "crypto/poly1305.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 
 // Poly1305 is a hot, pure-integer MAC (the other half of chacha20-poly1305). Like ChaCha it has no vector
 // path on the S3 and runs materially faster than the framework -Os; it is constant-time by structure

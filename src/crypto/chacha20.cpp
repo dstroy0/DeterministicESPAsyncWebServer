@@ -7,7 +7,7 @@
  */
 
 #include "crypto/chacha20.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 
 // ChaCha20 is a hot, pure-integer (add/xor/rotate) keystream generator. The ESP32-S3 has no usable
 // vector path (its PIE unit has only a *saturating* 32-bit add, `ee.vadds.s32`; ChaCha needs modular

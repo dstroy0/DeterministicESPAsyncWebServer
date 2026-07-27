@@ -16,7 +16,7 @@
 // Zero key material with a volatile loop the compiler cannot optimize away. A
 // plain memset() whose result is never observed (the buffer dies at return) may
 // be elided as a dead store, leaving secrets on the stack. Same idiom as ssh_wipe.
-#include "shared_primitives/aes_sbox.h"
+#include "crypto/aes_sbox.h"
 static inline void dws_snmp_wipe(void *p, size_t n)
 {
     volatile uint8_t *v = (volatile uint8_t *)p;

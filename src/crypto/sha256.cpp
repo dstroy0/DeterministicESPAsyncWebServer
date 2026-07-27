@@ -11,7 +11,7 @@
  */
 
 #include "crypto/sha256.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 #include <string.h>
 #ifdef ARDUINO
 #include <mbedtls/sha256.h> // hardware SHA accelerator

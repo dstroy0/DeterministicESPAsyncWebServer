@@ -10,7 +10,7 @@
  */
 
 #include "crypto/sha512.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 #include <string.h>
 #ifdef ARDUINO
 #include <mbedtls/sha512.h> // hardware SHA accelerator

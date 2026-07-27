@@ -13,10 +13,10 @@
  */
 
 #include "crypto/aes256ctr.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 #include <string.h>
 #ifndef ARDUINO
-#include "shared_primitives/aes_block.h" // native software AES S-box/blocks (ARDUINO uses mbedtls via the header)
+#include "crypto/aes_block.h" // native software AES S-box/blocks (ARDUINO uses mbedtls via the header)
 #endif
 DWS_CRYPTO_HOT
 

@@ -15,6 +15,7 @@
 #include "crypto/aes256ctr.h"
 #include "crypto/bignum.h"
 #include "crypto/chachapoly.h"
+#include "crypto/ghash.h"
 #include "crypto/hmac_sha256.h"
 #include "crypto/hmac_sha512.h"
 #include "crypto/sha256.h"
@@ -23,7 +24,6 @@
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/session/scratch.h"
-#include "shared_primitives/ghash.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
@@ -1584,7 +1584,7 @@ static void test_pkt_eam_forged_rejects(void)
 // ============================================================================
 
 // The pre-optimization reference: textbook 128-iteration bitwise GF(2^128) multiply (NIST SP 800-38D
-// sec 6.3), acc *= y. The table method in shared_primitives/ghash.h must match this for all inputs.
+// sec 6.3), acc *= y. The table method in crypto/ghash.h must match this for all inputs.
 static void ghash_gf_mul_bitwise(uint8_t x[16], const uint8_t y[16])
 {
     uint8_t z[16] = {0}, v[16];

@@ -71,7 +71,7 @@
 // Measured (crypto bench): the S3 P-256 MODMULT path's ~14% -O3 win is carried by -fpeel-loops (bisected
 // on-device); pin just that transform on the -O2 floor. Non-S3 dies run ecdsa on mbedtls/HW (flat at any level)
 // and take the crypto_opt per-die default (P4 -O3, else -O2). sdkconfig is included above.
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 #if defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
 DWS_CRYPTO_HOT_PEEL
 #else

@@ -7,7 +7,7 @@
  */
 
 #include "crypto/md.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 #include "shared_primitives/endian.h"
 #include <string.h>
 DWS_CRYPTO_HOT

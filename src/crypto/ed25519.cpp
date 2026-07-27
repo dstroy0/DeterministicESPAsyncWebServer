@@ -21,10 +21,10 @@
  */
 
 #include "crypto/ed25519.h"
+#include "crypto/crypto_opt.h"
 #include "crypto/curve25519.h" // dws_gf + field ops (native / non-S3 path)
 #include "crypto/fe25519.h"    // MODMULT dies: canonical uint32[8] field on the RSA accelerator
 #include "crypto/sha512.h"
-#include "shared_primitives/crypto_opt.h"
 #ifdef DWS_FE25519_MPI_HW
 #include "crypto/ed25519_comb_table.h" // fixed-base comb ED_COMB[i][j] = (j+1)*256^i*B; drives the MODMULT sign
 #endif

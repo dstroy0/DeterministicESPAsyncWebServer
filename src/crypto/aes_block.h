@@ -22,7 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_AES_BLOCK_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_AES_BLOCK_H
 
-#include "shared_primitives/aes_sbox.h" // DWS_AES_SBOX
+#include "crypto/aes_sbox.h" // DWS_AES_SBOX
 #include <stdint.h>
 #include <string.h>
 

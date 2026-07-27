@@ -26,8 +26,8 @@
  */
 
 #include "crypto/bignum.h"
+#include "crypto/crypto_opt.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h" // for ssh_wipe()
-#include "shared_primitives/crypto_opt.h"
 #include <string.h>
 #ifdef ARDUINO
 #include <mbedtls/bignum.h> // HW bignum acceleration for the DH-2048 modexp

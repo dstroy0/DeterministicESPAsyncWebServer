@@ -32,7 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AESGCM_H
 #define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_AESGCM_H
 
-#include "shared_primitives/ghash.h"
+#include "crypto/ghash.h"
 #include <stddef.h>
 #include <stdint.h>
 #ifdef ARDUINO

@@ -14,10 +14,10 @@
 
 #if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS || DWS_ENABLE_SMB)
 
-#include "shared_primitives/ghash.h"
+#include "crypto/ghash.h"
 #include <string.h>
 #if !defined(ARDUINO)
-#include "shared_primitives/aes_block.h" // native software AES-128 (Arduino uses the mbedtls HW block below)
+#include "crypto/aes_block.h" // native software AES-128 (Arduino uses the mbedtls HW block below)
 #endif
 
 // ===========================================================================
@@ -76,7 +76,7 @@ inline void xor16(uint8_t *dst, const uint8_t *src)
 }
 
 // GHASH (acc *= H, and fold buffers into acc) is the shared 4-bit-table primitive in
-// shared_primitives/ghash.h: build a GhashKey from H per packet (ghash_key_init), then ghash_update /
+// crypto/ghash.h: build a GhashKey from H per packet (ghash_key_init), then ghash_update /
 // ghash_mul. Replaced the old 128-iteration bitwise multiply (~37x faster on-device).
 
 inline void put_be64(uint8_t *p, uint64_t v)

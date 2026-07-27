@@ -8,6 +8,7 @@
 // would fail the AEAD open or the response check.
 
 #include "crypto/aes128gcm.h"
+#include "crypto/aes_block.h"
 #include "crypto/curve25519.h"
 #include "crypto/ed25519.h"
 #include "crypto/sha256.h"
@@ -18,7 +19,6 @@
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "services/coap/coap.h"
 #include "services/coap/coaps.h"
-#include "shared_primitives/aes_block.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>

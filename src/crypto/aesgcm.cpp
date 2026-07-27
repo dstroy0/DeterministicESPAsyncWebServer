@@ -12,10 +12,10 @@
  */
 
 #include "crypto/aesgcm.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 #include <string.h>
 #if !DWS_AESGCM_HW_GCM && !defined(ARDUINO)
-#include "shared_primitives/aes_block.h" // native software AES-256 (the HW-GCM and mbedtls paths use their own)
+#include "crypto/aes_block.h" // native software AES-256 (the HW-GCM and mbedtls paths use their own)
 #endif
 DWS_CRYPTO_HOT
 
@@ -126,7 +126,7 @@ inline void xor16(uint8_t *dst, const uint8_t *src)
 }
 
 // GHASH (acc *= H, and fold buffers into acc) is the shared 4-bit-table primitive in
-// shared_primitives/ghash.h - ghash_key_init(&ctx->ghk, ctx->h) once at init, then ghash_mul /
+// crypto/ghash.h - ghash_key_init(&ctx->ghk, ctx->h) once at init, then ghash_mul /
 // ghash_update on ctx->ghk. Replaced the old 128-iteration bitwise multiply (~37x faster on-device).
 
 inline void put_be64(uint8_t *p, uint64_t v)

@@ -10,7 +10,7 @@
  */
 
 #include "crypto/hmac_sha512.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 DWS_CRYPTO_HOT
 
 namespace

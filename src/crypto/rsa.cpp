@@ -10,9 +10,9 @@
  */
 
 #include "crypto/rsa.h"
+#include "crypto/crypto_opt.h"
 #include "crypto/sha256.h"
 #include "crypto/sha512.h"
-#include "shared_primitives/crypto_opt.h"
 #include <string.h>
 #ifdef ARDUINO
 #include <mbedtls/md.h>

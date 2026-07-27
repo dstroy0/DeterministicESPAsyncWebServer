@@ -11,8 +11,8 @@
  */
 
 #include "crypto/kdf.h"
+#include "crypto/crypto_opt.h"
 #include "crypto/sha256.h"
-#include "shared_primitives/crypto_opt.h"
 #include "shared_primitives/endian.h"
 #include <string.h>
 DWS_CRYPTO_HOT

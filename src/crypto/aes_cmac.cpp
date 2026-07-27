@@ -6,17 +6,17 @@
  * @brief AES-128-CMAC implementation (see aes_cmac.h).
  *
  * Arduino path: the AES-128 block runs on mbedtls_aes_crypt_ecb() (HW AES accelerator on ESP32).
- * Native path: the shared table-free software AES-128 (shared_primitives/aes_block.h). The CMAC
+ * Native path: the shared table-free software AES-128 (crypto/aes_block.h). The CMAC
  * construction (subkey derivation + CBC-MAC + last-block handling) is identical on both.
  */
 
 #include "crypto/aes_cmac.h"
-#include "shared_primitives/crypto_opt.h"
+#include "crypto/crypto_opt.h"
 #include <string.h>
 #ifdef ARDUINO
 #include <mbedtls/aes.h> // AES-128 single-block via the ESP32 AES peripheral
 #else
-#include "shared_primitives/aes_block.h" // native software AES-128 block
+#include "crypto/aes_block.h" // native software AES-128 block
 #endif
 DWS_CRYPTO_HOT
 
