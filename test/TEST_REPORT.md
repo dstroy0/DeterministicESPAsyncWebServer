@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-27 04:34:54
+**Generated:** 2026-07-27 05:04:58
 **Command:** `pio test` over 273 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 5751 passed - 391s
+**Result:** ✅ 5753 passed - 389s
 
 ---
 
@@ -181,12 +181,12 @@
 | `test_keepalive`         | `native_keepalive`       |    12 |   ✅   | 00:00:01.801 |
 | `test_range`             | `native_range`           |    21 |   ✅   | 00:00:01.808 |
 | `test_syslog`            | `native_syslog`          |    14 |   ✅   | 00:00:00.800 |
-| `test_smb2`              | `native_smb`             |    45 |   ✅   | 00:00:09.147 |
-| `test_ntlmssp`           | `native_smb`             |    12 |   ✅   | 00:00:00.665 |
-| `test_spnego`            | `native_smb`             |    16 |   ✅   | 00:00:00.636 |
-| `test_ntlm`              | `native_smb`             |    10 |   ✅   | 00:00:00.636 |
-| `test_smb_crypto`        | `native_smb`             |    11 |   ✅   | 00:00:00.657 |
-| `test_smb_client`        | `native_smb`             |    72 |   ✅   | 00:00:00.764 |
+| `test_smb2`              | `native_smb`             |    45 |   ✅   | 00:00:07.840 |
+| `test_ntlmssp`           | `native_smb`             |    12 |   ✅   | 00:00:00.654 |
+| `test_spnego`            | `native_smb`             |    16 |   ✅   | 00:00:00.644 |
+| `test_ntlm`              | `native_smb`             |    10 |   ✅   | 00:00:00.642 |
+| `test_smb_crypto`        | `native_smb`             |    11 |   ✅   | 00:00:00.647 |
+| `test_smb_client`        | `native_smb`             |    74 |   ✅   | 00:00:00.778 |
 | `test_smtp`              | `native_smtp`            |    39 |   ✅   | 00:00:01.022 |
 | `test_ntp_server`        | `native_ntp_server`      |     9 |   ✅   | 00:00:00.752 |
 | `test_dns_server`        | `native_dns_server`      |    13 |   ✅   | 00:00:00.762 |
@@ -6668,7 +6668,7 @@ _KAT tests for the NTLM digests (services/smb/smb_md): MD5 (RFC 1321 App A.5),_
 
 ---
 
-## test_smb_client - native_smb - ✅ 72 passed
+## test_smb_client - native_smb - ✅ 74 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6749,6 +6749,8 @@ _Unit tests for the SMB2 client dialogue engine (services/smb/smb_client): smb_o
 |  70 | `test_unsigned_session_when_not_required` |   ✅   | Unsigned session when not required |
 |  71 | `test_open_signed_311_roundtrip`          |   ✅   | Open signed 311 roundtrip          |
 |  72 | `test_signed_311_response_tampered`       |   ✅   | Signed 311 response tampered       |
+|  73 | `test_open_encrypted_311_roundtrip`       |   ✅   | Open encrypted 311 roundtrip       |
+|  74 | `test_encrypted_response_tampered`        |   ✅   | Encrypted response tampered        |
 
 </details>
 
