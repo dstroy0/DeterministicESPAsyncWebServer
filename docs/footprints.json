@@ -1060,8 +1060,8 @@
     "example": "L5-Session/SSHCryptoSelfTest",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 269545,
-    "ram_bytes": 21476
+    "flash_bytes": 269373,
+    "ram_bytes": 23620
   },
   "core/ServerSentEvents": {
     "example": "L6-Presentation/ServerSentEvents",

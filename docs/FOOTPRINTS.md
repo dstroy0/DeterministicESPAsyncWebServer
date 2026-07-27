@@ -159,7 +159,7 @@ from each example's `pio ci` size report and aggregated into
 | `core/PathParams`                                                                                         | L7-Application/PathParams            | 736.1 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/RegexRoutes`                                                                                        | L7-Application/RegexRoutes           | 735.9 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/ResponseHeaders`                                                                                    | L7-Application/ResponseHeaders       | 736.2 KB (57.5%) | 79.9 KB (25.0%)  |
-| `core/SSHCryptoSelfTest`                                                                                  | L5-Session/SSHCryptoSelfTest         | 263.2 KB (20.6%) | 21.0 KB (6.6%)   |
+| `core/SSHCryptoSelfTest`                                                                                  | L5-Session/SSHCryptoSelfTest         | 263.1 KB (20.6%) | 23.1 KB (7.2%)   |
 | `core/ServerSentEvents`                                                                                   | L6-Presentation/ServerSentEvents     | 736.6 KB (57.6%) | 79.9 KB (25.0%)  |
 | `core/Sysadmin`                                                                                           | Foundation/Sysadmin                  | 749.4 KB (58.6%) | 79.9 KB (25.0%)  |
 | `core/Templating`                                                                                         | L7-Application/Templating            | 737.5 KB (57.6%) | 79.9 KB (25.0%)  |
