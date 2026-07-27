@@ -680,6 +680,8 @@ src/
 │   ├── chachapoly.cpp
 │   ├── chachapoly.h
 │   ├── crypto_opt.h
+│   ├── crypto_scratch.cpp
+│   ├── crypto_scratch.h
 │   ├── curve25519.cpp
 │   ├── curve25519.h
 │   ├── ecdsa.cpp
@@ -1254,7 +1256,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `DNS_SERVER` | `L7-Application/DnsServer` | 725,929 | 46,044 |
 | `WIFI_SNIFFER+PROMISC` | `Peripherals/WifiSniffer` | 725,973 | 43,644 |
 | `VXI11` | `L7-Application/Vxi11` | 726,205 | 44,196 |
-| `IKEV2` | `L5-Session/IKEv2` | 727,557 | 43,948 |
+| `IKEV2` | `L5-Session/IKEv2` | 727,605 | 43,948 |
 | `UDP_TELEMETRY` | `L7-Application/UdpTelemetry` | 728,197 | 45,012 |
 | `PTP` | `L7-Application/Ptp` | 728,325 | 45,020 |
 | `SNMP+SNMP_TRAP` | `L7-Application/SnmpTrap` | 728,421 | 44,988 |
@@ -1267,7 +1269,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SMTP` | `L7-Application/SmtpAlert` | 735,201 | 61,124 |
 | `MQTT` | `L7-Application/MqttClient` | 736,465 | 65,340 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/NtpServer` | 748,669 | 46,708 |
-| `SMB` | `L7-Application/SmbFileClient` | 751,269 | 65,732 |
 | `ACCEPT_THROTTLE` | `L4-Transport/AcceptThrottle` | 753,245 | 81,828 |
 | `ADS` | `L7-Application/AdsClient` | 753,317 | 44,204 |
 | `core/CORS` | `L7-Application/CORS` | 753,417 | 81,820 |
@@ -1286,6 +1287,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/WebSocket` | `L6-Presentation/WebSocket` | 753,857 | 81,820 |
 | `core/Middleware` | `L7-Application/Middleware` | 753,941 | 81,828 |
 | `core/ChunkedResponse` | `L7-Application/ChunkedResponse` | 754,061 | 81,836 |
+| `DIAG` | `L7-Application/Diagnostics` | 754,101 | 81,820 |
 | `core/NetEgress` | `L7-Application/NetEgress` | 754,145 | 81,820 |
 | `core/FormParams` | `L6-Presentation/FormParams` | 754,165 | 81,820 |
 | `PARTITION_MONITOR` | `L7-Application/PartitionMonitor` | 754,205 | 81,828 |
@@ -1305,7 +1307,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SIMATIC` | `L7-Application/SimaticSerial` | 755,589 | 83,292 |
 | `MODBUS` | `L7-Application/ModbusTcp` | 755,609 | 82,108 |
 | `core/Basic` | `Foundation/Basic` | 755,621 | 81,836 |
-| `DIAG` | `Foundation/Configuration` | 755,665 | 77,580 |
 | `JWT` | `L6-Presentation/JWTAuth` | 755,745 | 82,972 |
 | `TELNET` | `L5-Session/Telnet` | 755,825 | 82,364 |
 | `CBOR` | `L6-Presentation/Cbor` | 755,873 | 81,900 |
@@ -1340,6 +1341,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/OAuth2` | 766,481 | 104,644 |
 | `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,009 | 45,388 |
 | `core/Sysadmin` | `Foundation/Sysadmin` | 767,429 | 81,836 |
+| `SMB` | `L7-Application/SmbFileClient` | 767,593 | 65,740 |
 | `OPCUA+UMATI` | `L7-Application/Umati` | 768,553 | 92,252 |
 | `OPCUA+EUROMAP77` | `L7-Application/Euromap77` | 768,809 | 92,276 |
 | `OPCUA+ROBOTICS` | `L7-Application/Robotics` | 768,929 | 92,468 |
@@ -1367,11 +1369,11 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 832,493 | 107,272 |
-| `SSH` | `L5-Session/SSHHostKey` | 832,565 | 109,240 |
+| `SSH` | `L5-Session/SSHHostKey` | 832,613 | 109,240 |
 | `HOTSWAP` | `L7-Application/HotSwapStorage` | 839,201 | 82,760 |
 | `EXC_DECODER+FTP+FTP_SESSION` | `L7-Application/CoreDump` | 841,993 | 83,460 |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE` | `L7-Application/HttpDelivery` | 843,481 | 82,736 |
-| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 847,941 | 110,976 |
+| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 847,989 | 110,976 |
 | `TLS` | `L6-Presentation/SecureWebSocket` | 855,873 | 122,020 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/mTLS` | 856,829 | 122,356 |
@@ -1379,7 +1381,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/TlsResumption` | 859,133 | 105,840 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/mTLS` | 859,217 | 106,016 |
 | `POWER_MGMT` | `L7-Application/PowerGovernor` | 881,905 | 85,680 |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 884,761 | 118,600 |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 884,809 | 118,600 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
@@ -1752,6 +1754,7 @@ guards at compile time.
 | `DWS_CONFIG_KEY_MAX` | `16` | Max key length incl. |
 | `DWS_CONFIG_MAX_ENTRIES` | `16` | Max key/value entries in the host (test) config backend. |
 | `DWS_CONFIG_VAL_MAX` | `64` | Max value bytes per entry in the host (test) config backend. |
+| `DWS_CRYPTO_WORK_SIZE` | `1536` | Size of the shared crypto scratch buffer (crypto/crypto_scratch: `crypto_work`). |
 | `DWS_DASHBOARD_JSON_BUF` | `1024` | Stack buffer for the dashboard layout / values JSON (bytes). |
 | `DWS_DASHBOARD_MAX_WIDGETS` | `16` | Maximum widgets in the dashboard table (BSS value array). |
 | `DWS_DEFER_QUEUE_DEPTH` | `8` | Depth of each worker's deferred-callback queue. |
@@ -1982,7 +1985,6 @@ guards at compile time.
 | `SSH_AUTH_PASS_MAX` | `64` | Max stored password length. |
 | `SSH_AUTH_USER_MAX` | `32` | Max stored user name (RFC 4252 imposes no limit; we cap for BSS). |
 | `SSH_CHAN_WINDOW` | `32768u` | Initial receive window the SSH server advertises (RFC 4254 §5.1). |
-| `SSH_CRYPTO_WORK_SIZE` | `1536` | Shared scratch buffer for SSH big-number operations. |
 | `SSH_KEXINIT_MAX` | `2048` | Max stored size of the CLIENT KEXINIT payload (I_C, for the exchange hash). |
 | `SSH_MAX_AUTH_ATTEMPTS` | `6` | Maximum failed SSH authentication attempts per connection. |
 | `SSH_MAX_PASSWORD_LEN` | `64` | Maximum SSH password length including null terminator. |

@@ -740,7 +740,6 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Layer | Feature             | Flash (best-worst) | RAM (best-worst) |
 | ----- | ------------------- | -----------------: | ---------------: |
 | Core  | `IPV6`              |             3.2 KB |          15.3 KB |
-| Core  | `DIAG`              |             2.8 KB |          11.1 KB |
 | L4    | `IP_ALLOWLIST`      |             2.0 KB |          15.3 KB |
 | L4    | `PER_IP_THROTTLE`   |             0.9 KB |          15.7 KB |
 | L4    | `DIFFSERV`          |             0.8 KB |          15.3 KB |
@@ -773,6 +772,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `EDGE_CACHE`        |            21.3 KB |          51.9 KB |
 | L7    | `DASHBOARD`         |            21.2 KB |          15.6 KB |
 | L7    | `NTRIP_CASTER`      |            18.2 KB |          18.1 KB |
+| L7    | `SMB`               |            14.4 KB |         < 0.5 KB |
 | L7    | `OAUTH2`            |            13.3 KB |          37.5 KB |
 | L7    | `OPCUA_CLIENT`      |        6.8-13.2 KB |     10.0-27.9 KB |
 | L7    | `OIDC`              |            13.0 KB |          32.9 KB |
@@ -804,6 +804,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `TOTP`              |             1.7 KB |          15.3 KB |
 | L7    | `OTA_ROLLBACK`      |             1.6 KB |          15.3 KB |
 | L7    | `PARTITION_MONITOR` |             1.3 KB |          15.3 KB |
+| L7    | `DIAG`              |             1.2 KB |          15.3 KB |
 | L7    | `GUARDRAILS`        |             0.9 KB |          15.3 KB |
 | L7    | `DEVICE_ID`         |             0.8 KB |          15.3 KB |
 | L7    | `RADIO_POWER`       |             0.6 KB |          15.3 KB |
