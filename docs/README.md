@@ -633,32 +633,33 @@ not listed).
 ```text
 src/
 ├── board_profiles/
-│   ├── 16mbflash.h
-│   ├── 16mbpsram.h
-│   ├── 2mbflash.h
-│   ├── 2mbpsram.h
-│   ├── 32mbflash.h
-│   ├── 32mbpsram.h
-│   ├── 4mbflash.h
-│   ├── 4mbpsram.h
-│   ├── 8mbflash.h
-│   ├── 8mbpsram.h
+│   ├── esp/
+│   │   ├── 16mbflash.h
+│   │   ├── 16mbpsram.h
+│   │   ├── 2mbflash.h
+│   │   ├── 2mbpsram.h
+│   │   ├── 32mbflash.h
+│   │   ├── 32mbpsram.h
+│   │   ├── 4mbflash.h
+│   │   ├── 4mbpsram.h
+│   │   ├── 8mbflash.h
+│   │   ├── 8mbpsram.h
+│   │   ├── c2_defaults.h
+│   │   ├── c3_defaults.h
+│   │   ├── c5_defaults.h
+│   │   ├── c61_defaults.h
+│   │   ├── c6_defaults.h
+│   │   ├── h21_defaults.h
+│   │   ├── h2_defaults.h
+│   │   ├── h4_defaults.h
+│   │   ├── p4_defaults.h
+│   │   ├── s2_defaults.h
+│   │   ├── s31_defaults.h
+│   │   └── s3_defaults.h
 │   ├── board_profile.h
-│   ├── c2_defaults.h
-│   ├── c3_defaults.h
-│   ├── c5_defaults.h
-│   ├── c61_defaults.h
-│   ├── c6_defaults.h
 │   ├── classic_defaults.h
 │   ├── derived_sizing.h
-│   ├── dws_platform.h
-│   ├── h21_defaults.h
-│   ├── h2_defaults.h
-│   ├── h4_defaults.h
-│   ├── p4_defaults.h
-│   ├── s2_defaults.h
-│   ├── s31_defaults.h
-│   └── s3_defaults.h
+│   └── dws_platform.h
 ├── crypto/
 │   ├── aes256ctr.cpp
 │   ├── aes256ctr.h
@@ -698,7 +699,8 @@ src/
 │   ├── sha256.h
 │   ├── sha512.cpp
 │   └── sha512.h
-├── hal/  (esp_crypto_hal.h, esp_crypto_hal.cpp)
+├── hal/
+│   └── esp/  (esp_crypto_hal.h, esp_crypto_hal.cpp)
 ├── network_drivers/
 │   ├── application/
 │   │   ├── binary_asset_blobs.cpp
