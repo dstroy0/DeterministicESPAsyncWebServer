@@ -1270,15 +1270,17 @@ void test_close_send_io()
     TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO, smb_close(&h, canned_send, canned_recv, &cn));
 }
 
-// A reply whose transport length prefix exceeds the 128-byte close buffer -> overflow error.
+// A reply whose transport length prefix exceeds the receive buffer -> overflow error. smb_close now shares
+// the DWS_SMB_BUF-sized s_smb.rx (via smb_round_trip, so encryption applies uniformly), so the length must
+// exceed that, not the old 128-byte stack buffer.
 void test_close_recv_overflow()
 {
     Canned cn;
     memset(&cn, 0, sizeof(cn));
     cn.resp[0] = 0x00;
-    cn.resp[1] = 0x00;
-    cn.resp[2] = 0x00;
-    cn.resp[3] = 0xC8; // length 200 > 128
+    cn.resp[1] = 0xFF; // length ~16 MiB, far beyond DWS_SMB_BUF -> recv_msg rejects it as overflow
+    cn.resp[2] = 0xFF;
+    cn.resp[3] = 0xFF;
     cn.dws_resp_len = 4;
     SmbHandle h = make_handle();
     TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_OVERFLOW, smb_close(&h, canned_send, canned_recv, &cn));

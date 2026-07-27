@@ -141,6 +141,21 @@ struct SmbSign
     uint8_t key[16];
 };
 
+// SMB 3.x transport-encryption state for a session. Once @ref active, every request is wrapped in a
+// TRANSFORM_HEADER (AES-128-GCM) instead of signed, and every response must decrypt (MS-SMB2 §3.1.4.3/4).
+// @ref available means the cipher keys were derived (server negotiated GCM) even before encryption is
+// required. @ref nonce is a monotonic per-session counter - it MUST never repeat for a given key, so callers
+// persist it across requests (on the SmbHandle for read/write/close).
+struct SmbCrypt
+{
+    bool active;
+    bool available;
+    uint8_t c2s[16];
+    uint8_t s2c[16];
+    uint64_t session_id;
+    uint64_t nonce;
+};
+
 // Sign / verify a message with the session's negotiated algorithm.
 static void smb_apply_sign(const SmbSign *s, uint8_t *msg, size_t len)
 {
@@ -159,8 +174,47 @@ static bool smb_check_sign(const SmbSign *s, uint8_t *msg, size_t len)
 // When @p sign is active the request is signed before sending and the response signature is verified
 // (a missing or wrong signature fails closed as SMB_ERR_PROTOCOL). Returns the reply length (>=0), or
 // -1 with *res set to the mapped IO / overflow / protocol error.
-static int smb_round_trip(SmbSendFn send, SmbRecvFn recv, void *ctx, size_t mlen, const SmbSign *sign, SmbResult *res)
+static int smb_round_trip(SmbSendFn send, SmbRecvFn recv, void *ctx, size_t mlen, const SmbSign *sign, SmbCrypt *crypt,
+                          SmbResult *res)
 {
+    // Encrypted path (SMB 3.x): wrap the plaintext request (tx+4) in a TRANSFORM_HEADER into rx+4, send it,
+    // receive the wrapped reply into rx, and decrypt it in place. Encryption supersedes signing (the AEAD tag
+    // is the integrity check), so a message is never both encrypted and signed.
+    if (crypt && crypt->active)
+    {
+        uint8_t nonce[DWS_SMB2_GCM_NONCE_LEN] = {0};
+        const uint64_t ctr = crypt->nonce++; // unique per key: never reuse a nonce, so advance every message
+        for (int i = 0; i < 8; i++)
+            nonce[i] = (uint8_t)(ctr >> (8 * i));
+        size_t tlen = dws_smb2_encrypt(crypt->c2s, nonce, crypt->session_id, s_smb.tx + 4, mlen, s_smb.rx + 4,
+                                       sizeof(s_smb.rx) - 4);
+        if (tlen == 0)
+        {
+            *res = SmbResult::SMB_ERR_OVERFLOW;
+            return -1;
+        }
+        if (!send_msg(send, ctx, s_smb.rx, tlen))
+        {
+            *res = SmbResult::SMB_ERR_IO;
+            return -1;
+        }
+        int rl = recv_msg(recv, ctx, s_smb.rx, sizeof(s_smb.rx));
+        if (rl < 0)
+        {
+            *res = (rl == -2) ? SmbResult::SMB_ERR_OVERFLOW : SmbResult::SMB_ERR_IO;
+            return -1;
+        }
+        // Decrypt in place: dws_smb2_decrypt GHASHes the whole ciphertext before the CTR pass, so an
+        // out == in (backward-shifted) overlap is safe. Fails closed on a bad tag / non-TRANSFORM reply.
+        size_t plen = dws_smb2_decrypt(crypt->s2c, s_smb.rx, (size_t)rl, s_smb.rx, sizeof(s_smb.rx));
+        if (plen == 0)
+        {
+            *res = SmbResult::SMB_ERR_PROTOCOL;
+            return -1;
+        }
+        return (int)plen;
+    }
+
     if (sign && sign->active)
         smb_apply_sign(sign, s_smb.tx + 4, mlen);
     if (!send_msg(send, ctx, s_smb.tx, mlen))
@@ -189,7 +243,7 @@ static int smb_round_trip(SmbSendFn send, SmbRecvFn recv, void *ctx, size_t mlen
 // hash chain (MS-SMB2 §3.1.5.2). The salt is a fresh random blob; it lives only in the request bytes
 // that feed the hash, so it needs no separate storage.
 static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx, uint16_t *sec_mode, uint16_t *dialect,
-                               SmbPreauth *preauth)
+                               uint16_t *cipher, SmbPreauth *preauth)
 {
     uint8_t guid[16];
     uint8_t salt[32];
@@ -208,7 +262,7 @@ static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx, uint16
 
     SmbResult rt = SmbResult::SMB_ERR_IO;
     // NEGOTIATE precedes authentication, so there is no session key yet: never signed.
-    int rl = smb_round_trip(send, recv, ctx, mlen, nullptr, &rt);
+    int rl = smb_round_trip(send, recv, ctx, mlen, nullptr, nullptr, &rt);
     if (rl < 0)
         return rt;
     dws_smb_preauth_update(preauth, s_smb.rx, (size_t)rl); // fold the NEGOTIATE response
@@ -217,6 +271,15 @@ static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx, uint16
         return SmbResult::SMB_ERR_PROTOCOL;
     *sec_mode = neg.security_mode;
     *dialect = neg.dialect;
+    // The negotiated encryption cipher lives in the 3.1.1 ENCRYPTION_CAPABILITIES context. 0 = none offered /
+    // accepted -> the session stays unencrypted. We only implement AES-128-GCM, which is what we offer.
+    *cipher = 0;
+    if (neg.dialect == (uint16_t)Smb2Dialect::SMB2_DIALECT_0311)
+    {
+        Smb2NegotiateContexts nc;
+        if (dws_smb2_parse_negotiate_contexts(s_smb.rx, (size_t)rl, &nc) && nc.have_encryption)
+            *cipher = nc.cipher;
+    }
     return SmbResult::SMB_OK;
 }
 
@@ -227,8 +290,8 @@ static SmbResult smb_negotiate(SmbSendFn send, SmbRecvFn recv, void *ctx, uint16
 // per-dialect signer: HMAC-SHA256 over the NTLMv2 session key for SMB 2.x, or AES-CMAC over the
 // SP800-108-derived signing key (from the final preauth hash) for SMB 3.x, so every later request signs.
 static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, bool want_signing, uint16_t dialect,
-                                   SmbPreauth *preauth, SmbSendFn send, SmbRecvFn recv, void *ctx, uint64_t *session_id,
-                                   SmbSign *sign)
+                                   uint16_t cipher, SmbPreauth *preauth, SmbSendFn send, SmbRecvFn recv, void *ctx,
+                                   uint64_t *session_id, SmbSign *sign, SmbCrypt *crypt)
 {
     // 2. SESSION_SETUP round 1: NTLMSSP NEGOTIATE wrapped in SPNEGO
     uint8_t ntneg[64];
@@ -242,7 +305,7 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, boo
     dws_smb_preauth_update(preauth, s_smb.tx + 4, mlen); // fold SESSION_SETUP request 1 (unsigned)
     SmbResult rt = SmbResult::SMB_ERR_IO;
     // Round 1 precedes the session key, so it is never signed.
-    int rl = smb_round_trip(send, recv, ctx, mlen, nullptr, &rt);
+    int rl = smb_round_trip(send, recv, ctx, mlen, nullptr, nullptr, &rt);
     if (rl < 0)
         return rt;
     dws_smb_preauth_update(preauth, s_smb.rx, (size_t)rl); // fold SESSION_SETUP response 1
@@ -322,7 +385,7 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, boo
             dws_smb2_sign(skey, s_smb.tx + 4, mlen);
     }
 
-    rl = smb_round_trip(send, recv, ctx, mlen, nullptr, &rt);
+    rl = smb_round_trip(send, recv, ctx, mlen, nullptr, nullptr, &rt);
     if (rl < 0)
         return rt;
     Smb2Header h2;
@@ -334,18 +397,39 @@ static SmbResult smb_session_setup(const SmbConfig *cfg, const char *domain, boo
     // §3.2.5.3.1); anything else with the server requiring signing signs the rest of the session.
     Smb2SessionSetupResp ss2;
     bool guest_or_null = false;
+    uint16_t sess_flags = 0;
     if (dws_smb2_parse_session_setup_response(s_smb.rx, (size_t)rl, &ss2))
-        guest_or_null = (ss2.session_flags & (Smb2SessionFlags::SMB2_SESSION_FLAG_IS_GUEST |
-                                              Smb2SessionFlags::SMB2_SESSION_FLAG_IS_NULL)) != 0;
+    {
+        sess_flags = ss2.session_flags;
+        guest_or_null = (sess_flags & (Smb2SessionFlags::SMB2_SESSION_FLAG_IS_GUEST |
+                                       Smb2SessionFlags::SMB2_SESSION_FLAG_IS_NULL)) != 0;
+    }
     sign->active = want_signing && !guest_or_null;
     sign->algo = algo;
     memcpy(sign->key, sign_key, sizeof(sign->key));
+
+    // SMB 3.x transport encryption: derive the C2S/S2C AES-128-GCM keys if the server negotiated GCM (SMB 3.x,
+    // non-guest), and turn encryption on now if the session is flagged encrypt-required. A share can also
+    // require it (checked at TREE_CONNECT); until then the keys sit ready (available) but inactive.
+    crypt->active = false;
+    crypt->available = false;
+    crypt->session_id = *session_id;
+    crypt->nonce = 0;
+    if (cipher == Smb2Cipher::SMB2_ENCRYPTION_AES128_GCM && dialect >= (uint16_t)Smb2Dialect::SMB2_DIALECT_0300 &&
+        !guest_or_null)
+    {
+        const bool is_311 = dialect == (uint16_t)Smb2Dialect::SMB2_DIALECT_0311;
+        crypt->available =
+            dws_smb3_derive_encryption_keys(skey, dialect, is_311 ? preauth->hash : nullptr, crypt->c2s, crypt->s2c);
+        if (crypt->available && (sess_flags & Smb2SessionFlags::SMB2_SESSION_FLAG_ENCRYPT_DATA))
+            crypt->active = true;
+    }
     return SmbResult::SMB_OK;
 }
 
 // Step 5 - TREE_CONNECT to \\server\share. Fills *tree_id.
 static SmbResult smb_tree_connect(const SmbConfig *cfg, uint64_t session_id, const SmbSign *sign, SmbSendFn send,
-                                  SmbRecvFn recv, void *ctx, uint32_t *tree_id)
+                                  SmbRecvFn recv, void *ctx, uint32_t *tree_id, SmbCrypt *crypt)
 {
     size_t utf16_n = utf16le(cfg->share, s_smb.utf16, sizeof(s_smb.utf16));
     if (!utf16_n)
@@ -354,7 +438,7 @@ static SmbResult smb_tree_connect(const SmbConfig *cfg, uint64_t session_id, con
     if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
         return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     SmbResult rt = SmbResult::SMB_ERR_IO;
-    int rl = smb_round_trip(send, recv, ctx, mlen, sign, &rt);
+    int rl = smb_round_trip(send, recv, ctx, mlen, sign, crypt, &rt);
     if (rl < 0)
         return rt;
     Smb2Header h3;
@@ -364,12 +448,16 @@ static SmbResult smb_tree_connect(const SmbConfig *cfg, uint64_t session_id, con
     if (!dws_smb2_parse_tree_connect_response(s_smb.rx, (size_t)rl, &tc))
         return SmbResult::SMB_ERR_PROTOCOL;
     *tree_id = h3.tree_id;
+    // A share flagged encrypt-data turns encryption on for everything from CREATE onward (MS-SMB2 §3.2.5.5),
+    // provided the cipher keys were derived at session setup.
+    if (crypt && crypt->available && (tc.share_flags & Smb2ShareFlags::SMB2_SHAREFLAG_ENCRYPT_DATA))
+        crypt->active = true;
     return SmbResult::SMB_OK;
 }
 
 // Step 6 - CREATE (open) the file; fills the handle h on success.
 static SmbResult smb_create(const SmbConfig *cfg, SmbHandle *h, uint64_t session_id, uint32_t tree_id,
-                            const SmbSign *sign, SmbSendFn send, SmbRecvFn recv, void *ctx)
+                            const SmbSign *sign, SmbCrypt *crypt, SmbSendFn send, SmbRecvFn recv, void *ctx)
 {
     size_t utf16_n = utf16le(cfg->path, s_smb.utf16, sizeof(s_smb.utf16));
     if (!utf16_n)
@@ -381,7 +469,7 @@ static SmbResult smb_create(const SmbConfig *cfg, SmbHandle *h, uint64_t session
     if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
         return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     SmbResult rt = SmbResult::SMB_ERR_IO;
-    int rl = smb_round_trip(send, recv, ctx, mlen, sign, &rt);
+    int rl = smb_round_trip(send, recv, ctx, mlen, sign, crypt, &rt);
     if (rl < 0)
         return rt;
     Smb2Header h4;
@@ -398,6 +486,12 @@ static SmbResult smb_create(const SmbConfig *cfg, SmbHandle *h, uint64_t session
     h->signing_active = sign->active;
     h->signing_algo = sign->algo;
     memcpy(h->signing_key, sign->key, sizeof(h->signing_key));
+    // Carry the encryption state onto the handle so read/write/close keep encrypting with the same keys and a
+    // continuing nonce (the counter must not restart, or a nonce would repeat under the same key).
+    h->encrypt_active = crypt->active;
+    memcpy(h->enc_c2s, crypt->c2s, sizeof(h->enc_c2s));
+    memcpy(h->enc_s2c, crypt->s2c, sizeof(h->enc_s2c));
+    h->enc_nonce = crypt->nonce;
     return SmbResult::SMB_OK;
 }
 
@@ -410,53 +504,53 @@ SmbResult smb_open(const SmbConfig *cfg, SmbHandle *h, SmbSendFn send, SmbRecvFn
 
     uint16_t sec_mode = 0;
     uint16_t dialect = 0;
+    uint16_t cipher = 0;
     SmbPreauth preauth;
-    SmbResult r = smb_negotiate(send, recv, ctx, &sec_mode, &dialect, &preauth);
+    SmbResult r = smb_negotiate(send, recv, ctx, &sec_mode, &dialect, &cipher, &preauth);
     if (r != SmbResult::SMB_OK)
         return r;
     // The client advertises SIGNING_ENABLED, so the session is signed exactly when the server requires it.
     bool want_signing = (sec_mode & Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_REQUIRED) != 0;
 
     SmbSign sign = {false, Smb2SignAlgo::HMAC_SHA256, {0}};
+    SmbCrypt crypt = {false, false, {0}, {0}, 0, 0};
     uint64_t session_id = 0;
-    r = smb_session_setup(cfg, domain, want_signing, dialect, &preauth, send, recv, ctx, &session_id, &sign);
+    r = smb_session_setup(cfg, domain, want_signing, dialect, cipher, &preauth, send, recv, ctx, &session_id, &sign,
+                          &crypt);
     if (r != SmbResult::SMB_OK)
         return r;
 
     uint32_t tree_id = 0;
-    r = smb_tree_connect(cfg, session_id, &sign, send, recv, ctx, &tree_id);
+    r = smb_tree_connect(cfg, session_id, &sign, send, recv, ctx, &tree_id, &crypt);
     if (r != SmbResult::SMB_OK)
         return r;
 
-    return smb_create(cfg, h, session_id, tree_id, &sign, send, recv, ctx);
+    return smb_create(cfg, h, session_id, tree_id, &sign, &crypt, send, recv, ctx);
 }
 
 SmbResult smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx)
 {
     if (!h || !send || !recv)
         return SmbResult::SMB_ERR_ARG;
-    uint8_t tx[128];
-    uint8_t rx[128];
-    size_t mlen =
-        dws_smb2_build_close(tx + 4, sizeof(tx) - 4, h->next_message_id, h->session_id, h->tree_id, h->file_id);
+    size_t mlen = dws_smb2_build_close(s_smb.tx + 4, sizeof(s_smb.tx) - 4, h->next_message_id, h->session_id,
+                                       h->tree_id, h->file_id);
     if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
         return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
     SmbSign sign = {h->signing_active, h->signing_algo, {0}};
     memcpy(sign.key, h->signing_key, sizeof(sign.key));
-    if (sign.active)
-        smb_apply_sign(&sign, tx + 4, mlen);
-    if (!send_msg(send, ctx, tx, mlen))
-        return SmbResult::SMB_ERR_IO;
-    int rl = recv_msg(recv, ctx, rx, sizeof(rx));
+    SmbCrypt crypt = {h->encrypt_active, h->encrypt_active, {0}, {0}, h->session_id, h->enc_nonce};
+    memcpy(crypt.c2s, h->enc_c2s, sizeof(crypt.c2s));
+    memcpy(crypt.s2c, h->enc_s2c, sizeof(crypt.s2c));
+    SmbResult rt = SmbResult::SMB_ERR_IO;
+    int rl = smb_round_trip(send, recv, ctx, mlen, &sign, &crypt, &rt);
+    h->enc_nonce = crypt.nonce; // persist the advanced nonce (must never repeat under the same key)
     if (rl < 0)
-        return rl == -2 ? SmbResult::SMB_ERR_OVERFLOW : SmbResult::SMB_ERR_IO;
-    if (sign.active && !smb_check_sign(&sign, rx, (size_t)rl))
-        return SmbResult::SMB_ERR_PROTOCOL;
+        return rt;
     Smb2Header hd;
     Smb2CloseResp cl;
-    if (!dws_smb2_parse_header(rx, (size_t)rl, &hd) || hd.status != Smb2Status::SMB2_STATUS_SUCCESS)
+    if (!dws_smb2_parse_header(s_smb.rx, (size_t)rl, &hd) || hd.status != Smb2Status::SMB2_STATUS_SUCCESS)
         return SmbResult::SMB_ERR_PROTOCOL;
-    if (!dws_smb2_parse_close_response(rx, (size_t)rl, &cl))
+    if (!dws_smb2_parse_close_response(s_smb.rx, (size_t)rl, &cl))
         return SmbResult::SMB_ERR_PROTOCOL;
     h->next_message_id++;
     return SmbResult::SMB_OK;
@@ -470,6 +564,9 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
     *out_len = 0;
     SmbSign sign = {h->signing_active, h->signing_algo, {0}};
     memcpy(sign.key, h->signing_key, sizeof(sign.key));
+    SmbCrypt crypt = {h->encrypt_active, h->encrypt_active, {0}, {0}, h->session_id, h->enc_nonce};
+    memcpy(crypt.c2s, h->enc_c2s, sizeof(crypt.c2s));
+    memcpy(crypt.s2c, h->enc_s2c, sizeof(crypt.s2c));
     const size_t chunk_max = DWS_SMB_BUF - 96; // room for the header + READ response body
     size_t total = 0;
     while (total < cap)
@@ -482,7 +579,8 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
         if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
             return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
         SmbResult rt = SmbResult::SMB_ERR_IO;
-        int rl = smb_round_trip(send, recv, ctx, mlen, &sign, &rt);
+        int rl = smb_round_trip(send, recv, ctx, mlen, &sign, &crypt, &rt);
+        h->enc_nonce = crypt.nonce; // persist immediately so the nonce never repeats, even on an error return
         if (rl < 0)
             return rt;
         Smb2Header hd;
@@ -515,6 +613,9 @@ SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t l
     *written = 0;
     SmbSign sign = {h->signing_active, h->signing_algo, {0}};
     memcpy(sign.key, h->signing_key, sizeof(sign.key));
+    SmbCrypt crypt = {h->encrypt_active, h->encrypt_active, {0}, {0}, h->session_id, h->enc_nonce};
+    memcpy(crypt.c2s, h->enc_c2s, sizeof(crypt.c2s));
+    memcpy(crypt.s2c, h->enc_s2c, sizeof(crypt.s2c));
     const size_t chunk_max = DWS_SMB_BUF - 128; // room for the header + WRITE request body
     size_t total = 0;
     while (total < len)
@@ -527,7 +628,8 @@ SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t l
         if (!mlen) // GCOVR_EXCL_LINE - the static_assert at the top of this file makes this unreachable
             return SmbResult::SMB_ERR_OVERFLOW; // GCOVR_EXCL_LINE - unreachable body of the guard above
         SmbResult rt = SmbResult::SMB_ERR_IO;
-        int rl = smb_round_trip(send, recv, ctx, mlen, &sign, &rt);
+        int rl = smb_round_trip(send, recv, ctx, mlen, &sign, &crypt, &rt);
+        h->enc_nonce = crypt.nonce; // persist immediately so the nonce never repeats, even on an error return
         if (rl < 0)
             return rt;
         Smb2Header hd;

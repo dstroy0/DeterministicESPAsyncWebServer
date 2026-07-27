@@ -363,6 +363,12 @@ bool dws_smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2S
 size_t dws_smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
                                    const uint8_t *path_utf16, size_t path_len);
 
+/** @brief TREE_CONNECT response ShareFlags of interest (MS-SMB2 §2.2.10). */
+struct Smb2ShareFlags
+{
+    static constexpr uint32_t SMB2_SHAREFLAG_ENCRYPT_DATA = 0x00008000; ///< the share mandates SMB3 encryption
+};
+
 /** @brief Parsed TREE_CONNECT response (MS-SMB2 §2.2.10). The TreeId is in the response header. */
 struct Smb2TreeConnectResp
 {

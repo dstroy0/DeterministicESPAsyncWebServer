@@ -74,6 +74,10 @@ struct SmbHandle
     bool signing_active;       ///< the session negotiated SMB signing (server set SigningRequired, not guest/null)
     Smb2SignAlgo signing_algo; ///< HMAC-SHA256 (SMB 2.x) or AES-CMAC (SMB 3.x), from the negotiated dialect
     uint8_t signing_key[16];   ///< the session signing key when @ref signing_active (2.x: NTLMv2 key; 3.x: KDF-derived)
+    bool encrypt_active;       ///< SMB 3.x transport encryption is in force (server session or share required it)
+    uint8_t enc_c2s[16];       ///< client->server AES-128-GCM key (encrypts requests) when @ref encrypt_active
+    uint8_t enc_s2c[16];       ///< server->client AES-128-GCM key (decrypts responses) when @ref encrypt_active
+    uint64_t enc_nonce;        ///< monotonic per-session GCM nonce counter, persisted across read/write/close
 };
 
 /**
