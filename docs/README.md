@@ -1341,7 +1341,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/OAuth2` | 766,481 | 104,644 |
 | `RTC+TIME_SOURCE+NTP` | `Drivers/Rtc` | 767,009 | 45,388 |
 | `core/Sysadmin` | `Foundation/Sysadmin` | 767,429 | 81,836 |
-| `SMB` | `L7-Application/SmbFileClient` | 767,593 | 65,740 |
+| `SMB` | `L7-Application/SmbFileClient` | 767,589 | 65,740 |
 | `OPCUA+UMATI` | `L7-Application/Umati` | 768,553 | 92,252 |
 | `OPCUA+EUROMAP77` | `L7-Application/Euromap77` | 768,809 | 92,276 |
 | `OPCUA+ROBOTICS` | `L7-Application/Robotics` | 768,929 | 92,468 |
@@ -1369,11 +1369,11 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 832,493 | 107,272 |
-| `SSH` | `L5-Session/SSHHostKey` | 832,613 | 109,240 |
+| `SSH` | `L5-Session/SSHHostKey` | 832,621 | 109,240 |
 | `HOTSWAP` | `L7-Application/HotSwapStorage` | 839,201 | 82,760 |
 | `EXC_DECODER+FTP+FTP_SESSION` | `L7-Application/CoreDump` | 841,993 | 83,460 |
 | `HTTP_DELIVERY+FILE_SERVING+RANGE` | `L7-Application/HttpDelivery` | 843,481 | 82,736 |
-| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 847,989 | 110,976 |
+| `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF` | `L5-Session/SSHReverseTunnel` | 847,997 | 110,976 |
 | `TLS` | `L6-Presentation/SecureWebSocket` | 855,873 | 122,020 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/mTLS` | 856,829 | 122,356 |
@@ -1381,7 +1381,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/TlsResumption` | 859,133 | 105,840 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/mTLS` | 859,217 | 106,016 |
 | `POWER_MGMT` | `L7-Application/PowerGovernor` | 881,905 | 85,680 |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 884,809 | 118,600 |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/SSHSftp` | 884,817 | 118,600 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
