@@ -745,7 +745,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L4    | `DIFFSERV`          |             0.8 KB |          15.3 KB |
 | L4    | `KEEPALIVE`         |             0.8 KB |          15.3 KB |
 | L4    | `ACCEPT_THROTTLE`   |           < 0.5 KB |          15.3 KB |
-| L5    | `SSH`               |       66.6-77.9 KB |     21.8-42.0 KB |
+| L5    | `SSH`               |       66.6-77.7 KB |     21.8-43.2 KB |
 | L5    | `TELNET`            |             2.9 KB |          15.8 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.1-7.9 KB |      8.0-23.3 KB |
@@ -772,7 +772,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `EDGE_CACHE`        |            21.3 KB |          51.9 KB |
 | L7    | `DASHBOARD`         |            21.2 KB |          15.6 KB |
 | L7    | `NTRIP_CASTER`      |            18.2 KB |          18.1 KB |
-| L7    | `SMB`               |            14.3 KB |           1.1 KB |
+| L7    | `SMB`               |            13.9 KB |           1.3 KB |
 | L7    | `OAUTH2`            |            13.3 KB |          37.5 KB |
 | L7    | `OPCUA_CLIENT`      |        6.8-13.2 KB |     10.0-27.9 KB |
 | L7    | `OIDC`              |            13.0 KB |          32.9 KB |
