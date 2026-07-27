@@ -675,7 +675,7 @@
     "example": "L7-Application/SmbFileClient",
     "flags": "-DDWS_ENABLE_SMB=1",
     "board": "esp32dev",
-    "flash_bytes": 747877,
+    "flash_bytes": 751269,
     "ram_bytes": 65732
   },
   "SMTP": {
