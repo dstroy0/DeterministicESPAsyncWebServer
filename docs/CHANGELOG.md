@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`9fbdd3e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fbdd3ec5978644e014698a5484806b536379a93))
+- update CHANGELOG.md [skip ci] ([`cdff3ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdff3ffff8d3e2a316fd593f7c6a20b81c4642ca))
 - update test report + coverage [skip ci] ([`6428195`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6428195148134b6d41c785ddf618549dd0a689e9))
 - update CHANGELOG.md [skip ci] ([`3fa5fff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3fa5fff04c80d8efb64a386896d757666235fed1))
 - update CHANGELOG.md [skip ci] ([`13c9bd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13c9bd521f2aa4fdc49d6b7a362523996f640629))
@@ -29,6 +31,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`c703c32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c703c326edd12e3220d9f1689378acb98c6d8098))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`31d2bba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31d2bbac63aef09ad529d05304ce02f352474396))
 - update ESP32 build footprints [skip ci] ([`83be0fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83be0fd3824c0014f7e57b87da9f61b407249296))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7c860b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c860b39675e81a9e346b8b0b3a96e445e8d48e3))
 - update ESP32 build footprints [skip ci] ([`938a29f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/938a29f40ba77488c31816f1d7d5d71b0acbacd2))
@@ -59,6 +63,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- end-to-end encrypted SMB 3.1.1 round-trip against a reference-peer mock ([`cc4e20a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc4e20a406df9a129af6eec6021322fd2b800842))
 - HW link-bringup test for the reorganized L1 layer + roadmap naming candidates ([`ec81e04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec81e0480348b9ebfa9ffef9d9e4ef9006d389c8))
 
 ## [7.177.0] - 2026-07-27
