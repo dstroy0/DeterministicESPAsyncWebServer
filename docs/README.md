@@ -720,7 +720,10 @@ src/
 │   ├── tls13_kdf.cpp
 │   └── tls13_kdf.h
 ├── hal/
-│   └── esp/  (esp_crypto_hal.h, esp_crypto_hal.cpp)
+│   └── esp/
+│       ├── esp_crypto_hal.cpp
+│       ├── esp_crypto_hal.h
+│       └── P4_CRYPTO_REG_SYMBOLS.md
 ├── network_drivers/
 │   ├── application/
 │   │   ├── binary_asset_blobs.cpp
