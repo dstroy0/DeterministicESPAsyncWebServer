@@ -732,6 +732,7 @@ src/
 │       ├── H2_CRYPTO_REG_SYMBOLS.md
 │       ├── P4_CRYPTO_REG_SYMBOLS.md
 │       ├── P4_MIPI_DSI_CSI.md
+│       ├── P4_MIPI_HELPERS.md
 │       ├── S2.md
 │       └── S3_CRYPTO_REG_SYMBOLS.md
 ├── network_drivers/
@@ -1240,6 +1241,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | Feature | Example | Flash (bytes) | Static RAM (bytes) |
 | :------ | :------ | ------------: | -----------------: |
 | `SIGFOX` | `Drivers/SigfoxUplink` | 267,961 | 21,464 |
+| `PREEMPT_QUEUE` | `Foundation/PreemptLanes` | 268,401 | 23,936 |
 | `ENOCEAN+GATEWAY` | `Drivers/EnOceanGateway` | 268,701 | 21,848 |
 | `ZWAVE+GATEWAY` | `Drivers/ZWaveGateway` | 268,905 | 21,848 |
 | `core/SSHCryptoSelfTest` | `L5-Session/SSHCryptoSelfTest` | 269,373 | 23,620 |
@@ -1251,7 +1253,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/InterfaceForward` | 270,849 | 29,096 |
 | `THREAD+GATEWAY` | `Drivers/ThreadGateway` | 271,889 | 22,616 |
 | `NMEA0183+UBX` | `Drivers/UbloxGnss` | 273,765 | 22,432 |
-| `PREEMPT_QUEUE` | `Foundation/PreemptQueue` | 274,069 | 23,968 |
 | `NRF24+GATEWAY` | `Drivers/Nrf24Gateway` | 276,105 | 21,680 |
 | `LORA+GATEWAY` | `Drivers/LoRaGateway` | 276,329 | 21,688 |
 | `PCA9685` | `Drivers/Pca9685` | 284,601 | 21,800 |
