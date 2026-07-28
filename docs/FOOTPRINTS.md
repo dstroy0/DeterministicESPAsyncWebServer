@@ -25,7 +25,7 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                                                                                    | L7-Application/Csrf                  | 737.3 KB (57.6%) | 82.1 KB (25.6%)  |
 | `DASHBOARD`                                                                                               | L7-Application/Dashboard             | 756.4 KB (59.1%) | 80.3 KB (25.1%)  |
 | `DEVICE_ID`                                                                                               | L7-Application/DeviceUuid            | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
-| `DIAG`                                                                                                    | L7-Application/Diagnostics           | 736.4 KB (57.5%) | 79.9 KB (25.0%)  |
+| `DIAG`                                                                                                    | Foundation/Configuration             | 738.0 KB (57.7%) | 75.8 KB (23.7%)  |
 | `DIFFSERV`                                                                                                | L4-Transport/DiffServ                | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`                                                                          | Peripherals/DmaIngest                | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE`                                                                  | Foundation/InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
@@ -122,7 +122,7 @@ from each example's `pio ci` size report and aggregated into
 | `TLS`                                                                                                     | L6-Presentation/SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                                                                                | L4-Transport/mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
 | `TLS+MTLS+TLS_ARENA_SIZE`                                                                                 | L4-Transport/mTLS                    | 839.1 KB (65.6%) | 103.5 KB (32.4%) |
-| `TLS+TLS_ARENA_SIZE`                                                                                      | L6-Presentation/SecureWebSocket      | 838.2 KB (65.5%) | 103.2 KB (32.3%) |
+| `TLS+TLS_ARENA_SIZE`                                                                                      | L4-Transport/HTTPS                   | 838.3 KB (65.5%) | 103.2 KB (32.3%) |
 | `TLS+TLS_RESUMPTION`                                                                                      | L4-Transport/TlsResumption           | 836.6 KB (65.4%) | 119.3 KB (37.3%) |
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE`                                                                       | L4-Transport/TlsResumption           | 839.0 KB (65.5%) | 103.4 KB (32.3%) |
 | `TOTP`                                                                                                    | L7-Application/Totp                  | 736.9 KB (57.6%) | 79.9 KB (25.0%)  |

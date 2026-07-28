@@ -119,11 +119,11 @@
     "ram_bytes": 81860
   },
   "DIAG": {
-    "example": "L7-Application/Diagnostics",
+    "example": "Foundation/Configuration",
     "flags": "-DDWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 754101,
-    "ram_bytes": 81820
+    "flash_bytes": 755665,
+    "ram_bytes": 77580
   },
   "DIFFSERV": {
     "example": "L4-Transport/DiffServ",
@@ -798,10 +798,10 @@
     "ram_bytes": 106016
   },
   "TLS+TLS_ARENA_SIZE": {
-    "example": "L6-Presentation/SecureWebSocket",
+    "example": "L4-Transport/HTTPS",
     "flags": "-DDWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 858365,
+    "flash_bytes": 858401,
     "ram_bytes": 105680
   },
   "TLS+TLS_RESUMPTION": {
