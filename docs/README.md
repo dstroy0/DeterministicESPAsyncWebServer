@@ -725,6 +725,7 @@ src/
 │       ├── C3_CRYPTO_REG_SYMBOLS.md
 │       ├── C6_CRYPTO_REG_SYMBOLS.md
 │       ├── CLASSIC_CRYPTO_REG_SYMBOLS.md
+│       ├── DMA_GDMA.md
 │       ├── E_CRYPTO_REG_SYMBOLS.md
 │       ├── esp_crypto_hal.cpp
 │       ├── esp_crypto_hal.h
