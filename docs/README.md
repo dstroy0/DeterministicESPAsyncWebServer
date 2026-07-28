@@ -731,6 +731,7 @@ src/
 │       ├── esp_crypto_hal.h
 │       ├── H2_CRYPTO_REG_SYMBOLS.md
 │       ├── P4_CRYPTO_REG_SYMBOLS.md
+│       ├── P4_MIPI_DSI_CSI.md
 │       ├── S2.md
 │       └── S3_CRYPTO_REG_SYMBOLS.md
 ├── network_drivers/
