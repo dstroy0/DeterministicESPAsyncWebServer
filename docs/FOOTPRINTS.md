@@ -25,7 +25,7 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                                                                                    | L7-Application/Csrf                  | 737.3 KB (57.6%) | 82.1 KB (25.6%)  |
 | `DASHBOARD`                                                                                               | L7-Application/Dashboard             | 756.4 KB (59.1%) | 80.3 KB (25.1%)  |
 | `DEVICE_ID`                                                                                               | L7-Application/DeviceUuid            | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
-| `DIAG`                                                                                                    | Foundation/Configuration             | 738.0 KB (57.7%) | 75.8 KB (23.7%)  |
+| `DIAG`                                                                                                    | L7-Application/Diagnostics           | 736.4 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DIFFSERV`                                                                                                | L4-Transport/DiffServ                | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`                                                                          | Peripherals/DmaIngest                | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE`                                                                  | Foundation/InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
@@ -91,7 +91,7 @@ from each example's `pio ci` size report and aggregated into
 | `PER_IP_THROTTLE`                                                                                         | L4-Transport/PerIpThrottle           | 736.1 KB (57.5%) | 80.3 KB (25.1%)  |
 | `PN532+GATEWAY`                                                                                           | Drivers/NfcGateway                   | 281.4 KB (22.0%) | 21.4 KB (6.7%)   |
 | `POWER_MGMT`                                                                                              | L7-Application/PowerGovernor         | 861.2 KB (67.3%) | 83.7 KB (26.1%)  |
-| `PREEMPT_QUEUE`                                                                                           | Foundation/PreemptLanes              | 262.1 KB (20.5%) | 23.4 KB (7.3%)   |
+| `PREEMPT_QUEUE`                                                                                           | Foundation/PreemptQueue              | 267.6 KB (20.9%) | 23.4 KB (7.3%)   |
 | `PROMISC+FORWARD+ETHERNET`                                                                                | Peripherals/WifiCapture              | 748.1 KB (58.4%) | 46.5 KB (14.5%)  |
 | `PROVISIONING`                                                                                            | L7-Application/Provisioning          | 743.9 KB (58.1%) | 81.5 KB (25.5%)  |
 | `PTP`                                                                                                     | L7-Application/Ptp                   | 711.3 KB (55.6%) | 44.0 KB (13.7%)  |

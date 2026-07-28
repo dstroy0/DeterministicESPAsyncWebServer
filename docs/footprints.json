@@ -119,11 +119,11 @@
     "ram_bytes": 81860
   },
   "DIAG": {
-    "example": "Foundation/Configuration",
+    "example": "L7-Application/Diagnostics",
     "flags": "-DDWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 755665,
-    "ram_bytes": 77580
+    "flash_bytes": 754101,
+    "ram_bytes": 81820
   },
   "DIFFSERV": {
     "example": "L4-Transport/DiffServ",
@@ -581,11 +581,11 @@
     "ram_bytes": 85680
   },
   "PREEMPT_QUEUE": {
-    "example": "Foundation/PreemptLanes",
+    "example": "Foundation/PreemptQueue",
     "flags": "-DDWS_ENABLE_PREEMPT_QUEUE=1",
     "board": "esp32dev",
-    "flash_bytes": 268401,
-    "ram_bytes": 23936
+    "flash_bytes": 274069,
+    "ram_bytes": 23968
   },
   "PROMISC+FORWARD+ETHERNET": {
     "example": "Peripherals/WifiCapture",
