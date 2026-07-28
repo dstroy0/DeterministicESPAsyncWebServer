@@ -723,6 +723,7 @@ src/
 │   └── esp/
 │       ├── C6_CRYPTO_REG_SYMBOLS.md
 │       ├── CLASSIC_CRYPTO_REG_SYMBOLS.md
+│       ├── E_CRYPTO_REG_SYMBOLS.md
 │       ├── esp_crypto_hal.cpp
 │       ├── esp_crypto_hal.h
 │       ├── H2_CRYPTO_REG_SYMBOLS.md
@@ -1383,7 +1384,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS` | `L6-Presentation/SecureWebSocket` | 855,873 | 122,020 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/mTLS` | 856,829 | 122,356 |
-| `TLS+TLS_ARENA_SIZE` | `L4-Transport/HTTPS` | 858,401 | 105,680 |
+| `TLS+TLS_ARENA_SIZE` | `L6-Presentation/SecureWebSocket` | 858,365 | 105,680 |
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/TlsResumption` | 859,133 | 105,840 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/mTLS` | 859,217 | 106,016 |
 | `POWER_MGMT` | `L7-Application/PowerGovernor` | 881,905 | 85,680 |
