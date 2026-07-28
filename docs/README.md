@@ -729,6 +729,7 @@ src/
 │       ├── esp_crypto_hal.h
 │       ├── H2_CRYPTO_REG_SYMBOLS.md
 │       ├── P4_CRYPTO_REG_SYMBOLS.md
+│       ├── S2.md
 │       └── S3_CRYPTO_REG_SYMBOLS.md
 ├── network_drivers/
 │   ├── application/
@@ -1377,7 +1378,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `ETAG` | `L7-Application/ETag` | 829,785 | 83,124 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/WebSocketClient` | 831,745 | 123,620 |
-| `SSH` | `L5-Session/SSH` | 832,325 | 110,728 |
+| `SSH` | `L5-Session/SSHHostKey` | 832,413 | 110,720 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/WebSocketClient` | 832,493 | 107,272 |
 | `HOTSWAP` | `L7-Application/HotSwapStorage` | 839,201 | 82,760 |
 | `EXC_DECODER+FTP+FTP_SESSION` | `L7-Application/CoreDump` | 841,993 | 83,460 |
