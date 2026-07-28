@@ -721,6 +721,7 @@ src/
 │   └── tls13_kdf.h
 ├── hal/
 │   └── esp/
+│       ├── C6_CRYPTO_REG_SYMBOLS.md
 │       ├── CLASSIC_CRYPTO_REG_SYMBOLS.md
 │       ├── esp_crypto_hal.cpp
 │       ├── esp_crypto_hal.h
@@ -1291,7 +1292,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/WebSocket` | `L6-Presentation/WebSocket` | 753,857 | 81,820 |
 | `core/Middleware` | `L7-Application/Middleware` | 753,941 | 81,828 |
 | `core/ChunkedResponse` | `L7-Application/ChunkedResponse` | 754,061 | 81,836 |
-| `DIAG` | `L7-Application/Diagnostics` | 754,101 | 81,820 |
 | `core/NetEgress` | `L7-Application/NetEgress` | 754,145 | 81,820 |
 | `core/FormParams` | `L6-Presentation/FormParams` | 754,165 | 81,820 |
 | `PARTITION_MONITOR` | `L7-Application/PartitionMonitor` | 754,205 | 81,828 |
@@ -1312,6 +1312,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `MODBUS` | `L7-Application/ModbusTcp` | 755,609 | 82,108 |
 | `JWT` | `L6-Presentation/JWTAuth` | 755,617 | 85,124 |
 | `core/Basic` | `Foundation/Basic` | 755,621 | 81,836 |
+| `DIAG` | `Foundation/Configuration` | 755,665 | 77,580 |
 | `TELNET` | `L5-Session/Telnet` | 755,825 | 82,364 |
 | `CBOR` | `L6-Presentation/Cbor` | 755,873 | 81,900 |
 | `AUDIT_LOG` | `L7-Application/AuditLog` | 755,889 | 84,812 |
@@ -1381,7 +1382,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS` | `L6-Presentation/SecureWebSocket` | 855,873 | 122,020 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/mTLS` | 856,829 | 122,356 |
-| `TLS+TLS_ARENA_SIZE` | `L6-Presentation/SecureWebSocket` | 858,365 | 105,680 |
+| `TLS+TLS_ARENA_SIZE` | `L4-Transport/HTTPS` | 858,401 | 105,680 |
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/TlsResumption` | 859,133 | 105,840 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/mTLS` | 859,217 | 106,016 |
 | `POWER_MGMT` | `L7-Application/PowerGovernor` | 881,905 | 85,680 |
