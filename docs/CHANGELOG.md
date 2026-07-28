@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`8a28a46`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a28a461b242e3dd91337668c98f256d9980bbb5))
 - update CHANGELOG.md [skip ci] ([`414f797`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/414f797d332a4f0db22f9438f526597b7daf1c9c))
 - update CHANGELOG.md [skip ci] ([`d409d67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d409d673718833ad354d94af73c196e6c7243b25))
 - update CHANGELOG.md [skip ci] ([`8f572d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f572d195173ef64db5f772cd8fd145dca7ac105))
@@ -20,6 +21,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Create P4_MIPI_HELPERS.md ([`6d3a44a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d3a44a35ed8b08207432489c03d38a5ef047b22))
 - Create P4_MIPI_DSI_CSI.md ([`c6c0a14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6c0a14cb6f19314e63170b115ef921f5e0f9e48))
 - Create DMA_GDMA.md ([`fd4eb80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd4eb8085e42d44860937e9715f0bebf398617fb))
 - Create C2_AND_S.md ([`077a9eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/077a9ebef16f5af2d29b7a6720b0a7f20a9b1eef))
@@ -36,6 +38,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`bfdaba8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfdaba82e956f0816dde67f2fdae04bc1d85b4d3))
+- update ESP32 build footprints [skip ci] ([`3f95335`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f95335e4bb8b4897ced6b67bbeb5c409aa4891a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ae883ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae883baab3845c0c86dbd3f447d5c3a2537acb71))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d99c726`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d99c72628851584655166a1ff6f785fbc98f18d5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`38dd9ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38dd9ae0607e04e1553c782dd579915fee0597d3))
