@@ -721,6 +721,7 @@ src/
 │   └── tls13_kdf.h
 ├── hal/
 │   └── esp/
+│       ├── CLASSIC_CRYPTO_REG_SYMBOLS.md
 │       ├── esp_crypto_hal.cpp
 │       ├── esp_crypto_hal.h
 │       └── P4_CRYPTO_REG_SYMBOLS.md
