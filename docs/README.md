@@ -725,6 +725,7 @@ src/
 │       ├── CLASSIC_CRYPTO_REG_SYMBOLS.md
 │       ├── esp_crypto_hal.cpp
 │       ├── esp_crypto_hal.h
+│       ├── H2_CRYPTO_REG_SYMBOLS.md
 │       └── P4_CRYPTO_REG_SYMBOLS.md
 ├── network_drivers/
 │   ├── application/
