@@ -109,7 +109,7 @@ from each example's `pio ci` size report and aggregated into
 | `SNMP`                                                                                                    | L7-Application/SNMP                  | 744.9 KB (58.2%) | 92.1 KB (28.8%)  |
 | `SNMP+SNMP_TRAP`                                                                                          | L7-Application/SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
 | `SPA_ROUTER`                                                                                              | L7-Application/SpaFallback           | 737.5 KB (57.6%) | 79.9 KB (25.0%)  |
-| `SSH`                                                                                                     | L5-Session/SSH                       | 812.8 KB (63.5%) | 108.1 KB (33.8%) |
+| `SSH`                                                                                                     | L5-Session/SSHHostKey                | 812.9 KB (63.5%) | 108.1 KB (33.8%) |
 | `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP`                                                                       | L5-Session/SSHSftp                   | 863.9 KB (67.5%) | 117.2 KB (36.6%) |
 | `SSH+SSH_CLIENT+SSH_CLIENT_MAX_CHANNELS+CLIENT_RX_BUF`                                                    | L5-Session/SSHReverseTunnel          | 827.9 KB (64.7%) | 109.8 KB (34.3%) |
 | `STATS`                                                                                                   | L7-Application/Stats                 | 737.7 KB (57.6%) | 80.0 KB (25.0%)  |
